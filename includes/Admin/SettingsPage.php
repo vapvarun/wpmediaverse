@@ -432,6 +432,32 @@ class SettingsPage {
 				),
 			)
 		);
+
+		// Webhooks section.
+		add_settings_section(
+			'mvs_webhooks',
+			__( 'Webhooks', 'wpmediaverse' ),
+			'__return_null',
+			self::PAGE_SLUG
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
+			'mvs_webhooks',
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_webhooks' ),
+				'default'           => array(),
+			)
+		);
+
+		add_settings_field(
+			'mvs_webhooks',
+			__( 'Webhook Configuration', 'wpmediaverse' ),
+			array( $this, 'render_webhook_field' ),
+			self::PAGE_SLUG,
+			'mvs_webhooks'
+		);
 	}
 
 	/**
@@ -540,5 +566,87 @@ class SettingsPage {
 			checked( $value, true, false ),
 			esc_html( $args['label'] ?? '' )
 		);
+	}
+
+	/**
+	 * Render the webhook configuration field.
+	 */
+	public function render_webhook_field(): void {
+		$webhooks = get_option( 'mvs_webhooks', array() );
+		$webhook  = ! empty( $webhooks[0] ) ? $webhooks[0] : array(
+			'url'    => '',
+			'secret' => '',
+			'events' => array( '*' ),
+		);
+
+		$all_events = \WPMediaVerse\Integrations\WebhookService::EVENTS;
+		?>
+		<fieldset>
+			<p>
+				<label><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
+				<input type="url" name="mvs_webhooks[0][url]" class="regular-text"
+					value="<?php echo esc_attr( $webhook['url'] ?? '' ); ?>"
+					placeholder="https://example.com/webhook"
+				/>
+			</p>
+			<p>
+				<label><?php esc_html_e( 'Secret:', 'wpmediaverse' ); ?></label><br />
+				<input type="text" name="mvs_webhooks[0][secret]" class="regular-text"
+					value="<?php echo esc_attr( $webhook['secret'] ?? '' ); ?>"
+					placeholder="<?php esc_attr_e( 'Shared secret for HMAC signing', 'wpmediaverse' ); ?>"
+				/>
+			</p>
+			<p>
+				<label><?php esc_html_e( 'Events:', 'wpmediaverse' ); ?></label><br />
+				<?php
+				$selected_events = $webhook['events'] ?? array( '*' );
+				?>
+				<label>
+					<input type="checkbox" name="mvs_webhooks[0][events][]" value="*"
+						<?php checked( in_array( '*', $selected_events, true ) ); ?>
+					/> <?php esc_html_e( 'All events', 'wpmediaverse' ); ?>
+				</label><br />
+				<?php foreach ( $all_events as $event ) : ?>
+					<label>
+						<input type="checkbox" name="mvs_webhooks[0][events][]" value="<?php echo esc_attr( $event ); ?>"
+							<?php checked( in_array( $event, $selected_events, true ) ); ?>
+						/> <code><?php echo esc_html( $event ); ?></code>
+					</label><br />
+				<?php endforeach; ?>
+			</p>
+		</fieldset>
+		<?php
+	}
+
+	/**
+	 * Sanitize webhook settings.
+	 *
+	 * @param mixed $input Raw input.
+	 * @return array Sanitized webhooks.
+	 */
+	public function sanitize_webhooks( $input ): array {
+		if ( ! is_array( $input ) ) {
+			return array();
+		}
+
+		$sanitized = array();
+		foreach ( $input as $webhook ) {
+			$url = isset( $webhook['url'] ) ? esc_url_raw( $webhook['url'] ) : '';
+			if ( empty( $url ) ) {
+				continue;
+			}
+
+			$events = isset( $webhook['events'] ) && is_array( $webhook['events'] )
+				? array_map( 'sanitize_text_field', $webhook['events'] )
+				: array( '*' );
+
+			$sanitized[] = array(
+				'url'    => $url,
+				'secret' => isset( $webhook['secret'] ) ? sanitize_text_field( $webhook['secret'] ) : '',
+				'events' => $events,
+			);
+		}
+
+		return $sanitized;
 	}
 }

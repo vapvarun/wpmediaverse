@@ -141,6 +141,10 @@ Templates can be overridden by copying to `your-theme/wpmediaverse/`:
 - **Moderation Queue** (`mvs-moderation`) — Review flagged/pending media with approve/reject
 - **Stats Dashboard** (`mvs-stats`) — Overview stats, top media, AI usage
 
+## Integrations
+- **BuddyPressIntegration** — Activity stream (upload/react/comment), profile Media tab, group Media tab, BP notifications (reaction/comment/mention). Conditional: only loads when BuddyPress is active.
+- **WebhookService** — Outbound webhooks for media events (uploaded, deleted, moderated, reaction, comment). HMAC-SHA256 signed payloads, async delivery via Action Scheduler, configurable via Settings.
+
 ## Recent Changes
 | Date | Files | Description |
 |---|---|---|
@@ -149,4 +153,5 @@ Templates can be overridden by copying to `your-theme/wpmediaverse/`:
 | 2026-03-03 | Phase 2 (all) | Social layer — 5 services, 3 controllers, 6 routes, 71 tests |
 | 2026-03-03 | Phase 3 (all) | Organization — AlbumService, CollectionService, StoryService, TagController, playlists, smart collections, 80 tests |
 | 2026-03-03 | Phase 4 (all) | AI features — AIProviderInterface, OpenAIProvider, AIService, ModerationService, ModerationController, ModerationQueue, AI settings, 101 tests |
-| 2026-03-03 | Phase 5 (all) | Blocks & Frontend — 7 Gutenberg blocks (media-upload, media-grid, media-player, album-viewer, story-viewer, media-stats, explore-feed), 5 Interactivity API stores, 5 shortcodes, template override system, admin stats dashboard |
+| 2026-03-03 | Phase 5 (all) | Blocks & Frontend — 7 Gutenberg blocks, 5 Interactivity API stores, 5 shortcodes, template override system, admin stats dashboard |
+| 2026-03-03 | Phase 6 (all) | Integrations — BuddyPress (activity, profile tab, group tab, notifications), webhook system (signed payloads, async delivery, settings UI) |

@@ -44,6 +44,8 @@ use WPMediaVerse\Social\FavoriteService;
 use WPMediaVerse\Social\MentionService;
 use WPMediaVerse\Social\ShareService;
 use WPMediaVerse\Services\StatsService;
+use WPMediaVerse\Integrations\BuddyPressIntegration;
+use WPMediaVerse\Integrations\WebhookService;
 
 /**
  * Main plugin bootstrap class.
@@ -99,6 +101,13 @@ class Plugin {
 		// AI processing hooks.
 		add_action( 'mvs_media_uploaded', array( self::class, 'maybe_queue_ai' ), 10, 1 );
 		add_action( 'mvs_ai_process_media', array( self::class, 'handle_ai_process' ), 10, 1 );
+
+		// Integrations (conditionally loaded).
+		self::$container->get( 'integration.buddypress' );
+		self::$container->get( 'integration.webhooks' );
+
+		// Action Scheduler callback for async webhook delivery.
+		add_action( 'mvs_deliver_webhook', array( self::class, 'deliver_webhook' ), 10, 3 );
 
 		// Flush rewrite rules if needed (after activation).
 		add_action( 'init', array( self::class, 'maybe_flush_rewrites' ), 99 );
@@ -247,6 +256,24 @@ class Plugin {
 				return new StatsPage( $c->get( 'ai' ) );
 			}
 		);
+
+		self::$container->register(
+			'integration.buddypress',
+			function () {
+				$bp = new BuddyPressIntegration();
+				$bp->init();
+				return $bp;
+			}
+		);
+
+		self::$container->register(
+			'integration.webhooks',
+			function () {
+				$webhooks = new WebhookService();
+				$webhooks->init();
+				return $webhooks;
+			}
+		);
 	}
 
 	/**
@@ -339,6 +366,18 @@ class Plugin {
 	public static function handle_ai_process( int $media_id ): void {
 		$ai = self::$container->get( 'ai' );
 		$ai->process( $media_id );
+	}
+
+	/**
+	 * Deliver a webhook via Action Scheduler.
+	 *
+	 * @param string $url     Webhook URL.
+	 * @param string $body    JSON body.
+	 * @param array  $headers HTTP headers.
+	 */
+	public static function deliver_webhook( string $url, string $body, array $headers ): void {
+		$webhooks = self::$container->get( 'integration.webhooks' );
+		$webhooks->send( $url, $body, $headers );
 	}
 
 	/**
