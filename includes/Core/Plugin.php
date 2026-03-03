@@ -24,6 +24,8 @@ use WPMediaVerse\Services\StoryService;
 use WPMediaVerse\Services\AIService;
 use WPMediaVerse\Services\OpenAIProvider;
 use WPMediaVerse\Services\ModerationService;
+use WPMediaVerse\Blocks\BlockRegistrar;
+use WPMediaVerse\Shortcodes\Shortcodes;
 use WPMediaVerse\REST\Controller\MediaController;
 use WPMediaVerse\REST\Controller\AlbumController;
 use WPMediaVerse\REST\Controller\CollectionController;
@@ -35,6 +37,7 @@ use WPMediaVerse\REST\Controller\StatsController;
 use WPMediaVerse\REST\Controller\TagController;
 use WPMediaVerse\REST\Controller\ModerationController;
 use WPMediaVerse\Admin\ModerationQueue;
+use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Social\ReactionService;
 use WPMediaVerse\Social\CommentService;
 use WPMediaVerse\Social\FavoriteService;
@@ -65,13 +68,23 @@ class Plugin {
 		self::$container = new ServiceContainer();
 		self::register_services();
 
-		// Register CPTs and taxonomies.
+		// Register CPTs, taxonomies, and blocks.
 		add_action( 'init', array( self::class, 'register_types' ) );
+
+		$blocks = new BlockRegistrar();
+		$blocks->init();
+
+		$shortcodes = new Shortcodes();
+		$shortcodes->init();
+
+		$templates = new TemplateLoader();
+		$templates->init();
 
 		// Admin hooks.
 		if ( is_admin() ) {
 			self::$container->get( 'admin.settings' );
 			self::$container->get( 'admin.moderation' );
+			self::$container->get( 'admin.stats' );
 		}
 
 		// Register REST API routes.
@@ -225,6 +238,13 @@ class Plugin {
 			'admin.moderation',
 			function ( ServiceContainer $c ) {
 				return new ModerationQueue( $c->get( 'moderation' ) );
+			}
+		);
+
+		self::$container->register(
+			'admin.stats',
+			function ( ServiceContainer $c ) {
+				return new StatsPage( $c->get( 'ai' ) );
 			}
 		);
 	}

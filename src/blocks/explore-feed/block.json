@@ -1,0 +1,42 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "mvs/explore-feed",
+	"version": "1.0.0",
+	"title": "Explore Feed",
+	"category": "media",
+	"icon": "screenoptions",
+	"description": "A discover/explore feed showing trending and recent WPMediaVerse media.",
+	"keywords": [ "explore", "discover", "feed", "trending" ],
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ]
+	},
+	"attributes": {
+		"layout": {
+			"type": "string",
+			"default": "grid"
+		},
+		"perPage": {
+			"type": "number",
+			"default": 12
+		},
+		"showFilters": {
+			"type": "boolean",
+			"default": true
+		},
+		"showSearch": {
+			"type": "boolean",
+			"default": true
+		},
+		"columns": {
+			"type": "number",
+			"default": 3
+		}
+	},
+	"textdomain": "wpmediaverse",
+	"editorScript": "file:./index.js",
+	"render": "file:./render.php",
+	"viewScriptModule": "file:./view.js",
+	"style": "file:./style-index.css"
+}

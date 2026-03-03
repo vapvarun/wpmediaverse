@@ -107,6 +107,40 @@ includes/
 - **ModerationService** — Queue management, approve/reject workflow, auto-actions (flag/hide/reject), logging
 - **Action Scheduler** — Async AI processing on upload via `mvs_ai_process_media` hook (falls back to sync)
 
+## Gutenberg Blocks (7)
+| Block | Namespace | Description |
+|---|---|---|
+| media-upload | `mvs/media-upload` | Drag & drop file uploader with REST integration |
+| media-grid | `mvs/media-grid` | Filterable media grid with lightbox |
+| media-player | `mvs/media-player` | Video/audio player with view tracking |
+| album-viewer | `mvs/album-viewer` | Album display with ordered items |
+| story-viewer | `mvs/story-viewer` | Instagram-style stories (time-limited) |
+| media-stats | `mvs/media-stats` | User stats dashboard cards |
+| explore-feed | `mvs/explore-feed` | Public explore feed with search/filter/load-more |
+
+## Interactivity API Stores (5)
+`mvs/media-upload`, `mvs/media-grid`, `mvs/media-player`, `mvs/story-viewer`, `mvs/explore-feed`
+
+## Shortcodes (5)
+| Shortcode | Attributes | Maps To |
+|---|---|---|
+| `[mvs_gallery]` | columns, count, type, category, lightbox | media-grid block |
+| `[mvs_upload]` | max_files, show_privacy | media-upload block |
+| `[mvs_album]` | id, columns, show_title | album-viewer block |
+| `[mvs_player]` | id, autoplay, loop, download | media-player block |
+| `[mvs_stats]` | views, downloads, reactions, top_media | media-stats block |
+
+## Template Override System
+Templates can be overridden by copying to `your-theme/wpmediaverse/`:
+- `media-single.php` — Single media item display
+- `album.php` — Single album display
+- `explore.php` — Explore/archive page
+
+## Admin Pages
+- **Settings** (`mvs-settings`) — General, Uploads, Storage, AI, Moderation settings
+- **Moderation Queue** (`mvs-moderation`) — Review flagged/pending media with approve/reject
+- **Stats Dashboard** (`mvs-stats`) — Overview stats, top media, AI usage
+
 ## Recent Changes
 | Date | Files | Description |
 |---|---|---|
@@ -115,3 +149,4 @@ includes/
 | 2026-03-03 | Phase 2 (all) | Social layer — 5 services, 3 controllers, 6 routes, 71 tests |
 | 2026-03-03 | Phase 3 (all) | Organization — AlbumService, CollectionService, StoryService, TagController, playlists, smart collections, 80 tests |
 | 2026-03-03 | Phase 4 (all) | AI features — AIProviderInterface, OpenAIProvider, AIService, ModerationService, ModerationController, ModerationQueue, AI settings, 101 tests |
+| 2026-03-03 | Phase 5 (all) | Blocks & Frontend — 7 Gutenberg blocks (media-upload, media-grid, media-player, album-viewer, story-viewer, media-stats, explore-feed), 5 Interactivity API stores, 5 shortcodes, template override system, admin stats dashboard |
