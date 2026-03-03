@@ -209,6 +209,229 @@ class SettingsPage {
 				),
 			)
 		);
+
+		// AI section.
+		add_settings_section(
+			'mvs_ai',
+			__( 'AI Features', 'wpmediaverse' ),
+			'__return_null',
+			self::PAGE_SLUG
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
+			'mvs_ai_provider',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'openai',
+			)
+		);
+
+		add_settings_field(
+			'mvs_ai_provider',
+			__( 'AI Provider', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG,
+			'mvs_ai',
+			array(
+				'option'  => 'mvs_ai_provider',
+				'choices' => array(
+					'openai' => __( 'OpenAI (GPT-4 Vision)', 'wpmediaverse' ),
+				),
+			)
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
+			'mvs_openai_api_key',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => '',
+			)
+		);
+
+		add_settings_field(
+			'mvs_openai_api_key',
+			__( 'OpenAI API Key', 'wpmediaverse' ),
+			array( $this, 'render_password_field' ),
+			self::PAGE_SLUG,
+			'mvs_ai',
+			array(
+				'option'      => 'mvs_openai_api_key',
+				'description' => __( 'Or define MVS_OPENAI_API_KEY constant in wp-config.php.', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
+			'mvs_openai_model',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'gpt-4o-mini',
+			)
+		);
+
+		add_settings_field(
+			'mvs_openai_model',
+			__( 'OpenAI Model', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG,
+			'mvs_ai',
+			array(
+				'option'  => 'mvs_openai_model',
+				'choices' => array(
+					'gpt-4o-mini' => __( 'GPT-4o Mini (cheaper)', 'wpmediaverse' ),
+					'gpt-4o'      => __( 'GPT-4o (best quality)', 'wpmediaverse' ),
+				),
+			)
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
+			'mvs_ai_auto_analyze',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+
+		add_settings_field(
+			'mvs_ai_auto_analyze',
+			__( 'Auto-Analyze Uploads', 'wpmediaverse' ),
+			array( $this, 'render_checkbox_field' ),
+			self::PAGE_SLUG,
+			'mvs_ai',
+			array(
+				'option' => 'mvs_ai_auto_analyze',
+				'label'  => __( 'Automatically analyze media on upload (description + tags).', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
+			'mvs_ai_auto_apply_tags',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+
+		add_settings_field(
+			'mvs_ai_auto_apply_tags',
+			__( 'Auto-Apply Tags', 'wpmediaverse' ),
+			array( $this, 'render_checkbox_field' ),
+			self::PAGE_SLUG,
+			'mvs_ai',
+			array(
+				'option' => 'mvs_ai_auto_apply_tags',
+				'label'  => __( 'Automatically assign AI-generated tags to taxonomy.', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
+			'mvs_ai_auto_moderate',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+
+		add_settings_field(
+			'mvs_ai_auto_moderate',
+			__( 'Auto-Moderate Uploads', 'wpmediaverse' ),
+			array( $this, 'render_checkbox_field' ),
+			self::PAGE_SLUG,
+			'mvs_ai',
+			array(
+				'option' => 'mvs_ai_auto_moderate',
+				'label'  => __( 'Check uploads for policy violations via AI.', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
+			'mvs_ai_monthly_budget',
+			array(
+				'type'              => 'number',
+				'sanitize_callback' => 'floatval',
+				'default'           => 0,
+			)
+		);
+
+		add_settings_field(
+			'mvs_ai_monthly_budget',
+			__( 'Monthly AI Budget ($)', 'wpmediaverse' ),
+			array( $this, 'render_number_field' ),
+			self::PAGE_SLUG,
+			'mvs_ai',
+			array(
+				'option'      => 'mvs_ai_monthly_budget',
+				'description' => __( 'Set to 0 for unlimited. AI calls will stop when budget is exceeded.', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
+			'mvs_ai_cost_per_call',
+			array(
+				'type'              => 'number',
+				'sanitize_callback' => 'floatval',
+				'default'           => 0.01,
+			)
+		);
+
+		add_settings_field(
+			'mvs_ai_cost_per_call',
+			__( 'Estimated Cost per Call ($)', 'wpmediaverse' ),
+			array( $this, 'render_number_field' ),
+			self::PAGE_SLUG,
+			'mvs_ai',
+			array(
+				'option'      => 'mvs_ai_cost_per_call',
+				'description' => __( 'Approximate cost per API call for budget tracking.', 'wpmediaverse' ),
+			)
+		);
+
+		// Moderation section.
+		add_settings_section(
+			'mvs_moderation',
+			__( 'Moderation', 'wpmediaverse' ),
+			'__return_null',
+			self::PAGE_SLUG
+		);
+
+		register_setting(
+			self::OPTION_GROUP,
+			'mvs_moderation_auto_action',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'flag',
+			)
+		);
+
+		add_settings_field(
+			'mvs_moderation_auto_action',
+			__( 'When AI Flags Content', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG,
+			'mvs_moderation',
+			array(
+				'option'  => 'mvs_moderation_auto_action',
+				'choices' => array(
+					'flag'   => __( 'Flag for review (keep visible)', 'wpmediaverse' ),
+					'hide'   => __( 'Hide (set to private)', 'wpmediaverse' ),
+					'reject' => __( 'Reject (move to draft)', 'wpmediaverse' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -285,6 +508,23 @@ class SettingsPage {
 			);
 		}
 		echo '</select>';
+	}
+
+	/**
+	 * Render a password input field.
+	 *
+	 * @param array $args Field arguments.
+	 */
+	public function render_password_field( array $args ): void {
+		$value = get_option( $args['option'], '' );
+		printf(
+			'<input type="password" name="%s" value="%s" class="regular-text" autocomplete="off" />',
+			esc_attr( $args['option'] ),
+			esc_attr( $value )
+		);
+		if ( ! empty( $args['description'] ) ) {
+			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+		}
 	}
 
 	/**

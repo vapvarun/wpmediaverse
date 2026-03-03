@@ -78,6 +78,19 @@ includes/
 | `/me/favorites` | GET | FavoriteController |
 | `/media/{id}/stats` | GET | StatsController |
 | `/me/stats` | GET | StatsController |
+| `/tags` | GET | TagController |
+| `/tags/cloud` | GET | TagController |
+| `/tags/merge` | POST | TagController |
+| `/tags/{id}` | PUT | TagController |
+| `/albums/{id}/items/{media_id}` | DELETE | AlbumController |
+| `/albums/{id}/cover` | PUT | AlbumController |
+| `/collections/{id}/rules` | PUT | CollectionController |
+| `/moderation` | GET | ModerationController |
+| `/moderation/counts` | GET | ModerationController |
+| `/moderation/{id}/approve` | POST | ModerationController |
+| `/moderation/{id}/reject` | POST | ModerationController |
+| `/moderation/{id}/analyze` | POST | ModerationController |
+| `/ai/usage` | GET | ModerationController |
 
 ## Social Services
 - **ReactionService** — Toggle reactions (like/love/haha/wow/sad/angry), syncs stats
@@ -87,9 +100,18 @@ includes/
 - **ShareService** — Record shares, generate share links (facebook/twitter/linkedin/email)
 - **StatsService** — Views/downloads/aggregation, user totals, pruning, download recording
 
+## AI & Moderation Services
+- **AIProviderInterface** — Contract for AI providers (analyze, tag, moderate)
+- **OpenAIProvider** — GPT-4 Vision implementation via OpenAI API
+- **AIService** — Orchestrator: provider registry, budget tracking, usage stats, auto-pipeline
+- **ModerationService** — Queue management, approve/reject workflow, auto-actions (flag/hide/reject), logging
+- **Action Scheduler** — Async AI processing on upload via `mvs_ai_process_media` hook (falls back to sync)
+
 ## Recent Changes
 | Date | Files | Description |
 |---|---|---|
 | 2026-03-03 | Phase 1a (all) | Initial scaffold — core, CPTs, taxonomies, caps, upload, settings, stubs |
 | 2026-03-03 | Phase 1b (all) | REST API (4 controllers, 13 routes), PrivacyService, RateLimiter, PHPUnit (27 tests) |
 | 2026-03-03 | Phase 2 (all) | Social layer — 5 services, 3 controllers, 6 routes, 71 tests |
+| 2026-03-03 | Phase 3 (all) | Organization — AlbumService, CollectionService, StoryService, TagController, playlists, smart collections, 80 tests |
+| 2026-03-03 | Phase 4 (all) | AI features — AIProviderInterface, OpenAIProvider, AIService, ModerationService, ModerationController, ModerationQueue, AI settings, 101 tests |

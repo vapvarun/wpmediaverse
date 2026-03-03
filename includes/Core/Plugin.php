@@ -21,6 +21,9 @@ use WPMediaVerse\Services\PrivacyService;
 use WPMediaVerse\Services\AlbumService;
 use WPMediaVerse\Services\CollectionService;
 use WPMediaVerse\Services\StoryService;
+use WPMediaVerse\Services\AIService;
+use WPMediaVerse\Services\OpenAIProvider;
+use WPMediaVerse\Services\ModerationService;
 use WPMediaVerse\REST\Controller\MediaController;
 use WPMediaVerse\REST\Controller\AlbumController;
 use WPMediaVerse\REST\Controller\CollectionController;
@@ -30,6 +33,8 @@ use WPMediaVerse\REST\Controller\CommentController;
 use WPMediaVerse\REST\Controller\FavoriteController;
 use WPMediaVerse\REST\Controller\StatsController;
 use WPMediaVerse\REST\Controller\TagController;
+use WPMediaVerse\REST\Controller\ModerationController;
+use WPMediaVerse\Admin\ModerationQueue;
 use WPMediaVerse\Social\ReactionService;
 use WPMediaVerse\Social\CommentService;
 use WPMediaVerse\Social\FavoriteService;
@@ -66,6 +71,7 @@ class Plugin {
 		// Admin hooks.
 		if ( is_admin() ) {
 			self::$container->get( 'admin.settings' );
+			self::$container->get( 'admin.moderation' );
 		}
 
 		// Register REST API routes.
@@ -73,6 +79,13 @@ class Plugin {
 
 		// Initialize story cleanup cron.
 		self::$container->get( 'stories' );
+
+		// Initialize moderation hooks.
+		self::$container->get( 'moderation' );
+
+		// AI processing hooks.
+		add_action( 'mvs_media_uploaded', array( self::class, 'maybe_queue_ai' ), 10, 1 );
+		add_action( 'mvs_ai_process_media', array( self::class, 'handle_ai_process' ), 10, 1 );
 
 		// Flush rewrite rules if needed (after activation).
 		add_action( 'init', array( self::class, 'maybe_flush_rewrites' ), 99 );
@@ -181,6 +194,39 @@ class Plugin {
 				return $service;
 			}
 		);
+
+		self::$container->register(
+			'ai',
+			function () {
+				$service = new AIService();
+				$service->register_provider( new OpenAIProvider() );
+
+				/**
+				 * Fires after the AI service is created so additional providers can be registered.
+				 *
+				 * @param AIService $service The AI service instance.
+				 */
+				do_action( 'mvs_ai_providers', $service );
+
+				return $service;
+			}
+		);
+
+		self::$container->register(
+			'moderation',
+			function ( ServiceContainer $c ) {
+				$service = new ModerationService( $c->get( 'ai' ) );
+				$service->init();
+				return $service;
+			}
+		);
+
+		self::$container->register(
+			'admin.moderation',
+			function ( ServiceContainer $c ) {
+				return new ModerationQueue( $c->get( 'moderation' ) );
+			}
+		);
 	}
 
 	/**
@@ -196,6 +242,8 @@ class Plugin {
 		$albums    = self::$container->get( 'albums' );
 
 		$collections = self::$container->get( 'collections' );
+		$moderation  = self::$container->get( 'moderation' );
+		$ai          = self::$container->get( 'ai' );
 
 		$controllers = array(
 			new MediaController( $privacy ),
@@ -207,6 +255,7 @@ class Plugin {
 			new FavoriteController( $favorites ),
 			new StatsController( $stats ),
 			new TagController(),
+			new ModerationController( $moderation, $ai ),
 		);
 
 		foreach ( $controllers as $controller ) {
@@ -233,6 +282,43 @@ class Plugin {
 			delete_transient( 'mvs_flush_rewrite' );
 			flush_rewrite_rules();
 		}
+	}
+
+	/**
+	 * Queue AI processing for a newly uploaded media item.
+	 *
+	 * @param int $media_id Media post ID.
+	 */
+	public static function maybe_queue_ai( int $media_id ): void {
+		if ( ! get_option( 'mvs_ai_auto_analyze', false ) ) {
+			return;
+		}
+
+		$ai = self::$container->get( 'ai' );
+		if ( ! $ai->get_active_provider() ) {
+			return;
+		}
+
+		// Use Action Scheduler if available, otherwise process synchronously.
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action(
+				'mvs_ai_process_media',
+				array( 'media_id' => $media_id ),
+				'wpmediaverse'
+			);
+		} else {
+			$ai->process( $media_id );
+		}
+	}
+
+	/**
+	 * Handle the Action Scheduler callback for AI processing.
+	 *
+	 * @param int $media_id Media post ID.
+	 */
+	public static function handle_ai_process( int $media_id ): void {
+		$ai = self::$container->get( 'ai' );
+		$ai->process( $media_id );
 	}
 
 	/**
