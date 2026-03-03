@@ -1,0 +1,95 @@
+# WPMediaVerse — CLAUDE.md
+
+## Identity
+| Property | Value |
+|---|---|
+| Plugin Name | WPMediaVerse |
+| Slug | `wpmediaverse` |
+| Text Domain | `wpmediaverse` |
+| PHP Namespace | `WPMediaVerse\` |
+| Function/Hook Prefix | `mvs_` |
+| CPT Prefix | `mvs_` |
+| Table Prefix | `{$wpdb->prefix}mvs_` |
+| REST Namespace | `mvs/v1` |
+| Block Namespace | `mvs/` |
+| Option Prefix | `mvs_` |
+| Constant Prefix | `MVS_` |
+| Min PHP | 7.4 |
+| Min WP | 6.5 |
+
+## Architecture
+- **Autoloading**: Composer PSR-4 (`WPMediaVerse\` → `includes/`)
+- **Container**: `Core\ServiceContainer` — lazy-load, no singletons/globals
+- **Migrations**: `Core\Migrator` — version-based, dbDelta for all 9 custom tables
+- **Storage**: Driver pattern (`StorageDriverInterface`) — `LocalDriver` default, S3/BunnyCDN via filter
+
+## Custom Post Types
+- `mvs_media` — Media items (images, video, audio, documents)
+- `mvs_album` — Albums (ordered media collections)
+- `mvs_collection` — Collections (saved favorites)
+
+## Taxonomies
+- `mvs_tag` — Non-hierarchical media tags
+- `mvs_category` — Hierarchical media categories
+
+## Custom Tables (9)
+`mvs_reactions`, `mvs_favorites`, `mvs_media_views`, `mvs_media_stats`, `mvs_access_rules`, `mvs_access_grants`, `mvs_mentions`, `mvs_album_items`, `mvs_media_index`
+
+## Key Conventions
+- All strings use `__()` / `esc_html__()` with domain `wpmediaverse`
+- Direct DB queries use `$wpdb->prepare()` always
+- File uploads go through `UploadService::handle()` — validates MIME, checks size, strips EXIF, hashes
+- Privacy checked via `PrivacyService::can_view()`
+- Capabilities mapped to roles in `MediaCapabilities`
+
+## File Structure
+```
+includes/
+├── Core/         — Bootstrap, container, migrator
+├── PostTypes/    — CPT registrations
+├── Taxonomies/   — Taxonomy registrations
+├── Services/     — Upload, storage, AI, moderation, stats
+├── Social/       — Reactions, comments, favorites, mentions, shares
+├── REST/         — REST API controllers
+├── Capabilities/ — Role/cap mapping
+├── CLI/          — WP-CLI commands
+└── Admin/        — Settings page, moderation queue
+```
+
+## REST API Routes (mvs/v1)
+| Route | Methods | Controller |
+|---|---|---|
+| `/media` | GET, POST | MediaController |
+| `/media/{id}` | GET, PUT, DELETE | MediaController |
+| `/media/{id}/view` | POST | MediaController |
+| `/media/{id}/access` | GET | MediaController |
+| `/me/media` | GET | MediaController |
+| `/albums` | GET, POST | AlbumController |
+| `/albums/{id}` | GET, PUT, DELETE | AlbumController |
+| `/albums/{id}/items` | POST | AlbumController |
+| `/albums/{id}/reorder` | PUT | AlbumController |
+| `/collections` | GET, POST | CollectionController |
+| `/collections/{id}` | GET, PUT, DELETE | CollectionController |
+| `/media/bulk` | POST | BulkController |
+| `/media/{id}/reactions` | GET, POST, DELETE | ReactionController |
+| `/media/{id}/comments` | GET, POST | CommentController |
+| `/media/{id}/comments/{cid}` | DELETE | CommentController |
+| `/media/{id}/favorite` | POST, DELETE | FavoriteController |
+| `/me/favorites` | GET | FavoriteController |
+| `/media/{id}/stats` | GET | StatsController |
+| `/me/stats` | GET | StatsController |
+
+## Social Services
+- **ReactionService** — Toggle reactions (like/love/haha/wow/sad/angry), syncs stats
+- **CommentService** — Threaded comments via WP comments (type=mvs_comment), syncs stats
+- **FavoriteService** — Idempotent favorites with optional collection, paginated listing
+- **MentionService** — @mention regex parsing, store in mvs_mentions, fires mvs_mentions_created
+- **ShareService** — Record shares, generate share links (facebook/twitter/linkedin/email)
+- **StatsService** — Views/downloads/aggregation, user totals, pruning, download recording
+
+## Recent Changes
+| Date | Files | Description |
+|---|---|---|
+| 2026-03-03 | Phase 1a (all) | Initial scaffold — core, CPTs, taxonomies, caps, upload, settings, stubs |
+| 2026-03-03 | Phase 1b (all) | REST API (4 controllers, 13 routes), PrivacyService, RateLimiter, PHPUnit (27 tests) |
+| 2026-03-03 | Phase 2 (all) | Social layer — 5 services, 3 controllers, 6 routes, 71 tests |

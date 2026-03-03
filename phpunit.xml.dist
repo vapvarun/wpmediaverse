@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<phpunit
+	bootstrap="tests/bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	convertErrorsToExceptions="true"
+	convertNoticesToExceptions="true"
+	convertWarningsToExceptions="true"
+>
+	<testsuites>
+		<testsuite name="WPMediaVerse">
+			<directory suffix="Test.php">tests/</directory>
+		</testsuite>
+	</testsuites>
+	<php>
+		<const name="WP_TESTS_FORCE_KNOWN_BUGS" value="false"/>
+	</php>
+</phpunit>

@@ -1,0 +1,18 @@
+{
+	"name": "wpmediaverse",
+	"version": "1.0.0",
+	"description": "A general-purpose WordPress media platform plugin.",
+	"author": "WBCom Designs",
+	"license": "GPL-2.0-or-later",
+	"main": "build/index.js",
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
+		"lint:js": "wp-scripts lint-js",
+		"lint:css": "wp-scripts lint-style",
+		"packages-update": "wp-scripts packages-update"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^30.0.0"
+	}
+}

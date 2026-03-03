@@ -1,0 +1,25 @@
+{
+	"name": "wbcomdesigns/wpmediaverse",
+	"description": "A general-purpose WordPress media platform plugin.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": ">=7.4",
+		"woocommerce/action-scheduler": "^3.7"
+	},
+	"autoload": {
+		"psr-4": {
+			"WPMediaVerse\\": "includes/"
+		}
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"sort-packages": true
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^9.6",
+		"yoast/phpunit-polyfills": "^2.0"
+	}
+}
