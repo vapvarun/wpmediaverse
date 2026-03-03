@@ -18,6 +18,9 @@ use WPMediaVerse\Admin\SettingsPage;
 use WPMediaVerse\Services\UploadService;
 use WPMediaVerse\Services\StorageService;
 use WPMediaVerse\Services\PrivacyService;
+use WPMediaVerse\Services\AlbumService;
+use WPMediaVerse\Services\CollectionService;
+use WPMediaVerse\Services\StoryService;
 use WPMediaVerse\REST\Controller\MediaController;
 use WPMediaVerse\REST\Controller\AlbumController;
 use WPMediaVerse\REST\Controller\CollectionController;
@@ -26,6 +29,7 @@ use WPMediaVerse\REST\Controller\ReactionController;
 use WPMediaVerse\REST\Controller\CommentController;
 use WPMediaVerse\REST\Controller\FavoriteController;
 use WPMediaVerse\REST\Controller\StatsController;
+use WPMediaVerse\REST\Controller\TagController;
 use WPMediaVerse\Social\ReactionService;
 use WPMediaVerse\Social\CommentService;
 use WPMediaVerse\Social\FavoriteService;
@@ -66,6 +70,9 @@ class Plugin {
 
 		// Register REST API routes.
 		add_action( 'rest_api_init', array( self::class, 'register_rest_routes' ) );
+
+		// Initialize story cleanup cron.
+		self::$container->get( 'stories' );
 
 		// Flush rewrite rules if needed (after activation).
 		add_action( 'init', array( self::class, 'maybe_flush_rewrites' ), 99 );
@@ -151,6 +158,29 @@ class Plugin {
 				return new StatsService();
 			}
 		);
+
+		self::$container->register(
+			'albums',
+			function () {
+				return new AlbumService();
+			}
+		);
+
+		self::$container->register(
+			'collections',
+			function () {
+				return new CollectionService();
+			}
+		);
+
+		self::$container->register(
+			'stories',
+			function () {
+				$service = new StoryService();
+				$service->init();
+				return $service;
+			}
+		);
 	}
 
 	/**
@@ -161,14 +191,22 @@ class Plugin {
 
 		$reactions = self::$container->get( 'reactions' );
 		$comments  = self::$container->get( 'comments' );
+		$favorites = self::$container->get( 'favorites' );
+		$stats     = self::$container->get( 'stats' );
+		$albums    = self::$container->get( 'albums' );
+
+		$collections = self::$container->get( 'collections' );
 
 		$controllers = array(
 			new MediaController( $privacy ),
-			new AlbumController(),
-			new CollectionController(),
+			new AlbumController( $albums, $privacy ),
+			new CollectionController( $collections ),
 			new BulkController(),
 			new ReactionController( $reactions ),
 			new CommentController( $comments ),
+			new FavoriteController( $favorites ),
+			new StatsController( $stats ),
+			new TagController(),
 		);
 
 		foreach ( $controllers as $controller ) {

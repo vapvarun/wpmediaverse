@@ -15,6 +15,8 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
+use WPMediaVerse\Services\AlbumService;
+use WPMediaVerse\Services\PrivacyService;
 
 /**
  * REST controller for albums.
@@ -34,6 +36,31 @@ class AlbumController extends WP_REST_Controller {
 	 * @var string
 	 */
 	protected $rest_base = 'albums';
+
+	/**
+	 * Album service instance.
+	 *
+	 * @var AlbumService
+	 */
+	private $albums;
+
+	/**
+	 * Privacy service instance.
+	 *
+	 * @var PrivacyService
+	 */
+	private $privacy;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param AlbumService   $albums  Album service.
+	 * @param PrivacyService $privacy Privacy service.
+	 */
+	public function __construct( AlbumService $albums, PrivacyService $privacy ) {
+		$this->albums  = $albums;
+		$this->privacy = $privacy;
+	}
 
 	/**
 	 * Register routes.
@@ -131,6 +158,52 @@ class AlbumController extends WP_REST_Controller {
 				),
 			)
 		);
+
+		// DELETE /albums/{id}/items/{media_id}.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/items/(?P<media_id>[\d]+)',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'remove_item' ),
+				'permission_callback' => array( $this, 'update_item_permissions_check' ),
+				'args'                => array(
+					'id'       => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+					'media_id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
+		// PUT /albums/{id}/cover.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/cover',
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'set_cover' ),
+				'permission_callback' => array( $this, 'update_item_permissions_check' ),
+				'args'                => array(
+					'id'       => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+					'media_id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -159,10 +232,21 @@ class AlbumController extends WP_REST_Controller {
 			$args['author'] = (int) $author;
 		}
 
-		$query = new \WP_Query( $args );
-		$items = array();
+		$album_type = $request->get_param( 'album_type' );
+		if ( $album_type ) {
+			$args['meta_key']   = '_mvs_album_type'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			$args['meta_value'] = sanitize_text_field( $album_type ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+		}
+
+		$query   = new \WP_Query( $args );
+		$items   = array();
+		$user_id = get_current_user_id();
 
 		foreach ( $query->posts as $post ) {
+			// Privacy enforcement on album listing.
+			if ( ! $this->privacy->can_view( $post->ID, $user_id ) ) {
+				continue;
+			}
 			$items[] = $this->prepare_album_response( $post );
 		}
 
@@ -183,6 +267,11 @@ class AlbumController extends WP_REST_Controller {
 		$post = get_post( $request->get_param( 'id' ) );
 		if ( ! $post || 'mvs_album' !== $post->post_type ) {
 			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		// Privacy enforcement.
+		if ( ! $this->privacy->can_view( $post->ID, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 
 		return rest_ensure_response( $this->prepare_album_response( $post, true ) );
@@ -221,6 +310,9 @@ class AlbumController extends WP_REST_Controller {
 
 		$privacy = sanitize_text_field( $request->get_param( 'privacy' ) ?? 'public' );
 		update_post_meta( $album_id, '_mvs_privacy', $privacy );
+
+		$album_type = sanitize_text_field( $request->get_param( 'album_type' ) ?? 'default' );
+		update_post_meta( $album_id, '_mvs_album_type', $album_type );
 
 		$response = rest_ensure_response( $this->prepare_album_response( get_post( $album_id ) ) );
 		$response->set_status( 201 );
@@ -293,9 +385,7 @@ class AlbumController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		// Remove album items from junction table.
-		global $wpdb;
-		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'album_id' => $album_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$this->albums->delete_all_items( $album_id );
 
 		$deleted = wp_delete_post( $album_id, true );
 
@@ -320,20 +410,7 @@ class AlbumController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_invalid_order', __( 'Order must be an array of media IDs.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
-		global $wpdb;
-
-		foreach ( $order as $position => $media_id ) {
-			$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_album_items',
-				array( 'position' => (int) $position ),
-				array(
-					'album_id' => $album_id,
-					'media_id' => (int) $media_id,
-				),
-				array( '%d' ),
-				array( '%d', '%d' )
-			);
-		}
+		$this->albums->reorder( $album_id, $order );
 
 		return rest_ensure_response( array( 'reordered' => true ) );
 	}
@@ -357,43 +434,52 @@ class AlbumController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_invalid_ids', __( 'media_ids must be a non-empty array.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
-		global $wpdb;
-
-		// Get current max position.
-		$max_pos = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT MAX(position) FROM {$wpdb->prefix}mvs_album_items WHERE album_id = %d",
-				$album_id
-			)
-		);
-
-		$added = 0;
-		foreach ( $media_ids as $media_id ) {
-			$media_id = (int) $media_id;
-			$post     = get_post( $media_id );
-
-			if ( ! $post || 'mvs_media' !== $post->post_type ) {
-				continue;
-			}
-
-			++$max_pos;
-			$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_album_items',
-				array(
-					'album_id' => $album_id,
-					'media_id' => $media_id,
-					'position' => $max_pos,
-					'added_at' => current_time( 'mysql', true ),
-				),
-				array( '%d', '%d', '%d', '%s' )
-			);
-
-			if ( false !== $result ) {
-				++$added;
-			}
-		}
+		$added = $this->albums->add_items( $album_id, $media_ids );
 
 		return rest_ensure_response( array( 'added' => $added ) );
+	}
+
+	/**
+	 * Remove a media item from an album.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function remove_item( $request ) {
+		$album_id = $request->get_param( 'id' );
+		$media_id = $request->get_param( 'media_id' );
+
+		$removed = $this->albums->remove_item( $album_id, $media_id );
+
+		if ( ! $removed ) {
+			return new WP_Error( 'mvs_not_found', __( 'Item not found in album.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		return new WP_REST_Response( null, 204 );
+	}
+
+	/**
+	 * Set album cover image.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function set_cover( $request ) {
+		$album_id = $request->get_param( 'id' );
+		$media_id = $request->get_param( 'media_id' );
+
+		$result = $this->albums->set_cover( $album_id, $media_id );
+
+		if ( ! $result ) {
+			return new WP_Error( 'mvs_cover_failed', __( 'Could not set cover image.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		return rest_ensure_response(
+			array(
+				'album_id'  => $album_id,
+				'cover_url' => $this->albums->get_cover_url( $album_id ),
+			)
+		);
 	}
 
 	/**
@@ -461,6 +547,7 @@ class AlbumController extends WP_REST_Controller {
 	private function prepare_album_response( $post, bool $include_items = false ): array {
 		$album_id      = $post->ID;
 		$privacy_value = get_post_meta( $album_id, '_mvs_privacy', true );
+		$album_type    = get_post_meta( $album_id, '_mvs_album_type', true );
 
 		$data = array(
 			'id'          => $album_id,
@@ -469,17 +556,13 @@ class AlbumController extends WP_REST_Controller {
 			'author'      => (int) $post->post_author,
 			'date'        => $post->post_date_gmt,
 			'privacy'     => $privacy_value ? $privacy_value : 'public',
+			'album_type'  => $album_type ? $album_type : 'default',
+			'media_count' => $this->albums->get_item_count( $album_id ),
+			'cover_url'   => $this->albums->get_cover_url( $album_id ),
 		);
 
 		if ( $include_items ) {
-			global $wpdb;
-			$data['items'] = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id, position FROM {$wpdb->prefix}mvs_album_items WHERE album_id = %d ORDER BY position ASC",
-					$album_id
-				),
-				ARRAY_A
-			);
+			$data['items'] = $this->albums->get_items( $album_id );
 		}
 
 		return $data;
@@ -492,22 +575,27 @@ class AlbumController extends WP_REST_Controller {
 	 */
 	public function get_collection_params() {
 		return array(
-			'per_page' => array(
+			'per_page'   => array(
 				'type'              => 'integer',
 				'default'           => 20,
 				'minimum'           => 1,
 				'maximum'           => 100,
 				'sanitize_callback' => 'absint',
 			),
-			'page'     => array(
+			'page'       => array(
 				'type'              => 'integer',
 				'default'           => 1,
 				'minimum'           => 1,
 				'sanitize_callback' => 'absint',
 			),
-			'author'   => array(
+			'author'     => array(
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
+			),
+			'album_type' => array(
+				'type'              => 'string',
+				'enum'              => array( 'default', 'playlist' ),
+				'sanitize_callback' => 'sanitize_text_field',
 			),
 		);
 	}

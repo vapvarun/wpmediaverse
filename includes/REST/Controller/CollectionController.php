@@ -15,6 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
+use WPMediaVerse\Services\CollectionService;
 
 /**
  * REST controller for collections.
@@ -34,6 +35,22 @@ class CollectionController extends WP_REST_Controller {
 	 * @var string
 	 */
 	protected $rest_base = 'collections';
+
+	/**
+	 * Collection service instance.
+	 *
+	 * @var CollectionService
+	 */
+	private $collections;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param CollectionService $collections Collection service.
+	 */
+	public function __construct( CollectionService $collections ) {
+		$this->collections = $collections;
+	}
 
 	/**
 	 * Register routes.
@@ -89,6 +106,28 @@ class CollectionController extends WP_REST_Controller {
 				),
 			)
 		);
+
+		// PUT /collections/{id}/rules — set smart collection rules.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/rules',
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'set_rules' ),
+				'permission_callback' => array( $this, 'owner_permissions_check' ),
+				'args'                => array(
+					'id'    => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+					'rules' => array(
+						'type'     => 'array',
+						'required' => true,
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -128,7 +167,7 @@ class CollectionController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Get a single collection.
+	 * Get a single collection with its items.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response|WP_Error
@@ -139,7 +178,12 @@ class CollectionController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		return rest_ensure_response( $this->prepare_collection_response( $post, true ) );
+		$per_page = $request->get_param( 'per_page' );
+		$per_page = $per_page ? (int) $per_page : 20;
+		$page     = $request->get_param( 'page' );
+		$page     = $page ? (int) $page : 1;
+
+		return rest_ensure_response( $this->prepare_collection_response( $post, true, $per_page, $page ) );
 	}
 
 	/**
@@ -172,6 +216,12 @@ class CollectionController extends WP_REST_Controller {
 
 		if ( is_wp_error( $post_id ) ) {
 			return $post_id;
+		}
+
+		// Set smart collection rules if provided.
+		$rules = $request->get_param( 'rules' );
+		if ( is_array( $rules ) && ! empty( $rules ) ) {
+			$this->collections->save_rules( $post_id, $rules );
 		}
 
 		$response = rest_ensure_response( $this->prepare_collection_response( get_post( $post_id ) ) );
@@ -224,7 +274,7 @@ class CollectionController extends WP_REST_Controller {
 	public function delete_item( $request ) {
 		$collection_id = $request->get_param( 'id' );
 
-		// Remove favorites referencing this collection.
+		// Nullify collection_id in favorites referencing this collection.
 		global $wpdb;
 		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_favorites',
@@ -241,6 +291,31 @@ class CollectionController extends WP_REST_Controller {
 		}
 
 		return new WP_REST_Response( null, 204 );
+	}
+
+	/**
+	 * Set smart collection rules.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function set_rules( $request ) {
+		$collection_id = $request->get_param( 'id' );
+		$rules         = $request->get_param( 'rules' );
+
+		if ( ! is_array( $rules ) ) {
+			return new WP_Error( 'mvs_invalid_rules', __( 'Rules must be an array.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		$this->collections->save_rules( $collection_id, $rules );
+
+		return rest_ensure_response(
+			array(
+				'collection_id' => $collection_id,
+				'type'          => 'smart',
+				'rules'         => $this->collections->get_rules( $collection_id ),
+			)
+		);
 	}
 
 	/**
@@ -289,27 +364,42 @@ class CollectionController extends WP_REST_Controller {
 	 * Prepare collection data for response.
 	 *
 	 * @param \WP_Post $post          Post object.
-	 * @param bool     $include_items Whether to include favorited items.
+	 * @param bool     $include_items Whether to include items.
+	 * @param int      $per_page      Items per page.
+	 * @param int      $page          Page number.
 	 * @return array
 	 */
-	private function prepare_collection_response( $post, bool $include_items = false ): array {
+	private function prepare_collection_response( $post, bool $include_items = false, int $per_page = 20, int $page = 1 ): array {
+		$collection_type = $this->collections->get_type( $post->ID );
+
 		$data = array(
 			'id'          => $post->ID,
 			'title'       => $post->post_title,
 			'description' => $post->post_content,
 			'author'      => (int) $post->post_author,
 			'date'        => $post->post_date_gmt,
+			'type'        => $collection_type,
 		);
 
+		if ( 'smart' === $collection_type ) {
+			$data['rules'] = $this->collections->get_rules( $post->ID );
+		}
+
 		if ( $include_items ) {
-			global $wpdb;
-			$data['favorites'] = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id, created_at FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC",
-					$post->ID
-				),
-				ARRAY_A
-			);
+			if ( 'smart' === $collection_type ) {
+				$resolved      = $this->collections->resolve( $post->ID, $per_page, $page );
+				$data['items'] = $resolved['items'];
+				$data['total'] = $resolved['total'];
+			} else {
+				global $wpdb;
+				$data['favorites'] = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT media_id, created_at FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC",
+						$post->ID
+					),
+					ARRAY_A
+				);
+			}
 		}
 
 		return $data;
