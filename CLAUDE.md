@@ -96,6 +96,8 @@ includes/
 | `/media/{id}/grant` | POST | AccessController |
 | `/media/{id}/grant/{user_id}` | DELETE | AccessController |
 | `/me/grants` | GET | AccessController |
+| `/media/{id}/signed-url` | GET | SignedUrlController |
+| `/serve` | GET | SignedUrlController |
 
 ## Social Services
 - **ReactionService** — Toggle reactions (like/love/haha/wow/sad/angry), syncs stats
@@ -114,6 +116,7 @@ includes/
 
 ## Monetization Services
 - **AccessRulesService** — Access rules engine (role/capability/membership/purchase/subscription/code) + grants tracking. Implicit access for role/cap/membership rules; explicit grants for purchase/subscription/code. Privacy filter at priority 20. Idempotent grants with expiration support.
+- **SignedUrlService** — HMAC-SHA256 signed, time-limited URLs for gated media. Auto-generated secret, range request support for streaming, download tracking. REST responses auto-replace file_url via `mvs_media_response` filter.
 
 ## Gutenberg Blocks (7)
 | Block | Namespace | Description |
@@ -164,3 +167,4 @@ Templates can be overridden by copying to `your-theme/wpmediaverse/`:
 | 2026-03-03 | Phase 5 (all) | Blocks & Frontend — 7 Gutenberg blocks, 5 Interactivity API stores, 5 shortcodes, template override system, admin stats dashboard |
 | 2026-03-03 | Phase 6 (all) | Integrations — BuddyPress (activity, profile tab, group tab, notifications), webhook system (signed payloads, async delivery, settings UI) |
 | 2026-03-05 | Phase 7 Step 42 | Access rules engine + grants tracking — AccessRulesService, AccessController (6 REST routes), manage_mvs_access cap, migration v2, 16 tests |
+| 2026-03-05 | Phase 7 Step 43 | Signed URLs — SignedUrlService (HMAC-SHA256, TTL, range requests), SignedUrlController (2 routes), mvs_media_response filter, 13 tests |

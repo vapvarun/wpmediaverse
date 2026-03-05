@@ -1,0 +1,201 @@
+<?php
+/**
+ * Signed URL REST controller.
+ *
+ * @package WPMediaVerse
+ */
+
+namespace WPMediaVerse\REST\Controller;
+
+defined( 'ABSPATH' ) || exit;
+
+use WP_Error;
+use WP_REST_Controller;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
+use WPMediaVerse\Services\SignedUrlService;
+
+/**
+ * REST controller for signed URL generation and file serving.
+ */
+class SignedUrlController extends WP_REST_Controller {
+
+	/**
+	 * REST API namespace.
+	 *
+	 * @var string
+	 */
+	protected $namespace = 'mvs/v1';
+
+	/**
+	 * Signed URL service.
+	 *
+	 * @var SignedUrlService
+	 */
+	private $signed_urls;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param SignedUrlService $signed_urls Signed URL service.
+	 */
+	public function __construct( SignedUrlService $signed_urls ) {
+		$this->signed_urls = $signed_urls;
+	}
+
+	/**
+	 * Register routes.
+	 */
+	public function register_routes(): void {
+		// GET /media/{id}/signed-url — generate a signed URL.
+		register_rest_route(
+			$this->namespace,
+			'/media/(?P<media_id>[\d]+)/signed-url',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_signed_url' ),
+					'permission_callback' => array( $this, 'get_signed_url_permissions_check' ),
+					'args'                => array(
+						'media_id' => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						'download' => array(
+							'type'    => 'boolean',
+							'default' => false,
+						),
+						'ttl'      => array(
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+						),
+					),
+				),
+			)
+		);
+
+		// GET /serve — serve a file via signed URL (no auth required, signature validates).
+		register_rest_route(
+			$this->namespace,
+			'/serve',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'serve_file' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						SignedUrlService::PARAM_MEDIA_ID  => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						SignedUrlService::PARAM_USER      => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						SignedUrlService::PARAM_EXPIRES   => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						SignedUrlService::PARAM_SIGNATURE => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						SignedUrlService::PARAM_DOWNLOAD  => array(
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+						),
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Generate a signed URL for a media item.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function get_signed_url( $request ) {
+		$media_id = $request->get_param( 'media_id' );
+		$download = (bool) $request->get_param( 'download' );
+		$ttl      = $request->get_param( 'ttl' );
+		$user_id  = get_current_user_id();
+
+		$url = $this->signed_urls->generate( $media_id, $user_id, $ttl ? $ttl : 0, $download );
+
+		if ( ! $url ) {
+			return new WP_Error(
+				'mvs_forbidden',
+				__( 'You do not have access to this media item.', 'wpmediaverse' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		return rest_ensure_response(
+			array(
+				'media_id'   => $media_id,
+				'signed_url' => $url,
+				'expires_in' => $ttl ? $ttl : SignedUrlService::DEFAULT_TTL,
+				'download'   => $download,
+			)
+		);
+	}
+
+	/**
+	 * Serve a file via validated signed URL.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public function serve_file( $request ) {
+		$params = array(
+			SignedUrlService::PARAM_MEDIA_ID  => $request->get_param( SignedUrlService::PARAM_MEDIA_ID ),
+			SignedUrlService::PARAM_USER      => $request->get_param( SignedUrlService::PARAM_USER ),
+			SignedUrlService::PARAM_EXPIRES   => $request->get_param( SignedUrlService::PARAM_EXPIRES ),
+			SignedUrlService::PARAM_SIGNATURE => $request->get_param( SignedUrlService::PARAM_SIGNATURE ),
+		);
+
+		$dl = $request->get_param( SignedUrlService::PARAM_DOWNLOAD );
+		if ( $dl ) {
+			$params[ SignedUrlService::PARAM_DOWNLOAD ] = 1;
+		}
+
+		// This method exits after sending the file.
+		$this->signed_urls->serve( $params );
+	}
+
+	/**
+	 * Permission check: authenticated user.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return bool|WP_Error
+	 */
+	public function get_signed_url_permissions_check( $request ) {
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error(
+				'mvs_unauthorized',
+				__( 'You must be logged in to request a signed URL.', 'wpmediaverse' ),
+				array( 'status' => 401 )
+			);
+		}
+
+		$media_id = $request->get_param( 'media_id' );
+		$post     = get_post( $media_id );
+
+		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+			return new WP_Error(
+				'mvs_not_found',
+				__( 'Media item not found.', 'wpmediaverse' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		return true;
+	}
+}

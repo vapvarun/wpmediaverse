@@ -37,6 +37,8 @@ use WPMediaVerse\REST\Controller\StatsController;
 use WPMediaVerse\REST\Controller\TagController;
 use WPMediaVerse\REST\Controller\ModerationController;
 use WPMediaVerse\REST\Controller\AccessController;
+use WPMediaVerse\REST\Controller\SignedUrlController;
+use WPMediaVerse\Services\SignedUrlService;
 use WPMediaVerse\Admin\ModerationQueue;
 use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Social\ReactionService;
@@ -107,6 +109,9 @@ class Plugin {
 		// Access rules privacy filter (priority 20 — after default privacy at 10).
 		$access_rules = self::$container->get( 'access_rules' );
 		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );
+
+		// Signed URL filter — replaces file_url in REST responses for gated media.
+		add_filter( 'mvs_media_response', array( self::class, 'maybe_sign_file_url' ), 10, 2 );
 
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
@@ -271,6 +276,13 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'signed_urls',
+			function ( ServiceContainer $c ) {
+				return new SignedUrlService( $c->get( 'access_rules' ), $c->get( 'privacy' ) );
+			}
+		);
+
+		self::$container->register(
 			'integration.buddypress',
 			function () {
 				$bp = new BuddyPressIntegration();
@@ -305,6 +317,7 @@ class Plugin {
 		$moderation   = self::$container->get( 'moderation' );
 		$ai           = self::$container->get( 'ai' );
 		$access_rules = self::$container->get( 'access_rules' );
+		$signed_urls  = self::$container->get( 'signed_urls' );
 
 		$controllers = array(
 			new MediaController( $privacy ),
@@ -318,6 +331,7 @@ class Plugin {
 			new TagController(),
 			new ModerationController( $moderation, $ai ),
 			new AccessController( $access_rules ),
+			new SignedUrlController( $signed_urls ),
 		);
 
 		foreach ( $controllers as $controller ) {
@@ -393,6 +407,37 @@ class Plugin {
 	public static function deliver_webhook( string $url, string $body, array $headers ): void {
 		$webhooks = self::$container->get( 'integration.webhooks' );
 		$webhooks->send( $url, $body, $headers );
+	}
+
+	/**
+	 * Replace file_url with signed URL for gated media in REST responses.
+	 *
+	 * @param array $data     Response data.
+	 * @param int   $media_id Media post ID.
+	 * @return array Modified response data.
+	 */
+	public static function maybe_sign_file_url( array $data, int $media_id ): array {
+		$signed_urls = self::$container->get( 'signed_urls' );
+
+		if ( ! $signed_urls->requires_signed_url( $media_id ) ) {
+			return $data;
+		}
+
+		$user_id = get_current_user_id();
+
+		// For gated media, replace direct URL with signed URL or remove it.
+		$url = $signed_urls->generate( $media_id, $user_id );
+
+		if ( $url ) {
+			$data['file_url'] = $url;
+			$data['gated']    = true;
+		} else {
+			// User doesn't have access — strip the file URL.
+			$data['file_url'] = '';
+			$data['gated']    = true;
+		}
+
+		return $data;
 	}
 
 	/**

@@ -1,0 +1,348 @@
+<?php
+/**
+ * Signed URL service.
+ *
+ * Generates time-limited, HMAC-signed URLs for gated media delivery.
+ *
+ * @package WPMediaVerse
+ */
+
+namespace WPMediaVerse\Services;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Generates and validates signed URLs for protected media files.
+ */
+class SignedUrlService {
+
+	/**
+	 * Default URL expiration in seconds (1 hour).
+	 *
+	 * @var int
+	 */
+	const DEFAULT_TTL = 3600;
+
+	/**
+	 * Query parameter names.
+	 */
+	const PARAM_MEDIA_ID  = 'mvs_id';
+	const PARAM_EXPIRES   = 'mvs_exp';
+	const PARAM_SIGNATURE = 'mvs_sig';
+	const PARAM_USER      = 'mvs_uid';
+	const PARAM_DOWNLOAD  = 'mvs_dl';
+
+	/**
+	 * Access rules service.
+	 *
+	 * @var AccessRulesService
+	 */
+	private $access_rules;
+
+	/**
+	 * Privacy service.
+	 *
+	 * @var PrivacyService
+	 */
+	private $privacy;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param AccessRulesService $access_rules Access rules service.
+	 * @param PrivacyService     $privacy      Privacy service.
+	 */
+	public function __construct( AccessRulesService $access_rules, PrivacyService $privacy ) {
+		$this->access_rules = $access_rules;
+		$this->privacy      = $privacy;
+	}
+
+	/**
+	 * Generate a signed URL for a media item.
+	 *
+	 * @param int  $media_id Media post ID.
+	 * @param int  $user_id  User ID requesting the URL.
+	 * @param int  $ttl      Time to live in seconds.
+	 * @param bool $download  Whether this is a download (vs stream/view).
+	 * @return string|false Signed URL or false if not authorized.
+	 */
+	public function generate( int $media_id, int $user_id, int $ttl = 0, bool $download = false ) {
+		// Verify the user has access.
+		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
+			return false;
+		}
+
+		if ( 0 === $ttl ) {
+			$ttl = $this->get_ttl();
+		}
+
+		$expires = time() + $ttl;
+
+		$params = array(
+			self::PARAM_MEDIA_ID => $media_id,
+			self::PARAM_USER     => $user_id,
+			self::PARAM_EXPIRES  => $expires,
+		);
+
+		if ( $download ) {
+			$params[ self::PARAM_DOWNLOAD ] = 1;
+		}
+
+		$signature                       = $this->sign( $params );
+		$params[ self::PARAM_SIGNATURE ] = $signature;
+
+		return add_query_arg( $params, $this->get_serve_endpoint() );
+	}
+
+	/**
+	 * Validate a signed URL's parameters.
+	 *
+	 * @param array $params URL query parameters.
+	 * @return int|false Media ID if valid, false otherwise.
+	 */
+	public function validate( array $params ) {
+		$required = array( self::PARAM_MEDIA_ID, self::PARAM_USER, self::PARAM_EXPIRES, self::PARAM_SIGNATURE );
+
+		foreach ( $required as $key ) {
+			if ( empty( $params[ $key ] ) ) {
+				return false;
+			}
+		}
+
+		$media_id  = (int) $params[ self::PARAM_MEDIA_ID ];
+		$user_id   = (int) $params[ self::PARAM_USER ];
+		$expires   = (int) $params[ self::PARAM_EXPIRES ];
+		$signature = $params[ self::PARAM_SIGNATURE ];
+
+		// Check expiration.
+		if ( time() > $expires ) {
+			return false;
+		}
+
+		// Rebuild params without signature for verification.
+		$verify_params = array(
+			self::PARAM_MEDIA_ID => $media_id,
+			self::PARAM_USER     => $user_id,
+			self::PARAM_EXPIRES  => $expires,
+		);
+
+		if ( ! empty( $params[ self::PARAM_DOWNLOAD ] ) ) {
+			$verify_params[ self::PARAM_DOWNLOAD ] = 1;
+		}
+
+		$expected_sig = $this->sign( $verify_params );
+
+		if ( ! hash_equals( $expected_sig, $signature ) ) {
+			return false;
+		}
+
+		return $media_id;
+	}
+
+	/**
+	 * Serve a file for a validated signed URL request.
+	 *
+	 * @param array $params Validated URL parameters.
+	 */
+	public function serve( array $params ): void {
+		$media_id = $this->validate( $params );
+
+		if ( ! $media_id ) {
+			status_header( 403 );
+			echo 'Invalid or expired signed URL.';
+			exit;
+		}
+
+		$file_path_rel = get_post_meta( $media_id, '_mvs_file_path', true );
+		$file_type     = get_post_meta( $media_id, '_mvs_file_type', true );
+
+		if ( ! $file_path_rel ) {
+			status_header( 404 );
+			echo 'File not found.';
+			exit;
+		}
+
+		// Resolve full path via storage driver.
+		$upload_dir = wp_upload_dir();
+		$full_path  = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . $file_path_rel;
+
+		if ( ! file_exists( $full_path ) ) {
+			status_header( 404 );
+			echo 'File not found.';
+			exit;
+		}
+
+		$is_download = ! empty( $params[ self::PARAM_DOWNLOAD ] );
+		$filename    = basename( $full_path );
+
+		// Record download event if applicable.
+		if ( $is_download ) {
+			$this->record_download( $media_id, (int) $params[ self::PARAM_USER ] );
+		}
+
+		// Send appropriate headers.
+		nocache_headers();
+		header( 'Content-Type: ' . ( $file_type ? $file_type : 'application/octet-stream' ) );
+		header( 'Content-Length: ' . filesize( $full_path ) );
+
+		if ( $is_download ) {
+			header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		} else {
+			header( 'Content-Disposition: inline; filename="' . $filename . '"' );
+		}
+
+		// Support range requests for streaming.
+		$this->handle_range_request( $full_path );
+	}
+
+	/**
+	 * Check if a media item requires signed URLs.
+	 *
+	 * Media with active access rules should use signed URLs.
+	 *
+	 * @param int $media_id Media post ID.
+	 * @return bool
+	 */
+	public function requires_signed_url( int $media_id ): bool {
+		return $this->access_rules->has_active_rules( $media_id );
+	}
+
+	/**
+	 * Get the configured TTL for signed URLs.
+	 *
+	 * @return int TTL in seconds.
+	 */
+	private function get_ttl(): int {
+		$ttl = (int) get_option( 'mvs_signed_url_ttl', self::DEFAULT_TTL );
+		return max( 60, $ttl ); // Minimum 60 seconds.
+	}
+
+	/**
+	 * Get the signing secret key.
+	 *
+	 * @return string
+	 */
+	private function get_secret(): string {
+		$secret = get_option( 'mvs_signed_url_secret' );
+
+		if ( ! $secret ) {
+			$secret = wp_generate_password( 64, true, true );
+			update_option( 'mvs_signed_url_secret', $secret, false );
+		}
+
+		return $secret;
+	}
+
+	/**
+	 * Generate HMAC-SHA256 signature for URL parameters.
+	 *
+	 * @param array $params Parameters to sign.
+	 * @return string Hex-encoded signature.
+	 */
+	private function sign( array $params ): string {
+		ksort( $params );
+		$payload = http_build_query( $params );
+		return hash_hmac( 'sha256', $payload, $this->get_secret() );
+	}
+
+	/**
+	 * Get the serve endpoint URL.
+	 *
+	 * @return string
+	 */
+	private function get_serve_endpoint(): string {
+		return rest_url( 'mvs/v1/serve' );
+	}
+
+	/**
+	 * Record a download event in the stats.
+	 *
+	 * @param int $media_id Media post ID.
+	 * @param int $user_id  User ID.
+	 */
+	private function record_download( int $media_id, int $user_id ): void {
+		global $wpdb;
+
+		$ip_hash = hash( 'sha256', $this->get_client_ip() . wp_salt() );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			$wpdb->prefix . 'mvs_media_views',
+			array(
+				'media_id'   => $media_id,
+				'user_id'    => $user_id ? $user_id : null,
+				'ip_hash'    => $ip_hash,
+				'event_type' => 'download',
+				'created_at' => current_time( 'mysql', true ),
+			),
+			array( '%d', '%d', '%s', '%s', '%s' )
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->query(
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$wpdb->prefix}mvs_media_stats SET downloads = downloads + 1, updated_at = %s WHERE media_id = %d",
+				current_time( 'mysql', true ),
+				$media_id
+			)
+		);
+	}
+
+	/**
+	 * Handle HTTP range requests for media streaming.
+	 *
+	 * @param string $file_path Full file path.
+	 */
+	private function handle_range_request( string $file_path ): void {
+		$file_size = filesize( $file_path );
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		if ( isset( $_SERVER['HTTP_RANGE'] ) ) {
+			$range = sanitize_text_field( wp_unslash( $_SERVER['HTTP_RANGE'] ) );
+
+			if ( preg_match( '/bytes=(\d+)-(\d*)/', $range, $matches ) ) {
+				$start = (int) $matches[1];
+				$end   = ! empty( $matches[2] ) ? (int) $matches[2] : $file_size - 1;
+
+				if ( $start > $end || $start >= $file_size ) {
+					status_header( 416 );
+					header( "Content-Range: bytes */{$file_size}" );
+					exit;
+				}
+
+				$length = $end - $start + 1;
+
+				status_header( 206 );
+				header( "Content-Range: bytes {$start}-{$end}/{$file_size}" );
+				header( "Content-Length: {$length}" );
+				header( 'Accept-Ranges: bytes' );
+
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+				$fp = fopen( $file_path, 'rb' );
+				fseek( $fp, $start );
+				// Binary file data — escaping not applicable.
+				echo fread( $fp, $length ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread, WordPress.Security.EscapeOutput.OutputNotEscaped
+				fclose( $fp ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+				exit;
+			}
+		}
+
+		header( 'Accept-Ranges: bytes' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
+		readfile( $file_path );
+		exit;
+	}
+
+	/**
+	 * Get client IP address.
+	 *
+	 * @return string
+	 */
+	private function get_client_ip(): string {
+		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+			return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+		}
+		return '127.0.0.1';
+	}
+}

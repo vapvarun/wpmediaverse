@@ -591,7 +591,7 @@ class MediaController extends WP_REST_Controller {
 		$privacy_value    = get_post_meta( $media_id, '_mvs_privacy', true );
 		$moderation_value = get_post_meta( $media_id, '_mvs_moderation_status', true );
 
-		return array(
+		$data = array(
 			'id'                => $media_id,
 			'title'             => $post->post_title,
 			'description'       => $post->post_content,
@@ -606,6 +606,14 @@ class MediaController extends WP_REST_Controller {
 			'tags'              => wp_get_object_terms( $media_id, 'mvs_tag', array( 'fields' => 'names' ) ),
 			'categories'        => wp_get_object_terms( $media_id, 'mvs_category', array( 'fields' => 'names' ) ),
 		);
+
+		/**
+		 * Filter the media item REST response data.
+		 *
+		 * @param array $data     Response data.
+		 * @param int   $media_id Media post ID.
+		 */
+		return apply_filters( 'mvs_media_response', $data, $media_id );
 	}
 
 	/**
