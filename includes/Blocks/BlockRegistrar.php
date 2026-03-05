@@ -29,6 +29,7 @@ class BlockRegistrar {
 		'story-viewer',
 		'media-stats',
 		'explore-feed',
+		'lock-overlay',
 	);
 
 	/**

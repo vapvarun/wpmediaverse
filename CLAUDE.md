@@ -98,6 +98,9 @@ includes/
 | `/me/grants` | GET | AccessController |
 | `/media/{id}/signed-url` | GET | SignedUrlController |
 | `/serve` | GET | SignedUrlController |
+| `/checkout` | POST | CheckoutController |
+| `/checkout/redeem` | POST | CheckoutController |
+| `/media/{id}/pricing` | GET | CheckoutController |
 
 ## Social Services
 - **ReactionService** — Toggle reactions (like/love/haha/wow/sad/angry), syncs stats
@@ -117,8 +120,9 @@ includes/
 ## Monetization Services
 - **AccessRulesService** — Access rules engine (role/capability/membership/purchase/subscription/code) + grants tracking. Implicit access for role/cap/membership rules; explicit grants for purchase/subscription/code. Privacy filter at priority 20. Idempotent grants with expiration support.
 - **SignedUrlService** — HMAC-SHA256 signed, time-limited URLs for gated media. Auto-generated secret, range request support for streaming, download tracking. REST responses auto-replace file_url via `mvs_media_response` filter.
+- **PaymentBridgeService** — Hook-based payment abstraction. `mvs_checkout_process` filter for Stripe/WooCommerce integration, `mvs_payment_completed` / `mvs_subscription_cancelled` action hooks, code redemption, free item auto-grant.
 
-## Gutenberg Blocks (7)
+## Gutenberg Blocks (8)
 | Block | Namespace | Description |
 |---|---|---|
 | media-upload | `mvs/media-upload` | Drag & drop file uploader with REST integration |
@@ -128,9 +132,10 @@ includes/
 | story-viewer | `mvs/story-viewer` | Instagram-style stories (time-limited) |
 | media-stats | `mvs/media-stats` | User stats dashboard cards |
 | explore-feed | `mvs/explore-feed` | Public explore feed with search/filter/load-more |
+| lock-overlay | `mvs/lock-overlay` | Paywall overlay with blurred preview + unlock prompt |
 
-## Interactivity API Stores (5)
-`mvs/media-upload`, `mvs/media-grid`, `mvs/media-player`, `mvs/story-viewer`, `mvs/explore-feed`
+## Interactivity API Stores (6)
+`mvs/media-upload`, `mvs/media-grid`, `mvs/media-player`, `mvs/story-viewer`, `mvs/explore-feed`, `mvs/lock-overlay`
 
 ## Shortcodes (5)
 | Shortcode | Attributes | Maps To |
@@ -168,3 +173,4 @@ Templates can be overridden by copying to `your-theme/wpmediaverse/`:
 | 2026-03-03 | Phase 6 (all) | Integrations — BuddyPress (activity, profile tab, group tab, notifications), webhook system (signed payloads, async delivery, settings UI) |
 | 2026-03-05 | Phase 7 Step 42 | Access rules engine + grants tracking — AccessRulesService, AccessController (6 REST routes), manage_mvs_access cap, migration v2, 16 tests |
 | 2026-03-05 | Phase 7 Step 43 | Signed URLs — SignedUrlService (HMAC-SHA256, TTL, range requests), SignedUrlController (2 routes), mvs_media_response filter, 13 tests |
+| 2026-03-05 | Phase 7 Step 44 | Lock overlay + payment bridges — lock-overlay block, PaymentBridgeService, CheckoutController (3 routes), code redemption, 11 tests |

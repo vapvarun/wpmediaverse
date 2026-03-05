@@ -39,6 +39,8 @@ use WPMediaVerse\REST\Controller\ModerationController;
 use WPMediaVerse\REST\Controller\AccessController;
 use WPMediaVerse\REST\Controller\SignedUrlController;
 use WPMediaVerse\Services\SignedUrlService;
+use WPMediaVerse\Services\PaymentBridgeService;
+use WPMediaVerse\REST\Controller\CheckoutController;
 use WPMediaVerse\Admin\ModerationQueue;
 use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Social\ReactionService;
@@ -283,6 +285,15 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'payments',
+			function ( ServiceContainer $c ) {
+				$service = new PaymentBridgeService( $c->get( 'access_rules' ) );
+				$service->init();
+				return $service;
+			}
+		);
+
+		self::$container->register(
 			'integration.buddypress',
 			function () {
 				$bp = new BuddyPressIntegration();
@@ -318,6 +329,7 @@ class Plugin {
 		$ai           = self::$container->get( 'ai' );
 		$access_rules = self::$container->get( 'access_rules' );
 		$signed_urls  = self::$container->get( 'signed_urls' );
+		$payments     = self::$container->get( 'payments' );
 
 		$controllers = array(
 			new MediaController( $privacy ),
@@ -332,6 +344,7 @@ class Plugin {
 			new ModerationController( $moderation, $ai ),
 			new AccessController( $access_rules ),
 			new SignedUrlController( $signed_urls ),
+			new CheckoutController( $payments ),
 		);
 
 		foreach ( $controllers as $controller ) {

@@ -1,0 +1,130 @@
+/* Lock overlay block styles */
+.mvs-lock-overlay-block {
+	position: relative;
+	overflow: hidden;
+	border-radius: 8px;
+}
+
+/* Unlocked state */
+.mvs-lock-overlay-unlocked img,
+.mvs-lock-overlay-unlocked video {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: 8px;
+}
+
+.mvs-lock-overlay-unlocked audio {
+	display: block;
+	width: 100%;
+}
+
+.mvs-lock-overlay-file {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 16px;
+	background: #f9f9f9;
+	border-radius: 8px;
+}
+
+/* Locked state */
+.mvs-lock-overlay-locked {
+	position: relative;
+	min-height: 200px;
+}
+
+.mvs-lock-overlay-preview {
+	position: relative;
+}
+
+.mvs-lock-overlay-preview img {
+	display: block;
+	width: 100%;
+	height: auto;
+	filter: blur(var(--mvs-blur, 20px));
+	transform: scale(1.05); /* Prevent blur edge artifacts */
+}
+
+.mvs-lock-overlay-placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 200px;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	filter: blur(var(--mvs-blur, 20px));
+}
+
+.mvs-lock-overlay-placeholder .dashicons {
+	font-size: 64px;
+	width: 64px;
+	height: 64px;
+	color: rgba(255, 255, 255, 0.5);
+}
+
+/* Prompt overlay */
+.mvs-lock-overlay-prompt {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, var(--mvs-overlay-opacity, 0.6));
+	text-align: center;
+	padding: 24px;
+	color: #fff;
+}
+
+.mvs-lock-icon {
+	font-size: 36px;
+	width: 36px;
+	height: 36px;
+	margin-bottom: 12px;
+	opacity: 0.9;
+}
+
+.mvs-lock-overlay-title {
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin: 0 0 8px;
+	color: #fff;
+}
+
+.mvs-lock-overlay-price {
+	font-size: 1.5rem;
+	font-weight: 700;
+	margin: 0 0 16px;
+	color: #ffd700;
+}
+
+.mvs-lock-overlay-btn {
+	display: inline-block;
+	padding: 12px 32px;
+	font-size: 1rem;
+	font-weight: 600;
+	background: #fff;
+	color: #333;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	text-decoration: none;
+	transition: background 0.2s, transform 0.1s;
+}
+
+.mvs-lock-overlay-btn:hover {
+	background: #f0f0f0;
+	transform: translateY(-1px);
+}
+
+.mvs-lock-overlay-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+	transform: none;
+}
+
+.mvs-lock-overlay-message {
+	margin: 12px 0 0;
+	font-size: 0.875rem;
+	min-height: 1.2em;
+}
