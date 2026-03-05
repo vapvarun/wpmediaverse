@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 1;
+	const CURRENT_VERSION = 2;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -35,6 +35,13 @@ class Migrator {
 		}
 
 		update_option( self::VERSION_OPTION, self::CURRENT_VERSION );
+	}
+
+	/**
+	 * Migration v2 — add manage_mvs_access capability for monetization.
+	 */
+	private function migrate_to_2(): void {
+		\WPMediaVerse\Capabilities\MediaCapabilities::add_caps();
 	}
 
 	/**

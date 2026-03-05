@@ -91,6 +91,11 @@ includes/
 | `/moderation/{id}/reject` | POST | ModerationController |
 | `/moderation/{id}/analyze` | POST | ModerationController |
 | `/ai/usage` | GET | ModerationController |
+| `/media/{id}/rules` | GET, POST | AccessController |
+| `/media/{id}/rules/{rule_id}` | DELETE | AccessController |
+| `/media/{id}/grant` | POST | AccessController |
+| `/media/{id}/grant/{user_id}` | DELETE | AccessController |
+| `/me/grants` | GET | AccessController |
 
 ## Social Services
 - **ReactionService** — Toggle reactions (like/love/haha/wow/sad/angry), syncs stats
@@ -106,6 +111,9 @@ includes/
 - **AIService** — Orchestrator: provider registry, budget tracking, usage stats, auto-pipeline
 - **ModerationService** — Queue management, approve/reject workflow, auto-actions (flag/hide/reject), logging
 - **Action Scheduler** — Async AI processing on upload via `mvs_ai_process_media` hook (falls back to sync)
+
+## Monetization Services
+- **AccessRulesService** — Access rules engine (role/capability/membership/purchase/subscription/code) + grants tracking. Implicit access for role/cap/membership rules; explicit grants for purchase/subscription/code. Privacy filter at priority 20. Idempotent grants with expiration support.
 
 ## Gutenberg Blocks (7)
 | Block | Namespace | Description |
@@ -155,3 +163,4 @@ Templates can be overridden by copying to `your-theme/wpmediaverse/`:
 | 2026-03-03 | Phase 4 (all) | AI features — AIProviderInterface, OpenAIProvider, AIService, ModerationService, ModerationController, ModerationQueue, AI settings, 101 tests |
 | 2026-03-03 | Phase 5 (all) | Blocks & Frontend — 7 Gutenberg blocks, 5 Interactivity API stores, 5 shortcodes, template override system, admin stats dashboard |
 | 2026-03-03 | Phase 6 (all) | Integrations — BuddyPress (activity, profile tab, group tab, notifications), webhook system (signed payloads, async delivery, settings UI) |
+| 2026-03-05 | Phase 7 Step 42 | Access rules engine + grants tracking — AccessRulesService, AccessController (6 REST routes), manage_mvs_access cap, migration v2, 16 tests |

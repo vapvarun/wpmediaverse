@@ -29,6 +29,7 @@ class MediaCapabilities {
 				'delete_others_mvs_media',
 				'moderate_mvs_media',
 				'manage_mvs_settings',
+				'manage_mvs_access',
 				'read_mvs_media',
 				'publish_mvs_media',
 				// Mapped meta caps for CPT.
@@ -46,6 +47,7 @@ class MediaCapabilities {
 				'delete_mvs_media',
 				'delete_others_mvs_media',
 				'moderate_mvs_media',
+				'manage_mvs_access',
 				'read_mvs_media',
 				'publish_mvs_media',
 				'edit_mvs_medias',

@@ -36,6 +36,7 @@ use WPMediaVerse\REST\Controller\FavoriteController;
 use WPMediaVerse\REST\Controller\StatsController;
 use WPMediaVerse\REST\Controller\TagController;
 use WPMediaVerse\REST\Controller\ModerationController;
+use WPMediaVerse\REST\Controller\AccessController;
 use WPMediaVerse\Admin\ModerationQueue;
 use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Social\ReactionService;
@@ -44,6 +45,7 @@ use WPMediaVerse\Social\FavoriteService;
 use WPMediaVerse\Social\MentionService;
 use WPMediaVerse\Social\ShareService;
 use WPMediaVerse\Services\StatsService;
+use WPMediaVerse\Services\AccessRulesService;
 use WPMediaVerse\Integrations\BuddyPressIntegration;
 use WPMediaVerse\Integrations\WebhookService;
 
@@ -101,6 +103,10 @@ class Plugin {
 		// AI processing hooks.
 		add_action( 'mvs_media_uploaded', array( self::class, 'maybe_queue_ai' ), 10, 1 );
 		add_action( 'mvs_ai_process_media', array( self::class, 'handle_ai_process' ), 10, 1 );
+
+		// Access rules privacy filter (priority 20 — after default privacy at 10).
+		$access_rules = self::$container->get( 'access_rules' );
+		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );
 
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
@@ -258,6 +264,13 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'access_rules',
+			function () {
+				return new AccessRulesService();
+			}
+		);
+
+		self::$container->register(
 			'integration.buddypress',
 			function () {
 				$bp = new BuddyPressIntegration();
@@ -288,9 +301,10 @@ class Plugin {
 		$stats     = self::$container->get( 'stats' );
 		$albums    = self::$container->get( 'albums' );
 
-		$collections = self::$container->get( 'collections' );
-		$moderation  = self::$container->get( 'moderation' );
-		$ai          = self::$container->get( 'ai' );
+		$collections  = self::$container->get( 'collections' );
+		$moderation   = self::$container->get( 'moderation' );
+		$ai           = self::$container->get( 'ai' );
+		$access_rules = self::$container->get( 'access_rules' );
 
 		$controllers = array(
 			new MediaController( $privacy ),
@@ -303,6 +317,7 @@ class Plugin {
 			new StatsController( $stats ),
 			new TagController(),
 			new ModerationController( $moderation, $ai ),
+			new AccessController( $access_rules ),
 		);
 
 		foreach ( $controllers as $controller ) {
