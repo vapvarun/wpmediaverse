@@ -247,7 +247,7 @@ class SettingsPage {
 			'mvs_openai_api_key',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( $this, 'sanitize_password_option' ),
 				'default'           => '',
 			)
 		);
@@ -543,14 +543,41 @@ class SettingsPage {
 	 */
 	public function render_password_field( array $args ): void {
 		$value = get_option( $args['option'], '' );
+
+		// Mask stored keys — show only last 4 characters.
+		$display = '';
+		if ( $value ) {
+			$display = str_repeat( '*', max( 0, strlen( $value ) - 4 ) ) . substr( $value, -4 );
+		}
+
 		printf(
-			'<input type="password" name="%s" value="%s" class="regular-text" autocomplete="off" />',
+			'<input type="password" name="%s" value="%s" class="regular-text" autocomplete="off" placeholder="%s" />',
 			esc_attr( $args['option'] ),
-			esc_attr( $value )
+			'',
+			esc_attr( $display ? sprintf( 'Current: %s', $display ) : '' )
 		);
+		if ( $value ) {
+			echo '<p class="description">' . esc_html__( 'Leave empty to keep the current key.', 'wpmediaverse' ) . '</p>';
+		}
 		if ( ! empty( $args['description'] ) ) {
 			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
 		}
+	}
+
+	/**
+	 * Sanitize a password/API key option — preserve existing value when empty.
+	 *
+	 * @param string $value New value.
+	 * @return string
+	 */
+	public function sanitize_password_option( $value ): string {
+		$value = sanitize_text_field( $value );
+		if ( '' === $value ) {
+			// Preserve the existing stored value.
+			$option = str_replace( 'sanitize_option_', '', current_filter() );
+			return get_option( $option, '' );
+		}
+		return $value;
 	}
 
 	/**
@@ -591,7 +618,7 @@ class SettingsPage {
 			</p>
 			<p>
 				<label><?php esc_html_e( 'Secret:', 'wpmediaverse' ); ?></label><br />
-				<input type="text" name="mvs_webhooks[0][secret]" class="regular-text"
+				<input type="password" name="mvs_webhooks[0][secret]" class="regular-text" autocomplete="off"
 					value="<?php echo esc_attr( $webhook['secret'] ?? '' ); ?>"
 					placeholder="<?php esc_attr_e( 'Shared secret for HMAC signing', 'wpmediaverse' ); ?>"
 				/>

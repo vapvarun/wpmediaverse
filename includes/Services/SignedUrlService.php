@@ -172,6 +172,15 @@ class SignedUrlService {
 			exit;
 		}
 
+		// Path traversal containment — ensure resolved path stays within upload directory.
+		$real_path = realpath( $full_path );
+		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
+		if ( false === $real_path || false === $real_base || 0 !== strpos( $real_path, $real_base . DIRECTORY_SEPARATOR ) ) {
+			status_header( 403 );
+			echo 'Access denied.';
+			exit;
+		}
+
 		$is_download = ! empty( $params[ self::PARAM_DOWNLOAD ] );
 		$filename    = sanitize_file_name( basename( $full_path ) );
 		$filename    = str_replace( array( "\r", "\n" ), '', $filename );
@@ -182,7 +191,7 @@ class SignedUrlService {
 		}
 
 		// Validate Content-Type against safe MIME types.
-		$safe_types = array(
+		$safe_types   = array(
 			'image/jpeg',
 			'image/png',
 			'image/gif',

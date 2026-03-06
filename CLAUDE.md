@@ -176,3 +176,5 @@ Templates can be overridden by copying to `your-theme/wpmediaverse/`:
 | 2026-03-05 | Phase 7 Step 43 | Signed URLs — SignedUrlService (HMAC-SHA256, TTL, range requests), SignedUrlController (2 routes), mvs_media_response filter, 13 tests |
 | 2026-03-05 | Phase 7 Step 44 | Lock overlay + payment bridges — lock-overlay block, PaymentBridgeService, CheckoutController (3 routes), code redemption, 11 tests |
 | 2026-03-06 | Phase 7 Step 45 | Watermarking Pro stub — WatermarkService with filter hooks, preview_url in REST responses, config/invalidation, 13 tests |
+| 2026-03-06 | Phase 8 Step 46 | Security audit batch 1 — 12 OWASP fixes: 3 IDOR, 3 auth/authz, 2 SQLi, 2 XSS, 2 header injection. PrivacyService extended to albums/collections. 13 files, 154 tests |
+| 2026-03-06 | Phase 8 Step 46b | Security audit batch 2 — 8 fixes: upload dir protection (.htaccess), server-side filesize, EXIF GPS stripping, extension blocklist, double-extension block, path traversal containment, API key masking, webhook secret type. 5 files |

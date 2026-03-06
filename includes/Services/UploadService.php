@@ -55,9 +55,10 @@ class UploadService {
 			);
 		}
 
-		// Check file size.
-		$max_size = (int) get_option( 'mvs_max_upload_size', 104857600 );
-		if ( $file['size'] > $max_size ) {
+		// Check file size using server-side measurement (not client-reported).
+		$max_size    = (int) get_option( 'mvs_max_upload_size', 104857600 );
+		$actual_size = filesize( $file['tmp_name'] );
+		if ( false === $actual_size || $actual_size > $max_size ) {
 			return new WP_Error(
 				'mvs_file_too_large',
 				sprintf(
@@ -100,8 +101,33 @@ class UploadService {
 		// Determine media type from MIME.
 		$media_type = $this->get_media_type( $mime );
 
+		// Block dangerous file extensions (defense-in-depth).
+		$ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
+
+		$blocked_extensions = array( 'php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'phps', 'pht', 'phar', 'cgi', 'pl', 'py', 'jsp', 'asp', 'aspx', 'sh', 'bash', 'exe', 'bat', 'cmd', 'com', 'htaccess', 'htpasswd' );
+		if ( in_array( $ext, $blocked_extensions, true ) ) {
+			return new WP_Error(
+				'mvs_blocked_extension',
+				__( 'This file extension is not allowed.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Also block double extensions (e.g. image.php.jpg).
+		$name_parts = explode( '.', $file['name'] );
+		if ( count( $name_parts ) > 2 ) {
+			foreach ( array_slice( $name_parts, 1, -1 ) as $middle_ext ) {
+				if ( in_array( strtolower( $middle_ext ), $blocked_extensions, true ) ) {
+					return new WP_Error(
+						'mvs_blocked_extension',
+						__( 'This file extension is not allowed.', 'wpmediaverse' ),
+						array( 'status' => 400 )
+					);
+				}
+			}
+		}
+
 		// Generate storage path.
-		$ext       = pathinfo( $file['name'], PATHINFO_EXTENSION );
 		$filename  = wp_unique_filename(
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . gmdate( 'Y/m' ),
 			sanitize_file_name( $file['name'] )
@@ -146,7 +172,7 @@ class UploadService {
 		// Save post meta.
 		update_post_meta( $media_id, '_mvs_file_url', $file_url );
 		update_post_meta( $media_id, '_mvs_file_path', $dest_path );
-		update_post_meta( $media_id, '_mvs_file_size', (int) $file['size'] );
+		update_post_meta( $media_id, '_mvs_file_size', (int) $actual_size );
 		update_post_meta( $media_id, '_mvs_file_type', $mime );
 		update_post_meta( $media_id, '_mvs_file_hash', $hash );
 		update_post_meta( $media_id, '_mvs_media_type', $media_type );
@@ -175,7 +201,7 @@ class UploadService {
 			array(
 				'file_url'   => $file_url,
 				'file_path'  => $dest_path,
-				'file_size'  => $file['size'],
+				'file_size'  => $actual_size,
 				'file_type'  => $mime,
 				'file_hash'  => $hash,
 				'media_type' => $media_type,
@@ -262,10 +288,14 @@ class UploadService {
 			return array();
 		}
 
-		// Store raw EXIF before stripping.
+		// Strip sensitive EXIF sections before storing in meta.
+		$sensitive_sections = array( 'GPS', 'MakerNote', 'UndefinedTag:0xEA1C', 'MAKERNOTE' );
+		foreach ( $sensitive_sections as $section ) {
+			unset( $exif[ $section ] );
+		}
 		$raw = $exif;
 
-		// Strip GPS data using GD — re-save the image without EXIF.
+		// Strip GPS data from file using GD — re-save the image without EXIF.
 		if ( isset( $exif['GPS'] ) && extension_loaded( 'gd' ) ) {
 			$info = getimagesize( $file_path );
 			if ( $info ) {

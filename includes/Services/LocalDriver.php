@@ -52,6 +52,9 @@ class LocalDriver implements StorageDriverInterface {
 			return false;
 		}
 
+		// Ensure base directory has protection files.
+		$this->ensure_protection_files();
+
 		return copy( $source_path, $full_path );
 	}
 
@@ -88,5 +91,22 @@ class LocalDriver implements StorageDriverInterface {
 	 */
 	public function exists( string $path ): bool {
 		return file_exists( $this->base_dir . $path );
+	}
+
+	/**
+	 * Ensure the base upload directory has .htaccess and index.php protection.
+	 */
+	private function ensure_protection_files(): void {
+		$htaccess = $this->base_dir . '.htaccess';
+		if ( ! file_exists( $htaccess ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			file_put_contents( $htaccess, "Order deny,allow\nDeny from all\n" );
+		}
+
+		$index = $this->base_dir . 'index.php';
+		if ( ! file_exists( $index ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			file_put_contents( $index, "<?php\n// Silence is golden.\n" );
+		}
 	}
 }
