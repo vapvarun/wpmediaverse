@@ -53,6 +53,7 @@ use WPMediaVerse\Services\StatsService;
 use WPMediaVerse\Services\AccessRulesService;
 use WPMediaVerse\Integrations\BuddyPressIntegration;
 use WPMediaVerse\Integrations\WebhookService;
+use WPMediaVerse\Services\CacheService;
 
 /**
  * Main plugin bootstrap class.
@@ -127,6 +128,9 @@ class Plugin {
 
 		// Initialize watermark service (adds preview_url filter at priority 30).
 		self::$container->get( 'watermark' );
+
+		// Initialize cache service (hooks for invalidation).
+		self::$container->get( 'cache' );
 
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
@@ -336,6 +340,15 @@ class Plugin {
 				$webhooks = new WebhookService();
 				$webhooks->init();
 				return $webhooks;
+			}
+		);
+
+		self::$container->register(
+			'cache',
+			function () {
+				$service = new CacheService();
+				$service->init();
+				return $service;
 			}
 		);
 	}

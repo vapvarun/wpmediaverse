@@ -37,3 +37,9 @@ register_deactivation_hook( __FILE__, array( 'WPMediaVerse\\Core\\Deactivator', 
 
 // Bootstrap the plugin.
 add_action( 'plugins_loaded', array( 'WPMediaVerse\\Core\\Plugin', 'init' ) );
+
+// WP-CLI commands.
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	WP_CLI::add_command( 'mvs', 'WPMediaVerse\\CLI\\Commands' );
+	WP_CLI::add_command( 'mvs import-rtmedia', 'WPMediaVerse\\CLI\\ImportRtMedia' );
+}
