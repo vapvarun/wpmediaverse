@@ -41,8 +41,12 @@ class ModerationQueue {
 	 * Add moderation page under Media menu.
 	 */
 	public function add_menu_page(): void {
-		$counts = $this->moderation->get_counts();
-		$badge  = $counts['flagged'];
+		$counts = get_transient( 'mvs_moderation_counts' );
+		if ( false === $counts ) {
+			$counts = $this->moderation->get_counts();
+			set_transient( 'mvs_moderation_counts', $counts, 60 );
+		}
+		$badge = $counts['flagged'];
 
 		$menu_title = __( 'Moderation', 'wpmediaverse' );
 		if ( $badge > 0 ) {

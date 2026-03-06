@@ -190,6 +190,11 @@ class Shortcodes {
 	 * @return string Rendered HTML.
 	 */
 	private function render_block_template( string $block_name, array $attributes ): string {
+		$allowed = array( 'media-grid', 'media-upload', 'album-viewer', 'media-player', 'media-stats' );
+		if ( ! in_array( $block_name, $allowed, true ) ) {
+			return '';
+		}
+
 		$template = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/render.php';
 
 		if ( ! file_exists( $template ) ) {

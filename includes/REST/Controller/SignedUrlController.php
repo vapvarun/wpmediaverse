@@ -14,6 +14,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\Services\PrivacyService;
 use WPMediaVerse\Services\SignedUrlService;
 
 /**
@@ -36,12 +37,21 @@ class SignedUrlController extends WP_REST_Controller {
 	private $signed_urls;
 
 	/**
+	 * Privacy service.
+	 *
+	 * @var PrivacyService
+	 */
+	private $privacy;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SignedUrlService $signed_urls Signed URL service.
+	 * @param PrivacyService   $privacy     Privacy service.
 	 */
-	public function __construct( SignedUrlService $signed_urls ) {
+	public function __construct( SignedUrlService $signed_urls, PrivacyService $privacy ) {
 		$this->signed_urls = $signed_urls;
+		$this->privacy     = $privacy;
 	}
 
 	/**
@@ -193,6 +203,15 @@ class SignedUrlController extends WP_REST_Controller {
 				'mvs_not_found',
 				__( 'Media item not found.', 'wpmediaverse' ),
 				array( 'status' => 404 )
+			);
+		}
+
+		// Verify the user can view this media item.
+		if ( ! $this->privacy->can_view( $media_id, get_current_user_id() ) ) {
+			return new WP_Error(
+				'mvs_forbidden',
+				__( 'You do not have access to this media item.', 'wpmediaverse' ),
+				array( 'status' => 403 )
 			);
 		}
 

@@ -44,6 +44,12 @@ class WebhookService {
 		add_action( 'before_delete_post', array( $this, 'on_media_deleted' ) );
 		add_action( 'mvs_media_moderated', array( $this, 'on_media_moderated' ), 10, 2 );
 
+		// Media update event.
+		add_action( 'save_post_mvs_media', array( $this, 'on_media_updated' ), 10, 3 );
+
+		// Payment event.
+		add_action( 'mvs_payment_completed', array( $this, 'on_media_purchased' ), 10, 3 );
+
 		// Social events.
 		add_action( 'mvs_reaction_added', array( $this, 'on_reaction' ), 10, 3 );
 		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 2 );
@@ -89,6 +95,38 @@ class WebhookService {
 		$payload               = $this->build_media_payload( $media_id );
 		$payload['mod_status'] = $status;
 		$this->dispatch( 'media.moderated', $payload );
+	}
+
+	/**
+	 * Handle media updated event.
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post object.
+	 * @param bool     $update  Whether this is an update.
+	 */
+	public function on_media_updated( int $post_id, $post, bool $update ): void {
+		if ( ! $update || 'mvs_media' !== $post->post_type ) {
+			return;
+		}
+		$this->dispatch( 'media.updated', $this->build_media_payload( $post_id ) );
+	}
+
+	/**
+	 * Handle media purchased event.
+	 *
+	 * @param int    $media_id Media post ID.
+	 * @param int    $user_id  User ID.
+	 * @param string $source   Payment source.
+	 */
+	public function on_media_purchased( int $media_id, int $user_id, string $source ): void {
+		$this->dispatch(
+			'media.purchased',
+			array(
+				'media_id' => $media_id,
+				'user_id'  => $user_id,
+				'source'   => $source,
+			)
+		);
 	}
 
 	/**

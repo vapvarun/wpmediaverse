@@ -149,7 +149,8 @@ class SignedUrlService {
 
 		if ( ! $media_id ) {
 			status_header( 403 );
-			echo 'Invalid or expired signed URL.';
+			header( 'Content-Type: text/plain' );
+			echo esc_html( 'Invalid or expired signed URL.' );
 			exit;
 		}
 
@@ -158,7 +159,8 @@ class SignedUrlService {
 
 		if ( ! $file_path_rel ) {
 			status_header( 404 );
-			echo 'File not found.';
+			header( 'Content-Type: text/plain' );
+			echo esc_html( 'File not found.' );
 			exit;
 		}
 
@@ -168,7 +170,8 @@ class SignedUrlService {
 
 		if ( ! file_exists( $full_path ) ) {
 			status_header( 404 );
-			echo 'File not found.';
+			header( 'Content-Type: text/plain' );
+			echo esc_html( 'File not found.' );
 			exit;
 		}
 
@@ -177,7 +180,8 @@ class SignedUrlService {
 		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
 		if ( false === $real_path || false === $real_base || 0 !== strpos( $real_path, $real_base . DIRECTORY_SEPARATOR ) ) {
 			status_header( 403 );
-			echo 'Access denied.';
+			header( 'Content-Type: text/plain' );
+			echo esc_html( 'Access denied.' );
 			exit;
 		}
 

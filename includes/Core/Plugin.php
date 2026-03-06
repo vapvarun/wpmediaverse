@@ -102,8 +102,17 @@ class Plugin {
 		// Initialize story cleanup cron.
 		self::$container->get( 'stories' );
 
-		// Initialize moderation hooks.
-		self::$container->get( 'moderation' );
+		// Defer moderation service — only load on admin or when processing uploads.
+		if ( is_admin() ) {
+			self::$container->get( 'moderation' );
+		}
+		add_action(
+			'mvs_media_uploaded',
+			function () {
+				self::$container->get( 'moderation' );
+			},
+			5
+		);
 
 		// AI processing hooks.
 		add_action( 'mvs_media_uploaded', array( self::class, 'maybe_queue_ai' ), 10, 1 );
@@ -356,7 +365,7 @@ class Plugin {
 			new TagController(),
 			new ModerationController( $moderation, $ai ),
 			new AccessController( $access_rules ),
-			new SignedUrlController( $signed_urls ),
+			new SignedUrlController( $signed_urls, $privacy ),
 			new CheckoutController( $payments ),
 		);
 

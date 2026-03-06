@@ -288,6 +288,9 @@ class UploadService {
 			return array();
 		}
 
+		// Check for GPS presence before stripping.
+		$has_gps = isset( $exif['GPS'] );
+
 		// Strip sensitive EXIF sections before storing in meta.
 		$sensitive_sections = array( 'GPS', 'MakerNote', 'UndefinedTag:0xEA1C', 'MAKERNOTE' );
 		foreach ( $sensitive_sections as $section ) {
@@ -296,7 +299,7 @@ class UploadService {
 		$raw = $exif;
 
 		// Strip GPS data from file using GD — re-save the image without EXIF.
-		if ( isset( $exif['GPS'] ) && extension_loaded( 'gd' ) ) {
+		if ( $has_gps && extension_loaded( 'gd' ) ) {
 			$info = getimagesize( $file_path );
 			if ( $info ) {
 				switch ( $info['mime'] ) {

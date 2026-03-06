@@ -618,10 +618,17 @@ class SettingsPage {
 			</p>
 			<p>
 				<label><?php esc_html_e( 'Secret:', 'wpmediaverse' ); ?></label><br />
+				<?php
+				$wh_secret  = $webhook['secret'] ?? '';
+				$wh_display = $wh_secret ? str_repeat( '*', max( 0, strlen( $wh_secret ) - 4 ) ) . substr( $wh_secret, -4 ) : '';
+				?>
 				<input type="password" name="mvs_webhooks[0][secret]" class="regular-text" autocomplete="off"
-					value="<?php echo esc_attr( $webhook['secret'] ?? '' ); ?>"
-					placeholder="<?php esc_attr_e( 'Shared secret for HMAC signing', 'wpmediaverse' ); ?>"
+					value=""
+					placeholder="<?php echo esc_attr( $wh_display ? sprintf( 'Current: %s', $wh_display ) : esc_attr__( 'Shared secret for HMAC signing', 'wpmediaverse' ) ); ?>"
 				/>
+				<?php if ( $wh_secret ) : ?>
+					<span class="description"><?php esc_html_e( 'Leave empty to keep the current secret.', 'wpmediaverse' ); ?></span>
+				<?php endif; ?>
 			</p>
 			<p>
 				<label><?php esc_html_e( 'Events:', 'wpmediaverse' ); ?></label><br />

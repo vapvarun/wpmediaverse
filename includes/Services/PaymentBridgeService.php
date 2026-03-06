@@ -160,7 +160,7 @@ class PaymentBridgeService {
 		$rules = $this->access_rules->get_rules( $media_id, 'code' );
 
 		foreach ( $rules as $rule ) {
-			if ( $rule['rule_value'] === $code ) {
+			if ( hash_equals( $rule['rule_value'], $code ) ) {
 				$grant_id = $this->access_rules->grant_access( $media_id, $user_id, 'code' );
 				if ( $grant_id ) {
 					/**
