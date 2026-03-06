@@ -13,7 +13,7 @@
 	var mediaId = window.mvsMedia ? window.mvsMedia.id : 0;
 	var restBase = window.mvsMedia ? window.mvsMedia.restUrl : '';
 	var nonce = window.mvsMedia ? window.mvsMedia.nonce : '';
-	var isLoggedIn = window.mvsMedia ? window.mvsMedia.isLoggedIn : false;
+	var isLoggedIn = window.mvsMedia ? !! window.mvsMedia.isLoggedIn : false;
 
 	if ( ! mediaId || ! restBase ) {
 		return;
@@ -66,7 +66,7 @@
 			var isActive = data.user_reaction === type;
 
 			var btn = document.createElement( 'button' );
-			btn.className = 'mvs-reaction-btn' + ( isActive ? ' active' : '' );
+			btn.className = 'mvs-reaction-btn' + ( isActive ? ' active' : '' ) + ( ! isLoggedIn ? ' mvs-guest' : '' );
 			btn.setAttribute( 'data-type', type );
 
 			var emoji = document.createElement( 'span' );
@@ -81,6 +81,7 @@
 
 			btn.addEventListener( 'click', function () {
 				if ( ! isLoggedIn ) {
+					alert( 'Please log in to react.' );
 					return;
 				}
 				handleReactionClick( type, isActive );

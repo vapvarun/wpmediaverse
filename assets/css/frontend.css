@@ -673,6 +673,11 @@
 	font-weight: 600;
 }
 
+.mvs-social-bar button.mvs-guest {
+	opacity: 0.7;
+	cursor: default;
+}
+
 .mvs-view-count {
 	margin-left: auto;
 	color: #999;
