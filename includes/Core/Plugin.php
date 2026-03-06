@@ -352,7 +352,7 @@ class Plugin {
 			new ReactionController( $reactions ),
 			new CommentController( $comments ),
 			new FavoriteController( $favorites ),
-			new StatsController( $stats ),
+			new StatsController( $stats, $privacy ),
 			new TagController(),
 			new ModerationController( $moderation, $ai ),
 			new AccessController( $access_rules ),

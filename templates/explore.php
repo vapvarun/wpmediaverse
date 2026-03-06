@@ -38,7 +38,7 @@ get_header();
 						<?php endif; ?>
 					</a>
 					<div class="mvs-grid-item-overlay">
-						<span class="mvs-grid-item-title"><?php the_title(); ?></span>
+						<span class="mvs-grid-item-title"><?php echo esc_html( get_the_title() ); ?></span>
 					</div>
 				</div>
 			<?php endwhile; ?>

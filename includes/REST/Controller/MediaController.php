@@ -470,17 +470,27 @@ class MediaController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$user_id      = get_current_user_id();
-		$can_view     = $this->privacy->can_view( $media_id, $user_id );
-		$privacy_meta = get_post_meta( $media_id, '_mvs_privacy', true );
-		$privacy      = $privacy_meta ? $privacy_meta : 'public';
+		$user_id  = get_current_user_id();
+		$can_view = $this->privacy->can_view( $media_id, $user_id );
+		$is_owner = $user_id && (int) $post->post_author === $user_id;
+
+		// Only expose privacy details to users who can view or own the media.
+		if ( $can_view || $is_owner ) {
+			$privacy_meta = get_post_meta( $media_id, '_mvs_privacy', true );
+			return rest_ensure_response(
+				array(
+					'media_id' => $media_id,
+					'can_view' => $can_view,
+					'privacy'  => $privacy_meta ? $privacy_meta : 'public',
+					'is_owner' => $is_owner,
+				)
+			);
+		}
 
 		return rest_ensure_response(
 			array(
 				'media_id' => $media_id,
-				'can_view' => $can_view,
-				'privacy'  => $privacy,
-				'is_owner' => $user_id && (int) $post->post_author === $user_id,
+				'can_view' => false,
 			)
 		);
 	}

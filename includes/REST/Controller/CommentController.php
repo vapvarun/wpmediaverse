@@ -212,6 +212,13 @@ class CommentController extends WP_REST_Controller {
 	 */
 	public function delete_item( $request ) {
 		$comment_id = $request->get_param( 'comment_id' );
+		$media_id   = $request->get_param( 'media_id' );
+
+		// Verify the comment belongs to the specified media item.
+		$comment = get_comment( $comment_id );
+		if ( $comment && (int) $comment->comment_post_ID !== $media_id ) {
+			return new WP_Error( 'mvs_mismatch', __( 'Comment does not belong to this media item.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
 
 		$result = $this->comments->delete( $comment_id, get_current_user_id() );
 

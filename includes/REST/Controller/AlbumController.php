@@ -502,6 +502,10 @@ class AlbumController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function update_item_permissions_check( $request ) {
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error( 'mvs_unauthorized', __( 'You must be logged in.', 'wpmediaverse' ), array( 'status' => 401 ) );
+		}
+
 		$post    = get_post( $request->get_param( 'id' ) );
 		$user_id = get_current_user_id();
 
@@ -523,6 +527,10 @@ class AlbumController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function delete_item_permissions_check( $request ) {
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error( 'mvs_unauthorized', __( 'You must be logged in.', 'wpmediaverse' ), array( 'status' => 401 ) );
+		}
+
 		$post    = get_post( $request->get_param( 'id' ) );
 		$user_id = get_current_user_id();
 

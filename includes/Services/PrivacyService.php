@@ -53,7 +53,8 @@ class PrivacyService {
 	 */
 	private function check_access( int $media_id, int $user_id ): bool {
 		$post = get_post( $media_id );
-		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+		$allowed_types = array( 'mvs_media', 'mvs_album', 'mvs_collection' );
+		if ( ! $post || ! in_array( $post->post_type, $allowed_types, true ) ) {
 			return false;
 		}
 

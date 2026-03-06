@@ -173,16 +173,39 @@ class SignedUrlService {
 		}
 
 		$is_download = ! empty( $params[ self::PARAM_DOWNLOAD ] );
-		$filename    = basename( $full_path );
+		$filename    = sanitize_file_name( basename( $full_path ) );
+		$filename    = str_replace( array( "\r", "\n" ), '', $filename );
 
 		// Record download event if applicable.
 		if ( $is_download ) {
 			$this->record_download( $media_id, (int) $params[ self::PARAM_USER ] );
 		}
 
+		// Validate Content-Type against safe MIME types.
+		$safe_types = array(
+			'image/jpeg',
+			'image/png',
+			'image/gif',
+			'image/webp',
+			'image/svg+xml',
+			'image/bmp',
+			'video/mp4',
+			'video/webm',
+			'video/ogg',
+			'video/quicktime',
+			'audio/mpeg',
+			'audio/ogg',
+			'audio/wav',
+			'audio/webm',
+			'audio/mp4',
+			'audio/flac',
+			'application/pdf',
+		);
+		$content_type = ( $file_type && in_array( $file_type, $safe_types, true ) ) ? $file_type : 'application/octet-stream';
+
 		// Send appropriate headers.
 		nocache_headers();
-		header( 'Content-Type: ' . ( $file_type ? $file_type : 'application/octet-stream' ) );
+		header( 'Content-Type: ' . $content_type );
 		header( 'Content-Length: ' . filesize( $full_path ) );
 
 		if ( $is_download ) {

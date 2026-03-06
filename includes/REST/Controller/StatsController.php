@@ -15,6 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\Services\StatsService;
+use WPMediaVerse\Services\PrivacyService;
 
 /**
  * REST controller for media statistics.
@@ -36,12 +37,21 @@ class StatsController extends WP_REST_Controller {
 	private $stats;
 
 	/**
+	 * Privacy service instance.
+	 *
+	 * @var PrivacyService
+	 */
+	private $privacy;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param StatsService $stats Stats service instance.
+	 * @param StatsService   $stats   Stats service instance.
+	 * @param PrivacyService $privacy Privacy service instance.
 	 */
-	public function __construct( StatsService $stats ) {
-		$this->stats = $stats;
+	public function __construct( StatsService $stats, PrivacyService $privacy ) {
+		$this->stats   = $stats;
+		$this->privacy = $privacy;
 	}
 
 	/**
@@ -92,6 +102,11 @@ class StatsController extends WP_REST_Controller {
 		$post = get_post( $media_id );
 		if ( ! $post || 'mvs_media' !== $post->post_type ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		// Privacy check — don't expose stats for private media.
+		if ( ! $this->privacy->can_view( $media_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 
 		$stats = $this->stats->get_for_media( $media_id );

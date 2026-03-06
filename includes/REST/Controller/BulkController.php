@@ -168,6 +168,12 @@ class BulkController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Verify the current user owns or can edit the target album.
+		$album_user_id = get_current_user_id();
+		if ( (int) $album->post_author !== $album_user_id && ! current_user_can( 'edit_others_mvs_medias' ) ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to add items to this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+
 		global $wpdb;
 
 		$max_pos = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

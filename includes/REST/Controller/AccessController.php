@@ -260,7 +260,22 @@ class AccessController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function delete_rule( $request ) {
-		$rule_id = $request->get_param( 'rule_id' );
+		$rule_id  = $request->get_param( 'rule_id' );
+		$media_id = $request->get_param( 'media_id' );
+
+		// Verify the rule belongs to the specified media item.
+		$rules = $this->access->get_rules( $media_id );
+		$found = false;
+		foreach ( $rules as $rule ) {
+			if ( (int) $rule['id'] === $rule_id ) {
+				$found = true;
+				break;
+			}
+		}
+
+		if ( ! $found ) {
+			return new WP_Error( 'mvs_not_found', __( 'Rule not found for this media item.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
 
 		$deleted = $this->access->delete_rule( $rule_id );
 

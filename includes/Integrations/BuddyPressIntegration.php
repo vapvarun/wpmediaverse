@@ -470,8 +470,8 @@ class BuddyPressIntegration {
 		}
 
 		return array(
-			'text' => $text,
-			'link' => $link,
+			'text' => esc_html( $text ),
+			'link' => esc_url( $link ),
 		);
 	}
 

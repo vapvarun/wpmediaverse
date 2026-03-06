@@ -257,12 +257,15 @@ class ModerationService {
 	public function get_counts(): array {
 		global $wpdb;
 
-		$results = $wpdb->get_results(
-			"SELECT meta_value AS status, COUNT(*) AS count
-			FROM {$wpdb->postmeta}
-			WHERE meta_key = '_mvs_moderation_status'
-			AND meta_value IN ('pending', 'flagged', 'rejected')
-			GROUP BY meta_value",
+		$results = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT meta_value AS status, COUNT(*) AS count
+				FROM {$wpdb->postmeta}
+				WHERE meta_key = %s
+				AND meta_value IN ('pending', 'flagged', 'rejected')
+				GROUP BY meta_value",
+				'_mvs_moderation_status'
+			),
 			ARRAY_A
 		);
 

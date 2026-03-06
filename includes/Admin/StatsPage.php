@@ -69,24 +69,30 @@ class StatsPage {
 		$stats_table = $wpdb->prefix . 'mvs_media_stats';
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$totals = $wpdb->get_row(
-			"SELECT
-				COALESCE(SUM(views), 0) AS total_views,
-				COALESCE(SUM(downloads), 0) AS total_downloads,
-				COALESCE(SUM(reactions), 0) AS total_reactions,
-				COALESCE(SUM(comments), 0) AS total_comments,
-				COALESCE(SUM(shares), 0) AS total_shares
-			FROM {$stats_table}",
+			$wpdb->prepare(
+				"SELECT
+					COALESCE(SUM(views), 0) AS total_views,
+					COALESCE(SUM(downloads), 0) AS total_downloads,
+					COALESCE(SUM(reactions), 0) AS total_reactions,
+					COALESCE(SUM(comments), 0) AS total_comments,
+					COALESCE(SUM(shares), 0) AS total_shares
+				FROM {$stats_table} WHERE 1 = %d",
+				1
+			),
 			ARRAY_A
 		);
 
-		// Top media by views.
 		$top_media = $wpdb->get_results(
-			"SELECT s.media_id, s.views, s.reactions, s.downloads, p.post_title
-			FROM {$stats_table} s
-			INNER JOIN {$wpdb->posts} p ON p.ID = s.media_id
-			WHERE p.post_type = 'mvs_media' AND p.post_status = 'publish'
-			ORDER BY s.views DESC
-			LIMIT 10",
+			$wpdb->prepare(
+				"SELECT s.media_id, s.views, s.reactions, s.downloads, p.post_title
+				FROM {$stats_table} s
+				INNER JOIN {$wpdb->posts} p ON p.ID = s.media_id
+				WHERE p.post_type = %s AND p.post_status = %s
+				ORDER BY s.views DESC
+				LIMIT 10",
+				'mvs_media',
+				'publish'
+			),
 			ARRAY_A
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -96,9 +102,12 @@ class StatsPage {
 
 		// Storage used.
 		$storage_size      = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			"SELECT SUM(CAST(meta_value AS UNSIGNED))
-			FROM {$wpdb->postmeta}
-			WHERE meta_key = '_mvs_file_size'"
+			$wpdb->prepare(
+				"SELECT SUM(CAST(meta_value AS UNSIGNED))
+				FROM {$wpdb->postmeta}
+				WHERE meta_key = %s",
+				'_mvs_file_size'
+			)
 		);
 		$storage_formatted = size_format( (int) $storage_size );
 
