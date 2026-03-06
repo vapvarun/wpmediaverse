@@ -444,6 +444,9 @@ class MediaController extends WP_REST_Controller {
 			array( '%d', '%d', '%s', '%s', '%s' )
 		);
 
+		// Ensure stats row exists (covers media created before publish hook).
+		\WPMediaVerse\Core\Plugin::ensure_media_rows( $media_id, $post );
+
 		// Increment stats.
 		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(

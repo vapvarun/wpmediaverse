@@ -112,6 +112,12 @@ class StatsController extends WP_REST_Controller {
 		$stats = $this->stats->get_for_media( $media_id );
 
 		if ( ! $stats ) {
+			// Auto-create stats row for media that pre-dates the publish hook.
+			\WPMediaVerse\Core\Plugin::ensure_media_rows( $media_id, $post );
+			$stats = $this->stats->get_for_media( $media_id );
+		}
+
+		if ( ! $stats ) {
 			return new WP_Error( 'mvs_no_stats', __( 'Stats not available.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
