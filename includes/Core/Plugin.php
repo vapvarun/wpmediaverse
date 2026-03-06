@@ -40,6 +40,7 @@ use WPMediaVerse\REST\Controller\AccessController;
 use WPMediaVerse\REST\Controller\SignedUrlController;
 use WPMediaVerse\Services\SignedUrlService;
 use WPMediaVerse\Services\PaymentBridgeService;
+use WPMediaVerse\Services\WatermarkService;
 use WPMediaVerse\REST\Controller\CheckoutController;
 use WPMediaVerse\Admin\ModerationQueue;
 use WPMediaVerse\Admin\StatsPage;
@@ -114,6 +115,9 @@ class Plugin {
 
 		// Signed URL filter — replaces file_url in REST responses for gated media.
 		add_filter( 'mvs_media_response', array( self::class, 'maybe_sign_file_url' ), 10, 2 );
+
+		// Initialize watermark service (adds preview_url filter at priority 30).
+		self::$container->get( 'watermark' );
 
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
@@ -288,6 +292,15 @@ class Plugin {
 			'payments',
 			function ( ServiceContainer $c ) {
 				$service = new PaymentBridgeService( $c->get( 'access_rules' ) );
+				$service->init();
+				return $service;
+			}
+		);
+
+		self::$container->register(
+			'watermark',
+			function ( ServiceContainer $c ) {
+				$service = new WatermarkService( $c->get( 'access_rules' ) );
 				$service->init();
 				return $service;
 			}
