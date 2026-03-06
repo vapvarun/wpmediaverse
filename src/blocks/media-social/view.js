@@ -1,0 +1,387 @@
+/**
+ * Interactivity API store: single media + album social interactions.
+ *
+ * Replaces assets/js/media-single.js (603 lines).
+ * Handles reactions, favorites, comments, share, stats, owner edit/delete.
+ *
+ * IMPORTANT: getContext() only works inside direct directive handlers.
+ * Internal helper functions receive `ctx` as a parameter instead.
+ *
+ * @package WPMediaVerse
+ */
+
+import { store, getContext } from '@wordpress/interactivity';
+
+const REACTION_TYPES = {
+	like: '\u{1F44D}',
+	love: '\u{2764}\u{FE0F}',
+	haha: '\u{1F602}',
+	wow: '\u{1F62E}',
+	sad: '\u{1F622}',
+	angry: '\u{1F621}',
+};
+
+const sharedUI = store( 'mvs/shared-ui' );
+
+function apiHeaders( nonce ) {
+	return {
+		'Content-Type': 'application/json',
+		'X-WP-Nonce': nonce,
+	};
+}
+
+function endpoint( ctx ) {
+	return ctx.type === 'album' ? 'albums/' : 'media/';
+}
+
+/* --- Internal helpers (receive ctx, no getContext() calls) --- */
+
+async function fetchReactions( ctx ) {
+	if ( ctx.type === 'album' ) return;
+	try {
+		const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
+			headers: apiHeaders( ctx.nonce ),
+			credentials: 'same-origin',
+		} );
+		const data = await res.json();
+		ctx.userReaction = data.user_reaction || '';
+		ctx.reactions = Object.keys( REACTION_TYPES ).map( ( type ) => ( {
+			type,
+			emoji: REACTION_TYPES[ type ],
+			count: data.counts?.[ type ] || 0,
+			active: data.user_reaction === type,
+		} ) );
+	} catch {
+		// Ignore.
+	}
+}
+
+async function fetchComments( ctx ) {
+	if ( ctx.type === 'album' ) return;
+	try {
+		const res = await fetch(
+			ctx.restUrl + 'media/' + ctx.mediaId + '/comments?per_page=20',
+			{ headers: apiHeaders( ctx.nonce ), credentials: 'same-origin' }
+		);
+		const data = await res.json();
+		ctx.comments = Array.isArray( data )
+			? data.map( ( c ) => ( {
+				id: c.id,
+				author: c.author_name || 'Anonymous',
+				date: new Date( c.date ).toLocaleDateString(),
+				content: c.content,
+			} ) )
+			: [];
+	} catch {
+		ctx.comments = [];
+	}
+}
+
+async function fetchStats( ctx ) {
+	if ( ctx.type === 'album' ) return;
+	try {
+		const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/stats', {
+			headers: apiHeaders( ctx.nonce ),
+			credentials: 'same-origin',
+		} );
+		const data = await res.json();
+		if ( data?.views !== undefined ) {
+			ctx.viewCount = data.views + ' views';
+		}
+	} catch {
+		// Ignore.
+	}
+}
+
+async function fetchFavorite( ctx ) {
+	if ( ! ctx.isLoggedIn ) return;
+	try {
+		const res = await fetch( ctx.restUrl + 'me/favorites?per_page=100', {
+			headers: apiHeaders( ctx.nonce ),
+			credentials: 'same-origin',
+		} );
+		const data = await res.json();
+		ctx.isFavorite = Array.isArray( data ) && data.some( ( f ) => f.media_id === ctx.mediaId );
+	} catch {
+		// Ignore.
+	}
+}
+
+store( 'mvs/media-social', {
+	state: {
+		reactions: [],
+		userReaction: '',
+		isFavorite: false,
+		comments: [],
+		commentText: '',
+		viewCount: '',
+		editVisible: false,
+		editTitle: '',
+		editDesc: '',
+		editPrivacy: 'public',
+		editTags: [],
+		tagInput: '',
+		tagResults: [],
+		tagDropdownVisible: false,
+		saving: false,
+		shareLabel: '\u{1F517} Share',
+	},
+	actions: {
+		/* --- Reactions --- */
+		async toggleReaction( event ) {
+			const ctx = getContext();
+			if ( ! ctx.isLoggedIn ) {
+				sharedUI.actions.showToast( 'Please log in to react.', 'error' );
+				return;
+			}
+			const type = event.target.closest( '[data-reaction-type]' )?.dataset.reactionType;
+			if ( ! type ) return;
+
+			const wasActive = ctx.userReaction === type;
+			const headers = apiHeaders( ctx.nonce );
+
+			if ( wasActive ) {
+				await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
+					method: 'DELETE',
+					headers,
+					credentials: 'same-origin',
+				} );
+			} else {
+				await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
+					method: 'POST',
+					headers,
+					credentials: 'same-origin',
+					body: JSON.stringify( { reaction_type: type } ),
+				} );
+			}
+			await fetchReactions( ctx );
+		},
+
+		/* --- Favorites --- */
+		async toggleFavorite() {
+			const ctx = getContext();
+			if ( ! ctx.isLoggedIn ) {
+				sharedUI.actions.showToast( 'Please log in to favorite.', 'error' );
+				return;
+			}
+			const method = ctx.isFavorite ? 'DELETE' : 'POST';
+			const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/favorite', {
+				method,
+				headers: apiHeaders( ctx.nonce ),
+				credentials: 'same-origin',
+			} );
+			if ( res.ok ) {
+				ctx.isFavorite = ! ctx.isFavorite;
+			}
+		},
+
+		/* --- Comments --- */
+		updateCommentText( event ) {
+			const ctx = getContext();
+			ctx.commentText = event.target.value;
+		},
+
+		async submitComment( event ) {
+			event.preventDefault();
+			const ctx = getContext();
+			if ( ! ctx.commentText.trim() ) return;
+
+			await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments', {
+				method: 'POST',
+				headers: apiHeaders( ctx.nonce ),
+				credentials: 'same-origin',
+				body: JSON.stringify( { content: ctx.commentText.trim() } ),
+			} );
+			ctx.commentText = '';
+			await fetchComments( ctx );
+		},
+
+		/* --- Share --- */
+		async handleShare() {
+			const ctx = getContext();
+			const url = window.location.href;
+			const title = document.title;
+
+			if ( navigator.share ) {
+				try {
+					await navigator.share( { title, url } );
+				} catch {
+					// User cancelled.
+				}
+			} else if ( navigator.clipboard ) {
+				await navigator.clipboard.writeText( url );
+				ctx.shareLabel = '\u2713 Copied!';
+				setTimeout( () => {
+					ctx.shareLabel = '\u{1F517} Share';
+				}, 2000 );
+			}
+		},
+
+		/* --- Owner Edit --- */
+		toggleEdit() {
+			const ctx = getContext();
+			ctx.editVisible = ! ctx.editVisible;
+		},
+
+		cancelEdit() {
+			getContext().editVisible = false;
+		},
+
+		updateEditTitle( event ) {
+			getContext().editTitle = event.target.value;
+		},
+
+		updateEditDesc( event ) {
+			getContext().editDesc = event.target.value;
+		},
+
+		updateEditPrivacy( event ) {
+			getContext().editPrivacy = event.target.value;
+		},
+
+		/* --- Owner Tag Input --- */
+		updateTagInput( event ) {
+			const ctx = getContext();
+			ctx.tagInput = event.target.value;
+			sharedUI.actions.searchTags( ctx.tagInput, ctx.restUrl );
+			setTimeout( () => {
+				const uiState = store( 'mvs/shared-ui' ).state;
+				ctx.tagResults = ( uiState.tagAutocomplete?.results || [] )
+					.filter( ( t ) => ! ctx.editTags.includes( t ) );
+				ctx.tagDropdownVisible = ctx.tagResults.length > 0;
+			}, 350 );
+		},
+
+		addTagFromInput( event ) {
+			if ( event.key !== 'Enter' ) return;
+			event.preventDefault();
+			const ctx = getContext();
+			const val = ctx.tagInput.trim();
+			if ( val && ! ctx.editTags.includes( val ) ) {
+				ctx.editTags = [ ...ctx.editTags, val ];
+			}
+			ctx.tagInput = '';
+			ctx.tagDropdownVisible = false;
+		},
+
+		selectTag( event ) {
+			const ctx = getContext();
+			const tag = event.target.dataset.tagName;
+			if ( tag && ! ctx.editTags.includes( tag ) ) {
+				ctx.editTags = [ ...ctx.editTags, tag ];
+			}
+			ctx.tagInput = '';
+			ctx.tagDropdownVisible = false;
+		},
+
+		removeTag( event ) {
+			const ctx = getContext();
+			const tag = event.target.closest( '[data-tag-name]' )?.dataset.tagName;
+			if ( tag ) {
+				ctx.editTags = ctx.editTags.filter( ( t ) => t !== tag );
+			}
+		},
+
+		async saveEdit() {
+			const ctx = getContext();
+			ctx.saving = true;
+			const ep = endpoint( ctx );
+			const payload = {
+				title: ctx.editTitle,
+				description: ctx.editDesc,
+				privacy: ctx.editPrivacy,
+			};
+			if ( ctx.type !== 'album' ) {
+				payload.tags = ctx.editTags;
+			}
+
+			try {
+				const res = await fetch( ctx.restUrl + ep + ctx.mediaId, {
+					method: 'PUT',
+					headers: apiHeaders( ctx.nonce ),
+					credentials: 'same-origin',
+					body: JSON.stringify( payload ),
+				} );
+				const updated = await res.json();
+				ctx.saving = false;
+				ctx.editVisible = false;
+
+				const titleEl = document.querySelector( ctx.type === 'album' ? '.mvs-album-title' : '.mvs-media-title' );
+				if ( titleEl ) titleEl.textContent = updated.title || '';
+				const descEl = document.querySelector( ctx.type === 'album' ? '.mvs-album-description' : '.mvs-media-description' );
+				if ( descEl ) descEl.textContent = updated.description || '';
+
+				if ( ctx.type !== 'album' && updated.tags ) {
+					const tagsContainer = document.querySelector( '.mvs-media-tags' );
+					if ( tagsContainer ) {
+						while ( tagsContainer.firstChild ) tagsContainer.removeChild( tagsContainer.firstChild );
+						updated.tags.forEach( ( t ) => {
+							const a = document.createElement( 'a' );
+							a.className = 'mvs-tag';
+							a.textContent = t;
+							a.href = '#';
+							tagsContainer.appendChild( a );
+						} );
+					}
+				}
+
+				sharedUI.actions.showToast( ctx.type === 'album' ? 'Album saved!' : 'Saved!', 'success' );
+			} catch {
+				ctx.saving = false;
+				sharedUI.actions.showToast( 'Save failed.', 'error' );
+			}
+		},
+
+		/* --- Owner Delete --- */
+		confirmDelete() {
+			const ctx = getContext();
+			const msg = ctx.type === 'album'
+				? 'Delete this album? Media items will not be deleted.'
+				: 'Delete this media item? This cannot be undone.';
+			sharedUI.actions.showConfirm( msg, async () => {
+				const ep = endpoint( ctx );
+				const res = await fetch( ctx.restUrl + ep + ctx.mediaId, {
+					method: 'DELETE',
+					headers: apiHeaders( ctx.nonce ),
+					credentials: 'same-origin',
+				} );
+				if ( res.ok ) {
+					window.location.href = ctx.archiveUrl || '/';
+				}
+			} );
+		},
+
+		stopPropagation( event ) {
+			event.stopPropagation();
+		},
+	},
+	callbacks: {
+		async init() {
+			const ctx = getContext();
+
+			// Initialize edit fields from server-rendered values.
+			ctx.editTitle = ctx.initialTitle || '';
+			ctx.editDesc = ctx.initialDesc || '';
+			ctx.editPrivacy = ctx.initialPrivacy || 'public';
+			ctx.editTags = ctx.initialTags || [];
+
+			// Load all data in parallel using helpers (ctx passed explicitly).
+			const promises = [];
+			if ( ctx.type !== 'album' ) {
+				promises.push( fetchReactions( ctx ) );
+				promises.push( fetchComments( ctx ) );
+				promises.push( fetchStats( ctx ) );
+				// Fire-and-forget view recording.
+				fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/view', {
+					method: 'POST',
+					headers: apiHeaders( ctx.nonce ),
+					credentials: 'same-origin',
+				} );
+			}
+			if ( ctx.isLoggedIn ) {
+				promises.push( fetchFavorite( ctx ) );
+			}
+			await Promise.all( promises );
+		},
+	},
+} );

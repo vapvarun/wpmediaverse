@@ -89,6 +89,25 @@ class TemplateLoader {
 			$query->set( 'posts_per_page', 18 );
 			$query->set( 'orderby', 'date' );
 			$query->set( 'order', 'DESC' );
+
+			// Search filter.
+			if ( ! empty( $_GET['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+				$query->set( 's', sanitize_text_field( wp_unslash( $_GET['s'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			}
+
+			// Tag filter.
+			if ( ! empty( $_GET['mvs_tag'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+				$query->set(
+					'tax_query',
+					array(
+						array(
+							'taxonomy' => 'mvs_tag',
+							'field'    => 'slug',
+							'terms'    => sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ), // phpcs:ignore WordPress.Security.NonceVerification
+						),
+					)
+				);
+			}
 		}
 	}
 

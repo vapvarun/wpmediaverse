@@ -56,7 +56,7 @@ if ( ! $mvs_totals ) {
 $media_count = wp_count_posts( 'mvs_media' );
 $user_count  = isset( $media_count->publish ) ? $media_count->publish : 0;
 
-$wrapper = get_block_wrapper_attributes( array( 'class' => 'mvs-stats-block' ) );
+$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-stats-block' ) ) : 'class="mvs-stats-block"';
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="mvs-stats-cards" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;">

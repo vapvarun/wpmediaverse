@@ -56,7 +56,7 @@ if ( $mvs_tag ) {
 }
 
 $query   = new WP_Query( $query_args );
-$wrapper = get_block_wrapper_attributes( array( 'class' => 'mvs-media-grid-block' ) );
+$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-grid-block' ) ) : 'class="mvs-media-grid-block"';
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/media-grid"

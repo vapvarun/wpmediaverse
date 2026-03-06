@@ -39,7 +39,7 @@ if ( ! $is_video && ! $is_audio ) {
 	return;
 }
 
-$wrapper  = get_block_wrapper_attributes( array( 'class' => 'mvs-media-player-block' ) );
+$wrapper  = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-player-block' ) ) : 'class="mvs-media-player-block"';
 $rest_url = esc_url( rest_url( 'mvs/v1/media/' . $media_id . '/view' ) );
 $nonce    = wp_create_nonce( 'wp_rest' );
 ?>

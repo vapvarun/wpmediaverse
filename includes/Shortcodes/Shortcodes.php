@@ -25,6 +25,7 @@ class Shortcodes {
 		add_shortcode( 'mvs_album', array( $this, 'render_album' ) );
 		add_shortcode( 'mvs_player', array( $this, 'render_player' ) );
 		add_shortcode( 'mvs_stats', array( $this, 'render_stats' ) );
+		add_shortcode( 'mvs_dashboard', array( $this, 'render_dashboard' ) );
 	}
 
 	/**
@@ -183,6 +184,201 @@ class Shortcodes {
 	}
 
 	/**
+	 * Render the [mvs_dashboard] shortcode.
+	 *
+	 * Usage: [mvs_dashboard]
+	 *
+	 * @param array|string $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_dashboard( $atts ): string {
+		if ( ! is_user_logged_in() ) {
+			return '<p>' . esc_html__( 'Please log in to access your media dashboard.', 'wpmediaverse' ) . '</p>';
+		}
+
+		wp_enqueue_style( 'mvs-frontend' );
+
+		// Enqueue Interactivity API stores.
+		$shared_asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
+		$shared_asset      = file_exists( $shared_asset_file ) ? require $shared_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+		wp_enqueue_script_module(
+			'mvs-shared-ui',
+			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
+			$shared_asset['dependencies'],
+			$shared_asset['version']
+		);
+
+		$dash_asset_file = MVS_PLUGIN_DIR . 'build/blocks/dashboard-view/view.asset.php';
+		$dash_asset      = file_exists( $dash_asset_file ) ? require $dash_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+		wp_enqueue_script_module(
+			'mvs-dashboard-view',
+			MVS_PLUGIN_URL . 'build/blocks/dashboard-view/view.js',
+			$dash_asset['dependencies'],
+			$dash_asset['version']
+		);
+
+		$mvs_dash_ctx = wp_interactivity_data_wp_context(
+			array(
+				'restUrl'  => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'    => wp_create_nonce( 'wp_rest' ),
+				'userId'   => get_current_user_id(),
+				'mediaUrl' => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
+			)
+		);
+
+		ob_start();
+		?>
+		<div class="mvs-dashboard"
+			data-wp-interactive="mvs/dashboard"
+			<?php echo $mvs_dash_ctx; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			data-wp-init="callbacks.init">
+
+			<nav class="mvs-dashboard-tabs" role="tablist">
+				<button class="mvs-dashboard-tab" data-tab="media" role="tab" type="button"
+					data-wp-class--active="state.isMediaTab"
+					data-wp-on--click="actions.switchTab">
+					<?php esc_html_e( 'My Media', 'wpmediaverse' ); ?>
+				</button>
+				<button class="mvs-dashboard-tab" data-tab="albums" role="tab" type="button"
+					data-wp-class--active="state.isAlbumsTab"
+					data-wp-on--click="actions.switchTab">
+					<?php esc_html_e( 'My Albums', 'wpmediaverse' ); ?>
+				</button>
+				<button class="mvs-dashboard-tab" data-tab="favorites" role="tab" type="button"
+					data-wp-class--active="state.isFavoritesTab"
+					data-wp-on--click="actions.switchTab">
+					<?php esc_html_e( 'My Favorites', 'wpmediaverse' ); ?>
+				</button>
+			</nav>
+
+			<!-- My Media Panel -->
+			<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isMediaTab">
+				<div class="mvs-dashboard-upload">
+					<div class="mvs-dashboard-dropzone"
+						data-wp-class--mvs-drag-active="state.upload.dragOver"
+						data-wp-on--click="actions.handleUploadClick"
+						data-wp-on--dragover="actions.handleUploadDragOver"
+						data-wp-on--dragleave="actions.handleUploadDragLeave"
+						data-wp-on--drop="actions.handleUploadDrop">
+						<span class="mvs-dashboard-dropzone-icon">&#x2B06;&#xFE0F;</span>
+						<span class="mvs-dashboard-dropzone-label"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
+						<input type="file" multiple accept="image/*,video/*,audio/*" class="mvs-upload-file-input" style="display:none"
+							data-wp-on--change="actions.handleUploadFileSelect" />
+					</div>
+					<div class="mvs-dashboard-upload-status" data-wp-bind--hidden="!state.upload.uploading"
+						data-wp-text="state.upload.status"></div>
+				</div>
+				<div class="mvs-dashboard-grid">
+					<template data-wp-each="state.media.items">
+						<div class="mvs-dashboard-card" data-wp-bind--data-media-id="context.item.id">
+							<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link">
+								<img data-wp-bind--src="context.item.file_url" data-wp-bind--alt="context.item.title" loading="lazy" />
+							</a>
+							<div class="mvs-dashboard-card-body">
+								<a class="mvs-dashboard-card-title" data-wp-bind--href="context.item.link"
+									data-wp-text="context.item.title || '(Untitled)'"></a>
+								<div class="mvs-dashboard-card-meta">
+									<span class="mvs-privacy-badge" data-wp-text="context.item.privacy || 'public'"></span>
+								</div>
+								<div class="mvs-dashboard-card-actions">
+									<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+										data-wp-on--click="actions.openEditModal"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
+									<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+										data-wp-on--click="actions.confirmDeleteMedia"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+								</div>
+							</div>
+						</div>
+					</template>
+				</div>
+				<p data-wp-bind--hidden="!state.showMediaEmpty" class="mvs-no-media">
+					<?php esc_html_e( 'No media yet. Use the upload area above!', 'wpmediaverse' ); ?>
+				</p>
+				<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreMedia">
+					<button class="mvs-btn mvs-btn--secondary" type="button"
+						data-wp-on--click="actions.loadMoreMedia"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></button>
+				</div>
+			</div>
+
+			<!-- Albums / Favorites panels rendered server-side similar to dashboard.php template -->
+			<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isAlbumsTab">
+				<div class="mvs-dashboard-actions">
+					<button class="mvs-btn" type="button"
+						data-wp-on--click="actions.openCreateAlbum">+ <?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></button>
+				</div>
+				<div class="mvs-dashboard-grid">
+					<template data-wp-each="state.albums.items">
+						<div class="mvs-dashboard-card" data-wp-bind--data-album-id="context.item.id">
+							<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link">
+								<img data-wp-bind--src="context.item.cover_url" data-wp-bind--alt="context.item.title" loading="lazy" />
+							</a>
+							<div class="mvs-dashboard-card-body">
+								<div class="mvs-dashboard-card-title" data-wp-text="context.item.title || '(Untitled)'"></div>
+								<div class="mvs-dashboard-card-meta" data-wp-text="(context.item.media_count || 0) + ' items'"></div>
+								<div class="mvs-dashboard-card-actions">
+									<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+										data-wp-on--click="actions.openAlbumModal"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
+									<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+										data-wp-on--click="actions.confirmDeleteAlbum"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+								</div>
+							</div>
+						</div>
+					</template>
+				</div>
+				<p data-wp-bind--hidden="!state.showAlbumsEmpty" class="mvs-no-media">
+					<?php esc_html_e( 'No albums yet. Create one!', 'wpmediaverse' ); ?>
+				</p>
+			</div>
+
+			<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isFavoritesTab">
+				<div class="mvs-dashboard-grid">
+					<template data-wp-each="state.favorites.items">
+						<div class="mvs-dashboard-card" data-wp-bind--data-fav-id="context.item.media_id">
+							<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link">
+								<img data-wp-bind--src="context.item.file_url" data-wp-bind--alt="context.item.title" loading="lazy" />
+							</a>
+							<div class="mvs-dashboard-card-body">
+								<div class="mvs-dashboard-card-title" data-wp-text="context.item.title || '(Untitled)'"></div>
+								<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+									data-wp-on--click="actions.unfavorite"><?php esc_html_e( 'Unfavorite', 'wpmediaverse' ); ?></button>
+							</div>
+						</div>
+					</template>
+				</div>
+				<p data-wp-bind--hidden="!state.showFavoritesEmpty" class="mvs-no-media">
+					<?php esc_html_e( 'No favorites yet. Browse and favorite media from the Explore page!', 'wpmediaverse' ); ?>
+				</p>
+				<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreFavorites">
+					<button class="mvs-btn mvs-btn--secondary" type="button"
+						data-wp-on--click="actions.loadMoreFavorites"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></button>
+				</div>
+			</div>
+
+			<!-- Toast + Confirm (shared-ui) -->
+			<div class="mvs-toast"
+				data-wp-interactive="mvs/shared-ui"
+				data-wp-bind--hidden="!state.toast.visible"
+				data-wp-text="state.toast.message"
+				data-wp-class--mvs-toast--success="state.toast.type === 'success'"
+				data-wp-class--mvs-toast--error="state.toast.type === 'error'"></div>
+			<div class="mvs-confirm-overlay"
+				data-wp-interactive="mvs/shared-ui"
+				data-wp-bind--hidden="!state.confirm.visible">
+				<div class="mvs-confirm">
+					<p data-wp-text="state.confirm.message"></p>
+					<div class="mvs-confirm-actions">
+						<button class="mvs-btn mvs-btn--secondary" type="button"
+							data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+						<button class="mvs-btn mvs-btn--danger" type="button"
+							data-wp-on--click="actions.handleConfirmYes"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
 	 * Render a block's server-side template with given attributes.
 	 *
 	 * @param string $block_name Block name (without namespace).
@@ -201,8 +397,29 @@ class Shortcodes {
 			$template = MVS_PLUGIN_DIR . 'src/blocks/' . $block_name . '/render.php';
 		}
 
-		// Ensure frontend styles are loaded.
+		// Ensure frontend + block styles are loaded.
 		wp_enqueue_style( 'mvs-frontend' );
+		$block_style = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/style-index.css';
+		if ( file_exists( $block_style ) ) {
+			wp_enqueue_style(
+				'mvs-block-' . $block_name,
+				MVS_PLUGIN_URL . 'build/blocks/' . $block_name . '/style-index.css',
+				array(),
+				filemtime( $block_style )
+			);
+		}
+		// Enqueue the block's view script (Interactivity API store).
+		$block_view = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/view.js';
+		if ( file_exists( $block_view ) ) {
+			$asset_file = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/view.asset.php';
+			$asset      = file_exists( $asset_file ) ? require $asset_file : array( 'dependencies' => array(), 'version' => filemtime( $block_view ) );
+			wp_enqueue_script_module(
+				'mvs-block-' . $block_name . '-view',
+				MVS_PLUGIN_URL . 'build/blocks/' . $block_name . '/view.js',
+				$asset['dependencies'],
+				$asset['version']
+			);
+		}
 
 		if ( ! file_exists( $template ) ) {
 			return '';
@@ -212,6 +429,8 @@ class Shortcodes {
 		// Make $attributes available to the template.
 		$content = '';
 		$block   = null;
+		// Flag so render.php can skip get_block_wrapper_attributes() (causes warning outside block context).
+		$mvs_shortcode_context = true;
 		include $template;
 		return ob_get_clean();
 	}

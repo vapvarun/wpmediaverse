@@ -135,10 +135,13 @@ includes/
 | explore-feed | `mvs/explore-feed` | Public explore feed with search/filter/load-more |
 | lock-overlay | `mvs/lock-overlay` | Paywall overlay with blurred preview + unlock prompt |
 
-## Interactivity API Stores (6)
-`mvs/media-upload`, `mvs/media-grid`, `mvs/media-player`, `mvs/story-viewer`, `mvs/explore-feed`, `mvs/lock-overlay`
+## Interactivity API Stores (10)
+**Block stores (6):** `mvs/media-upload`, `mvs/media-grid`, `mvs/media-player`, `mvs/story-viewer`, `mvs/explore-feed`, `mvs/lock-overlay`
+**Template stores (4):** `mvs/shared-ui` (toast, confirm, tag autocomplete), `mvs/dashboard` (My Media/Albums/Favorites CRUD), `mvs/media-social` (reactions, favorites, comments, share, owner edit/delete), `mvs/explore` (tag cloud)
 
-## Shortcodes (5)
+**Zero legacy JS** — all frontend is 100% Interactivity API. Templates enqueue stores via `wp_enqueue_script_module()`.
+
+## Shortcodes (6)
 | Shortcode | Attributes | Maps To |
 |---|---|---|
 | `[mvs_gallery]` | columns, count, type, category, lightbox | media-grid block |
@@ -146,17 +149,25 @@ includes/
 | `[mvs_album]` | id, columns, show_title | album-viewer block |
 | `[mvs_player]` | id, autoplay, loop, download | media-player block |
 | `[mvs_stats]` | views, downloads, reactions, top_media | media-stats block |
+| `[mvs_dashboard]` | (none) | Dashboard template (My Media/Albums/Favorites) |
 
 ## Template Override System
 Templates can be overridden by copying to `your-theme/wpmediaverse/`:
-- `media-single.php` — Single media item display
-- `album.php` — Single album display
-- `explore.php` — Explore/archive page
+- `media-single.php` — Single media item display (with owner edit/delete)
+- `album.php` — Single album display (with owner edit/delete)
+- `explore.php` — Explore/archive page (with search + tag cloud)
+- `dashboard.php` — User dashboard (My Media / My Albums / My Favorites)
 
 ## Admin Pages
-- **Settings** (`mvs-settings`) — General, Uploads, Storage, AI, Moderation settings
+- **Overview** (`mvs-overview`) — At-a-glance stats (media/albums/pending/views), quick links, recent uploads, missing page warnings
+- **Settings** (`mvs-settings`) — Tabbed: General, Display (grid/pagination/thumbnails), Permissions (role×cap matrix), AI & Moderation, Webhooks
 - **Moderation Queue** (`mvs-moderation`) — Review flagged/pending media with approve/reject
 - **Stats Dashboard** (`mvs-stats`) — Overview stats, top media, AI usage
+
+## Auto-Created Pages (on activation)
+- `mvs_page_explore` → Explore Media (`[mvs_gallery]`)
+- `mvs_page_dashboard` → My Media (`[mvs_dashboard]`)
+- `mvs_page_upload` → Upload Media (`[mvs_upload]`)
 
 ## Integrations
 - **BuddyPressIntegration** — Activity stream (upload/react/comment), profile Media tab, group Media tab, BP notifications (reaction/comment/mention). Conditional: only loads when BuddyPress is active.
@@ -181,3 +192,8 @@ Templates can be overridden by copying to `your-theme/wpmediaverse/`:
 | 2026-03-06 | Full audit | Comprehensive audit (steps 1-46) — 10 critical fixes: EXIF GPS dead code, mvs_reaction_added hook wiring, deferred ModerationService loading, SignedUrlController privacy check, timing-safe code comparison, shortcode path allowlist, moderation count caching, webhook media.updated/purchased hooks, error output escaping, webhook secret masking. 10 files |
 | 2026-03-06 | Phase 8 Steps 47a-e | Frontend functional — assets/css/frontend.css (450+ lines), wp_enqueue_scripts hook, block CSS for all 8 blocks (style.css + import + rebuild), lock-overlay build fix, social UI on media-single template (reactions, comments, favorites, share via REST API), assets/js/media-single.js (safe DOM methods). 154 tests. |
 | 2026-03-06 | Phase 8 Steps 47f-50 | CacheService (wp_cache with invalidation hooks), WP-CLI (7 commands: stats, migrate, prune-views, cleanup-expired, reindex, cache-flush, moderation-stats), rtMedia import tool (batch import with album mapping), wp.org prep (readme.txt, .distignore, uninstall.php, languages/). Removed dead stubs (MonetizationService, TranscodeService). 154 tests. |
+| 2026-03-06 | Phase 8 Steps 47h-j | Guest UX (login prompt for reactions), Instagram-like explore feed (author row, hover stats overlay, album badge), unified feed (pre_get_posts merges mvs_media + mvs_album into one grid). TemplateLoader, explore.php, frontend.css. |
+| 2026-03-06 | Phase 9 (all) | Complete frontend UI — dashboard template + [mvs_dashboard] shortcode, edit/delete media modal, tag autocomplete, album CRUD, favorites tab, owner actions on single media/album pages, explore search + tag cloud, upload form with title/desc/tags. 3 new files, 12 modified. |
+| 2026-03-06 | Phase 10 (all) | 100% Interactivity API migration — 4 new stores (shared-ui, dashboard, media-social, explore), replaced 1,730 lines of legacy IIFE JS. Templates rewritten with data-wp-* directives. Deleted 3 legacy JS files. Zero wp_localize_script remaining. |
+| 2026-03-06 | Phase 10 fixes | HTTPS mixed content fix (set_url_scheme in LocalDriver, SQL meta update), nonce headers on all REST fetches (media-social view.js), getContext() bug fix (helpers receive ctx param). |
+| 2026-03-06 | Admin UX | OverviewPage (stats/links/recent uploads), tabbed SettingsPage (General/Display/Permissions/AI/Webhooks), auto-create pages on activation, post-activation redirect to Overview. |

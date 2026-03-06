@@ -34,7 +34,9 @@ class LocalDriver implements StorageDriverInterface {
 	public function __construct() {
 		$upload_dir     = wp_upload_dir();
 		$this->base_dir = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/';
-		$this->base_url = trailingslashit( $upload_dir['baseurl'] ) . 'wpmediaverse/';
+		$base_url       = trailingslashit( $upload_dir['baseurl'] ) . 'wpmediaverse/';
+		// Ensure URL scheme matches site URL (fixes mixed content on HTTPS sites).
+		$this->base_url = set_url_scheme( $base_url );
 	}
 
 	/**

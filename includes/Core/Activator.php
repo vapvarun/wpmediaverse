@@ -30,11 +30,82 @@ class Activator {
 		// Set default options.
 		self::set_defaults();
 
+		// Create frontend pages if they don't exist.
+		self::create_pages();
+
 		// Protect upload directory from direct access.
 		self::protect_upload_directory();
 
 		// Flush rewrite rules on next load.
 		set_transient( 'mvs_flush_rewrite', true );
+
+		// Signal that we should redirect to the overview on next admin load.
+		set_transient( 'mvs_activation_redirect', true, 30 );
+	}
+
+	/**
+	 * Create the default frontend pages for Explore, Dashboard, and Upload.
+	 *
+	 * Pages are only created when the stored option is missing or points to a
+	 * non-existent page, so re-activation is safely idempotent.
+	 */
+	private static function create_pages(): void {
+		$pages = array(
+			'mvs_page_explore'   => array(
+				'title'     => __( 'Explore Media', 'wpmediaverse' ),
+				'slug'      => 'explore-media',
+				'shortcode' => '[mvs_gallery columns="3" count="24"]',
+			),
+			'mvs_page_dashboard' => array(
+				'title'     => __( 'My Media', 'wpmediaverse' ),
+				'slug'      => 'my-media',
+				'shortcode' => '[mvs_dashboard]',
+			),
+			'mvs_page_upload'    => array(
+				'title'     => __( 'Upload Media', 'wpmediaverse' ),
+				'slug'      => 'upload-media',
+				'shortcode' => '[mvs_upload]',
+			),
+		);
+
+		foreach ( $pages as $option_key => $page_data ) {
+			// 1. If the option already points to a live page, nothing to do.
+			$existing_id = (int) get_option( $option_key );
+			if ( $existing_id > 0 && 'publish' === get_post_status( $existing_id ) ) {
+				continue;
+			}
+
+			// 2. Try to find an existing published page with the expected slug.
+			$found = get_page_by_path( $page_data['slug'], OBJECT, 'page' );
+			if ( $found && 'publish' === $found->post_status ) {
+				update_option( $option_key, $found->ID );
+				continue;
+			}
+
+			// 3. Try to find an existing published page by title (handles slug variants like my-media-2).
+			$by_title = get_page_by_title( $page_data['title'], OBJECT, 'page' );
+			if ( $by_title && 'publish' === $by_title->post_status ) {
+				update_option( $option_key, $by_title->ID );
+				continue;
+			}
+
+			// 4. No existing page found — create one with an explicit slug.
+			$content = '<!-- wp:shortcode -->' . $page_data['shortcode'] . '<!-- /wp:shortcode -->';
+			$page_id = wp_insert_post(
+				array(
+					'post_title'     => $page_data['title'],
+					'post_name'      => $page_data['slug'],
+					'post_content'   => $content,
+					'post_status'    => 'publish',
+					'post_type'      => 'page',
+					'comment_status' => 'closed',
+				)
+			);
+
+			if ( $page_id && ! is_wp_error( $page_id ) ) {
+				update_option( $option_key, $page_id );
+			}
+		}
 	}
 
 	/**

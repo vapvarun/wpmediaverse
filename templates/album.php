@@ -32,6 +32,93 @@ get_header();
 				<?php if ( get_the_content() ) : ?>
 					<div class="mvs-album-description"><?php the_content(); ?></div>
 				<?php endif; ?>
+
+				<?php if ( is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id() ) : ?>
+					<?php
+					$album_privacy = get_post_meta( get_the_ID(), '_mvs_privacy', true );
+					if ( ! $album_privacy ) {
+						$album_privacy = 'public';
+					}
+					$mvs_album_ctx = array(
+						'mediaId'        => get_the_ID(),
+						'restUrl'        => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+						'nonce'          => wp_create_nonce( 'wp_rest' ),
+						'isLoggedIn'     => true,
+						'isOwner'        => true,
+						'type'           => 'album',
+						'archiveUrl'     => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
+						'initialTitle'   => get_the_title(),
+						'initialDesc'    => get_the_content(),
+						'initialPrivacy' => $album_privacy,
+						'initialTags'    => array(),
+						'reactions'      => array(),
+						'userReaction'   => '',
+						'isFavorite'     => false,
+						'comments'       => array(),
+						'commentText'    => '',
+						'viewCount'      => '',
+						'editVisible'    => false,
+						'editTitle'      => get_the_title(),
+						'editDesc'       => get_the_content(),
+						'editPrivacy'    => $album_privacy,
+						'editTags'       => array(),
+						'tagInput'       => '',
+						'tagResults'     => array(),
+						'tagDropdownVisible' => false,
+						'saving'         => false,
+						'shareLabel'     => "\xF0\x9F\x94\x97 Share",
+					);
+					?>
+					<div class="mvs-social-wrapper"
+						data-wp-interactive="mvs/media-social"
+						<?php echo wp_interactivity_data_wp_context( $mvs_album_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						data-wp-init="callbacks.init">
+						<div class="mvs-owner-actions" style="margin: 12px 0;">
+							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+								data-wp-on--click="actions.toggleEdit">
+								<?php esc_html_e( 'Edit Album', 'wpmediaverse' ); ?>
+							</button>
+							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+								data-wp-on--click="actions.confirmDelete">
+								<?php esc_html_e( 'Delete Album', 'wpmediaverse' ); ?>
+							</button>
+						</div>
+						<div class="mvs-inline-edit" data-wp-bind--hidden="!context.editVisible">
+							<div class="mvs-field">
+								<label><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
+								<input type="text" data-wp-bind--value="context.editTitle"
+									data-wp-on--input="actions.updateEditTitle" />
+							</div>
+							<div class="mvs-field">
+								<label><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
+								<textarea data-wp-on--input="actions.updateEditDesc"
+									data-wp-bind--value="context.editDesc"></textarea>
+							</div>
+							<div class="mvs-field">
+								<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+								<select data-wp-on--change="actions.updateEditPrivacy">
+									<?php foreach ( array( 'public', 'members', 'private' ) as $opt ) : ?>
+										<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $album_privacy, $opt ); ?>>
+											<?php echo esc_html( ucfirst( $opt ) ); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+							<div class="mvs-inline-edit-actions">
+								<button class="mvs-btn" type="button"
+									data-wp-on--click="actions.saveEdit"
+									data-wp-bind--disabled="context.saving">
+									<span data-wp-text="context.saving ? '<?php echo esc_js( __( 'Saving...', 'wpmediaverse' ) ); ?>' : '<?php echo esc_js( __( 'Save', 'wpmediaverse' ) ); ?>'"></span>
+								</button>
+								<button class="mvs-btn mvs-btn--secondary" type="button"
+									data-wp-on--click="actions.cancelEdit">
+									<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
+								</button>
+							</div>
+						</div>
+					</div>
+				<?php endif; ?>
+
 				<span class="mvs-album-count">
 					<?php
 					printf(
@@ -73,4 +160,26 @@ get_header();
 	<?php endwhile; ?>
 </div>
 <?php
+if ( is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id() ) :
+	wp_enqueue_style( 'mvs-frontend' );
+
+	// Enqueue Interactivity API stores.
+	$mvs_shared_asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
+	$mvs_shared_asset      = file_exists( $mvs_shared_asset_file ) ? require $mvs_shared_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+	wp_enqueue_script_module(
+		'mvs-shared-ui',
+		MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
+		$mvs_shared_asset['dependencies'],
+		$mvs_shared_asset['version']
+	);
+
+	$mvs_social_asset_file = MVS_PLUGIN_DIR . 'build/blocks/media-social/view.asset.php';
+	$mvs_social_asset      = file_exists( $mvs_social_asset_file ) ? require $mvs_social_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+	wp_enqueue_script_module(
+		'mvs-media-social',
+		MVS_PLUGIN_URL . 'build/blocks/media-social/view.js',
+		$mvs_social_asset['dependencies'],
+		$mvs_social_asset['version']
+	);
+endif;
 get_footer();

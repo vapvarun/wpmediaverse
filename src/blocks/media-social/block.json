@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "mvs/media-social",
+	"version": "1.0.0",
+	"title": "MVS Media Social",
+	"category": "widgets",
+	"description": "Internal social interactions store for single media/album pages. Not a user-facing block.",
+	"supports": {
+		"inserter": false
+	},
+	"textdomain": "wpmediaverse",
+	"viewScriptModule": "file:./view.js"
+}

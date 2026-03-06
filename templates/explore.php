@@ -17,6 +17,37 @@ get_header();
 		<h1><?php esc_html_e( 'Explore', 'wpmediaverse' ); ?></h1>
 	</header>
 
+	<!-- Search Bar -->
+	<div class="mvs-explore-search">
+		<form method="get" action="<?php echo esc_url( get_post_type_archive_link( 'mvs_media' ) ); ?>">
+			<input type="text" name="s" placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>"
+				value="<?php echo esc_attr( get_search_query() ); ?>" />
+			<button type="submit"><?php esc_html_e( 'Search', 'wpmediaverse' ); ?></button>
+		</form>
+	</div>
+
+	<!-- Tag Cloud (Interactivity API) -->
+	<?php
+	$mvs_explore_ctx = array(
+		'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+		'archiveUrl' => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
+		'activeTag'  => isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification
+		'tags'       => array(),
+		'loaded'     => false,
+	);
+	?>
+	<div class="mvs-tag-cloud"
+		data-wp-interactive="mvs/explore"
+		<?php echo wp_interactivity_data_wp_context( $mvs_explore_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		data-wp-init="callbacks.init">
+		<template data-wp-each="context.tags">
+			<a class="mvs-tag-cloud-item"
+				data-wp-bind--href="context.item.href"
+				data-wp-text="context.item.name"
+				data-wp-class--active="context.item.active"></a>
+		</template>
+	</div>
+
 	<?php if ( have_posts() ) : ?>
 		<div class="mvs-media-grid mvs-cols-3 mvs-feed">
 			<?php
@@ -107,4 +138,14 @@ get_header();
 	<?php endif; ?>
 </div>
 <?php
+// Enqueue Interactivity API stores.
+$mvs_explore_asset_file = MVS_PLUGIN_DIR . 'build/blocks/explore-view/view.asset.php';
+$mvs_explore_asset      = file_exists( $mvs_explore_asset_file ) ? require $mvs_explore_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+wp_enqueue_script_module(
+	'mvs-explore-view',
+	MVS_PLUGIN_URL . 'build/blocks/explore-view/view.js',
+	$mvs_explore_asset['dependencies'],
+	$mvs_explore_asset['version']
+);
+
 get_footer();

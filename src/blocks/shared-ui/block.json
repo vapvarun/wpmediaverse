@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "mvs/shared-ui",
+	"version": "1.0.0",
+	"title": "MVS Shared UI",
+	"category": "widgets",
+	"description": "Internal shared UI store (toast, confirm, tag autocomplete). Not a user-facing block.",
+	"supports": {
+		"inserter": false
+	},
+	"textdomain": "wpmediaverse",
+	"viewScriptModule": "file:./view.js"
+}

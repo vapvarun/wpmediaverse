@@ -11,6 +11,9 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Admin settings page for WPMediaVerse.
+ *
+ * Registered as a submenu under the mvs_media CPT menu. Provides tabbed
+ * navigation: General | Display | Permissions | AI & Moderation | Webhooks.
  */
 class SettingsPage {
 
@@ -18,20 +21,29 @@ class SettingsPage {
 	const OPTION_GROUP = 'mvs_settings';
 
 	/**
+	 * All supported tabs with labels.
+	 *
+	 * @var array<string,string>
+	 */
+	private static $tabs = array();
+
+	/**
 	 * Constructor. Hooks admin menu and settings registration.
 	 */
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_post_mvs_save_role_caps', array( $this, 'save_role_caps' ) );
 	}
 
 	/**
-	 * Add settings page under Settings menu.
+	 * Add settings page as submenu under WPMediaVerse (mvs_media CPT menu).
 	 */
 	public function add_menu_page(): void {
-		add_options_page(
+		add_submenu_page(
+			'edit.php?post_type=mvs_media',
 			__( 'WPMediaVerse Settings', 'wpmediaverse' ),
-			__( 'WPMediaVerse', 'wpmediaverse' ),
+			__( 'Settings', 'wpmediaverse' ),
 			'manage_mvs_settings',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
@@ -39,19 +51,41 @@ class SettingsPage {
 	}
 
 	/**
+	 * Return the active tab slug, defaulting to 'general'.
+	 *
+	 * @return string
+	 */
+	private function get_active_tab(): string {
+		$allowed = array( 'general', 'display', 'permissions', 'ai', 'webhooks' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'general';
+		return in_array( $tab, $allowed, true ) ? $tab : 'general';
+	}
+
+	/**
 	 * Register all settings, sections, and fields.
 	 */
 	public function register_settings(): void {
+		$this->register_general_settings();
+		$this->register_display_settings();
+		$this->register_ai_settings();
+		$this->register_moderation_settings();
+		$this->register_webhook_settings();
+	}
+
+	// -------------------------------------------------------------------------
+	// General settings (General + Uploads + Storage sections)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register General-tab settings.
+	 */
+	private function register_general_settings(): void {
 		// General section.
-		add_settings_section(
-			'mvs_general',
-			__( 'General', 'wpmediaverse' ),
-			'__return_null',
-			self::PAGE_SLUG
-		);
+		add_settings_section( 'mvs_general', __( 'General', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-general' );
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_general',
 			'mvs_max_upload_size',
 			array(
 				'type'              => 'integer',
@@ -59,12 +93,11 @@ class SettingsPage {
 				'default'           => 104857600,
 			)
 		);
-
 		add_settings_field(
 			'mvs_max_upload_size',
 			__( 'Max Upload Size (bytes)', 'wpmediaverse' ),
 			array( $this, 'render_number_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
 				'option'      => 'mvs_max_upload_size',
@@ -73,7 +106,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_general',
 			'mvs_allowed_file_types',
 			array(
 				'type'              => 'string',
@@ -81,12 +114,11 @@ class SettingsPage {
 				'default'           => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg',
 			)
 		);
-
 		add_settings_field(
 			'mvs_allowed_file_types',
 			__( 'Allowed File Types', 'wpmediaverse' ),
 			array( $this, 'render_textarea_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
 				'option'      => 'mvs_allowed_file_types',
@@ -95,7 +127,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_general',
 			'mvs_default_privacy',
 			array(
 				'type'              => 'string',
@@ -103,12 +135,11 @@ class SettingsPage {
 				'default'           => 'public',
 			)
 		);
-
 		add_settings_field(
 			'mvs_default_privacy',
 			__( 'Default Privacy Level', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
 				'option'  => 'mvs_default_privacy',
@@ -121,15 +152,10 @@ class SettingsPage {
 		);
 
 		// Uploads section.
-		add_settings_section(
-			'mvs_uploads',
-			__( 'Uploads', 'wpmediaverse' ),
-			'__return_null',
-			self::PAGE_SLUG
-		);
+		add_settings_section( 'mvs_uploads', __( 'Uploads', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-general' );
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_general',
 			'mvs_duplicate_action',
 			array(
 				'type'              => 'string',
@@ -137,12 +163,11 @@ class SettingsPage {
 				'default'           => 'warn',
 			)
 		);
-
 		add_settings_field(
 			'mvs_duplicate_action',
 			__( 'Duplicate Detection', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-general',
 			'mvs_uploads',
 			array(
 				'option'  => 'mvs_duplicate_action',
@@ -155,7 +180,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_general',
 			'mvs_strip_exif',
 			array(
 				'type'              => 'boolean',
@@ -163,12 +188,11 @@ class SettingsPage {
 				'default'           => true,
 			)
 		);
-
 		add_settings_field(
 			'mvs_strip_exif',
 			__( 'Strip EXIF Data', 'wpmediaverse' ),
 			array( $this, 'render_checkbox_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-general',
 			'mvs_uploads',
 			array(
 				'option' => 'mvs_strip_exif',
@@ -177,15 +201,10 @@ class SettingsPage {
 		);
 
 		// Storage section.
-		add_settings_section(
-			'mvs_storage',
-			__( 'Storage', 'wpmediaverse' ),
-			'__return_null',
-			self::PAGE_SLUG
-		);
+		add_settings_section( 'mvs_storage', __( 'Storage', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-general' );
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_general',
 			'mvs_storage_driver',
 			array(
 				'type'              => 'string',
@@ -193,12 +212,11 @@ class SettingsPage {
 				'default'           => 'local',
 			)
 		);
-
 		add_settings_field(
 			'mvs_storage_driver',
 			__( 'Storage Driver', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-general',
 			'mvs_storage',
 			array(
 				'option'  => 'mvs_storage_driver',
@@ -209,17 +227,105 @@ class SettingsPage {
 				),
 			)
 		);
+	}
 
-		// AI section.
-		add_settings_section(
-			'mvs_ai',
-			__( 'AI Features', 'wpmediaverse' ),
-			'__return_null',
-			self::PAGE_SLUG
+	// -------------------------------------------------------------------------
+	// Display settings (new tab)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register Display-tab settings.
+	 */
+	private function register_display_settings(): void {
+		add_settings_section( 'mvs_display', __( 'Media Display', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-display' );
+
+		register_setting(
+			self::OPTION_GROUP . '_display',
+			'mvs_grid_columns',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 3,
+			)
+		);
+		add_settings_field(
+			'mvs_grid_columns',
+			__( 'Grid Columns', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG . '-display',
+			'mvs_display',
+			array(
+				'option'  => 'mvs_grid_columns',
+				'choices' => array(
+					2 => __( '2 columns', 'wpmediaverse' ),
+					3 => __( '3 columns', 'wpmediaverse' ),
+					4 => __( '4 columns', 'wpmediaverse' ),
+				),
+			)
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_display',
+			'mvs_items_per_page',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 12,
+			)
+		);
+		add_settings_field(
+			'mvs_items_per_page',
+			__( 'Items Per Page', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG . '-display',
+			'mvs_display',
+			array(
+				'option'  => 'mvs_items_per_page',
+				'choices' => array(
+					12 => __( '12', 'wpmediaverse' ),
+					24 => __( '24', 'wpmediaverse' ),
+					48 => __( '48', 'wpmediaverse' ),
+				),
+			)
+		);
+
+		register_setting(
+			self::OPTION_GROUP . '_display',
+			'mvs_thumbnail_style',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'square',
+			)
+		);
+		add_settings_field(
+			'mvs_thumbnail_style',
+			__( 'Thumbnail Style', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG . '-display',
+			'mvs_display',
+			array(
+				'option'  => 'mvs_thumbnail_style',
+				'choices' => array(
+					'square'   => __( 'Square (cropped)', 'wpmediaverse' ),
+					'original' => __( 'Original proportions', 'wpmediaverse' ),
+				),
+			)
+		);
+	}
+
+	// -------------------------------------------------------------------------
+	// AI & Moderation settings
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register AI-tab settings.
+	 */
+	private function register_ai_settings(): void {
+		add_settings_section( 'mvs_ai', __( 'AI Features', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-ai' );
+
+		register_setting(
+			self::OPTION_GROUP . '_ai',
 			'mvs_ai_provider',
 			array(
 				'type'              => 'string',
@@ -227,12 +333,11 @@ class SettingsPage {
 				'default'           => 'openai',
 			)
 		);
-
 		add_settings_field(
 			'mvs_ai_provider',
 			__( 'AI Provider', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
 				'option'  => 'mvs_ai_provider',
@@ -243,7 +348,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_ai',
 			'mvs_openai_api_key',
 			array(
 				'type'              => 'string',
@@ -251,12 +356,11 @@ class SettingsPage {
 				'default'           => '',
 			)
 		);
-
 		add_settings_field(
 			'mvs_openai_api_key',
 			__( 'OpenAI API Key', 'wpmediaverse' ),
 			array( $this, 'render_password_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_openai_api_key',
@@ -265,7 +369,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_ai',
 			'mvs_openai_model',
 			array(
 				'type'              => 'string',
@@ -273,12 +377,11 @@ class SettingsPage {
 				'default'           => 'gpt-4o-mini',
 			)
 		);
-
 		add_settings_field(
 			'mvs_openai_model',
 			__( 'OpenAI Model', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
 				'option'  => 'mvs_openai_model',
@@ -290,7 +393,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_ai',
 			'mvs_ai_auto_analyze',
 			array(
 				'type'              => 'boolean',
@@ -298,12 +401,11 @@ class SettingsPage {
 				'default'           => false,
 			)
 		);
-
 		add_settings_field(
 			'mvs_ai_auto_analyze',
 			__( 'Auto-Analyze Uploads', 'wpmediaverse' ),
 			array( $this, 'render_checkbox_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
 				'option' => 'mvs_ai_auto_analyze',
@@ -312,7 +414,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_ai',
 			'mvs_ai_auto_apply_tags',
 			array(
 				'type'              => 'boolean',
@@ -320,12 +422,11 @@ class SettingsPage {
 				'default'           => false,
 			)
 		);
-
 		add_settings_field(
 			'mvs_ai_auto_apply_tags',
 			__( 'Auto-Apply Tags', 'wpmediaverse' ),
 			array( $this, 'render_checkbox_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
 				'option' => 'mvs_ai_auto_apply_tags',
@@ -334,7 +435,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_ai',
 			'mvs_ai_auto_moderate',
 			array(
 				'type'              => 'boolean',
@@ -342,12 +443,11 @@ class SettingsPage {
 				'default'           => false,
 			)
 		);
-
 		add_settings_field(
 			'mvs_ai_auto_moderate',
 			__( 'Auto-Moderate Uploads', 'wpmediaverse' ),
 			array( $this, 'render_checkbox_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
 				'option' => 'mvs_ai_auto_moderate',
@@ -356,7 +456,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_ai',
 			'mvs_ai_monthly_budget',
 			array(
 				'type'              => 'number',
@@ -364,12 +464,11 @@ class SettingsPage {
 				'default'           => 0,
 			)
 		);
-
 		add_settings_field(
 			'mvs_ai_monthly_budget',
 			__( 'Monthly AI Budget ($)', 'wpmediaverse' ),
 			array( $this, 'render_number_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_ai_monthly_budget',
@@ -378,7 +477,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_ai',
 			'mvs_ai_cost_per_call',
 			array(
 				'type'              => 'number',
@@ -386,29 +485,27 @@ class SettingsPage {
 				'default'           => 0.01,
 			)
 		);
-
 		add_settings_field(
 			'mvs_ai_cost_per_call',
 			__( 'Estimated Cost per Call ($)', 'wpmediaverse' ),
 			array( $this, 'render_number_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_ai_cost_per_call',
 				'description' => __( 'Approximate cost per API call for budget tracking.', 'wpmediaverse' ),
 			)
 		);
+	}
 
-		// Moderation section.
-		add_settings_section(
-			'mvs_moderation',
-			__( 'Moderation', 'wpmediaverse' ),
-			'__return_null',
-			self::PAGE_SLUG
-		);
+	/**
+	 * Register Moderation-related settings (shown on AI tab).
+	 */
+	private function register_moderation_settings(): void {
+		add_settings_section( 'mvs_moderation', __( 'Moderation', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-ai' );
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_ai',
 			'mvs_moderation_auto_action',
 			array(
 				'type'              => 'string',
@@ -416,12 +513,11 @@ class SettingsPage {
 				'default'           => 'flag',
 			)
 		);
-
 		add_settings_field(
 			'mvs_moderation_auto_action',
 			__( 'When AI Flags Content', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-ai',
 			'mvs_moderation',
 			array(
 				'option'  => 'mvs_moderation_auto_action',
@@ -432,17 +528,16 @@ class SettingsPage {
 				),
 			)
 		);
+	}
 
-		// Webhooks section.
-		add_settings_section(
-			'mvs_webhooks',
-			__( 'Webhooks', 'wpmediaverse' ),
-			'__return_null',
-			self::PAGE_SLUG
-		);
+	/**
+	 * Register Webhook settings.
+	 */
+	private function register_webhook_settings(): void {
+		add_settings_section( 'mvs_webhooks', __( 'Webhooks', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-webhooks' );
 
 		register_setting(
-			self::OPTION_GROUP,
+			self::OPTION_GROUP . '_webhooks',
 			'mvs_webhooks',
 			array(
 				'type'              => 'array',
@@ -450,36 +545,245 @@ class SettingsPage {
 				'default'           => array(),
 			)
 		);
-
 		add_settings_field(
 			'mvs_webhooks',
 			__( 'Webhook Configuration', 'wpmediaverse' ),
 			array( $this, 'render_webhook_field' ),
-			self::PAGE_SLUG,
+			self::PAGE_SLUG . '-webhooks',
 			'mvs_webhooks'
 		);
 	}
 
+	// -------------------------------------------------------------------------
+	// Page renderer
+	// -------------------------------------------------------------------------
+
 	/**
-	 * Render the settings page.
+	 * Render the settings page with tabbed navigation.
 	 */
 	public function render_page(): void {
 		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
 			return;
 		}
+
+		$active_tab = $this->get_active_tab();
+		$base_url   = admin_url( 'edit.php?post_type=mvs_media&page=' . self::PAGE_SLUG );
+
+		$tabs = array(
+			'general'     => __( 'General', 'wpmediaverse' ),
+			'display'     => __( 'Display', 'wpmediaverse' ),
+			'permissions' => __( 'Permissions', 'wpmediaverse' ),
+			'ai'          => __( 'AI & Moderation', 'wpmediaverse' ),
+			'webhooks'    => __( 'Webhooks', 'wpmediaverse' ),
+		);
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-			<form action="options.php" method="post">
+
+			<nav class="nav-tab-wrapper wp-clearfix" aria-label="<?php esc_attr_e( 'Settings tabs', 'wpmediaverse' ); ?>">
+				<?php foreach ( $tabs as $tab_slug => $tab_label ) : ?>
+					<a href="<?php echo esc_url( add_query_arg( 'tab', $tab_slug, $base_url ) ); ?>"
+					   class="nav-tab<?php echo ( $tab_slug === $active_tab ) ? ' nav-tab-active' : ''; ?>">
+						<?php echo esc_html( $tab_label ); ?>
+					</a>
+				<?php endforeach; ?>
+			</nav>
+
+			<?php if ( 'permissions' === $active_tab ) : ?>
+				<?php $this->render_permissions_tab(); ?>
+			<?php else : ?>
 				<?php
-				settings_fields( self::OPTION_GROUP );
-				do_settings_sections( self::PAGE_SLUG );
-				submit_button();
+				$option_group_map = array(
+					'general'  => self::OPTION_GROUP . '_general',
+					'display'  => self::OPTION_GROUP . '_display',
+					'ai'       => self::OPTION_GROUP . '_ai',
+					'webhooks' => self::OPTION_GROUP . '_webhooks',
+				);
+				$page_slug_map    = array(
+					'general'  => self::PAGE_SLUG . '-general',
+					'display'  => self::PAGE_SLUG . '-display',
+					'ai'       => self::PAGE_SLUG . '-ai',
+					'webhooks' => self::PAGE_SLUG . '-webhooks',
+				);
+				$option_group = $option_group_map[ $active_tab ] ?? ( self::OPTION_GROUP . '_general' );
+				$page_slug    = $page_slug_map[ $active_tab ] ?? ( self::PAGE_SLUG . '-general' );
 				?>
+				<form action="options.php" method="post">
+					<?php
+					settings_fields( $option_group );
+					do_settings_sections( $page_slug );
+					submit_button( __( 'Save Settings', 'wpmediaverse' ) );
+					?>
+				</form>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	// -------------------------------------------------------------------------
+	// Permissions tab
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Render the Permissions tab — role × capability matrix with checkboxes.
+	 */
+	private function render_permissions_tab(): void {
+		// Handle save.
+		if (
+			isset( $_POST['_wpnonce'] ) &&
+			wp_verify_nonce( sanitize_key( $_POST['_wpnonce'] ), 'mvs_save_role_caps' ) &&
+			current_user_can( 'manage_mvs_settings' )
+		) {
+			$this->process_role_caps_save();
+		}
+
+		$roles = array(
+			'administrator' => __( 'Administrator', 'wpmediaverse' ),
+			'editor'        => __( 'Editor', 'wpmediaverse' ),
+			'author'        => __( 'Author', 'wpmediaverse' ),
+			'contributor'   => __( 'Contributor', 'wpmediaverse' ),
+			'subscriber'    => __( 'Subscriber', 'wpmediaverse' ),
+		);
+
+		$caps = array(
+			'upload_mvs_media'        => __( 'Upload', 'wpmediaverse' ),
+			'edit_mvs_media'          => __( 'Edit Own', 'wpmediaverse' ),
+			'edit_others_mvs_media'   => __( 'Edit Others', 'wpmediaverse' ),
+			'delete_mvs_media'        => __( 'Delete Own', 'wpmediaverse' ),
+			'delete_others_mvs_media' => __( 'Delete Others', 'wpmediaverse' ),
+			'moderate_mvs_media'      => __( 'Moderate', 'wpmediaverse' ),
+			'manage_mvs_settings'     => __( 'Manage Settings', 'wpmediaverse' ),
+		);
+
+		$nonce_field_html = wp_nonce_field( 'mvs_save_role_caps', '_wpnonce', true, false );
+		?>
+		<div class="mvs-permissions-tab">
+			<?php settings_errors( 'mvs_role_caps' ); ?>
+			<form method="post" action="">
+				<?php echo $nonce_field_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_nonce_field output is safe. ?>
+				<input type="hidden" name="mvs_permissions_submit" value="1" />
+
+				<p class="description">
+					<?php esc_html_e( 'Control which user roles can perform each media action. Uncheck to revoke a capability.', 'wpmediaverse' ); ?>
+				</p>
+
+				<table class="wp-list-table widefat fixed striped mvs-caps-table" style="margin-top:1em;">
+					<thead>
+						<tr>
+							<th scope="col" style="width:140px;"><?php esc_html_e( 'Role', 'wpmediaverse' ); ?></th>
+							<?php foreach ( $caps as $cap_key => $cap_label ) : ?>
+								<th scope="col" style="text-align:center;"><?php echo esc_html( $cap_label ); ?></th>
+							<?php endforeach; ?>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $roles as $role_slug => $role_label ) : ?>
+							<?php $role_obj = get_role( $role_slug ); ?>
+							<tr>
+								<td><strong><?php echo esc_html( $role_label ); ?></strong></td>
+								<?php foreach ( $caps as $cap_key => $cap_label ) : ?>
+									<td style="text-align:center;">
+										<?php
+										$has_cap = $role_obj && ! empty( $role_obj->capabilities[ $cap_key ] );
+										printf(
+											'<input type="checkbox" name="mvs_role_caps[%s][%s]" value="1" %s aria-label="%s" />',
+											esc_attr( $role_slug ),
+											esc_attr( $cap_key ),
+											checked( $has_cap, true, false ),
+											esc_attr(
+												sprintf(
+													/* translators: 1: capability label, 2: role label */
+													__( '%1$s for %2$s', 'wpmediaverse' ),
+													$cap_label,
+													$role_label
+												)
+											)
+										);
+										?>
+									</td>
+								<?php endforeach; ?>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+
+				<?php submit_button( __( 'Save Permissions', 'wpmediaverse' ) ); ?>
 			</form>
 		</div>
 		<?php
 	}
+
+	/**
+	 * Process the role-capability matrix save from the Permissions tab form.
+	 */
+	private function process_role_caps_save(): void {
+		$roles = array( 'administrator', 'editor', 'author', 'contributor', 'subscriber' );
+		$caps  = array(
+			'upload_mvs_media',
+			'edit_mvs_media',
+			'edit_others_mvs_media',
+			'delete_mvs_media',
+			'delete_others_mvs_media',
+			'moderate_mvs_media',
+			'manage_mvs_settings',
+		);
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in render_permissions_tab().
+		$submitted = isset( $_POST['mvs_role_caps'] ) && is_array( $_POST['mvs_role_caps'] )
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing
+			? $_POST['mvs_role_caps']
+			: array();
+
+		foreach ( $roles as $role_slug ) {
+			$role_obj = get_role( $role_slug );
+			if ( ! $role_obj ) {
+				continue;
+			}
+			foreach ( $caps as $cap ) {
+				$granted = ! empty( $submitted[ $role_slug ][ $cap ] );
+				if ( $granted ) {
+					$role_obj->add_cap( $cap );
+				} else {
+					$role_obj->remove_cap( $cap );
+				}
+			}
+		}
+
+		add_settings_error( 'mvs_role_caps', 'mvs_role_caps_saved', __( 'Permissions saved.', 'wpmediaverse' ), 'updated' );
+	}
+
+	/**
+	 * Handle the admin-post action for role cap saves (fallback / direct POST).
+	 */
+	public function save_role_caps(): void {
+		if (
+			! isset( $_POST['_wpnonce'] ) ||
+			! wp_verify_nonce( sanitize_key( $_POST['_wpnonce'] ), 'mvs_save_role_caps' )
+		) {
+			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
+		}
+
+		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
+			wp_die( esc_html__( 'You do not have permission to change these settings.', 'wpmediaverse' ) );
+		}
+
+		$this->process_role_caps_save();
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'tab'     => 'permissions',
+					'updated' => '1',
+				),
+				admin_url( 'edit.php?post_type=mvs_media&page=' . self::PAGE_SLUG )
+			)
+		);
+		exit;
+	}
+
+	// -------------------------------------------------------------------------
+	// Field renderers
+	// -------------------------------------------------------------------------
 
 	/**
 	 * Render a number input field.
@@ -542,9 +846,7 @@ class SettingsPage {
 	 * @param array $args Field arguments.
 	 */
 	public function render_password_field( array $args ): void {
-		$value = get_option( $args['option'], '' );
-
-		// Mask stored keys — show only last 4 characters.
+		$value   = get_option( $args['option'], '' );
 		$display = '';
 		if ( $value ) {
 			$display = str_repeat( '*', max( 0, strlen( $value ) - 4 ) ) . substr( $value, -4 );
@@ -573,7 +875,6 @@ class SettingsPage {
 	public function sanitize_password_option( $value ): string {
 		$value = sanitize_text_field( $value );
 		if ( '' === $value ) {
-			// Preserve the existing stored value.
 			$option = str_replace( 'sanitize_option_', '', current_filter() );
 			return get_option( $option, '' );
 		}
@@ -632,9 +933,7 @@ class SettingsPage {
 			</p>
 			<p>
 				<label><?php esc_html_e( 'Events:', 'wpmediaverse' ); ?></label><br />
-				<?php
-				$selected_events = $webhook['events'] ?? array( '*' );
-				?>
+				<?php $selected_events = $webhook['events'] ?? array( '*' ); ?>
 				<label>
 					<input type="checkbox" name="mvs_webhooks[0][events][]" value="*"
 						<?php checked( in_array( '*', $selected_events, true ) ); ?>

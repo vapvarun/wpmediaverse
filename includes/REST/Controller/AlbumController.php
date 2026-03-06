@@ -563,6 +563,7 @@ class AlbumController extends WP_REST_Controller {
 			'description' => $post->post_content,
 			'author'      => (int) $post->post_author,
 			'date'        => $post->post_date_gmt,
+			'link'        => get_permalink( $album_id ),
 			'privacy'     => $privacy_value ? $privacy_value : 'public',
 			'album_type'  => $album_type ? $album_type : 'default',
 			'media_count' => $this->albums->get_item_count( $album_id ),

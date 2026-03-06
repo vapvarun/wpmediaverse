@@ -17,7 +17,7 @@ if ( ! is_user_logged_in() || ! current_user_can( 'upload_mvs_media' ) ) {
 
 $max_files    = isset( $attributes['maxFiles'] ) ? absint( $attributes['maxFiles'] ) : 10;
 $show_privacy = ! empty( $attributes['showPrivacy'] );
-$wrapper      = get_block_wrapper_attributes( array( 'class' => 'mvs-upload-block' ) );
+$wrapper      = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-upload-block' ) ) : 'class="mvs-upload-block"';
 $rest_url     = esc_url( rest_url( 'mvs/v1/media' ) );
 $nonce        = wp_create_nonce( 'wp_rest' );
 ?>
@@ -38,6 +38,7 @@ $nonce        = wp_create_nonce( 'wp_rest' );
 	'
 >
 	<div class="mvs-upload-dropzone"
+		data-wp-on--click="actions.handleClick"
 		data-wp-on--dragover="actions.handleDragOver"
 		data-wp-on--dragleave="actions.handleDragLeave"
 		data-wp-on--drop="actions.handleDrop"
@@ -62,6 +63,18 @@ $nonce        = wp_create_nonce( 'wp_rest' );
 				<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 			</select>
 		<?php endif; ?>
+	</div>
+	<!-- Optional metadata fields -->
+	<div class="mvs-upload-fields">
+		<input type="text" class="mvs-upload-title-input"
+			placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
+			data-wp-on--change="actions.setTitle" />
+		<textarea class="mvs-upload-desc-input" rows="2"
+			placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>"
+			data-wp-on--change="actions.setDescription"></textarea>
+		<input type="text" class="mvs-upload-tags-input"
+			placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
+			data-wp-on--change="actions.setTags" />
 	</div>
 	<div class="mvs-upload-progress" data-wp-bind--hidden="!state.isUploading">
 		<p data-wp-text="state.uploadStatus"></p>

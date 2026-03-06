@@ -35,7 +35,7 @@ $items = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	)
 );
 
-$wrapper = get_block_wrapper_attributes( array( 'class' => 'mvs-album-viewer-block' ) );
+$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-album-viewer-block' ) ) : 'class="mvs-album-viewer-block"';
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( $show_title ) : ?>

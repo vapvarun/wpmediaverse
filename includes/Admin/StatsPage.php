@@ -113,116 +113,139 @@ class StatsPage {
 
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'WPMediaVerse Stats', 'wpmediaverse' ); ?></h1>
-
-			<div class="mvs-admin-stats" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:16px;margin-top:20px;">
-				<?php
-				$cards = array(
-					array(
-						'label' => __( 'Total Media', 'wpmediaverse' ),
-						'value' => number_format_i18n( $total_media ),
-					),
-					array(
-						'label' => __( 'Albums', 'wpmediaverse' ),
-						'value' => number_format_i18n( $total_albums ),
-					),
-					array(
-						'label' => __( 'Total Views', 'wpmediaverse' ),
-						'value' => number_format_i18n( (int) $totals['total_views'] ),
-					),
-					array(
-						'label' => __( 'Downloads', 'wpmediaverse' ),
-						'value' => number_format_i18n( (int) $totals['total_downloads'] ),
-					),
-					array(
-						'label' => __( 'Reactions', 'wpmediaverse' ),
-						'value' => number_format_i18n( (int) $totals['total_reactions'] ),
-					),
-					array(
-						'label' => __( 'Storage Used', 'wpmediaverse' ),
-						'value' => $storage_formatted,
-					),
-				);
-
-				foreach ( $cards as $card ) :
-					?>
-					<div style="background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:16px;text-align:center;">
-						<div style="font-size:28px;font-weight:700;color:#1d2327;"><?php echo esc_html( $card['value'] ); ?></div>
-						<div style="font-size:13px;color:#50575e;margin-top:4px;"><?php echo esc_html( $card['label'] ); ?></div>
-					</div>
-				<?php endforeach; ?>
+			<div class="mvs-page-header">
+				<h1><?php esc_html_e( 'Media Stats', 'wpmediaverse' ); ?></h1>
 			</div>
 
-			<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-top:24px;">
-				<!-- Top Media -->
-				<div style="background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:16px;">
-					<h2 style="margin-top:0;"><?php esc_html_e( 'Top Media by Views', 'wpmediaverse' ); ?></h2>
-					<?php if ( ! empty( $top_media ) ) : ?>
-						<table class="widefat striped">
-							<thead>
-								<tr>
-									<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
-									<th><?php esc_html_e( 'Views', 'wpmediaverse' ); ?></th>
-									<th><?php esc_html_e( 'Reactions', 'wpmediaverse' ); ?></th>
-									<th><?php esc_html_e( 'Downloads', 'wpmediaverse' ); ?></th>
-								</tr>
-							</thead>
-							<tbody>
-								<?php foreach ( $top_media as $item ) : ?>
+			<?php // --- Stat Cards --- ?>
+			<div class="mvs-admin-stats">
+				<div class="mvs-stat-card mvs-stat-card--accent">
+					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $total_media ) ); ?></span>
+					<span class="mvs-stat-label"><?php esc_html_e( 'Total Media', 'wpmediaverse' ); ?></span>
+				</div>
+				<div class="mvs-stat-card mvs-stat-card--accent">
+					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $total_albums ) ); ?></span>
+					<span class="mvs-stat-label"><?php esc_html_e( 'Albums', 'wpmediaverse' ); ?></span>
+				</div>
+				<div class="mvs-stat-card mvs-stat-card--accent">
+					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( (int) $totals['total_views'] ) ); ?></span>
+					<span class="mvs-stat-label"><?php esc_html_e( 'Total Views', 'wpmediaverse' ); ?></span>
+				</div>
+				<div class="mvs-stat-card mvs-stat-card--accent">
+					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( (int) $totals['total_downloads'] ) ); ?></span>
+					<span class="mvs-stat-label"><?php esc_html_e( 'Downloads', 'wpmediaverse' ); ?></span>
+				</div>
+				<div class="mvs-stat-card mvs-stat-card--accent">
+					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( (int) $totals['total_reactions'] ) ); ?></span>
+					<span class="mvs-stat-label"><?php esc_html_e( 'Reactions', 'wpmediaverse' ); ?></span>
+				</div>
+				<div class="mvs-stat-card mvs-stat-card--warning">
+					<span class="mvs-stat-number"><?php echo esc_html( $storage_formatted ); ?></span>
+					<span class="mvs-stat-label"><?php esc_html_e( 'Storage Used', 'wpmediaverse' ); ?></span>
+				</div>
+			</div>
+
+			<?php // --- Two Column Layout --- ?>
+			<div class="mvs-admin-columns mvs-admin-columns--2-1">
+
+				<?php // Top Media Widget ?>
+				<div class="mvs-admin-widget">
+					<div class="mvs-widget-header">
+						<h2><?php esc_html_e( 'Top Media by Views', 'wpmediaverse' ); ?></h2>
+					</div>
+					<div class="mvs-widget-body mvs-widget-body--flush">
+						<?php if ( ! empty( $top_media ) ) : ?>
+							<table class="mvs-recent-table">
+								<thead>
 									<tr>
-										<td>
-											<a href="<?php echo esc_url( get_edit_post_link( $item['media_id'] ) ); ?>">
-												<?php echo esc_html( $item['post_title'] ); ?>
-											</a>
-										</td>
-										<td><?php echo esc_html( number_format_i18n( (int) $item['views'] ) ); ?></td>
-										<td><?php echo esc_html( number_format_i18n( (int) $item['reactions'] ) ); ?></td>
-										<td><?php echo esc_html( number_format_i18n( (int) $item['downloads'] ) ); ?></td>
+										<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
+										<th><?php esc_html_e( 'Views', 'wpmediaverse' ); ?></th>
+										<th><?php esc_html_e( 'Reactions', 'wpmediaverse' ); ?></th>
+										<th><?php esc_html_e( 'Downloads', 'wpmediaverse' ); ?></th>
 									</tr>
-								<?php endforeach; ?>
-							</tbody>
-						</table>
-					<?php else : ?>
-						<p><?php esc_html_e( 'No stats data yet.', 'wpmediaverse' ); ?></p>
-					<?php endif; ?>
+								</thead>
+								<tbody>
+									<?php foreach ( $top_media as $item ) : ?>
+									<?php
+									$edit_link = get_edit_post_link( (int) $item['media_id'], 'raw' );
+									$view_link = get_permalink( (int) $item['media_id'] );
+									$item_link = $edit_link ? $edit_link : $view_link;
+									?>
+										<tr>
+											<td>
+												<?php if ( $item_link ) : ?>
+													<a href="<?php echo esc_url( $item_link ); ?>">
+														<?php echo esc_html( $item['post_title'] ); ?>
+													</a>
+												<?php else : ?>
+													<?php echo esc_html( $item['post_title'] ); ?>
+												<?php endif; ?>
+											</td>
+											<td><?php echo esc_html( number_format_i18n( (int) $item['views'] ) ); ?></td>
+											<td><?php echo esc_html( number_format_i18n( (int) $item['reactions'] ) ); ?></td>
+											<td><?php echo esc_html( number_format_i18n( (int) $item['downloads'] ) ); ?></td>
+										</tr>
+									<?php endforeach; ?>
+								</tbody>
+							</table>
+						<?php else : ?>
+							<div class="mvs-empty-state">
+								<span class="dashicons dashicons-chart-bar"></span>
+								<p><?php esc_html_e( 'No stats data yet. Views will appear once users start browsing media.', 'wpmediaverse' ); ?></p>
+							</div>
+						<?php endif; ?>
+					</div>
 				</div>
 
-				<!-- AI Usage -->
-				<div style="background:#fff;border:1px solid #c3c4c7;border-radius:4px;padding:16px;">
-					<h2 style="margin-top:0;"><?php esc_html_e( 'AI Usage (This Month)', 'wpmediaverse' ); ?></h2>
-					<table class="widefat">
-						<tbody>
-							<tr>
-								<td><?php esc_html_e( 'API Calls', 'wpmediaverse' ); ?></td>
-								<td><strong><?php echo esc_html( number_format_i18n( $ai_stats['calls'] ) ); ?></strong></td>
-							</tr>
-							<tr>
-								<td><?php esc_html_e( 'Successful', 'wpmediaverse' ); ?></td>
-								<td><strong><?php echo esc_html( number_format_i18n( $ai_stats['success'] ) ); ?></strong></td>
-							</tr>
-							<tr>
-								<td><?php esc_html_e( 'Failed', 'wpmediaverse' ); ?></td>
-								<td><strong><?php echo esc_html( number_format_i18n( $ai_stats['failed'] ) ); ?></strong></td>
-							</tr>
-							<tr>
-								<td><?php esc_html_e( 'Cost', 'wpmediaverse' ); ?></td>
-								<td><strong>$<?php echo esc_html( number_format( $ai_stats['cost'], 2 ) ); ?></strong></td>
-							</tr>
+				<?php // AI Usage Widget ?>
+				<div class="mvs-admin-widget">
+					<div class="mvs-widget-header">
+						<h2><?php esc_html_e( 'AI Usage (This Month)', 'wpmediaverse' ); ?></h2>
+					</div>
+					<div class="mvs-widget-body">
+						<ul class="mvs-status-list">
+							<li>
+								<span class="mvs-status-label"><?php esc_html_e( 'API Calls', 'wpmediaverse' ); ?></span>
+								<span class="mvs-status-value"><?php echo esc_html( number_format_i18n( $ai_stats['calls'] ) ); ?></span>
+							</li>
+							<li>
+								<span class="mvs-status-label"><?php esc_html_e( 'Successful', 'wpmediaverse' ); ?></span>
+								<span class="mvs-status-value mvs-status-ok"><?php echo esc_html( number_format_i18n( $ai_stats['success'] ) ); ?></span>
+							</li>
+							<li>
+								<span class="mvs-status-label"><?php esc_html_e( 'Failed', 'wpmediaverse' ); ?></span>
+								<span class="mvs-status-value <?php echo $ai_stats['failed'] > 0 ? 'mvs-status-bad' : ''; ?>">
+									<?php echo esc_html( number_format_i18n( $ai_stats['failed'] ) ); ?>
+								</span>
+							</li>
+							<li>
+								<span class="mvs-status-label"><?php esc_html_e( 'Cost', 'wpmediaverse' ); ?></span>
+								<span class="mvs-status-value">$<?php echo esc_html( number_format( $ai_stats['cost'], 2 ) ); ?></span>
+							</li>
 							<?php if ( $ai_stats['budget'] > 0 ) : ?>
-								<tr>
-									<td><?php esc_html_e( 'Budget', 'wpmediaverse' ); ?></td>
-									<td>
-										<strong>$<?php echo esc_html( number_format( $ai_stats['budget'], 2 ) ); ?></strong>
+								<li>
+									<span class="mvs-status-label"><?php esc_html_e( 'Budget', 'wpmediaverse' ); ?></span>
+									<span class="mvs-status-value">
+										$<?php echo esc_html( number_format( $ai_stats['budget'], 2 ) ); ?>
 										<?php
-										$pct = $ai_stats['budget'] > 0 ? round( ( $ai_stats['cost'] / $ai_stats['budget'] ) * 100 ) : 0;
-										echo esc_html( sprintf( ' (%d%%)', $pct ) );
+										$pct = round( ( $ai_stats['cost'] / $ai_stats['budget'] ) * 100 );
+										$pct_class = $pct > 80 ? 'mvs-status-bad' : ( $pct > 50 ? 'mvs-status-warn' : 'mvs-status-ok' );
 										?>
-									</td>
-								</tr>
+										<span class="<?php echo esc_attr( $pct_class ); ?>">
+											(<?php echo esc_html( $pct ); ?>%)
+										</span>
+									</span>
+								</li>
 							<?php endif; ?>
-						</tbody>
-					</table>
+						</ul>
+					</div>
+					<div class="mvs-widget-footer">
+						<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-settings&tab=ai' ) ); ?>">
+							<?php esc_html_e( 'AI Settings', 'wpmediaverse' ); ?> &rarr;
+						</a>
+					</div>
 				</div>
+
 			</div>
 		</div>
 		<?php

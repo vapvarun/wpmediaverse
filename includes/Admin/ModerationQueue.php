@@ -137,7 +137,9 @@ class ModerationQueue {
 
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Media Moderation Queue', 'wpmediaverse' ); ?></h1>
+			<div class="mvs-page-header">
+				<h1><?php esc_html_e( 'Moderation Queue', 'wpmediaverse' ); ?></h1>
+			</div>
 
 			<?php if ( $updated ) : ?>
 				<div class="notice notice-success is-dismissible">
@@ -153,18 +155,27 @@ class ModerationQueue {
 				</div>
 			<?php endif; ?>
 
-			<ul class="subsubsub">
+			<?php // --- Status Counts --- ?>
+			<div class="mvs-admin-stats" style="margin-bottom:24px;">
 				<?php
-				$statuses = array(
-					'flagged'  => __( 'Flagged', 'wpmediaverse' ),
-					'pending'  => __( 'Pending', 'wpmediaverse' ),
-					'rejected' => __( 'Rejected', 'wpmediaverse' ),
+				$status_cards = array(
+					'flagged'  => array(
+						'label' => __( 'Flagged', 'wpmediaverse' ),
+						'class' => 'mvs-stat-card--danger',
+					),
+					'pending'  => array(
+						'label' => __( 'Pending', 'wpmediaverse' ),
+						'class' => 'mvs-stat-card--warning',
+					),
+					'rejected' => array(
+						'label' => __( 'Rejected', 'wpmediaverse' ),
+						'class' => 'mvs-stat-card--accent',
+					),
 				);
-				$links    = array();
-				foreach ( $statuses as $key => $label ) {
-					$count = isset( $counts[ $key ] ) ? $counts[ $key ] : 0;
-					$class = ( $status === $key ) ? ' class="current"' : '';
-					$url   = add_query_arg(
+				foreach ( $status_cards as $key => $card ) :
+					$count     = isset( $counts[ $key ] ) ? $counts[ $key ] : 0;
+					$is_active = ( $status === $key );
+					$url       = add_query_arg(
 						array(
 							'post_type' => 'mvs_media',
 							'page'      => self::PAGE_SLUG,
@@ -172,59 +183,75 @@ class ModerationQueue {
 						),
 						admin_url( 'edit.php' )
 					);
+					?>
+					<a href="<?php echo esc_url( $url ); ?>"
+					   class="mvs-stat-card <?php echo esc_attr( $card['class'] ); ?>"
+					   style="<?php echo $is_active ? 'box-shadow:0 0 0 2px #2271b1;' : ''; ?>">
+						<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
+						<span class="mvs-stat-label"><?php echo esc_html( $card['label'] ); ?></span>
+					</a>
+				<?php endforeach; ?>
+			</div>
 
-					$links[] = sprintf(
-						'<li><a href="%s"%s>%s <span class="count">(%d)</span></a></li>',
-						esc_url( $url ),
-						$class,
-						esc_html( $label ),
-						$count
-					);
-				}
-				echo wp_kses_post( implode( ' | ', $links ) );
-				?>
-			</ul>
-			<br class="clear" />
+			<?php // --- Queue Table --- ?>
+			<div class="mvs-admin-widget">
+				<div class="mvs-widget-header">
+					<h2>
+						<?php
+						$status_labels = array(
+							'flagged'  => __( 'Flagged Items', 'wpmediaverse' ),
+							'pending'  => __( 'Pending Items', 'wpmediaverse' ),
+							'rejected' => __( 'Rejected Items', 'wpmediaverse' ),
+						);
+						echo esc_html( $status_labels[ $status ] ?? __( 'Queue', 'wpmediaverse' ) );
+						?>
+					</h2>
+				</div>
+				<div class="mvs-widget-body mvs-widget-body--flush">
+					<?php if ( empty( $result['items'] ) ) : ?>
+						<div class="mvs-empty-state">
+							<span class="dashicons dashicons-shield-alt"></span>
+							<p><?php esc_html_e( 'No items in this queue. All clear!', 'wpmediaverse' ); ?></p>
+						</div>
+					<?php else : ?>
+						<table class="wp-list-table widefat fixed striped">
+							<thead>
+								<tr>
+									<th style="width:70px;"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'AI Flags', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'Actions', 'wpmediaverse' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach ( $result['items'] as $post ) : ?>
+									<?php $this->render_row( $post ); ?>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
 
-			<?php if ( empty( $result['items'] ) ) : ?>
-				<p><?php esc_html_e( 'No items in this queue.', 'wpmediaverse' ); ?></p>
-			<?php else : ?>
-				<table class="wp-list-table widefat fixed striped">
-					<thead>
-						<tr>
-							<th style="width:80px;"><?php esc_html_e( 'Thumbnail', 'wpmediaverse' ); ?></th>
-							<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
-							<th><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
-							<th><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
-							<th><?php esc_html_e( 'AI Flags', 'wpmediaverse' ); ?></th>
-							<th><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
-							<th><?php esc_html_e( 'Actions', 'wpmediaverse' ); ?></th>
-						</tr>
-					</thead>
-					<tbody>
-						<?php foreach ( $result['items'] as $post ) : ?>
-							<?php $this->render_row( $post ); ?>
-						<?php endforeach; ?>
-					</tbody>
-				</table>
-
-				<?php
-				if ( $result['pages'] > 1 ) {
-					echo '<div class="tablenav bottom"><div class="tablenav-pages">';
-					echo wp_kses_post(
-						paginate_links(
-							array(
-								'base'    => add_query_arg( 'paged', '%#%' ),
-								'format'  => '',
-								'current' => $paged,
-								'total'   => $result['pages'],
-							)
-						)
-					);
-					echo '</div></div>';
-				}
-				?>
-			<?php endif; ?>
+						<?php
+						if ( $result['pages'] > 1 ) {
+							echo '<div class="tablenav bottom"><div class="tablenav-pages">';
+							echo wp_kses_post(
+								paginate_links(
+									array(
+										'base'    => add_query_arg( 'paged', '%#%' ),
+										'format'  => '',
+										'current' => $paged,
+										'total'   => $result['pages'],
+									)
+								)
+							);
+							echo '</div></div>';
+						}
+						?>
+					<?php endif; ?>
+				</div>
+			</div>
 		</div>
 		<?php
 	}
@@ -244,30 +271,35 @@ class ModerationQueue {
 		<tr>
 			<td>
 				<?php if ( $file_url && strpos( $file_type, 'image/' ) === 0 ) : ?>
-					<img src="<?php echo esc_url( $file_url ); ?>" alt="" style="max-width:60px;max-height:60px;" />
+					<img src="<?php echo esc_url( $file_url ); ?>" alt="" class="mvs-thumb" style="width:60px;height:60px;" />
 				<?php else : ?>
-					<span class="dashicons dashicons-media-default" style="font-size:40px;width:40px;height:40px;"></span>
+					<span class="mvs-thumb-placeholder" style="width:60px;height:60px;">
+						<span class="dashicons dashicons-media-default"></span>
+					</span>
 				<?php endif; ?>
 			</td>
 			<td>
 				<strong><?php echo esc_html( $post->post_title ); ?></strong>
 				<br>
-				<small><?php echo esc_html( $file_type ); ?></small>
+				<small style="color:#50575e;"><?php echo esc_html( $file_type ); ?></small>
 			</td>
-			<td><?php echo $author ? esc_html( $author->display_name ) : '—'; ?></td>
+			<td><?php echo $author ? esc_html( $author->display_name ) : '&mdash;'; ?></td>
 			<td><?php echo esc_html( $file_type ); ?></td>
 			<td>
 				<?php if ( ! empty( $flags ) ) : ?>
 					<?php foreach ( $flags as $flag ) : ?>
-						<span class="mvs-flag" style="background:#dc3232;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;margin-right:3px;">
-							<?php echo esc_html( $flag ); ?>
-						</span>
+						<span class="mvs-flag-pill"><?php echo esc_html( $flag ); ?></span>
 					<?php endforeach; ?>
 				<?php else : ?>
-					—
+					&mdash;
 				<?php endif; ?>
 			</td>
-			<td><?php echo esc_html( get_the_date( '', $post ) ); ?></td>
+			<td>
+				<time datetime="<?php echo esc_attr( $post->post_date ); ?>">
+					<?php echo esc_html( human_time_diff( strtotime( $post->post_date ), current_time( 'timestamp' ) ) ); ?>
+					<?php esc_html_e( 'ago', 'wpmediaverse' ); ?>
+				</time>
+			</td>
 			<td>
 				<form method="post" style="display:inline;">
 					<?php wp_nonce_field( 'mvs_moderation_action', 'mvs_moderation_nonce' ); ?>
@@ -281,7 +313,7 @@ class ModerationQueue {
 					<?php wp_nonce_field( 'mvs_moderation_action', 'mvs_moderation_nonce' ); ?>
 					<input type="hidden" name="media_id" value="<?php echo absint( $post->ID ); ?>" />
 					<input type="hidden" name="mvs_moderation_action" value="reject" />
-					<button type="submit" class="button button-small" style="color:#dc3232;">
+					<button type="submit" class="button button-small" style="color:#d63638;">
 						<?php esc_html_e( 'Reject', 'wpmediaverse' ); ?>
 					</button>
 				</form>

@@ -175,7 +175,25 @@ class FavoriteController extends WP_REST_Controller {
 			$page
 		);
 
-		$response = rest_ensure_response( $result['items'] );
+		// Enrich items with post data for frontend display, skip orphaned.
+		$enriched = array();
+		foreach ( $result['items'] as $item ) {
+			$media_id = (int) $item['media_id'];
+			$post     = get_post( $media_id );
+			if ( ! $post || 'mvs_media' !== $post->post_type ) {
+				continue;
+			}
+			$enriched[] = array(
+				'media_id'   => $media_id,
+				'title'      => $post->post_title,
+				'link'       => get_permalink( $media_id ),
+				'file_url'   => set_url_scheme( get_post_meta( $media_id, '_mvs_file_url', true ) ),
+				'media_type' => get_post_meta( $media_id, '_mvs_media_type', true ),
+				'created_at' => $item['created_at'],
+			);
+		}
+
+		$response = rest_ensure_response( $enriched );
 		$response->header( 'X-WP-Total', $result['total'] );
 		$response->header( 'X-WP-TotalPages', (int) ceil( $result['total'] / $per_page ) );
 

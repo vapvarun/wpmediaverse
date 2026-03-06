@@ -53,26 +53,33 @@
 
 /* Media Content */
 .mvs-media-content {
-	padding: 0 24px;
+	padding: 0;
+}
+
+.mvs-media-image {
+	width: 100%;
+	background: #f0f0f0;
 }
 
 .mvs-media-image img {
 	display: block;
-	max-width: 100%;
+	width: 100%;
 	height: auto;
-	border-radius: 4px;
+}
+
+.mvs-media-video {
+	width: 100%;
+	background: #000;
 }
 
 .mvs-media-video video {
 	display: block;
-	max-width: 100%;
+	width: 100%;
 	height: auto;
-	border-radius: 4px;
-	background: #000;
 }
 
 .mvs-media-audio {
-	padding: 16px 0;
+	padding: 16px 24px;
 }
 
 .mvs-media-audio audio {
@@ -80,7 +87,7 @@
 }
 
 .mvs-media-description {
-	margin-top: 16px;
+	padding: 16px 24px 0;
 	line-height: 1.7;
 	color: #333;
 }
@@ -180,6 +187,9 @@
 .mvs-media-grid {
 	display: grid;
 	gap: 16px;
+	max-width: 100%;
+	overflow: hidden;
+	box-sizing: border-box;
 }
 
 .mvs-cols-2 {
@@ -215,6 +225,7 @@
 	border-radius: 8px;
 	background: #f5f5f5;
 	aspect-ratio: 1;
+	min-width: 0;
 }
 
 .mvs-grid-item a {
@@ -299,11 +310,12 @@
 .mvs-feed .mvs-grid-item {
 	aspect-ratio: auto;
 	border-radius: 4px;
-	overflow: visible;
+	overflow: hidden;
 	background: #fff;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 	display: flex;
 	flex-direction: column;
+	min-width: 0;
 }
 
 .mvs-feed .mvs-grid-item-link {
@@ -730,9 +742,17 @@
 .mvs-social-bar {
 	display: flex;
 	align-items: center;
-	gap: 16px;
+	flex-wrap: wrap;
+	gap: 12px;
 	padding: 12px 24px;
 	border-top: 1px solid #eee;
+}
+
+.mvs-reactions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
 }
 
 .mvs-social-bar button {
@@ -853,4 +873,860 @@
 	font-size: 0.9em;
 	line-height: 1.5;
 	color: #333;
+}
+
+/* ==========================================================================
+   14. Dashboard
+   ========================================================================== */
+
+.mvs-dashboard {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+.mvs-dashboard-header h1 {
+	margin: 0 0 20px;
+	font-size: 1.75em;
+}
+
+.mvs-dashboard-tabs {
+	display: flex;
+	gap: 0;
+	border-bottom: 2px solid #eee;
+	margin-bottom: 24px;
+}
+
+.mvs-dashboard-tab {
+	padding: 12px 24px;
+	background: none;
+	border: none;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -2px;
+	cursor: pointer;
+	font-size: 0.95em;
+	font-weight: 600;
+	color: #666;
+	transition: all 0.2s;
+}
+
+.mvs-dashboard-tab:hover {
+	color: #0073aa;
+}
+
+.mvs-dashboard-tab.active {
+	color: #0073aa;
+	border-bottom-color: #0073aa;
+}
+
+.mvs-dashboard-panel {
+	min-height: 200px;
+}
+
+/* Interactivity API uses [hidden] attribute for show/hide */
+.mvs-dashboard-panel[hidden] {
+	display: none !important;
+}
+
+.mvs-dashboard-actions {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+}
+
+.mvs-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 10px 20px;
+	background: #0073aa;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	font-size: 0.9em;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+
+.mvs-btn:hover {
+	background: #005a87;
+}
+
+.mvs-btn--secondary {
+	background: #f0f0f0;
+	color: #333;
+}
+
+.mvs-btn--secondary:hover {
+	background: #ddd;
+}
+
+.mvs-btn--danger {
+	background: #dc3545;
+}
+
+.mvs-btn--danger:hover {
+	background: #c82333;
+}
+
+.mvs-btn--small {
+	padding: 6px 12px;
+	font-size: 0.8em;
+}
+
+/* Dashboard Grid */
+.mvs-dashboard-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 16px;
+}
+
+.mvs-dashboard-card {
+	position: relative;
+	background: #fff;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	transition: box-shadow 0.2s;
+}
+
+.mvs-dashboard-card:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.mvs-dashboard-card-thumb {
+	display: block;
+	aspect-ratio: 1;
+	background: #f5f5f5;
+	overflow: hidden;
+	text-decoration: none;
+	color: inherit;
+}
+
+.mvs-dashboard-card-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.mvs-dashboard-card-body {
+	padding: 12px;
+}
+
+.mvs-dashboard-card-title {
+	display: block;
+	font-weight: 600;
+	font-size: 0.9em;
+	margin: 0 0 6px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: #262626;
+	text-decoration: none;
+}
+
+a.mvs-dashboard-card-title:hover {
+	color: #0073aa;
+}
+
+.mvs-dashboard-card-meta {
+	font-size: 0.8em;
+	color: #999;
+	margin-bottom: 8px;
+}
+
+.mvs-dashboard-card-actions {
+	display: flex;
+	gap: 6px;
+}
+
+.mvs-privacy-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-size: 0.7em;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.mvs-privacy-badge--public {
+	background: #e8f5e9;
+	color: #2e7d32;
+}
+
+.mvs-privacy-badge--members {
+	background: #fff3e0;
+	color: #e65100;
+}
+
+.mvs-privacy-badge--private {
+	background: #fce4ec;
+	color: #c62828;
+}
+
+/* Load More */
+.mvs-load-more-wrap {
+	text-align: center;
+	margin-top: 24px;
+}
+
+/* ==========================================================================
+   15. Modal
+   ========================================================================== */
+
+.mvs-modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.6);
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+}
+
+.mvs-modal {
+	background: #fff;
+	border-radius: 12px;
+	width: 100%;
+	max-width: 560px;
+	max-height: 85vh;
+	overflow-y: auto;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.mvs-modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 20px 24px;
+	border-bottom: 1px solid #eee;
+}
+
+.mvs-modal-header h2 {
+	margin: 0;
+	font-size: 1.2em;
+}
+
+.mvs-modal-close {
+	background: none;
+	border: none;
+	font-size: 1.5em;
+	cursor: pointer;
+	color: #999;
+	padding: 0;
+	line-height: 1;
+}
+
+.mvs-modal-close:hover {
+	color: #333;
+}
+
+.mvs-modal-body {
+	padding: 24px;
+}
+
+.mvs-modal-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	padding: 16px 24px;
+	border-top: 1px solid #eee;
+}
+
+/* Form Fields */
+.mvs-field {
+	margin-bottom: 16px;
+}
+
+.mvs-field label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: 600;
+	font-size: 0.9em;
+	color: #333;
+}
+
+.mvs-field input[type="text"],
+.mvs-field textarea,
+.mvs-field select {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	font-size: 0.9em;
+	font-family: inherit;
+	box-sizing: border-box;
+}
+
+.mvs-field textarea {
+	resize: vertical;
+	min-height: 80px;
+}
+
+.mvs-field select {
+	max-width: 200px;
+}
+
+/* ==========================================================================
+   16. Tag Input
+   ========================================================================== */
+
+.mvs-tag-input-wrap {
+	position: relative;
+}
+
+.mvs-tag-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	padding: 6px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	min-height: 38px;
+	align-items: center;
+	cursor: text;
+}
+
+.mvs-tag-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px;
+	background: #0073aa;
+	color: #fff;
+	border-radius: 12px;
+	font-size: 0.8em;
+}
+
+.mvs-tag-pill-remove {
+	background: none;
+	border: none;
+	color: #fff;
+	cursor: pointer;
+	font-size: 1em;
+	padding: 0;
+	line-height: 1;
+	opacity: 0.8;
+}
+
+.mvs-tag-pill-remove:hover {
+	opacity: 1;
+}
+
+.mvs-tag-text-input {
+	border: none !important;
+	outline: none;
+	padding: 2px 4px !important;
+	font-size: 0.9em;
+	min-width: 80px;
+	flex: 1;
+}
+
+.mvs-tag-autocomplete {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-top: none;
+	border-radius: 0 0 6px 6px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	z-index: 10;
+	max-height: 160px;
+	overflow-y: auto;
+}
+
+.mvs-tag-autocomplete-item {
+	padding: 8px 12px;
+	cursor: pointer;
+	font-size: 0.9em;
+}
+
+.mvs-tag-autocomplete-item:hover {
+	background: #f0f7fc;
+	color: #0073aa;
+}
+
+/* ==========================================================================
+   17. Confirm Dialog
+   ========================================================================== */
+
+.mvs-confirm-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 100001;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mvs-confirm {
+	background: #fff;
+	border-radius: 12px;
+	padding: 28px;
+	max-width: 380px;
+	width: 90%;
+	text-align: center;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.mvs-confirm p {
+	margin: 0 0 20px;
+	font-size: 1em;
+	color: #333;
+}
+
+.mvs-confirm-actions {
+	display: flex;
+	justify-content: center;
+	gap: 8px;
+}
+
+/* ==========================================================================
+   18. Toast Notification
+   ========================================================================== */
+
+.mvs-toast {
+	position: fixed;
+	bottom: 24px;
+	right: 24px;
+	padding: 12px 24px;
+	background: #333;
+	color: #fff;
+	border-radius: 8px;
+	font-size: 0.9em;
+	z-index: 100002;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+	animation: mvsToastIn 0.3s ease;
+}
+
+.mvs-toast--success {
+	background: #2e7d32;
+}
+
+.mvs-toast--error {
+	background: #c62828;
+}
+
+@keyframes mvsToastIn {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* ==========================================================================
+   Interactivity API [hidden] overrides
+   Elements with display:flex/fixed need explicit [hidden] rules because
+   data-wp-bind--hidden toggles the HTML hidden attribute.
+   ========================================================================== */
+
+.mvs-modal-overlay[hidden],
+.mvs-confirm-overlay[hidden],
+.mvs-toast[hidden],
+.mvs-inline-edit[hidden],
+.mvs-dashboard-upload-fields[hidden],
+.mvs-dashboard-upload-status[hidden],
+.mvs-tag-autocomplete[hidden],
+.mvs-load-more-wrap[hidden],
+.mvs-no-media[hidden] {
+	display: none !important;
+}
+
+/* ==========================================================================
+   19. Media Picker (for album creation)
+   ========================================================================== */
+
+.mvs-media-picker {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+	gap: 8px;
+	max-height: 300px;
+	overflow-y: auto;
+	padding: 8px;
+	border: 1px solid #eee;
+	border-radius: 6px;
+	margin-top: 8px;
+}
+
+.mvs-media-picker-item {
+	position: relative;
+	aspect-ratio: 1;
+	border-radius: 4px;
+	overflow: hidden;
+	cursor: pointer;
+	border: 2px solid transparent;
+	transition: border-color 0.2s;
+}
+
+.mvs-media-picker-item.selected {
+	border-color: #0073aa;
+}
+
+.mvs-media-picker-item img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.mvs-media-picker-check {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	width: 22px;
+	height: 22px;
+	background: #0073aa;
+	color: #fff;
+	border-radius: 50%;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.75em;
+	font-weight: 700;
+}
+
+.mvs-media-picker-item.selected .mvs-media-picker-check {
+	display: flex;
+}
+
+/* ==========================================================================
+   20. Owner Actions (on single pages)
+   ========================================================================== */
+
+.mvs-owner-actions {
+	display: flex;
+	gap: 8px;
+	padding: 12px 24px;
+	border-top: 1px solid #eee;
+}
+
+/* Inline edit form on single pages */
+.mvs-inline-edit {
+	padding: 16px 24px;
+	border-top: 1px solid #eee;
+	background: #fafafa;
+}
+
+.mvs-inline-edit .mvs-field {
+	margin-bottom: 12px;
+}
+
+.mvs-inline-edit-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+/* ==========================================================================
+   21. Explore Search + Tag Cloud
+   ========================================================================== */
+
+.mvs-explore-search {
+	margin-bottom: 24px;
+}
+
+.mvs-explore-search form {
+	display: flex;
+	gap: 8px;
+}
+
+.mvs-explore-search input[type="text"] {
+	flex: 1;
+	padding: 10px 16px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	font-size: 0.95em;
+}
+
+.mvs-explore-search button {
+	padding: 10px 20px;
+	background: #0073aa;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 0.95em;
+	transition: background 0.2s;
+}
+
+.mvs-explore-search button:hover {
+	background: #005a87;
+}
+
+.mvs-tag-cloud {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 24px;
+}
+
+.mvs-tag-cloud-item {
+	display: inline-block;
+	padding: 4px 14px;
+	background: #f0f0f0;
+	border-radius: 16px;
+	font-size: 0.85em;
+	color: #333;
+	text-decoration: none;
+	transition: background 0.2s, color 0.2s;
+}
+
+.mvs-tag-cloud-item:hover,
+.mvs-tag-cloud-item.active {
+	background: #0073aa;
+	color: #fff;
+}
+
+/* ==========================================================================
+   22. Upload Form Enhancement
+   ========================================================================== */
+
+.mvs-upload-fields {
+	margin-top: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.mvs-upload-fields input[type="text"],
+.mvs-upload-fields textarea {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	font-size: 0.9em;
+	font-family: inherit;
+	box-sizing: border-box;
+}
+
+.mvs-upload-fields textarea {
+	resize: vertical;
+	min-height: 60px;
+}
+
+/* ==========================================================================
+   23. Dashboard Inline Upload
+   ========================================================================== */
+
+.mvs-dashboard-upload {
+	margin-bottom: 24px;
+	background: #fff;
+	border-radius: 12px;
+	padding: 20px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.mvs-dashboard-dropzone {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 28px 20px;
+	border: 2px dashed #d0d5dd;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: border-color 0.2s, background 0.2s;
+	background: #fafbfc;
+}
+
+.mvs-dashboard-dropzone:hover {
+	border-color: #0073aa;
+	background: #f0f7fc;
+}
+
+.mvs-dashboard-dropzone.mvs-drag-active {
+	border-color: #0073aa;
+	background: #e6f2fa;
+	border-style: solid;
+}
+
+.mvs-dashboard-dropzone-icon {
+	font-size: 1.5em;
+	line-height: 1;
+}
+
+.mvs-dashboard-dropzone-label {
+	font-size: 0.95em;
+	color: #555;
+}
+
+.mvs-upload-toggle {
+	margin-top: 12px;
+}
+
+.mvs-dashboard-upload-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 12px;
+	padding: 12px;
+	background: #f9fafb;
+	border-radius: 6px;
+}
+
+.mvs-dashboard-upload-fields input[type="text"],
+.mvs-dashboard-upload-fields textarea,
+.mvs-dashboard-upload-fields select {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	font-size: 0.9em;
+	font-family: inherit;
+	box-sizing: border-box;
+}
+
+.mvs-dashboard-upload-fields textarea {
+	resize: vertical;
+	min-height: 60px;
+}
+
+.mvs-dashboard-upload-row {
+	display: flex;
+	gap: 10px;
+}
+
+.mvs-dashboard-upload-row input {
+	flex: 1;
+}
+
+.mvs-dashboard-upload-row select {
+	max-width: 160px;
+}
+
+.mvs-dashboard-upload-status {
+	margin-top: 12px;
+	font-size: 0.9em;
+	color: #0073aa;
+	font-weight: 600;
+}
+
+.mvs-dashboard-upload-status:empty {
+	display: none;
+}
+
+@media (max-width: 600px) {
+	.mvs-dashboard-dropzone {
+		flex-direction: column;
+		padding: 20px;
+	}
+	.mvs-dashboard-upload-row {
+		flex-direction: column;
+	}
+	.mvs-dashboard-upload-row select {
+		max-width: 100%;
+	}
+}
+
+/* ==========================================================================
+   15. Empty State (shared)
+   ========================================================================== */
+
+.mvs-empty-state {
+	text-align: center;
+	padding: 48px 24px;
+	color: #666;
+}
+
+.mvs-empty-state .dashicons {
+	font-size: 48px;
+	width: 48px;
+	height: 48px;
+	color: #ccc;
+	display: block;
+	margin: 0 auto 12px;
+}
+
+.mvs-empty-state p {
+	font-size: 1em;
+	margin: 8px 0 0;
+	color: #999;
+}
+
+/* ==========================================================================
+   16. BuddyPress Profile Media Tab
+   ========================================================================== */
+
+.mvs-bp-profile-actions {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 20px;
+	flex-wrap: wrap;
+}
+
+.mvs-bp-profile-actions .mvs-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.mvs-bp-profile-actions .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	line-height: 1;
+}
+
+/* BP inline upload dropzone */
+.mvs-bp-upload-wrap {
+	margin-bottom: 20px;
+}
+
+.mvs-bp-dropzone {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 16px 20px;
+	border: 2px dashed #ccc;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: border-color 0.2s, background 0.2s;
+	background: #fafafa;
+}
+
+.mvs-bp-dropzone:hover,
+.mvs-bp-dropzone--active {
+	border-color: #0073aa;
+	background: #f0f7fc;
+}
+
+.mvs-bp-dropzone .dashicons {
+	font-size: 24px;
+	width: 24px;
+	height: 24px;
+	color: #0073aa;
+}
+
+.mvs-bp-dropzone-text {
+	font-size: 0.9em;
+	color: #666;
+}
+
+.mvs-bp-upload-status {
+	padding: 10px 16px;
+	margin-top: 8px;
+	border-radius: 6px;
+	background: #f0f6fc;
+	color: #0073aa;
+	font-size: 0.9em;
+}
+
+.mvs-bp-upload-status--success {
+	background: #e6f7e6;
+	color: #00a32a;
 }

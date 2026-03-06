@@ -43,6 +43,7 @@ use WPMediaVerse\Services\PaymentBridgeService;
 use WPMediaVerse\Services\WatermarkService;
 use WPMediaVerse\REST\Controller\CheckoutController;
 use WPMediaVerse\Admin\ModerationQueue;
+use WPMediaVerse\Admin\OverviewPage;
 use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Social\ReactionService;
 use WPMediaVerse\Social\CommentService;
@@ -90,11 +91,18 @@ class Plugin {
 		$templates = new TemplateLoader();
 		$templates->init();
 
+		// Redirect to overview page on first load after activation.
+		add_action( 'admin_init', array( self::class, 'maybe_redirect_after_activation' ) );
+
 		// Admin hooks.
 		if ( is_admin() ) {
+			self::$container->get( 'admin.overview' );
 			self::$container->get( 'admin.settings' );
 			self::$container->get( 'admin.moderation' );
 			self::$container->get( 'admin.stats' );
+
+			// Reorder submenu so Overview is first, then separator, then content, then tools.
+			add_action( 'admin_menu', array( self::class, 'reorder_submenu' ), 999 );
 		}
 
 		// Register REST API routes.
@@ -171,6 +179,13 @@ class Plugin {
 			'upload',
 			function ( ServiceContainer $c ) {
 				return new UploadService( $c->get( 'storage' ) );
+			}
+		);
+
+		self::$container->register(
+			'admin.overview',
+			function () {
+				return new OverviewPage();
 			}
 		);
 
@@ -571,7 +586,7 @@ class Plugin {
 		$is_mvs     = in_array( $post_type, array( 'mvs_media', 'mvs_album', 'mvs_collection' ), true );
 		$is_archive = is_post_type_archive( 'mvs_media' );
 
-		// Always enqueue on MVS pages; on other pages only if shortcode or block is present.
+		// Always enqueue on MVS pages or pages with dashboard shortcode.
 		if ( $is_mvs || $is_archive ) {
 			wp_enqueue_style(
 				'mvs-frontend',
@@ -588,6 +603,73 @@ class Plugin {
 				MVS_VERSION
 			);
 		}
+	}
+
+	/**
+	 * Redirect to the Overview page once after plugin activation.
+	 *
+	 * The transient is set in Activator::activate() and has a 30-second TTL
+	 * so it self-expires if somehow the redirect never fires.
+	 */
+	public static function maybe_redirect_after_activation(): void {
+		if ( ! get_transient( 'mvs_activation_redirect' ) ) {
+			return;
+		}
+
+		// Only redirect for human admin requests — not AJAX, CLI, or bulk activate.
+		if ( wp_doing_ajax() || defined( 'WP_CLI' ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['activate-multi'] ) ) {
+			return;
+		}
+
+		delete_transient( 'mvs_activation_redirect' );
+
+		wp_safe_redirect(
+			admin_url( 'edit.php?post_type=mvs_media&page=' . OverviewPage::PAGE_SLUG )
+		);
+		exit;
+	}
+
+	/**
+	 * Reorder the WPMediaVerse submenu for a logical admin experience.
+	 *
+	 * Order: Overview > separator > All Media > Add New > Tags > Categories >
+	 * Albums > Collections > separator > Settings > Moderation > Stats.
+	 */
+	public static function reorder_submenu(): void {
+		global $submenu;
+
+		$parent = 'edit.php?post_type=mvs_media';
+		if ( empty( $submenu[ $parent ] ) ) {
+			return;
+		}
+
+		// Build a priority map by slug.
+		$order_map = array(
+			'mvs-overview'                                     => 1,
+			'edit.php?post_type=mvs_media'                     => 5,
+			'post-new.php?post_type=mvs_media'                 => 6,
+			'edit-tags.php?taxonomy=mvs_tag&post_type=mvs_media'      => 10,
+			'edit-tags.php?taxonomy=mvs_category&post_type=mvs_media' => 11,
+			'edit.php?post_type=mvs_album'                     => 15,
+			'edit.php?post_type=mvs_collection'                => 16,
+			'mvs-settings'                                     => 50,
+			'mvs-moderation'                                   => 51,
+			'mvs-stats'                                        => 52,
+		);
+
+		usort(
+			$submenu[ $parent ],
+			function ( $a, $b ) use ( $order_map ) {
+				$a_order = $order_map[ $a[2] ] ?? 99;
+				$b_order = $order_map[ $b[2] ] ?? 99;
+				return $a_order - $b_order;
+			}
+		);
 	}
 
 	/**

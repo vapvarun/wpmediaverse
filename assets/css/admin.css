@@ -1,0 +1,413 @@
+/**
+ * WPMediaVerse — Shared Admin CSS
+ *
+ * Used across Overview, Settings, Stats, and Moderation pages.
+ *
+ * @package WPMediaVerse
+ */
+
+/* ==========================================================================
+   Stat Cards Grid
+   ========================================================================== */
+
+.mvs-admin-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: 12px;
+	margin: 20px 0;
+}
+
+.mvs-stat-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 20px 16px 16px;
+	text-align: center;
+	transition: border-color 0.2s;
+}
+
+.mvs-stat-card:hover {
+	border-color: #2271b1;
+}
+
+.mvs-stat-card .mvs-stat-number {
+	display: block;
+	font-size: 2em;
+	font-weight: 700;
+	color: #1d2327;
+	line-height: 1.2;
+}
+
+.mvs-stat-card .mvs-stat-label {
+	display: block;
+	font-size: 12px;
+	color: #50575e;
+	margin-top: 4px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.mvs-stat-card--accent {
+	border-top: 3px solid #2271b1;
+}
+
+.mvs-stat-card--accent .mvs-stat-number {
+	color: #2271b1;
+}
+
+.mvs-stat-card--warning {
+	border-top: 3px solid #dba617;
+}
+
+.mvs-stat-card--warning .mvs-stat-number {
+	color: #996800;
+}
+
+.mvs-stat-card--danger {
+	border-top: 3px solid #d63638;
+}
+
+.mvs-stat-card--danger .mvs-stat-number {
+	color: #d63638;
+}
+
+.mvs-stat-card--success {
+	border-top: 3px solid #00a32a;
+}
+
+.mvs-stat-card--success .mvs-stat-number {
+	color: #00a32a;
+}
+
+/* Clickable stat cards */
+a.mvs-stat-card {
+	text-decoration: none;
+	color: inherit;
+}
+
+a.mvs-stat-card:hover {
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+a.mvs-stat-card:focus {
+	box-shadow: 0 0 0 2px #2271b1;
+	outline: none;
+}
+
+/* ==========================================================================
+   Dashboard Columns Layout
+   ========================================================================== */
+
+.mvs-admin-columns {
+	display: grid;
+	gap: 20px;
+	margin-top: 20px;
+}
+
+.mvs-admin-columns--2 {
+	grid-template-columns: 1fr 1fr;
+}
+
+.mvs-admin-columns--2-1 {
+	grid-template-columns: 2fr 1fr;
+}
+
+.mvs-admin-columns--1-2 {
+	grid-template-columns: 1fr 2fr;
+}
+
+.mvs-admin-columns--3 {
+	grid-template-columns: 1fr 1fr 1fr;
+}
+
+@media (max-width: 1200px) {
+	.mvs-admin-columns--3 {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+@media (max-width: 782px) {
+	.mvs-admin-columns--2,
+	.mvs-admin-columns--2-1,
+	.mvs-admin-columns--1-2,
+	.mvs-admin-columns--3 {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ==========================================================================
+   Postbox Widgets (reuse WP .postbox pattern)
+   ========================================================================== */
+
+.mvs-admin-widget {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+}
+
+.mvs-admin-widget .mvs-widget-header {
+	border-bottom: 1px solid #c3c4c7;
+	padding: 10px 16px;
+}
+
+.mvs-admin-widget .mvs-widget-header h2 {
+	margin: 0;
+	padding: 0;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.mvs-admin-widget .mvs-widget-body {
+	padding: 16px;
+}
+
+.mvs-admin-widget .mvs-widget-body--flush {
+	padding: 0;
+}
+
+.mvs-admin-widget .mvs-widget-footer {
+	border-top: 1px solid #f0f0f1;
+	padding: 8px 16px;
+}
+
+.mvs-admin-widget .mvs-widget-footer a {
+	text-decoration: none;
+}
+
+/* ==========================================================================
+   Quick Links
+   ========================================================================== */
+
+.mvs-quick-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.mvs-quick-links .button {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.mvs-quick-links .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	line-height: 1;
+}
+
+/* ==========================================================================
+   Recent Table
+   ========================================================================== */
+
+.mvs-recent-table {
+	width: 100%;
+	border-spacing: 0;
+}
+
+.mvs-recent-table th {
+	text-align: left;
+	padding: 8px 12px;
+	border-bottom: 1px solid #c3c4c7;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #50575e;
+}
+
+.mvs-recent-table td {
+	padding: 8px 12px;
+	border-bottom: 1px solid #f0f0f1;
+	vertical-align: middle;
+}
+
+.mvs-recent-table tr:last-child td {
+	border-bottom: none;
+}
+
+.mvs-recent-table .mvs-thumb {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+	border-radius: 4px;
+	vertical-align: middle;
+}
+
+.mvs-recent-table .mvs-thumb-placeholder {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	background: #f0f0f1;
+	border-radius: 4px;
+	color: #c3c4c7;
+}
+
+.mvs-recent-table .mvs-thumb-placeholder .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+/* ==========================================================================
+   Status List (for system info)
+   ========================================================================== */
+
+.mvs-status-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.mvs-status-list li {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 0;
+	border-bottom: 1px solid #f0f0f1;
+	font-size: 13px;
+}
+
+.mvs-status-list li:last-child {
+	border-bottom: none;
+}
+
+.mvs-status-list .mvs-status-label {
+	color: #50575e;
+}
+
+.mvs-status-list .mvs-status-value {
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.mvs-status-list .mvs-status-ok {
+	color: #00a32a;
+}
+
+.mvs-status-list .mvs-status-warn {
+	color: #dba617;
+}
+
+.mvs-status-list .mvs-status-bad {
+	color: #d63638;
+}
+
+/* ==========================================================================
+   Notice / Getting Started
+   ========================================================================== */
+
+.mvs-getting-started {
+	background: #f0f6fc;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #2271b1;
+	border-radius: 4px;
+	padding: 16px 20px;
+	margin: 20px 0;
+}
+
+.mvs-getting-started h3 {
+	margin: 0 0 8px;
+	font-size: 14px;
+}
+
+.mvs-getting-started ol {
+	margin: 0 0 0 1.5em;
+	padding: 0;
+}
+
+.mvs-getting-started li {
+	margin-bottom: 4px;
+	font-size: 13px;
+}
+
+.mvs-getting-started code {
+	background: #fff;
+	padding: 1px 5px;
+	border-radius: 3px;
+}
+
+/* ==========================================================================
+   Admin Page Header
+   ========================================================================== */
+
+.mvs-page-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 4px;
+}
+
+.mvs-page-header h1 {
+	margin: 0;
+}
+
+.mvs-page-header .mvs-version {
+	background: #f0f0f1;
+	border-radius: 3px;
+	padding: 2px 8px;
+	font-size: 12px;
+	color: #50575e;
+	font-weight: 400;
+}
+
+/* ==========================================================================
+   Badge (moderation count)
+   ========================================================================== */
+
+.mvs-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 9px;
+	background: #d63638;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1;
+	margin-left: 4px;
+}
+
+/* ==========================================================================
+   Flag Pill (moderation flags)
+   ========================================================================== */
+
+.mvs-flag-pill {
+	display: inline-block;
+	background: #d63638;
+	color: #fff;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 11px;
+	margin-right: 3px;
+	margin-bottom: 2px;
+}
+
+/* ==========================================================================
+   Empty State
+   ========================================================================== */
+
+.mvs-empty-state {
+	text-align: center;
+	padding: 40px 20px;
+	color: #50575e;
+}
+
+.mvs-empty-state .dashicons {
+	font-size: 48px;
+	width: 48px;
+	height: 48px;
+	color: #c3c4c7;
+	margin-bottom: 12px;
+}
+
+.mvs-empty-state p {
+	font-size: 14px;
+	margin: 8px 0;
+}

@@ -363,6 +363,18 @@ class MediaController extends WP_REST_Controller {
 			);
 		}
 
+		// Update tags if provided.
+		$tags = $request->get_param( 'tags' );
+		if ( null !== $tags && is_array( $tags ) ) {
+			wp_set_object_terms( $media_id, array_map( 'sanitize_text_field', $tags ), 'mvs_tag' );
+		}
+
+		// Update categories if provided.
+		$categories = $request->get_param( 'categories' );
+		if ( null !== $categories && is_array( $categories ) ) {
+			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
+		}
+
 		$post = get_post( $media_id );
 		return rest_ensure_response( $this->prepare_item_for_response( $post, $request ) );
 	}
@@ -604,13 +616,19 @@ class MediaController extends WP_REST_Controller {
 		$privacy_value    = get_post_meta( $media_id, '_mvs_privacy', true );
 		$moderation_value = get_post_meta( $media_id, '_mvs_moderation_status', true );
 
+		$file_url = get_post_meta( $media_id, '_mvs_file_url', true );
+		if ( $file_url ) {
+			$file_url = set_url_scheme( $file_url );
+		}
+
 		$data = array(
 			'id'                => $media_id,
 			'title'             => $post->post_title,
 			'description'       => $post->post_content,
 			'author'            => (int) $post->post_author,
 			'date'              => $post->post_date_gmt,
-			'file_url'          => get_post_meta( $media_id, '_mvs_file_url', true ),
+			'link'              => get_permalink( $media_id ),
+			'file_url'          => $file_url,
 			'file_size'         => (int) get_post_meta( $media_id, '_mvs_file_size', true ),
 			'file_type'         => get_post_meta( $media_id, '_mvs_file_type', true ),
 			'media_type'        => get_post_meta( $media_id, '_mvs_media_type', true ),

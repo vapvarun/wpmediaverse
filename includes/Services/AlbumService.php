@@ -193,7 +193,7 @@ class AlbumService {
 		}
 
 		$url = wp_get_attachment_image_url( $thumb_id, $size );
-		return $url ? $url : null;
+		return $url ? set_url_scheme( $url ) : null;
 	}
 
 	/**
