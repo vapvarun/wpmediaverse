@@ -29,6 +29,7 @@ class TemplateLoader {
 	public function init(): void {
 		add_filter( 'single_template', array( $this, 'load_single_template' ) );
 		add_filter( 'archive_template', array( $this, 'load_archive_template' ) );
+		add_action( 'pre_get_posts', array( $this, 'unified_explore_query' ) );
 	}
 
 	/**
@@ -63,7 +64,7 @@ class TemplateLoader {
 	 * @return string
 	 */
 	public function load_archive_template( string $template ): string {
-		if ( is_post_type_archive( 'mvs_media' ) ) {
+		if ( is_post_type_archive( 'mvs_media' ) || is_post_type_archive( 'mvs_album' ) ) {
 			$found = self::locate( 'explore.php' );
 			if ( $found ) {
 				return $found;
@@ -71,6 +72,24 @@ class TemplateLoader {
 		}
 
 		return $template;
+	}
+
+	/**
+	 * Merge mvs_media and mvs_album into the explore archive query.
+	 *
+	 * @param \WP_Query $query The query object.
+	 */
+	public function unified_explore_query( $query ): void {
+		if ( is_admin() || ! $query->is_main_query() ) {
+			return;
+		}
+
+		if ( $query->is_post_type_archive( 'mvs_media' ) || $query->is_post_type_archive( 'mvs_album' ) ) {
+			$query->set( 'post_type', array( 'mvs_media', 'mvs_album' ) );
+			$query->set( 'posts_per_page', 18 );
+			$query->set( 'orderby', 'date' );
+			$query->set( 'order', 'DESC' );
+		}
 	}
 
 	/**
