@@ -201,6 +201,9 @@ class Shortcodes {
 			$template = MVS_PLUGIN_DIR . 'src/blocks/' . $block_name . '/render.php';
 		}
 
+		// Ensure frontend styles are loaded.
+		wp_enqueue_style( 'mvs-frontend' );
+
 		if ( ! file_exists( $template ) ) {
 			return '';
 		}

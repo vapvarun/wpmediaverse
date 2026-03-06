@@ -36,5 +36,6 @@
 	},
 	"textdomain": "wpmediaverse",
 	"editorScript": "file:./index.js",
-	"render": "file:./render.php"
+	"render": "file:./render.php",
+	"style": "file:./style-index.css"
 }

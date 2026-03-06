@@ -135,6 +135,12 @@ class Plugin {
 		// Action Scheduler callback for async webhook delivery.
 		add_action( 'mvs_deliver_webhook', array( self::class, 'deliver_webhook' ), 10, 3 );
 
+		// Ensure stats/index rows exist when media is published.
+		add_action( 'publish_mvs_media', array( self::class, 'ensure_media_rows' ), 10, 2 );
+
+		// Enqueue frontend styles.
+		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
+
 		// Flush rewrite rules if needed (after activation).
 		add_action( 'init', array( self::class, 'maybe_flush_rewrites' ), 99 );
 
@@ -473,6 +479,102 @@ class Plugin {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Ensure mvs_media_stats and mvs_media_index rows exist for a published media item.
+	 *
+	 * This covers media created via WP admin, REST API, or any path outside UploadService.
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post object.
+	 */
+	public static function ensure_media_rows( int $post_id, \WP_Post $post ): void {
+		global $wpdb;
+
+		$now = current_time( 'mysql', true );
+
+		// Ensure mvs_media_stats row exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$exists = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d",
+				$post_id
+			)
+		);
+
+		if ( ! $exists ) {
+			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prefix . 'mvs_media_stats',
+				array(
+					'media_id'   => $post_id,
+					'views'      => 0,
+					'downloads'  => 0,
+					'reactions'  => 0,
+					'comments'   => 0,
+					'shares'     => 0,
+					'updated_at' => $now,
+				),
+				array( '%d', '%d', '%d', '%d', '%d', '%d', '%s' )
+			);
+		}
+
+		// Ensure mvs_media_index row exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$idx_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
+				$post_id
+			)
+		);
+
+		if ( ! $idx_exists ) {
+			$privacy_meta = get_post_meta( $post_id, '_mvs_privacy', true );
+			$privacy      = $privacy_meta ? $privacy_meta : 'public';
+			$type_meta    = get_post_meta( $post_id, '_mvs_media_type', true );
+			$media_type   = $type_meta ? $type_meta : '';
+			$created      = $post->post_date_gmt ? $post->post_date_gmt : $now;
+
+			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prefix . 'mvs_media_index',
+				array(
+					'media_id'          => $post_id,
+					'post_author'       => $post->post_author,
+					'media_type'        => $media_type,
+					'privacy'           => $privacy,
+					'moderation_status' => 'approved',
+					'created_at'        => $created,
+				),
+				array( '%d', '%d', '%s', '%s', '%s', '%s' )
+			);
+		}
+	}
+
+	/**
+	 * Enqueue frontend styles and scripts on MVS pages.
+	 */
+	public static function enqueue_frontend_assets(): void {
+		$post_type  = get_post_type();
+		$is_mvs     = in_array( $post_type, array( 'mvs_media', 'mvs_album', 'mvs_collection' ), true );
+		$is_archive = is_post_type_archive( 'mvs_media' );
+
+		// Always enqueue on MVS pages; on other pages only if shortcode or block is present.
+		if ( $is_mvs || $is_archive ) {
+			wp_enqueue_style(
+				'mvs-frontend',
+				MVS_PLUGIN_URL . 'assets/css/frontend.css',
+				array(),
+				MVS_VERSION
+			);
+		} else {
+			// Register for on-demand loading by blocks/shortcodes.
+			wp_register_style(
+				'mvs-frontend',
+				MVS_PLUGIN_URL . 'assets/css/frontend.css',
+				array(),
+				MVS_VERSION
+			);
+		}
 	}
 
 	/**

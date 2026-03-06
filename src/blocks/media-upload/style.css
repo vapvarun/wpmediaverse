@@ -1,0 +1,58 @@
+/**
+ * Media Upload Block — Frontend Styles
+ */
+
+.mvs-upload-block {
+	max-width: 720px;
+	margin: 0 auto;
+}
+
+.mvs-upload-dropzone {
+	border: 2px dashed #c3c4c7;
+	border-radius: 8px;
+	padding: 48px 24px;
+	text-align: center;
+	cursor: pointer;
+	transition: border-color 0.2s, background-color 0.2s;
+	background: #fafafa;
+}
+
+.mvs-upload-dropzone:hover,
+.mvs-upload-dropzone.mvs-dragover {
+	border-color: #0073aa;
+	background-color: #f0f7fc;
+}
+
+.mvs-upload-icon {
+	font-size: 48px;
+	color: #a0a5aa;
+	margin-bottom: 12px;
+}
+
+.mvs-upload-text {
+	font-size: 1.05em;
+	color: #50575e;
+	margin-bottom: 4px;
+}
+
+.mvs-upload-input {
+	display: none;
+}
+
+.mvs-upload-privacy {
+	margin-top: 16px;
+}
+
+.mvs-upload-privacy select {
+	padding: 6px 12px;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	font-size: 0.9em;
+}
+
+.mvs-upload-progress {
+	margin-top: 16px;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+	gap: 8px;
+}

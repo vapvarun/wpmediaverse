@@ -48,7 +48,7 @@ class ReactionServiceTest extends \PHPUnit\Framework\TestCase {
 
 		// Initialize stats row.
 		global $wpdb;
-		$wpdb->insert(
+		$wpdb->replace(
 			$wpdb->prefix . 'mvs_media_stats',
 			array(
 				'media_id'   => $this->media_id,

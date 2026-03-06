@@ -66,6 +66,28 @@ get_header();
 				<?php endif; ?>
 			</div>
 
+			<!-- Social Interactions Bar -->
+			<div class="mvs-social-bar">
+				<div class="mvs-reactions"></div>
+				<?php if ( is_user_logged_in() ) : ?>
+					<button class="mvs-favorite-btn" type="button">&#x2764; <?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></button>
+				<?php endif; ?>
+				<button class="mvs-share-btn" type="button">&#x1F517; <?php esc_html_e( 'Share', 'wpmediaverse' ); ?></button>
+				<span class="mvs-view-count"></span>
+			</div>
+
+			<!-- Comments Section -->
+			<div class="mvs-comments-section">
+				<h3 class="mvs-comments-title"><?php esc_html_e( 'Comments', 'wpmediaverse' ); ?></h3>
+				<?php if ( is_user_logged_in() ) : ?>
+					<form class="mvs-comment-form">
+						<textarea placeholder="<?php esc_attr_e( 'Write a comment...', 'wpmediaverse' ); ?>" rows="2"></textarea>
+						<button type="submit"><?php esc_html_e( 'Post', 'wpmediaverse' ); ?></button>
+					</form>
+				<?php endif; ?>
+				<ul class="mvs-comment-list"></ul>
+			</div>
+
 			<footer class="mvs-media-footer">
 				<?php
 				$tags = get_the_terms( get_the_ID(), 'mvs_tag' );
@@ -85,4 +107,24 @@ get_header();
 	<?php endwhile; ?>
 </div>
 <?php
+// Enqueue social interactions script.
+wp_enqueue_script(
+	'mvs-media-single',
+	MVS_PLUGIN_URL . 'assets/js/media-single.js',
+	array(),
+	MVS_VERSION,
+	true
+);
+
+wp_localize_script(
+	'mvs-media-single',
+	'mvsMedia',
+	array(
+		'id'         => get_the_ID(),
+		'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+		'nonce'      => wp_create_nonce( 'wp_rest' ),
+		'isLoggedIn' => is_user_logged_in(),
+	)
+);
+
 get_footer();

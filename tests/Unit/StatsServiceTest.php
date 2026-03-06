@@ -37,9 +37,9 @@ class StatsServiceTest extends \PHPUnit\Framework\TestCase {
 			)
 		);
 
-		// Initialize stats row.
+		// Initialize stats row (use replace to handle publish_mvs_media hook).
 		global $wpdb;
-		$wpdb->insert(
+		$wpdb->replace(
 			$wpdb->prefix . 'mvs_media_stats',
 			array(
 				'media_id'   => $this->media_id,
@@ -53,8 +53,8 @@ class StatsServiceTest extends \PHPUnit\Framework\TestCase {
 			array( '%d', '%d', '%d', '%d', '%d', '%d', '%s' )
 		);
 
-		// Insert index row for user stats query.
-		$wpdb->insert(
+		// Insert index row for user stats query (use replace for same reason).
+		$wpdb->replace(
 			$wpdb->prefix . 'mvs_media_index',
 			array(
 				'media_id'          => $this->media_id,
