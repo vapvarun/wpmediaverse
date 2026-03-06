@@ -252,23 +252,89 @@
 
 .mvs-grid-item-overlay {
 	position: absolute;
-	bottom: 0;
+	top: 0;
 	left: 0;
 	right: 0;
-	padding: 12px;
-	background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.4);
 	color: #fff;
 	font-size: 0.9em;
 	opacity: 0;
 	transition: opacity 0.3s;
 }
 
-.mvs-grid-item:hover .mvs-grid-item-overlay {
+.mvs-grid-item:hover .mvs-grid-item-overlay,
+.mvs-grid-item-link:hover .mvs-grid-item-overlay {
 	opacity: 1;
+}
+
+.mvs-grid-item-stats {
+	display: flex;
+	gap: 16px;
+	font-size: 1.1em;
+	font-weight: 700;
+}
+
+.mvs-grid-stat {
+	display: flex;
+	align-items: center;
+	gap: 4px;
 }
 
 .mvs-grid-item-title {
 	display: block;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Instagram-like feed: author row below each card */
+.mvs-feed {
+	gap: 6px;
+}
+
+.mvs-feed .mvs-grid-item {
+	aspect-ratio: auto;
+	border-radius: 4px;
+	overflow: visible;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	display: flex;
+	flex-direction: column;
+}
+
+.mvs-feed .mvs-grid-item-link {
+	display: block;
+	aspect-ratio: 1;
+	overflow: hidden;
+	position: relative;
+}
+
+.mvs-feed .mvs-grid-item-overlay {
+	pointer-events: none;
+}
+
+.mvs-grid-item-info {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 10px;
+	background: #fff;
+	font-size: 0.85em;
+}
+
+.mvs-grid-avatar {
+	border-radius: 50%;
+	width: 24px !important;
+	height: 24px !important;
+}
+
+.mvs-grid-item-author {
+	font-weight: 600;
+	color: #262626;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
