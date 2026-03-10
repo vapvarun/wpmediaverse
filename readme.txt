@@ -1,5 +1,5 @@
 === WPMediaVerse ===
-Contributors: developer starter
+Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9

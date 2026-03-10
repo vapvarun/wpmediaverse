@@ -4,7 +4,7 @@
  * Plugin URI:  https://wbcomdesigns.com/downloads/wpmediaverse/
  * Description: A general-purpose WordPress media platform plugin.
  * Version:     1.0.0
- * Author:      Starter WordPress Developer
+ * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
