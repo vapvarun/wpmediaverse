@@ -29,8 +29,11 @@ class BuddyPressIntegration {
 
 		// Activity recording (only if activity component is active).
 		if ( bp_is_active( 'activity' ) ) {
+			add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 			add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
 			add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 2 );
+			add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
+			add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 			add_action( 'bp_register_activity_actions', array( $this, 'register_activity_actions' ) );
 		}
 
@@ -57,6 +60,7 @@ class BuddyPressIntegration {
 			add_action( 'bp_activity_post_form_options', array( $this, 'activity_post_media_button' ) );
 			add_action( 'bp_enqueue_scripts', array( $this, 'enqueue_activity_media_scripts' ) );
 			add_action( 'bp_activity_posted_update', array( $this, 'attach_media_to_activity' ), 10, 3 );
+			add_action( 'bp_groups_posted_update', array( $this, 'attach_media_to_group_activity' ), 10, 4 );
 		}
 	}
 
@@ -72,6 +76,18 @@ class BuddyPressIntegration {
 			__( 'Media Uploads', 'wpmediaverse' ),
 			array( 'activity', 'member', 'group' )
 		);
+
+		// Register the same type under groups component so group-scoped uploads format correctly.
+		if ( bp_is_active( 'groups' ) ) {
+			bp_activity_set_action(
+				'groups',
+				'mvs_media_upload',
+				__( 'Group Media Uploads', 'wpmediaverse' ),
+				array( $this, 'format_activity_action_upload' ),
+				__( 'Group Media Uploads', 'wpmediaverse' ),
+				array( 'activity', 'member', 'group' )
+			);
+		}
 
 		bp_activity_set_action(
 			'wpmediaverse',
@@ -91,19 +107,60 @@ class BuddyPressIntegration {
 	 * @return string
 	 */
 	public function format_activity_action_upload( $action, $activity ) {
-		$post = get_post( $activity->item_id );
+		// Multi-image activity posts (via activity form) use bp_activity type 'activity_update',
+		// not 'mvs_media_upload', so this only handles single-upload activities.
+
+		// For group-scoped activities, item_id is the group ID and secondary_item_id is the media ID.
+		// For personal activities, item_id is the media ID.
+		$is_group = ( 'groups' === $activity->component && $activity->secondary_item_id > 0 );
+		$media_id = $is_group ? (int) $activity->secondary_item_id : (int) $activity->item_id;
+
+		$post = get_post( $media_id );
 		if ( ! $post ) {
 			return $action;
 		}
-		$file_type  = get_post_meta( $activity->item_id, '_mvs_file_type', true );
+		$file_type  = get_post_meta( $media_id, '_mvs_file_type', true );
 		$type_label = $this->get_media_type_label( $file_type );
+		$media_link = '<a href="' . esc_url( get_permalink( $media_id ) ) . '">' . esc_html( $post->post_title ) . '</a>';
+
+		// Build group context suffix if applicable.
+		$group_suffix = '';
+		if ( $is_group && function_exists( 'groups_get_group' ) ) {
+			$group = groups_get_group( (int) $activity->item_id );
+			if ( $group && ! empty( $group->name ) ) {
+				$group_link   = '<a href="' . esc_url( bp_get_group_url( $group ) ) . '">' . esc_html( $group->name ) . '</a>';
+				$group_suffix = sprintf(
+					/* translators: %s: group link */
+					__( ' in the group %s', 'wpmediaverse' ),
+					$group_link
+				);
+			}
+		}
+
+		// Check if this media belongs to an album.
+		$album_id = (int) get_post_meta( $media_id, '_mvs_album_id', true );
+		if ( $album_id ) {
+			$album = get_post( $album_id );
+			if ( $album && 'mvs_album' === $album->post_type ) {
+				$album_link = '<a href="' . esc_url( get_permalink( $album_id ) ) . '">' . esc_html( $album->post_title ) . '</a>';
+				return sprintf(
+					/* translators: 1: user link, 2: media type, 3: media link, 4: album link */
+					__( '%1$s uploaded a new %2$s: %3$s in album %4$s', 'wpmediaverse' ),
+					bp_core_get_userlink( $activity->user_id ),
+					esc_html( $type_label ),
+					$media_link,
+					$album_link
+				) . $group_suffix;
+			}
+		}
+
 		return sprintf(
 			/* translators: 1: user link, 2: media type, 3: media link */
 			__( '%1$s uploaded a new %2$s: %3$s', 'wpmediaverse' ),
 			bp_core_get_userlink( $activity->user_id ),
 			esc_html( $type_label ),
-			'<a href="' . esc_url( get_permalink( $activity->item_id ) ) . '">' . esc_html( $post->post_title ) . '</a>'
-		);
+			$media_link
+		) . $group_suffix;
 	}
 
 	/**
@@ -127,12 +184,32 @@ class BuddyPressIntegration {
 	}
 
 	/**
+	 * Flag media uploaded via BP activity form so record_upload_activity skips it.
+	 *
+	 * @param int $media_id Media post ID.
+	 */
+	public function flag_activity_upload( int $media_id ): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['context'] ) && 'activity' === $_GET['context'] ) {
+			update_post_meta( $media_id, '_mvs_activity_upload', '1' );
+		}
+	}
+
+	/**
 	 * Record activity when media is uploaded.
+	 *
+	 * Skips if the upload was via the BP activity form (context=activity),
+	 * since those are bundled into a single activity post by attach_media_to_activity().
 	 *
 	 * @param int $media_id Media post ID.
 	 */
 	public function record_upload_activity( int $media_id ): void {
 		if ( defined( 'MVS_RUNNING_TESTS' ) || ! function_exists( 'bp_activity_add' ) || ! bp_is_active( 'activity' ) ) {
+			return;
+		}
+
+		// Skip if this media was uploaded via the BP activity form.
+		if ( get_post_meta( $media_id, '_mvs_activity_upload', true ) ) {
 			return;
 		}
 
@@ -144,16 +221,97 @@ class BuddyPressIntegration {
 		$user_id   = (int) $post->post_author;
 		$thumbnail = $this->get_media_thumbnail_html( $media_id, 'medium' );
 
-		bp_activity_add(
-			array(
-				'user_id'   => $user_id,
-				'component' => 'wpmediaverse',
-				'type'      => 'mvs_media_upload',
-				'action'    => '', // Populated by format callback.
-				'content'   => $thumbnail,
-				'item_id'   => $media_id,
-			)
+		$activity_args = array(
+			'user_id'   => $user_id,
+			'component' => 'wpmediaverse',
+			'type'      => 'mvs_media_upload',
+			'action'    => '', // Populated by format callback.
+			'content'   => $thumbnail,
+			'item_id'   => $media_id,
 		);
+
+		// If media belongs to a group, record activity in the group stream.
+		$mvs_group_id = (int) get_post_meta( $media_id, '_mvs_group_id', true );
+		if ( $mvs_group_id > 0 && bp_is_active( 'groups' ) ) {
+			$activity_args['component']         = 'groups';
+			$activity_args['item_id']           = $mvs_group_id;
+			$activity_args['secondary_item_id'] = $media_id;
+		}
+
+		bp_activity_add( $activity_args );
+	}
+
+	/**
+	 * Reassign an upload activity to a group after group_id meta is set.
+	 *
+	 * The mvs_media_uploaded hook fires inside UploadService before the REST
+	 * controller sets _mvs_group_id, so the activity is initially recorded
+	 * under the wpmediaverse component. This method retroactively moves it
+	 * to the groups component so it appears in the group activity stream.
+	 *
+	 * @param int $media_id Media post ID.
+	 * @param int $group_id Group ID.
+	 */
+	public function reassign_activity_to_group( int $media_id, int $group_id ): void {
+		if ( ! function_exists( 'bp_activity_get' ) || ! bp_is_active( 'groups' ) ) {
+			return;
+		}
+
+		$activity = $this->find_media_upload_activity( $media_id );
+		if ( ! $activity ) {
+			return;
+		}
+
+		// Update the activity to belong to the group.
+		$GLOBALS['wpdb']->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			buddypress()->activity->table_name,
+			array(
+				'component'         => 'groups',
+				'item_id'           => $group_id,
+				'secondary_item_id' => $media_id,
+				'action'            => '', // Force regeneration.
+			),
+			array( 'id' => $activity->id ),
+			array( '%s', '%d', '%d', '%s' ),
+			array( '%d' )
+		);
+
+		// Clear cached action.
+		bp_activity_update_meta( $activity->id, 'bp_activity_cached_action', '' );
+	}
+
+	/**
+	 * Update existing upload activities when media items are added to an album.
+	 *
+	 * The action string is regenerated by format_activity_action_upload() which
+	 * reads _mvs_album_id from post meta, so we just need to clear the cached
+	 * action to force regeneration.
+	 *
+	 * @param int   $album_id  Album post ID.
+	 * @param array $media_ids Media post IDs.
+	 * @param int   $added     Number of items added.
+	 */
+	public function update_activity_with_album( int $album_id, array $media_ids, int $added ): void {
+		if ( ! function_exists( 'bp_activity_get' ) ) {
+			return;
+		}
+
+		foreach ( $media_ids as $media_id ) {
+			$media_id = (int) $media_id;
+			$activity = $this->find_media_upload_activity( $media_id );
+			if ( $activity ) {
+				// Clear the cached action so it regenerates with album link.
+				bp_activity_update_meta( $activity->id, 'bp_activity_cached_action', '' );
+				// Force action regeneration by setting it empty.
+				$GLOBALS['wpdb']->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					buddypress()->activity->table_name,
+					array( 'action' => '' ),
+					array( 'id' => $activity->id ),
+					array( '%s' ),
+					array( '%d' )
+				);
+			}
+		}
 	}
 
 	/**
@@ -174,6 +332,20 @@ class BuddyPressIntegration {
 		}
 
 		$user_id = (int) $comment->user_id;
+
+		// When comment comes from an activity lightbox, we know the exact parent
+		// activity ID — thread directly under it without searching.
+		if ( defined( 'MVS_COMMENT_FROM_ACTIVITY' ) && MVS_COMMENT_FROM_ACTIVITY > 0 ) {
+			bp_activity_new_comment(
+				array(
+					'activity_id'       => MVS_COMMENT_FROM_ACTIVITY,
+					'user_id'           => $user_id,
+					'content'           => wp_kses_post( $comment->comment_content ),
+					'skip_notification' => true,
+				)
+			);
+			return;
+		}
 
 		// Find the parent upload activity for this media item.
 		$parent_activity = $this->find_media_upload_activity( $media_id );
@@ -352,9 +524,15 @@ class BuddyPressIntegration {
 
 	/**
 	 * Render the profile albums sub-tab.
+	 * Supports single album view via /members/{user}/media/albums/{album-slug}/
 	 */
 	public function render_profile_albums_tab(): void {
-		add_action( 'bp_template_content', array( $this, 'profile_albums_content' ) );
+		$album_slug = bp_action_variable( 0 );
+		if ( $album_slug ) {
+			add_action( 'bp_template_content', array( $this, 'profile_single_album_content' ) );
+		} else {
+			add_action( 'bp_template_content', array( $this, 'profile_albums_content' ) );
+		}
 		bp_core_load_template( 'members/single/plugins' );
 	}
 
@@ -377,21 +555,47 @@ class BuddyPressIntegration {
 			$nonce    = wp_create_nonce( 'wp_rest' );
 
 			?>
-			<div class="mvs-bp-upload-wrap">
+			<div class="mvs-bp-profile-actions">
+				<button type="button" id="mvs-bp-upload-btn" class="mvs-btn">
+					<span class="dashicons dashicons-cloud-upload"></span> <?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
+				</button>
+			</div>
+
+			<div class="mvs-bp-upload-wrap" id="mvs-bp-upload-wrap" style="display:none;">
 				<input type="file" multiple accept="image/*,video/*,audio/*" class="mvs-bp-file-input" id="mvs-bp-file-input" style="display:none" />
 				<div class="mvs-bp-dropzone" id="mvs-bp-dropzone">
 					<span class="dashicons dashicons-cloud-upload"></span>
 					<span class="mvs-bp-dropzone-text"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
 				</div>
+				<div id="mvs-bp-upload-preview" class="mvs-bp-upload-preview"></div>
 				<div class="mvs-bp-upload-status" id="mvs-bp-upload-status" style="display:none;"></div>
+				<div class="mvs-bp-upload-form-actions">
+					<button type="button" id="mvs-bp-upload-cancel" class="mvs-btn mvs-btn-secondary"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+				</div>
 			</div>
 			<script>
 			(function(){
 				var restUrl = '<?php echo esc_js( $rest_url ); ?>';
 				var nonce = '<?php echo esc_js( $nonce ); ?>';
+				var uploadBtn = document.getElementById('mvs-bp-upload-btn');
+				var uploadWrap = document.getElementById('mvs-bp-upload-wrap');
 				var dropzone = document.getElementById('mvs-bp-dropzone');
 				var fileInput = document.getElementById('mvs-bp-file-input');
 				var statusEl = document.getElementById('mvs-bp-upload-status');
+				var previewEl = document.getElementById('mvs-bp-upload-preview');
+				var cancelBtn = document.getElementById('mvs-bp-upload-cancel');
+
+				uploadBtn.addEventListener('click', function() {
+					uploadWrap.style.display = 'block';
+					uploadBtn.style.display = 'none';
+				});
+
+				cancelBtn.addEventListener('click', function() {
+					uploadWrap.style.display = 'none';
+					uploadBtn.style.display = '';
+					previewEl.textContent = '';
+					statusEl.style.display = 'none';
+				});
 
 				var clicking = false;
 				dropzone.addEventListener('click', function(e) {
@@ -412,22 +616,49 @@ class BuddyPressIntegration {
 				dropzone.addEventListener('drop', function(e) {
 					e.preventDefault();
 					dropzone.classList.remove('mvs-bp-dropzone--active');
-					uploadFiles(Array.from(e.dataTransfer.files));
+					handleFiles(Array.from(e.dataTransfer.files));
 				});
 				fileInput.addEventListener('change', function() {
-					uploadFiles(Array.from(fileInput.files));
+					handleFiles(Array.from(fileInput.files));
 					fileInput.value = '';
 				});
 
-				function uploadFiles(files) {
+				function handleFiles(files) {
 					if (!files.length) return;
+
+					// Show thumbnails preview.
+					files.forEach(function(file) {
+						if (!file.type.match(/^image\//)) return;
+						var reader = new FileReader();
+						reader.onload = function(e) {
+							var thumb = document.createElement('div');
+							thumb.className = 'mvs-bp-upload-thumb';
+							var img = document.createElement('img');
+							img.src = e.target.result;
+							img.alt = file.name;
+							var name = document.createElement('span');
+							name.className = 'mvs-bp-upload-thumb-name';
+							name.textContent = file.name;
+							thumb.appendChild(img);
+							thumb.appendChild(name);
+							previewEl.appendChild(thumb);
+						};
+						reader.readAsDataURL(file);
+					});
+
+					uploadFiles(files);
+				}
+
+				function uploadFiles(files) {
 					statusEl.style.display = 'block';
-					var total = files.length, done = 0;
+					var total = files.length, done = 0, failed = 0;
 					statusEl.textContent = 'Uploading 1 of ' + total + '...';
+					statusEl.className = 'mvs-bp-upload-status';
 
 					function next() {
 						if (done >= total) {
-							statusEl.textContent = total + ' file(s) uploaded!';
+							var uploaded = total - failed;
+							statusEl.textContent = uploaded + ' file(s) uploaded!';
 							statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
 							setTimeout(function() { window.location.reload(); }, 800);
 							return;
@@ -439,11 +670,13 @@ class BuddyPressIntegration {
 							headers: { 'X-WP-Nonce': nonce },
 							credentials: 'same-origin',
 							body: fd
-						}).then(function() {
+						}).then(function(r) {
+							if (!r.ok) failed++;
 							done++;
 							if (done < total) statusEl.textContent = 'Uploading ' + (done + 1) + ' of ' + total + '...';
 							next();
 						}).catch(function() {
+							failed++;
 							done++;
 							next();
 						});
@@ -577,15 +810,25 @@ class BuddyPressIntegration {
 
 		// Action buttons for own profile.
 		if ( $is_own ) {
-			$dash_page = (int) get_option( 'mvs_page_dashboard' );
-			$dash_url  = $dash_page ? get_permalink( $dash_page ) : '';
-
 			echo '<div class="mvs-bp-profile-actions">';
-			if ( $dash_url ) {
-				echo '<a href="' . esc_url( $dash_url ) . '#albums" class="mvs-btn">';
-				echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Create Album', 'wpmediaverse' );
-				echo '</a>';
-			}
+			echo '<button type="button" id="mvs-bp-create-album-btn" class="mvs-btn">';
+			echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Create Album', 'wpmediaverse' );
+			echo '</button>';
+			echo '</div>';
+
+			// Inline album creation form (hidden by default).
+			echo '<div id="mvs-bp-album-form" class="mvs-bp-album-form" style="display:none;">';
+			echo '<div class="mvs-bp-album-form-inner">';
+			echo '<label for="mvs-bp-album-title">' . esc_html__( 'Album Name', 'wpmediaverse' ) . '</label>';
+			echo '<input type="text" id="mvs-bp-album-title" placeholder="' . esc_attr__( 'Enter album name...', 'wpmediaverse' ) . '" />';
+			echo '<label for="mvs-bp-album-desc">' . esc_html__( 'Description (optional)', 'wpmediaverse' ) . '</label>';
+			echo '<textarea id="mvs-bp-album-desc" rows="2" placeholder="' . esc_attr__( 'Album description...', 'wpmediaverse' ) . '"></textarea>';
+			echo '<div class="mvs-bp-album-form-actions">';
+			echo '<button type="button" id="mvs-bp-album-save" class="mvs-btn mvs-btn-primary">' . esc_html__( 'Create', 'wpmediaverse' ) . '</button>';
+			echo '<button type="button" id="mvs-bp-album-cancel" class="mvs-btn mvs-btn-secondary">' . esc_html__( 'Cancel', 'wpmediaverse' ) . '</button>';
+			echo '</div>';
+			echo '<div id="mvs-bp-album-msg" class="mvs-bp-album-msg"></div>';
+			echo '</div>';
 			echo '</div>';
 		}
 
@@ -658,8 +901,12 @@ class BuddyPressIntegration {
 				)
 			);
 
+			// Link to single album within BP profile context.
+			$album_post = get_post( $album_id );
+			$album_link = trailingslashit( bp_displayed_user_domain() . 'media/albums/' . $album_post->post_name );
+
 			echo '<div class="mvs-grid-item mvs-grid-item--album">';
-			echo '<a href="' . esc_url( get_permalink( $album_id ) ) . '" class="mvs-grid-item-link">';
+			echo '<a href="' . esc_url( $album_link ) . '" class="mvs-grid-item-link">';
 			if ( $cover_url ) {
 				echo '<img src="' . esc_url( $cover_url ) . '" alt="' . esc_attr( get_the_title() ) . '" loading="lazy" />';
 			} else {
@@ -693,6 +940,228 @@ class BuddyPressIntegration {
 	}
 
 	/**
+	 * Display a single album within the BP profile context.
+	 * URL: /members/{user}/media/albums/{album-slug}/
+	 * Includes inline upload for the album owner.
+	 */
+	public function profile_single_album_content(): void {
+		wp_enqueue_style( 'mvs-frontend' );
+
+		$album_slug = bp_action_variable( 0 );
+		$user_id    = bp_displayed_user_id();
+
+		$album = get_page_by_path( $album_slug, OBJECT, 'mvs_album' );
+		if ( ! $album || (int) $album->post_author !== $user_id ) {
+			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
+			return;
+		}
+
+		$album_id = $album->ID;
+		$is_own   = is_user_logged_in() && get_current_user_id() === $user_id;
+
+		// Back link.
+		$albums_url = trailingslashit( bp_displayed_user_domain() . 'media/albums' );
+		echo '<div class="mvs-bp-back-link">';
+		echo '<a href="' . esc_url( $albums_url ) . '">&larr; ' . esc_html__( 'Back to Albums', 'wpmediaverse' ) . '</a>';
+		echo '</div>';
+
+		// Album header.
+		echo '<div class="mvs-album-header">';
+		echo '<h2 class="mvs-album-title">' . esc_html( $album->post_title ) . '</h2>';
+		if ( $album->post_content ) {
+			echo '<div class="mvs-album-description">' . wp_kses_post( $album->post_content ) . '</div>';
+		}
+
+		// Get album items.
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_album_items';
+		$items = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$table} WHERE album_id = %d ORDER BY position ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$album_id
+			)
+		);
+		$item_count = count( $items );
+
+		echo '<span class="mvs-album-count">';
+		printf(
+			/* translators: %d: number of items */
+			esc_html( _n( '%d item', '%d items', $item_count, 'wpmediaverse' ) ),
+			$item_count
+		);
+		echo '</span>';
+		echo '</div>';
+
+		// Owner actions: upload + edit/delete.
+		if ( $is_own ) {
+			$rest_url = esc_url_raw( rest_url( 'mvs/v1/' ) );
+			$nonce    = wp_create_nonce( 'wp_rest' );
+
+			echo '<div class="mvs-bp-profile-actions">';
+			echo '<button type="button" id="mvs-album-upload-btn" class="mvs-btn">';
+			echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Add Media', 'wpmediaverse' );
+			echo '</button>';
+			echo '</div>';
+
+			echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;">';
+			echo '<input type="file" multiple accept="image/*,video/*,audio/*" id="mvs-album-file-input" style="display:none" />';
+			echo '<div class="mvs-bp-dropzone" id="mvs-album-dropzone">';
+			echo '<span class="dashicons dashicons-cloud-upload"></span>';
+			echo '<span class="mvs-bp-dropzone-text">' . esc_html__( 'Drop files here or click to upload into this album', 'wpmediaverse' ) . '</span>';
+			echo '</div>';
+			echo '<div id="mvs-album-upload-preview" class="mvs-bp-upload-preview"></div>';
+			echo '<div id="mvs-album-upload-status" class="mvs-bp-upload-status" style="display:none;"></div>';
+			echo '<div class="mvs-bp-upload-form-actions">';
+			echo '<button type="button" id="mvs-album-upload-cancel" class="mvs-btn mvs-btn-secondary">' . esc_html__( 'Cancel', 'wpmediaverse' ) . '</button>';
+			echo '</div>';
+			echo '</div>';
+
+			// Inline JS for album upload.
+			?>
+			<script>
+			(function(){
+				var albumId = <?php echo (int) $album_id; ?>;
+				var restUrl = '<?php echo esc_js( $rest_url ); ?>';
+				var nonce = '<?php echo esc_js( $nonce ); ?>';
+				var uploadBtn = document.getElementById('mvs-album-upload-btn');
+				var uploadWrap = document.getElementById('mvs-album-upload-wrap');
+				var dropzone = document.getElementById('mvs-album-dropzone');
+				var fileInput = document.getElementById('mvs-album-file-input');
+				var statusEl = document.getElementById('mvs-album-upload-status');
+				var previewEl = document.getElementById('mvs-album-upload-preview');
+				var cancelBtn = document.getElementById('mvs-album-upload-cancel');
+
+				uploadBtn.addEventListener('click', function() {
+					uploadWrap.style.display = 'block';
+					uploadBtn.style.display = 'none';
+				});
+				cancelBtn.addEventListener('click', function() {
+					uploadWrap.style.display = 'none';
+					uploadBtn.style.display = '';
+					previewEl.textContent = '';
+					statusEl.style.display = 'none';
+				});
+
+				var clicking = false;
+				dropzone.addEventListener('click', function(e) {
+					e.preventDefault(); e.stopPropagation();
+					if (clicking) return;
+					clicking = true;
+					fileInput.click();
+					setTimeout(function() { clicking = false; }, 100);
+				});
+				dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('mvs-bp-dropzone--active'); });
+				dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('mvs-bp-dropzone--active'); });
+				dropzone.addEventListener('drop', function(e) {
+					e.preventDefault(); dropzone.classList.remove('mvs-bp-dropzone--active');
+					handleFiles(Array.from(e.dataTransfer.files));
+				});
+				fileInput.addEventListener('change', function() {
+					handleFiles(Array.from(fileInput.files));
+					fileInput.value = '';
+				});
+
+				function handleFiles(files) {
+					if (!files.length) return;
+					files.forEach(function(file) {
+						if (!file.type.match(/^image\//)) return;
+						var reader = new FileReader();
+						reader.onload = function(e) {
+							var thumb = document.createElement('div');
+							thumb.className = 'mvs-bp-upload-thumb';
+							var img = document.createElement('img');
+							img.src = e.target.result;
+							thumb.appendChild(img);
+							previewEl.appendChild(thumb);
+						};
+						reader.readAsDataURL(file);
+					});
+					uploadAndAddToAlbum(files);
+				}
+
+				function uploadAndAddToAlbum(files) {
+					statusEl.style.display = 'block';
+					var total = files.length, done = 0;
+					var uploadedIds = [];
+					statusEl.textContent = 'Uploading 1 of ' + total + '...';
+					statusEl.className = 'mvs-bp-upload-status';
+
+					function next() {
+						if (done >= total) {
+							if (uploadedIds.length) {
+								statusEl.textContent = 'Adding to album...';
+								fetch(restUrl + 'albums/' + albumId + '/items', {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
+									credentials: 'same-origin',
+									body: JSON.stringify({ media_ids: uploadedIds })
+								}).then(function() {
+									statusEl.textContent = uploadedIds.length + ' file(s) added to album!';
+									statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
+									setTimeout(function() { window.location.reload(); }, 800);
+								});
+							}
+							return;
+						}
+						var fd = new FormData();
+						fd.append('file', files[done]);
+						fetch(restUrl + 'media', {
+							method: 'POST',
+							headers: { 'X-WP-Nonce': nonce },
+							credentials: 'same-origin',
+							body: fd
+						}).then(function(r) { return r.json(); })
+						.then(function(data) {
+							if (data.id) uploadedIds.push(data.id);
+							done++;
+							if (done < total) statusEl.textContent = 'Uploading ' + (done + 1) + ' of ' + total + '...';
+							next();
+						}).catch(function() { done++; next(); });
+					}
+					next();
+				}
+			})();
+			</script>
+			<?php
+		}
+
+		// Album items grid.
+		if ( ! empty( $items ) ) {
+			echo '<div class="mvs-media-grid mvs-cols-3">';
+			foreach ( $items as $media_id ) {
+				$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
+				$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
+				$is_image  = $file_url && strpos( $file_type, 'image/' ) === 0;
+
+				if ( $file_url ) {
+					$file_url = set_url_scheme( $file_url );
+				}
+
+				echo '<div class="mvs-grid-item">';
+				if ( $is_image ) {
+					echo '<a href="' . esc_url( get_permalink( $media_id ) ) . '">';
+					echo '<img src="' . esc_url( $file_url ) . '" alt="' . esc_attr( get_the_title( $media_id ) ) . '" loading="lazy" />';
+					echo '</a>';
+				} else {
+					echo '<div class="mvs-grid-item-placeholder"><span class="dashicons dashicons-media-default"></span></div>';
+				}
+				echo '<div class="mvs-grid-item-overlay"><span>' . esc_html( get_the_title( $media_id ) ) . '</span></div>';
+				echo '</div>';
+			}
+			echo '</div>';
+		} else {
+			echo '<div class="mvs-empty-state">';
+			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			if ( $is_own ) {
+				echo '<p>' . esc_html__( 'This album is empty. Add some media!', 'wpmediaverse' ) . '</p>';
+			} else {
+				echo '<p>' . esc_html__( 'This album is empty.', 'wpmediaverse' ) . '</p>';
+			}
+			echo '</div>';
+		}
+	}
+
+	/**
 	 * Add a Media tab on group pages.
 	 */
 	public function add_group_tab(): void {
@@ -713,7 +1182,7 @@ class BuddyPressIntegration {
 			array(
 				'name'            => __( 'Media', 'wpmediaverse' ),
 				'slug'            => 'media',
-				'parent_url'      => bp_get_group_url( $group ) . 'media/',
+				'parent_url'      => bp_get_group_url( $group ),
 				'parent_slug'     => $group->slug,
 				'screen_function' => array( $this, 'render_group_media_tab' ),
 				'position'        => 80,
@@ -722,18 +1191,50 @@ class BuddyPressIntegration {
 	}
 
 	/**
-	 * Render the group media tab.
+	 * Render the group media tab with internal routing.
 	 */
 	public function render_group_media_tab(): void {
-		add_action( 'bp_template_content', array( $this, 'group_media_content' ) );
+		$action = bp_action_variable( 0 );
+
+		if ( 'albums' === $action ) {
+			$album_slug = bp_action_variable( 1 );
+			if ( $album_slug ) {
+				add_action( 'bp_template_content', array( $this, 'group_single_album_content' ) );
+			} else {
+				add_action( 'bp_template_content', array( $this, 'group_albums_content' ) );
+			}
+		} else {
+			add_action( 'bp_template_content', array( $this, 'group_media_content' ) );
+		}
+
 		bp_core_load_template( 'groups/single/plugins' );
+	}
+
+	/**
+	 * Render sub-tab navigation for group media pages.
+	 *
+	 * @param string $active Active tab: 'media' or 'albums'.
+	 */
+	private function render_group_sub_tabs( string $active ): void {
+		$group     = groups_get_current_group();
+		$group_url = bp_get_group_url( $group );
+		$media_url = trailingslashit( $group_url . 'media' );
+		$albums_url = trailingslashit( $group_url . 'media/albums' );
+
+		echo '<nav class="mvs-bp-sub-tabs">';
+		echo '<a href="' . esc_url( $media_url ) . '" class="mvs-bp-sub-tab' . ( 'media' === $active ? ' active' : '' ) . '">';
+		esc_html_e( 'Media', 'wpmediaverse' );
+		echo '</a>';
+		echo '<a href="' . esc_url( $albums_url ) . '" class="mvs-bp-sub-tab' . ( 'albums' === $active ? ' active' : '' ) . '">';
+		esc_html_e( 'Albums', 'wpmediaverse' );
+		echo '</a>';
+		echo '</nav>';
 	}
 
 	/**
 	 * Output media grid for the current group.
 	 */
 	public function group_media_content(): void {
-		// Ensure frontend CSS is loaded.
 		wp_enqueue_style( 'mvs-frontend' );
 
 		$group = groups_get_current_group();
@@ -741,40 +1242,166 @@ class BuddyPressIntegration {
 			return;
 		}
 
-		$member_ids = array();
-		$members    = groups_get_group_members(
-			array(
-				'group_id' => $group->id,
-				'per_page' => 0,
-			)
-		);
-		if ( ! empty( $members['members'] ) ) {
-			$member_ids = wp_list_pluck( $members['members'], 'ID' );
-		}
+		$this->render_group_sub_tabs( 'media' );
 
-		if ( empty( $member_ids ) ) {
-			echo '<div class="mvs-empty-state"><span class="dashicons dashicons-format-gallery"></span>';
-			echo '<p>' . esc_html__( 'No group media yet. Members can share media with the group!', 'wpmediaverse' ) . '</p></div>';
-			return;
+		$is_member = is_user_logged_in() && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group->id );
+
+		// Upload section for group members.
+		if ( $is_member ) {
+			$rest_url = esc_url_raw( rest_url( 'mvs/v1/' ) );
+			$nonce    = wp_create_nonce( 'wp_rest' );
+
+			?>
+			<div class="mvs-bp-profile-actions">
+				<button type="button" id="mvs-bp-upload-btn" class="mvs-btn">
+					<span class="dashicons dashicons-cloud-upload"></span> <?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
+				</button>
+			</div>
+
+			<div class="mvs-bp-upload-wrap" id="mvs-bp-upload-wrap" style="display:none;">
+				<input type="file" multiple accept="image/*,video/*,audio/*" class="mvs-bp-file-input" id="mvs-bp-file-input" style="display:none" />
+				<div class="mvs-bp-dropzone" id="mvs-bp-dropzone">
+					<span class="dashicons dashicons-cloud-upload"></span>
+					<span class="mvs-bp-dropzone-text"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
+				</div>
+				<div id="mvs-bp-upload-preview" class="mvs-bp-upload-preview"></div>
+				<div class="mvs-bp-upload-status" id="mvs-bp-upload-status" style="display:none;"></div>
+				<div class="mvs-bp-upload-form-actions">
+					<button type="button" id="mvs-bp-upload-cancel" class="mvs-btn mvs-btn-secondary"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+				</div>
+			</div>
+			<script>
+			(function(){
+				var restUrl = '<?php echo esc_js( $rest_url ); ?>';
+				var nonce = '<?php echo esc_js( $nonce ); ?>';
+				var groupId = <?php echo (int) $group->id; ?>;
+				var uploadBtn = document.getElementById('mvs-bp-upload-btn');
+				var uploadWrap = document.getElementById('mvs-bp-upload-wrap');
+				var dropzone = document.getElementById('mvs-bp-dropzone');
+				var fileInput = document.getElementById('mvs-bp-file-input');
+				var statusEl = document.getElementById('mvs-bp-upload-status');
+				var previewEl = document.getElementById('mvs-bp-upload-preview');
+				var cancelBtn = document.getElementById('mvs-bp-upload-cancel');
+
+				uploadBtn.addEventListener('click', function() {
+					uploadWrap.style.display = 'block';
+					uploadBtn.style.display = 'none';
+				});
+
+				cancelBtn.addEventListener('click', function() {
+					uploadWrap.style.display = 'none';
+					uploadBtn.style.display = '';
+					previewEl.textContent = '';
+					statusEl.style.display = 'none';
+				});
+
+				var clicking = false;
+				dropzone.addEventListener('click', function(e) {
+					e.preventDefault();
+					e.stopPropagation();
+					if (clicking) return;
+					clicking = true;
+					fileInput.click();
+					setTimeout(function() { clicking = false; }, 100);
+				});
+				dropzone.addEventListener('dragover', function(e) {
+					e.preventDefault();
+					dropzone.classList.add('mvs-bp-dropzone--active');
+				});
+				dropzone.addEventListener('dragleave', function() {
+					dropzone.classList.remove('mvs-bp-dropzone--active');
+				});
+				dropzone.addEventListener('drop', function(e) {
+					e.preventDefault();
+					dropzone.classList.remove('mvs-bp-dropzone--active');
+					handleFiles(Array.from(e.dataTransfer.files));
+				});
+				fileInput.addEventListener('change', function() {
+					handleFiles(Array.from(fileInput.files));
+					fileInput.value = '';
+				});
+
+				function handleFiles(files) {
+					if (!files.length) return;
+					files.forEach(function(file) {
+						if (!file.type.match(/^image\//)) return;
+						var reader = new FileReader();
+						reader.onload = function(e) {
+							var thumb = document.createElement('div');
+							thumb.className = 'mvs-bp-upload-thumb';
+							var img = document.createElement('img');
+							img.src = e.target.result;
+							img.alt = file.name;
+							var name = document.createElement('span');
+							name.className = 'mvs-bp-upload-thumb-name';
+							name.textContent = file.name;
+							thumb.appendChild(img);
+							thumb.appendChild(name);
+							previewEl.appendChild(thumb);
+						};
+						reader.readAsDataURL(file);
+					});
+					uploadFiles(files);
+				}
+
+				function uploadFiles(files) {
+					statusEl.style.display = 'block';
+					var total = files.length, done = 0, failed = 0;
+					statusEl.textContent = 'Uploading 1 of ' + total + '...';
+					statusEl.className = 'mvs-bp-upload-status';
+
+					function next() {
+						if (done >= total) {
+							var uploaded = total - failed;
+							statusEl.textContent = uploaded + ' file(s) uploaded!';
+							statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
+							setTimeout(function() { window.location.reload(); }, 800);
+							return;
+						}
+						var fd = new FormData();
+						fd.append('file', files[done]);
+						fd.append('group_id', groupId);
+						fetch(restUrl + 'media', {
+							method: 'POST',
+							headers: { 'X-WP-Nonce': nonce },
+							credentials: 'same-origin',
+							body: fd
+						}).then(function(r) {
+							if (!r.ok) failed++;
+							done++;
+							if (done < total) statusEl.textContent = 'Uploading ' + (done + 1) + ' of ' + total + '...';
+							next();
+						}).catch(function() {
+							failed++;
+							done++;
+							next();
+						});
+					}
+					next();
+				}
+			})();
+			</script>
+			<?php
 		}
 
 		$paged     = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$per_page  = 18;
 		$stats_tbl = $GLOBALS['wpdb']->prefix . 'mvs_media_stats';
 
+		// Query media scoped to THIS group via _mvs_group_id meta.
 		$query = new \WP_Query(
 			array(
 				'post_type'      => 'mvs_media',
 				'post_status'    => 'publish',
-				'author__in'     => $member_ids,
 				'posts_per_page' => $per_page,
 				'paged'          => $paged,
 				'orderby'        => 'date',
 				'order'          => 'DESC',
 				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery
 					array(
-						'key'   => '_mvs_privacy',
-						'value' => 'group',
+						'key'   => '_mvs_group_id',
+						'value' => $group->id,
+						'type'  => 'NUMERIC',
 					),
 				),
 			)
@@ -816,12 +1443,10 @@ class BuddyPressIntegration {
 			$views     = isset( $stats_map[ $mid ]['views'] ) ? (int) $stats_map[ $mid ]['views'] : 0;
 			$reactions = isset( $stats_map[ $mid ]['reactions'] ) ? (int) $stats_map[ $mid ]['reactions'] : 0;
 
-			// Fix HTTPS mixed content.
 			if ( $file_url ) {
 				$file_url = set_url_scheme( $file_url );
 			}
 
-			// Resolve thumbnail: prefer file_url, fallback to WP attachment.
 			$thumb_url = '';
 			if ( $is_image && $file_url ) {
 				$thumb_url = $file_url;
@@ -855,7 +1480,6 @@ class BuddyPressIntegration {
 		}
 		echo '</div>';
 
-		// Pagination.
 		if ( $query->max_num_pages > 1 ) {
 			$pagination = paginate_links(
 				array(
@@ -871,6 +1495,388 @@ class BuddyPressIntegration {
 		}
 
 		wp_reset_postdata();
+	}
+
+	/**
+	 * Output albums grid for the current group.
+	 */
+	public function group_albums_content(): void {
+		wp_enqueue_style( 'mvs-frontend' );
+
+		$group = groups_get_current_group();
+		if ( ! $group ) {
+			return;
+		}
+
+		$this->render_group_sub_tabs( 'albums' );
+
+		$is_member = is_user_logged_in() && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group->id );
+
+		// Create album button + form for members.
+		if ( $is_member ) {
+			echo '<div class="mvs-bp-profile-actions">';
+			echo '<button type="button" id="mvs-bp-create-album-btn" class="mvs-btn">';
+			echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Create Album', 'wpmediaverse' );
+			echo '</button>';
+			echo '</div>';
+
+			echo '<div id="mvs-bp-album-form" class="mvs-bp-album-form" style="display:none;">';
+			echo '<div class="mvs-bp-album-form-inner">';
+			echo '<label for="mvs-bp-album-title">' . esc_html__( 'Album Name', 'wpmediaverse' ) . '</label>';
+			echo '<input type="text" id="mvs-bp-album-title" placeholder="' . esc_attr__( 'Enter album name...', 'wpmediaverse' ) . '" />';
+			echo '<label for="mvs-bp-album-desc">' . esc_html__( 'Description (optional)', 'wpmediaverse' ) . '</label>';
+			echo '<textarea id="mvs-bp-album-desc" rows="2" placeholder="' . esc_attr__( 'Album description...', 'wpmediaverse' ) . '"></textarea>';
+			echo '<input type="hidden" id="mvs-bp-group-id" value="' . (int) $group->id . '" />';
+			echo '<div class="mvs-bp-album-form-actions">';
+			echo '<button type="button" id="mvs-bp-album-save" class="mvs-btn mvs-btn-primary">' . esc_html__( 'Create', 'wpmediaverse' ) . '</button>';
+			echo '<button type="button" id="mvs-bp-album-cancel" class="mvs-btn mvs-btn-secondary">' . esc_html__( 'Cancel', 'wpmediaverse' ) . '</button>';
+			echo '</div>';
+			echo '<div id="mvs-bp-album-msg" class="mvs-bp-album-msg"></div>';
+			echo '</div>';
+			echo '</div>';
+		}
+
+		$paged    = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$per_page = 18;
+
+		$query = new \WP_Query(
+			array(
+				'post_type'      => 'mvs_album',
+				'post_status'    => 'publish',
+				'posts_per_page' => $per_page,
+				'paged'          => $paged,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery
+					array(
+						'key'   => '_mvs_group_id',
+						'value' => $group->id,
+						'type'  => 'NUMERIC',
+					),
+				),
+			)
+		);
+
+		if ( ! $query->have_posts() ) {
+			echo '<div class="mvs-empty-state">';
+			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			echo '<p>' . esc_html__( 'No group albums yet.', 'wpmediaverse' ) . '</p>';
+			echo '</div>';
+			return;
+		}
+
+		$group_url = bp_get_group_url( $group );
+
+		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed">';
+		while ( $query->have_posts() ) {
+			$query->the_post();
+			$album_id   = get_the_ID();
+			$cover_id   = (int) get_post_meta( $album_id, '_mvs_cover_media_id', true );
+			$cover_url  = '';
+			$item_count = 0;
+
+			if ( $cover_id ) {
+				$cover_url = get_post_meta( $cover_id, '_mvs_file_url', true );
+			}
+
+			// Fallback: use first album item's thumbnail as cover.
+			if ( ! $cover_url ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$first_media_id = $GLOBALS['wpdb']->get_var(
+					$GLOBALS['wpdb']->prepare(
+						"SELECT media_id FROM {$GLOBALS['wpdb']->prefix}mvs_album_items WHERE album_id = %d ORDER BY position ASC, id ASC LIMIT 1",
+						$album_id
+					)
+				);
+				if ( $first_media_id ) {
+					$attach_id = (int) get_post_meta( (int) $first_media_id, '_mvs_attachment_id', true );
+					if ( $attach_id ) {
+						$cover_url = wp_get_attachment_image_url( $attach_id, 'medium' );
+					}
+					if ( ! $cover_url ) {
+						$cover_url = get_post_meta( (int) $first_media_id, '_mvs_file_url', true );
+					}
+				}
+			}
+
+			if ( $cover_url ) {
+				$cover_url = set_url_scheme( $cover_url );
+			}
+
+			$item_count = (int) $GLOBALS['wpdb']->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$GLOBALS['wpdb']->prepare(
+					"SELECT COUNT(*) FROM {$GLOBALS['wpdb']->prefix}mvs_album_items WHERE album_id = %d",
+					$album_id
+				)
+			);
+
+			$album_post = get_post( $album_id );
+			$album_link = trailingslashit( $group_url . 'media/albums/' . $album_post->post_name );
+
+			echo '<div class="mvs-grid-item mvs-grid-item--album">';
+			echo '<a href="' . esc_url( $album_link ) . '" class="mvs-grid-item-link">';
+			if ( $cover_url ) {
+				echo '<img src="' . esc_url( $cover_url ) . '" alt="' . esc_attr( get_the_title() ) . '" loading="lazy" />';
+			} else {
+				echo '<div class="mvs-grid-item-placeholder"><span class="dashicons dashicons-format-gallery"></span></div>';
+			}
+			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';
+			echo '<span class="mvs-grid-stat">&#x1F5BC;&#xFE0F; ' . esc_html( $item_count ) . '</span>';
+			echo '</div></div>';
+			echo '</a>';
+			echo '<div class="mvs-grid-item-info"><span class="mvs-grid-item-title">' . esc_html( get_the_title() ) . '</span></div>';
+			echo '</div>';
+		}
+		echo '</div>';
+
+		if ( $query->max_num_pages > 1 ) {
+			$pagination = paginate_links(
+				array(
+					'base'    => add_query_arg( 'mpage', '%#%' ),
+					'format'  => '',
+					'current' => $paged,
+					'total'   => $query->max_num_pages,
+				)
+			);
+			if ( $pagination ) {
+				echo '<div class="mvs-pagination">' . wp_kses_post( $pagination ) . '</div>';
+			}
+		}
+
+		wp_reset_postdata();
+	}
+
+	/**
+	 * Display a single album within the BP group context.
+	 * URL: /groups/{slug}/media/albums/{album-slug}/
+	 */
+	public function group_single_album_content(): void {
+		wp_enqueue_style( 'mvs-frontend' );
+
+		$group = groups_get_current_group();
+		if ( ! $group ) {
+			return;
+		}
+
+		$album_slug = bp_action_variable( 1 );
+		$album      = get_page_by_path( $album_slug, OBJECT, 'mvs_album' );
+
+		if ( ! $album ) {
+			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
+			return;
+		}
+
+		// Verify album belongs to this group.
+		$album_group_id = (int) get_post_meta( $album->ID, '_mvs_group_id', true );
+		if ( $album_group_id !== (int) $group->id ) {
+			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found in this group.', 'wpmediaverse' ) . '</p></div>';
+			return;
+		}
+
+		$album_id  = $album->ID;
+		$group_url = bp_get_group_url( $group );
+		$is_member = is_user_logged_in() && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group->id );
+
+		// Back link.
+		$albums_url = trailingslashit( $group_url . 'media/albums' );
+		echo '<div class="mvs-bp-back-link">';
+		echo '<a href="' . esc_url( $albums_url ) . '">&larr; ' . esc_html__( 'Back to Albums', 'wpmediaverse' ) . '</a>';
+		echo '</div>';
+
+		// Album header.
+		echo '<div class="mvs-album-header">';
+		echo '<h2 class="mvs-album-title">' . esc_html( $album->post_title ) . '</h2>';
+		if ( $album->post_content ) {
+			echo '<div class="mvs-album-description">' . wp_kses_post( $album->post_content ) . '</div>';
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_album_items';
+		$items = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$table} WHERE album_id = %d ORDER BY position ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$album_id
+			)
+		);
+		$item_count = count( $items );
+
+		echo '<span class="mvs-album-count">';
+		printf(
+			/* translators: %d: number of items */
+			esc_html( _n( '%d item', '%d items', $item_count, 'wpmediaverse' ) ),
+			$item_count
+		);
+		echo '</span>';
+		echo '</div>';
+
+		// Upload for group members.
+		if ( $is_member ) {
+			$rest_url = esc_url_raw( rest_url( 'mvs/v1/' ) );
+			$nonce    = wp_create_nonce( 'wp_rest' );
+
+			echo '<div class="mvs-bp-profile-actions">';
+			echo '<button type="button" id="mvs-album-upload-btn" class="mvs-btn">';
+			echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Add Media', 'wpmediaverse' );
+			echo '</button>';
+			echo '</div>';
+
+			echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;">';
+			echo '<input type="file" multiple accept="image/*,video/*,audio/*" id="mvs-album-file-input" style="display:none" />';
+			echo '<div class="mvs-bp-dropzone" id="mvs-album-dropzone">';
+			echo '<span class="dashicons dashicons-cloud-upload"></span>';
+			echo '<span class="mvs-bp-dropzone-text">' . esc_html__( 'Drop files here or click to upload into this album', 'wpmediaverse' ) . '</span>';
+			echo '</div>';
+			echo '<div id="mvs-album-upload-preview" class="mvs-bp-upload-preview"></div>';
+			echo '<div id="mvs-album-upload-status" class="mvs-bp-upload-status" style="display:none;"></div>';
+			echo '<div class="mvs-bp-upload-form-actions">';
+			echo '<button type="button" id="mvs-album-upload-cancel" class="mvs-btn mvs-btn-secondary">' . esc_html__( 'Cancel', 'wpmediaverse' ) . '</button>';
+			echo '</div>';
+			echo '</div>';
+
+			?>
+			<script>
+			(function(){
+				var albumId = <?php echo (int) $album_id; ?>;
+				var groupId = <?php echo (int) $group->id; ?>;
+				var restUrl = '<?php echo esc_js( $rest_url ); ?>';
+				var nonce = '<?php echo esc_js( $nonce ); ?>';
+				var uploadBtn = document.getElementById('mvs-album-upload-btn');
+				var uploadWrap = document.getElementById('mvs-album-upload-wrap');
+				var dropzone = document.getElementById('mvs-album-dropzone');
+				var fileInput = document.getElementById('mvs-album-file-input');
+				var statusEl = document.getElementById('mvs-album-upload-status');
+				var previewEl = document.getElementById('mvs-album-upload-preview');
+				var cancelBtn = document.getElementById('mvs-album-upload-cancel');
+
+				uploadBtn.addEventListener('click', function() {
+					uploadWrap.style.display = 'block';
+					uploadBtn.style.display = 'none';
+				});
+				cancelBtn.addEventListener('click', function() {
+					uploadWrap.style.display = 'none';
+					uploadBtn.style.display = '';
+					previewEl.textContent = '';
+					statusEl.style.display = 'none';
+				});
+
+				var clicking = false;
+				dropzone.addEventListener('click', function(e) {
+					e.preventDefault(); e.stopPropagation();
+					if (clicking) return;
+					clicking = true;
+					fileInput.click();
+					setTimeout(function() { clicking = false; }, 100);
+				});
+				dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('mvs-bp-dropzone--active'); });
+				dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('mvs-bp-dropzone--active'); });
+				dropzone.addEventListener('drop', function(e) {
+					e.preventDefault(); dropzone.classList.remove('mvs-bp-dropzone--active');
+					handleFiles(Array.from(e.dataTransfer.files));
+				});
+				fileInput.addEventListener('change', function() {
+					handleFiles(Array.from(fileInput.files));
+					fileInput.value = '';
+				});
+
+				function handleFiles(files) {
+					if (!files.length) return;
+					files.forEach(function(file) {
+						if (!file.type.match(/^image\//)) return;
+						var reader = new FileReader();
+						reader.onload = function(e) {
+							var thumb = document.createElement('div');
+							thumb.className = 'mvs-bp-upload-thumb';
+							var img = document.createElement('img');
+							img.src = e.target.result;
+							thumb.appendChild(img);
+							previewEl.appendChild(thumb);
+						};
+						reader.readAsDataURL(file);
+					});
+					uploadAndAddToAlbum(files);
+				}
+
+				function uploadAndAddToAlbum(files) {
+					statusEl.style.display = 'block';
+					var total = files.length, done = 0;
+					var uploadedIds = [];
+					statusEl.textContent = 'Uploading 1 of ' + total + '...';
+					statusEl.className = 'mvs-bp-upload-status';
+
+					function next() {
+						if (done >= total) {
+							if (uploadedIds.length) {
+								statusEl.textContent = 'Adding to album...';
+								fetch(restUrl + 'albums/' + albumId + '/items', {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
+									credentials: 'same-origin',
+									body: JSON.stringify({ media_ids: uploadedIds })
+								}).then(function() {
+									statusEl.textContent = uploadedIds.length + ' file(s) added to album!';
+									statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
+									setTimeout(function() { window.location.reload(); }, 800);
+								});
+							}
+							return;
+						}
+						var fd = new FormData();
+						fd.append('file', files[done]);
+						fd.append('group_id', groupId);
+						fetch(restUrl + 'media', {
+							method: 'POST',
+							headers: { 'X-WP-Nonce': nonce },
+							credentials: 'same-origin',
+							body: fd
+						}).then(function(r) { return r.json(); })
+						.then(function(data) {
+							if (data.id) uploadedIds.push(data.id);
+							done++;
+							if (done < total) statusEl.textContent = 'Uploading ' + (done + 1) + ' of ' + total + '...';
+							next();
+						}).catch(function() { done++; next(); });
+					}
+					next();
+				}
+			})();
+			</script>
+			<?php
+		}
+
+		// Album items grid.
+		if ( ! empty( $items ) ) {
+			echo '<div class="mvs-media-grid mvs-cols-3">';
+			foreach ( $items as $media_id ) {
+				$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
+				$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
+				$is_image  = $file_url && strpos( $file_type, 'image/' ) === 0;
+
+				if ( $file_url ) {
+					$file_url = set_url_scheme( $file_url );
+				}
+
+				echo '<div class="mvs-grid-item">';
+				if ( $is_image ) {
+					echo '<a href="' . esc_url( get_permalink( $media_id ) ) . '">';
+					echo '<img src="' . esc_url( $file_url ) . '" alt="' . esc_attr( get_the_title( $media_id ) ) . '" loading="lazy" />';
+					echo '</a>';
+				} else {
+					echo '<div class="mvs-grid-item-placeholder"><span class="dashicons dashicons-media-default"></span></div>';
+				}
+				echo '<div class="mvs-grid-item-overlay"><span>' . esc_html( get_the_title( $media_id ) ) . '</span></div>';
+				echo '</div>';
+			}
+			echo '</div>';
+		} else {
+			echo '<div class="mvs-empty-state">';
+			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			if ( $is_member ) {
+				echo '<p>' . esc_html__( 'This album is empty. Add some media!', 'wpmediaverse' ) . '</p>';
+			} else {
+				echo '<p>' . esc_html__( 'This album is empty.', 'wpmediaverse' ) . '</p>';
+			}
+			echo '</div>';
+		}
 	}
 
 	/**
@@ -1094,13 +2100,13 @@ class BuddyPressIntegration {
 		}
 		?>
 		<div id="mvs-activity-media-btn-wrap" class="mvs-activity-media-btn-wrap">
-			<input type="file" id="mvs-activity-media-file" accept="image/*,video/*" style="display:none" />
+			<input type="file" id="mvs-activity-media-file" accept="image/*,video/*" multiple style="display:none" />
 			<button type="button" id="mvs-activity-media-btn" class="mvs-activity-media-btn" title="<?php esc_attr_e( 'Attach media', 'wpmediaverse' ); ?>">
 				<span class="dashicons dashicons-format-image"></span>
 				<?php esc_html_e( 'Photo/Video', 'wpmediaverse' ); ?>
 			</button>
 			<div id="mvs-activity-media-preview" class="mvs-activity-media-preview" style="display:none"></div>
-			<input type="hidden" id="mvs-activity-media-id" name="mvs_activity_media_id" value="" />
+			<input type="hidden" id="mvs-activity-media-ids" name="mvs_activity_media_ids" value="" />
 		</div>
 		<?php
 	}
@@ -1135,6 +2141,7 @@ class BuddyPressIntegration {
 				'restUrl'   => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 				'bpRestUrl' => esc_url_raw( rest_url( 'buddypress/v1/' ) ),
 				'nonce'     => wp_create_nonce( 'wp_rest' ),
+				'maxMedia'  => (int) apply_filters( 'mvs_activity_max_media', 5 ),
 			)
 		);
 	}
@@ -1148,31 +2155,74 @@ class BuddyPressIntegration {
 	 */
 	public function attach_media_to_activity( $content, $user_id, $activity_id ): void {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing
-		$media_id = isset( $_POST['mvs_activity_media_id'] ) ? absint( $_POST['mvs_activity_media_id'] ) : 0;
-		if ( ! $media_id ) {
+		$raw_ids = isset( $_POST['mvs_activity_media_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['mvs_activity_media_ids'] ) ) : '';
+		if ( ! $raw_ids ) {
 			return;
 		}
 
-		$post = get_post( $media_id );
-		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+		$media_ids = array_filter( array_map( 'absint', explode( ',', $raw_ids ) ) );
+		if ( empty( $media_ids ) ) {
 			return;
 		}
 
-		// Verify the user owns this media.
-		if ( (int) $post->post_author !== $user_id ) {
+		/** Filter: max media items per activity post. Default 5. */
+		$max_media = (int) apply_filters( 'mvs_activity_max_media', 5 );
+		$media_ids = array_slice( $media_ids, 0, $max_media );
+
+		$thumbnails = '';
+		$valid_ids  = array();
+		foreach ( $media_ids as $media_id ) {
+			$post = get_post( $media_id );
+			if ( ! $post || 'mvs_media' !== $post->post_type ) {
+				continue;
+			}
+			if ( (int) $post->post_author !== $user_id ) {
+				continue;
+			}
+			$valid_ids[] = $media_id;
+			$thumbnails .= $this->get_media_thumbnail_html( $media_id, 'medium' );
+		}
+
+		if ( empty( $valid_ids ) ) {
 			return;
 		}
 
-		$thumbnail   = $this->get_media_thumbnail_html( $media_id, 'medium' );
-		$new_content = $content . $thumbnail;
+		$count       = count( $valid_ids );
+		$grid_class  = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 5 );
+		$new_content = $content . '<div class="' . esc_attr( $grid_class ) . '">' . $thumbnails . '</div>';
 
-		bp_activity_update_meta( $activity_id, '_mvs_media_id', $media_id );
+		bp_activity_update_meta( $activity_id, '_mvs_media_ids', implode( ',', $valid_ids ) );
 
-		// Update activity content to include the thumbnail.
 		$activity = new \BP_Activity_Activity( $activity_id );
 		if ( $activity->id ) {
 			$activity->content = $new_content;
 			$activity->save();
+		}
+	}
+
+	/**
+	 * Attach media to a group activity post.
+	 *
+	 * Mirrors attach_media_to_activity() but for group updates.
+	 * Fires on bp_groups_posted_update ($content, $user_id, $group_id, $activity_id).
+	 *
+	 * @param string $content     Activity content.
+	 * @param int    $user_id     User ID.
+	 * @param int    $group_id    Group ID.
+	 * @param int    $activity_id Activity ID.
+	 */
+	public function attach_media_to_group_activity( $content, $user_id, $group_id, $activity_id ): void {
+		// Delegate to the same logic as personal activity.
+		$this->attach_media_to_activity( $content, $user_id, $activity_id );
+
+		// Also set group meta on each media item so it appears in group media grid.
+		$raw_ids = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
+		if ( $raw_ids ) {
+			$media_ids = array_filter( array_map( 'absint', explode( ',', $raw_ids ) ) );
+			foreach ( $media_ids as $media_id ) {
+				update_post_meta( $media_id, '_mvs_privacy', 'group' );
+				update_post_meta( $media_id, '_mvs_group_id', $group_id );
+			}
 		}
 	}
 

@@ -106,6 +106,22 @@ class AlbumService {
 			}
 		}
 
+		// Store album association on each media item.
+		if ( $added > 0 ) {
+			foreach ( $media_ids as $mid ) {
+				update_post_meta( (int) $mid, '_mvs_album_id', $album_id );
+			}
+
+			/**
+			 * Fires after media items are added to an album.
+			 *
+			 * @param int   $album_id  Album post ID.
+			 * @param array $media_ids Media post IDs that were added.
+			 * @param int   $added     Number of items successfully added.
+			 */
+			do_action( 'mvs_album_items_added', $album_id, $media_ids, $added );
+		}
+
 		// Auto-set cover if album has no cover yet.
 		if ( $added > 0 && ! has_post_thumbnail( $album_id ) ) {
 			$first_media = $media_ids[0];

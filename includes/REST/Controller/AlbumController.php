@@ -314,6 +314,13 @@ class AlbumController extends WP_REST_Controller {
 		$album_type = sanitize_text_field( $request->get_param( 'album_type' ) ?? 'default' );
 		update_post_meta( $album_id, '_mvs_album_type', $album_type );
 
+		// Set group association if group_id is provided and user is a member.
+		$group_id = absint( $request->get_param( 'group_id' ) );
+		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
+			update_post_meta( $album_id, '_mvs_privacy', 'group' );
+			update_post_meta( $album_id, '_mvs_group_id', $group_id );
+		}
+
 		$response = rest_ensure_response( $this->prepare_album_response( get_post( $album_id ) ) );
 		$response->set_status( 201 );
 

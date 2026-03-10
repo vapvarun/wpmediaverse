@@ -90,16 +90,21 @@ class CommentController extends WP_REST_Controller {
 					'callback'            => array( $this, 'create_item' ),
 					'permission_callback' => array( $this, 'create_item_permissions_check' ),
 					'args'                => array(
-						'media_id' => array(
+						'media_id'      => array(
 							'type'              => 'integer',
 							'required'          => true,
 							'sanitize_callback' => 'absint',
 						),
-						'content'  => array(
+						'content'       => array(
 							'type'     => 'string',
 							'required' => true,
 						),
-						'parent'   => array(
+						'parent'        => array(
+							'type'              => 'integer',
+							'default'           => 0,
+							'sanitize_callback' => 'absint',
+						),
+						'from_activity' => array(
 							'type'              => 'integer',
 							'default'           => 0,
 							'sanitize_callback' => 'absint',
@@ -180,7 +185,17 @@ class CommentController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_empty_comment', __( 'Comment content is required.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
-		$parent = (int) $request->get_param( 'parent' );
+		$parent        = (int) $request->get_param( 'parent' );
+		$from_activity = (int) $request->get_param( 'from_activity' );
+
+		// When comment originates from a BP activity lightbox, the JS already
+		// posts a BP activity reply. Set a flag so BuddyPressIntegration skips
+		// creating a duplicate standalone activity.
+		if ( $from_activity > 0 ) {
+			if ( ! defined( 'MVS_COMMENT_FROM_ACTIVITY' ) ) {
+				define( 'MVS_COMMENT_FROM_ACTIVITY', $from_activity );
+			}
+		}
 
 		$comment_id = $this->comments->add( $media_id, get_current_user_id(), $content, $parent );
 

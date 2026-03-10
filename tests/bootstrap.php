@@ -16,6 +16,7 @@ if ( ! file_exists( $wp_root . '/wp-load.php' ) ) {
 
 // Define test mode.
 define( 'WP_USE_THEMES', false );
+define( 'MVS_RUNNING_TESTS', true );
 define( 'ABSPATH', $wp_root . '/' );
 
 // Load WP.
