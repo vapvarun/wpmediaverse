@@ -181,6 +181,24 @@ class MediaController extends WP_REST_Controller {
 	public function get_items( $request ) {
 		global $wpdb;
 
+		// Slug lookup — return single item by post_name.
+		$slug = $request->get_param( 'slug' );
+		if ( $slug ) {
+			$posts = get_posts(
+				array(
+					'post_type'   => 'mvs_media',
+					'name'        => sanitize_title( $slug ),
+					'post_status' => 'publish',
+					'numberposts' => 1,
+				)
+			);
+			if ( ! empty( $posts ) ) {
+				$item = $this->prepare_item_for_response( $posts[0], $request );
+				return rest_ensure_response( $item ? array( $item ) : array() );
+			}
+			return rest_ensure_response( array() );
+		}
+
 		$per_page = $request->get_param( 'per_page' );
 		$per_page = $per_page ? (int) $per_page : 20;
 		$page     = $request->get_param( 'page' );
@@ -675,6 +693,10 @@ class MediaController extends WP_REST_Controller {
 			'author'     => array(
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
+			),
+			'slug'       => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_title',
 			),
 		);
 	}
