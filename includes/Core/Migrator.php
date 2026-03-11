@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 2;
+	const CURRENT_VERSION = 3;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -42,6 +42,52 @@ class Migrator {
 	 */
 	private function migrate_to_2(): void {
 		\WPMediaVerse\Capabilities\MediaCapabilities::add_caps();
+	}
+
+	/**
+	 * Migration v3 — social foundation tables (follows, notifications).
+	 *
+	 * @since 1.1.0
+	 */
+	private function migrate_to_3(): void {
+		global $wpdb;
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$prefix          = $wpdb->prefix;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		// 10. Follows.
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_follows (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				follower_id bigint(20) unsigned NOT NULL,
+				following_id bigint(20) unsigned NOT NULL,
+				status varchar(20) NOT NULL DEFAULT 'active',
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				UNIQUE KEY follower_following (follower_id, following_id),
+				KEY following_id (following_id),
+				KEY status (status)
+			) {$charset_collate};"
+		);
+
+		// 11. Notifications.
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_notifications (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				user_id bigint(20) unsigned NOT NULL,
+				type varchar(50) NOT NULL,
+				actor_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				media_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				comment_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				read_at datetime DEFAULT NULL,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY user_unread (user_id, read_at),
+				KEY user_date (user_id, created_at)
+			) {$charset_collate};"
+		);
 	}
 
 	/**

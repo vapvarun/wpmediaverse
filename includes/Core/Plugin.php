@@ -55,6 +55,11 @@ use WPMediaVerse\Services\AccessRulesService;
 use WPMediaVerse\Integrations\BuddyPressIntegration;
 use WPMediaVerse\Integrations\WebhookService;
 use WPMediaVerse\Services\CacheService;
+use WPMediaVerse\Social\FollowService;
+use WPMediaVerse\Social\NotificationService;
+use WPMediaVerse\REST\Controller\FollowController;
+use WPMediaVerse\REST\Controller\NotificationController;
+use WPMediaVerse\REST\Controller\UserController;
 
 /**
  * Main plugin bootstrap class.
@@ -366,6 +371,22 @@ class Plugin {
 				return $service;
 			}
 		);
+
+		self::$container->register(
+			'follows',
+			function () {
+				return new FollowService();
+			}
+		);
+
+		self::$container->register(
+			'notifications',
+			function () {
+				$service = new NotificationService();
+				$service->init();
+				return $service;
+			}
+		);
 	}
 
 	/**
@@ -387,6 +408,9 @@ class Plugin {
 		$signed_urls  = self::$container->get( 'signed_urls' );
 		$payments     = self::$container->get( 'payments' );
 
+		$follows       = self::$container->get( 'follows' );
+		$notifications = self::$container->get( 'notifications' );
+
 		$controllers = array(
 			new MediaController( $privacy ),
 			new AlbumController( $albums, $privacy ),
@@ -401,6 +425,9 @@ class Plugin {
 			new AccessController( $access_rules ),
 			new SignedUrlController( $signed_urls, $privacy ),
 			new CheckoutController( $payments ),
+			new FollowController( $follows ),
+			new NotificationController( $notifications ),
+			new UserController(),
 		);
 
 		foreach ( $controllers as $controller ) {

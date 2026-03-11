@@ -1,0 +1,294 @@
+<?php
+/**
+ * Notification service.
+ *
+ * Native notification center — works standalone, optionally syncs with BuddyPress.
+ *
+ * @package    WPMediaVerse
+ * @subpackage Social
+ * @since      1.1.0
+ */
+
+namespace WPMediaVerse\Social;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Handles notification creation, listing, read status, and counts.
+ */
+class NotificationService {
+
+	/**
+	 * Notification types.
+	 *
+	 * @var string[]
+	 */
+	const TYPES = array(
+		'new_follower',
+		'media_reaction',
+		'media_comment',
+		'media_mention',
+		'media_favorite',
+	);
+
+	/**
+	 * Register hooks for auto-creating notifications.
+	 *
+	 * @since 1.1.0
+	 */
+	public function init(): void {
+		add_action( 'mvs_user_followed', array( $this, 'on_follow' ), 10, 2 );
+		add_action( 'mvs_reaction_added', array( $this, 'on_reaction' ), 10, 3 );
+		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 3 );
+		add_action( 'mvs_mentions_created', array( $this, 'on_mentions' ), 10, 4 );
+		add_action( 'mvs_favorite_added', array( $this, 'on_favorite' ), 10, 2 );
+	}
+
+	/**
+	 * Create a notification.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int    $user_id    Recipient user ID.
+	 * @param string $type       Notification type.
+	 * @param int    $actor_id   User who triggered it.
+	 * @param int    $media_id   Related media ID (0 if none).
+	 * @param int    $comment_id Related comment ID (0 if none).
+	 * @return int|false Notification ID or false.
+	 */
+	public function create( int $user_id, string $type, int $actor_id, int $media_id = 0, int $comment_id = 0 ) {
+		// Don't notify yourself.
+		if ( $user_id === $actor_id ) {
+			return false;
+		}
+
+		if ( ! in_array( $type, self::TYPES, true ) ) {
+			return false;
+		}
+
+		global $wpdb;
+
+		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_notifications',
+			array(
+				'user_id'    => $user_id,
+				'type'       => $type,
+				'actor_id'   => $actor_id,
+				'media_id'   => $media_id,
+				'comment_id' => $comment_id,
+				'created_at' => current_time( 'mysql', true ),
+			),
+			array( '%d', '%s', '%d', '%d', '%d', '%s' )
+		);
+
+		if ( $wpdb->insert_id ) {
+			wp_cache_delete( 'mvs_notif_count_' . $user_id, 'mvs' );
+			return $wpdb->insert_id;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get notifications for a user.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int    $user_id  User ID.
+	 * @param int    $per_page Results per page.
+	 * @param int    $page     Page number.
+	 * @param string $filter   'all', 'unread', or a specific type.
+	 * @return array { notifications: array, total: int }
+	 */
+	public function get_notifications( int $user_id, int $per_page = 20, int $page = 1, string $filter = 'all' ): array {
+		global $wpdb;
+
+		$offset = ( $page - 1 ) * $per_page;
+		$where  = 'user_id = %d';
+		$params = array( $user_id );
+
+		if ( 'unread' === $filter ) {
+			$where .= ' AND read_at IS NULL';
+		} elseif ( in_array( $filter, self::TYPES, true ) ) {
+			$where   .= ' AND type = %s';
+			$params[] = $filter;
+		}
+
+		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_notifications WHERE {$where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$params
+			)
+		);
+
+		$params[] = $per_page;
+		$params[] = $offset;
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}mvs_notifications WHERE {$where} ORDER BY created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$params
+			)
+		);
+
+		$notifications = array();
+		foreach ( $rows as $row ) {
+			$notifications[] = $this->format_notification( $row );
+		}
+
+		return array(
+			'notifications' => $notifications,
+			'total'         => $total,
+		);
+	}
+
+	/**
+	 * Get unread notification count for a user.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return int
+	 */
+	public function get_unread_count( int $user_id ): int {
+		$cached = wp_cache_get( 'mvs_notif_count_' . $user_id, 'mvs' );
+		if ( false !== $cached ) {
+			return (int) $cached;
+		}
+
+		global $wpdb;
+
+		$count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_notifications WHERE user_id = %d AND read_at IS NULL",
+				$user_id
+			)
+		);
+
+		wp_cache_set( 'mvs_notif_count_' . $user_id, $count, 'mvs', 300 );
+
+		return $count;
+	}
+
+	/**
+	 * Mark notifications as read.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int   $user_id User ID.
+	 * @param int[] $ids     Notification IDs to mark read. Empty = mark all.
+	 * @return int Number of notifications marked.
+	 */
+	public function mark_read( int $user_id, array $ids = array() ): int {
+		global $wpdb;
+
+		$now = current_time( 'mysql', true );
+
+		if ( empty( $ids ) ) {
+			$updated = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_notifications SET read_at = %s WHERE user_id = %d AND read_at IS NULL",
+					$now,
+					$user_id
+				)
+			);
+		} else {
+			$id_list  = implode( ',', array_map( 'absint', $ids ) );
+			$updated  = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_notifications SET read_at = %s WHERE user_id = %d AND id IN ({$id_list})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$now,
+					$user_id
+				)
+			);
+		}
+
+		wp_cache_delete( 'mvs_notif_count_' . $user_id, 'mvs' );
+
+		return (int) $updated;
+	}
+
+	/**
+	 * Handle follow notification.
+	 *
+	 * @param int $follower_id  Follower.
+	 * @param int $following_id Followed user.
+	 */
+	public function on_follow( int $follower_id, int $following_id ): void {
+		$this->create( $following_id, 'new_follower', $follower_id );
+	}
+
+	/**
+	 * Handle reaction notification.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param int    $user_id  Reactor.
+	 * @param string $type     Reaction type.
+	 */
+	public function on_reaction( int $media_id, int $user_id, string $type ): void {
+		$owner = (int) get_post_field( 'post_author', $media_id );
+		$this->create( $owner, 'media_reaction', $user_id, $media_id );
+	}
+
+	/**
+	 * Handle comment notification.
+	 *
+	 * @param int $media_id   Media ID.
+	 * @param int $user_id    Commenter.
+	 * @param int $comment_id Comment ID.
+	 */
+	public function on_comment( int $media_id, int $user_id, int $comment_id ): void {
+		$owner = (int) get_post_field( 'post_author', $media_id );
+		$this->create( $owner, 'media_comment', $user_id, $media_id, $comment_id );
+	}
+
+	/**
+	 * Handle mention notifications.
+	 *
+	 * @param int   $media_id      Media ID.
+	 * @param int[] $mentioned_ids Mentioned user IDs.
+	 * @param string $context      Context.
+	 * @param int   $comment_id    Comment ID.
+	 */
+	public function on_mentions( int $media_id, array $mentioned_ids, string $context, int $comment_id ): void {
+		$actor = get_current_user_id();
+		foreach ( $mentioned_ids as $uid ) {
+			$this->create( (int) $uid, 'media_mention', $actor, $media_id, $comment_id );
+		}
+	}
+
+	/**
+	 * Handle favorite notification.
+	 *
+	 * @param int $media_id Media ID.
+	 * @param int $user_id  User who favorited.
+	 */
+	public function on_favorite( int $media_id, int $user_id ): void {
+		$owner = (int) get_post_field( 'post_author', $media_id );
+		$this->create( $owner, 'media_favorite', $user_id, $media_id );
+	}
+
+	/**
+	 * Format a notification row for REST output.
+	 *
+	 * @param object $row Database row.
+	 * @return array
+	 */
+	private function format_notification( object $row ): array {
+		$actor = get_userdata( (int) $row->actor_id );
+
+		return array(
+			'id'         => (int) $row->id,
+			'type'       => $row->type,
+			'actor'      => array(
+				'id'     => (int) $row->actor_id,
+				'name'   => $actor ? $actor->display_name : '',
+				'avatar' => get_avatar_url( (int) $row->actor_id, array( 'size' => 48 ) ),
+			),
+			'media_id'   => (int) $row->media_id,
+			'comment_id' => (int) $row->comment_id,
+			'is_read'    => ! empty( $row->read_at ),
+			'created_at' => $row->created_at,
+		);
+	}
+}
