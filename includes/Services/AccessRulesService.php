@@ -21,21 +21,21 @@ class AccessRulesService {
 	 *
 	 * @var string[]
 	 */
-	const RULE_TYPES = array( 'role', 'capability', 'membership', 'purchase', 'subscription', 'code' );
+	const RULE_TYPES = array( 'role', 'capability', 'membership', 'code' );
 
 	/**
 	 * Valid grant sources.
 	 *
 	 * @var string[]
 	 */
-	const GRANT_SOURCES = array( 'manual', 'purchase', 'code', 'subscription' );
+	const GRANT_SOURCES = array( 'manual', 'code' );
 
 	/**
 	 * Rule types that require an explicit grant row.
 	 *
 	 * @var string[]
 	 */
-	const EXPLICIT_GRANT_TYPES = array( 'purchase', 'subscription', 'code' );
+	const EXPLICIT_GRANT_TYPES = array( 'code' );
 
 	/**
 	 * Per-request access cache.
@@ -50,7 +50,7 @@ class AccessRulesService {
 	 * @param int         $media_id   Media post ID.
 	 * @param string      $rule_type  Rule type (one of RULE_TYPES).
 	 * @param string      $rule_value Rule value (role name, cap name, product ID, etc).
-	 * @param float|null  $price      Optional price for purchase/subscription rules.
+	 * @param float|null  $price      Reserved for future use.
 	 * @param string|null $currency   Optional currency code (e.g. USD).
 	 * @return int|false Inserted rule ID or false on failure.
 	 */

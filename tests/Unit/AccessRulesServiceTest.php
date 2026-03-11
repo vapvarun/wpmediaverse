@@ -67,7 +67,7 @@ class AccessRulesServiceTest extends \PHPUnit\Framework\TestCase {
 	 * Test: add_rule returns a valid ID.
 	 */
 	public function test_add_rule_returns_valid_id(): void {
-		$rule_id = $this->service->add_rule( $this->media_id, 'purchase', 'one-time', 4.99, 'USD' );
+		$rule_id = $this->service->add_rule( $this->media_id, 'role', 'subscriber' );
 
 		$this->assertIsInt( $rule_id );
 		$this->assertGreaterThan( 0, $rule_id );
@@ -87,7 +87,7 @@ class AccessRulesServiceTest extends \PHPUnit\Framework\TestCase {
 	 */
 	public function test_get_rules_returns_all_rules(): void {
 		$this->service->add_rule( $this->media_id, 'role', 'subscriber' );
-		$this->service->add_rule( $this->media_id, 'purchase', 'one-time', 9.99, 'USD' );
+		$this->service->add_rule( $this->media_id, 'capability', 'edit_posts' );
 
 		$rules = $this->service->get_rules( $this->media_id );
 
@@ -99,12 +99,12 @@ class AccessRulesServiceTest extends \PHPUnit\Framework\TestCase {
 	 */
 	public function test_get_rules_filtered_by_type(): void {
 		$this->service->add_rule( $this->media_id, 'role', 'subscriber' );
-		$this->service->add_rule( $this->media_id, 'purchase', 'one-time', 9.99, 'USD' );
+		$this->service->add_rule( $this->media_id, 'capability', 'edit_posts' );
 
-		$rules = $this->service->get_rules( $this->media_id, 'purchase' );
+		$rules = $this->service->get_rules( $this->media_id, 'capability' );
 
 		$this->assertCount( 1, $rules );
-		$this->assertEquals( 'purchase', $rules[0]['rule_type'] );
+		$this->assertEquals( 'capability', $rules[0]['rule_type'] );
 	}
 
 	/**
@@ -130,10 +130,8 @@ class AccessRulesServiceTest extends \PHPUnit\Framework\TestCase {
 			$this->media_id,
 			array(
 				array(
-					'rule_type'  => 'purchase',
-					'rule_value' => 'one-time',
-					'price'      => 4.99,
-					'currency'   => 'USD',
+					'rule_type'  => 'capability',
+					'rule_value' => 'edit_posts',
 				),
 			)
 		);
@@ -141,7 +139,7 @@ class AccessRulesServiceTest extends \PHPUnit\Framework\TestCase {
 		$this->assertEquals( 1, $count );
 		$rules = $this->service->get_rules( $this->media_id );
 		$this->assertCount( 1, $rules );
-		$this->assertEquals( 'purchase', $rules[0]['rule_type'] );
+		$this->assertEquals( 'capability', $rules[0]['rule_type'] );
 	}
 
 	/**
@@ -194,7 +192,7 @@ class AccessRulesServiceTest extends \PHPUnit\Framework\TestCase {
 	 */
 	public function test_grant_with_expiration_expired(): void {
 		$past = gmdate( 'Y-m-d H:i:s', strtotime( '-1 hour' ) );
-		$this->service->grant_access( $this->media_id, 2, 'purchase', $past );
+		$this->service->grant_access( $this->media_id, 2, 'code', $past );
 
 		$this->assertFalse( $this->service->has_access( $this->media_id, 2 ) );
 	}
@@ -214,7 +212,7 @@ class AccessRulesServiceTest extends \PHPUnit\Framework\TestCase {
 		);
 
 		$this->service->grant_access( $this->media_id, 2, 'manual' );
-		$this->service->grant_access( $media_id_2, 2, 'purchase' );
+		$this->service->grant_access( $media_id_2, 2, 'code' );
 
 		$result = $this->service->get_user_grants( 2, 10, 1, true );
 
@@ -235,7 +233,7 @@ class AccessRulesServiceTest extends \PHPUnit\Framework\TestCase {
 	 */
 	public function test_cleanup_expired(): void {
 		$past = gmdate( 'Y-m-d H:i:s', strtotime( '-1 hour' ) );
-		$this->service->grant_access( $this->media_id, 2, 'purchase', $past );
+		$this->service->grant_access( $this->media_id, 2, 'code', $past );
 
 		$cleaned = $this->service->cleanup_expired();
 
@@ -255,8 +253,8 @@ class AccessRulesServiceTest extends \PHPUnit\Framework\TestCase {
 	 * Test: filter_privacy_can_view returns true when user has grant.
 	 */
 	public function test_filter_privacy_with_grant_returns_true(): void {
-		$this->service->add_rule( $this->media_id, 'purchase', 'one-time', 4.99, 'USD' );
-		$this->service->grant_access( $this->media_id, 2, 'purchase' );
+		$this->service->add_rule( $this->media_id, 'code', 'UNLOCK2024' );
+		$this->service->grant_access( $this->media_id, 2, 'code' );
 
 		$result = $this->service->filter_privacy_can_view( null, $this->media_id, 2, 'public' );
 
@@ -267,7 +265,7 @@ class AccessRulesServiceTest extends \PHPUnit\Framework\TestCase {
 	 * Test: filter_privacy_can_view returns false when rules exist but no grant.
 	 */
 	public function test_filter_privacy_rules_no_grant_returns_false(): void {
-		$this->service->add_rule( $this->media_id, 'purchase', 'one-time', 4.99, 'USD' );
+		$this->service->add_rule( $this->media_id, 'code', 'UNLOCK2024' );
 
 		$result = $this->service->filter_privacy_can_view( null, $this->media_id, 2, 'public' );
 

@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
  * Outbound webhook system for media events.
  *
  * Sends signed HTTP POST payloads to configured webhook URLs
- * when media events occur (upload, delete, moderate, purchase).
+ * when media events occur (upload, delete, moderate).
  */
 class WebhookService {
 
@@ -25,7 +25,6 @@ class WebhookService {
 		'media.updated',
 		'media.deleted',
 		'media.moderated',
-		'media.purchased',
 		'media.reaction',
 		'media.comment',
 	);
@@ -46,9 +45,6 @@ class WebhookService {
 
 		// Media update event.
 		add_action( 'save_post_mvs_media', array( $this, 'on_media_updated' ), 10, 3 );
-
-		// Payment event.
-		add_action( 'mvs_payment_completed', array( $this, 'on_media_purchased' ), 10, 3 );
 
 		// Social events.
 		add_action( 'mvs_reaction_added', array( $this, 'on_reaction' ), 10, 3 );
@@ -109,24 +105,6 @@ class WebhookService {
 			return;
 		}
 		$this->dispatch( 'media.updated', $this->build_media_payload( $post_id ) );
-	}
-
-	/**
-	 * Handle media purchased event.
-	 *
-	 * @param int    $media_id Media post ID.
-	 * @param int    $user_id  User ID.
-	 * @param string $source   Payment source.
-	 */
-	public function on_media_purchased( int $media_id, int $user_id, string $source ): void {
-		$this->dispatch(
-			'media.purchased',
-			array(
-				'media_id' => $media_id,
-				'user_id'  => $user_id,
-				'source'   => $source,
-			)
-		);
 	}
 
 	/**

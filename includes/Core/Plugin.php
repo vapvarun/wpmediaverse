@@ -39,9 +39,7 @@ use WPMediaVerse\REST\Controller\ModerationController;
 use WPMediaVerse\REST\Controller\AccessController;
 use WPMediaVerse\REST\Controller\SignedUrlController;
 use WPMediaVerse\Services\SignedUrlService;
-use WPMediaVerse\Services\PaymentBridgeService;
 use WPMediaVerse\Services\WatermarkService;
-use WPMediaVerse\REST\Controller\CheckoutController;
 use WPMediaVerse\Admin\ModerationQueue;
 use WPMediaVerse\Admin\OverviewPage;
 use WPMediaVerse\Admin\StatsPage;
@@ -335,15 +333,6 @@ class Plugin {
 		);
 
 		self::$container->register(
-			'payments',
-			function ( ServiceContainer $c ) {
-				$service = new PaymentBridgeService( $c->get( 'access_rules' ) );
-				$service->init();
-				return $service;
-			}
-		);
-
-		self::$container->register(
 			'watermark',
 			function ( ServiceContainer $c ) {
 				$service = new WatermarkService( $c->get( 'access_rules' ) );
@@ -429,7 +418,6 @@ class Plugin {
 		$ai           = self::$container->get( 'ai' );
 		$access_rules = self::$container->get( 'access_rules' );
 		$signed_urls  = self::$container->get( 'signed_urls' );
-		$payments     = self::$container->get( 'payments' );
 
 		$follows       = self::$container->get( 'follows' );
 		$notifications = self::$container->get( 'notifications' );
@@ -449,7 +437,6 @@ class Plugin {
 			new ModerationController( $moderation, $ai ),
 			new AccessController( $access_rules ),
 			new SignedUrlController( $signed_urls, $privacy ),
-			new CheckoutController( $payments ),
 			new FollowController( $follows ),
 			new NotificationController( $notifications ),
 			new UserController(),

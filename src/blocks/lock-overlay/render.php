@@ -3,6 +3,7 @@
  * Server-side render for the lock-overlay block.
  *
  * Shows blurred preview + unlock prompt for gated media, or full content if user has access.
+ * Access is controlled via role, capability, membership, or code rules.
  *
  * @package WPMediaVerse
  *
@@ -15,8 +16,7 @@ defined( 'ABSPATH' ) || exit;
 
 $media_id        = isset( $attributes['mediaId'] ) ? absint( $attributes['mediaId'] ) : 0;
 $blur_amount     = isset( $attributes['blurAmount'] ) ? absint( $attributes['blurAmount'] ) : 20;
-$show_price      = ! empty( $attributes['showPrice'] );
-$unlock_label    = ! empty( $attributes['unlockLabel'] ) ? sanitize_text_field( $attributes['unlockLabel'] ) : __( 'Unlock This Media', 'wpmediaverse' );
+$unlock_label    = ! empty( $attributes['unlockLabel'] ) ? sanitize_text_field( $attributes['unlockLabel'] ) : __( 'Restricted Content', 'wpmediaverse' );
 $overlay_opacity = isset( $attributes['overlayOpacity'] ) ? absint( $attributes['overlayOpacity'] ) : 60;
 
 if ( ! $media_id ) {
@@ -38,22 +38,10 @@ $file_type   = get_post_meta( $media_id, '_mvs_file_type', true );
 $is_image    = $file_url && 0 === strpos( $file_type, 'image/' );
 $wrapper     = get_block_wrapper_attributes( array( 'class' => 'mvs-lock-overlay-block' ) );
 
-// Get pricing info from access rules.
+// Determine active rule types for display.
 $access_rules = $container->get( 'access_rules' );
 $rules        = $access_rules->get_rules( $media_id );
-$price_info   = '';
-if ( $show_price && $rules ) {
-	foreach ( $rules as $rule ) {
-		if ( ! empty( $rule['price'] ) ) {
-			$currency   = ! empty( $rule['currency'] ) ? $rule['currency'] : 'USD';
-			$price_info = number_format( (float) $rule['price'], 2 ) . ' ' . esc_html( $currency );
-			break;
-		}
-	}
-}
-
-// Determine rule types for frontend context.
-$rule_types = array_unique( array_column( $rules, 'rule_type' ) );
+$rule_types   = array_unique( array_column( $rules, 'rule_type' ) );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/lock-overlay"
@@ -63,10 +51,7 @@ $rule_types = array_unique( array_column( $rules, 'rule_type' ) );
 		array(
 			'mediaId'   => $media_id,
 			'hasAccess' => $has_access,
-			'price'     => $price_info,
 			'ruleTypes' => $rule_types,
-			'loading'   => false,
-			'message'   => '',
 		)
 	);
 	?>
@@ -105,23 +90,16 @@ $rule_types = array_unique( array_column( $rules, 'rule_type' ) );
 			<div class="mvs-lock-overlay-prompt">
 				<span class="dashicons dashicons-lock mvs-lock-icon"></span>
 				<h3 class="mvs-lock-overlay-title"><?php echo esc_html( $post->post_title ); ?></h3>
-				<?php if ( $price_info ) : ?>
-					<p class="mvs-lock-overlay-price"><?php echo esc_html( $price_info ); ?></p>
-				<?php endif; ?>
-				<?php if ( $user_id ) : ?>
-					<button
-						class="mvs-lock-overlay-btn wp-element-button"
-						data-wp-on--click="actions.initiateCheckout"
-						data-wp-bind--disabled="context.loading"
-					>
-						<span data-wp-text="context.loading ? '<?php echo esc_attr__( 'Processing...', 'wpmediaverse' ); ?>' : '<?php echo esc_attr( $unlock_label ); ?>'"></span>
-					</button>
-				<?php else : ?>
+				<p class="mvs-lock-overlay-info"><?php echo esc_html( $unlock_label ); ?></p>
+				<?php if ( ! $user_id ) : ?>
 					<a href="<?php echo esc_url( wp_login_url( get_permalink() ) ); ?>" class="mvs-lock-overlay-btn wp-element-button">
-						<?php esc_html_e( 'Log in to Unlock', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'Log in to View', 'wpmediaverse' ); ?>
 					</a>
+				<?php else : ?>
+					<p class="mvs-lock-overlay-restricted">
+						<?php esc_html_e( 'You do not have access to this content. Contact the site administrator for access.', 'wpmediaverse' ); ?>
+					</p>
 				<?php endif; ?>
-				<p class="mvs-lock-overlay-message" data-wp-text="context.message"></p>
 			</div>
 		</div>
 	<?php endif; ?>
