@@ -63,6 +63,15 @@ class SettingsPage {
 	}
 
 	/**
+	 * Whether WPMediaVerse Pro is active.
+	 *
+	 * @return bool
+	 */
+	private function is_pro_active(): bool {
+		return defined( 'MVS_PRO_VERSION' );
+	}
+
+	/**
 	 * Register all settings, sections, and fields.
 	 */
 	public function register_settings(): void {
@@ -212,21 +221,38 @@ class SettingsPage {
 				'default'           => 'local',
 			)
 		);
-		add_settings_field(
-			'mvs_storage_driver',
-			__( 'Storage Driver', 'wpmediaverse' ),
-			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG . '-general',
-			'mvs_storage',
-			array(
-				'option'  => 'mvs_storage_driver',
-				'choices' => array(
-					'local'    => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
-					's3'       => __( 'Amazon S3 (Pro)', 'wpmediaverse' ),
-					'bunnycdn' => __( 'BunnyCDN (Pro)', 'wpmediaverse' ),
-				),
-			)
-		);
+		if ( $this->is_pro_active() ) {
+			add_settings_field(
+				'mvs_storage_driver',
+				__( 'Storage Driver', 'wpmediaverse' ),
+				array( $this, 'render_select_field' ),
+				self::PAGE_SLUG . '-general',
+				'mvs_storage',
+				array(
+					'option'  => 'mvs_storage_driver',
+					'choices' => array(
+						'local'    => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
+						's3'       => __( 'Amazon S3', 'wpmediaverse' ),
+						'bunnycdn' => __( 'BunnyCDN', 'wpmediaverse' ),
+					),
+				)
+			);
+		} else {
+			add_settings_field(
+				'mvs_storage_driver',
+				__( 'Storage Driver', 'wpmediaverse' ),
+				array( $this, 'render_pro_select_field' ),
+				self::PAGE_SLUG . '-general',
+				'mvs_storage',
+				array(
+					'current' => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
+					'pro'     => array(
+						__( 'Amazon S3', 'wpmediaverse' ),
+						__( 'BunnyCDN', 'wpmediaverse' ),
+					),
+				)
+			);
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -333,19 +359,39 @@ class SettingsPage {
 				'default'           => 'openai',
 			)
 		);
-		add_settings_field(
-			'mvs_ai_provider',
-			__( 'AI Provider', 'wpmediaverse' ),
-			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option'  => 'mvs_ai_provider',
-				'choices' => array(
-					'openai' => __( 'OpenAI (GPT-4 Vision)', 'wpmediaverse' ),
-				),
-			)
-		);
+		if ( $this->is_pro_active() ) {
+			add_settings_field(
+				'mvs_ai_provider',
+				__( 'AI Provider', 'wpmediaverse' ),
+				array( $this, 'render_select_field' ),
+				self::PAGE_SLUG . '-ai',
+				'mvs_ai',
+				array(
+					'option'  => 'mvs_ai_provider',
+					'choices' => array(
+						'openai'      => __( 'OpenAI (GPT-4 Vision)', 'wpmediaverse' ),
+						'google'      => __( 'Google Vision', 'wpmediaverse' ),
+						'rekognition' => __( 'AWS Rekognition', 'wpmediaverse' ),
+					),
+				)
+			);
+		} else {
+			add_settings_field(
+				'mvs_ai_provider',
+				__( 'AI Provider', 'wpmediaverse' ),
+				array( $this, 'render_pro_select_field' ),
+				self::PAGE_SLUG . '-ai',
+				'mvs_ai',
+				array(
+					'current' => __( 'OpenAI (GPT-4 Vision)', 'wpmediaverse' ),
+					'pro'     => array(
+						__( 'Google Vision', 'wpmediaverse' ),
+						__( 'AWS Rekognition', 'wpmediaverse' ),
+					),
+				)
+			);
+
+		}
 
 		register_setting(
 			self::OPTION_GROUP . '_ai',
@@ -615,6 +661,11 @@ class SettingsPage {
 					submit_button( __( 'Save Settings', 'wpmediaverse' ) );
 					?>
 				</form>
+				<?php
+				if ( ! $this->is_pro_active() ) {
+					$this->render_pro_upsell( $active_tab );
+				}
+				?>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -949,6 +1000,102 @@ class SettingsPage {
 			</p>
 		</fieldset>
 		<?php
+	}
+
+	/**
+	 * Render a select field with Pro-locked options shown as disabled.
+	 *
+	 * @param array $args Field arguments: 'current' (active label), 'pro' (locked labels).
+	 */
+	public function render_pro_select_field( array $args ): void {
+		$current_label = $args['current'] ?? '';
+		$pro_options   = $args['pro'] ?? array();
+
+		echo '<select disabled>';
+		printf( '<option selected>%s</option>', esc_html( $current_label ) );
+		foreach ( $pro_options as $label ) {
+			printf( '<option disabled>%s</option>', esc_html( $label ) );
+		}
+		echo '</select>';
+		echo '<span class="mvs-pro-badge">' . esc_html__( 'Pro', 'wpmediaverse' ) . '</span>';
+	}
+
+	/**
+	 * Render a disabled Pro-locked checkbox field.
+	 *
+	 * @param array $args Field arguments: 'label'.
+	 */
+	public function render_pro_checkbox_field( array $args ): void {
+		printf(
+			'<div class="mvs-pro-field"><label><input type="checkbox" disabled /> %s</label></div>',
+			esc_html( $args['label'] ?? '' )
+		);
+		echo '<span class="mvs-pro-badge">' . esc_html__( 'Pro', 'wpmediaverse' ) . '</span>';
+	}
+
+	/**
+	 * Render the Pro upsell section below settings, tailored to the active tab.
+	 *
+	 * @param string $active_tab Current tab slug.
+	 */
+	private function render_pro_upsell( string $active_tab ): void {
+		$pro_url  = 'https://wbcomdesigns.com/downloads/wpmediaverse-pro/';
+		$features = $this->get_pro_features_for_tab( $active_tab );
+
+		if ( empty( $features ) ) {
+			return;
+		}
+		?>
+		<div class="mvs-pro-section">
+			<h3>
+				<?php esc_html_e( 'Unlock More with WPMediaVerse Pro', 'wpmediaverse' ); ?>
+				<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
+			</h3>
+			<ul>
+				<?php foreach ( $features as $feature ) : ?>
+					<li><?php echo esc_html( $feature ); ?></li>
+				<?php endforeach; ?>
+			</ul>
+			<a href="<?php echo esc_url( $pro_url ); ?>" class="mvs-pro-cta" target="_blank" rel="noopener">
+				<?php esc_html_e( 'Upgrade to Pro', 'wpmediaverse' ); ?> &rarr;
+			</a>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get Pro feature list for a specific settings tab.
+	 *
+	 * @param string $tab Tab slug.
+	 * @return string[] Feature descriptions.
+	 */
+	private function get_pro_features_for_tab( string $tab ): array {
+		$features = array(
+			'general'  => array(
+				__( 'Amazon S3 cloud storage for unlimited scalability', 'wpmediaverse' ),
+				__( 'BunnyCDN integration for global content delivery', 'wpmediaverse' ),
+				__( 'Image watermarking with custom position and opacity', 'wpmediaverse' ),
+				__( 'Advanced privacy controls per media item', 'wpmediaverse' ),
+			),
+			'display'  => array(
+				__( 'Custom player skins and branding', 'wpmediaverse' ),
+				__( 'Video chapters and resume playback', 'wpmediaverse' ),
+				__( 'Auto-generated video captions (Whisper AI)', 'wpmediaverse' ),
+			),
+			'ai'       => array(
+				__( 'Google Vision AI provider', 'wpmediaverse' ),
+				__( 'AWS Rekognition AI provider', 'wpmediaverse' ),
+				__( 'AI provider fallback chains and comparison mode', 'wpmediaverse' ),
+				__( 'Per-category moderation thresholds', 'wpmediaverse' ),
+			),
+			'webhooks' => array(
+				__( 'Multiple webhook endpoints', 'wpmediaverse' ),
+				__( 'Webhook delivery logs and retry management', 'wpmediaverse' ),
+				__( 'Custom webhook event filters', 'wpmediaverse' ),
+			),
+		);
+
+		return $features[ $tab ] ?? array();
 	}
 
 	/**

@@ -411,3 +411,74 @@ a.mvs-stat-card:focus {
 	font-size: 14px;
 	margin: 8px 0;
 }
+
+/* ==========================================================================
+   Pro Feature Indicators
+   ========================================================================== */
+
+.mvs-pro-badge {
+	display: inline-block;
+	background: linear-gradient(135deg, #6366f1, #8b5cf6);
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	padding: 2px 6px;
+	border-radius: 3px;
+	margin-left: 6px;
+	vertical-align: middle;
+}
+
+.mvs-pro-field {
+	position: relative;
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.mvs-pro-field input,
+.mvs-pro-field select,
+.mvs-pro-field textarea {
+	background: #f6f7f7;
+}
+
+.mvs-pro-section {
+	background: #f8f9ff;
+	border: 1px solid #c7d2fe;
+	border-radius: 4px;
+	padding: 16px 20px;
+	margin: 20px 0;
+}
+
+.mvs-pro-section h3 {
+	margin: 0 0 8px;
+	font-size: 14px;
+}
+
+.mvs-pro-section ul {
+	margin: 0 0 12px 1.5em;
+}
+
+.mvs-pro-section li {
+	font-size: 13px;
+	margin-bottom: 4px;
+	color: #50575e;
+}
+
+.mvs-pro-section .mvs-pro-cta {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	background: linear-gradient(135deg, #6366f1, #8b5cf6);
+	color: #fff;
+	padding: 6px 16px;
+	border-radius: 4px;
+	text-decoration: none;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.mvs-pro-section .mvs-pro-cta:hover {
+	opacity: 0.9;
+	color: #fff;
+}
