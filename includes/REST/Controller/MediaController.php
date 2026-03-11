@@ -300,6 +300,8 @@ class MediaController extends WP_REST_Controller {
 			'title'       => sanitize_text_field( $request->get_param( 'title' ) ?? '' ),
 			'description' => wp_kses_post( $request->get_param( 'description' ) ?? '' ),
 			'privacy'     => sanitize_text_field( $request->get_param( 'privacy' ) ?? '' ),
+			'status'      => sanitize_text_field( $request->get_param( 'status' ) ?? 'publish' ),
+			'publish_at'  => sanitize_text_field( $request->get_param( 'publish_at' ) ?? '' ),
 		);
 
 		$media_id = $upload_service->handle( $file, get_current_user_id(), $args );

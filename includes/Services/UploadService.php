@@ -150,13 +150,29 @@ class UploadService {
 		$privacy  = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : get_option( 'mvs_default_privacy', 'public' );
 		$title    = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
 
+		// Determine post status.
+		$status = 'publish';
+		if ( ! empty( $args['status'] ) && in_array( $args['status'], array( 'draft', 'publish' ), true ) ) {
+			$status = $args['status'];
+		}
+
 		// Create CPT post.
 		$post_data = array(
 			'post_type'   => 'mvs_media',
 			'post_title'  => $title,
-			'post_status' => 'publish',
+			'post_status' => $status,
 			'post_author' => $user_id,
 		);
+
+		// Scheduled publishing.
+		if ( ! empty( $args['publish_at'] ) && 'draft' === $status ) {
+			$publish_time = strtotime( $args['publish_at'] );
+			if ( $publish_time && $publish_time > time() ) {
+				$post_data['post_status'] = 'future';
+				$post_data['post_date']   = gmdate( 'Y-m-d H:i:s', $publish_time );
+				$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $publish_time );
+			}
+		}
 
 		if ( ! empty( $args['description'] ) ) {
 			$post_data['post_content'] = wp_kses_post( $args['description'] );

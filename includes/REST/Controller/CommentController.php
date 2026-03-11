@@ -118,19 +118,42 @@ class CommentController extends WP_REST_Controller {
 			$this->namespace,
 			'/' . $this->rest_base . '/(?P<comment_id>[\d]+)',
 			array(
-				'methods'             => WP_REST_Server::DELETABLE,
-				'callback'            => array( $this, 'delete_item' ),
-				'permission_callback' => array( $this, 'create_item_permissions_check' ),
-				'args'                => array(
-					'media_id'   => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
+				array(
+					'methods'             => WP_REST_Server::EDITABLE,
+					'callback'            => array( $this, 'update_item' ),
+					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'args'                => array(
+						'media_id'   => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						'comment_id' => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						'content'    => array(
+							'type'     => 'string',
+							'required' => true,
+						),
 					),
-					'comment_id' => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'delete_item' ),
+					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'args'                => array(
+						'media_id'   => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						'comment_id' => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
 					),
 				),
 			)
@@ -217,6 +240,76 @@ class CommentController extends WP_REST_Controller {
 		$response->set_status( 201 );
 
 		return $response;
+	}
+
+	/**
+	 * Edit a comment (own comments only, within 15-minute window).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function update_item( $request ) {
+		$comment_id = $request->get_param( 'comment_id' );
+		$media_id   = $request->get_param( 'media_id' );
+		$user_id    = get_current_user_id();
+
+		$comment = get_comment( $comment_id );
+		if ( ! $comment ) {
+			return new WP_Error( 'mvs_not_found', __( 'Comment not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		// Verify ownership.
+		if ( (int) $comment->user_id !== $user_id ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You can only edit your own comments.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+
+		// Verify comment belongs to media.
+		if ( (int) $comment->comment_post_ID !== $media_id ) {
+			return new WP_Error( 'mvs_mismatch', __( 'Comment does not belong to this media item.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		// 15-minute edit window.
+		$edit_window = (int) apply_filters( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS );
+		$comment_age = time() - strtotime( $comment->comment_date_gmt );
+		if ( $comment_age > $edit_window ) {
+			return new WP_Error(
+				'mvs_edit_expired',
+				__( 'Comments can only be edited within 15 minutes of posting.', 'wpmediaverse' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		$content = sanitize_textarea_field( $request->get_param( 'content' ) );
+		if ( empty( $content ) ) {
+			return new WP_Error( 'mvs_empty_comment', __( 'Comment content is required.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		$result = wp_update_comment(
+			array(
+				'comment_ID'      => $comment_id,
+				'comment_content' => $content,
+			)
+		);
+
+		if ( ! $result ) {
+			return new WP_Error( 'mvs_update_failed', __( 'Failed to update comment.', 'wpmediaverse' ), array( 'status' => 500 ) );
+		}
+
+		$updated = get_comment( $comment_id );
+
+		return rest_ensure_response(
+			array(
+				'id'          => (int) $updated->comment_ID,
+				'author'      => (int) $updated->user_id,
+				'author_name' => $updated->comment_author,
+				'content'     => $updated->comment_content,
+				'parent'      => (int) $updated->comment_parent,
+				'date'        => $updated->comment_date_gmt,
+				'edited'      => true,
+			)
+		);
 	}
 
 	/**
