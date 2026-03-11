@@ -165,6 +165,9 @@ class Plugin {
 		// Flush rewrite rules if needed (after activation).
 		add_action( 'init', array( self::class, 'maybe_flush_rewrites' ), 99 );
 
+		// Register Abilities API (WP 6.9+).
+		Abilities::init();
+
 		/**
 		 * Fires after WPMediaVerse has loaded.
 		 *
