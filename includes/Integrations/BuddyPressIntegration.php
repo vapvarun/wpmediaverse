@@ -20,6 +20,13 @@ defined( 'ABSPATH' ) || exit;
 class BuddyPressIntegration {
 
 	/**
+	 * Media IDs that already had activity recorded via mvs_media_uploaded.
+	 *
+	 * @var array<int, bool>
+	 */
+	private $recorded_uploads = array();
+
+	/**
 	 * Initialize the integration.
 	 */
 	public function init(): void {
@@ -31,6 +38,8 @@ class BuddyPressIntegration {
 		if ( bp_is_active( 'activity' ) ) {
 			add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 			add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
+			// Also create activity on any publish (WP-CLI, admin, REST, import).
+			add_action( 'publish_mvs_media', array( $this, 'maybe_record_publish_activity' ), 20, 2 );
 			add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 2 );
 			add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
 			add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
@@ -238,7 +247,52 @@ class BuddyPressIntegration {
 			$activity_args['secondary_item_id'] = $media_id;
 		}
 
-		bp_activity_add( $activity_args );
+		$activity_id = bp_activity_add( $activity_args );
+		$this->recorded_uploads[ $media_id ] = true;
+
+		// Store the activity ID on the media post for easy lookup/updates.
+		if ( $activity_id ) {
+			update_post_meta( $media_id, '_mvs_bp_activity_id', $activity_id );
+		}
+	}
+
+	/**
+	 * Create upload activity when media is published via any method.
+	 *
+	 * This catches media created via WP-CLI, admin, import, etc. that bypass
+	 * UploadService (which fires mvs_media_uploaded). Skips if activity
+	 * already exists from the mvs_media_uploaded path.
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post object.
+	 */
+	public function maybe_record_publish_activity( int $post_id, \WP_Post $post ): void {
+		if ( 'mvs_media' !== $post->post_type ) {
+			return;
+		}
+
+		// Skip if activity was already recorded via mvs_media_uploaded.
+		if ( ! empty( $this->recorded_uploads[ $post_id ] ) ) {
+			return;
+		}
+
+		// Check if activity already exists for this media.
+		$existing = bp_activity_get(
+			array(
+				'filter'   => array(
+					'object'     => 'wpmediaverse',
+					'action'     => 'mvs_media_upload',
+					'primary_id' => $post_id,
+				),
+				'per_page' => 1,
+			)
+		);
+
+		if ( ! empty( $existing['activities'] ) ) {
+			return;
+		}
+
+		$this->record_upload_activity( $post_id );
 	}
 
 	/**
