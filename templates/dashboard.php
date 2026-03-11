@@ -54,6 +54,11 @@ $mvs_dash_ctx = array(
 			data-wp-on--click="actions.switchTab">
 			<?php esc_html_e( 'My Favorites', 'wpmediaverse' ); ?>
 		</button>
+		<button class="mvs-dashboard-tab" data-tab="collections" role="tab" type="button"
+			data-wp-class--active="state.isCollectionsTab"
+			data-wp-on--click="actions.switchTab">
+			<?php esc_html_e( 'Collections', 'wpmediaverse' ); ?>
+		</button>
 	</nav>
 
 	<!-- My Media Panel -->
@@ -177,6 +182,139 @@ $mvs_dash_ctx = array(
 		<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreFavorites">
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.loadMoreFavorites"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></button>
+		</div>
+	</div>
+
+	<!-- My Collections Panel -->
+	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isCollectionsTab">
+		<div class="mvs-dashboard-actions">
+			<button class="mvs-btn" type="button"
+				data-wp-on--click="actions.openCreateCollection">+ <?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></button>
+		</div>
+		<div class="mvs-dashboard-grid">
+			<template data-wp-each="state.collections.items">
+				<div class="mvs-dashboard-card mvs-collection-card" data-wp-bind--data-collection-id="context.item.id">
+					<div class="mvs-collection-card-header">
+						<span class="mvs-collection-type-badge" data-wp-text="context.item.type"></span>
+						<span class="mvs-collection-count" data-wp-text="(context.item.matchCount || 0) + ' items'"></span>
+					</div>
+					<div class="mvs-dashboard-card-body">
+						<a class="mvs-dashboard-card-title" data-wp-bind--href="context.item.link"
+							data-wp-text="context.item.title || '(Untitled)'"></a>
+						<div class="mvs-dashboard-card-meta" data-wp-text="context.item.description"></div>
+						<div class="mvs-collection-rules-preview" data-wp-bind--hidden="context.item.type !== 'smart'">
+							<template data-wp-each--rule="context.item.rules">
+								<span class="mvs-rule-pill" data-wp-text="context.rule.key + ': ' + context.rule.value"></span>
+							</template>
+						</div>
+						<div class="mvs-dashboard-card-actions">
+							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+								data-wp-on--click="actions.openEditCollection"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
+							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+								data-wp-on--click="actions.confirmDeleteCollection"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+						</div>
+					</div>
+				</div>
+			</template>
+		</div>
+		<p data-wp-bind--hidden="!state.showCollectionsEmpty" class="mvs-no-media">
+			<?php esc_html_e( 'No collections yet. Create a smart collection to auto-organize your media!', 'wpmediaverse' ); ?>
+		</p>
+	</div>
+
+	<!-- Collection Modal (Create/Edit with Rule Builder) -->
+	<div class="mvs-modal-overlay" data-wp-bind--hidden="!state.collectionModal.visible"
+		data-wp-on--click="actions.closeOverlay">
+		<div class="mvs-modal mvs-modal--wide" data-wp-on--click="actions.stopPropagation">
+			<div class="mvs-modal-header">
+				<h2 data-wp-text="state.collectionModal.isEdit ? '<?php echo esc_js( __( 'Edit Collection', 'wpmediaverse' ) ); ?>' : '<?php echo esc_js( __( 'Create Collection', 'wpmediaverse' ) ); ?>'"></h2>
+				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeCollectionModal">&times;</button>
+			</div>
+			<div class="mvs-modal-body">
+				<div class="mvs-field">
+					<label><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
+					<input type="text" data-wp-bind--value="state.collectionModal.title"
+						data-wp-on--input="actions.setCollectionTitle" />
+				</div>
+				<div class="mvs-field">
+					<label><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
+					<textarea data-wp-bind--value="state.collectionModal.description"
+						data-wp-on--input="actions.setCollectionDesc" rows="2"></textarea>
+				</div>
+				<div class="mvs-field">
+					<label><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></label>
+					<div class="mvs-collection-type-toggle">
+						<button type="button" class="mvs-toggle-btn"
+							data-wp-class--active="state.collectionModal.collectionType === 'manual'"
+							data-wp-on--click="actions.setCollectionTypeManual">
+							<?php esc_html_e( 'Manual', 'wpmediaverse' ); ?>
+						</button>
+						<button type="button" class="mvs-toggle-btn"
+							data-wp-class--active="state.collectionModal.collectionType === 'smart'"
+							data-wp-on--click="actions.setCollectionTypeSmart">
+							<?php esc_html_e( 'Smart', 'wpmediaverse' ); ?>
+						</button>
+					</div>
+					<p class="mvs-field-hint" data-wp-bind--hidden="state.collectionModal.collectionType !== 'manual'">
+						<?php esc_html_e( 'Add media to this collection manually via the Favorites button.', 'wpmediaverse' ); ?>
+					</p>
+					<p class="mvs-field-hint" data-wp-bind--hidden="state.collectionModal.collectionType !== 'smart'">
+						<?php esc_html_e( 'Define rules and media matching all conditions will appear automatically.', 'wpmediaverse' ); ?>
+					</p>
+				</div>
+
+				<!-- Smart Rules Builder -->
+				<div class="mvs-rules-builder" data-wp-bind--hidden="state.collectionModal.collectionType !== 'smart'">
+					<label><?php esc_html_e( 'Rules (all must match)', 'wpmediaverse' ); ?></label>
+					<div class="mvs-rules-list">
+						<template data-wp-each--rule="state.collectionModal.rules">
+							<div class="mvs-rule-row" data-wp-bind--data-rule-index="context.rule.index">
+								<select class="mvs-rule-key" data-wp-on--change="actions.setRuleKey">
+									<option value=""><?php esc_html_e( '-- Select --', 'wpmediaverse' ); ?></option>
+									<option value="media_type" data-wp-bind--selected="context.rule.key === 'media_type'"><?php esc_html_e( 'Media Type', 'wpmediaverse' ); ?></option>
+									<option value="tag" data-wp-bind--selected="context.rule.key === 'tag'"><?php esc_html_e( 'Tag', 'wpmediaverse' ); ?></option>
+									<option value="category" data-wp-bind--selected="context.rule.key === 'category'"><?php esc_html_e( 'Category', 'wpmediaverse' ); ?></option>
+									<option value="author" data-wp-bind--selected="context.rule.key === 'author'"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></option>
+									<option value="privacy" data-wp-bind--selected="context.rule.key === 'privacy'"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></option>
+									<option value="date_after" data-wp-bind--selected="context.rule.key === 'date_after'"><?php esc_html_e( 'Date After', 'wpmediaverse' ); ?></option>
+									<option value="date_before" data-wp-bind--selected="context.rule.key === 'date_before'"><?php esc_html_e( 'Date Before', 'wpmediaverse' ); ?></option>
+								</select>
+
+								<!-- Value input: changes based on rule key -->
+								<select class="mvs-rule-value" data-wp-on--change="actions.setRuleValue"
+									data-wp-bind--hidden="!state.isRuleSelectType">
+									<template data-wp-each--opt="state.ruleValueOptions">
+										<option data-wp-bind--value="context.opt.value"
+											data-wp-bind--selected="context.opt.value == context.rule.value"
+											data-wp-text="context.opt.label"></option>
+									</template>
+								</select>
+								<input type="text" class="mvs-rule-value-text" data-wp-on--change="actions.setRuleValue"
+									data-wp-bind--hidden="state.isRuleSelectType"
+									data-wp-bind--value="context.rule.value"
+									data-wp-bind--type="state.ruleInputType"
+									data-wp-bind--placeholder="state.ruleInputPlaceholder" />
+
+								<button type="button" class="mvs-rule-remove" data-wp-on--click="actions.removeRule">&times;</button>
+							</div>
+						</template>
+					</div>
+					<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary"
+						data-wp-on--click="actions.addRule">+ <?php esc_html_e( 'Add Rule', 'wpmediaverse' ); ?></button>
+
+					<div class="mvs-rules-preview" data-wp-bind--hidden="!state.collectionModal.previewCount">
+						<span data-wp-text="state.collectionModal.previewCount + ' <?php echo esc_js( __( 'media items match', 'wpmediaverse' ) ); ?>'"></span>
+					</div>
+				</div>
+			</div>
+			<div class="mvs-modal-footer">
+				<button class="mvs-btn mvs-btn--secondary" type="button"
+					data-wp-on--click="actions.closeCollectionModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+				<button class="mvs-btn" type="button"
+					data-wp-on--click="actions.saveCollection"
+					data-wp-bind--disabled="state.collectionModal.saving"
+					data-wp-text="state.collectionModal.saving ? '<?php echo esc_js( __( 'Saving...', 'wpmediaverse' ) ); ?>' : ( state.collectionModal.isEdit ? '<?php echo esc_js( __( 'Save', 'wpmediaverse' ) ); ?>' : '<?php echo esc_js( __( 'Create', 'wpmediaverse' ) ); ?>' )"></button>
+			</div>
 		</div>
 	</div>
 

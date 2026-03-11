@@ -84,15 +84,89 @@ const { state, actions } = store( 'mvs/dashboard', {
 			totalPages: 1,
 			loading: false,
 		},
-		// Confirm dialog (local, also uses shared-ui)
+		// Collections
+		collections: {
+			items: [],
+			loading: false,
+		},
+		// Collection modal
+		collectionModal: {
+			visible: false,
+			isEdit: false,
+			collectionId: 0,
+			title: '',
+			description: '',
+			collectionType: 'smart',
+			rules: [],
+			saving: false,
+			previewCount: 0,
+			previewTimer: null,
+			// Lookup data for dropdowns
+			tags: [],
+			categories: [],
+		},
+		// Derived state
 		get isMediaTab() { return state.activeTab === 'media'; },
 		get isAlbumsTab() { return state.activeTab === 'albums'; },
 		get isFavoritesTab() { return state.activeTab === 'favorites'; },
+		get isCollectionsTab() { return state.activeTab === 'collections'; },
 		get hasMoreMedia() { return state.media.page < state.media.totalPages; },
 		get hasMoreFavorites() { return state.favorites.page < state.favorites.totalPages; },
 		get showMediaEmpty() { return state.media.items.length === 0 && ! state.media.loading; },
 		get showAlbumsEmpty() { return state.albums.items.length === 0 && ! state.albums.loading; },
 		get showFavoritesEmpty() { return state.favorites.items.length === 0 && ! state.favorites.loading; },
+		get showCollectionsEmpty() { return state.collections.items.length === 0 && ! state.collections.loading; },
+		get isRuleSelectType() {
+			const ctx = getContext();
+			const rule = ctx.rule;
+			if ( ! rule ) return false;
+			return [ 'media_type', 'tag', 'category', 'privacy' ].includes( rule.key );
+		},
+		get ruleInputType() {
+			const ctx = getContext();
+			const rule = ctx.rule;
+			if ( ! rule ) return 'text';
+			if ( rule.key === 'date_after' || rule.key === 'date_before' ) return 'date';
+			if ( rule.key === 'author' ) return 'number';
+			return 'text';
+		},
+		get ruleInputPlaceholder() {
+			const ctx = getContext();
+			const rule = ctx.rule;
+			if ( ! rule ) return '';
+			if ( rule.key === 'author' ) return 'User ID';
+			if ( rule.key === 'date_after' || rule.key === 'date_before' ) return 'YYYY-MM-DD';
+			return 'Value';
+		},
+		get ruleValueOptions() {
+			const ctx = getContext();
+			const rule = ctx.rule;
+			if ( ! rule ) return [];
+			if ( rule.key === 'media_type' ) {
+				return [
+					{ value: '', label: '-- Select --' },
+					{ value: 'image', label: 'Image' },
+					{ value: 'video', label: 'Video' },
+					{ value: 'audio', label: 'Audio' },
+					{ value: 'document', label: 'Document' },
+				];
+			}
+			if ( rule.key === 'privacy' ) {
+				return [
+					{ value: '', label: '-- Select --' },
+					{ value: 'public', label: 'Public' },
+					{ value: 'members', label: 'Members' },
+					{ value: 'private', label: 'Private' },
+				];
+			}
+			if ( rule.key === 'tag' ) {
+				return [ { value: '', label: '-- Select --' }, ...state.collectionModal.tags ];
+			}
+			if ( rule.key === 'category' ) {
+				return [ { value: '', label: '-- Select --' }, ...state.collectionModal.categories ];
+			}
+			return [];
+		},
 	},
 	actions: {
 		/* =====================================================================
@@ -109,6 +183,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 				actions.loadAlbums( ctx );
 			} else if ( tab === 'favorites' && state.favorites.items.length === 0 ) {
 				actions.loadFavorites( ctx );
+			} else if ( tab === 'collections' && state.collections.items.length === 0 ) {
+				actions.loadCollections( ctx );
 			}
 		},
 
@@ -518,6 +594,239 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 
 		/* =====================================================================
+		   Collections
+		   ===================================================================== */
+		async loadCollections( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			state.collections.loading = true;
+			try {
+				const res = await apiFetch( ctx, 'collections' );
+				const data = await res.json();
+				// Enrich with match counts for smart collections.
+				for ( const item of data ) {
+					item.link = '/?p=' + item.id;
+					if ( item.type === 'smart' ) {
+						try {
+							const detail = await apiFetch( ctx, 'collections/' + item.id + '?per_page=1' );
+							const dData = await detail.json();
+							item.matchCount = dData.total || 0;
+						} catch {
+							item.matchCount = 0;
+						}
+					} else {
+						item.matchCount = item.favorites ? item.favorites.length : 0;
+					}
+				}
+				state.collections.items = data;
+			} catch {
+				// Ignore.
+			}
+			state.collections.loading = false;
+		},
+
+		openCreateCollection() {
+			state.collectionModal.visible = true;
+			state.collectionModal.isEdit = false;
+			state.collectionModal.collectionId = 0;
+			state.collectionModal.title = '';
+			state.collectionModal.description = '';
+			state.collectionModal.collectionType = 'smart';
+			state.collectionModal.rules = [ { key: '', value: '', index: 0 } ];
+			state.collectionModal.saving = false;
+			state.collectionModal.previewCount = 0;
+			actions.loadRuleDropdownData();
+		},
+
+		openEditCollection( event ) {
+			const id = parseInt( event.target.closest( '[data-collection-id]' )?.dataset.collectionId, 10 );
+			const item = state.collections.items.find( ( c ) => c.id === id );
+			if ( ! item ) return;
+
+			state.collectionModal.visible = true;
+			state.collectionModal.isEdit = true;
+			state.collectionModal.collectionId = id;
+			state.collectionModal.title = item.title || '';
+			state.collectionModal.description = item.description || '';
+			state.collectionModal.collectionType = item.type || 'manual';
+			state.collectionModal.rules = ( item.rules || [] ).map( ( r, i ) => ( { ...r, index: i } ) );
+			if ( state.collectionModal.rules.length === 0 && item.type === 'smart' ) {
+				state.collectionModal.rules = [ { key: '', value: '', index: 0 } ];
+			}
+			state.collectionModal.saving = false;
+			state.collectionModal.previewCount = item.matchCount || 0;
+			actions.loadRuleDropdownData();
+		},
+
+		closeCollectionModal() {
+			state.collectionModal.visible = false;
+		},
+
+		setCollectionTitle( event ) { state.collectionModal.title = event.target.value; },
+		setCollectionDesc( event ) { state.collectionModal.description = event.target.value; },
+		setCollectionTypeManual() { state.collectionModal.collectionType = 'manual'; },
+		setCollectionTypeSmart() { state.collectionModal.collectionType = 'smart'; },
+
+		async loadRuleDropdownData() {
+			const ctx = getContext();
+			// Load tags.
+			try {
+				const res = await apiFetch( ctx, 'tags?per_page=100' );
+				const data = await res.json();
+				state.collectionModal.tags = data.map( ( t ) => ( { value: String( t.id ), label: t.name } ) );
+			} catch {
+				state.collectionModal.tags = [];
+			}
+			// Load categories.
+			try {
+				const catRes = await fetch( ctx.restUrl.replace( 'mvs/v1/', '' ) + 'wp/v2/mvs_category?per_page=100', {
+					credentials: 'same-origin',
+					headers: apiHeaders( ctx.nonce ),
+				} );
+				const catData = await catRes.json();
+				state.collectionModal.categories = catData.map( ( c ) => ( { value: String( c.id ), label: c.name } ) );
+			} catch {
+				state.collectionModal.categories = [];
+			}
+		},
+
+		addRule() {
+			const nextIndex = state.collectionModal.rules.length;
+			state.collectionModal.rules = [
+				...state.collectionModal.rules,
+				{ key: '', value: '', index: nextIndex },
+			];
+		},
+
+		removeRule( event ) {
+			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
+			state.collectionModal.rules = state.collectionModal.rules
+				.filter( ( r ) => r.index !== idx )
+				.map( ( r, i ) => ( { ...r, index: i } ) );
+			actions.previewRules();
+		},
+
+		setRuleKey( event ) {
+			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
+			const rules = [ ...state.collectionModal.rules ];
+			const rule = rules.find( ( r ) => r.index === idx );
+			if ( rule ) {
+				rule.key = event.target.value;
+				rule.value = '';
+				state.collectionModal.rules = rules;
+			}
+			actions.previewRules();
+		},
+
+		setRuleValue( event ) {
+			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
+			const rules = [ ...state.collectionModal.rules ];
+			const rule = rules.find( ( r ) => r.index === idx );
+			if ( rule ) {
+				rule.value = event.target.value;
+				state.collectionModal.rules = rules;
+			}
+			actions.previewRules();
+		},
+
+		async previewRules() {
+			// Live preview only works for existing collections (edit mode).
+			// For new collections, the count appears after save.
+			if ( ! state.collectionModal.isEdit || ! state.collectionModal.collectionId ) {
+				state.collectionModal.previewCount = 0;
+				return;
+			}
+			const ctx = getContext();
+			const validRules = state.collectionModal.rules.filter( ( r ) => r.key && r.value );
+			if ( ! validRules.length ) {
+				state.collectionModal.previewCount = 0;
+				return;
+			}
+			// Debounce.
+			if ( state.collectionModal.previewTimer ) {
+				clearTimeout( state.collectionModal.previewTimer );
+			}
+			state.collectionModal.previewTimer = setTimeout( async () => {
+				try {
+					await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId + '/rules', {
+						method: 'PUT',
+						headers: apiHeaders( ctx.nonce ),
+						body: JSON.stringify( { rules: validRules.map( ( { key, value } ) => ( { key, value } ) ) } ),
+					} );
+					const res = await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId + '?per_page=1' );
+					const data = await res.json();
+					state.collectionModal.previewCount = data.total || 0;
+				} catch {
+					// Ignore preview errors.
+				}
+			}, 800 );
+		},
+
+		async saveCollection() {
+			const ctx = getContext();
+			state.collectionModal.saving = true;
+
+			const payload = {
+				title: state.collectionModal.title,
+				description: state.collectionModal.description,
+			};
+
+			const validRules = state.collectionModal.rules
+				.filter( ( r ) => r.key && r.value )
+				.map( ( { key, value } ) => ( { key, value } ) );
+
+			if ( state.collectionModal.collectionType === 'smart' && validRules.length ) {
+				payload.rules = validRules;
+			}
+
+			try {
+				if ( state.collectionModal.isEdit ) {
+					await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId, {
+						method: 'PUT',
+						headers: apiHeaders( ctx.nonce ),
+						body: JSON.stringify( payload ),
+					} );
+					// Update rules separately if smart.
+					if ( state.collectionModal.collectionType === 'smart' && validRules.length ) {
+						await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId + '/rules', {
+							method: 'PUT',
+							headers: apiHeaders( ctx.nonce ),
+							body: JSON.stringify( { rules: validRules } ),
+						} );
+					}
+					sharedUI.actions.showToast( 'Collection updated!', 'success' );
+				} else {
+					await apiFetch( ctx, 'collections', {
+						method: 'POST',
+						headers: apiHeaders( ctx.nonce ),
+						body: JSON.stringify( payload ),
+					} );
+					sharedUI.actions.showToast( 'Collection created!', 'success' );
+				}
+				state.collectionModal.visible = false;
+				state.collectionModal.saving = false;
+				await actions.loadCollections( ctx );
+			} catch {
+				state.collectionModal.saving = false;
+				sharedUI.actions.showToast( 'Save failed.', 'error' );
+			}
+		},
+
+		confirmDeleteCollection( event ) {
+			const id = parseInt( event.target.closest( '[data-collection-id]' )?.dataset.collectionId, 10 );
+			const ctx = getContext();
+			sharedUI.actions.showConfirm( 'Delete this collection? Media items will not be deleted.', async () => {
+				const res = await apiFetch( ctx, 'collections/' + id, {
+					method: 'DELETE',
+					headers: apiHeaders( ctx.nonce ),
+				} );
+				if ( res.ok ) {
+					state.collections.items = state.collections.items.filter( ( c ) => c.id !== id );
+					sharedUI.actions.showToast( 'Collection deleted.', 'success' );
+				}
+			} );
+		},
+
+		/* =====================================================================
 		   Utility
 		   ===================================================================== */
 		stopPropagation( event ) {
@@ -528,6 +837,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( event.target === event.currentTarget ) {
 				state.editModal.visible = false;
 				state.albumModal.visible = false;
+				state.collectionModal.visible = false;
 			}
 		},
 	},

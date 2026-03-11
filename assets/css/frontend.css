@@ -2896,3 +2896,172 @@ a.mvs-dashboard-card-title:hover {
 .mvs-playlist-track-link:hover {
 	color: #0073aa;
 }
+
+/* ==========================================================================
+   27. Collections & Rule Builder
+   ========================================================================== */
+
+.mvs-collection-card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px 14px;
+	background: #f8f9fa;
+	border-bottom: 1px solid #eee;
+}
+
+.mvs-collection-type-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-size: 0.75em;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	background: #e8f0fe;
+	color: #1a73e8;
+}
+
+.mvs-collection-count {
+	font-size: 0.85em;
+	color: #666;
+}
+
+.mvs-collection-rules-preview {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 6px;
+}
+
+.mvs-rule-pill {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-size: 0.75em;
+	background: #f0f0f0;
+	color: #555;
+}
+
+/* Type toggle */
+.mvs-collection-type-toggle {
+	display: flex;
+	gap: 0;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	overflow: hidden;
+	width: fit-content;
+}
+
+.mvs-toggle-btn {
+	padding: 8px 20px;
+	border: none;
+	background: #fff;
+	cursor: pointer;
+	font-size: 0.9em;
+	color: #555;
+	transition: background 0.15s, color 0.15s;
+}
+
+.mvs-toggle-btn:not(:last-child) {
+	border-right: 1px solid #ddd;
+}
+
+.mvs-toggle-btn.active {
+	background: #0073aa;
+	color: #fff;
+}
+
+.mvs-field-hint {
+	margin-top: 6px;
+	font-size: 0.85em;
+	color: #888;
+	font-style: italic;
+}
+
+/* Rule builder */
+.mvs-rules-builder {
+	margin-top: 16px;
+}
+
+.mvs-rules-builder > label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 10px;
+}
+
+.mvs-rules-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.mvs-rule-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.mvs-rule-row select,
+.mvs-rule-row input {
+	padding: 8px 10px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 0.9em;
+}
+
+.mvs-rule-key {
+	min-width: 140px;
+	flex: 0 0 auto;
+}
+
+.mvs-rule-value,
+.mvs-rule-value-text {
+	flex: 1;
+	min-width: 120px;
+}
+
+.mvs-rule-remove {
+	flex: 0 0 auto;
+	width: 32px;
+	height: 32px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	background: #fff;
+	color: #cc0000;
+	font-size: 1.2em;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 0.15s;
+}
+
+.mvs-rule-remove:hover {
+	background: #fee;
+}
+
+.mvs-rules-preview {
+	margin-top: 12px;
+	padding: 10px 14px;
+	background: #e8f5e9;
+	border-radius: 6px;
+	font-size: 0.9em;
+	color: #2e7d32;
+	font-weight: 500;
+}
+
+/* Wide modal variant for collection rule builder */
+.mvs-modal--wide {
+	max-width: 680px;
+}
+
+@media (max-width: 600px) {
+	.mvs-rule-row {
+		flex-wrap: wrap;
+	}
+	.mvs-rule-key {
+		min-width: 100%;
+	}
+}

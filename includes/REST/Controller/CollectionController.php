@@ -379,6 +379,7 @@ class CollectionController extends WP_REST_Controller {
 			'author'      => (int) $post->post_author,
 			'date'        => $post->post_date_gmt,
 			'type'        => $collection_type,
+			'link'        => get_permalink( $post->ID ),
 		);
 
 		if ( 'smart' === $collection_type ) {
