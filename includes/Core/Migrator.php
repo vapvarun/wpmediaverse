@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 3;
+	const CURRENT_VERSION = 4;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -42,6 +42,68 @@ class Migrator {
 	 */
 	private function migrate_to_2(): void {
 		\WPMediaVerse\Capabilities\MediaCapabilities::add_caps();
+	}
+
+	/**
+	 * Migration v4 — reports, blocks, activity tables.
+	 *
+	 * @since 1.1.0
+	 */
+	private function migrate_to_4(): void {
+		global $wpdb;
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$prefix          = $wpdb->prefix;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		// 12. Reports.
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_reports (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				reporter_id bigint(20) unsigned NOT NULL,
+				target_type varchar(20) NOT NULL,
+				target_id bigint(20) unsigned NOT NULL,
+				reason varchar(50) NOT NULL,
+				details text,
+				status varchar(20) NOT NULL DEFAULT 'pending',
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY reporter_target (reporter_id, target_type, target_id),
+				KEY target (target_type, target_id),
+				KEY status (status)
+			) {$charset_collate};"
+		);
+
+		// 13. Blocks.
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_blocks (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				blocker_id bigint(20) unsigned NOT NULL,
+				blocked_id bigint(20) unsigned NOT NULL,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				UNIQUE KEY blocker_blocked (blocker_id, blocked_id),
+				KEY blocked_id (blocked_id)
+			) {$charset_collate};"
+		);
+
+		// 14. Activity feed.
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_activity (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				user_id bigint(20) unsigned NOT NULL,
+				type varchar(50) NOT NULL,
+				media_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				album_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				content text,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY user_date (user_id, created_at),
+				KEY type_date (type, created_at),
+				KEY created_at (created_at)
+			) {$charset_collate};"
+		);
 	}
 
 	/**

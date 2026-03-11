@@ -57,9 +57,13 @@ use WPMediaVerse\Integrations\WebhookService;
 use WPMediaVerse\Services\CacheService;
 use WPMediaVerse\Social\FollowService;
 use WPMediaVerse\Social\NotificationService;
+use WPMediaVerse\Social\ReportService;
+use WPMediaVerse\Social\ActivityService;
 use WPMediaVerse\REST\Controller\FollowController;
 use WPMediaVerse\REST\Controller\NotificationController;
 use WPMediaVerse\REST\Controller\UserController;
+use WPMediaVerse\REST\Controller\ReportController;
+use WPMediaVerse\REST\Controller\ActivityController;
 
 /**
  * Main plugin bootstrap class.
@@ -387,6 +391,22 @@ class Plugin {
 				return $service;
 			}
 		);
+
+		self::$container->register(
+			'reports',
+			function () {
+				return new ReportService();
+			}
+		);
+
+		self::$container->register(
+			'activity',
+			function () {
+				$service = new ActivityService();
+				$service->init();
+				return $service;
+			}
+		);
 	}
 
 	/**
@@ -410,6 +430,8 @@ class Plugin {
 
 		$follows       = self::$container->get( 'follows' );
 		$notifications = self::$container->get( 'notifications' );
+		$reports       = self::$container->get( 'reports' );
+		$activity      = self::$container->get( 'activity' );
 
 		$controllers = array(
 			new MediaController( $privacy ),
@@ -428,6 +450,8 @@ class Plugin {
 			new FollowController( $follows ),
 			new NotificationController( $notifications ),
 			new UserController(),
+			new ReportController( $reports ),
+			new ActivityController( $activity ),
 		);
 
 		foreach ( $controllers as $controller ) {
