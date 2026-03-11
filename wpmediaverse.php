@@ -3,7 +3,7 @@
  * Plugin Name: WPMediaVerse
  * Plugin URI:  https://wbcomdesigns.com/downloads/wpmediaverse/
  * Description: A general-purpose WordPress media platform plugin.
- * Version:     1.0.0
+ * Version:     1.1.0
  * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MVS_VERSION', '1.0.0' );
+define( 'MVS_VERSION', '1.1.0' );
 define( 'MVS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MVS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MVS_PLUGIN_FILE', __FILE__ );
