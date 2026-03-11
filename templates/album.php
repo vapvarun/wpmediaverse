@@ -254,22 +254,147 @@ get_header();
 				</script>
 			<?php endif; ?>
 
-			<?php if ( ! empty( $items ) ) : ?>
+			<?php
+			$album_type  = get_post_meta( get_the_ID(), '_mvs_album_type', true );
+			$is_playlist = 'playlist' === $album_type;
+			?>
+
+			<?php if ( ! empty( $items ) && $is_playlist ) : ?>
+				<?php
+				// Playlist mode: sequential audio tracklist.
+				$tracks = array();
+				foreach ( $items as $track_idx => $media_id ) {
+					$track_url  = get_post_meta( $media_id, '_mvs_file_url', true );
+					$track_type = get_post_meta( $media_id, '_mvs_file_type', true );
+					$track_dur  = get_post_meta( $media_id, '_mvs_duration', true );
+					$track_art  = get_post_meta( $media_id, '_mvs_artist', true );
+					$dur_label  = '';
+					if ( $track_dur ) {
+						$d = (float) $track_dur;
+						$dur_label = sprintf( '%d:%02d', floor( $d / 60 ), (int) $d % 60 );
+					}
+					$tracks[] = array(
+						'id'       => (int) $media_id,
+						'title'    => get_the_title( $media_id ),
+						'artist'   => $track_art ? $track_art : '',
+						'url'      => $track_url ? set_url_scheme( $track_url ) : '',
+						'type'     => $track_type ? $track_type : '',
+						'duration' => $dur_label,
+						'link'     => get_permalink( $media_id ),
+					);
+				}
+				?>
+				<div class="mvs-playlist" id="mvs-playlist-<?php the_ID(); ?>">
+					<div class="mvs-playlist-player">
+						<audio id="mvs-playlist-audio-<?php the_ID(); ?>" controls preload="metadata"></audio>
+					</div>
+					<div class="mvs-playlist-now-playing" id="mvs-playlist-now-<?php the_ID(); ?>"></div>
+					<ol class="mvs-playlist-tracks">
+						<?php foreach ( $tracks as $idx => $track ) : ?>
+							<li class="mvs-playlist-track" data-track-index="<?php echo (int) $idx; ?>">
+								<button type="button" class="mvs-playlist-track-btn" data-track-index="<?php echo (int) $idx; ?>">
+									<span class="mvs-playlist-track-num"><?php echo (int) ( $idx + 1 ); ?></span>
+									<span class="mvs-playlist-track-info">
+										<span class="mvs-playlist-track-title"><?php echo esc_html( $track['title'] ); ?></span>
+										<?php if ( $track['artist'] ) : ?>
+											<span class="mvs-playlist-track-artist"><?php echo esc_html( $track['artist'] ); ?></span>
+										<?php endif; ?>
+									</span>
+									<?php if ( $track['duration'] ) : ?>
+										<span class="mvs-playlist-track-duration"><?php echo esc_html( $track['duration'] ); ?></span>
+									<?php endif; ?>
+								</button>
+								<a href="<?php echo esc_url( $track['link'] ); ?>" class="mvs-playlist-track-link" title="<?php esc_attr_e( 'View details', 'wpmediaverse' ); ?>">&#8599;</a>
+							</li>
+						<?php endforeach; ?>
+					</ol>
+				</div>
+				<script>
+				(function(){
+					var tracks = <?php echo wp_json_encode( $tracks ); ?>;
+					var albumId = <?php echo (int) get_the_ID(); ?>;
+					var audio = document.getElementById('mvs-playlist-audio-' + albumId);
+					var nowEl = document.getElementById('mvs-playlist-now-' + albumId);
+					var trackEls = document.querySelectorAll('#mvs-playlist-' + albumId + ' .mvs-playlist-track');
+					var current = -1;
+
+					function playTrack(idx) {
+						if (idx < 0 || idx >= tracks.length || !tracks[idx].url) return;
+						current = idx;
+						audio.src = tracks[idx].url;
+						audio.type = tracks[idx].type;
+						audio.play();
+						var label = tracks[idx].title;
+						if (tracks[idx].artist) label = tracks[idx].artist + ' — ' + label;
+						nowEl.textContent = label;
+						trackEls.forEach(function(el, i) {
+							el.classList.toggle('mvs-playlist-track--active', i === idx);
+						});
+					}
+
+					audio.addEventListener('ended', function() {
+						if (current + 1 < tracks.length) {
+							playTrack(current + 1);
+						}
+					});
+
+					document.querySelectorAll('#mvs-playlist-' + albumId + ' .mvs-playlist-track-btn').forEach(function(btn) {
+						btn.addEventListener('click', function() {
+							playTrack(parseInt(btn.getAttribute('data-track-index'), 10));
+						});
+					});
+
+					if (tracks.length > 0 && tracks[0].url) {
+						audio.src = tracks[0].url;
+						audio.type = tracks[0].type;
+						nowEl.textContent = (tracks[0].artist ? tracks[0].artist + ' — ' : '') + tracks[0].title;
+						trackEls[0].classList.add('mvs-playlist-track--active');
+					}
+				})();
+				</script>
+			<?php elseif ( ! empty( $items ) ) : ?>
 				<div class="mvs-media-grid mvs-cols-3">
 					<?php foreach ( $items as $media_id ) : ?>
 						<?php
-						$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
-						$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
-						$is_image  = $file_url && strpos( $file_type, 'image/' ) === 0;
+						$file_url    = get_post_meta( $media_id, '_mvs_file_url', true );
+						$file_type   = get_post_meta( $media_id, '_mvs_file_type', true );
+						$media_type  = get_post_meta( $media_id, '_mvs_media_type', true );
+						$permalink   = get_permalink( $media_id );
+						$thumb_url   = '';
+						$attach_id   = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
+						if ( $attach_id ) {
+							$thumb_src = wp_get_attachment_image_url( $attach_id, 'medium' );
+							if ( $thumb_src ) {
+								$thumb_url = set_url_scheme( $thumb_src );
+							}
+						}
+						if ( ! $thumb_url && 'image' === $media_type && $file_url ) {
+							$thumb_url = set_url_scheme( $file_url );
+						}
 						?>
 						<div class="mvs-grid-item">
-							<?php if ( $is_image ) : ?>
-								<a href="<?php echo esc_url( get_permalink( $media_id ) ); ?>">
-									<img src="<?php echo esc_url( $file_url ); ?>"
+							<a href="<?php echo esc_url( $permalink ); ?>">
+								<?php if ( $thumb_url ) : ?>
+									<img src="<?php echo esc_url( $thumb_url ); ?>"
 										alt="<?php echo esc_attr( get_the_title( $media_id ) ); ?>"
 										loading="lazy" />
-								</a>
-							<?php endif; ?>
+									<?php if ( 'video' === $media_type ) : ?>
+										<span class="mvs-grid-play-icon">&#9654;</span>
+									<?php endif; ?>
+								<?php elseif ( 'video' === $media_type ) : ?>
+									<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">
+										<span class="mvs-grid-play-icon">&#9654;</span>
+									</div>
+								<?php elseif ( 'audio' === $media_type ) : ?>
+									<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio">
+										<span class="mvs-grid-audio-icon">&#9835;</span>
+									</div>
+								<?php else : ?>
+									<div class="mvs-grid-item-placeholder">
+										<span class="dashicons dashicons-media-default"></span>
+									</div>
+								<?php endif; ?>
+							</a>
 							<div class="mvs-grid-item-overlay">
 								<span><?php echo esc_html( get_the_title( $media_id ) ); ?></span>
 							</div>

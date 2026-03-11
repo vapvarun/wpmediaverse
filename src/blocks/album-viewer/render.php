@@ -50,20 +50,45 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?>">
 			<?php foreach ( $items as $media_id ) : ?>
 				<?php
-				$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
-				$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
-				$is_image  = $file_url && strpos( $file_type, 'image/' ) === 0;
+				$file_url    = get_post_meta( $media_id, '_mvs_file_url', true );
+				$file_type   = get_post_meta( $media_id, '_mvs_file_type', true );
+				$media_type  = get_post_meta( $media_id, '_mvs_media_type', true );
+				$permalink   = get_permalink( $media_id );
+				$thumb_url   = '';
+				$attach_id   = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
+				if ( $attach_id ) {
+					$thumb_src = wp_get_attachment_image_url( $attach_id, 'medium' );
+					if ( $thumb_src ) {
+						$thumb_url = set_url_scheme( $thumb_src );
+					}
+				}
+				if ( ! $thumb_url && 'image' === $media_type && $file_url ) {
+					$thumb_url = set_url_scheme( $file_url );
+				}
 				?>
 				<div class="mvs-grid-item">
-					<?php if ( $is_image ) : ?>
-						<img src="<?php echo esc_url( $file_url ); ?>"
-							alt="<?php echo esc_attr( get_the_title( $media_id ) ); ?>"
-							loading="lazy" />
-					<?php else : ?>
-						<div class="mvs-grid-item-placeholder">
-							<span class="dashicons dashicons-media-default"></span>
-						</div>
-					<?php endif; ?>
+					<a href="<?php echo esc_url( $permalink ); ?>">
+						<?php if ( $thumb_url ) : ?>
+							<img src="<?php echo esc_url( $thumb_url ); ?>"
+								alt="<?php echo esc_attr( get_the_title( $media_id ) ); ?>"
+								loading="lazy" />
+							<?php if ( 'video' === $media_type ) : ?>
+								<span class="mvs-grid-play-icon">&#9654;</span>
+							<?php endif; ?>
+						<?php elseif ( 'video' === $media_type ) : ?>
+							<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">
+								<span class="mvs-grid-play-icon">&#9654;</span>
+							</div>
+						<?php elseif ( 'audio' === $media_type ) : ?>
+							<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio">
+								<span class="mvs-grid-audio-icon">&#9835;</span>
+							</div>
+						<?php else : ?>
+							<div class="mvs-grid-item-placeholder">
+								<span class="dashicons dashicons-media-default"></span>
+							</div>
+						<?php endif; ?>
+					</a>
 					<div class="mvs-grid-item-overlay">
 						<span><?php echo esc_html( get_the_title( $media_id ) ); ?></span>
 					</div>

@@ -2546,3 +2546,353 @@ a.mvs-dashboard-card-title:hover {
 	color: #1e1e1e;
 	border-bottom-color: #2271b1;
 }
+
+/* ==========================================================================
+   27. Activity Media Thumbnails (Video/Audio)
+   ========================================================================== */
+
+.mvs-activity-media--video {
+	position: relative;
+}
+
+.mvs-activity-media--video a {
+	position: relative;
+	display: block;
+}
+
+.mvs-activity-play-icon {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 56px;
+	height: 56px;
+	background: rgba(0, 0, 0, 0.6);
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 24px;
+	color: #fff;
+	z-index: 2;
+	transition: background 0.2s;
+	pointer-events: none;
+}
+
+.mvs-activity-media--video a:hover .mvs-activity-play-icon {
+	background: rgba(0, 0, 0, 0.8);
+}
+
+.mvs-activity-media--placeholder {
+	background: #1a1a1a;
+	border-radius: 8px;
+	min-height: 200px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mvs-activity-media--placeholder a {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	text-decoration: none;
+	color: #ccc;
+	padding: 32px;
+}
+
+.mvs-activity-media--placeholder .mvs-activity-play-icon {
+	position: static;
+	transform: none;
+}
+
+.mvs-activity-media-label {
+	font-size: 0.9em;
+	max-width: 200px;
+	text-align: center;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-activity-media--audio {
+	background: #f8f8f8;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.mvs-activity-media--audio a {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 14px 18px;
+	text-decoration: none;
+	color: #333;
+}
+
+.mvs-activity-audio-icon {
+	width: 44px;
+	height: 44px;
+	background: #0073aa;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 20px;
+	color: #fff;
+	flex-shrink: 0;
+}
+
+.mvs-activity-audio-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.mvs-activity-audio-title {
+	font-weight: 600;
+	font-size: 0.95em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-activity-audio-meta {
+	font-size: 0.82em;
+	color: #888;
+}
+
+/* ==========================================================================
+   28. Enhanced Single Media Player
+   ========================================================================== */
+
+.mvs-media-duration,
+.mvs-media-resolution {
+	color: #888;
+	font-size: 0.85em;
+}
+
+.mvs-media-duration::before,
+.mvs-media-resolution::before {
+	content: "\00b7";
+	margin: 0 6px;
+}
+
+.mvs-media-video video {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: 4px;
+}
+
+.mvs-audio-info {
+	padding: 12px 24px 0;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	font-size: 0.9em;
+	color: #666;
+}
+
+.mvs-audio-artist {
+	font-weight: 600;
+	color: #333;
+}
+
+.mvs-audio-album::before {
+	content: "\00b7";
+	margin: 0 4px;
+}
+
+.mvs-media-audio audio {
+	display: block;
+	width: 100%;
+	margin-top: 8px;
+}
+
+/* ==========================================================================
+   29. Album Grid Items (Video/Audio)
+   ========================================================================== */
+
+.mvs-grid-item {
+	position: relative;
+}
+
+.mvs-grid-item a {
+	display: block;
+	position: relative;
+	text-decoration: none;
+	color: inherit;
+}
+
+.mvs-grid-play-icon {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 44px;
+	height: 44px;
+	background: rgba(0, 0, 0, 0.55);
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 18px;
+	color: #fff;
+	z-index: 2;
+	pointer-events: none;
+	transition: background 0.2s;
+}
+
+.mvs-grid-item a:hover .mvs-grid-play-icon {
+	background: rgba(0, 0, 0, 0.8);
+}
+
+.mvs-grid-item-placeholder--video {
+	background: #1a1a1a;
+	aspect-ratio: 16 / 9;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mvs-grid-item-placeholder--audio {
+	background: linear-gradient(135deg, #0073aa, #005a87);
+	aspect-ratio: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mvs-grid-audio-icon {
+	font-size: 36px;
+	color: rgba(255, 255, 255, 0.8);
+}
+
+/* ==========================================================================
+   30. Playlist UI
+   ========================================================================== */
+
+.mvs-playlist {
+	max-width: 700px;
+	margin: 20px auto;
+	background: #fafafa;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.mvs-playlist-player {
+	padding: 16px 20px;
+	background: #1a1a1a;
+}
+
+.mvs-playlist-player audio {
+	width: 100%;
+}
+
+.mvs-playlist-now-playing {
+	padding: 10px 20px;
+	background: #222;
+	color: #fff;
+	font-size: 0.95em;
+	font-weight: 600;
+	min-height: 20px;
+}
+
+.mvs-playlist-tracks {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.mvs-playlist-track {
+	display: flex;
+	align-items: center;
+	border-bottom: 1px solid #e8e8e8;
+	transition: background 0.15s;
+}
+
+.mvs-playlist-track:last-child {
+	border-bottom: none;
+}
+
+.mvs-playlist-track:hover {
+	background: #f0f0f0;
+}
+
+.mvs-playlist-track--active {
+	background: #e8f4fc;
+}
+
+.mvs-playlist-track--active:hover {
+	background: #dbeefa;
+}
+
+.mvs-playlist-track-btn {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	text-align: left;
+	font: inherit;
+	color: inherit;
+	min-width: 0;
+}
+
+.mvs-playlist-track-num {
+	width: 28px;
+	text-align: center;
+	color: #888;
+	font-size: 0.85em;
+	flex-shrink: 0;
+}
+
+.mvs-playlist-track--active .mvs-playlist-track-num {
+	color: #0073aa;
+	font-weight: 700;
+}
+
+.mvs-playlist-track-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.mvs-playlist-track-title {
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-playlist-track-artist {
+	font-size: 0.82em;
+	color: #888;
+}
+
+.mvs-playlist-track-duration {
+	color: #888;
+	font-size: 0.85em;
+	flex-shrink: 0;
+}
+
+.mvs-playlist-track-link {
+	padding: 12px 14px;
+	color: #888;
+	text-decoration: none;
+	font-size: 1.1em;
+}
+
+.mvs-playlist-track-link:hover {
+	color: #0073aa;
+}

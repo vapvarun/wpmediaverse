@@ -46,4 +46,14 @@ interface StorageDriverInterface {
 	 * @return bool
 	 */
 	public function exists( string $path ): bool;
+
+	/**
+	 * Get the absolute filesystem path for a stored file.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param string $path Relative path.
+	 * @return string Absolute file path.
+	 */
+	public function get_full_path( string $path ): string;
 }

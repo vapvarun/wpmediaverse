@@ -2067,28 +2067,56 @@ class BuddyPressIntegration {
 	 * @return string HTML string with linked thumbnail, or empty string.
 	 */
 	private function get_media_thumbnail_html( int $media_id, string $size = 'medium' ): string {
-		$attach_id = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
-		$thumb_url = '';
+		$attach_id  = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
+		$file_type  = get_post_meta( $media_id, '_mvs_file_type', true );
+		$media_type = get_post_meta( $media_id, '_mvs_media_type', true );
+		$thumb_url  = '';
 
 		if ( $attach_id ) {
 			$thumb_url = wp_get_attachment_image_url( $attach_id, $size );
 		}
 		if ( ! $thumb_url ) {
-			$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
-			$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
+			$file_url = get_post_meta( $media_id, '_mvs_file_url', true );
 			if ( $file_url && strpos( $file_type, 'image/' ) === 0 ) {
 				$thumb_url = $file_url;
 			}
 		}
 
-		if ( ! $thumb_url ) {
-			return '';
+		$permalink = get_permalink( $media_id );
+		$title     = get_the_title( $media_id );
+
+		// Image or video with poster thumbnail.
+		if ( $thumb_url ) {
+			$thumb_url = set_url_scheme( $thumb_url );
+			$overlay   = '';
+			if ( 'video' === $media_type ) {
+				$overlay = '<span class="mvs-activity-play-icon">&#9654;</span>';
+			}
+			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"><a href="' . esc_url( $permalink ) . '">' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" /></a></div>';
 		}
 
-		$thumb_url = set_url_scheme( $thumb_url );
-		$permalink = get_permalink( $media_id );
+		// Video without poster: show dark placeholder with play icon.
+		if ( 'video' === $media_type ) {
+			return '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"><a href="' . esc_url( $permalink ) . '"><span class="mvs-activity-play-icon">&#9654;</span><span class="mvs-activity-media-label">' . esc_html( $title ) . '</span></a></div>';
+		}
 
-		return '<div class="mvs-activity-media"><a href="' . esc_url( $permalink ) . '"><img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( get_the_title( $media_id ) ) . '" loading="lazy" /></a></div>';
+		// Audio: show compact audio card.
+		if ( 'audio' === $media_type ) {
+			$artist   = get_post_meta( $media_id, '_mvs_artist', true );
+			$duration = get_post_meta( $media_id, '_mvs_duration', true );
+			$sub      = '';
+			if ( $artist ) {
+				$sub .= esc_html( $artist );
+			}
+			if ( $duration ) {
+				$minutes = floor( (float) $duration / 60 );
+				$seconds = (int) $duration % 60;
+				$sub    .= ( $sub ? ' &middot; ' : '' ) . sprintf( '%d:%02d', $minutes, $seconds );
+			}
+			return '<div class="mvs-activity-media mvs-activity-media--audio"><a href="' . esc_url( $permalink ) . '"><span class="mvs-activity-audio-icon">&#9835;</span><span class="mvs-activity-audio-info"><span class="mvs-activity-audio-title">' . esc_html( $title ) . '</span>' . ( $sub ? '<span class="mvs-activity-audio-meta">' . $sub . '</span>' : '' ) . '</span></a></div>';
+		}
+
+		return '';
 	}
 
 	/**

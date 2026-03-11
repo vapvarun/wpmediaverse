@@ -96,6 +96,18 @@ class LocalDriver implements StorageDriverInterface {
 	}
 
 	/**
+	 * Get the absolute filesystem path for a stored file.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param string $path Relative path.
+	 * @return string Absolute file path.
+	 */
+	public function get_full_path( string $path ): string {
+		return $this->base_dir . $path;
+	}
+
+	/**
 	 * Ensure the base upload directory has .htaccess and index.php protection.
 	 */
 	private function ensure_protection_files(): void {

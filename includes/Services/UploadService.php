@@ -183,6 +183,9 @@ class UploadService {
 			update_post_meta( $media_id, '_mvs_exif_raw', $exif_raw );
 		}
 
+		// Extract and store media metadata (duration, dimensions, etc.).
+		$this->extract_and_store_metadata( $media_id, $driver->get_full_path( $dest_path ), $media_type, $mime );
+
 		// Insert into media index table.
 		$this->insert_index( $media_id, $user_id, $media_type, $privacy );
 
@@ -322,6 +325,151 @@ class UploadService {
 		}
 
 		return $raw;
+	}
+
+	/**
+	 * Extract metadata from the uploaded file and store as post meta.
+	 *
+	 * Uses WordPress core functions: wp_read_video_metadata() for video,
+	 * wp_read_audio_metadata() for audio, getimagesize() for images.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int    $media_id   Media post ID.
+	 * @param string $file_path  Absolute file path.
+	 * @param string $media_type Media type (image|video|audio|document).
+	 * @param string $mime       MIME type.
+	 */
+	private function extract_and_store_metadata( int $media_id, string $file_path, string $media_type, string $mime ): void {
+		if ( ! file_exists( $file_path ) ) {
+			return;
+		}
+
+		$metadata = array();
+
+		switch ( $media_type ) {
+			case 'video':
+				if ( ! function_exists( 'wp_read_video_metadata' ) ) {
+					require_once ABSPATH . 'wp-admin/includes/media.php';
+				}
+				$video_meta = wp_read_video_metadata( $file_path );
+				if ( $video_meta ) {
+					if ( ! empty( $video_meta['length'] ) ) {
+						$metadata['duration'] = (float) $video_meta['length'];
+						update_post_meta( $media_id, '_mvs_duration', $metadata['duration'] );
+					}
+					if ( ! empty( $video_meta['width'] ) ) {
+						$metadata['width'] = (int) $video_meta['width'];
+						update_post_meta( $media_id, '_mvs_width', $metadata['width'] );
+					}
+					if ( ! empty( $video_meta['height'] ) ) {
+						$metadata['height'] = (int) $video_meta['height'];
+						update_post_meta( $media_id, '_mvs_height', $metadata['height'] );
+					}
+					if ( ! empty( $video_meta['bitrate'] ) ) {
+						$metadata['bitrate'] = (int) $video_meta['bitrate'];
+						update_post_meta( $media_id, '_mvs_bitrate', $metadata['bitrate'] );
+					}
+					if ( ! empty( $video_meta['codec'] ) ) {
+						$metadata['codec'] = sanitize_text_field( $video_meta['codec'] );
+						update_post_meta( $media_id, '_mvs_codec', $metadata['codec'] );
+					}
+				}
+
+				// Create WP attachment for poster/thumbnail generation.
+				$this->create_wp_attachment( $media_id, $file_path, $mime );
+				break;
+
+			case 'audio':
+				if ( ! function_exists( 'wp_read_audio_metadata' ) ) {
+					require_once ABSPATH . 'wp-admin/includes/media.php';
+				}
+				$audio_meta = wp_read_audio_metadata( $file_path );
+				if ( $audio_meta ) {
+					if ( ! empty( $audio_meta['length'] ) ) {
+						$metadata['duration'] = (float) $audio_meta['length'];
+						update_post_meta( $media_id, '_mvs_duration', $metadata['duration'] );
+					}
+					if ( ! empty( $audio_meta['bitrate'] ) ) {
+						$metadata['bitrate'] = (int) $audio_meta['bitrate'];
+						update_post_meta( $media_id, '_mvs_bitrate', $metadata['bitrate'] );
+					}
+					if ( ! empty( $audio_meta['codec'] ) ) {
+						$metadata['codec'] = sanitize_text_field( $audio_meta['codec'] );
+						update_post_meta( $media_id, '_mvs_codec', $metadata['codec'] );
+					}
+					// ID3 tags.
+					if ( ! empty( $audio_meta['artist'] ) ) {
+						$metadata['artist'] = sanitize_text_field( $audio_meta['artist'] );
+						update_post_meta( $media_id, '_mvs_artist', $metadata['artist'] );
+					}
+					if ( ! empty( $audio_meta['album'] ) ) {
+						$metadata['album_name'] = sanitize_text_field( $audio_meta['album'] );
+						update_post_meta( $media_id, '_mvs_album_name', $metadata['album_name'] );
+					}
+				}
+				break;
+
+			case 'image':
+				$size = getimagesize( $file_path );
+				if ( $size ) {
+					$metadata['width']  = (int) $size[0];
+					$metadata['height'] = (int) $size[1];
+					update_post_meta( $media_id, '_mvs_width', $metadata['width'] );
+					update_post_meta( $media_id, '_mvs_height', $metadata['height'] );
+				}
+
+				// Create WP attachment for thumbnail generation.
+				$this->create_wp_attachment( $media_id, $file_path, $mime );
+				break;
+		}
+
+		/**
+		 * Filters the extracted media metadata before storage.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array  $metadata   Extracted metadata.
+		 * @param string $file_path  Absolute file path.
+		 * @param int    $media_id   Media post ID.
+		 */
+		$metadata = apply_filters( 'mvs_media_metadata', $metadata, $file_path, $media_id );
+	}
+
+	/**
+	 * Create a WordPress attachment for the media file.
+	 *
+	 * This enables WP to generate thumbnails for images and poster frames
+	 * for videos (when server supports it).
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param int    $media_id  Media post ID.
+	 * @param string $file_path Absolute file path.
+	 * @param string $mime      MIME type.
+	 */
+	private function create_wp_attachment( int $media_id, string $file_path, string $mime ): void {
+		if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+		}
+
+		$attachment_id = wp_insert_attachment(
+			array(
+				'post_mime_type' => $mime,
+				'post_title'    => get_the_title( $media_id ),
+				'post_status'   => 'inherit',
+				'post_parent'   => $media_id,
+			),
+			$file_path,
+			$media_id,
+			true
+		);
+
+		if ( ! is_wp_error( $attachment_id ) ) {
+			$attach_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
+			wp_update_attachment_metadata( $attachment_id, $attach_data );
+			update_post_meta( $media_id, '_mvs_attachment_id', $attachment_id );
+		}
 	}
 
 	/**

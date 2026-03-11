@@ -664,6 +664,18 @@ class MediaController extends WP_REST_Controller {
 			$file_url = set_url_scheme( $file_url );
 		}
 
+		// Build thumbnail URL from WP attachment if available.
+		$thumbnail_url = '';
+		$attachment_id = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
+		if ( $attachment_id ) {
+			$thumb = wp_get_attachment_image_url( $attachment_id, 'medium' );
+			if ( $thumb ) {
+				$thumbnail_url = set_url_scheme( $thumb );
+			}
+		}
+
+		$media_type_value = get_post_meta( $media_id, '_mvs_media_type', true );
+
 		$data = array(
 			'id'                => $media_id,
 			'title'             => $post->post_title,
@@ -674,12 +686,41 @@ class MediaController extends WP_REST_Controller {
 			'file_url'          => $file_url,
 			'file_size'         => (int) get_post_meta( $media_id, '_mvs_file_size', true ),
 			'file_type'         => get_post_meta( $media_id, '_mvs_file_type', true ),
-			'media_type'        => get_post_meta( $media_id, '_mvs_media_type', true ),
+			'media_type'        => $media_type_value,
 			'privacy'           => $privacy_value ? $privacy_value : 'public',
 			'moderation_status' => $moderation_value ? $moderation_value : 'approved',
 			'tags'              => wp_get_object_terms( $media_id, 'mvs_tag', array( 'fields' => 'names' ) ),
 			'categories'        => wp_get_object_terms( $media_id, 'mvs_category', array( 'fields' => 'names' ) ),
+			'thumbnail_url'     => $thumbnail_url,
+			'attachment_id'     => $attachment_id,
 		);
+
+		// Add media-type-specific metadata.
+		if ( in_array( $media_type_value, array( 'video', 'audio' ), true ) ) {
+			$duration = get_post_meta( $media_id, '_mvs_duration', true );
+			$bitrate  = get_post_meta( $media_id, '_mvs_bitrate', true );
+			$codec    = get_post_meta( $media_id, '_mvs_codec', true );
+
+			$data['duration'] = $duration ? (float) $duration : null;
+			$data['bitrate']  = $bitrate ? (int) $bitrate : null;
+			$data['codec']    = $codec ? $codec : null;
+		}
+
+		if ( in_array( $media_type_value, array( 'video', 'image' ), true ) ) {
+			$width  = get_post_meta( $media_id, '_mvs_width', true );
+			$height = get_post_meta( $media_id, '_mvs_height', true );
+
+			$data['width']  = $width ? (int) $width : null;
+			$data['height'] = $height ? (int) $height : null;
+		}
+
+		if ( 'audio' === $media_type_value ) {
+			$artist     = get_post_meta( $media_id, '_mvs_artist', true );
+			$album_name = get_post_meta( $media_id, '_mvs_album_name', true );
+
+			$data['artist']     = $artist ? $artist : null;
+			$data['album_name'] = $album_name ? $album_name : null;
+		}
 
 		/**
 		 * Filter the media item REST response data.

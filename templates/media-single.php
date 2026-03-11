@@ -16,11 +16,43 @@ get_header();
 	while ( have_posts() ) :
 		the_post();
 
-		$file_url  = get_post_meta( get_the_ID(), '_mvs_file_url', true );
-		$file_type = get_post_meta( get_the_ID(), '_mvs_file_type', true );
-		$is_image  = $file_url && strpos( $file_type, 'image/' ) === 0;
-		$is_video  = $file_url && strpos( $file_type, 'video/' ) === 0;
-		$is_audio  = $file_url && strpos( $file_type, 'audio/' ) === 0;
+		$file_url    = get_post_meta( get_the_ID(), '_mvs_file_url', true );
+		$file_type   = get_post_meta( get_the_ID(), '_mvs_file_type', true );
+		$media_type  = get_post_meta( get_the_ID(), '_mvs_media_type', true );
+		$is_image    = 'image' === $media_type;
+		$is_video    = 'video' === $media_type;
+		$is_audio    = 'audio' === $media_type;
+
+		// Metadata for video/audio.
+		$duration    = get_post_meta( get_the_ID(), '_mvs_duration', true );
+		$width       = get_post_meta( get_the_ID(), '_mvs_width', true );
+		$height      = get_post_meta( get_the_ID(), '_mvs_height', true );
+		$artist      = get_post_meta( get_the_ID(), '_mvs_artist', true );
+		$album_name  = get_post_meta( get_the_ID(), '_mvs_album_name', true );
+
+		// Poster/thumbnail from WP attachment.
+		$attach_id   = (int) get_post_meta( get_the_ID(), '_mvs_attachment_id', true );
+		$poster_url  = '';
+		if ( $attach_id ) {
+			$poster_src = wp_get_attachment_image_url( $attach_id, 'large' );
+			if ( $poster_src ) {
+				$poster_url = set_url_scheme( $poster_src );
+			}
+		}
+
+		// Format duration for display.
+		$duration_display = '';
+		if ( $duration ) {
+			$dur_float = (float) $duration;
+			$hours     = floor( $dur_float / 3600 );
+			$minutes   = floor( ( $dur_float % 3600 ) / 60 );
+			$seconds   = (int) $dur_float % 60;
+			if ( $hours > 0 ) {
+				$duration_display = sprintf( '%d:%02d:%02d', $hours, $minutes, $seconds );
+			} else {
+				$duration_display = sprintf( '%d:%02d', $minutes, $seconds );
+			}
+		}
 		?>
 
 		<article id="mvs-media-<?php the_ID(); ?>" <?php post_class( 'mvs-media-article' ); ?>>
@@ -37,6 +69,12 @@ get_header();
 						?>
 					</span>
 					<span class="mvs-media-date"><?php echo esc_html( get_the_date() ); ?></span>
+					<?php if ( $duration_display ) : ?>
+						<span class="mvs-media-duration"><?php echo esc_html( $duration_display ); ?></span>
+					<?php endif; ?>
+					<?php if ( $is_video && $width && $height ) : ?>
+						<span class="mvs-media-resolution"><?php echo esc_html( $width . 'x' . $height ); ?></span>
+					<?php endif; ?>
 				</div>
 			</header>
 
@@ -46,14 +84,53 @@ get_header();
 						<img src="<?php echo esc_url( $file_url ); ?>" alt="<?php echo esc_attr( get_the_title() ); ?>" />
 					</div>
 				<?php elseif ( $is_video ) : ?>
-					<div class="mvs-media-video">
-						<video controls preload="metadata" style="max-width:100%;">
+					<div class="mvs-media-video"
+						data-wp-interactive="mvs/media-player"
+						<?php
+						echo wp_interactivity_data_wp_context(
+							array(
+								'mediaId' => get_the_ID(),
+								'restUrl' => esc_url_raw( rest_url( 'mvs/v1/media/' . get_the_ID() . '/view' ) ),
+								'nonce'   => wp_create_nonce( 'wp_rest' ),
+								'playing' => false,
+							)
+						); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+						?>
+						data-wp-init="actions.trackView">
+						<video controls preload="metadata"
+							<?php echo $poster_url ? 'poster="' . esc_url( $poster_url ) . '"' : ''; ?>
+							data-wp-on--play="actions.onPlay"
+							data-wp-on--pause="actions.onPause">
 							<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
 						</video>
 					</div>
 				<?php elseif ( $is_audio ) : ?>
-					<div class="mvs-media-audio">
-						<audio controls preload="metadata" style="width:100%;">
+					<div class="mvs-media-audio"
+						data-wp-interactive="mvs/media-player"
+						<?php
+						echo wp_interactivity_data_wp_context(
+							array(
+								'mediaId' => get_the_ID(),
+								'restUrl' => esc_url_raw( rest_url( 'mvs/v1/media/' . get_the_ID() . '/view' ) ),
+								'nonce'   => wp_create_nonce( 'wp_rest' ),
+								'playing' => false,
+							)
+						); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+						?>
+						data-wp-init="actions.trackView">
+						<?php if ( $artist || $album_name ) : ?>
+							<div class="mvs-audio-info">
+								<?php if ( $artist ) : ?>
+									<span class="mvs-audio-artist"><?php echo esc_html( $artist ); ?></span>
+								<?php endif; ?>
+								<?php if ( $album_name ) : ?>
+									<span class="mvs-audio-album"><?php echo esc_html( $album_name ); ?></span>
+								<?php endif; ?>
+							</div>
+						<?php endif; ?>
+						<audio controls preload="metadata"
+							data-wp-on--play="actions.onPlay"
+							data-wp-on--pause="actions.onPause">
 							<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
 						</audio>
 					</div>
@@ -258,6 +335,15 @@ get_header();
 </div>
 <?php
 // Enqueue Interactivity API stores.
+$mvs_player_asset_file = MVS_PLUGIN_DIR . 'build/blocks/media-player/view.asset.php';
+$mvs_player_asset      = file_exists( $mvs_player_asset_file ) ? require $mvs_player_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+wp_enqueue_script_module(
+	'mvs-media-player',
+	MVS_PLUGIN_URL . 'build/blocks/media-player/view.js',
+	$mvs_player_asset['dependencies'],
+	$mvs_player_asset['version']
+);
+
 $mvs_shared_asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
 $mvs_shared_asset      = file_exists( $mvs_shared_asset_file ) ? require $mvs_shared_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
 wp_enqueue_script_module(
