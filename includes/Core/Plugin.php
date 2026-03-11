@@ -160,6 +160,11 @@ class Plugin {
 		// Enqueue frontend styles.
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
 
+		// Fix nav menu items when BuddyPress is not active.
+		if ( ! function_exists( 'buddypress' ) ) {
+			add_filter( 'wp_nav_menu_objects', array( self::class, 'filter_nav_menu_objects' ), 10 );
+		}
+
 		// Flush rewrite rules if needed (after activation).
 		add_action( 'init', array( self::class, 'maybe_flush_rewrites' ), 99 );
 
@@ -711,6 +716,57 @@ class Plugin {
 				return $a_order - $b_order;
 			}
 		);
+	}
+
+	/**
+	 * Filter nav menu items when BuddyPress is not active.
+	 *
+	 * Hides BP-only items (Groups, Members, Activity) and rewrites
+	 * "My Profile" (/members/me/) to the dashboard page.
+	 *
+	 * @param array $items Sorted menu items.
+	 * @return array Filtered menu items.
+	 */
+	public static function filter_nav_menu_objects( array $items ): array {
+		// BP-only URL patterns to remove entirely.
+		$bp_patterns = array( '/members/', '/groups/', '/activity/' );
+
+		$dashboard_url = '';
+		$dashboard_id  = (int) get_option( 'mvs_page_dashboard' );
+		if ( $dashboard_id ) {
+			$dashboard_url = get_permalink( $dashboard_id );
+		}
+
+		$filtered = array();
+		foreach ( $items as $item ) {
+			$url = $item->url;
+
+			// Check if this is a BP-only link.
+			$is_bp_link = false;
+			foreach ( $bp_patterns as $pattern ) {
+				if ( false !== strpos( $url, $pattern ) ) {
+					$is_bp_link = true;
+					break;
+				}
+			}
+
+			// "My Profile" (/members/me/) — rewrite to dashboard if available.
+			if ( $is_bp_link && false !== strpos( $url, '/members/me' ) && $dashboard_url ) {
+				$item->url   = $dashboard_url;
+				$item->title = __( 'My Media', 'wpmediaverse' );
+				$filtered[]  = $item;
+				continue;
+			}
+
+			// Skip other BP-only links.
+			if ( $is_bp_link ) {
+				continue;
+			}
+
+			$filtered[] = $item;
+		}
+
+		return $filtered;
 	}
 
 	/**
