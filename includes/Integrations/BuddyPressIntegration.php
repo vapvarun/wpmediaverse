@@ -446,6 +446,15 @@ class BuddyPressIntegration {
 			return null;
 		}
 
+		// Fast path: use stored activity ID from post meta.
+		$stored_id = (int) get_post_meta( $media_id, '_mvs_bp_activity_id', true );
+		if ( $stored_id ) {
+			$activity = new \BP_Activity_Activity( $stored_id );
+			if ( ! empty( $activity->id ) ) {
+				return $activity;
+			}
+		}
+
 		$activities = bp_activity_get(
 			array(
 				'filter'   => array(
@@ -458,6 +467,8 @@ class BuddyPressIntegration {
 		);
 
 		if ( ! empty( $activities['activities'] ) ) {
+			// Cache for next time.
+			update_post_meta( $media_id, '_mvs_bp_activity_id', $activities['activities'][0]->id );
 			return $activities['activities'][0];
 		}
 
@@ -475,6 +486,7 @@ class BuddyPressIntegration {
 		);
 
 		if ( ! empty( $activities['activities'] ) ) {
+			update_post_meta( $media_id, '_mvs_bp_activity_id', $activities['activities'][0]->id );
 			return $activities['activities'][0];
 		}
 
