@@ -26,6 +26,7 @@ class Shortcodes {
 		add_shortcode( 'mvs_player', array( $this, 'render_player' ) );
 		add_shortcode( 'mvs_stats', array( $this, 'render_stats' ) );
 		add_shortcode( 'mvs_dashboard', array( $this, 'render_dashboard' ) );
+		add_shortcode( 'mvs_collection', array( $this, 'render_collection' ) );
 	}
 
 	/**
@@ -433,5 +434,89 @@ class Shortcodes {
 		$mvs_shortcode_context = true;
 		include $template;
 		return ob_get_clean();
+	}
+
+	/**
+	 * Render the [mvs_collection] shortcode.
+	 *
+	 * Usage: [mvs_collection id="123" columns="3" per_page="20"]
+	 *
+	 * @param array|string $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_collection( $atts ): string {
+		$atts = shortcode_atts(
+			array(
+				'id'       => 0,
+				'columns'  => 3,
+				'per_page' => 20,
+			),
+			$atts,
+			'mvs_collection'
+		);
+
+		$collection_id = (int) $atts['id'];
+		if ( ! $collection_id ) {
+			return '<p>' . esc_html__( 'Please provide a collection ID: [mvs_collection id="123"]', 'wpmediaverse' ) . '</p>';
+		}
+
+		$post = get_post( $collection_id );
+		if ( ! $post || 'mvs_collection' !== $post->post_type || 'publish' !== $post->post_status ) {
+			return '<p>' . esc_html__( 'Collection not found.', 'wpmediaverse' ) . '</p>';
+		}
+
+		$container  = \WPMediaVerse\Core\Plugin::container();
+		$service    = $container->get( 'collections' );
+		$type       = $service->get_type( $collection_id );
+		$media_ids  = array();
+
+		if ( 'smart' === $type ) {
+			$resolved  = $service->resolve( $collection_id, (int) $atts['per_page'], 1 );
+			$media_ids = array_column( $resolved['items'], 'media_id' );
+		} else {
+			global $wpdb;
+			$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$collection_id,
+					(int) $atts['per_page']
+				)
+			);
+		}
+
+		if ( empty( $media_ids ) ) {
+			return '<p class="mvs-no-media">' . esc_html__( 'No media in this collection.', 'wpmediaverse' ) . '</p>';
+		}
+
+		wp_enqueue_style( 'mvs-frontend' );
+
+		$columns = (int) $atts['columns'];
+		$output  = '<div class="mvs-media-grid mvs-collection-embed" style="--mvs-grid-cols: ' . $columns . '">';
+
+		foreach ( $media_ids as $media_id ) {
+			$media_post = get_post( $media_id );
+			if ( ! $media_post || 'publish' !== $media_post->post_status ) {
+				continue;
+			}
+			$file_url   = get_post_meta( $media_id, '_mvs_file_url', true );
+			$media_type = get_post_meta( $media_id, '_mvs_media_type', true ) ?: 'image';
+			$permalink  = get_permalink( $media_id );
+
+			$output .= '<div class="mvs-grid-item">';
+			$output .= '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';
+			if ( $file_url && 'image' === $media_type ) {
+				$output .= '<img src="' . esc_url( $file_url ) . '" alt="' . esc_attr( $media_post->post_title ) . '" loading="lazy" />';
+			} else {
+				$output .= '<div class="mvs-grid-placeholder mvs-grid-placeholder--' . esc_attr( $media_type ) . '">'
+					. esc_html( strtoupper( $media_type ) ) . '</div>';
+			}
+			$output .= '</a>';
+			$output .= '<div class="mvs-grid-item-title">' . esc_html( $media_post->post_title ?: __( '(Untitled)', 'wpmediaverse' ) ) . '</div>';
+			$output .= '</div>';
+		}
+
+		$output .= '</div>';
+
+		return $output;
 	}
 }

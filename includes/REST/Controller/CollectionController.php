@@ -325,13 +325,18 @@ class CollectionController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function get_item_permissions_check( $request ) {
-		$post    = get_post( $request->get_param( 'id' ) );
-		$user_id = get_current_user_id();
+		$post = get_post( $request->get_param( 'id' ) );
 
 		if ( ! $post || 'mvs_collection' !== $post->post_type ) {
 			return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Published collections are viewable by anyone (shareable live views).
+		if ( 'publish' === $post->post_status ) {
+			return true;
+		}
+
+		$user_id = get_current_user_id();
 		if ( (int) $post->post_author === $user_id || current_user_can( 'moderate_mvs_media' ) ) {
 			return true;
 		}

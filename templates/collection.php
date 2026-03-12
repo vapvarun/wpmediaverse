@@ -23,7 +23,7 @@ get_header();
 
 		// Resolve items.
 		$container = \WPMediaVerse\Core\Plugin::container();
-		$service   = $container->get( \WPMediaVerse\Services\CollectionService::class );
+		$service   = $container->get( 'collections' );
 		$items     = array();
 
 		if ( 'smart' === $collection_type ) {

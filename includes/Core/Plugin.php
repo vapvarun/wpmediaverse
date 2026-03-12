@@ -43,6 +43,7 @@ use WPMediaVerse\Services\WatermarkService;
 use WPMediaVerse\Admin\ModerationQueue;
 use WPMediaVerse\Admin\OverviewPage;
 use WPMediaVerse\Admin\StatsPage;
+use WPMediaVerse\Admin\CollectionMetaBox;
 use WPMediaVerse\Social\ReactionService;
 use WPMediaVerse\Social\CommentService;
 use WPMediaVerse\Social\FavoriteService;
@@ -107,6 +108,7 @@ class Plugin {
 			self::$container->get( 'admin.settings' );
 			self::$container->get( 'admin.moderation' );
 			self::$container->get( 'admin.stats' );
+			self::$container->get( 'admin.collection_metabox' );
 
 			// Reorder submenu so Overview is first, then separator, then content, then tools.
 			add_action( 'admin_menu', array( self::class, 'reorder_submenu' ), 999 );
@@ -320,6 +322,15 @@ class Plugin {
 			'admin.stats',
 			function ( ServiceContainer $c ) {
 				return new StatsPage( $c->get( 'ai' ) );
+			}
+		);
+
+		self::$container->register(
+			'admin.collection_metabox',
+			function ( ServiceContainer $c ) {
+				$metabox = new CollectionMetaBox( $c->get( 'collections' ) );
+				$metabox->init();
+				return $metabox;
 			}
 		);
 
