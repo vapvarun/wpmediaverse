@@ -1,0 +1,73 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mvs/media-grid",
+  "version": "1.0.0",
+  "title": "Media Grid",
+  "category": "media",
+  "icon": "grid-view",
+  "description": "Display a grid of media items from WPMediaVerse.",
+  "keywords": [
+    "gallery",
+    "grid",
+    "media",
+    "photos"
+  ],
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ],
+    "color": {
+      "background": true
+    },
+    "spacing": {
+      "padding": true,
+      "margin": true
+    }
+  },
+  "attributes": {
+    "columns": {
+      "type": "number",
+      "default": 3
+    },
+    "perPage": {
+      "type": "number",
+      "default": 12
+    },
+    "mediaType": {
+      "type": "string",
+      "default": ""
+    },
+    "category": {
+      "type": "string",
+      "default": ""
+    },
+    "tag": {
+      "type": "string",
+      "default": ""
+    },
+    "orderBy": {
+      "type": "string",
+      "default": "date"
+    },
+    "showLightbox": {
+      "type": "boolean",
+      "default": true
+    },
+    "showReactions": {
+      "type": "boolean",
+      "default": true
+    },
+    "gap": {
+      "type": "number",
+      "default": 8
+    }
+  },
+  "textdomain": "wpmediaverse",
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php",
+  "viewScriptModule": "file:./view.js",
+  "style": "file:./style-index.css"
+}

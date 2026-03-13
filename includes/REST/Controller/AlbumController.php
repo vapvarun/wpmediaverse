@@ -247,7 +247,7 @@ class AlbumController extends WP_REST_Controller {
 			if ( ! $this->privacy->can_view( $post->ID, $user_id ) ) {
 				continue;
 			}
-			$items[] = $this->prepare_album_response( $post );
+			$items[] = $this->prepare_album_response( $post, true );
 		}
 
 		$response = rest_ensure_response( $items );
@@ -578,7 +578,7 @@ class AlbumController extends WP_REST_Controller {
 		);
 
 		if ( $include_items ) {
-			$data['items'] = $this->albums->get_items( $album_id );
+			$data['items'] = array_map( 'intval', array_column( $this->albums->get_items( $album_id ), 'media_id' ) );
 		}
 
 		return $data;

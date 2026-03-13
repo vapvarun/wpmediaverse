@@ -40,8 +40,8 @@ class Shortcodes {
 	public function render_gallery( $atts ): string {
 		$atts = shortcode_atts(
 			array(
-				'columns'  => 3,
-				'per_page' => 12,
+				'columns'  => (int) get_option( 'mvs_grid_columns', 3 ),
+				'per_page' => (int) get_option( 'mvs_items_per_page', 12 ),
 				'type'     => '',
 				'category' => '',
 				'tag'      => '',

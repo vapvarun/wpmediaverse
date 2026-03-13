@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mvs/media-player",
+  "version": "1.0.0",
+  "title": "Media Player",
+  "category": "media",
+  "icon": "controls-play",
+  "description": "Video and audio player for WPMediaVerse media items.",
+  "keywords": [
+    "video",
+    "audio",
+    "player",
+    "media"
+  ],
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "attributes": {
+    "mediaId": {
+      "type": "number",
+      "default": 0
+    },
+    "autoplay": {
+      "type": "boolean",
+      "default": false
+    },
+    "loop": {
+      "type": "boolean",
+      "default": false
+    },
+    "showDownload": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "textdomain": "wpmediaverse",
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php",
+  "viewScriptModule": "file:./view.js",
+  "style": "file:./style-index.css"
+}

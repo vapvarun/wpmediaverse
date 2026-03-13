@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mvs/album-viewer",
+  "version": "1.0.0",
+  "title": "Album Viewer",
+  "category": "media",
+  "icon": "images-alt2",
+  "description": "Display a WPMediaVerse album with its media items.",
+  "keywords": [
+    "album",
+    "gallery",
+    "collection"
+  ],
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "attributes": {
+    "albumId": {
+      "type": "number",
+      "default": 0
+    },
+    "columns": {
+      "type": "number",
+      "default": 3
+    },
+    "showTitle": {
+      "type": "boolean",
+      "default": true
+    },
+    "showDescription": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "textdomain": "wpmediaverse",
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php",
+  "style": "file:./style-index.css"
+}

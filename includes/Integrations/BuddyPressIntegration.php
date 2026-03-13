@@ -2074,6 +2074,12 @@ class BuddyPressIntegration {
 			if ( (int) $post->post_author !== $user_id ) {
 				continue;
 			}
+
+			// Publish draft media now that the activity is being posted.
+			if ( 'draft' === $post->post_status ) {
+				wp_publish_post( $media_id );
+			}
+
 			$valid_ids[] = $media_id;
 			$thumbnails .= $this->get_media_thumbnail_html( $media_id, 'medium' );
 		}

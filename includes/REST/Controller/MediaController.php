@@ -296,13 +296,18 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		$upload_service = Plugin::container()->get( 'upload' );
-		$args           = array(
+		$args = array(
 			'title'       => sanitize_text_field( $request->get_param( 'title' ) ?? '' ),
 			'description' => wp_kses_post( $request->get_param( 'description' ) ?? '' ),
-			'privacy'     => sanitize_text_field( $request->get_param( 'privacy' ) ?? '' ),
 			'status'      => sanitize_text_field( $request->get_param( 'status' ) ?? 'publish' ),
 			'publish_at'  => sanitize_text_field( $request->get_param( 'publish_at' ) ?? '' ),
 		);
+
+		// Only set privacy if explicitly provided; otherwise UploadService uses the default option.
+		$privacy_param = $request->get_param( 'privacy' );
+		if ( ! empty( $privacy_param ) ) {
+			$args['privacy'] = sanitize_text_field( $privacy_param );
+		}
 
 		$media_id = $upload_service->handle( $file, get_current_user_id(), $args );
 

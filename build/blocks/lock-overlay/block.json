@@ -1,0 +1,59 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mvs/lock-overlay",
+  "version": "1.0.0",
+  "title": "Lock Overlay",
+  "category": "wpmediaverse",
+  "icon": "lock",
+  "description": "Displays a paywall overlay on gated media items with blurred preview and unlock prompt.",
+  "keywords": [
+    "lock",
+    "paywall",
+    "gated",
+    "monetization",
+    "premium"
+  ],
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ],
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "padding": true,
+      "margin": true
+    }
+  },
+  "attributes": {
+    "mediaId": {
+      "type": "number",
+      "default": 0
+    },
+    "blurAmount": {
+      "type": "number",
+      "default": 20
+    },
+    "showPrice": {
+      "type": "boolean",
+      "default": true
+    },
+    "unlockLabel": {
+      "type": "string",
+      "default": ""
+    },
+    "overlayOpacity": {
+      "type": "number",
+      "default": 60
+    }
+  },
+  "textdomain": "wpmediaverse",
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php",
+  "viewScriptModule": "file:./view.js",
+  "style": "file:./style-index.css"
+}

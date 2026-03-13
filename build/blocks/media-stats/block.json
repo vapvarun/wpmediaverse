@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mvs/media-stats",
+  "version": "1.0.0",
+  "title": "Media Stats",
+  "category": "widgets",
+  "icon": "chart-bar",
+  "description": "Display media statistics dashboard for WPMediaVerse.",
+  "keywords": [
+    "stats",
+    "analytics",
+    "dashboard"
+  ],
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "attributes": {
+    "showViews": {
+      "type": "boolean",
+      "default": true
+    },
+    "showDownloads": {
+      "type": "boolean",
+      "default": true
+    },
+    "showReactions": {
+      "type": "boolean",
+      "default": true
+    },
+    "showTopMedia": {
+      "type": "boolean",
+      "default": true
+    },
+    "topCount": {
+      "type": "number",
+      "default": 5
+    }
+  },
+  "textdomain": "wpmediaverse",
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php",
+  "style": "file:./style-index.css"
+}

@@ -1,0 +1,1 @@
+import{store as s}from"@wordpress/interactivity";s("mvs/lock-overlay",{actions:{requestAccess(){}}});

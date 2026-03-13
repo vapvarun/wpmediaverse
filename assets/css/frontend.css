@@ -3527,3 +3527,302 @@ a.mvs-dashboard-card-title:hover {
 	outline: 3px solid #0073aa;
 	outline-offset: -3px;
 }
+
+/* ==========================================================================
+   27. Grid Pagination
+   ========================================================================== */
+
+.mvs-grid-pagination {
+	margin-top: 24px;
+	text-align: center;
+}
+
+.mvs-grid-pagination-info {
+	display: block;
+	margin-bottom: 12px;
+	font-size: 13px;
+	color: #666;
+}
+
+.mvs-grid-pagination-links ul {
+	display: flex;
+	justify-content: center;
+	gap: 4px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	flex-wrap: wrap;
+}
+
+.mvs-grid-pagination-links li {
+	margin: 0;
+}
+
+.mvs-grid-pagination-links a,
+.mvs-grid-pagination-links span {
+	display: inline-block;
+	padding: 8px 14px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	text-decoration: none;
+	font-size: 13px;
+	color: #333;
+	background: #fff;
+	transition: all 0.15s;
+}
+
+.mvs-grid-pagination-links a:hover {
+	background: #f0f0f0;
+	border-color: #bbb;
+}
+
+.mvs-grid-pagination-links .current {
+	background: #2271b1;
+	color: #fff;
+	border-color: #2271b1;
+	font-weight: 600;
+}
+
+.mvs-grid-pagination-links .dots {
+	border-color: transparent;
+	background: transparent;
+}
+
+/* ==========================================================================
+   28. Upload Form Fixes
+   ========================================================================== */
+
+.mvs-upload-block {
+	max-width: 680px;
+	margin: 0 auto;
+}
+
+.mvs-upload-dropzone {
+	border: 2px dashed #c3c4c7;
+	border-radius: 8px;
+	padding: 40px 20px;
+	text-align: center;
+	cursor: pointer;
+	transition: all 0.2s;
+	background: #fafafa;
+}
+
+.mvs-upload-dropzone:hover,
+.mvs-upload-dropzone.mvs-dragover {
+	border-color: #2271b1;
+	background: #f0f6fc;
+}
+
+.mvs-upload-icon {
+	color: #999;
+	margin-bottom: 12px;
+}
+
+.mvs-upload-text {
+	margin: 0 0 16px;
+	font-size: 14px;
+	color: #666;
+}
+
+.mvs-upload-input {
+	display: none;
+}
+
+.mvs-upload-privacy {
+	margin-top: 12px;
+	padding: 6px 12px;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	font-size: 13px;
+}
+
+.mvs-upload-fields {
+	margin-top: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.mvs-upload-fields input,
+.mvs-upload-fields textarea {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	font-size: 13px;
+}
+
+/* ==========================================================================
+   29. BP Activity Media Button Alignment
+   ========================================================================== */
+
+#mvs-activity-media-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 14px;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	background: #fff;
+	cursor: pointer;
+	font-size: 13px;
+	line-height: 1.4;
+	vertical-align: middle;
+	margin: 4px 0;
+	transition: all 0.15s;
+}
+
+#mvs-activity-media-btn:hover {
+	background: #f0f0f0;
+	border-color: #999;
+}
+
+#mvs-activity-media-btn .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+	line-height: 18px;
+}
+
+.mvs-activity-media-preview {
+	margin-top: 12px;
+	gap: 6px;
+}
+
+.mvs-activity-media-preview.mvs-preview-grid-1 { grid-template-columns: 1fr; }
+.mvs-activity-media-preview.mvs-preview-grid-2 { grid-template-columns: 1fr 1fr; }
+.mvs-activity-media-preview.mvs-preview-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.mvs-activity-media-preview.mvs-preview-grid-4,
+.mvs-activity-media-preview.mvs-preview-grid-5 { grid-template-columns: 1fr 1fr; }
+
+.mvs-preview-item {
+	position: relative;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.mvs-preview-item img {
+	width: 100%;
+	height: 120px;
+	object-fit: cover;
+	display: block;
+}
+
+.mvs-activity-media-remove {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.6);
+	color: #fff;
+	border: none;
+	cursor: pointer;
+	font-size: 14px;
+	line-height: 24px;
+	padding: 0;
+}
+
+/* ==========================================================================
+   30. Single Media Page Fixes
+   ========================================================================== */
+
+.mvs-media-content img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 4px;
+}
+
+.mvs-social-bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+	padding: 16px 24px;
+	border-top: 1px solid #f0f0f1;
+}
+
+.mvs-reactions {
+	display: flex;
+	gap: 4px;
+}
+
+.mvs-reaction-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 10px;
+	border: 1px solid #e0e0e0;
+	border-radius: 20px;
+	background: #fff;
+	cursor: pointer;
+	font-size: 14px;
+	transition: all 0.15s;
+}
+
+.mvs-reaction-btn:hover,
+.mvs-reaction-btn.active {
+	background: #f0f6fc;
+	border-color: #2271b1;
+}
+
+.mvs-reaction-btn .mvs-count {
+	font-size: 12px;
+	color: #666;
+}
+
+.mvs-favorite-btn {
+	padding: 6px 14px;
+	border: 1px solid #e0e0e0;
+	border-radius: 20px;
+	background: #fff;
+	cursor: pointer;
+	font-size: 13px;
+	transition: all 0.15s;
+}
+
+.mvs-favorite-btn:hover,
+.mvs-favorite-btn.active {
+	background: #fce4e4;
+	border-color: #d63638;
+	color: #d63638;
+}
+
+.mvs-share-btn {
+	padding: 6px 14px;
+	border: 1px solid #e0e0e0;
+	border-radius: 20px;
+	background: #fff;
+	cursor: pointer;
+	font-size: 13px;
+}
+
+.mvs-view-count {
+	margin-left: auto;
+	font-size: 12px;
+	color: #999;
+}
+
+/* ==========================================================================
+   31. Explore Page Grid Fixes
+   ========================================================================== */
+
+.mvs-explore-grid {
+	display: grid;
+	grid-template-columns: repeat(var(--mvs-grid-cols, 3), 1fr);
+	gap: 16px;
+}
+
+@media (max-width: 768px) {
+	.mvs-explore-grid {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 8px;
+	}
+}
+
+@media (max-width: 480px) {
+	.mvs-explore-grid {
+		grid-template-columns: 1fr;
+	}
+}

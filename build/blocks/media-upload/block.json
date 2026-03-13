@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mvs/media-upload",
+  "version": "1.0.0",
+  "title": "Media Upload",
+  "category": "media",
+  "icon": "upload",
+  "description": "A drag-and-drop media upload form for WPMediaVerse.",
+  "keywords": [
+    "upload",
+    "media",
+    "file"
+  ],
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "attributes": {
+    "maxFiles": {
+      "type": "number",
+      "default": 10
+    },
+    "showPrivacy": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "textdomain": "wpmediaverse",
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php",
+  "viewScriptModule": "file:./view.js",
+  "style": "file:./style-index.css"
+}

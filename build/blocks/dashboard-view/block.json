@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mvs/dashboard-view",
+  "version": "1.0.0",
+  "title": "MVS Dashboard View",
+  "category": "widgets",
+  "description": "Internal dashboard store for My Media/Albums/Favorites. Not a user-facing block.",
+  "supports": {
+    "inserter": false
+  },
+  "textdomain": "wpmediaverse",
+  "viewScriptModule": "file:./view.js"
+}
