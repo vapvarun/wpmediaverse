@@ -475,7 +475,7 @@ do_action( 'mvs_dashboard_before_content' );
 						<span data-wp-bind--hidden="state.albumModal.isEdit"><?php esc_html_e( 'Select Media', 'wpmediaverse' ); ?></span>
 						<span data-wp-bind--hidden="!state.albumModal.isEdit"><?php esc_html_e( 'Album Media & Cover', 'wpmediaverse' ); ?></span>
 					</label>
-					<p class="mvs-field-hint" data-wp-bind--hidden="!state.albumModal.isEdit">
+					<p class="mvs-field-hint">
 						<?php esc_html_e( 'Click a thumbnail to toggle selection. Click "Set Cover" to choose the album cover.', 'wpmediaverse' ); ?>
 					</p>
 					<div class="mvs-media-picker">
@@ -524,7 +524,7 @@ do_action( 'mvs_dashboard_before_content' );
 	</div>
 
 	<!-- Toast (shared-ui) -->
-	<div class="mvs-toast"
+	<div class="mvs-toast" hidden
 		data-wp-interactive="mvs/shared-ui"
 		data-wp-bind--hidden="!state.toast.visible"
 		data-wp-text="state.toast.message"
@@ -532,7 +532,7 @@ do_action( 'mvs_dashboard_before_content' );
 		data-wp-class--mvs-toast--error="state.toast.type === 'error'"></div>
 
 	<!-- Confirm Dialog (shared-ui) -->
-	<div class="mvs-confirm-overlay"
+	<div class="mvs-confirm-overlay" hidden
 		data-wp-interactive="mvs/shared-ui"
 		data-wp-bind--hidden="!state.confirm.visible">
 		<div class="mvs-confirm">

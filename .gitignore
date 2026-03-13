@@ -1,5 +1,4 @@
 node_modules/
-vendor/
 *.log
 .DS_Store
 .phpunit.result.cache
