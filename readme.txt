@@ -8,7 +8,7 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A full-featured WordPress media platform with albums, privacy controls, social interactions, AI moderation, and BuddyPress integration.
+Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
 
 == Description ==
 
@@ -72,6 +72,17 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * `[mvs_album id="123"]` — Album viewer
 * `[mvs_player id="456"]` — Media player
 * `[mvs_stats]` — Stats dashboard
+
+== Screenshots ==
+
+1. **Explore Page** — Instagram-style media grid with search and tag cloud filtering.
+2. **Dashboard** — User media management with albums, favorites, and collections tabs.
+3. **Single Media** — Full media view with reactions, comments, favorites, and sharing.
+4. **Album View** — Album page with cover image, item grid, and sequential playback.
+5. **Admin Overview** — At-a-glance stats, quick links, recent uploads, and system status.
+6. **Settings** — Tabbed settings with upload limits, display options, permissions, and AI config.
+7. **BuddyPress Profile** — Media tab on user profiles with album support.
+8. **Moderation Queue** — AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
 
