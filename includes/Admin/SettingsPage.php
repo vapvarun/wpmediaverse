@@ -629,7 +629,7 @@ class SettingsPage {
 			<nav class="nav-tab-wrapper wp-clearfix" aria-label="<?php esc_attr_e( 'Settings tabs', 'wpmediaverse' ); ?>">
 				<?php foreach ( $tabs as $tab_slug => $tab_label ) : ?>
 					<a href="<?php echo esc_url( add_query_arg( 'tab', $tab_slug, $base_url ) ); ?>"
-					   class="nav-tab<?php echo ( $tab_slug === $active_tab ) ? ' nav-tab-active' : ''; ?>">
+						class="nav-tab<?php echo ( $tab_slug === $active_tab ) ? ' nav-tab-active' : ''; ?>">
 						<?php echo esc_html( $tab_label ); ?>
 					</a>
 				<?php endforeach; ?>
@@ -651,8 +651,8 @@ class SettingsPage {
 					'ai'       => self::PAGE_SLUG . '-ai',
 					'webhooks' => self::PAGE_SLUG . '-webhooks',
 				);
-				$option_group = $option_group_map[ $active_tab ] ?? ( self::OPTION_GROUP . '_general' );
-				$page_slug    = $page_slug_map[ $active_tab ] ?? ( self::PAGE_SLUG . '-general' );
+				$option_group     = $option_group_map[ $active_tab ] ?? ( self::OPTION_GROUP . '_general' );
+				$page_slug        = $page_slug_map[ $active_tab ] ?? ( self::PAGE_SLUG . '-general' );
 				?>
 				<form action="options.php" method="post">
 					<?php
@@ -780,10 +780,19 @@ class SettingsPage {
 		);
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in render_permissions_tab().
-		$submitted = isset( $_POST['mvs_role_caps'] ) && is_array( $_POST['mvs_role_caps'] )
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing
-			? $_POST['mvs_role_caps']
+		$raw_caps  = isset( $_POST['mvs_role_caps'] ) && is_array( $_POST['mvs_role_caps'] )
+			? wp_unslash( $_POST['mvs_role_caps'] ) // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			: array();
+		$submitted = array();
+		foreach ( $raw_caps as $role_key => $cap_arr ) {
+			if ( ! is_array( $cap_arr ) ) {
+				continue;
+			}
+			$clean_role = sanitize_key( $role_key );
+			foreach ( $cap_arr as $cap_key => $cap_val ) {
+				$submitted[ $clean_role ][ sanitize_key( $cap_key ) ] = sanitize_text_field( $cap_val );
+			}
+		}
 
 		foreach ( $roles as $role_slug ) {
 			$role_obj = get_role( $role_slug );
@@ -808,8 +817,8 @@ class SettingsPage {
 	 */
 	public function save_role_caps(): void {
 		if (
-			! isset( $_POST['_wpnonce'] ) ||
-			! wp_verify_nonce( sanitize_key( $_POST['_wpnonce'] ), 'mvs_save_role_caps' )
+			! isset( $_POST['_wpnonce'] ) || // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['_wpnonce'] ) ), 'mvs_save_role_caps' ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		) {
 			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
 		}

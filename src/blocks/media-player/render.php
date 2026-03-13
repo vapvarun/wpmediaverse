@@ -62,8 +62,8 @@ $nonce    = wp_create_nonce( 'wp_rest' );
 	<?php if ( $is_video ) : ?>
 		<video class="mvs-player-video"
 			controls
-			<?php echo $autoplay ? 'autoplay muted' : ''; ?>
-			<?php echo $loop ? 'loop' : ''; ?>
+			<?php echo $autoplay ? 'autoplay muted' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static strings. ?>
+			<?php echo $loop ? 'loop' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
 			preload="metadata"
 			data-wp-on--play="actions.onPlay"
 			data-wp-on--pause="actions.onPause"
@@ -75,8 +75,8 @@ $nonce    = wp_create_nonce( 'wp_rest' );
 			<div class="mvs-player-audio-title"><?php echo esc_html( $media_post->post_title ); ?></div>
 			<audio class="mvs-player-audio"
 				controls
-				<?php echo $autoplay ? 'autoplay' : ''; ?>
-				<?php echo $loop ? 'loop' : ''; ?>
+				<?php echo $autoplay ? 'autoplay' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
+				<?php echo $loop ? 'loop' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
 				preload="metadata"
 				data-wp-on--play="actions.onPlay"
 				data-wp-on--pause="actions.onPause"

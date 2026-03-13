@@ -134,7 +134,12 @@ class CollectionMetaBox {
 			<div id="mvs-rules-list">
 				<?php
 				if ( empty( $rules ) ) {
-					$rules = array( array( 'key' => '', 'value' => '' ) );
+					$rules = array(
+						array(
+							'key'   => '',
+							'value' => '',
+						),
+					);
 				}
 				foreach ( $rules as $i => $rule ) :
 					$this->render_rule_row( $i, $rule, $tags, $categories );
@@ -151,7 +156,7 @@ class CollectionMetaBox {
 					printf(
 						/* translators: %d: number of matching items */
 						esc_html( _n( '%d media item matches', '%d media items match', $match_count, 'wpmediaverse' ) ),
-						$match_count
+						(int) $match_count
 					);
 					?>
 				</div>
@@ -163,7 +168,17 @@ class CollectionMetaBox {
 			<tbody>
 				<tr>
 					<td>
-						<?php $this->render_rule_row( '__INDEX__', array( 'key' => '', 'value' => '' ), $tags, $categories ); ?>
+						<?php
+						$this->render_rule_row(
+							'__INDEX__',
+							array(
+								'key'   => '',
+								'value' => '',
+							),
+							$tags,
+							$categories
+						);
+						?>
 					</td>
 				</tr>
 			</tbody>
@@ -336,10 +351,10 @@ class CollectionMetaBox {
 	 * @param \WP_Post $post    Post object.
 	 */
 	public function save( int $post_id, \WP_Post $post ): void {
-		if ( ! isset( $_POST['mvs_collection_rules_nonce'] ) ) {
+		if ( ! isset( $_POST['mvs_collection_rules_nonce'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			return;
 		}
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mvs_collection_rules_nonce'] ) ), 'mvs_collection_rules' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mvs_collection_rules_nonce'] ) ), 'mvs_collection_rules' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 			return;
 		}
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
@@ -358,7 +373,8 @@ class CollectionMetaBox {
 		}
 
 		// Parse and save rules.
-		$raw_rules = isset( $_POST['mvs_rules'] ) && is_array( $_POST['mvs_rules'] ) ? $_POST['mvs_rules'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- nonce verified above, individual fields sanitized below.
+		$raw_rules   = isset( $_POST['mvs_rules'] ) && is_array( $_POST['mvs_rules'] ) ? wp_unslash( $_POST['mvs_rules'] ) : array();
 		$clean_rules = array();
 
 		foreach ( $raw_rules as $rule ) {

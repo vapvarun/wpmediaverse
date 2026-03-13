@@ -148,7 +148,7 @@ class StatsPage {
 			<?php // --- Two Column Layout --- ?>
 			<div class="mvs-admin-columns mvs-admin-columns--2-1">
 
-				<?php // Top Media Widget ?>
+				<?php // Top Media Widget. ?>
 				<div class="mvs-admin-widget">
 					<div class="mvs-widget-header">
 						<h2><?php esc_html_e( 'Top Media by Views', 'wpmediaverse' ); ?></h2>
@@ -166,11 +166,11 @@ class StatsPage {
 								</thead>
 								<tbody>
 									<?php foreach ( $top_media as $item ) : ?>
-									<?php
-									$edit_link = get_edit_post_link( (int) $item['media_id'], 'raw' );
-									$view_link = get_permalink( (int) $item['media_id'] );
-									$item_link = $edit_link ? $edit_link : $view_link;
-									?>
+										<?php
+										$edit_link = get_edit_post_link( (int) $item['media_id'], 'raw' );
+										$view_link = get_permalink( (int) $item['media_id'] );
+										$item_link = $edit_link ? $edit_link : $view_link;
+										?>
 										<tr>
 											<td>
 												<?php if ( $item_link ) : ?>
@@ -197,7 +197,7 @@ class StatsPage {
 					</div>
 				</div>
 
-				<?php // AI Usage Widget ?>
+				<?php // AI Usage Widget. ?>
 				<div class="mvs-admin-widget">
 					<div class="mvs-widget-header">
 						<h2><?php esc_html_e( 'AI Usage (This Month)', 'wpmediaverse' ); ?></h2>
@@ -214,7 +214,7 @@ class StatsPage {
 							</li>
 							<li>
 								<span class="mvs-status-label"><?php esc_html_e( 'Failed', 'wpmediaverse' ); ?></span>
-								<span class="mvs-status-value <?php echo $ai_stats['failed'] > 0 ? 'mvs-status-bad' : ''; ?>">
+								<span class="mvs-status-value <?php echo esc_attr( $ai_stats['failed'] > 0 ? 'mvs-status-bad' : '' ); ?>">
 									<?php echo esc_html( number_format_i18n( $ai_stats['failed'] ) ); ?>
 								</span>
 							</li>
@@ -228,7 +228,7 @@ class StatsPage {
 									<span class="mvs-status-value">
 										$<?php echo esc_html( number_format( $ai_stats['budget'], 2 ) ); ?>
 										<?php
-										$pct = round( ( $ai_stats['cost'] / $ai_stats['budget'] ) * 100 );
+										$pct       = round( ( $ai_stats['cost'] / $ai_stats['budget'] ) * 100 );
 										$pct_class = $pct > 80 ? 'mvs-status-bad' : ( $pct > 50 ? 'mvs-status-warn' : 'mvs-status-ok' );
 										?>
 										<span class="<?php echo esc_attr( $pct_class ); ?>">

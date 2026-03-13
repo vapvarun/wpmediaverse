@@ -32,20 +32,11 @@ class Commands {
 		$media_count = (int) wp_count_posts( 'mvs_media' )->publish;
 		$album_count = (int) wp_count_posts( 'mvs_album' )->publish;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$total_views = (int) $wpdb->get_var(
-			"SELECT COALESCE(SUM(views), 0) FROM {$wpdb->prefix}mvs_media_stats" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		);
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$total_reactions = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_reactions" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		);
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$total_favorites = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_favorites" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		);
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names only, no user input.
+		$total_views     = (int) $wpdb->get_var( "SELECT COALESCE(SUM(views), 0) FROM {$wpdb->prefix}mvs_media_stats" );
+		$total_reactions = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_reactions" );
+		$total_favorites = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_favorites" );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		$items = array(
 			array( 'Metric' => 'Published Media', 'Value' => $media_count ),
@@ -278,11 +269,8 @@ class Commands {
 	public function moderation_stats( $args, $assoc_args ) {
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$rows = $wpdb->get_results(
-			"SELECT moderation_status, COUNT(*) as cnt FROM {$wpdb->prefix}mvs_media_index GROUP BY moderation_status", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			ARRAY_A
-		);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name only, no user input.
+		$rows = $wpdb->get_results( "SELECT moderation_status, COUNT(*) as cnt FROM {$wpdb->prefix}mvs_media_index GROUP BY moderation_status", ARRAY_A );
 
 		if ( empty( $rows ) ) {
 			WP_CLI::log( 'No media found in the index.' );

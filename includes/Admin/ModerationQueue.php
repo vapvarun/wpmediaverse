@@ -67,11 +67,11 @@ class ModerationQueue {
 	 * Handle approve/reject form submissions.
 	 */
 	public function handle_actions(): void {
-		if ( ! isset( $_POST['mvs_moderation_action'] ) ) {
+		if ( ! isset( $_POST['mvs_moderation_action'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			return;
 		}
 
-		if ( ! check_admin_referer( 'mvs_moderation_action', 'mvs_moderation_nonce' ) ) {
+		if ( ! check_admin_referer( 'mvs_moderation_action', 'mvs_moderation_nonce' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 			return;
 		}
 
@@ -185,8 +185,8 @@ class ModerationQueue {
 					);
 					?>
 					<a href="<?php echo esc_url( $url ); ?>"
-					   class="mvs-stat-card <?php echo esc_attr( $card['class'] ); ?>"
-					   style="<?php echo $is_active ? 'box-shadow:0 0 0 2px #2271b1;' : ''; ?>">
+						class="mvs-stat-card <?php echo esc_attr( $card['class'] ); ?>"
+						style="<?php echo $is_active ? 'box-shadow:0 0 0 2px #2271b1;' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>">
 						<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
 						<span class="mvs-stat-label"><?php echo esc_html( $card['label'] ); ?></span>
 					</a>
@@ -296,7 +296,7 @@ class ModerationQueue {
 			</td>
 			<td>
 				<time datetime="<?php echo esc_attr( $post->post_date ); ?>">
-					<?php echo esc_html( human_time_diff( strtotime( $post->post_date ), current_time( 'timestamp' ) ) ); ?>
+					<?php echo esc_html( human_time_diff( strtotime( $post->post_date ), time() ) ); ?>
 					<?php esc_html_e( 'ago', 'wpmediaverse' ); ?>
 				</time>
 			</td>

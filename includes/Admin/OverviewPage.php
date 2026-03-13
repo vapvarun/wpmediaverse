@@ -127,9 +127,9 @@ class OverviewPage {
 			<?php // --- Main Content Grid --- ?>
 			<div class="mvs-admin-columns mvs-admin-columns--2">
 
-				<?php // --- Left Column --- ?>
+				<?php // --- Left Column. ?>
 				<div>
-					<?php // Quick Links Widget ?>
+					<?php // Quick Links Widget. ?>
 					<div class="mvs-admin-widget">
 						<div class="mvs-widget-header">
 							<h2><?php esc_html_e( 'Quick Links', 'wpmediaverse' ); ?></h2>
@@ -161,7 +161,7 @@ class OverviewPage {
 						</div>
 					</div>
 
-					<?php // Frontend Pages Widget ?>
+					<?php // Frontend Pages Widget. ?>
 					<div class="mvs-admin-widget" style="margin-top:20px;">
 						<div class="mvs-widget-header">
 							<h2><?php esc_html_e( 'Frontend Pages', 'wpmediaverse' ); ?></h2>
@@ -238,9 +238,9 @@ class OverviewPage {
 					</div>
 				</div>
 
-				<?php // --- Right Column --- ?>
+				<?php // --- Right Column. ?>
 				<div>
-					<?php // Recent Uploads Widget ?>
+					<?php // Recent Uploads Widget. ?>
 					<div class="mvs-admin-widget">
 						<div class="mvs-widget-header">
 							<h2><?php esc_html_e( 'Recent Uploads', 'wpmediaverse' ); ?></h2>
@@ -298,7 +298,7 @@ class OverviewPage {
 												<td><?php echo esc_html( get_the_author_meta( 'display_name', $item->post_author ) ); ?></td>
 												<td>
 													<time datetime="<?php echo esc_attr( $item->post_date ); ?>">
-														<?php echo esc_html( human_time_diff( strtotime( $item->post_date ), current_time( 'timestamp' ) ) ); ?>
+														<?php echo esc_html( human_time_diff( strtotime( $item->post_date ), time() ) ); ?>
 														<?php esc_html_e( 'ago', 'wpmediaverse' ); ?>
 													</time>
 												</td>
@@ -315,7 +315,7 @@ class OverviewPage {
 						</div>
 					</div>
 
-					<?php // System Status Widget ?>
+					<?php // System Status Widget. ?>
 					<div class="mvs-admin-widget" style="margin-top:20px;">
 						<div class="mvs-widget-header">
 							<h2><?php esc_html_e( 'System Status', 'wpmediaverse' ); ?></h2>
@@ -348,13 +348,13 @@ class OverviewPage {
 										$ai_key = MVS_OPENAI_API_KEY;
 									}
 									?>
-									<span class="mvs-status-value <?php echo $ai_key ? 'mvs-status-ok' : 'mvs-status-warn'; ?>">
+									<span class="mvs-status-value <?php echo esc_attr( $ai_key ? 'mvs-status-ok' : 'mvs-status-warn' ); ?>">
 										<?php echo $ai_key ? esc_html__( 'Configured', 'wpmediaverse' ) : esc_html__( 'Not set', 'wpmediaverse' ); ?>
 									</span>
 								</li>
 								<li>
 									<span class="mvs-status-label"><?php esc_html_e( 'BuddyPress', 'wpmediaverse' ); ?></span>
-									<span class="mvs-status-value <?php echo $system_info['buddypress'] ? 'mvs-status-ok' : ''; ?>">
+									<span class="mvs-status-value <?php echo esc_attr( $system_info['buddypress'] ? 'mvs-status-ok' : '' ); ?>">
 										<?php echo $system_info['buddypress'] ? esc_html__( 'Active', 'wpmediaverse' ) : esc_html__( 'Inactive', 'wpmediaverse' ); ?>
 									</span>
 								</li>

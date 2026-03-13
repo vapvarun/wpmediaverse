@@ -199,7 +199,7 @@ class BuddyPressIntegration {
 	 */
 	public function flag_activity_upload( int $media_id ): void {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( isset( $_GET['context'] ) && 'activity' === $_GET['context'] ) {
+		if ( isset( $_GET['context'] ) && 'activity' === sanitize_key( wp_unslash( $_GET['context'] ) ) ) {
 			update_post_meta( $media_id, '_mvs_activity_upload', '1' );
 		}
 	}

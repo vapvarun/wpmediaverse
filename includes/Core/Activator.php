@@ -83,7 +83,18 @@ class Activator {
 			}
 
 			// 3. Try to find an existing published page by title (handles slug variants like my-media-2).
-			$by_title = get_page_by_title( $page_data['title'], OBJECT, 'page' );
+			$by_title_query = new \WP_Query(
+				array(
+					'post_type'              => 'page',
+					'title'                  => $page_data['title'],
+					'post_status'            => 'publish',
+					'posts_per_page'         => 1,
+					'no_found_rows'          => true,
+					'update_post_meta_cache' => false,
+					'update_post_term_cache' => false,
+				)
+			);
+			$by_title = $by_title_query->have_posts() ? $by_title_query->posts[0] : null;
 			if ( $by_title && 'publish' === $by_title->post_status ) {
 				update_option( $option_key, $by_title->ID );
 				continue;
