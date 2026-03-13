@@ -482,3 +482,190 @@ a.mvs-stat-card:focus {
 	opacity: 0.9;
 	color: #fff;
 }
+
+/* ==========================================================================
+   Settings Card (container for non-panel tabs)
+   ========================================================================== */
+
+.mvs-settings-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 0 20px 20px;
+	margin-top: 20px;
+}
+
+/* When panels are used (General tab), make the card a transparent wrapper. */
+.mvs-settings-card:has(.mvs-settings-panel) {
+	background: transparent;
+	border: none;
+	padding: 0;
+	margin-top: 16px;
+}
+
+.mvs-settings-card h2 {
+	border-bottom: 1px solid #f0f0f1;
+	padding-bottom: 8px;
+	margin-top: 24px;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.mvs-settings-card .form-table th {
+	font-weight: 500;
+	color: #1d2327;
+	padding-top: 20px;
+}
+
+.mvs-settings-card .form-table td {
+	padding-top: 16px;
+}
+
+/* Connect nav-tab to card visually (non-panel tabs) */
+.wrap .nav-tab-wrapper + .mvs-settings-card:not(:has(.mvs-settings-panel)) {
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+	margin-top: 0;
+}
+
+.wrap .nav-tab-wrapper {
+	border-bottom: none;
+	margin-bottom: 0;
+}
+
+.wrap .nav-tab-wrapper .nav-tab-active {
+	border-bottom-color: #fff;
+}
+
+/* ==========================================================================
+   Settings Panels (General tab)
+   ========================================================================== */
+
+.mvs-settings-panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+	margin-bottom: 16px;
+	overflow: hidden;
+}
+
+.mvs-settings-panel__header {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 16px 20px;
+	border-bottom: 1px solid #f0f0f1;
+	background: #fafafa;
+}
+
+.mvs-settings-panel__icon {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+	color: #2271b1;
+	margin-top: 2px;
+}
+
+.mvs-settings-panel__title {
+	margin: 0 !important;
+	padding: 0 !important;
+	font-size: 14px !important;
+	font-weight: 600;
+	border: none !important;
+}
+
+.mvs-settings-panel__desc {
+	margin: 2px 0 0;
+	font-size: 12px;
+	color: #50575e;
+}
+
+.mvs-settings-panel__body {
+	padding: 0 20px;
+}
+
+.mvs-settings-panel--pro {
+	border-left: 3px solid #6366f1;
+}
+
+.mvs-settings-panel--pro .mvs-settings-panel__icon {
+	color: #6366f1;
+}
+
+.mvs-settings-panel[hidden] {
+	display: none;
+}
+
+/* ==========================================================================
+   File Types Checkbox Grid
+   ========================================================================== */
+
+.mvs-file-types-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	gap: 16px;
+}
+
+.mvs-file-types-group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.mvs-file-types-group strong {
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #50575e;
+	margin-bottom: 2px;
+}
+
+.mvs-file-types-group label {
+	font-size: 13px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.mvs-custom-types {
+	margin-top: 12px;
+}
+
+.mvs-custom-types summary {
+	cursor: pointer;
+	font-size: 13px;
+	color: #2271b1;
+}
+
+.mvs-custom-types textarea {
+	margin-top: 8px;
+}
+
+/* ==========================================================================
+   Page Header
+   ========================================================================== */
+
+.wp-heading-inline .mvs-version {
+	background: #f0f0f1;
+	border-radius: 3px;
+	padding: 2px 8px;
+	font-size: 12px;
+	color: #50575e;
+	font-weight: 400;
+	vertical-align: middle;
+	margin-left: 8px;
+}
+
+.mvs-page-subtitle {
+	margin-top: 0;
+	margin-bottom: 12px;
+	color: #50575e;
+	font-size: 13px;
+}
+
+/* Legacy header (Overview page etc.) */
+.mvs-page-header + .description {
+	margin-top: 0;
+	margin-bottom: 12px;
+	color: #50575e;
+}

@@ -88,10 +88,11 @@ class OverviewPage {
 		$system_info  = $this->get_system_info();
 		?>
 		<div class="wrap">
-			<div class="mvs-page-header">
-				<h1><?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?></h1>
+			<h1 class="wp-heading-inline">
+				<?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?>
 				<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
-			</div>
+			</h1>
+			<hr class="wp-header-end">
 			<p class="description">
 				<?php esc_html_e( 'Your media sharing platform at a glance.', 'wpmediaverse' ); ?>
 			</p>

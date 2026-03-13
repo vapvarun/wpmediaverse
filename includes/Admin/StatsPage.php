@@ -113,9 +113,12 @@ class StatsPage {
 
 		?>
 		<div class="wrap">
-			<div class="mvs-page-header">
-				<h1><?php esc_html_e( 'Media Stats', 'wpmediaverse' ); ?></h1>
-			</div>
+			<h1 class="wp-heading-inline">
+				<?php esc_html_e( 'Media Stats', 'wpmediaverse' ); ?>
+				<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
+			</h1>
+			<hr class="wp-header-end">
+			<p class="description"><?php esc_html_e( 'Track views, downloads, reactions, and AI usage across your media library.', 'wpmediaverse' ); ?></p>
 
 			<?php // --- Stat Cards --- ?>
 			<div class="mvs-admin-stats">

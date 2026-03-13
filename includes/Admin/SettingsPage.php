@@ -98,19 +98,18 @@ class SettingsPage {
 			'mvs_max_upload_size',
 			array(
 				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
+				'sanitize_callback' => array( $this, 'sanitize_size_mb' ),
 				'default'           => 104857600,
 			)
 		);
 		add_settings_field(
 			'mvs_max_upload_size',
-			__( 'Max Upload Size (bytes)', 'wpmediaverse' ),
-			array( $this, 'render_number_field' ),
+			__( 'Max Upload Size', 'wpmediaverse' ),
+			array( $this, 'render_size_field' ),
 			self::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
-				'option'      => 'mvs_max_upload_size',
-				'description' => __( 'Maximum file upload size in bytes. Default: 104857600 (100 MB).', 'wpmediaverse' ),
+				'option' => 'mvs_max_upload_size',
 			)
 		);
 
@@ -119,19 +118,18 @@ class SettingsPage {
 			'mvs_allowed_file_types',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( $this, 'sanitize_file_types' ),
 				'default'           => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg',
 			)
 		);
 		add_settings_field(
 			'mvs_allowed_file_types',
 			__( 'Allowed File Types', 'wpmediaverse' ),
-			array( $this, 'render_textarea_field' ),
+			array( $this, 'render_file_types_field' ),
 			self::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
-				'option'      => 'mvs_allowed_file_types',
-				'description' => __( 'Comma-separated MIME types.', 'wpmediaverse' ),
+				'option' => 'mvs_allowed_file_types',
 			)
 		);
 
@@ -160,9 +158,6 @@ class SettingsPage {
 			)
 		);
 
-		// Uploads section.
-		add_settings_section( 'mvs_uploads', __( 'Uploads', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-general' );
-
 		register_setting(
 			self::OPTION_GROUP . '_general',
 			'mvs_duplicate_action',
@@ -177,7 +172,7 @@ class SettingsPage {
 			__( 'Duplicate Detection', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
 			self::PAGE_SLUG . '-general',
-			'mvs_uploads',
+			'mvs_general',
 			array(
 				'option'  => 'mvs_duplicate_action',
 				'choices' => array(
@@ -202,7 +197,7 @@ class SettingsPage {
 			__( 'Strip EXIF Data', 'wpmediaverse' ),
 			array( $this, 'render_checkbox_field' ),
 			self::PAGE_SLUG . '-general',
-			'mvs_uploads',
+			'mvs_general',
 			array(
 				'option' => 'mvs_strip_exif',
 				'label'  => __( 'Remove GPS and device data from uploaded images.', 'wpmediaverse' ),
@@ -624,7 +619,12 @@ class SettingsPage {
 		);
 		?>
 		<div class="wrap">
-			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+			<h1 class="wp-heading-inline">
+				<?php esc_html_e( 'WPMediaVerse Settings', 'wpmediaverse' ); ?>
+				<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
+			</h1>
+			<hr class="wp-header-end">
+			<p class="mvs-page-subtitle"><?php esc_html_e( 'Configure your media platform settings.', 'wpmediaverse' ); ?></p>
 
 			<nav class="nav-tab-wrapper wp-clearfix" aria-label="<?php esc_attr_e( 'Settings tabs', 'wpmediaverse' ); ?>">
 				<?php foreach ( $tabs as $tab_slug => $tab_label ) : ?>
@@ -654,13 +654,24 @@ class SettingsPage {
 				$option_group     = $option_group_map[ $active_tab ] ?? ( self::OPTION_GROUP . '_general' );
 				$page_slug        = $page_slug_map[ $active_tab ] ?? ( self::PAGE_SLUG . '-general' );
 				?>
-				<form action="options.php" method="post">
-					<?php
-					settings_fields( $option_group );
-					do_settings_sections( $page_slug );
-					submit_button( __( 'Save Settings', 'wpmediaverse' ) );
-					?>
-				</form>
+				<div class="mvs-settings-card">
+					<form action="options.php" method="post">
+						<?php
+						settings_fields( $option_group );
+						if ( 'general' === $active_tab ) {
+							$this->render_settings_panels( $page_slug );
+						} else {
+							do_settings_sections( $page_slug );
+						}
+						submit_button( __( 'Save Settings', 'wpmediaverse' ) );
+						?>
+					</form>
+				</div>
+				<?php
+				if ( 'general' === $active_tab && $this->is_pro_active() ) {
+					$this->render_storage_toggle_script();
+				}
+				?>
 				<?php
 				if ( ! $this->is_pro_active() ) {
 					$this->render_pro_upsell( $active_tab );
@@ -668,6 +679,172 @@ class SettingsPage {
 				?>
 			<?php endif; ?>
 		</div>
+		<?php
+	}
+
+	// -------------------------------------------------------------------------
+	// Settings Panels Renderer (General tab)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Panel metadata for each settings section on the General tab.
+	 *
+	 * @return array<string,array{icon:string,desc:string,class:string,driver:string}>
+	 */
+	private function get_panel_meta(): array {
+		return array(
+			'mvs_general'       => array(
+				'icon'   => 'dashicons-upload',
+				'desc'   => __( 'Upload limits, file types, and privacy defaults.', 'wpmediaverse' ),
+				'class'  => '',
+				'driver' => '',
+			),
+			'mvs_storage'       => array(
+				'icon'   => 'dashicons-database',
+				'desc'   => __( 'Choose where media files are stored.', 'wpmediaverse' ),
+				'class'  => '',
+				'driver' => '',
+			),
+			'mvs_pro_license'   => array(
+				'icon'   => 'dashicons-admin-network',
+				'desc'   => __( 'Activate your license to receive updates and support.', 'wpmediaverse' ),
+				'class'  => 'mvs-settings-panel--pro',
+				'driver' => '',
+			),
+			'mvs_pro_s3'        => array(
+				'icon'   => 'dashicons-cloud',
+				'desc'   => __( 'Connect to Amazon S3 for cloud storage.', 'wpmediaverse' ),
+				'class'  => 'mvs-settings-panel--pro',
+				'driver' => 's3',
+			),
+			'mvs_pro_bunny'     => array(
+				'icon'   => 'dashicons-performance',
+				'desc'   => __( 'Connect to BunnyCDN for global content delivery.', 'wpmediaverse' ),
+				'class'  => 'mvs-settings-panel--pro',
+				'driver' => 'bunnycdn',
+			),
+			'mvs_pro_transcode' => array(
+				'icon'   => 'dashicons-video-alt3',
+				'desc'   => __( 'Convert videos to multiple quality levels with FFmpeg.', 'wpmediaverse' ),
+				'class'  => 'mvs-settings-panel--pro',
+				'driver' => '',
+			),
+			'mvs_pro_webhook'   => array(
+				'icon'   => 'dashicons-rest-api',
+				'desc'   => __( 'Accept credits from external systems via HMAC-signed webhooks.', 'wpmediaverse' ),
+				'class'  => 'mvs-settings-panel--pro',
+				'driver' => '',
+			),
+		);
+	}
+
+	/**
+	 * Render settings as styled panels instead of flat do_settings_sections().
+	 *
+	 * @param string $page_slug The settings page slug.
+	 */
+	private function render_settings_panels( string $page_slug ): void {
+		global $wp_settings_sections, $wp_settings_fields;
+
+		if ( empty( $wp_settings_sections[ $page_slug ] ) ) {
+			return;
+		}
+
+		$panel_meta     = $this->get_panel_meta();
+		$current_driver = get_option( 'mvs_storage_driver', 'local' );
+
+		foreach ( (array) $wp_settings_sections[ $page_slug ] as $section ) {
+			$section_id = $section['id'];
+			$meta       = $panel_meta[ $section_id ] ?? null;
+
+			// Fallback: sections without panel metadata render normally.
+			if ( ! $meta ) {
+				if ( $section['title'] ) {
+					echo '<h2>' . esc_html( $section['title'] ) . '</h2>';
+				}
+				if ( $section['callback'] ) {
+					call_user_func( $section['callback'], $section );
+				}
+				if ( ! empty( $wp_settings_fields[ $page_slug ][ $section_id ] ) ) {
+					echo '<table class="form-table" role="presentation">';
+					do_settings_fields( $page_slug, $section_id );
+					echo '</table>';
+				}
+				continue;
+			}
+
+			// Determine hidden state for driver-specific panels.
+			$hidden = '';
+			if ( $meta['driver'] && $meta['driver'] !== $current_driver ) {
+				$hidden = ' hidden';
+			}
+
+			$classes = 'mvs-settings-panel';
+			if ( $meta['class'] ) {
+				$classes .= ' ' . $meta['class'];
+			}
+
+			$driver_attr = '';
+			if ( $meta['driver'] ) {
+				$driver_attr = sprintf( ' data-mvs-driver="%s"', esc_attr( $meta['driver'] ) );
+			}
+
+			printf( '<div class="%s"%s%s>', esc_attr( $classes ), $driver_attr, $hidden );
+
+			// Panel header.
+			echo '<div class="mvs-settings-panel__header">';
+			printf( '<span class="dashicons %s mvs-settings-panel__icon"></span>', esc_attr( $meta['icon'] ) );
+			echo '<div>';
+			printf( '<h2 class="mvs-settings-panel__title">%s', esc_html( $section['title'] ) );
+			if ( $meta['class'] ) {
+				echo ' <span class="mvs-pro-badge">' . esc_html__( 'Pro', 'wpmediaverse' ) . '</span>';
+			}
+			echo '</h2>';
+			if ( $meta['desc'] ) {
+				printf( '<p class="mvs-settings-panel__desc">%s</p>', esc_html( $meta['desc'] ) );
+			}
+			echo '</div>';
+			echo '</div>';
+
+			// Panel body.
+			echo '<div class="mvs-settings-panel__body">';
+			if ( $section['callback'] ) {
+				call_user_func( $section['callback'], $section );
+			}
+			if ( ! empty( $wp_settings_fields[ $page_slug ][ $section_id ] ) ) {
+				echo '<table class="form-table" role="presentation">';
+				do_settings_fields( $page_slug, $section_id );
+				echo '</table>';
+			}
+			echo '</div>';
+
+			echo '</div>'; // .mvs-settings-panel
+		}
+	}
+
+	/**
+	 * Render inline JS for toggling storage driver panels.
+	 */
+	private function render_storage_toggle_script(): void {
+		?>
+		<script>
+		(function(){
+			var sel = document.querySelector('select[name="mvs_storage_driver"]');
+			if (!sel) return;
+			function toggle() {
+				var panels = document.querySelectorAll('[data-mvs-driver]');
+				for (var i = 0; i < panels.length; i++) {
+					if (panels[i].getAttribute('data-mvs-driver') === sel.value) {
+						panels[i].removeAttribute('hidden');
+					} else {
+						panels[i].setAttribute('hidden', '');
+					}
+				}
+			}
+			sel.addEventListener('change', toggle);
+			toggle();
+		})();
+		</script>
 		<?php
 	}
 
@@ -860,6 +1037,142 @@ class SettingsPage {
 		if ( ! empty( $args['description'] ) ) {
 			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
 		}
+	}
+
+	/**
+	 * Render a size field with MB suffix and server limit hint.
+	 *
+	 * @param array $args Field arguments.
+	 */
+	public function render_size_field( array $args ): void {
+		$bytes       = (int) get_option( $args['option'], 104857600 );
+		$mb_value    = round( $bytes / MB_IN_BYTES );
+		$server_max  = wp_max_upload_size();
+		$server_mb   = round( $server_max / MB_IN_BYTES );
+
+		printf(
+			'<input type="number" name="%s" value="%s" class="small-text" min="1" max="%s" step="1" /> <strong>MB</strong>',
+			esc_attr( $args['option'] ),
+			esc_attr( $mb_value ),
+			esc_attr( $server_mb )
+		);
+		printf(
+			'<p class="description">%s</p>',
+			sprintf(
+				/* translators: %s: server upload limit in MB */
+				esc_html__( 'Maximum file size per upload. Server limit: %s MB.', 'wpmediaverse' ),
+				esc_html( $server_mb )
+			)
+		);
+	}
+
+	/**
+	 * Sanitize size field — converts MB input to bytes.
+	 *
+	 * @param mixed $value Input value in MB.
+	 * @return int Value in bytes.
+	 */
+	public function sanitize_size_mb( $value ): int {
+		$mb = absint( $value );
+		if ( $mb < 1 ) {
+			$mb = 100;
+		}
+		return $mb * MB_IN_BYTES;
+	}
+
+	/**
+	 * Render the file types checkbox grid.
+	 *
+	 * @param array $args Field arguments.
+	 */
+	public function render_file_types_field( array $args ): void {
+		$current = get_option( $args['option'], '' );
+		$selected = array_map( 'trim', explode( ',', $current ) );
+
+		$groups = array(
+			__( 'Images', 'wpmediaverse' ) => array(
+				'image/jpeg' => 'JPEG',
+				'image/png'  => 'PNG',
+				'image/gif'  => 'GIF',
+				'image/webp' => 'WebP',
+			),
+			__( 'Video', 'wpmediaverse' ) => array(
+				'video/mp4'  => 'MP4',
+				'video/webm' => 'WebM',
+			),
+			__( 'Audio', 'wpmediaverse' ) => array(
+				'audio/mpeg' => 'MP3',
+				'audio/ogg'  => 'OGG',
+			),
+			__( 'Documents', 'wpmediaverse' ) => array(
+				'application/pdf' => 'PDF',
+			),
+		);
+
+		$known_mimes = array();
+		foreach ( $groups as $mime_map ) {
+			$known_mimes = array_merge( $known_mimes, array_keys( $mime_map ) );
+		}
+		$custom_types = array_diff( $selected, $known_mimes, array( '' ) );
+
+		echo '<div class="mvs-file-types-grid">';
+		foreach ( $groups as $group_label => $mimes ) {
+			printf( '<div class="mvs-file-types-group"><strong>%s</strong>', esc_html( $group_label ) );
+			foreach ( $mimes as $mime => $label ) {
+				$checked = in_array( $mime, $selected, true ) ? ' checked' : '';
+				printf(
+					'<label><input type="checkbox" name="%s[]" value="%s"%s /> %s</label>',
+					esc_attr( $args['option'] ),
+					esc_attr( $mime ),
+					$checked,
+					esc_html( $label )
+				);
+			}
+			echo '</div>';
+		}
+		echo '</div>';
+
+		printf(
+			'<details class="mvs-custom-types"><summary>%s</summary>',
+			esc_html__( 'Custom MIME types', 'wpmediaverse' )
+		);
+		printf(
+			'<textarea name="%s_custom" rows="2" class="large-text" placeholder="%s">%s</textarea>',
+			esc_attr( $args['option'] ),
+			esc_attr__( 'e.g. image/svg+xml,video/quicktime', 'wpmediaverse' ),
+			esc_textarea( implode( ',', $custom_types ) )
+		);
+		printf(
+			'<p class="description">%s</p>',
+			esc_html__( 'Additional comma-separated MIME types for advanced users.', 'wpmediaverse' )
+		);
+		echo '</details>';
+	}
+
+	/**
+	 * Sanitize file types — merge checkbox values with custom textarea.
+	 *
+	 * @param mixed $value Input (array from checkboxes).
+	 * @return string Comma-separated MIME types.
+	 */
+	public function sanitize_file_types( $value ): string {
+		$types = array();
+
+		if ( is_array( $value ) ) {
+			$types = array_map( 'sanitize_mime_type', $value );
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( ! empty( $_POST['mvs_allowed_file_types_custom'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$custom = sanitize_text_field( wp_unslash( $_POST['mvs_allowed_file_types_custom'] ) );
+			$custom_arr = array_map( 'trim', explode( ',', $custom ) );
+			$custom_arr = array_map( 'sanitize_mime_type', $custom_arr );
+			$types = array_merge( $types, $custom_arr );
+		}
+
+		$types = array_unique( array_filter( $types ) );
+		return implode( ',', $types );
 	}
 
 	/**
