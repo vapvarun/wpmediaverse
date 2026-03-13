@@ -197,6 +197,23 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			return ctx.item && state.albumModal.coverId === ctx.item.id;
 		},
+		get isSmartType() {
+			return state.collectionModal.collectionType === 'smart';
+		},
+		get isManualType() {
+			return state.collectionModal.collectionType === 'manual';
+		},
+		get isRuleKeyMediaType() { return getContext().rule?.key === 'media_type'; },
+		get isRuleKeyTag() { return getContext().rule?.key === 'tag'; },
+		get isRuleKeyCategory() { return getContext().rule?.key === 'category'; },
+		get isRuleKeyAuthor() { return getContext().rule?.key === 'author'; },
+		get isRuleKeyPrivacy() { return getContext().rule?.key === 'privacy'; },
+		get isRuleKeyDateAfter() { return getContext().rule?.key === 'date_after'; },
+		get isRuleKeyDateBefore() { return getContext().rule?.key === 'date_before'; },
+		get isRuleValueSelected() {
+			const ctx = getContext();
+			return ctx.opt && ctx.rule && String( ctx.opt.value ) === String( ctx.rule.value );
+		},
 		get isRuleSelectType() {
 			const ctx = getContext();
 			const rule = ctx.rule;

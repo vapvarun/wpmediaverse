@@ -158,7 +158,7 @@ get_header();
 						<div id="mvs-album-upload-preview" class="mvs-bp-upload-preview"></div>
 						<div id="mvs-album-upload-status" class="mvs-bp-upload-status" style="display:none;"></div>
 						<div class="mvs-bp-upload-form-actions">
-							<button type="button" id="mvs-album-upload-cancel" class="mvs-btn mvs-btn-secondary"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+							<button type="button" id="mvs-album-upload-cancel" class="mvs-btn mvs-btn--secondary"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
 						</div>
 					</div>
 				</div>
@@ -208,17 +208,24 @@ get_header();
 					function handleFiles(files) {
 						if (!files.length) return;
 						files.forEach(function(file) {
-							if (!file.type.match(/^image\//)) return;
-							var reader = new FileReader();
-							reader.onload = function(e) {
-								var thumb = document.createElement('div');
-								thumb.className = 'mvs-bp-upload-thumb';
-								var img = document.createElement('img');
-								img.src = e.target.result;
-								thumb.appendChild(img);
-								previewEl.appendChild(thumb);
-							};
-							reader.readAsDataURL(file);
+							if (!file.type.match(/^(image|video|audio)\//)) return;
+							var thumb = document.createElement('div');
+							thumb.className = 'mvs-bp-upload-thumb';
+							if (file.type.match(/^image\//)) {
+								var reader = new FileReader();
+								reader.onload = function(e) {
+									var img = document.createElement('img');
+									img.src = e.target.result;
+									thumb.appendChild(img);
+								};
+								reader.readAsDataURL(file);
+							} else {
+								var label = document.createElement('span');
+								label.className = 'mvs-bp-upload-thumb-label';
+								label.textContent = file.type.match(/^video\//) ? '\u25B6 ' + file.name : '\u266B ' + file.name;
+								thumb.appendChild(label);
+							}
+							previewEl.appendChild(thumb);
 						});
 						uploadAndAddToAlbum(files);
 					}

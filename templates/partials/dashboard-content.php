@@ -269,7 +269,7 @@ do_action( 'mvs_dashboard_before_content' );
 	</div>
 
 	<!-- Collection Modal (Create/Edit with Rule Builder) -->
-	<div class="mvs-modal-overlay" data-wp-bind--hidden="!state.collectionModal.visible"
+	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.collectionModal.visible"
 		data-wp-on--click="actions.closeOverlay">
 		<div class="mvs-modal mvs-modal--wide" data-wp-on--click="actions.stopPropagation">
 			<div class="mvs-modal-header">
@@ -294,39 +294,39 @@ do_action( 'mvs_dashboard_before_content' );
 					<label><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></label>
 					<div class="mvs-collection-type-toggle">
 						<button type="button" class="mvs-toggle-btn"
-							data-wp-class--active="state.collectionModal.collectionType === 'manual'"
+							data-wp-class--active="state.isManualType"
 							data-wp-on--click="actions.setCollectionTypeManual">
 							<?php esc_html_e( 'Manual', 'wpmediaverse' ); ?>
 						</button>
 						<button type="button" class="mvs-toggle-btn"
-							data-wp-class--active="state.collectionModal.collectionType === 'smart'"
+							data-wp-class--active="state.isSmartType"
 							data-wp-on--click="actions.setCollectionTypeSmart">
 							<?php esc_html_e( 'Smart', 'wpmediaverse' ); ?>
 						</button>
 					</div>
-					<p class="mvs-field-hint" data-wp-bind--hidden="state.collectionModal.collectionType !== 'manual'">
+					<p class="mvs-field-hint" data-wp-bind--hidden="!state.isManualType">
 						<?php esc_html_e( 'Add media to this collection manually via the Favorites button.', 'wpmediaverse' ); ?>
 					</p>
-					<p class="mvs-field-hint" data-wp-bind--hidden="state.collectionModal.collectionType !== 'smart'">
+					<p class="mvs-field-hint" data-wp-bind--hidden="!state.isSmartType">
 						<?php esc_html_e( 'Define rules and media matching all conditions will appear automatically.', 'wpmediaverse' ); ?>
 					</p>
 				</div>
 
 				<!-- Smart Rules Builder -->
-				<div class="mvs-rules-builder" data-wp-bind--hidden="state.collectionModal.collectionType !== 'smart'">
+				<div class="mvs-rules-builder" data-wp-bind--hidden="!state.isSmartType">
 					<label><?php esc_html_e( 'Rules (all must match)', 'wpmediaverse' ); ?></label>
 					<div class="mvs-rules-list">
 						<template data-wp-each--rule="state.collectionModal.rules">
 							<div class="mvs-rule-row" data-wp-bind--data-rule-index="context.rule.index">
 								<select class="mvs-rule-key" data-wp-on--change="actions.setRuleKey">
 									<option value=""><?php esc_html_e( '-- Select --', 'wpmediaverse' ); ?></option>
-									<option value="media_type" data-wp-bind--selected="context.rule.key === 'media_type'"><?php esc_html_e( 'Media Type', 'wpmediaverse' ); ?></option>
-									<option value="tag" data-wp-bind--selected="context.rule.key === 'tag'"><?php esc_html_e( 'Tag', 'wpmediaverse' ); ?></option>
-									<option value="category" data-wp-bind--selected="context.rule.key === 'category'"><?php esc_html_e( 'Category', 'wpmediaverse' ); ?></option>
-									<option value="author" data-wp-bind--selected="context.rule.key === 'author'"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></option>
-									<option value="privacy" data-wp-bind--selected="context.rule.key === 'privacy'"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></option>
-									<option value="date_after" data-wp-bind--selected="context.rule.key === 'date_after'"><?php esc_html_e( 'Date After', 'wpmediaverse' ); ?></option>
-									<option value="date_before" data-wp-bind--selected="context.rule.key === 'date_before'"><?php esc_html_e( 'Date Before', 'wpmediaverse' ); ?></option>
+									<option value="media_type" data-wp-bind--selected="state.isRuleKeyMediaType"><?php esc_html_e( 'Media Type', 'wpmediaverse' ); ?></option>
+									<option value="tag" data-wp-bind--selected="state.isRuleKeyTag"><?php esc_html_e( 'Tag', 'wpmediaverse' ); ?></option>
+									<option value="category" data-wp-bind--selected="state.isRuleKeyCategory"><?php esc_html_e( 'Category', 'wpmediaverse' ); ?></option>
+									<option value="author" data-wp-bind--selected="state.isRuleKeyAuthor"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></option>
+									<option value="privacy" data-wp-bind--selected="state.isRuleKeyPrivacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></option>
+									<option value="date_after" data-wp-bind--selected="state.isRuleKeyDateAfter"><?php esc_html_e( 'Date After', 'wpmediaverse' ); ?></option>
+									<option value="date_before" data-wp-bind--selected="state.isRuleKeyDateBefore"><?php esc_html_e( 'Date Before', 'wpmediaverse' ); ?></option>
 								</select>
 
 								<!-- Value input: changes based on rule key -->
@@ -334,7 +334,7 @@ do_action( 'mvs_dashboard_before_content' );
 									data-wp-bind--hidden="!state.isRuleSelectType">
 									<template data-wp-each--opt="state.ruleValueOptions">
 										<option data-wp-bind--value="context.opt.value"
-											data-wp-bind--selected="context.opt.value == context.rule.value"
+											data-wp-bind--selected="state.isRuleValueSelected"
 											data-wp-text="context.opt.label"></option>
 									</template>
 								</select>
@@ -373,7 +373,7 @@ do_action( 'mvs_dashboard_before_content' );
 	</div>
 
 	<!-- Edit Media Modal -->
-	<div class="mvs-modal-overlay" data-wp-bind--hidden="!state.editModal.visible"
+	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.editModal.visible"
 		data-wp-on--click="actions.closeOverlay">
 		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation">
 			<div class="mvs-modal-header">
@@ -441,7 +441,7 @@ do_action( 'mvs_dashboard_before_content' );
 	</div>
 
 	<!-- Album Modal (Create/Edit) -->
-	<div class="mvs-modal-overlay" data-wp-bind--hidden="!state.albumModal.visible"
+	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.albumModal.visible"
 		data-wp-on--click="actions.closeOverlay">
 		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation">
 			<div class="mvs-modal-header">
@@ -528,8 +528,8 @@ do_action( 'mvs_dashboard_before_content' );
 		data-wp-interactive="mvs/shared-ui"
 		data-wp-bind--hidden="!state.toast.visible"
 		data-wp-text="state.toast.message"
-		data-wp-class--mvs-toast--success="state.toast.type === 'success'"
-		data-wp-class--mvs-toast--error="state.toast.type === 'error'"></div>
+		data-wp-class--mvs-toast--success="state.isToastSuccess"
+		data-wp-class--mvs-toast--error="state.isToastError"</div>
 
 	<!-- Confirm Dialog (shared-ui) -->
 	<div class="mvs-confirm-overlay" hidden

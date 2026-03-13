@@ -23,6 +23,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			visible: false,
 			onConfirm: null,
 		},
+		get isToastSuccess() { return state.toast.type === 'success'; },
+		get isToastError() { return state.toast.type === 'error'; },
 		tagAutocomplete: {
 			query: '',
 			results: [],
