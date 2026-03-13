@@ -25,6 +25,7 @@ class OverviewPage {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ), 5 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		add_action( 'wp_ajax_mvs_import_demo_data', array( $this, 'ajax_import_demo_data' ) );
 	}
 
 	/**
@@ -158,6 +159,46 @@ class OverviewPage {
 									<?php esc_html_e( 'Stats', 'wpmediaverse' ); ?>
 								</a>
 							</div>
+
+							<?php if ( 0 === (int) $stats['total_media'] ) : ?>
+								<div class="mvs-demo-import" style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
+									<p style="margin:0 0 8px;color:#666;">
+										<?php esc_html_e( 'Get started quickly with sample media, albums, and collections.', 'wpmediaverse' ); ?>
+									</p>
+									<button type="button" class="button button-primary" id="mvs-import-demo-btn"
+										data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_import_demo' ) ); ?>">
+										<span class="dashicons dashicons-download" style="margin-top:4px;"></span>
+										<?php esc_html_e( 'Import Demo Data', 'wpmediaverse' ); ?>
+									</button>
+									<span id="mvs-import-demo-status" style="margin-left:8px;"></span>
+								</div>
+								<script>
+								document.getElementById('mvs-import-demo-btn').addEventListener('click', function() {
+									var btn = this;
+									var status = document.getElementById('mvs-import-demo-status');
+									btn.disabled = true;
+									btn.textContent = '<?php echo esc_js( __( 'Importing...', 'wpmediaverse' ) ); ?>';
+									status.textContent = '';
+									var xhr = new XMLHttpRequest();
+									xhr.open('POST', ajaxurl);
+									xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+									xhr.onload = function() {
+										var data = JSON.parse(xhr.responseText);
+										if (data.success) {
+											status.textContent = data.data.message;
+											status.style.color = '#00a32a';
+											setTimeout(function() { location.reload(); }, 1500);
+										} else {
+											status.textContent = data.data ? data.data.message : 'Import failed.';
+											status.style.color = '#d63638';
+											btn.disabled = false;
+											btn.textContent = '<?php echo esc_js( __( 'Import Demo Data', 'wpmediaverse' ) ); ?>';
+										}
+									};
+									xhr.send('action=mvs_import_demo_data&_nonce=' + btn.getAttribute('data-nonce'));
+								});
+								</script>
+							<?php endif; ?>
 						</div>
 					</div>
 
@@ -477,5 +518,26 @@ class OverviewPage {
 		return array(
 			'buddypress' => class_exists( 'BuddyPress' ),
 		);
+	}
+
+	/**
+	 * AJAX handler for demo data import.
+	 */
+	public function ajax_import_demo_data(): void {
+		check_ajax_referer( 'mvs_import_demo', '_nonce' );
+
+		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
+			wp_send_json_error( array( 'message' => 'Permission denied.' ) );
+		}
+
+		$seeder = MVS_PLUGIN_DIR . 'seed-demo-data.php';
+		if ( ! file_exists( $seeder ) ) {
+			wp_send_json_error( array( 'message' => 'Demo data seeder not found.' ) );
+		}
+
+		require_once $seeder;
+
+		// If the seeder didn't send a response (shouldn't happen), send one.
+		wp_send_json_success( array( 'message' => 'Import complete.' ) );
 	}
 }
