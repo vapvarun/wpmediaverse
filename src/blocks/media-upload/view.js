@@ -6,6 +6,30 @@
 
 import { store, getContext } from '@wordpress/interactivity';
 
+// Allowed MIME prefixes for client-side validation.
+const ALLOWED_PREFIXES = [ 'image/', 'video/', 'audio/' ];
+
+function isAllowedFile( file ) {
+	return ALLOWED_PREFIXES.some( ( prefix ) => file.type.startsWith( prefix ) );
+}
+
+function filterFiles( files, ctx ) {
+	const valid = [];
+	const rejected = [];
+	for ( const file of files ) {
+		if ( isAllowedFile( file ) ) {
+			valid.push( file );
+		} else {
+			rejected.push( file.name );
+		}
+	}
+	if ( rejected.length ) {
+		ctx.uploadError = `File type not allowed: ${ rejected.join( ', ' ) }. Only images, videos, and audio files are accepted.`;
+		setTimeout( () => { ctx.uploadError = ''; }, 5000 );
+	}
+	return valid;
+}
+
 const { state, actions } = store( 'mvs/media-upload', {
 	state: {
 		get isDragOver() {
@@ -18,6 +42,12 @@ const { state, actions } = store( 'mvs/media-upload', {
 			const ctx = getContext();
 			if ( ! ctx.uploading ) return '';
 			return ctx.uploadMessage || 'Uploading...';
+		},
+		get hasError() {
+			return !! getContext().uploadError;
+		},
+		get errorMessage() {
+			return getContext().uploadError || '';
 		},
 	},
 	actions: {
@@ -48,14 +78,20 @@ const { state, actions } = store( 'mvs/media-upload', {
 			event.preventDefault();
 			const ctx = getContext();
 			ctx.dragOver = false;
-			const files = Array.from( event.dataTransfer.files ).slice( 0, ctx.maxFiles );
+			const files = filterFiles(
+				Array.from( event.dataTransfer.files ).slice( 0, ctx.maxFiles ),
+				ctx
+			);
 			if ( files.length ) {
 				actions.uploadFiles( files );
 			}
 		},
 		handleFileSelect( event ) {
 			const ctx = getContext();
-			const files = Array.from( event.target.files ).slice( 0, ctx.maxFiles );
+			const files = filterFiles(
+				Array.from( event.target.files ).slice( 0, ctx.maxFiles ),
+				ctx
+			);
 			if ( files.length ) {
 				actions.uploadFiles( files );
 			}
@@ -79,7 +115,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 		async uploadFiles( files ) {
 			const ctx = getContext();
 			ctx.uploading = true;
+			ctx.uploadError = '';
 			ctx.uploadMessage = `Uploading ${ files.length } file(s)...`;
+			let successCount = 0;
 
 			for ( let i = 0; i < files.length; i++ ) {
 				ctx.uploadMessage = `Uploading ${ i + 1 } of ${ files.length }...`;
@@ -100,19 +138,32 @@ const { state, actions } = store( 'mvs/media-upload', {
 				}
 
 				try {
-					await fetch( ctx.restUrl, {
+					const resp = await fetch( ctx.restUrl, {
 						method: 'POST',
 						headers: { 'X-WP-Nonce': ctx.nonce },
+						credentials: 'same-origin',
 						body: formData,
 					} );
+					if ( resp.ok ) {
+						successCount++;
+					} else {
+						const err = await resp.json().catch( () => ( {} ) );
+						ctx.uploadError = err.message || `Upload failed for ${ files[ i ].name }.`;
+					}
 				} catch ( err ) {
-					// Continue with remaining files.
+					ctx.uploadError = `Network error uploading ${ files[ i ].name }.`;
 				}
 			}
 
 			ctx.uploading = false;
-			ctx.uploadMessage = 'Upload complete!';
-			setTimeout( () => { ctx.uploadMessage = ''; }, 3000 );
+			if ( successCount === files.length ) {
+				ctx.uploadMessage = `${ successCount } file(s) uploaded successfully!`;
+			} else if ( successCount > 0 ) {
+				ctx.uploadMessage = `${ successCount } of ${ files.length } file(s) uploaded.`;
+			} else {
+				ctx.uploadMessage = '';
+			}
+			setTimeout( () => { ctx.uploadMessage = ''; }, 4000 );
 		},
 	},
 } );

@@ -396,6 +396,125 @@ class Shortcodes {
 				</p>
 			</div>
 
+			<!-- Edit Media Modal -->
+			<div class="mvs-modal-overlay" data-wp-bind--hidden="!state.editModal.visible"
+				data-wp-on--click="actions.closeOverlay">
+				<div class="mvs-modal" data-wp-on--click="actions.stopPropagation">
+					<div class="mvs-modal-header">
+						<h2><?php esc_html_e( 'Edit Media', 'wpmediaverse' ); ?></h2>
+						<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeEditModal">&times;</button>
+					</div>
+					<div class="mvs-modal-body">
+						<div class="mvs-field">
+							<label><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
+							<input type="text" data-wp-bind--value="state.editModal.title"
+								data-wp-on--input="actions.setEditTitle" />
+						</div>
+						<div class="mvs-field">
+							<label><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
+							<textarea data-wp-bind--value="state.editModal.description"
+								data-wp-on--input="actions.setEditDesc"></textarea>
+						</div>
+						<div class="mvs-field">
+							<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+							<select data-wp-on--change="actions.setEditPrivacy">
+								<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+								<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+								<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+							</select>
+						</div>
+						<div class="mvs-field">
+							<label><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
+							<div class="mvs-tag-input-wrap">
+								<div class="mvs-tag-pills">
+									<template data-wp-each="state.editModal.tags">
+										<span class="mvs-tag-pill">
+											<span data-wp-text="context.item"></span>
+											<button type="button" class="mvs-tag-pill-remove"
+												data-wp-bind--data-tag-name="context.item"
+												data-wp-on--click="actions.removeEditTag">&times;</button>
+										</span>
+									</template>
+									<input type="text" class="mvs-tag-text-input" placeholder="<?php esc_attr_e( 'Add tags...', 'wpmediaverse' ); ?>"
+										data-wp-bind--value="state.editModal.tagInput"
+										data-wp-on--input="actions.updateEditTagInput"
+										data-wp-on--keydown="actions.addEditTag" />
+								</div>
+								<div class="mvs-tag-autocomplete" data-wp-bind--hidden="!state.editModal.tagDropdownVisible">
+									<template data-wp-each="state.editModal.tagResults">
+										<div class="mvs-tag-autocomplete-item"
+											data-wp-bind--data-tag-name="context.item"
+											data-wp-text="context.item"
+											data-wp-on--click="actions.selectEditTag"></div>
+									</template>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="mvs-modal-footer">
+						<button class="mvs-btn mvs-btn--secondary" type="button"
+							data-wp-on--click="actions.closeEditModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+						<button class="mvs-btn" type="button"
+							data-wp-on--click="actions.saveEdit"
+							data-wp-bind--disabled="state.editModal.saving"
+							data-wp-text="state.editModal.saving ? '<?php echo esc_js( __( 'Saving...', 'wpmediaverse' ) ); ?>' : '<?php echo esc_js( __( 'Save', 'wpmediaverse' ) ); ?>'"></button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Album Modal (Create/Edit) -->
+			<div class="mvs-modal-overlay" data-wp-bind--hidden="!state.albumModal.visible"
+				data-wp-on--click="actions.closeOverlay">
+				<div class="mvs-modal" data-wp-on--click="actions.stopPropagation">
+					<div class="mvs-modal-header">
+						<h2 data-wp-text="state.albumModal.isEdit ? '<?php echo esc_js( __( 'Edit Album', 'wpmediaverse' ) ); ?>' : '<?php echo esc_js( __( 'Create Album', 'wpmediaverse' ) ); ?>'"></h2>
+						<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeAlbumModal">&times;</button>
+					</div>
+					<div class="mvs-modal-body">
+						<div class="mvs-field">
+							<label><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
+							<input type="text" data-wp-bind--value="state.albumModal.title"
+								data-wp-on--input="actions.setAlbumTitle" />
+						</div>
+						<div class="mvs-field">
+							<label><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
+							<textarea data-wp-bind--value="state.albumModal.description"
+								data-wp-on--input="actions.setAlbumDesc"></textarea>
+						</div>
+						<div class="mvs-field">
+							<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+							<select data-wp-on--change="actions.setAlbumPrivacy">
+								<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+								<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+								<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+							</select>
+						</div>
+						<div class="mvs-field" data-wp-bind--hidden="state.albumModal.isEdit">
+							<label><?php esc_html_e( 'Select Media', 'wpmediaverse' ); ?></label>
+							<div class="mvs-media-picker">
+								<p data-wp-bind--hidden="!state.albumModal.pickerLoading"><?php esc_html_e( 'Loading media...', 'wpmediaverse' ); ?></p>
+								<template data-wp-each="state.albumModal.pickerItems">
+									<div class="mvs-media-picker-item"
+										data-wp-bind--data-picker-id="context.item.id"
+										data-wp-on--click="actions.togglePickerItem">
+										<img data-wp-bind--src="context.item.file_url" data-wp-bind--alt="context.item.title" loading="lazy" />
+										<span class="mvs-media-picker-check">&#x2713;</span>
+									</div>
+								</template>
+							</div>
+						</div>
+					</div>
+					<div class="mvs-modal-footer">
+						<button class="mvs-btn mvs-btn--secondary" type="button"
+							data-wp-on--click="actions.closeAlbumModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+						<button class="mvs-btn" type="button"
+							data-wp-on--click="actions.saveAlbum"
+							data-wp-bind--disabled="state.albumModal.saving"
+							data-wp-text="state.albumModal.saving ? '<?php echo esc_js( __( 'Saving...', 'wpmediaverse' ) ); ?>' : ( state.albumModal.isEdit ? '<?php echo esc_js( __( 'Save', 'wpmediaverse' ) ); ?>' : '<?php echo esc_js( __( 'Create', 'wpmediaverse' ) ); ?>' )"></button>
+					</div>
+				</div>
+			</div>
+
 			<!-- Collection Modal -->
 			<div class="mvs-modal-overlay" data-wp-bind--hidden="!state.collectionModal.visible"
 				data-wp-on--click="actions.closeOverlay">

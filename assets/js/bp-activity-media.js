@@ -73,6 +73,7 @@
 
 		var fd = new FormData();
 		fd.append( 'file', file );
+		fd.append( 'status', 'draft' );
 
 		return fetch( restUrl + 'media?context=activity', {
 			method: 'POST',
@@ -90,6 +91,22 @@
 			}
 		} );
 	}
+
+	// Cleanup abandoned uploads when user navigates away without posting.
+	function cleanupOrphans() {
+		if ( ! attachedMedia.length ) { return; }
+		attachedMedia.forEach( function( item ) {
+			// Use sendBeacon for reliable delivery on page unload.
+			if ( navigator.sendBeacon ) {
+				var fd = new FormData();
+				fd.append( '_wpnonce', nonce );
+				navigator.sendBeacon( restUrl + 'media/' + item.id + '?_method=DELETE', fd );
+			}
+		} );
+		attachedMedia = [];
+	}
+
+	window.addEventListener( 'beforeunload', cleanupOrphans );
 
 	// Use event delegation since Nouveau renders the form dynamically.
 	document.addEventListener( 'click', function( e ) {
@@ -162,12 +179,16 @@
 	} );
 
 	// Reset attachments when activity is posted (BP fires this event).
+	// Remove beforeunload handler since media is now attached to the activity.
 	if ( typeof jQuery !== 'undefined' ) {
 		jQuery( document ).on( 'bp_activity_ajax_post_update', function() {
+			window.removeEventListener( 'beforeunload', cleanupOrphans );
 			attachedMedia = [];
 			renderPreview();
 			var btn = document.getElementById( 'mvs-activity-media-btn' );
 			if ( btn ) { btn.disabled = false; btn.style.opacity = '1'; }
+			// Re-add handler for next upload cycle.
+			window.addEventListener( 'beforeunload', cleanupOrphans );
 		} );
 	}
 

@@ -27,11 +27,12 @@ $nonce        = wp_create_nonce( 'wp_rest' );
 	<?php
 	echo wp_json_encode(
 		array(
-			'maxFiles'  => $max_files,
-			'restUrl'   => $rest_url,
-			'nonce'     => $nonce,
-			'uploading' => false,
-			'files'     => array(),
+			'maxFiles'    => $max_files,
+			'restUrl'     => $rest_url,
+			'nonce'       => $nonce,
+			'uploading'   => false,
+			'uploadError' => '',
+			'files'       => array(),
 		)
 	);
 	?>
@@ -76,7 +77,13 @@ $nonce        = wp_create_nonce( 'wp_rest' );
 			placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setTags" />
 	</div>
+	<div class="mvs-upload-error" data-wp-bind--hidden="!state.hasError" style="color:#d63638;background:#fce4e4;padding:8px 12px;border-radius:4px;margin-top:8px;">
+		<p data-wp-text="state.errorMessage" style="margin:0;"></p>
+	</div>
 	<div class="mvs-upload-progress" data-wp-bind--hidden="!state.isUploading">
 		<p data-wp-text="state.uploadStatus"></p>
+	</div>
+	<div class="mvs-upload-success" data-wp-bind--hidden="state.isUploading" style="margin-top:8px;">
+		<p data-wp-text="state.uploadStatus" style="color:#00a32a;margin:0;"></p>
 	</div>
 </div>

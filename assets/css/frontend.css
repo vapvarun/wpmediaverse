@@ -3065,3 +3065,59 @@ a.mvs-dashboard-card-title:hover {
 		min-width: 100%;
 	}
 }
+
+/* ==========================================================================
+   27. Theme Compatibility — Reign / BuddyBoss / Generic
+   ========================================================================== */
+
+/* Reign theme: upload button alignment in BP activity and profile */
+.theme-flavor .mvs-bp-upload-btn,
+.theme-flavor .mvs-upload-dropzone,
+.theme-flavor .mvs-upload-block {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0 auto;
+}
+
+.theme-flavor #mvs-activity-media-btn,
+.theme-flavor .mvs-bp-upload-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: 8px 0;
+	vertical-align: middle;
+}
+
+/* Reign BP activity form: align the photo/video button with text area */
+.theme-flavor #whats-new-form #mvs-activity-media-btn {
+	margin-left: 10px;
+}
+
+/* Reign BP profile/group media grids */
+.theme-flavor .mvs-bp-media-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 12px;
+}
+
+/* BuddyBoss theme compatibility */
+.buddyboss-theme .mvs-upload-dropzone,
+.buddyboss-theme .mvs-upload-block {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.buddyboss-theme #mvs-activity-media-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* Generic: ensure upload button never overflows on narrow containers */
+.mvs-bp-upload-btn,
+#mvs-activity-media-btn {
+	max-width: 100%;
+	box-sizing: border-box;
+}
