@@ -127,6 +127,36 @@ class UploadService {
 			}
 		}
 
+		/**
+		 * Filters the upload arguments before processing.
+		 *
+		 * Pro uses this to enforce quota limits. Return a WP_Error to reject.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array $upload_args {
+		 *     @type string $mime       Detected MIME type.
+		 *     @type string $media_type High-level type (image|video|audio|document).
+		 *     @type int    $file_size  File size in bytes.
+		 *     @type string $file_name  Original file name.
+		 * }
+		 * @param int $user_id Uploading user ID.
+		 */
+		$upload_args = apply_filters(
+			'mvs_upload_args',
+			array(
+				'mime'       => $mime,
+				'media_type' => $media_type,
+				'file_size'  => $actual_size,
+				'file_name'  => $file['name'],
+			),
+			$user_id
+		);
+
+		if ( is_wp_error( $upload_args ) ) {
+			return $upload_args;
+		}
+
 		// Generate storage path.
 		$filename  = wp_unique_filename(
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . gmdate( 'Y/m' ),

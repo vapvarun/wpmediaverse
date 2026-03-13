@@ -132,6 +132,7 @@ class BulkController extends WP_REST_Controller {
 		$deleted = 0;
 
 		foreach ( $media_ids as $media_id ) {
+			$bulk_post = get_post( $media_id );
 			$file_path = get_post_meta( $media_id, '_mvs_file_path', true );
 			if ( $file_path ) {
 				$storage = Plugin::container()->get( 'storage' );
@@ -143,6 +144,9 @@ class BulkController extends WP_REST_Controller {
 
 			if ( wp_delete_post( $media_id, true ) ) {
 				++$deleted;
+
+				/** This action is documented in includes/REST/Controller/MediaController.php */
+				do_action( 'mvs_media_deleted', $media_id, $bulk_post ? (int) $bulk_post->post_author : 0 );
 			}
 		}
 

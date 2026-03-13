@@ -455,12 +455,26 @@ class MediaController extends WP_REST_Controller {
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
+		$author_id = (int) $post->post_author;
+
 		// Delete the post.
 		$deleted = wp_delete_post( $media_id, true );
 
 		if ( ! $deleted ) {
 			return new WP_Error( 'mvs_delete_failed', __( 'Failed to delete media item.', 'wpmediaverse' ), array( 'status' => 500 ) );
 		}
+
+		/**
+		 * Fires after a media item has been permanently deleted.
+		 *
+		 * Pro uses this to decrement quota usage counters.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int $media_id  The deleted media post ID.
+		 * @param int $author_id The author user ID.
+		 */
+		do_action( 'mvs_media_deleted', $media_id, $author_id );
 
 		return new WP_REST_Response( null, 204 );
 	}

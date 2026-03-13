@@ -89,7 +89,20 @@ class Shortcodes {
 			'showPrivacy' => filter_var( $atts['show_privacy'], FILTER_VALIDATE_BOOLEAN ),
 		);
 
-		return $this->render_block_template( 'media-upload', $block_attrs );
+		ob_start();
+
+		/**
+		 * Fires before the upload form is rendered.
+		 *
+		 * Pro uses this to display the quota usage widget.
+		 *
+		 * @since 1.1.0
+		 */
+		do_action( 'mvs_before_upload_form' );
+
+		echo $this->render_block_template( 'media-upload', $block_attrs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+
+		return ob_get_clean();
 	}
 
 	/**

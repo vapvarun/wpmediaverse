@@ -9,6 +9,15 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+
+/**
+ * Fires before the dashboard content is rendered.
+ *
+ * Pro uses this to display the quota usage widget.
+ *
+ * @since 1.1.0
+ */
+do_action( 'mvs_dashboard_before_content' );
 ?>
 <div class="mvs-dashboard"
 	data-wp-interactive="mvs/dashboard"
