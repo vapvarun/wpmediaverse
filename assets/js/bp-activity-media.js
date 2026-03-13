@@ -28,6 +28,22 @@
 		}
 	}
 
+	function ensurePreviewPosition( preview ) {
+		// Move preview out of the toolbar row so it doesn't push "Post in: Profile" buttons.
+		// Place it right before the options/toolbar container for a clean layout.
+		if ( preview.dataset.repositioned ) { return; }
+		var form = preview.closest( 'form' ) || preview.closest( '#whats-new-form' );
+		if ( ! form ) { return; }
+		var toolbar = preview.closest( '#whats-new-options' ) ||
+						preview.closest( '.activity-form-options' ) ||
+						preview.closest( '.whats-new-options' ) ||
+						preview.parentElement.parentElement; // fallback: grandparent of btn-wrap
+		if ( toolbar && toolbar !== form ) {
+			toolbar.parentNode.insertBefore( preview, toolbar );
+			preview.dataset.repositioned = '1';
+		}
+	}
+
 	function renderPreview() {
 		var preview = document.getElementById( 'mvs-activity-media-preview' );
 		if ( ! preview ) { return; }
@@ -39,7 +55,8 @@
 			return;
 		}
 
-		preview.style.display = 'grid';
+		ensurePreviewPosition( preview );
+		preview.style.display = 'flex';
 		preview.className = 'mvs-activity-media-preview mvs-preview-grid-' + Math.min( attachedMedia.length, 5 );
 
 		attachedMedia.forEach( function( item, idx ) {
@@ -144,6 +161,7 @@
 		var uploadingText = document.createElement( 'span' );
 		uploadingText.className = 'mvs-activity-media-uploading';
 		uploadingText.textContent = 'Uploading ' + files.length + ' file' + ( files.length > 1 ? 's' : '' ) + '...';
+		ensurePreviewPosition( preview );
 		preview.textContent = '';
 		preview.appendChild( uploadingText );
 		preview.style.display = 'block';
@@ -619,8 +637,9 @@
 			switchToGalleryItem( item );
 		} else {
 			// Resolve media ID from permalink first.
-			getMediaIdFromLink( item.permalink, function( resolvedId ) {
+			getMediaIdFromLink( item.permalink, item.imgSrc, function( resolvedId, resolvedLink ) {
 				item.mediaId = resolvedId;
+				if ( resolvedLink ) { item.permalink = resolvedLink; }
 				switchToGalleryItem( item );
 			} );
 		}
@@ -656,6 +675,12 @@
 
 		// Reload social data for new image (always use media-specific comments).
 		if ( item.mediaId ) {
+			// Fetch full-size image URL from REST.
+			apiGet( 'media/' + item.mediaId ).then( function( data ) {
+				if ( data && data.file_url ) {
+					refs.img.src = data.file_url;
+				}
+			} );
 			loadReactions();
 			loadMediaComments( item.mediaId );
 			apiGet( 'media/' + item.mediaId + '/stats' ).then( function( data ) {
@@ -710,6 +735,13 @@
 		updateNavButtons();
 		lbOverlay.classList.add( 'mvs-lb-open' );
 
+		// Fetch full-size image URL from REST (replaces thumbnail with original).
+		apiGet( 'media/' + mediaId ).then( function( data ) {
+			if ( data && data.file_url ) {
+				refs.img.src = data.file_url;
+			}
+		} );
+
 		// Load all social data in parallel (always image-specific comments).
 		loadReactions();
 		loadMediaComments( mediaId );
@@ -739,20 +771,38 @@
 		} );
 	}
 
-	// Extract media ID from permalink: /media/slug/ → lookup via REST, or from data attribute.
-	function getMediaIdFromLink( href, callback ) {
+	// Extract media ID from permalink or image src.
+	function getMediaIdFromLink( href, imgSrc, callback ) {
 		// Try to extract slug from URL pattern /media/{slug}/
 		var match = href.match( /\/media\/([^\/]+)\/?$/ );
-		if ( ! match ) { callback( 0 ); return; }
-		var slug = match[ 1 ];
+		if ( match ) {
+			apiGet( 'media?slug=' + encodeURIComponent( match[ 1 ] ) + '&per_page=1' ).then( function( data ) {
+				if ( Array.isArray( data ) && data.length > 0 ) {
+					callback( data[ 0 ].id, data[ 0 ].link || href );
+				} else {
+					callback( 0, href );
+				}
+			} ).catch( function() { callback( 0, href ); } );
+			return;
+		}
 
-		apiGet( 'media?slug=' + encodeURIComponent( slug ) + '&per_page=1' ).then( function( data ) {
-			if ( Array.isArray( data ) && data.length > 0 ) {
-				callback( data[ 0 ].id );
-			} else {
-				callback( 0 );
+		// Fallback: no slug in URL (draft/archive link). Search by filename from img src.
+		if ( imgSrc ) {
+			var fnMatch = imgSrc.match( /\/([^\/]+?)(?:-\d+x\d+)?(\.\w+)$/ );
+			if ( fnMatch ) {
+				var searchTerm = fnMatch[ 1 ];
+				apiGet( 'media?search=' + encodeURIComponent( searchTerm ) + '&per_page=1' ).then( function( data ) {
+					if ( Array.isArray( data ) && data.length > 0 ) {
+						callback( data[ 0 ].id, data[ 0 ].link || href );
+					} else {
+						callback( 0, href );
+					}
+				} ).catch( function() { callback( 0, href ); } );
+				return;
 			}
-		} ).catch( function() { callback( 0 ); } );
+		}
+
+		callback( 0, href );
 	}
 
 	// Handle clicks on "+N more" overlay — open lightbox at that position.
@@ -782,7 +832,7 @@
 		e.preventDefault();
 		e.stopPropagation();
 
-		var fullSrc = img.src.replace( /-\d+x\d+(\.\w+)$/, '$1' );
+		var fullSrc = img.src; // Use actual src; full-size fetched from REST after ID resolve.
 		var title = img.alt || '';
 		var permalink = link.href || '';
 
@@ -808,7 +858,7 @@
 			try {
 				var allImgs = JSON.parse( grid.dataset.allImages );
 				allImgs.forEach( function( item, idx ) {
-					var itemSrc = item.src.replace( /-\d+x\d+(\.\w+)$/, '$1' );
+					var itemSrc = item.src;
 					gallery.push( {
 						mediaId: 0,
 						imgSrc: itemSrc,
@@ -829,7 +879,7 @@
 				allLinks.forEach( function( a, idx ) {
 					var aImg = a.querySelector( 'img:not(.emoji):not(.avatar)' );
 					if ( ! aImg ) { return; }
-					var itemSrc = aImg.src.replace( /-\d+x\d+(\.\w+)$/, '$1' );
+					var itemSrc = aImg.src;
 					gallery.push( {
 						mediaId: 0,
 						imgSrc: itemSrc,
@@ -841,7 +891,10 @@
 			}
 		}
 
-		getMediaIdFromLink( permalink, function( mediaId ) {
+		getMediaIdFromLink( permalink, fullSrc, function( mediaId, resolvedLink ) {
+			if ( resolvedLink && resolvedLink !== permalink ) {
+				permalink = resolvedLink;
+			}
 			if ( mediaId ) {
 				// Set mediaId on the clicked gallery item.
 				if ( gallery.length > 0 && gallery[ clickedIndex ] ) {
@@ -849,7 +902,10 @@
 				}
 				openLightbox( mediaId, fullSrc, title, permalink, activityId, gallery, clickedIndex );
 			} else {
-				window.location.href = permalink;
+				// Only navigate if we have a real single-media permalink.
+				if ( permalink.match( /\/media\/[^\/]+\/?$/ ) ) {
+					window.location.href = permalink;
+				}
 			}
 		} );
 	} );

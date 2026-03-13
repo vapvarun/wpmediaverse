@@ -228,7 +228,7 @@ class BuddyPressIntegration {
 		}
 
 		$user_id   = (int) $post->post_author;
-		$thumbnail = $this->get_media_thumbnail_html( $media_id, 'medium' );
+		$thumbnail = $this->get_media_thumbnail_html( $media_id, 'large' );
 
 		$activity_args = array(
 			'user_id'   => $user_id,
@@ -2078,10 +2078,11 @@ class BuddyPressIntegration {
 			// Publish draft media now that the activity is being posted.
 			if ( 'draft' === $post->post_status ) {
 				wp_publish_post( $media_id );
+				clean_post_cache( $media_id );
 			}
 
 			$valid_ids[] = $media_id;
-			$thumbnails .= $this->get_media_thumbnail_html( $media_id, 'medium' );
+			$thumbnails .= $this->get_media_thumbnail_html( $media_id, 'large' );
 		}
 
 		if ( empty( $valid_ids ) ) {
