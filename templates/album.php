@@ -26,19 +26,42 @@ get_header();
 		);
 		?>
 
+		<?php
+		$album_privacy = get_post_meta( get_the_ID(), '_mvs_privacy', true );
+		if ( ! $album_privacy ) {
+			$album_privacy = 'public';
+		}
+		$album_type = get_post_meta( get_the_ID(), '_mvs_album_type', true );
+		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
+		?>
+
 		<article id="mvs-album-<?php the_ID(); ?>" <?php post_class( 'mvs-album-article' ); ?>>
-			<header class="mvs-album-header">
-				<h1 class="mvs-album-title"><?php the_title(); ?></h1>
+			<!-- Info Card -->
+			<div class="mvs-collection-card-info">
+				<h1 class="mvs-collection-card-title"><?php the_title(); ?></h1>
+				<div class="mvs-collection-card-meta">
+					<span class="mvs-collection-meta-author">
+						<?php echo get_avatar( get_the_author_meta( 'ID' ), 24, '', '', array( 'class' => 'mvs-collection-avatar' ) ); ?>
+						<a href="<?php echo esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ); ?>"><?php echo esc_html( get_the_author() ); ?></a>
+					</span>
+					<span class="mvs-collection-meta-text">
+						<?php
+						printf(
+							/* translators: %d: number of items */
+							esc_html( _n( '%d item', '%d items', count( $items ), 'wpmediaverse' ) ),
+							count( $items )
+						);
+						?>
+					</span>
+					<span class="mvs-collection-type-badge"><?php echo esc_html( $album_type ? $album_type : 'album' ); ?></span>
+					<span class="mvs-privacy-badge"><?php echo esc_html( ucfirst( $album_privacy ) ); ?></span>
+				</div>
 				<?php if ( get_the_content() ) : ?>
-					<div class="mvs-album-description"><?php the_content(); ?></div>
+					<div class="mvs-collection-card-desc"><?php the_content(); ?></div>
 				<?php endif; ?>
 
-				<?php if ( is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id() ) : ?>
+				<?php if ( $mvs_is_album_owner ) : ?>
 					<?php
-					$album_privacy = get_post_meta( get_the_ID(), '_mvs_privacy', true );
-					if ( ! $album_privacy ) {
-						$album_privacy = 'public';
-					}
 					$mvs_album_ctx = array(
 						'mediaId'        => get_the_ID(),
 						'restUrl'        => esc_url_raw( rest_url( 'mvs/v1/' ) ),
@@ -73,7 +96,7 @@ get_header();
 						data-wp-interactive="mvs/media-social"
 						<?php echo wp_interactivity_data_wp_context( $mvs_album_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						data-wp-init="callbacks.init">
-						<div class="mvs-owner-actions" style="margin: 12px 0;">
+						<div class="mvs-owner-actions">
 							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
 								data-wp-on--click="actions.toggleEdit">
 								<?php esc_html_e( 'Edit Album', 'wpmediaverse' ); ?>
@@ -108,7 +131,8 @@ get_header();
 								<button class="mvs-btn" type="button"
 									data-wp-on--click="actions.saveEdit"
 									data-wp-bind--disabled="context.saving">
-									<span data-wp-text="context.saving ? '<?php echo esc_js( __( 'Saving...', 'wpmediaverse' ) ); ?>' : '<?php echo esc_js( __( 'Save', 'wpmediaverse' ) ); ?>'"></span>
+									<span data-wp-bind--hidden="context.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
+									<span data-wp-bind--hidden="!context.saving"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 								</button>
 								<button class="mvs-btn mvs-btn--secondary" type="button"
 									data-wp-on--click="actions.cancelEdit">
@@ -118,19 +142,9 @@ get_header();
 						</div>
 					</div>
 				<?php endif; ?>
+			</div>
 
-				<span class="mvs-album-count">
-					<?php
-					printf(
-						/* translators: %d: number of items */
-						esc_html( _n( '%d item', '%d items', count( $items ), 'wpmediaverse' ) ),
-						count( $items )
-					);
-					?>
-				</span>
-			</header>
-
-			<?php if ( is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id() ) : ?>
+			<?php if ( $mvs_is_album_owner ) : ?>
 				<div class="mvs-album-upload-section">
 					<button type="button" id="mvs-album-upload-btn" class="mvs-btn">
 						<span class="dashicons dashicons-plus-alt"></span> <?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
@@ -354,52 +368,19 @@ get_header();
 				</script>
 			<?php elseif ( ! empty( $items ) ) : ?>
 				<div class="mvs-media-grid mvs-cols-3">
-					<?php foreach ( $items as $media_id ) : ?>
-						<?php
-						$file_url    = get_post_meta( $media_id, '_mvs_file_url', true );
-						$file_type   = get_post_meta( $media_id, '_mvs_file_type', true );
-						$media_type  = get_post_meta( $media_id, '_mvs_media_type', true );
-						$permalink   = get_permalink( $media_id );
-						$thumb_url   = '';
-						$attach_id   = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
-						if ( $attach_id ) {
-							$thumb_src = wp_get_attachment_image_url( $attach_id, 'medium' );
-							if ( $thumb_src ) {
-								$thumb_url = set_url_scheme( $thumb_src );
-							}
-						}
-						if ( ! $thumb_url && 'image' === $media_type && $file_url ) {
-							$thumb_url = set_url_scheme( $file_url );
-						}
-						?>
-						<div class="mvs-grid-item">
-							<a href="<?php echo esc_url( $permalink ); ?>">
-								<?php if ( $thumb_url ) : ?>
-									<img src="<?php echo esc_url( $thumb_url ); ?>"
-										alt="<?php echo esc_attr( get_the_title( $media_id ) ); ?>"
-										loading="lazy" />
-									<?php if ( 'video' === $media_type ) : ?>
-										<span class="mvs-grid-play-icon">&#9654;</span>
-									<?php endif; ?>
-								<?php elseif ( 'video' === $media_type ) : ?>
-									<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">
-										<span class="mvs-grid-play-icon">&#9654;</span>
-									</div>
-								<?php elseif ( 'audio' === $media_type ) : ?>
-									<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio">
-										<span class="mvs-grid-audio-icon">&#9835;</span>
-									</div>
-								<?php else : ?>
-									<div class="mvs-grid-item-placeholder">
-										<span class="dashicons dashicons-media-default"></span>
-									</div>
-								<?php endif; ?>
-							</a>
-							<div class="mvs-grid-item-overlay">
-								<span><?php echo esc_html( get_the_title( $media_id ) ); ?></span>
-							</div>
-						</div>
-					<?php endforeach; ?>
+					<?php
+					foreach ( $items as $media_id ) :
+						$media_id = (int) $media_id;
+						\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+							$media_id,
+							array(),
+							array(
+								'show_author'  => false,
+								'show_overlay' => false,
+							)
+						);
+					endforeach;
+					?>
 				</div>
 			<?php else : ?>
 				<p class="mvs-no-media"><?php esc_html_e( 'This album is empty.', 'wpmediaverse' ); ?></p>

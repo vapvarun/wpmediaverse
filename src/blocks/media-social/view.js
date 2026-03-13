@@ -64,13 +64,23 @@ async function fetchComments( ctx ) {
 			{ headers: apiHeaders( ctx.nonce ), credentials: 'same-origin' }
 		);
 		const data = await res.json();
+		const now = Date.now();
+		const editWindow = 15 * 60 * 1000; // 15 minutes in ms.
 		ctx.comments = Array.isArray( data )
-			? data.map( ( c ) => ( {
-				id: c.id,
-				author: c.author_name || 'Anonymous',
-				date: new Date( c.date ).toLocaleDateString(),
-				content: c.content,
-			} ) )
+			? data.map( ( c ) => {
+				const commentAge = now - new Date( c.date ).getTime();
+				const isOwnComment = ctx.currentUserId && c.author === ctx.currentUserId;
+				return {
+					id: c.id,
+					author: c.author,
+					author_name: c.author_name || 'Anonymous',
+					date: new Date( c.date ).toLocaleDateString(),
+					content: c.content,
+					canEdit: isOwnComment && commentAge < editWindow,
+					editing: false,
+					editText: '',
+				};
+			} )
 			: [];
 	} catch {
 		ctx.comments = [];
@@ -125,6 +135,10 @@ store( 'mvs/media-social', {
 		tagDropdownVisible: false,
 		saving: false,
 		shareLabel: '\u{1F517} Share',
+		get hideCommentActions() {
+			const item = getContext().item;
+			return ! item?.canEdit || item?.editing;
+		},
 	},
 	actions: {
 		/* --- Reactions --- */
@@ -196,6 +210,75 @@ store( 'mvs/media-social', {
 			await fetchComments( ctx );
 		},
 
+		/* --- Comment Edit/Delete --- */
+		startEditComment() {
+			const ctx = getContext();
+			const comment = ctx.item;
+			if ( ! comment ) return;
+			comment.editing = true;
+			comment.editText = comment.content;
+		},
+
+		updateEditCommentText( event ) {
+			const ctx = getContext();
+			if ( ctx.item ) {
+				ctx.item.editText = event.target.value;
+			}
+		},
+
+		async saveEditComment() {
+			const ctx = getContext();
+			const comment = ctx.item;
+			if ( ! comment || ! comment.editText.trim() ) return;
+
+			try {
+				const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
+					method: 'PUT',
+					headers: apiHeaders( ctx.nonce ),
+					credentials: 'same-origin',
+					body: JSON.stringify( { content: comment.editText.trim() } ),
+				} );
+				if ( res.ok ) {
+					const updated = await res.json();
+					comment.content = updated.content;
+					comment.editing = false;
+					comment.editText = '';
+					sharedUI.actions.showToast( 'Comment updated.', 'success' );
+				} else {
+					const err = await res.json();
+					sharedUI.actions.showToast( err.message || 'Edit failed.', 'error' );
+				}
+			} catch {
+				sharedUI.actions.showToast( 'Edit failed.', 'error' );
+			}
+		},
+
+		cancelEditComment() {
+			const ctx = getContext();
+			if ( ctx.item ) {
+				ctx.item.editing = false;
+				ctx.item.editText = '';
+			}
+		},
+
+		deleteComment() {
+			const ctx = getContext();
+			const comment = ctx.item;
+			if ( ! comment ) return;
+
+			sharedUI.actions.showConfirm( 'Delete this comment?', async () => {
+				const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
+					method: 'DELETE',
+					headers: apiHeaders( ctx.nonce ),
+					credentials: 'same-origin',
+				} );
+				if ( res.ok ) {
+					await fetchComments( ctx );
+					sharedUI.actions.showToast( 'Comment deleted.', 'success' );
+				}
+			} );
+		},
+
 		/* --- Share --- */
 		async handleShare() {
 			const ctx = getContext();
@@ -214,6 +297,26 @@ store( 'mvs/media-social', {
 				setTimeout( () => {
 					ctx.shareLabel = '\u{1F517} Share';
 				}, 2000 );
+			}
+		},
+
+		/* --- Follow --- */
+		async toggleFollow() {
+			const ctx = getContext();
+			const authorId = ctx.followAuthorId || ctx.authorId;
+			if ( ! authorId ) return;
+			const method = ctx.isFollowing ? 'DELETE' : 'POST';
+			try {
+				const res = await fetch( ctx.restUrl + 'users/' + authorId + '/follow', {
+					method,
+					headers: apiHeaders( ctx.nonce ),
+					credentials: 'same-origin',
+				} );
+				if ( res.ok ) {
+					ctx.isFollowing = ! ctx.isFollowing;
+				}
+			} catch {
+				sharedUI.actions.showToast( 'Follow action failed.', 'error' );
 			}
 		},
 
@@ -380,8 +483,38 @@ store( 'mvs/media-social', {
 			}
 			if ( ctx.isLoggedIn ) {
 				promises.push( fetchFavorite( ctx ) );
+				// Check follow status for media author.
+				if ( ctx.authorId && ! ctx.isOwner ) {
+					promises.push( ( async () => {
+						try {
+							const res = await fetch( ctx.restUrl + 'me/following', {
+								headers: apiHeaders( ctx.nonce ),
+								credentials: 'same-origin',
+							} );
+							const data = await res.json();
+							ctx.isFollowing = Array.isArray( data ) && data.some( ( f ) => f.user_id === ctx.authorId || f.id === ctx.authorId );
+						} catch {
+							// Ignore.
+						}
+					} )() );
+				}
 			}
 			await Promise.all( promises );
+		},
+
+		async initFollow() {
+			const ctx = getContext();
+			if ( ! ctx.followAuthorId ) return;
+			try {
+				const res = await fetch( ctx.restUrl + 'me/following', {
+					headers: apiHeaders( ctx.nonce ),
+					credentials: 'same-origin',
+				} );
+				const data = await res.json();
+				ctx.isFollowing = Array.isArray( data ) && data.some( ( f ) => f.user_id === ctx.followAuthorId || f.id === ctx.followAuthorId );
+			} catch {
+				// Ignore.
+			}
 		},
 	},
 } );

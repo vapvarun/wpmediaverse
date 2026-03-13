@@ -40,76 +40,90 @@ get_header();
 		}
 
 		$rules = $service->get_rules( $collection_id );
+
+		// Resolve rule values to human-readable names.
+		foreach ( $rules as &$rule ) {
+			if ( 'tag' === $rule['key'] ) {
+				$term = get_term( (int) $rule['value'], 'mvs_tag' );
+				if ( $term && ! is_wp_error( $term ) ) {
+					$rule['value'] = $term->name;
+				}
+			} elseif ( 'category' === $rule['key'] ) {
+				$term = get_term( (int) $rule['value'], 'mvs_category' );
+				if ( $term && ! is_wp_error( $term ) ) {
+					$rule['value'] = $term->name;
+				}
+			} elseif ( 'author' === $rule['key'] ) {
+				$user = get_userdata( (int) $rule['value'] );
+				if ( $user ) {
+					$rule['value'] = $user->display_name;
+				}
+			}
+		}
+		unset( $rule );
 		?>
 
 		<article id="mvs-collection-<?php the_ID(); ?>" <?php post_class( 'mvs-collection-article' ); ?>>
-			<header class="mvs-collection-header">
-				<h1 class="mvs-collection-title"><?php the_title(); ?></h1>
-				<span class="mvs-collection-type-badge"><?php echo esc_html( $collection_type ); ?></span>
-
-				<?php if ( get_the_content() ) : ?>
-					<div class="mvs-collection-description"><?php the_content(); ?></div>
-				<?php endif; ?>
-
-				<?php if ( 'smart' === $collection_type && ! empty( $rules ) ) : ?>
-					<div class="mvs-collection-rules-display">
+			<!-- Info Card -->
+			<div class="mvs-collection-card-info">
+				<h1 class="mvs-collection-card-title"><?php the_title(); ?></h1>
+				<div class="mvs-collection-card-meta">
+					<span class="mvs-collection-meta-author">
+						<?php echo get_avatar( get_the_author_meta( 'ID' ), 24, '', '', array( 'class' => 'mvs-collection-avatar' ) ); ?>
+						<a href="<?php echo esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ); ?>"><?php echo esc_html( get_the_author() ); ?></a>
+					</span>
+					<span class="mvs-collection-meta-text">
+						<?php
+						printf(
+							/* translators: %d: number of items */
+							esc_html( _n( '%d item', '%d items', count( $items ), 'wpmediaverse' ) ),
+							count( $items )
+						);
+						?>
+					</span>
+					<span class="mvs-collection-type-badge"><?php echo esc_html( $collection_type ); ?></span>
+					<?php if ( 'smart' === $collection_type && ! empty( $rules ) ) : ?>
 						<?php foreach ( $rules as $rule ) : ?>
-							<span class="mvs-rule-pill">
-								<?php echo esc_html( $rule['key'] . ': ' . $rule['value'] ); ?>
-							</span>
+							<span class="mvs-rule-pill"><?php echo esc_html( $rule['key'] . ': ' . $rule['value'] ); ?></span>
 						<?php endforeach; ?>
-					</div>
-				<?php endif; ?>
-
-				<div class="mvs-collection-meta">
-					<?php
-					printf(
-						/* translators: %d: number of items */
-						esc_html( _n( '%d item', '%d items', count( $items ), 'wpmediaverse' ) ),
-						count( $items )
-					);
-					?>
-					&middot;
-					<?php
-					printf(
-						/* translators: %s: author name */
-						esc_html__( 'by %s', 'wpmediaverse' ),
-						esc_html( get_the_author() )
-					);
-					?>
+					<?php endif; ?>
 				</div>
-			</header>
+				<?php if ( get_the_content() ) : ?>
+					<div class="mvs-collection-card-desc"><?php the_content(); ?></div>
+				<?php endif; ?>
+			</div>
 
+			<!-- Search within collection -->
 			<?php if ( ! empty( $items ) ) : ?>
-				<div class="mvs-media-grid mvs-collection-grid">
+			<div class="mvs-explore-search mvs-collection-search">
+				<form onsubmit="return false;">
+					<input type="text" class="mvs-collection-search-input" placeholder="<?php esc_attr_e( 'Search in this collection...', 'wpmediaverse' ); ?>" />
+					<button type="button" class="mvs-collection-search-btn"><?php esc_html_e( 'Search', 'wpmediaverse' ); ?></button>
+				</form>
+			</div>
+			<?php endif; ?>
+
+			<!-- Media Grid -->
+			<?php if ( ! empty( $items ) ) : ?>
+				<?php $stats_map = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( array_map( 'intval', $items ) ); ?>
+				<div class="mvs-media-grid mvs-cols-3 mvs-feed">
 					<?php
 					foreach ( $items as $media_id ) :
+						$media_id   = (int) $media_id;
 						$media_post = get_post( $media_id );
 						if ( ! $media_post || 'publish' !== $media_post->post_status ) {
 							continue;
 						}
-						$file_url   = get_post_meta( $media_id, '_mvs_file_url', true );
-						$media_type = get_post_meta( $media_id, '_mvs_media_type', true ) ?: 'image';
-						$permalink  = get_permalink( $media_id );
-						?>
-						<div class="mvs-grid-item">
-							<a href="<?php echo esc_url( $permalink ); ?>" class="mvs-grid-item-link">
-								<?php if ( 'video' === $media_type ) : ?>
-									<div class="mvs-grid-item-video-badge">&#9654;</div>
-								<?php elseif ( 'audio' === $media_type ) : ?>
-									<div class="mvs-grid-item-audio-badge">&#9835;</div>
-								<?php endif; ?>
-								<?php if ( $file_url && 'image' === $media_type ) : ?>
-									<img src="<?php echo esc_url( $file_url ); ?>" alt="<?php echo esc_attr( $media_post->post_title ); ?>" loading="lazy" />
-								<?php else : ?>
-									<div class="mvs-grid-placeholder mvs-grid-placeholder--<?php echo esc_attr( $media_type ); ?>">
-										<?php echo esc_html( strtoupper( $media_type ) ); ?>
-									</div>
-								<?php endif; ?>
-							</a>
-							<div class="mvs-grid-item-title"><?php echo esc_html( $media_post->post_title ?: __( '(Untitled)', 'wpmediaverse' ) ); ?></div>
-						</div>
-					<?php endforeach; ?>
+						\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+							$media_id,
+							$stats_map[ $media_id ] ?? array(),
+							array(
+								'show_author' => true,
+								'data_attrs'  => array( 'title' => strtolower( $media_post->post_title ) ),
+							)
+						);
+					endforeach;
+					?>
 				</div>
 			<?php else : ?>
 				<p class="mvs-no-media">
@@ -126,6 +140,27 @@ get_header();
 
 	<?php endwhile; ?>
 </div>
+<script>
+( function() {
+	const input = document.querySelector( '.mvs-collection-search-input' );
+	if ( ! input ) return;
+	const grid = document.querySelector( '.mvs-collection-article .mvs-media-grid' );
+	if ( ! grid ) return;
+	const items = grid.querySelectorAll( '.mvs-grid-item' );
+
+	function filterItems() {
+		const q = input.value.toLowerCase().trim();
+		items.forEach( function( item ) {
+			const title = item.getAttribute( 'data-title' ) || '';
+			item.style.display = ( ! q || title.indexOf( q ) !== -1 ) ? '' : 'none';
+		} );
+	}
+
+	input.addEventListener( 'input', filterItems );
+	const btn = document.querySelector( '.mvs-collection-search-btn' );
+	if ( btn ) btn.addEventListener( 'click', filterItems );
+} )();
+</script>
 <?php
 wp_enqueue_style( 'mvs-frontend' );
 get_footer();

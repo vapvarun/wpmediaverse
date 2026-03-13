@@ -613,7 +613,6 @@ class BuddyPressIntegration {
 		$is_own     = is_user_logged_in() && get_current_user_id() === $user_id;
 		$paged      = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$per_page   = 18;
-		$stats_tbl  = $GLOBALS['wpdb']->prefix . 'mvs_media_stats';
 
 		// Inline upload for own profile.
 		if ( $is_own ) {
@@ -780,67 +779,17 @@ class BuddyPressIntegration {
 
 		// Collect IDs for batch stats query.
 		$media_ids = wp_list_pluck( $query->posts, 'ID' );
-		$stats_map = array();
-		if ( ! empty( $media_ids ) ) {
-			$placeholders = implode( ',', array_fill( 0, count( $media_ids ), '%d' ) );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$stats_rows = $GLOBALS['wpdb']->get_results(
-				$GLOBALS['wpdb']->prepare(
-					"SELECT media_id, views, reactions FROM {$stats_tbl} WHERE media_id IN ({$placeholders})",
-					...$media_ids
-				),
-				ARRAY_A
-			);
-			if ( $stats_rows ) {
-				foreach ( $stats_rows as $row ) {
-					$stats_map[ (int) $row['media_id'] ] = $row;
-				}
-			}
-		}
+		$stats_map = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( $media_ids );
 
 		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed">';
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			$mid       = get_the_ID();
-			$file_url  = get_post_meta( $mid, '_mvs_file_url', true );
-			$file_type = get_post_meta( $mid, '_mvs_file_type', true );
-			$is_image  = strpos( $file_type, 'image/' ) === 0;
-			$views     = isset( $stats_map[ $mid ]['views'] ) ? (int) $stats_map[ $mid ]['views'] : 0;
-			$reactions = isset( $stats_map[ $mid ]['reactions'] ) ? (int) $stats_map[ $mid ]['reactions'] : 0;
-
-			// Fix HTTPS mixed content.
-			if ( $file_url ) {
-				$file_url = set_url_scheme( $file_url );
-			}
-
-			// Resolve thumbnail: prefer file_url, fallback to WP attachment.
-			$thumb_url = '';
-			if ( $is_image && $file_url ) {
-				$thumb_url = $file_url;
-			} elseif ( $is_image ) {
-				$attach_id = (int) get_post_meta( $mid, '_mvs_attachment_id', true );
-				if ( $attach_id ) {
-					$thumb_url = wp_get_attachment_image_url( $attach_id, 'medium' );
-					if ( $thumb_url ) {
-						$thumb_url = set_url_scheme( $thumb_url );
-					}
-				}
-			}
-
-			echo '<div class="mvs-grid-item">';
-			echo '<a href="' . esc_url( get_permalink( $mid ) ) . '" class="mvs-grid-item-link">';
-			if ( $thumb_url ) {
-				echo '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( get_the_title() ) . '" loading="lazy" />';
-			} else {
-				echo '<div class="mvs-grid-item-placeholder"><span class="dashicons dashicons-media-default"></span></div>';
-			}
-			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';
-			echo '<span class="mvs-grid-stat">&#x1F441;&#xFE0F; ' . esc_html( number_format_i18n( $views ) ) . '</span>';
-			echo '<span class="mvs-grid-stat">&#x2764;&#xFE0F; ' . esc_html( number_format_i18n( $reactions ) ) . '</span>';
-			echo '</div></div>';
-			echo '</a>';
-			echo '<div class="mvs-grid-item-info"><span class="mvs-grid-item-title">' . esc_html( get_the_title() ) . '</span></div>';
-			echo '</div>';
+			$mid = get_the_ID();
+			\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+				$mid,
+				$stats_map[ $mid ] ?? array(),
+				array( 'show_author' => true )
+			);
 		}
 		echo '</div>';
 
@@ -922,50 +871,14 @@ class BuddyPressIntegration {
 			return;
 		}
 
+		$album_svc = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+
 		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed">';
 		while ( $query->have_posts() ) {
 			$query->the_post();
 			$album_id   = get_the_ID();
-			$cover_id   = (int) get_post_meta( $album_id, '_mvs_cover_media_id', true );
-			$cover_url  = '';
-			$item_count = 0;
-
-			if ( $cover_id ) {
-				$cover_url = get_post_meta( $cover_id, '_mvs_file_url', true );
-			}
-
-			// Fallback: use first album item's thumbnail as cover if no explicit cover set.
-			if ( ! $cover_url ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$first_media_id = $GLOBALS['wpdb']->get_var(
-					$GLOBALS['wpdb']->prepare(
-						"SELECT media_id FROM {$GLOBALS['wpdb']->prefix}mvs_album_items WHERE album_id = %d ORDER BY position ASC, id ASC LIMIT 1",
-						$album_id
-					)
-				);
-				if ( $first_media_id ) {
-					$attach_id = (int) get_post_meta( (int) $first_media_id, '_mvs_attachment_id', true );
-					if ( $attach_id ) {
-						$cover_url = wp_get_attachment_image_url( $attach_id, 'medium' );
-					}
-					if ( ! $cover_url ) {
-						$cover_url = get_post_meta( (int) $first_media_id, '_mvs_file_url', true );
-					}
-				}
-			}
-
-			// Fix HTTPS mixed content.
-			if ( $cover_url ) {
-				$cover_url = set_url_scheme( $cover_url );
-			}
-
-			// Count album items.
-			$item_count = (int) $GLOBALS['wpdb']->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$GLOBALS['wpdb']->prepare(
-					"SELECT COUNT(*) FROM {$GLOBALS['wpdb']->prefix}mvs_album_items WHERE album_id = %d",
-					$album_id
-				)
-			);
+			$cover_url  = $album_svc->get_cover_url( $album_id );
+			$item_count = $album_svc->get_item_count( $album_id );
 
 			// Link to single album within BP profile context.
 			$album_post = get_post( $album_id );
@@ -976,7 +889,7 @@ class BuddyPressIntegration {
 			if ( $cover_url ) {
 				echo '<img src="' . esc_url( $cover_url ) . '" alt="' . esc_attr( get_the_title() ) . '" loading="lazy" />';
 			} else {
-				echo '<div class="mvs-grid-item-placeholder"><span class="dashicons dashicons-format-gallery"></span></div>';
+				echo '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album"><span class="mvs-grid-album-icon">&#128193;</span></div>';
 			}
 			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';
 			echo '<span class="mvs-grid-stat">&#x1F5BC;&#xFE0F; ' . esc_html( $item_count ) . '</span>';
@@ -1195,24 +1108,11 @@ class BuddyPressIntegration {
 		if ( ! empty( $items ) ) {
 			echo '<div class="mvs-media-grid mvs-cols-3">';
 			foreach ( $items as $media_id ) {
-				$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
-				$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
-				$is_image  = $file_url && strpos( $file_type, 'image/' ) === 0;
-
-				if ( $file_url ) {
-					$file_url = set_url_scheme( $file_url );
-				}
-
-				echo '<div class="mvs-grid-item">';
-				if ( $is_image ) {
-					echo '<a href="' . esc_url( get_permalink( $media_id ) ) . '">';
-					echo '<img src="' . esc_url( $file_url ) . '" alt="' . esc_attr( get_the_title( $media_id ) ) . '" loading="lazy" />';
-					echo '</a>';
-				} else {
-					echo '<div class="mvs-grid-item-placeholder"><span class="dashicons dashicons-media-default"></span></div>';
-				}
-				echo '<div class="mvs-grid-item-overlay"><span>' . esc_html( get_the_title( $media_id ) ) . '</span></div>';
-				echo '</div>';
+				\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+					(int) $media_id,
+					array(),
+					array( 'show_author' => false, 'show_overlay' => false )
+				);
 			}
 			echo '</div>';
 		} else {
@@ -1452,7 +1352,6 @@ class BuddyPressIntegration {
 
 		$paged     = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$per_page  = 18;
-		$stats_tbl = $GLOBALS['wpdb']->prefix . 'mvs_media_stats';
 
 		// Query media scoped to THIS group via _mvs_group_id meta.
 		$query = new \WP_Query(
@@ -1481,68 +1380,17 @@ class BuddyPressIntegration {
 
 		// Batch fetch stats.
 		$media_ids = wp_list_pluck( $query->posts, 'ID' );
-		$stats_map = array();
-		if ( ! empty( $media_ids ) ) {
-			$placeholders = implode( ',', array_fill( 0, count( $media_ids ), '%d' ) );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$stats_rows = $GLOBALS['wpdb']->get_results(
-				$GLOBALS['wpdb']->prepare(
-					"SELECT media_id, views, reactions FROM {$stats_tbl} WHERE media_id IN ({$placeholders})",
-					...$media_ids
-				),
-				ARRAY_A
-			);
-			if ( $stats_rows ) {
-				foreach ( $stats_rows as $row ) {
-					$stats_map[ (int) $row['media_id'] ] = $row;
-				}
-			}
-		}
+		$stats_map = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( $media_ids );
 
 		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed">';
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			$mid       = get_the_ID();
-			$file_url  = get_post_meta( $mid, '_mvs_file_url', true );
-			$file_type = get_post_meta( $mid, '_mvs_file_type', true );
-			$is_image  = strpos( $file_type, 'image/' ) === 0;
-			$views     = isset( $stats_map[ $mid ]['views'] ) ? (int) $stats_map[ $mid ]['views'] : 0;
-			$reactions = isset( $stats_map[ $mid ]['reactions'] ) ? (int) $stats_map[ $mid ]['reactions'] : 0;
-
-			if ( $file_url ) {
-				$file_url = set_url_scheme( $file_url );
-			}
-
-			$thumb_url = '';
-			if ( $is_image && $file_url ) {
-				$thumb_url = $file_url;
-			} elseif ( $is_image ) {
-				$attach_id = (int) get_post_meta( $mid, '_mvs_attachment_id', true );
-				if ( $attach_id ) {
-					$thumb_url = wp_get_attachment_image_url( $attach_id, 'medium' );
-					if ( $thumb_url ) {
-						$thumb_url = set_url_scheme( $thumb_url );
-					}
-				}
-			}
-
-			echo '<div class="mvs-grid-item">';
-			echo '<a href="' . esc_url( get_permalink( $mid ) ) . '" class="mvs-grid-item-link">';
-			if ( $thumb_url ) {
-				echo '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( get_the_title() ) . '" loading="lazy" />';
-			} else {
-				echo '<div class="mvs-grid-item-placeholder"><span class="dashicons dashicons-media-default"></span></div>';
-			}
-			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';
-			echo '<span class="mvs-grid-stat">&#x1F441;&#xFE0F; ' . esc_html( number_format_i18n( $views ) ) . '</span>';
-			echo '<span class="mvs-grid-stat">&#x2764;&#xFE0F; ' . esc_html( number_format_i18n( $reactions ) ) . '</span>';
-			echo '</div></div>';
-			echo '</a>';
-			echo '<div class="mvs-grid-item-info">';
-			echo get_avatar( get_the_author_meta( 'ID' ), 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
-			echo '<span class="mvs-grid-item-author">' . esc_html( get_the_author() ) . '</span>';
-			echo '</div>';
-			echo '</div>';
+			$mid = get_the_ID();
+			\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+				$mid,
+				$stats_map[ $mid ] ?? array(),
+				array( 'show_author' => true )
+			);
 		}
 		echo '</div>';
 
@@ -1633,48 +1481,14 @@ class BuddyPressIntegration {
 
 		$group_url = bp_get_group_url( $group );
 
+		$album_svc = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+
 		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed">';
 		while ( $query->have_posts() ) {
 			$query->the_post();
 			$album_id   = get_the_ID();
-			$cover_id   = (int) get_post_meta( $album_id, '_mvs_cover_media_id', true );
-			$cover_url  = '';
-			$item_count = 0;
-
-			if ( $cover_id ) {
-				$cover_url = get_post_meta( $cover_id, '_mvs_file_url', true );
-			}
-
-			// Fallback: use first album item's thumbnail as cover.
-			if ( ! $cover_url ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$first_media_id = $GLOBALS['wpdb']->get_var(
-					$GLOBALS['wpdb']->prepare(
-						"SELECT media_id FROM {$GLOBALS['wpdb']->prefix}mvs_album_items WHERE album_id = %d ORDER BY position ASC, id ASC LIMIT 1",
-						$album_id
-					)
-				);
-				if ( $first_media_id ) {
-					$attach_id = (int) get_post_meta( (int) $first_media_id, '_mvs_attachment_id', true );
-					if ( $attach_id ) {
-						$cover_url = wp_get_attachment_image_url( $attach_id, 'medium' );
-					}
-					if ( ! $cover_url ) {
-						$cover_url = get_post_meta( (int) $first_media_id, '_mvs_file_url', true );
-					}
-				}
-			}
-
-			if ( $cover_url ) {
-				$cover_url = set_url_scheme( $cover_url );
-			}
-
-			$item_count = (int) $GLOBALS['wpdb']->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$GLOBALS['wpdb']->prepare(
-					"SELECT COUNT(*) FROM {$GLOBALS['wpdb']->prefix}mvs_album_items WHERE album_id = %d",
-					$album_id
-				)
-			);
+			$cover_url  = $album_svc->get_cover_url( $album_id );
+			$item_count = $album_svc->get_item_count( $album_id );
 
 			$album_post = get_post( $album_id );
 			$album_link = trailingslashit( $group_url . 'media/albums/' . $album_post->post_name );
@@ -1684,7 +1498,7 @@ class BuddyPressIntegration {
 			if ( $cover_url ) {
 				echo '<img src="' . esc_url( $cover_url ) . '" alt="' . esc_attr( get_the_title() ) . '" loading="lazy" />';
 			} else {
-				echo '<div class="mvs-grid-item-placeholder"><span class="dashicons dashicons-format-gallery"></span></div>';
+				echo '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album"><span class="mvs-grid-album-icon">&#128193;</span></div>';
 			}
 			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';
 			echo '<span class="mvs-grid-stat">&#x1F5BC;&#xFE0F; ' . esc_html( $item_count ) . '</span>';
@@ -1913,24 +1727,11 @@ class BuddyPressIntegration {
 		if ( ! empty( $items ) ) {
 			echo '<div class="mvs-media-grid mvs-cols-3">';
 			foreach ( $items as $media_id ) {
-				$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
-				$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
-				$is_image  = $file_url && strpos( $file_type, 'image/' ) === 0;
-
-				if ( $file_url ) {
-					$file_url = set_url_scheme( $file_url );
-				}
-
-				echo '<div class="mvs-grid-item">';
-				if ( $is_image ) {
-					echo '<a href="' . esc_url( get_permalink( $media_id ) ) . '">';
-					echo '<img src="' . esc_url( $file_url ) . '" alt="' . esc_attr( get_the_title( $media_id ) ) . '" loading="lazy" />';
-					echo '</a>';
-				} else {
-					echo '<div class="mvs-grid-item-placeholder"><span class="dashicons dashicons-media-default"></span></div>';
-				}
-				echo '<div class="mvs-grid-item-overlay"><span>' . esc_html( get_the_title( $media_id ) ) . '</span></div>';
-				echo '</div>';
+				\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+					(int) $media_id,
+					array(),
+					array( 'show_author' => false, 'show_overlay' => false )
+				);
 			}
 			echo '</div>';
 		} else {

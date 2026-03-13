@@ -41,6 +41,8 @@ get_header();
 		}
 
 		// Format duration for display.
+		$mvs_is_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
+
 		$duration_display = '';
 		if ( $duration ) {
 			$dur_float = (float) $duration;
@@ -68,6 +70,27 @@ get_header();
 						);
 						?>
 					</span>
+					<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
+					<span class="mvs-follow-btn-wrap"
+						data-wp-interactive="mvs/media-social"
+						<?php
+						echo wp_interactivity_data_wp_context(
+							array(
+								'followAuthorId' => (int) get_the_author_meta( 'ID' ),
+								'restUrl'        => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+								'nonce'          => wp_create_nonce( 'wp_rest' ),
+							)
+						); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+						?>
+						data-wp-init="callbacks.initFollow">
+						<button class="mvs-btn mvs-btn--small mvs-follow-btn" type="button"
+							data-wp-class--active="context.isFollowing"
+							data-wp-on--click="actions.toggleFollow">
+							<span data-wp-bind--hidden="context.isFollowing"><?php esc_html_e( 'Follow', 'wpmediaverse' ); ?></span>
+							<span data-wp-bind--hidden="!context.isFollowing"><?php esc_html_e( 'Following', 'wpmediaverse' ); ?></span>
+						</button>
+					</span>
+					<?php endif; ?>
 					<span class="mvs-media-date"><?php echo esc_html( get_the_date() ); ?></span>
 					<?php if ( $duration_display ) : ?>
 						<span class="mvs-media-duration"><?php echo esc_html( $duration_display ); ?></span>
@@ -162,7 +185,10 @@ get_header();
 				'restUrl'        => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 				'nonce'          => wp_create_nonce( 'wp_rest' ),
 				'isLoggedIn'     => is_user_logged_in(),
+				'currentUserId'  => get_current_user_id(),
 				'isOwner'        => $mvs_is_owner,
+				'authorId'       => (int) get_the_author_meta( 'ID' ),
+				'isFollowing'    => false,
 				'type'           => 'media',
 				'archiveUrl'     => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
 				'initialTitle'   => get_the_title(),
@@ -258,7 +284,8 @@ get_header();
 						<button class="mvs-btn" type="button"
 							data-wp-on--click="actions.saveEdit"
 							data-wp-bind--disabled="context.saving">
-							<span data-wp-text="context.saving ? '<?php echo esc_js( __( 'Saving...', 'wpmediaverse' ) ); ?>' : '<?php echo esc_js( __( 'Save', 'wpmediaverse' ) ); ?>'"></span>
+							<span data-wp-bind--hidden="context.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
+							<span data-wp-bind--hidden="!context.saving"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 						</button>
 						<button class="mvs-btn mvs-btn--secondary" type="button"
 							data-wp-on--click="actions.cancelEdit">
@@ -305,10 +332,31 @@ get_header();
 					<?php endif; ?>
 					<ul class="mvs-comment-list">
 						<template data-wp-each="context.comments">
-							<li class="mvs-comment-item">
-								<span class="mvs-comment-author" data-wp-text="context.item.author"></span>
-								<span class="mvs-comment-date" data-wp-text="context.item.date"></span>
-								<div class="mvs-comment-text" data-wp-text="context.item.content"></div>
+							<li class="mvs-comment-item" data-wp-bind--data-comment-id="context.item.id">
+								<div class="mvs-comment-header">
+									<span class="mvs-comment-author" data-wp-text="context.item.author_name"></span>
+									<span class="mvs-comment-date" data-wp-text="context.item.date"></span>
+								</div>
+								<div class="mvs-comment-body" data-wp-bind--hidden="context.item.editing">
+									<div class="mvs-comment-text" data-wp-text="context.item.content"></div>
+								</div>
+								<div class="mvs-comment-edit-form" data-wp-bind--hidden="!context.item.editing">
+									<textarea class="mvs-comment-edit-textarea" rows="2"
+										data-wp-bind--value="context.item.editText"
+										data-wp-on--input="actions.updateEditCommentText"></textarea>
+									<div class="mvs-comment-edit-actions">
+										<button class="mvs-btn mvs-btn--small" type="button"
+											data-wp-on--click="actions.saveEditComment"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></button>
+										<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+											data-wp-on--click="actions.cancelEditComment"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+									</div>
+								</div>
+								<div class="mvs-comment-actions" data-wp-bind--hidden="state.hideCommentActions">
+									<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+										data-wp-on--click="actions.startEditComment"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
+									<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+										data-wp-on--click="actions.deleteComment"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+								</div>
 							</li>
 						</template>
 					</ul>

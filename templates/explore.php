@@ -53,65 +53,38 @@ get_header();
 			<?php
 			while ( have_posts() ) :
 				the_post();
-				global $wpdb;
 
 				$post_type = get_post_type();
 				$is_album  = ( 'mvs_album' === $post_type );
 
 				if ( $is_album ) {
-					// Album: get cover image (first item) and item count.
-					$album_table = $wpdb->prefix . 'mvs_album_items';
-					$cover_id    = $wpdb->get_var( $wpdb->prepare( "SELECT media_id FROM {$album_table} WHERE album_id = %d ORDER BY position ASC LIMIT 1", get_the_ID() ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$item_count  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$album_table} WHERE album_id = %d", get_the_ID() ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$cover_url   = $cover_id ? get_post_meta( $cover_id, '_mvs_file_url', true ) : '';
-					$cover_type  = $cover_id ? get_post_meta( $cover_id, '_mvs_file_type', true ) : '';
-					$is_image    = $cover_url && strpos( $cover_type, 'image/' ) === 0;
+					$container  = \WPMediaVerse\Core\Plugin::container();
+					$album_svc  = $container->get( 'albums' );
+					$item_count = $album_svc->get_item_count( get_the_ID() );
+					$cover_url  = $album_svc->get_cover_url( get_the_ID() );
 				} else {
-					// Single media item.
-					$file_url  = get_post_meta( get_the_ID(), '_mvs_file_url', true );
-					$file_type = get_post_meta( get_the_ID(), '_mvs_file_type', true );
-					$is_image  = $file_url && strpos( $file_type, 'image/' ) === 0;
-
-					// Get stats for hover overlay.
-					$stats_table    = $wpdb->prefix . 'mvs_media_stats';
-					$media_stats    = $wpdb->get_row( $wpdb->prepare( "SELECT reactions, comments FROM {$stats_table} WHERE media_id = %d", get_the_ID() ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$reaction_count = $media_stats ? (int) $media_stats->reactions : 0;
-					$comment_count  = $media_stats ? (int) $media_stats->comments : 0;
+					$stats_data = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( array( get_the_ID() ) );
+					$my_stats   = $stats_data[ get_the_ID() ] ?? array();
 				}
 				?>
-				<div class="mvs-grid-item<?php echo $is_album ? ' mvs-grid-item--album' : ''; ?>">
+				<?php if ( $is_album ) : ?>
+				<div class="mvs-grid-item mvs-grid-item--album">
 					<a href="<?php the_permalink(); ?>" class="mvs-grid-item-link">
-						<?php if ( $is_album && $is_image ) : ?>
+						<?php if ( $cover_url ) : ?>
 							<img src="<?php echo esc_url( $cover_url ); ?>"
 								alt="<?php echo esc_attr( get_the_title() ); ?>"
 								loading="lazy" />
-							<span class="mvs-album-badge" title="<?php echo esc_attr( sprintf( '%d items', $item_count ) ); ?>">
-								<span class="dashicons dashicons-images-alt2"></span>
-							</span>
-						<?php elseif ( $is_album ) : ?>
-							<div class="mvs-grid-item-placeholder">
-								<span class="dashicons dashicons-format-gallery"></span>
-							</div>
-							<span class="mvs-album-badge">
-								<span class="dashicons dashicons-images-alt2"></span>
-							</span>
-						<?php elseif ( $is_image ) : ?>
-							<img src="<?php echo esc_url( $file_url ); ?>"
-								alt="<?php echo esc_attr( get_the_title() ); ?>"
-								loading="lazy" />
 						<?php else : ?>
-							<div class="mvs-grid-item-placeholder">
-								<span class="dashicons dashicons-media-default"></span>
+							<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album">
+								<span class="mvs-grid-album-icon">&#128193;</span>
 							</div>
 						<?php endif; ?>
+						<span class="mvs-album-badge" title="<?php echo esc_attr( sprintf( '%d items', $item_count ) ); ?>">
+							<span class="dashicons dashicons-images-alt2"></span>
+						</span>
 						<div class="mvs-grid-item-overlay">
 							<div class="mvs-grid-item-stats">
-								<?php if ( $is_album ) : ?>
-									<span class="mvs-grid-stat">&#x1F5BC;&#xFE0F; <?php echo esc_html( $item_count ); ?></span>
-								<?php else : ?>
-									<span class="mvs-grid-stat">&#x2764;&#xFE0F; <?php echo esc_html( $reaction_count ); ?></span>
-									<span class="mvs-grid-stat">&#x1F4AC; <?php echo esc_html( $comment_count ); ?></span>
-								<?php endif; ?>
+								<span class="mvs-grid-stat">&#x1F5BC;&#xFE0F; <?php echo esc_html( $item_count ); ?></span>
 							</div>
 						</div>
 					</a>
@@ -120,6 +93,15 @@ get_header();
 						<span class="mvs-grid-item-author"><?php echo esc_html( get_the_author() ); ?></span>
 					</div>
 				</div>
+				<?php else : ?>
+				<?php
+				\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+					get_the_ID(),
+					$my_stats,
+					array( 'show_author' => true )
+				);
+				?>
+				<?php endif; ?>
 			<?php endwhile; ?>
 		</div>
 

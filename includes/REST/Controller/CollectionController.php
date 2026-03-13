@@ -377,6 +377,33 @@ class CollectionController extends WP_REST_Controller {
 	private function prepare_collection_response( $post, bool $include_items = false, int $per_page = 20, int $page = 1 ): array {
 		$collection_type = $this->collections->get_type( $post->ID );
 
+		// Get cover from post thumbnail or first media item.
+		$cover_url = null;
+		$thumb_id  = get_post_thumbnail_id( $post->ID );
+		if ( $thumb_id ) {
+			$url       = wp_get_attachment_image_url( $thumb_id, 'medium' );
+			$cover_url = $url ? set_url_scheme( $url ) : null;
+		}
+		if ( ! $cover_url ) {
+			$first_media_id = $this->get_first_collection_media( $post->ID, $collection_type );
+			if ( $first_media_id ) {
+				$file_url   = get_post_meta( $first_media_id, '_mvs_file_url', true );
+				$media_type = get_post_meta( $first_media_id, '_mvs_media_type', true ) ?: 'image';
+				if ( 'image' === $media_type && $file_url ) {
+					$cover_url = set_url_scheme( $file_url );
+				} else {
+					$att_id = get_post_thumbnail_id( $first_media_id );
+					if ( ! $att_id ) {
+						$att_id = (int) get_post_meta( $first_media_id, '_mvs_attachment_id', true );
+					}
+					if ( $att_id ) {
+						$url       = wp_get_attachment_image_url( $att_id, 'medium' );
+						$cover_url = $url ? set_url_scheme( $url ) : null;
+					}
+				}
+			}
+		}
+
 		$data = array(
 			'id'          => $post->ID,
 			'title'       => $post->post_title,
@@ -385,10 +412,12 @@ class CollectionController extends WP_REST_Controller {
 			'date'        => $post->post_date_gmt,
 			'type'        => $collection_type,
 			'link'        => get_permalink( $post->ID ),
+			'cover_url'   => $cover_url,
 		);
 
 		if ( 'smart' === $collection_type ) {
-			$data['rules'] = $this->collections->get_rules( $post->ID );
+			$raw_rules     = $this->collections->get_rules( $post->ID );
+			$data['rules'] = array_map( array( $this, 'enrich_rule' ), $raw_rules );
 		}
 
 		if ( $include_items ) {
@@ -409,6 +438,68 @@ class CollectionController extends WP_REST_Controller {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Enrich a rule with a human-readable value label.
+	 *
+	 * @param array $rule Rule array with 'key' and 'value'.
+	 * @return array Enriched rule with readable 'value'.
+	 */
+	private function enrich_rule( array $rule ): array {
+		$key   = $rule['key'] ?? '';
+		$value = $rule['value'] ?? '';
+
+		switch ( $key ) {
+			case 'tag':
+				$term = get_term( (int) $value, 'mvs_tag' );
+				if ( $term && ! is_wp_error( $term ) ) {
+					$rule['value'] = $term->name;
+				}
+				break;
+			case 'category':
+				$term = get_term( (int) $value, 'mvs_category' );
+				if ( $term && ! is_wp_error( $term ) ) {
+					$rule['value'] = $term->name;
+				}
+				break;
+			case 'author':
+				$user = get_userdata( (int) $value );
+				if ( $user ) {
+					$rule['value'] = $user->display_name;
+				}
+				break;
+		}
+
+		return $rule;
+	}
+
+	/**
+	 * Get the first media ID from a collection for cover image.
+	 *
+	 * @param int    $collection_id Collection post ID.
+	 * @param string $type          Collection type (smart or manual).
+	 * @return int|null
+	 */
+	private function get_first_collection_media( int $collection_id, string $type ): ?int {
+		if ( 'smart' === $type ) {
+			$resolved = $this->collections->resolve( $collection_id, 1, 1 );
+			if ( ! empty( $resolved['items'] ) ) {
+				return (int) $resolved['items'][0]['media_id'];
+			}
+		} else {
+			global $wpdb;
+			$media_id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$collection_id
+				)
+			);
+			if ( $media_id ) {
+				return (int) $media_id;
+			}
+		}
+		return null;
 	}
 
 	/**

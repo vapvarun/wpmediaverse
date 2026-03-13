@@ -914,6 +914,10 @@
 	color: #0073aa;
 }
 
+.mvs-dashboard-tab:first-child {
+	padding-left: 0;
+}
+
 .mvs-dashboard-tab.active {
 	color: #0073aa;
 	border-bottom-color: #0073aa;
@@ -984,6 +988,8 @@
 
 .mvs-dashboard-card {
 	position: relative;
+	display: flex;
+	flex-direction: column;
 	background: #fff;
 	border-radius: 8px;
 	overflow: hidden;
@@ -1012,6 +1018,9 @@
 
 .mvs-dashboard-card-body {
 	padding: 12px;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
 }
 
 .mvs-dashboard-card-title {
@@ -1039,6 +1048,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-dashboard-card-actions {
 	display: flex;
 	gap: 6px;
+	margin-top: auto;
+	padding-top: 8px;
 }
 
 .mvs-privacy-badge {
@@ -1411,8 +1422,13 @@ a.mvs-dashboard-card-title:hover {
 .mvs-owner-actions {
 	display: flex;
 	gap: 8px;
-	padding: 12px 24px;
+	padding: 12px 0 0;
+	margin-top: 12px;
 	border-top: 1px solid #eee;
+}
+
+.mvs-collection-card-info .mvs-owner-actions {
+	padding: 12px 0 0;
 }
 
 /* Inline edit form on single pages */
@@ -2910,6 +2926,133 @@ a.mvs-dashboard-card-title:hover {
 	border-bottom: 1px solid #eee;
 }
 
+/* --- Collection Single Page --- */
+
+.mvs-single-collection {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 24px 16px 0;
+}
+
+/* Info Card */
+.mvs-collection-card-info {
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	padding: 24px 28px;
+	margin-bottom: 24px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.mvs-collection-card-title {
+	margin: 0 0 12px;
+	font-size: 1.6em;
+	font-weight: 700;
+	line-height: 1.3;
+	color: #111827;
+}
+
+.mvs-collection-card-meta {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	flex-wrap: wrap;
+	font-size: 0.9em;
+	color: #6b7280;
+}
+
+.mvs-collection-meta-author {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.mvs-collection-meta-author a {
+	color: #dc2626;
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.mvs-collection-meta-author a:hover {
+	text-decoration: underline;
+}
+
+.mvs-collection-avatar {
+	border-radius: 50%;
+	width: 24px;
+	height: 24px;
+}
+
+.mvs-collection-meta-text {
+	color: #6b7280;
+}
+
+.mvs-collection-card-desc {
+	margin-top: 14px;
+	padding-top: 14px;
+	border-top: 1px solid #f3f4f6;
+	color: #4b5563;
+	font-size: 0.95em;
+	line-height: 1.6;
+}
+
+.mvs-collection-card-desc p {
+	margin: 0;
+}
+
+/* Search bar — reuses .mvs-explore-search layout */
+.mvs-collection-search {
+	margin-bottom: 24px;
+}
+
+.mvs-collection-search form {
+	display: flex;
+	gap: 0;
+}
+
+.mvs-collection-search-input {
+	flex: 1;
+	padding: 10px 16px;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px 0 0 8px;
+	font-size: 0.95em;
+	background: #fff;
+	transition: border-color 0.2s;
+}
+
+.mvs-collection-search-input:focus {
+	outline: none;
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.mvs-collection-search-btn {
+	padding: 10px 20px;
+	border: 1px solid #3b82f6;
+	border-left: 0;
+	border-radius: 0 8px 8px 0;
+	background: #3b82f6;
+	color: #fff;
+	font-size: 0.95em;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+
+.mvs-collection-search-btn:hover {
+	background: #2563eb;
+}
+
+/* Rules display (inline in meta) */
+.mvs-collection-card-meta .mvs-rule-pill {
+	padding: 3px 10px;
+	border-radius: 16px;
+	font-size: 0.85em;
+	background: #f3f4f6;
+	color: #374151;
+	font-weight: 500;
+}
+
 .mvs-collection-type-badge {
 	display: inline-block;
 	padding: 2px 8px;
@@ -3120,4 +3263,267 @@ a.mvs-dashboard-card-title:hover {
 #mvs-activity-media-btn {
 	max-width: 100%;
 	box-sizing: border-box;
+}
+
+/* ==========================================================================
+   26. Album Placeholder
+   ========================================================================== */
+
+.mvs-grid-item-placeholder--album {
+	background: linear-gradient(135deg, #6c757d, #495057);
+	aspect-ratio: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mvs-grid-album-icon {
+	font-size: 36px;
+	opacity: 0.8;
+}
+
+.mvs-grid-item-placeholder--collection {
+	background: linear-gradient(135deg, #4a90d9, #357abd);
+	aspect-ratio: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mvs-grid-collection-icon {
+	font-size: 36px;
+	opacity: 0.8;
+}
+
+.mvs-collection-card .mvs-collection-type-badge {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	background: rgba(0, 0, 0, 0.6);
+	color: #fff;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	text-transform: uppercase;
+}
+
+.mvs-collection-card .mvs-dashboard-card-thumb {
+	position: relative;
+}
+
+.mvs-collection-card .mvs-dashboard-card-meta {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-collection-card .mvs-collection-rules-preview {
+	max-height: 52px;
+	overflow: hidden;
+}
+
+/* ==========================================================================
+   27. Notification Bell
+   ========================================================================== */
+
+.mvs-dashboard-header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.mvs-dashboard-heading {
+	font-size: 1.4em;
+	font-weight: 700;
+}
+
+.mvs-notification-bell {
+	position: relative;
+	cursor: pointer;
+	margin-left: auto;
+	user-select: none;
+}
+
+.mvs-notification-bell-icon {
+	font-size: 1.4em;
+}
+
+.mvs-notification-badge {
+	position: absolute;
+	top: -6px;
+	right: -8px;
+	background: #d63638;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	min-width: 18px;
+	height: 18px;
+	line-height: 18px;
+	text-align: center;
+	border-radius: 9px;
+	padding: 0 4px;
+}
+
+.mvs-notification-dropdown {
+	position: absolute;
+	top: 100%;
+	right: 0;
+	width: 320px;
+	max-height: 400px;
+	overflow-y: auto;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	z-index: 100;
+	margin-top: 8px;
+}
+
+.mvs-notification-dropdown-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 16px;
+	border-bottom: 1px solid #eee;
+}
+
+.mvs-notification-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.mvs-notification-item {
+	padding: 10px 16px;
+	border-bottom: 1px solid #f0f0f0;
+	font-size: 0.9em;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.mvs-notification-item:last-child {
+	border-bottom: none;
+}
+
+.mvs-notification-unread {
+	background: #f0f7ff;
+}
+
+.mvs-notification-time {
+	color: #999;
+	font-size: 0.8em;
+}
+
+.mvs-notification-empty {
+	padding: 20px 16px;
+	text-align: center;
+	color: #999;
+	margin: 0;
+}
+
+/* ==========================================================================
+   28. Comment Edit/Delete Actions
+   ========================================================================== */
+
+.mvs-comment-header {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	margin-bottom: 4px;
+}
+
+.mvs-comment-actions {
+	display: flex;
+	gap: 6px;
+	margin-top: 6px;
+}
+
+.mvs-comment-edit-form {
+	margin-top: 6px;
+}
+
+.mvs-comment-edit-textarea {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 0.9em;
+	resize: vertical;
+	box-sizing: border-box;
+}
+
+.mvs-comment-edit-actions {
+	display: flex;
+	gap: 6px;
+	margin-top: 6px;
+}
+
+/* ==========================================================================
+   29. Follow Button
+   ========================================================================== */
+
+.mvs-follow-btn-wrap {
+	display: inline-flex;
+	align-items: center;
+}
+
+.mvs-follow-btn {
+	border-radius: 20px;
+	padding: 4px 14px;
+	font-size: 0.85em;
+	font-weight: 600;
+	transition: all 0.2s;
+}
+
+.mvs-follow-btn.active {
+	background: #e0e0e0;
+	color: #333;
+	border-color: #ccc;
+}
+
+/* ==========================================================================
+   30. Album Cover Picker
+   ========================================================================== */
+
+.mvs-media-picker-item {
+	position: relative;
+}
+
+.mvs-media-picker-cover-btn {
+	position: absolute;
+	bottom: 4px;
+	left: 4px;
+	background: rgba(0, 0, 0, 0.7);
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	padding: 2px 8px;
+	font-size: 11px;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.2s;
+	z-index: 3;
+}
+
+.mvs-media-picker-item:hover .mvs-media-picker-cover-btn {
+	opacity: 1;
+}
+
+.mvs-media-picker-cover-badge {
+	position: absolute;
+	top: 4px;
+	left: 4px;
+	background: #0073aa;
+	color: #fff;
+	border-radius: 4px;
+	padding: 2px 8px;
+	font-size: 11px;
+	font-weight: 700;
+	z-index: 3;
+}
+
+.mvs-media-picker-cover {
+	outline: 3px solid #0073aa;
+	outline-offset: -3px;
 }

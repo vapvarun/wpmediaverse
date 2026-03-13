@@ -74,8 +74,15 @@ const { state, actions } = store( 'mvs/dashboard', {
 			privacy: 'public',
 			pickerItems: [],
 			selectedIds: [],
+			coverId: 0,
 			pickerLoading: false,
 			saving: false,
+		},
+		// Notifications
+		notifications: {
+			items: [],
+			count: 0,
+			visible: false,
 		},
 		// Favorites
 		favorites: {
@@ -116,6 +123,80 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get showAlbumsEmpty() { return state.albums.items.length === 0 && ! state.albums.loading; },
 		get showFavoritesEmpty() { return state.favorites.items.length === 0 && ! state.favorites.loading; },
 		get showCollectionsEmpty() { return state.collections.items.length === 0 && ! state.collections.loading; },
+		get mediaThumbUrl() {
+			const ctx = getContext();
+			const item = ctx.item;
+			if ( ! item ) return '';
+			if ( item.thumbnail_url ) return item.thumbnail_url;
+			if ( item.media_type === 'image' ) return item.file_url;
+			return '';
+		},
+		get showMediaVideoPlaceholder() {
+			return ! state.mediaThumbUrl && getContext().item?.media_type === 'video';
+		},
+		get showMediaAudioPlaceholder() {
+			return ! state.mediaThumbUrl && getContext().item?.media_type === 'audio';
+		},
+		get favThumbUrl() {
+			const ctx = getContext();
+			const item = ctx.item;
+			if ( ! item ) return '';
+			if ( item.thumbnail_url ) return item.thumbnail_url;
+			if ( item.media_type === 'image' ) return item.file_url;
+			return '';
+		},
+		get showFavVideoPlaceholder() {
+			return ! state.favThumbUrl && getContext().item?.media_type === 'video';
+		},
+		get showFavAudioPlaceholder() {
+			return ! state.favThumbUrl && getContext().item?.media_type === 'audio';
+		},
+		get pickerThumbUrl() {
+			const ctx = getContext();
+			const item = ctx.item;
+			if ( ! item ) return '';
+			if ( item.thumbnail_url ) return item.thumbnail_url;
+			if ( item.media_type === 'image' ) return item.file_url;
+			return '';
+		},
+		get showPickerVideoPlaceholder() {
+			return ! state.pickerThumbUrl && getContext().item?.media_type === 'video';
+		},
+		get showPickerAudioPlaceholder() {
+			return ! state.pickerThumbUrl && getContext().item?.media_type === 'audio';
+		},
+		get hasAlbumCover() {
+			return !! getContext().item?.cover_url;
+		},
+		get itemTitle() {
+			return getContext().item?.title || '(Untitled)';
+		},
+		get itemPrivacy() {
+			return getContext().item?.privacy || 'public';
+		},
+		get albumItemCount() {
+			return ( getContext().item?.media_count || 0 ) + ' items';
+		},
+		get collectionItemCount() {
+			return ( getContext().item?.matchCount || 0 ) + ' items';
+		},
+		get rulePillText() {
+			const rule = getContext().rule;
+			return rule ? rule.key + ': ' + rule.value : '';
+		},
+		get isSmartCollection() {
+			return getContext().item?.type === 'smart';
+		},
+		get collectionCoverUrl() {
+			return getContext().item?.cover_url || '';
+		},
+		get hasCollectionCover() {
+			return !! getContext().item?.cover_url;
+		},
+		get isPickerCover() {
+			const ctx = getContext();
+			return ctx.item && state.albumModal.coverId === ctx.item.id;
+		},
 		get isRuleSelectType() {
 			const ctx = getContext();
 			const rule = ctx.rule;
@@ -176,6 +257,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const tab = event.target.closest( '[data-tab]' )?.dataset.tab;
 			if ( ! tab ) return;
 			state.activeTab = tab;
+			window.location.hash = tab;
 			const ctx = getContext();
 			if ( tab === 'media' && state.media.items.length === 0 ) {
 				actions.loadMedia( ctx );
@@ -444,6 +526,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.description = album?.description || '';
 			state.albumModal.privacy = album?.privacy || 'public';
 			state.albumModal.selectedIds = album?.items ? [ ...album.items ] : [];
+			state.albumModal.coverId = album?.cover_media_id || 0;
 			state.albumModal.saving = false;
 
 			// Load user media for picker.
@@ -458,6 +541,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.description = '';
 			state.albumModal.privacy = 'public';
 			state.albumModal.selectedIds = [];
+			state.albumModal.coverId = 0;
 			state.albumModal.saving = false;
 			actions.loadPickerMedia();
 		},
@@ -484,6 +568,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 
 		togglePickerItem( event ) {
+			// Don't toggle selection when clicking "Set Cover" button.
+			if ( event.target.closest( '.mvs-media-picker-cover-btn' ) ) return;
 			const id = parseInt( event.target.closest( '[data-picker-id]' )?.dataset.pickerId, 10 );
 			if ( ! id ) return;
 			if ( state.albumModal.selectedIds.includes( id ) ) {
@@ -491,6 +577,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 			} else {
 				state.albumModal.selectedIds = [ ...state.albumModal.selectedIds, id ];
 			}
+		},
+
+		setCoverItem( event ) {
+			event.stopPropagation();
+			const id = parseInt( event.target.closest( '[data-picker-id]' )?.dataset.pickerId, 10 );
+			if ( ! id ) return;
+			state.albumModal.coverId = state.albumModal.coverId === id ? 0 : id;
 		},
 
 		async saveAlbum() {
@@ -504,13 +597,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 			};
 
 			try {
+				let albumId = state.albumModal.albumId;
 				if ( state.albumModal.isEdit ) {
-					await apiFetch( ctx, 'albums/' + state.albumModal.albumId, {
+					await apiFetch( ctx, 'albums/' + albumId, {
 						method: 'PUT',
 						headers: apiHeaders( ctx.nonce ),
 						body: JSON.stringify( payload ),
 					} );
-					sharedUI.actions.showToast( 'Album updated!', 'success' );
 				} else {
 					const res = await apiFetch( ctx, 'albums', {
 						method: 'POST',
@@ -518,17 +611,26 @@ const { state, actions } = store( 'mvs/dashboard', {
 						body: JSON.stringify( payload ),
 					} );
 					const created = await res.json();
-					if ( state.albumModal.selectedIds.length && created.id ) {
-						await apiFetch( ctx, 'albums/' + created.id + '/items', {
+					albumId = created.id;
+					if ( state.albumModal.selectedIds.length && albumId ) {
+						await apiFetch( ctx, 'albums/' + albumId + '/items', {
 							method: 'POST',
 							headers: apiHeaders( ctx.nonce ),
 							body: JSON.stringify( { media_ids: state.albumModal.selectedIds } ),
 						} );
 					}
-					sharedUI.actions.showToast( 'Album created!', 'success' );
+				}
+				// Set cover if selected.
+				if ( state.albumModal.coverId && albumId ) {
+					await apiFetch( ctx, 'albums/' + albumId + '/cover', {
+						method: 'PUT',
+						headers: apiHeaders( ctx.nonce ),
+						body: JSON.stringify( { media_id: state.albumModal.coverId } ),
+					} );
 				}
 				state.albumModal.visible = false;
 				state.albumModal.saving = false;
+				sharedUI.actions.showToast( state.albumModal.isEdit ? 'Album updated!' : 'Album created!', 'success' );
 				await actions.loadAlbums( ctx );
 			} catch {
 				state.albumModal.saving = false;
@@ -827,6 +929,57 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 
 		/* =====================================================================
+		   Notifications
+		   ===================================================================== */
+		async toggleNotifications( event ) {
+			event.stopPropagation();
+			const ctx = getContext();
+			state.notifications.visible = ! state.notifications.visible;
+			if ( state.notifications.visible && state.notifications.items.length === 0 ) {
+				try {
+					const res = await apiFetch( ctx, 'me/notifications?per_page=20' );
+					const data = await res.json();
+					state.notifications.items = Array.isArray( data )
+						? data.map( ( n ) => ( {
+							id: n.id,
+							message: n.message || n.content || '',
+							date: new Date( n.date || n.created_at ).toLocaleDateString(),
+							read: !! n.read,
+						} ) )
+						: [];
+				} catch {
+					state.notifications.items = [];
+				}
+			}
+		},
+
+		async markAllRead( event ) {
+			event.stopPropagation();
+			const ctx = getContext();
+			try {
+				await apiFetch( ctx, 'me/notifications/read', {
+					method: 'POST',
+					headers: apiHeaders( ctx.nonce ),
+				} );
+				state.notifications.count = 0;
+				state.notifications.items = state.notifications.items.map( ( n ) => ( { ...n, read: true } ) );
+				sharedUI.actions.showToast( 'All notifications marked as read.', 'success' );
+			} catch {
+				// Ignore.
+			}
+		},
+
+		async loadNotificationCount( ctx ) {
+			try {
+				const res = await apiFetch( ctx, 'me/notifications/count' );
+				const data = await res.json();
+				state.notifications.count = data.count || 0;
+			} catch {
+				// Ignore.
+			}
+		},
+
+		/* =====================================================================
 		   Utility
 		   ===================================================================== */
 		stopPropagation( event ) {
@@ -844,7 +997,22 @@ const { state, actions } = store( 'mvs/dashboard', {
 	callbacks: {
 		init() {
 			const ctx = getContext();
-			actions.loadMedia( ctx );
+			const validTabs = [ 'media', 'albums', 'favorites', 'collections' ];
+			const hashTab = window.location.hash.replace( '#', '' );
+			if ( hashTab && validTabs.includes( hashTab ) ) {
+				state.activeTab = hashTab;
+			}
+			// Load the active tab's data.
+			if ( state.activeTab === 'albums' ) {
+				actions.loadAlbums( ctx );
+			} else if ( state.activeTab === 'favorites' ) {
+				actions.loadFavorites( ctx );
+			} else if ( state.activeTab === 'collections' ) {
+				actions.loadCollections( ctx );
+			} else {
+				actions.loadMedia( ctx );
+			}
+			actions.loadNotificationCount( ctx );
 		},
 	},
 } );

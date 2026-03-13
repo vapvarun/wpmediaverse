@@ -189,6 +189,10 @@ class AlbumService {
 	public function set_cover( int $album_id, int $media_id ): bool {
 		$thumb_id = get_post_thumbnail_id( $media_id );
 		if ( ! $thumb_id ) {
+			// Fallback: use _mvs_attachment_id meta (the WP attachment for this media).
+			$thumb_id = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
+		}
+		if ( ! $thumb_id ) {
 			return false;
 		}
 
@@ -204,12 +208,71 @@ class AlbumService {
 	 */
 	public function get_cover_url( int $album_id, string $size = 'medium' ): ?string {
 		$thumb_id = get_post_thumbnail_id( $album_id );
+
+		// Fallback: use the first album item's image as cover.
+		if ( ! $thumb_id ) {
+			$first_media_id = $this->get_first_image_item( $album_id );
+			if ( $first_media_id ) {
+				$thumb_id = get_post_thumbnail_id( $first_media_id );
+				if ( ! $thumb_id ) {
+					$thumb_id = (int) get_post_meta( $first_media_id, '_mvs_attachment_id', true );
+				}
+				// Last resort: if it's an image, use file_url directly.
+				if ( ! $thumb_id ) {
+					$file_url  = get_post_meta( $first_media_id, '_mvs_file_url', true );
+					$file_type = get_post_meta( $first_media_id, '_mvs_file_type', true );
+					if ( $file_url && is_string( $file_type ) && strpos( $file_type, 'image/' ) === 0 ) {
+						return set_url_scheme( $file_url );
+					}
+				}
+			}
+		}
+
 		if ( ! $thumb_id ) {
 			return null;
 		}
 
 		$url = wp_get_attachment_image_url( $thumb_id, $size );
 		return $url ? set_url_scheme( $url ) : null;
+	}
+
+	/**
+	 * Get the first image-type media item in an album.
+	 *
+	 * Falls back to the first item of any type if no images exist.
+	 *
+	 * @param int $album_id Album post ID.
+	 * @return int|null Media post ID or null.
+	 */
+	private function get_first_image_item( int $album_id ): ?int {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$media_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ai.media_id
+				FROM {$wpdb->prefix}mvs_album_items ai
+				INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = ai.media_id AND pm.meta_key = '_mvs_file_type'
+				WHERE ai.album_id = %d AND pm.meta_value LIKE %s
+				ORDER BY ai.position ASC
+				LIMIT 1",
+				$album_id,
+				'image/%'
+			)
+		);
+
+		// If no image item, fall back to just the first item (for video thumbnails etc).
+		if ( ! $media_id ) {
+			$media_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT media_id FROM {$wpdb->prefix}mvs_album_items WHERE album_id = %d ORDER BY position ASC LIMIT 1",
+					$album_id
+				)
+			);
+		}
+		// phpcs:enable
+
+		return $media_id ? (int) $media_id : null;
 	}
 
 	/**
