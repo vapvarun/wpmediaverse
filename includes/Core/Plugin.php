@@ -658,9 +658,10 @@ class Plugin {
 		$post_type  = get_post_type();
 		$is_mvs     = in_array( $post_type, array( 'mvs_media', 'mvs_album', 'mvs_collection' ), true );
 		$is_archive = is_post_type_archive( 'mvs_media' );
+		$is_mvs_tax = is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' );
 
 		// Always enqueue on MVS pages or pages with dashboard shortcode.
-		if ( $is_mvs || $is_archive ) {
+		if ( $is_mvs || $is_archive || $is_mvs_tax ) {
 			wp_enqueue_style(
 				'mvs-frontend',
 				MVS_PLUGIN_URL . 'assets/css/frontend.css',

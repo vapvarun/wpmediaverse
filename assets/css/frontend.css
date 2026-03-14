@@ -789,7 +789,7 @@
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
-	gap: 12px;
+	gap: 8px 12px;
 	padding: 12px 24px;
 	border-top: 1px solid #eee;
 }
@@ -836,9 +836,56 @@
 }
 
 .mvs-view-count {
-	margin-left: auto;
 	color: #999;
 	font-size: 0.85em;
+}
+
+.mvs-social-actions {
+	display: flex;
+	align-items: center;
+	padding: 8px 24px 12px;
+}
+
+.mvs-social-actions-left {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.mvs-social-actions .mvs-view-count {
+	flex: 1;
+	text-align: center;
+}
+
+.mvs-social-actions-right {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.mvs-social-actions button {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	background: none;
+	border: 1px solid #ddd;
+	border-radius: 20px;
+	cursor: pointer;
+	font-size: 0.9em;
+	color: #555;
+	transition: all 0.2s;
+}
+
+.mvs-social-actions button:hover {
+	border-color: #0073aa;
+	color: #0073aa;
+}
+
+.mvs-social-actions button.active {
+	background: #0073aa;
+	border-color: #0073aa;
+	color: #fff;
 }
 
 /* ==========================================================================
@@ -1468,14 +1515,13 @@ a.mvs-dashboard-card-title:hover {
    ========================================================================== */
 
 .mvs-owner-actions {
-	display: flex;
-	gap: 8px;
-	padding: 12px 0 0;
-	margin-top: 12px;
-	border-top: 1px solid #eee;
+	display: inline-flex;
+	gap: 6px;
 }
 
 .mvs-collection-card-info .mvs-owner-actions {
+	display: flex;
+	margin-left: 0;
 	padding: 12px 0 0;
 }
 

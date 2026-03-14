@@ -81,8 +81,9 @@ wp_enqueue_script_module(
 
 		<!-- Inline Edit Form -->
 		<div class="mvs-dashboard-profile-edit-form"
-			data-wp-interactive="mvs/profile-edit"
 			data-wp-bind--hidden="!context.editingProfile">
+		  <div data-wp-interactive="mvs/profile-edit"
+			<?php echo wp_interactivity_data_wp_context( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 
 			<div class="mvs-profile-message mvs-profile-message--success"
 				data-wp-bind--hidden="!context.profileMessage"
@@ -145,12 +146,13 @@ wp_enqueue_script_module(
 						<span data-wp-bind--hidden="context.savingProfile"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 						<span data-wp-bind--hidden="!context.savingProfile"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 					</button>
-					<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small"
-						data-wp-on--click="actions.toggleProfileEdit">
-						<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
-					</button>
 				</div>
 			</div>
+		  </div>
+		  <button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-cancel-btn"
+			data-wp-on--click="actions.toggleProfileEdit">
+			<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
+		  </button>
 		</div>
 	</div>
 
@@ -659,7 +661,7 @@ wp_enqueue_script_module(
 		data-wp-bind--hidden="!state.toast.visible"
 		data-wp-text="state.toast.message"
 		data-wp-class--mvs-toast--success="state.isToastSuccess"
-		data-wp-class--mvs-toast--error="state.isToastError"</div>
+		data-wp-class--mvs-toast--error="state.isToastError"></div>
 
 	<!-- Confirm Dialog (shared-ui) -->
 	<div class="mvs-confirm-overlay" hidden

@@ -92,6 +92,12 @@ const { actions } = store( 'mvs/profile-edit', {
 				const successMsg = 'Profile updated successfully.';
 				ctx.profileMessage = successMsg;
 				ctx.savedMessage = successMsg;
+
+				// Close the form in dashboard context.
+				const dashboard = store( 'mvs/dashboard' );
+				if ( dashboard?.actions?.toggleProfileEdit ) {
+					dashboard.actions.toggleProfileEdit();
+				}
 			} catch ( err ) {
 				const errMsg = 'Network error. Please try again.';
 				ctx.profileError = errMsg;

@@ -493,6 +493,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 		},
 
+		toggleProfileEdit() {
+			const ctx = getContext();
+			ctx.editingProfile = ! ctx.editingProfile;
+			ctx.profileMessage = '';
+			ctx.profileError = '';
+		},
+
 		/* =====================================================================
 		   Delete Media
 		   ===================================================================== */

@@ -14,7 +14,28 @@ get_header();
 ?>
 <div class="mvs-explore-page">
 	<header class="mvs-explore-header">
-		<h1><?php esc_html_e( 'Explore', 'wpmediaverse' ); ?></h1>
+		<h1>
+		<?php
+		if ( is_tax( 'mvs_tag' ) ) {
+			printf(
+				/* translators: %s: tag name */
+				esc_html__( 'Tag: %s', 'wpmediaverse' ),
+				esc_html( single_term_title( '', false ) )
+			);
+		} elseif ( is_tax( 'mvs_category' ) ) {
+			printf(
+				/* translators: %s: category name */
+				esc_html__( 'Category: %s', 'wpmediaverse' ),
+				esc_html( single_term_title( '', false ) )
+			);
+		} else {
+			esc_html_e( 'Explore', 'wpmediaverse' );
+		}
+		?>
+		</h1>
+		<?php if ( is_tax() && term_description() ) : ?>
+			<p class="mvs-explore-term-desc"><?php echo wp_kses_post( term_description() ); ?></p>
+		<?php endif; ?>
 	</header>
 
 	<!-- Search Bar -->
@@ -31,7 +52,7 @@ get_header();
 	$mvs_explore_ctx = array(
 		'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 		'archiveUrl' => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
-		'activeTag'  => isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification
+		'activeTag'  => is_tax( 'mvs_tag' ) ? get_queried_object()->slug : ( isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '' ), // phpcs:ignore WordPress.Security.NonceVerification
 		'tags'       => array(),
 		'loaded'     => false,
 	);

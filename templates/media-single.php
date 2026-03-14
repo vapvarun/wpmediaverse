@@ -63,9 +63,25 @@ get_header();
 					<div class="mvs-media-author-info">
 						<?php echo get_avatar( get_the_author_meta( 'ID' ), 40, '', '', array( 'class' => 'mvs-media-author-avatar' ) ); ?>
 						<div class="mvs-media-author-text">
-							<a href="<?php echo esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ); ?>" class="mvs-media-author-name">
-								<?php echo esc_html( get_the_author() ); ?>
-							</a>
+							<?php
+						$mvs_author_id  = get_the_author_meta( 'ID' );
+						$mvs_author_url = '';
+						if ( function_exists( 'bp_members_get_user_url' ) ) {
+							$mvs_author_url = bp_members_get_user_url( $mvs_author_id );
+						} elseif ( function_exists( 'bp_core_get_user_domain' ) ) {
+							$mvs_author_url = bp_core_get_user_domain( $mvs_author_id );
+						} elseif ( defined( 'MVS_PRO_VERSION' ) ) {
+							$mvs_author_url = home_url( '/media/@' . get_the_author_meta( 'user_login', $mvs_author_id ) . '/' );
+						}
+
+						if ( $mvs_author_url ) :
+						?>
+						<a href="<?php echo esc_url( $mvs_author_url ); ?>" class="mvs-media-author-name">
+							<?php echo esc_html( get_the_author() ); ?>
+						</a>
+						<?php else : ?>
+						<span class="mvs-media-author-name"><?php echo esc_html( get_the_author() ); ?></span>
+						<?php endif; ?>
 							<span class="mvs-media-date"><?php echo esc_html( get_the_date() ); ?>
 								<?php if ( $duration_display ) : ?>
 									<span class="mvs-media-sep">&middot;</span> <?php echo esc_html( $duration_display ); ?>
@@ -219,18 +235,47 @@ get_header();
 				<?php echo wp_interactivity_data_wp_context( $mvs_social_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				data-wp-init="callbacks.init">
 
-				<?php if ( $mvs_is_owner ) : ?>
-				<!-- Owner Actions -->
-				<div class="mvs-owner-actions">
-					<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
-						data-wp-on--click="actions.toggleEdit">
-						<?php esc_html_e( 'Edit', 'wpmediaverse' ); ?>
-					</button>
-					<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
-						data-wp-on--click="actions.confirmDelete">
-						<?php esc_html_e( 'Delete', 'wpmediaverse' ); ?>
-					</button>
+				<!-- Social Interactions Bar -->
+				<div class="mvs-social-bar">
+					<div class="mvs-reactions">
+						<template data-wp-each="context.reactions">
+							<button class="mvs-reaction-btn"
+								data-wp-class--active="context.item.active"
+								data-wp-bind--data-reaction-type="context.item.type"
+								data-wp-on--click="actions.toggleReaction">
+								<span class="mvs-reaction-emoji" data-wp-text="context.item.emoji"></span>
+								<span class="mvs-count" data-wp-text="context.item.count"></span>
+							</button>
+						</template>
+					</div>
 				</div>
+				<div class="mvs-social-actions">
+					<div class="mvs-social-actions-left">
+						<?php if ( is_user_logged_in() ) : ?>
+							<button class="mvs-favorite-btn" type="button"
+								data-wp-class--active="context.isFavorite"
+								data-wp-on--click="actions.toggleFavorite">&#x2764; <?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></button>
+						<?php endif; ?>
+						<button class="mvs-share-btn" type="button"
+							data-wp-on--click="actions.handleShare"
+							data-wp-text="context.shareLabel"></button>
+					</div>
+					<span class="mvs-view-count" data-wp-text="context.viewCount"></span>
+					<div class="mvs-social-actions-right">
+						<?php if ( $mvs_is_owner ) : ?>
+							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+								data-wp-on--click="actions.toggleEdit">
+								<?php esc_html_e( 'Edit', 'wpmediaverse' ); ?>
+							</button>
+							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+								data-wp-on--click="actions.confirmDelete">
+								<?php esc_html_e( 'Delete', 'wpmediaverse' ); ?>
+							</button>
+						<?php endif; ?>
+					</div>
+				</div>
+
+				<?php if ( $mvs_is_owner ) : ?>
 				<!-- Inline Edit Form -->
 				<div class="mvs-inline-edit" data-wp-bind--hidden="!context.editVisible">
 					<div class="mvs-field">
@@ -294,30 +339,6 @@ get_header();
 					</div>
 				</div>
 				<?php endif; ?>
-
-				<!-- Social Interactions Bar -->
-				<div class="mvs-social-bar">
-					<div class="mvs-reactions">
-						<template data-wp-each="context.reactions">
-							<button class="mvs-reaction-btn"
-								data-wp-class--active="context.item.active"
-								data-wp-bind--data-reaction-type="context.item.type"
-								data-wp-on--click="actions.toggleReaction">
-								<span class="mvs-reaction-emoji" data-wp-text="context.item.emoji"></span>
-								<span class="mvs-count" data-wp-text="context.item.count"></span>
-							</button>
-						</template>
-					</div>
-					<?php if ( is_user_logged_in() ) : ?>
-						<button class="mvs-favorite-btn" type="button"
-							data-wp-class--active="context.isFavorite"
-							data-wp-on--click="actions.toggleFavorite">&#x2764; <?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></button>
-					<?php endif; ?>
-					<button class="mvs-share-btn" type="button"
-						data-wp-on--click="actions.handleShare"
-						data-wp-text="context.shareLabel"></button>
-					<span class="mvs-view-count" data-wp-text="context.viewCount"></span>
-				</div>
 
 				<!-- Comments Section -->
 				<div class="mvs-comments-section">

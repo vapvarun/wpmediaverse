@@ -29,6 +29,7 @@ class TemplateLoader {
 	public function init(): void {
 		add_filter( 'single_template', array( $this, 'load_single_template' ) );
 		add_filter( 'archive_template', array( $this, 'load_archive_template' ) );
+		add_filter( 'taxonomy_template', array( $this, 'load_taxonomy_template' ) );
 		add_action( 'pre_get_posts', array( $this, 'unified_explore_query' ) );
 
 		// Profile edit endpoint: /media/edit-profile/
@@ -80,6 +81,23 @@ class TemplateLoader {
 	}
 
 	/**
+	 * Load explore template for MVS taxonomy archives (tags, categories).
+	 *
+	 * @param string $template Current template path.
+	 * @return string
+	 */
+	public function load_taxonomy_template( string $template ): string {
+		if ( is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' ) ) {
+			$found = self::locate( 'explore.php' );
+			if ( $found ) {
+				return $found;
+			}
+		}
+
+		return $template;
+	}
+
+	/**
 	 * Merge mvs_media and mvs_album into the explore archive query.
 	 *
 	 * @param \WP_Query $query The query object.
@@ -89,7 +107,10 @@ class TemplateLoader {
 			return;
 		}
 
-		if ( $query->is_post_type_archive( 'mvs_media' ) || $query->is_post_type_archive( 'mvs_album' ) ) {
+		$is_mvs_archive  = $query->is_post_type_archive( 'mvs_media' ) || $query->is_post_type_archive( 'mvs_album' );
+		$is_mvs_taxonomy = $query->is_tax( 'mvs_tag' ) || $query->is_tax( 'mvs_category' );
+
+		if ( $is_mvs_archive || $is_mvs_taxonomy ) {
 			$query->set( 'post_type', array( 'mvs_media', 'mvs_album' ) );
 			$query->set( 'posts_per_page', 18 );
 			$query->set( 'orderby', 'date' );
@@ -100,8 +121,8 @@ class TemplateLoader {
 				$query->set( 's', sanitize_text_field( wp_unslash( $_GET['s'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 			}
 
-			// Tag filter.
-			if ( ! empty( $_GET['mvs_tag'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			// Tag filter (only on archive pages, taxonomy pages already have the term set).
+			if ( ! $is_mvs_taxonomy && ! empty( $_GET['mvs_tag'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$query->set(
 					'tax_query',
 					array(

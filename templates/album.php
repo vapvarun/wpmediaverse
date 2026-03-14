@@ -42,7 +42,23 @@ get_header();
 				<div class="mvs-collection-card-meta">
 					<span class="mvs-collection-meta-author">
 						<?php echo get_avatar( get_the_author_meta( 'ID' ), 24, '', '', array( 'class' => 'mvs-collection-avatar' ) ); ?>
-						<a href="<?php echo esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ); ?>"><?php echo esc_html( get_the_author() ); ?></a>
+						<?php
+						$mvs_author_id  = get_the_author_meta( 'ID' );
+						$mvs_author_url = '';
+						if ( function_exists( 'bp_members_get_user_url' ) ) {
+							$mvs_author_url = bp_members_get_user_url( $mvs_author_id );
+						} elseif ( function_exists( 'bp_core_get_user_domain' ) ) {
+							$mvs_author_url = bp_core_get_user_domain( $mvs_author_id );
+						} elseif ( defined( 'MVS_PRO_VERSION' ) ) {
+							$mvs_author_url = home_url( '/media/@' . get_the_author_meta( 'user_login', $mvs_author_id ) . '/' );
+						}
+
+						if ( $mvs_author_url ) :
+						?>
+						<a href="<?php echo esc_url( $mvs_author_url ); ?>"><?php echo esc_html( get_the_author() ); ?></a>
+						<?php else : ?>
+						<span><?php echo esc_html( get_the_author() ); ?></span>
+						<?php endif; ?>
 					</span>
 					<span class="mvs-collection-meta-text">
 						<?php
