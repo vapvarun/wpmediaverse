@@ -59,17 +59,23 @@ get_header();
 
 		<article id="mvs-media-<?php the_ID(); ?>" <?php post_class( 'mvs-media-article' ); ?>>
 			<header class="mvs-media-header">
-				<h1 class="mvs-media-title"><?php the_title(); ?></h1>
-				<div class="mvs-media-meta">
-					<span class="mvs-media-author">
-						<?php
-						printf(
-							/* translators: %s: author display name */
-							esc_html__( 'By %s', 'wpmediaverse' ),
-							esc_html( get_the_author() )
-						);
-						?>
-					</span>
+				<div class="mvs-media-header-row">
+					<div class="mvs-media-author-info">
+						<?php echo get_avatar( get_the_author_meta( 'ID' ), 40, '', '', array( 'class' => 'mvs-media-author-avatar' ) ); ?>
+						<div class="mvs-media-author-text">
+							<a href="<?php echo esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ); ?>" class="mvs-media-author-name">
+								<?php echo esc_html( get_the_author() ); ?>
+							</a>
+							<span class="mvs-media-date"><?php echo esc_html( get_the_date() ); ?>
+								<?php if ( $duration_display ) : ?>
+									<span class="mvs-media-sep">&middot;</span> <?php echo esc_html( $duration_display ); ?>
+								<?php endif; ?>
+								<?php if ( $is_video && $width && $height ) : ?>
+									<span class="mvs-media-sep">&middot;</span> <?php echo esc_html( $width . 'x' . $height ); ?>
+								<?php endif; ?>
+							</span>
+						</div>
+					</div>
 					<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
 					<span class="mvs-follow-btn-wrap"
 						data-wp-interactive="mvs/media-social"
@@ -91,14 +97,8 @@ get_header();
 						</button>
 					</span>
 					<?php endif; ?>
-					<span class="mvs-media-date"><?php echo esc_html( get_the_date() ); ?></span>
-					<?php if ( $duration_display ) : ?>
-						<span class="mvs-media-duration"><?php echo esc_html( $duration_display ); ?></span>
-					<?php endif; ?>
-					<?php if ( $is_video && $width && $height ) : ?>
-						<span class="mvs-media-resolution"><?php echo esc_html( $width . 'x' . $height ); ?></span>
-					<?php endif; ?>
 				</div>
+				<h1 class="mvs-media-title"><?php the_title(); ?></h1>
 			</header>
 
 			<div class="mvs-media-content">
