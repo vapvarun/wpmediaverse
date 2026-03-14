@@ -29,6 +29,7 @@ class NotificationService {
 		'media_comment',
 		'media_mention',
 		'media_favorite',
+		'new_message',
 	);
 
 	/**

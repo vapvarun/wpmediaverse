@@ -18,11 +18,141 @@ defined( 'ABSPATH' ) || exit;
  * @since 1.1.0
  */
 do_action( 'mvs_dashboard_before_content' );
+
+// Profile data for the header.
+$mvs_current_user = wp_get_current_user();
+$mvs_avatar_url   = get_avatar_url( $mvs_current_user->ID, array( 'size' => 96 ) );
+$mvs_has_custom   = false;
+if ( isset( $mvs_container ) && $mvs_container->has( 'profile' ) ) {
+	$mvs_has_custom = $mvs_container->get( 'profile' )->has_custom_avatar( $mvs_current_user->ID );
+} elseif ( class_exists( '\WPMediaVerse\Core\Plugin' ) ) {
+	$mvs_c = \WPMediaVerse\Core\Plugin::container();
+	if ( $mvs_c->has( 'profile' ) ) {
+		$mvs_has_custom = $mvs_c->get( 'profile' )->has_custom_avatar( $mvs_current_user->ID );
+	}
+}
+
+// Merge profile context into dashboard context.
+$mvs_dash_ctx['firstName']       = $mvs_current_user->first_name;
+$mvs_dash_ctx['lastName']        = $mvs_current_user->last_name;
+$mvs_dash_ctx['displayName']     = $mvs_current_user->display_name;
+$mvs_dash_ctx['bio']             = $mvs_current_user->description;
+$mvs_dash_ctx['avatarUrl']       = $mvs_avatar_url;
+$mvs_dash_ctx['hasCustomAvatar'] = $mvs_has_custom;
+$mvs_dash_ctx['editingProfile']  = false;
+$mvs_dash_ctx['savingProfile']   = false;
+$mvs_dash_ctx['uploadingAvatar'] = false;
+$mvs_dash_ctx['profileMessage']  = '';
+$mvs_dash_ctx['profileError']    = '';
+
+// Enqueue profile edit store.
+$mvs_pe_asset_file = MVS_PLUGIN_DIR . 'build/blocks/profile-edit/view.asset.php';
+$mvs_pe_asset      = file_exists( $mvs_pe_asset_file )
+	? require $mvs_pe_asset_file
+	: array( 'dependencies' => array( array( 'id' => '@wordpress/interactivity', 'import' => 'static' ) ), 'version' => defined( 'MVS_VERSION' ) ? MVS_VERSION : '1.1.0' );
+wp_enqueue_script_module(
+	'mvs-profile-edit',
+	( defined( 'MVS_PLUGIN_URL' ) ? MVS_PLUGIN_URL : '' ) . 'assets/js/profile-edit.js',
+	$mvs_pe_asset['dependencies'],
+	$mvs_pe_asset['version']
+);
 ?>
 <div class="mvs-dashboard"
 	data-wp-interactive="mvs/dashboard"
 	<?php echo wp_interactivity_data_wp_context( $mvs_dash_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-init="callbacks.init">
+
+	<!-- Profile Header -->
+	<div class="mvs-dashboard-profile-header">
+		<div class="mvs-dashboard-profile-view" data-wp-bind--hidden="context.editingProfile">
+			<img class="mvs-dashboard-profile-avatar" data-wp-bind--src="context.avatarUrl"
+				alt="" width="64" height="64" />
+			<div class="mvs-dashboard-profile-info">
+				<h2 class="mvs-dashboard-profile-name" data-wp-text="context.displayName"></h2>
+				<p class="mvs-dashboard-profile-bio" data-wp-bind--hidden="!context.bio"
+					data-wp-text="context.bio"></p>
+			</div>
+			<button class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-dashboard-profile-edit-btn"
+				type="button"
+				data-wp-on--click="actions.toggleProfileEdit">
+				<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
+			</button>
+		</div>
+
+		<!-- Inline Edit Form -->
+		<div class="mvs-dashboard-profile-edit-form"
+			data-wp-interactive="mvs/profile-edit"
+			data-wp-bind--hidden="!context.editingProfile">
+
+			<div class="mvs-profile-message mvs-profile-message--success"
+				data-wp-bind--hidden="!context.profileMessage"
+				data-wp-text="context.profileMessage"></div>
+			<div class="mvs-profile-message mvs-profile-message--error"
+				data-wp-bind--hidden="!context.profileError"
+				data-wp-text="context.profileError"></div>
+
+			<div class="mvs-profile-avatar-section">
+				<div class="mvs-profile-avatar-preview">
+					<img data-wp-bind--src="context.avatarUrl"
+						alt="" width="96" height="96" class="mvs-profile-avatar-img" />
+				</div>
+				<div class="mvs-profile-avatar-actions">
+					<label class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-avatar-upload-label">
+						<span data-wp-bind--hidden="context.uploadingAvatar"><?php esc_html_e( 'Change Avatar', 'wpmediaverse' ); ?></span>
+						<span data-wp-bind--hidden="!context.uploadingAvatar"><?php esc_html_e( 'Uploading...', 'wpmediaverse' ); ?></span>
+						<input type="file" accept="image/jpeg,image/png,image/gif,image/webp"
+							class="mvs-profile-avatar-input"
+							data-wp-on--change="actions.uploadAvatar" />
+					</label>
+					<button type="button"
+						class="mvs-btn mvs-btn--text mvs-profile-avatar-remove"
+						data-wp-bind--hidden="!context.hasCustomAvatar"
+						data-wp-on--click="actions.deleteAvatar">
+						<?php esc_html_e( 'Remove', 'wpmediaverse' ); ?>
+					</button>
+					<p class="mvs-profile-avatar-hint"><?php esc_html_e( 'Max 2 MB. JPEG, PNG, GIF, WebP.', 'wpmediaverse' ); ?></p>
+				</div>
+			</div>
+
+			<div class="mvs-profile-form-inline">
+				<div class="mvs-profile-field-row">
+					<div class="mvs-profile-field">
+						<label><?php esc_html_e( 'First Name', 'wpmediaverse' ); ?></label>
+						<input type="text" data-wp-bind--value="context.firstName"
+							data-wp-on--input="actions.updateFirstName" />
+					</div>
+					<div class="mvs-profile-field">
+						<label><?php esc_html_e( 'Last Name', 'wpmediaverse' ); ?></label>
+						<input type="text" data-wp-bind--value="context.lastName"
+							data-wp-on--input="actions.updateLastName" />
+					</div>
+				</div>
+				<div class="mvs-profile-field">
+					<label><?php esc_html_e( 'Display Name', 'wpmediaverse' ); ?></label>
+					<input type="text" data-wp-bind--value="context.displayName"
+						data-wp-on--input="actions.updateDisplayName" />
+				</div>
+				<div class="mvs-profile-field">
+					<label><?php esc_html_e( 'Bio', 'wpmediaverse' ); ?></label>
+					<textarea rows="3" maxlength="500"
+						data-wp-on--input="actions.updateBio"
+						data-wp-text="context.bio"></textarea>
+				</div>
+				<div class="mvs-profile-form-actions">
+					<button type="button" class="mvs-btn mvs-btn--primary mvs-btn--small"
+						data-wp-bind--disabled="context.savingProfile"
+						data-wp-on--click="actions.saveProfile">
+						<span data-wp-bind--hidden="context.savingProfile"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
+						<span data-wp-bind--hidden="!context.savingProfile"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
+					</button>
+					<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small"
+						data-wp-on--click="actions.toggleProfileEdit">
+						<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
 
 	<div class="mvs-dashboard-header">
 		<span class="mvs-dashboard-heading"><?php esc_html_e( 'My Media', 'wpmediaverse' ); ?></span>

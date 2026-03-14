@@ -27,6 +27,16 @@ class BuddyPressIntegration {
 	private $recorded_uploads = array();
 
 	/**
+	 * Whether UploadService is currently processing an upload.
+	 *
+	 * Set by mvs_before_media_insert, cleared by mvs_media_uploaded.
+	 * Prevents publish_mvs_media from creating duplicate activity.
+	 *
+	 * @var bool
+	 */
+	private $upload_in_progress = false;
+
+	/**
 	 * Initialize the integration.
 	 */
 	public function init(): void {
@@ -36,9 +46,13 @@ class BuddyPressIntegration {
 
 		// Activity recording (only if activity component is active).
 		if ( bp_is_active( 'activity' ) ) {
+			add_action( 'mvs_before_media_insert', array( $this, 'mark_upload_in_progress' ) );
 			add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 			add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
-			// Also create activity on any publish (WP-CLI, admin, REST, import).
+			// Fallback: create activity on publish for media NOT uploaded via UploadService
+			// (e.g. WP-CLI, admin, direct wp_insert_post). The mvs_before_media_insert
+			// flag prevents this from firing for UploadService uploads (which handle
+			// activity via mvs_media_uploaded instead, with full thumbnail support).
 			add_action( 'publish_mvs_media', array( $this, 'maybe_record_publish_activity' ), 20, 2 );
 			add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 2 );
 			add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
@@ -126,7 +140,11 @@ class BuddyPressIntegration {
 
 		$post = get_post( $media_id );
 		if ( ! $post ) {
-			return $action;
+			// Always return a valid action string — empty strings crash BP Nouveau's strpos().
+			$user_link = bp_core_get_userlink( $activity->user_id );
+			return $user_link
+				? sprintf( __( '%s uploaded new media', 'wpmediaverse' ), $user_link )
+				: __( 'A member uploaded new media', 'wpmediaverse' );
 		}
 		$file_type  = get_post_meta( $media_id, '_mvs_file_type', true );
 		$type_label = $this->get_media_type_label( $file_type );
@@ -182,7 +200,10 @@ class BuddyPressIntegration {
 	public function format_activity_action_comment( $action, $activity ) {
 		$post = get_post( $activity->item_id );
 		if ( ! $post ) {
-			return $action;
+			$user_link = bp_core_get_userlink( $activity->user_id );
+			return $user_link
+				? sprintf( __( '%s commented on a media item', 'wpmediaverse' ), $user_link )
+				: __( 'A member commented on a media item', 'wpmediaverse' );
 		}
 		return sprintf(
 			/* translators: 1: user link, 2: media link */
@@ -193,11 +214,26 @@ class BuddyPressIntegration {
 	}
 
 	/**
+	 * Mark that UploadService is currently running.
+	 *
+	 * Called by mvs_before_media_insert (fires before wp_insert_post),
+	 * so publish_mvs_media knows to skip activity creation.
+	 */
+	public function mark_upload_in_progress(): void {
+		$this->upload_in_progress = true;
+	}
+
+	/**
 	 * Flag media uploaded via BP activity form so record_upload_activity skips it.
+	 * Also clears the upload_in_progress flag since mvs_media_uploaded has fired.
 	 *
 	 * @param int $media_id Media post ID.
 	 */
 	public function flag_activity_upload( int $media_id ): void {
+		// Mark as coming through UploadService — prevents publish_mvs_media duplicate.
+		$this->recorded_uploads[ $media_id ] = true;
+		$this->upload_in_progress = false;
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['context'] ) && 'activity' === sanitize_key( wp_unslash( $_GET['context'] ) ) ) {
 			update_post_meta( $media_id, '_mvs_activity_upload', '1' );
@@ -230,11 +266,24 @@ class BuddyPressIntegration {
 		$user_id   = (int) $post->post_author;
 		$thumbnail = $this->get_media_thumbnail_html( $media_id, 'large' );
 
+		// Build action string at insert time (format callback regenerates on display,
+		// but storing it prevents empty-action crashes in BP Nouveau's strpos()).
+		$file_type  = get_post_meta( $media_id, '_mvs_file_type', true );
+		$type_label = $this->get_media_type_label( $file_type );
+		$media_link = '<a href="' . esc_url( get_permalink( $media_id ) ) . '">' . esc_html( $post->post_title ) . '</a>';
+		$action_str = sprintf(
+			/* translators: 1: user link, 2: media type, 3: media link */
+			__( '%1$s uploaded a new %2$s: %3$s', 'wpmediaverse' ),
+			bp_core_get_userlink( $user_id ),
+			esc_html( $type_label ),
+			$media_link
+		);
+
 		$activity_args = array(
 			'user_id'   => $user_id,
 			'component' => 'wpmediaverse',
 			'type'      => 'mvs_media_upload',
-			'action'    => '', // Populated by format callback.
+			'action'    => $action_str,
 			'content'   => $thumbnail,
 			'item_id'   => $media_id,
 		);
@@ -268,6 +317,12 @@ class BuddyPressIntegration {
 	 */
 	public function maybe_record_publish_activity( int $post_id, \WP_Post $post ): void {
 		if ( 'mvs_media' !== $post->post_type ) {
+			return;
+		}
+
+		// Skip if UploadService is running — mvs_media_uploaded will handle activity
+		// with full thumbnail support after all meta/attachments are saved.
+		if ( $this->upload_in_progress ) {
 			return;
 		}
 

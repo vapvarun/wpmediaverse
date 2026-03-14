@@ -2,7 +2,7 @@
 /**
  * Follow service.
  *
- * Manages user follow/unfollow relationships with optional BuddyPress bridge.
+ * Manages user follow/unfollow relationships via custom mvs_follows table.
  *
  * @package    WPMediaVerse
  * @subpackage Social

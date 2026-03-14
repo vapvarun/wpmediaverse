@@ -208,6 +208,15 @@ class UploadService {
 			$post_data['post_content'] = wp_kses_post( $args['description'] );
 		}
 
+		/**
+		 * Fires just before the mvs_media post is created.
+		 *
+		 * Used by integrations to set flags before publish hooks fire.
+		 *
+		 * @since 1.1.0
+		 */
+		do_action( 'mvs_before_media_insert' );
+
 		$media_id = wp_insert_post( $post_data, true );
 
 		if ( is_wp_error( $media_id ) ) {

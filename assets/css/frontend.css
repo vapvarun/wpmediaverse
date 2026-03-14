@@ -3798,3 +3798,290 @@ a.mvs-dashboard-card-title:hover {
 		grid-template-columns: 1fr;
 	}
 }
+
+/* ==========================================================================
+   32. Profile Header (Dashboard) & Profile Edit
+   ========================================================================== */
+
+/* Dashboard Profile Header */
+.mvs-dashboard-profile-header {
+	margin-bottom: 1.5rem;
+	padding: 1.25rem;
+	background: #f8f9fa;
+	border-radius: 12px;
+}
+
+.mvs-dashboard-profile-view {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+.mvs-dashboard-profile-avatar {
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+
+.mvs-dashboard-profile-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.mvs-dashboard-profile-name {
+	font-size: 1.125rem;
+	margin: 0 0 0.125rem;
+	font-weight: 600;
+}
+
+.mvs-dashboard-profile-bio {
+	font-size: 0.8125rem;
+	color: #666;
+	margin: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-dashboard-profile-edit-btn {
+	flex-shrink: 0;
+}
+
+/* Inline Edit Form */
+.mvs-dashboard-profile-edit-form {
+	padding-top: 0.5rem;
+}
+
+.mvs-profile-form-inline {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.mvs-profile-field-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+}
+
+.mvs-profile-form-actions {
+	display: flex;
+	gap: 0.5rem;
+}
+
+/* Standalone Profile Edit Page */
+.mvs-profile-edit {
+	max-width: 600px;
+	margin: 2rem auto;
+	padding: 0 1rem;
+}
+
+.mvs-profile-edit h2 {
+	font-size: 1.5rem;
+	margin-bottom: 1.5rem;
+}
+
+/* Messages */
+.mvs-profile-message {
+	padding: 0.75rem 1rem;
+	border-radius: 6px;
+	margin-bottom: 1rem;
+	font-size: 0.875rem;
+}
+
+.mvs-profile-message--success {
+	background: #d4edda;
+	color: #155724;
+	border: 1px solid #c3e6cb;
+}
+
+.mvs-profile-message--error {
+	background: #f8d7da;
+	color: #721c24;
+	border: 1px solid #f5c6cb;
+}
+
+/* Avatar Section */
+.mvs-profile-avatar-section {
+	display: flex;
+	align-items: center;
+	gap: 1.5rem;
+	margin-bottom: 2rem;
+	padding: 1.5rem;
+	background: #f8f9fa;
+	border-radius: 12px;
+}
+
+.mvs-profile-avatar-preview {
+	flex-shrink: 0;
+}
+
+.mvs-profile-avatar-img {
+	width: 96px;
+	height: 96px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 3px solid #fff;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mvs-profile-avatar-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.mvs-profile-avatar-upload-label {
+	cursor: pointer;
+	display: inline-block;
+}
+
+.mvs-profile-avatar-input {
+	display: none;
+}
+
+.mvs-profile-avatar-remove {
+	font-size: 0.8125rem;
+	color: #dc3545;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0;
+	text-align: left;
+}
+
+.mvs-profile-avatar-remove:hover {
+	text-decoration: underline;
+}
+
+.mvs-profile-avatar-hint {
+	font-size: 0.75rem;
+	color: #6c757d;
+	margin: 0;
+}
+
+/* Form Fields */
+.mvs-profile-form {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+}
+
+.mvs-profile-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+}
+
+.mvs-profile-field label {
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: #333;
+}
+
+.mvs-profile-field input[type="text"],
+.mvs-profile-field textarea {
+	padding: 0.625rem 0.75rem;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+	font-size: 0.9375rem;
+	font-family: inherit;
+	transition: border-color 0.2s;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.mvs-profile-field input[type="text"]:focus,
+.mvs-profile-field textarea:focus {
+	border-color: #0073aa;
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.15);
+}
+
+.mvs-profile-field textarea {
+	resize: vertical;
+	min-height: 80px;
+}
+
+/* Actions */
+.mvs-profile-actions {
+	margin-top: 0.5rem;
+}
+
+/* Shared button styles (used across profile and dashboard) */
+.mvs-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	padding: 0.625rem 1.25rem;
+	border-radius: 6px;
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+	border: 1px solid transparent;
+	transition: background 0.2s, border-color 0.2s;
+	text-decoration: none;
+	line-height: 1.4;
+}
+
+.mvs-btn--primary {
+	background: #0073aa;
+	color: #fff;
+	border-color: #0073aa;
+}
+
+.mvs-btn--primary:hover {
+	background: #005f8d;
+}
+
+.mvs-btn--primary:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.mvs-btn--secondary {
+	background: #fff;
+	color: #333;
+	border-color: #ccc;
+}
+
+.mvs-btn--secondary:hover {
+	background: #f0f0f0;
+}
+
+.mvs-btn--text {
+	background: none;
+	border: none;
+	padding: 0.25rem 0;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+	.mvs-profile-avatar-section {
+		flex-direction: column;
+		text-align: center;
+	}
+
+	.mvs-profile-avatar-actions {
+		align-items: center;
+	}
+
+	.mvs-profile-avatar-remove {
+		text-align: center;
+	}
+
+	.mvs-dashboard-profile-view {
+		flex-wrap: wrap;
+	}
+
+	.mvs-dashboard-profile-edit-btn {
+		width: 100%;
+	}
+
+	.mvs-profile-field-row {
+		grid-template-columns: 1fr;
+	}
+}

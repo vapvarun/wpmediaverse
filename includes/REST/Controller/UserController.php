@@ -138,7 +138,7 @@ class UserController extends WP_REST_Controller {
 			'id'           => $user_id,
 			'name'         => $user->display_name,
 			'username'     => $user->user_login,
-			'bio'          => get_user_meta( $user_id, '_mvs_bio', true ),
+			'bio'          => $user->description,
 			'avatar'       => get_avatar_url( $user_id, array( 'size' => 150 ) ),
 			'media_count'  => $media_count,
 			'followers'    => $counts['followers'],

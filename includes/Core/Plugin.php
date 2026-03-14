@@ -63,6 +63,8 @@ use WPMediaVerse\REST\Controller\NotificationController;
 use WPMediaVerse\REST\Controller\UserController;
 use WPMediaVerse\REST\Controller\ReportController;
 use WPMediaVerse\REST\Controller\ActivityController;
+use WPMediaVerse\REST\Controller\ProfileController;
+use WPMediaVerse\Services\ProfileService;
 
 /**
  * Main plugin bootstrap class.
@@ -148,6 +150,9 @@ class Plugin {
 
 		// Initialize cache service (hooks for invalidation).
 		self::$container->get( 'cache' );
+
+		// Initialize profile service (avatar filter hooks).
+		self::$container->get( 'profile' );
 
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
@@ -415,6 +420,15 @@ class Plugin {
 				return $service;
 			}
 		);
+
+		self::$container->register(
+			'profile',
+			function () {
+				$service = new ProfileService();
+				$service->init();
+				return $service;
+			}
+		);
 	}
 
 	/**
@@ -439,6 +453,7 @@ class Plugin {
 		$notifications = self::$container->get( 'notifications' );
 		$reports       = self::$container->get( 'reports' );
 		$activity      = self::$container->get( 'activity' );
+		$profile       = self::$container->get( 'profile' );
 
 		$controllers = array(
 			new MediaController( $privacy ),
@@ -458,6 +473,7 @@ class Plugin {
 			new UserController(),
 			new ReportController( $reports ),
 			new ActivityController( $activity ),
+			new ProfileController( $profile ),
 		);
 
 		foreach ( $controllers as $controller ) {

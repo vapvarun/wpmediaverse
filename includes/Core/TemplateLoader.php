@@ -30,6 +30,11 @@ class TemplateLoader {
 		add_filter( 'single_template', array( $this, 'load_single_template' ) );
 		add_filter( 'archive_template', array( $this, 'load_archive_template' ) );
 		add_action( 'pre_get_posts', array( $this, 'unified_explore_query' ) );
+
+		// Profile edit endpoint: /media/edit-profile/
+		add_action( 'init', array( $this, 'register_profile_rewrite' ) );
+		add_filter( 'query_vars', array( $this, 'add_profile_query_var' ) );
+		add_action( 'template_redirect', array( $this, 'load_profile_template' ) );
 	}
 
 	/**
@@ -108,6 +113,55 @@ class TemplateLoader {
 					)
 				);
 			}
+		}
+	}
+
+	/**
+	 * Register rewrite rule for /media/edit-profile/.
+	 *
+	 * @since 1.1.0
+	 */
+	public function register_profile_rewrite(): void {
+		add_rewrite_rule(
+			'^media/edit-profile/?$',
+			'index.php?mvs_edit_profile=1',
+			'top'
+		);
+	}
+
+	/**
+	 * Add mvs_edit_profile query var.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param string[] $vars Existing query vars.
+	 * @return string[]
+	 */
+	public function add_profile_query_var( array $vars ): array {
+		$vars[] = 'mvs_edit_profile';
+		return $vars;
+	}
+
+	/**
+	 * Load the profile edit template when the endpoint is hit.
+	 *
+	 * @since 1.1.0
+	 */
+	public function load_profile_template(): void {
+		if ( ! get_query_var( 'mvs_edit_profile' ) ) {
+			return;
+		}
+
+		// Must be logged in.
+		if ( ! is_user_logged_in() ) {
+			wp_safe_redirect( wp_login_url( home_url( '/media/edit-profile/' ) ) );
+			exit;
+		}
+
+		$template = self::locate( 'profile-edit.php' );
+		if ( $template ) {
+			include $template;
+			exit;
 		}
 	}
 
