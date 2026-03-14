@@ -179,6 +179,12 @@ class MediaController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_items( $request ) {
+		// Rate limit public reads: 120/min per user/IP to prevent scraping.
+		$rate_check = RateLimiter::check( 'media_read', 120, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		global $wpdb;
 
 		// Slug lookup — return single item by post_name.
@@ -491,6 +497,12 @@ class MediaController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function record_view( $request ) {
+		// Rate limit: 60 views/min per user/IP to prevent view count manipulation.
+		$rate_check = RateLimiter::check( 'record_view', 60, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$media_id = $request->get_param( 'id' );
 		$post     = get_post( $media_id );
 
