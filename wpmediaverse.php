@@ -29,6 +29,26 @@ if ( file_exists( MVS_PLUGIN_DIR . 'vendor/autoload.php' ) ) {
 	require_once MVS_PLUGIN_DIR . 'vendor/autoload.php';
 }
 
+// EDD SL SDK — registers plugin for updates from wbcomdesigns.com (free, no license).
+$mvs_sdk_file = MVS_PLUGIN_DIR . 'vendor/easy-digital-downloads/edd-sl-sdk/edd-sl-sdk.php';
+if ( file_exists( $mvs_sdk_file ) ) {
+	require_once $mvs_sdk_file;
+}
+add_action(
+	'edd_sl_sdk_registry',
+	function ( $registry ) {
+		$registry->register(
+			array(
+				'id'      => 'wpmediaverse',
+				'url'     => 'https://wbcomdesigns.com',
+				'item_id' => 0, // Placeholder — replace with real EDD product ID.
+				'version' => MVS_VERSION,
+				'file'    => MVS_PLUGIN_FILE,
+			)
+		);
+	}
+);
+
 // Activation.
 register_activation_hook( __FILE__, array( 'WPMediaVerse\\Core\\Activator', 'activate' ) );
 

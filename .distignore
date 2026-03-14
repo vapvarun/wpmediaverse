@@ -21,3 +21,5 @@
 /seed-demo-data.php
 *.md
 !readme.txt
+.phpunit.result.cache
+.phpunit.cache

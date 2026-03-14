@@ -4,8 +4,43 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3e4bf58bc18eb4ad7fa87ed149dab5e4",
+    "content-hash": "7596b4b347e7dd5eebc96b835e116c3e",
     "packages": [
+        {
+            "name": "easy-digital-downloads/edd-sl-sdk",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/vapvarun/edd-sl-sdk.git",
+                "reference": "ec694fa21ab46e8ca1d4eb6b5273b0049cfdec33"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/vapvarun/edd-sl-sdk/zipball/ec694fa21ab46e8ca1d4eb6b5273b0049cfdec33",
+                "reference": "ec694fa21ab46e8ca1d4eb6b5273b0049cfdec33",
+                "shasum": ""
+            },
+            "require-dev": {
+                "codedungeon/phpunit-result-printer": "dev-master",
+                "phpunit/phpunit": "^8",
+                "yoast/phpunit-polyfills": "^1.0.5",
+                "yoast/wp-test-utils": "^1.0"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "EasyDigitalDownloads\\Updater\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "support": {
+                "source": "https://github.com/vapvarun/edd-sl-sdk/tree/main"
+            },
+            "time": "2025-12-23T20:15:04+00:00"
+        },
         {
             "name": "woocommerce/action-scheduler",
             "version": "3.9.3",
@@ -1914,12 +1949,14 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "easy-digital-downloads/edd-sl-sdk": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
         "php": ">=7.4"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

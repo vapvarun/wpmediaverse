@@ -7,16 +7,24 @@ namespace Composer\Autoload;
 class ComposerStaticInita0bf12d206119181b994ca7fa816dbae
 {
     public static $prefixLengthsPsr4 = array (
-        'W' => 
+        'W' =>
         array (
             'WPMediaVerse\\' => 13,
+        ),
+        'E' =>
+        array (
+            'EasyDigitalDownloads\\Updater\\' => 29,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'WPMediaVerse\\' => 
+        'WPMediaVerse\\' =>
         array (
             0 => __DIR__ . '/../..' . '/includes',
+        ),
+        'EasyDigitalDownloads\\Updater\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/easy-digital-downloads/edd-sl-sdk/src',
         ),
     );
 

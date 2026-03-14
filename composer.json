@@ -3,9 +3,16 @@
 	"description": "A general-purpose WordPress media platform plugin.",
 	"type": "wordpress-plugin",
 	"license": "GPL-2.0-or-later",
+	"repositories": {
+		"edd-sl-sdk": {
+			"type": "vcs",
+			"url": "https://github.com/vapvarun/edd-sl-sdk"
+		}
+	},
 	"require": {
 		"php": ">=7.4",
-		"woocommerce/action-scheduler": "^3.7"
+		"woocommerce/action-scheduler": "^3.7",
+		"easy-digital-downloads/edd-sl-sdk": "dev-main"
 	},
 	"autoload": {
 		"psr-4": {

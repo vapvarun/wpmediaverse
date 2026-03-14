@@ -7,4 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'WPMediaVerse\\' => array($baseDir . '/includes'),
+    'EasyDigitalDownloads\\Updater\\' => array($vendorDir . '/easy-digital-downloads/edd-sl-sdk/src'),
 );

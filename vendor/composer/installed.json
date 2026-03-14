@@ -1,6 +1,44 @@
 {
     "packages": [
         {
+            "name": "easy-digital-downloads/edd-sl-sdk",
+            "version": "dev-main",
+            "version_normalized": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/vapvarun/edd-sl-sdk.git",
+                "reference": "ec694fa21ab46e8ca1d4eb6b5273b0049cfdec33"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/vapvarun/edd-sl-sdk/zipball/ec694fa21ab46e8ca1d4eb6b5273b0049cfdec33",
+                "reference": "ec694fa21ab46e8ca1d4eb6b5273b0049cfdec33",
+                "shasum": ""
+            },
+            "require-dev": {
+                "codedungeon/phpunit-result-printer": "dev-master",
+                "phpunit/phpunit": "^8",
+                "yoast/phpunit-polyfills": "^1.0.5",
+                "yoast/wp-test-utils": "^1.0"
+            },
+            "time": "2025-12-23T20:15:04+00:00",
+            "default-branch": true,
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "EasyDigitalDownloads\\Updater\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "support": {
+                "source": "https://github.com/vapvarun/edd-sl-sdk/tree/main"
+            },
+            "install-path": "../easy-digital-downloads/edd-sl-sdk"
+        },
+        {
             "name": "woocommerce/action-scheduler",
             "version": "3.9.3",
             "version_normalized": "3.9.3.0",
