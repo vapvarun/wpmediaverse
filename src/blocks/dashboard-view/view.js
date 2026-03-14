@@ -959,9 +959,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 					state.notifications.items = Array.isArray( data )
 						? data.map( ( n ) => ( {
 							id: n.id,
-							message: n.message || n.content || '',
-							date: new Date( n.date || n.created_at ).toLocaleDateString(),
-							read: !! n.read,
+							message: n.message || '',
+							date: new Date( n.created_at ).toLocaleDateString(),
+							read: !! n.is_read,
 						} ) )
 						: [];
 				} catch {

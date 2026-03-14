@@ -276,14 +276,23 @@ class NotificationService {
 	 * @return array
 	 */
 	private function format_notification( object $row ): array {
-		$actor = get_userdata( (int) $row->actor_id );
+		$actor      = get_userdata( (int) $row->actor_id );
+		$actor_name = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
+		$media_title = '';
+		if ( $row->media_id ) {
+			$post = get_post( (int) $row->media_id );
+			$media_title = $post ? $post->post_title : '';
+		}
+
+		$message = $this->build_notification_message( $row->type, $actor_name, $media_title );
 
 		return array(
 			'id'         => (int) $row->id,
 			'type'       => $row->type,
+			'message'    => $message,
 			'actor'      => array(
 				'id'     => (int) $row->actor_id,
-				'name'   => $actor ? $actor->display_name : '',
+				'name'   => $actor_name,
 				'avatar' => get_avatar_url( (int) $row->actor_id, array( 'size' => 48 ) ),
 			),
 			'media_id'   => (int) $row->media_id,
@@ -291,5 +300,50 @@ class NotificationService {
 			'is_read'    => ! empty( $row->read_at ),
 			'created_at' => $row->created_at,
 		);
+	}
+
+	/**
+	 * Build a human-readable notification message.
+	 *
+	 * @param string $type       Notification type.
+	 * @param string $actor_name Actor display name.
+	 * @param string $media_title Media title (if applicable).
+	 * @return string
+	 */
+	private function build_notification_message( string $type, string $actor_name, string $media_title ): string {
+		switch ( $type ) {
+			case 'new_follower':
+				/* translators: %s: user name */
+				return sprintf( __( '%s started following you', 'wpmediaverse' ), $actor_name );
+
+			case 'media_reaction':
+				/* translators: 1: user name, 2: media title */
+				return $media_title
+					? sprintf( __( '%1$s reacted to %2$s', 'wpmediaverse' ), $actor_name, $media_title )
+					: sprintf( __( '%s reacted to your media', 'wpmediaverse' ), $actor_name );
+
+			case 'media_comment':
+				/* translators: 1: user name, 2: media title */
+				return $media_title
+					? sprintf( __( '%1$s commented on %2$s', 'wpmediaverse' ), $actor_name, $media_title )
+					: sprintf( __( '%s commented on your media', 'wpmediaverse' ), $actor_name );
+
+			case 'media_mention':
+				/* translators: %s: user name */
+				return sprintf( __( '%s mentioned you', 'wpmediaverse' ), $actor_name );
+
+			case 'media_favorite':
+				/* translators: 1: user name, 2: media title */
+				return $media_title
+					? sprintf( __( '%1$s favorited %2$s', 'wpmediaverse' ), $actor_name, $media_title )
+					: sprintf( __( '%s favorited your media', 'wpmediaverse' ), $actor_name );
+
+			case 'new_message':
+				/* translators: %s: user name */
+				return sprintf( __( '%s sent you a message', 'wpmediaverse' ), $actor_name );
+
+			default:
+				return sprintf( __( '%s interacted with your content', 'wpmediaverse' ), $actor_name );
+		}
 	}
 }
