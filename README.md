@@ -222,6 +222,7 @@ cd wp-content/plugins/
 git clone https://github.com/vapvarun/wpmediaverse.git
 cd wpmediaverse
 composer install
+npm install && npm run build
 ```
 
 ### After Activation
