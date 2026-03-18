@@ -33,7 +33,87 @@ class SettingsPage {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_init', array( $this, 'track_settings_changes' ) );
 		add_action( 'admin_post_mvs_save_role_caps', array( $this, 'save_role_caps' ) );
+		add_action( 'admin_notices', array( $this, 'render_contextual_notices' ) );
+	}
+
+	/**
+	 * Track setting changes before they are saved (for contextual notices).
+	 */
+	public function track_settings_changes(): void {
+		// Only on settings save.
+		if ( empty( $_POST ) || ! isset( $_POST['option_page'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$option_page = sanitize_text_field( wp_unslash( $_POST['option_page'] ) );
+		if ( strpos( $option_page, 'mvs_settings' ) !== 0 ) {
+			return;
+		}
+
+		$old_driver = get_option( 'mvs_storage_driver', 'local' );
+		set_transient( 'mvs_old_storage_driver_' . get_current_user_id(), $old_driver, 30 );
+	}
+
+	/**
+	 * Show contextual success notices after settings save.
+	 */
+	public function render_contextual_notices(): void {
+		$screen = get_current_screen();
+		if ( ! $screen || false === strpos( $screen->id, 'mvs-settings' ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['settings-updated'] ) || 'true' !== $_GET['settings-updated'] ) {
+			return;
+		}
+
+		$user_id    = get_current_user_id();
+		$old_driver = get_transient( 'mvs_old_storage_driver_' . $user_id );
+		$new_driver = get_option( 'mvs_storage_driver', 'local' );
+
+		if ( false !== $old_driver && $old_driver !== $new_driver ) {
+			delete_transient( 'mvs_old_storage_driver_' . $user_id );
+			printf(
+				'<div class="notice notice-info is-dismissible"><p>%s</p></div>',
+				sprintf(
+					/* translators: %s: new storage driver name */
+					esc_html__( 'Storage driver changed to %s. New uploads will use this driver.', 'wpmediaverse' ),
+					'<strong>' . esc_html( ucfirst( $new_driver ) ) . '</strong>'
+				)
+			);
+		} else {
+			delete_transient( 'mvs_old_storage_driver_' . $user_id );
+		}
+
+		// Permissions save notice.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$perms_saved = isset( $_GET['permissions-saved'] ) ? absint( $_GET['permissions-saved'] ) : -1;
+		if ( $perms_saved >= 0 ) {
+			if ( $perms_saved > 0 ) {
+				printf(
+					'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+					sprintf(
+						/* translators: %d: number of roles */
+						esc_html( _n(
+							'Permissions updated for %d role.',
+							'Permissions updated for %d roles.',
+							$perms_saved,
+							'wpmediaverse'
+						) ),
+						esc_html( $perms_saved )
+					)
+				);
+			} else {
+				printf(
+					'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+					esc_html__( 'Permissions saved. No changes were needed.', 'wpmediaverse' )
+				);
+			}
+		}
 	}
 
 	/**
@@ -944,7 +1024,10 @@ class SettingsPage {
 	/**
 	 * Process the role-capability matrix save from the Permissions tab form.
 	 */
-	private function process_role_caps_save(): void {
+	/**
+	 * @return int Number of roles updated.
+	 */
+	private function process_role_caps_save(): int {
 		$roles = array( 'administrator', 'editor', 'author', 'contributor', 'subscriber' );
 		$caps  = array(
 			'upload_mvs_media',
@@ -971,22 +1054,33 @@ class SettingsPage {
 			}
 		}
 
+		$updated_count = 0;
 		foreach ( $roles as $role_slug ) {
 			$role_obj = get_role( $role_slug );
 			if ( ! $role_obj ) {
 				continue;
 			}
+			$changed = false;
 			foreach ( $caps as $cap ) {
 				$granted = ! empty( $submitted[ $role_slug ][ $cap ] );
+				$current = $role_obj->has_cap( $cap );
+				if ( $granted !== $current ) {
+					$changed = true;
+				}
 				if ( $granted ) {
 					$role_obj->add_cap( $cap );
 				} else {
 					$role_obj->remove_cap( $cap );
 				}
 			}
+			if ( $changed ) {
+				++$updated_count;
+			}
 		}
 
 		add_settings_error( 'mvs_role_caps', 'mvs_role_caps_saved', __( 'Permissions saved.', 'wpmediaverse' ), 'updated' );
+
+		return $updated_count;
 	}
 
 	/**
@@ -1004,13 +1098,13 @@ class SettingsPage {
 			wp_die( esc_html__( 'You do not have permission to change these settings.', 'wpmediaverse' ) );
 		}
 
-		$this->process_role_caps_save();
+		$roles_updated = $this->process_role_caps_save();
 
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'tab'     => 'permissions',
-					'updated' => '1',
+					'tab'              => 'permissions',
+					'permissions-saved' => $roles_updated,
 				),
 				admin_url( 'edit.php?post_type=mvs_media&page=' . self::PAGE_SLUG )
 			)

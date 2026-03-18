@@ -107,7 +107,8 @@ get_header();
 						data-wp-init="callbacks.initFollow">
 						<button class="mvs-btn mvs-btn--small mvs-follow-btn" type="button"
 							data-wp-class--active="context.isFollowing"
-							data-wp-on--click="actions.toggleFollow">
+							data-wp-on--click="actions.toggleFollow"
+							aria-label="<?php echo esc_attr( sprintf( __( 'Follow %s', 'wpmediaverse' ), get_the_author() ) ); ?>">
 							<span data-wp-bind--hidden="context.isFollowing"><?php esc_html_e( 'Follow', 'wpmediaverse' ); ?></span>
 							<span data-wp-bind--hidden="!context.isFollowing"><?php esc_html_e( 'Following', 'wpmediaverse' ); ?></span>
 						</button>
@@ -242,6 +243,7 @@ get_header();
 							<button class="mvs-reaction-btn"
 								data-wp-class--active="context.item.active"
 								data-wp-bind--data-reaction-type="context.item.type"
+								data-wp-bind--aria-label="context.item.type"
 								data-wp-on--click="actions.toggleReaction">
 								<span class="mvs-reaction-emoji" data-wp-text="context.item.emoji"></span>
 								<span class="mvs-count" data-wp-text="context.item.count"></span>
@@ -254,11 +256,17 @@ get_header();
 						<?php if ( is_user_logged_in() ) : ?>
 							<button class="mvs-favorite-btn" type="button"
 								data-wp-class--active="context.isFavorite"
-								data-wp-on--click="actions.toggleFavorite">&#x2764; <?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></button>
+								data-wp-on--click="actions.toggleFavorite"
+								aria-label="<?php esc_attr_e( 'Add to favorites', 'wpmediaverse' ); ?>">&#x2764; <?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></button>
+						<?php else : ?>
+							<a href="<?php echo esc_url( wp_login_url( get_permalink() ) ); ?>" class="mvs-favorite-btn mvs-login-prompt"
+								title="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
+								aria-label="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>">&#x2764; <?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></a>
 						<?php endif; ?>
 						<button class="mvs-share-btn" type="button"
 							data-wp-on--click="actions.handleShare"
-							data-wp-text="context.shareLabel"></button>
+							data-wp-text="context.shareLabel"
+							aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>"></button>
 					</div>
 					<span class="mvs-view-count" data-wp-text="context.viewCount"></span>
 					<div class="mvs-social-actions-right">
@@ -348,8 +356,14 @@ get_header();
 							<textarea placeholder="<?php esc_attr_e( 'Write a comment...', 'wpmediaverse' ); ?>" rows="2"
 								data-wp-bind--value="context.commentText"
 								data-wp-on--input="actions.updateCommentText"></textarea>
-							<button type="submit"><?php esc_html_e( 'Post', 'wpmediaverse' ); ?></button>
+							<button type="submit" aria-label="<?php esc_attr_e( 'Post comment', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Post', 'wpmediaverse' ); ?></button>
 						</form>
+					<?php else : ?>
+						<p class="mvs-login-to-comment">
+							<a href="<?php echo esc_url( wp_login_url( get_permalink() ) ); ?>">
+								<?php esc_html_e( 'Log in to leave a comment', 'wpmediaverse' ); ?>
+							</a>
+						</p>
 					<?php endif; ?>
 					<ul class="mvs-comment-list">
 						<template data-wp-each="context.comments">

@@ -4244,3 +4244,456 @@ a.mvs-dashboard-card-title:hover {
 		grid-template-columns: 1fr;
 	}
 }
+
+/* ==========================================================================
+   33a. Search Tabs & User Search
+   ========================================================================== */
+
+.mvs-search-tabs {
+	display: flex;
+	gap: 0;
+	margin-bottom: 8px;
+}
+
+.mvs-search-tab {
+	padding: 6px 16px;
+	border: 1px solid #dbdbdb;
+	background: #fff;
+	cursor: pointer;
+	font-size: 0.875rem;
+	color: #666;
+	transition: background 0.15s, color 0.15s;
+}
+
+.mvs-search-tab:first-child {
+	border-radius: 6px 0 0 6px;
+}
+
+.mvs-search-tab:last-child {
+	border-radius: 0 6px 6px 0;
+	border-left: none;
+}
+
+.mvs-search-tab.active {
+	background: #0073aa;
+	color: #fff;
+	border-color: #0073aa;
+}
+
+.mvs-search-input-wrap {
+	display: flex;
+	gap: 8px;
+}
+
+.mvs-search-input-wrap input {
+	flex: 1;
+}
+
+.mvs-user-search-results {
+	margin-top: 12px;
+}
+
+.mvs-user-search-empty {
+	text-align: center;
+	color: #666;
+	padding: 16px;
+}
+
+.mvs-user-card {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	border: 1px solid #dbdbdb;
+	border-radius: 8px;
+	margin-bottom: 8px;
+	text-decoration: none;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.mvs-user-card:hover {
+	border-color: #0073aa;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.mvs-user-card-avatar {
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.mvs-user-card-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.mvs-user-card-info strong {
+	font-size: 0.9375rem;
+	color: #1a1a1a;
+}
+
+.mvs-user-card-info span {
+	font-size: 0.8125rem;
+	color: #8e8e8e;
+}
+
+/* Login prompt links styled like buttons */
+.mvs-login-prompt {
+	opacity: 0.7;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.mvs-login-to-comment {
+	text-align: center;
+	padding: 12px;
+	color: #666;
+}
+
+.mvs-login-to-comment a {
+	color: #0073aa;
+}
+
+/* ==========================================================================
+   33. Logged-Out CTA Banner
+   ========================================================================== */
+
+.mvs-logged-out-banner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: #fff;
+	padding: 14px 24px;
+	border-radius: 8px;
+	margin: 0 auto 20px;
+	max-width: 1200px;
+	position: relative;
+}
+
+.mvs-logged-out-banner__content {
+	font-size: 0.9375rem;
+}
+
+.mvs-logged-out-banner__content strong {
+	font-weight: 700;
+}
+
+.mvs-logged-out-banner__actions {
+	display: flex;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.mvs-logged-out-banner__actions .mvs-btn--primary {
+	background: #fff;
+	color: #667eea;
+	border: none;
+}
+
+.mvs-logged-out-banner__actions .mvs-btn--secondary {
+	background: transparent;
+	color: #fff;
+	border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.mvs-logged-out-banner__close {
+	background: none;
+	border: none;
+	color: rgba(255, 255, 255, 0.7);
+	font-size: 20px;
+	cursor: pointer;
+	padding: 4px;
+	line-height: 1;
+	position: absolute;
+	top: 8px;
+	right: 8px;
+}
+
+.mvs-logged-out-banner__close:hover {
+	color: #fff;
+}
+
+@media (max-width: 600px) {
+	.mvs-logged-out-banner {
+		flex-direction: column;
+		text-align: center;
+		padding: 16px 20px 20px;
+	}
+}
+
+/* ==========================================================================
+   34. Frontend Empty States
+   ========================================================================== */
+
+.mvs-empty-state-frontend {
+	text-align: center;
+	padding: 48px 24px;
+	color: #666;
+}
+
+.mvs-empty-state-icon {
+	display: block;
+	font-size: 48px;
+	margin-bottom: 12px;
+	line-height: 1;
+	opacity: 0.7;
+}
+
+.mvs-empty-state-frontend h3 {
+	margin: 0 0 8px;
+	font-size: 1.125rem;
+	color: #333;
+}
+
+.mvs-empty-state-frontend p {
+	margin: 0 0 16px;
+	font-size: 0.9375rem;
+	color: #666;
+}
+
+/* ==========================================================================
+   34b. Profile Completion Prompt
+   ========================================================================== */
+
+.mvs-profile-prompt {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: #fef3cd;
+	border: 1px solid #ffc107;
+	border-radius: 6px;
+	padding: 10px 16px;
+	margin-bottom: 16px;
+	font-size: 0.875rem;
+	position: relative;
+}
+
+.mvs-profile-prompt-icon {
+	font-size: 20px;
+	flex-shrink: 0;
+}
+
+.mvs-profile-prompt-text {
+	flex: 1;
+	color: #856404;
+}
+
+.mvs-profile-prompt-text a {
+	color: #533f03;
+	font-weight: 600;
+}
+
+.mvs-profile-prompt-close {
+	background: none;
+	border: none;
+	font-size: 18px;
+	cursor: pointer;
+	color: #856404;
+	padding: 4px;
+	line-height: 1;
+}
+
+/* ==========================================================================
+   35. Accessibility — Focus & Reduced Motion
+   ========================================================================== */
+
+/* Visible focus ring on all interactive elements */
+.mvs-btn:focus-visible,
+.mvs-reaction-btn:focus-visible,
+.mvs-favorite-btn:focus-visible,
+.mvs-share-btn:focus-visible,
+.mvs-follow-btn:focus-visible,
+.mvs-dashboard-tab:focus-visible,
+.mvs-comment-form button:focus-visible,
+.mvs-comment-form textarea:focus-visible,
+.mvs-tag-cloud-item:focus-visible,
+.mvs-notification-bell:focus-visible,
+.mvs-modal-close:focus-visible,
+.mvs-dashboard-dropzone:focus-visible {
+	outline: 2px solid #0073aa;
+	outline-offset: 2px;
+}
+
+/* Focus trap visual — modals */
+.mvs-modal:focus-within {
+	box-shadow: 0 0 0 4px rgba(0, 115, 170, 0.15);
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* Hidden attribute override — ensure hidden works even with inline display */
+[hidden] {
+	display: none !important;
+}
+
+/* ==========================================================================
+   36. Mobile Touch Targets & Responsiveness
+   ========================================================================== */
+
+@media (max-width: 768px) {
+	/* Ensure minimum 44px touch targets */
+	.mvs-reaction-btn {
+		min-width: 44px;
+		min-height: 44px;
+		padding: 8px 10px;
+	}
+
+	.mvs-favorite-btn,
+	.mvs-share-btn {
+		min-height: 44px;
+		padding: 10px 14px;
+	}
+
+	.mvs-follow-btn {
+		min-height: 44px;
+		padding: 10px 16px;
+	}
+
+	/* Increase spacing between action buttons */
+	.mvs-social-actions {
+		gap: 8px;
+	}
+
+	.mvs-social-actions-left {
+		gap: 8px;
+	}
+
+	/* Sticky dashboard tabs */
+	.mvs-dashboard-tabs {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: #fff;
+		padding: 8px 0;
+		border-bottom: 1px solid #dbdbdb;
+		margin: 0 -20px;
+		padding-left: 20px;
+		padding-right: 20px;
+		overflow-x: auto;
+		white-space: nowrap;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.mvs-dashboard-tab {
+		min-height: 44px;
+	}
+
+	/* Prevent horizontal overflow on long text */
+	.mvs-media-title {
+		word-break: break-word;
+		overflow-wrap: break-word;
+	}
+
+	.mvs-media-author-name {
+		max-width: 150px;
+	}
+
+	.mvs-grid-item-info {
+		max-width: 100%;
+		overflow: hidden;
+	}
+
+	.mvs-grid-item-author {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 120px;
+	}
+
+	/* Single media — sticky bottom action bar */
+	.mvs-social-bar {
+		position: sticky;
+		bottom: 0;
+		background: #fff;
+		border-top: 1px solid #dbdbdb;
+		padding: 8px 16px;
+		margin: 0 -16px;
+		z-index: 5;
+	}
+
+	.mvs-social-actions {
+		flex-wrap: wrap;
+	}
+
+	/* Notification bell touch target */
+	.mvs-notification-bell {
+		min-width: 44px;
+		min-height: 44px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* Upload dropzone larger on mobile */
+	.mvs-dashboard-dropzone {
+		min-height: 120px;
+	}
+
+	/* Tag cloud horizontal scroll */
+	.mvs-tag-cloud {
+		overflow-x: auto;
+		white-space: nowrap;
+		-webkit-overflow-scrolling: touch;
+		padding-bottom: 8px;
+	}
+
+	.mvs-tag-cloud-item {
+		min-height: 36px;
+		padding: 6px 12px;
+	}
+
+	/* Modal full-screen on mobile */
+	.mvs-modal {
+		width: 100%;
+		max-width: 100%;
+		height: 100%;
+		max-height: 100%;
+		border-radius: 0;
+		margin: 0;
+	}
+
+	.mvs-modal-body {
+		max-height: calc(100vh - 120px);
+		overflow-y: auto;
+	}
+}
+
+/* Bottom navigation bar for mobile logged-in users */
+@media (max-width: 600px) {
+	.mvs-explore-header h1 {
+		font-size: 1.25rem;
+	}
+
+	.mvs-explore-search input {
+		font-size: 16px; /* Prevent zoom on iOS */
+	}
+
+	.mvs-media-grid.mvs-cols-3 {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.mvs-dashboard-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	/* Comment form stacked on mobile */
+	.mvs-comment-form {
+		flex-direction: column;
+	}
+
+	.mvs-comment-form button {
+		align-self: flex-end;
+	}
+}

@@ -156,9 +156,29 @@ wp_enqueue_script_module(
 		</div>
 	</div>
 
+	<?php
+	// Profile completion prompt (if no custom avatar or empty bio).
+	$mvs_profile_incomplete = ! $mvs_has_custom || empty( $mvs_current_user->description );
+	if ( $mvs_profile_incomplete ) :
+		$mvs_edit_profile_url = home_url( '/media/edit-profile/' );
+	?>
+	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
+		<span class="mvs-profile-prompt-icon">&#x1F464;</span>
+		<span class="mvs-profile-prompt-text">
+			<?php esc_html_e( 'Complete your profile — add an avatar and bio to help others find you.', 'wpmediaverse' ); ?>
+			<a href="<?php echo esc_url( $mvs_edit_profile_url ); ?>"><?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?></a>
+		</span>
+		<button type="button" class="mvs-profile-prompt-close"
+			onclick="this.parentNode.style.display='none';localStorage.setItem('mvs_profile_prompt_dismissed','1');"
+			aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">&times;</button>
+	</div>
+	<script>if(localStorage.getItem('mvs_profile_prompt_dismissed')==='1'){var pp=document.getElementById('mvs-profile-prompt');if(pp)pp.style.display='none';}</script>
+	<?php endif; ?>
+
 	<div class="mvs-dashboard-header">
 		<span class="mvs-dashboard-heading"><?php esc_html_e( 'My Media', 'wpmediaverse' ); ?></span>
-		<div class="mvs-notification-bell" data-wp-on--click="actions.toggleNotifications">
+		<div class="mvs-notification-bell" data-wp-on--click="actions.toggleNotifications"
+			role="button" tabindex="0" aria-label="<?php esc_attr_e( 'Notifications', 'wpmediaverse' ); ?>">
 			<span class="mvs-notification-bell-icon">&#128276;</span>
 			<span class="mvs-notification-badge" data-wp-bind--hidden="!state.notifications.count"
 				data-wp-text="state.notifications.count"></span>
@@ -217,7 +237,9 @@ wp_enqueue_script_module(
 				data-wp-on--click="actions.handleUploadClick"
 				data-wp-on--dragover="actions.handleUploadDragOver"
 				data-wp-on--dragleave="actions.handleUploadDragLeave"
-				data-wp-on--drop="actions.handleUploadDrop">
+				data-wp-on--drop="actions.handleUploadDrop"
+				role="button" tabindex="0"
+				aria-label="<?php esc_attr_e( 'Upload media files', 'wpmediaverse' ); ?>"
 				<span class="mvs-dashboard-dropzone-icon">&#x2B06;&#xFE0F;</span>
 				<span class="mvs-dashboard-dropzone-label"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
 				<input type="file" multiple accept="image/*,video/*,audio/*" class="mvs-upload-file-input" style="display:none"
@@ -278,9 +300,11 @@ wp_enqueue_script_module(
 				</div>
 			</template>
 		</div>
-		<p data-wp-bind--hidden="!state.showMediaEmpty" class="mvs-no-media">
-			<?php esc_html_e( 'No media yet. Use the upload area above!', 'wpmediaverse' ); ?>
-		</p>
+		<div class="mvs-empty-state-frontend" data-wp-bind--hidden="!state.showMediaEmpty">
+			<span class="mvs-empty-state-icon">&#x2B06;&#xFE0F;</span>
+			<h3><?php esc_html_e( 'No media yet', 'wpmediaverse' ); ?></h3>
+			<p><?php esc_html_e( 'Drag & drop files above or click to upload your first media.', 'wpmediaverse' ); ?></p>
+		</div>
 		<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreMedia">
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.loadMoreMedia"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></button>
@@ -316,9 +340,11 @@ wp_enqueue_script_module(
 				</div>
 			</template>
 		</div>
-		<p data-wp-bind--hidden="!state.showAlbumsEmpty" class="mvs-no-media">
-			<?php esc_html_e( 'No albums yet. Create one!', 'wpmediaverse' ); ?>
-		</p>
+		<div class="mvs-empty-state-frontend" data-wp-bind--hidden="!state.showAlbumsEmpty">
+			<span class="mvs-empty-state-icon">&#128193;</span>
+			<h3><?php esc_html_e( 'No albums yet', 'wpmediaverse' ); ?></h3>
+			<p><?php esc_html_e( 'Create your first album to organize your media into collections.', 'wpmediaverse' ); ?></p>
+		</div>
 	</div>
 
 	<!-- My Favorites Panel -->
@@ -345,9 +371,19 @@ wp_enqueue_script_module(
 				</div>
 			</template>
 		</div>
-		<p data-wp-bind--hidden="!state.showFavoritesEmpty" class="mvs-no-media">
-			<?php esc_html_e( 'No favorites yet. Browse and favorite media from the Explore page!', 'wpmediaverse' ); ?>
-		</p>
+		<div class="mvs-empty-state-frontend" data-wp-bind--hidden="!state.showFavoritesEmpty">
+			<span class="mvs-empty-state-icon">&#x2764;&#xFE0F;</span>
+			<h3><?php esc_html_e( 'No favorites yet', 'wpmediaverse' ); ?></h3>
+			<p><?php esc_html_e( 'Browse the explore page and save media you like!', 'wpmediaverse' ); ?></p>
+			<?php
+			$mvs_explore_page = (int) get_option( 'mvs_page_explore', 0 );
+			if ( $mvs_explore_page ) :
+			?>
+				<a href="<?php echo esc_url( get_permalink( $mvs_explore_page ) ); ?>" class="mvs-btn mvs-btn--secondary mvs-btn--small">
+					<?php esc_html_e( 'Explore Media', 'wpmediaverse' ); ?>
+				</a>
+			<?php endif; ?>
+		</div>
 		<div class="mvs-load-more-wrap" data-wp-bind--hidden="!state.hasMoreFavorites">
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.loadMoreFavorites"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></button>
@@ -395,9 +431,11 @@ wp_enqueue_script_module(
 				</div>
 			</template>
 		</div>
-		<p data-wp-bind--hidden="!state.showCollectionsEmpty" class="mvs-no-media">
-			<?php esc_html_e( 'No collections yet. Create a smart collection to auto-organize your media!', 'wpmediaverse' ); ?>
-		</p>
+		<div class="mvs-empty-state-frontend" data-wp-bind--hidden="!state.showCollectionsEmpty">
+			<span class="mvs-empty-state-icon">&#128218;</span>
+			<h3><?php esc_html_e( 'No collections yet', 'wpmediaverse' ); ?></h3>
+			<p><?php esc_html_e( 'Create a smart collection to auto-organize your media!', 'wpmediaverse' ); ?></p>
+		</div>
 	</div>
 
 	<!-- Collection Modal (Create/Edit with Rule Builder) -->
@@ -409,7 +447,7 @@ wp_enqueue_script_module(
 					<span data-wp-bind--hidden="state.collectionModal.isEdit"><?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></span>
 					<span data-wp-bind--hidden="!state.collectionModal.isEdit"><?php esc_html_e( 'Edit Collection', 'wpmediaverse' ); ?></span>
 				</h2>
-				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeCollectionModal">&times;</button>
+				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeCollectionModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">&times;</button>
 			</div>
 			<div class="mvs-modal-body">
 				<div class="mvs-field">
@@ -510,7 +548,7 @@ wp_enqueue_script_module(
 		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation">
 			<div class="mvs-modal-header">
 				<h2><?php esc_html_e( 'Edit Media', 'wpmediaverse' ); ?></h2>
-				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeEditModal">&times;</button>
+				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeEditModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">&times;</button>
 			</div>
 			<div class="mvs-modal-body">
 				<div class="mvs-field">
@@ -581,7 +619,7 @@ wp_enqueue_script_module(
 					<span data-wp-bind--hidden="state.albumModal.isEdit"><?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></span>
 					<span data-wp-bind--hidden="!state.albumModal.isEdit"><?php esc_html_e( 'Edit Album', 'wpmediaverse' ); ?></span>
 				</h2>
-				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeAlbumModal">&times;</button>
+				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeAlbumModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">&times;</button>
 			</div>
 			<div class="mvs-modal-body">
 				<div class="mvs-field">

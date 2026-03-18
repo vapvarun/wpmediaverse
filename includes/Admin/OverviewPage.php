@@ -26,6 +26,7 @@ class OverviewPage {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ), 5 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'wp_ajax_mvs_import_demo_data', array( $this, 'ajax_import_demo_data' ) );
+		add_action( 'wp_ajax_mvs_dismiss_welcome', array( $this, 'ajax_dismiss_welcome' ) );
 	}
 
 	/**
@@ -46,7 +47,8 @@ class OverviewPage {
 			false !== strpos( $screen->id, 'mvs-overview' ) ||
 			false !== strpos( $screen->id, 'mvs-settings' ) ||
 			false !== strpos( $screen->id, 'mvs-moderation' ) ||
-			false !== strpos( $screen->id, 'mvs-stats' )
+			false !== strpos( $screen->id, 'mvs-stats' ) ||
+			false !== strpos( $screen->id, 'mvs-logs' )
 		);
 
 		if ( $is_mvs_page ) {
@@ -163,8 +165,9 @@ class OverviewPage {
 
 							<?php if ( 0 === (int) $stats['total_media'] ) : ?>
 								<div class="mvs-demo-import" style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
-									<p style="margin:0 0 8px;color:#666;">
-										<?php esc_html_e( 'Get started quickly with sample media, albums, and collections.', 'wpmediaverse' ); ?>
+									<h4 style="margin:0 0 4px;"><?php esc_html_e( 'Quick Start with Demo Content', 'wpmediaverse' ); ?></h4>
+									<p style="margin:0 0 12px;color:#666;">
+										<?php esc_html_e( 'Import 12 sample media items to see how everything works — albums, reactions, and your explore page will come alive.', 'wpmediaverse' ); ?>
 									</p>
 									<button type="button" class="button button-primary" id="mvs-import-demo-btn"
 										data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_import_demo' ) ); ?>">
@@ -172,30 +175,49 @@ class OverviewPage {
 										<?php esc_html_e( 'Import Demo Data', 'wpmediaverse' ); ?>
 									</button>
 									<span id="mvs-import-demo-status" style="margin-left:8px;"></span>
+									<div class="mvs-import-progress" id="mvs-import-progress" style="display:none;margin-top:8px;">
+										<div class="mvs-import-progress-bar" id="mvs-import-progress-bar" style="width:0%;height:4px;background:#2271b1;border-radius:2px;transition:width 0.3s;"></div>
+									</div>
 								</div>
 								<script>
 								document.getElementById('mvs-import-demo-btn').addEventListener('click', function() {
 									var btn = this;
 									var status = document.getElementById('mvs-import-demo-status');
+									var progress = document.getElementById('mvs-import-progress');
+									var bar = document.getElementById('mvs-import-progress-bar');
 									btn.disabled = true;
 									btn.textContent = '<?php echo esc_js( __( 'Importing...', 'wpmediaverse' ) ); ?>';
 									status.textContent = '';
+									progress.style.display = 'block';
+									bar.style.width = '30%';
 									var xhr = new XMLHttpRequest();
 									xhr.open('POST', ajaxurl);
 									xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 									xhr.onload = function() {
+										bar.style.width = '100%';
 										var data = JSON.parse(xhr.responseText);
 										if (data.success) {
 											status.textContent = data.data.message;
 											status.style.color = '#00a32a';
+											<?php
+											$explore_page_id = (int) get_option( 'mvs_page_explore', 0 );
+											$explore_url     = $explore_page_id ? get_permalink( $explore_page_id ) : '';
+											if ( $explore_url ) :
+											?>
+											status.textContent += ' <?php echo esc_js( __( 'Redirecting to Explore page...', 'wpmediaverse' ) ); ?>';
+											setTimeout(function() { window.location.href = '<?php echo esc_url( $explore_url ); ?>'; }, 1500);
+											<?php else : ?>
 											setTimeout(function() { location.reload(); }, 1500);
+											<?php endif; ?>
 										} else {
 											status.textContent = data.data ? data.data.message : 'Import failed.';
 											status.style.color = '#d63638';
 											btn.disabled = false;
 											btn.textContent = '<?php echo esc_js( __( 'Import Demo Data', 'wpmediaverse' ) ); ?>';
+											progress.style.display = 'none';
 										}
 									};
+									setTimeout(function() { bar.style.width = '60%'; }, 500);
 									xhr.send('action=mvs_import_demo_data&_nonce=' + btn.getAttribute('data-nonce'));
 								});
 								</script>
@@ -411,24 +433,111 @@ class OverviewPage {
 	}
 
 	/**
-	 * Render a getting-started notice if the plugin has no media yet.
+	 * Render a dismissible welcome banner for new installs.
 	 */
 	private function render_getting_started(): void {
-		$total = (int) wp_count_posts( 'mvs_media' )->publish;
-		if ( $total > 0 ) {
+		// Don't show if user already dismissed.
+		if ( get_user_meta( get_current_user_id(), '_mvs_welcome_dismissed', true ) ) {
+			return;
+		}
+
+		$settings_url    = admin_url( 'edit.php?post_type=mvs_media&page=mvs-settings' );
+		$upload_page_id  = (int) get_option( 'mvs_page_upload', 0 );
+		$upload_url      = $upload_page_id ? get_permalink( $upload_page_id ) : admin_url( 'post-new.php?post_type=mvs_media' );
+		$permissions_url = admin_url( 'edit.php?post_type=mvs_media&page=mvs-settings&tab=permissions' );
+		?>
+		<div class="mvs-welcome-banner" id="mvs-welcome-banner">
+			<div class="mvs-welcome-banner__content">
+				<h3><?php esc_html_e( 'Welcome to WPMediaVerse!', 'wpmediaverse' ); ?></h3>
+				<p><?php esc_html_e( 'Your media sharing platform is ready. Follow these steps to get started:', 'wpmediaverse' ); ?></p>
+				<div class="mvs-welcome-steps">
+					<a href="<?php echo esc_url( $settings_url ); ?>" class="mvs-welcome-step">
+						<span class="mvs-welcome-step__number">1</span>
+						<span class="mvs-welcome-step__text">
+							<strong><?php esc_html_e( 'Configure settings', 'wpmediaverse' ); ?></strong>
+							<span><?php esc_html_e( 'Upload limits, privacy, file types', 'wpmediaverse' ); ?></span>
+						</span>
+					</a>
+					<a href="<?php echo esc_url( $upload_url ); ?>" class="mvs-welcome-step">
+						<span class="mvs-welcome-step__number">2</span>
+						<span class="mvs-welcome-step__text">
+							<strong><?php esc_html_e( 'Upload your first media', 'wpmediaverse' ); ?></strong>
+							<span><?php esc_html_e( 'Images, videos, or audio files', 'wpmediaverse' ); ?></span>
+						</span>
+					</a>
+					<a href="<?php echo esc_url( $permissions_url ); ?>" class="mvs-welcome-step">
+						<span class="mvs-welcome-step__number">3</span>
+						<span class="mvs-welcome-step__text">
+							<strong><?php esc_html_e( 'Customize permissions', 'wpmediaverse' ); ?></strong>
+							<span><?php esc_html_e( 'Control who can upload and manage', 'wpmediaverse' ); ?></span>
+						</span>
+					</a>
+				</div>
+				<?php $this->render_pages_created_notice(); ?>
+			</div>
+			<button type="button" class="mvs-welcome-banner__dismiss" id="mvs-dismiss-welcome"
+				data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_dismiss_welcome' ) ); ?>"
+				aria-label="<?php esc_attr_e( 'Dismiss welcome banner', 'wpmediaverse' ); ?>">
+				<span class="dashicons dashicons-no-alt"></span>
+			</button>
+		</div>
+		<script>
+		document.getElementById('mvs-dismiss-welcome').addEventListener('click', function() {
+			var banner = document.getElementById('mvs-welcome-banner');
+			banner.style.display = 'none';
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', ajaxurl);
+			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+			xhr.send('action=mvs_dismiss_welcome&_nonce=' + this.getAttribute('data-nonce'));
+		});
+		</script>
+		<?php
+	}
+
+	/**
+	 * Render success notice showing auto-created frontend pages.
+	 */
+	private function render_pages_created_notice(): void {
+		$pages = array(
+			'mvs_page_explore'   => __( 'Explore Media', 'wpmediaverse' ),
+			'mvs_page_upload'    => __( 'Upload Media', 'wpmediaverse' ),
+			'mvs_page_dashboard' => __( 'My Media', 'wpmediaverse' ),
+		);
+
+		$active_pages = array();
+		foreach ( $pages as $option_key => $label ) {
+			$page_id = (int) get_option( $option_key, 0 );
+			if ( $page_id > 0 && 'publish' === get_post_status( $page_id ) ) {
+				$active_pages[] = array(
+					'label' => $label,
+					'url'   => get_permalink( $page_id ),
+				);
+			}
+		}
+
+		if ( empty( $active_pages ) ) {
 			return;
 		}
 		?>
-		<div class="mvs-getting-started">
-			<h3><?php esc_html_e( 'Welcome to WPMediaVerse!', 'wpmediaverse' ); ?></h3>
-			<ol>
-				<li><?php esc_html_e( 'Configure your settings (upload limits, privacy defaults, allowed file types).', 'wpmediaverse' ); ?></li>
-				<li><?php esc_html_e( 'Upload your first media item via the Upload page or Add New in the admin.', 'wpmediaverse' ); ?></li>
-				<li><?php esc_html_e( 'Create albums to organize your media into collections.', 'wpmediaverse' ); ?></li>
-				<li><?php esc_html_e( 'Share the Explore page URL with your community!', 'wpmediaverse' ); ?></li>
-			</ol>
+		<div class="mvs-welcome-pages">
+			<span class="dashicons dashicons-yes-alt" style="color:#00a32a;"></span>
+			<span><?php esc_html_e( 'Frontend pages created:', 'wpmediaverse' ); ?></span>
+			<?php foreach ( $active_pages as $page ) : ?>
+				<a href="<?php echo esc_url( $page['url'] ); ?>" target="_blank">
+					<?php echo esc_html( $page['label'] ); ?> &#8599;
+				</a>
+			<?php endforeach; ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * AJAX handler for dismissing the welcome banner.
+	 */
+	public function ajax_dismiss_welcome(): void {
+		check_ajax_referer( 'mvs_dismiss_welcome', '_nonce' );
+		update_user_meta( get_current_user_id(), '_mvs_welcome_dismissed', 1 );
+		wp_send_json_success();
 	}
 
 	// -------------------------------------------------------------------------

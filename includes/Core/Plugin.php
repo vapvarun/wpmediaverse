@@ -43,6 +43,8 @@ use WPMediaVerse\Services\WatermarkService;
 use WPMediaVerse\Admin\ModerationQueue;
 use WPMediaVerse\Admin\OverviewPage;
 use WPMediaVerse\Admin\StatsPage;
+use WPMediaVerse\Admin\LogViewerPage;
+use WPMediaVerse\Admin\SetupWizard;
 use WPMediaVerse\Admin\CollectionMetaBox;
 use WPMediaVerse\Social\ReactionService;
 use WPMediaVerse\Social\CommentService;
@@ -110,6 +112,8 @@ class Plugin {
 			self::$container->get( 'admin.settings' );
 			self::$container->get( 'admin.moderation' );
 			self::$container->get( 'admin.stats' );
+			self::$container->get( 'admin.logs' );
+			self::$container->get( 'admin.setup_wizard' );
 			self::$container->get( 'admin.collection_metabox' );
 
 			// Reorder submenu so Overview is first, then separator, then content, then tools.
@@ -327,6 +331,20 @@ class Plugin {
 			'admin.stats',
 			function ( ServiceContainer $c ) {
 				return new StatsPage( $c->get( 'ai' ) );
+			}
+		);
+
+		self::$container->register(
+			'admin.logs',
+			function () {
+				return new LogViewerPage();
+			}
+		);
+
+		self::$container->register(
+			'admin.setup_wizard',
+			function () {
+				return new SetupWizard();
 			}
 		);
 
@@ -716,9 +734,14 @@ class Plugin {
 
 		delete_transient( 'mvs_activation_redirect' );
 
-		wp_safe_redirect(
-			admin_url( 'edit.php?post_type=mvs_media&page=' . OverviewPage::PAGE_SLUG )
-		);
+		// Redirect to setup wizard if first time, otherwise overview.
+		if ( ! get_option( 'mvs_setup_complete' ) && current_user_can( 'manage_mvs_settings' ) ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=' . SetupWizard::PAGE_SLUG ) );
+		} else {
+			wp_safe_redirect(
+				admin_url( 'edit.php?post_type=mvs_media&page=' . OverviewPage::PAGE_SLUG )
+			);
+		}
 		exit;
 	}
 
