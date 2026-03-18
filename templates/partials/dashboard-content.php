@@ -37,7 +37,7 @@ $mvs_dash_ctx['firstName']       = $mvs_current_user->first_name;
 $mvs_dash_ctx['lastName']        = $mvs_current_user->last_name;
 $mvs_dash_ctx['displayName']     = $mvs_current_user->display_name;
 $mvs_dash_ctx['bio']             = $mvs_current_user->description;
-$mvs_dash_ctx['avatarUrl']       = $mvs_avatar_url;
+$mvs_dash_ctx['avatarUrl']       = $mvs_avatar_url ?: '';
 $mvs_dash_ctx['hasCustomAvatar'] = $mvs_has_custom;
 $mvs_dash_ctx['editingProfile']  = false;
 $mvs_dash_ctx['savingProfile']   = false;
@@ -168,11 +168,10 @@ wp_enqueue_script_module(
 			<?php esc_html_e( 'Complete your profile — add an avatar and bio to help others find you.', 'wpmediaverse' ); ?>
 			<a href="<?php echo esc_url( $mvs_edit_profile_url ); ?>"><?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?></a>
 		</span>
-		<button type="button" class="mvs-profile-prompt-close"
-			onclick="this.parentNode.style.display='none';localStorage.setItem('mvs_profile_prompt_dismissed','1');"
+		<button type="button" class="mvs-profile-prompt-close" id="mvs-profile-prompt-close"
 			aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
-	<script>if(localStorage.getItem('mvs_profile_prompt_dismissed')==='1'){var pp=document.getElementById('mvs-profile-prompt');if(pp)pp.style.display='none';}</script>
+	<script>(function(){var pp=document.getElementById('mvs-profile-prompt');var btn=document.getElementById('mvs-profile-prompt-close');if(pp&&localStorage.getItem('mvs_profile_prompt_dismissed')==='1'){pp.style.display='none';}if(btn)btn.addEventListener('click',function(){if(pp)pp.style.display='none';localStorage.setItem('mvs_profile_prompt_dismissed','1');});}());</script>
 	<?php endif; ?>
 
 	<div class="mvs-dashboard-header">

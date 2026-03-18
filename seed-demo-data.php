@@ -342,6 +342,12 @@ if ( (int) $existing > 0 ) {
 // Seed media.
 // ---------------------------------------------------------------------------
 
+$user_id = get_current_user_id();
+if ( ! $user_id ) {
+	mvs_seed_log( 'No logged-in user found. Run with --user=<id> in WP-CLI.', 'warning' );
+	return;
+}
+
 mvs_seed_log( 'Importing WPMediaVerse demo data...' );
 mvs_seed_log( '' );
 
@@ -377,7 +383,7 @@ foreach ( $images as $idx => $img ) {
 			'post_title'   => $img['title'],
 			'post_content' => $img['description'],
 			'post_status'  => 'publish',
-			'post_author'  => get_current_user_id() ? get_current_user_id() : 1,
+			'post_author'  => $user_id,
 		),
 		true
 	);
@@ -433,7 +439,7 @@ foreach ( $images as $idx => $img ) {
 		$wpdb->prefix . 'mvs_media_index',
 		array(
 			'media_id'          => $post_id,
-			'author_id'         => get_current_user_id() ? get_current_user_id() : 1,
+			'post_author'       => $user_id,
 			'media_type'        => $img['type'],
 			'privacy'           => $img['privacy'],
 			'moderation_status' => 'approved',
@@ -464,7 +470,7 @@ foreach ( $albums_config as $album_cfg ) {
 			'post_title'   => $album_cfg['title'],
 			'post_content' => $album_cfg['description'],
 			'post_status'  => 'publish',
-			'post_author'  => get_current_user_id() ? get_current_user_id() : 1,
+			'post_author'  => $user_id,
 		),
 		true
 	);
@@ -524,7 +530,7 @@ foreach ( $collections_config as $col_cfg ) {
 			'post_title'   => $col_cfg['title'],
 			'post_content' => $col_cfg['description'],
 			'post_status'  => 'publish',
-			'post_author'  => get_current_user_id() ? get_current_user_id() : 1,
+			'post_author'  => $user_id,
 		),
 		true
 	);
@@ -561,7 +567,6 @@ mvs_seed_log( '' );
 mvs_seed_log( 'Adding social interactions...' );
 
 $reaction_types = array( 'like', 'love', 'haha', 'wow' );
-$user_id        = get_current_user_id() ? get_current_user_id() : 1;
 
 foreach ( $created_media as $idx => $media ) {
 	$media_id = $media['post_id'];

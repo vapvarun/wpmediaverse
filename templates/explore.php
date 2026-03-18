@@ -29,10 +29,10 @@ get_header();
 				</a>
 			<?php endif; ?>
 		</div>
-		<button type="button" class="mvs-logged-out-banner__close" onclick="this.parentNode.style.display='none';localStorage.setItem('mvs_hide_cta','1');"
+		<button type="button" class="mvs-logged-out-banner__close" id="mvs-logged-out-banner-close"
 			aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
-	<script>if(localStorage.getItem('mvs_hide_cta')==='1'){var b=document.getElementById('mvs-logged-out-banner');if(b)b.style.display='none';}</script>
+	<script>(function(){var b=document.getElementById('mvs-logged-out-banner');var btn=document.getElementById('mvs-logged-out-banner-close');if(b&&localStorage.getItem('mvs_hide_cta')==='1'){b.style.display='none';}if(btn)btn.addEventListener('click',function(){if(b)b.style.display='none';localStorage.setItem('mvs_hide_cta','1');});}());</script>
 <?php endif; ?>
 
 <div class="mvs-explore-page">
