@@ -14,6 +14,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Services\PrivacyService;
 use WPMediaVerse\Services\SignedUrlService;
 
@@ -133,6 +134,11 @@ class SignedUrlController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_signed_url( $request ) {
+		$rate_check = RateLimiter::check( 'signed_url', 60, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$media_id = $request->get_param( 'media_id' );
 		$download = (bool) $request->get_param( 'download' );
 		$ttl      = $request->get_param( 'ttl' );
@@ -164,6 +170,11 @@ class SignedUrlController extends WP_REST_Controller {
 	 * @param WP_REST_Request $request Request.
 	 */
 	public function serve_file( $request ) {
+		$rate_check = RateLimiter::check( 'serve_file', 60, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$params = array(
 			SignedUrlService::PARAM_MEDIA_ID  => $request->get_param( SignedUrlService::PARAM_MEDIA_ID ),
 			SignedUrlService::PARAM_USER      => $request->get_param( SignedUrlService::PARAM_USER ),

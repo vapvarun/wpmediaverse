@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 4;
+	const CURRENT_VERSION = 5;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -297,5 +297,94 @@ class Migrator {
 				KEY type_date (media_type, created_at)
 			) {$charset_collate};"
 		);
+	}
+
+	/**
+	 * Migration v5 — error log table + report unique constraint.
+	 *
+	 * @since 1.2.0
+	 */
+	private function migrate_to_5(): void {
+		global $wpdb;
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$prefix          = $wpdb->prefix;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		// Error log table for centralized logging.
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_error_log (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				level varchar(10) NOT NULL DEFAULT 'info',
+				context varchar(50) NOT NULL DEFAULT '',
+				message text NOT NULL,
+				metadata text DEFAULT NULL,
+				user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				ip_address varchar(45) NOT NULL DEFAULT '',
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY level_date (level, created_at),
+				KEY context_date (context, created_at)
+			) {$charset_collate};"
+		);
+
+		// Add unique constraint to reports (prevent duplicate reports).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$index_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s",
+				DB_NAME,
+				$prefix . 'mvs_reports',
+				'unique_report'
+			)
+		);
+
+		if ( ! $index_exists ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$prefix}mvs_reports ADD UNIQUE KEY unique_report (reporter_id, target_type, target_id)" );
+		}
+
+		// Unique constraint on follows (prevent duplicate follows).
+		$follow_idx = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s",
+				DB_NAME,
+				$prefix . 'mvs_follows',
+				'unique_follow'
+			)
+		);
+		if ( ! $follow_idx ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$prefix}mvs_follows ADD UNIQUE KEY unique_follow (follower_id, following_id)" );
+		}
+
+		// Unique constraint on reactions (prevent duplicate reactions).
+		$react_idx = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s",
+				DB_NAME,
+				$prefix . 'mvs_reactions',
+				'unique_reaction'
+			)
+		);
+		if ( ! $react_idx ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$prefix}mvs_reactions ADD UNIQUE KEY unique_reaction (media_id, user_id, reaction_type)" );
+		}
+
+		// Unique constraint on favorites.
+		$fav_idx = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s",
+				DB_NAME,
+				$prefix . 'mvs_favorites',
+				'unique_favorite'
+			)
+		);
+		if ( ! $fav_idx ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$prefix}mvs_favorites ADD UNIQUE KEY unique_favorite (media_id, user_id)" );
+		}
 	}
 }

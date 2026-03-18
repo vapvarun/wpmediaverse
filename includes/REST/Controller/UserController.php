@@ -19,6 +19,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\Core\Plugin;
+use WPMediaVerse\REST\RateLimiter;
 
 /**
  * REST controller for user profiles and search.
@@ -191,12 +192,19 @@ class UserController extends WP_REST_Controller {
 			)
 		);
 
+		// Prime post and meta caches in bulk.
+		$int_ids = array_map( 'intval', $ids );
+		if ( $int_ids ) {
+			_prime_post_caches( $int_ids, true, true );
+			update_meta_cache( 'post', $int_ids );
+		}
+
 		$privacy  = Plugin::container()->get( 'privacy' );
 		$media_ctrl = new MediaController( $privacy );
 
 		$items = array();
-		foreach ( $ids as $mid ) {
-			$post = get_post( (int) $mid );
+		foreach ( $int_ids as $mid ) {
+			$post = get_post( $mid );
 			if ( $post ) {
 				$item = $media_ctrl->prepare_item_for_response( $post, $request );
 				if ( $item ) {
@@ -218,6 +226,11 @@ class UserController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function search_users( $request ) {
+		$rate_check = RateLimiter::check( 'user_search', 100, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$query    = sanitize_text_field( $request->get_param( 'q' ) );
 		$per_page = (int) $request->get_param( 'per_page' );
 
@@ -235,20 +248,44 @@ class UserController extends WP_REST_Controller {
 			)
 		);
 
-		$follows    = Plugin::container()->get( 'follows' );
-		$current_id = get_current_user_id();
-		$results    = array();
+		$current_id  = get_current_user_id();
+		$result_ids  = array_map( 'intval', $user_query->get_results() );
 
-		foreach ( $user_query->get_results() as $uid ) {
-			$user = get_userdata( $uid );
+		// Batch load follow status.
+		$following_map = array();
+		if ( $current_id && $result_ids ) {
+			global $wpdb;
+			$placeholders = implode( ',', array_fill( 0, count( $result_ids ), '%d' ) );
+			$params       = array_merge( array( $current_id ), $result_ids );
+			$followed     = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND following_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...$params
+				)
+			);
+			$following_map = array_flip( array_map( 'intval', $followed ) );
+		}
+
+		// Batch load user objects.
+		$user_objects = array();
+		if ( $result_ids ) {
+			$batch = new \WP_User_Query( array( 'include' => $result_ids, 'fields' => 'all' ) );
+			foreach ( $batch->get_results() as $u ) {
+				$user_objects[ (int) $u->ID ] = $u;
+			}
+		}
+
+		$results = array();
+		foreach ( $result_ids as $uid ) {
+			$user = $user_objects[ $uid ] ?? null;
 			if ( ! $user ) {
 				continue;
 			}
 			$results[] = array(
-				'id'           => (int) $uid,
+				'id'           => $uid,
 				'name'         => $user->display_name,
 				'avatar'       => get_avatar_url( $uid, array( 'size' => 48 ) ),
-				'is_following' => $current_id ? $follows->is_following( $current_id, (int) $uid ) : false,
+				'is_following' => isset( $following_map[ $uid ] ),
 			);
 		}
 

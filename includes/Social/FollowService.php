@@ -36,25 +36,22 @@ class FollowService {
 			return false;
 		}
 
-		// Already following?
-		if ( $this->is_following( $follower_id, $following_id ) ) {
-			return true;
-		}
-
 		global $wpdb;
 
-		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_follows',
-			array(
-				'follower_id'  => $follower_id,
-				'following_id' => $following_id,
-				'status'       => 'active',
-				'created_at'   => current_time( 'mysql', true ),
-			),
-			array( '%d', '%d', '%s', '%s' )
+		// Use INSERT IGNORE to handle race conditions — if two concurrent requests
+		// both pass the check, only one will succeed; the other silently no-ops.
+		$table = $wpdb->prefix . 'mvs_follows';
+		$result = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$table} (follower_id, following_id, status, created_at) VALUES (%d, %d, %s, %s)", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$follower_id,
+				$following_id,
+				'active',
+				current_time( 'mysql', true )
+			)
 		);
 
-		if ( $result ) {
+		if ( $result && $wpdb->insert_id ) {
 			/**
 			 * Fires after a user follows another user.
 			 *
@@ -68,7 +65,8 @@ class FollowService {
 			return $wpdb->insert_id;
 		}
 
-		return false;
+		// Already following (INSERT IGNORE no-op) — return true.
+		return $this->is_following( $follower_id, $following_id );
 	}
 
 	/**

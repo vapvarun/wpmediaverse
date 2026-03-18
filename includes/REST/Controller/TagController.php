@@ -219,25 +219,36 @@ class TagController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Target tag not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		// Get all posts with the source tag.
-		$posts = get_posts(
-			array(
-				'post_type'      => 'mvs_media',
-				'posts_per_page' => -1,
-				'fields'         => 'ids',
-				'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-					array(
-						'taxonomy' => 'mvs_tag',
-						'terms'    => $source_id,
-					),
-				),
-			)
-		);
+		// Get posts with the source tag in batches to avoid unbounded memory usage.
+		$batch_size    = 500;
+		$batch_page    = 1;
+		$posts         = array();
+		$total_merged  = 0;
 
-		// Add target tag to each post.
-		foreach ( $posts as $post_id ) {
-			wp_set_object_terms( $post_id, $target_id, 'mvs_tag', true );
-		}
+		do {
+			$batch = get_posts(
+				array(
+					'post_type'      => 'mvs_media',
+					'posts_per_page' => $batch_size,
+					'paged'          => $batch_page,
+					'fields'         => 'ids',
+					'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+						array(
+							'taxonomy' => 'mvs_tag',
+							'terms'    => $source_id,
+						),
+					),
+				)
+			);
+
+			foreach ( $batch as $post_id ) {
+				wp_set_object_terms( $post_id, $target_id, 'mvs_tag', true );
+			}
+
+			$total_merged += count( $batch );
+			$posts         = array_merge( $posts, $batch );
+			++$batch_page;
+		} while ( count( $batch ) === $batch_size );
 
 		// Delete source tag.
 		wp_delete_term( $source_id, 'mvs_tag' );

@@ -193,6 +193,12 @@ class ModerationController extends WP_REST_Controller {
 			)
 		);
 
+		// Prime postmeta cache in bulk to avoid N+1.
+		$post_ids = wp_list_pluck( $result['items'], 'ID' );
+		if ( $post_ids ) {
+			update_meta_cache( 'post', $post_ids );
+		}
+
 		$items = array();
 		foreach ( $result['items'] as $post ) {
 			$items[] = $this->prepare_item( $post );

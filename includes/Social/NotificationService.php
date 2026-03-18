@@ -132,6 +132,23 @@ class NotificationService {
 			)
 		);
 
+		// Prime caches in bulk to avoid N+1 queries.
+		$actor_ids = array();
+		$media_ids = array();
+		foreach ( $rows as $row ) {
+			$actor_ids[] = (int) $row->actor_id;
+			if ( $row->media_id ) {
+				$media_ids[] = (int) $row->media_id;
+			}
+		}
+		if ( $actor_ids ) {
+			// Pre-load all actor user objects in one query.
+			new \WP_User_Query( array( 'include' => array_unique( $actor_ids ), 'fields' => 'all' ) );
+		}
+		if ( $media_ids ) {
+			_prime_post_caches( array_unique( $media_ids ), false, false );
+		}
+
 		$notifications = array();
 		foreach ( $rows as $row ) {
 			$notifications[] = $this->format_notification( $row );

@@ -37,15 +37,18 @@ if ( file_exists( $mvs_sdk_file ) ) {
 add_action(
 	'edd_sl_sdk_registry',
 	function ( $registry ) {
-		$registry->register(
-			array(
-				'id'      => 'wpmediaverse',
-				'url'     => 'https://wbcomdesigns.com',
-				'item_id' => 0, // Placeholder — replace with real EDD product ID.
-				'version' => MVS_VERSION,
-				'file'    => MVS_PLUGIN_FILE,
-			)
-		);
+		$item_id = 0; // Placeholder — replace with real EDD product ID.
+		if ( $item_id ) {
+			$registry->register(
+				array(
+					'id'      => 'wpmediaverse',
+					'url'     => 'https://wbcomdesigns.com',
+					'item_id' => $item_id,
+					'version' => MVS_VERSION,
+					'file'    => MVS_PLUGIN_FILE,
+				)
+			);
+		}
 	}
 );
 

@@ -251,6 +251,11 @@ class CommentController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_item( $request ) {
+		$rate_check = RateLimiter::check( 'comment_write', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$comment_id = $request->get_param( 'comment_id' );
 		$media_id   = $request->get_param( 'media_id' );
 		$user_id    = get_current_user_id();
@@ -319,6 +324,11 @@ class CommentController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function delete_item( $request ) {
+		$rate_check = RateLimiter::check( 'comment_write', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$comment_id = $request->get_param( 'comment_id' );
 		$media_id   = $request->get_param( 'media_id' );
 

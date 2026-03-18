@@ -159,7 +159,7 @@ class Plugin {
 		self::$container->get( 'integration.webhooks' );
 
 		// Action Scheduler callback for async webhook delivery.
-		add_action( 'mvs_deliver_webhook', array( self::class, 'deliver_webhook' ), 10, 3 );
+		add_action( 'mvs_deliver_webhook', array( self::class, 'deliver_webhook' ), 10, 4 );
 
 		// Ensure stats/index rows exist when media is published.
 		add_action( 'publish_mvs_media', array( self::class, 'ensure_media_rows' ), 10, 2 );
@@ -389,6 +389,20 @@ class Plugin {
 			}
 		);
 
+		// Log pruning cron (daily).
+		if ( ! wp_next_scheduled( 'mvs_prune_logs' ) ) {
+			wp_schedule_event( time(), 'daily', 'mvs_prune_logs' );
+		}
+		add_action( 'mvs_prune_logs', array( \WPMediaVerse\Services\LoggerService::class, 'prune' ) );
+
+		// GDPR compliance.
+		$gdpr = new \WPMediaVerse\Services\GDPRService();
+		$gdpr->init();
+
+		// Site Health checks.
+		$health = new \WPMediaVerse\Services\HealthCheckService();
+		$health->init();
+
 		self::$container->register(
 			'follows',
 			function () {
@@ -546,9 +560,9 @@ class Plugin {
 	 * @param string $body    JSON body.
 	 * @param array  $headers HTTP headers.
 	 */
-	public static function deliver_webhook( string $url, string $body, array $headers ): void {
+	public static function deliver_webhook( string $url, string $body, array $headers, int $attempt = 1 ): void {
 		$webhooks = self::$container->get( 'integration.webhooks' );
-		$webhooks->send( $url, $body, $headers );
+		$webhooks->send( $url, $body, $headers, $attempt );
 	}
 
 	/**

@@ -16,6 +16,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Social\FollowService;
 
 /**
@@ -145,6 +146,11 @@ class FollowController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function follow_user( $request ) {
+		$rate_check = RateLimiter::check( 'follow', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$target_id = $request->get_param( 'id' );
 		$result    = $this->follows->follow( get_current_user_id(), $target_id );
 
@@ -167,6 +173,11 @@ class FollowController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function unfollow_user( $request ) {
+		$rate_check = RateLimiter::check( 'follow', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$target_id = $request->get_param( 'id' );
 		$this->follows->unfollow( get_current_user_id(), $target_id );
 
@@ -248,17 +259,42 @@ class FollowController extends WP_REST_Controller {
 	 * @return array
 	 */
 	private function format_user_list( array $user_ids, int $current_user ): array {
+		if ( empty( $user_ids ) ) {
+			return array();
+		}
+
+		// Batch load all user objects in one query.
+		$user_query = new \WP_User_Query(
+			array(
+				'include' => $user_ids,
+				'orderby' => 'include',
+				'fields'  => 'all',
+			)
+		);
+
+		// Batch load follow status if logged in.
+		$following_map = array();
+		if ( $current_user ) {
+			global $wpdb;
+			$placeholders = implode( ',', array_fill( 0, count( $user_ids ), '%d' ) );
+			$params       = array_merge( array( $current_user ), $user_ids );
+			$followed     = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND following_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...$params
+				)
+			);
+			$following_map = array_flip( array_map( 'intval', $followed ) );
+		}
+
 		$users = array();
-		foreach ( $user_ids as $uid ) {
-			$user = get_userdata( $uid );
-			if ( ! $user ) {
-				continue;
-			}
+		foreach ( $user_query->get_results() as $user ) {
+			$uid     = (int) $user->ID;
 			$users[] = array(
 				'id'           => $uid,
 				'name'         => $user->display_name,
 				'avatar'       => get_avatar_url( $uid, array( 'size' => 96 ) ),
-				'is_following' => $current_user ? $this->follows->is_following( $current_user, $uid ) : false,
+				'is_following' => isset( $following_map[ $uid ] ),
 			);
 		}
 		return $users;

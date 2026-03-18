@@ -209,7 +209,7 @@ class WebhookService {
 	 * @param array  $headers HTTP headers.
 	 * @return bool True on success.
 	 */
-	public function send( string $url, string $body, array $headers ): bool {
+	public function send( string $url, string $body, array $headers, int $attempt = 1 ): bool {
 		$response = wp_remote_post(
 			$url,
 			array(
@@ -222,16 +222,51 @@ class WebhookService {
 
 		if ( is_wp_error( $response ) ) {
 			$this->log_failure( $url, $response->get_error_message() );
-			return false;
+			return $this->maybe_retry( $url, $body, $headers, $attempt );
 		}
 
 		$code = wp_remote_retrieve_response_code( $response );
 		if ( $code < 200 || $code >= 300 ) {
 			$this->log_failure( $url, "HTTP {$code}" );
+			// Retry on 5xx server errors, not 4xx client errors.
+			if ( $code >= 500 ) {
+				return $this->maybe_retry( $url, $body, $headers, $attempt );
+			}
 			return false;
 		}
 
 		return true;
+	}
+
+	/**
+	 * Schedule a webhook retry via Action Scheduler.
+	 *
+	 * Max 3 attempts with 5-minute intervals.
+	 *
+	 * @param string $url     Webhook URL.
+	 * @param string $body    JSON body.
+	 * @param array  $headers HTTP headers.
+	 * @param int    $attempt Current attempt number.
+	 * @return bool Always false (current attempt failed).
+	 */
+	private function maybe_retry( string $url, string $body, array $headers, int $attempt ): bool {
+		if ( $attempt >= 3 || ! function_exists( 'as_schedule_single_action' ) ) {
+			return false;
+		}
+
+		as_schedule_single_action(
+			time() + ( 300 * $attempt ), // 5min, 10min.
+			'mvs_deliver_webhook',
+			array(
+				'url'     => $url,
+				'body'    => $body,
+				'headers' => $headers,
+				'attempt' => $attempt + 1,
+			),
+			'wpmediaverse'
+		);
+
+		return false;
 	}
 
 	/**

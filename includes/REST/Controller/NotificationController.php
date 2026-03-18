@@ -15,6 +15,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Social\NotificationService;
 
 /**
@@ -136,6 +137,11 @@ class NotificationController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function mark_read( $request ) {
+		$rate_check = RateLimiter::check( 'notification_write', 60, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$ids     = array_map( 'absint', $request->get_param( 'ids' ) );
 		$updated = $this->notifications->mark_read( get_current_user_id(), $ids );
 

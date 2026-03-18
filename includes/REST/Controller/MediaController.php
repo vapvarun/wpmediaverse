@@ -249,9 +249,16 @@ class MediaController extends WP_REST_Controller {
 		$data_sql = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE {$where_sql} ORDER BY created_at DESC LIMIT %d OFFSET %d";
 		$ids      = $wpdb->get_col( $wpdb->prepare( $data_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
 
+		// Prime post and meta caches in bulk to avoid N+1 queries.
+		$int_ids = array_map( 'intval', $ids );
+		if ( $int_ids ) {
+			_prime_post_caches( $int_ids, true, true );
+			update_meta_cache( 'post', $int_ids );
+		}
+
 		$items = array();
-		foreach ( $ids as $media_id ) {
-			$item = $this->prepare_item_for_response( get_post( (int) $media_id ), $request );
+		foreach ( $int_ids as $media_id ) {
+			$item = $this->prepare_item_for_response( get_post( $media_id ), $request );
 			if ( $item ) {
 				$items[] = $item;
 			}

@@ -190,6 +190,77 @@ class CacheService {
 	}
 
 	/**
+	 * Get follower/following counts with caching.
+	 *
+	 * @param int $user_id User ID.
+	 * @return array{followers: int, following: int}
+	 */
+	public function get_follow_counts( int $user_id ): array {
+		$key = "follow_counts_{$user_id}";
+		return $this->remember(
+			$key,
+			function () use ( $user_id ) {
+				global $wpdb;
+				$followers = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_follows WHERE following_id = %d",
+						$user_id
+					)
+				);
+				$following = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d",
+						$user_id
+					)
+				);
+				return array(
+					'followers' => $followers,
+					'following' => $following,
+				);
+			},
+			self::TTL_MEDIUM
+		);
+	}
+
+	/**
+	 * Get tag cloud data with caching.
+	 *
+	 * @param int $limit Max tags.
+	 * @return array
+	 */
+	public function get_tag_cloud( int $limit = 50 ): array {
+		$key = "tag_cloud_{$limit}";
+		return $this->remember(
+			$key,
+			function () use ( $limit ) {
+				$terms = get_terms(
+					array(
+						'taxonomy'   => 'mvs_tag',
+						'orderby'    => 'count',
+						'order'      => 'DESC',
+						'number'     => $limit,
+						'hide_empty' => true,
+					)
+				);
+				if ( is_wp_error( $terms ) ) {
+					return array();
+				}
+				$cloud = array();
+				foreach ( $terms as $term ) {
+					$cloud[] = array(
+						'id'    => $term->term_id,
+						'name'  => $term->name,
+						'slug'  => $term->slug,
+						'count' => $term->count,
+					);
+				}
+				return $cloud;
+			},
+			self::TTL_LONG
+		);
+	}
+
+	/**
 	 * Invalidate media stats cache.
 	 *
 	 * @param int $media_id Media post ID.
@@ -201,6 +272,27 @@ class CacheService {
 		$author_id = (int) get_post_field( 'post_author', $media_id );
 		if ( $author_id ) {
 			$this->delete( "user_stats_{$author_id}" );
+		}
+	}
+
+	/**
+	 * Invalidate follow counts for both users.
+	 *
+	 * @param int $follower_id  Follower user ID.
+	 * @param int $following_id Followed user ID.
+	 */
+	public function invalidate_follow_counts( int $follower_id, int $following_id ): void {
+		$this->delete( "follow_counts_{$follower_id}" );
+		$this->delete( "follow_counts_{$following_id}" );
+	}
+
+	/**
+	 * Invalidate tag cloud cache.
+	 */
+	public function invalidate_tag_cloud(): void {
+		// Clear all tag cloud variants.
+		foreach ( array( 20, 50, 100 ) as $limit ) {
+			$this->delete( "tag_cloud_{$limit}" );
 		}
 	}
 
@@ -241,6 +333,18 @@ class CacheService {
 		// Invalidate moderation cache.
 		add_action( 'mvs_media_moderated', array( $this, 'on_moderation_change' ) );
 		add_action( 'mvs_media_uploaded', array( $this, 'on_moderation_change' ) );
+
+		// Invalidate follow counts on follow/unfollow.
+		add_action( 'mvs_user_followed', array( $this, 'on_follow_change' ), 10, 2 );
+		add_action( 'mvs_user_unfollowed', array( $this, 'on_follow_change' ), 10, 2 );
+
+		// Invalidate tag cloud on term changes.
+		add_action( 'created_mvs_tag', array( $this, 'on_tag_change' ) );
+		add_action( 'edited_mvs_tag', array( $this, 'on_tag_change' ) );
+		add_action( 'delete_mvs_tag', array( $this, 'on_tag_change' ) );
+
+		// Invalidate media meta cache on save.
+		add_action( 'save_post_mvs_media', array( $this, 'on_media_save' ) );
 	}
 
 	/**
@@ -257,5 +361,32 @@ class CacheService {
 	 */
 	public function on_moderation_change(): void {
 		$this->invalidate_moderation_counts();
+	}
+
+	/**
+	 * Handle follow/unfollow events.
+	 *
+	 * @param int $follower_id  Follower user ID.
+	 * @param int $following_id Followed user ID.
+	 */
+	public function on_follow_change( int $follower_id, int $following_id ): void {
+		$this->invalidate_follow_counts( $follower_id, $following_id );
+	}
+
+	/**
+	 * Handle tag taxonomy changes.
+	 */
+	public function on_tag_change(): void {
+		$this->invalidate_tag_cloud();
+	}
+
+	/**
+	 * Handle media post save.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function on_media_save( int $post_id ): void {
+		$this->invalidate_media_stats( $post_id );
+		$this->invalidate_tag_cloud();
 	}
 }

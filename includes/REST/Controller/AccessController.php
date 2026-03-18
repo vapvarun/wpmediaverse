@@ -14,6 +14,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Services\AccessRulesService;
 
 /**
@@ -235,6 +236,11 @@ class AccessController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function set_rules( $request ) {
+		$rate_check = RateLimiter::check( 'access_write', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$media_id = $request->get_param( 'media_id' );
 
 		if ( ! $this->media_exists( $media_id ) ) {
@@ -293,6 +299,11 @@ class AccessController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function grant_access( $request ) {
+		$rate_check = RateLimiter::check( 'access_write', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$media_id   = $request->get_param( 'media_id' );
 		$user_id    = $request->get_param( 'user_id' );
 		$source     = $request->get_param( 'source' );

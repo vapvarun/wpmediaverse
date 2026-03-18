@@ -88,19 +88,6 @@ class CommentService {
 	 * @return array{comments: array, total: int}
 	 */
 	public function get_for_media( int $media_id, int $per_page = 20, int $page = 1 ): array {
-		$args = array(
-			'post_id' => $media_id,
-			'type'    => self::COMMENT_TYPE,
-			'status'  => 'approve',
-			'parent'  => 0,
-			'number'  => $per_page,
-			'offset'  => ( $page - 1 ) * $per_page,
-			'orderby' => 'comment_date_gmt',
-			'order'   => 'ASC',
-		);
-
-		$comments = get_comments( $args );
-
 		// Count total top-level comments.
 		$total = (int) get_comments(
 			array(
@@ -112,9 +99,46 @@ class CommentService {
 			)
 		);
 
+		// Fetch top-level comments for the current page.
+		$top_level = get_comments(
+			array(
+				'post_id' => $media_id,
+				'type'    => self::COMMENT_TYPE,
+				'status'  => 'approve',
+				'parent'  => 0,
+				'number'  => $per_page,
+				'offset'  => ( $page - 1 ) * $per_page,
+				'orderby' => 'comment_date_gmt',
+				'order'   => 'ASC',
+			)
+		);
+
+		// Fetch ALL replies for this media in one query, then build tree in memory.
+		$all_replies = array();
+		if ( $top_level ) {
+			$replies_raw = get_comments(
+				array(
+					'post_id'    => $media_id,
+					'type'       => self::COMMENT_TYPE,
+					'status'     => 'approve',
+					'parent__not_in' => array( 0 ),
+					'orderby'    => 'comment_date_gmt',
+					'order'      => 'ASC',
+					'number'     => 0, // All replies.
+				)
+			);
+			foreach ( $replies_raw as $reply ) {
+				$parent_id = (int) $reply->comment_parent;
+				if ( ! isset( $all_replies[ $parent_id ] ) ) {
+					$all_replies[ $parent_id ] = array();
+				}
+				$all_replies[ $parent_id ][] = $reply;
+			}
+		}
+
 		$result = array();
-		foreach ( $comments as $comment ) {
-			$result[] = $this->format_comment( $comment, true );
+		foreach ( $top_level as $comment ) {
+			$result[] = $this->format_comment_with_replies( $comment, $all_replies );
 		}
 
 		return array(
@@ -179,6 +203,34 @@ class CommentService {
 
 			$data['replies'] = array();
 			foreach ( $replies as $reply ) {
+				$data['replies'][] = $this->format_comment( $reply, false );
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Format a comment with replies from pre-loaded reply map (no N+1).
+	 *
+	 * @param \WP_Comment $comment     Comment object.
+	 * @param array       $replies_map Map of parent_id => WP_Comment[].
+	 * @return array
+	 */
+	private function format_comment_with_replies( $comment, array $replies_map ): array {
+		$comment_id = (int) $comment->comment_ID;
+		$data       = array(
+			'id'          => $comment_id,
+			'author'      => (int) $comment->user_id,
+			'author_name' => $comment->comment_author,
+			'content'     => $comment->comment_content,
+			'parent'      => (int) $comment->comment_parent,
+			'date'        => $comment->comment_date_gmt,
+			'replies'     => array(),
+		);
+
+		if ( isset( $replies_map[ $comment_id ] ) ) {
+			foreach ( $replies_map[ $comment_id ] as $reply ) {
 				$data['replies'][] = $this->format_comment( $reply, false );
 			}
 		}
