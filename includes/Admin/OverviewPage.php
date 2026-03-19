@@ -48,7 +48,8 @@ class OverviewPage {
 			false !== strpos( $screen->id, 'mvs-settings' ) ||
 			false !== strpos( $screen->id, 'mvs-moderation' ) ||
 			false !== strpos( $screen->id, 'mvs-stats' ) ||
-			false !== strpos( $screen->id, 'mvs-logs' )
+			false !== strpos( $screen->id, 'mvs-logs' ) ||
+			false !== strpos( $screen->id, 'mvs-migration' )
 		);
 
 		if ( $is_mvs_page ) {

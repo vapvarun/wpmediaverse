@@ -46,6 +46,7 @@ use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Admin\LogViewerPage;
 use WPMediaVerse\Admin\SetupWizard;
 use WPMediaVerse\Admin\CollectionMetaBox;
+use WPMediaVerse\Admin\MigrationPage;
 use WPMediaVerse\Social\ReactionService;
 use WPMediaVerse\Social\CommentService;
 use WPMediaVerse\Social\FavoriteService;
@@ -115,6 +116,7 @@ class Plugin {
 			self::$container->get( 'admin.logs' );
 			self::$container->get( 'admin.setup_wizard' );
 			self::$container->get( 'admin.collection_metabox' );
+			self::$container->get( 'admin.migration' );
 
 			// Reorder submenu so Overview is first, then separator, then content, then tools.
 			add_action( 'admin_menu', array( self::class, 'reorder_submenu' ), 999 );
@@ -345,6 +347,13 @@ class Plugin {
 			'admin.setup_wizard',
 			function () {
 				return new SetupWizard();
+			}
+		);
+
+		self::$container->register(
+			'admin.migration',
+			function () {
+				return new MigrationPage();
 			}
 		);
 
