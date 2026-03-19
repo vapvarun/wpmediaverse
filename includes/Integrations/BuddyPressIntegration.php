@@ -60,7 +60,11 @@ class BuddyPressIntegration {
 			add_action( 'bp_register_activity_actions', array( $this, 'register_activity_actions' ) );
 
 			// Transform legacy media plugin activity HTML (rtMedia, etc.) to MVS rendering.
-			add_filter( 'bp_get_activity_content_body', array( $this, 'transform_legacy_media_content' ) );
+			// Priority 0: must run before bp_activity_filter_kses (priority 1) which strips <div> and class attrs.
+			add_filter( 'bp_get_activity_content_body', array( $this, 'transform_legacy_media_content' ), 0, 2 );
+
+			// Whitelist our MVS tags/attrs so kses (priority 1) preserves our transformed output.
+			add_filter( 'bp_activity_allowed_tags', array( $this, 'allow_mvs_activity_tags' ) );
 		}
 
 		// Profile tab.
@@ -2068,10 +2072,9 @@ class BuddyPressIntegration {
 		}
 		?>
 		<div id="mvs-activity-media-btn-wrap" class="mvs-activity-media-btn-wrap">
-			<input type="file" id="mvs-activity-media-file" accept="image/*,video/*" multiple style="display:none" />
+			<input type="file" id="mvs-activity-media-file" accept="image/*,video/*,audio/*" multiple style="display:none" />
 			<button type="button" id="mvs-activity-media-btn" class="mvs-activity-media-btn" title="<?php esc_attr_e( 'Attach media', 'wpmediaverse' ); ?>">
-				<span class="dashicons dashicons-format-image"></span>
-				<?php esc_html_e( 'Photo/Video', 'wpmediaverse' ); ?>
+				<span class="dashicons dashicons-admin-media"></span>
 			</button>
 			<div id="mvs-activity-media-preview" class="mvs-activity-media-preview" style="display:none"></div>
 			<input type="hidden" id="mvs-activity-media-ids" name="mvs_activity_media_ids" value="" />
@@ -2243,6 +2246,52 @@ class BuddyPressIntegration {
 	}
 
 	/**
+	 * Whitelist MVS HTML tags and attributes in BP activity content.
+	 *
+	 * Hooked to bp_activity_allowed_tags so kses preserves our transformed grid markup.
+	 *
+	 * @param array $tags Allowed tags array.
+	 * @return array Extended allowed tags.
+	 */
+	public function allow_mvs_activity_tags( array $tags ): array {
+		// Grid container and per-item wrappers.
+		$tags['div'] = array(
+			'class'              => array(),
+			'style'              => array(),
+			'data-mvs-media-id'  => array(),
+			'data-mvs-src'       => array(),
+			'data-mvs-permalink' => array(),
+		);
+
+		// Allow inline <video> player.
+		$tags['video'] = array(
+			'src'      => array(),
+			'controls' => array(),
+			'preload'  => array(),
+			'style'    => array(),
+			'class'    => array(),
+			'width'    => array(),
+			'height'   => array(),
+		);
+
+		// Allow inline <audio> player.
+		$tags['audio'] = array(
+			'src'      => array(),
+			'controls' => array(),
+			'preload'  => array(),
+			'style'    => array(),
+			'class'    => array(),
+		);
+
+		// Allow style on <a> and <img> for inline-styled media links.
+		$tags['a']['style']         = array();
+		$tags['img']['style']       = array();
+		$tags['img']['loading']     = array();
+
+		return $tags;
+	}
+
+	/**
 	 * Transform legacy media plugin activity HTML (rtMedia, etc.) to MVS rendering.
 	 *
 	 * Hooked to bp_get_activity_content_body. Detects known legacy HTML markers,
@@ -2273,7 +2322,8 @@ class BuddyPressIntegration {
 		foreach ( $items[1] as $item_html ) {
 			$is_video = strpos( $item_html, 'media-type-video' ) !== false
 						|| strpos( $item_html, '<video' ) !== false;
-			$is_audio = strpos( $item_html, 'media-type-music' ) !== false;
+			$is_audio = strpos( $item_html, 'media-type-music' ) !== false
+					|| strpos( $item_html, '<audio' ) !== false;
 
 			// Primary link href (rtMedia's detail page — may 404 after deactivation).
 			$href = '';
@@ -2294,20 +2344,31 @@ class BuddyPressIntegration {
 				$link      = $src ?: $href;
 				$mvs_id    = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
 				$data_mid  = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
+				$data_src  = $link ? ' data-mvs-src="' . esc_attr( $link ) . '"' : '';
 
-				$media_html .= '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . ' style="position:relative;overflow:hidden;background:#111;aspect-ratio:16/9;">'
+				$media_html .= '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . $data_src . ' style="position:relative;overflow:hidden;background:#111;aspect-ratio:16/9;">'
 							 . '<a href="' . esc_url( $link ) . '" style="display:block;width:100%;height:100%;">'
 							 . '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;color:#fff;pointer-events:none;">&#9654;</span>'
 							 . ( $title ? '<span style="position:absolute;bottom:8px;left:8px;right:8px;color:#ccc;font-size:.85em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>' : '' )
 							 . '</a></div>';
 
 			} elseif ( $is_audio ) {
+				// Extract direct audio file URL from <audio src="..."> — deactivation-safe.
+				$src = '';
+				if ( preg_match( '/<audio[^>]+src="([^"]+)"/', $item_html, $sm ) ) {
+					$src = esc_url( $sm[1] );
+				}
 				$title = '';
 				if ( preg_match( '/title="([^"]+)"/', $item_html, $tm ) ) {
 					$title = esc_html( $tm[1] );
 				}
-				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio" style="background:#f5f5f5;border-radius:6px;padding:8px;">'
-							 . '<a href="' . esc_url( $href ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">'
+				$link     = $src ?: $href;
+				$mvs_id   = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
+				$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
+				$data_src = $src ? ' data-mvs-src="' . esc_attr( $src ) . '"' : '';
+
+				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . $data_src . ' style="background:#f5f5f5;border-radius:6px;padding:8px;">'
+							 . '<a href="' . esc_url( $link ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">'
 							 . '<span style="font-size:1.5em;flex-shrink:0;">&#9835;</span>'
 							 . '<span style="min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>'
 							 . '</a></div>';

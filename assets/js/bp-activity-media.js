@@ -63,10 +63,26 @@
 			var wrap = document.createElement( 'div' );
 			wrap.className = 'mvs-preview-item';
 
-			var img = document.createElement( 'img' );
-			img.src = item.thumbUrl;
-			img.alt = 'Media preview';
-			img.className = 'mvs-activity-media-thumb';
+			var thumb;
+			if ( 'audio' === item.mediaType ) {
+				thumb = document.createElement( 'div' );
+				thumb.className = 'mvs-activity-media-thumb mvs-preview-audio';
+				thumb.innerHTML = '<span style="font-size:2em;">♫</span>';
+			} else if ( 'video' === item.mediaType && item.thumbUrl ) {
+				thumb = document.createElement( 'img' );
+				thumb.src = item.thumbUrl;
+				thumb.alt = 'Media preview';
+				thumb.className = 'mvs-activity-media-thumb';
+			} else if ( 'video' === item.mediaType ) {
+				thumb = document.createElement( 'div' );
+				thumb.className = 'mvs-activity-media-thumb mvs-preview-video';
+				thumb.innerHTML = '<span style="font-size:2em;">▶</span>';
+			} else {
+				thumb = document.createElement( 'img' );
+				thumb.src = item.thumbUrl;
+				thumb.alt = 'Media preview';
+				thumb.className = 'mvs-activity-media-thumb';
+			}
 
 			var removeBtn = document.createElement( 'button' );
 			removeBtn.type = 'button';
@@ -77,7 +93,7 @@
 				renderPreview();
 			} );
 
-			wrap.appendChild( img );
+			wrap.appendChild( thumb );
 			wrap.appendChild( removeBtn );
 			preview.appendChild( wrap );
 		} );
@@ -85,25 +101,60 @@
 		syncHiddenInput();
 	}
 
+	function generateVideoThumb( file ) {
+		return new Promise( function( resolve ) {
+			var video = document.createElement( 'video' );
+			var url   = URL.createObjectURL( file );
+			video.preload = 'metadata';
+			video.muted   = true;
+			video.src     = url;
+			video.addEventListener( 'loadeddata', function() {
+				video.currentTime = Math.min( 1, video.duration * 0.1 || 0 );
+			} );
+			video.addEventListener( 'seeked', function() {
+				var canvas = document.createElement( 'canvas' );
+				var w = video.videoWidth  || 320;
+				var h = video.videoHeight || 180;
+				canvas.width  = 200;
+				canvas.height = Math.round( 200 * h / w ) || 113;
+				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+				URL.revokeObjectURL( url );
+				resolve( canvas.toDataURL( 'image/jpeg', 0.7 ) );
+			} );
+			video.addEventListener( 'error', function() {
+				URL.revokeObjectURL( url );
+				resolve( '' );
+			} );
+		} );
+	}
+
 	function uploadFile( file, btn ) {
 		if ( attachedMedia.length >= maxMedia ) { return Promise.resolve(); }
+
+		var isVideo = file.type.indexOf( 'video/' ) === 0;
+		var isAudio = file.type.indexOf( 'audio/' ) === 0;
+
+		var thumbPromise = isVideo ? generateVideoThumb( file ) : Promise.resolve( '' );
 
 		var fd = new FormData();
 		fd.append( 'file', file );
 		fd.append( 'status', 'draft' );
 
-		return fetch( restUrl + 'media?context=activity', {
+		var uploadPromise = fetch( restUrl + 'media?context=activity', {
 			method: 'POST',
 			headers: { 'X-WP-Nonce': nonce },
 			credentials: 'same-origin',
 			body: fd
-		} )
-		.then( function( r ) { return r.json(); } )
-		.then( function( data ) {
+		} ).then( function( r ) { return r.json(); } );
+
+		return Promise.all( [ thumbPromise, uploadPromise ] ).then( function( results ) {
+			var localThumb = results[ 0 ];
+			var data       = results[ 1 ];
 			if ( data.id ) {
 				attachedMedia.push( {
-					id: data.id,
-					thumbUrl: data.thumbnail_url || data.file_url || ''
+					id:        data.id,
+					thumbUrl:  localThumb || data.thumbnail_url || '',
+					mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
 				} );
 			}
 		} );
