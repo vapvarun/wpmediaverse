@@ -113,7 +113,10 @@ class ActivityService {
 			$ids     = $follows->get_following_ids( $user_id );
 
 			if ( empty( $ids ) ) {
-				return array( 'activities' => array(), 'total' => 0 );
+				return array(
+					'activities' => array(),
+					'total'      => 0,
+				);
 			}
 
 			$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
@@ -124,8 +127,8 @@ class ActivityService {
 		// Exclude blocked users if viewer is logged in.
 		$viewer_id = get_current_user_id();
 		if ( $viewer_id ) {
-			$reports    = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
-			$blocked    = $reports->get_blocked_ids( $viewer_id );
+			$reports = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
+			$blocked = $reports->get_blocked_ids( $viewer_id );
 			if ( ! empty( $blocked ) ) {
 				$block_placeholders = implode( ',', array_fill( 0, count( $blocked ), '%d' ) );
 				$where             .= " AND a.user_id NOT IN ({$block_placeholders})"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -134,7 +137,7 @@ class ActivityService {
 		}
 
 		$count_params = $params;
-		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$total        = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_activity a WHERE {$where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				...$count_params
@@ -234,8 +237,8 @@ class ActivityService {
 		if ( $row->media_id ) {
 			$media_post = get_post( (int) $row->media_id );
 			if ( $media_post ) {
-				$thumb_url  = '';
-				$attach_id  = (int) get_post_meta( $media_post->ID, '_mvs_attachment_id', true );
+				$thumb_url = '';
+				$attach_id = (int) get_post_meta( $media_post->ID, '_mvs_attachment_id', true );
 				if ( $attach_id ) {
 					$thumb_src = wp_get_attachment_image_url( $attach_id, 'thumbnail' );
 					if ( $thumb_src ) {
@@ -244,10 +247,10 @@ class ActivityService {
 				}
 
 				$activity['media'] = array(
-					'title'      => $media_post->post_title,
-					'type'       => get_post_meta( $media_post->ID, '_mvs_media_type', true ),
-					'thumbnail'  => $thumb_url,
-					'link'       => get_permalink( $media_post->ID ),
+					'title'     => $media_post->post_title,
+					'type'      => get_post_meta( $media_post->ID, '_mvs_media_type', true ),
+					'thumbnail' => $thumb_url,
+					'link'      => get_permalink( $media_post->ID ),
 				);
 			}
 		}

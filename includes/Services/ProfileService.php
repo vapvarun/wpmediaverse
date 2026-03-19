@@ -64,14 +64,14 @@ class ProfileService {
 		}
 
 		$profile = array(
-			'id'           => $user_id,
-			'first_name'   => $user->first_name,
-			'last_name'    => $user->last_name,
-			'display_name' => $user->display_name,
-			'username'     => $user->user_login,
-			'email'        => $user->user_email,
-			'bio'          => $user->description,
-			'avatar'       => get_avatar_url( $user_id, array( 'size' => 150 ) ),
+			'id'                => $user_id,
+			'first_name'        => $user->first_name,
+			'last_name'         => $user->last_name,
+			'display_name'      => $user->display_name,
+			'username'          => $user->user_login,
+			'email'             => $user->user_email,
+			'bio'               => $user->description,
+			'avatar'            => get_avatar_url( $user_id, array( 'size' => 150 ) ),
 			'has_custom_avatar' => $this->has_custom_avatar( $user_id ),
 		);
 
@@ -381,7 +381,7 @@ class ProfileService {
 			return $url;
 		}
 
-		$size      = ! empty( $args['size'] ) ? (int) $args['size'] : 96;
+		$size       = ! empty( $args['size'] ) ? (int) $args['size'] : 96;
 		$custom_url = $this->get_custom_avatar_url( $user_id, $size );
 
 		return $custom_url ? $custom_url : $url;

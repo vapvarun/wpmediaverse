@@ -33,19 +33,19 @@ if ( $mvs_container->has( 'profile' ) ) {
 }
 
 $mvs_profile_ctx = array(
-	'restUrl'        => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-	'nonce'          => wp_create_nonce( 'wp_rest' ),
-	'userId'         => $mvs_user_id,
-	'firstName'      => $mvs_user->first_name,
-	'lastName'       => $mvs_user->last_name,
-	'displayName'    => $mvs_user->display_name,
-	'bio'            => $mvs_user->description,
-	'avatarUrl'      => $mvs_avatar_url,
+	'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+	'nonce'           => wp_create_nonce( 'wp_rest' ),
+	'userId'          => $mvs_user_id,
+	'firstName'       => $mvs_user->first_name,
+	'lastName'        => $mvs_user->last_name,
+	'displayName'     => $mvs_user->display_name,
+	'bio'             => $mvs_user->description,
+	'avatarUrl'       => $mvs_avatar_url,
 	'hasCustomAvatar' => $mvs_has_custom,
-	'saving'         => false,
+	'saving'          => false,
 	'uploadingAvatar' => false,
-	'savedMessage'   => '',
-	'errorMessage'   => '',
+	'savedMessage'    => '',
+	'errorMessage'    => '',
 );
 
 get_header();
@@ -54,7 +54,15 @@ wp_enqueue_style( 'mvs-frontend' );
 $mvs_profile_asset_file = MVS_PLUGIN_DIR . 'build/blocks/profile-edit/view.asset.php';
 $mvs_profile_asset      = file_exists( $mvs_profile_asset_file )
 	? require $mvs_profile_asset_file
-	: array( 'dependencies' => array( array( 'id' => '@wordpress/interactivity', 'import' => 'static' ) ), 'version' => MVS_VERSION );
+	: array(
+		'dependencies' => array(
+			array(
+				'id'     => '@wordpress/interactivity',
+				'import' => 'static',
+			),
+		),
+		'version'      => MVS_VERSION,
+	);
 wp_enqueue_script_module(
 	'mvs-profile-edit',
 	MVS_PLUGIN_URL . 'assets/js/profile-edit.js',

@@ -39,13 +39,34 @@ class Commands {
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		$items = array(
-			array( 'Metric' => 'Published Media', 'Value' => $media_count ),
-			array( 'Metric' => 'Albums', 'Value' => $album_count ),
-			array( 'Metric' => 'Total Views', 'Value' => $total_views ),
-			array( 'Metric' => 'Total Reactions', 'Value' => $total_reactions ),
-			array( 'Metric' => 'Total Favorites', 'Value' => $total_favorites ),
-			array( 'Metric' => 'DB Version', 'Value' => get_option( 'mvs_db_version', '0' ) ),
-			array( 'Metric' => 'Plugin Version', 'Value' => MVS_VERSION ),
+			array(
+				'Metric' => 'Published Media',
+				'Value'  => $media_count,
+			),
+			array(
+				'Metric' => 'Albums',
+				'Value'  => $album_count,
+			),
+			array(
+				'Metric' => 'Total Views',
+				'Value'  => $total_views,
+			),
+			array(
+				'Metric' => 'Total Reactions',
+				'Value'  => $total_reactions,
+			),
+			array(
+				'Metric' => 'Total Favorites',
+				'Value'  => $total_favorites,
+			),
+			array(
+				'Metric' => 'DB Version',
+				'Value'  => get_option( 'mvs_db_version', '0' ),
+			),
+			array(
+				'Metric' => 'Plugin Version',
+				'Value'  => MVS_VERSION,
+			),
 		);
 
 		Utils\format_items( 'table', $items, array( 'Metric', 'Value' ) );

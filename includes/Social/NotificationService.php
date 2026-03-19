@@ -143,7 +143,12 @@ class NotificationService {
 		}
 		if ( $actor_ids ) {
 			// Pre-load all actor user objects in one query.
-			new \WP_User_Query( array( 'include' => array_unique( $actor_ids ), 'fields' => 'all' ) );
+			new \WP_User_Query(
+				array(
+					'include' => array_unique( $actor_ids ),
+					'fields'  => 'all',
+				)
+			);
 		}
 		if ( $media_ids ) {
 			_prime_post_caches( array_unique( $media_ids ), false, false );
@@ -211,8 +216,8 @@ class NotificationService {
 				)
 			);
 		} else {
-			$id_list  = implode( ',', array_map( 'absint', $ids ) );
-			$updated  = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$id_list = implode( ',', array_map( 'absint', $ids ) );
+			$updated = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"UPDATE {$wpdb->prefix}mvs_notifications SET read_at = %s WHERE user_id = %d AND id IN ({$id_list})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$now,
@@ -263,10 +268,10 @@ class NotificationService {
 	/**
 	 * Handle mention notifications.
 	 *
-	 * @param int   $media_id      Media ID.
-	 * @param int[] $mentioned_ids Mentioned user IDs.
+	 * @param int    $media_id      Media ID.
+	 * @param int[]  $mentioned_ids Mentioned user IDs.
 	 * @param string $context      Context.
-	 * @param int   $comment_id    Comment ID.
+	 * @param int    $comment_id    Comment ID.
 	 */
 	public function on_mentions( int $media_id, array $mentioned_ids, string $context, int $comment_id ): void {
 		$actor = get_current_user_id();
@@ -293,11 +298,11 @@ class NotificationService {
 	 * @return array
 	 */
 	private function format_notification( object $row ): array {
-		$actor      = get_userdata( (int) $row->actor_id );
-		$actor_name = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
+		$actor       = get_userdata( (int) $row->actor_id );
+		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 		$media_title = '';
 		if ( $row->media_id ) {
-			$post = get_post( (int) $row->media_id );
+			$post        = get_post( (int) $row->media_id );
 			$media_title = $post ? $post->post_title : '';
 		}
 

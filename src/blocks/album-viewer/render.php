@@ -50,12 +50,12 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?>">
 			<?php foreach ( $items as $media_id ) : ?>
 				<?php
-				$file_url    = get_post_meta( $media_id, '_mvs_file_url', true );
-				$file_type   = get_post_meta( $media_id, '_mvs_file_type', true );
-				$media_type  = get_post_meta( $media_id, '_mvs_media_type', true );
-				$permalink   = get_permalink( $media_id );
-				$thumb_url   = '';
-				$attach_id   = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
+				$file_url   = get_post_meta( $media_id, '_mvs_file_url', true );
+				$file_type  = get_post_meta( $media_id, '_mvs_file_type', true );
+				$media_type = get_post_meta( $media_id, '_mvs_media_type', true );
+				$permalink  = get_permalink( $media_id );
+				$thumb_url  = '';
+				$attach_id  = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
 				if ( $attach_id ) {
 					$thumb_src = wp_get_attachment_image_url( $attach_id, 'medium' );
 					if ( $thumb_src ) {

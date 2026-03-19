@@ -102,7 +102,6 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * WP-CLI commands
 * rtMedia import tool
 * 40+ REST API endpoints
-* 150+ PHPUnit tests
 
 == Upgrade Notice ==
 

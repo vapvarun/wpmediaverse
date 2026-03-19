@@ -577,6 +577,7 @@ class Plugin {
 	 * @param string $url     Webhook URL.
 	 * @param string $body    JSON body.
 	 * @param array  $headers HTTP headers.
+	 * @param int    $attempt Delivery attempt number.
 	 */
 	public static function deliver_webhook( string $url, string $body, array $headers, int $attempt = 1 ): void {
 		$webhooks = self::$container->get( 'integration.webhooks' );
@@ -761,16 +762,16 @@ class Plugin {
 
 		// Build a priority map by slug.
 		$order_map = array(
-			'mvs-overview'                                     => 1,
-			'edit.php?post_type=mvs_media'                     => 5,
-			'post-new.php?post_type=mvs_media'                 => 6,
-			'edit-tags.php?taxonomy=mvs_tag&post_type=mvs_media'      => 10,
+			'mvs-overview'                      => 1,
+			'edit.php?post_type=mvs_media'      => 5,
+			'post-new.php?post_type=mvs_media'  => 6,
+			'edit-tags.php?taxonomy=mvs_tag&post_type=mvs_media' => 10,
 			'edit-tags.php?taxonomy=mvs_category&post_type=mvs_media' => 11,
-			'edit.php?post_type=mvs_album'                     => 15,
-			'edit.php?post_type=mvs_collection'                => 16,
-			'mvs-settings'                                     => 50,
-			'mvs-moderation'                                   => 51,
-			'mvs-stats'                                        => 52,
+			'edit.php?post_type=mvs_album'      => 15,
+			'edit.php?post_type=mvs_collection' => 16,
+			'mvs-settings'                      => 50,
+			'mvs-moderation'                    => 51,
+			'mvs-stats'                         => 52,
 		);
 
 		usort(

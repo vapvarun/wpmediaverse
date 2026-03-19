@@ -199,7 +199,7 @@ class UserController extends WP_REST_Controller {
 			update_meta_cache( 'post', $int_ids );
 		}
 
-		$privacy  = Plugin::container()->get( 'privacy' );
+		$privacy    = Plugin::container()->get( 'privacy' );
 		$media_ctrl = new MediaController( $privacy );
 
 		$items = array();
@@ -248,16 +248,16 @@ class UserController extends WP_REST_Controller {
 			)
 		);
 
-		$current_id  = get_current_user_id();
-		$result_ids  = array_map( 'intval', $user_query->get_results() );
+		$current_id = get_current_user_id();
+		$result_ids = array_map( 'intval', $user_query->get_results() );
 
 		// Batch load follow status.
 		$following_map = array();
 		if ( $current_id && $result_ids ) {
 			global $wpdb;
-			$placeholders = implode( ',', array_fill( 0, count( $result_ids ), '%d' ) );
-			$params       = array_merge( array( $current_id ), $result_ids );
-			$followed     = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$placeholders  = implode( ',', array_fill( 0, count( $result_ids ), '%d' ) );
+			$params        = array_merge( array( $current_id ), $result_ids );
+			$followed      = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND following_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					...$params
@@ -269,7 +269,12 @@ class UserController extends WP_REST_Controller {
 		// Batch load user objects.
 		$user_objects = array();
 		if ( $result_ids ) {
-			$batch = new \WP_User_Query( array( 'include' => $result_ids, 'fields' => 'all' ) );
+			$batch = new \WP_User_Query(
+				array(
+					'include' => $result_ids,
+					'fields'  => 'all',
+				)
+			);
 			foreach ( $batch->get_results() as $u ) {
 				$user_objects[ (int) $u->ID ] = $u;
 			}

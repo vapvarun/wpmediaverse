@@ -81,10 +81,10 @@ class LogViewerPage {
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		$level    = isset( $_GET['level'] ) ? sanitize_text_field( wp_unslash( $_GET['level'] ) ) : '';
+		$level       = isset( $_GET['level'] ) ? sanitize_text_field( wp_unslash( $_GET['level'] ) ) : '';
 		$log_context = isset( $_GET['log_context'] ) ? sanitize_text_field( wp_unslash( $_GET['log_context'] ) ) : '';
-		$paged    = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
-		$cleared  = isset( $_GET['cleared'] ) ? true : false;
+		$paged       = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
+		$cleared     = isset( $_GET['cleared'] ) ? true : false;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$per_page = 50;
@@ -205,7 +205,7 @@ class LogViewerPage {
 									$log_level_color = $level_colors[ $log->level ] ?? '#50575e';
 									$user_display    = '';
 									if ( $log->user_id > 0 ) {
-										$user = get_userdata( $log->user_id );
+										$user         = get_userdata( $log->user_id );
 										$user_display = $user ? $user->display_name : sprintf( '#%d', $log->user_id );
 									}
 									?>

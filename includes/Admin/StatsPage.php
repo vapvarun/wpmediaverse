@@ -142,7 +142,7 @@ class StatsPage {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$range = isset( $_GET['range'] ) ? sanitize_text_field( wp_unslash( $_GET['range'] ) ) : 'all';
+		$range       = isset( $_GET['range'] ) ? sanitize_text_field( wp_unslash( $_GET['range'] ) ) : 'all';
 		$date_filter = $this->get_date_filter( $range );
 
 		// Overall counts.
@@ -237,7 +237,7 @@ class StatsPage {
 			<div class="mvs-stats-toolbar">
 				<div class="mvs-date-range-selector">
 					<?php
-					$ranges = array(
+					$ranges         = array(
 						'today' => __( 'Today', 'wpmediaverse' ),
 						'week'  => __( 'This Week', 'wpmediaverse' ),
 						'month' => __( 'This Month', 'wpmediaverse' ),
@@ -245,7 +245,7 @@ class StatsPage {
 					);
 					$base_stats_url = admin_url( 'edit.php?post_type=mvs_media&page=' . self::PAGE_SLUG );
 					foreach ( $ranges as $key => $label ) :
-						$url      = add_query_arg( 'range', $key, $base_stats_url );
+						$url       = add_query_arg( 'range', $key, $base_stats_url );
 						$is_active = ( $range === $key );
 						?>
 						<a href="<?php echo esc_url( $url ); ?>"

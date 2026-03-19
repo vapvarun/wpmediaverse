@@ -58,7 +58,8 @@ $nonce        = wp_create_nonce( 'wp_rest' );
 			data-wp-on--change="actions.handleFileSelect"
 			accept="image/*,video/*,audio/*"
 		/>
-		<?php if ( $show_privacy ) :
+		<?php
+		if ( $show_privacy ) :
 			$default_privacy = get_option( 'mvs_default_privacy', 'public' );
 			?>
 			<select class="mvs-upload-privacy" data-wp-on--change="actions.setPrivacy">

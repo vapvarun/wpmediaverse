@@ -200,8 +200,8 @@ class FollowController extends WP_REST_Controller {
 		$per_page = (int) $request->get_param( 'per_page' );
 		$page     = (int) $request->get_param( 'page' );
 
-		$data     = $this->follows->get_followers( $user_id, $per_page, $page );
-		$users    = $this->format_user_list( $data['users'], get_current_user_id() );
+		$data  = $this->follows->get_followers( $user_id, $per_page, $page );
+		$users = $this->format_user_list( $data['users'], get_current_user_id() );
 
 		$response = rest_ensure_response( $users );
 		$response->header( 'X-WP-Total', $data['total'] );
@@ -220,8 +220,8 @@ class FollowController extends WP_REST_Controller {
 		$per_page = (int) $request->get_param( 'per_page' );
 		$page     = (int) $request->get_param( 'page' );
 
-		$data     = $this->follows->get_following( $user_id, $per_page, $page );
-		$users    = $this->format_user_list( $data['users'], get_current_user_id() );
+		$data  = $this->follows->get_following( $user_id, $per_page, $page );
+		$users = $this->format_user_list( $data['users'], get_current_user_id() );
 
 		$response = rest_ensure_response( $users );
 		$response->header( 'X-WP-Total', $data['total'] );
@@ -276,9 +276,9 @@ class FollowController extends WP_REST_Controller {
 		$following_map = array();
 		if ( $current_user ) {
 			global $wpdb;
-			$placeholders = implode( ',', array_fill( 0, count( $user_ids ), '%d' ) );
-			$params       = array_merge( array( $current_user ), $user_ids );
-			$followed     = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$placeholders  = implode( ',', array_fill( 0, count( $user_ids ), '%d' ) );
+			$params        = array_merge( array( $current_user ), $user_ids );
+			$followed      = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND following_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					...$params

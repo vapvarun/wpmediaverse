@@ -220,10 +220,10 @@ class TagController extends WP_REST_Controller {
 		}
 
 		// Get posts with the source tag in batches to avoid unbounded memory usage.
-		$batch_size    = 500;
-		$batch_page    = 1;
-		$posts         = array();
-		$total_merged  = 0;
+		$batch_size   = 500;
+		$batch_page   = 1;
+		$posts        = array();
+		$total_merged = 0;
 
 		do {
 			$batch = get_posts(

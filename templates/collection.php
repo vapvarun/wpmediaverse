@@ -82,7 +82,7 @@ get_header();
 						}
 
 						if ( $mvs_author_url ) :
-						?>
+							?>
 						<a href="<?php echo esc_url( $mvs_author_url ); ?>"><?php echo esc_html( get_the_author() ); ?></a>
 						<?php else : ?>
 						<span><?php echo esc_html( get_the_author() ); ?></span>

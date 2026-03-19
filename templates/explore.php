@@ -234,13 +234,13 @@ get_header();
 					</div>
 				</div>
 				<?php else : ?>
-				<?php
-				\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
-					get_the_ID(),
-					$my_stats,
-					array( 'show_author' => true )
-				);
-				?>
+					<?php
+					\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+						get_the_ID(),
+						$my_stats,
+						array( 'show_author' => true )
+					);
+					?>
 				<?php endif; ?>
 			<?php endwhile; ?>
 		</div>
@@ -263,7 +263,7 @@ get_header();
 			<?php
 			$mvs_upload_page_id = (int) get_option( 'mvs_page_upload', 0 );
 			if ( is_user_logged_in() && $mvs_upload_page_id ) :
-			?>
+				?>
 				<a href="<?php echo esc_url( get_permalink( $mvs_upload_page_id ) ); ?>" class="mvs-btn mvs-btn--primary">
 					<?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
 				</a>
@@ -274,7 +274,10 @@ get_header();
 <?php
 // Enqueue Interactivity API stores.
 $mvs_explore_asset_file = MVS_PLUGIN_DIR . 'build/blocks/explore-view/view.asset.php';
-$mvs_explore_asset      = file_exists( $mvs_explore_asset_file ) ? require $mvs_explore_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+$mvs_explore_asset      = file_exists( $mvs_explore_asset_file ) ? require $mvs_explore_asset_file : array(
+	'dependencies' => array(),
+	'version'      => MVS_VERSION,
+);
 wp_enqueue_script_module(
 	'mvs-explore-view',
 	MVS_PLUGIN_URL . 'build/blocks/explore-view/view.js',

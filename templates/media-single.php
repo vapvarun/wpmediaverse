@@ -16,23 +16,23 @@ get_header();
 	while ( have_posts() ) :
 		the_post();
 
-		$file_url    = get_post_meta( get_the_ID(), '_mvs_file_url', true );
-		$file_type   = get_post_meta( get_the_ID(), '_mvs_file_type', true );
-		$media_type  = get_post_meta( get_the_ID(), '_mvs_media_type', true );
-		$is_image    = 'image' === $media_type;
-		$is_video    = 'video' === $media_type;
-		$is_audio    = 'audio' === $media_type;
+		$file_url   = get_post_meta( get_the_ID(), '_mvs_file_url', true );
+		$file_type  = get_post_meta( get_the_ID(), '_mvs_file_type', true );
+		$media_type = get_post_meta( get_the_ID(), '_mvs_media_type', true );
+		$is_image   = 'image' === $media_type;
+		$is_video   = 'video' === $media_type;
+		$is_audio   = 'audio' === $media_type;
 
 		// Metadata for video/audio.
-		$duration    = get_post_meta( get_the_ID(), '_mvs_duration', true );
-		$width       = get_post_meta( get_the_ID(), '_mvs_width', true );
-		$height      = get_post_meta( get_the_ID(), '_mvs_height', true );
-		$artist      = get_post_meta( get_the_ID(), '_mvs_artist', true );
-		$album_name  = get_post_meta( get_the_ID(), '_mvs_album_name', true );
+		$duration   = get_post_meta( get_the_ID(), '_mvs_duration', true );
+		$width      = get_post_meta( get_the_ID(), '_mvs_width', true );
+		$height     = get_post_meta( get_the_ID(), '_mvs_height', true );
+		$artist     = get_post_meta( get_the_ID(), '_mvs_artist', true );
+		$album_name = get_post_meta( get_the_ID(), '_mvs_album_name', true );
 
 		// Poster/thumbnail from WP attachment.
-		$attach_id   = (int) get_post_meta( get_the_ID(), '_mvs_attachment_id', true );
-		$poster_url  = '';
+		$attach_id  = (int) get_post_meta( get_the_ID(), '_mvs_attachment_id', true );
+		$poster_url = '';
 		if ( $attach_id ) {
 			$poster_src = wp_get_attachment_image_url( $attach_id, 'large' );
 			if ( $poster_src ) {
@@ -64,20 +64,20 @@ get_header();
 						<?php echo get_avatar( get_the_author_meta( 'ID' ), 40, '', '', array( 'class' => 'mvs-media-author-avatar' ) ); ?>
 						<div class="mvs-media-author-text">
 							<?php
-						$mvs_author_id  = get_the_author_meta( 'ID' );
-						$mvs_author_url = '';
-						if ( function_exists( 'bp_members_get_user_url' ) ) {
-							$mvs_author_url = bp_members_get_user_url( $mvs_author_id );
-						} elseif ( function_exists( 'bp_core_get_user_domain' ) ) {
-							$mvs_author_url = bp_core_get_user_domain( $mvs_author_id );
-						} elseif ( defined( 'MVS_PRO_VERSION' ) ) {
-							$mvs_author_url = home_url( '/media/@' . get_the_author_meta( 'user_login', $mvs_author_id ) . '/' );
-						}
+							$mvs_author_id  = get_the_author_meta( 'ID' );
+							$mvs_author_url = '';
+							if ( function_exists( 'bp_members_get_user_url' ) ) {
+								$mvs_author_url = bp_members_get_user_url( $mvs_author_id );
+							} elseif ( function_exists( 'bp_core_get_user_domain' ) ) {
+								$mvs_author_url = bp_core_get_user_domain( $mvs_author_id );
+							} elseif ( defined( 'MVS_PRO_VERSION' ) ) {
+								$mvs_author_url = home_url( '/media/@' . get_the_author_meta( 'user_login', $mvs_author_id ) . '/' );
+							}
 
-						if ( $mvs_author_url ) :
-						?>
+							if ( $mvs_author_url ) :
+								?>
 						<a href="<?php echo esc_url( $mvs_author_url ); ?>" class="mvs-media-author-name">
-							<?php echo esc_html( get_the_author() ); ?>
+								<?php echo esc_html( get_the_author() ); ?>
 						</a>
 						<?php else : ?>
 						<span class="mvs-media-author-name"><?php echo esc_html( get_the_author() ); ?></span>
@@ -196,38 +196,38 @@ get_header();
 					$mvs_tag_names[] = $mvs_t->name;
 				}
 			}
-			$mvs_is_owner  = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
+			$mvs_is_owner   = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
 			$mvs_social_ctx = array(
-				'mediaId'        => get_the_ID(),
-				'restUrl'        => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-				'nonce'          => wp_create_nonce( 'wp_rest' ),
-				'isLoggedIn'     => is_user_logged_in(),
-				'currentUserId'  => get_current_user_id(),
-				'isOwner'        => $mvs_is_owner,
-				'authorId'       => (int) get_the_author_meta( 'ID' ),
-				'isFollowing'    => false,
-				'type'           => 'media',
-				'archiveUrl'     => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
-				'initialTitle'   => get_the_title(),
-				'initialDesc'    => get_the_content(),
-				'initialPrivacy' => $current_privacy,
-				'initialTags'    => $mvs_tag_names,
-				'reactions'      => array(),
-				'userReaction'   => '',
-				'isFavorite'     => false,
-				'comments'       => array(),
-				'commentText'    => '',
-				'viewCount'      => '',
-				'editVisible'    => false,
-				'editTitle'      => get_the_title(),
-				'editDesc'       => get_the_content(),
-				'editPrivacy'    => $current_privacy,
-				'editTags'       => $mvs_tag_names,
-				'tagInput'       => '',
-				'tagResults'     => array(),
+				'mediaId'            => get_the_ID(),
+				'restUrl'            => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'              => wp_create_nonce( 'wp_rest' ),
+				'isLoggedIn'         => is_user_logged_in(),
+				'currentUserId'      => get_current_user_id(),
+				'isOwner'            => $mvs_is_owner,
+				'authorId'           => (int) get_the_author_meta( 'ID' ),
+				'isFollowing'        => false,
+				'type'               => 'media',
+				'archiveUrl'         => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
+				'initialTitle'       => get_the_title(),
+				'initialDesc'        => get_the_content(),
+				'initialPrivacy'     => $current_privacy,
+				'initialTags'        => $mvs_tag_names,
+				'reactions'          => array(),
+				'userReaction'       => '',
+				'isFavorite'         => false,
+				'comments'           => array(),
+				'commentText'        => '',
+				'viewCount'          => '',
+				'editVisible'        => false,
+				'editTitle'          => get_the_title(),
+				'editDesc'           => get_the_content(),
+				'editPrivacy'        => $current_privacy,
+				'editTags'           => $mvs_tag_names,
+				'tagInput'           => '',
+				'tagResults'         => array(),
 				'tagDropdownVisible' => false,
-				'saving'         => false,
-				'shareLabel'     => "\xF0\x9F\x94\x97 Share",
+				'saving'             => false,
+				'shareLabel'         => "\xF0\x9F\x94\x97 Share",
 			);
 			?>
 
@@ -419,7 +419,10 @@ get_header();
 <?php
 // Enqueue Interactivity API stores.
 $mvs_player_asset_file = MVS_PLUGIN_DIR . 'build/blocks/media-player/view.asset.php';
-$mvs_player_asset      = file_exists( $mvs_player_asset_file ) ? require $mvs_player_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+$mvs_player_asset      = file_exists( $mvs_player_asset_file ) ? require $mvs_player_asset_file : array(
+	'dependencies' => array(),
+	'version'      => MVS_VERSION,
+);
 wp_enqueue_script_module(
 	'mvs-media-player',
 	MVS_PLUGIN_URL . 'build/blocks/media-player/view.js',
@@ -428,7 +431,10 @@ wp_enqueue_script_module(
 );
 
 $mvs_shared_asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
-$mvs_shared_asset      = file_exists( $mvs_shared_asset_file ) ? require $mvs_shared_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+$mvs_shared_asset      = file_exists( $mvs_shared_asset_file ) ? require $mvs_shared_asset_file : array(
+	'dependencies' => array(),
+	'version'      => MVS_VERSION,
+);
 wp_enqueue_script_module(
 	'mvs-shared-ui',
 	MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
@@ -437,7 +443,10 @@ wp_enqueue_script_module(
 );
 
 $mvs_social_asset_file = MVS_PLUGIN_DIR . 'build/blocks/media-social/view.asset.php';
-$mvs_social_asset      = file_exists( $mvs_social_asset_file ) ? require $mvs_social_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+$mvs_social_asset      = file_exists( $mvs_social_asset_file ) ? require $mvs_social_asset_file : array(
+	'dependencies' => array(),
+	'version'      => MVS_VERSION,
+);
 wp_enqueue_script_module(
 	'mvs-media-social',
 	MVS_PLUGIN_URL . 'build/blocks/media-social/view.js',

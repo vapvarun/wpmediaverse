@@ -52,7 +52,7 @@ class PrivacyService {
 	 * @return bool
 	 */
 	private function check_access( int $media_id, int $user_id ): bool {
-		$post = get_post( $media_id );
+		$post          = get_post( $media_id );
 		$allowed_types = array( 'mvs_media', 'mvs_album', 'mvs_collection' );
 		if ( ! $post || ! in_array( $post->post_type, $allowed_types, true ) ) {
 			return false;

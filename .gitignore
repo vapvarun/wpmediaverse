@@ -11,3 +11,4 @@ docs/
 tests/
 .phpcs.xml.dist
 phpunit.xml.dist
+wpcs-report.md

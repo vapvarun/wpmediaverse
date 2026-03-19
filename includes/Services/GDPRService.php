@@ -71,7 +71,10 @@ class GDPRService {
 	public function export_media( string $email_address, int $page = 1 ): array {
 		$user = get_user_by( 'email', $email_address );
 		if ( ! $user ) {
-			return array( 'data' => array(), 'done' => true );
+			return array(
+				'data' => array(),
+				'done' => true,
+			);
 		}
 
 		$per_page = 50;
@@ -92,12 +95,30 @@ class GDPRService {
 				'group_label' => __( 'Media Items', 'wpmediaverse' ),
 				'item_id'     => "mvs-media-{$post->ID}",
 				'data'        => array(
-					array( 'name' => __( 'Title', 'wpmediaverse' ), 'value' => $post->post_title ),
-					array( 'name' => __( 'Description', 'wpmediaverse' ), 'value' => $post->post_content ),
-					array( 'name' => __( 'Type', 'wpmediaverse' ), 'value' => get_post_meta( $post->ID, '_mvs_media_type', true ) ),
-					array( 'name' => __( 'Privacy', 'wpmediaverse' ), 'value' => get_post_meta( $post->ID, '_mvs_privacy', true ) ),
-					array( 'name' => __( 'Date', 'wpmediaverse' ), 'value' => $post->post_date ),
-					array( 'name' => __( 'File URL', 'wpmediaverse' ), 'value' => get_post_meta( $post->ID, '_mvs_file_url', true ) ),
+					array(
+						'name'  => __( 'Title', 'wpmediaverse' ),
+						'value' => $post->post_title,
+					),
+					array(
+						'name'  => __( 'Description', 'wpmediaverse' ),
+						'value' => $post->post_content,
+					),
+					array(
+						'name'  => __( 'Type', 'wpmediaverse' ),
+						'value' => get_post_meta( $post->ID, '_mvs_media_type', true ),
+					),
+					array(
+						'name'  => __( 'Privacy', 'wpmediaverse' ),
+						'value' => get_post_meta( $post->ID, '_mvs_privacy', true ),
+					),
+					array(
+						'name'  => __( 'Date', 'wpmediaverse' ),
+						'value' => $post->post_date,
+					),
+					array(
+						'name'  => __( 'File URL', 'wpmediaverse' ),
+						'value' => get_post_meta( $post->ID, '_mvs_file_url', true ),
+					),
 				),
 			);
 		}
@@ -118,7 +139,10 @@ class GDPRService {
 	public function export_social( string $email_address, int $page = 1 ): array {
 		$user = get_user_by( 'email', $email_address );
 		if ( ! $user ) {
-			return array( 'data' => array(), 'done' => true );
+			return array(
+				'data' => array(),
+				'done' => true,
+			);
 		}
 
 		global $wpdb;
@@ -138,9 +162,18 @@ class GDPRService {
 					'group_label' => __( 'Reactions', 'wpmediaverse' ),
 					'item_id'     => "mvs-reaction-{$r->media_id}",
 					'data'        => array(
-						array( 'name' => __( 'Media ID', 'wpmediaverse' ), 'value' => $r->media_id ),
-						array( 'name' => __( 'Type', 'wpmediaverse' ), 'value' => $r->reaction_type ),
-						array( 'name' => __( 'Date', 'wpmediaverse' ), 'value' => $r->created_at ),
+						array(
+							'name'  => __( 'Media ID', 'wpmediaverse' ),
+							'value' => $r->media_id,
+						),
+						array(
+							'name'  => __( 'Type', 'wpmediaverse' ),
+							'value' => $r->reaction_type,
+						),
+						array(
+							'name'  => __( 'Date', 'wpmediaverse' ),
+							'value' => $r->created_at,
+						),
 					),
 				);
 			}
@@ -153,14 +186,20 @@ class GDPRService {
 				)
 			);
 			foreach ( $follows as $f ) {
-				$followed_user = get_userdata( $f->following_id );
+				$followed_user  = get_userdata( $f->following_id );
 				$export_items[] = array(
 					'group_id'    => 'wpmediaverse-follows',
 					'group_label' => __( 'Following', 'wpmediaverse' ),
 					'item_id'     => "mvs-follow-{$f->following_id}",
 					'data'        => array(
-						array( 'name' => __( 'User', 'wpmediaverse' ), 'value' => $followed_user ? $followed_user->display_name : "#{$f->following_id}" ),
-						array( 'name' => __( 'Date', 'wpmediaverse' ), 'value' => $f->created_at ),
+						array(
+							'name'  => __( 'User', 'wpmediaverse' ),
+							'value' => $followed_user ? $followed_user->display_name : "#{$f->following_id}",
+						),
+						array(
+							'name'  => __( 'Date', 'wpmediaverse' ),
+							'value' => $f->created_at,
+						),
 					),
 				);
 			}
@@ -178,8 +217,14 @@ class GDPRService {
 					'group_label' => __( 'Favorites', 'wpmediaverse' ),
 					'item_id'     => "mvs-fav-{$fav->media_id}",
 					'data'        => array(
-						array( 'name' => __( 'Media ID', 'wpmediaverse' ), 'value' => $fav->media_id ),
-						array( 'name' => __( 'Date', 'wpmediaverse' ), 'value' => $fav->created_at ),
+						array(
+							'name'  => __( 'Media ID', 'wpmediaverse' ),
+							'value' => $fav->media_id,
+						),
+						array(
+							'name'  => __( 'Date', 'wpmediaverse' ),
+							'value' => $fav->created_at,
+						),
 					),
 				);
 			}
@@ -201,7 +246,12 @@ class GDPRService {
 	public function erase_social( string $email_address, int $page = 1 ): array {
 		$user = get_user_by( 'email', $email_address );
 		if ( ! $user ) {
-			return array( 'items_removed' => 0, 'items_retained' => 0, 'messages' => array(), 'done' => true );
+			return array(
+				'items_removed'  => 0,
+				'items_retained' => 0,
+				'messages'       => array(),
+				'done'           => true,
+			);
 		}
 
 		global $wpdb;
@@ -219,7 +269,7 @@ class GDPRService {
 		);
 
 		foreach ( $tables as $table => $column ) {
-			$count = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$count    = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"DELETE FROM {$wpdb->prefix}{$table} WHERE {$column} = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$user->ID
@@ -254,7 +304,7 @@ class GDPRService {
 		);
 		foreach ( $comments as $cid ) {
 			wp_delete_comment( $cid, true );
-			$removed++;
+			++$removed;
 		}
 
 		return array(
@@ -275,7 +325,12 @@ class GDPRService {
 	public function erase_media( string $email_address, int $page = 1 ): array {
 		$user = get_user_by( 'email', $email_address );
 		if ( ! $user ) {
-			return array( 'items_removed' => 0, 'items_retained' => 0, 'messages' => array(), 'done' => true );
+			return array(
+				'items_removed'  => 0,
+				'items_retained' => 0,
+				'messages'       => array(),
+				'done'           => true,
+			);
 		}
 
 		$per_page = 50;
@@ -292,7 +347,7 @@ class GDPRService {
 		$removed = 0;
 		foreach ( $posts as $post ) {
 			wp_delete_post( $post->ID, true );
-			$removed++;
+			++$removed;
 		}
 
 		return array(

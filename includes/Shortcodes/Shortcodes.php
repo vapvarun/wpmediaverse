@@ -215,7 +215,10 @@ class Shortcodes {
 
 		// Enqueue Interactivity API stores.
 		$shared_asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
-		$shared_asset      = file_exists( $shared_asset_file ) ? require $shared_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+		$shared_asset      = file_exists( $shared_asset_file ) ? require $shared_asset_file : array(
+			'dependencies' => array(),
+			'version'      => MVS_VERSION,
+		);
 		wp_enqueue_script_module(
 			'mvs-shared-ui',
 			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
@@ -224,7 +227,10 @@ class Shortcodes {
 		);
 
 		$dash_asset_file = MVS_PLUGIN_DIR . 'build/blocks/dashboard-view/view.asset.php';
-		$dash_asset      = file_exists( $dash_asset_file ) ? require $dash_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+		$dash_asset      = file_exists( $dash_asset_file ) ? require $dash_asset_file : array(
+			'dependencies' => array(),
+			'version'      => MVS_VERSION,
+		);
 		wp_enqueue_script_module(
 			'mvs-dashboard-view',
 			MVS_PLUGIN_URL . 'build/blocks/dashboard-view/view.js',
@@ -278,7 +284,10 @@ class Shortcodes {
 		$block_view = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/view.js';
 		if ( file_exists( $block_view ) ) {
 			$asset_file = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/view.asset.php';
-			$asset      = file_exists( $asset_file ) ? require $asset_file : array( 'dependencies' => array(), 'version' => filemtime( $block_view ) );
+			$asset      = file_exists( $asset_file ) ? require $asset_file : array(
+				'dependencies' => array(),
+				'version'      => filemtime( $block_view ),
+			);
 			wp_enqueue_script_module(
 				'mvs-block-' . $block_name . '-view',
 				MVS_PLUGIN_URL . 'build/blocks/' . $block_name . '/view.js',
@@ -330,10 +339,10 @@ class Shortcodes {
 			return '<p>' . esc_html__( 'Collection not found.', 'wpmediaverse' ) . '</p>';
 		}
 
-		$container  = \WPMediaVerse\Core\Plugin::container();
-		$service    = $container->get( 'collections' );
-		$type       = $service->get_type( $collection_id );
-		$media_ids  = array();
+		$container = \WPMediaVerse\Core\Plugin::container();
+		$service   = $container->get( 'collections' );
+		$type      = $service->get_type( $collection_id );
+		$media_ids = array();
 
 		if ( 'smart' === $type ) {
 			$resolved  = $service->resolve( $collection_id, (int) $atts['per_page'], 1 );
@@ -403,7 +412,15 @@ class Shortcodes {
 		$mvs_profile_asset_file = MVS_PLUGIN_DIR . 'build/blocks/profile-edit/view.asset.php';
 		$mvs_profile_asset      = file_exists( $mvs_profile_asset_file )
 			? require $mvs_profile_asset_file
-			: array( 'dependencies' => array( array( 'id' => '@wordpress/interactivity', 'import' => 'static' ) ), 'version' => MVS_VERSION );
+			: array(
+				'dependencies' => array(
+					array(
+						'id'     => '@wordpress/interactivity',
+						'import' => 'static',
+					),
+				),
+				'version'      => MVS_VERSION,
+			);
 		wp_enqueue_script_module(
 			'mvs-profile-edit',
 			MVS_PLUGIN_URL . 'assets/js/profile-edit.js',

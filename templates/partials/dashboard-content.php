@@ -49,7 +49,15 @@ $mvs_dash_ctx['profileError']    = '';
 $mvs_pe_asset_file = MVS_PLUGIN_DIR . 'build/blocks/profile-edit/view.asset.php';
 $mvs_pe_asset      = file_exists( $mvs_pe_asset_file )
 	? require $mvs_pe_asset_file
-	: array( 'dependencies' => array( array( 'id' => '@wordpress/interactivity', 'import' => 'static' ) ), 'version' => defined( 'MVS_VERSION' ) ? MVS_VERSION : '1.1.0' );
+	: array(
+		'dependencies' => array(
+			array(
+				'id'     => '@wordpress/interactivity',
+				'import' => 'static',
+			),
+		),
+		'version'      => defined( 'MVS_VERSION' ) ? MVS_VERSION : '1.1.0',
+	);
 wp_enqueue_script_module(
 	'mvs-profile-edit',
 	( defined( 'MVS_PLUGIN_URL' ) ? MVS_PLUGIN_URL : '' ) . 'assets/js/profile-edit.js',
@@ -82,7 +90,7 @@ wp_enqueue_script_module(
 		<!-- Inline Edit Form -->
 		<div class="mvs-dashboard-profile-edit-form"
 			data-wp-bind--hidden="!context.editingProfile">
-		  <div data-wp-interactive="mvs/profile-edit"
+			<div data-wp-interactive="mvs/profile-edit"
 			<?php echo wp_interactivity_data_wp_context( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 
 			<div class="mvs-profile-message mvs-profile-message--success"
@@ -148,11 +156,11 @@ wp_enqueue_script_module(
 					</button>
 				</div>
 			</div>
-		  </div>
-		  <button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-cancel-btn"
+			</div>
+			<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-cancel-btn"
 			data-wp-on--click="actions.toggleProfileEdit">
 			<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
-		  </button>
+			</button>
 		</div>
 	</div>
 
@@ -161,7 +169,7 @@ wp_enqueue_script_module(
 	$mvs_profile_incomplete = ! $mvs_has_custom || empty( $mvs_current_user->description );
 	if ( $mvs_profile_incomplete ) :
 		$mvs_edit_profile_url = home_url( '/media/edit-profile/' );
-	?>
+		?>
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
 		<span class="mvs-profile-prompt-icon">&#x1F464;</span>
 		<span class="mvs-profile-prompt-text">
@@ -377,7 +385,7 @@ wp_enqueue_script_module(
 			<?php
 			$mvs_explore_page = (int) get_option( 'mvs_page_explore', 0 );
 			if ( $mvs_explore_page ) :
-			?>
+				?>
 				<a href="<?php echo esc_url( get_permalink( $mvs_explore_page ) ); ?>" class="mvs-btn mvs-btn--secondary mvs-btn--small">
 					<?php esc_html_e( 'Explore Media', 'wpmediaverse' ); ?>
 				</a>

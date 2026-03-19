@@ -232,7 +232,7 @@ class BuddyPressIntegration {
 	public function flag_activity_upload( int $media_id ): void {
 		// Mark as coming through UploadService — prevents publish_mvs_media duplicate.
 		$this->recorded_uploads[ $media_id ] = true;
-		$this->upload_in_progress = false;
+		$this->upload_in_progress            = false;
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['context'] ) && 'activity' === sanitize_key( wp_unslash( $_GET['context'] ) ) ) {
@@ -296,7 +296,7 @@ class BuddyPressIntegration {
 			$activity_args['secondary_item_id'] = $media_id;
 		}
 
-		$activity_id = bp_activity_add( $activity_args );
+		$activity_id                         = bp_activity_add( $activity_args );
 		$this->recorded_uploads[ $media_id ] = true;
 
 		// Store the activity ID on the media post for easy lookup/updates.
@@ -664,10 +664,10 @@ class BuddyPressIntegration {
 		// Ensure frontend CSS is loaded.
 		wp_enqueue_style( 'mvs-frontend' );
 
-		$user_id    = bp_displayed_user_id();
-		$is_own     = is_user_logged_in() && get_current_user_id() === $user_id;
-		$paged      = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$per_page   = 18;
+		$user_id  = bp_displayed_user_id();
+		$is_own   = is_user_logged_in() && get_current_user_id() === $user_id;
+		$paged    = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$per_page = 18;
 
 		// Inline upload for own profile.
 		if ( $is_own ) {
@@ -1008,8 +1008,8 @@ class BuddyPressIntegration {
 
 		// Get album items.
 		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_album_items';
-		$items = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$table      = $wpdb->prefix . 'mvs_album_items';
+		$items      = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT media_id FROM {$table} WHERE album_id = %d ORDER BY position ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$album_id
@@ -1166,7 +1166,10 @@ class BuddyPressIntegration {
 				\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
 					(int) $media_id,
 					array(),
-					array( 'show_author' => false, 'show_overlay' => false )
+					array(
+						'show_author'  => false,
+						'show_overlay' => false,
+					)
 				);
 			}
 			echo '</div>';
@@ -1237,9 +1240,9 @@ class BuddyPressIntegration {
 	 * @param string $active Active tab: 'media' or 'albums'.
 	 */
 	private function render_group_sub_tabs( string $active ): void {
-		$group     = groups_get_current_group();
-		$group_url = bp_get_group_url( $group );
-		$media_url = trailingslashit( $group_url . 'media' );
+		$group      = groups_get_current_group();
+		$group_url  = bp_get_group_url( $group );
+		$media_url  = trailingslashit( $group_url . 'media' );
 		$albums_url = trailingslashit( $group_url . 'media/albums' );
 
 		echo '<nav class="mvs-bp-sub-tabs">';
@@ -1405,8 +1408,8 @@ class BuddyPressIntegration {
 			<?php
 		}
 
-		$paged     = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$per_page  = 18;
+		$paged    = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$per_page = 18;
 
 		// Query media scoped to THIS group via _mvs_group_id meta.
 		$query = new \WP_Query(
@@ -1626,8 +1629,8 @@ class BuddyPressIntegration {
 		}
 
 		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_album_items';
-		$items = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$table      = $wpdb->prefix . 'mvs_album_items';
+		$items      = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT media_id FROM {$table} WHERE album_id = %d ORDER BY position ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$album_id
@@ -1785,7 +1788,10 @@ class BuddyPressIntegration {
 				\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
 					(int) $media_id,
 					array(),
-					array( 'show_author' => false, 'show_overlay' => false )
+					array(
+						'show_author'  => false,
+						'show_overlay' => false,
+					)
 				);
 			}
 			echo '</div>';

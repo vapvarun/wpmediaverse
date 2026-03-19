@@ -173,7 +173,7 @@ class CacheService {
 			'moderation_counts',
 			function () {
 				global $wpdb;
-				$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$rows   = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 					"SELECT moderation_status, COUNT(*) as cnt FROM {$wpdb->prefix}mvs_media_index GROUP BY moderation_status", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					ARRAY_A
 				);

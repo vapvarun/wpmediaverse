@@ -98,12 +98,14 @@ class SettingsPage {
 					'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
 					sprintf(
 						/* translators: %d: number of roles */
-						esc_html( _n(
-							'Permissions updated for %d role.',
-							'Permissions updated for %d roles.',
-							$perms_saved,
-							'wpmediaverse'
-						) ),
+						esc_html(
+							_n(
+								'Permissions updated for %d role.',
+								'Permissions updated for %d roles.',
+								$perms_saved,
+								'wpmediaverse'
+							)
+						),
 						esc_html( $perms_saved )
 					)
 				);
@@ -1103,7 +1105,7 @@ class SettingsPage {
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'tab'              => 'permissions',
+					'tab'               => 'permissions',
 					'permissions-saved' => $roles_updated,
 				),
 				admin_url( 'edit.php?post_type=mvs_media&page=' . self::PAGE_SLUG )
@@ -1139,10 +1141,10 @@ class SettingsPage {
 	 * @param array $args Field arguments.
 	 */
 	public function render_size_field( array $args ): void {
-		$bytes       = (int) get_option( $args['option'], 104857600 );
-		$mb_value    = round( $bytes / MB_IN_BYTES );
-		$server_max  = wp_max_upload_size();
-		$server_mb   = round( $server_max / MB_IN_BYTES );
+		$bytes      = (int) get_option( $args['option'], 104857600 );
+		$mb_value   = round( $bytes / MB_IN_BYTES );
+		$server_max = wp_max_upload_size();
+		$server_mb  = round( $server_max / MB_IN_BYTES );
 
 		printf(
 			'<input type="number" name="%s" value="%s" class="small-text" min="1" max="%s" step="1" /> <strong>MB</strong>',
@@ -1180,21 +1182,21 @@ class SettingsPage {
 	 * @param array $args Field arguments.
 	 */
 	public function render_file_types_field( array $args ): void {
-		$current = get_option( $args['option'], '' );
+		$current  = get_option( $args['option'], '' );
 		$selected = array_map( 'trim', explode( ',', $current ) );
 
 		$groups = array(
-			__( 'Images', 'wpmediaverse' ) => array(
+			__( 'Images', 'wpmediaverse' )    => array(
 				'image/jpeg' => 'JPEG',
 				'image/png'  => 'PNG',
 				'image/gif'  => 'GIF',
 				'image/webp' => 'WebP',
 			),
-			__( 'Video', 'wpmediaverse' ) => array(
+			__( 'Video', 'wpmediaverse' )     => array(
 				'video/mp4'  => 'MP4',
 				'video/webm' => 'WebM',
 			),
-			__( 'Audio', 'wpmediaverse' ) => array(
+			__( 'Audio', 'wpmediaverse' )     => array(
 				'audio/mpeg' => 'MP3',
 				'audio/ogg'  => 'OGG',
 			),
@@ -1259,10 +1261,10 @@ class SettingsPage {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( ! empty( $_POST['mvs_allowed_file_types_custom'] ) ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			$custom = sanitize_text_field( wp_unslash( $_POST['mvs_allowed_file_types_custom'] ) );
+			$custom     = sanitize_text_field( wp_unslash( $_POST['mvs_allowed_file_types_custom'] ) );
 			$custom_arr = array_map( 'trim', explode( ',', $custom ) );
 			$custom_arr = array_map( 'sanitize_mime_type', $custom_arr );
-			$types = array_merge( $types, $custom_arr );
+			$types      = array_merge( $types, $custom_arr );
 		}
 
 		$types = array_unique( array_filter( $types ) );

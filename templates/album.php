@@ -31,7 +31,7 @@ get_header();
 		if ( ! $album_privacy ) {
 			$album_privacy = 'public';
 		}
-		$album_type = get_post_meta( get_the_ID(), '_mvs_album_type', true );
+		$album_type         = get_post_meta( get_the_ID(), '_mvs_album_type', true );
 		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
 		?>
 
@@ -54,7 +54,7 @@ get_header();
 						}
 
 						if ( $mvs_author_url ) :
-						?>
+							?>
 						<a href="<?php echo esc_url( $mvs_author_url ); ?>"><?php echo esc_html( get_the_author() ); ?></a>
 						<?php else : ?>
 						<span><?php echo esc_html( get_the_author() ); ?></span>
@@ -79,33 +79,33 @@ get_header();
 				<?php if ( $mvs_is_album_owner ) : ?>
 					<?php
 					$mvs_album_ctx = array(
-						'mediaId'        => get_the_ID(),
-						'restUrl'        => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-						'nonce'          => wp_create_nonce( 'wp_rest' ),
-						'isLoggedIn'     => true,
-						'isOwner'        => true,
-						'type'           => 'album',
-						'archiveUrl'     => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
-						'initialTitle'   => get_the_title(),
-						'initialDesc'    => get_the_content(),
-						'initialPrivacy' => $album_privacy,
-						'initialTags'    => array(),
-						'reactions'      => array(),
-						'userReaction'   => '',
-						'isFavorite'     => false,
-						'comments'       => array(),
-						'commentText'    => '',
-						'viewCount'      => '',
-						'editVisible'    => false,
-						'editTitle'      => get_the_title(),
-						'editDesc'       => get_the_content(),
-						'editPrivacy'    => $album_privacy,
-						'editTags'       => array(),
-						'tagInput'       => '',
-						'tagResults'     => array(),
+						'mediaId'            => get_the_ID(),
+						'restUrl'            => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+						'nonce'              => wp_create_nonce( 'wp_rest' ),
+						'isLoggedIn'         => true,
+						'isOwner'            => true,
+						'type'               => 'album',
+						'archiveUrl'         => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
+						'initialTitle'       => get_the_title(),
+						'initialDesc'        => get_the_content(),
+						'initialPrivacy'     => $album_privacy,
+						'initialTags'        => array(),
+						'reactions'          => array(),
+						'userReaction'       => '',
+						'isFavorite'         => false,
+						'comments'           => array(),
+						'commentText'        => '',
+						'viewCount'          => '',
+						'editVisible'        => false,
+						'editTitle'          => get_the_title(),
+						'editDesc'           => get_the_content(),
+						'editPrivacy'        => $album_privacy,
+						'editTags'           => array(),
+						'tagInput'           => '',
+						'tagResults'         => array(),
 						'tagDropdownVisible' => false,
-						'saving'         => false,
-						'shareLabel'     => "\xF0\x9F\x94\x97 Share",
+						'saving'             => false,
+						'shareLabel'         => "\xF0\x9F\x94\x97 Share",
 					);
 					?>
 					<div class="mvs-social-wrapper"
@@ -307,7 +307,7 @@ get_header();
 					$track_art  = get_post_meta( $media_id, '_mvs_artist', true );
 					$dur_label  = '';
 					if ( $track_dur ) {
-						$d = (float) $track_dur;
+						$d         = (float) $track_dur;
 						$dur_label = sprintf( '%d:%02d', floor( $d / 60 ), (int) $d % 60 );
 					}
 					$tracks[] = array(
@@ -418,7 +418,10 @@ if ( is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_us
 
 	// Enqueue Interactivity API stores.
 	$mvs_shared_asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
-	$mvs_shared_asset      = file_exists( $mvs_shared_asset_file ) ? require $mvs_shared_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+	$mvs_shared_asset      = file_exists( $mvs_shared_asset_file ) ? require $mvs_shared_asset_file : array(
+		'dependencies' => array(),
+		'version'      => MVS_VERSION,
+	);
 	wp_enqueue_script_module(
 		'mvs-shared-ui',
 		MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
@@ -427,7 +430,10 @@ if ( is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_us
 	);
 
 	$mvs_social_asset_file = MVS_PLUGIN_DIR . 'build/blocks/media-social/view.asset.php';
-	$mvs_social_asset      = file_exists( $mvs_social_asset_file ) ? require $mvs_social_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+	$mvs_social_asset      = file_exists( $mvs_social_asset_file ) ? require $mvs_social_asset_file : array(
+		'dependencies' => array(),
+		'version'      => MVS_VERSION,
+	);
 	wp_enqueue_script_module(
 		'mvs-media-social',
 		MVS_PLUGIN_URL . 'build/blocks/media-social/view.js',

@@ -129,11 +129,11 @@ class TemplateHelpers {
 	 *                        - 'size' (string) Image size. Default 'medium'.
 	 */
 	public static function render_grid_item( int $media_id, array $stats = array(), array $options = array() ): void {
-		$show_author = $options['show_author'] ?? true;
+		$show_author  = $options['show_author'] ?? true;
 		$show_overlay = $options['show_overlay'] ?? true;
-		$data_attrs  = $options['data_attrs'] ?? array();
-		$size        = $options['size'] ?? 'medium';
-		$media_post  = get_post( $media_id );
+		$data_attrs   = $options['data_attrs'] ?? array();
+		$size         = $options['size'] ?? 'medium';
+		$media_post   = get_post( $media_id );
 
 		if ( ! $media_post || 'publish' !== $media_post->post_status ) {
 			return;

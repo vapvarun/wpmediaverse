@@ -87,7 +87,10 @@ class HealthCheckService {
 			return array(
 				'label'       => __( 'WPMediaVerse database tables are present', 'wpmediaverse' ),
 				'status'      => 'good',
-				'badge'       => array( 'label' => 'WPMediaVerse', 'color' => 'blue' ),
+				'badge'       => array(
+					'label' => 'WPMediaVerse',
+					'color' => 'blue',
+				),
 				'description' => sprintf( '<p>%s</p>', __( 'All required database tables exist.', 'wpmediaverse' ) ),
 				'test'        => 'wpmediaverse_tables',
 			);
@@ -96,7 +99,10 @@ class HealthCheckService {
 		return array(
 			'label'       => __( 'WPMediaVerse database tables are missing', 'wpmediaverse' ),
 			'status'      => 'critical',
-			'badge'       => array( 'label' => 'WPMediaVerse', 'color' => 'red' ),
+			'badge'       => array(
+				'label' => 'WPMediaVerse',
+				'color' => 'red',
+			),
 			'description' => sprintf(
 				'<p>%s: %s</p><p>%s</p>',
 				__( 'Missing tables', 'wpmediaverse' ),
@@ -120,7 +126,10 @@ class HealthCheckService {
 			return array(
 				'label'       => __( 'Upload directory is not writable', 'wpmediaverse' ),
 				'status'      => 'critical',
-				'badge'       => array( 'label' => 'WPMediaVerse', 'color' => 'red' ),
+				'badge'       => array(
+					'label' => 'WPMediaVerse',
+					'color' => 'red',
+				),
 				'description' => sprintf( '<p>%s</p>', esc_html( $upload_dir['error'] ) ),
 				'test'        => 'wpmediaverse_uploads',
 			);
@@ -131,7 +140,10 @@ class HealthCheckService {
 			return array(
 				'label'       => __( 'WPMediaVerse upload directory is not writable', 'wpmediaverse' ),
 				'status'      => 'critical',
-				'badge'       => array( 'label' => 'WPMediaVerse', 'color' => 'red' ),
+				'badge'       => array(
+					'label' => 'WPMediaVerse',
+					'color' => 'red',
+				),
 				'description' => sprintf( '<p>%s: %s</p>', __( 'Directory not writable', 'wpmediaverse' ), esc_html( $mvs_dir ) ),
 				'test'        => 'wpmediaverse_uploads',
 			);
@@ -140,7 +152,10 @@ class HealthCheckService {
 		return array(
 			'label'       => __( 'WPMediaVerse upload directory is writable', 'wpmediaverse' ),
 			'status'      => 'good',
-			'badge'       => array( 'label' => 'WPMediaVerse', 'color' => 'blue' ),
+			'badge'       => array(
+				'label' => 'WPMediaVerse',
+				'color' => 'blue',
+			),
 			'description' => sprintf( '<p>%s</p>', __( 'Media files can be uploaded successfully.', 'wpmediaverse' ) ),
 			'test'        => 'wpmediaverse_uploads',
 		);
@@ -170,7 +185,10 @@ class HealthCheckService {
 			return array(
 				'label'       => __( 'WPMediaVerse pages are set up', 'wpmediaverse' ),
 				'status'      => 'good',
-				'badge'       => array( 'label' => 'WPMediaVerse', 'color' => 'blue' ),
+				'badge'       => array(
+					'label' => 'WPMediaVerse',
+					'color' => 'blue',
+				),
 				'description' => sprintf( '<p>%s</p>', __( 'All required pages exist and are published.', 'wpmediaverse' ) ),
 				'test'        => 'wpmediaverse_pages',
 			);
@@ -179,7 +197,10 @@ class HealthCheckService {
 		return array(
 			'label'       => __( 'WPMediaVerse pages are missing', 'wpmediaverse' ),
 			'status'      => 'recommended',
-			'badge'       => array( 'label' => 'WPMediaVerse', 'color' => 'orange' ),
+			'badge'       => array(
+				'label' => 'WPMediaVerse',
+				'color' => 'orange',
+			),
 			'description' => sprintf(
 				'<p>%s: %s</p><p>%s</p>',
 				__( 'Missing pages', 'wpmediaverse' ),

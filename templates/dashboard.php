@@ -29,13 +29,16 @@ $mvs_dash_ctx = array(
 	'mediaUrl' => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
 );
 
-include MVS_PLUGIN_DIR . 'templates/partials/dashboard-content.php';
+require MVS_PLUGIN_DIR . 'templates/partials/dashboard-content.php';
 
 wp_enqueue_style( 'mvs-frontend' );
 
 // Enqueue Interactivity API stores.
 $mvs_shared_asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
-$mvs_shared_asset      = file_exists( $mvs_shared_asset_file ) ? require $mvs_shared_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+$mvs_shared_asset      = file_exists( $mvs_shared_asset_file ) ? require $mvs_shared_asset_file : array(
+	'dependencies' => array(),
+	'version'      => MVS_VERSION,
+);
 wp_enqueue_script_module(
 	'mvs-shared-ui',
 	MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
@@ -44,7 +47,10 @@ wp_enqueue_script_module(
 );
 
 $mvs_dash_asset_file = MVS_PLUGIN_DIR . 'build/blocks/dashboard-view/view.asset.php';
-$mvs_dash_asset      = file_exists( $mvs_dash_asset_file ) ? require $mvs_dash_asset_file : array( 'dependencies' => array(), 'version' => MVS_VERSION );
+$mvs_dash_asset      = file_exists( $mvs_dash_asset_file ) ? require $mvs_dash_asset_file : array(
+	'dependencies' => array(),
+	'version'      => MVS_VERSION,
+);
 wp_enqueue_script_module(
 	'mvs-dashboard-view',
 	MVS_PLUGIN_URL . 'build/blocks/dashboard-view/view.js',

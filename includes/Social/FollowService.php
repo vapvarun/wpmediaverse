@@ -40,7 +40,7 @@ class FollowService {
 
 		// Use INSERT IGNORE to handle race conditions — if two concurrent requests
 		// both pass the check, only one will succeed; the other silently no-ops.
-		$table = $wpdb->prefix . 'mvs_follows';
+		$table  = $wpdb->prefix . 'mvs_follows';
 		$result = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"INSERT IGNORE INTO {$table} (follower_id, following_id, status, created_at) VALUES (%d, %d, %s, %s)", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

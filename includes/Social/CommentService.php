@@ -118,13 +118,13 @@ class CommentService {
 		if ( $top_level ) {
 			$replies_raw = get_comments(
 				array(
-					'post_id'    => $media_id,
-					'type'       => self::COMMENT_TYPE,
-					'status'     => 'approve',
+					'post_id'        => $media_id,
+					'type'           => self::COMMENT_TYPE,
+					'status'         => 'approve',
 					'parent__not_in' => array( 0 ),
-					'orderby'    => 'comment_date_gmt',
-					'order'      => 'ASC',
-					'number'     => 0, // All replies.
+					'orderby'        => 'comment_date_gmt',
+					'order'          => 'ASC',
+					'number'         => 0, // All replies.
 				)
 			);
 			foreach ( $replies_raw as $reply ) {

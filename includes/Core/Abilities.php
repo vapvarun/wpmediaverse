@@ -62,7 +62,7 @@ class Abilities {
 	private static function get_ability_definitions(): array {
 		return array(
 			// --- Media Management ---
-			'wpmediaverse/upload-media'      => array(
+			'wpmediaverse/upload-media'       => array(
 				'label'               => __( 'Upload Media', 'wpmediaverse' ),
 				'description'         => __( 'Upload images, videos, audio, and documents.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -73,7 +73,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => false ),
 				),
 			),
-			'wpmediaverse/list-media'        => array(
+			'wpmediaverse/list-media'         => array(
 				'label'               => __( 'List Media', 'wpmediaverse' ),
 				'description'         => __( 'Browse and search media items with filters.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -84,7 +84,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => true ),
 				),
 			),
-			'wpmediaverse/manage-media'      => array(
+			'wpmediaverse/manage-media'       => array(
 				'label'               => __( 'Manage Media', 'wpmediaverse' ),
 				'description'         => __( 'Edit, delete, and set privacy on owned media.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -95,7 +95,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => false ),
 				),
 			),
-			'wpmediaverse/draft-media'       => array(
+			'wpmediaverse/draft-media'        => array(
 				'label'               => __( 'Draft & Schedule Media', 'wpmediaverse' ),
 				'description'         => __( 'Save media as draft or schedule for future publishing.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -108,7 +108,7 @@ class Abilities {
 			),
 
 			// --- Albums & Collections ---
-			'wpmediaverse/manage-albums'     => array(
+			'wpmediaverse/manage-albums'      => array(
 				'label'               => __( 'Manage Albums', 'wpmediaverse' ),
 				'description'         => __( 'Create, edit, and delete media albums and playlists.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -143,7 +143,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => false ),
 				),
 			),
-			'wpmediaverse/comments'          => array(
+			'wpmediaverse/comments'           => array(
 				'label'               => __( 'Comment on Media', 'wpmediaverse' ),
 				'description'         => __( 'Post threaded comments with 15-minute edit window.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -154,7 +154,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => false ),
 				),
 			),
-			'wpmediaverse/favorites'         => array(
+			'wpmediaverse/favorites'          => array(
 				'label'               => __( 'Favorite Media', 'wpmediaverse' ),
 				'description'         => __( 'Save media to favorites for quick access.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -165,7 +165,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => false ),
 				),
 			),
-			'wpmediaverse/follow-users'      => array(
+			'wpmediaverse/follow-users'       => array(
 				'label'               => __( 'Follow Users', 'wpmediaverse' ),
 				'description'         => __( 'Follow and unfollow users to see their content in your feed.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -176,7 +176,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => false ),
 				),
 			),
-			'wpmediaverse/share-media'       => array(
+			'wpmediaverse/share-media'        => array(
 				'label'               => __( 'Share Media', 'wpmediaverse' ),
 				'description'         => __( 'Share media to social platforms (Facebook, Twitter, LinkedIn, email).', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -187,7 +187,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => true ),
 				),
 			),
-			'wpmediaverse/mentions'          => array(
+			'wpmediaverse/mentions'           => array(
 				'label'               => __( '@Mention Users', 'wpmediaverse' ),
 				'description'         => __( 'Mention users in comments and media descriptions.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -200,7 +200,7 @@ class Abilities {
 			),
 
 			// --- Safety ---
-			'wpmediaverse/report-content'    => array(
+			'wpmediaverse/report-content'     => array(
 				'label'               => __( 'Report Content', 'wpmediaverse' ),
 				'description'         => __( 'Report media or users for policy violations.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -211,7 +211,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => false ),
 				),
 			),
-			'wpmediaverse/block-users'       => array(
+			'wpmediaverse/block-users'        => array(
 				'label'               => __( 'Block Users', 'wpmediaverse' ),
 				'description'         => __( 'Block users to hide them from feed, search, and comments.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -224,7 +224,7 @@ class Abilities {
 			),
 
 			// --- Discovery ---
-			'wpmediaverse/activity-feed'     => array(
+			'wpmediaverse/activity-feed'      => array(
 				'label'               => __( 'Activity Feed', 'wpmediaverse' ),
 				'description'         => __( 'View public or following-scoped activity feed.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -235,7 +235,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => true ),
 				),
 			),
-			'wpmediaverse/notifications'     => array(
+			'wpmediaverse/notifications'      => array(
 				'label'               => __( 'Notifications', 'wpmediaverse' ),
 				'description'         => __( 'View and manage notification center with unread counts.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',
@@ -246,7 +246,7 @@ class Abilities {
 					'annotations'  => array( 'readonly' => true ),
 				),
 			),
-			'wpmediaverse/user-profiles'     => array(
+			'wpmediaverse/user-profiles'      => array(
 				'label'               => __( 'User Profiles', 'wpmediaverse' ),
 				'description'         => __( 'View public user profiles with stats, media, and follow counts.', 'wpmediaverse' ),
 				'category'            => 'wpmediaverse',

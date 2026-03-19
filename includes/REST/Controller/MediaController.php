@@ -309,7 +309,7 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		$upload_service = Plugin::container()->get( 'upload' );
-		$args = array(
+		$args           = array(
 			'title'       => sanitize_text_field( $request->get_param( 'title' ) ?? '' ),
 			'description' => wp_kses_post( $request->get_param( 'description' ) ?? '' ),
 			'status'      => sanitize_text_field( $request->get_param( 'status' ) ?? 'publish' ),

@@ -203,7 +203,7 @@ class OverviewPage {
 											$explore_page_id = (int) get_option( 'mvs_page_explore', 0 );
 											$explore_url     = $explore_page_id ? get_permalink( $explore_page_id ) : '';
 											if ( $explore_url ) :
-											?>
+												?>
 											status.textContent += ' <?php echo esc_js( __( 'Redirecting to Explore page...', 'wpmediaverse' ) ); ?>';
 											setTimeout(function() { window.location.href = '<?php echo esc_url( $explore_url ); ?>'; }, 1500);
 											<?php else : ?>

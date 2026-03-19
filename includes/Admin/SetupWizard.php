@@ -137,17 +137,17 @@ class SetupWizard {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$step = isset( $_GET['step'] ) ? sanitize_key( $_GET['step'] ) : 'welcome';
 
-		$steps = array(
+		$steps         = array(
 			'welcome'     => __( 'Welcome', 'wpmediaverse' ),
 			'pages'       => __( 'Pages', 'wpmediaverse' ),
 			'permissions' => __( 'Permissions', 'wpmediaverse' ),
 			'display'     => __( 'Display', 'wpmediaverse' ),
 			'done'        => __( 'Done', 'wpmediaverse' ),
 		);
-		$step_keys = array_keys( $steps );
+		$step_keys     = array_keys( $steps );
 		$current_index = array_search( $step, $step_keys, true );
 		if ( false === $current_index ) {
-			$step = 'welcome';
+			$step          = 'welcome';
 			$current_index = 0;
 		}
 		?>
@@ -159,7 +159,8 @@ class SetupWizard {
 
 			<!-- Progress Steps -->
 			<div class="mvs-setup-progress">
-				<?php foreach ( $steps as $key => $label ) :
+				<?php
+				foreach ( $steps as $key => $label ) :
 					$index = array_search( $key, $step_keys, true );
 					$class = '';
 					if ( $index < $current_index ) {
@@ -214,7 +215,7 @@ class SetupWizard {
 				<li><span class="dashicons dashicons-shield"></span> <?php esc_html_e( 'AI-powered moderation and privacy controls', 'wpmediaverse' ); ?></li>
 				<li><span class="dashicons dashicons-buddicons-buddypress-logo"></span> <?php esc_html_e( 'Optional BuddyPress integration', 'wpmediaverse' ); ?></li>
 			</ul>
-			<p><?php esc_html_e( "This quick setup will help you configure the essentials. You can change any setting later.", 'wpmediaverse' ); ?></p>
+			<p><?php esc_html_e( 'This quick setup will help you configure the essentials. You can change any setting later.', 'wpmediaverse' ); ?></p>
 			<div class="mvs-setup-actions">
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&step=pages' ) ); ?>"
 					class="button button-primary button-hero">
@@ -256,7 +257,8 @@ class SetupWizard {
 			<p><?php esc_html_e( 'These pages have been automatically created for your media hub:', 'wpmediaverse' ); ?></p>
 
 			<div class="mvs-setup-pages-list">
-				<?php foreach ( $pages as $option_key => $page_info ) :
+				<?php
+				foreach ( $pages as $option_key => $page_info ) :
 					$page_id = (int) get_option( $option_key, 0 );
 					$exists  = $page_id > 0 && 'publish' === get_post_status( $page_id );
 					$url     = $exists ? get_permalink( $page_id ) : '';
@@ -314,8 +316,9 @@ class SetupWizard {
 				<input type="hidden" name="mvs_wizard_step" value="permissions" />
 
 				<div class="mvs-setup-role-list">
-					<?php foreach ( $all_roles as $slug => $label ) :
-						$role = get_role( $slug );
+					<?php
+					foreach ( $all_roles as $slug => $label ) :
+						$role    = get_role( $slug );
 						$has_cap = $role && $role->has_cap( 'upload_mvs_media' );
 						$checked = $has_cap || in_array( $slug, $default_upload, true );
 						?>
@@ -344,9 +347,9 @@ class SetupWizard {
 	 * Step 4: Display settings.
 	 */
 	private function render_step_display(): void {
-		$columns   = (int) get_option( 'mvs_grid_columns', 3 );
-		$per_page  = (int) get_option( 'mvs_items_per_page', 24 );
-		$style     = get_option( 'mvs_thumbnail_style', 'square' );
+		$columns  = (int) get_option( 'mvs_grid_columns', 3 );
+		$per_page = (int) get_option( 'mvs_items_per_page', 24 );
+		$style    = get_option( 'mvs_thumbnail_style', 'square' );
 		?>
 		<div class="mvs-setup-step">
 			<h2><?php esc_html_e( 'Display Settings', 'wpmediaverse' ); ?></h2>

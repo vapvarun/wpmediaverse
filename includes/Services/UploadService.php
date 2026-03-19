@@ -198,8 +198,8 @@ class UploadService {
 		if ( ! empty( $args['publish_at'] ) && 'draft' === $status ) {
 			$publish_time = strtotime( $args['publish_at'] );
 			if ( $publish_time && $publish_time > time() ) {
-				$post_data['post_status'] = 'future';
-				$post_data['post_date']   = gmdate( 'Y-m-d H:i:s', $publish_time );
+				$post_data['post_status']   = 'future';
+				$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $publish_time );
 				$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $publish_time );
 			}
 		}
@@ -511,9 +511,9 @@ class UploadService {
 		$attachment_id = wp_insert_attachment(
 			array(
 				'post_mime_type' => $mime,
-				'post_title'    => get_the_title( $media_id ),
-				'post_status'   => 'inherit',
-				'post_parent'   => $media_id,
+				'post_title'     => get_the_title( $media_id ),
+				'post_status'    => 'inherit',
+				'post_parent'    => $media_id,
 			),
 			$file_path,
 			$media_id,

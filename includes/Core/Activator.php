@@ -94,7 +94,7 @@ class Activator {
 					'update_post_term_cache' => false,
 				)
 			);
-			$by_title = $by_title_query->have_posts() ? $by_title_query->posts[0] : null;
+			$by_title       = $by_title_query->have_posts() ? $by_title_query->posts[0] : null;
 			if ( $by_title && 'publish' === $by_title->post_status ) {
 				update_option( $option_key, $by_title->ID );
 				continue;

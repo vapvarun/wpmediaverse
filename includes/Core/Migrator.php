@@ -333,7 +333,7 @@ class Migrator {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$index_exists = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s",
+				'SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s',
 				DB_NAME,
 				$prefix . 'mvs_reports',
 				'unique_report'
@@ -348,7 +348,7 @@ class Migrator {
 		// Unique constraint on follows (prevent duplicate follows).
 		$follow_idx = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s",
+				'SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s',
 				DB_NAME,
 				$prefix . 'mvs_follows',
 				'unique_follow'
@@ -362,7 +362,7 @@ class Migrator {
 		// Unique constraint on reactions (prevent duplicate reactions).
 		$react_idx = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s",
+				'SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s',
 				DB_NAME,
 				$prefix . 'mvs_reactions',
 				'unique_reaction'
@@ -376,7 +376,7 @@ class Migrator {
 		// Unique constraint on favorites.
 		$fav_idx = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s",
+				'SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND INDEX_NAME = %s',
 				DB_NAME,
 				$prefix . 'mvs_favorites',
 				'unique_favorite'
