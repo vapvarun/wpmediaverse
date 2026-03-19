@@ -144,7 +144,9 @@ class TemplateHelpers {
 		$reactions = isset( $stats['reactions'] ) ? (int) $stats['reactions'] : 0;
 		$comments  = isset( $stats['comments'] ) ? (int) $stats['comments'] : 0;
 
-		// Build data attributes string.
+		// Build data attributes string — always include media-id and media-type for lightbox.
+		$data_attrs['media-id']   = $media_id;
+		$data_attrs['media-type'] = self::get_media_type( $media_id );
 		$data_str = '';
 		foreach ( $data_attrs as $key => $val ) {
 			$data_str .= ' data-' . esc_attr( $key ) . '="' . esc_attr( $val ) . '"';

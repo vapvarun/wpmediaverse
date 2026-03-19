@@ -64,73 +64,48 @@ if ( $mvs_tag ) {
 
 $query   = new WP_Query( $query_args );
 $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-grid-block' ) ) : 'class="mvs-media-grid-block"';
+
+// Enqueue universal lightbox when this block is rendered.
+if ( $show_lightbox && wp_script_is( 'mvs-lightbox', 'registered' ) ) {
+	wp_enqueue_script( 'mvs-lightbox' );
+}
 ?>
-<div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-	data-wp-interactive="mvs/media-grid"
-	data-wp-context='
-	<?php
-	echo wp_json_encode(
-		array(
-			'lightboxOpen'  => false,
-			'lightboxUrl'   => '',
-			'lightboxTitle' => '',
-		)
-	);
-	?>
-	'
->
+<div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( $query->have_posts() ) : ?>
 		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px">
 			<?php
 			while ( $query->have_posts() ) :
 				$query->the_post();
-				$file_url  = get_post_meta( get_the_ID(), '_mvs_file_url', true );
-				$file_type = get_post_meta( get_the_ID(), '_mvs_file_type', true );
-				$is_image  = $file_url && strpos( $file_type, 'image/' ) === 0;
+				$file_url   = get_post_meta( get_the_ID(), '_mvs_file_url', true );
+				$file_type  = get_post_meta( get_the_ID(), '_mvs_file_type', true );
+				$is_image   = $file_url && strpos( $file_type, 'image/' ) === 0;
+				$is_video   = $file_url && strpos( $file_type, 'video/' ) === 0;
+				$media_type = $is_image ? 'image' : ( $is_video ? 'video' : 'document' );
 				?>
 				<div class="mvs-grid-item"
-					<?php if ( $show_lightbox && $is_image ) : ?>
-						data-wp-on--click="actions.openLightbox"
-						data-wp-context='
-						<?php
-						echo wp_json_encode(
-							array(
-								'url'   => $file_url,
-								'title' => get_the_title(),
-							)
-						);
-						?>
-											'
-					<?php endif; ?>
+					data-media-id="<?php echo absint( get_the_ID() ); ?>"
+					data-media-type="<?php echo esc_attr( $media_type ); ?>"
 				>
-					<?php if ( $is_image ) : ?>
+					<a href="<?php the_permalink(); ?>" class="mvs-grid-item-link">
+					<?php if ( $is_image || $is_video ) : ?>
 						<img src="<?php echo esc_url( $file_url ); ?>"
 							alt="<?php echo esc_attr( get_the_title() ); ?>"
 							loading="lazy" />
+						<?php if ( $is_video ) : ?>
+							<span class="mvs-grid-play-icon">&#9654;</span>
+						<?php endif; ?>
 					<?php else : ?>
 						<div class="mvs-grid-item-placeholder">
-							<span class="dashicons dashicons-media-<?php echo esc_attr( strpos( $file_type, 'video/' ) === 0 ? 'video' : 'default' ); ?>"></span>
+							<span class="dashicons dashicons-media-default"></span>
 						</div>
 					<?php endif; ?>
 					<div class="mvs-grid-item-overlay">
 						<span class="mvs-grid-item-title"><?php echo esc_html( get_the_title() ); ?></span>
 					</div>
+					</a>
 				</div>
 			<?php endwhile; ?>
 		</div>
-
-		<?php if ( $show_lightbox ) : ?>
-			<div class="mvs-lightbox-overlay"
-				data-wp-bind--hidden="!context.lightboxOpen"
-				data-wp-on--click="actions.closeLightbox"
-				data-wp-on--keydown="actions.handleLightboxKey"
-			>
-				<button class="mvs-lightbox-close" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">&times;</button>
-				<div class="mvs-lightbox-content">
-					<img data-wp-bind--src="context.lightboxUrl" data-wp-bind--alt="context.lightboxTitle" />
-				</div>
-			</div>
-		<?php endif; ?>
 
 		<?php
 		if ( $query->max_num_pages > 1 ) :
