@@ -64,7 +64,4 @@ add_action( 'plugins_loaded', array( 'WPMediaVerse\\Core\\Plugin', 'init' ) );
 // WP-CLI commands.
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	WP_CLI::add_command( 'mvs', 'WPMediaVerse\\CLI\\Commands' );
-	WP_CLI::add_command( 'mvs import-rtmedia', 'WPMediaVerse\\CLI\\ImportRtMedia' );
-	WP_CLI::add_command( 'mvs import-mediapress', 'WPMediaVerse\\CLI\\ImportMediaPress' );
-	WP_CLI::add_command( 'mvs import-buddyboss', 'WPMediaVerse\\CLI\\ImportBuddyBoss' );
 }
