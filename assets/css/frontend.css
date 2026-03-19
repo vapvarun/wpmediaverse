@@ -1945,6 +1945,23 @@ a.mvs-dashboard-card-title:hover {
 /* ── Grid layouts ── */
 
 /* 2 images: side by side */
+/* Single item: cap height so tall portrait images don't dominate the feed */
+.mvs-activity-grid-1 {
+	max-height: 480px;
+}
+
+.mvs-activity-grid-1 .mvs-activity-media {
+	max-height: 480px;
+}
+
+.mvs-activity-grid-1 .mvs-activity-media img {
+	width: 100%;
+	height: 100%;
+	max-height: 480px;
+	object-fit: cover;
+	border-radius: 10px;
+}
+
 .mvs-activity-grid-2 {
 	grid-template-columns: 1fr 1fr;
 	grid-template-rows: 280px;
@@ -2698,9 +2715,11 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-activity-media--placeholder {
-	background: #1a1a1a;
+	background: linear-gradient(135deg, #0d2137, #0a0a0a);
 	border-radius: 8px;
-	min-height: 200px;
+	min-height: 120px;
+	max-height: 360px;
+	aspect-ratio: 16 / 9;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -2731,9 +2750,8 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-activity-media--audio {
-	background: #f8f8f8;
-	border: 1px solid #e0e0e0;
-	border-radius: 8px;
+	background: linear-gradient(135deg, #4a1272, #1a0a2e);
+	border-radius: 12px;
 	overflow: hidden;
 }
 
@@ -2741,21 +2759,21 @@ a.mvs-dashboard-card-title:hover {
 	display: flex;
 	align-items: center;
 	gap: 14px;
-	padding: 14px 18px;
+	padding: 16px 20px;
 	text-decoration: none;
-	color: #333;
+	color: #fff;
 }
 
 .mvs-activity-audio-icon {
-	width: 44px;
-	height: 44px;
-	background: var(--mvs-primary);
+	width: 48px;
+	height: 48px;
+	background: rgba(255, 255, 255, 0.15);
 	border-radius: 50%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 20px;
-	color: var(--mvs-bg);
+	font-size: 22px;
+	color: #fff;
 	flex-shrink: 0;
 }
 
@@ -2866,7 +2884,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-grid-item-placeholder--video {
-	background: #1a1a1a;
+	background: linear-gradient(135deg, #0d2137, #0a0a0a);
 	aspect-ratio: 16 / 9;
 	display: flex;
 	align-items: center;
@@ -2874,7 +2892,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-grid-item-placeholder--audio {
-	background: linear-gradient(135deg, #0073aa, #005a87);
+	background: linear-gradient(135deg, #4a1272, #1a0a2e);
 	aspect-ratio: 1;
 	display: flex;
 	align-items: center;
