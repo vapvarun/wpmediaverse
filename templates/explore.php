@@ -64,14 +64,16 @@ get_header();
 	<!-- Search Bar with Media/Users toggle -->
 	<div class="mvs-explore-search">
 		<form method="get" action="<?php echo esc_url( get_post_type_archive_link( 'mvs_media' ) ); ?>" id="mvs-explore-search-form">
-			<div class="mvs-search-tabs">
-				<button type="button" class="mvs-search-tab active" data-search-mode="media"><?php esc_html_e( 'Media', 'wpmediaverse' ); ?></button>
-				<button type="button" class="mvs-search-tab" data-search-mode="users"><?php esc_html_e( 'Users', 'wpmediaverse' ); ?></button>
-			</div>
-			<div class="mvs-search-input-wrap">
-				<input type="text" name="s" placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>"
-					value="<?php echo esc_attr( get_search_query() ); ?>" id="mvs-search-input" />
-				<button type="submit" aria-label="<?php esc_attr_e( 'Search', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Search', 'wpmediaverse' ); ?></button>
+			<div class="mvs-search-bar">
+				<div class="mvs-search-mode">
+					<button type="button" class="mvs-search-mode-btn active" data-search-mode="media"><?php esc_html_e( 'Media', 'wpmediaverse' ); ?></button>
+					<button type="button" class="mvs-search-mode-btn" data-search-mode="users"><?php esc_html_e( 'People', 'wpmediaverse' ); ?></button>
+				</div>
+				<div class="mvs-search-field">
+					<svg class="mvs-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+					<input type="text" name="s" placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>"
+						value="<?php echo esc_attr( get_search_query() ); ?>" id="mvs-search-input" />
+				</div>
 			</div>
 		</form>
 		<!-- User search results (populated via safe DOM methods) -->
@@ -79,7 +81,7 @@ get_header();
 	</div>
 	<script>
 	(function() {
-		var tabs = document.querySelectorAll('.mvs-search-tab');
+		var tabs = document.querySelectorAll('.mvs-search-mode-btn');
 		var input = document.getElementById('mvs-search-input');
 		var form = document.getElementById('mvs-explore-search-form');
 		var results = document.getElementById('mvs-user-search-results');

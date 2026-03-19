@@ -1550,34 +1550,6 @@ a.mvs-dashboard-card-title:hover {
 	margin-bottom: 24px;
 }
 
-.mvs-explore-search form {
-	display: flex;
-	gap: 8px;
-}
-
-.mvs-explore-search input[type="text"] {
-	flex: 1;
-	padding: 10px 16px;
-	border: 1px solid #ddd;
-	border-radius: 6px;
-	font-size: 0.95em;
-}
-
-.mvs-explore-search button {
-	padding: 10px 20px;
-	background: #0073aa;
-	color: #fff;
-	border: none;
-	border-radius: 6px;
-	cursor: pointer;
-	font-size: 0.95em;
-	transition: background 0.2s;
-}
-
-.mvs-explore-search button:hover {
-	background: #005a87;
-}
-
 .mvs-tag-cloud {
 	display: flex;
 	flex-wrap: wrap;
@@ -4275,44 +4247,80 @@ a.mvs-dashboard-card-title:hover {
    33a. Search Tabs & User Search
    ========================================================================== */
 
-.mvs-search-tabs {
+.mvs-search-bar {
 	display: flex;
+	align-items: center;
+	background: #fff;
+	border: 1.5px solid #e2e2e2;
+	border-radius: 100px;
+	padding: 5px 5px 5px 6px;
 	gap: 0;
-	margin-bottom: 8px;
+	transition: border-color 0.2s, box-shadow 0.2s;
+	max-width: 600px;
 }
 
-.mvs-search-tab {
-	padding: 6px 16px;
-	border: 1px solid #dbdbdb;
-	background: #fff;
+.mvs-search-bar:focus-within {
+	border-color: #0073aa;
+	box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.12);
+}
+
+.mvs-search-mode {
+	display: flex;
+	background: #f3f3f3;
+	border-radius: 100px;
+	padding: 2px;
+	flex-shrink: 0;
+	gap: 2px;
+}
+
+.mvs-search-mode-btn {
+	padding: 5px 14px;
+	border: none;
+	background: transparent;
+	border-radius: 100px;
 	cursor: pointer;
-	font-size: 0.875rem;
+	font-size: 0.8125rem;
+	font-weight: 500;
 	color: #666;
 	transition: background 0.15s, color 0.15s;
+	white-space: nowrap;
 }
 
-.mvs-search-tab:first-child {
-	border-radius: 6px 0 0 6px;
+.mvs-search-mode-btn.active {
+	background: #fff;
+	color: #0073aa;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
-.mvs-search-tab:last-child {
-	border-radius: 0 6px 6px 0;
-	border-left: none;
-}
-
-.mvs-search-tab.active {
-	background: #0073aa;
-	color: #fff;
-	border-color: #0073aa;
-}
-
-.mvs-search-input-wrap {
+.mvs-search-field {
 	display: flex;
+	align-items: center;
+	flex: 1;
+	padding: 0 12px;
 	gap: 8px;
+	min-width: 0;
 }
 
-.mvs-search-input-wrap input {
+.mvs-search-icon {
+	width: 16px;
+	height: 16px;
+	color: #aaa;
+	flex-shrink: 0;
+}
+
+.mvs-search-field input {
 	flex: 1;
+	border: none;
+	outline: none;
+	background: transparent;
+	font-size: 0.9375rem;
+	color: #222;
+	padding: 6px 0;
+	min-width: 0;
+}
+
+.mvs-search-field input::placeholder {
+	color: #aaa;
 }
 
 .mvs-user-search-results {
