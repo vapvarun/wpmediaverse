@@ -58,6 +58,9 @@ class BuddyPressIntegration {
 			add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
 			add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 			add_action( 'bp_register_activity_actions', array( $this, 'register_activity_actions' ) );
+
+			// Transform legacy media plugin activity HTML (rtMedia, etc.) to MVS rendering.
+			add_filter( 'bp_get_activity_content_body', array( $this, 'transform_legacy_media_content' ) );
 		}
 
 		// Profile tab.
@@ -255,6 +258,11 @@ class BuddyPressIntegration {
 
 		// Skip if this media was uploaded via the BP activity form.
 		if ( get_post_meta( $media_id, '_mvs_activity_upload', true ) ) {
+			return;
+		}
+
+		// Skip imported media — their original source activity is preserved and rendered via transform_legacy_media_content().
+		if ( get_post_meta( $media_id, '_mvs_imported_media', true ) ) {
 			return;
 		}
 
@@ -1998,34 +2006,38 @@ class BuddyPressIntegration {
 		$attach_id  = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
 		$file_type  = get_post_meta( $media_id, '_mvs_file_type', true );
 		$media_type = get_post_meta( $media_id, '_mvs_media_type', true );
+		$file_url   = (string) get_post_meta( $media_id, '_mvs_file_url', true );
 		$thumb_url  = '';
 
 		if ( $attach_id ) {
 			$thumb_url = wp_get_attachment_image_url( $attach_id, $size );
 		}
-		if ( ! $thumb_url ) {
-			$file_url = get_post_meta( $media_id, '_mvs_file_url', true );
-			if ( $file_url && strpos( $file_type, 'image/' ) === 0 ) {
-				$thumb_url = $file_url;
-			}
+		if ( ! $thumb_url && $file_url && strpos( $file_type, 'image/' ) === 0 ) {
+			$thumb_url = $file_url;
 		}
 
 		$permalink = get_permalink( $media_id );
 		$title     = get_the_title( $media_id );
+
+		// Use the raw file URL as href so images remain clickable after plugin deactivation.
+		// The CPT permalink is stored in data-mvs-permalink for JS to use while active.
+		$href       = $file_url ?: $permalink;
+		$data_perma = $permalink ? ' data-mvs-permalink="' . esc_url( $permalink ) . '"' : '';
+		$data_mid   = ' data-mvs-media-id="' . esc_attr( $media_id ) . '"';
 
 		// Image or video with poster thumbnail.
 		if ( $thumb_url ) {
 			$thumb_url = set_url_scheme( $thumb_url );
 			$overlay   = '';
 			if ( 'video' === $media_type ) {
-				$overlay = '<span class="mvs-activity-play-icon">&#9654;</span>';
+				$overlay = '<span class="mvs-activity-play-icon" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;color:#fff;text-shadow:0 0 8px rgba(0,0,0,.7);pointer-events:none;">&#9654;</span>';
 			}
-			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"><a href="' . esc_url( $permalink ) . '">' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" /></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . ' style="position:relative;overflow:hidden;"><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" /></a></div>';
 		}
 
 		// Video without poster: show dark placeholder with play icon.
 		if ( 'video' === $media_type ) {
-			return '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"><a href="' . esc_url( $permalink ) . '"><span class="mvs-activity-play-icon">&#9654;</span><span class="mvs-activity-media-label">' . esc_html( $title ) . '</span></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . ' style="position:relative;overflow:hidden;background:#111;aspect-ratio:16/9;"><a href="' . esc_url( $href ) . '"' . $data_perma . ' style="display:block;width:100%;height:100%;"><span class="mvs-activity-play-icon" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;color:#fff;">&#9654;</span><span class="mvs-activity-media-label" style="position:absolute;bottom:8px;left:8px;right:8px;color:#ccc;font-size:.85em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . esc_html( $title ) . '</span></a></div>';
 		}
 
 		// Audio: show compact audio card.
@@ -2041,7 +2053,7 @@ class BuddyPressIntegration {
 				$seconds = (int) $duration % 60;
 				$sub    .= ( $sub ? ' &middot; ' : '' ) . sprintf( '%d:%02d', $minutes, $seconds );
 			}
-			return '<div class="mvs-activity-media mvs-activity-media--audio"><a href="' . esc_url( $permalink ) . '"><span class="mvs-activity-audio-icon">&#9835;</span><span class="mvs-activity-audio-info"><span class="mvs-activity-audio-title">' . esc_html( $title ) . '</span>' . ( $sub ? '<span class="mvs-activity-audio-meta">' . $sub . '</span>' : '' ) . '</span></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . ' style="background:#f5f5f5;border-radius:6px;padding:8px;"><a href="' . esc_url( $href ) . '"' . $data_perma . ' style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;"><span class="mvs-activity-audio-icon" style="font-size:1.5em;flex-shrink:0;">&#9835;</span><span class="mvs-activity-audio-info" style="min-width:0;"><span class="mvs-activity-audio-title" style="display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . esc_html( $title ) . '</span>' . ( $sub ? '<span class="mvs-activity-audio-meta" style="display:block;font-size:.8em;color:#666;">' . $sub . '</span>' : '' ) . '</span></a></div>';
 		}
 
 		return '';
@@ -2174,7 +2186,7 @@ class BuddyPressIntegration {
 
 		$count       = count( $valid_ids );
 		$grid_class  = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 5 );
-		$new_content = $content . '<div class="' . esc_attr( $grid_class ) . '">' . $thumbnails . '</div>';
+		$new_content = $content . '<div class="' . esc_attr( $grid_class ) . '" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">' . $thumbnails . '</div>';
 
 		bp_activity_update_meta( $activity_id, '_mvs_media_ids', implode( ',', $valid_ids ) );
 
@@ -2228,5 +2240,153 @@ class BuddyPressIntegration {
 			return __( 'audio file', 'wpmediaverse' );
 		}
 		return __( 'file', 'wpmediaverse' );
+	}
+
+	/**
+	 * Transform legacy media plugin activity HTML (rtMedia, etc.) to MVS rendering.
+	 *
+	 * Hooked to bp_get_activity_content_body. Detects known legacy HTML markers,
+	 * extracts media items, and rewrites the content with inline-styled MVS HTML
+	 * so that images/videos render consistently with the MVS UI (including lightbox).
+	 *
+	 * @param string $content Raw activity content.
+	 * @return string Transformed content, or original if no legacy marker found.
+	 */
+	public function transform_legacy_media_content( string $content ): string {
+		// Only process content that has rtMedia's container class.
+		if ( strpos( $content, 'rtmedia-activity-container' ) === false ) {
+			return $content;
+		}
+
+		// Extract optional user text from rtMedia's text block.
+		$text = '';
+		if ( preg_match( '/<div[^>]+class="[^"]*rtmedia-activity-text[^"]*"[^>]*>.*?<span>(.*?)<\/span>/s', $content, $m ) ) {
+			$text = trim( wp_strip_all_tags( $m[1] ) );
+		}
+
+		// Extract each <li class="rtmedia-list-item"> block.
+		$media_html = '';
+		$count      = 0;
+
+		preg_match_all( '/<li[^>]+class="[^"]*rtmedia-list-item[^"]*"[^>]*>(.*?)<\/li>/s', $content, $items );
+
+		foreach ( $items[1] as $item_html ) {
+			$is_video = strpos( $item_html, 'media-type-video' ) !== false
+						|| strpos( $item_html, '<video' ) !== false;
+			$is_audio = strpos( $item_html, 'media-type-music' ) !== false;
+
+			// Primary link href (rtMedia's detail page — may 404 after deactivation).
+			$href = '';
+			if ( preg_match( '/href="([^"]+)"/', $item_html, $hm ) ) {
+				$href = esc_url( $hm[1] );
+			}
+
+			if ( $is_video ) {
+				// Get direct video src from <video src="..."> for deactivation-safe href.
+				$src = '';
+				if ( preg_match( '/<video[^>]+src="([^"]+)"/', $item_html, $sm ) ) {
+					$src = esc_url( $sm[1] );
+				}
+				$title = '';
+				if ( preg_match( '/title="([^"]+)"/', $item_html, $tm ) ) {
+					$title = esc_html( $tm[1] );
+				}
+				$link      = $src ?: $href;
+				$mvs_id    = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
+				$data_mid  = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
+
+				$media_html .= '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . ' style="position:relative;overflow:hidden;background:#111;aspect-ratio:16/9;">'
+							 . '<a href="' . esc_url( $link ) . '" style="display:block;width:100%;height:100%;">'
+							 . '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;color:#fff;pointer-events:none;">&#9654;</span>'
+							 . ( $title ? '<span style="position:absolute;bottom:8px;left:8px;right:8px;color:#ccc;font-size:.85em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>' : '' )
+							 . '</a></div>';
+
+			} elseif ( $is_audio ) {
+				$title = '';
+				if ( preg_match( '/title="([^"]+)"/', $item_html, $tm ) ) {
+					$title = esc_html( $tm[1] );
+				}
+				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio" style="background:#f5f5f5;border-radius:6px;padding:8px;">'
+							 . '<a href="' . esc_url( $href ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">'
+							 . '<span style="font-size:1.5em;flex-shrink:0;">&#9835;</span>'
+							 . '<span style="min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>'
+							 . '</a></div>';
+
+			} else {
+				// Image: extract <img src> and alt.
+				$src = '';
+				$alt = '';
+				if ( preg_match( '/<img[^>]+src="([^"]+)"/', $item_html, $im ) ) {
+					$src = esc_url( $im[1] );
+				}
+				if ( preg_match( '/<img[^>]+alt="([^"]+)"/', $item_html, $am ) ) {
+					$alt = esc_attr( $am[1] );
+				}
+
+				if ( $src ) {
+					// Resolve MVS post ID for lightbox support.
+					$mvs_id   = $this->get_mvs_id_from_file_url( $src );
+					$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
+
+					// Use direct file URL as link (deactivation-safe; strip size suffix for full image).
+					$full_src = preg_replace( '/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $src );
+					$link     = $full_src ?: $src;
+
+					$media_html .= '<div class="mvs-activity-media mvs-activity-media--image"' . $data_mid . ' style="position:relative;overflow:hidden;">'
+								 . '<a href="' . esc_url( $link ) . '">'
+								 . '<img src="' . $src . '" alt="' . $alt . '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />'
+								 . '</a></div>';
+				}
+			}
+
+			++$count;
+		}
+
+		if ( ! $media_html ) {
+			return $content; // Parsing failed — return original safely.
+		}
+
+		$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 5 );
+		$output     = '';
+		if ( $text ) {
+			$output .= '<p>' . esc_html( $text ) . '</p>';
+		}
+		$output .= '<div class="' . esc_attr( $grid_class ) . '" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">' . $media_html . '</div>';
+
+		return $output;
+	}
+
+	/**
+	 * Find an MVS media post ID from a file URL (used to attach media IDs to transformed activity HTML).
+	 *
+	 * Looks up the WP attachment by URL (stripping thumbnail size suffixes),
+	 * then finds the mvs_media post that references that attachment.
+	 *
+	 * @param string $url File or thumbnail URL.
+	 * @return int MVS post ID, or 0 if not found.
+	 */
+	private function get_mvs_id_from_file_url( string $url ): int {
+		// Strip thumbnail size suffix (e.g. -320x240.png → .png).
+		$clean = preg_replace( '/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $url );
+
+		$attach_id = attachment_url_to_postid( $clean );
+		if ( ! $attach_id && $clean !== $url ) {
+			$attach_id = attachment_url_to_postid( $url );
+		}
+		if ( ! $attach_id ) {
+			return 0;
+		}
+
+		$posts = get_posts(
+			array(
+				'post_type'      => 'mvs_media',
+				'meta_key'       => '_mvs_attachment_id', // phpcs:ignore WordPress.DB.SlowDBQuery
+				'meta_value'     => $attach_id, // phpcs:ignore WordPress.DB.SlowDBQuery
+				'fields'         => 'ids',
+				'posts_per_page' => 1,
+			)
+		);
+
+		return $posts ? (int) $posts[0] : 0;
 	}
 }

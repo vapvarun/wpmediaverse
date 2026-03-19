@@ -418,4 +418,64 @@
 		openLightbox( mediaId, imgSrc, title, permalink, gallery, clickIdx );
 	} );
 
+	/* ── Activity stream media click delegate ── */
+	/* Handles .mvs-activity-media[data-mvs-media-id] — both native MVS activities  */
+	/* and transformed legacy rtMedia/MediaPress/BuddyBoss activities.               */
+	document.addEventListener( 'click', function( e ) {
+		var link = e.target.closest( 'a' );
+		if ( ! link ) { return; }
+
+		var wrapper = link.closest( '.mvs-activity-media[data-mvs-media-id]' );
+		if ( ! wrapper ) { return; }
+
+		// Only intercept image type; audio/video wrappers carry --video / --audio modifier.
+		var isImage = wrapper.classList.contains( 'mvs-activity-media--image' ) ||
+			( ! wrapper.classList.contains( 'mvs-activity-media--video' ) &&
+			  ! wrapper.classList.contains( 'mvs-activity-media--audio' ) &&
+			  ! wrapper.classList.contains( 'mvs-activity-media--document' ) );
+		if ( ! isImage ) { return; }
+
+		var mediaId = parseInt( wrapper.dataset.mvsMediaId, 10 );
+		if ( ! mediaId ) { return; }
+
+		e.preventDefault();
+		e.stopPropagation();
+
+		var imgEl     = link.querySelector( 'img' );
+		var imgSrc    = imgEl ? imgEl.src : ( link.href || '' );
+		var title     = imgEl ? ( imgEl.alt || '' ) : '';
+		var permalink = link.dataset.mvsPermalink || link.href || '';
+
+		// Build gallery from all image wrappers in the same activity media grid.
+		var gridContainer = wrapper.closest( '.mvs-activity-media-grid' );
+		var gallery  = [];
+		var clickIdx = 0;
+
+		if ( gridContainer ) {
+			var allWrappers = gridContainer.querySelectorAll( '.mvs-activity-media[data-mvs-media-id]' );
+			allWrappers.forEach( function( w ) {
+				// Skip non-image items.
+				if ( w.classList.contains( 'mvs-activity-media--video' ) ||
+					 w.classList.contains( 'mvs-activity-media--audio' ) ||
+					 w.classList.contains( 'mvs-activity-media--document' ) ) { return; }
+				var mid  = parseInt( w.dataset.mvsMediaId, 10 );
+				var aEl  = w.querySelector( 'a' );
+				var aImg = aEl ? aEl.querySelector( 'img' ) : null;
+				gallery.push( {
+					mediaId:   mid,
+					imgSrc:    aImg ? aImg.src : ( aEl ? aEl.href : '' ),
+					title:     aImg ? ( aImg.alt || '' ) : '',
+					permalink: ( aEl && aEl.dataset.mvsPermalink ) ? aEl.dataset.mvsPermalink : ( aEl ? aEl.href : '' )
+				} );
+				if ( mid === mediaId ) { clickIdx = gallery.length - 1; }
+			} );
+		}
+
+		if ( ! gallery.length ) {
+			gallery = [ { mediaId: mediaId, imgSrc: imgSrc, title: title, permalink: permalink } ];
+		}
+
+		openLightbox( mediaId, imgSrc, title, permalink, gallery, clickIdx );
+	} );
+
 } )();
