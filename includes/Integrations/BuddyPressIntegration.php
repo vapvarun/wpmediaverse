@@ -2041,7 +2041,7 @@ class BuddyPressIntegration {
 
 		// Video without poster: show dark placeholder with play icon.
 		if ( 'video' === $media_type ) {
-			return '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . ' style="position:relative;overflow:hidden;background:#111;aspect-ratio:16/9;"><a href="' . esc_url( $href ) . '"' . $data_perma . ' style="display:block;width:100%;height:100%;"><span class="mvs-activity-play-icon" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;color:#fff;">&#9654;</span><span class="mvs-activity-media-label" style="position:absolute;bottom:8px;left:8px;right:8px;color:#ccc;font-size:.85em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . esc_html( $title ) . '</span></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . ' style="position:relative;overflow:hidden;aspect-ratio:16/9;border-radius:12px;"><a href="' . esc_url( $href ) . '"' . $data_perma . ' style="display:block;width:100%;height:100%;"><span class="mvs-activity-play-icon" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;color:#fff;">&#9654;</span><span class="mvs-activity-media-label" style="position:absolute;bottom:8px;left:8px;right:8px;color:#ccc;font-size:.85em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . esc_html( $title ) . '</span></a></div>';
 		}
 
 		// Audio: show compact audio card.
@@ -2057,7 +2057,7 @@ class BuddyPressIntegration {
 				$seconds = (int) $duration % 60;
 				$sub    .= ( $sub ? ' &middot; ' : '' ) . sprintf( '%d:%02d', $minutes, $seconds );
 			}
-			return '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . ' style="background:#f5f5f5;border-radius:6px;padding:8px;"><a href="' . esc_url( $href ) . '"' . $data_perma . ' style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;"><span class="mvs-activity-audio-icon" style="font-size:1.5em;flex-shrink:0;">&#9835;</span><span class="mvs-activity-audio-info" style="min-width:0;"><span class="mvs-activity-audio-title" style="display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . esc_html( $title ) . '</span>' . ( $sub ? '<span class="mvs-activity-audio-meta" style="display:block;font-size:.8em;color:#666;">' . $sub . '</span>' : '' ) . '</span></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . ' style="border-radius:12px;"><a href="' . esc_url( $href ) . '"' . $data_perma . ' style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;"><span class="mvs-activity-audio-icon" style="font-size:1.5em;flex-shrink:0;">&#9835;</span><span class="mvs-activity-audio-info" style="min-width:0;"><span class="mvs-activity-audio-title" style="display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . esc_html( $title ) . '</span>' . ( $sub ? '<span class="mvs-activity-audio-meta" style="display:block;font-size:.8em;color:#666;">' . $sub . '</span>' : '' ) . '</span></a></div>';
 		}
 
 		return '';
@@ -2346,7 +2346,7 @@ class BuddyPressIntegration {
 				$data_mid  = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
 				$data_src  = $link ? ' data-mvs-src="' . esc_attr( $link ) . '"' : '';
 
-				$media_html .= '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . $data_src . ' style="position:relative;overflow:hidden;background:#111;aspect-ratio:16/9;">'
+				$media_html .= '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . $data_src . ' style="position:relative;overflow:hidden;aspect-ratio:16/9;">'
 							 . '<a href="' . esc_url( $link ) . '" style="display:block;width:100%;height:100%;">'
 							 . '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;color:#fff;pointer-events:none;">&#9654;</span>'
 							 . ( $title ? '<span style="position:absolute;bottom:8px;left:8px;right:8px;color:#ccc;font-size:.85em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>' : '' )
@@ -2367,7 +2367,7 @@ class BuddyPressIntegration {
 				$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
 				$data_src = $src ? ' data-mvs-src="' . esc_attr( $src ) . '"' : '';
 
-				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . $data_src . ' style="background:#f5f5f5;border-radius:6px;padding:8px;">'
+				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . $data_src . ' style="border-radius:12px;">'
 							 . '<a href="' . esc_url( $link ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">'
 							 . '<span style="font-size:1.5em;flex-shrink:0;">&#9835;</span>'
 							 . '<span style="min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>'
