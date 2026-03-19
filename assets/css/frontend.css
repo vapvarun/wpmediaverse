@@ -2714,15 +2714,16 @@ a.mvs-dashboard-card-title:hover {
 	background: rgba(0, 0, 0, 0.8);
 }
 
-.mvs-activity-media--placeholder {
+.mvs-activity-media--placeholder,
+.mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--placeholder {
 	background: linear-gradient(135deg, #0d2137, #0a0a0a);
 	border-radius: 8px;
-	min-height: 120px;
-	max-height: 360px;
 	aspect-ratio: 16 / 9;
-	display: flex;
-	align-items: center;
-	justify-content: center;
+}
+
+.mvs-activity-media--audio,
+.mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--audio {
+	background: linear-gradient(135deg, #4a1272, #1a0a2e);
 }
 
 .mvs-activity-media--placeholder a {
