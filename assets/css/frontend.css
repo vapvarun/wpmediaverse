@@ -1879,6 +1879,8 @@ a.mvs-dashboard-card-title:hover {
 
 /* Thumbnail in activity stream items — single image */
 .mvs-activity-media {
+	position: relative;
+	overflow: hidden;
 	margin-top: 10px;
 }
 
@@ -2710,6 +2712,18 @@ a.mvs-dashboard-card-title:hover {
 	pointer-events: none;
 }
 
+.mvs-activity-play-icon::before {
+	content: '\25B6';
+	font-style: normal;
+}
+
+/* Full-coverage link for video thumbnail cards */
+.mvs-activity-vid-link {
+	width: 100%;
+	height: 100%;
+	position: relative;
+}
+
 .mvs-activity-media--video a:hover .mvs-activity-play-icon {
 	background: rgba(0, 0, 0, 0.8);
 }
@@ -2726,14 +2740,21 @@ a.mvs-dashboard-card-title:hover {
 	background: linear-gradient(135deg, #4a1272, #1a0a2e);
 }
 
-.mvs-activity-media--placeholder a {
+.mvs-activity-media--placeholder a,
+.mvs-activity-media--placeholder .mvs-activity-vid-link,
+.mvs-activity-media-grid .mvs-activity-media--placeholder a,
+.mvs-activity-media-grid .mvs-activity-media--placeholder .mvs-activity-vid-link {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	justify-content: center;
 	gap: 12px;
 	text-decoration: none;
 	color: #ccc;
 	padding: 32px;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
 }
 
 .mvs-activity-media--placeholder .mvs-activity-play-icon {

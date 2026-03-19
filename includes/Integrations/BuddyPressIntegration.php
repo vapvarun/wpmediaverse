@@ -2034,14 +2034,14 @@ class BuddyPressIntegration {
 			$thumb_url = set_url_scheme( $thumb_url );
 			$overlay   = '';
 			if ( 'video' === $media_type ) {
-				$overlay = '<span class="mvs-activity-play-icon" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;color:#fff;text-shadow:0 0 8px rgba(0,0,0,.7);pointer-events:none;">&#9654;</span>';
+				$overlay = '<span class="mvs-activity-play-icon" aria-hidden="true"></span>';
 			}
-			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . ' style="position:relative;overflow:hidden;"><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" /></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" /></a></div>';
 		}
 
 		// Video without poster: show dark placeholder with play icon.
 		if ( 'video' === $media_type ) {
-			return '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . ' style="position:relative;overflow:hidden;aspect-ratio:16/9;border-radius:12px;"><a href="' . esc_url( $href ) . '"' . $data_perma . ' style="display:block;width:100%;height:100%;"><span class="mvs-activity-play-icon" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;color:#fff;">&#9654;</span><span class="mvs-activity-media-label" style="position:absolute;bottom:8px;left:8px;right:8px;color:#ccc;font-size:.85em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . esc_html( $title ) . '</span></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . ' style="position:relative;overflow:hidden;"><a href="' . esc_url( $href ) . '"' . $data_perma . ' class="mvs-activity-vid-link"><span class="mvs-activity-play-icon" aria-hidden="true"></span><span class="mvs-activity-media-label">' . esc_html( $title ) . '</span></a></div>';
 		}
 
 		// Audio: show compact audio card.
@@ -2283,10 +2283,15 @@ class BuddyPressIntegration {
 			'class'    => array(),
 		);
 
-		// Allow style on <a> and <img> for inline-styled media links.
+		// Allow class/style on <a>, <span>, <img> for MVS media links.
+		$tags['a']['class']         = array();
 		$tags['a']['style']         = array();
 		$tags['img']['style']       = array();
 		$tags['img']['loading']     = array();
+		$tags['span'] = array(
+			'class'      => array(),
+			'aria-hidden' => array(),
+		);
 
 		return $tags;
 	}
@@ -2346,10 +2351,10 @@ class BuddyPressIntegration {
 				$data_mid  = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
 				$data_src  = $link ? ' data-mvs-src="' . esc_attr( $link ) . '"' : '';
 
-				$media_html .= '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . $data_src . ' style="position:relative;overflow:hidden;aspect-ratio:16/9;">'
-							 . '<a href="' . esc_url( $link ) . '" style="display:block;width:100%;height:100%;">'
-							 . '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2em;color:#fff;pointer-events:none;">&#9654;</span>'
-							 . ( $title ? '<span style="position:absolute;bottom:8px;left:8px;right:8px;color:#ccc;font-size:.85em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>' : '' )
+				$media_html .= '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . $data_src . '>'
+							 . '<a href="' . esc_url( $link ) . '" class="mvs-activity-vid-link">'
+							 . '<span class="mvs-activity-play-icon" aria-hidden="true"></span>'
+							 . ( $title ? '<span class="mvs-activity-media-label">' . $title . '</span>' : '' )
 							 . '</a></div>';
 
 			} elseif ( $is_audio ) {
