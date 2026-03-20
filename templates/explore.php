@@ -68,27 +68,39 @@ get_header();
 	</header>
 	<?php endif; ?>
 
-	<?php if ( $mvs_profile ) : ?>
+	<?php if ( $mvs_profile ) :
+		$mvs_profile_post_count = count_user_posts( $mvs_profile->ID, 'mvs_media', true );
+		$mvs_follow_counts      = array( 'followers' => 0, 'following' => 0 );
+		if ( class_exists( '\WPMediaVerse\Core\Plugin' ) ) {
+			$mvs_container = \WPMediaVerse\Core\Plugin::container();
+			if ( $mvs_container->has( 'follows' ) ) {
+				$mvs_follow_counts = $mvs_container->get( 'follows' )->get_counts( $mvs_profile->ID );
+			}
+		}
+		$mvs_is_own_profile = is_user_logged_in() && get_current_user_id() === $mvs_profile->ID;
+		$mvs_dashboard_id   = (int) get_option( 'mvs_page_dashboard', 0 );
+		$mvs_dashboard_link = $mvs_dashboard_id ? get_permalink( $mvs_dashboard_id ) : home_url( '/my-media/' );
+	?>
 	<div class="mvs-profile-header-card">
 		<img class="mvs-profile-header-avatar" src="<?php echo esc_url( get_avatar_url( $mvs_profile->ID, array( 'size' => 96 ) ) ); ?>"
 			alt="<?php echo esc_attr( $mvs_profile->display_name ); ?>" width="96" height="96" />
 		<div class="mvs-profile-header-info">
-			<h2 class="mvs-profile-header-name"><?php echo esc_html( $mvs_profile->display_name ); ?></h2>
+			<div class="mvs-profile-header-top">
+				<h2 class="mvs-profile-header-name"><?php echo esc_html( $mvs_profile->display_name ); ?></h2>
+				<?php if ( $mvs_is_own_profile ) : ?>
+					<a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="<?php echo esc_url( $mvs_dashboard_link ); ?>">
+						<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
+					</a>
+				<?php endif; ?>
+			</div>
+			<div class="mvs-profile-header-stats">
+				<span><strong><?php echo esc_html( number_format_i18n( $mvs_profile_post_count ) ); ?></strong> <?php esc_html_e( 'media', 'wpmediaverse' ); ?></span>
+				<span><strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['followers'] ) ); ?></strong> <?php esc_html_e( 'followers', 'wpmediaverse' ); ?></span>
+				<span><strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['following'] ) ); ?></strong> <?php esc_html_e( 'following', 'wpmediaverse' ); ?></span>
+			</div>
 			<?php if ( $mvs_profile->description ) : ?>
 				<p class="mvs-profile-header-bio"><?php echo esc_html( $mvs_profile->description ); ?></p>
 			<?php endif; ?>
-			<?php
-			$mvs_profile_post_count = count_user_posts( $mvs_profile->ID, 'mvs_media', true );
-			?>
-			<span class="mvs-profile-header-stats">
-				<?php
-				printf(
-					/* translators: %s: number of media posts */
-					esc_html__( '%s media', 'wpmediaverse' ),
-					'<strong>' . esc_html( number_format_i18n( $mvs_profile_post_count ) ) . '</strong>'
-				);
-				?>
-			</span>
 		</div>
 	</div>
 	<?php endif; ?>
