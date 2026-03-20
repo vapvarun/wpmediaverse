@@ -1060,9 +1060,10 @@ const { state, actions } = store( 'mvs/messaging', {
 				const data = yield apiFetch(
 					REST + '/users/search?q=' + encodeURIComponent( q )
 				);
-				// Free's UserController returns `name`; normalize to `display_name` for template consistency.
+				// Free's UserController returns `name` and `avatar`; normalize for template consistency.
 				state.searchResults = ( data || [] ).filter( u => u.id !== ME.id ).map( u => {
 					u.display_name = u.display_name || u.name || '';
+					u.avatar_url = u.avatar_url || u.avatar || '';
 					return u;
 				} );
 			} catch ( e ) {
