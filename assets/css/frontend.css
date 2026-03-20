@@ -1721,10 +1721,10 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-dashboard-upload {
 	margin-bottom: 24px;
-	background: var(--mvs-bg);
+	background: var(--mvs-bg, #fff);
+	border: 1px solid var(--mvs-border, #dcdcde);
 	border-radius: 12px;
 	padding: 20px;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .mvs-dashboard-dropzone {
@@ -3560,14 +3560,14 @@ a.mvs-dashboard-card-title:hover {
 	position: absolute;
 	top: 100%;
 	right: 0;
-	width: 320px;
+	width: 340px;
 	max-height: 400px;
 	overflow-y: auto;
-	background: var(--mvs-bg);
-	border: 1px solid #ddd;
+	background: var(--mvs-bg, #fff);
+	border: 1px solid var(--mvs-border, #ddd);
 	border-radius: 8px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	z-index: 100;
+	box-shadow: var(--mvs-shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.18));
+	z-index: 9999;
 	margin-top: 8px;
 }
 
