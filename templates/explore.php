@@ -36,6 +36,12 @@ get_header();
 <?php endif; ?>
 
 <div class="mvs-explore-page">
+	<?php
+	$mvs_profile_username = get_query_var( 'mvs_profile_user', '' );
+	$mvs_profile         = $mvs_profile_username ? get_user_by( 'login', sanitize_user( $mvs_profile_username ) ) : null;
+	?>
+
+	<?php if ( ! $mvs_profile ) : ?>
 	<header class="mvs-explore-header">
 		<h1>
 		<?php
@@ -60,6 +66,32 @@ get_header();
 			<p class="mvs-explore-term-desc"><?php echo wp_kses_post( term_description() ); ?></p>
 		<?php endif; ?>
 	</header>
+	<?php endif; ?>
+
+	<?php if ( $mvs_profile ) : ?>
+	<div class="mvs-profile-header-card">
+		<img class="mvs-profile-header-avatar" src="<?php echo esc_url( get_avatar_url( $mvs_profile->ID, array( 'size' => 96 ) ) ); ?>"
+			alt="<?php echo esc_attr( $mvs_profile->display_name ); ?>" width="96" height="96" />
+		<div class="mvs-profile-header-info">
+			<h2 class="mvs-profile-header-name"><?php echo esc_html( $mvs_profile->display_name ); ?></h2>
+			<?php if ( $mvs_profile->description ) : ?>
+				<p class="mvs-profile-header-bio"><?php echo esc_html( $mvs_profile->description ); ?></p>
+			<?php endif; ?>
+			<?php
+			$mvs_profile_post_count = count_user_posts( $mvs_profile->ID, 'mvs_media', true );
+			?>
+			<span class="mvs-profile-header-stats">
+				<?php
+				printf(
+					/* translators: %s: number of media posts */
+					esc_html__( '%s media', 'wpmediaverse' ),
+					'<strong>' . esc_html( number_format_i18n( $mvs_profile_post_count ) ) . '</strong>'
+				);
+				?>
+			</span>
+		</div>
+	</div>
+	<?php endif; ?>
 
 	<!-- Search Bar with Media/Users toggle -->
 	<div class="mvs-explore-search">

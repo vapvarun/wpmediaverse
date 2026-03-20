@@ -110,7 +110,21 @@ class TemplateLoader {
 		$is_mvs_archive  = $query->is_post_type_archive( 'mvs_media' ) || $query->is_post_type_archive( 'mvs_album' );
 		$is_mvs_taxonomy = $query->is_tax( 'mvs_tag' ) || $query->is_tax( 'mvs_category' );
 
-		if ( $is_mvs_archive || $is_mvs_taxonomy ) {
+		// User profile: /media/@{username}/ — filter to that user's media.
+		$profile_username = $query->get( 'mvs_profile_user' );
+		if ( $profile_username ) {
+			$profile_user = get_user_by( 'login', sanitize_user( $profile_username ) );
+			if ( $profile_user ) {
+				$query->set( 'author', $profile_user->ID );
+				// Store for template use.
+				$GLOBALS['mvs_profile_user'] = $profile_user;
+			} else {
+				$query->set_404();
+				return;
+			}
+		}
+
+		if ( $is_mvs_archive || $is_mvs_taxonomy || $profile_username ) {
 			$query->set( 'post_type', array( 'mvs_media', 'mvs_album' ) );
 			$query->set( 'posts_per_page', 18 );
 			$query->set( 'orderby', 'date' );
@@ -148,6 +162,18 @@ class TemplateLoader {
 			'index.php?mvs_edit_profile=1',
 			'top'
 		);
+
+		// User profile: /media/@{username}/ — shows user's media in explore grid.
+		add_rewrite_rule(
+			'^media/@([^/]+)/page/([0-9]+)/?$',
+			'index.php?post_type=mvs_media&mvs_profile_user=$matches[1]&paged=$matches[2]',
+			'top'
+		);
+		add_rewrite_rule(
+			'^media/@([^/]+)/?$',
+			'index.php?post_type=mvs_media&mvs_profile_user=$matches[1]',
+			'top'
+		);
 	}
 
 	/**
@@ -160,6 +186,7 @@ class TemplateLoader {
 	 */
 	public function add_profile_query_var( array $vars ): array {
 		$vars[] = 'mvs_edit_profile';
+		$vars[] = 'mvs_profile_user';
 		return $vars;
 	}
 

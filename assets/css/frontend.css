@@ -67,6 +67,48 @@
 }
 
 /* ==========================================================================
+   0b. Profile Header Card (explore grid filtered by user)
+   ========================================================================== */
+
+.mvs-profile-header-card {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	padding: 24px 0;
+	margin-bottom: 16px;
+	border-bottom: 1px solid var(--mvs-border);
+}
+
+.mvs-profile-header-avatar {
+	width: 96px;
+	height: 96px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+
+.mvs-profile-header-name {
+	margin: 0 0 4px;
+	font-size: 1.5rem;
+	font-weight: 700;
+}
+
+.mvs-profile-header-bio {
+	margin: 0 0 8px;
+	color: var(--mvs-text-secondary);
+	font-size: 0.875rem;
+}
+
+.mvs-profile-header-stats {
+	font-size: 0.875rem;
+	color: var(--mvs-text-muted);
+}
+
+.mvs-profile-header-stats strong {
+	color: var(--mvs-text);
+}
+
+/* ==========================================================================
    1. Single Media Template
    ========================================================================== */
 
