@@ -14,26 +14,26 @@
 
 :root {
 	/* Brand */
-	--mvs-primary: var(--mvs-primary);
-	--mvs-primary-hover: var(--mvs-primary-hover);
+	--mvs-primary:        #0073aa;
+	--mvs-primary-hover:  #005a87;
 	--mvs-primary-rgb:    0, 115, 170;
-	--mvs-danger: var(--mvs-danger);
+	--mvs-danger:         #d63638;
 	--mvs-success:        #44b700;
 
 	/* Surfaces */
-	--mvs-bg: var(--mvs-bg);
-	--mvs-surface: var(--mvs-surface);
-	--mvs-surface-2: var(--mvs-surface-2);
+	--mvs-bg:             #ffffff;
+	--mvs-surface:        #f6f7f7;
+	--mvs-surface-2:      #eeeeee;
 	--mvs-overlay:        rgba(0, 0, 0, 0.72);
 
 	/* Text */
-	--mvs-text: var(--mvs-text);
-	--mvs-text-secondary: var(--mvs-text-secondary);
-	--mvs-text-muted: var(--mvs-text-muted);
+	--mvs-text:           #1e1e1e;
+	--mvs-text-secondary: #646970;
+	--mvs-text-muted:     #a7aaad;
 
 	/* Borders & Shadows */
-	--mvs-border: var(--mvs-border);
-	--mvs-border-light: var(--mvs-border-light);
+	--mvs-border:         #dcdcde;
+	--mvs-border-light:   #e9e9ea;
 	--mvs-shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.10);
 	--mvs-shadow-md:      0 4px 16px rgba(0, 0, 0, 0.14);
 	--mvs-shadow-lg:      0 8px 32px rgba(0, 0, 0, 0.18);
