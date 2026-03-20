@@ -748,3 +748,13 @@ wp_enqueue_script_module(
 		</div>
 	</div>
 </div>
+<?php
+/**
+ * Fires after the dashboard content is rendered.
+ *
+ * Pro uses this to display the quota usage widget below the media grid.
+ *
+ * @since 1.1.0
+ */
+do_action( 'mvs_dashboard_after_content' );
+?>

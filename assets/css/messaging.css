@@ -105,6 +105,17 @@
 	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Account for WP admin bar height */
+.admin-bar .mvs-chat-panel {
+	top: 32px;
+}
+
+@media screen and (max-width: 782px) {
+	.admin-bar .mvs-chat-panel {
+		top: 46px;
+	}
+}
+
 .mvs-chat-panel[data-open="true"] {
 	transform: translateX(0);
 }

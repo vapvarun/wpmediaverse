@@ -228,7 +228,55 @@ const { state, actions } = store( 'mvs/media-upload', {
 			} else {
 				ctx.successMessage = '';
 			}
-			setTimeout( () => { ctx.successMessage = ''; }, 4000 );
+			// Refresh quota widget if present.
+		const quotaWidget = document.querySelector( '.mvs-quota-widget' );
+		if ( quotaWidget && successCount > 0 ) {
+			try {
+				const quotaResp = await fetch(
+					ctx.restUrl.replace( '/media', '-pro/v1/me/quota/check' ) + '?media_type=image&file_size=0',
+					{
+						headers: { 'X-WP-Nonce': ctx.nonce },
+						credentials: 'same-origin',
+					}
+				);
+				if ( quotaResp.ok ) {
+					const quotaData = await quotaResp.json();
+					const summary = quotaData.summary;
+					if ( summary ) {
+						const rows = quotaWidget.querySelectorAll( '.mvs-quota-row' );
+						const typeMap = [ 'image', 'video', 'audio' ];
+						rows.forEach( ( row, i ) => {
+							const type = typeMap[ i ];
+							const data = summary[ type ];
+							if ( ! data ) {
+								return;
+							}
+							const countEl = row.querySelector( '.mvs-quota-count' );
+							if ( countEl && ! data.unlimited ) {
+								countEl.textContent = `${ data.used } / ${ data.total }`;
+							}
+							const fillEl = row.querySelector( '.mvs-quota-fill' );
+							if ( fillEl && ! data.unlimited && data.total > 0 ) {
+								fillEl.style.width = `${ Math.min( 100, Math.round( ( data.used / data.total ) * 100 ) ) }%`;
+							}
+						} );
+						// Update storage row (last row).
+						if ( summary.storage && ! summary.storage.unlimited && rows.length > typeMap.length ) {
+							const storageRow = rows[ typeMap.length ];
+							const countEl = storageRow.querySelector( '.mvs-quota-count' );
+							if ( countEl ) {
+								const usedMB = ( summary.storage.used / ( 1024 * 1024 ) ).toFixed( 0 );
+								const limitGB = ( summary.storage.limit / ( 1024 * 1024 * 1024 ) ).toFixed( 0 );
+								countEl.textContent = `${ usedMB } MB / ${ limitGB } GB`;
+							}
+						}
+					}
+				}
+			} catch {
+				// Quota refresh is non-critical.
+			}
+		}
+		setTimeout( () => { ctx.successMessage = ''; }, 8000 );
 		},
 	},
 } );
