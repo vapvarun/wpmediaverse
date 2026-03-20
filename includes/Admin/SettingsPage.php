@@ -163,7 +163,10 @@ class SettingsPage {
 		$this->register_moderation_settings();
 		$this->register_webhook_settings();
 		$this->register_messaging_settings();
-		$this->register_watermark_settings();
+		// Watermark: only show on General tab when Pro is NOT active (Pro has its own on Display tab).
+		if ( ! $this->is_pro_active() ) {
+			$this->register_watermark_settings();
+		}
 		$this->register_pages_settings();
 	}
 
