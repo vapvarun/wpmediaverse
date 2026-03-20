@@ -909,6 +909,7 @@ class Plugin {
 
 		// Frontend assets + chat panel (only for logged-in users).
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_messaging_assets' ) );
+		add_action( 'wp_head', array( self::class, 'print_messaging_config' ), 1 );
 		add_action( 'wp_footer', array( self::class, 'render_chat_panel' ) );
 		add_action( 'init', array( self::class, 'register_messages_page' ) );
 	}
@@ -933,7 +934,33 @@ class Plugin {
 			MVS_VERSION
 		);
 
-		$user = wp_get_current_user();
+		wp_register_script_module(
+			'mvs-messaging',
+			MVS_PLUGIN_URL . 'assets/js/messaging.js',
+			array(
+				array(
+					'id'     => '@wordpress/interactivity',
+					'import' => 'static',
+				),
+			),
+			MVS_VERSION
+		);
+		wp_enqueue_script_module( 'mvs-messaging' );
+	}
+
+	/**
+	 * Print messaging config as inline script in wp_head.
+	 */
+	public static function print_messaging_config(): void {
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+
+		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			return;
+		}
+
+		$user   = wp_get_current_user();
 		$config = array(
 			'restBase'    => esc_url_raw( rest_url( 'mvs/v1' ) ),
 			'nonce'       => wp_create_nonce( 'wp_rest' ),
@@ -948,26 +975,10 @@ class Plugin {
 			)->get_client_config(),
 		);
 
-		wp_register_script_module(
-			'mvs-messaging',
-			MVS_PLUGIN_URL . 'assets/js/messaging.js',
-			array(
-				array(
-					'id'     => '@wordpress/interactivity',
-					'import' => 'static',
-				),
-			),
-			MVS_VERSION
+		wp_print_inline_script_tag(
+			'window.mvsMessagingConfig = ' . wp_json_encode( $config ) . ';',
+			array( 'id' => 'mvs-messaging-config' )
 		);
-		wp_enqueue_script_module( 'mvs-messaging' );
-
-		// Inject config before the module loads.
-		add_action( 'wp_head', function () use ( $config ) {
-			wp_print_inline_script_tag(
-				'window.mvsMessagingConfig = ' . wp_json_encode( $config ) . ';',
-				array( 'id' => 'mvs-messaging-config' )
-			);
-		}, 1 );
 	}
 
 	/**
