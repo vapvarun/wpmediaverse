@@ -7,7 +7,6 @@ CLAUDE.md
 .claude/
 
 # Dev/test - not for public repo
-docs/
 tests/
 .phpcs.xml.dist
 phpunit.xml.dist
