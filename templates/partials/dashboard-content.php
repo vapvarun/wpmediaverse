@@ -97,7 +97,16 @@ wp_enqueue_script_module(
 		<div class="mvs-dashboard-profile-edit-form"
 			data-wp-bind--hidden="!context.editingProfile">
 			<div data-wp-interactive="mvs/profile-edit"
-			<?php echo wp_interactivity_data_wp_context( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+			<?php
+			echo wp_interactivity_data_wp_context( array( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				'avatarUrl'       => $mvs_avatar_url ?: '',
+				'hasCustomAvatar' => $mvs_has_custom,
+				'uploadingAvatar' => false,
+				'savingProfile'   => false,
+				'profileMessage'  => '',
+				'profileError'    => '',
+			) );
+			?>>
 
 			<div class="mvs-profile-message mvs-profile-message--success"
 				data-wp-bind--hidden="!context.profileMessage"
