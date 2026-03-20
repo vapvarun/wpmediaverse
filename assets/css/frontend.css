@@ -56,8 +56,8 @@
 		--mvs-surface:        #1e1e1e;
 		--mvs-surface-2:      #2a2a2a;
 		--mvs-text:           #f0f0f0;
-		--mvs-text-secondary: var(--mvs-text-muted);
-		--mvs-text-muted: var(--mvs-text-secondary);
+		--mvs-text-secondary: #b0b0b0;
+		--mvs-text-muted:     #888888;
 		--mvs-border:         #363636;
 		--mvs-border-light:   #2e2e2e;
 		--mvs-shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.35);

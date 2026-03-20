@@ -182,6 +182,9 @@ class Plugin {
 		// Register Abilities API (WP 6.9+).
 		Abilities::init();
 
+		// Plugin-level theme.json — design tokens at lowest priority (theme always wins).
+		add_filter( 'wp_theme_json_data_default', array( self::class, 'register_theme_json' ) );
+
 		// Messaging — DM engine.
 		self::init_messaging();
 
@@ -880,6 +883,45 @@ class Plugin {
 	 */
 	public static function container(): ServiceContainer {
 		return self::$container;
+	}
+
+	// -------------------------------------------------------------------------
+	// Plugin-level theme.json
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register plugin-level theme.json design tokens.
+	 *
+	 * Uses wp_theme_json_data_default (WP 6.1+) so the active theme's
+	 * theme.json always overrides these tokens. Pro can extend via
+	 * the mvs_theme_json filter.
+	 *
+	 * @param \WP_Theme_JSON_Data $theme_json Default theme JSON data.
+	 * @return \WP_Theme_JSON_Data
+	 */
+	public static function register_theme_json( $theme_json ) {
+		$plugin_json_path = MVS_PLUGIN_DIR . 'theme.json';
+		if ( ! file_exists( $plugin_json_path ) ) {
+			return $theme_json;
+		}
+
+		$plugin_data = wp_json_file_decode( $plugin_json_path, array( 'associative' => true ) );
+		if ( ! $plugin_data ) {
+			return $theme_json;
+		}
+
+		/**
+		 * Filter plugin theme.json data before merging.
+		 *
+		 * Pro can extend with premium design tokens (extra colors, spacing, etc).
+		 *
+		 * @param array $plugin_data Decoded theme.json array.
+		 */
+		$plugin_data = apply_filters( 'mvs_theme_json', $plugin_data );
+
+		$theme_json->update_with( $plugin_data );
+
+		return $theme_json;
 	}
 
 	// -------------------------------------------------------------------------
