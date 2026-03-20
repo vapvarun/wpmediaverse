@@ -907,6 +907,15 @@ class Plugin {
 			return $messaging_service;
 		} );
 
+		// Online status visibility — read from option, respect per-setting.
+		add_filter( 'mvs_show_online_status', function ( $show ) {
+			$setting = get_option( 'mvs_show_online_status', 'everyone' );
+			if ( 'nobody' === $setting ) {
+				return false;
+			}
+			return $show;
+		}, 5 );
+
 		// Frontend assets + chat panel (only for logged-in users).
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_messaging_assets' ) );
 		add_action( 'wp_head', array( self::class, 'print_messaging_config' ), 1 );

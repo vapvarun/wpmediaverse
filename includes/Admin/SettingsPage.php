@@ -162,6 +162,9 @@ class SettingsPage {
 		$this->register_ai_settings();
 		$this->register_moderation_settings();
 		$this->register_webhook_settings();
+		$this->register_messaging_settings();
+		$this->register_watermark_settings();
+		$this->register_pages_settings();
 	}
 
 	// -------------------------------------------------------------------------
@@ -330,6 +333,28 @@ class SettingsPage {
 				)
 			);
 		}
+
+		// Signed URL TTL.
+		register_setting(
+			self::OPTION_GROUP . '_general',
+			'mvs_signed_url_ttl',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 3600,
+			)
+		);
+		add_settings_field(
+			'mvs_signed_url_ttl',
+			__( 'Signed URL Expiry (seconds)', 'wpmediaverse' ),
+			array( $this, 'render_number_field' ),
+			self::PAGE_SLUG . '-general',
+			'mvs_storage',
+			array(
+				'option'      => 'mvs_signed_url_ttl',
+				'description' => __( 'How long signed URLs remain valid for private media files. Default: 3600 (1 hour).', 'wpmediaverse' ),
+			)
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -651,6 +676,28 @@ class SettingsPage {
 				),
 			)
 		);
+
+		// Report auto-hide threshold.
+		register_setting(
+			self::OPTION_GROUP . '_ai',
+			'mvs_report_auto_hide_threshold',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 3,
+			)
+		);
+		add_settings_field(
+			'mvs_report_auto_hide_threshold',
+			__( 'Auto-Hide Threshold', 'wpmediaverse' ),
+			array( $this, 'render_number_field' ),
+			self::PAGE_SLUG . '-ai',
+			'mvs_moderation',
+			array(
+				'option'      => 'mvs_report_auto_hide_threshold',
+				'description' => __( 'Number of reports before media is automatically hidden. Set to 0 to disable.', 'wpmediaverse' ),
+			)
+		);
 	}
 
 	/**
@@ -675,6 +722,247 @@ class SettingsPage {
 			self::PAGE_SLUG . '-webhooks',
 			'mvs_webhooks'
 		);
+	}
+
+	// -------------------------------------------------------------------------
+	// Messaging settings (DM section on General tab)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register Messaging (DM) settings on the General tab.
+	 */
+	private function register_messaging_settings(): void {
+		add_settings_section(
+			'mvs_messaging',
+			__( 'Direct Messages', 'wpmediaverse' ),
+			function () {
+				printf(
+					'<p class="description">%s</p>',
+					esc_html__( 'Configure direct messaging privacy and spam prevention.', 'wpmediaverse' )
+				);
+			},
+			self::PAGE_SLUG . '-general'
+		);
+
+		// DM access level.
+		register_setting(
+			self::OPTION_GROUP . '_general',
+			'mvs_dm_access',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'everyone',
+			)
+		);
+		add_settings_field(
+			'mvs_dm_access',
+			__( 'Who Can Send DMs', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG . '-general',
+			'mvs_messaging',
+			array(
+				'option'  => 'mvs_dm_access',
+				'choices' => array(
+					'everyone'  => __( 'Everyone', 'wpmediaverse' ),
+					'followers' => __( 'Followers only (others go to Requests)', 'wpmediaverse' ),
+					'mutual'    => __( 'Mutual followers only', 'wpmediaverse' ),
+					'nobody'    => __( 'Nobody (DMs disabled)', 'wpmediaverse' ),
+				),
+			)
+		);
+
+		// Min account age.
+		register_setting(
+			self::OPTION_GROUP . '_general',
+			'mvs_dm_min_age',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 0,
+			)
+		);
+		add_settings_field(
+			'mvs_dm_min_age',
+			__( 'Minimum Account Age (days)', 'wpmediaverse' ),
+			array( $this, 'render_number_field' ),
+			self::PAGE_SLUG . '-general',
+			'mvs_messaging',
+			array(
+				'option'      => 'mvs_dm_min_age',
+				'description' => __( 'Accounts younger than this cannot send DMs. Set 0 to disable.', 'wpmediaverse' ),
+			)
+		);
+
+		// Online status visibility.
+		register_setting(
+			self::OPTION_GROUP . '_general',
+			'mvs_show_online_status',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'everyone',
+			)
+		);
+		add_settings_field(
+			'mvs_show_online_status',
+			__( 'Online Status Visibility', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG . '-general',
+			'mvs_messaging',
+			array(
+				'option'  => 'mvs_show_online_status',
+				'choices' => array(
+					'everyone'  => __( 'Everyone', 'wpmediaverse' ),
+					'followers' => __( 'Followers only', 'wpmediaverse' ),
+					'nobody'    => __( 'Nobody', 'wpmediaverse' ),
+				),
+			)
+		);
+	}
+
+	// -------------------------------------------------------------------------
+	// Watermark settings (on General tab)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register Watermark settings on the General tab.
+	 */
+	private function register_watermark_settings(): void {
+		add_settings_section(
+			'mvs_watermark',
+			__( 'Watermark', 'wpmediaverse' ),
+			function () {
+				printf(
+					'<p class="description">%s</p>',
+					esc_html__( 'Add a text or image watermark to uploaded images.', 'wpmediaverse' )
+				);
+			},
+			self::PAGE_SLUG . '-general'
+		);
+
+		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_type', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => 'text',
+		) );
+		add_settings_field( 'mvs_watermark_type', __( 'Watermark Type', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+			array(
+				'option'  => 'mvs_watermark_type',
+				'choices' => array(
+					'text'  => __( 'Text', 'wpmediaverse' ),
+					'image' => __( 'Image', 'wpmediaverse' ),
+				),
+			)
+		);
+
+		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_text', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => get_bloginfo( 'name' ),
+		) );
+		add_settings_field( 'mvs_watermark_text', __( 'Watermark Text', 'wpmediaverse' ),
+			array( $this, 'render_text_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+			array(
+				'option'      => 'mvs_watermark_text',
+				'description' => __( 'Text to overlay on images. Used when type is "Text".', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_position', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default'           => 'center',
+		) );
+		add_settings_field( 'mvs_watermark_position', __( 'Position', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+			array(
+				'option'  => 'mvs_watermark_position',
+				'choices' => array(
+					'center'       => __( 'Center', 'wpmediaverse' ),
+					'bottom-right' => __( 'Bottom Right', 'wpmediaverse' ),
+					'bottom-left'  => __( 'Bottom Left', 'wpmediaverse' ),
+					'top-right'    => __( 'Top Right', 'wpmediaverse' ),
+					'top-left'     => __( 'Top Left', 'wpmediaverse' ),
+					'tile'         => __( 'Tile (repeat)', 'wpmediaverse' ),
+				),
+			)
+		);
+
+		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_opacity', array(
+			'type'              => 'integer',
+			'sanitize_callback' => 'absint',
+			'default'           => 40,
+		) );
+		add_settings_field( 'mvs_watermark_opacity', __( 'Opacity (%)', 'wpmediaverse' ),
+			array( $this, 'render_number_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+			array(
+				'option'      => 'mvs_watermark_opacity',
+				'description' => __( '0 = transparent, 100 = fully opaque. Default: 40.', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_font_size', array(
+			'type'              => 'integer',
+			'sanitize_callback' => 'absint',
+			'default'           => 24,
+		) );
+		add_settings_field( 'mvs_watermark_font_size', __( 'Font Size (px)', 'wpmediaverse' ),
+			array( $this, 'render_number_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+			array(
+				'option'      => 'mvs_watermark_font_size',
+				'description' => __( 'Font size for text watermarks in pixels.', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_color', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_hex_color',
+			'default'           => '#ffffff',
+		) );
+		add_settings_field( 'mvs_watermark_color', __( 'Text Color', 'wpmediaverse' ),
+			array( $this, 'render_color_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+			array( 'option' => 'mvs_watermark_color' )
+		);
+	}
+
+	// -------------------------------------------------------------------------
+	// Page assignment settings (on General tab)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register page assignment settings on the General tab.
+	 */
+	private function register_pages_settings(): void {
+		add_settings_section(
+			'mvs_pages',
+			__( 'Pages', 'wpmediaverse' ),
+			function () {
+				printf(
+					'<p class="description">%s</p>',
+					esc_html__( 'Assign pages for plugin features. Pages are auto-created during setup but can be changed here.', 'wpmediaverse' )
+				);
+			},
+			self::PAGE_SLUG . '-general'
+		);
+
+		$pages = array(
+			'mvs_page_dashboard' => __( 'Dashboard Page', 'wpmediaverse' ),
+			'mvs_page_explore'   => __( 'Explore Page', 'wpmediaverse' ),
+			'mvs_page_upload'    => __( 'Upload Page', 'wpmediaverse' ),
+		);
+
+		foreach ( $pages as $option => $label ) {
+			register_setting( self::OPTION_GROUP . '_general', $option, array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 0,
+			) );
+			add_settings_field( $option, $label,
+				array( $this, 'render_page_dropdown_field' ), self::PAGE_SLUG . '-general', 'mvs_pages',
+				array( 'option' => $option )
+			);
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -1449,6 +1737,52 @@ class SettingsPage {
 			esc_html( $args['label'] ?? '' )
 		);
 		echo '<span class="mvs-pro-badge">' . esc_html__( 'Pro', 'wpmediaverse' ) . '</span>';
+	}
+
+	/**
+	 * Render a text input field.
+	 *
+	 * @param array $args Field arguments.
+	 */
+	public function render_text_field( array $args ): void {
+		$value = get_option( $args['option'], '' );
+		printf(
+			'<input type="text" name="%s" value="%s" class="regular-text" />',
+			esc_attr( $args['option'] ),
+			esc_attr( $value )
+		);
+		if ( ! empty( $args['description'] ) ) {
+			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+		}
+	}
+
+	/**
+	 * Render a color picker field.
+	 *
+	 * @param array $args Field arguments.
+	 */
+	public function render_color_field( array $args ): void {
+		$value = get_option( $args['option'], '#ffffff' );
+		printf(
+			'<input type="color" name="%s" value="%s" />',
+			esc_attr( $args['option'] ),
+			esc_attr( $value )
+		);
+	}
+
+	/**
+	 * Render a page dropdown field.
+	 *
+	 * @param array $args Field arguments.
+	 */
+	public function render_page_dropdown_field( array $args ): void {
+		$selected = (int) get_option( $args['option'], 0 );
+		wp_dropdown_pages( array(
+			'name'              => $args['option'],
+			'selected'          => $selected,
+			'show_option_none'  => __( '— Select —', 'wpmediaverse' ),
+			'option_none_value' => 0,
+		) );
 	}
 
 	/**
