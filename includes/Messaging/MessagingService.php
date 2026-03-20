@@ -634,8 +634,9 @@ class MessagingService {
 		$message_type = sanitize_text_field( $data['message_type'] ?? 'text' );
 		$max_length   = (int) apply_filters( 'mvs_message_max_length', self::MAX_MESSAGE_LENGTH );
 
-		// Validate content.
-		if ( 'text' === $message_type && empty( $content ) ) {
+		// Validate content: text-only messages require content, but attachment/media messages allow empty text.
+		$has_attachment = ! empty( $data['attachment_id'] ) || ! empty( $data['media_id'] );
+		if ( 'text' === $message_type && empty( $content ) && ! $has_attachment ) {
 			return array( 'success' => false, 'message_id' => 0, 'error' => 'empty_content' );
 		}
 
@@ -698,9 +699,9 @@ class MessagingService {
 		$preview = mb_substr( wp_strip_all_tags( $content ), 0, 100 );
 		if ( 'voice' === $message_type ) {
 			$preview = 'Voice message';
-		} elseif ( in_array( $message_type, array( 'image', 'video', 'file' ), true ) ) {
+		} elseif ( in_array( $message_type, array( 'image', 'video', 'file' ), true ) && empty( $preview ) ) {
 			$preview = ucfirst( $message_type );
-		} elseif ( 'media_share' === $message_type ) {
+		} elseif ( 'media_share' === $message_type && empty( $preview ) ) {
 			$preview = 'Shared a media';
 		}
 

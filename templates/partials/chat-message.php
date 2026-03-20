@@ -64,8 +64,8 @@ defined( 'ABSPATH' ) || exit;
 		<!-- Deleted message -->
 		<span data-wp-bind--hidden="context.item.notDeleted">This message was deleted</span>
 
-		<!-- Text content -->
-		<span data-wp-bind--hidden="context.item.notText" data-wp-text="context.item.content"></span>
+		<!-- Text content (shown for text-only messages AND attachment messages with text) -->
+		<span data-wp-bind--hidden="context.item.noTextContent" data-wp-text="context.item.content"></span>
 
 		<!-- Image attachment -->
 		<img

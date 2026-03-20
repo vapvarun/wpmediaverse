@@ -75,6 +75,10 @@ function enrichMessage( msg ) {
 	msg.notFile    = msg.message_type !== 'file';
 	msg.notMediaShare = msg.message_type !== 'media_share';
 
+	// Show text content alongside attachments when both are present.
+	msg.hasTextContent = !! ( msg.content && msg.content.trim() );
+	msg.noTextContent  = ! msg.hasTextContent;
+
 	// Parse metadata if it's a JSON string.
 	if ( typeof msg.metadata === 'string' && msg.metadata ) {
 		try { msg.metadata = JSON.parse( msg.metadata ); } catch ( e ) { msg.metadata = null; }
