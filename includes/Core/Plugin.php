@@ -182,6 +182,9 @@ class Plugin {
 		// Register Abilities API (WP 6.9+).
 		Abilities::init();
 
+		// Messaging — DM engine.
+		self::init_messaging();
+
 		/**
 		 * Fires after WPMediaVerse has loaded.
 		 *
@@ -877,5 +880,150 @@ class Plugin {
 	 */
 	public static function container(): ServiceContainer {
 		return self::$container;
+	}
+
+	// -------------------------------------------------------------------------
+	// Messaging
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Initialize the DM/messaging engine.
+	 */
+	private static function init_messaging(): void {
+		$messaging_service = new \WPMediaVerse\Messaging\MessagingService();
+		$transport         = apply_filters(
+			'mvs_messaging_transport',
+			new \WPMediaVerse\Messaging\RestPollingTransport()
+		);
+		$controller        = new \WPMediaVerse\Messaging\MessagingController( $messaging_service, $transport );
+
+		add_action( 'rest_api_init', array( $controller, 'register_routes' ) );
+
+		$listener = new \WPMediaVerse\Messaging\NotificationListener( $messaging_service );
+		$listener->init();
+
+		// Register the service in the container for other components.
+		self::$container->register( 'messaging', function () use ( $messaging_service ) {
+			return $messaging_service;
+		} );
+
+		// Frontend assets + chat panel (only for logged-in users).
+		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_messaging_assets' ) );
+		add_action( 'wp_footer', array( self::class, 'render_chat_panel' ) );
+		add_action( 'init', array( self::class, 'register_messages_page' ) );
+	}
+
+	/**
+	 * Enqueue messaging CSS + JS for logged-in users.
+	 */
+	public static function enqueue_messaging_assets(): void {
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+
+		// Suppress DM UI when BuddyNext handles it.
+		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'mvs-messaging',
+			MVS_PLUGIN_URL . 'assets/css/messaging.css',
+			array(),
+			MVS_VERSION
+		);
+
+		$user = wp_get_current_user();
+		$config = array(
+			'restBase'    => esc_url_raw( rest_url( 'mvs/v1' ) ),
+			'nonce'       => wp_create_nonce( 'wp_rest' ),
+			'currentUser' => array(
+				'id'           => $user->ID,
+				'display_name' => $user->display_name,
+				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 64 ) ),
+			),
+			'transport'   => apply_filters(
+				'mvs_messaging_transport',
+				new \WPMediaVerse\Messaging\RestPollingTransport()
+			)->get_client_config(),
+		);
+
+		wp_register_script_module(
+			'mvs-messaging',
+			MVS_PLUGIN_URL . 'assets/js/messaging.js',
+			array(
+				array(
+					'id'     => '@wordpress/interactivity',
+					'import' => 'static',
+				),
+			),
+			MVS_VERSION
+		);
+		wp_enqueue_script_module( 'mvs-messaging' );
+
+		// Inject config before the module loads.
+		add_action( 'wp_head', function () use ( $config ) {
+			wp_print_inline_script_tag(
+				'window.mvsMessagingConfig = ' . wp_json_encode( $config ) . ';',
+				array( 'id' => 'mvs-messaging-config' )
+			);
+		}, 1 );
+	}
+
+	/**
+	 * Render the chat panel in wp_footer for logged-in users.
+	 */
+	public static function render_chat_panel(): void {
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+
+		// Suppress when BuddyNext handles DM UI.
+		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			return;
+		}
+
+		$template = MVS_PLUGIN_DIR . 'templates/partials/chat-panel.php';
+		if ( file_exists( $template ) ) {
+			include $template;
+		}
+	}
+
+	/**
+	 * Register the /messages/ page rewrite rule.
+	 */
+	public static function register_messages_page(): void {
+		add_rewrite_rule(
+			'^messages/?$',
+			'index.php?mvs_messages_page=1',
+			'top'
+		);
+
+		add_filter( 'query_vars', function ( $vars ) {
+			$vars[] = 'mvs_messages_page';
+			return $vars;
+		} );
+
+		add_action( 'template_redirect', function () {
+			if ( ! get_query_var( 'mvs_messages_page' ) ) {
+				return;
+			}
+
+			if ( ! is_user_logged_in() ) {
+				auth_redirect();
+				return;
+			}
+
+			// Suppress when BuddyNext handles DM UI.
+			if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+				return;
+			}
+
+			$template = MVS_PLUGIN_DIR . 'templates/messages.php';
+			if ( file_exists( $template ) ) {
+				include $template;
+				exit;
+			}
+		} );
 	}
 }

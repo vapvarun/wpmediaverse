@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 5;
+	const CURRENT_VERSION = 6;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -386,5 +386,90 @@ class Migrator {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "ALTER TABLE {$prefix}mvs_favorites ADD UNIQUE KEY unique_favorite (media_id, user_id)" );
 		}
+	}
+
+	/**
+	 * Migration v6: Messaging tables (conversations, participants, messages, reactions).
+	 */
+	private function migrate_to_6(): void {
+		global $wpdb;
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$prefix          = $wpdb->prefix;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_conversations (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				type varchar(20) NOT NULL DEFAULT 'direct',
+				title varchar(255) DEFAULT NULL,
+				created_by bigint(20) unsigned NOT NULL,
+				last_message_id bigint(20) unsigned DEFAULT NULL,
+				last_message_preview varchar(255) DEFAULT NULL,
+				last_activity_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY last_activity (last_activity_at),
+				KEY created_by (created_by)
+			) {$charset_collate};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_conversation_participants (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				conversation_id bigint(20) unsigned NOT NULL,
+				user_id bigint(20) unsigned NOT NULL,
+				last_read_at datetime DEFAULT NULL,
+				is_muted tinyint(1) NOT NULL DEFAULT 0,
+				muted_until datetime DEFAULT NULL,
+				is_pinned tinyint(1) NOT NULL DEFAULT 0,
+				is_archived tinyint(1) NOT NULL DEFAULT 0,
+				status varchar(20) NOT NULL DEFAULT 'active',
+				joined_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				UNIQUE KEY conv_user (conversation_id, user_id),
+				KEY user_status (user_id, status),
+				KEY conv_read (conversation_id, last_read_at)
+			) {$charset_collate};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_messages (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				conversation_id bigint(20) unsigned NOT NULL,
+				sender_id bigint(20) unsigned NOT NULL,
+				content longtext DEFAULT NULL,
+				message_type varchar(20) NOT NULL DEFAULT 'text',
+				attachment_id bigint(20) unsigned DEFAULT NULL,
+				media_id bigint(20) unsigned DEFAULT NULL,
+				parent_id bigint(20) unsigned DEFAULT NULL,
+				metadata text DEFAULT NULL,
+				is_deleted tinyint(1) NOT NULL DEFAULT 0,
+				deleted_for_all tinyint(1) NOT NULL DEFAULT 0,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY conv_date (conversation_id, created_at),
+				KEY conv_id (conversation_id),
+				KEY sender (sender_id)
+			) {$charset_collate};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$prefix}mvs_message_reactions (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				message_id bigint(20) unsigned NOT NULL,
+				user_id bigint(20) unsigned NOT NULL,
+				emoji varchar(50) NOT NULL,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				UNIQUE KEY msg_user (message_id, user_id),
+				KEY message_id (message_id)
+			) {$charset_collate};"
+		);
+
+		// phpcs:enable
 	}
 }

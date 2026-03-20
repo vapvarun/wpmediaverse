@@ -80,11 +80,17 @@ wp_enqueue_script_module(
 				<p class="mvs-dashboard-profile-bio" data-wp-bind--hidden="!context.bio"
 					data-wp-text="context.bio"></p>
 			</div>
-			<button class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-dashboard-profile-edit-btn"
-				type="button"
-				data-wp-on--click="actions.toggleProfileEdit">
-				<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
-			</button>
+			<div class="mvs-dashboard-profile-actions">
+				<a class="mvs-btn mvs-btn--secondary mvs-btn--small"
+					href="<?php echo esc_url( home_url( '/media/@' . $mvs_current_user->user_login . '/' ) ); ?>">
+					<?php esc_html_e( 'View Profile', 'wpmediaverse' ); ?>
+				</a>
+				<button class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-dashboard-profile-edit-btn"
+					type="button"
+					data-wp-on--click="actions.toggleProfileEdit">
+					<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
+				</button>
+			</div>
 		</div>
 
 		<!-- Inline Edit Form -->

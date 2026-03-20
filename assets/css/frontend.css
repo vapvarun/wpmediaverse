@@ -4102,6 +4102,12 @@ a.mvs-dashboard-card-title:hover {
 	white-space: nowrap;
 }
 
+.mvs-dashboard-profile-actions {
+	display: flex;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
 .mvs-dashboard-profile-edit-btn {
 	flex-shrink: 0;
 }
