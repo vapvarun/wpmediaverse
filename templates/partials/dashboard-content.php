@@ -174,7 +174,8 @@ wp_enqueue_script_module(
 	// Profile completion prompt (if no custom avatar or empty bio).
 	$mvs_profile_incomplete = ! $mvs_has_custom || empty( $mvs_current_user->description );
 	if ( $mvs_profile_incomplete ) :
-		$mvs_edit_profile_url = home_url( '/media/edit-profile/' );
+		$mvs_dashboard_page_id = (int) get_option( 'mvs_page_dashboard', 0 );
+		$mvs_edit_profile_url  = $mvs_dashboard_page_id ? get_permalink( $mvs_dashboard_page_id ) : home_url( '/my-media/' );
 		?>
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
 		<span class="mvs-profile-prompt-icon">&#x1F464;</span>
