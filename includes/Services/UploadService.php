@@ -524,6 +524,9 @@ class UploadService {
 			$attach_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
 			wp_update_attachment_metadata( $attachment_id, $attach_data );
 			update_post_meta( $media_id, '_mvs_attachment_id', $attachment_id );
+
+			// Set as featured image so it shows in the grid and admin.
+			set_post_thumbnail( $media_id, $attachment_id );
 		}
 	}
 

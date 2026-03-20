@@ -6,26 +6,76 @@
 
 import { store, getContext } from '@wordpress/interactivity';
 
-// Allowed MIME prefixes for client-side validation.
-const ALLOWED_PREFIXES = [ 'image/', 'video/', 'audio/' ];
+/**
+ * Map of MIME types to human-readable labels for error messages.
+ */
+const MIME_LABELS = {
+	'image/jpeg': 'JPEG',
+	'image/png': 'PNG',
+	'image/gif': 'GIF',
+	'image/webp': 'WebP',
+	'video/mp4': 'MP4',
+	'video/webm': 'WebM',
+	'audio/mpeg': 'MP3',
+	'audio/ogg': 'OGG',
+};
 
-function isAllowedFile( file ) {
-	return ALLOWED_PREFIXES.some( ( prefix ) => file.type.startsWith( prefix ) );
+/**
+ * Check whether a file matches the server-configured allowed MIME types.
+ *
+ * Falls back to broad prefix matching (image/, video/, audio/) when the
+ * browser does not report a MIME type for the file.
+ *
+ * @param {File}     file         File to check.
+ * @param {string[]} allowedTypes Array of allowed MIME strings from context.
+ * @return {boolean} True when file type is allowed.
+ */
+function isAllowedFile( file, allowedTypes ) {
+	if ( ! file.type ) {
+		return false;
+	}
+	if ( allowedTypes && allowedTypes.length ) {
+		return allowedTypes.includes( file.type );
+	}
+	// Fallback: allow any image/video/audio when server config is missing.
+	return [ 'image/', 'video/', 'audio/' ].some( ( p ) => file.type.startsWith( p ) );
 }
 
+/**
+ * Build a human-readable label string from the allowed MIME list.
+ *
+ * @param {string[]} allowedTypes Array of allowed MIME strings.
+ * @return {string} Formatted label like "JPEG, PNG, GIF, WebP, MP4, WebM, MP3, OGG".
+ */
+function formatAllowedLabels( allowedTypes ) {
+	if ( ! allowedTypes || ! allowedTypes.length ) {
+		return 'images, videos, and audio files';
+	}
+	return allowedTypes
+		.map( ( mime ) => MIME_LABELS[ mime ] || mime.split( '/' ).pop().toUpperCase() )
+		.join( ', ' );
+}
+
+/**
+ * Validate files against allowed types. Sets ctx.uploadError for rejected files.
+ *
+ * @param {File[]} files Array of files to validate.
+ * @param {Object} ctx   Interactivity API context.
+ * @return {File[]} Only the files that passed validation.
+ */
 function filterFiles( files, ctx ) {
 	const valid = [];
 	const rejected = [];
 	for ( const file of files ) {
-		if ( isAllowedFile( file ) ) {
+		if ( isAllowedFile( file, ctx.allowedTypes ) ) {
 			valid.push( file );
 		} else {
 			rejected.push( file.name );
 		}
 	}
 	if ( rejected.length ) {
-		ctx.uploadError = `File type not allowed: ${ rejected.join( ', ' ) }. Only images, videos, and audio files are accepted.`;
-		setTimeout( () => { ctx.uploadError = ''; }, 5000 );
+		const allowed = formatAllowedLabels( ctx.allowedTypes );
+		ctx.uploadError = `File type not allowed: ${ rejected.join( ', ' ) }. Supported formats: ${ allowed }.`;
 	}
 	return valid;
 }
@@ -40,8 +90,14 @@ const { state, actions } = store( 'mvs/media-upload', {
 		},
 		get uploadStatus() {
 			const ctx = getContext();
-			if ( ! ctx.uploading ) return '';
-			return ctx.uploadMessage || 'Uploading...';
+			return ctx.uploading ? ( ctx.uploadMessage || 'Uploading...' ) : '';
+		},
+		get hasSuccess() {
+			const ctx = getContext();
+			return ! ctx.uploading && !! ctx.successMessage;
+		},
+		get successText() {
+			return getContext().successMessage || '';
 		},
 		get hasError() {
 			return !! getContext().uploadError;
@@ -78,6 +134,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 			event.preventDefault();
 			const ctx = getContext();
 			ctx.dragOver = false;
+			ctx.uploadError = '';
 			const files = filterFiles(
 				Array.from( event.dataTransfer.files ).slice( 0, ctx.maxFiles ),
 				ctx
@@ -88,10 +145,13 @@ const { state, actions } = store( 'mvs/media-upload', {
 		},
 		handleFileSelect( event ) {
 			const ctx = getContext();
+			ctx.uploadError = '';
 			const files = filterFiles(
 				Array.from( event.target.files ).slice( 0, ctx.maxFiles ),
 				ctx
 			);
+			// Reset input so re-selecting the same file triggers change again.
+			event.target.value = '';
 			if ( files.length ) {
 				actions.uploadFiles( files );
 			}
@@ -112,10 +172,14 @@ const { state, actions } = store( 'mvs/media-upload', {
 			const ctx = getContext();
 			ctx.uploadTags = event.target.value;
 		},
+		dismissError() {
+			const ctx = getContext();
+			ctx.uploadError = '';
+		},
 		async uploadFiles( files ) {
 			const ctx = getContext();
 			ctx.uploading = true;
-			ctx.uploadError = '';
+			ctx.successMessage = '';
 			ctx.uploadMessage = `Uploading ${ files.length } file(s)...`;
 			let successCount = 0;
 
@@ -156,14 +220,15 @@ const { state, actions } = store( 'mvs/media-upload', {
 			}
 
 			ctx.uploading = false;
+			ctx.uploadMessage = '';
 			if ( successCount === files.length ) {
-				ctx.uploadMessage = `${ successCount } file(s) uploaded successfully!`;
+				ctx.successMessage = `${ successCount } file(s) uploaded successfully!`;
 			} else if ( successCount > 0 ) {
-				ctx.uploadMessage = `${ successCount } of ${ files.length } file(s) uploaded.`;
+				ctx.successMessage = `${ successCount } of ${ files.length } file(s) uploaded.`;
 			} else {
-				ctx.uploadMessage = '';
+				ctx.successMessage = '';
 			}
-			setTimeout( () => { ctx.uploadMessage = ''; }, 4000 );
+			setTimeout( () => { ctx.successMessage = ''; }, 4000 );
 		},
 	},
 } );

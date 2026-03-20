@@ -50,9 +50,25 @@
 	font-size: 0.9em;
 }
 
+.mvs-upload-block [hidden] {
+	display: none !important;
+}
+
+.mvs-upload-error {
+	color: #d63638;
+	background: #fce4e4;
+	padding: 8px 12px;
+	border-radius: 4px;
+	margin-top: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
 .mvs-upload-progress {
 	margin-top: 16px;
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-	gap: 8px;
+}
+
+.mvs-upload-success {
+	margin-top: 8px;
 }

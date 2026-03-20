@@ -130,6 +130,35 @@ class TemplateLoader {
 			$query->set( 'orderby', 'date' );
 			$query->set( 'order', 'DESC' );
 
+			// Privacy filter: only show media the current user is allowed to see.
+			$current_user_id = get_current_user_id();
+
+			if ( ! $current_user_id ) {
+				// Logged-out: only public media (meta not set defaults to public).
+				$query->set(
+					'meta_query',
+					array(
+						'relation' => 'OR',
+						array(
+							'key'     => '_mvs_privacy',
+							'value'   => 'public',
+							'compare' => '=',
+						),
+						array(
+							'key'     => '_mvs_privacy',
+							'compare' => 'NOT EXISTS',
+						),
+					)
+				);
+			} elseif ( ! current_user_can( 'moderate_mvs_media' ) ) {
+				// Logged-in non-admin: public + members + own media (any privacy).
+				add_filter(
+					'posts_where',
+					array( $this, 'privacy_where_clause' )
+				);
+			}
+			// Admins/moderators: no filter, see everything.
+
 			// Search filter.
 			if ( ! empty( $_GET['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$query->set( 's', sanitize_text_field( wp_unslash( $_GET['s'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
@@ -211,6 +240,45 @@ class TemplateLoader {
 			include $template;
 			exit;
 		}
+	}
+
+	/**
+	 * Filter posts WHERE clause to enforce privacy for logged-in non-admin users.
+	 *
+	 * Shows: public media, members-only media, and the current user's own media
+	 * (regardless of its privacy level). Hides private/friends/group/custom media
+	 * from other users on the explore page.
+	 *
+	 * @param string $where Existing WHERE clause.
+	 * @return string Modified WHERE clause.
+	 */
+	public function privacy_where_clause( string $where ): string {
+		global $wpdb;
+
+		// Remove this filter so it only runs once (for the main query).
+		remove_filter( 'posts_where', array( $this, 'privacy_where_clause' ) );
+
+		$current_user_id = get_current_user_id();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$where .= $wpdb->prepare(
+			" AND (
+				{$wpdb->posts}.post_author = %d
+				OR {$wpdb->posts}.ID IN (
+					SELECT post_id FROM {$wpdb->postmeta}
+					WHERE meta_key = '_mvs_privacy'
+					AND meta_value IN ('public', 'members')
+				)
+				OR {$wpdb->posts}.ID NOT IN (
+					SELECT post_id FROM {$wpdb->postmeta}
+					WHERE meta_key = '_mvs_privacy'
+				)
+			)",
+			$current_user_id
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return $where;
 	}
 
 	/**

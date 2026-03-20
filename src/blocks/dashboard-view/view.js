@@ -119,6 +119,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get isCollectionsTab() { return state.activeTab === 'collections'; },
 		get hasMoreMedia() { return state.media.page < state.media.totalPages; },
 		get hasMoreFavorites() { return state.favorites.page < state.favorites.totalPages; },
+		get hasNotifications() { return state.notifications.items.length > 0; },
 		get showMediaEmpty() { return state.media.items.length === 0 && ! state.media.loading; },
 		get showAlbumsEmpty() { return state.albums.items.length === 0 && ! state.albums.loading; },
 		get showFavoritesEmpty() { return state.favorites.items.length === 0 && ! state.favorites.loading; },
@@ -503,18 +504,23 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/* =====================================================================
 		   Delete Media
 		   ===================================================================== */
-		confirmDeleteMedia( event ) {
-			const id = parseInt( event.target.closest( '[data-media-id]' )?.dataset.mediaId, 10 );
+		confirmDeleteMedia() {
 			const ctx = getContext();
+			const id = ctx.item?.id;
+			if ( ! id ) return;
 			sharedUI.actions.showConfirm( 'Delete this media item? This cannot be undone.', async () => {
-				const res = await apiFetch( ctx, 'media/' + id, {
-					method: 'DELETE',
-					headers: apiHeaders( ctx.nonce ),
-				} );
-				if ( res.ok ) {
-					state.media.items = state.media.items.filter( ( m ) => m.id !== id );
-					sharedUI.actions.showToast( 'Media deleted.', 'success' );
-				} else {
+				try {
+					const res = await apiFetch( ctx, 'media/' + id, {
+						method: 'DELETE',
+						headers: apiHeaders( ctx.nonce ),
+					} );
+					if ( res.ok ) {
+						state.media.items = state.media.items.filter( ( m ) => m.id !== id );
+						sharedUI.actions.showToast( 'Media deleted.', 'success' );
+					} else {
+						sharedUI.actions.showToast( 'Delete failed.', 'error' );
+					}
+				} catch {
 					sharedUI.actions.showToast( 'Delete failed.', 'error' );
 				}
 			} );
@@ -662,17 +668,24 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 		},
 
-		confirmDeleteAlbum( event ) {
-			const id = parseInt( event.target.closest( '[data-album-id]' )?.dataset.albumId, 10 );
+		confirmDeleteAlbum() {
 			const ctx = getContext();
+			const id = ctx.item?.id;
+			if ( ! id ) return;
 			sharedUI.actions.showConfirm( 'Delete this album? Media items will not be deleted.', async () => {
-				const res = await apiFetch( ctx, 'albums/' + id, {
-					method: 'DELETE',
-					headers: apiHeaders( ctx.nonce ),
-				} );
-				if ( res.ok ) {
-					state.albums.items = state.albums.items.filter( ( a ) => a.id !== id );
-					sharedUI.actions.showToast( 'Album deleted.', 'success' );
+				try {
+					const res = await apiFetch( ctx, 'albums/' + id, {
+						method: 'DELETE',
+						headers: apiHeaders( ctx.nonce ),
+					} );
+					if ( res.ok ) {
+						state.albums.items = state.albums.items.filter( ( a ) => a.id !== id );
+						sharedUI.actions.showToast( 'Album deleted.', 'success' );
+					} else {
+						sharedUI.actions.showToast( 'Delete failed.', 'error' );
+					}
+				} catch {
+					sharedUI.actions.showToast( 'Delete failed.', 'error' );
 				}
 			} );
 		},
@@ -937,17 +950,24 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 		},
 
-		confirmDeleteCollection( event ) {
-			const id = parseInt( event.target.closest( '[data-collection-id]' )?.dataset.collectionId, 10 );
+		confirmDeleteCollection() {
 			const ctx = getContext();
+			const id = ctx.item?.id;
+			if ( ! id ) return;
 			sharedUI.actions.showConfirm( 'Delete this collection? Media items will not be deleted.', async () => {
-				const res = await apiFetch( ctx, 'collections/' + id, {
-					method: 'DELETE',
-					headers: apiHeaders( ctx.nonce ),
-				} );
-				if ( res.ok ) {
-					state.collections.items = state.collections.items.filter( ( c ) => c.id !== id );
-					sharedUI.actions.showToast( 'Collection deleted.', 'success' );
+				try {
+					const res = await apiFetch( ctx, 'collections/' + id, {
+						method: 'DELETE',
+						headers: apiHeaders( ctx.nonce ),
+					} );
+					if ( res.ok ) {
+						state.collections.items = state.collections.items.filter( ( c ) => c.id !== id );
+						sharedUI.actions.showToast( 'Collection deleted.', 'success' );
+					} else {
+						sharedUI.actions.showToast( 'Delete failed.', 'error' );
+					}
+				} catch {
+					sharedUI.actions.showToast( 'Delete failed.', 'error' );
 				}
 			} );
 		},

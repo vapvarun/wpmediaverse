@@ -230,7 +230,7 @@ wp_enqueue_script_module(
 						</li>
 					</template>
 				</ul>
-				<p data-wp-bind--hidden="state.notifications.items.length > 0" class="mvs-notification-empty">
+				<p data-wp-bind--hidden="state.hasNotifications" class="mvs-notification-empty">
 					<?php esc_html_e( 'No notifications yet.', 'wpmediaverse' ); ?>
 				</p>
 			</div>

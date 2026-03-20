@@ -32,7 +32,16 @@ class TemplateHelpers {
 		$file_url   = get_post_meta( $media_id, '_mvs_file_url', true );
 		$media_type = self::get_media_type( $media_id );
 
-		// Try WP attachment thumbnail first (works for all types including video posters).
+		// Try WordPress featured image first (set via admin editor).
+		$featured_id = (int) get_post_thumbnail_id( $media_id );
+		if ( $featured_id ) {
+			$featured_src = wp_get_attachment_image_url( $featured_id, $size );
+			if ( $featured_src ) {
+				return set_url_scheme( $featured_src );
+			}
+		}
+
+		// Try WP attachment thumbnail (works for all types including video posters).
 		if ( $attach_id ) {
 			$thumb_src = wp_get_attachment_image_url( $attach_id, $size );
 			if ( $thumb_src ) {

@@ -534,8 +534,21 @@ class Plugin {
 	 * Flush rewrite rules once after activation.
 	 */
 	public static function maybe_flush_rewrites(): void {
+		$needs_flush = false;
+
 		if ( get_transient( 'mvs_flush_rewrite' ) ) {
 			delete_transient( 'mvs_flush_rewrite' );
+			$needs_flush = true;
+		}
+
+		// Also flush when the plugin version changes (e.g., after update).
+		$stored_version = get_option( 'mvs_rewrite_version', '' );
+		if ( defined( 'MVS_VERSION' ) && MVS_VERSION !== $stored_version ) {
+			update_option( 'mvs_rewrite_version', MVS_VERSION );
+			$needs_flush = true;
+		}
+
+		if ( $needs_flush ) {
 			flush_rewrite_rules();
 		}
 	}

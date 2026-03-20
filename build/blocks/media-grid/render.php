@@ -76,29 +76,14 @@ if ( $show_lightbox && wp_script_is( 'mvs-lightbox', 'registered' ) ) {
 			<?php
 			while ( $query->have_posts() ) :
 				$query->the_post();
-				$file_url   = get_post_meta( get_the_ID(), '_mvs_file_url', true );
-				$file_type  = get_post_meta( get_the_ID(), '_mvs_file_type', true );
-				$is_image   = $file_url && strpos( $file_type, 'image/' ) === 0;
-				$is_video   = $file_url && strpos( $file_type, 'video/' ) === 0;
-				$media_type = $is_image ? 'image' : ( $is_video ? 'video' : 'document' );
+				$mvs_grid_media_type = \WPMediaVerse\Core\TemplateHelpers::get_media_type( get_the_ID() );
 				?>
 				<div class="mvs-grid-item"
 					data-media-id="<?php echo absint( get_the_ID() ); ?>"
-					data-media-type="<?php echo esc_attr( $media_type ); ?>"
+					data-media-type="<?php echo esc_attr( $mvs_grid_media_type ); ?>"
 				>
 					<a href="<?php the_permalink(); ?>" class="mvs-grid-item-link">
-					<?php if ( $is_image || $is_video ) : ?>
-						<img src="<?php echo esc_url( $file_url ); ?>"
-							alt="<?php echo esc_attr( get_the_title() ); ?>"
-							loading="lazy" />
-						<?php if ( $is_video ) : ?>
-							<span class="mvs-grid-play-icon">&#9654;</span>
-						<?php endif; ?>
-					<?php else : ?>
-						<div class="mvs-grid-item-placeholder">
-							<span class="dashicons dashicons-media-default"></span>
-						</div>
-					<?php endif; ?>
+					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( get_the_ID(), 'medium', get_the_title() ); ?>
 					<div class="mvs-grid-item-overlay">
 						<span class="mvs-grid-item-title"><?php echo esc_html( get_the_title() ); ?></span>
 					</div>

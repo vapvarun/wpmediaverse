@@ -28,15 +28,15 @@ if ( ! $post || 'mvs_media' !== $post->post_type ) {
 	return;
 }
 
-$user_id     = get_current_user_id();
-$container   = \WPMediaVerse\Core\Plugin::container();
-$privacy     = $container->get( 'privacy' );
-$has_access  = $privacy->can_view( $media_id, $user_id );
+$user_id    = get_current_user_id();
+$container  = \WPMediaVerse\Core\Plugin::container();
+$privacy    = $container->get( 'privacy' );
+$has_access = $privacy->can_view( $media_id, $user_id );
 
-$file_url    = get_post_meta( $media_id, '_mvs_file_url', true );
-$file_type   = get_post_meta( $media_id, '_mvs_file_type', true );
-$is_image    = $file_url && 0 === strpos( $file_type, 'image/' );
-$wrapper     = get_block_wrapper_attributes( array( 'class' => 'mvs-lock-overlay-block' ) );
+$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
+$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
+$is_image  = $file_url && 0 === strpos( $file_type, 'image/' );
+$wrapper   = get_block_wrapper_attributes( array( 'class' => 'mvs-lock-overlay-block' ) );
 
 // Determine active rule types for display.
 $access_rules = $container->get( 'access_rules' );

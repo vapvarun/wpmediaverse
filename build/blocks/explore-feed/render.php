@@ -86,20 +86,9 @@ $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 			<?php
 			while ( $query->have_posts() ) :
 				$query->the_post();
-				$file_url  = get_post_meta( get_the_ID(), '_mvs_file_url', true );
-				$file_type = get_post_meta( get_the_ID(), '_mvs_file_type', true );
-				$is_image  = $file_url && strpos( $file_type, 'image/' ) === 0;
 				?>
-				<div class="mvs-grid-item">
-					<?php if ( $is_image ) : ?>
-						<img src="<?php echo esc_url( $file_url ); ?>"
-							alt="<?php echo esc_attr( get_the_title() ); ?>"
-							loading="lazy" />
-					<?php else : ?>
-						<div class="mvs-grid-item-placeholder">
-							<span class="dashicons dashicons-media-<?php echo esc_attr( strpos( $file_type, 'video/' ) === 0 ? 'video' : ( strpos( $file_type, 'audio/' ) === 0 ? 'audio' : 'default' ) ); ?>"></span>
-						</div>
-					<?php endif; ?>
+				<div class="mvs-grid-item" data-media-type="<?php echo esc_attr( \WPMediaVerse\Core\TemplateHelpers::get_media_type( get_the_ID() ) ); ?>">
+					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( get_the_ID(), 'medium', get_the_title() ); ?>
 					<div class="mvs-grid-item-overlay">
 						<span class="mvs-grid-item-title"><?php echo esc_html( get_the_title() ); ?></span>
 					</div>

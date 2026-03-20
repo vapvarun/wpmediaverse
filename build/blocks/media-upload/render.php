@@ -15,11 +15,12 @@ if ( ! is_user_logged_in() || ! current_user_can( 'upload_mvs_media' ) ) {
 	return;
 }
 
-$max_files    = isset( $attributes['maxFiles'] ) ? absint( $attributes['maxFiles'] ) : 10;
-$show_privacy = ! empty( $attributes['showPrivacy'] );
-$wrapper      = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-upload-block' ) ) : 'class="mvs-upload-block"';
-$rest_url     = esc_url( rest_url( 'mvs/v1/media' ) );
-$nonce        = wp_create_nonce( 'wp_rest' );
+$max_files     = isset( $attributes['maxFiles'] ) ? absint( $attributes['maxFiles'] ) : 10;
+$show_privacy  = ! empty( $attributes['showPrivacy'] );
+$wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-upload-block' ) ) : 'class="mvs-upload-block"';
+$rest_url      = esc_url( rest_url( 'mvs/v1/media' ) );
+$nonce         = wp_create_nonce( 'wp_rest' );
+$allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/media-upload"
@@ -27,13 +28,15 @@ $nonce        = wp_create_nonce( 'wp_rest' );
 	<?php
 	echo wp_json_encode(
 		array(
-			'maxFiles'    => $max_files,
-			'restUrl'     => $rest_url,
-			'nonce'       => $nonce,
-			'uploading'   => false,
-			'uploadError' => '',
-			'files'       => array(),
-			'privacy'     => $show_privacy ? get_option( 'mvs_default_privacy', 'public' ) : '',
+			'maxFiles'     => $max_files,
+			'restUrl'      => $rest_url,
+			'nonce'        => $nonce,
+			'uploading'      => false,
+			'uploadError'    => '',
+			'successMessage' => '',
+			'files'          => array(),
+			'privacy'      => $show_privacy ? get_option( 'mvs_default_privacy', 'public' ) : '',
+			'allowedTypes' => array_map( 'trim', explode( ',', $allowed_types ) ),
 		)
 	);
 	?>
@@ -58,7 +61,8 @@ $nonce        = wp_create_nonce( 'wp_rest' );
 			data-wp-on--change="actions.handleFileSelect"
 			accept="image/*,video/*,audio/*"
 		/>
-		<?php if ( $show_privacy ) :
+		<?php
+		if ( $show_privacy ) :
 			$default_privacy = get_option( 'mvs_default_privacy', 'public' );
 			?>
 			<select class="mvs-upload-privacy" data-wp-on--change="actions.setPrivacy">
@@ -80,13 +84,14 @@ $nonce        = wp_create_nonce( 'wp_rest' );
 			placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setTags" />
 	</div>
-	<div class="mvs-upload-error" data-wp-bind--hidden="!state.hasError" style="color:#d63638;background:#fce4e4;padding:8px 12px;border-radius:4px;margin-top:8px;">
-		<p data-wp-text="state.errorMessage" style="margin:0;"></p>
+	<div class="mvs-upload-error" data-wp-bind--hidden="!state.hasError" hidden>
+		<p data-wp-text="state.errorMessage" style="margin:0;flex:1;"></p>
+		<button type="button" data-wp-on--click="actions.dismissError" style="background:none;border:none;color:#d63638;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;" aria-label="<?php esc_attr_e( 'Dismiss error', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
-	<div class="mvs-upload-progress" data-wp-bind--hidden="!state.isUploading">
+	<div class="mvs-upload-progress" data-wp-bind--hidden="!state.isUploading" hidden>
 		<p data-wp-text="state.uploadStatus"></p>
 	</div>
-	<div class="mvs-upload-success" data-wp-bind--hidden="state.isUploading" style="margin-top:8px;">
-		<p data-wp-text="state.uploadStatus" style="color:#00a32a;margin:0;"></p>
+	<div class="mvs-upload-success" data-wp-bind--hidden="!state.hasSuccess" hidden>
+		<p data-wp-text="state.successText" style="color:#00a32a;margin:0;"></p>
 	</div>
 </div>

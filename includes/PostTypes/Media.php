@@ -37,18 +37,22 @@ class Media {
 		);
 
 		$args = array(
-			'labels'          => $labels,
-			'public'          => true,
-			'has_archive'     => true,
-			'show_in_rest'    => true,
-			'rest_base'       => 'mvs-media',
-			'supports'        => array( 'title', 'author', 'thumbnail', 'custom-fields' ),
-			'capability_type' => array( 'mvs_media', 'mvs_medias' ),
-			'map_meta_cap'    => true,
-			'rewrite'         => array( 'slug' => 'media' ),
-			'menu_icon'       => 'dashicons-format-gallery',
-			'show_in_menu'    => true,
-			'menu_position'   => 25,
+			'labels'             => $labels,
+			'public'             => true,
+			'publicly_queryable' => true,
+			'has_archive'        => true,
+			'show_in_rest'       => true,
+			'rest_base'          => 'mvs-media',
+			'supports'           => array( 'title', 'author', 'thumbnail', 'custom-fields' ),
+			'capability_type'    => array( 'mvs_media', 'mvs_medias' ),
+			'map_meta_cap'       => true,
+			'rewrite'            => array(
+				'slug'       => 'media',
+				'with_front' => false,
+			),
+			'menu_icon'          => 'dashicons-format-gallery',
+			'show_in_menu'       => true,
+			'menu_position'      => 25,
 		);
 
 		register_post_type( 'mvs_media', $args );
