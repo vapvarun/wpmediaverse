@@ -99,12 +99,21 @@ wp_enqueue_script_module(
 			<div data-wp-interactive="mvs/profile-edit"
 			<?php
 			echo wp_interactivity_data_wp_context( array( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'           => wp_create_nonce( 'wp_rest' ),
+				'firstName'       => $mvs_current_user->first_name,
+				'lastName'        => $mvs_current_user->last_name,
+				'displayName'     => $mvs_current_user->display_name,
+				'bio'             => $mvs_current_user->description,
 				'avatarUrl'       => $mvs_avatar_url ?: '',
 				'hasCustomAvatar' => $mvs_has_custom,
 				'uploadingAvatar' => false,
 				'savingProfile'   => false,
+				'saving'          => false,
 				'profileMessage'  => '',
 				'profileError'    => '',
+				'savedMessage'    => '',
+				'errorMessage'    => '',
 			) );
 			?>>
 
@@ -169,13 +178,13 @@ wp_enqueue_script_module(
 						<span data-wp-bind--hidden="context.savingProfile"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 						<span data-wp-bind--hidden="!context.savingProfile"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 					</button>
+					<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-cancel-btn"
+						data-wp-on--click="mvs/dashboard::actions.toggleProfileEdit">
+						<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
+					</button>
 				</div>
 			</div>
 			</div>
-			<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-cancel-btn"
-			data-wp-on--click="actions.toggleProfileEdit">
-			<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
-			</button>
 		</div>
 	</div>
 
