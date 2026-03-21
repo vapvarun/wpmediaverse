@@ -66,7 +66,14 @@ class NotificationListener {
 				}
 			}
 
-			// Coalesce: one notification per conversation per 30 seconds.
+			// When BuddyNext is active it owns notification routing and its own coalescing.
+			// Still clear the MVS unread cache so the BuddyNext nav badge can read it.
+			if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+				delete_transient( 'mvs_dm_unread_' . $recipient_id );
+				continue;
+			}
+
+			// Coalesce: one MVS notification per conversation per 30 seconds.
 			$coalesce_key = "mvs_dm_notif_{$conversation_id}_{$recipient_id}";
 			if ( get_transient( $coalesce_key ) ) {
 				continue;
