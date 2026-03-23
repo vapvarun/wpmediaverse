@@ -33,7 +33,7 @@ class Shortcodes {
 	/**
 	 * Render the [mvs_gallery] shortcode.
 	 *
-	 * Usage: [mvs_gallery columns="3" per_page="12" type="image" category="" tag="" orderby="date"]
+	 * Usage: [mvs_gallery type="image" category="" tag="" orderby="date"]
 	 *
 	 * @param array|string $atts Shortcode attributes.
 	 * @return string
@@ -41,8 +41,6 @@ class Shortcodes {
 	public function render_gallery( $atts ): string {
 		$atts = shortcode_atts(
 			array(
-				'columns'  => (int) get_option( 'mvs_grid_columns', 3 ),
-				'per_page' => (int) get_option( 'mvs_items_per_page', 12 ),
 				'type'     => '',
 				'category' => '',
 				'tag'      => '',
@@ -52,9 +50,11 @@ class Shortcodes {
 			'mvs_gallery'
 		);
 
+		// Columns and per_page always come from backend settings — shortcode
+		// attributes must not override admin-configured display values.
 		$block_attrs = array(
-			'columns'       => absint( $atts['columns'] ),
-			'perPage'       => absint( $atts['per_page'] ),
+			'columns'       => absint( get_option( 'mvs_grid_columns', 3 ) ),
+			'perPage'       => absint( get_option( 'mvs_items_per_page', 12 ) ),
 			'mediaType'     => sanitize_text_field( $atts['type'] ),
 			'category'      => sanitize_text_field( $atts['category'] ),
 			'tag'           => sanitize_text_field( $atts['tag'] ),
