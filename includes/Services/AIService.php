@@ -146,6 +146,14 @@ class AIService {
 
 		$result = $provider->moderate_content( $image_url );
 
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		if ( ! is_array( $result ) || ! isset( $result['safe'] ) ) {
+			return new WP_Error( 'mvs_moderation_failed', __( 'AI moderation returned an invalid response.', 'wpmediaverse' ) );
+		}
+
 		update_post_meta( $media_id, '_mvs_ai_moderation', $result );
 
 		if ( ! $result['safe'] ) {

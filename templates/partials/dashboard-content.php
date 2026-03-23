@@ -193,7 +193,12 @@ wp_enqueue_script_module(
 	$mvs_profile_incomplete = ! $mvs_has_custom || empty( $mvs_current_user->description );
 	if ( $mvs_profile_incomplete ) :
 		$mvs_dashboard_page_id = (int) get_option( 'mvs_page_dashboard', 0 );
-		$mvs_edit_profile_url  = $mvs_dashboard_page_id ? get_permalink( $mvs_dashboard_page_id ) : home_url( '/my-media/' );
+		$mvs_edit_profile_url  = $mvs_dashboard_page_id ? get_permalink( $mvs_dashboard_page_id ) : '';
+		if ( ! $mvs_edit_profile_url ) {
+			// Fallback: find the dashboard page by slug.
+			$mvs_dash_page = get_page_by_path( 'my-media' );
+			$mvs_edit_profile_url = $mvs_dash_page ? get_permalink( $mvs_dash_page ) : home_url( '/' );
+		}
 		?>
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
 		<span class="mvs-profile-prompt-icon">&#x1F464;</span>

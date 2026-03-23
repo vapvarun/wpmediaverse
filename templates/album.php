@@ -441,4 +441,28 @@ if ( is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_us
 		$mvs_social_asset['version']
 	);
 endif;
+
+// Shared UI: Toast + Confirm Dialog (required for delete action).
+?>
+<div class="mvs-toast" hidden
+	data-wp-interactive="mvs/shared-ui"
+	data-wp-bind--hidden="!state.toast.visible"
+	data-wp-text="state.toast.message"
+	data-wp-class--mvs-toast--success="state.isToastSuccess"
+	data-wp-class--mvs-toast--error="state.isToastError"></div>
+
+<div class="mvs-confirm-overlay" hidden
+	data-wp-interactive="mvs/shared-ui"
+	data-wp-bind--hidden="!state.confirm.visible">
+	<div class="mvs-confirm">
+		<p data-wp-text="state.confirm.message"></p>
+		<div class="mvs-confirm-actions">
+			<button class="mvs-btn mvs-btn--secondary" type="button"
+				data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+			<button class="mvs-btn mvs-btn--danger" type="button"
+				data-wp-on--click="actions.handleConfirmYes"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+		</div>
+	</div>
+</div>
+<?php
 get_footer();

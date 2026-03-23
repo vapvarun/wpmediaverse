@@ -413,7 +413,7 @@
 .mvs-chat-messages {
 	flex: 1;
 	overflow-y: auto;
-	padding: 16px;
+	padding: 56px 16px 16px;
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
@@ -476,6 +476,7 @@
 	border-radius: var(--mvs-chat-radius);
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+	overflow: hidden;
 	line-height: 1.4;
 	font-size: 14px;
 	position: relative;
@@ -643,6 +644,8 @@
    ---------------------------------------------------------------- */
 .mvs-chat-msg__image {
 	max-width: 260px;
+	max-height: 300px;
+	object-fit: contain;
 	border-radius: 12px;
 	cursor: pointer;
 	display: block;

@@ -165,8 +165,9 @@ class Plugin {
 		// Action Scheduler callback for async webhook delivery.
 		add_action( 'mvs_deliver_webhook', array( self::class, 'deliver_webhook' ), 10, 4 );
 
-		// Ensure stats/index rows exist when media is published.
+		// Ensure stats/index rows exist when media is published (any save, not just publish transition).
 		add_action( 'publish_mvs_media', array( self::class, 'ensure_media_rows' ), 10, 2 );
+		add_action( 'save_post_mvs_media', array( self::class, 'ensure_media_rows_on_save' ), 10, 3 );
 
 		// Enqueue frontend styles.
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
@@ -642,6 +643,20 @@ class Plugin {
 	 * @param int      $post_id Post ID.
 	 * @param \WP_Post $post    Post object.
 	 */
+	/**
+	 * Wrapper for save_post_mvs_media to call ensure_media_rows for published posts.
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post object.
+	 * @param bool     $update  Whether this is an update.
+	 */
+	public static function ensure_media_rows_on_save( int $post_id, \WP_Post $post, bool $update ): void {
+		if ( 'publish' !== $post->post_status || wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+		self::ensure_media_rows( $post_id, $post );
+	}
+
 	public static function ensure_media_rows( int $post_id, \WP_Post $post ): void {
 		global $wpdb;
 

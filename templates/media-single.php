@@ -9,6 +9,36 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// Privacy gate: block access to non-public media for unauthorized viewers.
+if ( have_posts() ) {
+	the_post();
+	$mvs_privacy_level = get_post_meta( get_the_ID(), '_mvs_privacy', true );
+	if ( $mvs_privacy_level && 'public' !== $mvs_privacy_level ) {
+		$mvs_viewer_id = get_current_user_id();
+		$mvs_author_id = (int) get_the_author_meta( 'ID' );
+		$mvs_can_view  = false;
+
+		if ( $mvs_viewer_id === $mvs_author_id || current_user_can( 'moderate_mvs_media' ) ) {
+			$mvs_can_view = true;
+		} elseif ( 'members' === $mvs_privacy_level && $mvs_viewer_id > 0 ) {
+			$mvs_can_view = true;
+		}
+		// 'private', 'friends', 'group' etc — deny unless owner/admin.
+
+		if ( ! $mvs_can_view ) {
+			get_header();
+			echo '<div class="mvs-single-media"><div class="mvs-privacy-blocked" style="text-align:center;padding:60px 20px;">';
+			echo '<span style="font-size:48px;">&#128274;</span>';
+			echo '<h2>' . esc_html__( 'This media is private', 'wpmediaverse' ) . '</h2>';
+			echo '<p>' . esc_html__( 'You do not have permission to view this content.', 'wpmediaverse' ) . '</p>';
+			echo '</div></div>';
+			get_footer();
+			return;
+		}
+	}
+	rewind_posts();
+}
+
 get_header();
 ?>
 <div class="mvs-single-media">
@@ -454,4 +484,27 @@ wp_enqueue_script_module(
 	$mvs_social_asset['version']
 );
 
+// Shared UI: Toast + Confirm Dialog (required for delete/share actions).
+?>
+<div class="mvs-toast" hidden
+	data-wp-interactive="mvs/shared-ui"
+	data-wp-bind--hidden="!state.toast.visible"
+	data-wp-text="state.toast.message"
+	data-wp-class--mvs-toast--success="state.isToastSuccess"
+	data-wp-class--mvs-toast--error="state.isToastError"></div>
+
+<div class="mvs-confirm-overlay" hidden
+	data-wp-interactive="mvs/shared-ui"
+	data-wp-bind--hidden="!state.confirm.visible">
+	<div class="mvs-confirm">
+		<p data-wp-text="state.confirm.message"></p>
+		<div class="mvs-confirm-actions">
+			<button class="mvs-btn mvs-btn--secondary" type="button"
+				data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+			<button class="mvs-btn mvs-btn--danger" type="button"
+				data-wp-on--click="actions.handleConfirmYes"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+		</div>
+	</div>
+</div>
+<?php
 get_footer();

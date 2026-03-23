@@ -259,11 +259,13 @@ class ModerationService {
 
 		$results = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT meta_value AS status, COUNT(*) AS count
-				FROM {$wpdb->postmeta}
-				WHERE meta_key = %s
-				AND meta_value IN ('pending', 'flagged', 'rejected')
-				GROUP BY meta_value",
+				"SELECT pm.meta_value AS status, COUNT(*) AS count
+				FROM {$wpdb->postmeta} pm
+				INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+				WHERE pm.meta_key = %s
+				AND pm.meta_value IN ('pending', 'flagged', 'rejected')
+				AND p.post_type = 'mvs_media'
+				GROUP BY pm.meta_value",
 				'_mvs_moderation_status'
 			),
 			ARRAY_A

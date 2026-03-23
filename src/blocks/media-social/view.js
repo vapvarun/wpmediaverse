@@ -288,15 +288,34 @@ store( 'mvs/media-social', {
 			if ( navigator.share ) {
 				try {
 					await navigator.share( { title, url } );
+					return;
 				} catch {
-					// User cancelled.
+					// User cancelled or share failed — fall through to clipboard.
 				}
-			} else if ( navigator.clipboard ) {
-				await navigator.clipboard.writeText( url );
+			}
+
+			// Clipboard fallback.
+			try {
+				if ( navigator.clipboard ) {
+					await navigator.clipboard.writeText( url );
+				} else {
+					// Legacy fallback for older browsers / non-HTTPS.
+					const ta = document.createElement( 'textarea' );
+					ta.value = url;
+					ta.style.position = 'fixed';
+					ta.style.opacity = '0';
+					document.body.appendChild( ta );
+					ta.select();
+					document.execCommand( 'copy' );
+					document.body.removeChild( ta );
+				}
 				ctx.shareLabel = '\u2713 Copied!';
+				sharedUI.actions.showToast( 'Link copied to clipboard!', 'success' );
 				setTimeout( () => {
 					ctx.shareLabel = '\u{1F517} Share';
 				}, 2000 );
+			} catch {
+				sharedUI.actions.showToast( 'Could not copy link. Please copy the URL manually.', 'error' );
 			}
 		},
 

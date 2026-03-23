@@ -63,6 +63,9 @@ class BuddyPressIntegration {
 			// Priority 0: must run before bp_activity_filter_kses (priority 1) which strips <div> and class attrs.
 			add_filter( 'bp_get_activity_content_body', array( $this, 'transform_legacy_media_content' ), 0, 2 );
 
+			// Inject inline video player for MVS video activities.
+			add_filter( 'bp_get_activity_content_body', array( $this, 'inject_video_player_in_activity' ), 0, 2 );
+
 			// Whitelist our MVS tags/attrs so kses (priority 1) preserves our transformed output.
 			add_filter( 'bp_activity_allowed_tags', array( $this, 'allow_mvs_activity_tags' ) );
 		}
@@ -2268,10 +2271,17 @@ class BuddyPressIntegration {
 			'src'      => array(),
 			'controls' => array(),
 			'preload'  => array(),
+			'poster'   => array(),
 			'style'    => array(),
 			'class'    => array(),
 			'width'    => array(),
 			'height'   => array(),
+		);
+
+		// Allow <source> inside <video>/<audio>.
+		$tags['source'] = array(
+			'src'  => array(),
+			'type' => array(),
 		);
 
 		// Allow inline <audio> player.
@@ -2294,6 +2304,60 @@ class BuddyPressIntegration {
 		);
 
 		return $tags;
+	}
+
+	/**
+	 * Transform legacy media plugin activity HTML (rtMedia, etc.) to MVS rendering.
+	 *
+	 * Hooked to bp_get_activity_content_body. Detects known legacy HTML markers,
+	 * extracts media items, and rewrites the content with inline-styled MVS HTML
+	 * so that images/videos render consistently with the MVS UI (including lightbox).
+	 *
+	 * @param string $content Raw activity content.
+	 * @return string Transformed content, or original if no legacy marker found.
+	 */
+	public function inject_video_player_in_activity( string $content ): string {
+		// Only process content that has our video placeholder markup.
+		if ( false === strpos( $content, 'mvs-activity-media--video' ) ) {
+			return $content;
+		}
+
+		// Extract media ID from data-mvs-media-id attribute.
+		if ( ! preg_match( '/data-mvs-media-id="(\d+)"/', $content, $matches ) ) {
+			return $content;
+		}
+
+		$media_id   = (int) $matches[1];
+		$file_url   = get_post_meta( $media_id, '_mvs_file_url', true );
+		$media_type = get_post_meta( $media_id, '_mvs_media_type', true );
+
+		if ( 'video' !== $media_type || ! $file_url ) {
+			return $content;
+		}
+
+		$file_url  = set_url_scheme( $file_url );
+		$permalink = get_permalink( $media_id );
+		$poster    = '';
+
+		$attach_id = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
+		if ( $attach_id ) {
+			$poster_url = wp_get_attachment_image_url( $attach_id, 'large' );
+			if ( $poster_url ) {
+				$poster = ' poster="' . esc_url( set_url_scheme( $poster_url ) ) . '"';
+			}
+		}
+
+		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'
+			. '<video controls preload="metadata"' . $poster . ' style="width:100%;max-height:400px;border-radius:8px;display:block;">'
+			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( get_post_meta( $media_id, '_mvs_file_type', true ) ?: 'video/mp4' ) . '">'
+			. '</video>'
+			. '<a href="' . esc_url( $permalink ) . '" class="mvs-activity-media-link" style="display:block;text-align:center;margin-top:4px;font-size:13px;">' . esc_html__( 'View full media', 'wpmediaverse' ) . '</a>'
+			. '</div>';
+
+		// Replace the existing thumbnail/placeholder with the video player.
+		$content = preg_replace( '/<div class="mvs-activity-media mvs-activity-media--video[^"]*"[^>]*>.*?<\/div>/s', $video_html, $content );
+
+		return $content;
 	}
 
 	/**

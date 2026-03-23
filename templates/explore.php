@@ -79,7 +79,11 @@ get_header();
 		}
 		$mvs_is_own_profile = is_user_logged_in() && get_current_user_id() === $mvs_profile->ID;
 		$mvs_dashboard_id   = (int) get_option( 'mvs_page_dashboard', 0 );
-		$mvs_dashboard_link = $mvs_dashboard_id ? get_permalink( $mvs_dashboard_id ) : home_url( '/my-media/' );
+		$mvs_dashboard_link = $mvs_dashboard_id ? get_permalink( $mvs_dashboard_id ) : '';
+		if ( ! $mvs_dashboard_link ) {
+			$mvs_dash_page      = get_page_by_path( 'my-media' );
+			$mvs_dashboard_link = $mvs_dash_page ? get_permalink( $mvs_dash_page ) : home_url( '/' );
+		}
 	?>
 	<div class="mvs-profile-header-card">
 		<img class="mvs-profile-header-avatar" src="<?php echo esc_url( get_avatar_url( $mvs_profile->ID, array( 'size' => 96 ) ) ); ?>"

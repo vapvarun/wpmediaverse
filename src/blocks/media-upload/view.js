@@ -180,8 +180,36 @@ const { state, actions } = store( 'mvs/media-upload', {
 			const ctx = getContext();
 			ctx.uploading = true;
 			ctx.successMessage = '';
+			ctx.uploadError = '';
 			ctx.uploadMessage = `Uploading ${ files.length } file(s)...`;
 			let successCount = 0;
+
+			// Pre-upload quota check (Pro only — endpoint may not exist).
+			try {
+				const quotaCheckUrl = ctx.restUrl.replace( /\/media\/?$/, '' ).replace( /mvs\/v1\/?$/, 'mvs-pro/v1/me/quota/check' );
+				const file = files[ 0 ];
+				const mimeType = file.type || 'image/jpeg';
+				const mediaType = mimeType.startsWith( 'video/' ) ? 'video' : ( mimeType.startsWith( 'audio/' ) ? 'audio' : 'image' );
+				const checkResp = await fetch(
+					quotaCheckUrl + `?media_type=${ mediaType }&file_size=${ file.size }`,
+					{
+						headers: { 'X-WP-Nonce': ctx.nonce },
+						credentials: 'same-origin',
+					}
+				);
+				if ( checkResp.ok ) {
+					const checkData = await checkResp.json();
+					if ( checkData.can_upload === false ) {
+						ctx.uploading = false;
+						ctx.uploadMessage = '';
+						ctx.uploadError = checkData.reason || 'Upload limit reached. Please upgrade your plan.';
+						return;
+					}
+				}
+				// 404 = Pro not active, skip check.
+			} catch {
+				// Pro endpoint not available — proceed without check.
+			}
 
 			for ( let i = 0; i < files.length; i++ ) {
 				ctx.uploadMessage = `Uploading ${ i + 1 } of ${ files.length }...`;
@@ -227,6 +255,17 @@ const { state, actions } = store( 'mvs/media-upload', {
 				ctx.successMessage = `${ successCount } of ${ files.length } file(s) uploaded.`;
 			} else {
 				ctx.successMessage = '';
+			}
+
+			// Reset form fields after upload.
+			if ( successCount > 0 ) {
+				ctx.uploadTitle = '';
+				ctx.uploadDescription = '';
+				ctx.uploadTags = '';
+				const fileInput = document.querySelector( '.mvs-upload-block input[type="file"]' );
+				if ( fileInput ) {
+					fileInput.value = '';
+				}
 			}
 			// Refresh quota widget if present.
 		const quotaWidget = document.querySelector( '.mvs-quota-widget' );
