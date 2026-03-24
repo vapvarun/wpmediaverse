@@ -63,6 +63,12 @@ class BuddyPressIntegration {
 			// Priority 0: must run before bp_activity_filter_kses (priority 1) which strips <div> and class attrs.
 			add_filter( 'bp_get_activity_content_body', array( $this, 'transform_legacy_media_content' ), 0, 2 );
 
+			// Transform MediaPress activities — inject MVS thumbnail when MediaPress is deactivated.
+			add_filter( 'bp_get_activity_content_body', array( $this, 'transform_mediapress_activity' ), 0, 2 );
+
+			// Inject thumbnail into imported/empty media activities.
+			add_filter( 'bp_get_activity_content_body', array( $this, 'inject_imported_media_thumbnail' ), 0, 2 );
+
 			// Inject inline video player for MVS video activities.
 			add_filter( 'bp_get_activity_content_body', array( $this, 'inject_video_player_in_activity' ), 0, 2 );
 
@@ -2484,6 +2490,132 @@ class BuddyPressIntegration {
 		$output .= '<div class="' . esc_attr( $grid_class ) . '" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">' . $media_html . '</div>';
 
 		return $output;
+	}
+
+	/**
+	 * Transform MediaPress activity entries after MediaPress is deactivated.
+	 *
+	 * MediaPress stores the attachment ID in activity meta (_mpp_attached_media_id).
+	 * When MediaPress is deactivated, its rendering is gone. This method looks up
+	 * the imported MVS media from the original attachment and injects a thumbnail.
+	 *
+	 * @param string $content Activity content.
+	 * @return string Transformed content.
+	 */
+	public function transform_mediapress_activity( string $content, $activity = null ): string {
+		// Only process if MediaPress is NOT active (if active, let MediaPress handle its own rendering).
+		if ( function_exists( 'mediapress' ) || class_exists( 'MediaPress' ) ) {
+			return $content;
+		}
+
+		$activity_id = 0;
+		if ( is_object( $activity ) && ! empty( $activity->id ) ) {
+			$activity_id = (int) $activity->id;
+		} elseif ( function_exists( 'bp_get_activity_id' ) ) {
+			$activity_id = bp_get_activity_id();
+		}
+		if ( ! $activity_id ) {
+			return $content;
+		}
+
+		// Check for MediaPress activity meta.
+		$mpp_media_id = bp_activity_get_meta( $activity_id, '_mpp_attached_media_id', true );
+		if ( ! $mpp_media_id ) {
+			return $content;
+		}
+
+		// Find the imported MVS media that came from this MediaPress attachment.
+		$mvs_posts = get_posts(
+			array(
+				'post_type'      => 'mvs_media',
+				'meta_key'       => '_mvs_mpp_id', // phpcs:ignore WordPress.DB.SlowDBQuery
+				'meta_value'     => $mpp_media_id, // phpcs:ignore WordPress.DB.SlowDBQuery
+				'fields'         => 'ids',
+				'posts_per_page' => 1,
+			)
+		);
+
+		if ( empty( $mvs_posts ) ) {
+			// Try finding by attachment ID directly.
+			$mvs_posts = get_posts(
+				array(
+					'post_type'      => 'mvs_media',
+					'meta_key'       => '_mvs_attachment_id', // phpcs:ignore WordPress.DB.SlowDBQuery
+					'meta_value'     => $mpp_media_id, // phpcs:ignore WordPress.DB.SlowDBQuery
+					'fields'         => 'ids',
+					'posts_per_page' => 1,
+				)
+			);
+		}
+
+		if ( empty( $mvs_posts ) ) {
+			return $content;
+		}
+
+		$mvs_id    = $mvs_posts[0];
+		$thumbnail = $this->get_media_thumbnail_html( $mvs_id, 'large' );
+
+		if ( ! $thumbnail ) {
+			return $content;
+		}
+
+		// Append the thumbnail after existing content text.
+		return $content . $thumbnail;
+	}
+
+	/**
+	 * Inject thumbnail into imported media activities that currently show text-only.
+	 *
+	 * When media is imported via WP-CLI, the _mvs_imported_media flag skips the normal
+	 * record_upload_activity() which sets thumbnail as content. This method retroactively
+	 * adds the thumbnail for any mvs_media_upload activity that has empty content.
+	 *
+	 * @param string $content Activity content.
+	 * @return string Content with thumbnail injected.
+	 */
+	public function inject_imported_media_thumbnail( string $content, $activity = null ): string {
+		// Only process empty/minimal content.
+		if ( strlen( trim( wp_strip_all_tags( $content ) ) ) > 10 ) {
+			return $content;
+		}
+
+		// Already has media markup.
+		if ( strpos( $content, 'mvs-activity-media' ) !== false ) {
+			return $content;
+		}
+
+		// Get activity from param or global.
+		if ( ! is_object( $activity ) || empty( $activity->type ) ) {
+			global $activities_template;
+			$activity = ! empty( $activities_template->activity ) ? $activities_template->activity : null;
+		}
+		if ( ! $activity || empty( $activity->type ) ) {
+			return $content;
+		}
+
+		// Only for mvs_media_upload activities.
+		if ( 'mvs_media_upload' !== $activity->type ) {
+			return $content;
+		}
+
+		// The media ID is in item_id (profile uploads) or secondary_item_id (group uploads).
+		$media_id = 0;
+		if ( 'wpmediaverse' === $activity->component && $activity->item_id > 0 ) {
+			$media_id = (int) $activity->item_id;
+		} elseif ( 'groups' === $activity->component && $activity->secondary_item_id > 0 ) {
+			$media_id = (int) $activity->secondary_item_id;
+		}
+
+		if ( ! $media_id || 'mvs_media' !== get_post_type( $media_id ) ) {
+			return $content;
+		}
+
+		$thumbnail = $this->get_media_thumbnail_html( $media_id, 'large' );
+		if ( ! $thumbnail ) {
+			return $content;
+		}
+
+		return $content . $thumbnail;
 	}
 
 	/**
