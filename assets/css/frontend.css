@@ -2007,11 +2007,18 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-activity-grid-1 .mvs-activity-media {
-	max-height: 480px;
+	background: transparent;
+	max-height: none;
+}
+
+.mvs-activity-grid-1 .mvs-activity-media a {
+	width: auto;
+	height: auto;
 }
 
 .mvs-activity-grid-1 .mvs-activity-media img {
 	max-width: 100%;
+	width: auto;
 	height: auto;
 	max-height: 480px;
 	border-radius: 10px;

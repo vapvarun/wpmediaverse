@@ -2059,7 +2059,7 @@ class BuddyPressIntegration {
 				}
 			}
 
-			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '"' . $img_attrs . ' loading="lazy" style="max-width:100%;height:auto;display:block;border-radius:8px;" /></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '"' . $img_attrs . ' loading="lazy" style="max-width:100%;width:auto;height:auto;display:block;border-radius:8px;margin:8px 0 12px;" /></a></div>';
 		}
 
 		// Video without poster: show dark placeholder with play icon.
