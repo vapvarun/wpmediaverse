@@ -62,7 +62,7 @@ class StatsPage {
 			return;
 		}
 
-		if ( ! current_user_can( 'upload_mvs_media' ) ) {
+		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
 			return;
 		}
 

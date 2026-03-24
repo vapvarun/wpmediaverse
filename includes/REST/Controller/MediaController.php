@@ -237,6 +237,23 @@ class MediaController extends WP_REST_Controller {
 			$params[] = (int) $author;
 		}
 
+		// Exclude media from blocked users.
+		if ( $user_id ) {
+			$blocked_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT blocked_id FROM {$wpdb->prefix}mvs_blocks WHERE blocker_id = %d",
+					$user_id
+				)
+			);
+			if ( $blocked_ids ) {
+				$placeholders = implode( ',', array_fill( 0, count( $blocked_ids ), '%d' ) );
+				$where[]      = "post_author NOT IN ($placeholders)"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				foreach ( $blocked_ids as $bid ) {
+					$params[] = (int) $bid;
+				}
+			}
+		}
+
 		$where_sql = implode( ' AND ', $where );
 
 		// Count query.
@@ -625,7 +642,13 @@ class MediaController extends WP_REST_Controller {
 	 */
 	public function get_item_permissions_check( $request ) {
 		$media_id = $request->get_param( 'id' );
-		$user_id  = get_current_user_id();
+		$post     = get_post( $media_id );
+
+		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$user_id = get_current_user_id();
 
 		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
 			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );

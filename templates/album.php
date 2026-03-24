@@ -49,7 +49,7 @@ get_header();
 							$mvs_author_url = bp_members_get_user_url( $mvs_author_id );
 						} elseif ( function_exists( 'bp_core_get_user_domain' ) ) {
 							$mvs_author_url = bp_core_get_user_domain( $mvs_author_id );
-						} elseif ( defined( 'MVS_PRO_VERSION' ) ) {
+						} else {
 							$mvs_author_url = home_url( '/media/@' . get_the_author_meta( 'user_login', $mvs_author_id ) . '/' );
 						}
 

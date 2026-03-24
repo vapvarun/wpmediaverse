@@ -525,6 +525,7 @@ class Plugin {
 	 */
 	public static function register_types(): void {
 		Media::register();
+		Media::register_admin_columns();
 		Album::register();
 		Collection::register();
 		MediaTag::register();

@@ -69,12 +69,12 @@ class CommentService {
 		/**
 		 * Fires after a media comment is created.
 		 *
-		 * @param int    $comment_id Comment ID.
 		 * @param int    $media_id   Media post ID.
 		 * @param int    $user_id    Commenter user ID.
+		 * @param int    $comment_id Comment ID.
 		 * @param string $content    Comment content.
 		 */
-		do_action( 'mvs_comment_created', $comment_id, $media_id, $user_id, $content );
+		do_action( 'mvs_comment_created', $media_id, $user_id, $comment_id, $content );
 
 		return $comment_id;
 	}
