@@ -28,15 +28,15 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 	<?php
 	echo wp_json_encode(
 		array(
-			'maxFiles'     => $max_files,
-			'restUrl'      => $rest_url,
-			'nonce'        => $nonce,
+			'maxFiles'       => $max_files,
+			'restUrl'        => $rest_url,
+			'nonce'          => $nonce,
 			'uploading'      => false,
 			'uploadError'    => '',
 			'successMessage' => '',
 			'files'          => array(),
-			'privacy'      => $show_privacy ? get_option( 'mvs_default_privacy', 'public' ) : '',
-			'allowedTypes' => array_map( 'trim', explode( ',', $allowed_types ) ),
+			'privacy'        => $show_privacy ? get_option( 'mvs_default_privacy', 'public' ) : '',
+			'allowedTypes'   => array_map( 'trim', explode( ',', $allowed_types ) ),
 		)
 	);
 	?>

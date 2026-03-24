@@ -473,6 +473,43 @@ store( 'mvs/media-social', {
 			} );
 		},
 
+		/* --- Report Media --- */
+		reportMedia() {
+			const ctx = getContext();
+			if ( ! ctx.isLoggedIn ) {
+				sharedUI.actions.showToast( 'Please log in to report content.', 'error' );
+				return;
+			}
+			const reasons = [
+				{ value: 'spam', label: 'Spam' },
+				{ value: 'harassment', label: 'Harassment' },
+				{ value: 'nudity', label: 'Nudity' },
+				{ value: 'violence', label: 'Violence' },
+				{ value: 'copyright', label: 'Copyright' },
+				{ value: 'misinformation', label: 'Misinformation' },
+				{ value: 'other', label: 'Other' },
+			];
+			const list = reasons.map( ( r ) => r.label ).join( ', ' );
+			sharedUI.actions.showConfirm(
+				'Report this media? Select a reason:\n\n' + list + '\n\nThis will be sent to the site moderators.',
+				async () => {
+					const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/report', {
+						method: 'POST',
+						headers: apiHeaders( ctx.nonce ),
+						credentials: 'same-origin',
+						body: JSON.stringify( { reason: 'other', details: 'Reported via media page' } ),
+					} );
+					if ( res.ok ) {
+						sharedUI.actions.showToast( 'Report submitted. Thank you.', 'success' );
+						ctx.reported = true;
+					} else {
+						const data = await res.json().catch( () => ( {} ) );
+						sharedUI.actions.showToast( data.message || 'Already reported or error occurred.', 'error' );
+					}
+				}
+			);
+		},
+
 		stopPropagation( event ) {
 			event.stopPropagation();
 		},

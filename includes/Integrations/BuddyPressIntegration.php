@@ -2049,7 +2049,7 @@ class BuddyPressIntegration {
 			if ( 'video' === $media_type ) {
 				$overlay = '<span class="mvs-activity-play-icon" aria-hidden="true"></span>';
 			}
-			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" /></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" style="max-width:100%;height:auto;display:block;border-radius:8px;" /></a></div>';
 		}
 
 		// Video without poster: show dark placeholder with play icon.
@@ -2575,7 +2575,7 @@ class BuddyPressIntegration {
 
 					$media_html .= '<div class="mvs-activity-media mvs-activity-media--image"' . $data_mid . ' style="position:relative;overflow:hidden;">'
 								. '<a href="' . esc_url( $link ) . '">'
-								. '<img src="' . $src . '" alt="' . $alt . '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />'
+								. '<img src="' . $src . '" alt="' . $alt . '" loading="lazy" style="max-width:100%;height:auto;display:block;border-radius:8px;" />'
 								. '</a></div>';
 				}
 			}

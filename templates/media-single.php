@@ -309,6 +309,13 @@ get_header();
 								data-wp-on--click="actions.confirmDelete">
 								<?php esc_html_e( 'Delete', 'wpmediaverse' ); ?>
 							</button>
+						<?php elseif ( is_user_logged_in() ) : ?>
+							<button class="mvs-btn mvs-btn--small mvs-btn--text" type="button"
+								data-wp-on--click="actions.reportMedia"
+								data-wp-bind--hidden="context.reported"
+								aria-label="<?php esc_attr_e( 'Report this media', 'wpmediaverse' ); ?>">
+								<?php esc_html_e( 'Report', 'wpmediaverse' ); ?>
+							</button>
 						<?php endif; ?>
 					</div>
 				</div>
