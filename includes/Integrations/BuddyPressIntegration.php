@@ -2314,10 +2314,17 @@ class BuddyPressIntegration {
 		);
 
 		// Allow class/style on <a>, <span>, <img> for MVS media links.
-		$tags['a']['class']     = array();
-		$tags['a']['style']     = array();
+		$tags['a']['class']              = array();
+		$tags['a']['style']              = array();
+		$tags['a']['href']               = array();
+		$tags['a']['data-mvs-permalink'] = array();
+		$tags['img']['src']     = array();
+		$tags['img']['alt']     = array();
+		$tags['img']['width']   = array();
+		$tags['img']['height']  = array();
 		$tags['img']['style']   = array();
 		$tags['img']['loading'] = array();
+		$tags['img']['class']   = array();
 		$tags['span']           = array(
 			'class'       => array(),
 			'aria-hidden' => array(),
@@ -2423,7 +2430,27 @@ class BuddyPressIntegration {
 			}
 		}
 
-		// --- 3. Imported/empty mvs_media_upload thumbnail injection ---
+		// --- 3. BuddyBoss activity transform (bp_media_ids meta) ---
+		if ( ! function_exists( 'buddyboss_platform_plugin_basename' ) ) {
+			$bb_media_ids = bp_activity_get_meta( (int) $activity->id, 'bp_media_ids', true );
+			if ( $bb_media_ids ) {
+				$bb_ids    = array_filter( array_map( 'intval', explode( ',', $bb_media_ids ) ) );
+				$grid_html = '';
+				foreach ( $bb_ids as $bb_id ) {
+					$thumbnail = $this->resolve_imported_thumbnail( $bb_id, '_mvs_bb_media_id', '_mvs_attachment_id' );
+					if ( $thumbnail ) {
+						$grid_html .= $thumbnail;
+					}
+				}
+				if ( $grid_html ) {
+					$count      = count( $bb_ids );
+					$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 5 );
+					return $content . '<div class="' . esc_attr( $grid_class ) . '" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">' . $grid_html . '</div>';
+				}
+			}
+		}
+
+		// --- 4. Imported/empty mvs_media_upload thumbnail injection ---
 		if ( 'mvs_media_upload' === ( $activity->type ?? '' ) && strlen( trim( wp_strip_all_tags( $content ) ) ) <= 10 ) {
 			$media_id = 0;
 			if ( 'wpmediaverse' === $activity->component && $activity->item_id > 0 ) {
