@@ -13,36 +13,36 @@
    ========================================================================== */
 
 :root {
-	/* Brand */
-	--mvs-primary:        #0073aa;
-	--mvs-primary-hover:  #005a87;
+	/* Brand — BuddyNext first, then hardcoded fallback */
+	--mvs-primary:        var(--brand, #0073aa);
+	--mvs-primary-hover:  var(--brand-hover, #005a87);
 	--mvs-primary-rgb:    0, 115, 170;
-	--mvs-danger:         #d63638;
-	--mvs-success:        #44b700;
+	--mvs-danger:         var(--red, #d63638);
+	--mvs-success:        var(--green, #44b700);
 
-	/* Surfaces */
-	--mvs-bg:             #ffffff;
-	--mvs-surface:        #f6f7f7;
-	--mvs-surface-2:      #eeeeee;
+	/* Surfaces — BuddyNext first, then hardcoded fallback */
+	--mvs-bg:             var(--bg, #ffffff);
+	--mvs-surface:        var(--bg-subtle, #f6f7f7);
+	--mvs-surface-2:      var(--bg-hover, #eeeeee);
 	--mvs-overlay:        rgba(0, 0, 0, 0.72);
 
-	/* Text */
-	--mvs-text:           #1e1e1e;
-	--mvs-text-secondary: #646970;
-	--mvs-text-muted:     #a7aaad;
+	/* Text — BuddyNext first, then hardcoded fallback */
+	--mvs-text:           var(--text-1, #1e1e1e);
+	--mvs-text-secondary: var(--text-2, #646970);
+	--mvs-text-muted:     var(--text-3, #a7aaad);
 
-	/* Borders & Shadows */
-	--mvs-border:         #dcdcde;
-	--mvs-border-light:   #e9e9ea;
+	/* Borders & Shadows — BuddyNext first where applicable */
+	--mvs-border:         var(--border, #dcdcde);
+	--mvs-border-light:   var(--border-soft, #e9e9ea);
 	--mvs-shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.10);
 	--mvs-shadow-md:      0 4px 16px rgba(0, 0, 0, 0.14);
 	--mvs-shadow-lg:      0 8px 32px rgba(0, 0, 0, 0.18);
 
-	/* Radii */
-	--mvs-radius-sm:      6px;
-	--mvs-radius-md:      8px;
-	--mvs-radius-lg:      12px;
-	--mvs-radius-pill:    100px;
+	/* Radii — BuddyNext first, then hardcoded fallback */
+	--mvs-radius-sm:      var(--r-sm, 6px);
+	--mvs-radius-md:      var(--r-md, 8px);
+	--mvs-radius-lg:      var(--r-lg, 12px);
+	--mvs-radius-pill:    var(--r-full, 100px);
 
 	/* Breakpoints (reference only — used in @media rules) */
 	--mvs-bp-mobile:      480px;
@@ -50,8 +50,11 @@
 	--mvs-bp-desktop:     1024px;
 }
 
+/* OS dark mode — only applies when BuddyNext is NOT controlling dark mode.
+   When BuddyNext is active, [data-theme="dark"] overrides the underlying
+   --bg, --text-1, --brand etc. tokens, and --mvs-* picks them up automatically. */
 @media (prefers-color-scheme: dark) {
-	:root {
+	:root:not([data-theme="dark"]) {
 		--mvs-bg:             #121212;
 		--mvs-surface:        #1e1e1e;
 		--mvs-surface-2:      #2a2a2a;

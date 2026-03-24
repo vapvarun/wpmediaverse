@@ -36,6 +36,9 @@ class TemplateLoader {
 		add_action( 'init', array( $this, 'register_profile_rewrite' ) );
 		add_filter( 'query_vars', array( $this, 'add_profile_query_var' ) );
 		add_action( 'template_redirect', array( $this, 'load_profile_template' ) );
+
+		// Body class signal for BuddyX and other themes.
+		add_action( 'wp', array( $this, 'maybe_add_mvs_body_class' ) );
 	}
 
 	/**
@@ -240,6 +243,59 @@ class TemplateLoader {
 			include $template;
 			exit;
 		}
+	}
+
+	/**
+	 * Add mvs-page body class on all WPMediaVerse frontend pages.
+	 *
+	 * Signals to BuddyX (and any other theme) that this page should render
+	 * full-width with no page chrome (title, breadcrumb, sidebar). Works for
+	 * both CPT-based pages (detect via WP conditional tags) and shortcode pages
+	 * (detect via mvs_page_* option values — uses alloptions cache, no extra DB query).
+	 */
+	public function maybe_add_mvs_body_class(): void {
+		// CPT pages: WP_Query is resolved at the 'wp' action so conditional tags work.
+		$is_mvs_page = (
+			is_singular( array( 'mvs_media', 'mvs_album', 'mvs_collection' ) )
+			|| is_post_type_archive( array( 'mvs_media', 'mvs_album' ) )
+			|| is_tax( 'mvs_tag' )
+			|| is_tax( 'mvs_category' )
+			|| (bool) get_query_var( 'mvs_edit_profile' )
+			|| (bool) get_query_var( 'mvs_profile_user' )
+		);
+
+		// Shortcode pages (e.g. dashboard): match current page ID against any
+		// mvs_page_* option. The alloptions array is already loaded at this point.
+		if ( ! $is_mvs_page && is_singular() ) {
+			$queried_id = (int) get_queried_object_id();
+			if ( $queried_id > 0 ) {
+				$all_options = wp_load_alloptions();
+				foreach ( $all_options as $option_key => $option_value ) {
+					if (
+						str_starts_with( $option_key, 'mvs_page_' )
+						&& (int) $option_value === $queried_id
+					) {
+						$is_mvs_page = true;
+						break;
+					}
+				}
+			}
+		}
+
+		if ( ! $is_mvs_page ) {
+			return;
+		}
+
+		add_filter(
+			'body_class',
+			static function ( array $classes ): array {
+				if ( ! in_array( 'mvs-page', $classes, true ) ) {
+					$classes[] = 'mvs-page';
+					$classes[] = 'no-sidebar';
+				}
+				return $classes;
+			}
+		);
 	}
 
 	/**
