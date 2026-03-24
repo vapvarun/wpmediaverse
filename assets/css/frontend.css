@@ -3,7 +3,7 @@
  *
  * Base styles for templates, shortcodes, and unstyled blocks.
  * Mobile-first. RTL-ready via [dir="rtl"] overrides.
- * Dark mode via prefers-color-scheme.
+ * Dark mode via BuddyNext [data-theme="dark"] token cascade.
  *
  * @package WPMediaVerse
  */
@@ -13,6 +13,10 @@
    ========================================================================== */
 
 :root {
+	/* Typography — BuddyNext first, then system stack fallback */
+	--mvs-font:           var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+	--mvs-font-heading:   var(--font-display, var(--mvs-font));
+
 	/* Brand — BuddyNext first, then hardcoded fallback */
 	--mvs-primary:        var(--brand, #0073aa);
 	--mvs-primary-hover:  var(--brand-hover, #005a87);
@@ -50,24 +54,47 @@
 	--mvs-bp-desktop:     1024px;
 }
 
-/* OS dark mode — only applies when BuddyNext is NOT controlling dark mode.
-   When BuddyNext is active, [data-theme="dark"] overrides the underlying
-   --bg, --text-1, --brand etc. tokens, and --mvs-* picks them up automatically. */
-@media (prefers-color-scheme: dark) {
-	:root:not([data-theme="dark"]) {
-		--mvs-bg:             #121212;
-		--mvs-surface:        #1e1e1e;
-		--mvs-surface-2:      #2a2a2a;
-		--mvs-text:           #f0f0f0;
-		--mvs-text-secondary: #b0b0b0;
-		--mvs-text-muted:     #888888;
-		--mvs-border:         #363636;
-		--mvs-border-light:   #2e2e2e;
-		--mvs-shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.35);
-		--mvs-shadow-md:      0 4px 16px rgba(0, 0, 0, 0.45);
-		--mvs-shadow-lg:      0 8px 32px rgba(0, 0, 0, 0.55);
-	}
+/* Dark mode is controlled by BuddyNext via [data-theme="dark"] which overrides
+   the underlying --bg, --text-1, --brand etc. tokens. The --mvs-* tokens pick
+   them up automatically through the var() cascade. No OS prefers-color-scheme
+   needed — BuddyNext is the single source of truth for dark mode. */
+
+/* ==========================================================================
+   0a. Type Reset — lock down all typography inside MVS templates.
+       Follows BuddyNext type scale. Works with or without BuddyNext.
+   ========================================================================== */
+
+/* Scope: all MVS template wrappers use these classes.
+   font-family set here so BuddyNext's Inter/Plus Jakarta Sans carries through. */
+.mvs-single-media,
+.mvs-single-album,
+.mvs-single-collection,
+.mvs-explore,
+.mvs-dashboard,
+.mvs-profile-edit {
+	font-family: var(--mvs-font);
+	font-size: 0.9375rem;
+	line-height: 1.6;
+	color: var(--mvs-text);
 }
+
+/* Heading reset within any MVS template — uses display font for headings */
+.mvs-single-media h1, .mvs-single-album h1, .mvs-single-collection h1,
+.mvs-explore h1, .mvs-dashboard h1, .mvs-profile-edit h1 { font-family: var(--mvs-font-heading); font-size: 1.375rem; font-weight: 700; line-height: 1.3; margin: 0 0 0.5em; }
+
+.mvs-single-media h2, .mvs-single-album h2, .mvs-single-collection h2,
+.mvs-explore h2, .mvs-dashboard h2, .mvs-profile-edit h2 { font-family: var(--mvs-font-heading); font-size: 1.25rem; font-weight: 700; line-height: 1.3; margin: 0 0 0.5em; }
+
+.mvs-single-media h3, .mvs-single-album h3, .mvs-single-collection h3,
+.mvs-explore h3, .mvs-dashboard h3, .mvs-profile-edit h3 { font-family: var(--mvs-font-heading); font-size: 1.125rem; font-weight: 600; line-height: 1.35; margin: 0 0 0.5em; }
+
+.mvs-single-media h4, .mvs-single-album h4, .mvs-single-collection h4,
+.mvs-explore h4, .mvs-dashboard h4, .mvs-profile-edit h4 { font-size: 0.875rem; font-weight: 600; margin: 0 0 0.5em; }
+
+/* Form elements inherit font from wrapper */
+.mvs-single-media button, .mvs-single-media input, .mvs-single-media select, .mvs-single-media textarea,
+.mvs-dashboard button, .mvs-dashboard input, .mvs-dashboard select, .mvs-dashboard textarea,
+.mvs-profile-edit button, .mvs-profile-edit input, .mvs-profile-edit select, .mvs-profile-edit textarea { font-family: inherit; font-size: inherit; }
 
 /* ==========================================================================
    0b. Profile Header Card (explore grid filtered by user)
