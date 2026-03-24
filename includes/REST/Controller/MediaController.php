@@ -260,11 +260,37 @@ class MediaController extends WP_REST_Controller {
 		$count_sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE {$where_sql}";
 		$total     = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
 
-		// Data query.
+		// Determine sort order.
+		$orderby = $request->get_param( 'orderby' );
 		$params[] = $per_page;
 		$params[] = $offset;
-		$data_sql = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE {$where_sql} ORDER BY created_at DESC LIMIT %d OFFSET %d";
-		$ids      = $wpdb->get_col( $wpdb->prepare( $data_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+
+		if ( 'trending' === $orderby ) {
+			// Trending score: (reactions * 3 + comments * 5 + views) / age_hours^1.5
+			// JOIN mvs_media_stats for engagement data.
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$data_sql = "SELECT i.media_id,
+				((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0))
+				/ POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5)) AS trending_score
+				FROM {$wpdb->prefix}mvs_media_index i
+				LEFT JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id
+				WHERE {$where_sql}
+				ORDER BY trending_score DESC
+				LIMIT %d OFFSET %d";
+		} elseif ( 'popular' === $orderby ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$data_sql = "SELECT i.media_id
+				FROM {$wpdb->prefix}mvs_media_index i
+				LEFT JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id
+				WHERE {$where_sql}
+				ORDER BY COALESCE(s.views, 0) DESC
+				LIMIT %d OFFSET %d";
+		} else {
+			$data_sql = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE {$where_sql} ORDER BY created_at DESC LIMIT %d OFFSET %d";
+		}
+
+		$results = $wpdb->get_col( $wpdb->prepare( $data_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
+		$ids     = $results;
 
 		// Prime post and meta caches in bulk to avoid N+1 queries.
 		$int_ids = array_map( 'intval', $ids );
@@ -826,6 +852,12 @@ class MediaController extends WP_REST_Controller {
 			'slug'       => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_title',
+			),
+			'orderby'    => array(
+				'type'              => 'string',
+				'default'           => 'date',
+				'enum'              => array( 'date', 'trending', 'popular' ),
+				'sanitize_callback' => 'sanitize_text_field',
 			),
 		);
 	}
