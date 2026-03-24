@@ -54,10 +54,27 @@
 	--mvs-bp-desktop:     1024px;
 }
 
-/* Dark mode is controlled by BuddyNext via [data-theme="dark"] which overrides
-   the underlying --bg, --text-1, --brand etc. tokens. The --mvs-* tokens pick
-   them up automatically through the var() cascade. No OS prefers-color-scheme
-   needed — BuddyNext is the single source of truth for dark mode. */
+/* Dark mode: two layers.
+   1. When BuddyNext is active: [data-theme="dark"] on <html> overrides --bg,
+      --text-1, --brand etc. and --mvs-* tokens pick them up via var() cascade.
+   2. When standalone (no BuddyNext): OS prefers-color-scheme applies these
+      fallback overrides. The :not([data-theme]) guard prevents double-application
+      when BuddyNext IS controlling dark mode. */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme]) {
+		--mvs-bg:             #121212;
+		--mvs-surface:        #1e1e1e;
+		--mvs-surface-2:      #2a2a2a;
+		--mvs-text:           #f0f0f0;
+		--mvs-text-secondary: #b0b0b0;
+		--mvs-text-muted:     #888888;
+		--mvs-border:         #363636;
+		--mvs-border-light:   #2e2e2e;
+		--mvs-shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.35);
+		--mvs-shadow-md:      0 4px 16px rgba(0, 0, 0, 0.45);
+		--mvs-shadow-lg:      0 8px 32px rgba(0, 0, 0, 0.55);
+	}
+}
 
 /* ==========================================================================
    0a. Type Reset — lock down all typography inside MVS templates.
