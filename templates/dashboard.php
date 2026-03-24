@@ -22,6 +22,8 @@ if ( ! is_user_logged_in() ) {
 
 get_header();
 
+do_action( 'mvs_before_content' );
+
 $mvs_dash_ctx = array(
 	'restUrl'  => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 	'nonce'    => wp_create_nonce( 'wp_rest' ),
@@ -57,5 +59,7 @@ wp_enqueue_script_module(
 	$mvs_dash_asset['dependencies'],
 	$mvs_dash_asset['version']
 );
+
+do_action( 'mvs_after_content' );
 
 get_footer();

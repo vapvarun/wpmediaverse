@@ -11,6 +11,8 @@
 defined( 'ABSPATH' ) || exit;
 
 get_header();
+
+do_action( 'mvs_before_content' );
 ?>
 <?php // Logged-out CTA banner. ?>
 <?php if ( ! is_user_logged_in() ) : ?>
@@ -338,5 +340,7 @@ wp_enqueue_script_module(
 	$mvs_explore_asset['dependencies'],
 	$mvs_explore_asset['version']
 );
+
+do_action( 'mvs_after_content' );
 
 get_footer();

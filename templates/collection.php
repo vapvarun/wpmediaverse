@@ -11,6 +11,8 @@
 defined( 'ABSPATH' ) || exit;
 
 get_header();
+
+do_action( 'mvs_before_content' );
 ?>
 <div class="mvs-single-collection">
 	<?php
@@ -179,4 +181,6 @@ get_header();
 </script>
 <?php
 wp_enqueue_style( 'mvs-frontend' );
+do_action( 'mvs_after_content' );
+
 get_footer();

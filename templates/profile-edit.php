@@ -49,6 +49,9 @@ $mvs_profile_ctx = array(
 );
 
 get_header();
+
+do_action( 'mvs_before_content' );
+
 wp_enqueue_style( 'mvs-frontend' );
 
 $mvs_profile_asset_file = MVS_PLUGIN_DIR . 'build/blocks/profile-edit/view.asset.php';
@@ -155,4 +158,6 @@ wp_enqueue_script_module(
 	</form>
 </div>
 <?php
+do_action( 'mvs_after_content' );
+
 get_footer();

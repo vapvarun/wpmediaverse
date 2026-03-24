@@ -40,6 +40,8 @@ if ( have_posts() ) {
 }
 
 get_header();
+
+do_action( 'mvs_before_content' );
 ?>
 <div class="mvs-single-media">
 	<?php
@@ -514,4 +516,6 @@ wp_enqueue_script_module(
 	</div>
 </div>
 <?php
+do_action( 'mvs_after_content' );
+
 get_footer();

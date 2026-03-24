@@ -9,6 +9,8 @@
 defined( 'ABSPATH' ) || exit;
 
 get_header();
+
+do_action( 'mvs_before_content' );
 ?>
 
 <div
@@ -39,4 +41,6 @@ get_header();
 </div>
 
 <?php
+do_action( 'mvs_after_content' );
+
 get_footer();

@@ -10,6 +10,8 @@
 defined( 'ABSPATH' ) || exit;
 
 get_header();
+
+do_action( 'mvs_before_content' );
 ?>
 <div class="mvs-single-album">
 	<?php
@@ -465,4 +467,6 @@ endif;
 	</div>
 </div>
 <?php
+do_action( 'mvs_after_content' );
+
 get_footer();
