@@ -59,15 +59,14 @@ class BuddyPressIntegration {
 			add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 			add_action( 'bp_register_activity_actions', array( $this, 'register_activity_actions' ) );
 
-			// Transform legacy media plugin activity HTML (rtMedia, etc.) to MVS rendering.
-			// Priority 0: must run before bp_activity_filter_kses (priority 1) which strips <div> and class attrs.
-			add_filter( 'bp_get_activity_content_body', array( $this, 'transform_legacy_media_content' ), 0, 2 );
+			// Enhance activity content: transform legacy plugin HTML (rtMedia/MediaPress) to MVS
+			// rendering. Priority 0: runs before bp_activity_filter_kses (priority 1).
+			add_filter( 'bp_get_activity_content_body', array( $this, 'enhance_activity_media_content' ), 0, 2 );
 
-			// Transform MediaPress activities — inject MVS thumbnail when MediaPress is deactivated.
-			add_filter( 'bp_get_activity_content_body', array( $this, 'transform_mediapress_activity' ), 0, 2 );
-
-			// Inject thumbnail into imported/empty media activities.
-			add_filter( 'bp_get_activity_content_body', array( $this, 'inject_imported_media_thumbnail' ), 0, 2 );
+			// Inject media thumbnails into activities with empty content (imported media).
+			// Uses bp_activity_entry_content ACTION (not filter) because BP Nouveau skips
+			// bp_get_activity_content_body entirely when content is empty.
+			add_action( 'bp_activity_entry_content', array( $this, 'render_activity_media_thumbnail' ) );
 
 			// Inject inline video player for MVS video activities.
 			add_filter( 'bp_get_activity_content_body', array( $this, 'inject_video_player_in_activity' ), 0, 2 );
@@ -2015,7 +2014,12 @@ class BuddyPressIntegration {
 	 * @param string $size     Image size (thumbnail, medium, large).
 	 * @return string HTML string with linked thumbnail, or empty string.
 	 */
-	private function get_media_thumbnail_html( int $media_id, string $size = 'medium' ): string {
+	/**
+	 * Generate media thumbnail HTML for activity display.
+	 *
+	 * @since 1.1.0 Changed from private to public for WP-CLI backfill command.
+	 */
+	public function get_media_thumbnail_html( int $media_id, string $size = 'medium' ): string {
 		$attach_id  = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
 		$file_type  = get_post_meta( $media_id, '_mvs_file_type', true );
 		$media_type = get_post_meta( $media_id, '_mvs_media_type', true );
@@ -2367,16 +2371,117 @@ class BuddyPressIntegration {
 	}
 
 	/**
-	 * Transform legacy media plugin activity HTML (rtMedia, etc.) to MVS rendering.
+	 * Enhance activity media content.
 	 *
-	 * Hooked to bp_get_activity_content_body. Detects known legacy HTML markers,
-	 * extracts media items, and rewrites the content with inline-styled MVS HTML
-	 * so that images/videos render consistently with the MVS UI (including lightbox).
+	 * Single unified filter for all activity media rendering:
+	 * 1. Transform rtMedia legacy HTML to MVS rendering (when rtMedia deactivated)
+	 * 2. Transform MediaPress activities via _mpp_attached_media_id meta lookup
+	 * 3. Inject thumbnails for imported/empty mvs_media_upload activities
 	 *
-	 * @param string $content Raw activity content.
-	 * @return string Transformed content, or original if no legacy marker found.
+	 * @param string        $content  Raw activity content.
+	 * @param object|null   $activity BP activity object (passed by ref from BP).
+	 * @return string Enhanced content.
 	 */
-	public function transform_legacy_media_content( string $content ): string {
+	public function enhance_activity_media_content( string $content, $activity = null ): string {
+		// Already has MVS media markup — skip.
+		if ( strpos( $content, 'mvs-activity-media' ) !== false ) {
+			return $content;
+		}
+
+		// --- 1. rtMedia legacy transform ---
+		if ( strpos( $content, 'rtmedia-activity-container' ) !== false ) {
+			return $this->transform_rtmedia_content( $content );
+		}
+
+		// Resolve activity object.
+		if ( ! is_object( $activity ) || empty( $activity->id ) ) {
+			global $activities_template;
+			$activity = ! empty( $activities_template->activity ) ? $activities_template->activity : null;
+		}
+		if ( ! $activity || empty( $activity->id ) ) {
+			return $content;
+		}
+
+		// --- 2. MediaPress activity transform ---
+		if ( ! function_exists( 'mediapress' ) && ! class_exists( 'MediaPress' ) ) {
+			$mpp_media_id = bp_activity_get_meta( (int) $activity->id, '_mpp_attached_media_id', true );
+			if ( $mpp_media_id ) {
+				$thumbnail = $this->resolve_imported_thumbnail( (int) $mpp_media_id, '_mvs_mpp_id', '_mvs_attachment_id' );
+				if ( $thumbnail ) {
+					return $content . $thumbnail;
+				}
+			}
+		}
+
+		// --- 3. Imported/empty mvs_media_upload thumbnail injection ---
+		if ( 'mvs_media_upload' === ( $activity->type ?? '' ) && strlen( trim( wp_strip_all_tags( $content ) ) ) <= 10 ) {
+			$media_id = 0;
+			if ( 'wpmediaverse' === $activity->component && $activity->item_id > 0 ) {
+				$media_id = (int) $activity->item_id;
+			} elseif ( 'groups' === $activity->component && $activity->secondary_item_id > 0 ) {
+				$media_id = (int) $activity->secondary_item_id;
+			}
+			if ( $media_id && 'mvs_media' === get_post_type( $media_id ) ) {
+				$thumbnail = $this->get_media_thumbnail_html( $media_id, 'large' );
+				if ( $thumbnail ) {
+					return $content . $thumbnail;
+				}
+			}
+		}
+
+		return $content;
+	}
+
+	/**
+	 * Resolve an imported media thumbnail from a source plugin attachment ID.
+	 *
+	 * Looks up the MVS media post by the source meta key, then generates thumbnail HTML.
+	 *
+	 * @param int    $source_id       Original attachment/media ID from the source plugin.
+	 * @param string $primary_meta    Primary meta key to search (e.g. _mvs_mpp_id).
+	 * @param string $fallback_meta   Fallback meta key (e.g. _mvs_attachment_id).
+	 * @return string Thumbnail HTML or empty string.
+	 */
+	private function resolve_imported_thumbnail( int $source_id, string $primary_meta, string $fallback_meta ): string {
+		$mvs_posts = get_posts(
+			array(
+				'post_type'      => 'mvs_media',
+				'meta_key'       => $primary_meta, // phpcs:ignore WordPress.DB.SlowDBQuery
+				'meta_value'     => $source_id, // phpcs:ignore WordPress.DB.SlowDBQuery
+				'fields'         => 'ids',
+				'posts_per_page' => 1,
+			)
+		);
+
+		if ( empty( $mvs_posts ) ) {
+			$mvs_posts = get_posts(
+				array(
+					'post_type'      => 'mvs_media',
+					'meta_key'       => $fallback_meta, // phpcs:ignore WordPress.DB.SlowDBQuery
+					'meta_value'     => $source_id, // phpcs:ignore WordPress.DB.SlowDBQuery
+					'fields'         => 'ids',
+					'posts_per_page' => 1,
+				)
+			);
+		}
+
+		if ( empty( $mvs_posts ) ) {
+			return '';
+		}
+
+		return $this->get_media_thumbnail_html( $mvs_posts[0], 'large' );
+	}
+
+	/**
+	 * Transform rtMedia legacy activity HTML to MVS rendering.
+	 *
+	 * Extracts media items from rtMedia's container markup and rewrites as
+	 * inline-styled MVS HTML for consistent rendering after rtMedia deactivation.
+	 *
+	 * @param string $content Activity content with rtMedia HTML.
+	 * @return string Transformed content.
+	 */
+	private function transform_rtmedia_content( string $content ): string {
 		// Only process content that has rtMedia's container class.
 		if ( strpos( $content, 'rtmedia-activity-container' ) === false ) {
 			return $content;
@@ -2493,14 +2598,73 @@ class BuddyPressIntegration {
 	}
 
 	/**
-	 * Transform MediaPress activity entries after MediaPress is deactivated.
+	 * Render media thumbnail into activity entries with empty content.
 	 *
-	 * MediaPress stores the attachment ID in activity meta (_mpp_attached_media_id).
-	 * When MediaPress is deactivated, its rendering is gone. This method looks up
-	 * the imported MVS media from the original attachment and injects a thumbnail.
+	 * Hooked to `bp_activity_entry_content` (action, not filter) because BP Nouveau
+	 * skips `bp_get_activity_content_body` entirely when activity content is empty.
+	 * This method outputs the thumbnail AND persists it to the DB so the filter
+	 * is not needed on subsequent renders.
 	 *
-	 * @param string $content Activity content.
-	 * @return string Transformed content.
+	 * Handles imported media from all 3 source plugins:
+	 * - rtMedia (via _mvs_rtmedia_id on the media post)
+	 * - MediaPress (via _mpp_attached_media_id activity meta)
+	 * - BuddyBoss (via _mvs_bb_media_id on the media post)
+	 *
+	 * @since 1.1.0
+	 */
+	public function render_activity_media_thumbnail(): void {
+		global $activities_template;
+
+		if ( empty( $activities_template->activity ) ) {
+			return;
+		}
+
+		$activity = $activities_template->activity;
+
+		// Only for mvs_media_upload activities with empty content.
+		if ( 'mvs_media_upload' !== ( $activity->type ?? '' ) ) {
+			return;
+		}
+		if ( ! empty( trim( $activity->content ?? '' ) ) ) {
+			return;
+		}
+
+		// Resolve media ID from activity.
+		$media_id = 0;
+		if ( 'wpmediaverse' === $activity->component && $activity->item_id > 0 ) {
+			$media_id = (int) $activity->item_id;
+		} elseif ( 'groups' === $activity->component && $activity->secondary_item_id > 0 ) {
+			$media_id = (int) $activity->secondary_item_id;
+		}
+
+		if ( ! $media_id || 'mvs_media' !== get_post_type( $media_id ) ) {
+			return;
+		}
+
+		$thumbnail = $this->get_media_thumbnail_html( $media_id, 'large' );
+		if ( ! $thumbnail ) {
+			return;
+		}
+
+		// Output the thumbnail (display-time only — does NOT write to DB).
+		// To persist thumbnails into activity content permanently, run:
+		//   wp mvs backfill-activity-thumbnails
+		// That command warns the site owner and requires explicit confirmation.
+		echo $thumbnail; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped in get_media_thumbnail_html.
+	}
+
+	/**
+	 * Backwards compatibility wrapper.
+	 *
+	 * @param string $content Content.
+	 * @return string Content.
+	 */
+	public function transform_legacy_media_content( string $content ): string {
+		return $this->enhance_activity_media_content( $content );
+	}
+
+	/**
+	 * @deprecated Consolidated into enhance_activity_media_content().
 	 */
 	public function transform_mediapress_activity( string $content, $activity = null ): string {
 		// Only process if MediaPress is NOT active (if active, let MediaPress handle its own rendering).

@@ -279,6 +279,151 @@ class Commands {
 	}
 
 	/**
+	 * Backfill thumbnails into BuddyPress activity entries that have empty content.
+	 *
+	 * After migrating from rtMedia/MediaPress/BuddyBoss, imported media creates
+	 * activity entries with empty content (no thumbnail). This command populates
+	 * the activity content with the MVS media thumbnail so activities display
+	 * images/videos inline.
+	 *
+	 * WARNING: This modifies the bp_activity table directly. Take a database
+	 * backup before running without --dry-run.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Show what would be updated without writing to the database.
+	 *
+	 * [--source=<source>]
+	 * : Only backfill activities from a specific migration source: rtmedia, mediapress, buddyboss, or all.
+	 * ---
+	 * default: all
+	 * options:
+	 *   - all
+	 *   - rtmedia
+	 *   - mediapress
+	 *   - buddyboss
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs backfill-activity-thumbnails --dry-run
+	 *     wp mvs backfill-activity-thumbnails
+	 *     wp mvs backfill-activity-thumbnails --source=mediapress
+	 *
+	 * @subcommand backfill-activity-thumbnails
+	 * @when after_wp_load
+	 */
+	public function backfill_activity_thumbnails( $args, $assoc_args ) {
+		if ( ! function_exists( 'bp_activity_get' ) || ! bp_is_active( 'activity' ) ) {
+			WP_CLI::error( 'BuddyPress activity component is not active.' );
+		}
+
+		global $wpdb;
+
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$source  = Utils\get_flag_value( $assoc_args, 'source', 'all' );
+
+		// Find mvs_media_upload activities with empty content.
+		$activities = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			"SELECT id, item_id, secondary_item_id, component
+			 FROM {$wpdb->prefix}bp_activity
+			 WHERE type = 'mvs_media_upload'
+			   AND (content = '' OR content IS NULL)
+			 ORDER BY id ASC"
+		);
+
+		$total   = count( $activities );
+		$updated = 0;
+		$skipped = 0;
+		$errors  = 0;
+
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No activities with empty content found. Nothing to backfill.' );
+			return;
+		}
+
+		WP_CLI::log( "Found {$total} activity entries with empty content." );
+
+		if ( ! $dry_run ) {
+			WP_CLI::warning( 'This will modify the bp_activity table. Make sure you have a database backup.' );
+			WP_CLI::confirm( 'Proceed with backfill?' );
+		}
+
+		$container = \WPMediaVerse\Core\Plugin::container();
+		$bp_int    = $container->get( 'integration.buddypress' );
+
+		$progress = Utils\make_progress_bar( 'Backfilling thumbnails', $total );
+
+		foreach ( $activities as $act ) {
+			$media_id = 0;
+			if ( 'wpmediaverse' === $act->component && $act->item_id > 0 ) {
+				$media_id = (int) $act->item_id;
+			} elseif ( 'groups' === $act->component && $act->secondary_item_id > 0 ) {
+				$media_id = (int) $act->secondary_item_id;
+			}
+
+			if ( ! $media_id || 'mvs_media' !== get_post_type( $media_id ) ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			// Filter by source if specified.
+			if ( 'all' !== $source ) {
+				$meta_keys = array(
+					'rtmedia'    => '_mvs_rtmedia_id',
+					'mediapress' => '_mvs_mpp_id',
+					'buddyboss'  => '_mvs_bb_media_id',
+				);
+				$check_key = $meta_keys[ $source ] ?? '';
+				if ( $check_key && ! get_post_meta( $media_id, $check_key, true ) ) {
+					++$skipped;
+					$progress->tick();
+					continue;
+				}
+			}
+
+			$thumbnail = $bp_int->get_media_thumbnail_html( $media_id, 'large' );
+
+			if ( ! $thumbnail ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			if ( $dry_run ) {
+				++$updated;
+				$progress->tick();
+				continue;
+			}
+
+			$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prefix . 'bp_activity',
+				array( 'content' => $thumbnail ),
+				array( 'id' => (int) $act->id ),
+				array( '%s' ),
+				array( '%d' )
+			);
+			++$updated;
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		$action = $dry_run ? 'Would update' : 'Updated';
+		WP_CLI::success(
+			sprintf(
+				'%s %d activity entries. Skipped %d. Errors: %d.',
+				$action,
+				$updated,
+				$skipped,
+				$errors
+			)
+		);
+	}
+
+	/**
 	 * Show moderation queue statistics.
 	 *
 	 * ## EXAMPLES
