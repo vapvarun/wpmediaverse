@@ -246,6 +246,15 @@ class MessagingController extends WP_REST_Controller {
 			return new WP_REST_Response( array( 'error' => 'invalid_recipient' ), 400 );
 		}
 
+		// Block check: prevent DM if either user has blocked the other.
+		$container = \WPMediaVerse\Core\Plugin::container();
+		if ( $container->has( 'reports' ) ) {
+			$report_svc = $container->get( 'reports' );
+			if ( $report_svc->is_blocked_either_way( $user_id, $recipient_id ) ) {
+				return new WP_REST_Response( array( 'error' => 'blocked' ), 403 );
+			}
+		}
+
 		$result = $this->service->find_or_create_conversation( $user_id, $recipient_id );
 
 		if ( ! $result['conversation_id'] ) {
@@ -366,6 +375,19 @@ class MessagingController extends WP_REST_Controller {
 	public function send_message( WP_REST_Request $request ): WP_REST_Response {
 		$user_id = get_current_user_id();
 		$conv_id = (int) $request['id'];
+
+		// Block check: prevent messaging if either participant has blocked the other.
+		$container = \WPMediaVerse\Core\Plugin::container();
+		if ( $container->has( 'reports' ) ) {
+			$report_svc   = $container->get( 'reports' );
+			$participants = $this->service->get_participants( $conv_id );
+			foreach ( $participants as $p ) {
+				$pid = (int) ( $p['id'] ?? $p['user_id'] ?? 0 );
+				if ( $pid && $pid !== $user_id && $report_svc->is_blocked_either_way( $user_id, $pid ) ) {
+					return new WP_REST_Response( array( 'error' => 'blocked' ), 403 );
+				}
+			}
+		}
 
 		$result = $this->service->send_message( $conv_id, $user_id, array(
 			'content'       => $request->get_param( 'content' ),
