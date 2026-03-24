@@ -2049,7 +2049,17 @@ class BuddyPressIntegration {
 			if ( 'video' === $media_type ) {
 				$overlay = '<span class="mvs-activity-play-icon" aria-hidden="true"></span>';
 			}
-			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" style="max-width:100%;height:auto;display:block;border-radius:8px;" /></a></div>';
+
+			// Get intrinsic dimensions to prevent upscaling.
+			$img_attrs = '';
+			if ( $attach_id ) {
+				$meta = wp_get_attachment_image_src( $attach_id, $size );
+				if ( $meta ) {
+					$img_attrs = ' width="' . esc_attr( $meta[1] ) . '" height="' . esc_attr( $meta[2] ) . '"';
+				}
+			}
+
+			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '"' . $img_attrs . ' loading="lazy" style="max-width:100%;height:auto;display:block;border-radius:8px;" /></a></div>';
 		}
 
 		// Video without poster: show dark placeholder with play icon.
@@ -2575,7 +2585,7 @@ class BuddyPressIntegration {
 
 					$media_html .= '<div class="mvs-activity-media mvs-activity-media--image"' . $data_mid . ' style="position:relative;overflow:hidden;">'
 								. '<a href="' . esc_url( $link ) . '">'
-								. '<img src="' . $src . '" alt="' . $alt . '" loading="lazy" style="max-width:100%;height:auto;display:block;border-radius:8px;" />'
+								. '<img src="' . $src . '" alt="' . $alt . '" loading="lazy" style="max-width:100%;width:auto;height:auto;display:block;border-radius:8px;" />'
 								. '</a></div>';
 				}
 			}
