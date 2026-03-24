@@ -156,7 +156,7 @@ class TemplateHelpers {
 		// Build data attributes string — always include media-id and media-type for lightbox.
 		$data_attrs['media-id']   = $media_id;
 		$data_attrs['media-type'] = self::get_media_type( $media_id );
-		$data_str = '';
+		$data_str                 = '';
 		foreach ( $data_attrs as $key => $val ) {
 			$data_str .= ' data-' . esc_attr( $key ) . '="' . esc_attr( $val ) . '"';
 		}

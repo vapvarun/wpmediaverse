@@ -19,12 +19,12 @@ get_header();
 >
 	<!-- Sidebar: Conversation List -->
 	<div class="mvs-messages-sidebar">
-		<?php include __DIR__ . '/partials/chat-list.php'; ?>
+		<?php require __DIR__ . '/partials/chat-list.php'; ?>
 	</div>
 
 	<!-- Main: Active Conversation -->
 	<div class="mvs-messages-main" data-wp-bind--hidden="!state.activeConversationId">
-		<?php include __DIR__ . '/partials/chat-conversation.php'; ?>
+		<?php require __DIR__ . '/partials/chat-conversation.php'; ?>
 	</div>
 
 	<!-- Empty State -->

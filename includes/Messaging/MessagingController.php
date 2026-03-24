@@ -50,157 +50,268 @@ class MessagingController extends WP_REST_Controller {
 	public function register_routes(): void {
 
 		// GET /me/conversations
-		register_rest_route( $this->namespace, '/me/conversations', array(
-			'methods'             => WP_REST_Server::READABLE,
-			'callback'            => array( $this, 'list_conversations' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-			'args'                => array(
-				'tab'      => array( 'type' => 'string', 'default' => 'all', 'enum' => array( 'all', 'unread', 'requests' ) ),
-				'per_page' => array( 'type' => 'integer', 'default' => 20, 'minimum' => 1, 'maximum' => 50 ),
-				'page'     => array( 'type' => 'integer', 'default' => 1, 'minimum' => 1 ),
-			),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/me/conversations',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'list_conversations' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+				'args'                => array(
+					'tab'      => array(
+						'type'    => 'string',
+						'default' => 'all',
+						'enum'    => array( 'all', 'unread', 'requests' ),
+					),
+					'per_page' => array(
+						'type'    => 'integer',
+						'default' => 20,
+						'minimum' => 1,
+						'maximum' => 50,
+					),
+					'page'     => array(
+						'type'    => 'integer',
+						'default' => 1,
+						'minimum' => 1,
+					),
+				),
+			)
+		);
 
 		// POST /conversations
-		register_rest_route( $this->namespace, '/conversations', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'create_conversation' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-			'args'                => array(
-				'recipient_id' => array( 'type' => 'integer', 'required' => true ),
-			),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/conversations',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'create_conversation' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+				'args'                => array(
+					'recipient_id' => array(
+						'type'     => 'integer',
+						'required' => true,
+					),
+				),
+			)
+		);
 
 		// GET /conversations/{id}
-		register_rest_route( $this->namespace, '/conversations/(?P<id>\d+)', array(
-			'methods'             => WP_REST_Server::READABLE,
-			'callback'            => array( $this, 'get_conversation' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_conversation' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// PATCH /conversations/{id}
-		register_rest_route( $this->namespace, '/conversations/(?P<id>\d+)', array(
-			'methods'             => 'PATCH',
-			'callback'            => array( $this, 'update_conversation' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)',
+			array(
+				'methods'             => 'PATCH',
+				'callback'            => array( $this, 'update_conversation' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// DELETE /conversations/{id}
-		register_rest_route( $this->namespace, '/conversations/(?P<id>\d+)', array(
-			'methods'             => WP_REST_Server::DELETABLE,
-			'callback'            => array( $this, 'delete_conversation' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_conversation' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// GET /conversations/{id}/messages
-		register_rest_route( $this->namespace, '/conversations/(?P<id>\d+)/messages', array(
-			'methods'             => WP_REST_Server::READABLE,
-			'callback'            => array( $this, 'list_messages' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-			'args'                => array(
-				'before'   => array( 'type' => 'integer', 'default' => 0 ),
-				'per_page' => array( 'type' => 'integer', 'default' => 30, 'minimum' => 1, 'maximum' => 100 ),
-			),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)/messages',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'list_messages' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+				'args'                => array(
+					'before'   => array(
+						'type'    => 'integer',
+						'default' => 0,
+					),
+					'per_page' => array(
+						'type'    => 'integer',
+						'default' => 30,
+						'minimum' => 1,
+						'maximum' => 100,
+					),
+				),
+			)
+		);
 
 		// POST /conversations/{id}/messages
-		register_rest_route( $this->namespace, '/conversations/(?P<id>\d+)/messages', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'send_message' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-			'args'                => array(
-				'content'       => array( 'type' => 'string', 'default' => '' ),
-				'message_type'  => array( 'type' => 'string', 'default' => 'text' ),
-				'attachment_id' => array( 'type' => 'integer' ),
-				'media_id'      => array( 'type' => 'integer' ),
-				'parent_id'     => array( 'type' => 'integer' ),
-				'metadata'      => array( 'type' => 'object' ),
-			),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)/messages',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'send_message' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+				'args'                => array(
+					'content'       => array(
+						'type'    => 'string',
+						'default' => '',
+					),
+					'message_type'  => array(
+						'type'    => 'string',
+						'default' => 'text',
+					),
+					'attachment_id' => array( 'type' => 'integer' ),
+					'media_id'      => array( 'type' => 'integer' ),
+					'parent_id'     => array( 'type' => 'integer' ),
+					'metadata'      => array( 'type' => 'object' ),
+				),
+			)
+		);
 
 		// DELETE /messages/{id}
-		register_rest_route( $this->namespace, '/messages/(?P<id>\d+)', array(
-			'methods'             => WP_REST_Server::DELETABLE,
-			'callback'            => array( $this, 'delete_message' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/messages/(?P<id>\d+)',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_message' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// DELETE /messages/{id}/unsend
-		register_rest_route( $this->namespace, '/messages/(?P<id>\d+)/unsend', array(
-			'methods'             => WP_REST_Server::DELETABLE,
-			'callback'            => array( $this, 'unsend_message' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/messages/(?P<id>\d+)/unsend',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'unsend_message' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// POST /conversations/{id}/read
-		register_rest_route( $this->namespace, '/conversations/(?P<id>\d+)/read', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'mark_read' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)/read',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'mark_read' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// POST /conversations/{id}/typing
-		register_rest_route( $this->namespace, '/conversations/(?P<id>\d+)/typing', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'typing' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)/typing',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'typing' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// POST /messages/{id}/reactions
-		register_rest_route( $this->namespace, '/messages/(?P<id>\d+)/reactions', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'add_reaction' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-			'args'                => array(
-				'emoji' => array( 'type' => 'string', 'required' => true ),
-			),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/messages/(?P<id>\d+)/reactions',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'add_reaction' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+				'args'                => array(
+					'emoji' => array(
+						'type'     => 'string',
+						'required' => true,
+					),
+				),
+			)
+		);
 
 		// DELETE /messages/{id}/reactions
-		register_rest_route( $this->namespace, '/messages/(?P<id>\d+)/reactions', array(
-			'methods'             => WP_REST_Server::DELETABLE,
-			'callback'            => array( $this, 'remove_reaction' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/messages/(?P<id>\d+)/reactions',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'remove_reaction' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// GET /messages/poll
-		register_rest_route( $this->namespace, '/messages/poll', array(
-			'methods'             => WP_REST_Server::READABLE,
-			'callback'            => array( $this, 'poll' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-			'args'                => array(
-				'since'           => array( 'type' => 'string', 'required' => true ),
-				'conversation_id' => array( 'type' => 'integer', 'default' => 0 ),
-			),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/messages/poll',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'poll' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+				'args'                => array(
+					'since'           => array(
+						'type'     => 'string',
+						'required' => true,
+					),
+					'conversation_id' => array(
+						'type'    => 'integer',
+						'default' => 0,
+					),
+				),
+			)
+		);
 
 		// GET /me/messages/unread-count
-		register_rest_route( $this->namespace, '/me/messages/unread-count', array(
-			'methods'             => WP_REST_Server::READABLE,
-			'callback'            => array( $this, 'unread_count' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/me/messages/unread-count',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'unread_count' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// POST /conversations/{id}/accept
-		register_rest_route( $this->namespace, '/conversations/(?P<id>\d+)/accept', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'accept_request' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)/accept',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'accept_request' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// POST /conversations/{id}/decline
-		register_rest_route( $this->namespace, '/conversations/(?P<id>\d+)/decline', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'decline_request' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)/decline',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'decline_request' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 
 		// POST /messages/upload — file upload for DM attachments (any logged-in user).
-		register_rest_route( $this->namespace, '/messages/upload', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'upload_attachment' ),
-			'permission_callback' => array( $this, 'check_auth' ),
-		) );
+		register_rest_route(
+			$this->namespace,
+			'/messages/upload',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'upload_attachment' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+			)
+		);
 	}
 
 	/**
@@ -389,21 +500,25 @@ class MessagingController extends WP_REST_Controller {
 			}
 		}
 
-		$result = $this->service->send_message( $conv_id, $user_id, array(
-			'content'       => $request->get_param( 'content' ),
-			'message_type'  => $request->get_param( 'message_type' ),
-			'attachment_id' => $request->get_param( 'attachment_id' ),
-			'media_id'      => $request->get_param( 'media_id' ),
-			'parent_id'     => $request->get_param( 'parent_id' ),
-			'metadata'      => $request->get_param( 'metadata' ),
-		) );
+		$result = $this->service->send_message(
+			$conv_id,
+			$user_id,
+			array(
+				'content'       => $request->get_param( 'content' ),
+				'message_type'  => $request->get_param( 'message_type' ),
+				'attachment_id' => $request->get_param( 'attachment_id' ),
+				'media_id'      => $request->get_param( 'media_id' ),
+				'parent_id'     => $request->get_param( 'parent_id' ),
+				'metadata'      => $request->get_param( 'metadata' ),
+			)
+		);
 
 		if ( ! $result['success'] ) {
 			$status_map = array(
 				'not_participant' => 403,
 				'rate_limited'    => 429,
 			);
-			$status = $status_map[ $result['error'] ] ?? 400;
+			$status     = $status_map[ $result['error'] ] ?? 400;
 			return new WP_REST_Response( array( 'error' => $result['error'] ), $status );
 		}
 
@@ -531,12 +646,15 @@ class MessagingController extends WP_REST_Controller {
 			}
 		}
 
-		return new WP_REST_Response( array(
-			'messages'     => $messages,
-			'typing'       => $typing,
-			'online_users' => $online_users,
-			'server_time'  => gmdate( 'c' ),
-		), 200 );
+		return new WP_REST_Response(
+			array(
+				'messages'     => $messages,
+				'typing'       => $typing,
+				'online_users' => $online_users,
+				'server_time'  => gmdate( 'c' ),
+			),
+			200
+		);
 	}
 
 	/**
@@ -546,9 +664,12 @@ class MessagingController extends WP_REST_Controller {
 		$user_id = get_current_user_id();
 		$this->service->update_online_status( $user_id );
 
-		return new WP_REST_Response( array(
-			'unread' => $this->service->get_total_unread( $user_id ),
-		), 200 );
+		return new WP_REST_Response(
+			array(
+				'unread' => $this->service->get_total_unread( $user_id ),
+			),
+			200
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -652,8 +773,8 @@ class MessagingController extends WP_REST_Controller {
 		$attachment_id = wp_insert_attachment(
 			array(
 				'post_mime_type' => $upload['type'],
-				'post_title'    => sanitize_file_name( $file['name'] ),
-				'post_status'   => 'inherit',
+				'post_title'     => sanitize_file_name( $file['name'] ),
+				'post_status'    => 'inherit',
 			),
 			$upload['file']
 		);

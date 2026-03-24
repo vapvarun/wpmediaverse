@@ -843,13 +843,21 @@ class SettingsPage {
 			self::PAGE_SLUG . '-general'
 		);
 
-		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_type', array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field',
-			'default'           => 'text',
-		) );
-		add_settings_field( 'mvs_watermark_type', __( 'Watermark Type', 'wpmediaverse' ),
-			array( $this, 'render_select_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+		register_setting(
+			self::OPTION_GROUP . '_general',
+			'mvs_watermark_type',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'text',
+			)
+		);
+		add_settings_field(
+			'mvs_watermark_type',
+			__( 'Watermark Type', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG . '-general',
+			'mvs_watermark',
 			array(
 				'option'  => 'mvs_watermark_type',
 				'choices' => array(
@@ -859,26 +867,42 @@ class SettingsPage {
 			)
 		);
 
-		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_text', array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field',
-			'default'           => get_bloginfo( 'name' ),
-		) );
-		add_settings_field( 'mvs_watermark_text', __( 'Watermark Text', 'wpmediaverse' ),
-			array( $this, 'render_text_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+		register_setting(
+			self::OPTION_GROUP . '_general',
+			'mvs_watermark_text',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => get_bloginfo( 'name' ),
+			)
+		);
+		add_settings_field(
+			'mvs_watermark_text',
+			__( 'Watermark Text', 'wpmediaverse' ),
+			array( $this, 'render_text_field' ),
+			self::PAGE_SLUG . '-general',
+			'mvs_watermark',
 			array(
 				'option'      => 'mvs_watermark_text',
 				'description' => __( 'Text to overlay on images. Used when type is "Text".', 'wpmediaverse' ),
 			)
 		);
 
-		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_position', array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_text_field',
-			'default'           => 'center',
-		) );
-		add_settings_field( 'mvs_watermark_position', __( 'Position', 'wpmediaverse' ),
-			array( $this, 'render_select_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+		register_setting(
+			self::OPTION_GROUP . '_general',
+			'mvs_watermark_position',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'center',
+			)
+		);
+		add_settings_field(
+			'mvs_watermark_position',
+			__( 'Position', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG . '-general',
+			'mvs_watermark',
 			array(
 				'option'  => 'mvs_watermark_position',
 				'choices' => array(
@@ -892,39 +916,63 @@ class SettingsPage {
 			)
 		);
 
-		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_opacity', array(
-			'type'              => 'integer',
-			'sanitize_callback' => 'absint',
-			'default'           => 40,
-		) );
-		add_settings_field( 'mvs_watermark_opacity', __( 'Opacity (%)', 'wpmediaverse' ),
-			array( $this, 'render_number_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+		register_setting(
+			self::OPTION_GROUP . '_general',
+			'mvs_watermark_opacity',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 40,
+			)
+		);
+		add_settings_field(
+			'mvs_watermark_opacity',
+			__( 'Opacity (%)', 'wpmediaverse' ),
+			array( $this, 'render_number_field' ),
+			self::PAGE_SLUG . '-general',
+			'mvs_watermark',
 			array(
 				'option'      => 'mvs_watermark_opacity',
 				'description' => __( '0 = transparent, 100 = fully opaque. Default: 40.', 'wpmediaverse' ),
 			)
 		);
 
-		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_font_size', array(
-			'type'              => 'integer',
-			'sanitize_callback' => 'absint',
-			'default'           => 24,
-		) );
-		add_settings_field( 'mvs_watermark_font_size', __( 'Font Size (px)', 'wpmediaverse' ),
-			array( $this, 'render_number_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+		register_setting(
+			self::OPTION_GROUP . '_general',
+			'mvs_watermark_font_size',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 24,
+			)
+		);
+		add_settings_field(
+			'mvs_watermark_font_size',
+			__( 'Font Size (px)', 'wpmediaverse' ),
+			array( $this, 'render_number_field' ),
+			self::PAGE_SLUG . '-general',
+			'mvs_watermark',
 			array(
 				'option'      => 'mvs_watermark_font_size',
 				'description' => __( 'Font size for text watermarks in pixels.', 'wpmediaverse' ),
 			)
 		);
 
-		register_setting( self::OPTION_GROUP . '_general', 'mvs_watermark_color', array(
-			'type'              => 'string',
-			'sanitize_callback' => 'sanitize_hex_color',
-			'default'           => '#ffffff',
-		) );
-		add_settings_field( 'mvs_watermark_color', __( 'Text Color', 'wpmediaverse' ),
-			array( $this, 'render_color_field' ), self::PAGE_SLUG . '-general', 'mvs_watermark',
+		register_setting(
+			self::OPTION_GROUP . '_general',
+			'mvs_watermark_color',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_hex_color',
+				'default'           => '#ffffff',
+			)
+		);
+		add_settings_field(
+			'mvs_watermark_color',
+			__( 'Text Color', 'wpmediaverse' ),
+			array( $this, 'render_color_field' ),
+			self::PAGE_SLUG . '-general',
+			'mvs_watermark',
 			array( 'option' => 'mvs_watermark_color' )
 		);
 	}
@@ -956,13 +1004,21 @@ class SettingsPage {
 		);
 
 		foreach ( $pages as $option => $label ) {
-			register_setting( self::OPTION_GROUP . '_general', $option, array(
-				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
-				'default'           => 0,
-			) );
-			add_settings_field( $option, $label,
-				array( $this, 'render_page_dropdown_field' ), self::PAGE_SLUG . '-general', 'mvs_pages',
+			register_setting(
+				self::OPTION_GROUP . '_general',
+				$option,
+				array(
+					'type'              => 'integer',
+					'sanitize_callback' => 'absint',
+					'default'           => 0,
+				)
+			);
+			add_settings_field(
+				$option,
+				$label,
+				array( $this, 'render_page_dropdown_field' ),
+				self::PAGE_SLUG . '-general',
+				'mvs_pages',
 				array( 'option' => $option )
 			);
 		}
@@ -1780,12 +1836,14 @@ class SettingsPage {
 	 */
 	public function render_page_dropdown_field( array $args ): void {
 		$selected = (int) get_option( $args['option'], 0 );
-		wp_dropdown_pages( array(
-			'name'              => $args['option'],
-			'selected'          => $selected,
-			'show_option_none'  => __( '— Select —', 'wpmediaverse' ),
-			'option_none_value' => 0,
-		) );
+		wp_dropdown_pages(
+			array(
+				'name'              => $args['option'],
+				'selected'          => $selected,
+				'show_option_none'  => __( '— Select —', 'wpmediaverse' ),
+				'option_none_value' => 0,
+			)
+		);
 	}
 
 	/**

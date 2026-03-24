@@ -53,10 +53,14 @@ class NotificationListener {
 				// Check if mute has expired.
 				if ( $conv->muted_until && strtotime( $conv->muted_until ) < time() ) {
 					// Mute expired, unmute and proceed.
-					$this->service->update_participant( $conversation_id, $recipient_id, array(
-						'is_muted'    => 0,
-						'muted_until' => null,
-					) );
+					$this->service->update_participant(
+						$conversation_id,
+						$recipient_id,
+						array(
+							'is_muted'    => 0,
+							'muted_until' => null,
+						)
+					);
 				} else {
 					continue;
 				}
@@ -118,7 +122,10 @@ class NotificationListener {
 	public function export_data( string $email_address, int $page = 1 ): array {
 		$user = get_user_by( 'email', $email_address );
 		if ( ! $user ) {
-			return array( 'data' => array(), 'done' => true );
+			return array(
+				'data' => array(),
+				'done' => true,
+			);
 		}
 
 		return array(
@@ -137,7 +144,12 @@ class NotificationListener {
 	public function erase_data( string $email_address, int $page = 1 ): array {
 		$user = get_user_by( 'email', $email_address );
 		if ( ! $user ) {
-			return array( 'items_removed' => 0, 'items_retained' => 0, 'messages' => array(), 'done' => true );
+			return array(
+				'items_removed'  => 0,
+				'items_retained' => 0,
+				'messages'       => array(),
+				'done'           => true,
+			);
 		}
 
 		$count = $this->service->erase_user_data( $user->ID );

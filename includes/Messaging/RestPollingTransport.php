@@ -41,11 +41,14 @@ class RestPollingTransport implements TransportInterface {
 	 * @return array
 	 */
 	public function get_client_config(): array {
-		$intervals = apply_filters( 'mvs_messaging_poll_intervals', array(
-			'active'     => 3000,  // Active conversation: 3s.
-			'list'       => 10000, // Conversation list: 10s.
-			'background' => 30000, // Chat closed: 30s.
-		) );
+		$intervals = apply_filters(
+			'mvs_messaging_poll_intervals',
+			array(
+				'active'     => 3000,  // Active conversation: 3s.
+				'list'       => 10000, // Conversation list: 10s.
+				'background' => 30000, // Chat closed: 30s.
+			)
+		);
 
 		return array(
 			'type'      => 'polling',

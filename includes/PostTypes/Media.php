@@ -97,7 +97,7 @@ class Media {
 	public static function render_column( string $column, int $post_id ): void {
 		switch ( $column ) {
 			case 'mvs_thumb':
-				$url = get_post_meta( $post_id, '_mvs_file_url', true );
+				$url  = get_post_meta( $post_id, '_mvs_file_url', true );
 				$type = get_post_meta( $post_id, '_mvs_media_type', true ) ?: 'image';
 				if ( $url && 'image' === $type ) {
 					printf(
@@ -111,7 +111,7 @@ class Media {
 						'document' => 'dashicons-media-document',
 						'image'    => 'dashicons-format-image',
 					);
-					$icon = $icons[ $type ] ?? 'dashicons-media-default';
+					$icon  = $icons[ $type ] ?? 'dashicons-media-default';
 					printf( '<span class="dashicons %s" style="font-size:28px;width:40px;height:40px;line-height:40px;color:#646970;"></span>', esc_attr( $icon ) );
 				}
 				break;
@@ -124,7 +124,7 @@ class Media {
 					'audio'    => '#e67e22',
 					'document' => '#27ae60',
 				);
-				$color = $colors[ $type ] ?? '#646970';
+				$color  = $colors[ $type ] ?? '#646970';
 				printf(
 					'<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:%s;">%s</span>',
 					esc_attr( $color ),
@@ -141,7 +141,7 @@ class Media {
 					'group'   => array( '#9b59b6', __( 'Group', 'wpmediaverse' ) ),
 					'friends' => array( '#e67e22', __( 'Friends', 'wpmediaverse' ) ),
 				);
-				$info = $labels[ $privacy ] ?? array( '#646970', ucfirst( $privacy ) );
+				$info    = $labels[ $privacy ] ?? array( '#646970', ucfirst( $privacy ) );
 				printf(
 					'<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:%s;">%s</span>',
 					esc_attr( $info[0] ),
@@ -157,7 +157,7 @@ class Media {
 					'flagged'  => array( '#d63638', __( 'Flagged', 'wpmediaverse' ) ),
 					'rejected' => array( '#646970', __( 'Rejected', 'wpmediaverse' ) ),
 				);
-				$info = $labels[ $status ] ?? array( '#646970', ucfirst( $status ) );
+				$info   = $labels[ $status ] ?? array( '#646970', ucfirst( $status ) );
 				printf(
 					'<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:%s;">%s</span>',
 					esc_attr( $info[0] ),

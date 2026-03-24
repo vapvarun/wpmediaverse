@@ -2294,12 +2294,12 @@ class BuddyPressIntegration {
 		);
 
 		// Allow class/style on <a>, <span>, <img> for MVS media links.
-		$tags['a']['class']         = array();
-		$tags['a']['style']         = array();
-		$tags['img']['style']       = array();
-		$tags['img']['loading']     = array();
-		$tags['span'] = array(
-			'class'      => array(),
+		$tags['a']['class']     = array();
+		$tags['a']['style']     = array();
+		$tags['img']['style']   = array();
+		$tags['img']['loading'] = array();
+		$tags['span']           = array(
+			'class'       => array(),
 			'aria-hidden' => array(),
 		);
 
@@ -2410,16 +2410,16 @@ class BuddyPressIntegration {
 				if ( preg_match( '/title="([^"]+)"/', $item_html, $tm ) ) {
 					$title = esc_html( $tm[1] );
 				}
-				$link      = $src ?: $href;
-				$mvs_id    = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
-				$data_mid  = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
-				$data_src  = $link ? ' data-mvs-src="' . esc_attr( $link ) . '"' : '';
+				$link     = $src ?: $href;
+				$mvs_id   = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
+				$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
+				$data_src = $link ? ' data-mvs-src="' . esc_attr( $link ) . '"' : '';
 
 				$media_html .= '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . $data_src . '>'
-							 . '<a href="' . esc_url( $link ) . '" class="mvs-activity-vid-link">'
-							 . '<span class="mvs-activity-play-icon" aria-hidden="true"></span>'
-							 . ( $title ? '<span class="mvs-activity-media-label">' . $title . '</span>' : '' )
-							 . '</a></div>';
+							. '<a href="' . esc_url( $link ) . '" class="mvs-activity-vid-link">'
+							. '<span class="mvs-activity-play-icon" aria-hidden="true"></span>'
+							. ( $title ? '<span class="mvs-activity-media-label">' . $title . '</span>' : '' )
+							. '</a></div>';
 
 			} elseif ( $is_audio ) {
 				// Extract direct audio file URL from <audio src="..."> — deactivation-safe.
@@ -2437,10 +2437,10 @@ class BuddyPressIntegration {
 				$data_src = $src ? ' data-mvs-src="' . esc_attr( $src ) . '"' : '';
 
 				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . $data_src . ' style="border-radius:12px;">'
-							 . '<a href="' . esc_url( $link ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">'
-							 . '<span style="font-size:1.5em;flex-shrink:0;">&#9835;</span>'
-							 . '<span style="min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>'
-							 . '</a></div>';
+							. '<a href="' . esc_url( $link ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">'
+							. '<span style="font-size:1.5em;flex-shrink:0;">&#9835;</span>'
+							. '<span style="min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>'
+							. '</a></div>';
 
 			} else {
 				// Image: extract <img src> and alt.
@@ -2463,9 +2463,9 @@ class BuddyPressIntegration {
 					$link     = $full_src ?: $src;
 
 					$media_html .= '<div class="mvs-activity-media mvs-activity-media--image"' . $data_mid . ' style="position:relative;overflow:hidden;">'
-								 . '<a href="' . esc_url( $link ) . '">'
-								 . '<img src="' . $src . '" alt="' . $alt . '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />'
-								 . '</a></div>';
+								. '<a href="' . esc_url( $link ) . '">'
+								. '<img src="' . $src . '" alt="' . $alt . '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" />'
+								. '</a></div>';
 				}
 			}
 

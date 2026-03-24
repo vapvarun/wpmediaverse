@@ -49,17 +49,17 @@ if ( ! $user_id ) {
 	>
 		<!-- List View -->
 		<div data-wp-bind--hidden="!state.isViewList">
-			<?php include __DIR__ . '/chat-list.php'; ?>
+			<?php require __DIR__ . '/chat-list.php'; ?>
 		</div>
 
 		<!-- Conversation View -->
 		<div class="mvs-chat-panel__view" data-wp-bind--hidden="!state.isViewConversation">
-			<?php include __DIR__ . '/chat-conversation.php'; ?>
+			<?php require __DIR__ . '/chat-conversation.php'; ?>
 		</div>
 
 		<!-- New Conversation View -->
 		<div class="mvs-chat-panel__view" data-wp-bind--hidden="!state.isViewNew">
-			<?php include __DIR__ . '/chat-new.php'; ?>
+			<?php require __DIR__ . '/chat-new.php'; ?>
 		</div>
 	</div>
 </div>

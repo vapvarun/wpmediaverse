@@ -38,7 +38,7 @@ get_header();
 <div class="mvs-explore-page">
 	<?php
 	$mvs_profile_username = get_query_var( 'mvs_profile_user', '' );
-	$mvs_profile         = $mvs_profile_username ? get_user_by( 'login', sanitize_user( $mvs_profile_username ) ) : null;
+	$mvs_profile          = $mvs_profile_username ? get_user_by( 'login', sanitize_user( $mvs_profile_username ) ) : null;
 	?>
 
 	<?php if ( ! $mvs_profile ) : ?>
@@ -68,9 +68,13 @@ get_header();
 	</header>
 	<?php endif; ?>
 
-	<?php if ( $mvs_profile ) :
+	<?php
+	if ( $mvs_profile ) :
 		$mvs_profile_post_count = count_user_posts( $mvs_profile->ID, 'mvs_media', true );
-		$mvs_follow_counts      = array( 'followers' => 0, 'following' => 0 );
+		$mvs_follow_counts      = array(
+			'followers' => 0,
+			'following' => 0,
+		);
 		if ( class_exists( '\WPMediaVerse\Core\Plugin' ) ) {
 			$mvs_container = \WPMediaVerse\Core\Plugin::container();
 			if ( $mvs_container->has( 'follows' ) ) {
@@ -84,7 +88,7 @@ get_header();
 			$mvs_dash_page      = get_page_by_path( 'my-media' );
 			$mvs_dashboard_link = $mvs_dash_page ? get_permalink( $mvs_dash_page ) : home_url( '/' );
 		}
-	?>
+		?>
 	<div class="mvs-profile-header-card">
 		<img class="mvs-profile-header-avatar" src="<?php echo esc_url( get_avatar_url( $mvs_profile->ID, array( 'size' => 96 ) ) ); ?>"
 			alt="<?php echo esc_attr( $mvs_profile->display_name ); ?>" width="96" height="96" />

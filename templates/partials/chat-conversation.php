@@ -38,7 +38,7 @@ defined( 'ABSPATH' ) || exit;
 
 	<!-- Message Bubbles -->
 	<template data-wp-each="state.messages">
-		<?php include __DIR__ . '/chat-message.php'; ?>
+		<?php require __DIR__ . '/chat-message.php'; ?>
 	</template>
 
 	<!-- Typing Indicator -->
@@ -62,5 +62,5 @@ defined( 'ABSPATH' ) || exit;
 
 <!-- Composer -->
 <div data-wp-bind--hidden="state.isRequest">
-	<?php include __DIR__ . '/chat-composer.php'; ?>
+	<?php require __DIR__ . '/chat-composer.php'; ?>
 </div>

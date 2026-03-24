@@ -98,7 +98,8 @@ wp_enqueue_script_module(
 			data-wp-bind--hidden="!context.editingProfile">
 			<div data-wp-interactive="mvs/profile-edit"
 			<?php
-			echo wp_interactivity_data_wp_context( array( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo wp_interactivity_data_wp_context(
+				array( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 				'nonce'           => wp_create_nonce( 'wp_rest' ),
 				'firstName'       => $mvs_current_user->first_name,
@@ -114,8 +115,10 @@ wp_enqueue_script_module(
 				'profileError'    => '',
 				'savedMessage'    => '',
 				'errorMessage'    => '',
-			) );
-			?>>
+				)
+			);
+			?>
+			>
 
 			<div class="mvs-profile-message mvs-profile-message--success"
 				data-wp-bind--hidden="!context.profileMessage"
@@ -196,7 +199,7 @@ wp_enqueue_script_module(
 		$mvs_edit_profile_url  = $mvs_dashboard_page_id ? get_permalink( $mvs_dashboard_page_id ) : '';
 		if ( ! $mvs_edit_profile_url ) {
 			// Fallback: find the dashboard page by slug.
-			$mvs_dash_page = get_page_by_path( 'my-media' );
+			$mvs_dash_page        = get_page_by_path( 'my-media' );
 			$mvs_edit_profile_url = $mvs_dash_page ? get_permalink( $mvs_dash_page ) : home_url( '/' );
 		}
 		?>

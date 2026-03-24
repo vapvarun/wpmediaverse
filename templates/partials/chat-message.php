@@ -113,7 +113,7 @@ defined( 'ABSPATH' ) || exit;
 
 		<!-- Media share card -->
 		<div data-wp-bind--hidden="context.item.notMediaShare">
-			<?php include __DIR__ . '/chat-media-card.php'; ?>
+			<?php require __DIR__ . '/chat-media-card.php'; ?>
 		</div>
 	</div>
 

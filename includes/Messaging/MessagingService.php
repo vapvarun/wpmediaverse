@@ -15,13 +15,13 @@ class MessagingService {
 	/**
 	 * Rate limit constants.
 	 */
-	const RATE_MESSAGES_PER_MIN  = 30;
-	const RATE_CONVOS_PER_HOUR   = 10;
-	const MAX_MESSAGE_LENGTH     = 2000;
-	const UNSEND_WINDOW_SECONDS  = 900; // 15 min.
-	const MAX_PINNED             = 3;
-	const ONLINE_THRESHOLD       = 120; // 2 min.
-	const COALESCE_SECONDS       = 30;
+	const RATE_MESSAGES_PER_MIN = 30;
+	const RATE_CONVOS_PER_HOUR  = 10;
+	const MAX_MESSAGE_LENGTH    = 2000;
+	const UNSEND_WINDOW_SECONDS = 900; // 15 min.
+	const MAX_PINNED            = 3;
+	const ONLINE_THRESHOLD      = 120; // 2 min.
+	const COALESCE_SECONDS      = 30;
 
 	// -------------------------------------------------------------------------
 	// Privacy & Access
@@ -36,19 +36,31 @@ class MessagingService {
 	 */
 	public function can_message( int $sender_id, int $recipient_id ): array {
 		if ( $sender_id === $recipient_id ) {
-			return array( 'allowed' => false, 'reason' => 'cannot_message_self', 'is_request' => false );
+			return array(
+				'allowed'    => false,
+				'reason'     => 'cannot_message_self',
+				'is_request' => false,
+			);
 		}
 
 		// Block check via ReportService.
 		$report_service = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
 		if ( $report_service && $report_service->is_blocked_either_way( $sender_id, $recipient_id ) ) {
-			return array( 'allowed' => false, 'reason' => 'blocked', 'is_request' => false );
+			return array(
+				'allowed'    => false,
+				'reason'     => 'blocked',
+				'is_request' => false,
+			);
 		}
 
 		// BuddyNext integration hook — allows external block lists.
 		$allowed = apply_filters( 'mvs_can_send_message', true, $sender_id, $recipient_id );
 		if ( ! $allowed ) {
-			return array( 'allowed' => false, 'reason' => 'blocked', 'is_request' => false );
+			return array(
+				'allowed'    => false,
+				'reason'     => 'blocked',
+				'is_request' => false,
+			);
 		}
 
 		// Min account age check.
@@ -59,7 +71,11 @@ class MessagingService {
 				$reg_time = strtotime( $sender->user_registered );
 				$age_days = ( time() - $reg_time ) / DAY_IN_SECONDS;
 				if ( $age_days < $min_age ) {
-					return array( 'allowed' => false, 'reason' => 'account_too_new', 'is_request' => false );
+					return array(
+						'allowed'    => false,
+						'reason'     => 'account_too_new',
+						'is_request' => false,
+					);
 				}
 			}
 		}
@@ -73,7 +89,11 @@ class MessagingService {
 		$access = apply_filters( 'mvs_dm_access_level', $access, $sender_id, $recipient_id );
 
 		if ( 'nobody' === $access ) {
-			return array( 'allowed' => false, 'reason' => 'dms_disabled', 'is_request' => false );
+			return array(
+				'allowed'    => false,
+				'reason'     => 'dms_disabled',
+				'is_request' => false,
+			);
 		}
 
 		// For followers/mutual checks, use free plugin's FollowService.
@@ -82,7 +102,11 @@ class MessagingService {
 		switch ( $access ) {
 			case 'followers':
 				if ( $follow_service && ! $follow_service->is_following( $sender_id, $recipient_id ) ) {
-					return array( 'allowed' => true, 'reason' => 'request', 'is_request' => true );
+					return array(
+						'allowed'    => true,
+						'reason'     => 'request',
+						'is_request' => true,
+					);
 				}
 				break;
 
@@ -92,15 +116,27 @@ class MessagingService {
 					$b_follows_a = $follow_service->is_following( $recipient_id, $sender_id );
 					if ( ! $a_follows_b || ! $b_follows_a ) {
 						if ( $a_follows_b ) {
-							return array( 'allowed' => true, 'reason' => 'request', 'is_request' => true );
+							return array(
+								'allowed'    => true,
+								'reason'     => 'request',
+								'is_request' => true,
+							);
 						}
-						return array( 'allowed' => false, 'reason' => 'mutual_follow_required', 'is_request' => false );
+						return array(
+							'allowed'    => false,
+							'reason'     => 'mutual_follow_required',
+							'is_request' => false,
+						);
 					}
 				}
 				break;
 		}
 
-		return array( 'allowed' => true, 'reason' => '', 'is_request' => false );
+		return array(
+			'allowed'    => true,
+			'reason'     => '',
+			'is_request' => false,
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -182,8 +218,8 @@ class MessagingService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		$conv_table    = $wpdb->prefix . 'mvs_conversations';
-		$part_table    = $wpdb->prefix . 'mvs_conversation_participants';
+		$conv_table = $wpdb->prefix . 'mvs_conversations';
+		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
 		// Find existing conversation between these two users.
 		$existing_id = $wpdb->get_var(
@@ -203,8 +239,14 @@ class MessagingService {
 			// Reactivate if the current user had left.
 			$wpdb->update(
 				$part_table,
-				array( 'status' => 'active', 'is_archived' => 0 ),
-				array( 'conversation_id' => $existing_id, 'user_id' => $user_a ),
+				array(
+					'status'      => 'active',
+					'is_archived' => 0,
+				),
+				array(
+					'conversation_id' => $existing_id,
+					'user_id'         => $user_a,
+				),
 				array( '%s', '%d' ),
 				array( '%d', '%d' )
 			);
@@ -258,7 +300,11 @@ class MessagingService {
 		$conv_id = (int) $wpdb->insert_id;
 
 		if ( ! $conv_id ) {
-			return array( 'conversation_id' => 0, 'created' => false, 'status' => 'db_error' );
+			return array(
+				'conversation_id' => 0,
+				'created'         => false,
+				'status'          => 'db_error',
+			);
 		}
 
 		// Add creator as active participant.
@@ -497,7 +543,10 @@ class MessagingService {
 		$result = $wpdb->update(
 			$part_table,
 			$update,
-			array( 'conversation_id' => $conversation_id, 'user_id' => $user_id ),
+			array(
+				'conversation_id' => $conversation_id,
+				'user_id'         => $user_id,
+			),
 			$formats,
 			array( '%d', '%d' )
 		);
@@ -521,7 +570,10 @@ class MessagingService {
 		$result = $wpdb->update(
 			$part_table,
 			array( 'status' => 'left' ),
-			array( 'conversation_id' => $conversation_id, 'user_id' => $user_id ),
+			array(
+				'conversation_id' => $conversation_id,
+				'user_id'         => $user_id,
+			),
 			array( '%s' ),
 			array( '%d', '%d' )
 		);
@@ -622,12 +674,20 @@ class MessagingService {
 		);
 
 		if ( ! $participant || ! in_array( $participant->status, array( 'active', 'request_pending' ), true ) ) {
-			return array( 'success' => false, 'message_id' => 0, 'error' => 'not_participant' );
+			return array(
+				'success'    => false,
+				'message_id' => 0,
+				'error'      => 'not_participant',
+			);
 		}
 
 		// Rate limit.
 		if ( ! $this->check_message_rate( $sender_id ) ) {
-			return array( 'success' => false, 'message_id' => 0, 'error' => 'rate_limited' );
+			return array(
+				'success'    => false,
+				'message_id' => 0,
+				'error'      => 'rate_limited',
+			);
 		}
 
 		$content      = isset( $data['content'] ) ? $this->sanitize_message( $data['content'] ) : '';
@@ -637,16 +697,28 @@ class MessagingService {
 		// Validate content: text-only messages require content, but attachment/media messages allow empty text.
 		$has_attachment = ! empty( $data['attachment_id'] ) || ! empty( $data['media_id'] );
 		if ( 'text' === $message_type && empty( $content ) && ! $has_attachment ) {
-			return array( 'success' => false, 'message_id' => 0, 'error' => 'empty_content' );
+			return array(
+				'success'    => false,
+				'message_id' => 0,
+				'error'      => 'empty_content',
+			);
 		}
 
 		if ( mb_strlen( $content ) > $max_length ) {
-			return array( 'success' => false, 'message_id' => 0, 'error' => 'content_too_long' );
+			return array(
+				'success'    => false,
+				'message_id' => 0,
+				'error'      => 'content_too_long',
+			);
 		}
 
 		// Duplicate check.
 		if ( $content && $this->is_duplicate( $sender_id, $content ) ) {
-			return array( 'success' => false, 'message_id' => 0, 'error' => 'duplicate_message' );
+			return array(
+				'success'    => false,
+				'message_id' => 0,
+				'error'      => 'duplicate_message',
+			);
 		}
 
 		$allowed_types = apply_filters(
@@ -659,7 +731,7 @@ class MessagingService {
 
 		$now = current_time( 'mysql', true );
 
-		$insert_data = array(
+		$insert_data    = array(
 			'conversation_id' => $conversation_id,
 			'sender_id'       => $sender_id,
 			'content'         => $content,
@@ -692,7 +764,11 @@ class MessagingService {
 		$message_id = (int) $wpdb->insert_id;
 
 		if ( ! $message_id ) {
-			return array( 'success' => false, 'message_id' => 0, 'error' => 'db_error' );
+			return array(
+				'success'    => false,
+				'message_id' => 0,
+				'error'      => 'db_error',
+			);
 		}
 
 		// Update conversation last_message.
@@ -721,7 +797,10 @@ class MessagingService {
 		$wpdb->update(
 			$part_table,
 			array( 'last_read_at' => $now ),
-			array( 'conversation_id' => $conversation_id, 'user_id' => $sender_id ),
+			array(
+				'conversation_id' => $conversation_id,
+				'user_id'         => $sender_id,
+			),
 			array( '%s' ),
 			array( '%d', '%d' )
 		);
@@ -755,7 +834,11 @@ class MessagingService {
 			do_action( 'mvs_voice_message_sent', $message_id, $conversation_id, $duration );
 		}
 
-		return array( 'success' => true, 'message_id' => $message_id, 'error' => '' );
+		return array(
+			'success'    => true,
+			'message_id' => $message_id,
+			'error'      => '',
+		);
 	}
 
 	/**
@@ -773,10 +856,10 @@ class MessagingService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		$msg_table  = $wpdb->prefix . 'mvs_messages';
+		$msg_table   = $wpdb->prefix . 'mvs_messages';
 		$react_table = $wpdb->prefix . 'mvs_message_reactions';
 
-		$where = "m.conversation_id = %d AND (m.is_deleted = 0 OR m.sender_id = %d)";
+		$where  = 'm.conversation_id = %d AND (m.is_deleted = 0 OR m.sender_id = %d)';
 		$params = array( $conversation_id, $user_id );
 
 		if ( $before > 0 ) {
@@ -797,10 +880,10 @@ class MessagingService {
 		foreach ( $messages as &$msg ) {
 			// Hide content for deleted messages.
 			if ( $msg->deleted_for_all ) {
-				$msg->content = '';
+				$msg->content  = '';
 				$msg->metadata = null;
 			} elseif ( $msg->is_deleted && (int) $msg->sender_id === $user_id ) {
-				$msg->content = '';
+				$msg->content  = '';
 				$msg->metadata = null;
 			}
 
@@ -896,7 +979,10 @@ class MessagingService {
 		$result = $wpdb->update(
 			$msg_table,
 			array( 'is_deleted' => 1 ),
-			array( 'id' => $message_id, 'sender_id' => $user_id ),
+			array(
+				'id'        => $message_id,
+				'sender_id' => $user_id,
+			),
 			array( '%d' ),
 			array( '%d', '%d' )
 		);
@@ -930,23 +1016,35 @@ class MessagingService {
 		);
 
 		if ( ! $msg ) {
-			return array( 'success' => false, 'error' => 'not_found' );
+			return array(
+				'success' => false,
+				'error'   => 'not_found',
+			);
 		}
 
 		if ( (int) $msg->sender_id !== $user_id ) {
-			return array( 'success' => false, 'error' => 'not_sender' );
+			return array(
+				'success' => false,
+				'error'   => 'not_sender',
+			);
 		}
 
 		$created_time = strtotime( $msg->created_at );
 		$now          = time();
 		if ( ( $now - $created_time ) > self::UNSEND_WINDOW_SECONDS ) {
-			return array( 'success' => false, 'error' => 'window_expired' );
+			return array(
+				'success' => false,
+				'error'   => 'window_expired',
+			);
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->update(
 			$msg_table,
-			array( 'deleted_for_all' => 1, 'content' => '' ),
+			array(
+				'deleted_for_all' => 1,
+				'content'         => '',
+			),
 			array( 'id' => $message_id ),
 			array( '%d', '%s' ),
 			array( '%d' )
@@ -954,7 +1052,10 @@ class MessagingService {
 
 		do_action( 'mvs_message_deleted', $message_id, $user_id, true );
 
-		return array( 'success' => true, 'error' => '' );
+		return array(
+			'success' => true,
+			'error'   => '',
+		);
 	}
 
 	/**
@@ -974,7 +1075,10 @@ class MessagingService {
 		$result = $wpdb->update(
 			$part_table,
 			array( 'last_read_at' => $now ),
-			array( 'conversation_id' => $conversation_id, 'user_id' => $user_id ),
+			array(
+				'conversation_id' => $conversation_id,
+				'user_id'         => $user_id,
+			),
 			array( '%s' ),
 			array( '%d', '%d' )
 		);
@@ -1043,7 +1147,10 @@ class MessagingService {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->delete(
 			$react_table,
-			array( 'message_id' => $message_id, 'user_id' => $user_id ),
+			array(
+				'message_id' => $message_id,
+				'user_id'    => $user_id,
+			),
 			array( '%d', '%d' )
 		);
 
@@ -1081,7 +1188,10 @@ class MessagingService {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$result = $wpdb->delete(
 			$react_table,
-			array( 'message_id' => $message_id, 'user_id' => $user_id ),
+			array(
+				'message_id' => $message_id,
+				'user_id'    => $user_id,
+			),
 			array( '%d', '%d' )
 		);
 
@@ -1336,13 +1446,20 @@ class MessagingService {
 	 * @return string
 	 */
 	private function sanitize_message( string $content ): string {
-		return wp_kses( $content, array(
-			'a'      => array( 'href' => array(), 'title' => array(), 'rel' => array() ),
-			'br'     => array(),
-			'em'     => array(),
-			'strong' => array(),
-			'code'   => array(),
-		) );
+		return wp_kses(
+			$content,
+			array(
+				'a'      => array(
+					'href'  => array(),
+					'title' => array(),
+					'rel'   => array(),
+				),
+				'br'     => array(),
+				'em'     => array(),
+				'strong' => array(),
+				'code'   => array(),
+			)
+		);
 	}
 
 	/**
@@ -1441,10 +1558,22 @@ class MessagingService {
 				'group_label' => 'WPMediaVerse Messages',
 				'item_id'     => 'message-' . $msg->id,
 				'data'        => array(
-					array( 'name' => 'Conversation ID', 'value' => $msg->conversation_id ),
-					array( 'name' => 'Content', 'value' => $msg->content ),
-					array( 'name' => 'Type', 'value' => $msg->message_type ),
-					array( 'name' => 'Date', 'value' => $msg->created_at ),
+					array(
+						'name'  => 'Conversation ID',
+						'value' => $msg->conversation_id,
+					),
+					array(
+						'name'  => 'Content',
+						'value' => $msg->content,
+					),
+					array(
+						'name'  => 'Type',
+						'value' => $msg->message_type,
+					),
+					array(
+						'name'  => 'Date',
+						'value' => $msg->created_at,
+					),
 				),
 			);
 		}
