@@ -181,13 +181,15 @@ class CommentService {
 	 * @return array
 	 */
 	private function format_comment( $comment, bool $include_replies = false ): array {
+		$cmt_author_id = (int) $comment->user_id;
 		$data = array(
-			'id'          => (int) $comment->comment_ID,
-			'author'      => (int) $comment->user_id,
-			'author_name' => $comment->comment_author,
-			'content'     => $comment->comment_content,
-			'parent'      => (int) $comment->comment_parent,
-			'date'        => $comment->comment_date_gmt,
+			'id'            => (int) $comment->comment_ID,
+			'author'        => $cmt_author_id,
+			'author_name'   => $comment->comment_author,
+			'author_avatar' => $cmt_author_id ? (string) get_avatar_url( $cmt_author_id, array( 'size' => 48 ) ) : '',
+			'content'       => $comment->comment_content,
+			'parent'        => (int) $comment->comment_parent,
+			'date'          => $comment->comment_date_gmt,
 		);
 
 		if ( $include_replies ) {
@@ -219,14 +221,16 @@ class CommentService {
 	 */
 	private function format_comment_with_replies( $comment, array $replies_map ): array {
 		$comment_id = (int) $comment->comment_ID;
+		$author_id  = (int) $comment->user_id;
 		$data       = array(
-			'id'          => $comment_id,
-			'author'      => (int) $comment->user_id,
-			'author_name' => $comment->comment_author,
-			'content'     => $comment->comment_content,
-			'parent'      => (int) $comment->comment_parent,
-			'date'        => $comment->comment_date_gmt,
-			'replies'     => array(),
+			'id'            => $comment_id,
+			'author'        => $author_id,
+			'author_name'   => $comment->comment_author,
+			'author_avatar' => $author_id ? (string) get_avatar_url( $author_id, array( 'size' => 48 ) ) : '',
+			'content'       => $comment->comment_content,
+			'parent'        => (int) $comment->comment_parent,
+			'date'          => $comment->comment_date_gmt,
+			'replies'       => array(),
 		);
 
 		if ( isset( $replies_map[ $comment_id ] ) ) {

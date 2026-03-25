@@ -226,15 +226,17 @@ class CommentController extends WP_REST_Controller {
 			return $comment_id;
 		}
 
-		$comment  = get_comment( $comment_id );
-		$response = rest_ensure_response(
+		$comment        = get_comment( $comment_id );
+		$cmt_author_id  = (int) $comment->user_id;
+		$response       = rest_ensure_response(
 			array(
-				'id'          => (int) $comment->comment_ID,
-				'author'      => (int) $comment->user_id,
-				'author_name' => $comment->comment_author,
-				'content'     => $comment->comment_content,
-				'parent'      => (int) $comment->comment_parent,
-				'date'        => $comment->comment_date_gmt,
+				'id'            => (int) $comment->comment_ID,
+				'author'        => $cmt_author_id,
+				'author_name'   => $comment->comment_author,
+				'author_avatar' => $cmt_author_id ? (string) get_avatar_url( $cmt_author_id, array( 'size' => 48 ) ) : '',
+				'content'       => $comment->comment_content,
+				'parent'        => (int) $comment->comment_parent,
+				'date'          => $comment->comment_date_gmt,
 			)
 		);
 		$response->set_status( 201 );

@@ -344,10 +344,23 @@
 		}
 		comments.forEach( function( c ) {
 			var item = el( 'div', 'mvs-lb-comment' );
-			item.appendChild( el( 'strong', 'mvs-lb-comment-author', c.author_name || 'Anonymous' ) );
-			item.appendChild( el( 'span',   'mvs-lb-comment-text',   ' ' + c.content ) );
-			item.appendChild( el( 'span',   'mvs-lb-comment-date',
+			// Avatar.
+			if ( c.author_avatar ) {
+				var avatar    = document.createElement( 'img' );
+				avatar.src       = c.author_avatar;
+				avatar.alt       = c.author_name || '';
+				avatar.className = 'mvs-lb-comment-avatar';
+				avatar.width     = 32;
+				avatar.height    = 32;
+				avatar.loading   = 'lazy';
+				item.appendChild( avatar );
+			}
+			var textWrap = el( 'div', 'mvs-lb-comment-body' );
+			textWrap.appendChild( el( 'strong', 'mvs-lb-comment-author', c.author_name || 'Anonymous' ) );
+			textWrap.appendChild( el( 'span',   'mvs-lb-comment-text',   ' ' + c.content ) );
+			textWrap.appendChild( el( 'span',   'mvs-lb-comment-date',
 				new Date( c.date ).toLocaleDateString() ) );
+			item.appendChild( textWrap );
 			list.appendChild( item );
 		} );
 		list.scrollTop = list.scrollHeight;

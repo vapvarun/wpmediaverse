@@ -2485,12 +2485,26 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lb-comment {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
 	margin-bottom: 16px;
 	font-size: 15px;
 	line-height: 1.5;
 	color: #1a1a1a;
 	padding-bottom: 12px;
 	border-bottom: 1px solid #f5f5f5;
+}
+.mvs-lb-comment-avatar {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+.mvs-lb-comment-body {
+	flex: 1;
+	min-width: 0;
 }
 
 .mvs-lb-comment:last-child {
