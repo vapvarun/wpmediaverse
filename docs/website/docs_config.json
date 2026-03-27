@@ -1,0 +1,79 @@
+{
+  "product_slug": "wpmediaverse",
+  "product_name": "WPMediaVerse",
+  "product_type": "plugin",
+  "version": "1.0.0",
+  "description": "Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.",
+  "author": "Wbcom Designs",
+  "author_url": "https://wbcomdesigns.com/",
+  "product_url": "https://wbcomdesigns.com/downloads/wpmediaverse/",
+  "support_url": "https://wbcomdesigns.com/support/",
+  "docs_url": "https://wbcomdesigns.com/docs/wpmediaverse/",
+  "text_domain": "wpmediaverse",
+  "requires_wp": "6.5",
+  "requires_php": "7.4",
+  "sections": [
+    {
+      "slug": "getting-started",
+      "title": "Getting Started",
+      "icon": "rocket",
+      "pages": [
+        { "slug": "installation", "title": "Installation" },
+        { "slug": "setup-wizard", "title": "Setup Wizard" },
+        { "slug": "first-upload", "title": "Your First Upload" }
+      ]
+    },
+    {
+      "slug": "settings",
+      "title": "Settings",
+      "icon": "admin-generic",
+      "pages": [
+        { "slug": "general", "title": "General Settings" },
+        { "slug": "display", "title": "Display Settings" },
+        { "slug": "permissions", "title": "Permissions" },
+        { "slug": "ai-moderation", "title": "AI & Moderation" },
+        { "slug": "webhooks", "title": "Webhooks" }
+      ]
+    },
+    {
+      "slug": "features",
+      "title": "Features",
+      "icon": "star-filled",
+      "pages": [
+        { "slug": "media-upload", "title": "Media Upload" },
+        { "slug": "albums", "title": "Albums" },
+        { "slug": "collections", "title": "Collections" },
+        { "slug": "stories", "title": "Stories" },
+        { "slug": "social-features", "title": "Social Features" },
+        { "slug": "privacy-access-control", "title": "Privacy & Access Control" },
+        { "slug": "ai-moderation", "title": "AI Moderation" },
+        { "slug": "shortcodes", "title": "Shortcodes" },
+        { "slug": "blocks", "title": "Gutenberg Blocks" }
+      ]
+    },
+    {
+      "slug": "buddypress",
+      "title": "BuddyPress Integration",
+      "icon": "groups",
+      "pages": [
+        { "slug": "overview", "title": "Overview" },
+        { "slug": "profile-tabs", "title": "Profile Media Tab" },
+        { "slug": "group-tabs", "title": "Group Media Tab" },
+        { "slug": "activity-media", "title": "Activity Stream Media" },
+        { "slug": "notifications", "title": "Notifications" }
+      ]
+    },
+    {
+      "slug": "developer-guide",
+      "title": "Developer Guide",
+      "icon": "editor-code",
+      "pages": [
+        { "slug": "rest-api", "title": "REST API Reference" },
+        { "slug": "hooks-filters", "title": "Hooks & Filters" },
+        { "slug": "template-overrides", "title": "Template Overrides" },
+        { "slug": "custom-storage-drivers", "title": "Custom Storage Drivers" },
+        { "slug": "wp-cli", "title": "WP-CLI Commands" }
+      ]
+    }
+  ]
+}
