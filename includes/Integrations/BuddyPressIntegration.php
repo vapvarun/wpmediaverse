@@ -2218,6 +2218,12 @@ class BuddyPressIntegration {
 
 		bp_activity_update_meta( $activity_id, '_mvs_media_ids', implode( ',', $valid_ids ) );
 
+		// Store the activity ID on each media post so comments on these media
+		// can be threaded back as activity comments via find_media_upload_activity().
+		foreach ( $valid_ids as $mid ) {
+			update_post_meta( $mid, '_mvs_bp_activity_id', $activity_id );
+		}
+
 		$activity = new \BP_Activity_Activity( $activity_id );
 		if ( $activity->id ) {
 			$activity->content = $new_content;
