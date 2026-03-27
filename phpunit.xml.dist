@@ -8,9 +8,8 @@
 		<testsuite name="unit">
 			<directory suffix="Test.php">./tests/unit</directory>
 		</testsuite>
-		<!-- Add integration suite when tests/integration/ exists -->
-		<!-- <testsuite name="integration">
-			<directory suffix="Test.php">./tests/integration</directory>
-		</testsuite> -->
 	</testsuites>
+	<php>
+		<const name="MVS_RUNNING_TESTS" value="1" />
+	</php>
 </phpunit>

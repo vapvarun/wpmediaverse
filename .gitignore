@@ -6,8 +6,5 @@ node_modules/
 CLAUDE.md
 .claude/
 
-# Dev/test - not for public repo
-tests/
-.phpcs.xml.dist
-phpunit.xml.dist
+# Dev reports
 wpcs-report.md
