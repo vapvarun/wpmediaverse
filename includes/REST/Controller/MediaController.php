@@ -261,7 +261,7 @@ class MediaController extends WP_REST_Controller {
 		$total     = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
 
 		// Determine sort order.
-		$orderby = $request->get_param( 'orderby' );
+		$orderby  = $request->get_param( 'orderby' );
 		$params[] = $per_page;
 		$params[] = $offset;
 

@@ -1,0 +1,94 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.1', '8.2', '8.3']
+        wp: ['6.7', '6.8', '6.9']
+      fail-fast: false
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wp_tests
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout WPMediaVerse Pro
+        env:
+          TOKEN: ${{ secrets.PRO_REPO_TOKEN }}
+        run: git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/vapvarun/wpmediaverse-pro.git" "$GITHUB_WORKSPACE/../wpmediaverse-pro"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli, mbstring, intl
+          coverage: none
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y subversion
+
+      - name: Install Composer dependencies
+        run: composer install --no-progress --prefer-dist
+
+      - name: Install WordPress test library
+        env:
+          WP_VERSION: ${{ matrix.wp }}
+        run: bash bin/install-wp-tests.sh wp_tests root root 127.0.0.1 "$WP_VERSION" true
+
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit --testdox
+
+  wpcs:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli, mbstring
+
+      - name: Install Composer dependencies
+        run: composer install --no-progress --prefer-dist
+
+      - name: Run WordPress Coding Standards
+        run: vendor/bin/phpcs
+
+  phpstan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli, mbstring
+
+      - name: Install Composer dependencies
+        run: composer install --no-progress --prefer-dist
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse -c phpstan.neon.dist --memory-limit=1G

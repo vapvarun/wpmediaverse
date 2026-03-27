@@ -182,7 +182,7 @@ class CommentService {
 	 */
 	private function format_comment( $comment, bool $include_replies = false ): array {
 		$cmt_author_id = (int) $comment->user_id;
-		$data = array(
+		$data          = array(
 			'id'            => (int) $comment->comment_ID,
 			'author'        => $cmt_author_id,
 			'author_name'   => $comment->comment_author,

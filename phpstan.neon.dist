@@ -1,0 +1,14 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - includes/
+    scanFiles:
+        - wpmediaverse.php
+    ignoreErrors:
+        -
+            message: '#(BuddyPress|bp_|BP_)#'
+            reportUnmatched: false

@@ -1,0 +1,386 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Parameter \\#1 \\$args of function paginate_links expects array\\{base\\?\\: string, format\\?\\: string, total\\?\\: int, current\\?\\: int, aria_current\\?\\: string, show_all\\?\\: bool, end_size\\?\\: int, mid_size\\?\\: int, \\.\\.\\.\\}, array\\{base\\: string, format\\: '', current\\: int, total\\: float\\} given\\.$#"
+			count: 1
+			path: includes/Admin/LogViewerPage.php
+
+		-
+			message: "#^Offset 'flagged'\\|'pending'\\|'rejected' on array\\{pending\\: int, flagged\\: int, rejected\\: int\\} in isset\\(\\) always exists and is not nullable\\.$#"
+			count: 1
+			path: includes/Admin/ModerationQueue.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int given\\.$#"
+			count: 2
+			path: includes/Admin/ModerationQueue.php
+
+		-
+			message: "#^Parameter \\#1 \\$user_id of function get_userdata expects int, string given\\.$#"
+			count: 1
+			path: includes/Admin/ModerationQueue.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Admin/OverviewPage.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/OverviewPage.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<1, max\\> given\\.$#"
+			count: 1
+			path: includes/Admin/OverviewPage.php
+
+		-
+			message: "#^Parameter \\#2 \\$user_id of function get_the_author_meta expects int\\|false, string given\\.$#"
+			count: 1
+			path: includes/Admin/OverviewPage.php
+
+		-
+			message: "#^Parameter \\#1 \\$args of function wp_dropdown_pages expects array\\{depth\\?\\: int, child_of\\?\\: int, selected\\?\\: int\\|string, echo\\?\\: bool\\|int, name\\?\\: string, id\\?\\: string, class\\?\\: string, show_option_none\\?\\: string, \\.\\.\\.\\}, array\\{name\\: mixed, selected\\: int, show_option_none\\: string, option_none_value\\: 0\\} given\\.$#"
+			count: 1
+			path: includes/Admin/SettingsPage.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, float given\\.$#"
+			count: 2
+			path: includes/Admin/SettingsPage.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_html expects string, float given\\.$#"
+			count: 1
+			path: includes/Admin/SettingsPage.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<1, max\\> given\\.$#"
+			count: 1
+			path: includes/Admin/SettingsPage.php
+
+		-
+			message: "#^Static property WPMediaVerse\\\\Admin\\\\SettingsPage\\:\\:\\$tabs is never read, only written\\.$#"
+			count: 1
+			path: includes/Admin/SettingsPage.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/SetupWizard.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int given\\.$#"
+			count: 1
+			path: includes/Admin/SetupWizard.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_html expects string, float given\\.$#"
+			count: 1
+			path: includes/Admin/StatsPage.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Blocks/BlockRegistrar.php
+
+		-
+			message: "#^Call to static method confirm\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Call to static method error\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Call to static method log\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 6
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Call to static method success\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 9
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Call to static method warning\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 2
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Function WP_CLI\\\\Utils\\\\format_items not found\\.$#"
+			count: 2
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Function WP_CLI\\\\Utils\\\\get_flag_value not found\\.$#"
+			count: 7
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Function WP_CLI\\\\Utils\\\\make_progress_bar not found\\.$#"
+			count: 1
+			path: includes/CLI/Commands.php
+
+		-
+			message: "#^Call to function is_wp_error\\(\\) with int\\<1, max\\> will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Core/Activator.php
+
+		-
+			message: "#^is_wp_error\\(int\\<1, max\\>\\) will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Core/Activator.php
+
+		-
+			message: "#^Constant DB_NAME not found\\.$#"
+			count: 4
+			path: includes/Core/Migrator.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 3
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 6
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Parameter \\#2 \\$user_id of function get_the_author_meta expects int\\|false, string given\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Core/TemplateLoader.php
+
+		-
+			message: "#^Access to an undefined property object\\:\\:\\$component\\.$#"
+			count: 4
+			path: includes/Integrations/BuddyPressIntegration.php
+
+		-
+			message: "#^Access to an undefined property object\\:\\:\\$item_id\\.$#"
+			count: 2
+			path: includes/Integrations/BuddyPressIntegration.php
+
+		-
+			message: "#^Access to an undefined property object\\:\\:\\$secondary_item_id\\.$#"
+			count: 2
+			path: includes/Integrations/BuddyPressIntegration.php
+
+		-
+			message: "#^Callback expects 1 parameter, \\$accepted_args is set to 2\\.$#"
+			count: 1
+			path: includes/Integrations/BuddyPressIntegration.php
+
+		-
+			message: "#^Function buddypress not found\\.$#"
+			count: 4
+			path: includes/Integrations/BuddyPressIntegration.php
+
+		-
+			message: "#^Function groups_get_current_group not found\\.$#"
+			count: 4
+			path: includes/Integrations/BuddyPressIntegration.php
+
+		-
+			message: "#^Parameter \\#1 \\$args of function get_posts expects array\\{numberposts\\?\\: int, category\\?\\: int\\|string, include\\?\\: array\\<int\\>, exclude\\?\\: array\\<int\\>, suppress_filters\\?\\: bool, attachment_id\\?\\: int, author\\?\\: int\\|string, author_name\\?\\: string, \\.\\.\\.\\}\\|null, array\\{post_type\\: 'mvs_media', meta_key\\: '_mvs_attachment_id', meta_value\\: int\\<min, \\-1\\>\\|int\\<1, max\\>, fields\\: 'ids', posts_per_page\\: 1\\} given\\.$#"
+			count: 1
+			path: includes/Integrations/BuddyPressIntegration.php
+
+		-
+			message: "#^Parameter \\#1 \\$args of function get_posts expects array\\{numberposts\\?\\: int, category\\?\\: int\\|string, include\\?\\: array\\<int\\>, exclude\\?\\: array\\<int\\>, suppress_filters\\?\\: bool, attachment_id\\?\\: int, author\\?\\: int\\|string, author_name\\?\\: string, \\.\\.\\.\\}\\|null, array\\{post_type\\: 'mvs_media', meta_key\\: string, meta_value\\: int, fields\\: 'ids', posts_per_page\\: 1\\} given\\.$#"
+			count: 2
+			path: includes/Integrations/BuddyPressIntegration.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
+			count: 4
+			path: includes/Integrations/BuddyPressIntegration.php
+
+		-
+			message: "#^Call to function is_wp_error\\(\\) with int\\<0, max\\> will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingController.php
+
+		-
+			message: "#^is_wp_error\\(int\\<0, max\\>\\) will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingController.php
+
+		-
+			message: "#^If condition is always true\\.$#"
+			count: 1
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Left side of && is always true\\.$#"
+			count: 2
+			path: includes/Messaging/MessagingService.php
+
+		-
+			message: "#^Left side of && is always true\\.$#"
+			count: 1
+			path: includes/Messaging/NotificationListener.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, float given\\.$#"
+			count: 1
+			path: includes/REST/Controller/AccessController.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
+			count: 1
+			path: includes/REST/Controller/AccessController.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
+			count: 2
+			path: includes/REST/Controller/AlbumController.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
+			count: 2
+			path: includes/REST/Controller/CollectionController.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
+			count: 2
+			path: includes/REST/Controller/CommentController.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
+			count: 2
+			path: includes/REST/Controller/FavoriteController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\FollowController\\:\\:unfollow_user\\(\\) should return WP_REST_Response but returns WP_Error\\.$#"
+			count: 1
+			path: includes/REST/Controller/FollowController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:get_items\\(\\) should return WP_REST_Response but returns WP_Error\\.$#"
+			count: 1
+			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:prepare_item_for_response\\(\\) should return array but returns null\\.$#"
+			count: 1
+			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
+			count: 2
+			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Return type \\(array\\) of method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:prepare_item_for_response\\(\\) should be compatible with return type \\(WP_Error\\|WP_REST_Response\\) of method WP_REST_Controller\\:\\:prepare_item_for_response\\(\\)$#"
+			count: 1
+			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
+			count: 2
+			path: includes/REST/Controller/ModerationController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\NotificationController\\:\\:mark_read\\(\\) should return WP_REST_Response but returns WP_Error\\.$#"
+			count: 1
+			path: includes/REST/Controller/NotificationController.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\UserController\\:\\:search_users\\(\\) should return WP_REST_Response but returns WP_Error\\.$#"
+			count: 1
+			path: includes/REST/Controller/UserController.php
+
+		-
+			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
+			count: 1
+			path: includes/REST/Controller/UserController.php
+
+		-
+			message: "#^Call to function is_wp_error\\(\\) with array\\{safe\\: bool, flags\\: array\\<string\\>, confidence\\: float\\} will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/AIService.php
+
+		-
+			message: "#^Offset 'safe' on array\\{safe\\: bool, flags\\: array\\<string\\>, confidence\\: float\\} in isset\\(\\) always exists and is not nullable\\.$#"
+			count: 1
+			path: includes/Services/AIService.php
+
+		-
+			message: "#^Result of \\|\\| is always false\\.$#"
+			count: 1
+			path: includes/Services/AIService.php
+
+		-
+			message: "#^is_wp_error\\(array\\<string, array\\<string\\>\\|bool\\|float\\>\\) will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/AIService.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: includes/Services/LocalDriver.php
+
+		-
+			message: "#^Property WPMediaVerse\\\\Services\\\\ModerationService\\:\\:\\$ai is never read, only written\\.$#"
+			count: 1
+			path: includes/Services/ModerationService.php
+
+		-
+			message: "#^Parameter \\#1 \\$owner_id of method WPMediaVerse\\\\Services\\\\PrivacyService\\:\\:check_friends\\(\\) expects int, string given\\.$#"
+			count: 1
+			path: includes/Services/PrivacyService.php
+
+		-
+			message: "#^Call to function is_wp_error\\(\\) with int\\<0, max\\> will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/ProfileService.php
+
+		-
+			message: "#^is_wp_error\\(int\\<0, max\\>\\) will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/ProfileService.php
+
+		-
+			message: "#^Action callback returns int but should not return anything\\.$#"
+			count: 1
+			path: includes/Services/StoryService.php
+
+		-
+			message: "#^Call to function is_wp_error\\(\\) with array will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/UploadService.php
+
+		-
+			message: "#^is_wp_error\\(array\\) will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/UploadService.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 9
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 5
+			path: includes/Shortcodes/Shortcodes.php
+
+		-
+			message: "#^Parameter \\#1 \\$args of function get_comments expects array\\{author_email\\?\\: string, author_url\\?\\: string, author__in\\?\\: array\\<int\\>, author__not_in\\?\\: array\\<int\\>, comment__in\\?\\: array\\<int\\>, comment__not_in\\?\\: array\\<int\\>, count\\?\\: bool, date_query\\?\\: array, \\.\\.\\.\\}, array\\{parent\\: string, type\\: 'mvs_comment', status\\: 'approve', orderby\\: 'comment_date_gmt', order\\: 'ASC'\\} given\\.$#"
+			count: 1
+			path: includes/Social/CommentService.php

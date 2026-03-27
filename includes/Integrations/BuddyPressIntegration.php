@@ -2320,14 +2320,14 @@ class BuddyPressIntegration {
 		$tags['a']['style']              = array();
 		$tags['a']['href']               = array();
 		$tags['a']['data-mvs-permalink'] = array();
-		$tags['img']['src']     = array();
-		$tags['img']['alt']     = array();
-		$tags['img']['width']   = array();
-		$tags['img']['height']  = array();
-		$tags['img']['style']   = array();
-		$tags['img']['loading'] = array();
-		$tags['img']['class']   = array();
-		$tags['span']           = array(
+		$tags['img']['src']              = array();
+		$tags['img']['alt']              = array();
+		$tags['img']['width']            = array();
+		$tags['img']['height']           = array();
+		$tags['img']['style']            = array();
+		$tags['img']['loading']          = array();
+		$tags['img']['class']            = array();
+		$tags['span']                    = array(
 			'class'       => array(),
 			'aria-hidden' => array(),
 		);
@@ -2397,8 +2397,8 @@ class BuddyPressIntegration {
 	 * 2. Transform MediaPress activities via _mpp_attached_media_id meta lookup
 	 * 3. Inject thumbnails for imported/empty mvs_media_upload activities
 	 *
-	 * @param string        $content  Raw activity content.
-	 * @param object|null   $activity BP activity object (passed by ref from BP).
+	 * @param string      $content  Raw activity content.
+	 * @param object|null $activity BP activity object (passed by ref from BP).
 	 * @return string Enhanced content.
 	 */
 	public function enhance_activity_media_content( string $content, $activity = null ): string {
@@ -2687,7 +2687,7 @@ class BuddyPressIntegration {
 
 		// Output the thumbnail (display-time only — does NOT write to DB).
 		// To persist thumbnails into activity content permanently, run:
-		//   wp mvs backfill-activity-thumbnails
+		// wp mvs backfill-activity-thumbnails
 		// That command warns the site owner and requires explicit confirmation.
 		echo $thumbnail; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped in get_media_thumbnail_html.
 	}
