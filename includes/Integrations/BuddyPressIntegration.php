@@ -54,7 +54,7 @@ class BuddyPressIntegration {
 			// flag prevents this from firing for UploadService uploads (which handle
 			// activity via mvs_media_uploaded instead, with full thumbnail support).
 			add_action( 'publish_mvs_media', array( $this, 'maybe_record_publish_activity' ), 20, 2 );
-			add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 2 );
+			add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 3 );
 			add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
 			add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 			add_action( 'bp_register_activity_actions', array( $this, 'register_activity_actions' ) );
@@ -86,7 +86,7 @@ class BuddyPressIntegration {
 		// Notifications (only if notifications component is active).
 		if ( bp_is_active( 'notifications' ) ) {
 			add_action( 'mvs_reaction_added', array( $this, 'notify_reaction' ), 10, 3 );
-			add_action( 'mvs_comment_created', array( $this, 'notify_comment' ), 10, 2 );
+			add_action( 'mvs_comment_created', array( $this, 'notify_comment' ), 10, 3 );
 			add_action( 'mvs_mentions_created', array( $this, 'notify_mentions' ), 10, 2 );
 			add_filter( 'bp_notifications_get_registered_components', array( $this, 'register_notification_component' ) );
 			add_filter( 'bp_notifications_get_notifications_for_user', array( $this, 'format_notifications' ), 10, 8 );
@@ -446,10 +446,13 @@ class BuddyPressIntegration {
 	/**
 	 * Record activity when a comment is created.
 	 *
-	 * @param int $comment_id Comment ID.
+	 * Hook signature: mvs_comment_created( $media_id, $user_id, $comment_id, $content ).
+	 *
 	 * @param int $media_id   Media post ID.
+	 * @param int $user_id    Commenter user ID.
+	 * @param int $comment_id Comment ID.
 	 */
-	public function record_comment_activity( int $comment_id, int $media_id ): void {
+	public function record_comment_activity( int $media_id, int $user_id, int $comment_id ): void {
 		if ( defined( 'MVS_RUNNING_TESTS' ) || ! function_exists( 'bp_activity_add' ) || ! bp_is_active( 'activity' ) ) {
 			return;
 		}
@@ -459,8 +462,6 @@ class BuddyPressIntegration {
 		if ( ! $comment || ! $post ) {
 			return;
 		}
-
-		$user_id = (int) $comment->user_id;
 
 		// When comment comes from an activity lightbox, we know the exact parent
 		// activity ID — thread directly under it without searching.
@@ -1858,10 +1859,13 @@ class BuddyPressIntegration {
 	/**
 	 * Send a BP notification when someone comments on media.
 	 *
-	 * @param int $comment_id Comment ID.
+	 * Hook signature: mvs_comment_created( $media_id, $user_id, $comment_id, $content ).
+	 *
 	 * @param int $media_id   Media post ID.
+	 * @param int $user_id    Commenter user ID.
+	 * @param int $comment_id Comment ID.
 	 */
-	public function notify_comment( int $comment_id, int $media_id ): void {
+	public function notify_comment( int $media_id, int $user_id, int $comment_id ): void {
 		if ( defined( 'MVS_RUNNING_TESTS' ) || ! function_exists( 'bp_notifications_add_notification' ) || ! bp_is_active( 'notifications' ) ) {
 			return;
 		}
