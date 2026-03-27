@@ -20,6 +20,7 @@
 
 	var maxMedia = ( typeof mvsActivityMedia !== 'undefined' && mvsActivityMedia.maxMedia ) ? mvsActivityMedia.maxMedia : 5;
 	var attachedMedia = []; // Array of { id, thumbUrl }
+	var isSubmitting = false; // Flag to prevent orphan cleanup during form submit
 
 	function syncHiddenInput() {
 		var hidden = document.getElementById( 'mvs-activity-media-ids' );
@@ -162,7 +163,7 @@
 
 	// Cleanup abandoned uploads when user navigates away without posting.
 	function cleanupOrphans() {
-		if ( ! attachedMedia.length ) { return; }
+		if ( isSubmitting || ! attachedMedia.length ) { return; }
 		attachedMedia.forEach( function( item ) {
 			// Use sendBeacon for reliable delivery on page unload.
 			if ( navigator.sendBeacon ) {
@@ -175,6 +176,25 @@
 	}
 
 	window.addEventListener( 'beforeunload', cleanupOrphans );
+
+	// Detect activity form submission (both AJAX and non-AJAX) to prevent orphan cleanup.
+	document.addEventListener( 'submit', function( e ) {
+		var form = e.target;
+		if ( form.id === 'whats-new-form' || form.classList.contains( 'activity-form' ) || form.querySelector( '[name="whats-new"]' ) ) {
+			if ( attachedMedia.length ) {
+				isSubmitting = true;
+			}
+		}
+	} );
+
+	// Also intercept the BP Nouveau AJAX post button click.
+	if ( typeof jQuery !== 'undefined' ) {
+		jQuery( document ).on( 'click', '#aw-whats-new-submit', function() {
+			if ( attachedMedia.length ) {
+				isSubmitting = true;
+			}
+		} );
+	}
 
 	// Use event delegation since Nouveau renders the form dynamically.
 	document.addEventListener( 'click', function( e ) {
@@ -251,6 +271,7 @@
 	// Remove beforeunload handler since media is now attached to the activity.
 	if ( typeof jQuery !== 'undefined' ) {
 		jQuery( document ).on( 'bp_activity_ajax_post_update', function() {
+			isSubmitting = false;
 			window.removeEventListener( 'beforeunload', cleanupOrphans );
 			attachedMedia = [];
 			renderPreview();
