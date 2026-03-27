@@ -91,4 +91,4 @@ jobs:
         run: composer install --no-progress --prefer-dist
 
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyse -c phpstan.neon.dist --memory-limit=1G
+        run: vendor/bin/phpstan analyse -c phpstan.neon.dist --memory-limit=2G
