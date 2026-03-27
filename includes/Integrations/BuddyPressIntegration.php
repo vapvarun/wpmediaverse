@@ -2059,7 +2059,7 @@ class BuddyPressIntegration {
 				}
 			}
 
-			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '"' . $img_attrs . ' loading="lazy" style="max-width:100%;width:auto;height:auto;display:block;border-radius:8px;margin:8px 0 12px;" /></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '"' . $data_perma . '>' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '"' . $img_attrs . ' loading="lazy" /></a></div>';
 		}
 
 		// Video without poster: show dark placeholder with play icon.
@@ -2109,15 +2109,12 @@ class BuddyPressIntegration {
 	 * Enqueue JS/CSS for the activity media attachment button.
 	 */
 	public function enqueue_activity_media_scripts(): void {
-		if ( ! is_user_logged_in() ) {
-			return;
-		}
-
+		// Always enqueue frontend CSS and lightbox on BP pages for all visitors.
 		wp_enqueue_style( 'mvs-frontend' );
 
 		$plugin_url = plugin_dir_url( dirname( __DIR__ ) );
 
-		// Grid lightbox — loads on all BP pages so profile/group media tabs have lightbox support.
+		// Grid lightbox — loads on all BP pages so activity/profile/group media have lightbox support.
 		$lb_path = plugin_dir_path( dirname( __DIR__ ) ) . 'assets/js/mvs-lightbox.js';
 		if ( file_exists( $lb_path ) ) {
 			wp_enqueue_script(
@@ -2133,9 +2130,14 @@ class BuddyPressIntegration {
 				array(
 					'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 					'nonce'      => wp_create_nonce( 'wp_rest' ),
-					'isLoggedIn' => true,
+					'isLoggedIn' => is_user_logged_in(),
 				)
 			);
+		}
+
+		// Upload button and activity-media JS only for logged-in users.
+		if ( ! is_user_logged_in() ) {
+			return;
 		}
 
 		$js_path = plugin_dir_path( dirname( __DIR__ ) ) . 'assets/js/bp-activity-media.js';
@@ -2212,7 +2214,7 @@ class BuddyPressIntegration {
 
 		$count       = count( $valid_ids );
 		$grid_class  = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 5 );
-		$new_content = $content . '<div class="' . esc_attr( $grid_class ) . '" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">' . $thumbnails . '</div>';
+		$new_content = $content . '<div class="' . esc_attr( $grid_class ) . '">' . $thumbnails . '</div>';
 
 		bp_activity_update_meta( $activity_id, '_mvs_media_ids', implode( ',', $valid_ids ) );
 

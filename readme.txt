@@ -2,7 +2,7 @@
 Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
-Tested up to: 6.9
+Tested up to: 6.8
 Stable tag: 1.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
@@ -23,7 +23,7 @@ WPMediaVerse transforms WordPress into a complete media sharing platform. Upload
 * **Social Features** — Reactions (6 types), threaded comments, favorites, @mentions, sharing
 * **AI Moderation** — Automatic content analysis via OpenAI Vision with approve/reject queue
 * **Gutenberg Blocks** — 8 blocks including media grid, player, upload, album viewer, stories, and explore feed
-* **Shortcodes** — 5 shortcodes for embedding media features anywhere
+* **Shortcodes** — 8 shortcodes for embedding media features anywhere
 * **Template System** — Override templates from your theme (media-single, album, explore)
 * **Monetization** — Access rules, signed URLs, payment bridges, lock overlay
 * **BuddyPress Integration** — Activity feed, profile/group media tabs, notifications
@@ -72,6 +72,9 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * `[mvs_album id="123"]` — Album viewer
 * `[mvs_player id="456"]` — Media player
 * `[mvs_stats]` — Stats dashboard
+* `[mvs_dashboard]` — User dashboard
+* `[mvs_collection]` — Collection display
+* `[mvs_profile_edit]` — Profile editor
 
 == Screenshots ==
 
@@ -94,7 +97,7 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * Social features: reactions, comments, favorites, mentions, sharing
 * AI moderation with OpenAI Vision
 * 8 Gutenberg blocks with Interactivity API
-* 5 shortcodes
+* 8 shortcodes
 * Template override system
 * Monetization: access rules, signed URLs, payment bridges
 * BuddyPress integration: activity, profile, groups, notifications
