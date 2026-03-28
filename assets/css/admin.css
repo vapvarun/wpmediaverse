@@ -1282,7 +1282,7 @@ a.mvs-stat-card:focus {
 .mvs-settings-content {
 	flex: 1;
 	background: #f0f0f1;
-	padding: 0 32px 24px;
+	padding: 20px 32px 24px;
 	min-width: 0;
 }
 
