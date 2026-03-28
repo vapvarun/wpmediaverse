@@ -206,7 +206,14 @@ class SettingsPage {
 	 */
 	private function register_general_settings(): void {
 		// General section.
-		add_settings_section( 'mvs_general', __( 'General', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-general' );
+		add_settings_section(
+			'mvs_general',
+			__( 'General', 'wpmediaverse' ),
+			function () {
+				echo '<p>' . esc_html__( 'Upload limits, file types, privacy defaults, and duplicate detection.', 'wpmediaverse' ) . '</p>';
+			},
+			self::PAGE_SLUG . '-general'
+		);
 
 		register_setting(
 			self::OPTION_GROUP . '_general',
@@ -1404,6 +1411,7 @@ class SettingsPage {
 		}
 
 		// Multiple section_ids: each gets its own card.
+		$is_first = true;
 		foreach ( $ids as $sid ) {
 			if ( empty( $wp_settings_fields[ $page_slug ][ $sid ] ) ) {
 				continue;
@@ -1411,6 +1419,16 @@ class SettingsPage {
 
 			$wp_section = $wp_settings_sections[ $page_slug ][ $sid ] ?? null;
 			$title      = $wp_section ? $wp_section['title'] : $section['label'];
+
+			// Get description: try WP section callback output, fall back to sidebar description for first card.
+			$desc_html = '';
+			if ( $wp_section && is_callable( $wp_section['callback'] ) && '__return_null' !== $wp_section['callback'] ) {
+				ob_start();
+				call_user_func( $wp_section['callback'], $wp_section );
+				$desc_html = ob_get_clean();
+			} elseif ( $is_first && ! empty( $section['description'] ) ) {
+				$desc_html = '<p>' . esc_html( $section['description'] ) . '</p>';
+			}
 			?>
 			<div class="mvs-settings-card">
 				<div class="mvs-settings-card__head">
@@ -1420,10 +1438,8 @@ class SettingsPage {
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 						<?php endif; ?>
 					</p>
-					<?php if ( $wp_section && is_callable( $wp_section['callback'] ) ) : ?>
-						<div class="mvs-settings-card__desc">
-							<?php call_user_func( $wp_section['callback'], $wp_section ); ?>
-						</div>
+					<?php if ( $desc_html ) : ?>
+						<div class="mvs-settings-card__desc"><?php echo $desc_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
 					<?php endif; ?>
 				</div>
 				<table class="form-table" role="presentation">
@@ -1431,6 +1447,7 @@ class SettingsPage {
 				</table>
 			</div>
 			<?php
+			$is_first = false;
 		}
 	}
 

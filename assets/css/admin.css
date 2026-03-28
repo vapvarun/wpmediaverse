@@ -1143,7 +1143,7 @@ a.mvs-stat-card:focus {
 .mvs-settings-wrap {
 	display: flex;
 	min-height: calc(100vh - 32px);
-	margin: -20px -20px -20px 0;
+	margin: -4px -20px -20px -2px;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
@@ -1271,7 +1271,7 @@ a.mvs-stat-card:focus {
 	--mvs-admin-radius: 8px;
 	--mvs-admin-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
 	--mvs-admin-border: #e2e8f0;
-	--mvs-admin-surface-1: #f8fafc;
+	--mvs-admin-surface-1: #f1f5f9;
 	--mvs-admin-surface-2: #f1f5f9;
 	--mvs-admin-text: #1e293b;
 	--mvs-admin-text-muted: #64748b;
