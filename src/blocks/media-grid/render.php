@@ -83,7 +83,7 @@ if ( $show_lightbox && wp_script_is( 'mvs-lightbox', 'registered' ) ) {
 					data-media-type="<?php echo esc_attr( $mvs_grid_media_type ); ?>"
 				>
 					<a href="<?php the_permalink(); ?>" class="mvs-grid-item-link">
-					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( get_the_ID(), 'medium', get_the_title() ); ?>
+					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( get_the_ID(), 'large', get_the_title() ); ?>
 					<div class="mvs-grid-item-overlay">
 						<span class="mvs-grid-item-title"><?php echo esc_html( get_the_title() ); ?></span>
 					</div>

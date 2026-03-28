@@ -757,7 +757,7 @@ class MediaController extends WP_REST_Controller {
 		$thumbnail_url = '';
 		$attachment_id = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
 		if ( $attachment_id ) {
-			$thumb = wp_get_attachment_image_url( $attachment_id, 'medium' );
+			$thumb = wp_get_attachment_image_url( $attachment_id, 'large' );
 			if ( $thumb ) {
 				$thumbnail_url = set_url_scheme( $thumb );
 			}

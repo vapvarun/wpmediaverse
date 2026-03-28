@@ -27,7 +27,7 @@ class TemplateHelpers {
 	 * @param string $size     WordPress image size.
 	 * @return string Thumbnail URL or empty string.
 	 */
-	public static function get_thumb_url( int $media_id, string $size = 'medium' ): string {
+	public static function get_thumb_url( int $media_id, string $size = 'large' ): string {
 		$attach_id  = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
 		$file_url   = get_post_meta( $media_id, '_mvs_file_url', true );
 		$media_type = self::get_media_type( $media_id );
@@ -96,7 +96,7 @@ class TemplateHelpers {
 	 * @param string $size     WordPress image size.
 	 * @param string $alt      Alt text for the image.
 	 */
-	public static function render_grid_thumbnail( int $media_id, string $size = 'medium', string $alt = '' ): void {
+	public static function render_grid_thumbnail( int $media_id, string $size = 'large', string $alt = '' ): void {
 		$thumb_url  = self::get_thumb_url( $media_id, $size );
 		$media_type = self::get_media_type( $media_id );
 

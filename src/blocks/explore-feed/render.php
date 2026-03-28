@@ -88,7 +88,7 @@ $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 				$query->the_post();
 				?>
 				<div class="mvs-grid-item" data-media-type="<?php echo esc_attr( \WPMediaVerse\Core\TemplateHelpers::get_media_type( get_the_ID() ) ); ?>">
-					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( get_the_ID(), 'medium', get_the_title() ); ?>
+					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( get_the_ID(), 'large', get_the_title() ); ?>
 					<div class="mvs-grid-item-overlay">
 						<span class="mvs-grid-item-title"><?php echo esc_html( get_the_title() ); ?></span>
 					</div>

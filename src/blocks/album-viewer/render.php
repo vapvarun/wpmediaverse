@@ -57,7 +57,7 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 				$thumb_url  = '';
 				$attach_id  = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
 				if ( $attach_id ) {
-					$thumb_src = wp_get_attachment_image_url( $attach_id, 'medium' );
+					$thumb_src = wp_get_attachment_image_url( $attach_id, 'large' );
 					if ( $thumb_src ) {
 						$thumb_url = set_url_scheme( $thumb_src );
 					}

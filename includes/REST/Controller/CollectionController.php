@@ -381,7 +381,7 @@ class CollectionController extends WP_REST_Controller {
 		$cover_url = null;
 		$thumb_id  = get_post_thumbnail_id( $post->ID );
 		if ( $thumb_id ) {
-			$url       = wp_get_attachment_image_url( $thumb_id, 'medium' );
+			$url       = wp_get_attachment_image_url( $thumb_id, 'large' );
 			$cover_url = $url ? set_url_scheme( $url ) : null;
 		}
 		if ( ! $cover_url ) {
@@ -397,7 +397,7 @@ class CollectionController extends WP_REST_Controller {
 						$att_id = (int) get_post_meta( $first_media_id, '_mvs_attachment_id', true );
 					}
 					if ( $att_id ) {
-						$url       = wp_get_attachment_image_url( $att_id, 'medium' );
+						$url       = wp_get_attachment_image_url( $att_id, 'large' );
 						$cover_url = $url ? set_url_scheme( $url ) : null;
 					}
 				}
