@@ -491,7 +491,7 @@ a.mvs-stat-card:focus {
 	background: #fff;
 	border: 1px solid #c3c4c7;
 	border-radius: 4px;
-	padding: 0 20px 20px;
+	padding: 0;
 	margin-top: 20px;
 }
 
