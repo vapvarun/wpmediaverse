@@ -186,6 +186,10 @@ class Plugin {
 		// Plugin-level theme.json — design tokens at lowest priority (theme always wins).
 		add_filter( 'wp_theme_json_data_default', array( self::class, 'register_theme_json' ) );
 
+		// Shared UI shell — FAB, upload modal, lightbox (all frontend pages).
+		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_shared_ui_assets' ) );
+		add_action( 'wp_footer', array( self::class, 'render_shared_ui_shell' ) );
+
 		// Messaging — DM engine.
 		self::init_messaging();
 
@@ -1066,6 +1070,48 @@ class Plugin {
 			'window.mvsMessagingConfig = ' . wp_json_encode( $config ) . ';',
 			array( 'id' => 'mvs-messaging-config' )
 		);
+	}
+
+	/**
+	 * Enqueue shared UI shell assets (FAB, upload modal, lightbox).
+	 */
+	public static function enqueue_shared_ui_assets(): void {
+		if ( ! is_user_logged_in() || is_admin() ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'mvs-shared-ui-shell',
+			MVS_PLUGIN_URL . 'assets/css/shared-ui-shell.css',
+			array(),
+			MVS_VERSION
+		);
+
+		$asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
+		$asset      = file_exists( $asset_file ) ? require $asset_file : array(
+			'dependencies' => array(),
+			'version'      => MVS_VERSION,
+		);
+		wp_enqueue_script_module(
+			'mvs-shared-ui',
+			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
+			$asset['dependencies'],
+			$asset['version']
+		);
+	}
+
+	/**
+	 * Render the shared UI shell in wp_footer (FAB, upload modal, lightbox).
+	 */
+	public static function render_shared_ui_shell(): void {
+		if ( ! is_user_logged_in() || is_admin() ) {
+			return;
+		}
+
+		$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-shell.php';
+		if ( file_exists( $template ) ) {
+			include $template;
+		}
 	}
 
 	/**
