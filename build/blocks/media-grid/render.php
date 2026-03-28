@@ -21,10 +21,10 @@ $show_lightbox  = ! empty( $attributes['showLightbox'] );
 $show_reactions = ! empty( $attributes['showReactions'] );
 $gap            = isset( $attributes['gap'] ) ? absint( $attributes['gap'] ) : 8;
 
-// Pagination support.
+// Pagination support — static front pages use 'page', archive pages use 'paged'.
 $mvs_paged = 1;
 if ( ! empty( $mvs_shortcode_context ) ) {
-	$mvs_paged = max( 1, absint( get_query_var( 'paged', 1 ) ) );
+	$mvs_paged = max( 1, absint( get_query_var( 'paged' ) ?: get_query_var( 'page' ) ) );
 }
 
 // Build query.
