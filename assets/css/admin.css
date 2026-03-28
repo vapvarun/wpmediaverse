@@ -1144,7 +1144,7 @@ a.mvs-stat-card:focus {
 	display: flex;
 	min-height: calc(100vh - 32px);
 	margin: -20px -20px -20px 0;
-	padding-top: 16px;
+	padding-top: 26px;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
