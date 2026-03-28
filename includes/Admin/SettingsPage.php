@@ -1325,26 +1325,24 @@ class SettingsPage {
 
 				<?php foreach ( $sections as $section_id => $section ) : ?>
 					<div class="mvs-settings-section" id="section-<?php echo esc_attr( $section_id ); ?>">
-						<div class="mvs-settings-section__header">
-							<h2>
-								<?php echo esc_html( strtoupper( $section['label'] ) ); ?>
-								<?php if ( ! empty( $section['is_pro'] ) ) : ?>
-									<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
-								<?php endif; ?>
-							</h2>
-							<p><?php echo esc_html( $section['description'] ); ?></p>
-						</div>
 
 						<?php if ( ! empty( $section['renderer'] ) && 'permissions' === $section['renderer'] ) : ?>
-							<?php $this->render_permissions_tab(); ?>
+							<div class="mvs-settings-card">
+								<div class="mvs-settings-card__head">
+									<p class="mvs-settings-card__title">
+										<?php echo esc_html( strtoupper( $section['label'] ) ); ?>
+										<?php if ( ! empty( $section['is_pro'] ) ) : ?>
+											<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
+										<?php endif; ?>
+									</p>
+									<p class="mvs-settings-card__desc"><?php echo esc_html( $section['description'] ); ?></p>
+								</div>
+								<?php $this->render_permissions_tab(); ?>
+							</div>
 						<?php elseif ( ! empty( $section['page_slug'] ) ) : ?>
 							<form action="options.php" method="post">
 								<?php settings_fields( $section['option_group'] ); ?>
-								<div class="mvs-settings-section__body">
-									<table class="form-table" role="presentation">
-										<?php $this->render_section_fields( $section['page_slug'], $section['section_ids'] ); ?>
-									</table>
-								</div>
+								<?php $this->render_section_cards( $section, $section_id ); ?>
 								<div class="mvs-settings-section__footer">
 									<?php submit_button( __( 'Save Changes', 'wpmediaverse' ), 'primary', 'submit', false ); ?>
 								</div>
@@ -1364,6 +1362,76 @@ class SettingsPage {
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Render settings as card-based sections.
+	 *
+	 * Each section_id gets its own card with a header band (title + description)
+	 * and a form-table body. For sidebar items with a single section_id, the
+	 * sidebar item's label is used. For multiple section_ids, each card uses
+	 * the WP section title registered via add_settings_section().
+	 *
+	 * @param array  $section    Sidebar section config.
+	 * @param string $section_key Sidebar section key.
+	 */
+	private function render_section_cards( array $section, string $section_key ): void {
+		global $wp_settings_sections, $wp_settings_fields;
+
+		$page_slug = $section['page_slug'];
+		$ids       = $section['section_ids'];
+		$is_pro    = ! empty( $section['is_pro'] );
+
+		if ( count( $ids ) <= 1 ) {
+			// Single card: use the sidebar item's label as card header.
+			?>
+			<div class="mvs-settings-card">
+				<div class="mvs-settings-card__head">
+					<p class="mvs-settings-card__title">
+						<?php echo esc_html( strtoupper( $section['label'] ) ); ?>
+						<?php if ( $is_pro ) : ?>
+							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
+						<?php endif; ?>
+					</p>
+					<p class="mvs-settings-card__desc"><?php echo esc_html( $section['description'] ); ?></p>
+				</div>
+				<table class="form-table" role="presentation">
+					<?php $this->render_section_fields( $page_slug, $ids ); ?>
+				</table>
+			</div>
+			<?php
+			return;
+		}
+
+		// Multiple section_ids: each gets its own card.
+		foreach ( $ids as $sid ) {
+			if ( empty( $wp_settings_fields[ $page_slug ][ $sid ] ) ) {
+				continue;
+			}
+
+			$wp_section = $wp_settings_sections[ $page_slug ][ $sid ] ?? null;
+			$title      = $wp_section ? $wp_section['title'] : $section['label'];
+			?>
+			<div class="mvs-settings-card">
+				<div class="mvs-settings-card__head">
+					<p class="mvs-settings-card__title">
+						<?php echo esc_html( strtoupper( $title ) ); ?>
+						<?php if ( $is_pro ) : ?>
+							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
+						<?php endif; ?>
+					</p>
+					<?php if ( $wp_section && is_callable( $wp_section['callback'] ) ) : ?>
+						<div class="mvs-settings-card__desc">
+							<?php call_user_func( $wp_section['callback'], $wp_section ); ?>
+						</div>
+					<?php endif; ?>
+				</div>
+				<table class="form-table" role="presentation">
+					<?php $this->render_section_fields( $page_slug, array( $sid ) ); ?>
+				</table>
+			</div>
+			<?php
+		}
 	}
 
 	/**

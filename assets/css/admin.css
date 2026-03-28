@@ -1266,11 +1266,23 @@ a.mvs-stat-card:focus {
 	padding: 1px 5px;
 }
 
+/* --- Design Tokens (Jetonomy-matched) --- */
+.mvs-settings-wrap {
+	--mvs-admin-radius: 8px;
+	--mvs-admin-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+	--mvs-admin-border: #e2e8f0;
+	--mvs-admin-surface-1: #f8fafc;
+	--mvs-admin-surface-2: #f1f5f9;
+	--mvs-admin-text: #1e293b;
+	--mvs-admin-text-muted: #64748b;
+	--mvs-admin-text-field: #374151;
+}
+
 /* --- Content Area --- */
 .mvs-settings-content {
 	flex: 1;
 	background: #f0f0f1;
-	padding: 32px 32px 24px;
+	padding: 0 32px 24px;
 	min-width: 0;
 }
 
@@ -1283,49 +1295,93 @@ a.mvs-stat-card:focus {
 	display: block;
 }
 
-.mvs-settings-section__header {
-	margin-bottom: 16px;
+/* --- Settings Card (Jetonomy pattern) --- */
+.mvs-settings-card {
+	background: #fff;
+	border: 1px solid var(--mvs-admin-border);
+	border-radius: var(--mvs-admin-radius);
+	box-shadow: var(--mvs-admin-shadow);
+	margin-bottom: 20px;
+	overflow: hidden;
 }
 
-.mvs-settings-section__header h2 {
-	font-size: 12px;
-	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	color: #1d2327;
-	margin: 0 0 4px;
-	padding: 0;
+.mvs-settings-card__head {
+	padding: 14px 20px 12px;
+	border-bottom: 1px solid var(--mvs-admin-border);
+	background: var(--mvs-admin-surface-1);
 }
 
-.mvs-settings-section__header p {
+.mvs-settings-card__title {
 	font-size: 13px;
-	color: #757575;
+	font-weight: 700;
+	color: var(--mvs-admin-text);
+	margin: 0 0 2px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.mvs-settings-card__desc,
+.mvs-settings-card__desc p {
+	font-size: 13px;
+	color: var(--mvs-admin-text-muted);
+	margin: 0;
+	line-height: 1.5;
+}
+
+/* form-table inside a card */
+.mvs-settings-card .form-table {
 	margin: 0;
 }
 
+.mvs-settings-card .form-table th {
+	padding: 14px 20px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--mvs-admin-text-field);
+	width: 220px;
+	vertical-align: middle;
+}
+
+.mvs-settings-card .form-table td {
+	padding: 14px 20px;
+}
+
+.mvs-settings-card .form-table tr {
+	border-bottom: 1px solid var(--mvs-admin-surface-2);
+}
+
+.mvs-settings-card .form-table tr:last-child {
+	border-bottom: none;
+}
+
+.mvs-settings-card .form-table h2 {
+	display: none;
+}
+
+/* --- Legacy body class (keep for backward compat) --- */
 .mvs-settings-section__body {
 	background: #fff;
-	border: 1px solid #e0e0e0;
-	border-radius: 8px;
+	border: 1px solid var(--mvs-admin-border);
+	border-radius: var(--mvs-admin-radius);
+	box-shadow: var(--mvs-admin-shadow);
 	padding: 4px 24px 16px;
-	margin-bottom: 16px;
+	margin-bottom: 20px;
+	overflow: hidden;
 }
 
 .mvs-settings-section__body .form-table th {
-	padding-top: 16px;
-	padding-bottom: 16px;
+	padding: 14px 20px;
 	font-weight: 500;
 	font-size: 13px;
-	color: #1d2327;
+	color: var(--mvs-admin-text-field);
 }
 
 .mvs-settings-section__body .form-table td {
-	padding-top: 12px;
-	padding-bottom: 12px;
+	padding: 14px 20px;
 }
 
 .mvs-settings-section__body .form-table tr {
-	border-bottom: 1px solid #f0f0f1;
+	border-bottom: 1px solid var(--mvs-admin-surface-2);
 }
 
 .mvs-settings-section__body .form-table tr:last-child {
@@ -1333,12 +1389,12 @@ a.mvs-stat-card:focus {
 }
 
 .mvs-settings-section__body h2 {
-	/* Hide WordPress section titles inside the card — we use our own header */
 	display: none;
 }
 
+/* --- Footer --- */
 .mvs-settings-section__footer {
-	padding: 8px 0 0;
+	padding: 0;
 }
 
 .mvs-settings-section__footer .button-primary {
