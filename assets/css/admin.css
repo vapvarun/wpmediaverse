@@ -1135,3 +1135,273 @@ a.mvs-stat-card:focus {
 	width: 16px;
 	height: 16px;
 }
+
+/* ==========================================================================
+   Settings Page — Sidebar Navigation Layout
+   ========================================================================== */
+
+.mvs-settings-wrap {
+	display: flex;
+	min-height: calc(100vh - 32px);
+	margin: -20px -20px -20px 0;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* --- Sidebar --- */
+.mvs-settings-sidebar {
+	width: 260px;
+	flex-shrink: 0;
+	background: #fff;
+	border-right: 1px solid #e0e0e0;
+	padding: 0;
+	position: sticky;
+	top: 32px;
+	height: calc(100vh - 32px);
+	overflow-y: auto;
+	z-index: 1;
+}
+
+.mvs-settings-sidebar__brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 24px 20px 16px;
+	border-bottom: 1px solid #f0f0f1;
+	margin-bottom: 8px;
+}
+
+
+.mvs-settings-sidebar__logo {
+	width: 32px;
+	height: 32px;
+	background: linear-gradient(135deg, #2271b1, #135e96);
+	color: #fff;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+	flex-shrink: 0;
+}
+
+.mvs-settings-sidebar__brand strong {
+	display: block;
+	font-size: 14px;
+	font-weight: 700;
+	color: #1d2327;
+	line-height: 1.2;
+}
+
+.mvs-settings-sidebar__brand span {
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	color: #999;
+}
+
+/* --- Nav Groups --- */
+.mvs-settings-nav-group {
+	margin-bottom: 4px;
+}
+
+.mvs-settings-nav-group__label {
+	display: block;
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #999;
+	padding: 14px 20px 6px;
+}
+
+/* --- Nav Items --- */
+.mvs-settings-nav-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 7px 20px;
+	color: #50575e;
+	text-decoration: none;
+	font-size: 13px;
+	font-weight: 400;
+	border-left: 3px solid transparent;
+	transition: background 0.1s, color 0.1s;
+	cursor: pointer;
+}
+
+.mvs-settings-nav-item:hover {
+	background: #f6f7f7;
+	color: #1d2327;
+	text-decoration: none;
+}
+
+.mvs-settings-nav-item:focus {
+	outline: none;
+	box-shadow: none;
+}
+
+.mvs-settings-nav-item.is-active {
+	color: #2271b1;
+	background: #f0f6fc;
+	border-left-color: #2271b1;
+	font-weight: 600;
+}
+
+.mvs-settings-nav-item .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	color: inherit;
+	opacity: 0.7;
+}
+
+.mvs-settings-nav-item.is-active .dashicons {
+	opacity: 1;
+}
+
+.mvs-settings-nav-item .mvs-pro-badge {
+	margin-left: auto;
+	font-size: 9px;
+	padding: 1px 5px;
+}
+
+/* --- Content Area --- */
+.mvs-settings-content {
+	flex: 1;
+	background: #f0f0f1;
+	padding: 32px 32px 24px;
+	min-width: 0;
+}
+
+/* --- Sections --- */
+.mvs-settings-section {
+	display: none;
+}
+
+.mvs-settings-section.is-active {
+	display: block;
+}
+
+.mvs-settings-section__header {
+	margin-bottom: 16px;
+}
+
+.mvs-settings-section__header h2 {
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #1d2327;
+	margin: 0 0 4px;
+	padding: 0;
+}
+
+.mvs-settings-section__header p {
+	font-size: 13px;
+	color: #757575;
+	margin: 0;
+}
+
+.mvs-settings-section__body {
+	background: #fff;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	padding: 4px 24px 16px;
+	margin-bottom: 16px;
+}
+
+.mvs-settings-section__body .form-table th {
+	padding-top: 16px;
+	padding-bottom: 16px;
+	font-weight: 500;
+	font-size: 13px;
+	color: #1d2327;
+}
+
+.mvs-settings-section__body .form-table td {
+	padding-top: 12px;
+	padding-bottom: 12px;
+}
+
+.mvs-settings-section__body .form-table tr {
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.mvs-settings-section__body .form-table tr:last-child {
+	border-bottom: none;
+}
+
+.mvs-settings-section__body h2 {
+	/* Hide WordPress section titles inside the card — we use our own header */
+	display: none;
+}
+
+.mvs-settings-section__footer {
+	padding: 8px 0 0;
+}
+
+.mvs-settings-section__footer .button-primary {
+	min-width: 120px;
+}
+
+/* --- Success notice inside section --- */
+.mvs-settings-section .notice {
+	margin: 16px 0 0;
+	border-radius: 4px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 960px) {
+	.mvs-settings-wrap {
+		flex-direction: column;
+		margin: 0;
+	}
+
+	.mvs-settings-sidebar {
+		width: 100%;
+		height: auto;
+		position: static;
+		border-right: none;
+		border-bottom: 1px solid #e0e0e0;
+		display: flex;
+		flex-wrap: wrap;
+		padding: 12px;
+		gap: 4px;
+	}
+
+	.mvs-settings-sidebar__brand {
+		width: 100%;
+		padding: 8px 12px 12px;
+		margin-bottom: 4px;
+	}
+
+	.mvs-settings-nav-group {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px;
+		margin-bottom: 0;
+	}
+
+	.mvs-settings-nav-group__label {
+		width: 100%;
+		padding: 8px 8px 2px;
+	}
+
+	.mvs-settings-nav-item {
+		padding: 6px 12px;
+		border-left: none;
+		border-radius: 4px;
+		font-size: 12px;
+	}
+
+	.mvs-settings-nav-item.is-active {
+		border-left: none;
+		background: #2271b1;
+		color: #fff;
+	}
+
+	.mvs-settings-content {
+		padding: 16px;
+	}
+}

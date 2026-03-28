@@ -62,6 +62,21 @@ if ( $mvs_tag ) {
 	$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery
 }
 
+// Exclude non-cover gallery group items from the grid.
+$query_args['meta_query'] = isset( $query_args['meta_query'] ) ? $query_args['meta_query'] : array();
+$query_args['meta_query'][] = array(
+	'relation' => 'OR',
+	array(
+		'key'     => '_mvs_media_group',
+		'compare' => 'NOT EXISTS',
+	),
+	array(
+		'key'     => '_mvs_group_position',
+		'value'   => '0',
+		'compare' => '=',
+	),
+);
+
 $query   = new WP_Query( $query_args );
 $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-grid-block' ) ) : 'class="mvs-media-grid-block"';
 
@@ -77,13 +92,28 @@ if ( $show_lightbox && wp_script_is( 'mvs-lightbox', 'registered' ) ) {
 			while ( $query->have_posts() ) :
 				$query->the_post();
 				$mvs_grid_media_type = \WPMediaVerse\Core\TemplateHelpers::get_media_type( get_the_ID() );
+				$mvs_grid_group      = get_post_meta( get_the_ID(), '_mvs_media_group', true );
+				$mvs_grid_group_cnt  = 0;
+				if ( $mvs_grid_group ) {
+					global $wpdb;
+					$mvs_grid_group_cnt = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+						"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = '_mvs_media_group' AND meta_value = %s",
+						$mvs_grid_group
+					) );
+				}
+				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group ? ' mvs-grid-item--gallery' : '' );
 				?>
-				<div class="mvs-grid-item"
+				<div class="<?php echo esc_attr( $mvs_grid_item_class ); ?>"
 					data-media-id="<?php echo absint( get_the_ID() ); ?>"
 					data-media-type="<?php echo esc_attr( $mvs_grid_media_type ); ?>"
 				>
 					<a href="<?php the_permalink(); ?>" class="mvs-grid-item-link">
 					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( get_the_ID(), 'large', get_the_title() ); ?>
+					<?php if ( $mvs_grid_group && $mvs_grid_group_cnt > 1 ) : ?>
+						<span class="mvs-gallery-badge" title="<?php echo esc_attr( sprintf( '%d photos', $mvs_grid_group_cnt ) ); ?>">
+							<span class="dashicons dashicons-images-alt2"></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>
+						</span>
+					<?php endif; ?>
 					<div class="mvs-grid-item-overlay">
 						<span class="mvs-grid-item-title"><?php echo esc_html( get_the_title() ); ?></span>
 					</div>

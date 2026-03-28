@@ -157,6 +157,24 @@ class MediaController extends WP_REST_Controller {
 			)
 		);
 
+		// GET /media/{id}/group — get all items in same gallery group.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/group',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_group_items' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
 		// GET /me/media — current user's media.
 		register_rest_route(
 			$this->namespace,
@@ -254,6 +272,26 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
+		// Exclude non-cover gallery group items from feeds (only when explicitly requested).
+		$show_group_covers = $request->get_param( 'group_covers' );
+		if ( 'true' === $show_group_covers || '1' === $show_group_covers ) {
+			$where[] = "media_id NOT IN (
+				SELECT post_id FROM {$wpdb->postmeta}
+				WHERE meta_key = '_mvs_media_group'
+				AND post_id IN (
+					SELECT post_id FROM {$wpdb->postmeta}
+					WHERE meta_key = '_mvs_group_position' AND meta_value != '0'
+				)
+			)";
+		}
+
+		// Filter by specific media group ID.
+		$media_group_param = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
+		if ( $media_group_param ) {
+			$where[]  = "media_id IN (SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_mvs_media_group' AND meta_value = %s)";
+			$params[] = $media_group_param;
+		}
+
 		$where_sql = implode( ' AND ', $where );
 
 		// Count query.
@@ -330,6 +368,62 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Get all media items in the same gallery group.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function get_group_items( $request ) {
+		$media_id = $request->get_param( 'id' );
+		$post     = get_post( $media_id );
+
+		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$group_id = get_post_meta( $media_id, '_mvs_media_group', true );
+		if ( ! $group_id ) {
+			return rest_ensure_response( array( $this->prepare_item_for_response( $post, $request ) ) );
+		}
+
+		$group_posts = get_posts(
+			array(
+				'post_type'   => 'mvs_media',
+				'post_status' => 'publish',
+				'meta_key'    => '_mvs_media_group',
+				'meta_value'  => $group_id, // phpcs:ignore WordPress.DB.SlowDBQuery
+				'orderby'     => 'meta_value_num',
+				'meta_query'  => array( // phpcs:ignore WordPress.DB.SlowDBQuery
+					array(
+						'key'     => '_mvs_group_position',
+						'compare' => 'EXISTS',
+					),
+				),
+				'order'       => 'ASC',
+				'numberposts' => 50,
+			)
+		);
+
+		$items = array();
+		foreach ( $group_posts as $gp ) {
+			$item = $this->prepare_item_for_response( $gp, $request );
+			if ( $item ) {
+				$items[] = $item;
+			}
+		}
+
+		// Sort by group_position.
+		usort(
+			$items,
+			function ( $a, $b ) {
+				return ( $a['group_position'] ?? 0 ) - ( $b['group_position'] ?? 0 );
+			}
+		);
+
+		return rest_ensure_response( $items );
+	}
+
+	/**
 	 * Create a media item via file upload.
 	 *
 	 * @param WP_REST_Request $request Request.
@@ -373,13 +467,31 @@ class MediaController extends WP_REST_Controller {
 
 		// Apply tags and categories if provided.
 		$tags = $request->get_param( 'tags' );
-		if ( $tags && is_array( $tags ) ) {
-			wp_set_object_terms( $media_id, array_map( 'sanitize_text_field', $tags ), 'mvs_tag' );
+		if ( $tags ) {
+			// Accept comma-separated string or array.
+			if ( is_string( $tags ) ) {
+				$tags = array_map( 'trim', explode( ',', $tags ) );
+			}
+			$tags = array_filter( array_map( 'sanitize_text_field', $tags ) );
+			if ( $tags ) {
+				wp_set_object_terms( $media_id, $tags, 'mvs_tag' );
+			}
 		}
 
 		$categories = $request->get_param( 'categories' );
 		if ( $categories && is_array( $categories ) ) {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
+		}
+
+		// Store media group (gallery post) metadata.
+		$media_group = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
+		if ( $media_group ) {
+			update_post_meta( $media_id, '_mvs_media_group', $media_group );
+			$group_position = absint( $request->get_param( 'group_position' ) );
+			update_post_meta( $media_id, '_mvs_group_position', $group_position );
+			if ( 0 === $group_position ) {
+				update_post_meta( $media_id, '_mvs_group_cover', 1 );
+			}
 		}
 
 		// Set group association if group_id is provided and user is a member.
@@ -783,6 +895,31 @@ class MediaController extends WP_REST_Controller {
 			'thumbnail_url'     => $thumbnail_url,
 			'attachment_id'     => $attachment_id,
 		);
+
+		// Add author data for lightbox sidebar.
+		$author_id            = (int) $post->post_author;
+		$data['author_data']  = array(
+			'name'        => get_the_author_meta( 'display_name', $author_id ),
+			'avatar'      => get_avatar_url( $author_id, array( 'size' => 64 ) ),
+			'profile_url' => get_author_posts_url( $author_id ),
+		);
+
+		// Add media group (gallery post) data.
+		$media_group = get_post_meta( $media_id, '_mvs_media_group', true );
+		if ( $media_group ) {
+			$data['media_group']    = $media_group;
+			$data['group_position'] = (int) get_post_meta( $media_id, '_mvs_group_position', true );
+			$data['group_cover']    = (bool) get_post_meta( $media_id, '_mvs_group_cover', true );
+
+			// Count group members.
+			global $wpdb;
+			$data['group_count'] = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = '_mvs_media_group' AND meta_value = %s",
+					$media_group
+				)
+			);
+		}
 
 		// Add media-type-specific metadata.
 		if ( in_array( $media_type_value, array( 'video', 'audio' ), true ) ) {

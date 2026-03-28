@@ -236,6 +236,8 @@ do_action( 'mvs_before_content' );
 		data-wp-interactive="mvs/explore"
 		<?php echo wp_interactivity_data_wp_context( $mvs_explore_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		data-wp-init="callbacks.init">
+		<a class="mvs-tag-cloud-item <?php echo empty( $mvs_explore_ctx['activeTag'] ) && empty( $_GET['s'] ) ? 'active' : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>"
+			href="<?php echo esc_url( get_post_type_archive_link( 'mvs_media' ) ); ?>"><?php esc_html_e( 'All', 'wpmediaverse' ); ?></a>
 		<template data-wp-each="context.tags">
 			<a class="mvs-tag-cloud-item"
 				data-wp-bind--href="context.item.href"
@@ -329,16 +331,11 @@ do_action( 'mvs_before_content' );
 </div>
 <?php
 // Enqueue Interactivity API stores.
-$mvs_explore_asset_file = MVS_PLUGIN_DIR . 'build/blocks/explore-view/view.asset.php';
-$mvs_explore_asset      = file_exists( $mvs_explore_asset_file ) ? require $mvs_explore_asset_file : array(
-	'dependencies' => array(),
-	'version'      => MVS_VERSION,
-);
 wp_enqueue_script_module(
-	'mvs-explore-view',
-	MVS_PLUGIN_URL . 'build/blocks/explore-view/view.js',
-	$mvs_explore_asset['dependencies'],
-	$mvs_explore_asset['version']
+	'@mvs/explore-view',
+	MVS_PLUGIN_URL . 'src/blocks/explore-view/view.js',
+	array( '@wordpress/interactivity' ),
+	MVS_VERSION
 );
 
 do_action( 'mvs_after_content' );

@@ -1087,16 +1087,11 @@ class Plugin {
 			MVS_VERSION
 		);
 
-		$asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
-		$asset      = file_exists( $asset_file ) ? require $asset_file : array(
-			'dependencies' => array(),
-			'version'      => MVS_VERSION,
-		);
 		wp_enqueue_script_module(
-			'mvs-shared-ui',
-			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
-			$asset['dependencies'],
-			$asset['version']
+			'@mvs/shared-ui',
+			MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js',
+			array( '@wordpress/interactivity' ),
+			MVS_VERSION
 		);
 	}
 

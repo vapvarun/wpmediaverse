@@ -141,7 +141,7 @@ class TemplateHelpers {
 		$show_author  = $options['show_author'] ?? true;
 		$show_overlay = $options['show_overlay'] ?? true;
 		$data_attrs   = $options['data_attrs'] ?? array();
-		$size         = $options['size'] ?? 'medium';
+		$size         = $options['size'] ?? get_option( 'mvs_thumbnail_size', 'large' );
 		$media_post   = get_post( $media_id );
 
 		if ( ! $media_post || 'publish' !== $media_post->post_status ) {
@@ -161,10 +161,50 @@ class TemplateHelpers {
 			$data_str .= ' data-' . esc_attr( $key ) . '="' . esc_attr( $val ) . '"';
 		}
 
-		echo '<div class="mvs-grid-item"' . $data_str . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';
+		// Check if this is a gallery group cover.
+		$media_group  = get_post_meta( $media_id, '_mvs_media_group', true );
+		$group_count  = 0;
+		$is_gallery   = false;
+		if ( $media_group ) {
+			$is_gallery  = true;
+			$group_count = (int) get_post_meta( $media_id, '_mvs_group_count_cache', true );
+			if ( ! $group_count ) {
+				global $wpdb;
+				$group_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = '_mvs_media_group' AND meta_value = %s",
+						$media_group
+					)
+				);
+			}
+		}
+
+		$item_class = 'mvs-grid-item' . ( $is_gallery ? ' mvs-grid-item--gallery' : '' );
+
+		// Interactivity API context for lightbox.
+		$lightbox_ctx = wp_interactivity_data_wp_context(
+			array(
+				'mediaId' => $media_id,
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+			)
+		);
+
+		echo '<div class="' . esc_attr( $item_class ) . '"' . $data_str // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			. ' data-wp-interactive="mvs/shared-ui" '
+			. $lightbox_ctx // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			. '>';
+		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link"'
+			. ' data-wp-on--click="actions.openLightbox"'
+			. '>';
 
 		self::render_grid_thumbnail( $media_id, $size, $media_post->post_title );
+
+		// Gallery badge showing item count (e.g. "1/4").
+		if ( $is_gallery && $group_count > 1 ) {
+			echo '<span class="mvs-gallery-badge" title="' . esc_attr( sprintf( '%d photos', $group_count ) ) . '">';
+			echo '<span class="dashicons dashicons-images-alt2"></span> ' . esc_html( $group_count );
+			echo '</span>';
+		}
 
 		if ( $show_overlay ) {
 			echo '<div class="mvs-grid-item-overlay"><div class="mvs-grid-item-stats">';

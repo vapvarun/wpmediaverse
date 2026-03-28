@@ -133,6 +133,13 @@ class TemplateLoader {
 			$query->set( 'orderby', 'date' );
 			$query->set( 'order', 'DESC' );
 
+			// Exclude non-cover gallery group items — only show the cover (position 0).
+			// Items without _mvs_media_group pass through; grouped items must be covers.
+			add_filter(
+				'posts_where',
+				array( $this, 'gallery_group_where_clause' )
+			);
+
 			// Privacy filter: only show media the current user is allowed to see.
 			$current_user_id = get_current_user_id();
 
@@ -333,6 +340,33 @@ class TemplateLoader {
 			$current_user_id
 		);
 		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return $where;
+	}
+
+	/**
+	 * Filter posts WHERE clause to exclude non-cover gallery group items.
+	 *
+	 * Gallery posts share a `_mvs_media_group` meta value. Only the cover
+	 * image (group_position = 0) should appear in grids and feeds. Non-cover
+	 * items (position > 0) are hidden.
+	 *
+	 * @param string $where Existing WHERE clause.
+	 * @return string Modified WHERE clause.
+	 */
+	public function gallery_group_where_clause( string $where ): string {
+		global $wpdb;
+
+		remove_filter( 'posts_where', array( $this, 'gallery_group_where_clause' ) );
+
+		// Exclude posts that have _mvs_media_group AND _mvs_group_position != 0.
+		$where .= " AND {$wpdb->posts}.ID NOT IN (
+			SELECT pm1.post_id FROM {$wpdb->postmeta} pm1
+			INNER JOIN {$wpdb->postmeta} pm2 ON pm1.post_id = pm2.post_id
+			WHERE pm1.meta_key = '_mvs_media_group'
+			AND pm2.meta_key = '_mvs_group_position'
+			AND pm2.meta_value != '0'
+		)";
 
 		return $where;
 	}

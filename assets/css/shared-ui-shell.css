@@ -418,6 +418,7 @@
 }
 
 .mvs-lightbox-media {
+	position: relative;
 	flex-shrink: 0;
 	display: flex;
 	align-items: center;
@@ -435,6 +436,60 @@
 	max-width: 100%;
 	max-height: 95vh;
 	object-fit: contain;
+}
+
+/* Lightbox gallery navigation arrows */
+.mvs-lightbox-nav {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	background: rgba(0, 0, 0, 0.5);
+	border: none;
+	color: #fff;
+	cursor: pointer;
+	padding: 12px 8px;
+	border-radius: 4px;
+	z-index: 5;
+	transition: background 0.15s;
+}
+
+.mvs-lightbox-nav:hover {
+	background: rgba(0, 0, 0, 0.8);
+}
+
+.mvs-lightbox-nav[hidden] {
+	display: none !important;
+}
+
+.mvs-lightbox-nav--prev {
+	left: 8px;
+}
+
+.mvs-lightbox-nav--next {
+	right: 8px;
+}
+
+.mvs-lightbox-nav svg {
+	pointer-events: none;
+}
+
+/* Lightbox position indicator */
+.mvs-lightbox-position {
+	position: absolute;
+	bottom: 12px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(0, 0, 0, 0.6);
+	color: #fff;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 13px;
+	font-weight: 500;
+	z-index: 5;
+}
+
+.mvs-lightbox-position[hidden] {
+	display: none !important;
 }
 
 .mvs-lightbox-sidebar {

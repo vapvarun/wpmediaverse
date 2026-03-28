@@ -32,10 +32,37 @@ class SettingsPage {
 	 */
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
+		add_action( 'admin_menu', array( $this, 'cleanup_admin_menu' ), 999 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_init', array( $this, 'track_settings_changes' ) );
 		add_action( 'admin_post_mvs_save_role_caps', array( $this, 'save_role_caps' ) );
 		add_action( 'admin_notices', array( $this, 'render_contextual_notices' ) );
+	}
+
+	/**
+	 * Remove redundant submenu items for a cleaner admin menu.
+	 *
+	 * Pages remain accessible via direct URL — only the menu links are removed.
+	 * Keeps: Overview, All Media, Albums, Collections, Moderation, Stats, Settings.
+	 */
+	public function cleanup_admin_menu(): void {
+		$parent = 'edit.php?post_type=mvs_media';
+
+		// Remove taxonomy submenus (accessible via All Media screen filters).
+		remove_submenu_page( $parent, 'edit-tags.php?taxonomy=mvs_tag&amp;post_type=mvs_media' );
+		remove_submenu_page( $parent, 'edit-tags.php?taxonomy=mvs_category&amp;post_type=mvs_media' );
+
+		// Remove Add Media (users upload via frontend FAB or All Media screen).
+		remove_submenu_page( $parent, 'post-new.php?post_type=mvs_media' );
+
+		// Remove Logs (linked from Settings sidebar).
+		remove_submenu_page( $parent, 'mvs-logs' );
+
+		// Remove Pro pages (linked from Settings sidebar).
+		remove_submenu_page( $parent, 'mvs-quotas' );
+		remove_submenu_page( $parent, 'mvs-reports' );
+		remove_submenu_page( $parent, 'mvs-analytics' );
+		remove_submenu_page( $parent, 'mvs-migration' );
 	}
 
 	/**
@@ -441,6 +468,32 @@ class SettingsPage {
 					'square'   => __( 'Square (cropped)', 'wpmediaverse' ),
 					'original' => __( 'Original proportions', 'wpmediaverse' ),
 				),
+			)
+		);
+
+		register_setting(
+			self::OPTION_GROUP . '_display',
+			'mvs_thumbnail_size',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'large',
+			)
+		);
+		add_settings_field(
+			'mvs_thumbnail_size',
+			__( 'Thumbnail Quality', 'wpmediaverse' ),
+			array( $this, 'render_select_field' ),
+			self::PAGE_SLUG . '-display',
+			'mvs_display',
+			array(
+				'option'      => 'mvs_thumbnail_size',
+				'choices'     => array(
+					'medium'    => __( 'Medium (300px — faster loading)', 'wpmediaverse' ),
+					'large'     => __( 'Large (1024px — retina crisp)', 'wpmediaverse' ),
+					'full'      => __( 'Full (original — highest quality)', 'wpmediaverse' ),
+				),
+				'description' => __( 'Controls image quality on grids and feeds. Larger sizes look sharper on retina displays but load slower.', 'wpmediaverse' ),
 			)
 		);
 	}
@@ -1025,90 +1078,330 @@ class SettingsPage {
 	}
 
 	// -------------------------------------------------------------------------
+	// Section Registry
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Get all registered sidebar sections.
+	 *
+	 * Each section maps a sidebar nav item to its group, page slug, option group,
+	 * and section IDs. Extensible via `mvs_settings_sections` filter.
+	 *
+	 * @return array<string,array>
+	 */
+	private function get_registered_sections(): array {
+		$sections = array(
+			'general'     => array(
+				'group'        => 'general',
+				'label'        => __( 'General', 'wpmediaverse' ),
+				'icon'         => 'dashicons-admin-generic',
+				'description'  => __( 'Upload limits, file types, privacy defaults, and page assignments.', 'wpmediaverse' ),
+				'option_group' => self::OPTION_GROUP . '_general',
+				'page_slug'    => self::PAGE_SLUG . '-general',
+				'section_ids'  => array( 'mvs_general', 'mvs_pages' ),
+				'is_pro'       => false,
+				'priority'     => 10,
+			),
+			'display'     => array(
+				'group'        => 'general',
+				'label'        => __( 'Display', 'wpmediaverse' ),
+				'icon'         => 'dashicons-format-gallery',
+				'description'  => __( 'Grid layout, columns, thumbnails, and feed preferences.', 'wpmediaverse' ),
+				'option_group' => self::OPTION_GROUP . '_display',
+				'page_slug'    => self::PAGE_SLUG . '-display',
+				'section_ids'  => array( 'mvs_display' ),
+				'is_pro'       => false,
+				'priority'     => 20,
+			),
+			'social'      => array(
+				'group'        => 'general',
+				'label'        => __( 'Social', 'wpmediaverse' ),
+				'icon'         => 'dashicons-format-chat',
+				'description'  => __( 'Direct messaging, privacy, and spam prevention.', 'wpmediaverse' ),
+				'option_group' => self::OPTION_GROUP . '_general',
+				'page_slug'    => self::PAGE_SLUG . '-general',
+				'section_ids'  => array( 'mvs_messaging' ),
+				'is_pro'       => false,
+				'priority'     => 30,
+			),
+			'storage'     => array(
+				'group'        => 'storage',
+				'label'        => __( 'Storage', 'wpmediaverse' ),
+				'icon'         => 'dashicons-database',
+				'description'  => __( 'Choose where media files are stored.', 'wpmediaverse' ),
+				'option_group' => self::OPTION_GROUP . '_general',
+				'page_slug'    => self::PAGE_SLUG . '-general',
+				'section_ids'  => array( 'mvs_storage' ),
+				'is_pro'       => false,
+				'priority'     => 40,
+			),
+			'ai'          => array(
+				'group'        => 'ai',
+				'label'        => __( 'AI & Moderation', 'wpmediaverse' ),
+				'icon'         => 'dashicons-welcome-learn-more',
+				'description'  => __( 'AI providers, auto-analysis, tagging, and content moderation.', 'wpmediaverse' ),
+				'option_group' => self::OPTION_GROUP . '_ai',
+				'page_slug'    => self::PAGE_SLUG . '-ai',
+				'section_ids'  => array( 'mvs_ai', 'mvs_moderation' ),
+				'is_pro'       => false,
+				'priority'     => 50,
+			),
+			'watermark'   => array(
+				'group'        => 'advanced',
+				'label'        => __( 'Watermark', 'wpmediaverse' ),
+				'icon'         => 'dashicons-art',
+				'description'  => __( 'Add a text or image watermark to uploaded images.', 'wpmediaverse' ),
+				'option_group' => self::OPTION_GROUP . '_general',
+				'page_slug'    => self::PAGE_SLUG . '-general',
+				'section_ids'  => array( 'mvs_watermark' ),
+				'is_pro'       => false,
+				'priority'     => 60,
+			),
+			'permissions' => array(
+				'group'        => 'advanced',
+				'label'        => __( 'Permissions', 'wpmediaverse' ),
+				'icon'         => 'dashicons-admin-users',
+				'description'  => __( 'Role-based access control for media features.', 'wpmediaverse' ),
+				'option_group' => '',
+				'page_slug'    => '',
+				'section_ids'  => array(),
+				'is_pro'       => false,
+				'priority'     => 70,
+				'renderer'     => 'permissions',
+			),
+			'webhooks'    => array(
+				'group'        => 'advanced',
+				'label'        => __( 'Webhooks', 'wpmediaverse' ),
+				'icon'         => 'dashicons-rest-api',
+				'description'  => __( 'Send event notifications to external services.', 'wpmediaverse' ),
+				'option_group' => self::OPTION_GROUP . '_webhooks',
+				'page_slug'    => self::PAGE_SLUG . '-webhooks',
+				'section_ids'  => array( 'mvs_webhooks' ),
+				'is_pro'       => false,
+				'priority'     => 80,
+			),
+			);
+
+		// Remove free watermark if Pro handles it on display tab.
+		if ( $this->is_pro_active() ) {
+			unset( $sections['watermark'] );
+		}
+
+		/**
+		 * Filter the settings sections for sidebar navigation.
+		 *
+		 * Pro plugins add sections here (S3, BunnyCDN, Feed Layout, Captions, etc.).
+		 *
+		 * @param array $sections Section definitions keyed by ID.
+		 */
+		$sections = apply_filters( 'mvs_settings_sections', $sections );
+
+		// Sort by priority.
+		uasort(
+			$sections,
+			function ( $a, $b ) {
+				return ( $a['priority'] ?? 50 ) - ( $b['priority'] ?? 50 );
+			}
+		);
+
+		return $sections;
+	}
+
+	/**
+	 * Group sections by their group key.
+	 *
+	 * @param array $sections Flat sections array.
+	 * @return array<string,array> Grouped sections.
+	 */
+	private function group_sections( array $sections ): array {
+		$group_labels = array(
+			'general'  => __( 'General', 'wpmediaverse' ),
+			'media'    => __( 'Media', 'wpmediaverse' ),
+			'social'   => __( 'Social', 'wpmediaverse' ),
+			'storage'  => __( 'Storage', 'wpmediaverse' ),
+			'ai'       => __( 'AI & Moderation', 'wpmediaverse' ),
+			'advanced' => __( 'Advanced', 'wpmediaverse' ),
+			'license'  => __( 'License', 'wpmediaverse' ),
+		);
+
+		/**
+		 * Filter group labels for sidebar navigation.
+		 *
+		 * @param array $group_labels Group labels keyed by group ID.
+		 */
+		$group_labels = apply_filters( 'mvs_settings_group_labels', $group_labels );
+
+		$grouped = array();
+		foreach ( $sections as $id => $section ) {
+			$group = $section['group'] ?? 'general';
+			if ( ! isset( $grouped[ $group ] ) ) {
+				$grouped[ $group ] = array(
+					'label'    => $group_labels[ $group ] ?? ucfirst( $group ),
+					'sections' => array(),
+				);
+			}
+			$grouped[ $group ]['sections'][ $id ] = $section;
+		}
+
+		return $grouped;
+	}
+
+	// -------------------------------------------------------------------------
 	// Page renderer
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Render the settings page with tabbed navigation.
+	 * Render the settings page with sidebar navigation.
 	 */
 	public function render_page(): void {
 		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
 			return;
 		}
 
-		$active_tab = $this->get_active_tab();
-		$base_url   = admin_url( 'edit.php?post_type=mvs_media&page=' . self::PAGE_SLUG );
+		$sections = $this->get_registered_sections();
+		$grouped  = $this->group_sections( $sections );
 
-		$tabs = array(
-			'general'     => __( 'General', 'wpmediaverse' ),
-			'display'     => __( 'Display', 'wpmediaverse' ),
-			'permissions' => __( 'Permissions', 'wpmediaverse' ),
-			'ai'          => __( 'AI & Moderation', 'wpmediaverse' ),
-			'webhooks'    => __( 'Webhooks', 'wpmediaverse' ),
+		wp_enqueue_script(
+			'mvs-settings-nav',
+			MVS_PLUGIN_URL . 'assets/js/settings-nav.js',
+			array(),
+			MVS_VERSION,
+			true
 		);
 		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline">
-				<?php esc_html_e( 'WPMediaVerse Settings', 'wpmediaverse' ); ?>
-				<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
-			</h1>
-			<hr class="wp-header-end">
-			<p class="mvs-page-subtitle"><?php esc_html_e( 'Configure your media platform settings.', 'wpmediaverse' ); ?></p>
-
-			<nav class="nav-tab-wrapper wp-clearfix" aria-label="<?php esc_attr_e( 'Settings tabs', 'wpmediaverse' ); ?>">
-				<?php foreach ( $tabs as $tab_slug => $tab_label ) : ?>
-					<a href="<?php echo esc_url( add_query_arg( 'tab', $tab_slug, $base_url ) ); ?>"
-						class="nav-tab<?php echo ( $tab_slug === $active_tab ) ? ' nav-tab-active' : ''; ?>">
-						<?php echo esc_html( $tab_label ); ?>
-					</a>
-				<?php endforeach; ?>
-			</nav>
-
-			<?php if ( 'permissions' === $active_tab ) : ?>
-				<?php $this->render_permissions_tab(); ?>
-			<?php else : ?>
-				<?php
-				$option_group_map = array(
-					'general'  => self::OPTION_GROUP . '_general',
-					'display'  => self::OPTION_GROUP . '_display',
-					'ai'       => self::OPTION_GROUP . '_ai',
-					'webhooks' => self::OPTION_GROUP . '_webhooks',
-				);
-				$page_slug_map    = array(
-					'general'  => self::PAGE_SLUG . '-general',
-					'display'  => self::PAGE_SLUG . '-display',
-					'ai'       => self::PAGE_SLUG . '-ai',
-					'webhooks' => self::PAGE_SLUG . '-webhooks',
-				);
-				$option_group     = $option_group_map[ $active_tab ] ?? ( self::OPTION_GROUP . '_general' );
-				$page_slug        = $page_slug_map[ $active_tab ] ?? ( self::PAGE_SLUG . '-general' );
-				?>
-				<div class="mvs-settings-card">
-					<form action="options.php" method="post">
-						<?php
-						settings_fields( $option_group );
-						if ( 'general' === $active_tab ) {
-							$this->render_settings_panels( $page_slug );
-						} else {
-							do_settings_sections( $page_slug );
-						}
-						submit_button( __( 'Save Settings', 'wpmediaverse' ) );
-						?>
-					</form>
+		<div class="mvs-settings-wrap">
+			<!-- Sidebar -->
+			<div class="mvs-settings-sidebar">
+				<div class="mvs-settings-sidebar__brand">
+					<span class="mvs-settings-sidebar__logo dashicons dashicons-format-gallery"></span>
+					<div>
+						<strong><?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?></strong>
+						<span><?php esc_html_e( 'SETTINGS', 'wpmediaverse' ); ?></span>
+					</div>
 				</div>
+
+				<?php foreach ( $grouped as $group_id => $group ) : ?>
+					<div class="mvs-settings-nav-group">
+						<span class="mvs-settings-nav-group__label"><?php echo esc_html( $group['label'] ); ?></span>
+						<?php foreach ( $group['sections'] as $section_id => $section ) : ?>
+							<a class="mvs-settings-nav-item" href="#<?php echo esc_attr( $section_id ); ?>" data-section="<?php echo esc_attr( $section_id ); ?>">
+								<span class="dashicons <?php echo esc_attr( $section['icon'] ); ?>"></span>
+								<?php echo esc_html( $section['label'] ); ?>
+								<?php if ( ! empty( $section['is_pro'] ) ) : ?>
+									<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
+								<?php endif; ?>
+							</a>
+						<?php endforeach; ?>
+					</div>
+				<?php endforeach; ?>
+
+				<!-- Tools links (pages removed from main menu) -->
+				<div class="mvs-settings-nav-group">
+					<span class="mvs-settings-nav-group__label"><?php esc_html_e( 'Tools', 'wpmediaverse' ); ?></span>
+					<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-logs' ) ); ?>">
+						<span class="dashicons dashicons-list-view"></span>
+						<?php esc_html_e( 'Logs', 'wpmediaverse' ); ?>
+					</a>
+					<?php if ( $this->is_pro_active() ) : ?>
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-analytics' ) ); ?>">
+							<span class="dashicons dashicons-chart-area"></span>
+							<?php esc_html_e( 'Analytics', 'wpmediaverse' ); ?>
+							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
+						</a>
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-migration' ) ); ?>">
+							<span class="dashicons dashicons-migrate"></span>
+							<?php esc_html_e( 'Import / Migration', 'wpmediaverse' ); ?>
+							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
+						</a>
+					<?php endif; ?>
+				</div>
+			</div>
+
+			<!-- Content -->
+			<div class="mvs-settings-content">
+				<?php if ( isset( $_GET['settings-updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification ?>
+					<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'wpmediaverse' ); ?></p></div>
+				<?php endif; ?>
+
+				<?php foreach ( $sections as $section_id => $section ) : ?>
+					<div class="mvs-settings-section" id="section-<?php echo esc_attr( $section_id ); ?>">
+						<div class="mvs-settings-section__header">
+							<h2>
+								<?php echo esc_html( strtoupper( $section['label'] ) ); ?>
+								<?php if ( ! empty( $section['is_pro'] ) ) : ?>
+									<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
+								<?php endif; ?>
+							</h2>
+							<p><?php echo esc_html( $section['description'] ); ?></p>
+						</div>
+
+						<?php if ( ! empty( $section['renderer'] ) && 'permissions' === $section['renderer'] ) : ?>
+							<?php $this->render_permissions_tab(); ?>
+						<?php elseif ( ! empty( $section['page_slug'] ) ) : ?>
+							<form action="options.php" method="post">
+								<?php settings_fields( $section['option_group'] ); ?>
+								<div class="mvs-settings-section__body">
+									<table class="form-table" role="presentation">
+										<?php $this->render_section_fields( $section['page_slug'], $section['section_ids'] ); ?>
+									</table>
+								</div>
+								<div class="mvs-settings-section__footer">
+									<?php submit_button( __( 'Save Changes', 'wpmediaverse' ), 'primary', 'submit', false ); ?>
+								</div>
+							</form>
+						<?php endif; ?>
+					</div>
+				<?php endforeach; ?>
+
 				<?php
-				if ( 'general' === $active_tab && $this->is_pro_active() ) {
+				if ( ! $this->is_pro_active() ) {
+					$this->render_pro_upsell( 'general' );
+				}
+				if ( $this->is_pro_active() ) {
 					$this->render_storage_toggle_script();
 				}
 				?>
-				<?php
-				if ( ! $this->is_pro_active() ) {
-					$this->render_pro_upsell( $active_tab );
-				}
-				?>
-			<?php endif; ?>
+			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Render only specific section fields from a page slug.
+	 *
+	 * Uses WordPress globals to render fields for specific section IDs,
+	 * allowing one sidebar item to show a subset of a page slug's fields.
+	 *
+	 * @param string   $page_slug   The settings page slug.
+	 * @param string[] $section_ids Section IDs to render.
+	 */
+	private function render_section_fields( string $page_slug, array $section_ids ): void {
+		global $wp_settings_fields;
+
+		foreach ( $section_ids as $section_id ) {
+			if ( empty( $wp_settings_fields[ $page_slug ][ $section_id ] ) ) {
+				continue;
+			}
+			foreach ( $wp_settings_fields[ $page_slug ][ $section_id ] as $field ) {
+				$class = '';
+				if ( ! empty( $field['args']['class'] ) ) {
+					$class = ' class="' . esc_attr( $field['args']['class'] ) . '"';
+				}
+				echo '<tr' . $class . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				if ( ! empty( $field['title'] ) ) {
+					echo '<th scope="row">';
+					if ( ! empty( $field['args']['label_for'] ) ) {
+						echo '<label for="' . esc_attr( $field['args']['label_for'] ) . '">' . esc_html( $field['title'] ) . '</label>';
+					} else {
+						echo esc_html( $field['title'] );
+					}
+					echo '</th>';
+				}
+				echo '<td>';
+				call_user_func( $field['callback'], $field['args'] );
+				echo '</td></tr>';
+			}
+		}
 	}
 
 	// -------------------------------------------------------------------------

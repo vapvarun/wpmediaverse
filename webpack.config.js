@@ -5,7 +5,6 @@ const path = require( 'path' );
 // wp-scripts only discovers index.js entries, so we add these manually.
 const viewOnlyStores = [
 	'dashboard-view',
-	'shared-ui',
 	'media-social',
 	'explore-view',
 ];
@@ -25,16 +24,18 @@ const configs = Array.isArray( defaultConfig )
 
 // Add view-only entries to the first config.
 const mainConfig = configs[ 0 ];
-const existingEntry =
-	typeof mainConfig.entry === 'function'
-		? mainConfig.entry()
-		: mainConfig.entry || {};
+const originalEntry = mainConfig.entry;
 
 configs[ 0 ] = {
 	...mainConfig,
-	entry: {
-		...existingEntry,
-		...viewEntries,
+	entry: async () => {
+		const resolved = typeof originalEntry === 'function'
+			? await originalEntry()
+			: originalEntry || {};
+		return {
+			...resolved,
+			...viewEntries,
+		};
 	},
 };
 

@@ -45,11 +45,11 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 	</div>
 
 	<!-- Upload Modal Overlay -->
-	<div class="mvs-modal-overlay" data-wp-bind--hidden="!state.uploadModal.visible" data-wp-on--click="actions.closeUploadModal">
-		<div class="mvs-modal" data-wp-on--click="event.stopPropagation()">
+	<div class="mvs-modal-overlay" data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.closeUploadModal">
+		<div class="mvs-modal" data-wp-on--click="actions.handleModalClick">
 			<!-- Modal Header -->
 			<div class="mvs-modal-header">
-				<h3 class="mvs-modal-title" data-wp-text="state.uploadModalTitle"></h3>
+				<h3 class="mvs-modal-title" data-wp-text="state.uploadModalHeading"></h3>
 				<button class="mvs-modal-close" data-wp-on--click="actions.closeUploadModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
 						<line x1="18" y1="6" x2="6" y2="18"></line>
@@ -60,7 +60,7 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 
 			<!-- Mode Tabs -->
 			<div class="mvs-modal-tabs">
-				<button class="mvs-modal-tab" data-wp-class--active="state.uploadModal.mode === 'photo'"
+				<button class="mvs-modal-tab" data-wp-class--active="state.isPhotoMode"
 					data-wp-on--click="actions.setUploadMode" data-wp-context='{"uploadMode":"photo"}'>
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
 						<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -69,7 +69,7 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 					</svg>
 					<?php esc_html_e( 'Photo', 'wpmediaverse' ); ?>
 				</button>
-				<button class="mvs-modal-tab" data-wp-class--active="state.uploadModal.mode === 'gallery'"
+				<button class="mvs-modal-tab" data-wp-class--active="state.isGalleryMode"
 					data-wp-on--click="actions.setUploadMode" data-wp-context='{"uploadMode":"gallery"}'>
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
 						<rect x="2" y="2" width="16" height="16" rx="2"></rect>
@@ -77,14 +77,14 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 					</svg>
 					<?php esc_html_e( 'Gallery', 'wpmediaverse' ); ?>
 				</button>
-				<button class="mvs-modal-tab" data-wp-class--active="state.uploadModal.mode === 'album'"
+				<button class="mvs-modal-tab" data-wp-class--active="state.isAlbumMode"
 					data-wp-on--click="actions.setUploadMode" data-wp-context='{"uploadMode":"album"}'>
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
 						<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
 					</svg>
 					<?php esc_html_e( 'Album', 'wpmediaverse' ); ?>
 				</button>
-				<button class="mvs-modal-tab" data-wp-class--active="state.uploadModal.mode === 'video'"
+				<button class="mvs-modal-tab" data-wp-class--active="state.isVideoMode"
 					data-wp-on--click="actions.setUploadMode" data-wp-context='{"uploadMode":"video"}'>
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
 						<polygon points="23 7 16 12 23 17 23 7"></polygon>
@@ -116,7 +116,7 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 				<div class="mvs-modal-dropzone" data-wp-on--click="actions.handleUploadClick"
 					data-wp-on--drop="actions.handleUploadDrop"
 					data-wp-on--dragover="actions.handleUploadDragOver"
-					data-wp-bind--hidden="state.uploadModal.uploading">
+					data-wp-bind--hidden="state.uploadModalUploading">
 					<input type="file" id="mvs-modal-file-input" style="display:none"
 						data-wp-bind--accept="state.uploadAccept"
 						data-wp-bind--multiple="state.uploadMultiple"
@@ -124,7 +124,7 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 
 					<!-- Preview thumbnails -->
 					<div class="mvs-modal-previews" data-wp-bind--hidden="!state.hasFiles">
-						<template data-wp-each="state.uploadModal.previews">
+						<template data-wp-each="state.uploadModalPreviews">
 							<img class="mvs-modal-preview-thumb" data-wp-bind--src="context.item" alt="" />
 						</template>
 					</div>
@@ -141,30 +141,30 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 				</div>
 
 				<!-- Upload progress -->
-				<div class="mvs-modal-progress" data-wp-bind--hidden="!state.uploadModal.uploading">
+				<div class="mvs-modal-progress" data-wp-bind--hidden="!state.uploadModalUploading">
 					<div class="mvs-modal-progress-bar">
 						<div class="mvs-modal-progress-fill"
-							data-wp-style--width="(state.uploadModal.total ? Math.round((state.uploadModal.done / state.uploadModal.total) * 100) : 0) + '%'"></div>
+							data-wp-style--width="state.uploadProgressWidth"></div>
 					</div>
 					<p class="mvs-modal-progress-text" data-wp-text="state.uploadProgressText"></p>
 				</div>
 
 				<!-- Metadata fields -->
-				<div class="mvs-modal-fields" data-wp-bind--hidden="state.uploadModal.uploading">
+				<div class="mvs-modal-fields" data-wp-bind--hidden="state.uploadModalUploading">
 					<div class="mvs-modal-field">
 						<input type="text" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
 							data-wp-on--input="actions.updateUploadTitle"
-							data-wp-bind--value="state.uploadModal.title" />
+							data-wp-bind--value="state.uploadModalTitle" />
 					</div>
 					<div class="mvs-modal-field">
 						<textarea rows="2" placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>"
 							data-wp-on--input="actions.updateUploadDescription"
-							data-wp-text="state.uploadModal.description"></textarea>
+							data-wp-bind--value="state.uploadModalDescription"></textarea>
 					</div>
 					<div class="mvs-modal-field-row">
 						<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 							data-wp-on--input="actions.updateUploadTags"
-							data-wp-bind--value="state.uploadModal.tags" />
+							data-wp-bind--value="state.uploadModalTags" />
 						<select data-wp-on--change="actions.updateUploadPrivacy">
 							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 							<option value="loggedin"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
@@ -175,7 +175,7 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 			</div>
 
 			<!-- Modal Footer -->
-			<div class="mvs-modal-footer" data-wp-bind--hidden="state.uploadModal.uploading">
+			<div class="mvs-modal-footer" data-wp-bind--hidden="state.uploadModalUploading">
 				<button class="mvs-btn mvs-btn--secondary" data-wp-on--click="actions.closeUploadModal">
 					<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
 				</button>
@@ -187,8 +187,8 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 	</div>
 
 	<!-- Lightbox Overlay -->
-	<div class="mvs-lightbox-overlay" data-wp-bind--hidden="!state.lightbox.visible" data-wp-on--click="actions.closeLightbox">
-		<div class="mvs-lightbox" data-wp-on--click="event.stopPropagation()">
+	<div class="mvs-lightbox-overlay" data-wp-bind--hidden="!state.lightboxVisible" data-wp-on--click="actions.closeLightbox">
+		<div class="mvs-lightbox" data-wp-on--click="actions.handleModalClick">
 			<!-- Close button -->
 			<button class="mvs-lightbox-close" data-wp-on--click="actions.closeLightbox" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
 				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">
@@ -198,17 +198,38 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 			</button>
 
 			<!-- Loading spinner -->
-			<div class="mvs-lightbox-loading" data-wp-bind--hidden="!state.lightbox.loading">
+			<div class="mvs-lightbox-loading" data-wp-bind--hidden="!state.lightboxLoading">
 				<div class="mvs-spinner"></div>
 			</div>
 
-			<!-- Image -->
-			<div class="mvs-lightbox-media" data-wp-bind--hidden="state.lightbox.loading">
+			<!-- Image with gallery navigation -->
+			<div class="mvs-lightbox-media" data-wp-bind--hidden="state.lightboxLoading">
+				<!-- Prev arrow (gallery groups only) -->
+				<button class="mvs-lightbox-nav mvs-lightbox-nav--prev"
+					data-wp-bind--hidden="!state.lightboxIsGroup"
+					data-wp-on--click="actions.lightboxPrev"
+					aria-label="<?php esc_attr_e( 'Previous', 'wpmediaverse' ); ?>">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+				</button>
+
 				<img data-wp-bind--src="state.lightboxImageUrl" data-wp-bind--alt="state.lightboxTitle" />
+
+				<!-- Next arrow (gallery groups only) -->
+				<button class="mvs-lightbox-nav mvs-lightbox-nav--next"
+					data-wp-bind--hidden="!state.lightboxIsGroup"
+					data-wp-on--click="actions.lightboxNext"
+					aria-label="<?php esc_attr_e( 'Next', 'wpmediaverse' ); ?>">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+				</button>
+
+				<!-- Position indicator (e.g. "2 / 4") -->
+				<div class="mvs-lightbox-position" data-wp-bind--hidden="!state.lightboxIsGroup">
+					<span data-wp-text="state.lightboxPositionText"></span>
+				</div>
 			</div>
 
 			<!-- Sidebar with info -->
-			<div class="mvs-lightbox-sidebar" data-wp-bind--hidden="state.lightbox.loading">
+			<div class="mvs-lightbox-sidebar" data-wp-bind--hidden="state.lightboxLoading">
 				<div class="mvs-lightbox-author">
 					<img class="mvs-lightbox-author-avatar" data-wp-bind--src="state.lightboxAuthorAvatar" alt="" width="32" height="32" />
 					<strong data-wp-text="state.lightboxAuthor"></strong>
@@ -218,11 +239,11 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 		</div>
 	</div>
 
-	<!-- Toast (already in shared-ui, but rendered here as a global container) -->
-	<div class="mvs-toast" data-wp-bind--hidden="!state.toast.visible"
+	<!-- Toast -->
+	<div class="mvs-toast" data-wp-bind--hidden="!state.toastVisible"
 		data-wp-class--mvs-toast--success="state.isToastSuccess"
 		data-wp-class--mvs-toast--error="state.isToastError">
-		<span data-wp-text="state.toast.message"></span>
+		<span data-wp-text="state.toastMessage"></span>
 		<button class="mvs-toast-close" data-wp-on--click="actions.hideToast">&times;</button>
 	</div>
 </div>

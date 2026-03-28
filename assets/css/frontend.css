@@ -584,6 +584,31 @@
 	color: var(--mvs-bg);
 }
 
+/* -- Gallery badge (multi-image group indicator) */
+.mvs-gallery-badge {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	background: rgba(0, 0, 0, 0.6);
+	color: #fff;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 0.8em;
+	font-weight: 600;
+	pointer-events: none;
+	z-index: 2;
+}
+
+.mvs-gallery-badge .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	color: #fff;
+}
+
 /* ==========================================================================
    5. Pagination
    ========================================================================== */
