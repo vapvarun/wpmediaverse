@@ -484,9 +484,16 @@ class BuddyPressIntegration {
 	 * @param string $content    Comment content.
 	 * @param string $source     Source of the comment.
 	 */
+	/**
+	 * Flag to prevent infinite comment sync loops.
+	 *
+	 * @var bool
+	 */
+	private $syncing_comment = false;
+
 	public function sync_comment_to_activity( int $media_id, int $user_id, int $comment_id, string $content, string $source = '' ): void {
-		// Prevent infinite loop.
-		if ( 'bp_activity' === $source ) {
+		// Prevent infinite loop — skip if source is BP or if we're already syncing.
+		if ( 'bp_activity' === $source || $this->syncing_comment ) {
 			return;
 		}
 
@@ -499,11 +506,13 @@ class BuddyPressIntegration {
 			return;
 		}
 
+		$this->syncing_comment = true;
 		bp_activity_new_comment( array(
 			'activity_id' => $activity_id,
 			'content'     => $content,
 			'user_id'     => $user_id,
 		) );
+		$this->syncing_comment = false;
 	}
 
 	/**
@@ -514,6 +523,11 @@ class BuddyPressIntegration {
 	 * @param object $activity_comment Activity comment object.
 	 */
 	public function sync_activity_comment_to_media( int $comment_id, array $params, object $activity_comment ): void {
+		// Prevent infinite loop.
+		if ( $this->syncing_comment ) {
+			return;
+		}
+
 		$activity_id = $params['activity_id'] ?? 0;
 		if ( ! $activity_id ) {
 			return;
@@ -535,9 +549,13 @@ class BuddyPressIntegration {
 			return;
 		}
 
+		$this->syncing_comment = true;
+
 		// Create comment on the primary media item with 'bp_activity' source to prevent loop.
 		$comment_service = new \WPMediaVerse\Social\CommentService();
 		$comment_service->add( $media_ids[0], $user_id, $content, 0, 'bp_activity' );
+
+		$this->syncing_comment = false;
 	}
 
 	/**
