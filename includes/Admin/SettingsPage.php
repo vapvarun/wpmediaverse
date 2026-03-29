@@ -54,6 +54,31 @@ class SettingsPage {
 
 		// Remove Add Media (users upload via frontend FAB or All Media screen).
 		remove_submenu_page( $parent, 'post-new.php?post_type=mvs_media' );
+
+		// Hide tool/config pages from menu via CSS instead of remove_submenu_page().
+		// This preserves page titles and menu highlighting while keeping the menu clean.
+		// Pages are accessible via Settings sidebar links.
+		$hide_slugs = array(
+			'mvs-logs',
+			'mvs-quotas',
+			'mvs-reports',
+			'mvs-analytics',
+			'mvs-migration',
+			'mvs-challenges',
+			'mvs-tournaments',
+			'mvs-battles',
+		);
+
+		add_action(
+			'admin_head',
+			function () use ( $hide_slugs ) {
+				echo '<style>';
+				foreach ( $hide_slugs as $slug ) {
+					echo '#menu-posts-mvs_media .wp-submenu a[href$="page=' . esc_attr( $slug ) . '"]{display:none!important}';
+				}
+				echo '</style>';
+			}
+		);
 	}
 
 	/**
