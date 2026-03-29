@@ -724,23 +724,7 @@ class Plugin {
 				MVS_VERSION
 			);
 
-			// Grid lightbox — shared interactive lightbox for all MVS grids.
-			wp_enqueue_script(
-				'mvs-lightbox',
-				MVS_PLUGIN_URL . 'assets/js/mvs-lightbox.js',
-				array(),
-				MVS_VERSION,
-				true
-			);
-			wp_localize_script(
-				'mvs-lightbox',
-				'mvsLightboxData',
-				array(
-					'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-					'nonce'      => wp_create_nonce( 'wp_rest' ),
-					'isLoggedIn' => is_user_logged_in(),
-				)
-			);
+			// Lightbox is handled by shared-ui Interactivity API module — no legacy JS needed.
 		} else {
 			// Register for on-demand loading by blocks/shortcodes.
 			wp_register_style(
@@ -748,23 +732,6 @@ class Plugin {
 				MVS_PLUGIN_URL . 'assets/css/frontend.css',
 				array(),
 				MVS_VERSION
-			);
-			wp_register_script(
-				'mvs-lightbox',
-				MVS_PLUGIN_URL . 'assets/js/mvs-lightbox.js',
-				array(),
-				MVS_VERSION,
-				true
-			);
-			// Localize even when registered — data will be output when enqueued by shortcodes/blocks.
-			wp_localize_script(
-				'mvs-lightbox',
-				'mvsLightboxData',
-				array(
-					'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-					'nonce'      => wp_create_nonce( 'wp_rest' ),
-					'isLoggedIn' => is_user_logged_in(),
-				)
 			);
 		}
 	}

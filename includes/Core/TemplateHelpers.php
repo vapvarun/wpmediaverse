@@ -186,6 +186,7 @@ class TemplateHelpers {
 			array(
 				'mediaId' => $media_id,
 				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
 			)
 		);
 

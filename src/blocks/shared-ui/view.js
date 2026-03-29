@@ -412,9 +412,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			document.body.style.overflow = 'hidden';
 
 			try {
+				const headers = {};
+				if ( ctx.nonce ) {
+					headers[ 'X-WP-Nonce' ] = ctx.nonce;
+				}
 				const res = await fetch(
 					ctx.restUrl + 'media/' + mediaId,
-					{ credentials: 'same-origin' }
+					{ credentials: 'same-origin', headers }
 				);
 				const data = await res.json();
 				state.lightboxMediaData = data;
@@ -424,7 +428,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				if ( data.media_group && data.group_count > 1 ) {
 					const groupRes = await fetch(
 						ctx.restUrl + 'media/' + mediaId + '/group',
-						{ credentials: 'same-origin' }
+						{ credentials: 'same-origin', headers }
 					);
 					const groupData = await groupRes.json();
 					if ( Array.isArray( groupData ) && groupData.length > 1 ) {

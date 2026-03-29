@@ -92,10 +92,7 @@ $media_items  = $wpdb->get_results( $wpdb->prepare( $items_sql, ...$all_params )
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $found_posts / $mvs_per_page ) : 1;
 $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-grid-block' ) ) : 'class="mvs-media-grid-block"';
 
-// Enqueue universal lightbox when this block is rendered.
-if ( $show_lightbox && wp_script_is( 'mvs-lightbox', 'registered' ) ) {
-	wp_enqueue_script( 'mvs-lightbox' );
-}
+// Lightbox handled by shared-ui Interactivity API module.
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( ! empty( $media_items ) ) : ?>

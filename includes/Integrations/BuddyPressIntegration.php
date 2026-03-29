@@ -2083,26 +2083,7 @@ class BuddyPressIntegration {
 
 		$plugin_url = plugin_dir_url( dirname( __DIR__ ) );
 
-		// Grid lightbox — loads on all BP pages so activity/profile/group media have lightbox support.
-		$lb_path = plugin_dir_path( dirname( __DIR__ ) ) . 'assets/js/mvs-lightbox.js';
-		if ( file_exists( $lb_path ) ) {
-			wp_enqueue_script(
-				'mvs-lightbox',
-				$plugin_url . 'assets/js/mvs-lightbox.js',
-				array(),
-				filemtime( $lb_path ),
-				true
-			);
-			wp_localize_script(
-				'mvs-lightbox',
-				'mvsLightboxData',
-				array(
-					'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-					'nonce'      => wp_create_nonce( 'wp_rest' ),
-					'isLoggedIn' => is_user_logged_in(),
-				)
-			);
-		}
+		// Lightbox handled by shared-ui Interactivity API module — no legacy JS needed.
 
 		// Upload button and activity-media JS only for logged-in users.
 		if ( ! is_user_logged_in() ) {
