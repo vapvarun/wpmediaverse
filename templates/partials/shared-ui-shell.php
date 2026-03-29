@@ -45,7 +45,7 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 	</div>
 
 	<!-- Upload Modal Overlay -->
-	<div class="mvs-modal-overlay" data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.closeUploadModal">
+	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.closeUploadModal">
 		<div class="mvs-modal" data-wp-on--click="actions.handleModalClick">
 			<!-- Modal Header -->
 			<div class="mvs-modal-header">
@@ -187,7 +187,7 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 	</div>
 
 	<!-- Lightbox Overlay -->
-	<div class="mvs-lightbox-overlay" data-wp-bind--hidden="!state.lightboxVisible" data-wp-on--click="actions.closeLightbox">
+	<div class="mvs-lightbox-overlay" hidden data-wp-bind--hidden="!state.lightboxVisible" data-wp-on--click="actions.closeLightbox">
 		<div class="mvs-lightbox" data-wp-on--click="actions.handleModalClick">
 			<!-- Close button -->
 			<button class="mvs-lightbox-close" data-wp-on--click="actions.closeLightbox" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
@@ -240,7 +240,7 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 	</div>
 
 	<!-- Toast -->
-	<div class="mvs-toast" data-wp-bind--hidden="!state.toastVisible"
+	<div class="mvs-toast" hidden data-wp-bind--hidden="!state.toastVisible"
 		data-wp-class--mvs-toast--success="state.isToastSuccess"
 		data-wp-class--mvs-toast--error="state.isToastError">
 		<span data-wp-text="state.toastMessage"></span>

@@ -2012,6 +2012,15 @@ a.mvs-dashboard-card-title:hover {
    ========================================================================== */
 
 /* Thumbnail in activity stream items — single image */
+/* Constrain ALL images in BP activity content — covers both MVS-wrapped
+   and raw images uploaded via the activity form. */
+#buddypress .activity-content img:not(.avatar):not(.emoji),
+.activity-list .activity-content img:not(.avatar):not(.emoji) {
+	max-width: 100%;
+	height: auto;
+	border-radius: 12px;
+}
+
 .mvs-activity-media {
 	position: relative;
 	overflow: hidden;
