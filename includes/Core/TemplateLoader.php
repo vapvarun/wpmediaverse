@@ -92,8 +92,15 @@ class TemplateLoader {
 		);
 
 		// Single media by slug (non-numeric) — must be LAST to avoid catching special routes.
+		// Exclude reserved sub-paths (battles, challenges, tournaments, leaderboard, etc.)
+		// so Pro and third-party plugins can register their own /media/{feature}/ pages.
+		$reserved = apply_filters( 'mvs_reserved_media_paths', array(
+			'battles', 'challenges', 'tournaments', 'leaderboard',
+			'edit-profile', 'page',
+		) );
+		$exclude  = implode( '|', array_map( 'preg_quote', $reserved ) );
 		add_rewrite_rule(
-			'^media/([a-z0-9][a-z0-9\-]*)/?$',
+			'^media/(?!' . $exclude . '/)([a-z0-9][a-z0-9\-]*)/?$',
 			'index.php?mvs_media_slug=$matches[1]',
 			'top'
 		);
