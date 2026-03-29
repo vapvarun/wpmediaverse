@@ -52,6 +52,8 @@ class BuddyPressIntegration {
 			add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 			add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
 			add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 3 );
+			add_action( 'mvs_comment_created', array( $this, 'sync_comment_to_activity' ), 10, 5 );
+			add_action( 'bp_activity_comment_posted', array( $this, 'sync_activity_comment_to_media' ), 10, 3 );
 			add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
 			add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 			add_action( 'bp_register_activity_actions', array( $this, 'register_activity_actions' ) );
@@ -476,6 +478,71 @@ class BuddyPressIntegration {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Sync a media comment to the associated BP activity as an activity comment.
+	 *
+	 * @param int    $media_id   Media ID.
+	 * @param int    $user_id    Commenter user ID.
+	 * @param int    $comment_id Comment ID.
+	 * @param string $content    Comment content.
+	 * @param string $source     Source of the comment.
+	 */
+	public function sync_comment_to_activity( int $media_id, int $user_id, int $comment_id, string $content, string $source = '' ): void {
+		// Prevent infinite loop.
+		if ( 'bp_activity' === $source ) {
+			return;
+		}
+
+		if ( ! function_exists( 'bp_activity_new_comment' ) ) {
+			return;
+		}
+
+		$activity_id = (int) MediaMeta::get( $media_id, 'bp_activity_id' );
+		if ( ! $activity_id ) {
+			return;
+		}
+
+		bp_activity_new_comment( array(
+			'activity_id' => $activity_id,
+			'content'     => $content,
+			'user_id'     => $user_id,
+		) );
+	}
+
+	/**
+	 * Sync a BP activity comment to the associated media item as a media comment.
+	 *
+	 * @param int    $comment_id      Activity comment ID.
+	 * @param array  $params          Comment parameters.
+	 * @param object $activity_comment Activity comment object.
+	 */
+	public function sync_activity_comment_to_media( int $comment_id, array $params, object $activity_comment ): void {
+		$activity_id = $params['activity_id'] ?? 0;
+		if ( ! $activity_id ) {
+			return;
+		}
+
+		$raw_ids = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
+		if ( ! $raw_ids ) {
+			return;
+		}
+
+		$media_ids = array_filter( array_map( 'absint', explode( ',', $raw_ids ) ) );
+		if ( empty( $media_ids ) ) {
+			return;
+		}
+
+		$user_id = $params['user_id'] ?? get_current_user_id();
+		$content = $params['content'] ?? '';
+		if ( ! $content || ! $user_id ) {
+			return;
+		}
+
+		// Create comment on the primary media item with 'bp_activity' source to prevent loop.
+		$comment_service = new \WPMediaVerse\Social\CommentService();
+		$comment_service->add( $media_ids[0], $user_id, $content, 0, 'bp_activity' );
 	}
 
 	/**

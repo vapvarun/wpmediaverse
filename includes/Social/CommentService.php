@@ -32,9 +32,10 @@ class CommentService {
 	 * @param int    $user_id   Commenter user ID.
 	 * @param string $content   Comment content.
 	 * @param int    $parent_id Parent comment ID for threading (0 for top-level).
+	 * @param string $source    Optional source identifier (e.g. 'bp_activity') to prevent sync loops.
 	 * @return int|WP_Error Comment ID on success.
 	 */
-	public function add( int $media_id, int $user_id, string $content, int $parent_id = 0 ) {
+	public function add( int $media_id, int $user_id, string $content, int $parent_id = 0, string $source = '' ) {
 		$user = get_userdata( $user_id );
 		if ( ! $user ) {
 			return new WP_Error( 'mvs_invalid_user', __( 'Invalid user.', 'wpmediaverse' ), array( 'status' => 400 ) );
@@ -73,8 +74,9 @@ class CommentService {
 		 * @param int    $user_id    Commenter user ID.
 		 * @param int    $comment_id Comment ID.
 		 * @param string $content    Comment content.
+		 * @param string $source     Source of the comment (e.g. 'bp_activity').
 		 */
-		do_action( 'mvs_comment_created', $media_id, $user_id, $comment_id, $content );
+		do_action( 'mvs_comment_created', $media_id, $user_id, $comment_id, $content, $source );
 
 		return $comment_id;
 	}
