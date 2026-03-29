@@ -1,40 +1,20 @@
 /**
  * Interactivity API store for the media-grid block.
  *
+ * NOTE: Lightbox is handled by the shared-ui store (mvs/shared-ui).
+ * Grid items use data-wp-interactive="mvs/shared-ui" with
+ * data-wp-on--click="actions.openLightbox" and a context
+ * containing mediaId, restUrl, nonce.
+ *
+ * This block store is kept minimal — only block-specific behaviors
+ * (filter toggles, layout switches, etc.) belong here.
+ *
  * @package WPMediaVerse
  */
 
-import { store, getContext } from '@wordpress/interactivity';
+import { store } from '@wordpress/interactivity';
 
 store( 'mvs/media-grid', {
-	actions: {
-		openLightbox( event ) {
-			event.stopPropagation();
-			const itemCtx = getContext();
-			// Walk up to find the block-level context.
-			const blockEl = event.target.closest( '[data-wp-interactive="mvs/media-grid"]' );
-			if ( blockEl && itemCtx.url ) {
-				const ctx = getContext();
-				ctx.lightboxOpen = true;
-				ctx.lightboxUrl = itemCtx.url;
-				ctx.lightboxTitle = itemCtx.title || '';
-				document.body.style.overflow = 'hidden';
-			}
-		},
-		closeLightbox() {
-			const ctx = getContext();
-			ctx.lightboxOpen = false;
-			ctx.lightboxUrl = '';
-			ctx.lightboxTitle = '';
-			document.body.style.overflow = '';
-		},
-		handleLightboxKey( event ) {
-			if ( event.key === 'Escape' ) {
-				const ctx = getContext();
-				ctx.lightboxOpen = false;
-				ctx.lightboxUrl = '';
-				document.body.style.overflow = '';
-			}
-		},
-	},
+	// Block-specific actions (not lightbox — that's in shared-ui).
+	actions: {},
 } );
