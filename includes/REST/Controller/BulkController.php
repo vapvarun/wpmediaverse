@@ -142,12 +142,6 @@ class BulkController extends WP_REST_Controller {
 				$storage->get_driver()->delete( $file_path );
 			}
 
-			// Delete WP attachment (for thumbnails).
-			$attachment_id = MediaMeta::get( $media_id, 'attachment_id' );
-			if ( $attachment_id ) {
-				wp_delete_attachment( (int) $attachment_id, true );
-			}
-
 			// Delete from custom tables.
 			MediaMeta::delete_all( $media_id );
 			$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery

@@ -121,15 +121,6 @@ class AlbumService {
 			do_action( 'mvs_album_items_added', $album_id, $media_ids, $added );
 		}
 
-		// Auto-set cover if album has no cover yet.
-		if ( $added > 0 && ! has_post_thumbnail( $album_id ) ) {
-			$first_media = (int) $media_ids[0];
-			$thumb_id    = (int) MediaMeta::get( $first_media, 'attachment_id' );
-			if ( $thumb_id ) {
-				set_post_thumbnail( $album_id, $thumb_id );
-			}
-		}
-
 		return $added;
 	}
 
@@ -186,12 +177,8 @@ class AlbumService {
 	 * @return bool True on success.
 	 */
 	public function set_cover( int $album_id, int $media_id ): bool {
-		$thumb_id = (int) MediaMeta::get( $media_id, 'attachment_id' );
-		if ( ! $thumb_id ) {
-			return false;
-		}
-
-		return (bool) set_post_thumbnail( $album_id, $thumb_id );
+		// Attachment-based thumbnails removed; cover is resolved via get_cover_url().
+		return false;
 	}
 
 	/**

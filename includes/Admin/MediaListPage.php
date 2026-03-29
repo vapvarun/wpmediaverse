@@ -236,9 +236,8 @@ class MediaListPage {
 		$type     = $item['media_type'] ?: 'image';
 		$privacy  = $item['privacy'] ?: 'public';
 		$status   = $item['status'] ?: 'publish';
-		$file_url      = $item['file_url'] ?? '';
-		$attachment_id = ! empty( $item['attachment_id'] ) ? (int) $item['attachment_id'] : 0;
-		$author        = get_userdata( (int) $item['post_author'] );
+		$file_url = $item['file_url'] ?? '';
+		$author   = get_userdata( (int) $item['post_author'] );
 
 		$type_colors = array(
 			'image'    => '#2271b1',
@@ -379,11 +378,6 @@ class MediaListPage {
 
 			case 'delete':
 				check_admin_referer( 'mvs_delete_media_' . $media_id );
-				// Delete attachment if exists.
-				$attachment_id = MediaMeta::get( $media_id, 'attachment_id' );
-				if ( $attachment_id ) {
-					wp_delete_attachment( (int) $attachment_id, true );
-				}
 				// Delete from custom tables.
 				MediaMeta::delete_all( $media_id );
 				$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery

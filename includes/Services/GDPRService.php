@@ -356,12 +356,6 @@ class GDPRService {
 		foreach ( $media_ids as $media_id ) {
 			$media_id = (int) $media_id;
 
-			// Delete the underlying WP attachment file if one exists.
-			$attachment_id = (int) MediaMeta::get( $media_id, 'attachment_id' );
-			if ( $attachment_id ) {
-				wp_delete_attachment( $attachment_id, true );
-			}
-
 			// Remove all custom table data (index + meta).
 			MediaMeta::delete_all( $media_id );
 

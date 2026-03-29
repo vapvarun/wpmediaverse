@@ -2523,7 +2523,7 @@ class BuddyPressIntegration {
 		global $wpdb;
 
 		// Check if this is an index column.
-		$index_columns = array( 'attachment_id', 'media_type', 'privacy', 'file_url', 'file_type', 'file_size', 'moderation_status', 'post_author' );
+		$index_columns = array( 'media_type', 'privacy', 'file_url', 'file_type', 'file_size', 'moderation_status', 'post_author' );
 
 		if ( in_array( $key, $index_columns, true ) ) {
 			$result = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
