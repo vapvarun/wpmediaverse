@@ -1,85 +1,93 @@
 # WPMediaVerse (Free) — Master Roadmap
 
 > Single source of truth. Updated: 2026-03-29
-> Process: plan → review with user → implement. No cowboy coding.
+> Process: plan → review → implement. Architecture decisions are final.
 
 ---
 
-## Current Version: 1.0.0 → Target: 1.1.0
+## BLOCKER: Architecture Decision (before v1.0)
+
+The plugin currently uses 31 custom tables + CPT. This is a mixed approach
+that must be resolved BEFORE release. Architecture can't change after v1.0.
+
+### Decision Needed: What stays, what goes?
+
+**KEEP (custom tables for many-to-many, justified):**
+- mvs_reactions (user × media × type)
+- mvs_favorites (user × media)
+- mvs_follows (user × user)
+- mvs_album_items (album × media)
+- mvs_activity (feed)
+- mvs_notifications (per-user read tracking)
+- mvs_blocks (user × user)
+- Messaging tables (4) — conversations, participants, messages, reactions
+
+**QUESTION: Keep or move to postmeta?**
+- mvs_media_index — duplicates wp_posts for fast queries
+- mvs_media_stats — view/download/reaction counters
+- mvs_media_views — individual view records
+- mvs_access_rules — privacy rules per media
+- mvs_access_grants — privacy grants per user
+- mvs_mentions — @mentions
+- mvs_reports — user reports
+
+**DELETE (dead, replaced, or unused):**
+- mvs_battles, mvs_battle_votes (old, replaced by unified Pro schema)
+- mvs_challenges, mvs_challenge_votes (old)
+- mvs_tournaments, mvs_tournament_*, mvs_tournament_votes (old)
+- mvs_email_leads (0 rows, no feature)
+- mvs_transactions (0 rows, no feature)
+- mvs_error_log (use WP debug.log instead)
+- wptests_* (10 test artifacts)
+
+### Factors:
+- postmeta = simpler, WordPress-native, works with all WP plugins
+- Custom tables = faster queries at scale, but more maintenance
+- v1.0 architecture is FINAL — can't restructure after release
+- Platform target: Dribbble/Flickr/Pinterest level
 
 ---
 
 ## DONE (this session)
 
-- [x] Settings page redesigned to Jetonomy card layout
-- [x] Dead CSS removed (50+ lines)
-- [x] Sidebar links: added Quotas, Reports (were orphaned)
-- [x] Sidebar links: JS fix — external links navigate instead of being blocked
-- [x] Overview "Customize permissions" link fixed
-- [x] Permission fail → wp_die (3 pages)
-- [x] LogViewerPage cleared check fixed
-- [x] All pages registered under WPMediaVerse menu (no hidden pages)
-- [x] Settings sidebar links use correct URLs
+- [x] Settings page Jetonomy card layout
+- [x] Dead CSS removed
+- [x] Sidebar links (Quotas, Reports added)
+- [x] Sidebar JS fix (external links navigate)
+- [x] Overview permissions link fixed
+- [x] Permission fail → wp_die (all pages)
+- [x] All pages under WPMediaVerse menu (proper parent)
+- [x] Menu cleaned to 7 items (CSS hide for tool pages)
+- [x] Titles + menu highlighting work on all 15 pages
+- [x] Missing capabilities fixed (edit/trash row actions)
+- [x] Status badge CSS added
+- [x] Pro CSS enqueue on hidden pages
+- [x] Success feedback on form handlers
+- [x] ReportManager description added
+- [x] Tournament winner display_name
+- [x] Plans consolidated (ROADMAP.md + ADMIN-UX-GUIDELINES.md only)
 
 ---
 
-## TODO: Admin Listing Pages (before release)
+## TODO: After Architecture Decision
 
-### All Media listing (edit.php?post_type=mvs_media)
-- [ ] Missing Edit row action
-- [ ] Missing Delete row action
-- [ ] Missing Quick Edit
-- [ ] Check: are bulk actions (Trash, etc.) available?
-- [ ] Check: column sorting works?
-- [ ] Audit: what columns are shown? Do we need custom columns (Author, Views, Reactions)?
-
-### Albums listing (edit.php?post_type=mvs_album)
-- [ ] Same audit as above
-
-### Collections listing (edit.php?post_type=mvs_collection)
-- [ ] Same audit as above
-
-### WPMediaVerse submenu items — which should be visible?
-- [ ] Decide: should Logs, Analytics, Quotas, Reports, Migration, Challenges, Tournaments, Battles all show in the menu? Or should some be collapsed/grouped?
-- [ ] Too many submenu items clutters the menu — need a strategy
-
----
-
-## TODO: DM Integration (move from Pro to Free)
-
-- [ ] Move MessagingService, MessagingController, RestPollingTransport from Pro → Free
-- [ ] Move 4 DB tables to Free Activator.php
-- [ ] Move templates + CSS + JS
-- [ ] Add mvs_buddynext_active filter
-- [ ] Add mvs_can_send_message filter
-
----
-
-## TODO: Gamification Hooks
-
-- [ ] Add apply_filters('mvs_activity_types') to ActivityService
-- [ ] Add same filter to NotificationService
+- [ ] Clean up dead tables
+- [ ] DM integration (move from Pro to Free)
+- [ ] Gamification hooks (ActivityService + NotificationService filters)
+- [ ] Admin page pagination (6 pages)
+- [ ] Pre-release checklist (version bump, build, readme, QA)
 
 ---
 
 ## Pre-Release Checklist
 
+- [ ] Architecture decision finalized
 - [ ] php -l — zero errors
-- [ ] npm run build — 13 blocks compile
+- [ ] npm run build — blocks compile
 - [ ] Remove console.log / error_log / var_dump
-- [ ] Bump version to 1.1.0
-- [ ] Create .distignore
-- [ ] Generate .pot file
-- [ ] Write readme.txt
-- [ ] Run full QA suite
+- [ ] Bump version
+- [ ] .distignore + .pot file
+- [ ] readme.txt
+- [ ] QA suite
 - [ ] Build ZIP
 - [ ] Tag + push
-
----
-
-## v1.2.0+
-
-- Social sharing buttons
-- Play event tracking
-- Cursor-based pagination
-- Admin page pagination (6 pages)
