@@ -72,10 +72,10 @@ class TemplateLoader {
 			'top'
 		);
 
-		// Single media by slug (non-numeric).
+		// Profile edit — must be before slug rule to avoid being caught as a media slug.
 		add_rewrite_rule(
-			'^media/([a-z0-9][a-z0-9\-]*)/?$',
-			'index.php?mvs_media_slug=$matches[1]',
+			'^media/edit-profile/?$',
+			'index.php?mvs_edit_profile=1',
 			'top'
 		);
 
@@ -91,10 +91,10 @@ class TemplateLoader {
 			'top'
 		);
 
-		// Profile edit.
+		// Single media by slug (non-numeric) — must be LAST to avoid catching special routes.
 		add_rewrite_rule(
-			'^media/edit-profile/?$',
-			'index.php?mvs_edit_profile=1',
+			'^media/([a-z0-9][a-z0-9\-]*)/?$',
+			'index.php?mvs_media_slug=$matches[1]',
 			'top'
 		);
 	}
