@@ -1884,12 +1884,9 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-activity-media img {
 	max-width: 100%;
-	max-height: 500px;
-	width: auto;
 	height: auto;
 	border-radius: 12px;
 	display: block;
-	object-fit: contain;
 }
 
 /* Multi-image grid in activity stream (Facebook-style) */
@@ -1941,26 +1938,21 @@ a.mvs-dashboard-card-title:hover {
 /* ── Grid layouts ── */
 
 /* 2 images: side by side */
-/* Single item: cap height so tall portrait images don't dominate the feed */
-.mvs-activity-grid-1 {
-	max-height: 480px;
-}
-
+/* Single item: let the image scale naturally within the container */
 .mvs-activity-grid-1 .mvs-activity-media {
 	background: transparent;
-	max-height: none;
 }
 
 .mvs-activity-grid-1 .mvs-activity-media a {
-	width: auto;
-	height: auto;
+	display: block;
 }
 
 .mvs-activity-grid-1 .mvs-activity-media img {
 	max-width: 100%;
-	width: auto;
+	width: 100%;
 	height: auto;
-	max-height: 480px;
+	max-height: 600px;
+	object-fit: contain;
 	border-radius: 10px;
 	margin: 8px 0 12px;
 }
@@ -3476,7 +3468,7 @@ a.mvs-dashboard-card-title:hover {
 	gap: 8px;
 	margin-top: 12px;
 	padding: 10px;
-	background: var(--mvs-surface);
+	background: #f8f9fa;
 	border: 1px solid #e0e0e0;
 	border-radius: 8px;
 	overflow-x: auto;

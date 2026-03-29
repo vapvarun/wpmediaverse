@@ -389,6 +389,57 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.media.loading = false;
 		},
 
+		openMediaLightbox( event ) {
+			event.preventDefault();
+			const item = getContext().item;
+			if ( ! item?.id ) return;
+			const ctx = getContext();
+			// Delegate to the shared-ui lightbox.
+			const sharedState = sharedUI.state;
+			sharedState.lightboxVisible = true;
+			sharedState.lightboxMediaId = item.id;
+			sharedState.lightboxLoading = true;
+			sharedState.lightboxCommentText = '';
+			sharedState.lightboxGroupItems = [];
+			sharedState.lightboxCurrentIndex = 0;
+			document.body.style.overflow = 'hidden';
+			// Fetch media data via shared-ui openLightbox pattern.
+			fetch( ctx.restUrl + 'media/' + item.id, {
+				credentials: 'same-origin',
+				headers: { 'X-WP-Nonce': ctx.nonce },
+			} ).then( ( r ) => r.json() ).then( ( data ) => {
+				sharedState.lightboxMediaData = data;
+				sharedState.lightboxLoading = false;
+				// Load social data.
+				sharedUI.actions.lightboxLoadSocial( ctx, item.id, { 'X-WP-Nonce': ctx.nonce } );
+			} ).catch( () => {
+				sharedState.lightboxLoading = false;
+			} );
+		},
+		openFavLightbox( event ) {
+			event.preventDefault();
+			const item = getContext().item;
+			if ( ! item?.media_id ) return;
+			const ctx = getContext();
+			const sharedState = sharedUI.state;
+			sharedState.lightboxVisible = true;
+			sharedState.lightboxMediaId = item.media_id;
+			sharedState.lightboxLoading = true;
+			sharedState.lightboxCommentText = '';
+			sharedState.lightboxGroupItems = [];
+			sharedState.lightboxCurrentIndex = 0;
+			document.body.style.overflow = 'hidden';
+			fetch( ctx.restUrl + 'media/' + item.media_id, {
+				credentials: 'same-origin',
+				headers: { 'X-WP-Nonce': ctx.nonce },
+			} ).then( ( r ) => r.json() ).then( ( data ) => {
+				sharedState.lightboxMediaData = data;
+				sharedState.lightboxLoading = false;
+				sharedUI.actions.lightboxLoadSocial( ctx, item.media_id, { 'X-WP-Nonce': ctx.nonce } );
+			} ).catch( () => {
+				sharedState.lightboxLoading = false;
+			} );
+		},
 		loadMoreMedia() {
 			const ctx = getContext();
 			actions.loadMedia( ctx, state.media.page + 1 );

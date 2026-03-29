@@ -324,7 +324,8 @@ wp_enqueue_style( 'mvs-frontend' );
 		<div class="mvs-dashboard-grid">
 			<template data-wp-each="state.media.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-media-id="context.item.id">
-					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link">
+					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
+						data-wp-on--click="actions.openMediaLightbox">
 						<img data-wp-bind--hidden="!state.mediaThumbUrl" data-wp-bind--src="state.mediaThumbUrl" data-wp-bind--alt="context.item.title" loading="lazy" />
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 							data-wp-bind--hidden="!state.showMediaVideoPlaceholder">
@@ -403,7 +404,8 @@ wp_enqueue_style( 'mvs-frontend' );
 		<div class="mvs-dashboard-grid">
 			<template data-wp-each="state.favorites.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-fav-id="context.item.media_id">
-					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link">
+					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
+						data-wp-on--click="actions.openFavLightbox">
 						<img data-wp-bind--hidden="!state.favThumbUrl" data-wp-bind--src="state.favThumbUrl" data-wp-bind--alt="context.item.title" loading="lazy" />
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 							data-wp-bind--hidden="!state.showFavVideoPlaceholder">

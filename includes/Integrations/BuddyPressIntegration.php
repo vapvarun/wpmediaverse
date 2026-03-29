@@ -2018,16 +2018,7 @@ class BuddyPressIntegration {
 				$overlay = '<span class="mvs-activity-play-icon" aria-hidden="true"></span>';
 			}
 
-			// Get intrinsic dimensions to prevent upscaling.
-			$img_attrs = '';
-			if ( $attach_id ) {
-				$meta = wp_get_attachment_image_src( $attach_id, $size );
-				if ( $meta ) {
-					$img_attrs = ' width="' . esc_attr( $meta[1] ) . '" height="' . esc_attr( $meta[2] ) . '"';
-				}
-			}
-
-			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '">' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '"' . $img_attrs . ' loading="lazy" /></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '">' . $overlay . '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" /></a></div>';
 		}
 
 		// Video without poster: show dark placeholder with play icon.
