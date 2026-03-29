@@ -812,13 +812,29 @@
 					var item = document.createElement( 'div' );
 					item.className = 'mvs-lightbox-comment mvs-lightbox-comment--vanilla';
 
+					// Author link with avatar.
+					var link = document.createElement( 'a' );
+					link.className = 'mvs-lightbox-comment-author-link';
+					link.href = c.author_url || '#';
+
+					if ( c.author_avatar ) {
+						var avatar = document.createElement( 'img' );
+						avatar.className = 'mvs-lightbox-comment-avatar';
+						avatar.src = c.author_avatar;
+						avatar.alt = '';
+						avatar.width = 24;
+						avatar.height = 24;
+						link.appendChild( avatar );
+					}
+
 					var author = document.createElement( 'strong' );
 					author.textContent = c.author_name || 'Anonymous';
+					link.appendChild( author );
 
 					var text = document.createElement( 'span' );
 					text.textContent = ' ' + ( c.content || '' );
 
-					item.appendChild( author );
+					item.appendChild( link );
 					item.appendChild( text );
 					list.appendChild( item );
 				} );
