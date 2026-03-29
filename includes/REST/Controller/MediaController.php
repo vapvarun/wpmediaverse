@@ -590,12 +590,6 @@ class MediaController extends WP_REST_Controller {
 			$storage->get_driver()->delete( $file_path );
 		}
 
-		// Delete WP attachment if one exists.
-		$att_id = MediaMeta::get( $media_id, 'attachment_id' );
-		if ( $att_id ) {
-			wp_delete_attachment( (int) $att_id, true );
-		}
-
 		// Remove from custom tables.
 		global $wpdb;
 		MediaMeta::delete_all( $media_id );
@@ -849,7 +843,6 @@ class MediaController extends WP_REST_Controller {
 			'tags'              => self::parse_meta_list( $all['tags'] ?? '' ),
 			'categories'        => self::parse_meta_list( $all['category'] ?? '' ),
 			'thumbnail_url'     => $thumbnail_url,
-			'attachment_id'     => $attachment_id,
 		);
 
 		// Add author data for lightbox sidebar.

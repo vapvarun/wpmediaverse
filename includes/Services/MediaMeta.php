@@ -37,7 +37,6 @@ class MediaMeta {
 		'file_type',
 		'file_size',
 		'file_hash',
-		'attachment_id',
 		'width',
 		'height',
 		'duration',
