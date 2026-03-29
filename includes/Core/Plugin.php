@@ -87,6 +87,10 @@ class Plugin {
 		// Load textdomain.
 		load_plugin_textdomain( 'wpmediaverse', false, 'wpmediaverse/languages' );
 
+		// Run pending DB migrations on every load (cheap version check).
+		$migrator = new Migrator();
+		$migrator->run();
+
 		// Build service container.
 		self::$container = new ServiceContainer();
 		self::register_services();

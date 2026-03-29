@@ -243,7 +243,13 @@ $mvs_archive_url = home_url( '/media/' );
 		$mvs_tag_names = array();
 		$mvs_tags_raw  = \WPMediaVerse\Services\MediaMeta::get( $mvs_media_id, 'tags' );
 		if ( $mvs_tags_raw ) {
-			$mvs_tag_names = array_filter( array_map( 'trim', explode( ',', $mvs_tags_raw ) ) );
+			// Handle both JSON array and comma-separated formats.
+			$decoded = json_decode( $mvs_tags_raw, true );
+			if ( is_array( $decoded ) ) {
+				$mvs_tag_names = array_filter( array_map( 'trim', $decoded ) );
+			} else {
+				$mvs_tag_names = array_filter( array_map( 'trim', explode( ',', $mvs_tags_raw ) ) );
+			}
 		}
 		// Also try taxonomy terms if still stored there.
 		if ( empty( $mvs_tag_names ) ) {

@@ -852,8 +852,8 @@ class MediaController extends WP_REST_Controller {
 			'media_type'        => $media_type_value,
 			'privacy'           => $privacy_value,
 			'moderation_status' => $moderation_value,
-			'tags'              => wp_get_object_terms( $media_id, 'mvs_tag', array( 'fields' => 'names' ) ),
-			'categories'        => wp_get_object_terms( $media_id, 'mvs_category', array( 'fields' => 'names' ) ),
+			'tags'              => self::parse_meta_list( $all['tags'] ?? '' ),
+			'categories'        => self::parse_meta_list( $all['category'] ?? '' ),
 			'thumbnail_url'     => $thumbnail_url,
 			'attachment_id'     => $attachment_id,
 		);
@@ -956,6 +956,23 @@ class MediaController extends WP_REST_Controller {
 	 *
 	 * @return string
 	 */
+	/**
+	 * Parse a meta value that may be JSON array or comma-separated into a flat array.
+	 *
+	 * @param string $raw Raw meta value.
+	 * @return string[]
+	 */
+	private static function parse_meta_list( string $raw ): array {
+		if ( '' === $raw ) {
+			return array();
+		}
+		$decoded = json_decode( $raw, true );
+		if ( is_array( $decoded ) ) {
+			return array_values( array_filter( array_map( 'trim', $decoded ) ) );
+		}
+		return array_values( array_filter( array_map( 'trim', explode( ',', $raw ) ) ) );
+	}
+
 	private static function get_client_ip(): string {
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
