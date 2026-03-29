@@ -18,7 +18,7 @@
 		return;
 	}
 
-	var maxMedia = ( typeof mvsActivityMedia !== 'undefined' && mvsActivityMedia.maxMedia ) ? mvsActivityMedia.maxMedia : 5;
+	var maxMedia = ( typeof mvsActivityMedia !== 'undefined' && mvsActivityMedia.maxMedia ) ? mvsActivityMedia.maxMedia : 6;
 	var attachedMedia = []; // Array of { id, thumbUrl }
 	var isSubmitting = false; // Flag to prevent orphan cleanup during form submit
 
@@ -58,7 +58,7 @@
 
 		ensurePreviewPosition( preview );
 		preview.style.display = 'flex';
-		preview.className = 'mvs-activity-media-preview mvs-preview-grid-' + Math.min( attachedMedia.length, 5 );
+		preview.className = 'mvs-activity-media-preview mvs-preview-grid-' + Math.min( attachedMedia.length, 6 );
 
 		attachedMedia.forEach( function( item, idx ) {
 			var wrap = document.createElement( 'div' );
@@ -1106,4 +1106,513 @@
 		}
 		// Links to /media/{slug}/ — normal navigation to single page.
 	} );
+
+	// ── Shared-UI Lightbox Driver for BuddyPress Pages ──────────────
+	// Drives the `.mvs-lightbox-overlay` DOM rendered by shared-ui-shell.php
+	// using vanilla JS. On Explore/Instagram pages the Interactivity API
+	// handles the same DOM; on BP pages this driver takes over.
+	( function() {
+		var BP_SELECTORS = '#buddypress, .bp-wrap, .activity-content, .activity-inner';
+
+		// State for the shared-ui lightbox driver.
+		var suiState = {
+			mediaId: 0,
+			permalink: '',
+			gallery: [],   // Array of { mediaId, imgSrc }
+			galleryIndex: 0,
+			active: false  // True while the shared-ui lightbox is driven by this module.
+		};
+
+		/**
+		 * Check whether the Interactivity API store is managing the lightbox.
+		 * If the WP Interactivity API store for mvs/shared-ui exists and has
+		 * lightboxVisible set, defer to it.
+		 */
+		function interactivityApiActive() {
+			try {
+				if ( window.wp && wp.interactivity ) {
+					var store = wp.interactivity.getConfig( 'mvs/shared-ui' );
+					if ( store ) { return true; }
+				}
+			} catch ( ex ) { /* not available */ }
+			return false;
+		}
+
+		/**
+		 * Check whether the click target is inside a known BP container.
+		 */
+		function isInBPContext( el ) {
+			return !! el.closest( BP_SELECTORS );
+		}
+
+		/**
+		 * Query the shared-ui overlay element.
+		 */
+		function getOverlay() {
+			return document.querySelector( '.mvs-lightbox-overlay' );
+		}
+
+		// ── Open ──
+
+		function openSharedLightbox( mediaId, gallery, galleryIndex ) {
+			var overlay = getOverlay();
+			if ( ! overlay ) {
+				// Fallback: navigate to single media page.
+				window.location.href = restUrl.replace( /\/wp-json\/mvs\/v1\/$/, '/media/' + mediaId + '/' );
+				return;
+			}
+
+			suiState.mediaId = mediaId;
+			suiState.gallery = gallery || [];
+			suiState.galleryIndex = galleryIndex || 0;
+			suiState.active = true;
+
+			// Show loading, hide content panels.
+			var loading = overlay.querySelector( '.mvs-lightbox-loading' );
+			var media   = overlay.querySelector( '.mvs-lightbox-media' );
+			var sidebar = overlay.querySelector( '.mvs-lightbox-sidebar' );
+			if ( loading ) { loading.removeAttribute( 'hidden' ); }
+			if ( media )   { media.setAttribute( 'hidden', '' ); }
+			if ( sidebar ) { sidebar.setAttribute( 'hidden', '' ); }
+
+			// Remove hidden from overlay to show it.
+			overlay.removeAttribute( 'hidden' );
+			document.body.style.overflow = 'hidden';
+
+			// Fetch media data.
+			apiGet( 'media/' + mediaId ).then( function( data ) {
+				if ( ! data || data.code ) {
+					closeSharedLightbox();
+					return;
+				}
+				populateSharedLightbox( overlay, data );
+
+				// Social data fetches in parallel.
+				loadSharedReactions( overlay, mediaId );
+				loadSharedComments( overlay, mediaId );
+				loadSharedStats( overlay, mediaId );
+				loadSharedFavorite( overlay, mediaId );
+
+				// Record view.
+				fetch( restUrl + 'media/' + mediaId + '/view', {
+					method: 'POST',
+					headers: { 'X-WP-Nonce': nonce },
+					credentials: 'same-origin'
+				} );
+			} ).catch( function() {
+				closeSharedLightbox();
+			} );
+		}
+
+		function populateSharedLightbox( overlay, data ) {
+			var loading = overlay.querySelector( '.mvs-lightbox-loading' );
+			var media   = overlay.querySelector( '.mvs-lightbox-media' );
+			var sidebar = overlay.querySelector( '.mvs-lightbox-sidebar' );
+			if ( loading ) { loading.setAttribute( 'hidden', '' ); }
+			if ( media )   { media.removeAttribute( 'hidden' ); }
+			if ( sidebar ) { sidebar.removeAttribute( 'hidden' ); }
+
+			// Image.
+			var img = media ? media.querySelector( 'img' ) : null;
+			if ( img ) {
+				img.src = data.file_url || data.thumbnail_url || '';
+				img.alt = data.title || '';
+			}
+
+			// Author.
+			var authorLink   = overlay.querySelector( '.mvs-lightbox-author-link' );
+			var authorAvatar = overlay.querySelector( '.mvs-lightbox-author-avatar' );
+			var authorName   = overlay.querySelector( '.mvs-lightbox-author strong' );
+			if ( authorLink && data.author_url )    { authorLink.href = data.author_url; }
+			if ( authorAvatar && data.author_avatar ) { authorAvatar.src = data.author_avatar; }
+			if ( authorName )                        { authorName.textContent = data.author_name || ''; }
+
+			// Description.
+			var descBlock = overlay.querySelector( '.mvs-lightbox-desc' );
+			if ( descBlock ) {
+				var descAuthor = descBlock.querySelector( 'strong' );
+				var descText   = descBlock.querySelector( 'span' );
+				if ( descAuthor ) { descAuthor.textContent = data.author_name || ''; }
+				if ( descText )   { descText.textContent = data.description || ''; }
+				if ( data.description ) {
+					descBlock.removeAttribute( 'hidden' );
+				} else {
+					descBlock.setAttribute( 'hidden', '' );
+				}
+			}
+
+			// Permalink on open link.
+			suiState.permalink = data.link || data.permalink || '';
+			var openLink = overlay.querySelector( '.mvs-lightbox-actions a.mvs-lightbox-action[target="_blank"]' );
+			if ( openLink ) { openLink.href = suiState.permalink; }
+
+			// Gallery nav.
+			updateSharedNav( overlay );
+		}
+
+		// ── Close ──
+
+		function closeSharedLightbox() {
+			var overlay = getOverlay();
+			if ( overlay ) {
+				overlay.setAttribute( 'hidden', '' );
+			}
+			document.body.style.overflow = '';
+			suiState.active = false;
+			suiState.mediaId = 0;
+			suiState.gallery = [];
+			suiState.galleryIndex = 0;
+
+			// Reset image src to free memory.
+			if ( overlay ) {
+				var img = overlay.querySelector( '.mvs-lightbox-media img' );
+				if ( img ) { img.src = ''; }
+			}
+		}
+
+		// ── Gallery Navigation ──
+
+		function updateSharedNav( overlay ) {
+			var prevBtn = overlay.querySelector( '.mvs-lightbox-nav--prev' );
+			var nextBtn = overlay.querySelector( '.mvs-lightbox-nav--next' );
+			var posSpan = overlay.querySelector( '.mvs-lightbox-position span' );
+			var hasGallery = suiState.gallery.length > 1;
+
+			if ( prevBtn ) {
+				if ( hasGallery && suiState.galleryIndex > 0 ) {
+					prevBtn.removeAttribute( 'hidden' );
+				} else {
+					prevBtn.setAttribute( 'hidden', '' );
+				}
+			}
+			if ( nextBtn ) {
+				if ( hasGallery && suiState.galleryIndex < suiState.gallery.length - 1 ) {
+					nextBtn.removeAttribute( 'hidden' );
+				} else {
+					nextBtn.setAttribute( 'hidden', '' );
+				}
+			}
+			if ( posSpan && hasGallery ) {
+				posSpan.textContent = ( suiState.galleryIndex + 1 ) + ' / ' + suiState.gallery.length;
+			}
+		}
+
+		function navigateSharedGallery( direction ) {
+			if ( suiState.gallery.length < 2 ) { return; }
+			var newIdx = suiState.galleryIndex + direction;
+			if ( newIdx < 0 || newIdx >= suiState.gallery.length ) { return; }
+
+			suiState.galleryIndex = newIdx;
+			var item = suiState.gallery[ newIdx ];
+			suiState.mediaId = item.mediaId;
+
+			var overlay = getOverlay();
+			if ( ! overlay ) { return; }
+
+			// Show loading briefly.
+			var loading = overlay.querySelector( '.mvs-lightbox-loading' );
+			var media   = overlay.querySelector( '.mvs-lightbox-media' );
+			if ( loading ) { loading.removeAttribute( 'hidden' ); }
+			if ( media )   { media.setAttribute( 'hidden', '' ); }
+
+			apiGet( 'media/' + item.mediaId ).then( function( data ) {
+				if ( ! data || data.code ) { return; }
+				populateSharedLightbox( overlay, data );
+				loadSharedReactions( overlay, item.mediaId );
+				loadSharedComments( overlay, item.mediaId );
+				loadSharedStats( overlay, item.mediaId );
+				loadSharedFavorite( overlay, item.mediaId );
+
+				fetch( restUrl + 'media/' + item.mediaId + '/view', {
+					method: 'POST',
+					headers: { 'X-WP-Nonce': nonce },
+					credentials: 'same-origin'
+				} );
+			} );
+		}
+
+		// ── Social Data Loaders ──
+
+		function loadSharedReactions( overlay, mediaId ) {
+			apiGet( 'media/' + mediaId + '/reactions' ).then( function( data ) {
+				if ( ! data ) { return; }
+				var buttons = overlay.querySelectorAll( '.mvs-lightbox-reaction[data-reaction]' );
+				buttons.forEach( function( btn ) {
+					var type     = btn.getAttribute( 'data-reaction' );
+					var countEl  = btn.querySelectorAll( 'span' )[ 1 ];
+					var count    = ( data.counts && data.counts[ type ] ) || 0;
+					var isActive = data.user_reaction === type;
+
+					if ( countEl ) { countEl.textContent = count > 0 ? String( count ) : ''; }
+					if ( isActive ) {
+						btn.classList.add( 'active' );
+					} else {
+						btn.classList.remove( 'active' );
+					}
+				} );
+			} );
+		}
+
+		function loadSharedComments( overlay, mediaId ) {
+			var list = overlay.querySelector( '.mvs-lightbox-comment-list' );
+			if ( ! list ) { return; }
+
+			apiGet( 'media/' + mediaId + '/comments?per_page=20' ).then( function( data ) {
+				var comments = Array.isArray( data ) ? data : [];
+
+				// Remove any previously injected vanilla comment elements (leave templates alone).
+				var existing = list.querySelectorAll( '.mvs-lightbox-comment--vanilla' );
+				existing.forEach( function( el ) { el.remove(); } );
+
+				var noComments = list.querySelector( '.mvs-lightbox-no-comments' );
+				if ( noComments ) {
+					if ( comments.length ) {
+						noComments.setAttribute( 'hidden', '' );
+					} else {
+						noComments.removeAttribute( 'hidden' );
+					}
+				}
+
+				comments.forEach( function( c ) {
+					var item = document.createElement( 'div' );
+					item.className = 'mvs-lightbox-comment mvs-lightbox-comment--vanilla';
+
+					var author = document.createElement( 'strong' );
+					author.textContent = c.author_name || 'Anonymous';
+
+					var text = document.createElement( 'span' );
+					text.textContent = ' ' + ( c.content || '' );
+
+					item.appendChild( author );
+					item.appendChild( text );
+					list.appendChild( item );
+				} );
+
+				list.scrollTop = list.scrollHeight;
+			} ).catch( function() { /* silent */ } );
+		}
+
+		function loadSharedStats( overlay, mediaId ) {
+			apiGet( 'media/' + mediaId + '/stats' ).then( function( data ) {
+				var statsSpan = overlay.querySelector( '.mvs-lightbox-stats span' );
+				if ( statsSpan && data && data.views !== undefined ) {
+					statsSpan.textContent = data.views + ' views';
+				}
+			} );
+		}
+
+		function loadSharedFavorite( overlay, mediaId ) {
+			apiGet( 'media/' + mediaId + '/favorite' ).then( function( data ) {
+				var favBtn = overlay.querySelector( '.mvs-lightbox-actions button.mvs-lightbox-action' );
+				if ( ! favBtn ) { return; }
+				var isFav = !! ( data && data.favorited );
+				if ( isFav ) {
+					favBtn.classList.add( 'active' );
+					favBtn.textContent = '\u2665 Favorited';
+				} else {
+					favBtn.classList.remove( 'active' );
+					favBtn.textContent = '\u2661 Favorite';
+				}
+			} ).catch( function() { /* silent */ } );
+		}
+
+		// ── Click Interception (data-mvs-media-id within BP containers) ──
+
+		document.addEventListener( 'click', function( e ) {
+			// Find the closest element with data-mvs-media-id.
+			var target = e.target.closest( '[data-mvs-media-id]' );
+			if ( ! target ) { return; }
+
+			// Only handle within BP context to avoid conflicting with Interactivity API.
+			if ( ! isInBPContext( target ) ) { return; }
+
+			// If Interactivity API is actively managing the lightbox, defer to it.
+			if ( interactivityApiActive() ) { return; }
+
+			e.preventDefault();
+			e.stopPropagation();
+
+			var mediaId = parseInt( target.getAttribute( 'data-mvs-media-id' ), 10 );
+			if ( ! mediaId ) { return; }
+
+			// Collect gallery from all [data-mvs-media-id] in the same activity item.
+			var activityItem = target.closest( 'li.activity-item, li[id^="activity-"], .mvs-activity-media-grid' );
+			var gallery = [];
+			var clickedIndex = 0;
+
+			if ( activityItem ) {
+				var allMediaEls = activityItem.querySelectorAll( '[data-mvs-media-id]' );
+				allMediaEls.forEach( function( el, idx ) {
+					var mid = parseInt( el.getAttribute( 'data-mvs-media-id' ), 10 );
+					if ( mid ) {
+						gallery.push( { mediaId: mid, imgSrc: '' } );
+						if ( mid === mediaId ) { clickedIndex = gallery.length - 1; }
+					}
+				} );
+			}
+
+			if ( ! gallery.length ) {
+				gallery = [ { mediaId: mediaId, imgSrc: '' } ];
+				clickedIndex = 0;
+			}
+
+			openSharedLightbox( mediaId, gallery, clickedIndex );
+		} );
+
+		// ── Reactions (event delegation) ──
+
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+			var btn = e.target.closest( '.mvs-lightbox-reaction[data-reaction]' );
+			if ( ! btn ) { return; }
+			if ( ! suiState.mediaId ) { return; }
+
+			var type     = btn.getAttribute( 'data-reaction' );
+			var isActive = btn.classList.contains( 'active' );
+			var promise  = isActive
+				? apiDelete( 'media/' + suiState.mediaId + '/reactions' )
+				: apiPost( 'media/' + suiState.mediaId + '/reactions', { reaction_type: type } );
+
+			promise.then( function() {
+				var overlay = getOverlay();
+				if ( overlay ) { loadSharedReactions( overlay, suiState.mediaId ); }
+			} );
+		} );
+
+		// ── Favorites (event delegation) ──
+
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+			// Match the first button.mvs-lightbox-action inside .mvs-lightbox-actions.
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lightbox-action' );
+			if ( ! btn ) { return; }
+			// Skip if it's the share button (contains "Share" text).
+			if ( btn.textContent.indexOf( 'Share' ) !== -1 ) { return; }
+			if ( ! suiState.mediaId ) { return; }
+
+			var isFav   = btn.classList.contains( 'active' );
+			var promise = isFav
+				? apiDelete( 'media/' + suiState.mediaId + '/favorite' )
+				: apiPost( 'media/' + suiState.mediaId + '/favorite', {} );
+
+			promise.then( function() {
+				var newFav = ! isFav;
+				if ( newFav ) {
+					btn.classList.add( 'active' );
+					btn.textContent = '\u2665 Favorited';
+				} else {
+					btn.classList.remove( 'active' );
+					btn.textContent = '\u2661 Favorite';
+				}
+			} );
+		} );
+
+		// ── Share (event delegation) ──
+
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lightbox-action' );
+			if ( ! btn ) { return; }
+			if ( btn.textContent.indexOf( 'Share' ) === -1 && btn.textContent.indexOf( 'Copied' ) === -1 ) { return; }
+
+			var url = suiState.permalink || window.location.href;
+			if ( navigator.share ) {
+				navigator.share( { title: 'Media', url: url } );
+			} else if ( navigator.clipboard ) {
+				navigator.clipboard.writeText( url ).then( function() {
+					var original = btn.innerHTML;
+					btn.textContent = '\u2713 Copied!';
+					setTimeout( function() { btn.innerHTML = original; }, 2000 );
+				} );
+			}
+		} );
+
+		// ── Comment posting ──
+
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+			var btn = e.target.closest( '.mvs-lightbox-comment-post' );
+			if ( ! btn ) { return; }
+			postSharedComment();
+		} );
+
+		document.addEventListener( 'keydown', function( e ) {
+			if ( ! suiState.active ) { return; }
+			if ( e.key !== 'Enter' ) { return; }
+			var input = e.target.closest( '.mvs-lightbox-comment-input' );
+			if ( ! input ) { return; }
+			e.preventDefault();
+			postSharedComment();
+		} );
+
+		function postSharedComment() {
+			var overlay = getOverlay();
+			if ( ! overlay || ! suiState.mediaId ) { return; }
+
+			var input = overlay.querySelector( '.mvs-lightbox-comment-input' );
+			if ( ! input ) { return; }
+
+			var text = ( input.value || '' ).trim();
+			if ( ! text ) { return; }
+
+			input.disabled = true;
+
+			apiPost( 'media/' + suiState.mediaId + '/comments', { content: text } ).then( function() {
+				input.value = '';
+				input.disabled = false;
+				loadSharedComments( overlay, suiState.mediaId );
+			} ).catch( function() {
+				input.disabled = false;
+			} );
+		}
+
+		// ── Gallery nav (event delegation) ──
+
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+			if ( e.target.closest( '.mvs-lightbox-nav--prev' ) ) {
+				e.stopPropagation();
+				navigateSharedGallery( -1 );
+				return;
+			}
+			if ( e.target.closest( '.mvs-lightbox-nav--next' ) ) {
+				e.stopPropagation();
+				navigateSharedGallery( 1 );
+				return;
+			}
+		} );
+
+		// ── Close handlers ──
+
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+			// Close button.
+			if ( e.target.closest( '.mvs-lightbox-close' ) ) {
+				closeSharedLightbox();
+				return;
+			}
+			// Click on overlay background (not the inner lightbox panel).
+			if ( e.target.classList.contains( 'mvs-lightbox-overlay' ) ) {
+				closeSharedLightbox();
+				return;
+			}
+		} );
+
+		document.addEventListener( 'keydown', function( e ) {
+			if ( ! suiState.active ) { return; }
+			if ( e.key === 'Escape' ) {
+				closeSharedLightbox();
+				return;
+			}
+			if ( e.key === 'ArrowLeft' ) {
+				navigateSharedGallery( -1 );
+				return;
+			}
+			if ( e.key === 'ArrowRight' ) {
+				navigateSharedGallery( 1 );
+				return;
+			}
+		} );
+	} )();
+
 } )();
