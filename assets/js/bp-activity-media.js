@@ -542,6 +542,50 @@
 
 		// ── Open ──
 
+		// Store original data-wp-on--click attributes so we can restore on close.
+		var savedIABindings = [];
+
+		function disableIABindings( overlay ) {
+			savedIABindings = [];
+			// Strip data-wp-on--click so IA handlers don't intercept clicks.
+			var clickEls = overlay.querySelectorAll( '[data-wp-on--click]' );
+			clickEls.forEach( function( el ) {
+				savedIABindings.push( { el: el, attr: 'data-wp-on--click', value: el.getAttribute( 'data-wp-on--click' ) } );
+				el.removeAttribute( 'data-wp-on--click' );
+			} );
+			// Strip data-wp-bind--hidden on the overlay itself so IA doesn't re-hide it.
+			if ( overlay.hasAttribute( 'data-wp-bind--hidden' ) ) {
+				savedIABindings.push( { el: overlay, attr: 'data-wp-bind--hidden', value: overlay.getAttribute( 'data-wp-bind--hidden' ) } );
+				overlay.removeAttribute( 'data-wp-bind--hidden' );
+			}
+			// Strip data-wp-on--input on comment input.
+			var inputEls = overlay.querySelectorAll( '[data-wp-on--input]' );
+			inputEls.forEach( function( el ) {
+				savedIABindings.push( { el: el, attr: 'data-wp-on--input', value: el.getAttribute( 'data-wp-on--input' ) } );
+				el.removeAttribute( 'data-wp-on--input' );
+			} );
+			// Strip data-wp-on--keydown on comment input.
+			var keyEls = overlay.querySelectorAll( '[data-wp-on--keydown]' );
+			keyEls.forEach( function( el ) {
+				savedIABindings.push( { el: el, attr: 'data-wp-on--keydown', value: el.getAttribute( 'data-wp-on--keydown' ) } );
+				el.removeAttribute( 'data-wp-on--keydown' );
+			} );
+			// Strip data-wp-bind--disabled on post button.
+			var disabledEls = overlay.querySelectorAll( '[data-wp-bind--disabled]' );
+			disabledEls.forEach( function( el ) {
+				savedIABindings.push( { el: el, attr: 'data-wp-bind--disabled', value: el.getAttribute( 'data-wp-bind--disabled' ) } );
+				el.removeAttribute( 'data-wp-bind--disabled' );
+				el.disabled = false;
+			} );
+		}
+
+		function restoreIABindings() {
+			savedIABindings.forEach( function( entry ) {
+				entry.el.setAttribute( entry.attr, entry.value );
+			} );
+			savedIABindings = [];
+		}
+
 		function openSharedLightbox( mediaId, gallery, galleryIndex ) {
 			var overlay = getOverlay();
 			if ( ! overlay ) {
@@ -554,6 +598,9 @@
 			suiState.gallery = gallery || [];
 			suiState.galleryIndex = galleryIndex || 0;
 			suiState.active = true;
+
+			// Disable Interactivity API click bindings so our vanilla JS handlers work.
+			disableIABindings( overlay );
 
 			// Show loading, hide content panels.
 			var loading = overlay.querySelector( '.mvs-lightbox-loading' );
@@ -641,6 +688,9 @@
 		// ── Close ──
 
 		function closeSharedLightbox() {
+			// Restore Interactivity API bindings before closing.
+			restoreIABindings();
+
 			var overlay = getOverlay();
 			if ( overlay ) {
 				overlay.setAttribute( 'hidden', '' );
