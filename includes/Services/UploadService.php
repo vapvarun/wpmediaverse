@@ -539,14 +539,14 @@ class UploadService {
 	private function find_by_hash( string $hash ): ?int {
 		global $wpdb;
 
-		$post_id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$media_id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_mvs_file_hash' AND meta_value = %s LIMIT 1",
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'file_hash' AND meta_value = %s LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$hash
 			)
 		);
 
-		return $post_id ? (int) $post_id : null;
+		return $media_id ? (int) $media_id : null;
 	}
 
 	/**

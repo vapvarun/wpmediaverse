@@ -575,12 +575,9 @@ class OverviewPage {
 		$total_views_row = $wpdb->get_var( "SELECT SUM(views) FROM {$wpdb->prefix}mvs_media_stats" );
 		$total_views     = $total_views_row ? (int) $total_views_row : 0;
 
-		// Storage used.
+		// Storage used (from mvs_media_index table).
 		$storage_size = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT SUM(CAST(meta_value AS UNSIGNED)) FROM {$wpdb->postmeta} WHERE meta_key = %s",
-				'_mvs_file_size'
-			)
+			"SELECT SUM(file_size) FROM {$wpdb->prefix}mvs_media_index" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		);
 		$storage_used = size_format( (int) $storage_size );
 

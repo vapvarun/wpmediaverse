@@ -174,7 +174,7 @@ class TemplateHelpers {
 				global $wpdb;
 				$group_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 					$wpdb->prepare(
-						"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = '_mvs_media_group' AND meta_value = %s",
+						"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 						$media_group
 					)
 				);

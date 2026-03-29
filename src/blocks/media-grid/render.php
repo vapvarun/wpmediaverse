@@ -38,8 +38,18 @@ $query_args = array(
 );
 
 if ( $media_type ) {
-	$query_args['meta_key']   = '_mvs_file_type';
-	$query_args['meta_value'] = $media_type; // phpcs:ignore WordPress.DB.SlowDBQuery
+	// Filter by file_type via mvs_media_index custom table using posts_clauses.
+	$mvs_grid_file_type_filter = $media_type;
+	add_filter(
+		'posts_clauses',
+		function ( $clauses ) use ( $mvs_grid_file_type_filter ) {
+			global $wpdb;
+			$index_table       = $wpdb->prefix . 'mvs_media_index';
+			$clauses['join']  .= " INNER JOIN {$index_table} AS mvs_ft ON {$wpdb->posts}.ID = mvs_ft.media_id";
+			$clauses['where'] .= $wpdb->prepare( ' AND mvs_ft.file_type = %s', $mvs_grid_file_type_filter );
+			return $clauses;
+		}
+	);
 }
 
 if ( $category ) {
@@ -62,19 +72,21 @@ if ( $mvs_tag ) {
 	$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery
 }
 
-// Exclude non-cover gallery group items from the grid.
-$query_args['meta_query'] = isset( $query_args['meta_query'] ) ? $query_args['meta_query'] : array();
-$query_args['meta_query'][] = array(
-	'relation' => 'OR',
-	array(
-		'key'     => '_mvs_media_group',
-		'compare' => 'NOT EXISTS',
-	),
-	array(
-		'key'     => '_mvs_group_position',
-		'value'   => '0',
-		'compare' => '=',
-	),
+// Exclude non-cover gallery group items from the grid via custom table.
+add_filter(
+	'posts_where',
+	function ( $where ) {
+		global $wpdb;
+		$meta_table = $wpdb->prefix . 'mvs_media_meta';
+		$where     .= " AND {$wpdb->posts}.ID NOT IN (
+			SELECT mm1.media_id FROM {$meta_table} mm1
+			INNER JOIN {$meta_table} mm2 ON mm1.media_id = mm2.media_id
+			WHERE mm1.meta_key = 'media_group'
+			AND mm2.meta_key = 'group_position'
+			AND mm2.meta_value != '0'
+		)";
+		return $where;
+	}
 );
 
 $query   = new WP_Query( $query_args );
@@ -92,12 +104,12 @@ if ( $show_lightbox && wp_script_is( 'mvs-lightbox', 'registered' ) ) {
 			while ( $query->have_posts() ) :
 				$query->the_post();
 				$mvs_grid_media_type = \WPMediaVerse\Core\TemplateHelpers::get_media_type( get_the_ID() );
-				$mvs_grid_group      = get_post_meta( get_the_ID(), '_mvs_media_group', true );
+				$mvs_grid_group      = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'media_group' );
 				$mvs_grid_group_cnt  = 0;
 				if ( $mvs_grid_group ) {
 					global $wpdb;
 					$mvs_grid_group_cnt = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-						"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = '_mvs_media_group' AND meta_value = %s",
+						"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 						$mvs_grid_group
 					) );
 				}

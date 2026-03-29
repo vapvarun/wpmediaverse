@@ -29,11 +29,11 @@ do_action( 'mvs_before_content' );
 		?>
 
 		<?php
-		$album_privacy = get_post_meta( get_the_ID(), '_mvs_privacy', true );
+		$album_privacy = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'privacy' );
 		if ( ! $album_privacy ) {
 			$album_privacy = 'public';
 		}
-		$album_type         = get_post_meta( get_the_ID(), '_mvs_album_type', true );
+		$album_type         = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'album_type' );
 		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
 		?>
 
@@ -294,7 +294,7 @@ do_action( 'mvs_before_content' );
 			<?php endif; ?>
 
 			<?php
-			$album_type  = get_post_meta( get_the_ID(), '_mvs_album_type', true );
+			$album_type  = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'album_type' );
 			$is_playlist = 'playlist' === $album_type;
 			?>
 
@@ -303,10 +303,10 @@ do_action( 'mvs_before_content' );
 				// Playlist mode: sequential audio tracklist.
 				$tracks = array();
 				foreach ( $items as $track_idx => $media_id ) {
-					$track_url  = get_post_meta( $media_id, '_mvs_file_url', true );
-					$track_type = get_post_meta( $media_id, '_mvs_file_type', true );
-					$track_dur  = get_post_meta( $media_id, '_mvs_duration', true );
-					$track_art  = get_post_meta( $media_id, '_mvs_artist', true );
+					$track_url  = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'file_url' );
+					$track_type = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'file_type' );
+					$track_dur  = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'duration' );
+					$track_art  = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'artist' );
 					$dur_label  = '';
 					if ( $track_dur ) {
 						$d         = (float) $track_dur;

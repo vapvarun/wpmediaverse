@@ -25,8 +25,8 @@ if ( ! $media_post || 'mvs_media' !== $media_post->post_type ) {
 	return;
 }
 
-$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
-$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
+$file_url  = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_url' );
+$file_type = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_type' );
 
 if ( ! $file_url ) {
 	return;

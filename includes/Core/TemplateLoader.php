@@ -144,21 +144,22 @@ class TemplateLoader {
 			$current_user_id = get_current_user_id();
 
 			if ( ! $current_user_id ) {
-				// Logged-out: only public media (meta not set defaults to public).
-				$query->set(
-					'meta_query',
-					array(
-						'relation' => 'OR',
-						array(
-							'key'     => '_mvs_privacy',
-							'value'   => 'public',
-							'compare' => '=',
-						),
-						array(
-							'key'     => '_mvs_privacy',
-							'compare' => 'NOT EXISTS',
-						),
-					)
+				// Logged-out: only public media — filter via mvs_media_index.
+				add_filter(
+					'posts_where',
+					static function ( string $where ): string {
+						global $wpdb;
+						$index_table = $wpdb->prefix . 'mvs_media_index';
+						$where      .= " AND (
+							{$wpdb->posts}.ID IN (
+								SELECT media_id FROM {$index_table} WHERE privacy = 'public'
+							)
+							OR {$wpdb->posts}.ID NOT IN (
+								SELECT media_id FROM {$index_table} WHERE privacy IS NOT NULL AND privacy != ''
+							)
+						)";
+						return $where;
+					}
 				);
 			} elseif ( ! current_user_can( 'moderate_mvs_media' ) ) {
 				// Logged-in non-admin: public + members + own media (any privacy).
@@ -323,18 +324,19 @@ class TemplateLoader {
 
 		$current_user_id = get_current_user_id();
 
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$where .= $wpdb->prepare(
 			" AND (
 				{$wpdb->posts}.post_author = %d
 				OR {$wpdb->posts}.ID IN (
-					SELECT post_id FROM {$wpdb->postmeta}
-					WHERE meta_key = '_mvs_privacy'
-					AND meta_value IN ('public', 'members')
+					SELECT media_id FROM {$index_table}
+					WHERE privacy IN ('public', 'members')
 				)
 				OR {$wpdb->posts}.ID NOT IN (
-					SELECT post_id FROM {$wpdb->postmeta}
-					WHERE meta_key = '_mvs_privacy'
+					SELECT media_id FROM {$index_table}
+					WHERE privacy IS NOT NULL AND privacy != ''
 				)
 			)",
 			$current_user_id
@@ -359,13 +361,15 @@ class TemplateLoader {
 
 		remove_filter( 'posts_where', array( $this, 'gallery_group_where_clause' ) );
 
-		// Exclude posts that have _mvs_media_group AND _mvs_group_position != 0.
+		$meta_table = $wpdb->prefix . 'mvs_media_meta';
+
+		// Exclude posts that have media_group AND group_position != 0.
 		$where .= " AND {$wpdb->posts}.ID NOT IN (
-			SELECT pm1.post_id FROM {$wpdb->postmeta} pm1
-			INNER JOIN {$wpdb->postmeta} pm2 ON pm1.post_id = pm2.post_id
-			WHERE pm1.meta_key = '_mvs_media_group'
-			AND pm2.meta_key = '_mvs_group_position'
-			AND pm2.meta_value != '0'
+			SELECT mm1.media_id FROM {$meta_table} mm1
+			INNER JOIN {$meta_table} mm2 ON mm1.media_id = mm2.media_id
+			WHERE mm1.meta_key = 'media_group'
+			AND mm2.meta_key = 'group_position'
+			AND mm2.meta_value != '0'
 		)";
 
 		return $where;

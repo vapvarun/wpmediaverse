@@ -213,14 +213,9 @@ class StatsPage {
 		// AI usage.
 		$ai_stats = $this->ai->get_usage_stats();
 
-		// Storage used.
+		// Storage used (from mvs_media_index table).
 		$storage_size      = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT SUM(CAST(meta_value AS UNSIGNED))
-				FROM {$wpdb->postmeta}
-				WHERE meta_key = %s",
-				'_mvs_file_size'
-			)
+			"SELECT SUM(file_size) FROM {$wpdb->prefix}mvs_media_index" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		);
 		$storage_formatted = size_format( (int) $storage_size );
 

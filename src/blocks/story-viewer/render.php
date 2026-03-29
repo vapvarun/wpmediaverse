@@ -14,28 +14,26 @@ defined( 'ABSPATH' ) || exit;
 $count       = isset( $attributes['count'] ) ? absint( $attributes['count'] ) : 10;
 $avatar_size = isset( $attributes['avatarSize'] ) ? absint( $attributes['avatarSize'] ) : 64;
 
-// Get active stories.
-$stories = get_posts(
-	array(
-		'post_type'      => 'mvs_media',
-		'post_status'    => 'publish',
-		'posts_per_page' => $count,
-		'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery
-			array(
-				'key'   => '_mvs_is_story',
-				'value' => '1',
-			),
-			array(
-				'key'     => '_mvs_story_expires_at',
-				'value'   => current_time( 'mysql', true ),
-				'compare' => '>',
-				'type'    => 'DATETIME',
-			),
-		),
-		'orderby'        => 'date',
-		'order'          => 'DESC',
+// Get active stories from custom meta table.
+global $wpdb;
+$meta_table = $wpdb->prefix . 'mvs_media_meta';
+$story_ids  = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	$wpdb->prepare(
+		"SELECT m1.media_id
+		FROM {$meta_table} m1
+		INNER JOIN {$meta_table} m2 ON m1.media_id = m2.media_id
+		INNER JOIN {$wpdb->posts} p ON p.ID = m1.media_id
+		WHERE m1.meta_key = 'is_story' AND m1.meta_value = '1'
+		AND m2.meta_key = 'story_expires_at' AND m2.meta_value > %s
+		AND p.post_type = 'mvs_media' AND p.post_status = 'publish'
+		ORDER BY p.post_date DESC
+		LIMIT %d",
+		current_time( 'mysql', true ),
+		$count
 	)
 );
+$stories = array_map( 'get_post', $story_ids );
+$stories = array_filter( $stories );
 
 if ( empty( $stories ) ) {
 	return;
@@ -73,7 +71,7 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'mvs-story-viewer-blo
 			$user       = get_userdata( $author_id );
 			$avatar_url = get_avatar_url( $author_id, array( 'size' => $avatar_size * 2 ) );
 			$first      = $author_stories[0];
-			$file_url   = get_post_meta( $first->ID, '_mvs_file_url', true );
+			$file_url   = \WPMediaVerse\Services\MediaMeta::get( $first->ID, 'file_url' );
 			?>
 			<div class="mvs-story-avatar"
 				style="text-align:center;flex-shrink:0;cursor:pointer;"

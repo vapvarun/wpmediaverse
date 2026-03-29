@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
 // Privacy gate: block access to non-public media for unauthorized viewers.
 if ( have_posts() ) {
 	the_post();
-	$mvs_privacy_level = get_post_meta( get_the_ID(), '_mvs_privacy', true );
+	$mvs_privacy_level = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'privacy' );
 	if ( $mvs_privacy_level && 'public' !== $mvs_privacy_level ) {
 		$mvs_viewer_id = get_current_user_id();
 		$mvs_author_id = (int) get_the_author_meta( 'ID' );
@@ -48,22 +48,22 @@ do_action( 'mvs_before_content' );
 	while ( have_posts() ) :
 		the_post();
 
-		$file_url   = get_post_meta( get_the_ID(), '_mvs_file_url', true );
-		$file_type  = get_post_meta( get_the_ID(), '_mvs_file_type', true );
-		$media_type = get_post_meta( get_the_ID(), '_mvs_media_type', true );
+		$file_url   = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'file_url' );
+		$file_type  = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'file_type' );
+		$media_type = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'media_type' );
 		$is_image   = 'image' === $media_type;
 		$is_video   = 'video' === $media_type;
 		$is_audio   = 'audio' === $media_type;
 
 		// Metadata for video/audio.
-		$duration   = get_post_meta( get_the_ID(), '_mvs_duration', true );
-		$width      = get_post_meta( get_the_ID(), '_mvs_width', true );
-		$height     = get_post_meta( get_the_ID(), '_mvs_height', true );
-		$artist     = get_post_meta( get_the_ID(), '_mvs_artist', true );
-		$album_name = get_post_meta( get_the_ID(), '_mvs_album_name', true );
+		$duration   = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'duration' );
+		$width      = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'width' );
+		$height     = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'height' );
+		$artist     = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'artist' );
+		$album_name = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'album_name' );
 
 		// Poster/thumbnail from WP attachment.
-		$attach_id  = (int) get_post_meta( get_the_ID(), '_mvs_attachment_id', true );
+		$attach_id  = (int) \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'attachment_id' );
 		$poster_url = '';
 		if ( $attach_id ) {
 			$poster_src = wp_get_attachment_image_url( $attach_id, 'large' );
@@ -217,7 +217,7 @@ do_action( 'mvs_before_content' );
 
 			<?php
 			// Prepare Interactivity API context.
-			$current_privacy = get_post_meta( get_the_ID(), '_mvs_privacy', true );
+			$current_privacy = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'privacy' );
 			if ( ! $current_privacy ) {
 				$current_privacy = 'public';
 			}

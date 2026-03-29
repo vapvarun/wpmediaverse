@@ -33,8 +33,8 @@ $container  = \WPMediaVerse\Core\Plugin::container();
 $privacy    = $container->get( 'privacy' );
 $has_access = $privacy->can_view( $media_id, $user_id );
 
-$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
-$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
+$file_url  = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_url' );
+$file_type = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_type' );
 $is_image  = $file_url && 0 === strpos( $file_type, 'image/' );
 $wrapper   = get_block_wrapper_attributes( array( 'class' => 'mvs-lock-overlay-block' ) );
 

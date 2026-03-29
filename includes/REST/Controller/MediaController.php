@@ -276,20 +276,19 @@ class MediaController extends WP_REST_Controller {
 		// Exclude non-cover gallery group items from feeds (only when explicitly requested).
 		$show_group_covers = $request->get_param( 'group_covers' );
 		if ( 'true' === $show_group_covers || '1' === $show_group_covers ) {
-			$where[] = "media_id NOT IN (
-				SELECT post_id FROM {$wpdb->postmeta}
-				WHERE meta_key = '_mvs_media_group'
-				AND post_id IN (
-					SELECT post_id FROM {$wpdb->postmeta}
-					WHERE meta_key = '_mvs_group_position' AND meta_value != '0'
-				)
+			$meta_table = $wpdb->prefix . 'mvs_media_meta';
+			$where[]    = "media_id NOT IN (
+				SELECT mm1.media_id FROM {$meta_table} mm1
+				INNER JOIN {$meta_table} mm2 ON mm1.media_id = mm2.media_id
+				WHERE mm1.meta_key = 'media_group'
+				AND mm2.meta_key = 'group_position' AND mm2.meta_value != '0'
 			)";
 		}
 
 		// Filter by specific media group ID.
 		$media_group_param = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
 		if ( $media_group_param ) {
-			$where[]  = "media_id IN (SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_mvs_media_group' AND meta_value = %s)";
+			$where[]  = "media_id IN (SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s)";
 			$params[] = $media_group_param;
 		}
 
@@ -916,7 +915,7 @@ class MediaController extends WP_REST_Controller {
 			global $wpdb;
 			$data['group_count'] = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = '_mvs_media_group' AND meta_value = %s",
+					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$media_group
 				)
 			);

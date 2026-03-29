@@ -247,13 +247,15 @@ class AlbumService {
 	private function get_first_image_item( int $album_id ): ?int {
 		global $wpdb;
 
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$media_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT ai.media_id
 				FROM {$wpdb->prefix}mvs_album_items ai
-				INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = ai.media_id AND pm.meta_key = '_mvs_file_type'
-				WHERE ai.album_id = %d AND pm.meta_value LIKE %s
+				INNER JOIN {$index_table} idx ON idx.media_id = ai.media_id
+				WHERE ai.album_id = %d AND idx.file_type LIKE %s
 				ORDER BY ai.position ASC
 				LIMIT 1",
 				$album_id,

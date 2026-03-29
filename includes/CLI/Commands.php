@@ -373,12 +373,12 @@ class Commands {
 			// Filter by source if specified.
 			if ( 'all' !== $source ) {
 				$meta_keys = array(
-					'rtmedia'    => '_mvs_rtmedia_id',
-					'mediapress' => '_mvs_mpp_id',
-					'buddyboss'  => '_mvs_bb_media_id',
+					'rtmedia'    => 'rtmedia_id',
+					'mediapress' => 'mpp_id',
+					'buddyboss'  => 'bb_media_id',
 				);
 				$check_key = $meta_keys[ $source ] ?? '';
-				if ( $check_key && ! get_post_meta( $media_id, $check_key, true ) ) {
+				if ( $check_key && ! MediaMeta::get( (int) $media_id, $check_key ) ) {
 					++$skipped;
 					$progress->tick();
 					continue;

@@ -146,23 +146,41 @@ class ModerationService {
 
 		$args = wp_parse_args( $args, $defaults );
 
-		$query_args = array(
-			'post_type'      => 'mvs_media',
-			'post_status'    => 'any',
-			'posts_per_page' => $args['per_page'],
-			'paged'          => $args['page'],
-			'meta_key'       => '_mvs_moderation_status',
-			'meta_value'     => $args['status'],
-			'orderby'        => 'date',
-			'order'          => 'DESC',
+		global $wpdb;
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$offset      = ( $args['page'] - 1 ) * $args['per_page'];
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$index_table} i
+				INNER JOIN {$wpdb->posts} p ON p.ID = i.media_id
+				WHERE i.moderation_status = %s AND p.post_type = 'mvs_media'",
+				$args['status']
+			)
 		);
 
-		$query = new \WP_Query( $query_args );
+		$media_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT i.media_id FROM {$index_table} i
+				INNER JOIN {$wpdb->posts} p ON p.ID = i.media_id
+				WHERE i.moderation_status = %s AND p.post_type = 'mvs_media'
+				ORDER BY p.post_date DESC
+				LIMIT %d OFFSET %d",
+				$args['status'],
+				$args['per_page'],
+				$offset
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$items = array_filter( array_map( 'get_post', $media_ids ) );
+		$pages = $args['per_page'] > 0 ? (int) ceil( $total / $args['per_page'] ) : 1;
 
 		return array(
-			'items' => $query->posts,
-			'total' => $query->found_posts,
-			'pages' => $query->max_num_pages,
+			'items' => $items,
+			'total' => $total,
+			'pages' => $pages,
 		);
 	}
 
@@ -257,17 +275,14 @@ class ModerationService {
 	public function get_counts(): array {
 		global $wpdb;
 
-		$results = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT pm.meta_value AS status, COUNT(*) AS count
-				FROM {$wpdb->postmeta} pm
-				INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
-				WHERE pm.meta_key = %s
-				AND pm.meta_value IN ('pending', 'flagged', 'rejected')
-				AND p.post_type = 'mvs_media'
-				GROUP BY pm.meta_value",
-				'_mvs_moderation_status'
-			),
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$results     = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			"SELECT i.moderation_status AS status, COUNT(*) AS count
+			FROM {$index_table} i
+			INNER JOIN {$wpdb->posts} p ON i.media_id = p.ID
+			WHERE i.moderation_status IN ('pending', 'flagged', 'rejected')
+			AND p.post_type = 'mvs_media'
+			GROUP BY i.moderation_status", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 
