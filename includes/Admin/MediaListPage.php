@@ -235,8 +235,9 @@ class MediaListPage {
 		$type     = $item['media_type'] ?: 'image';
 		$privacy  = $item['privacy'] ?: 'public';
 		$status   = $item['status'] ?: 'publish';
-		$file_url = $item['file_url'] ?? '';
-		$author   = get_userdata( (int) $item['post_author'] );
+		$file_url      = $item['file_url'] ?? '';
+		$attachment_id = ! empty( $item['attachment_id'] ) ? (int) $item['attachment_id'] : 0;
+		$author        = get_userdata( (int) $item['post_author'] );
 
 		$type_colors = array(
 			'image'    => '#2271b1',
@@ -265,8 +266,21 @@ class MediaListPage {
 		<tr>
 			<th scope="row" class="check-column"><input type="checkbox" name="media_ids[]" value="<?php echo esc_attr( $media_id ); ?>" /></th>
 			<td style="width:50px;">
-				<?php if ( $file_url && 'image' === $type ) : ?>
-					<img src="<?php echo esc_url( $file_url ); ?>" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" loading="lazy" />
+				<?php
+				$thumb_url = '';
+				if ( 'image' === $type ) {
+					if ( $file_url ) {
+						$thumb_url = $file_url;
+					} elseif ( $attachment_id ) {
+						$thumb_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+					}
+				} elseif ( $attachment_id ) {
+					// Non-image types may still have a generated thumbnail (e.g. video poster).
+					$thumb_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+				}
+				?>
+				<?php if ( $thumb_url ) : ?>
+					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" loading="lazy" />
 				<?php else : ?>
 					<?php
 					$icons = array(

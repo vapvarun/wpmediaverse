@@ -64,6 +64,29 @@ wp_enqueue_script_module(
 	$mvs_pe_asset['dependencies'],
 	$mvs_pe_asset['version']
 );
+
+// Enqueue dashboard store (mvs/dashboard — handles media/albums/favorites/collections tabs).
+$mvs_dv_asset_file = MVS_PLUGIN_DIR . 'build/blocks/dashboard-view/view.asset.php';
+$mvs_dv_asset      = file_exists( $mvs_dv_asset_file )
+	? require $mvs_dv_asset_file
+	: array(
+		'dependencies' => array(
+			array(
+				'id'     => '@wordpress/interactivity',
+				'import' => 'static',
+			),
+		),
+		'version'      => defined( 'MVS_VERSION' ) ? MVS_VERSION : '1.1.0',
+	);
+wp_enqueue_script_module(
+	'mvs-dashboard-view',
+	( defined( 'MVS_PLUGIN_URL' ) ? MVS_PLUGIN_URL : '' ) . 'build/blocks/dashboard-view/view.js',
+	$mvs_dv_asset['dependencies'],
+	$mvs_dv_asset['version']
+);
+
+// Enqueue frontend CSS.
+wp_enqueue_style( 'mvs-frontend' );
 ?>
 <div class="mvs-dashboard"
 	data-wp-interactive="mvs/dashboard"
@@ -279,7 +302,7 @@ wp_enqueue_script_module(
 				data-wp-on--dragleave="actions.handleUploadDragLeave"
 				data-wp-on--drop="actions.handleUploadDrop"
 				role="button" tabindex="0"
-				aria-label="<?php esc_attr_e( 'Upload media files', 'wpmediaverse' ); ?>"
+				aria-label="<?php esc_attr_e( 'Upload media files', 'wpmediaverse' ); ?>">
 				<span class="mvs-dashboard-dropzone-icon">&#x2B06;&#xFE0F;</span>
 				<span class="mvs-dashboard-dropzone-label"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
 				<input type="file" multiple accept="image/*,video/*,audio/*" class="mvs-upload-file-input" style="display:none"

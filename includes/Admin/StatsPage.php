@@ -10,6 +10,7 @@ namespace WPMediaVerse\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Services\AIService;
+use WPMediaVerse\Services\MediaMeta;
 
 /**
  * Admin stats dashboard page.
@@ -309,14 +310,12 @@ class StatsPage {
 								<tbody>
 									<?php foreach ( $top_media as $item ) : ?>
 										<?php
-										$edit_link = get_edit_post_link( (int) $item['media_id'], 'raw' );
-										$view_link = get_permalink( (int) $item['media_id'] );
-										$item_link = $edit_link ? $edit_link : $view_link;
+										$item_link = MediaMeta::get_permalink( (int) $item['media_id'] );
 										?>
 										<tr>
 											<td>
 												<?php if ( $item_link ) : ?>
-													<a href="<?php echo esc_url( $item_link ); ?>">
+													<a href="<?php echo esc_url( $item_link ); ?>" target="_blank">
 														<?php echo esc_html( $item['post_title'] ); ?>
 													</a>
 												<?php else : ?>
