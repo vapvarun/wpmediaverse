@@ -9,7 +9,6 @@ namespace WPMediaVerse\Core;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\PostTypes\Media;
 use WPMediaVerse\PostTypes\Album;
 use WPMediaVerse\PostTypes\Collection;
 use WPMediaVerse\Taxonomies\MediaTag;
@@ -92,8 +91,11 @@ class Plugin {
 		self::$container = new ServiceContainer();
 		self::register_services();
 
-		// Register CPTs, taxonomies, and blocks.
+		// Register post types, taxonomies, and blocks.
 		add_action( 'init', array( self::class, 'register_types' ) );
+
+		// Custom admin menu (replaces CPT-based menu).
+		add_action( 'admin_menu', array( self::class, 'register_admin_menu' ), 5 );
 
 		$blocks = new BlockRegistrar();
 		$blocks->init();
@@ -166,9 +168,7 @@ class Plugin {
 		// Action Scheduler callback for async webhook delivery.
 		add_action( 'mvs_deliver_webhook', array( self::class, 'deliver_webhook' ), 10, 4 );
 
-		// Ensure stats/index rows exist when media is published (any save, not just publish transition).
-		add_action( 'publish_mvs_media', array( self::class, 'ensure_media_rows' ), 10, 2 );
-		add_action( 'save_post_mvs_media', array( self::class, 'ensure_media_rows_on_save' ), 10, 3 );
+		// Note: ensure_media_rows hooks removed — media is now in custom tables, not CPT.
 
 		// Enqueue frontend styles.
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
@@ -526,15 +526,73 @@ class Plugin {
 	}
 
 	/**
-	 * Register custom post types and taxonomies.
+	 * Register post types and taxonomies.
+	 *
+	 * Note: mvs_media is NOT a CPT — media lives in mvs_media_index custom table.
+	 * Albums and collections remain as CPTs (low volume, CPT is fine).
 	 */
 	public static function register_types(): void {
-		Media::register();
-		Media::register_admin_columns();
 		Album::register();
 		Collection::register();
 		MediaTag::register();
 		MediaCategory::register();
+	}
+
+	/**
+	 * Admin menu parent slug — all subpages register under this.
+	 */
+	const ADMIN_SLUG = 'wpmediaverse';
+
+	/**
+	 * Build admin URL for a WPMediaVerse page.
+	 *
+	 * @param string $page Page slug (e.g., 'mvs-settings'). Empty = overview.
+	 * @param array  $args Additional query args.
+	 * @return string Full admin URL.
+	 */
+	public static function admin_url( string $page = '', array $args = array() ): string {
+		$slug = $page ? $page : self::ADMIN_SLUG;
+		$url  = admin_url( 'admin.php?page=' . $slug );
+		if ( ! empty( $args ) ) {
+			$url = add_query_arg( $args, $url );
+		}
+		return $url;
+	}
+
+	/**
+	 * Register the top-level WPMediaVerse admin menu and core subpages.
+	 */
+	public static function register_admin_menu(): void {
+		// Top-level menu — renders overview page.
+		add_menu_page(
+			__( 'WPMediaVerse', 'wpmediaverse' ),
+			__( 'WPMediaVerse', 'wpmediaverse' ),
+			'upload_mvs_media',
+			self::ADMIN_SLUG,
+			array( self::$container->get( 'admin.overview' ), 'render_page' ),
+			'dashicons-format-gallery',
+			25
+		);
+
+		// First submenu replaces the auto-created duplicate.
+		add_submenu_page(
+			self::ADMIN_SLUG,
+			__( 'Overview', 'wpmediaverse' ),
+			__( 'Overview', 'wpmediaverse' ),
+			'upload_mvs_media',
+			self::ADMIN_SLUG,
+			array( self::$container->get( 'admin.overview' ), 'render_page' )
+		);
+
+		// All Media — custom listing page.
+		add_submenu_page(
+			self::ADMIN_SLUG,
+			__( 'All Media', 'wpmediaverse' ),
+			__( 'All Media', 'wpmediaverse' ),
+			'upload_mvs_media',
+			'mvs-media',
+			array( \WPMediaVerse\Admin\MediaListPage::class, 'render' )
+		);
 	}
 
 	/**
@@ -641,100 +699,20 @@ class Plugin {
 		return $data;
 	}
 
-	/**
-	 * Ensure mvs_media_stats and mvs_media_index rows exist for a published media item.
-	 *
-	 * This covers media created via WP admin, REST API, or any path outside UploadService.
-	 *
-	 * @param int      $post_id Post ID.
-	 * @param \WP_Post $post    Post object.
-	 */
-	/**
-	 * Wrapper for save_post_mvs_media to call ensure_media_rows for published posts.
-	 *
-	 * @param int      $post_id Post ID.
-	 * @param \WP_Post $post    Post object.
-	 * @param bool     $update  Whether this is an update.
-	 */
-	public static function ensure_media_rows_on_save( int $post_id, \WP_Post $post, bool $update ): void {
-		if ( 'publish' !== $post->post_status || wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
-			return;
-		}
-		self::ensure_media_rows( $post_id, $post );
-	}
-
-	public static function ensure_media_rows( int $post_id, \WP_Post $post ): void {
-		global $wpdb;
-
-		$now = current_time( 'mysql', true );
-
-		// Ensure mvs_media_stats row exists.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$exists = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d",
-				$post_id
-			)
-		);
-
-		if ( ! $exists ) {
-			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_media_stats',
-				array(
-					'media_id'   => $post_id,
-					'views'      => 0,
-					'downloads'  => 0,
-					'reactions'  => 0,
-					'comments'   => 0,
-					'shares'     => 0,
-					'updated_at' => $now,
-				),
-				array( '%d', '%d', '%d', '%d', '%d', '%d', '%s' )
-			);
-		}
-
-		// Ensure mvs_media_index row exists.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$idx_exists = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
-				$post_id
-			)
-		);
-
-		if ( ! $idx_exists ) {
-			$privacy_meta = MediaMeta::get( $post_id, 'privacy' );
-			$privacy      = $privacy_meta ? $privacy_meta : 'public';
-			$type_meta    = MediaMeta::get( $post_id, 'media_type' );
-			$media_type   = $type_meta ? $type_meta : '';
-			$created      = $post->post_date_gmt ? $post->post_date_gmt : $now;
-
-			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_media_index',
-				array(
-					'media_id'          => $post_id,
-					'post_author'       => $post->post_author,
-					'media_type'        => $media_type,
-					'privacy'           => $privacy,
-					'moderation_status' => 'approved',
-					'created_at'        => $created,
-				),
-				array( '%d', '%d', '%s', '%s', '%s', '%s' )
-			);
-		}
-	}
+	// Note: ensure_media_rows methods removed — media is created directly in custom tables.
 
 	/**
 	 * Enqueue frontend styles and scripts on MVS pages.
 	 */
 	public static function enqueue_frontend_assets(): void {
 		$post_type  = get_post_type();
-		$is_mvs     = in_array( $post_type, array( 'mvs_media', 'mvs_album', 'mvs_collection' ), true );
-		$is_archive = is_post_type_archive( 'mvs_media' );
+		$is_mvs     = in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true );
+		$is_archive = is_post_type_archive( 'mvs_album' );
 		$is_mvs_tax = is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' );
+		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
 
 		// Always enqueue on MVS pages or pages with dashboard shortcode.
-		if ( $is_mvs || $is_archive || $is_mvs_tax ) {
+		if ( $is_mvs || $is_archive || $is_mvs_tax || $is_mvs_tpl ) {
 			wp_enqueue_style(
 				'mvs-frontend',
 				MVS_PLUGIN_URL . 'assets/css/frontend.css',
@@ -814,9 +792,7 @@ class Plugin {
 		if ( ! get_option( 'mvs_setup_complete' ) && current_user_can( 'manage_mvs_settings' ) ) {
 			wp_safe_redirect( admin_url( 'admin.php?page=' . SetupWizard::PAGE_SLUG ) );
 		} else {
-			wp_safe_redirect(
-				admin_url( 'edit.php?post_type=mvs_media&page=' . OverviewPage::PAGE_SLUG )
-			);
+			wp_safe_redirect( admin_url( 'admin.php?page=' . self::ADMIN_SLUG ) );
 		}
 		exit;
 	}
@@ -830,30 +806,24 @@ class Plugin {
 	public static function reorder_submenu(): void {
 		global $submenu;
 
-		$parent = 'edit.php?post_type=mvs_media';
+		$parent = self::ADMIN_SLUG;
 		if ( empty( $submenu[ $parent ] ) ) {
 			return;
 		}
 
-		// Build a priority map by slug.
 		$order_map = array(
-			'mvs-overview'                      => 1,
-			'edit.php?post_type=mvs_media'      => 5,
-			'post-new.php?post_type=mvs_media'  => 6,
-			'edit-tags.php?taxonomy=mvs_tag&post_type=mvs_media' => 10,
-			'edit-tags.php?taxonomy=mvs_category&post_type=mvs_media' => 11,
-			'edit.php?post_type=mvs_album'      => 15,
-			'edit.php?post_type=mvs_collection' => 16,
-			'mvs-settings'                      => 50,
-			'mvs-moderation'                    => 51,
-			'mvs-stats'                         => 52,
+			self::ADMIN_SLUG  => 1,
+			'mvs-media'       => 5,
+			'mvs-settings'    => 50,
+			'mvs-moderation'  => 51,
+			'mvs-stats'       => 52,
 		);
 
 		usort(
 			$submenu[ $parent ],
 			function ( $a, $b ) use ( $order_map ) {
-				$a_order = $order_map[ $a[2] ] ?? 99;
-				$b_order = $order_map[ $b[2] ] ?? 99;
+				$a_order = $order_map[ $a[2] ] ?? 30;
+				$b_order = $order_map[ $b[2] ] ?? 30;
 				return $a_order - $b_order;
 			}
 		);

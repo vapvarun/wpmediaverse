@@ -2,6 +2,8 @@
 /**
  * Server-side render for the story-viewer block.
  *
+ * Queries mvs_media_index + mvs_media_meta for active stories -- no wp_posts join.
+ *
  * @package WPMediaVerse
  *
  * @var array    $attributes Block attributes.
@@ -14,28 +16,29 @@ defined( 'ABSPATH' ) || exit;
 $count       = isset( $attributes['count'] ) ? absint( $attributes['count'] ) : 10;
 $avatar_size = isset( $attributes['avatarSize'] ) ? absint( $attributes['avatarSize'] ) : 64;
 
-// Get active stories.
-$stories = get_posts(
-	array(
-		'post_type'      => 'mvs_media',
-		'post_status'    => 'publish',
-		'posts_per_page' => $count,
-		'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery
-			array(
-				'key'   => '_mvs_is_story',
-				'value' => '1',
-			),
-			array(
-				'key'     => '_mvs_story_expires_at',
-				'value'   => current_time( 'mysql', true ),
-				'compare' => '>',
-				'type'    => 'DATETIME',
-			),
-		),
-		'orderby'        => 'date',
-		'order'          => 'DESC',
-	)
+// Get active stories from custom tables (index + meta).
+global $wpdb;
+$index_table = $wpdb->prefix . 'mvs_media_index';
+$meta_table  = $wpdb->prefix . 'mvs_media_meta';
+
+// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$stories = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT idx.*
+		FROM {$meta_table} m1
+		INNER JOIN {$meta_table} m2 ON m1.media_id = m2.media_id
+		INNER JOIN {$index_table} idx ON idx.media_id = m1.media_id
+		WHERE m1.meta_key = 'is_story' AND m1.meta_value = '1'
+		AND m2.meta_key = 'story_expires_at' AND m2.meta_value > %s
+		AND idx.status = 'publish'
+		ORDER BY idx.created_at DESC
+		LIMIT %d",
+		current_time( 'mysql', true ),
+		$count
+	),
+	ARRAY_A
 );
+// phpcs:enable
 
 if ( empty( $stories ) ) {
 	return;
@@ -44,7 +47,7 @@ if ( empty( $stories ) ) {
 // Group stories by author.
 $by_author = array();
 foreach ( $stories as $story ) {
-	$author_id = (int) $story->post_author;
+	$author_id = (int) $story['post_author'];
 	if ( ! isset( $by_author[ $author_id ] ) ) {
 		$by_author[ $author_id ] = array();
 	}
@@ -73,7 +76,7 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'mvs-story-viewer-blo
 			$user       = get_userdata( $author_id );
 			$avatar_url = get_avatar_url( $author_id, array( 'size' => $avatar_size * 2 ) );
 			$first      = $author_stories[0];
-			$file_url   = get_post_meta( $first->ID, '_mvs_file_url', true );
+			$file_url   = ! empty( $first['file_url'] ) ? set_url_scheme( $first['file_url'] ) : '';
 			?>
 			<div class="mvs-story-avatar"
 				style="text-align:center;flex-shrink:0;cursor:pointer;"

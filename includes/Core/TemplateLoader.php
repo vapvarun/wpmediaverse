@@ -2,7 +2,9 @@
 /**
  * Template loader.
  *
- * Allows themes to override plugin templates by placing them in a wpmediaverse/ directory.
+ * Serves media pages via rewrite rules + template_redirect.
+ * Albums/Collections still use CPT template filters.
+ * Themes can override by placing templates in a wpmediaverse/ directory.
  *
  * @package WPMediaVerse
  */
@@ -10,6 +12,8 @@
 namespace WPMediaVerse\Core;
 
 defined( 'ABSPATH' ) || exit;
+
+use WPMediaVerse\Services\MediaMeta;
 
 /**
  * Handles template loading with theme override support.
@@ -27,22 +31,287 @@ class TemplateLoader {
 	 * Initialize template hooks.
 	 */
 	public function init(): void {
+		// Rewrite rules for media pages (no CPT needed).
+		add_action( 'init', array( $this, 'register_rewrite_rules' ) );
+		add_filter( 'query_vars', array( $this, 'register_query_vars' ) );
+
+		// Serve media templates via template_redirect.
+		add_action( 'template_redirect', array( $this, 'load_media_templates' ) );
+
+		// CPT template filters — albums and collections only.
 		add_filter( 'single_template', array( $this, 'load_single_template' ) );
 		add_filter( 'archive_template', array( $this, 'load_archive_template' ) );
 		add_filter( 'taxonomy_template', array( $this, 'load_taxonomy_template' ) );
-		add_action( 'pre_get_posts', array( $this, 'unified_explore_query' ) );
-
-		// Profile edit endpoint: /media/edit-profile/
-		add_action( 'init', array( $this, 'register_profile_rewrite' ) );
-		add_filter( 'query_vars', array( $this, 'add_profile_query_var' ) );
-		add_action( 'template_redirect', array( $this, 'load_profile_template' ) );
 
 		// Body class signal for BuddyX and other themes.
 		add_action( 'wp', array( $this, 'maybe_add_mvs_body_class' ) );
 	}
 
 	/**
-	 * Load single template for MVS post types.
+	 * Register rewrite rules for media pages.
+	 *
+	 * Routes:
+	 *   /media/                          — Explore (archive)
+	 *   /media/page/{n}/                 — Explore paginated
+	 *   /media/{slug}/                   — Single media item (by slug)
+	 *   /media/{id}/                     — Single media item (by numeric ID)
+	 *   /media/@{username}/              — User profile media
+	 *   /media/@{username}/page/{n}/     — User profile paginated
+	 *   /media/edit-profile/             — Profile edit
+	 */
+	public function register_rewrite_rules(): void {
+		// Media archive (explore).
+		add_rewrite_rule(
+			'^media/page/([0-9]+)/?$',
+			'index.php?mvs_media_archive=1&paged=$matches[1]',
+			'top'
+		);
+		add_rewrite_rule(
+			'^media/?$',
+			'index.php?mvs_media_archive=1',
+			'top'
+		);
+
+		// Single media by slug (non-numeric).
+		add_rewrite_rule(
+			'^media/([a-z0-9][a-z0-9\-]*)/?$',
+			'index.php?mvs_media_slug=$matches[1]',
+			'top'
+		);
+
+		// User profile: /media/@{username}/.
+		add_rewrite_rule(
+			'^media/@([^/]+)/page/([0-9]+)/?$',
+			'index.php?mvs_profile_user=$matches[1]&paged=$matches[2]',
+			'top'
+		);
+		add_rewrite_rule(
+			'^media/@([^/]+)/?$',
+			'index.php?mvs_profile_user=$matches[1]',
+			'top'
+		);
+
+		// Profile edit.
+		add_rewrite_rule(
+			'^media/edit-profile/?$',
+			'index.php?mvs_edit_profile=1',
+			'top'
+		);
+	}
+
+	/**
+	 * Register custom query variables.
+	 *
+	 * @param string[] $vars Existing query vars.
+	 * @return string[]
+	 */
+	public function register_query_vars( array $vars ): array {
+		$vars[] = 'mvs_media_archive';
+		$vars[] = 'mvs_media_slug';
+		$vars[] = 'mvs_profile_user';
+		$vars[] = 'mvs_edit_profile';
+		return $vars;
+	}
+
+	/**
+	 * Serve media templates via template_redirect.
+	 *
+	 * Handles single media, explore archive, user profile, and profile edit.
+	 */
+	public function load_media_templates(): void {
+		// Single media by slug.
+		$slug = get_query_var( 'mvs_media_slug' );
+		if ( $slug ) {
+			$this->serve_single_media( $slug );
+			return;
+		}
+
+		// Media archive (explore).
+		if ( get_query_var( 'mvs_media_archive' ) ) {
+			$this->serve_media_archive();
+			return;
+		}
+
+		// User profile.
+		$profile_user = get_query_var( 'mvs_profile_user' );
+		if ( $profile_user ) {
+			$this->serve_user_profile( $profile_user );
+			return;
+		}
+
+		// Profile edit.
+		if ( get_query_var( 'mvs_edit_profile' ) ) {
+			$this->serve_profile_edit();
+			return;
+		}
+	}
+
+	/**
+	 * Serve a single media item page.
+	 *
+	 * @param string $slug Media slug (or numeric ID).
+	 */
+	private function serve_single_media( string $slug ): void {
+		global $wpdb;
+
+		// Look up by slug first, then by numeric ID.
+		if ( ctype_digit( $slug ) ) {
+			$media = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d AND status = 'publish'",
+					(int) $slug
+				),
+				ARRAY_A
+			);
+		} else {
+			$media = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s AND status = 'publish'",
+					$slug
+				),
+				ARRAY_A
+			);
+		}
+
+		if ( ! $media ) {
+			global $wp_query;
+			$wp_query->set_404();
+			status_header( 404 );
+			return;
+		}
+
+		// Check privacy.
+		$can_view = $this->can_view_media( $media );
+		if ( ! $can_view ) {
+			global $wp_query;
+			$wp_query->set_404();
+			status_header( 404 );
+			return;
+		}
+
+		// Set globals for the template.
+		$GLOBALS['mvs_current_media'] = $media;
+
+		// Set page title.
+		add_filter(
+			'document_title_parts',
+			function ( $title ) use ( $media ) {
+				$title['title'] = $media['title'] ?: __( 'Media', 'wpmediaverse' );
+				return $title;
+			}
+		);
+
+		$template = self::locate( 'media-single.php' );
+		if ( $template ) {
+			include $template;
+			exit;
+		}
+	}
+
+	/**
+	 * Serve the media archive (explore) page.
+	 */
+	private function serve_media_archive(): void {
+		$GLOBALS['mvs_is_media_archive'] = true;
+
+		add_filter(
+			'document_title_parts',
+			function ( $title ) {
+				$title['title'] = __( 'Explore Media', 'wpmediaverse' );
+				return $title;
+			}
+		);
+
+		$template = self::locate( 'explore.php' );
+		if ( $template ) {
+			include $template;
+			exit;
+		}
+	}
+
+	/**
+	 * Serve a user's media profile page.
+	 *
+	 * @param string $username Username (without @).
+	 */
+	private function serve_user_profile( string $username ): void {
+		$user = get_user_by( 'login', sanitize_user( $username ) );
+		if ( ! $user ) {
+			global $wp_query;
+			$wp_query->set_404();
+			status_header( 404 );
+			return;
+		}
+
+		$GLOBALS['mvs_profile_user']     = $user;
+		$GLOBALS['mvs_is_media_archive'] = true;
+
+		add_filter(
+			'document_title_parts',
+			function ( $title ) use ( $user ) {
+				/* translators: %s: user display name */
+				$title['title'] = sprintf( __( '%s — Media', 'wpmediaverse' ), $user->display_name );
+				return $title;
+			}
+		);
+
+		$template = self::locate( 'explore.php' );
+		if ( $template ) {
+			include $template;
+			exit;
+		}
+	}
+
+	/**
+	 * Serve the profile edit page.
+	 */
+	private function serve_profile_edit(): void {
+		if ( ! is_user_logged_in() ) {
+			wp_safe_redirect( wp_login_url( home_url( '/media/edit-profile/' ) ) );
+			exit;
+		}
+
+		$template = self::locate( 'profile-edit.php' );
+		if ( $template ) {
+			include $template;
+			exit;
+		}
+	}
+
+	/**
+	 * Check if the current user can view a media item based on privacy.
+	 *
+	 * @param array $media Media index row.
+	 * @return bool
+	 */
+	private function can_view_media( array $media ): bool {
+		$privacy = $media['privacy'] ?? 'public';
+
+		if ( 'public' === $privacy ) {
+			return true;
+		}
+
+		$current_user_id = get_current_user_id();
+
+		// Owner can always view.
+		if ( $current_user_id && (int) $media['post_author'] === $current_user_id ) {
+			return true;
+		}
+
+		// Admins/moderators can view everything.
+		if ( current_user_can( 'moderate_mvs_media' ) ) {
+			return true;
+		}
+
+		if ( 'members' === $privacy && $current_user_id ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Load single template for Album/Collection CPTs (NOT media).
 	 *
 	 * @param string $template Current template path.
 	 * @return string
@@ -51,7 +320,6 @@ class TemplateLoader {
 		$post_type = get_post_type();
 
 		$map = array(
-			'mvs_media'      => 'media-single.php',
 			'mvs_album'      => 'album.php',
 			'mvs_collection' => 'collection.php',
 		);
@@ -67,13 +335,13 @@ class TemplateLoader {
 	}
 
 	/**
-	 * Load archive template for MVS post types.
+	 * Load archive template for Album CPT.
 	 *
 	 * @param string $template Current template path.
 	 * @return string
 	 */
 	public function load_archive_template( string $template ): string {
-		if ( is_post_type_archive( 'mvs_media' ) || is_post_type_archive( 'mvs_album' ) ) {
+		if ( is_post_type_archive( 'mvs_album' ) ) {
 			$found = self::locate( 'explore.php' );
 			if ( $found ) {
 				return $found;
@@ -101,179 +369,21 @@ class TemplateLoader {
 	}
 
 	/**
-	 * Merge mvs_media and mvs_album into the explore archive query.
-	 *
-	 * @param \WP_Query $query The query object.
-	 */
-	public function unified_explore_query( $query ): void {
-		if ( is_admin() || ! $query->is_main_query() ) {
-			return;
-		}
-
-		$is_mvs_archive  = $query->is_post_type_archive( 'mvs_media' ) || $query->is_post_type_archive( 'mvs_album' );
-		$is_mvs_taxonomy = $query->is_tax( 'mvs_tag' ) || $query->is_tax( 'mvs_category' );
-
-		// User profile: /media/@{username}/ — filter to that user's media.
-		$profile_username = $query->get( 'mvs_profile_user' );
-		if ( $profile_username ) {
-			$profile_user = get_user_by( 'login', sanitize_user( $profile_username ) );
-			if ( $profile_user ) {
-				$query->set( 'author', $profile_user->ID );
-				// Store for template use.
-				$GLOBALS['mvs_profile_user'] = $profile_user;
-			} else {
-				$query->set_404();
-				return;
-			}
-		}
-
-		if ( $is_mvs_archive || $is_mvs_taxonomy || $profile_username ) {
-			$query->set( 'post_type', array( 'mvs_media', 'mvs_album' ) );
-			$query->set( 'posts_per_page', 18 );
-			$query->set( 'orderby', 'date' );
-			$query->set( 'order', 'DESC' );
-
-			// Exclude non-cover gallery group items — only show the cover (position 0).
-			// Items without _mvs_media_group pass through; grouped items must be covers.
-			add_filter(
-				'posts_where',
-				array( $this, 'gallery_group_where_clause' )
-			);
-
-			// Privacy filter: only show media the current user is allowed to see.
-			$current_user_id = get_current_user_id();
-
-			if ( ! $current_user_id ) {
-				// Logged-out: only public media — filter via mvs_media_index.
-				add_filter(
-					'posts_where',
-					static function ( string $where ): string {
-						global $wpdb;
-						$index_table = $wpdb->prefix . 'mvs_media_index';
-						$where      .= " AND (
-							{$wpdb->posts}.ID IN (
-								SELECT media_id FROM {$index_table} WHERE privacy = 'public'
-							)
-							OR {$wpdb->posts}.ID NOT IN (
-								SELECT media_id FROM {$index_table} WHERE privacy IS NOT NULL AND privacy != ''
-							)
-						)";
-						return $where;
-					}
-				);
-			} elseif ( ! current_user_can( 'moderate_mvs_media' ) ) {
-				// Logged-in non-admin: public + members + own media (any privacy).
-				add_filter(
-					'posts_where',
-					array( $this, 'privacy_where_clause' )
-				);
-			}
-			// Admins/moderators: no filter, see everything.
-
-			// Search filter.
-			if ( ! empty( $_GET['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-				$query->set( 's', sanitize_text_field( wp_unslash( $_GET['s'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
-			}
-
-			// Tag filter (only on archive pages, taxonomy pages already have the term set).
-			if ( ! $is_mvs_taxonomy && ! empty( $_GET['mvs_tag'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-				$query->set(
-					'tax_query',
-					array(
-						array(
-							'taxonomy' => 'mvs_tag',
-							'field'    => 'slug',
-							'terms'    => sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ), // phpcs:ignore WordPress.Security.NonceVerification
-						),
-					)
-				);
-			}
-		}
-	}
-
-	/**
-	 * Register rewrite rule for /media/edit-profile/.
-	 *
-	 * @since 1.1.0
-	 */
-	public function register_profile_rewrite(): void {
-		add_rewrite_rule(
-			'^media/edit-profile/?$',
-			'index.php?mvs_edit_profile=1',
-			'top'
-		);
-
-		// User profile: /media/@{username}/ — shows user's media in explore grid.
-		add_rewrite_rule(
-			'^media/@([^/]+)/page/([0-9]+)/?$',
-			'index.php?post_type=mvs_media&mvs_profile_user=$matches[1]&paged=$matches[2]',
-			'top'
-		);
-		add_rewrite_rule(
-			'^media/@([^/]+)/?$',
-			'index.php?post_type=mvs_media&mvs_profile_user=$matches[1]',
-			'top'
-		);
-	}
-
-	/**
-	 * Add mvs_edit_profile query var.
-	 *
-	 * @since 1.1.0
-	 *
-	 * @param string[] $vars Existing query vars.
-	 * @return string[]
-	 */
-	public function add_profile_query_var( array $vars ): array {
-		$vars[] = 'mvs_edit_profile';
-		$vars[] = 'mvs_profile_user';
-		return $vars;
-	}
-
-	/**
-	 * Load the profile edit template when the endpoint is hit.
-	 *
-	 * @since 1.1.0
-	 */
-	public function load_profile_template(): void {
-		if ( ! get_query_var( 'mvs_edit_profile' ) ) {
-			return;
-		}
-
-		// Must be logged in.
-		if ( ! is_user_logged_in() ) {
-			wp_safe_redirect( wp_login_url( home_url( '/media/edit-profile/' ) ) );
-			exit;
-		}
-
-		$template = self::locate( 'profile-edit.php' );
-		if ( $template ) {
-			include $template;
-			exit;
-		}
-	}
-
-	/**
 	 * Add mvs-page body class on all WPMediaVerse frontend pages.
-	 *
-	 * Signals to BuddyX (and any other theme) that this page should render
-	 * full-width with no page chrome (title, breadcrumb, sidebar). Works for
-	 * both CPT-based pages (detect via WP conditional tags) and shortcode pages
-	 * (detect via mvs_page_* option values — uses alloptions cache, no extra DB query).
 	 */
 	public function maybe_add_mvs_body_class(): void {
-		// CPT pages: WP_Query is resolved at the 'wp' action so conditional tags work.
 		$is_mvs_page = (
-			is_singular( array( 'mvs_media', 'mvs_album', 'mvs_collection' ) )
-			|| is_post_type_archive( array( 'mvs_media', 'mvs_album' ) )
+			is_singular( array( 'mvs_album', 'mvs_collection' ) )
+			|| is_post_type_archive( 'mvs_album' )
 			|| is_tax( 'mvs_tag' )
 			|| is_tax( 'mvs_category' )
 			|| (bool) get_query_var( 'mvs_edit_profile' )
 			|| (bool) get_query_var( 'mvs_profile_user' )
+			|| (bool) get_query_var( 'mvs_media_archive' )
+			|| (bool) get_query_var( 'mvs_media_slug' )
 		);
 
-		// Shortcode pages (e.g. dashboard): match current page ID against any
-		// mvs_page_* option. The alloptions array is already loaded at this point.
+		// Shortcode pages (e.g. dashboard): match current page ID against any mvs_page_* option.
 		if ( ! $is_mvs_page && is_singular() ) {
 			$queried_id = (int) get_queried_object_id();
 			if ( $queried_id > 0 ) {
@@ -307,75 +417,6 @@ class TemplateLoader {
 	}
 
 	/**
-	 * Filter posts WHERE clause to enforce privacy for logged-in non-admin users.
-	 *
-	 * Shows: public media, members-only media, and the current user's own media
-	 * (regardless of its privacy level). Hides private/friends/group/custom media
-	 * from other users on the explore page.
-	 *
-	 * @param string $where Existing WHERE clause.
-	 * @return string Modified WHERE clause.
-	 */
-	public function privacy_where_clause( string $where ): string {
-		global $wpdb;
-
-		// Remove this filter so it only runs once (for the main query).
-		remove_filter( 'posts_where', array( $this, 'privacy_where_clause' ) );
-
-		$current_user_id = get_current_user_id();
-
-		$index_table = $wpdb->prefix . 'mvs_media_index';
-
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$where .= $wpdb->prepare(
-			" AND (
-				{$wpdb->posts}.post_author = %d
-				OR {$wpdb->posts}.ID IN (
-					SELECT media_id FROM {$index_table}
-					WHERE privacy IN ('public', 'members')
-				)
-				OR {$wpdb->posts}.ID NOT IN (
-					SELECT media_id FROM {$index_table}
-					WHERE privacy IS NOT NULL AND privacy != ''
-				)
-			)",
-			$current_user_id
-		);
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-
-		return $where;
-	}
-
-	/**
-	 * Filter posts WHERE clause to exclude non-cover gallery group items.
-	 *
-	 * Gallery posts share a `_mvs_media_group` meta value. Only the cover
-	 * image (group_position = 0) should appear in grids and feeds. Non-cover
-	 * items (position > 0) are hidden.
-	 *
-	 * @param string $where Existing WHERE clause.
-	 * @return string Modified WHERE clause.
-	 */
-	public function gallery_group_where_clause( string $where ): string {
-		global $wpdb;
-
-		remove_filter( 'posts_where', array( $this, 'gallery_group_where_clause' ) );
-
-		$meta_table = $wpdb->prefix . 'mvs_media_meta';
-
-		// Exclude posts that have media_group AND group_position != 0.
-		$where .= " AND {$wpdb->posts}.ID NOT IN (
-			SELECT mm1.media_id FROM {$meta_table} mm1
-			INNER JOIN {$meta_table} mm2 ON mm1.media_id = mm2.media_id
-			WHERE mm1.meta_key = 'media_group'
-			AND mm2.meta_key = 'group_position'
-			AND mm2.meta_value != '0'
-		)";
-
-		return $where;
-	}
-
-	/**
 	 * Locate a template file.
 	 *
 	 * Checks theme first, then plugin templates directory.
@@ -390,14 +431,12 @@ class TemplateLoader {
 			$theme_path .= trailingslashit( $template_path );
 		}
 
-		// Check child theme first, then parent theme.
 		$template = locate_template(
 			array(
 				$theme_path . $template_name,
 			)
 		);
 
-		// Fall back to plugin templates.
 		if ( ! $template ) {
 			$plugin_path = MVS_PLUGIN_DIR . 'templates/';
 			if ( $template_path ) {
@@ -433,7 +472,6 @@ class TemplateLoader {
 			return;
 		}
 
-		// Extract args for the template.
 		if ( ! empty( $args ) ) {
 			extract( $args, EXTR_SKIP ); // phpcs:ignore WordPress.PHP.DontExtract.extract_extract
 		}

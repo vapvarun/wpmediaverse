@@ -194,15 +194,9 @@ class ModerationController extends WP_REST_Controller {
 			)
 		);
 
-		// Prime postmeta cache in bulk to avoid N+1.
-		$post_ids = wp_list_pluck( $result['items'], 'ID' );
-		if ( $post_ids ) {
-			update_meta_cache( 'post', $post_ids );
-		}
-
 		$items = array();
-		foreach ( $result['items'] as $post ) {
-			$items[] = $this->prepare_item( $post );
+		foreach ( $result['items'] as $media_id ) {
+			$items[] = $this->prepare_item_from_meta( (int) $media_id );
 		}
 
 		$response = rest_ensure_response( $items );
@@ -229,15 +223,14 @@ class ModerationController extends WP_REST_Controller {
 	 */
 	public function approve_item( WP_REST_Request $request ) {
 		$media_id = (int) $request->get_param( 'id' );
-		$post     = get_post( $media_id );
 
-		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+		if ( ! MediaMeta::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		$this->moderation->approve( $media_id, get_current_user_id() );
 
-		return rest_ensure_response( $this->prepare_item( $post ) );
+		return rest_ensure_response( $this->prepare_item_from_meta( $media_id ) );
 	}
 
 	/**
@@ -248,16 +241,15 @@ class ModerationController extends WP_REST_Controller {
 	 */
 	public function reject_item( WP_REST_Request $request ) {
 		$media_id = (int) $request->get_param( 'id' );
-		$post     = get_post( $media_id );
 
-		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+		if ( ! MediaMeta::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		$reason = $request->get_param( 'reason' );
 		$this->moderation->reject( $media_id, get_current_user_id(), $reason );
 
-		return rest_ensure_response( $this->prepare_item( $post ) );
+		return rest_ensure_response( $this->prepare_item_from_meta( $media_id ) );
 	}
 
 	/**
@@ -268,9 +260,8 @@ class ModerationController extends WP_REST_Controller {
 	 */
 	public function analyze_item( WP_REST_Request $request ) {
 		$media_id = (int) $request->get_param( 'id' );
-		$post     = get_post( $media_id );
 
-		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+		if ( ! MediaMeta::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -294,26 +285,26 @@ class ModerationController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Prepare a moderation queue item for response.
+	 * Prepare a moderation queue item for response from custom tables.
 	 *
-	 * @param \WP_Post $post Post object.
+	 * @param int $media_id Media ID.
 	 * @return array
 	 */
-	private function prepare_item( \WP_Post $post ): array {
+	private function prepare_item_from_meta( int $media_id ): array {
 		return array(
-			'id'                => $post->ID,
-			'title'             => $post->post_title,
-			'author'            => (int) $post->post_author,
-			'date'              => $post->post_date_gmt,
-			'status'            => $post->post_status,
-			'moderation_status' => $this->moderation->get_status( $post->ID ),
-			'file_url'          => MediaMeta::get( $post->ID, 'file_url' ),
-			'file_type'         => MediaMeta::get( $post->ID, 'file_type' ),
-			'ai_description'    => MediaMeta::get( $post->ID, 'ai_description' ),
-			'ai_tags'           => MediaMeta::get( $post->ID, 'ai_tags' ),
-			'ai_moderation'     => MediaMeta::get( $post->ID, 'ai_moderation' ),
-			'rejection_reason'  => MediaMeta::get( $post->ID, 'rejection_reason' ),
-			'moderation_log'    => $this->moderation->get_log( $post->ID ),
+			'id'                => $media_id,
+			'title'             => MediaMeta::get( $media_id, 'title' ),
+			'author'            => MediaMeta::get_author( $media_id ),
+			'date'              => MediaMeta::get( $media_id, 'created_at' ),
+			'status'            => MediaMeta::get( $media_id, 'status' ),
+			'moderation_status' => $this->moderation->get_status( $media_id ),
+			'file_url'          => MediaMeta::get( $media_id, 'file_url' ),
+			'file_type'         => MediaMeta::get( $media_id, 'file_type' ),
+			'ai_description'    => MediaMeta::get( $media_id, 'ai_description' ),
+			'ai_tags'           => MediaMeta::get( $media_id, 'ai_tags' ),
+			'ai_moderation'     => MediaMeta::get( $media_id, 'ai_moderation' ),
+			'rejection_reason'  => MediaMeta::get( $media_id, 'rejection_reason' ),
+			'moderation_log'    => $this->moderation->get_log( $media_id ),
 		);
 	}
 

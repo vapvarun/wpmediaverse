@@ -133,22 +133,30 @@ class BulkController extends WP_REST_Controller {
 		$deleted = 0;
 
 		foreach ( $media_ids as $media_id ) {
-			$bulk_post = get_post( $media_id );
+			$author_id = MediaMeta::get_author( $media_id );
 			$file_path = MediaMeta::get( $media_id, 'file_path' );
+
+			// Delete stored file.
 			if ( $file_path ) {
 				$storage = Plugin::container()->get( 'storage' );
 				$storage->get_driver()->delete( $file_path );
 			}
 
-			$wpdb->delete( $wpdb->prefix . 'mvs_media_index', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-
-			if ( wp_delete_post( $media_id, true ) ) {
-				++$deleted;
-
-				/** This action is documented in includes/REST/Controller/MediaController.php */
-				do_action( 'mvs_media_deleted', $media_id, $bulk_post ? (int) $bulk_post->post_author : 0 );
+			// Delete WP attachment (for thumbnails).
+			$attachment_id = MediaMeta::get( $media_id, 'attachment_id' );
+			if ( $attachment_id ) {
+				wp_delete_attachment( (int) $attachment_id, true );
 			}
+
+			// Delete from custom tables.
+			MediaMeta::delete_all( $media_id );
+			$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->delete( $wpdb->prefix . 'mvs_reactions', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->delete( $wpdb->prefix . 'mvs_favorites', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+			++$deleted;
+			do_action( 'mvs_media_deleted', $media_id, $author_id );
 		}
 
 		return rest_ensure_response(
@@ -229,15 +237,6 @@ class BulkController extends WP_REST_Controller {
 
 		foreach ( $media_ids as $media_id ) {
 			MediaMeta::set( $media_id, 'privacy', $privacy );
-
-			$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_media_index',
-				array( 'privacy' => $privacy ),
-				array( 'media_id' => $media_id ),
-				array( '%s' ),
-				array( '%d' )
-			);
-
 			++$updated;
 		}
 
@@ -264,11 +263,10 @@ class BulkController extends WP_REST_Controller {
 		return array_filter(
 			$media_ids,
 			function ( $media_id ) use ( $user_id, $can_edit_others ) {
-				$post = get_post( $media_id );
-				if ( ! $post || 'mvs_media' !== $post->post_type ) {
+				if ( ! MediaMeta::exists( $media_id ) ) {
 					return false;
 				}
-				return $can_edit_others || (int) $post->post_author === $user_id;
+				return $can_edit_others || MediaMeta::get_author( $media_id ) === $user_id;
 			}
 		);
 	}

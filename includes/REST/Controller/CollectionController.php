@@ -393,10 +393,7 @@ class CollectionController extends WP_REST_Controller {
 				if ( 'image' === $media_type && $file_url ) {
 					$cover_url = set_url_scheme( $file_url );
 				} else {
-					$att_id = get_post_thumbnail_id( $first_media_id );
-					if ( ! $att_id ) {
-						$att_id = (int) MediaMeta::get( $first_media_id, 'attachment_id' );
-					}
+					$att_id = (int) MediaMeta::get( $first_media_id, 'attachment_id' );
 					if ( $att_id ) {
 						$url       = wp_get_attachment_image_url( $att_id, 'large' );
 						$cover_url = $url ? set_url_scheme( $url ) : null;

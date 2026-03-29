@@ -2,7 +2,7 @@
 /**
  * Upload service.
  *
- * Handles file validation, storage, CPT creation, and index entry.
+ * Handles file validation, storage, and media record creation in custom tables.
  *
  * @package WPMediaVerse
  */
@@ -180,69 +180,66 @@ class UploadService {
 		$privacy  = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : get_option( 'mvs_default_privacy', 'public' );
 		$title    = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
 
-		// Determine post status.
+		// Determine status.
 		$status = 'publish';
 		if ( ! empty( $args['status'] ) && in_array( $args['status'], array( 'draft', 'publish' ), true ) ) {
 			$status = $args['status'];
 		}
 
-		// Create CPT post.
-		$post_data = array(
-			'post_type'   => 'mvs_media',
-			'post_title'  => $title,
-			'post_status' => $status,
-			'post_author' => $user_id,
-		);
-
-		// Scheduled publishing.
+		// Scheduled publishing — store as 'scheduled' status with future created_at.
+		$created_at = current_time( 'mysql', true );
 		if ( ! empty( $args['publish_at'] ) && 'draft' === $status ) {
 			$publish_time = strtotime( $args['publish_at'] );
 			if ( $publish_time && $publish_time > time() ) {
-				$post_data['post_status']   = 'future';
-				$post_data['post_date']     = gmdate( 'Y-m-d H:i:s', $publish_time );
-				$post_data['post_date_gmt'] = gmdate( 'Y-m-d H:i:s', $publish_time );
+				$status     = 'scheduled';
+				$created_at = gmdate( 'Y-m-d H:i:s', $publish_time );
 			}
 		}
 
-		if ( ! empty( $args['description'] ) ) {
-			$post_data['post_content'] = wp_kses_post( $args['description'] );
-		}
+		$description = ! empty( $args['description'] ) ? wp_kses_post( $args['description'] ) : '';
 
 		/**
-		 * Fires just before the mvs_media post is created.
-		 *
-		 * Used by integrations to set flags before publish hooks fire.
+		 * Fires just before the media record is created.
 		 *
 		 * @since 1.1.0
 		 */
 		do_action( 'mvs_before_media_insert' );
 
-		$media_id = wp_insert_post( $post_data, true );
+		// Insert directly into mvs_media_index — the authoritative media record.
+		$media_id = MediaMeta::insert(
+			array(
+				'title'             => $title,
+				'description'       => $description,
+				'post_author'       => $user_id,
+				'status'            => $status,
+				'media_type'        => $media_type,
+				'privacy'           => $privacy,
+				'moderation_status' => 'approved',
+				'file_url'          => $file_url,
+				'file_path'         => $dest_path,
+				'file_type'         => $mime,
+				'file_size'         => (int) $actual_size,
+				'file_hash'         => $hash,
+				'created_at'        => $created_at,
+			)
+		);
 
-		if ( is_wp_error( $media_id ) ) {
+		if ( ! $media_id ) {
 			$driver->delete( $dest_path );
-			return $media_id;
+			return new WP_Error(
+				'mvs_insert_failed',
+				__( 'Failed to create media record.', 'wpmediaverse' ),
+				array( 'status' => 500 )
+			);
 		}
 
-		// Save media meta via custom tables.
-		MediaMeta::set( $media_id, 'file_url', $file_url );
-		MediaMeta::set( $media_id, 'file_path', $dest_path );
-		MediaMeta::set( $media_id, 'file_size', (int) $actual_size );
-		MediaMeta::set( $media_id, 'file_type', $mime );
-		MediaMeta::set( $media_id, 'file_hash', $hash );
-		MediaMeta::set( $media_id, 'media_type', $media_type );
-		MediaMeta::set( $media_id, 'privacy', $privacy );
-		MediaMeta::set( $media_id, 'moderation_status', 'approved' );
-
+		// Store EXIF data in meta table (sparse data).
 		if ( ! empty( $exif_raw ) ) {
 			MediaMeta::set( $media_id, 'exif_raw', $exif_raw );
 		}
 
 		// Extract and store media metadata (duration, dimensions, etc.).
 		$this->extract_and_store_metadata( $media_id, $driver->get_full_path( $dest_path ), $media_type, $mime );
-
-		// Insert into media index table.
-		$this->insert_index( $media_id, $user_id, $media_type, $privacy );
 
 		// Initialize stats row.
 		$this->init_stats( $media_id );
@@ -494,12 +491,12 @@ class UploadService {
 	/**
 	 * Create a WordPress attachment for the media file.
 	 *
-	 * This enables WP to generate thumbnails for images and poster frames
-	 * for videos (when server supports it).
+	 * Attachment is used ONLY for file storage (thumbnails, disk management).
+	 * It is NOT the media record — mvs_media_index is.
 	 *
 	 * @since 1.1.0
 	 *
-	 * @param int    $media_id  Media post ID.
+	 * @param int    $media_id  Media ID (from mvs_media_index).
 	 * @param string $file_path Absolute file path.
 	 * @param string $mime      MIME type.
 	 */
@@ -508,15 +505,17 @@ class UploadService {
 			require_once ABSPATH . 'wp-admin/includes/image.php';
 		}
 
+		$title = MediaMeta::get( $media_id, 'title' ) ?: 'media-' . $media_id;
+
 		$attachment_id = wp_insert_attachment(
 			array(
 				'post_mime_type' => $mime,
-				'post_title'     => get_the_title( $media_id ),
+				'post_title'     => $title,
 				'post_status'    => 'inherit',
-				'post_parent'    => $media_id,
+				'post_parent'    => 0,
 			),
 			$file_path,
-			$media_id,
+			0,
 			true
 		);
 
@@ -524,9 +523,6 @@ class UploadService {
 			$attach_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
 			wp_update_attachment_metadata( $attachment_id, $attach_data );
 			MediaMeta::set( $media_id, 'attachment_id', $attachment_id );
-
-			// Set as featured image so it shows in the grid and admin.
-			set_post_thumbnail( $media_id, $attachment_id );
 		}
 	}
 
@@ -541,37 +537,12 @@ class UploadService {
 
 		$media_id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'file_hash' AND meta_value = %s LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$hash
 			)
 		);
 
 		return $media_id ? (int) $media_id : null;
-	}
-
-	/**
-	 * Insert a row into the media index table.
-	 *
-	 * @param int    $media_id   Media post ID.
-	 * @param int    $user_id    Author user ID.
-	 * @param string $media_type Media type.
-	 * @param string $privacy    Privacy level.
-	 */
-	private function insert_index( int $media_id, int $user_id, string $media_type, string $privacy ): void {
-		global $wpdb;
-
-		$wpdb->replace( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_media_index',
-			array(
-				'media_id'          => $media_id,
-				'post_author'       => $user_id,
-				'media_type'        => $media_type,
-				'privacy'           => $privacy,
-				'moderation_status' => 'approved',
-				'created_at'        => current_time( 'mysql', true ),
-			),
-			array( '%d', '%d', '%s', '%s', '%s', '%s' )
-		);
 	}
 
 	/**

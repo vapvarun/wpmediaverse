@@ -692,45 +692,7 @@ function mvs_seed_import_local_image( $source_path, $title ) {
 	return $attachment_id;
 }
 
-/**
- * Ensure a media category exists.
- *
- * @param string $name Category name.
- * @return int Term ID.
- */
-function mvs_seed_ensure_category( $name ) {
-	$term = term_exists( $name, 'mvs_category' );
-	if ( $term ) {
-		return is_array( $term ) ? (int) $term['term_id'] : (int) $term;
-	}
-	$result = wp_insert_term( $name, 'mvs_category' );
-	if ( is_wp_error( $result ) ) {
-		return 0;
-	}
-	return (int) $result['term_id'];
-}
-
-/**
- * Ensure media tags exist.
- *
- * @param array $tags Tag names.
- * @return array Term IDs.
- */
-function mvs_seed_ensure_tags( $tags ) {
-	$ids = array();
-	foreach ( $tags as $tag_name ) {
-		$term = term_exists( $tag_name, 'mvs_tag' );
-		if ( $term ) {
-			$ids[] = is_array( $term ) ? (int) $term['term_id'] : (int) $term;
-		} else {
-			$result = wp_insert_term( $tag_name, 'mvs_tag' );
-			if ( ! is_wp_error( $result ) ) {
-				$ids[] = (int) $result['term_id'];
-			}
-		}
-	}
-	return $ids;
-}
+// Tags and categories are now stored as MediaMeta values (no CPT taxonomy).
 
 /**
  * Log a message — works in WP-CLI and AJAX contexts.
@@ -757,15 +719,14 @@ function mvs_seed_log( $message, $type = 'log' ) {
 
 $existing = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	$wpdb->prepare(
-		"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s AND post_status = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		'mvs_media',
+		"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		'publish'
 	)
 );
 
 if ( (int) $existing > 0 ) {
 	mvs_seed_log( "Found {$existing} existing media items. Skipping demo import to avoid duplicates.", 'warning' );
-	mvs_seed_log( 'To reimport, first delete existing mvs_media posts.' );
+	mvs_seed_log( 'To reimport, first run the cleanup script.' );
 	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 		wp_send_json_success( array( 'message' => 'Demo data already exists. Delete existing media first to reimport.' ) );
 	}
@@ -855,62 +816,39 @@ foreach ( $images as $idx => $img ) {
 	$mime_type = get_post_mime_type( $attachment_id );
 	$file_size = $file_path && file_exists( $file_path ) ? filesize( $file_path ) : 0;
 
-	// Create mvs_media post as draft first (so publish hooks fire AFTER meta is set).
-	$post_id = wp_insert_post(
-		array(
-			'post_type'    => 'mvs_media',
-			'post_title'   => $img['title'],
-			'post_content' => $img['description'],
-			'post_status'  => 'draft',
-			'post_author'  => $post_author,
-		),
-		true
-	);
-
-	if ( is_wp_error( $post_id ) ) {
-		mvs_seed_log( '  Failed to create post: ' . $post_id->get_error_message(), 'warning' );
-		continue;
-	}
-
 	// Get width/height from attachment metadata.
 	$attach_meta = wp_get_attachment_metadata( $attachment_id );
 
-	// Set meta BEFORE publishing (so hooks have access to full data).
-	\WPMediaVerse\Services\MediaMeta::set_many(
-		$post_id,
+	// Insert into mvs_media_index (returns auto-generated media_id).
+	$media_id = \WPMediaVerse\Services\MediaMeta::insert(
 		array(
-			'file_url'       => $file_url,
-			'file_type'      => $mime_type,
-			'file_size'      => $file_size,
-			'media_type'     => $img['type'],
-			'privacy'        => $img['privacy'],
-			'attachment_id'  => $attachment_id,
-			'width'          => $attach_meta['width'] ?? null,
-			'height'         => $attach_meta['height'] ?? null,
-			'title'          => $img['title'],
+			'title'             => $img['title'],
+			'description'       => $img['description'],
+			'post_author'       => $post_author,
+			'status'            => 'publish',
+			'media_type'        => $img['type'],
+			'privacy'           => $img['privacy'],
+			'moderation_status' => 'approved',
+			'file_url'          => $file_url,
+			'file_type'         => $mime_type,
+			'file_size'         => $file_size,
+			'attachment_id'     => $attachment_id,
+			'width'             => $attach_meta['width'] ?? null,
+			'height'            => $attach_meta['height'] ?? null,
 		)
 	);
 
-	// Set featured image.
-	set_post_thumbnail( $post_id, $attachment_id );
-
-	// Now publish (hooks fire with full data available).
-	wp_publish_post( $post_id );
-
-	// Set tags.
-	if ( ! empty( $img['tags'] ) ) {
-		$tag_ids = mvs_seed_ensure_tags( $img['tags'] );
-		if ( $tag_ids ) {
-			wp_set_object_terms( $post_id, $tag_ids, 'mvs_tag' );
-		}
+	if ( ! $media_id ) {
+		mvs_seed_log( '  Failed to insert media into index table.', 'warning' );
+		continue;
 	}
 
-	// Set category.
+	// Store tags and category as meta (no CPT taxonomy support).
+	if ( ! empty( $img['tags'] ) ) {
+		\WPMediaVerse\Services\MediaMeta::set( $media_id, 'tags', $img['tags'] );
+	}
 	if ( ! empty( $img['category'] ) ) {
-		$cat_id = mvs_seed_ensure_category( $img['category'] );
-		if ( $cat_id ) {
-			wp_set_object_terms( $post_id, array( $cat_id ), 'mvs_category' );
-		}
+		\WPMediaVerse\Services\MediaMeta::set( $media_id, 'category', $img['category'] );
 	}
 
 	// Create stats row with randomized views.
@@ -918,7 +856,7 @@ foreach ( $images as $idx => $img ) {
 	$wpdb->replace( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prefix . 'mvs_media_stats',
 		array(
-			'media_id'   => $post_id,
+			'media_id'   => $media_id,
 			'views'      => $views,
 			'reactions'  => 0,
 			'comments'   => 0,
@@ -928,28 +866,15 @@ foreach ( $images as $idx => $img ) {
 		array( '%d', '%d', '%d', '%d', '%d', '%s' )
 	);
 
-	// Create index row.
-	$wpdb->replace( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->prefix . 'mvs_media_index',
-		array(
-			'media_id'          => $post_id,
-			'post_author'       => $post_author,
-			'media_type'        => $img['type'],
-			'privacy'           => $img['privacy'],
-			'moderation_status' => 'approved',
-			'created_at'        => gmdate( 'Y-m-d H:i:s' ),
-		),
-		array( '%d', '%d', '%s', '%s', '%s', '%s' )
-	);
-
 	$created_media[] = array(
-		'post_id' => $post_id,
-		'tags'    => $img['tags'],
-		'user'    => $img['user'] ?? '',
-		'author'  => $post_author,
+		'media_id'      => $media_id,
+		'attachment_id' => $attachment_id,
+		'tags'          => $img['tags'],
+		'user'          => $img['user'] ?? '',
+		'author'        => $post_author,
 	);
 
-	mvs_seed_log( "  Created mvs_media #{$post_id}: {$img['title']} ({$img['privacy']})", 'success' );
+	mvs_seed_log( "  Created media #{$media_id}: {$img['title']} ({$img['privacy']})", 'success' );
 }
 
 // ---------------------------------------------------------------------------
@@ -995,7 +920,7 @@ foreach ( $albums_config as $album_cfg ) {
 				$wpdb->prefix . 'mvs_album_items',
 				array(
 					'album_id' => $album_id,
-					'media_id' => $media['post_id'],
+					'media_id' => $media['media_id'],
 					'position' => $position,
 					'added_at' => gmdate( 'Y-m-d H:i:s' ),
 				),
@@ -1005,15 +930,12 @@ foreach ( $albums_config as $album_cfg ) {
 		}
 	}
 
-	// Set first media as cover.
+	// Set first media as cover (use attachment from the first matching media).
 	if ( $position > 0 ) {
 		foreach ( $created_media as $media ) {
 			$matches = array_intersect( $media['tags'], $album_cfg['media_tags'] );
-			if ( ! empty( $matches ) ) {
-				$cover_attachment = get_post_thumbnail_id( $media['post_id'] );
-				if ( $cover_attachment ) {
-					set_post_thumbnail( $album_id, $cover_attachment );
-				}
+			if ( ! empty( $matches ) && ! empty( $media['attachment_id'] ) ) {
+				set_post_thumbnail( $album_id, $media['attachment_id'] );
 				break;
 			}
 		}
@@ -1046,22 +968,11 @@ foreach ( $collections_config as $col_cfg ) {
 		continue;
 	}
 
-	// Collections use wp_postmeta (no custom table for this post type).
+	// Collections use wp_postmeta (still a CPT).
 	update_post_meta( $col_id, '_mvs_collection_type', $col_cfg['type'] ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 
-	// Save rules — resolve tag names to term IDs.
-	$resolved_rules = array();
-	foreach ( $col_cfg['rules'] as $rule ) {
-		$resolved_rule = $rule;
-		if ( 'tag' === $rule['key'] ) {
-			$term = get_term_by( 'name', $rule['value'], 'mvs_tag' );
-			if ( $term ) {
-				$resolved_rule['value'] = (string) $term->term_id;
-			}
-		}
-		$resolved_rules[] = $resolved_rule;
-	}
-	update_post_meta( $col_id, '_mvs_collection_rules', $resolved_rules ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+	// Save rules — tag values stored as plain strings now (no taxonomy term IDs).
+	update_post_meta( $col_id, '_mvs_collection_rules', $col_cfg['rules'] ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 
 	mvs_seed_log( "Created collection #{$col_id}: {$col_cfg['title']} ({$col_cfg['type']})", 'success' );
 }
@@ -1082,7 +993,7 @@ $follow_count    = 0;
 
 // --- 100+ reactions (randomized, no self-likes) ---
 foreach ( $created_media as $media ) {
-	$media_id     = $media['post_id'];
+	$media_id     = $media['media_id'];
 	$media_author = $media['author'];
 
 	// Each media gets 2-4 reactions from OTHER users.
@@ -1168,7 +1079,7 @@ shuffle( $media_for_comments );
 $media_for_comments = array_slice( $media_for_comments, 0, 30 );
 
 foreach ( $media_for_comments as $ci => $media ) {
-	$media_id     = $media['post_id'];
+	$media_id     = $media['media_id'];
 	$media_author = $media['author'];
 
 	// Pick a commenter who is NOT the media author.
@@ -1181,17 +1092,18 @@ foreach ( $media_for_comments as $ci => $media ) {
 	}
 
 	$commenter_id = $eligible[ wp_rand( 0, count( $eligible ) - 1 ) ];
-	$commenter    = get_userdata( $commenter_id );
 
-	wp_insert_comment(
+	// Insert comment as activity row (no CPT, so no wp_comments).
+	$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prefix . 'mvs_activity',
 		array(
-			'comment_post_ID'  => $media_id,
-			'comment_author'   => $commenter ? $commenter->display_name : 'Demo User',
-			'user_id'          => $commenter_id,
-			'comment_content'  => $comment_texts[ $ci % count( $comment_texts ) ],
-			'comment_type'     => 'mvs_comment',
-			'comment_approved' => 1,
-		)
+			'user_id'    => $commenter_id,
+			'type'       => 'comment',
+			'media_id'   => $media_id,
+			'content'    => $comment_texts[ $ci % count( $comment_texts ) ],
+			'created_at' => gmdate( 'Y-m-d H:i:s', time() - wp_rand( 0, 7 * DAY_IN_SECONDS ) ),
+		),
+		array( '%d', '%s', '%d', '%s', '%s' )
 	);
 
 	$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -1215,7 +1127,7 @@ foreach ( $media_for_favs as $media ) {
 		break;
 	}
 
-	$media_id     = $media['post_id'];
+	$media_id     = $media['media_id'];
 	$media_author = $media['author'];
 
 	$eligible = array_filter( $all_user_ids, function ( $uid ) use ( $media_author ) {
@@ -1283,7 +1195,7 @@ $competition_counts = array(
 );
 
 $created_media_ids = array_map( function( $m ) {
-	return $m['post_id'];
+	return $m['media_id'];
 }, $created_media );
 
 if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $created_media_ids ) >= 5 ) {
@@ -1293,9 +1205,9 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 	$challenge_service = new \WPMediaVersePro\Challenges\ChallengeService();
 	$battle_service    = new \WPMediaVersePro\Battles\BattleService();
 
-	// Get test users (use the post authors from created media).
+	// Get test users (use the authors from created media).
 	$test_users = array_unique( array_map( function( $id ) {
-		return (int) get_post_field( 'post_author', $id );
+		return (int) \WPMediaVerse\Services\MediaMeta::get_author( $id );
 	}, $created_media_ids ) );
 
 	// --- Challenge 1: Active challenge (accepting entries) ---
@@ -1316,7 +1228,7 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 		mvs_seed_log( '  Challenge: Golden Hour Photography (active)' );
 		// Submit 3 entries from demo media.
 		for ( $i = 0; $i < min( 3, count( $created_media_ids ) ); $i++ ) {
-			$author = (int) get_post_field( 'post_author', $created_media_ids[ $i ] );
+			$author = (int) \WPMediaVerse\Services\MediaMeta::get_author( $created_media_ids[ $i ] );
 			if ( $author > 0 ) {
 				$challenge_service->submit_entry( $ch1, $author, $created_media_ids[ $i ] );
 			}
@@ -1347,10 +1259,10 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 			$battle_service->accept( $b1, $test_users[1] );
 			// Submit media from each user.
 			$user1_media = array_filter( $created_media_ids, function( $id ) use ( $test_users ) {
-				return (int) get_post_field( 'post_author', $id ) === $test_users[0];
+				return (int) \WPMediaVerse\Services\MediaMeta::get_author( $id ) === $test_users[0];
 			} );
 			$user2_media = array_filter( $created_media_ids, function( $id ) use ( $test_users ) {
-				return (int) get_post_field( 'post_author', $id ) === $test_users[1];
+				return (int) \WPMediaVerse\Services\MediaMeta::get_author( $id ) === $test_users[1];
 			} );
 			if ( ! empty( $user1_media ) ) {
 				$battle_service->submit_media( $b1, $test_users[0], reset( $user1_media ) );
@@ -1370,34 +1282,7 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 // Summary.
 // ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Backfill index data (hooks during wp_insert_post may create partial rows).
-// ---------------------------------------------------------------------------
-
-foreach ( $created_media as $mid ) {
-	$attach_id = (int) get_post_thumbnail_id( $mid );
-	if ( ! $attach_id ) {
-		continue;
-	}
-	$url         = wp_get_attachment_url( $attach_id );
-	$path        = get_attached_file( $attach_id );
-	$mime        = get_post_mime_type( $attach_id );
-	$size        = $path && file_exists( $path ) ? filesize( $path ) : 0;
-	$attach_meta = wp_get_attachment_metadata( $attach_id );
-
-	\WPMediaVerse\Services\MediaMeta::set_many(
-		$mid,
-		array(
-			'title'         => get_the_title( $mid ),
-			'file_url'      => $url ?: '',
-			'file_type'     => $mime ?: '',
-			'file_size'     => $size,
-			'attachment_id' => $attach_id,
-			'width'         => $attach_meta['width'] ?? null,
-			'height'        => $attach_meta['height'] ?? null,
-		)
-	);
-}
+// No backfill needed — all fields are set during MediaMeta::insert() above.
 
 mvs_seed_log( '' );
 mvs_seed_log( 'Demo data import complete!', 'success' );

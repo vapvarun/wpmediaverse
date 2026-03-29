@@ -32,7 +32,6 @@ class BuddyPressIntegration {
 	 * Whether UploadService is currently processing an upload.
 	 *
 	 * Set by mvs_before_media_insert, cleared by mvs_media_uploaded.
-	 * Prevents publish_mvs_media from creating duplicate activity.
 	 *
 	 * @var bool
 	 */
@@ -51,11 +50,6 @@ class BuddyPressIntegration {
 			add_action( 'mvs_before_media_insert', array( $this, 'mark_upload_in_progress' ) );
 			add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 			add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
-			// Fallback: create activity on publish for media NOT uploaded via UploadService
-			// (e.g. WP-CLI, admin, direct wp_insert_post). The mvs_before_media_insert
-			// flag prevents this from firing for UploadService uploads (which handle
-			// activity via mvs_media_uploaded instead, with full thumbnail support).
-			add_action( 'publish_mvs_media', array( $this, 'maybe_record_publish_activity' ), 20, 2 );
 			add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 3 );
 			add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
 			add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
@@ -155,17 +149,17 @@ class BuddyPressIntegration {
 		$is_group = ( 'groups' === $activity->component && $activity->secondary_item_id > 0 );
 		$media_id = $is_group ? (int) $activity->secondary_item_id : (int) $activity->item_id;
 
-		$post = get_post( $media_id );
-		if ( ! $post ) {
+		if ( ! MediaMeta::exists( $media_id ) ) {
 			// Always return a valid action string — empty strings crash BP Nouveau's strpos().
 			$user_link = bp_core_get_userlink( $activity->user_id );
 			return $user_link
 				? sprintf( __( '%s uploaded new media', 'wpmediaverse' ), $user_link )
 				: __( 'A member uploaded new media', 'wpmediaverse' );
 		}
-		$file_type  = MediaMeta::get( $media_id, 'file_type' );
-		$type_label = $this->get_media_type_label( $file_type );
-		$media_link = '<a href="' . esc_url( get_permalink( $media_id ) ) . '">' . esc_html( $post->post_title ) . '</a>';
+		$file_type   = MediaMeta::get( $media_id, 'file_type' );
+		$type_label  = $this->get_media_type_label( $file_type );
+		$media_title = MediaMeta::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
+		$media_link  = '<a href="' . esc_url( MediaMeta::get_permalink( $media_id ) ) . '">' . esc_html( $media_title ) . '</a>';
 
 		// Build group context suffix if applicable.
 		$group_suffix = '';
@@ -215,26 +209,27 @@ class BuddyPressIntegration {
 	 * @return string
 	 */
 	public function format_activity_action_comment( $action, $activity ) {
-		$post = get_post( $activity->item_id );
-		if ( ! $post ) {
+		$media_id = (int) $activity->item_id;
+		if ( ! MediaMeta::exists( $media_id ) ) {
 			$user_link = bp_core_get_userlink( $activity->user_id );
 			return $user_link
 				? sprintf( __( '%s commented on a media item', 'wpmediaverse' ), $user_link )
 				: __( 'A member commented on a media item', 'wpmediaverse' );
 		}
+		$media_title = MediaMeta::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 		return sprintf(
 			/* translators: 1: user link, 2: media link */
 			__( '%1$s commented on %2$s', 'wpmediaverse' ),
 			bp_core_get_userlink( $activity->user_id ),
-			'<a href="' . esc_url( get_permalink( $activity->item_id ) ) . '">' . esc_html( $post->post_title ) . '</a>'
+			'<a href="' . esc_url( MediaMeta::get_permalink( $media_id ) ) . '">' . esc_html( $media_title ) . '</a>'
 		);
 	}
 
 	/**
 	 * Mark that UploadService is currently running.
 	 *
-	 * Called by mvs_before_media_insert (fires before wp_insert_post),
-	 * so publish_mvs_media knows to skip activity creation.
+	 * Called by mvs_before_media_insert (fires before media insert),
+	 * so duplicate activity creation is prevented.
 	 */
 	public function mark_upload_in_progress(): void {
 		$this->upload_in_progress = true;
@@ -247,7 +242,7 @@ class BuddyPressIntegration {
 	 * @param int $media_id Media post ID.
 	 */
 	public function flag_activity_upload( int $media_id ): void {
-		// Mark as coming through UploadService — prevents publish_mvs_media duplicate.
+		// Mark as coming through UploadService — prevents duplicate activity.
 		$this->recorded_uploads[ $media_id ] = true;
 		$this->upload_in_progress            = false;
 
@@ -280,19 +275,19 @@ class BuddyPressIntegration {
 			return;
 		}
 
-		$post = get_post( $media_id );
-		if ( ! $post ) {
+		if ( ! MediaMeta::exists( $media_id ) ) {
 			return;
 		}
 
-		$user_id   = (int) $post->post_author;
+		$user_id   = MediaMeta::get_author( $media_id );
 		$thumbnail = $this->get_media_thumbnail_html( $media_id, 'large' );
 
 		// Build action string at insert time (format callback regenerates on display,
 		// but storing it prevents empty-action crashes in BP Nouveau's strpos()).
-		$file_type  = MediaMeta::get( $media_id, 'file_type' );
-		$type_label = $this->get_media_type_label( $file_type );
-		$media_link = '<a href="' . esc_url( get_permalink( $media_id ) ) . '">' . esc_html( $post->post_title ) . '</a>';
+		$file_type   = MediaMeta::get( $media_id, 'file_type' );
+		$type_label  = $this->get_media_type_label( $file_type );
+		$media_title = MediaMeta::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
+		$media_link  = '<a href="' . esc_url( MediaMeta::get_permalink( $media_id ) ) . '">' . esc_html( $media_title ) . '</a>';
 		$action_str = sprintf(
 			/* translators: 1: user link, 2: media type, 3: media link */
 			__( '%1$s uploaded a new %2$s: %3$s', 'wpmediaverse' ),
@@ -328,48 +323,18 @@ class BuddyPressIntegration {
 	}
 
 	/**
-	 * Create upload activity when media is published via any method.
+	 * No-op. Previously created activity on publish_mvs_media hook.
 	 *
-	 * This catches media created via WP-CLI, admin, import, etc. that bypass
-	 * UploadService (which fires mvs_media_uploaded). Skips if activity
-	 * already exists from the mvs_media_uploaded path.
+	 * Media no longer uses a CPT, so the publish_mvs_media hook never fires.
+	 * Kept as a stub for backwards compatibility.
+	 *
+	 * @deprecated 1.2.0
 	 *
 	 * @param int      $post_id Post ID.
 	 * @param \WP_Post $post    Post object.
 	 */
 	public function maybe_record_publish_activity( int $post_id, \WP_Post $post ): void {
-		if ( 'mvs_media' !== $post->post_type ) {
-			return;
-		}
-
-		// Skip if UploadService is running — mvs_media_uploaded will handle activity
-		// with full thumbnail support after all meta/attachments are saved.
-		if ( $this->upload_in_progress ) {
-			return;
-		}
-
-		// Skip if activity was already recorded via mvs_media_uploaded.
-		if ( ! empty( $this->recorded_uploads[ $post_id ] ) ) {
-			return;
-		}
-
-		// Check if activity already exists for this media.
-		$existing = bp_activity_get(
-			array(
-				'filter'   => array(
-					'object'     => 'wpmediaverse',
-					'action'     => 'mvs_media_upload',
-					'primary_id' => $post_id,
-				),
-				'per_page' => 1,
-			)
-		);
-
-		if ( ! empty( $existing['activities'] ) ) {
-			return;
-		}
-
-		$this->record_upload_activity( $post_id );
+		// No-op: media no longer uses wp_posts. Activity is created via mvs_media_uploaded.
 	}
 
 	/**
@@ -460,8 +425,7 @@ class BuddyPressIntegration {
 		}
 
 		$comment = get_comment( $comment_id );
-		$post    = get_post( $media_id );
-		if ( ! $comment || ! $post ) {
+		if ( ! $comment || ! MediaMeta::exists( $media_id ) ) {
 			return;
 		}
 
@@ -636,17 +600,13 @@ class BuddyPressIntegration {
 			return;
 		}
 
-		$count_query = new \WP_Query(
-			array(
-				'post_type'      => 'mvs_media',
-				'post_status'    => 'publish',
-				'author'         => $displayed_user_id,
-				'posts_per_page' => 1,
-				'fields'         => 'ids',
-				'no_found_rows'  => false,
+		global $wpdb;
+		$media_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$displayed_user_id
 			)
 		);
-		$media_count = $count_query->found_posts;
 
 		if ( $media_count > 0 ) {
 			$nav_name = sprintf(
@@ -831,19 +791,18 @@ class BuddyPressIntegration {
 			<?php
 		}
 
-		$query = new \WP_Query(
-			array(
-				'post_type'      => 'mvs_media',
-				'post_status'    => 'publish',
-				'author'         => $user_id,
-				'posts_per_page' => $per_page,
-				'paged'          => $paged,
-				'orderby'        => 'date',
-				'order'          => 'DESC',
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_media_index';
+		$offset = ( $paged - 1 ) * $per_page;
+
+		$total_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE post_author = %d AND status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id
 			)
 		);
 
-		if ( ! $query->have_posts() ) {
+		if ( ! $total_count ) {
 			echo '<div class="mvs-empty-state">';
 			echo '<span class="dashicons dashicons-format-gallery"></span>';
 			if ( $is_own ) {
@@ -855,14 +814,21 @@ class BuddyPressIntegration {
 			return;
 		}
 
+		$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$table} WHERE post_author = %d AND status = 'publish' ORDER BY created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id,
+				$per_page,
+				$offset
+			)
+		);
+		$media_ids = array_map( 'intval', $media_ids );
+
 		// Collect IDs for batch stats query.
-		$media_ids = wp_list_pluck( $query->posts, 'ID' );
 		$stats_map = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( $media_ids );
 
 		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed">';
-		while ( $query->have_posts() ) {
-			$query->the_post();
-			$mid = get_the_ID();
+		foreach ( $media_ids as $mid ) {
 			\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
 				$mid,
 				$stats_map[ $mid ] ?? array(),
@@ -872,21 +838,20 @@ class BuddyPressIntegration {
 		echo '</div>';
 
 		// Pagination.
-		if ( $query->max_num_pages > 1 ) {
+		$max_pages = (int) ceil( $total_count / $per_page );
+		if ( $max_pages > 1 ) {
 			$pagination = paginate_links(
 				array(
 					'base'    => add_query_arg( 'mpage', '%#%' ),
 					'format'  => '',
 					'current' => $paged,
-					'total'   => $query->max_num_pages,
+					'total'   => $max_pages,
 				)
 			);
 			if ( $pagination ) {
 				echo '<div class="mvs-pagination">' . wp_kses_post( $pagination ) . '</div>';
 			}
 		}
-
-		wp_reset_postdata();
 	}
 
 	/**
@@ -1436,45 +1401,38 @@ class BuddyPressIntegration {
 
 		// Query media scoped to THIS group via mvs_media_meta custom table.
 		global $wpdb;
-		$group_media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$meta_table  = $wpdb->prefix . 'mvs_media_meta';
+		$offset      = ( $paged - 1 ) * $per_page;
+
+		$total_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'group_id' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT COUNT(*) FROM {$meta_table} mm INNER JOIN {$index_table} mi ON mm.media_id = mi.media_id WHERE mm.meta_key = 'group_id' AND mm.meta_value = %s AND mi.status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				(string) $group->id
 			)
 		);
 
-		$query_args = array(
-			'post_type'      => 'mvs_media',
-			'post_status'    => 'publish',
-			'posts_per_page' => $per_page,
-			'paged'          => $paged,
-			'orderby'        => 'date',
-			'order'          => 'DESC',
-		);
-
-		if ( ! empty( $group_media_ids ) ) {
-			$query_args['post__in'] = array_map( 'intval', $group_media_ids );
-		} else {
-			// No media in this group — force empty result.
-			$query_args['post__in'] = array( 0 );
-		}
-
-		$query = new \WP_Query( $query_args );
-
-		if ( ! $query->have_posts() ) {
+		if ( ! $total_count ) {
 			echo '<div class="mvs-empty-state"><span class="dashicons dashicons-format-gallery"></span>';
 			echo '<p>' . esc_html__( 'No group media yet. Members can share media with the group!', 'wpmediaverse' ) . '</p></div>';
 			return;
 		}
 
+		$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT mi.media_id FROM {$meta_table} mm INNER JOIN {$index_table} mi ON mm.media_id = mi.media_id WHERE mm.meta_key = 'group_id' AND mm.meta_value = %s AND mi.status = 'publish' ORDER BY mi.created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				(string) $group->id,
+				$per_page,
+				$offset
+			)
+		);
+		$media_ids = array_map( 'intval', $media_ids );
+
 		// Batch fetch stats.
-		$media_ids = wp_list_pluck( $query->posts, 'ID' );
 		$stats_map = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( $media_ids );
 
 		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed">';
-		while ( $query->have_posts() ) {
-			$query->the_post();
-			$mid = get_the_ID();
+		foreach ( $media_ids as $mid ) {
 			\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
 				$mid,
 				$stats_map[ $mid ] ?? array(),
@@ -1483,21 +1441,20 @@ class BuddyPressIntegration {
 		}
 		echo '</div>';
 
-		if ( $query->max_num_pages > 1 ) {
+		$max_pages = (int) ceil( $total_count / $per_page );
+		if ( $max_pages > 1 ) {
 			$pagination = paginate_links(
 				array(
 					'base'    => add_query_arg( 'mpage', '%#%' ),
 					'format'  => '',
 					'current' => $paged,
-					'total'   => $query->max_num_pages,
+					'total'   => $max_pages,
 				)
 			);
 			if ( $pagination ) {
 				echo '<div class="mvs-pagination">' . wp_kses_post( $pagination ) . '</div>';
 			}
 		}
-
-		wp_reset_postdata();
 	}
 
 	/**
@@ -1850,14 +1807,14 @@ class BuddyPressIntegration {
 			return;
 		}
 
-		$post = get_post( $media_id );
-		if ( ! $post || (int) $post->post_author === $user_id ) {
+		$owner_id = MediaMeta::get_author( $media_id );
+		if ( ! $owner_id || $owner_id === $user_id ) {
 			return;
 		}
 
 		bp_notifications_add_notification(
 			array(
-				'user_id'           => (int) $post->post_author,
+				'user_id'           => $owner_id,
 				'item_id'           => $media_id,
 				'secondary_item_id' => $user_id,
 				'component_name'    => 'wpmediaverse',
@@ -1880,15 +1837,15 @@ class BuddyPressIntegration {
 			return;
 		}
 
-		$comment = get_comment( $comment_id );
-		$post    = get_post( $media_id );
-		if ( ! $comment || ! $post || (int) $post->post_author === (int) $comment->user_id ) {
+		$comment  = get_comment( $comment_id );
+		$owner_id = MediaMeta::get_author( $media_id );
+		if ( ! $comment || ! $owner_id || $owner_id === (int) $comment->user_id ) {
 			return;
 		}
 
 		bp_notifications_add_notification(
 			array(
-				'user_id'           => (int) $post->post_author,
+				'user_id'           => $owner_id,
 				'item_id'           => $media_id,
 				'secondary_item_id' => (int) $comment->user_id,
 				'component_name'    => 'wpmediaverse',
@@ -1908,8 +1865,7 @@ class BuddyPressIntegration {
 			return;
 		}
 
-		$post     = get_post( $media_id );
-		$actor_id = $post ? (int) $post->post_author : 0;
+		$actor_id = MediaMeta::get_author( $media_id );
 
 		foreach ( $mentioned_ids as $mentioned_id ) {
 			if ( (int) $mentioned_id === $actor_id ) {
@@ -1990,9 +1946,8 @@ class BuddyPressIntegration {
 			return $content;
 		}
 
-		$post      = get_post( $item_id );
 		$user_name = bp_core_get_user_displayname( $secondary_item_id );
-		$link      = $post ? get_permalink( $post->ID ) : '';
+		$link      = MediaMeta::exists( $item_id ) ? MediaMeta::get_permalink( $item_id ) : '';
 
 		switch ( $component_action ) {
 			case 'mvs_new_reaction':
@@ -2047,11 +2002,11 @@ class BuddyPressIntegration {
 			$thumb_url = $file_url;
 		}
 
-		$permalink = get_permalink( $media_id );
-		$title     = get_the_title( $media_id );
+		$permalink = MediaMeta::get_permalink( $media_id );
+		$title     = MediaMeta::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 
 		// Use the raw file URL as href so images remain clickable after plugin deactivation.
-		// The CPT permalink is stored in data-mvs-permalink for JS to use while active.
+		// The media permalink is stored in data-mvs-permalink for JS to use while active.
 		$href       = $file_url ?: $permalink;
 		$data_perma = $permalink ? ' data-mvs-permalink="' . esc_url( $permalink ) . '"' : '';
 		$data_mid   = ' data-mvs-media-id="' . esc_attr( $media_id ) . '"';
@@ -2204,18 +2159,18 @@ class BuddyPressIntegration {
 		$thumbnails = '';
 		$valid_ids  = array();
 		foreach ( $media_ids as $media_id ) {
-			$post = get_post( $media_id );
-			if ( ! $post || 'mvs_media' !== $post->post_type ) {
+			if ( ! MediaMeta::exists( $media_id ) ) {
 				continue;
 			}
-			if ( (int) $post->post_author !== $user_id ) {
+			$media_author = MediaMeta::get_author( $media_id );
+			if ( $media_author !== $user_id ) {
 				continue;
 			}
 
 			// Publish draft media now that the activity is being posted.
-			if ( 'draft' === $post->post_status ) {
-				wp_publish_post( $media_id );
-				clean_post_cache( $media_id );
+			$media_status = MediaMeta::get( $media_id, 'status' );
+			if ( 'draft' === $media_status ) {
+				MediaMeta::set( $media_id, 'status', 'publish' );
 			}
 
 			$valid_ids[] = $media_id;
@@ -2388,7 +2343,7 @@ class BuddyPressIntegration {
 		}
 
 		$file_url  = set_url_scheme( $file_url );
-		$permalink = get_permalink( $media_id );
+		$permalink = MediaMeta::get_permalink( $media_id );
 		$poster    = '';
 
 		$attach_id = (int) MediaMeta::get( $media_id, 'attachment_id' );
@@ -2483,7 +2438,7 @@ class BuddyPressIntegration {
 			} elseif ( 'groups' === $activity->component && $activity->secondary_item_id > 0 ) {
 				$media_id = (int) $activity->secondary_item_id;
 			}
-			if ( $media_id && 'mvs_media' === get_post_type( $media_id ) ) {
+			if ( $media_id && MediaMeta::exists( $media_id ) ) {
 				$thumbnail = $this->get_media_thumbnail_html( $media_id, 'large' );
 				if ( $thumbnail ) {
 					return $content . $thumbnail;
@@ -2497,7 +2452,7 @@ class BuddyPressIntegration {
 	/**
 	 * Resolve an imported media thumbnail from a source plugin attachment ID.
 	 *
-	 * Looks up the MVS media post by the source meta key, then generates thumbnail HTML.
+	 * Looks up the MVS media item by the source meta key, then generates thumbnail HTML.
 	 *
 	 * @param int    $source_id       Original attachment/media ID from the source plugin.
 	 * @param string $primary_meta    Primary meta key to search (e.g. _mvs_mpp_id).
@@ -2523,14 +2478,14 @@ class BuddyPressIntegration {
 	}
 
 	/**
-	 * Find a mvs_media post ID by a key/value in custom tables.
+	 * Find a media ID by a key/value in custom tables.
 	 *
 	 * Checks mvs_media_index first (for core columns like attachment_id),
 	 * then mvs_media_meta (for sparse keys like mpp_id, bb_media_id).
 	 *
 	 * @param string $key   Meta key (without _mvs_ prefix).
 	 * @param string $value Meta value to match.
-	 * @return int Media post ID, or 0 if not found.
+	 * @return int Media ID, or 0 if not found.
 	 */
 	private function find_media_by_meta_key( string $key, string $value ): int {
 		global $wpdb;
@@ -2725,7 +2680,7 @@ class BuddyPressIntegration {
 			$media_id = (int) $activity->secondary_item_id;
 		}
 
-		if ( ! $media_id || 'mvs_media' !== get_post_type( $media_id ) ) {
+		if ( ! $media_id || ! MediaMeta::exists( $media_id ) ) {
 			return;
 		}
 
@@ -2840,7 +2795,7 @@ class BuddyPressIntegration {
 			$media_id = (int) $activity->secondary_item_id;
 		}
 
-		if ( ! $media_id || 'mvs_media' !== get_post_type( $media_id ) ) {
+		if ( ! $media_id || ! MediaMeta::exists( $media_id ) ) {
 			return $content;
 		}
 
@@ -2856,7 +2811,7 @@ class BuddyPressIntegration {
 	 * Find an MVS media post ID from a file URL (used to attach media IDs to transformed activity HTML).
 	 *
 	 * Looks up the WP attachment by URL (stripping thumbnail size suffixes),
-	 * then finds the mvs_media post that references that attachment.
+	 * then finds the media item that references that attachment.
 	 *
 	 * @param string $url File or thumbnail URL.
 	 * @return int MVS post ID, or 0 if not found.

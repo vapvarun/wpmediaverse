@@ -42,6 +42,7 @@ class MediaCategory {
 			'rewrite'           => array( 'slug' => 'media-category' ),
 		);
 
-		register_taxonomy( 'mvs_category', 'mvs_media', $args );
+		// Registered on mvs_album for admin UI. Media-category associations stored in custom tables.
+		register_taxonomy( 'mvs_category', 'mvs_album', $args );
 	}
 }

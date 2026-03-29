@@ -1510,21 +1510,20 @@ class MessagingService {
 	 * @return array|null
 	 */
 	private function get_media_share_data( int $media_id ) {
-		$post = get_post( $media_id );
-		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+		if ( ! MediaMeta::exists( $media_id ) ) {
 			return null;
 		}
 
 		$data = array(
 			'id'        => $media_id,
-			'title'     => $post->post_title,
-			'permalink' => get_permalink( $media_id ),
+			'title'     => MediaMeta::get( $media_id, 'title' ),
+			'permalink' => MediaMeta::get_permalink( $media_id ),
 			'type'      => MediaMeta::get( $media_id, 'media_type' ) ?: 'image',
 		);
 
-		$thumb_id = get_post_thumbnail_id( $media_id );
-		if ( $thumb_id ) {
-			$data['thumbnail'] = set_url_scheme( wp_get_attachment_image_url( $thumb_id, 'medium' ) );
+		$file_url = MediaMeta::get( $media_id, 'file_url' );
+		if ( $file_url ) {
+			$data['thumbnail'] = set_url_scheme( $file_url );
 		}
 
 		return $data;

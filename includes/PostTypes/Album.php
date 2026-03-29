@@ -43,7 +43,7 @@ class Album {
 			'capability_type' => array( 'mvs_media', 'mvs_medias' ),
 			'map_meta_cap'    => true,
 			'rewrite'         => array( 'slug' => 'album' ),
-			'show_in_menu'    => 'edit.php?post_type=mvs_media',
+			'show_in_menu'    => 'wpmediaverse',
 		);
 
 		register_post_type( 'mvs_album', $args );

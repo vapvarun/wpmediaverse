@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 6;
+	const CURRENT_VERSION = 7;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -282,19 +282,42 @@ class Migrator {
 			) {$charset_collate};"
 		);
 
-		// 9. Media index (flat, no-JOIN query table).
+		// 9. Media index — authoritative media record (no CPT dependency).
 		dbDelta(
 			"CREATE TABLE {$prefix}mvs_media_index (
-				media_id bigint(20) unsigned NOT NULL,
+				media_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				title varchar(255) NOT NULL DEFAULT '',
+				slug varchar(255) NOT NULL DEFAULT '',
+				description longtext,
 				post_author bigint(20) unsigned NOT NULL DEFAULT 0,
+				status varchar(20) NOT NULL DEFAULT 'publish',
 				media_type varchar(20) NOT NULL DEFAULT '',
 				privacy varchar(20) NOT NULL DEFAULT 'public',
 				moderation_status varchar(20) NOT NULL DEFAULT 'approved',
+				file_url text,
+				file_path text,
+				file_type varchar(100) DEFAULT '',
+				file_size bigint(20) unsigned NOT NULL DEFAULT 0,
+				file_hash varchar(64) DEFAULT '',
+				attachment_id bigint(20) unsigned DEFAULT NULL,
+				width int(11) unsigned DEFAULT NULL,
+				height int(11) unsigned DEFAULT NULL,
+				duration decimal(10,2) DEFAULT NULL,
+				album_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				view_count bigint(20) unsigned NOT NULL DEFAULT 0,
+				reaction_count bigint(20) unsigned NOT NULL DEFAULT 0,
+				comment_count bigint(20) unsigned NOT NULL DEFAULT 0,
+				is_featured tinyint(1) NOT NULL DEFAULT 0,
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at datetime DEFAULT NULL,
 				PRIMARY KEY  (media_id),
+				UNIQUE KEY slug (slug),
 				KEY moderation_privacy_date (moderation_status, privacy, created_at),
 				KEY author_date (post_author, created_at),
-				KEY type_date (media_type, created_at)
+				KEY type_date (media_type, created_at),
+				KEY status_date (status, created_at),
+				KEY album_id (album_id),
+				KEY file_hash (file_hash)
 			) {$charset_collate};"
 		);
 	}
@@ -471,5 +494,79 @@ class Migrator {
 		);
 
 		// phpcs:enable
+	}
+
+	/**
+	 * Migration v7: Upgrade mvs_media_index to be the authoritative media record.
+	 *
+	 * Adds columns needed for CPT-free architecture. After this migration,
+	 * media items live entirely in mvs_media_index — no wp_posts dependency.
+	 */
+	private function migrate_to_7(): void {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_media_index';
+
+		// Check if table has already been upgraded (idempotent).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$has_title = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s',
+				DB_NAME,
+				$table,
+				'title'
+			)
+		);
+
+		if ( $has_title ) {
+			return; // Already upgraded.
+		}
+
+		// Drop the old table and recreate with full schema.
+		// Safe because plugin is pre-release — no production data to preserve.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+
+		$charset_collate = $wpdb->get_charset_collate();
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		dbDelta(
+			"CREATE TABLE {$table} (
+				media_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				title varchar(255) NOT NULL DEFAULT '',
+				slug varchar(255) NOT NULL DEFAULT '',
+				description longtext,
+				post_author bigint(20) unsigned NOT NULL DEFAULT 0,
+				status varchar(20) NOT NULL DEFAULT 'publish',
+				media_type varchar(20) NOT NULL DEFAULT '',
+				privacy varchar(20) NOT NULL DEFAULT 'public',
+				moderation_status varchar(20) NOT NULL DEFAULT 'approved',
+				file_url text,
+				file_path text,
+				file_type varchar(100) DEFAULT '',
+				file_size bigint(20) unsigned NOT NULL DEFAULT 0,
+				file_hash varchar(64) DEFAULT '',
+				attachment_id bigint(20) unsigned DEFAULT NULL,
+				width int(11) unsigned DEFAULT NULL,
+				height int(11) unsigned DEFAULT NULL,
+				duration decimal(10,2) DEFAULT NULL,
+				album_id bigint(20) unsigned NOT NULL DEFAULT 0,
+				view_count bigint(20) unsigned NOT NULL DEFAULT 0,
+				reaction_count bigint(20) unsigned NOT NULL DEFAULT 0,
+				comment_count bigint(20) unsigned NOT NULL DEFAULT 0,
+				is_featured tinyint(1) NOT NULL DEFAULT 0,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at datetime DEFAULT NULL,
+				PRIMARY KEY  (media_id),
+				UNIQUE KEY slug (slug),
+				KEY moderation_privacy_date (moderation_status, privacy, created_at),
+				KEY author_date (post_author, created_at),
+				KEY type_date (media_type, created_at),
+				KEY status_date (status, created_at),
+				KEY album_id (album_id),
+				KEY file_hash (file_hash)
+			) {$charset_collate};"
+		);
 	}
 }

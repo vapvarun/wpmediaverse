@@ -2,6 +2,8 @@
 /**
  * Server-side render for the media-player block.
  *
+ * Reads media data from mvs_media_index via MediaMeta -- no get_post().
+ *
  * @package WPMediaVerse
  *
  * @var array    $attributes Block attributes.
@@ -20,13 +22,14 @@ if ( ! $media_id ) {
 	return;
 }
 
-$media_post = get_post( $media_id );
-if ( ! $media_post || 'mvs_media' !== $media_post->post_type ) {
+// Verify media exists in the index table.
+if ( ! \WPMediaVerse\Services\MediaMeta::exists( $media_id ) ) {
 	return;
 }
 
-$file_url  = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_url' );
-$file_type = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_type' );
+$file_url   = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_url' );
+$file_type  = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_type' );
+$media_title = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'title' );
 
 if ( ! $file_url ) {
 	return;
@@ -72,7 +75,7 @@ $nonce    = wp_create_nonce( 'wp_rest' );
 		</video>
 	<?php elseif ( $is_audio ) : ?>
 		<div class="mvs-player-audio-wrap">
-			<div class="mvs-player-audio-title"><?php echo esc_html( $media_post->post_title ); ?></div>
+			<div class="mvs-player-audio-title"><?php echo esc_html( $media_title ); ?></div>
 			<audio class="mvs-player-audio"
 				controls
 				<?php echo $autoplay ? 'autoplay' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>

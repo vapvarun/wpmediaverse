@@ -2,6 +2,9 @@
 /**
  * Template: Single Album.
  *
+ * Album is still a CPT (mvs_album), but media items inside it are read from
+ * mvs_media_index via mvs_album_items table -- not from wp_posts.
+ *
  * Override by copying to your-theme/wpmediaverse/album.php
  *
  * @package WPMediaVerse
@@ -12,6 +15,9 @@ defined( 'ABSPATH' ) || exit;
 get_header();
 
 do_action( 'mvs_before_content' );
+
+// Archive URL (base media page).
+$mvs_archive_url = home_url( '/media/' );
 ?>
 <div class="mvs-single-album">
 	<?php
@@ -19,13 +25,24 @@ do_action( 'mvs_before_content' );
 		the_post();
 
 		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_album_items';
-		$items = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$album_items_table = $wpdb->prefix . 'mvs_album_items';
+		$index_table       = $wpdb->prefix . 'mvs_media_index';
+
+		// Get media items from album via the join to mvs_media_index.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$items = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT media_id FROM {$table} WHERE album_id = %d ORDER BY position ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT idx.* FROM {$album_items_table} ai
+				INNER JOIN {$index_table} idx ON idx.media_id = ai.media_id
+				WHERE ai.album_id = %d AND idx.status = 'publish'
+				ORDER BY ai.position ASC",
 				get_the_ID()
-			)
+			),
+			ARRAY_A
 		);
+		// phpcs:enable
+
+		$item_ids = array_column( $items, 'media_id' );
 		?>
 
 		<?php
@@ -87,7 +104,7 @@ do_action( 'mvs_before_content' );
 						'isLoggedIn'         => true,
 						'isOwner'            => true,
 						'type'               => 'album',
-						'archiveUrl'         => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
+						'archiveUrl'         => esc_url( $mvs_archive_url ),
 						'initialTitle'       => get_the_title(),
 						'initialDesc'        => get_the_content(),
 						'initialPrivacy'     => $album_privacy,
@@ -301,25 +318,24 @@ do_action( 'mvs_before_content' );
 			<?php if ( ! empty( $items ) && $is_playlist ) : ?>
 				<?php
 				// Playlist mode: sequential audio tracklist.
+				// Items are already full index rows from the joined query above.
 				$tracks = array();
-				foreach ( $items as $track_idx => $media_id ) {
-					$track_url  = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'file_url' );
-					$track_type = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'file_type' );
-					$track_dur  = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'duration' );
-					$track_art  = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'artist' );
-					$dur_label  = '';
-					if ( $track_dur ) {
-						$d         = (float) $track_dur;
+				foreach ( $items as $track_idx => $item_row ) {
+					$track_media_id = (int) $item_row['media_id'];
+					$track_art      = \WPMediaVerse\Services\MediaMeta::get( $track_media_id, 'artist' );
+					$dur_label      = '';
+					if ( ! empty( $item_row['duration'] ) ) {
+						$d         = (float) $item_row['duration'];
 						$dur_label = sprintf( '%d:%02d', floor( $d / 60 ), (int) $d % 60 );
 					}
 					$tracks[] = array(
-						'id'       => (int) $media_id,
-						'title'    => get_the_title( $media_id ),
+						'id'       => $track_media_id,
+						'title'    => $item_row['title'] ?? '',
 						'artist'   => $track_art ? $track_art : '',
-						'url'      => $track_url ? set_url_scheme( $track_url ) : '',
-						'type'     => $track_type ? $track_type : '',
+						'url'      => ! empty( $item_row['file_url'] ) ? set_url_scheme( $item_row['file_url'] ) : '',
+						'type'     => $item_row['file_type'] ?? '',
 						'duration' => $dur_label,
-						'link'     => get_permalink( $media_id ),
+						'link'     => \WPMediaVerse\Services\MediaMeta::get_permalink( $track_media_id ),
 					);
 				}
 				?>
@@ -394,8 +410,8 @@ do_action( 'mvs_before_content' );
 			<?php elseif ( ! empty( $items ) ) : ?>
 				<div class="mvs-media-grid mvs-cols-3">
 					<?php
-					foreach ( $items as $media_id ) :
-						$media_id = (int) $media_id;
+					foreach ( $items as $item_row ) :
+						$media_id = (int) $item_row['media_id'];
 						\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
 							$media_id,
 							array(),

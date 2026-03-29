@@ -2,6 +2,8 @@
 /**
  * Server-side render for the media-grid block.
  *
+ * Queries mvs_media_index directly instead of WP_Query.
+ *
  * @package WPMediaVerse
  *
  * @var array    $attributes Block attributes.
@@ -21,64 +23,74 @@ $show_lightbox  = ! empty( $attributes['showLightbox'] );
 $show_reactions = ! empty( $attributes['showReactions'] );
 $gap            = isset( $attributes['gap'] ) ? absint( $attributes['gap'] ) : 8;
 
-// Pagination support — static front pages use 'page', archive pages use 'paged'.
+// Pagination support -- static front pages use 'page', archive pages use 'paged'.
 $mvs_paged = 1;
 if ( ! empty( $mvs_shortcode_context ) ) {
 	$mvs_paged = max( 1, absint( get_query_var( 'paged' ) ?: get_query_var( 'page' ) ) );
 }
 
-// Build query.
-$query_args = array(
-	'post_type'      => 'mvs_media',
-	'post_status'    => 'publish',
-	'posts_per_page' => $mvs_per_page,
-	'paged'          => $mvs_paged,
-	'orderby'        => 'date' === $order_by ? 'date' : 'title',
-	'order'          => 'DESC',
-);
+global $wpdb;
+$index_table = $wpdb->prefix . 'mvs_media_index';
+$meta_table  = $wpdb->prefix . 'mvs_media_meta';
+
+// Build WHERE/JOIN clauses.
+$where  = "WHERE m.status = 'publish'";
+$joins  = '';
+$params = array();
 
 if ( $media_type ) {
-	$query_args['meta_key']   = '_mvs_file_type';
-	$query_args['meta_value'] = $media_type; // phpcs:ignore WordPress.DB.SlowDBQuery
+	$where   .= ' AND m.media_type = %s';
+	$params[] = $media_type;
 }
 
+// Category filter via term_relationships.
 if ( $category ) {
-	$query_args['tax_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery
-		array(
-			'taxonomy' => 'mvs_category',
-			'field'    => 'slug',
-			'terms'    => $category,
-		),
-	);
+	$cat_term = get_term_by( 'slug', $category, 'mvs_category' );
+	if ( $cat_term ) {
+		$joins   .= " INNER JOIN {$wpdb->term_relationships} trc ON trc.object_id = m.media_id";
+		$where   .= ' AND trc.term_taxonomy_id = %d';
+		$params[] = $cat_term->term_taxonomy_id;
+	}
 }
 
+// Tag filter via term_relationships.
 if ( $mvs_tag ) {
-	$tax_query               = isset( $query_args['tax_query'] ) ? $query_args['tax_query'] : array();
-	$tax_query[]             = array(
-		'taxonomy' => 'mvs_tag',
-		'field'    => 'slug',
-		'terms'    => $mvs_tag,
-	);
-	$query_args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery
+	$tag_term = get_term_by( 'slug', $mvs_tag, 'mvs_tag' );
+	if ( $tag_term ) {
+		$joins   .= " INNER JOIN {$wpdb->term_relationships} trt ON trt.object_id = m.media_id";
+		$where   .= ' AND trt.term_taxonomy_id = %d';
+		$params[] = $tag_term->term_taxonomy_id;
+	}
 }
 
-// Exclude non-cover gallery group items from the grid.
-$query_args['meta_query'] = isset( $query_args['meta_query'] ) ? $query_args['meta_query'] : array();
-$query_args['meta_query'][] = array(
-	'relation' => 'OR',
-	array(
-		'key'     => '_mvs_media_group',
-		'compare' => 'NOT EXISTS',
-	),
-	array(
-		'key'     => '_mvs_group_position',
-		'value'   => '0',
-		'compare' => '=',
-	),
-);
+// Exclude non-cover gallery group items.
+$where .= " AND m.media_id NOT IN (
+	SELECT mm1.media_id FROM {$meta_table} mm1
+	INNER JOIN {$meta_table} mm2 ON mm1.media_id = mm2.media_id
+	WHERE mm1.meta_key = 'media_group'
+	AND mm2.meta_key = 'group_position'
+	AND mm2.meta_value != '0'
+)";
 
-$query   = new WP_Query( $query_args );
-$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-grid-block' ) ) : 'class="mvs-media-grid-block"';
+$order_clause = 'date' === $order_by ? 'm.created_at DESC' : 'm.title ASC';
+$offset       = ( $mvs_paged - 1 ) * $mvs_per_page;
+
+// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+// Count total.
+$count_sql = "SELECT COUNT(DISTINCT m.media_id) FROM {$index_table} m {$joins} {$where}";
+if ( ! empty( $params ) ) {
+	$count_sql = $wpdb->prepare( $count_sql, ...$params );
+}
+$found_posts = (int) $wpdb->get_var( $count_sql );
+
+// Fetch items.
+$items_sql = "SELECT m.* FROM {$index_table} m {$joins} {$where} ORDER BY {$order_clause} LIMIT %d OFFSET %d";
+$all_params   = array_merge( $params, array( $mvs_per_page, $offset ) );
+$media_items  = $wpdb->get_results( $wpdb->prepare( $items_sql, ...$all_params ), ARRAY_A );
+// phpcs:enable
+
+$max_num_pages = $mvs_per_page > 0 ? (int) ceil( $found_posts / $mvs_per_page ) : 1;
+$wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-grid-block' ) ) : 'class="mvs-media-grid-block"';
 
 // Enqueue universal lightbox when this block is rendered.
 if ( $show_lightbox && wp_script_is( 'mvs-lightbox', 'registered' ) ) {
@@ -86,50 +98,51 @@ if ( $show_lightbox && wp_script_is( 'mvs-lightbox', 'registered' ) ) {
 }
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<?php if ( $query->have_posts() ) : ?>
+	<?php if ( ! empty( $media_items ) ) : ?>
 		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px">
 			<?php
-			while ( $query->have_posts() ) :
-				$query->the_post();
-				$mvs_grid_media_type = \WPMediaVerse\Core\TemplateHelpers::get_media_type( get_the_ID() );
-				$mvs_grid_group      = get_post_meta( get_the_ID(), '_mvs_media_group', true );
+			foreach ( $media_items as $item ) :
+				$item_id             = (int) $item['media_id'];
+				$mvs_grid_media_type = \WPMediaVerse\Core\TemplateHelpers::get_media_type( $item_id );
+				$mvs_grid_group      = \WPMediaVerse\Services\MediaMeta::get( $item_id, 'media_group' );
 				$mvs_grid_group_cnt  = 0;
 				if ( $mvs_grid_group ) {
-					global $wpdb;
 					$mvs_grid_group_cnt = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-						"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = '_mvs_media_group' AND meta_value = %s",
+						"SELECT COUNT(*) FROM {$meta_table} WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 						$mvs_grid_group
 					) );
 				}
 				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group ? ' mvs-grid-item--gallery' : '' );
+				$item_title          = $item['title'] ?? '';
+				$item_permalink      = \WPMediaVerse\Services\MediaMeta::get_permalink( $item_id );
 				?>
 				<div class="<?php echo esc_attr( $mvs_grid_item_class ); ?>"
-					data-media-id="<?php echo absint( get_the_ID() ); ?>"
+					data-media-id="<?php echo absint( $item_id ); ?>"
 					data-media-type="<?php echo esc_attr( $mvs_grid_media_type ); ?>"
 				>
-					<a href="<?php the_permalink(); ?>" class="mvs-grid-item-link">
-					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( get_the_ID(), 'large', get_the_title() ); ?>
+					<a href="<?php echo esc_url( $item_permalink ); ?>" class="mvs-grid-item-link">
+					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( $item_id, 'large', $item_title ); ?>
 					<?php if ( $mvs_grid_group && $mvs_grid_group_cnt > 1 ) : ?>
 						<span class="mvs-gallery-badge" title="<?php echo esc_attr( sprintf( '%d photos', $mvs_grid_group_cnt ) ); ?>">
 							<span class="dashicons dashicons-images-alt2"></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>
 						</span>
 					<?php endif; ?>
 					<div class="mvs-grid-item-overlay">
-						<span class="mvs-grid-item-title"><?php echo esc_html( get_the_title() ); ?></span>
+						<span class="mvs-grid-item-title"><?php echo esc_html( $item_title ); ?></span>
 					</div>
 					</a>
 				</div>
-			<?php endwhile; ?>
+			<?php endforeach; ?>
 		</div>
 
 		<?php
-		if ( $query->max_num_pages > 1 ) :
+		if ( $max_num_pages > 1 ) :
 			?>
 			<div class="mvs-grid-pagination">
 				<span class="mvs-grid-pagination-info">
 				<?php
 				/* translators: 1: current page, 2: total pages */
-				echo esc_html( sprintf( __( 'Page %1$d of %2$d (%3$d items)', 'wpmediaverse' ), $mvs_paged, $query->max_num_pages, $query->found_posts ) );
+				echo esc_html( sprintf( __( 'Page %1$d of %2$d (%3$d items)', 'wpmediaverse' ), $mvs_paged, $max_num_pages, $found_posts ) );
 				?>
 				</span>
 				<div class="mvs-grid-pagination-links">
@@ -137,7 +150,7 @@ if ( $show_lightbox && wp_script_is( 'mvs-lightbox', 'registered' ) ) {
 					echo wp_kses_post(
 						paginate_links(
 							array(
-								'total'     => $query->max_num_pages,
+								'total'     => $max_num_pages,
 								'current'   => $mvs_paged,
 								'prev_text' => '&laquo; ' . __( 'Previous', 'wpmediaverse' ),
 								'next_text' => __( 'Next', 'wpmediaverse' ) . ' &raquo;',
@@ -152,5 +165,4 @@ if ( $show_lightbox && wp_script_is( 'mvs-lightbox', 'registered' ) ) {
 	<?php else : ?>
 		<p class="mvs-no-media"><?php esc_html_e( 'No media items found.', 'wpmediaverse' ); ?></p>
 	<?php endif; ?>
-	<?php wp_reset_postdata(); ?>
 </div>

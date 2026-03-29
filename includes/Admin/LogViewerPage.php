@@ -31,7 +31,7 @@ class LogViewerPage {
 	 */
 	public function add_menu_page(): void {
 		add_submenu_page(
-			'edit.php?post_type=mvs_media',
+			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
 			__( 'Log Viewer', 'wpmediaverse' ),
 			__( 'Logs', 'wpmediaverse' ),
 			'manage_mvs_settings',
@@ -66,7 +66,7 @@ class LogViewerPage {
 					'page'    => self::PAGE_SLUG,
 					'cleared' => '1',
 				),
-				admin_url( 'edit.php?post_type=mvs_media' )
+				admin_url( 'admin.php' )
 			)
 		);
 		exit;
@@ -106,7 +106,7 @@ class LogViewerPage {
 			'info'    => '#2271b1',
 		);
 
-		$base_url = admin_url( 'edit.php?post_type=mvs_media&page=' . self::PAGE_SLUG );
+		$base_url = admin_url( 'admin.php?page=' . self::PAGE_SLUG );
 
 		?>
 		<div class="wrap">
@@ -126,7 +126,6 @@ class LogViewerPage {
 			<!-- Filters -->
 			<div class="mvs-log-filters">
 				<form method="get">
-					<input type="hidden" name="post_type" value="mvs_media" />
 					<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE_SLUG ); ?>" />
 
 					<label for="mvs-log-level"><?php esc_html_e( 'Level:', 'wpmediaverse' ); ?></label>

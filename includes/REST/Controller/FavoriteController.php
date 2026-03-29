@@ -131,8 +131,7 @@ class FavoriteController extends WP_REST_Controller {
 
 		$media_id = $request->get_param( 'media_id' );
 
-		$post = get_post( $media_id );
-		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+		if ( ! MediaMeta::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -180,14 +179,13 @@ class FavoriteController extends WP_REST_Controller {
 		$enriched = array();
 		foreach ( $result['items'] as $item ) {
 			$media_id = (int) $item['media_id'];
-			$post     = get_post( $media_id );
-			if ( ! $post || 'mvs_media' !== $post->post_type ) {
+			if ( ! MediaMeta::exists( $media_id ) ) {
 				continue;
 			}
 			$enriched[] = array(
 				'media_id'   => $media_id,
-				'title'      => $post->post_title,
-				'link'       => get_permalink( $media_id ),
+				'title'      => MediaMeta::get( $media_id, 'title' ),
+				'link'       => MediaMeta::get_permalink( $media_id ),
 				'file_url'   => set_url_scheme( MediaMeta::get( $media_id, 'file_url' ) ),
 				'media_type' => MediaMeta::get( $media_id, 'media_type' ),
 				'created_at' => $item['created_at'],

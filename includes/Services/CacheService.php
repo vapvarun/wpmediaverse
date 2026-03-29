@@ -343,8 +343,8 @@ class CacheService {
 		add_action( 'edited_mvs_tag', array( $this, 'on_tag_change' ) );
 		add_action( 'delete_mvs_tag', array( $this, 'on_tag_change' ) );
 
-		// Invalidate media meta cache on save.
-		add_action( 'save_post_mvs_media', array( $this, 'on_media_save' ) );
+		// Invalidate media meta cache on upload (media is custom table, not CPT).
+		add_action( 'mvs_media_uploaded', array( $this, 'on_media_save' ) );
 	}
 
 	/**

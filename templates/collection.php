@@ -127,9 +127,10 @@ do_action( 'mvs_before_content' );
 				<div class="mvs-media-grid mvs-cols-3 mvs-feed">
 					<?php
 					foreach ( $items as $media_id ) :
-						$media_id   = (int) $media_id;
-						$media_post = get_post( $media_id );
-						if ( ! $media_post || 'publish' !== $media_post->post_status ) {
+						$media_id    = (int) $media_id;
+						$media_title = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'title' );
+						$media_status = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'status' );
+						if ( ! $media_title || 'publish' !== $media_status ) {
 							continue;
 						}
 						\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
@@ -137,7 +138,7 @@ do_action( 'mvs_before_content' );
 							$stats_map[ $media_id ] ?? array(),
 							array(
 								'show_author' => true,
-								'data_attrs'  => array( 'title' => strtolower( $media_post->post_title ) ),
+								'data_attrs'  => array( 'title' => strtolower( $media_title ) ),
 							)
 						);
 					endforeach;

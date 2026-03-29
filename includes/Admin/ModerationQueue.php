@@ -55,7 +55,7 @@ class ModerationQueue {
 		}
 
 		add_submenu_page(
-			'edit.php?post_type=mvs_media',
+			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
 			__( 'Media Moderation', 'wpmediaverse' ),
 			$menu_title,
 			'moderate_mvs_media',
@@ -104,7 +104,7 @@ class ModerationQueue {
 						'updated' => $redirect_action,
 						'count'   => $count,
 					),
-					admin_url( 'edit.php?post_type=mvs_media' )
+					admin_url( 'admin.php' )
 				)
 			);
 			exit;
@@ -142,7 +142,7 @@ class ModerationQueue {
 					'page'    => self::PAGE_SLUG,
 					'updated' => $action,
 				),
-				admin_url( 'edit.php?post_type=mvs_media' )
+				admin_url( 'admin.php' )
 			)
 		);
 		exit;
@@ -234,11 +234,10 @@ class ModerationQueue {
 					$is_active = ( $status === $key );
 					$url       = add_query_arg(
 						array(
-							'post_type' => 'mvs_media',
-							'page'      => self::PAGE_SLUG,
-							'status'    => $key,
+							'page'   => self::PAGE_SLUG,
+							'status' => $key,
 						),
-						admin_url( 'edit.php' )
+						admin_url( 'admin.php' )
 					);
 					?>
 					<a href="<?php echo esc_url( $url ); ?>"

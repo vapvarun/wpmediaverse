@@ -2,6 +2,9 @@
 /**
  * Server-side render for the album-viewer block.
  *
+ * Album is still a CPT (mvs_album), but media items inside it are read from
+ * mvs_media_index via mvs_album_items -- not from wp_posts.
+ *
  * @package WPMediaVerse
  *
  * @var array    $attributes Block attributes.
@@ -25,15 +28,23 @@ if ( ! $album || 'mvs_album' !== $album->post_type ) {
 	return;
 }
 
-// Get album items from the custom table.
+// Get album items joined with mvs_media_index for full media data.
 global $wpdb;
-$table = $wpdb->prefix . 'mvs_album_items';
-$items = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+$album_items_table = $wpdb->prefix . 'mvs_album_items';
+$index_table       = $wpdb->prefix . 'mvs_media_index';
+
+// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$items = $wpdb->get_results(
 	$wpdb->prepare(
-		"SELECT media_id FROM {$table} WHERE album_id = %d ORDER BY position ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		"SELECT idx.* FROM {$album_items_table} ai
+		INNER JOIN {$index_table} idx ON idx.media_id = ai.media_id
+		WHERE ai.album_id = %d AND idx.status = 'publish'
+		ORDER BY ai.position ASC",
 		$album_id
-	)
+	),
+	ARRAY_A
 );
+// phpcs:enable
 
 $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-album-viewer-block' ) ) : 'class="mvs-album-viewer-block"';
 ?>
@@ -48,14 +59,16 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 
 	<?php if ( ! empty( $items ) ) : ?>
 		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?>">
-			<?php foreach ( $items as $media_id ) : ?>
+			<?php foreach ( $items as $item_row ) : ?>
 				<?php
-				$file_url   = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'file_url' );
-				$file_type  = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'file_type' );
-				$media_type = \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'media_type' );
-				$permalink  = get_permalink( $media_id );
+				$media_id   = (int) $item_row['media_id'];
+				$file_url   = $item_row['file_url'] ?? '';
+				$file_type  = $item_row['file_type'] ?? '';
+				$media_type = $item_row['media_type'] ?? '';
+				$item_title = $item_row['title'] ?? '';
+				$permalink  = \WPMediaVerse\Services\MediaMeta::get_permalink( $media_id );
 				$thumb_url  = '';
-				$attach_id  = (int) \WPMediaVerse\Services\MediaMeta::get( (int) $media_id, 'attachment_id' );
+				$attach_id  = (int) ( $item_row['attachment_id'] ?? 0 );
 				if ( $attach_id ) {
 					$thumb_src = wp_get_attachment_image_url( $attach_id, 'large' );
 					if ( $thumb_src ) {
@@ -70,7 +83,7 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 					<a href="<?php echo esc_url( $permalink ); ?>">
 						<?php if ( $thumb_url ) : ?>
 							<img src="<?php echo esc_url( $thumb_url ); ?>"
-								alt="<?php echo esc_attr( get_the_title( $media_id ) ); ?>"
+								alt="<?php echo esc_attr( $item_title ); ?>"
 								loading="lazy" />
 							<?php if ( 'video' === $media_type ) : ?>
 								<span class="mvs-grid-play-icon">&#9654;</span>
@@ -90,7 +103,7 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 						<?php endif; ?>
 					</a>
 					<div class="mvs-grid-item-overlay">
-						<span><?php echo esc_html( get_the_title( $media_id ) ); ?></span>
+						<span><?php echo esc_html( $item_title ); ?></span>
 					</div>
 				</div>
 			<?php endforeach; ?>

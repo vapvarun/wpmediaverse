@@ -25,23 +25,27 @@ class MediaMeta {
 	 */
 	private static array $index_columns = array(
 		'title',
+		'slug',
 		'description',
 		'post_author',
+		'status',
 		'media_type',
 		'privacy',
 		'moderation_status',
 		'file_url',
+		'file_path',
 		'file_type',
 		'file_size',
+		'file_hash',
 		'attachment_id',
 		'width',
 		'height',
+		'duration',
 		'album_id',
 		'view_count',
 		'reaction_count',
 		'comment_count',
 		'is_featured',
-		'spare_1',
 		'created_at',
 		'updated_at',
 	);
@@ -251,6 +255,119 @@ class MediaMeta {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Check if a media item exists in mvs_media_index.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool
+	 */
+	public static function exists( int $media_id ): bool {
+		global $wpdb;
+
+		return (bool) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
+				$media_id
+			)
+		);
+	}
+
+	/**
+	 * Get the author (owner) of a media item.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return int User ID or 0 if not found.
+	 */
+	public static function get_author( int $media_id ): int {
+		$author = self::get( $media_id, 'post_author' );
+		return $author ? (int) $author : 0;
+	}
+
+	/**
+	 * Build a permalink for a media item.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Full URL to the media single page.
+	 */
+	public static function get_permalink( int $media_id ): string {
+		$slug = self::get( $media_id, 'slug' );
+		if ( $slug ) {
+			return home_url( '/media/' . $slug . '/' );
+		}
+		return home_url( '/media/' . $media_id . '/' );
+	}
+
+	/**
+	 * Insert a new media item and return the auto-generated media_id.
+	 *
+	 * @param array $data Column-value pairs for mvs_media_index.
+	 * @return int|false New media_id on success, false on failure.
+	 */
+	public static function insert( array $data ) {
+		global $wpdb;
+
+		$defaults = array(
+			'status'            => 'publish',
+			'privacy'           => 'public',
+			'moderation_status' => 'approved',
+			'created_at'        => current_time( 'mysql', true ),
+		);
+
+		$data = array_merge( $defaults, $data );
+
+		// Generate slug if not provided.
+		if ( empty( $data['slug'] ) && ! empty( $data['title'] ) ) {
+			$data['slug'] = self::generate_unique_slug( $data['title'] );
+		}
+
+		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_media_index',
+			$data
+		);
+
+		if ( false === $result ) {
+			return false;
+		}
+
+		return (int) $wpdb->insert_id;
+	}
+
+	/**
+	 * Generate a unique slug from a title.
+	 *
+	 * @param string $title Media title.
+	 * @return string Unique slug.
+	 */
+	public static function generate_unique_slug( string $title ): string {
+		global $wpdb;
+
+		$slug = sanitize_title( $title );
+		if ( empty( $slug ) ) {
+			$slug = 'media-' . wp_generate_password( 8, false );
+		}
+
+		$base_slug = $slug;
+		$counter   = 1;
+
+		while ( true ) {
+			$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s",
+					$slug
+				)
+			);
+
+			if ( ! $exists ) {
+				break;
+			}
+
+			$slug = $base_slug . '-' . $counter;
+			++$counter;
+		}
+
+		return $slug;
 	}
 
 	/**

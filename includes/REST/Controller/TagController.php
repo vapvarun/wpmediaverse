@@ -219,36 +219,30 @@ class TagController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Target tag not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		// Get posts with the source tag in batches to avoid unbounded memory usage.
-		$batch_size   = 500;
-		$batch_page   = 1;
+		// Get media IDs with the source tag via term_relationships + mvs_media_index.
+		global $wpdb;
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$source_tt   = (int) get_term( $source_id, 'mvs_tag' )->term_taxonomy_id;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$media_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT tr.object_id FROM {$wpdb->term_relationships} tr
+				INNER JOIN {$index_table} idx ON idx.media_id = tr.object_id
+				WHERE tr.term_taxonomy_id = %d",
+				$source_tt
+			)
+		);
+		// phpcs:enable
+
 		$posts        = array();
 		$total_merged = 0;
 
-		do {
-			$batch = get_posts(
-				array(
-					'post_type'      => 'mvs_media',
-					'posts_per_page' => $batch_size,
-					'paged'          => $batch_page,
-					'fields'         => 'ids',
-					'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-						array(
-							'taxonomy' => 'mvs_tag',
-							'terms'    => $source_id,
-						),
-					),
-				)
-			);
-
-			foreach ( $batch as $post_id ) {
-				wp_set_object_terms( $post_id, $target_id, 'mvs_tag', true );
-			}
-
-			$total_merged += count( $batch );
-			$posts         = array_merge( $posts, $batch );
-			++$batch_page;
-		} while ( count( $batch ) === $batch_size );
+		foreach ( $media_ids as $media_id ) {
+			wp_set_object_terms( (int) $media_id, $target_id, 'mvs_tag', true );
+			$posts[] = (int) $media_id;
+			++$total_merged;
+		}
 
 		// Delete source tag.
 		wp_delete_term( $source_id, 'mvs_tag' );

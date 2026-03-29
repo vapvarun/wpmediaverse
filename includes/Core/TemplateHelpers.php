@@ -5,6 +5,8 @@
  * Shared rendering utilities used by all templates and BuddyPress integration
  * to ensure consistent thumbnail resolution, placeholders, and grid markup.
  *
+ * All media lookups go through mvs_media_index / MediaMeta -- never get_post().
+ *
  * @package WPMediaVerse
  */
 
@@ -23,9 +25,9 @@ class TemplateHelpers {
 	 * Resolve the best thumbnail URL for a media item.
 	 *
 	 * Priority: WP attachment thumbnail > file_url (images only).
-	 * For video/audio, tries _mvs_attachment_id first (generated poster).
+	 * For video/audio, tries attachment_id first (generated poster).
 	 *
-	 * @param int    $media_id Media post ID.
+	 * @param int    $media_id Media ID (mvs_media_index.media_id).
 	 * @param string $size     WordPress image size.
 	 * @return string Thumbnail URL or empty string.
 	 */
@@ -33,15 +35,6 @@ class TemplateHelpers {
 		$attach_id  = (int) MediaMeta::get( $media_id, 'attachment_id' );
 		$file_url   = MediaMeta::get( $media_id, 'file_url' );
 		$media_type = self::get_media_type( $media_id );
-
-		// Try WordPress featured image first (set via admin editor).
-		$featured_id = (int) get_post_thumbnail_id( $media_id );
-		if ( $featured_id ) {
-			$featured_src = wp_get_attachment_image_url( $featured_id, $size );
-			if ( $featured_src ) {
-				return set_url_scheme( $featured_src );
-			}
-		}
 
 		// Try WP attachment thumbnail (works for all types including video posters).
 		if ( $attach_id ) {
@@ -62,7 +55,7 @@ class TemplateHelpers {
 	/**
 	 * Get the media type (image, video, audio, document) for a media item.
 	 *
-	 * @param int $media_id Media post ID.
+	 * @param int $media_id Media ID (mvs_media_index.media_id).
 	 * @return string One of: image, video, audio, document.
 	 */
 	public static function get_media_type( int $media_id ): string {
@@ -91,10 +84,7 @@ class TemplateHelpers {
 	/**
 	 * Render a grid item's thumbnail or type-appropriate placeholder.
 	 *
-	 * Outputs either an <img> tag (with optional video play icon overlay)
-	 * or a placeholder <div> with the correct icon for the media type.
-	 *
-	 * @param int    $media_id Media post ID.
+	 * @param int    $media_id Media ID (mvs_media_index.media_id).
 	 * @param string $size     WordPress image size.
 	 * @param string $alt      Alt text for the image.
 	 */
@@ -103,7 +93,8 @@ class TemplateHelpers {
 		$media_type = self::get_media_type( $media_id );
 
 		if ( ! $alt ) {
-			$alt = get_the_title( $media_id );
+			$title = MediaMeta::get( $media_id, 'title' );
+			$alt   = $title ? $title : '';
 		}
 
 		if ( $thumb_url ) {
@@ -129,9 +120,9 @@ class TemplateHelpers {
 	/**
 	 * Render a complete grid item (thumbnail + overlay + info row).
 	 *
-	 * Used for explore, collection, BP profile, and BP group media grids.
+	 * Reads media data from mvs_media_index via MediaMeta -- no get_post().
 	 *
-	 * @param int   $media_id Media post ID.
+	 * @param int   $media_id Media ID (mvs_media_index.media_id).
 	 * @param array $stats    Optional stats array with 'views', 'reactions', 'comments' keys.
 	 * @param array $options  Optional rendering options:
 	 *                        - 'show_author' (bool) Show author row below thumbnail. Default true.
@@ -144,18 +135,25 @@ class TemplateHelpers {
 		$show_overlay = $options['show_overlay'] ?? true;
 		$data_attrs   = $options['data_attrs'] ?? array();
 		$size         = $options['size'] ?? get_option( 'mvs_thumbnail_size', 'large' );
-		$media_post   = get_post( $media_id );
 
-		if ( ! $media_post || 'publish' !== $media_post->post_status ) {
+		// Read core fields from mvs_media_index.
+		$media_row = MediaMeta::get_all( $media_id );
+		if ( empty( $media_row ) || empty( $media_row['media_id'] ) ) {
+			return;
+		}
+		$media_status = $media_row['status'] ?? 'publish';
+		if ( 'publish' !== $media_status ) {
 			return;
 		}
 
-		$permalink = get_permalink( $media_id );
-		$views     = isset( $stats['views'] ) ? (int) $stats['views'] : 0;
-		$reactions = isset( $stats['reactions'] ) ? (int) $stats['reactions'] : 0;
-		$comments  = isset( $stats['comments'] ) ? (int) $stats['comments'] : 0;
+		$media_title  = $media_row['title'] ?? '';
+		$author_id    = (int) ( $media_row['post_author'] ?? 0 );
+		$permalink    = MediaMeta::get_permalink( $media_id );
+		$views        = isset( $stats['views'] ) ? (int) $stats['views'] : 0;
+		$reactions    = isset( $stats['reactions'] ) ? (int) $stats['reactions'] : 0;
+		$comments     = isset( $stats['comments'] ) ? (int) $stats['comments'] : 0;
 
-		// Build data attributes string — always include media-id and media-type for lightbox.
+		// Build data attributes string.
 		$data_attrs['media-id']   = $media_id;
 		$data_attrs['media-type'] = self::get_media_type( $media_id );
 		$data_str                 = '';
@@ -199,9 +197,9 @@ class TemplateHelpers {
 			. ' data-wp-on--click="actions.openLightbox"'
 			. '>';
 
-		self::render_grid_thumbnail( $media_id, $size, $media_post->post_title );
+		self::render_grid_thumbnail( $media_id, $size, $media_title );
 
-		// Gallery badge showing item count (e.g. "1/4").
+		// Gallery badge showing item count.
 		if ( $is_gallery && $group_count > 1 ) {
 			echo '<span class="mvs-gallery-badge" title="' . esc_attr( sprintf( '%d photos', $group_count ) ) . '">';
 			echo '<span class="dashicons dashicons-images-alt2"></span> ' . esc_html( $group_count );
@@ -220,10 +218,10 @@ class TemplateHelpers {
 
 		echo '</a>';
 
-		if ( $show_author ) {
+		if ( $show_author && $author_id ) {
 			echo '<div class="mvs-grid-item-info">';
-			echo get_avatar( (int) $media_post->post_author, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
-			echo '<span class="mvs-grid-item-author">' . esc_html( get_the_author_meta( 'display_name', $media_post->post_author ) ) . '</span>';
+			echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
+			echo '<span class="mvs-grid-item-author">' . esc_html( get_the_author_meta( 'display_name', $author_id ) ) . '</span>';
 			echo '</div>';
 		}
 
@@ -233,7 +231,7 @@ class TemplateHelpers {
 	/**
 	 * Bulk-fetch stats for an array of media IDs.
 	 *
-	 * @param int[] $media_ids Array of media post IDs.
+	 * @param int[] $media_ids Array of media IDs (mvs_media_index.media_id).
 	 * @return array Associative array keyed by media_id with views/reactions/comments.
 	 */
 	public static function bulk_get_stats( array $media_ids ): array {

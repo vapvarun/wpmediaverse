@@ -2,6 +2,8 @@
 /**
  * Server-side render for the explore-feed block.
  *
+ * Queries mvs_media_index directly instead of WP_Query.
+ *
  * @package WPMediaVerse
  *
  * @var array    $attributes Block attributes.
@@ -17,15 +19,24 @@ $show_filters = ! empty( $attributes['showFilters'] );
 $show_search  = ! empty( $attributes['showSearch'] );
 $columns      = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : 3;
 
-$query = new WP_Query(
-	array(
-		'post_type'      => 'mvs_media',
-		'post_status'    => 'publish',
-		'posts_per_page' => $mvs_per_page,
-		'orderby'        => 'date',
-		'order'          => 'DESC',
-	)
+global $wpdb;
+$index_table = $wpdb->prefix . 'mvs_media_index';
+
+// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$media_items = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT * FROM {$index_table} WHERE status = 'publish' ORDER BY created_at DESC LIMIT %d",
+		$mvs_per_page
+	),
+	ARRAY_A
 );
+
+$total_count = (int) $wpdb->get_var(
+	"SELECT COUNT(*) FROM {$index_table} WHERE status = 'publish'"
+);
+// phpcs:enable
+
+$max_num_pages = $mvs_per_page > 0 ? (int) ceil( $total_count / $mvs_per_page ) : 1;
 
 $wrapper  = get_block_wrapper_attributes( array( 'class' => 'mvs-explore-feed-block' ) );
 $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
@@ -42,7 +53,7 @@ $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 			'filter'  => '',
 			'search'  => '',
 			'loading' => false,
-			'hasMore' => $query->max_num_pages > 1,
+			'hasMore' => $max_num_pages > 1,
 		)
 	);
 	?>
@@ -81,19 +92,23 @@ $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 		</div>
 	<?php endif; ?>
 
-	<?php if ( $query->have_posts() ) : ?>
+	<?php if ( ! empty( $media_items ) ) : ?>
 		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?>" data-wp-class--mvs-layout-masonry="state.isMasonry">
 			<?php
-			while ( $query->have_posts() ) :
-				$query->the_post();
+			foreach ( $media_items as $item ) :
+				$item_id    = (int) $item['media_id'];
+				$item_title = $item['title'] ?? '';
+				$permalink  = \WPMediaVerse\Services\MediaMeta::get_permalink( $item_id );
 				?>
-				<div class="mvs-grid-item" data-media-type="<?php echo esc_attr( \WPMediaVerse\Core\TemplateHelpers::get_media_type( get_the_ID() ) ); ?>">
-					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( get_the_ID(), 'large', get_the_title() ); ?>
+				<div class="mvs-grid-item" data-media-type="<?php echo esc_attr( \WPMediaVerse\Core\TemplateHelpers::get_media_type( $item_id ) ); ?>">
+					<a href="<?php echo esc_url( $permalink ); ?>">
+						<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( $item_id, 'large', $item_title ); ?>
+					</a>
 					<div class="mvs-grid-item-overlay">
-						<span class="mvs-grid-item-title"><?php echo esc_html( get_the_title() ); ?></span>
+						<span class="mvs-grid-item-title"><?php echo esc_html( $item_title ); ?></span>
 					</div>
 				</div>
-			<?php endwhile; ?>
+			<?php endforeach; ?>
 		</div>
 
 		<button class="mvs-load-more"
@@ -107,5 +122,4 @@ $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 	<?php else : ?>
 		<p class="mvs-no-media"><?php esc_html_e( 'No media items found.', 'wpmediaverse' ); ?></p>
 	<?php endif; ?>
-	<?php wp_reset_postdata(); ?>
 </div>

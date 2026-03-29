@@ -25,7 +25,6 @@ class OverviewPage {
 	 * Constructor. Registers the admin submenu.
 	 */
 	public function __construct() {
-		add_action( 'admin_menu', array( $this, 'add_menu_page' ), 5 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'wp_ajax_mvs_import_demo_data', array( $this, 'ajax_import_demo_data' ) );
 		add_action( 'wp_ajax_mvs_cleanup_demo_data', array( $this, 'handle_cleanup_demo' ) );
@@ -43,15 +42,12 @@ class OverviewPage {
 			return;
 		}
 
-		// Enqueue on any mvs_media admin page or our custom pages.
+		// Enqueue on any WPMediaVerse admin page.
 		$is_mvs_page = (
-			'mvs_media' === $screen->post_type ||
 			'mvs_album' === $screen->post_type ||
-			false !== strpos( $screen->id, 'mvs-overview' ) ||
-			false !== strpos( $screen->id, 'mvs-settings' ) ||
-			false !== strpos( $screen->id, 'mvs-moderation' ) ||
-			false !== strpos( $screen->id, 'mvs-stats' ) ||
-			false !== strpos( $screen->id, 'mvs-logs' )
+			'mvs_collection' === $screen->post_type ||
+			false !== strpos( $screen->id, 'wpmediaverse' ) ||
+			false !== strpos( $screen->id, 'mvs-' )
 		);
 
 		if ( $is_mvs_page ) {
@@ -62,22 +58,6 @@ class OverviewPage {
 				MVS_VERSION
 			);
 		}
-	}
-
-	/**
-	 * Add the Overview page as the first submenu under the mvs_media CPT.
-	 *
-	 * Uses priority 5 on admin_menu to register before other submenus.
-	 */
-	public function add_menu_page(): void {
-		add_submenu_page(
-			'edit.php?post_type=mvs_media',
-			__( 'WPMediaVerse Overview', 'wpmediaverse' ),
-			__( 'Overview', 'wpmediaverse' ),
-			'edit_posts',
-			self::PAGE_SLUG,
-			array( $this, 'render_page' )
-		);
 	}
 
 	/**
@@ -106,7 +86,7 @@ class OverviewPage {
 
 			<?php // --- Stat Cards --- ?>
 			<div class="mvs-admin-stats">
-				<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media' ) ); ?>" class="mvs-stat-card mvs-stat-card--accent">
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>" class="mvs-stat-card mvs-stat-card--accent">
 					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $stats['total_media'] ) ); ?></span>
 					<span class="mvs-stat-label"><?php esc_html_e( 'Total Media', 'wpmediaverse' ); ?></span>
 				</a>
@@ -117,11 +97,11 @@ class OverviewPage {
 				<?php
 				$pending_class = $stats['pending_moderation'] > 0 ? 'mvs-stat-card--danger' : 'mvs-stat-card--success';
 				?>
-				<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-moderation' ) ); ?>" class="mvs-stat-card <?php echo esc_attr( $pending_class ); ?>">
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-moderation' ) ); ?>" class="mvs-stat-card <?php echo esc_attr( $pending_class ); ?>">
 					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $stats['pending_moderation'] ) ); ?></span>
 					<span class="mvs-stat-label"><?php esc_html_e( 'Pending Review', 'wpmediaverse' ); ?></span>
 				</a>
-				<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-stats' ) ); ?>" class="mvs-stat-card mvs-stat-card--accent">
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-stats' ) ); ?>" class="mvs-stat-card mvs-stat-card--accent">
 					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $stats['total_views'] ) ); ?></span>
 					<span class="mvs-stat-label"><?php esc_html_e( 'Total Views', 'wpmediaverse' ); ?></span>
 				</a>
@@ -143,16 +123,16 @@ class OverviewPage {
 						</div>
 						<div class="mvs-widget-body">
 							<div class="mvs-quick-links">
-								<a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=mvs_media' ) ); ?>" class="button button-primary">
+								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>" class="button button-primary">
 									<span class="dashicons dashicons-plus-alt2"></span>
 									<?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
 								</a>
-								<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-settings' ) ); ?>" class="button">
+								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-settings' ) ); ?>" class="button">
 									<span class="dashicons dashicons-admin-generic"></span>
 									<?php esc_html_e( 'Settings', 'wpmediaverse' ); ?>
 								</a>
 								<?php if ( current_user_can( 'moderate_mvs_media' ) ) : ?>
-									<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-moderation' ) ); ?>" class="button">
+									<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-moderation' ) ); ?>" class="button">
 										<span class="dashicons dashicons-shield"></span>
 										<?php esc_html_e( 'Moderation', 'wpmediaverse' ); ?>
 										<?php if ( $stats['pending_moderation'] > 0 ) : ?>
@@ -160,7 +140,7 @@ class OverviewPage {
 										<?php endif; ?>
 									</a>
 								<?php endif; ?>
-								<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-stats' ) ); ?>" class="button">
+								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-stats' ) ); ?>" class="button">
 									<span class="dashicons dashicons-chart-bar"></span>
 									<?php esc_html_e( 'Stats', 'wpmediaverse' ); ?>
 								</a>
@@ -358,7 +338,7 @@ class OverviewPage {
 								<div class="mvs-empty-state">
 									<span class="dashicons dashicons-format-image"></span>
 									<p><?php esc_html_e( 'No media uploaded yet.', 'wpmediaverse' ); ?></p>
-									<a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=mvs_media' ) ); ?>" class="button button-primary">
+									<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>" class="button button-primary">
 										<?php esc_html_e( 'Upload First Media', 'wpmediaverse' ); ?>
 									</a>
 								</div>
@@ -417,7 +397,7 @@ class OverviewPage {
 							<?php endif; ?>
 						</div>
 						<div class="mvs-widget-footer">
-							<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media' ) ); ?>">
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>">
 								<?php esc_html_e( 'View all media', 'wpmediaverse' ); ?> &rarr;
 							</a>
 						</div>
@@ -485,10 +465,10 @@ class OverviewPage {
 			return;
 		}
 
-		$settings_url    = admin_url( 'edit.php?post_type=mvs_media&page=mvs-settings' );
+		$settings_url    = admin_url( 'admin.php?page=mvs-settings' );
 		$upload_page_id  = (int) get_option( 'mvs_page_upload', 0 );
-		$upload_url      = $upload_page_id ? get_permalink( $upload_page_id ) : admin_url( 'post-new.php?post_type=mvs_media' );
-		$permissions_url = admin_url( 'edit.php?post_type=mvs_media&page=mvs-settings#permissions' );
+		$upload_url      = $upload_page_id ? get_permalink( $upload_page_id ) : admin_url( 'admin.php?page=mvs-media' );
+		$permissions_url = admin_url( 'admin.php?page=mvs-settings#permissions' );
 		?>
 		<div class="mvs-welcome-banner" id="mvs-welcome-banner">
 			<div class="mvs-welcome-banner__content">
@@ -602,15 +582,11 @@ class OverviewPage {
 
 		global $wpdb;
 
-		$total_media  = (int) wp_count_posts( 'mvs_media' )->publish;
+		$total_media  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$total_albums = (int) wp_count_posts( 'mvs_album' )->publish;
 
-		$pending_moderation = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s AND post_status = %s",
-				'mvs_media',
-				'pending'
-			)
+		$pending_moderation = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE moderation_status = 'pending'"
 		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -630,34 +606,28 @@ class OverviewPage {
 	}
 
 	/**
-	 * Fetch the 5 most recent published media items.
+	 * Fetch the 5 most recent published media items from custom table.
 	 *
-	 * @return \WP_Post[]
+	 * @return array[] Array of media rows.
 	 */
 	private function get_recent_media(): array {
+		global $wpdb;
+
 		$cache_key = 'mvs_overview_recent';
 		$cached    = wp_cache_get( $cache_key, 'wpmediaverse' );
 		if ( false !== $cached && is_array( $cached ) ) {
 			return $cached;
 		}
 
-		$query = new \WP_Query(
-			array(
-				'post_type'              => 'mvs_media',
-				'post_status'            => 'publish',
-				'posts_per_page'         => 5,
-				'orderby'                => 'date',
-				'order'                  => 'DESC',
-				'no_found_rows'          => true,
-				'update_post_meta_cache' => true,
-				'update_post_term_cache' => false,
-			)
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' ORDER BY created_at DESC LIMIT 5",
+			ARRAY_A
 		);
 
-		$posts = $query->posts;
-		wp_cache_set( $cache_key, $posts, 'wpmediaverse', 5 * MINUTE_IN_SECONDS );
+		$result = $rows ?: array();
+		wp_cache_set( $cache_key, $result, 'wpmediaverse', 5 * MINUTE_IN_SECONDS );
 
-		return $posts;
+		return $result;
 	}
 
 	/**

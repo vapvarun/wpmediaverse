@@ -15,6 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
+use WPMediaVerse\Services\MediaMeta;
 use WPMediaVerse\Services\PrivacyService;
 use WPMediaVerse\Services\SignedUrlService;
 
@@ -207,9 +208,8 @@ class SignedUrlController extends WP_REST_Controller {
 		}
 
 		$media_id = $request->get_param( 'media_id' );
-		$post     = get_post( $media_id );
 
-		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+		if ( ! MediaMeta::exists( $media_id ) ) {
 			return new WP_Error(
 				'mvs_not_found',
 				__( 'Media item not found.', 'wpmediaverse' ),

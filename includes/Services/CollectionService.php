@@ -78,19 +78,11 @@ class CollectionService {
 
 		global $wpdb;
 
-		$args = array(
-			'post_type'      => 'mvs_media',
-			'post_status'    => 'publish',
-			'posts_per_page' => $per_page,
-			'paged'          => $page,
-			'orderby'        => 'date',
-			'order'          => 'DESC',
-		);
-
-		$tax_query    = array();
-		$date_query   = array();
-		$index_wheres = array();
-		$index_params = array();
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$joins       = array();
+		$wheres      = array( "idx.status = 'publish'" );
+		$params      = array();
+		$join_idx    = 0;
 
 		foreach ( $rules as $rule ) {
 			if ( empty( $rule['key'] ) || ! isset( $rule['value'] ) ) {
@@ -99,86 +91,81 @@ class CollectionService {
 
 			switch ( $rule['key'] ) {
 				case 'media_type':
-					// Query mvs_media_index.file_type (custom table, not wp_postmeta).
-					$index_wheres[] = 'file_type LIKE %s';
-					$index_params[] = '%' . $wpdb->esc_like( sanitize_text_field( $rule['value'] ) ) . '%';
+					$wheres[] = 'idx.file_type LIKE %s';
+					$params[] = '%' . $wpdb->esc_like( sanitize_text_field( $rule['value'] ) ) . '%';
 					break;
 
 				case 'tag':
-					$tax_query[] = array(
-						'taxonomy' => 'mvs_tag',
-						'terms'    => (int) $rule['value'],
-					);
-					break;
-
 				case 'category':
-					$tax_query[] = array(
-						'taxonomy' => 'mvs_category',
-						'terms'    => (int) $rule['value'],
-					);
+					$taxonomy  = 'tag' === $rule['key'] ? 'mvs_tag' : 'mvs_category';
+					$alias_tr  = 'tr' . $join_idx;
+					$alias_tt  = 'tt' . $join_idx;
+					$joins[]   = "INNER JOIN {$wpdb->term_relationships} AS {$alias_tr} ON {$alias_tr}.object_id = idx.media_id";
+					$joins[]   = "INNER JOIN {$wpdb->term_taxonomy} AS {$alias_tt} ON {$alias_tt}.term_taxonomy_id = {$alias_tr}.term_taxonomy_id AND {$alias_tt}.taxonomy = %s AND {$alias_tt}.term_id = %d";
+					$params[]  = $taxonomy;
+					$params[]  = (int) $rule['value'];
+					++$join_idx;
 					break;
 
 				case 'author':
-					$args['author'] = (int) $rule['value'];
+					$wheres[] = 'idx.post_author = %d';
+					$params[] = (int) $rule['value'];
 					break;
 
 				case 'date_after':
-					$date_query['after'] = sanitize_text_field( $rule['value'] );
+					$wheres[] = 'idx.created_at >= %s';
+					$params[] = sanitize_text_field( $rule['value'] ) . ' 00:00:00';
 					break;
 
 				case 'date_before':
-					$date_query['before'] = sanitize_text_field( $rule['value'] );
+					$wheres[] = 'idx.created_at <= %s';
+					$params[] = sanitize_text_field( $rule['value'] ) . ' 23:59:59';
 					break;
 
 				case 'privacy':
-					// Query mvs_media_index.privacy (custom table, not wp_postmeta).
-					$index_wheres[] = 'privacy = %s';
-					$index_params[] = sanitize_text_field( $rule['value'] );
+					$wheres[] = 'idx.privacy = %s';
+					$params[] = sanitize_text_field( $rule['value'] );
 					break;
 			}
 		}
 
-		// If any rules target custom table columns, pre-filter IDs from mvs_media_index.
-		if ( ! empty( $index_wheres ) ) {
-			$where_sql = implode( ' AND ', $index_wheres );
-			$filtered_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE {$where_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					...$index_params
-				)
+		$join_sql  = implode( ' ', $joins );
+		$where_sql = implode( ' AND ', $wheres );
+		$offset    = ( $page - 1 ) * $per_page;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		// Count total matches.
+		$count_sql   = "SELECT COUNT(DISTINCT idx.media_id) FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql}";
+		$total       = ! empty( $params )
+			? (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) )
+			: (int) $wpdb->get_var( $count_sql );
+
+		if ( 0 === $total ) {
+			return array(
+				'items' => array(),
+				'total' => 0,
 			);
-
-			if ( empty( $filtered_ids ) ) {
-				return array(
-					'items' => array(),
-					'total' => 0,
-				);
-			}
-
-			$args['post__in'] = array_map( 'intval', $filtered_ids );
 		}
 
-		if ( ! empty( $tax_query ) ) {
-			$args['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-		}
+		// Fetch page of results.
+		$select_sql = "SELECT DISTINCT idx.media_id, idx.created_at FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql} ORDER BY idx.created_at DESC LIMIT %d OFFSET %d";
+		$all_params = array_merge( $params, array( $per_page, $offset ) );
+		$rows       = $wpdb->get_results( $wpdb->prepare( $select_sql, ...$all_params ), ARRAY_A );
 
-		if ( ! empty( $date_query ) ) {
-			$args['date_query'] = array( $date_query );
-		}
-
-		$query = new \WP_Query( $args );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		$items = array();
-		foreach ( $query->posts as $post ) {
+		foreach ( $rows as $row ) {
 			$items[] = array(
-				'media_id'   => $post->ID,
-				'created_at' => $post->post_date_gmt,
+				'media_id'   => (int) $row['media_id'],
+				'created_at' => $row['created_at'],
 			);
 		}
 
 		return array(
 			'items' => $items,
-			'total' => (int) $query->found_posts,
+			'total' => $total,
 		);
 	}
 }

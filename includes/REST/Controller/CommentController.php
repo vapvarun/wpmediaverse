@@ -15,6 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
+use WPMediaVerse\Services\MediaMeta;
 use WPMediaVerse\Social\CommentService;
 
 /**
@@ -369,7 +370,6 @@ class CommentController extends WP_REST_Controller {
 	 * @return bool
 	 */
 	private function media_exists( int $media_id ): bool {
-		$post = get_post( $media_id );
-		return $post && 'mvs_media' === $post->post_type;
+		return MediaMeta::exists( $media_id );
 	}
 }

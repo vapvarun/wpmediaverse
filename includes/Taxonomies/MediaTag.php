@@ -44,6 +44,7 @@ class MediaTag {
 			'rewrite'           => array( 'slug' => 'media-tag' ),
 		);
 
-		register_taxonomy( 'mvs_tag', 'mvs_media', $args );
+		// Registered on mvs_album for admin UI. Media-tag associations stored in custom tables.
+		register_taxonomy( 'mvs_tag', 'mvs_album', $args );
 	}
 }

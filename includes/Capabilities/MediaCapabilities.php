@@ -32,7 +32,7 @@ class MediaCapabilities {
 				'manage_mvs_access',
 				'read_mvs_media',
 				'publish_mvs_media',
-				// Mapped meta caps for CPT.
+				// Legacy plural caps (kept for backward compatibility).
 				'edit_mvs_medias',
 				'edit_others_mvs_medias',
 				'edit_published_mvs_medias',

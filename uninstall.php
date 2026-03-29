@@ -21,6 +21,7 @@ $mvs_tables = array(
 	'mvs_access_grants',
 	'mvs_mentions',
 	'mvs_album_items',
+	'mvs_media_meta',
 	'mvs_media_index',
 );
 
@@ -34,8 +35,8 @@ $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LI
 // Delete all _mvs_ post meta.
 $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s", $wpdb->esc_like( '_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
-// Delete all mvs_ CPT posts (media, album, collection).
-$mvs_post_types = array( 'mvs_media', 'mvs_album', 'mvs_collection' );
+// Delete all mvs_ CPT posts (album, collection — media lives in custom tables dropped above).
+$mvs_post_types = array( 'mvs_album', 'mvs_collection' );
 foreach ( $mvs_post_types as $mvs_post_type ) {
 	$mvs_posts = get_posts(
 		array(

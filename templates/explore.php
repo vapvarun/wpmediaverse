@@ -2,6 +2,7 @@
 /**
  * Template: Media Explore/Archive.
  *
+ * Queries mvs_media_index directly instead of WP_Query.
  * Unified feed displaying both media items and albums (Instagram-style).
  * Override by copying to your-theme/wpmediaverse/explore.php
  *
@@ -13,6 +14,9 @@ defined( 'ABSPATH' ) || exit;
 get_header();
 
 do_action( 'mvs_before_content' );
+
+// Archive URL (base media page).
+$mvs_archive_url = home_url( '/media/' );
 ?>
 <?php // Logged-out CTA banner. ?>
 <?php if ( ! is_user_logged_in() ) : ?>
@@ -22,7 +26,7 @@ do_action( 'mvs_before_content' );
 			<span><?php esc_html_e( '— upload, share, and discover media', 'wpmediaverse' ); ?></span>
 		</div>
 		<div class="mvs-logged-out-banner__actions">
-			<a href="<?php echo esc_url( wp_login_url( get_post_type_archive_link( 'mvs_media' ) ) ); ?>" class="mvs-btn mvs-btn--primary mvs-btn--small">
+			<a href="<?php echo esc_url( wp_login_url( $mvs_archive_url ) ); ?>" class="mvs-btn mvs-btn--primary mvs-btn--small">
 				<?php esc_html_e( 'Log In', 'wpmediaverse' ); ?>
 			</a>
 			<?php if ( get_option( 'users_can_register' ) ) : ?>
@@ -39,40 +43,54 @@ do_action( 'mvs_before_content' );
 
 <div class="mvs-explore-page">
 	<?php
-	$mvs_profile_username = get_query_var( 'mvs_profile_user', '' );
-	$mvs_profile          = $mvs_profile_username ? get_user_by( 'login', sanitize_user( $mvs_profile_username ) ) : null;
+	// Profile user detection (set by TemplateLoader).
+	$mvs_profile = isset( $GLOBALS['mvs_profile_user'] ) ? $GLOBALS['mvs_profile_user'] : null;
 	?>
 
 	<?php if ( ! $mvs_profile ) : ?>
 	<header class="mvs-explore-header">
 		<h1>
 		<?php
-		if ( is_tax( 'mvs_tag' ) ) {
+		// Check for tag/category filter via query vars.
+		$mvs_filter_tag = get_query_var( 'mvs_tag', '' );
+		if ( ! $mvs_filter_tag && isset( $_GET['mvs_tag'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			$mvs_filter_tag = sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+		}
+		$mvs_filter_cat = get_query_var( 'mvs_category', '' );
+
+		if ( $mvs_filter_tag ) {
+			$tag_term = get_term_by( 'slug', $mvs_filter_tag, 'mvs_tag' );
 			printf(
 				/* translators: %s: tag name */
 				esc_html__( 'Tag: %s', 'wpmediaverse' ),
-				esc_html( single_term_title( '', false ) )
+				esc_html( $tag_term ? $tag_term->name : $mvs_filter_tag )
 			);
-		} elseif ( is_tax( 'mvs_category' ) ) {
+		} elseif ( $mvs_filter_cat ) {
+			$cat_term = get_term_by( 'slug', $mvs_filter_cat, 'mvs_category' );
 			printf(
 				/* translators: %s: category name */
 				esc_html__( 'Category: %s', 'wpmediaverse' ),
-				esc_html( single_term_title( '', false ) )
+				esc_html( $cat_term ? $cat_term->name : $mvs_filter_cat )
 			);
 		} else {
 			esc_html_e( 'Explore', 'wpmediaverse' );
 		}
 		?>
 		</h1>
-		<?php if ( is_tax() && term_description() ) : ?>
-			<p class="mvs-explore-term-desc"><?php echo wp_kses_post( term_description() ); ?></p>
-		<?php endif; ?>
 	</header>
 	<?php endif; ?>
 
 	<?php
 	if ( $mvs_profile ) :
-		$mvs_profile_post_count = count_user_posts( $mvs_profile->ID, 'mvs_media', true );
+		// Count media from the index table.
+		global $wpdb;
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$mvs_profile_post_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$index_table} WHERE post_author = %d AND status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$mvs_profile->ID
+			)
+		);
 		$mvs_follow_counts      = array(
 			'followers' => 0,
 			'following' => 0,
@@ -117,7 +135,7 @@ do_action( 'mvs_before_content' );
 
 	<!-- Search Bar with Media/Users toggle -->
 	<div class="mvs-explore-search">
-		<form method="get" action="<?php echo esc_url( get_post_type_archive_link( 'mvs_media' ) ); ?>" id="mvs-explore-search-form">
+		<form method="get" action="<?php echo esc_url( $mvs_archive_url ); ?>" id="mvs-explore-search-form">
 			<div class="mvs-search-bar">
 				<div class="mvs-search-mode">
 					<button type="button" class="mvs-search-mode-btn active" data-search-mode="media"><?php esc_html_e( 'Media', 'wpmediaverse' ); ?></button>
@@ -126,7 +144,7 @@ do_action( 'mvs_before_content' );
 				<div class="mvs-search-field">
 					<svg class="mvs-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 					<input type="text" name="s" placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>"
-						value="<?php echo esc_attr( get_search_query() ); ?>" id="mvs-search-input" />
+						value="<?php echo isset( $_GET['s'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_GET['s'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>" id="mvs-search-input" />
 				</div>
 			</div>
 		</form>
@@ -226,8 +244,8 @@ do_action( 'mvs_before_content' );
 	<?php
 	$mvs_explore_ctx = array(
 		'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-		'archiveUrl' => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
-		'activeTag'  => is_tax( 'mvs_tag' ) ? get_queried_object()->slug : ( isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '' ), // phpcs:ignore WordPress.Security.NonceVerification
+		'archiveUrl' => esc_url( $mvs_archive_url ),
+		'activeTag'  => $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '' ), // phpcs:ignore WordPress.Security.NonceVerification
 		'tags'       => array(),
 		'loaded'     => false,
 	);
@@ -237,7 +255,7 @@ do_action( 'mvs_before_content' );
 		<?php echo wp_interactivity_data_wp_context( $mvs_explore_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		data-wp-init="callbacks.init">
 		<a class="mvs-tag-cloud-item <?php echo empty( $mvs_explore_ctx['activeTag'] ) && empty( $_GET['s'] ) ? 'active' : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>"
-			href="<?php echo esc_url( get_post_type_archive_link( 'mvs_media' ) ); ?>"><?php esc_html_e( 'All', 'wpmediaverse' ); ?></a>
+			href="<?php echo esc_url( $mvs_archive_url ); ?>"><?php esc_html_e( 'All', 'wpmediaverse' ); ?></a>
 		<template data-wp-each="context.tags">
 			<a class="mvs-tag-cloud-item"
 				data-wp-bind--href="context.item.href"
@@ -246,31 +264,138 @@ do_action( 'mvs_before_content' );
 		</template>
 	</div>
 
-	<?php if ( have_posts() ) : ?>
+	<?php
+	// --- Query media from mvs_media_index directly ---
+	global $wpdb;
+	$index_table = $wpdb->prefix . 'mvs_media_index';
+	$per_page    = absint( get_option( 'mvs_items_per_page', 12 ) );
+	$paged       = max( 1, absint( get_query_var( 'paged' ) ?: get_query_var( 'page' ) ) );
+	$offset      = ( $paged - 1 ) * $per_page;
+
+	// Build WHERE clauses.
+	$where  = "WHERE m.status = 'publish'";
+	$params = array();
+
+	// Search filter.
+	$mvs_search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+	if ( $mvs_search ) {
+		$like    = '%' . $wpdb->esc_like( $mvs_search ) . '%';
+		$where  .= ' AND (m.title LIKE %s OR m.description LIKE %s)';
+		$params[] = $like;
+		$params[] = $like;
+	}
+
+	// Tag filter.
+	$mvs_tag_join = '';
+	if ( ! empty( $mvs_filter_tag ) ) {
+		$tag_term_obj = get_term_by( 'slug', $mvs_filter_tag, 'mvs_tag' );
+		if ( $tag_term_obj ) {
+			$mvs_tag_join = " INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = m.media_id";
+			$where       .= ' AND tr.term_taxonomy_id = %d';
+			$params[]     = $tag_term_obj->term_taxonomy_id;
+		}
+	}
+
+	// Category filter.
+	$mvs_cat_join = '';
+	if ( ! empty( $mvs_filter_cat ) ) {
+		$cat_term_obj = get_term_by( 'slug', $mvs_filter_cat, 'mvs_category' );
+		if ( $cat_term_obj ) {
+			$mvs_cat_join = " INNER JOIN {$wpdb->term_relationships} trc ON trc.object_id = m.media_id";
+			$where       .= ' AND trc.term_taxonomy_id = %d';
+			$params[]     = $cat_term_obj->term_taxonomy_id;
+		}
+	}
+
+	// Privacy filter: non-logged-in see only public.
+	if ( ! is_user_logged_in() ) {
+		$where .= " AND m.privacy = 'public'";
+	} elseif ( ! current_user_can( 'moderate_mvs_media' ) ) {
+		$where   .= " AND (m.privacy = 'public' OR m.privacy = 'members' OR m.post_author = %d)";
+		$params[] = get_current_user_id();
+	}
+
+	// Profile user filter.
+	if ( $mvs_profile ) {
+		$where   .= ' AND m.post_author = %d';
+		$params[] = $mvs_profile->ID;
+	}
+
+	// Exclude non-cover gallery group items.
+	$meta_table = $wpdb->prefix . 'mvs_media_meta';
+	$where     .= " AND m.media_id NOT IN (
+		SELECT mm1.media_id FROM {$meta_table} mm1
+		INNER JOIN {$meta_table} mm2 ON mm1.media_id = mm2.media_id
+		WHERE mm1.meta_key = 'media_group'
+		AND mm2.meta_key = 'group_position'
+		AND mm2.meta_value != '0'
+	)";
+
+	// Count total.
+	// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+	$count_sql = "SELECT COUNT(DISTINCT m.media_id) FROM {$index_table} m {$mvs_tag_join} {$mvs_cat_join} {$where}";
+	if ( ! empty( $params ) ) {
+		$count_sql = $wpdb->prepare( $count_sql, ...$params );
+	}
+	$total_items = (int) $wpdb->get_var( $count_sql );
+
+	// Also count albums (albums are still a CPT).
+	$album_count = 0;
+	if ( ! $mvs_profile && ! $mvs_search && ! $mvs_filter_tag && ! $mvs_filter_cat ) {
+		$album_count = (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'mvs_album' AND post_status = 'publish'"
+		);
+	}
+
+	$total_combined = $total_items + $album_count;
+	$max_pages      = $per_page > 0 ? (int) ceil( $total_combined / $per_page ) : 1;
+
+	// Fetch albums for the first page (show them at top).
+	$albums = array();
+	if ( $album_count > 0 && 1 === $paged ) {
+		$albums = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT ID, post_title, post_author FROM {$wpdb->posts} WHERE post_type = 'mvs_album' AND post_status = 'publish' ORDER BY post_date DESC LIMIT %d",
+				min( $album_count, $per_page )
+			)
+		);
+	}
+
+	// Calculate how many media items to fetch (account for albums on first page).
+	$albums_on_page = count( $albums );
+	$media_limit    = max( 0, $per_page - $albums_on_page );
+	$media_offset   = ( $paged > 1 ) ? $offset - $album_count : 0;
+	if ( $media_offset < 0 ) {
+		$media_offset = 0;
+	}
+
+	// Fetch media items.
+	$media_items = array();
+	if ( $media_limit > 0 ) {
+		$media_sql = "SELECT m.* FROM {$index_table} m {$mvs_tag_join} {$mvs_cat_join} {$where} ORDER BY m.created_at DESC LIMIT %d OFFSET %d";
+		$all_params   = array_merge( $params, array( $media_limit, $media_offset ) );
+		$media_items  = $wpdb->get_results( $wpdb->prepare( $media_sql, ...$all_params ), ARRAY_A );
+	}
+	// phpcs:enable
+
+	$has_items = ! empty( $albums ) || ! empty( $media_items );
+	?>
+
+	<?php if ( $has_items ) : ?>
 		<div class="mvs-media-grid mvs-cols-3 mvs-feed">
 			<?php
-			while ( have_posts() ) :
-				the_post();
-
-				$post_type = get_post_type();
-				$is_album  = ( 'mvs_album' === $post_type );
-
-				if ( $is_album ) {
-					$container  = \WPMediaVerse\Core\Plugin::container();
-					$album_svc  = $container->get( 'albums' );
-					$item_count = $album_svc->get_item_count( get_the_ID() );
-					$cover_url  = $album_svc->get_cover_url( get_the_ID() );
-				} else {
-					$stats_data = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( array( get_the_ID() ) );
-					$my_stats   = $stats_data[ get_the_ID() ] ?? array();
-				}
+			// Render albums first.
+			foreach ( $albums as $album_post ) :
+				$container_obj = \WPMediaVerse\Core\Plugin::container();
+				$album_svc     = $container_obj->get( 'albums' );
+				$item_count    = $album_svc->get_item_count( $album_post->ID );
+				$cover_url     = $album_svc->get_cover_url( $album_post->ID );
 				?>
-				<?php if ( $is_album ) : ?>
 				<div class="mvs-grid-item mvs-grid-item--album">
-					<a href="<?php the_permalink(); ?>" class="mvs-grid-item-link">
+					<a href="<?php echo esc_url( get_permalink( $album_post->ID ) ); ?>" class="mvs-grid-item-link">
 						<?php if ( $cover_url ) : ?>
 							<img src="<?php echo esc_url( $cover_url ); ?>"
-								alt="<?php echo esc_attr( get_the_title() ); ?>"
+								alt="<?php echo esc_attr( $album_post->post_title ); ?>"
 								loading="lazy" />
 						<?php else : ?>
 							<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album">
@@ -287,32 +412,47 @@ do_action( 'mvs_before_content' );
 						</div>
 					</a>
 					<div class="mvs-grid-item-info">
-						<?php echo get_avatar( get_the_author_meta( 'ID' ), 24, '', '', array( 'class' => 'mvs-grid-avatar' ) ); ?>
-						<span class="mvs-grid-item-author"><?php echo esc_html( get_the_author() ); ?></span>
+						<?php echo get_avatar( (int) $album_post->post_author, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) ); ?>
+						<span class="mvs-grid-item-author"><?php echo esc_html( get_the_author_meta( 'display_name', $album_post->post_author ) ); ?></span>
 					</div>
 				</div>
-				<?php else : ?>
-					<?php
-					\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
-						get_the_ID(),
-						$my_stats,
-						array( 'show_author' => true )
-					);
-					?>
-				<?php endif; ?>
-			<?php endwhile; ?>
-		</div>
+			<?php endforeach; ?>
 
-		<div class="mvs-pagination">
 			<?php
-			the_posts_pagination(
-				array(
-					'prev_text' => __( '&laquo; Previous', 'wpmediaverse' ),
-					'next_text' => __( 'Next &raquo;', 'wpmediaverse' ),
-				)
-			);
+			// Render media items from index table.
+			$media_ids_for_stats = array_column( $media_items, 'media_id' );
+			$stats_data          = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( array_map( 'intval', $media_ids_for_stats ) );
+
+			foreach ( $media_items as $item ) :
+				$item_id   = (int) $item['media_id'];
+				$my_stats  = $stats_data[ $item_id ] ?? array();
+				\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+					$item_id,
+					$my_stats,
+					array( 'show_author' => true )
+				);
+			endforeach;
 			?>
 		</div>
+
+		<?php if ( $max_pages > 1 ) : ?>
+			<div class="mvs-pagination">
+				<?php
+				echo wp_kses_post(
+					paginate_links(
+						array(
+							'base'      => trailingslashit( $mvs_archive_url ) . 'page/%#%/',
+							'format'    => '',
+							'total'     => $max_pages,
+							'current'   => $paged,
+							'prev_text' => __( '&laquo; Previous', 'wpmediaverse' ),
+							'next_text' => __( 'Next &raquo;', 'wpmediaverse' ),
+						)
+					)
+				);
+				?>
+			</div>
+		<?php endif; ?>
 	<?php else : ?>
 		<div class="mvs-empty-state-frontend">
 			<span class="mvs-empty-state-icon">&#x1F4F7;</span>

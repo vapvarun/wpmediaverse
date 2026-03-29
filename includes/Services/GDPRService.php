@@ -77,47 +77,55 @@ class GDPRService {
 			);
 		}
 
+		global $wpdb;
+
 		$per_page = 50;
-		$posts    = get_posts(
-			array(
-				'post_type'      => 'mvs_media',
-				'author'         => $user->ID,
-				'posts_per_page' => $per_page,
-				'paged'          => $page,
-				'post_status'    => 'any',
-			)
+		$offset   = ( $page - 1 ) * $per_page;
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id, title, description, media_type, privacy, file_url, created_at
+				FROM {$wpdb->prefix}mvs_media_index
+				WHERE post_author = %d
+				ORDER BY media_id ASC
+				LIMIT %d OFFSET %d",
+				$user->ID,
+				$per_page,
+				$offset
+			),
+			ARRAY_A
 		);
 
 		$export_items = array();
-		foreach ( $posts as $post ) {
+		foreach ( $rows as $row ) {
 			$export_items[] = array(
 				'group_id'    => 'wpmediaverse-media',
 				'group_label' => __( 'Media Items', 'wpmediaverse' ),
-				'item_id'     => "mvs-media-{$post->ID}",
+				'item_id'     => "mvs-media-{$row['media_id']}",
 				'data'        => array(
 					array(
 						'name'  => __( 'Title', 'wpmediaverse' ),
-						'value' => $post->post_title,
+						'value' => $row['title'] ?? '',
 					),
 					array(
 						'name'  => __( 'Description', 'wpmediaverse' ),
-						'value' => $post->post_content,
+						'value' => $row['description'] ?? '',
 					),
 					array(
 						'name'  => __( 'Type', 'wpmediaverse' ),
-						'value' => MediaMeta::get( $post->ID, 'media_type' ),
+						'value' => $row['media_type'] ?? '',
 					),
 					array(
 						'name'  => __( 'Privacy', 'wpmediaverse' ),
-						'value' => MediaMeta::get( $post->ID, 'privacy' ),
+						'value' => $row['privacy'] ?? '',
 					),
 					array(
 						'name'  => __( 'Date', 'wpmediaverse' ),
-						'value' => $post->post_date,
+						'value' => $row['created_at'] ?? '',
 					),
 					array(
 						'name'  => __( 'File URL', 'wpmediaverse' ),
-						'value' => MediaMeta::get( $post->ID, 'file_url' ),
+						'value' => $row['file_url'] ?? '',
 					),
 				),
 			);
@@ -125,7 +133,7 @@ class GDPRService {
 
 		return array(
 			'data' => $export_items,
-			'done' => count( $posts ) < $per_page,
+			'done' => count( $rows ) < $per_page,
 		);
 	}
 
@@ -333,20 +341,33 @@ class GDPRService {
 			);
 		}
 
-		$per_page = 50;
-		$posts    = get_posts(
-			array(
-				'post_type'      => 'mvs_media',
-				'author'         => $user->ID,
-				'posts_per_page' => $per_page,
-				'paged'          => $page,
-				'post_status'    => 'any',
+		global $wpdb;
+
+		$per_page  = 50;
+		$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d ORDER BY media_id ASC LIMIT %d",
+				$user->ID,
+				$per_page
 			)
 		);
 
 		$removed = 0;
-		foreach ( $posts as $post ) {
-			wp_delete_post( $post->ID, true );
+		foreach ( $media_ids as $media_id ) {
+			$media_id = (int) $media_id;
+
+			// Delete the underlying WP attachment file if one exists.
+			$attachment_id = (int) MediaMeta::get( $media_id, 'attachment_id' );
+			if ( $attachment_id ) {
+				wp_delete_attachment( $attachment_id, true );
+			}
+
+			// Remove all custom table data (index + meta).
+			MediaMeta::delete_all( $media_id );
+
+			// Clean up stats row.
+			$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
 			++$removed;
 		}
 
@@ -354,7 +375,7 @@ class GDPRService {
 			'items_removed'  => $removed,
 			'items_retained' => 0,
 			'messages'       => array(),
-			'done'           => count( $posts ) < $per_page,
+			'done'           => count( $media_ids ) < $per_page,
 		);
 	}
 

@@ -118,35 +118,49 @@ class StoryService {
 			);
 		}
 
-		$args = array(
-			'post_type'      => 'mvs_media',
-			'post_status'    => 'publish',
-			'posts_per_page' => $per_page,
-			'paged'          => $page,
-			'orderby'        => 'date',
-			'order'          => 'DESC',
-			'post__in'       => array_map( 'intval', $story_ids ),
-		);
+		// Query mvs_media_index directly for story media.
+		$index_table  = $wpdb->prefix . 'mvs_media_index';
+		$placeholders = implode( ',', array_fill( 0, count( $story_ids ), '%d' ) );
+		$offset       = ( $page - 1 ) * $per_page;
+
+		$where  = "WHERE idx.media_id IN ({$placeholders}) AND idx.status = 'publish'";
+		$params = array_map( 'intval', $story_ids );
 
 		if ( $author_id ) {
-			$args['author'] = $author_id;
+			$where   .= ' AND idx.post_author = %d';
+			$params[] = $author_id;
 		}
 
-		$query = new \WP_Query( $args );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$index_table} idx {$where}",
+				...$params
+			)
+		);
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT idx.* FROM {$index_table} idx {$where} ORDER BY idx.created_at DESC LIMIT %d OFFSET %d",
+				...array_merge( $params, array( $per_page, $offset ) )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
 
 		$items = array();
-		foreach ( $query->posts as $post ) {
+		foreach ( $rows as $row ) {
 			$items[] = array(
-				'media_id'   => $post->ID,
-				'author'     => (int) $post->post_author,
-				'title'      => $post->post_title,
-				'expires_at' => MediaMeta::get( $post->ID, 'story_expires_at' ),
+				'media_id'   => (int) $row['media_id'],
+				'author'     => (int) $row['post_author'],
+				'title'      => $row['title'],
+				'expires_at' => MediaMeta::get( (int) $row['media_id'], 'story_expires_at' ),
 			);
 		}
 
 		return array(
 			'items' => $items,
-			'total' => (int) $query->found_posts,
+			'total' => $total,
 		);
 	}
 

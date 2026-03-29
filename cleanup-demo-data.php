@@ -28,21 +28,27 @@ foreach ( $demo_user_ids as $duid ) {
 	++$demo_user_count;
 }
 
-// Delete all mvs_media posts + their attachments.
-$media_ids = $wpdb->get_col( "SELECT ID FROM $wpdb->posts WHERE post_type = 'mvs_media'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-foreach ( $media_ids as $mid ) {
-	// Delete associated attachment.
-	$thumb_id = get_post_thumbnail_id( $mid );
-	if ( $thumb_id ) {
-		wp_delete_attachment( $thumb_id, true );
+// Delete all media from mvs_media_index + their WP attachments.
+$media_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	"SELECT media_id, attachment_id FROM {$wpdb->prefix}mvs_media_index" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+);
+$media_ids = array();
+foreach ( $media_rows as $row ) {
+	$media_ids[] = (int) $row->media_id;
+
+	// Delete the WP attachment (file + thumbnails) if it exists.
+	if ( ! empty( $row->attachment_id ) ) {
+		wp_delete_attachment( (int) $row->attachment_id, true );
 	}
-	wp_delete_post( $mid, true );
+
+	// Delete index + meta rows for this media item.
+	\WPMediaVerse\Services\MediaMeta::delete_all( (int) $row->media_id );
 }
 
-// Delete albums + collections.
+// Delete albums + collections (still CPTs).
 $wpdb->query( "DELETE FROM $wpdb->posts WHERE post_type IN ('mvs_album', 'mvs_collection')" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
-// Clean orphaned postmeta.
+// Clean orphaned postmeta (for albums/collections).
 $wpdb->query( "DELETE pm FROM $wpdb->postmeta pm LEFT JOIN $wpdb->posts p ON pm.post_id = p.ID WHERE p.ID IS NULL" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 // Truncate all custom tables.

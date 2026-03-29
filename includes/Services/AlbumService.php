@@ -75,9 +75,8 @@ class AlbumService {
 		$added = 0;
 		foreach ( $media_ids as $media_id ) {
 			$media_id = (int) $media_id;
-			$post     = get_post( $media_id );
 
-			if ( ! $post || 'mvs_media' !== $post->post_type ) {
+			if ( ! MediaMeta::exists( $media_id ) ) {
 				continue;
 			}
 
@@ -124,8 +123,8 @@ class AlbumService {
 
 		// Auto-set cover if album has no cover yet.
 		if ( $added > 0 && ! has_post_thumbnail( $album_id ) ) {
-			$first_media = $media_ids[0];
-			$thumb_id    = get_post_thumbnail_id( (int) $first_media );
+			$first_media = (int) $media_ids[0];
+			$thumb_id    = (int) MediaMeta::get( $first_media, 'attachment_id' );
 			if ( $thumb_id ) {
 				set_post_thumbnail( $album_id, $thumb_id );
 			}
@@ -187,11 +186,7 @@ class AlbumService {
 	 * @return bool True on success.
 	 */
 	public function set_cover( int $album_id, int $media_id ): bool {
-		$thumb_id = get_post_thumbnail_id( $media_id );
-		if ( ! $thumb_id ) {
-			// Fallback: use _mvs_attachment_id meta (the WP attachment for this media).
-			$thumb_id = (int) MediaMeta::get( $media_id, 'attachment_id' );
-		}
+		$thumb_id = (int) MediaMeta::get( $media_id, 'attachment_id' );
 		if ( ! $thumb_id ) {
 			return false;
 		}
@@ -213,10 +208,7 @@ class AlbumService {
 		if ( ! $thumb_id ) {
 			$first_media_id = $this->get_first_image_item( $album_id );
 			if ( $first_media_id ) {
-				$thumb_id = get_post_thumbnail_id( $first_media_id );
-				if ( ! $thumb_id ) {
-					$thumb_id = (int) MediaMeta::get( $first_media_id, 'attachment_id' );
-				}
+				$thumb_id = (int) MediaMeta::get( $first_media_id, 'attachment_id' );
 				// Last resort: if it's an image, use file_url directly.
 				if ( ! $thumb_id ) {
 					$file_url  = MediaMeta::get( $first_media_id, 'file_url' );

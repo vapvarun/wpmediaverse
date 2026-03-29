@@ -41,7 +41,7 @@ class StatsPage {
 	 */
 	public function add_menu_page(): void {
 		add_submenu_page(
-			'edit.php?post_type=mvs_media',
+			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
 			__( 'Media Stats', 'wpmediaverse' ),
 			__( 'Stats', 'wpmediaverse' ),
 			'upload_mvs_media',
@@ -69,16 +69,16 @@ class StatsPage {
 		global $wpdb;
 		$stats_table = $wpdb->prefix . 'mvs_media_stats';
 
+		$index_table = $wpdb->prefix . 'mvs_media_index';
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$top_media = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT s.media_id, s.views, s.reactions, s.downloads, s.comments, s.shares, p.post_title
+				"SELECT s.media_id, s.views, s.reactions, s.downloads, s.comments, s.shares, m.title AS post_title
 				FROM {$stats_table} s
-				INNER JOIN {$wpdb->posts} p ON p.ID = s.media_id
-				WHERE p.post_type = %s AND p.post_status = %s
+				INNER JOIN {$index_table} m ON m.media_id = s.media_id
+				WHERE m.status = %s
 				ORDER BY s.views DESC
 				LIMIT 100",
-				'mvs_media',
 				'publish'
 			),
 			ARRAY_A
@@ -121,11 +121,11 @@ class StatsPage {
 
 		switch ( $range ) {
 			case 'today':
-				return $wpdb->prepare( 'AND p.post_date >= %s', gmdate( 'Y-m-d 00:00:00' ) );
+				return $wpdb->prepare( 'AND m.created_at >= %s', gmdate( 'Y-m-d 00:00:00' ) );
 			case 'week':
-				return $wpdb->prepare( 'AND p.post_date >= %s', gmdate( 'Y-m-d 00:00:00', strtotime( '-7 days' ) ) );
+				return $wpdb->prepare( 'AND m.created_at >= %s', gmdate( 'Y-m-d 00:00:00', strtotime( '-7 days' ) ) );
 			case 'month':
-				return $wpdb->prepare( 'AND p.post_date >= %s', gmdate( 'Y-m-d 00:00:00', strtotime( '-30 days' ) ) );
+				return $wpdb->prepare( 'AND m.created_at >= %s', gmdate( 'Y-m-d 00:00:00', strtotime( '-30 days' ) ) );
 			default:
 				return '';
 		}
@@ -146,13 +146,15 @@ class StatsPage {
 		$date_filter = $this->get_date_filter( $range );
 
 		// Overall counts.
-		$media_counts = wp_count_posts( 'mvs_media' );
+		$total_media  = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish'" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		);
 		$album_counts = wp_count_posts( 'mvs_album' );
-		$total_media  = isset( $media_counts->publish ) ? (int) $media_counts->publish : 0;
 		$total_albums = isset( $album_counts->publish ) ? (int) $album_counts->publish : 0;
 
 		// Stats totals.
 		$stats_table = $wpdb->prefix . 'mvs_media_stats';
+		$index_table = $wpdb->prefix . 'mvs_media_index';
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		if ( $date_filter ) {
 			$totals = $wpdb->get_row(
@@ -163,8 +165,8 @@ class StatsPage {
 					COALESCE(SUM(s.comments), 0) AS total_comments,
 					COALESCE(SUM(s.shares), 0) AS total_shares
 				FROM {$stats_table} s
-				INNER JOIN {$wpdb->posts} p ON p.ID = s.media_id
-				WHERE p.post_type = 'mvs_media' {$date_filter}",
+				INNER JOIN {$index_table} m ON m.media_id = s.media_id
+				WHERE m.status = 'publish' {$date_filter}",
 				ARRAY_A
 			);
 		} else {
@@ -185,10 +187,10 @@ class StatsPage {
 
 		if ( $date_filter ) {
 			$top_media = $wpdb->get_results(
-				"SELECT s.media_id, s.views, s.reactions, s.downloads, p.post_title
+				"SELECT s.media_id, s.views, s.reactions, s.downloads, m.title AS post_title
 				FROM {$stats_table} s
-				INNER JOIN {$wpdb->posts} p ON p.ID = s.media_id
-				WHERE p.post_type = 'mvs_media' AND p.post_status = 'publish' {$date_filter}
+				INNER JOIN {$index_table} m ON m.media_id = s.media_id
+				WHERE m.status = 'publish' {$date_filter}
 				ORDER BY s.views DESC
 				LIMIT 10",
 				ARRAY_A
@@ -196,13 +198,12 @@ class StatsPage {
 		} else {
 			$top_media = $wpdb->get_results(
 				$wpdb->prepare(
-					"SELECT s.media_id, s.views, s.reactions, s.downloads, p.post_title
+					"SELECT s.media_id, s.views, s.reactions, s.downloads, m.title AS post_title
 					FROM {$stats_table} s
-					INNER JOIN {$wpdb->posts} p ON p.ID = s.media_id
-					WHERE p.post_type = %s AND p.post_status = %s
+					INNER JOIN {$index_table} m ON m.media_id = s.media_id
+					WHERE m.status = %s
 					ORDER BY s.views DESC
 					LIMIT 10",
-					'mvs_media',
 					'publish'
 				),
 				ARRAY_A
@@ -238,7 +239,7 @@ class StatsPage {
 						'month' => __( 'This Month', 'wpmediaverse' ),
 						'all'   => __( 'All Time', 'wpmediaverse' ),
 					);
-					$base_stats_url = admin_url( 'edit.php?post_type=mvs_media&page=' . self::PAGE_SLUG );
+					$base_stats_url = admin_url( 'admin.php?page=' . self::PAGE_SLUG );
 					foreach ( $ranges as $key => $label ) :
 						$url       = add_query_arg( 'range', $key, $base_stats_url );
 						$is_active = ( $range === $key );
@@ -381,7 +382,7 @@ class StatsPage {
 						</ul>
 					</div>
 					<div class="mvs-widget-footer">
-						<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-settings&tab=ai' ) ); ?>">
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-settings&tab=ai' ) ); ?>">
 							<?php esc_html_e( 'AI Settings', 'wpmediaverse' ); ?> &rarr;
 						</a>
 					</div>

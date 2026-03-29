@@ -40,13 +40,10 @@ class WebhookService {
 			return;
 		}
 
-		// Media lifecycle events.
+		// Media lifecycle events (custom table based — no CPT hooks).
 		add_action( 'mvs_media_uploaded', array( $this, 'on_media_uploaded' ) );
-		add_action( 'before_delete_post', array( $this, 'on_media_deleted' ) );
+		add_action( 'mvs_media_deleted', array( $this, 'on_media_deleted' ), 10, 2 );
 		add_action( 'mvs_media_moderated', array( $this, 'on_media_moderated' ), 10, 2 );
-
-		// Media update event.
-		add_action( 'save_post_mvs_media', array( $this, 'on_media_updated' ), 10, 3 );
 
 		// Social events.
 		add_action( 'mvs_reaction_added', array( $this, 'on_reaction' ), 10, 3 );
@@ -65,20 +62,15 @@ class WebhookService {
 	/**
 	 * Handle media deleted event.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int $media_id  Media ID.
+	 * @param int $author_id Author user ID.
 	 */
-	public function on_media_deleted( int $post_id ): void {
-		$post = get_post( $post_id );
-		if ( ! $post || 'mvs_media' !== $post->post_type ) {
-			return;
-		}
-
+	public function on_media_deleted( int $media_id, int $author_id = 0 ): void {
 		$this->dispatch(
 			'media.deleted',
 			array(
-				'media_id' => $post_id,
-				'title'    => $post->post_title,
-				'author'   => (int) $post->post_author,
+				'media_id' => $media_id,
+				'author'   => $author_id,
 			)
 		);
 	}
@@ -95,19 +87,8 @@ class WebhookService {
 		$this->dispatch( 'media.moderated', $payload );
 	}
 
-	/**
-	 * Handle media updated event.
-	 *
-	 * @param int      $post_id Post ID.
-	 * @param \WP_Post $post    Post object.
-	 * @param bool     $update  Whether this is an update.
-	 */
-	public function on_media_updated( int $post_id, $post, bool $update ): void {
-		if ( ! $update || 'mvs_media' !== $post->post_type ) {
-			return;
-		}
-		$this->dispatch( 'media.updated', $this->build_media_payload( $post_id ) );
-	}
+	// Note: on_media_updated removed — media is no longer a CPT, save_post hook doesn't fire.
+	// Media updates are tracked via mvs_media_index direct writes.
 
 	/**
 	 * Handle reaction event.
@@ -278,20 +259,20 @@ class WebhookService {
 	 * @return array
 	 */
 	private function build_media_payload( int $media_id ): array {
-		$post = get_post( $media_id );
-		if ( ! $post ) {
+		$data = MediaMeta::get_all( $media_id );
+		if ( empty( $data ) ) {
 			return array( 'media_id' => $media_id );
 		}
 
 		return array(
 			'media_id'  => $media_id,
-			'title'     => $post->post_title,
-			'author'    => (int) $post->post_author,
-			'url'       => get_permalink( $media_id ),
-			'file_url'  => MediaMeta::get( $media_id, 'file_url' ),
-			'file_type' => MediaMeta::get( $media_id, 'file_type' ),
-			'privacy'   => MediaMeta::get( $media_id, 'privacy' ),
-			'status'    => $post->post_status,
+			'title'     => $data['title'] ?? '',
+			'author'    => (int) ( $data['post_author'] ?? 0 ),
+			'url'       => MediaMeta::get_permalink( $media_id ),
+			'file_url'  => $data['file_url'] ?? '',
+			'file_type' => $data['file_type'] ?? '',
+			'privacy'   => $data['privacy'] ?? 'public',
+			'status'    => $data['status'] ?? '',
 		);
 	}
 

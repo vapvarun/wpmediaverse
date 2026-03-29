@@ -244,7 +244,7 @@ class Shortcodes {
 			'restUrl'  => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 			'nonce'    => wp_create_nonce( 'wp_rest' ),
 			'userId'   => get_current_user_id(),
-			'mediaUrl' => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
+			'mediaUrl' => esc_url( home_url( '/media/' ) ),
 		);
 
 		ob_start();
@@ -370,24 +370,28 @@ class Shortcodes {
 		$output  = '<div class="mvs-media-grid mvs-collection-embed" style="--mvs-grid-cols: ' . $columns . '">';
 
 		foreach ( $media_ids as $media_id ) {
-			$media_post = get_post( $media_id );
-			if ( ! $media_post || 'publish' !== $media_post->post_status ) {
+			if ( ! MediaMeta::exists( $media_id ) ) {
 				continue;
 			}
+			$status = MediaMeta::get( $media_id, 'status' );
+			if ( 'publish' !== $status ) {
+				continue;
+			}
+			$title      = MediaMeta::get( $media_id, 'title' );
 			$file_url   = MediaMeta::get( $media_id, 'file_url' );
 			$media_type = MediaMeta::get( $media_id, 'media_type' ) ?: 'image';
-			$permalink  = get_permalink( $media_id );
+			$permalink  = MediaMeta::get_permalink( $media_id );
 
 			$output .= '<div class="mvs-grid-item">';
 			$output .= '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';
 			if ( $file_url && 'image' === $media_type ) {
-				$output .= '<img src="' . esc_url( $file_url ) . '" alt="' . esc_attr( $media_post->post_title ) . '" loading="lazy" />';
+				$output .= '<img src="' . esc_url( $file_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" />';
 			} else {
 				$output .= '<div class="mvs-grid-placeholder mvs-grid-placeholder--' . esc_attr( $media_type ) . '">'
 					. esc_html( strtoupper( $media_type ) ) . '</div>';
 			}
 			$output .= '</a>';
-			$output .= '<div class="mvs-grid-item-title">' . esc_html( $media_post->post_title ?: __( '(Untitled)', 'wpmediaverse' ) ) . '</div>';
+			$output .= '<div class="mvs-grid-item-title">' . esc_html( $title ?: __( '(Untitled)', 'wpmediaverse' ) ) . '</div>';
 			$output .= '</div>';
 		}
 

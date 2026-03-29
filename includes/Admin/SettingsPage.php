@@ -46,14 +46,7 @@ class SettingsPage {
 	 * Keeps: Overview, All Media, Albums, Collections, Moderation, Stats, Settings.
 	 */
 	public function cleanup_admin_menu(): void {
-		$parent = 'edit.php?post_type=mvs_media';
-
-		// Remove taxonomy submenus (accessible via All Media screen filters).
-		remove_submenu_page( $parent, 'edit-tags.php?taxonomy=mvs_tag&amp;post_type=mvs_media' );
-		remove_submenu_page( $parent, 'edit-tags.php?taxonomy=mvs_category&amp;post_type=mvs_media' );
-
-		// Remove Add Media (users upload via frontend FAB or All Media screen).
-		remove_submenu_page( $parent, 'post-new.php?post_type=mvs_media' );
+		$parent = \WPMediaVerse\Core\Plugin::ADMIN_SLUG;
 
 		// Hide tool/config pages from menu via CSS instead of remove_submenu_page().
 		// This preserves page titles and menu highlighting while keeping the menu clean.
@@ -71,10 +64,10 @@ class SettingsPage {
 
 		add_action(
 			'admin_head',
-			function () use ( $hide_slugs ) {
+			function () use ( $hide_slugs, $parent ) {
 				echo '<style>';
 				foreach ( $hide_slugs as $slug ) {
-					echo '#menu-posts-mvs_media .wp-submenu a[href$="page=' . esc_attr( $slug ) . '"]{display:none!important}';
+					echo '.toplevel_page_' . esc_attr( $parent ) . ' .wp-submenu a[href$="page=' . esc_attr( $slug ) . '"]{display:none!important}';
 				}
 				echo '</style>';
 			}
@@ -166,7 +159,7 @@ class SettingsPage {
 	 */
 	public function add_menu_page(): void {
 		add_submenu_page(
-			'edit.php?post_type=mvs_media',
+			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
 			__( 'WPMediaVerse Settings', 'wpmediaverse' ),
 			__( 'Settings', 'wpmediaverse' ),
 			'manage_mvs_settings',
@@ -1338,27 +1331,27 @@ class SettingsPage {
 				<!-- Tools links (pages removed from main menu) -->
 				<div class="mvs-settings-nav-group">
 					<span class="mvs-settings-nav-group__label"><?php esc_html_e( 'Tools', 'wpmediaverse' ); ?></span>
-					<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-logs' ) ); ?>">
+					<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-logs' ) ); ?>">
 						<span class="dashicons dashicons-list-view"></span>
 						<?php esc_html_e( 'Logs', 'wpmediaverse' ); ?>
 					</a>
 					<?php if ( $this->is_pro_active() ) : ?>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-analytics' ) ); ?>">
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-analytics' ) ); ?>">
 							<span class="dashicons dashicons-chart-area"></span>
 							<?php esc_html_e( 'Analytics', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 						</a>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-quotas' ) ); ?>">
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-quotas' ) ); ?>">
 							<span class="dashicons dashicons-dashboard"></span>
 							<?php esc_html_e( 'Quota & Credits', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 						</a>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-reports' ) ); ?>">
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-reports' ) ); ?>">
 							<span class="dashicons dashicons-flag"></span>
 							<?php esc_html_e( 'Reports', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 						</a>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-migration' ) ); ?>">
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-migration' ) ); ?>">
 							<span class="dashicons dashicons-migrate"></span>
 							<?php esc_html_e( 'Import / Migration', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
@@ -1876,7 +1869,7 @@ class SettingsPage {
 					'tab'               => 'permissions',
 					'permissions-saved' => $roles_updated,
 				),
-				admin_url( 'edit.php?post_type=mvs_media&page=' . self::PAGE_SLUG )
+				admin_url( 'admin.php?page=' . self::PAGE_SLUG )
 			)
 		);
 		exit;

@@ -52,14 +52,23 @@ class PrivacyService {
 	 * @return bool
 	 */
 	private function check_access( int $media_id, int $user_id ): bool {
-		$post          = get_post( $media_id );
-		$allowed_types = array( 'mvs_media', 'mvs_album', 'mvs_collection' );
-		if ( ! $post || ! in_array( $post->post_type, $allowed_types, true ) ) {
-			return false;
+		// Check custom tables first (media items live in mvs_media_index).
+		$is_media = MediaMeta::exists( $media_id );
+
+		if ( $is_media ) {
+			$author_id = MediaMeta::get_author( $media_id );
+		} else {
+			// Albums and collections are still CPTs.
+			$post          = get_post( $media_id );
+			$allowed_types = array( 'mvs_album', 'mvs_collection' );
+			if ( ! $post || ! in_array( $post->post_type, $allowed_types, true ) ) {
+				return false;
+			}
+			$author_id = (int) $post->post_author;
 		}
 
 		// Owners and admins always have access.
-		if ( $user_id && ( (int) $post->post_author === $user_id || user_can( $user_id, 'moderate_mvs_media' ) ) ) {
+		if ( $user_id && ( $author_id === $user_id || user_can( $user_id, 'moderate_mvs_media' ) ) ) {
 			return true;
 		}
 
@@ -91,7 +100,7 @@ class PrivacyService {
 				return $user_id > 0;
 
 			case 'friends':
-				return $this->check_friends( $post->post_author, $user_id );
+				return $this->check_friends( $author_id, $user_id );
 
 			case 'group':
 				return $this->check_group( $media_id, $user_id );

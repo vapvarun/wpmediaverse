@@ -30,7 +30,7 @@ class Commands {
 	public function stats( $args, $assoc_args ) {
 		global $wpdb;
 
-		$media_count = (int) wp_count_posts( 'mvs_media' )->publish;
+		$media_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$album_count = (int) wp_count_posts( 'mvs_album' )->publish;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names only, no user input.
@@ -176,12 +176,12 @@ class Commands {
 	}
 
 	/**
-	 * Rebuild the mvs_media_index table from published media posts.
+	 * Ensure every mvs_media_index row has a corresponding mvs_media_stats row.
 	 *
 	 * ## OPTIONS
 	 *
 	 * [--batch-size=<size>]
-	 * : Number of posts to process per batch. Default 100.
+	 * : Number of rows to process per batch. Default 100.
 	 *
 	 * ## EXAMPLES
 	 *
@@ -193,75 +193,65 @@ class Commands {
 	public function reindex( $args, $assoc_args ) {
 		global $wpdb;
 
-		$batch_size = (int) Utils\get_flag_value( $assoc_args, 'batch-size', 100 );
-		$offset     = 0;
-		$total      = 0;
+		$batch_size  = (int) Utils\get_flag_value( $assoc_args, 'batch-size', 100 );
+		$last_id     = 0;
+		$total       = 0;
+		$stats_added = 0;
 
-		WP_CLI::log( 'Rebuilding mvs_media_index...' );
+		WP_CLI::log( 'Verifying mvs_media_index and ensuring stats rows...' );
 
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		do {
-			$post_ids = get_posts(
-				array(
-					'post_type'      => 'mvs_media',
-					'post_status'    => 'publish',
-					'posts_per_page' => $batch_size,
-					'offset'         => $offset,
-					'fields'         => 'ids',
-					'orderby'        => 'ID',
-					'order'          => 'ASC',
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id > %d ORDER BY media_id ASC LIMIT %d",
+					$last_id,
+					$batch_size
 				)
 			);
 
-			if ( empty( $post_ids ) ) {
+			if ( empty( $rows ) ) {
 				break;
 			}
 
-			foreach ( $post_ids as $mvs_post_id ) {
-				$mvs_post     = get_post( $mvs_post_id );
-				$privacy_meta = MediaMeta::get( $mvs_post_id, 'privacy' );
-				$privacy_val  = $privacy_meta ? $privacy_meta : 'public';
-				$type_meta    = MediaMeta::get( $mvs_post_id, 'media_type' );
-				$media_type   = $type_meta ? $type_meta : '';
-				$created      = $mvs_post->post_date_gmt ? $mvs_post->post_date_gmt : current_time( 'mysql', true );
+			foreach ( $rows as $row ) {
+				$media_id = (int) $row->media_id;
+				$last_id  = $media_id;
 
-				$wpdb->replace( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prefix . 'mvs_media_index',
-					array(
-						'media_id'          => $mvs_post_id,
-						'post_author'       => $mvs_post->post_author,
-						'media_type'        => $media_type,
-						'privacy'           => $privacy_val,
-						'moderation_status' => 'approved',
-						'created_at'        => $created,
-					),
-					array( '%d', '%d', '%s', '%s', '%s', '%s' )
+				// Ensure stats row exists.
+				$has_stats = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT media_id FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d",
+						$media_id
+					)
 				);
 
-				// Also ensure stats row.
-				$wpdb->replace( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prefix . 'mvs_media_stats',
-					array(
-						'media_id'   => $mvs_post_id,
-						'views'      => 0,
-						'downloads'  => 0,
-						'reactions'  => 0,
-						'comments'   => 0,
-						'shares'     => 0,
-						'updated_at' => current_time( 'mysql', true ),
-					),
-					array( '%d', '%d', '%d', '%d', '%d', '%d', '%s' )
-				);
+				if ( ! $has_stats ) {
+					$wpdb->insert(
+						$wpdb->prefix . 'mvs_media_stats',
+						array(
+							'media_id'   => $media_id,
+							'views'      => 0,
+							'downloads'  => 0,
+							'reactions'  => 0,
+							'comments'   => 0,
+							'shares'     => 0,
+							'updated_at' => current_time( 'mysql', true ),
+						),
+						array( '%d', '%d', '%d', '%d', '%d', '%d', '%s' )
+					);
+					++$stats_added;
+				}
 
 				++$total;
 			}
 
-			$offset += $batch_size;
-
 			WP_CLI::log( "Processed {$total} media items..." );
 
-		} while ( count( $post_ids ) === $batch_size );
+		} while ( count( $rows ) === $batch_size );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		WP_CLI::success( "Reindex complete. {$total} media items indexed." );
+		WP_CLI::success( "Reindex complete. {$total} media items checked, {$stats_added} stats rows created." );
 	}
 
 	/**
@@ -364,7 +354,7 @@ class Commands {
 				$media_id = (int) $act->secondary_item_id;
 			}
 
-			if ( ! $media_id || 'mvs_media' !== get_post_type( $media_id ) ) {
+			if ( ! $media_id || ! MediaMeta::exists( $media_id ) ) {
 				++$skipped;
 				$progress->tick();
 				continue;

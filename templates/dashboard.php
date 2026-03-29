@@ -28,7 +28,7 @@ $mvs_dash_ctx = array(
 	'restUrl'  => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 	'nonce'    => wp_create_nonce( 'wp_rest' ),
 	'userId'   => get_current_user_id(),
-	'mediaUrl' => esc_url( get_post_type_archive_link( 'mvs_media' ) ),
+	'mediaUrl' => esc_url( home_url( '/media/' ) ),
 );
 
 require MVS_PLUGIN_DIR . 'templates/partials/dashboard-content.php';

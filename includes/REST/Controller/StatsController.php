@@ -14,6 +14,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\Services\MediaMeta;
 use WPMediaVerse\Services\StatsService;
 use WPMediaVerse\Services\PrivacyService;
 
@@ -99,8 +100,7 @@ class StatsController extends WP_REST_Controller {
 	public function get_media_stats( $request ) {
 		$media_id = $request->get_param( 'media_id' );
 
-		$post = get_post( $media_id );
-		if ( ! $post || 'mvs_media' !== $post->post_type ) {
+		if ( ! MediaMeta::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -110,12 +110,6 @@ class StatsController extends WP_REST_Controller {
 		}
 
 		$stats = $this->stats->get_for_media( $media_id );
-
-		if ( ! $stats ) {
-			// Auto-create stats row for media that pre-dates the publish hook.
-			\WPMediaVerse\Core\Plugin::ensure_media_rows( $media_id, $post );
-			$stats = $this->stats->get_for_media( $media_id );
-		}
 
 		if ( ! $stats ) {
 			return new WP_Error( 'mvs_no_stats', __( 'Stats not available.', 'wpmediaverse' ), array( 'status' => 404 ) );

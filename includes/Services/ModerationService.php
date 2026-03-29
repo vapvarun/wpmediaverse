@@ -153,19 +153,16 @@ class ModerationService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$total = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$index_table} i
-				INNER JOIN {$wpdb->posts} p ON p.ID = i.media_id
-				WHERE i.moderation_status = %s AND p.post_type = 'mvs_media'",
+				"SELECT COUNT(*) FROM {$index_table} WHERE moderation_status = %s",
 				$args['status']
 			)
 		);
 
 		$media_ids = $wpdb->get_col(
 			$wpdb->prepare(
-				"SELECT i.media_id FROM {$index_table} i
-				INNER JOIN {$wpdb->posts} p ON p.ID = i.media_id
-				WHERE i.moderation_status = %s AND p.post_type = 'mvs_media'
-				ORDER BY p.post_date DESC
+				"SELECT media_id FROM {$index_table}
+				WHERE moderation_status = %s
+				ORDER BY created_at DESC
 				LIMIT %d OFFSET %d",
 				$args['status'],
 				$args['per_page'],
@@ -174,11 +171,10 @@ class ModerationService {
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		$items = array_filter( array_map( 'get_post', $media_ids ) );
 		$pages = $args['per_page'] > 0 ? (int) ceil( $total / $args['per_page'] ) : 1;
 
 		return array(
-			'items' => $items,
+			'items' => $media_ids,
 			'total' => $total,
 			'pages' => $pages,
 		);
@@ -277,12 +273,10 @@ class ModerationService {
 
 		$index_table = $wpdb->prefix . 'mvs_media_index';
 		$results     = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			"SELECT i.moderation_status AS status, COUNT(*) AS count
-			FROM {$index_table} i
-			INNER JOIN {$wpdb->posts} p ON i.media_id = p.ID
-			WHERE i.moderation_status IN ('pending', 'flagged', 'rejected')
-			AND p.post_type = 'mvs_media'
-			GROUP BY i.moderation_status", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			"SELECT moderation_status AS status, COUNT(*) AS count
+			FROM {$index_table}
+			WHERE moderation_status IN ('pending', 'flagged', 'rejected')
+			GROUP BY moderation_status", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 

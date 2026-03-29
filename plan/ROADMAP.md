@@ -1,35 +1,39 @@
 # WPMediaVerse (Free) — v1.0.0 Roadmap
 
-> Single source of truth. Updated: 2026-03-29
+> Single source of truth. Updated: 2026-03-29 (CPT removal complete)
 > Architecture: 100% custom tables. No CPT for media. No wp_postmeta.
 
 ---
 
-## BLOCKER: Remove mvs_media CPT
+## DONE: Remove mvs_media CPT ✓
 
-Media items must be rows in `mvs_media_index`, NOT wp_posts. WordPress attachment stays ONLY for file storage (thumbnails, disk management).
+Media items are rows in `mvs_media_index` (AUTO_INCREMENT). WordPress attachment stays ONLY for file storage.
 
-### What needs to change:
+### Completed:
 
-1. **Remove CPT registration** — delete `PostTypes/Media.php` register call
-2. **Rewrite UploadService** — no `wp_insert_post()`, create row in `mvs_media_index` directly, use `wp_handle_upload()` + `wp_insert_attachment()` for the file only
-3. **Rewrite admin listing** — custom page (not `edit.php?post_type=mvs_media`), query `mvs_media_index` directly
-4. **Rewrite permalinks** — rewrite rules for `/media/{id}/` or `/media/{slug}/` (like we already do for `/media/battles/`)
-5. **Update all templates** — replace `get_post()`, `get_the_ID()`, `the_title()`, `get_permalink()` with custom table reads via MediaMeta
-6. **Update all blocks** — `render.php` files read from MediaMeta, not WP_Query
-7. **Update REST API** — `MediaController` already reads from custom tables, but response shaping may use `get_post()`
-8. **Update seeder** — no `wp_insert_post()` for media, insert directly into `mvs_media_index`
-9. **Update cleanup** — delete from custom tables, not `wp_delete_post()`
-10. **Update TemplateLoader** — `pre_get_posts` and `archive_template` hooks won't work without CPT, use `template_redirect` instead
-11. **Update BuddyPress integration** — activity recording, profile media queries
-12. **Update albums/collections** — these reference `mvs_media` posts, need to reference `mvs_media_index.media_id` instead
+1. ✓ **Remove CPT registration** — `PostTypes/Media.php` deleted, no `register_post_type('mvs_media')` anywhere
+2. ✓ **Rewrite UploadService** — inserts directly into `mvs_media_index` via `MediaMeta::insert()`
+3. ✓ **Rewrite admin listing** — `Admin/MediaListPage.php` with custom table queries, filters, pagination
+4. ✓ **Rewrite admin menu** — `add_menu_page('wpmediaverse')`, all subpages under custom slug
+5. ✓ **Rewrite permalinks** — rewrite rules for `/media/{slug}/`, `/media/`, `/media/@{user}/`
+6. ✓ **Update all templates** — `media-single.php`, `explore.php`, `album.php` read from custom tables
+7. ✓ **Update all blocks** — 7 block `render.php` files rewritten to query `mvs_media_index`
+8. ✓ **Update REST API** — MediaController, BulkController, + 8 other controllers
+9. ✓ **Update seeder** — `seed-demo-data.php` uses `MediaMeta::insert()`
+10. ✓ **Update cleanup** — `cleanup-demo-data.php` deletes from custom tables
+11. ✓ **Update TemplateLoader** — `template_redirect` with custom rewrite rules
+12. ✓ **Update BuddyPress** — all `get_post()` replaced with `MediaMeta::*` methods
+13. ✓ **Update albums/collections** — reference `mvs_media_index.media_id`
+14. ✓ **Migration v7** — schema upgraded with all columns + AUTO_INCREMENT
+15. ✓ **Update all services** — GDPR, Moderation, Privacy, Webhooks, CLI, Capabilities
+16. ✓ **188 PHP files** pass syntax check with 0 errors
 
 ### What stays the same:
 - `mvs_album` CPT — albums are low volume, CPT is fine
 - `mvs_collection` CPT — same
 - WordPress attachments — file handling only
 - All custom tables (mvs_media_index, mvs_media_meta, reactions, favorites, etc.)
-- MediaMeta helper class
+- MediaMeta helper class (expanded with insert/exists/get_author/get_permalink/generate_unique_slug)
 - All social features (reactions, comments, follows, favorites)
 - All gamification features (battles, challenges, tournaments, boosts)
 
@@ -59,9 +63,8 @@ Media items must be rows in `mvs_media_index`, NOT wp_posts. WordPress attachmen
 
 ## TODO (all v1.0.0 — no deferral)
 
-### After CPT removal:
+### Release prep:
 - [ ] npm run build (regenerate blocks)
-- [ ] php -l all files
 - [ ] Remove console.log / error_log / var_dump
 - [ ] Version bump to 1.0.0
 - [ ] readme.txt

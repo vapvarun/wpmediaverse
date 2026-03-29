@@ -3,7 +3,7 @@
  * Server-side render for the lock-overlay block.
  *
  * Shows blurred preview + unlock prompt for gated media, or full content if user has access.
- * Access is controlled via role, capability, membership, or code rules.
+ * Reads media data from mvs_media_index via MediaMeta -- no get_post().
  *
  * @package WPMediaVerse
  *
@@ -23,18 +23,19 @@ if ( ! $media_id ) {
 	return;
 }
 
-$post = get_post( $media_id );
-if ( ! $post || 'mvs_media' !== $post->post_type ) {
+// Verify media exists in the index table.
+if ( ! \WPMediaVerse\Services\MediaMeta::exists( $media_id ) ) {
 	return;
 }
 
-$user_id    = get_current_user_id();
-$container  = \WPMediaVerse\Core\Plugin::container();
-$privacy    = $container->get( 'privacy' );
-$has_access = $privacy->can_view( $media_id, $user_id );
+$media_title = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'title' ) ?: '';
+$user_id     = get_current_user_id();
+$container   = \WPMediaVerse\Core\Plugin::container();
+$privacy     = $container->get( 'privacy' );
+$has_access  = $privacy->can_view( $media_id, $user_id );
 
-$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
-$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
+$file_url  = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_url' );
+$file_type = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_type' );
 $is_image  = $file_url && 0 === strpos( $file_type, 'image/' );
 $wrapper   = get_block_wrapper_attributes( array( 'class' => 'mvs-lock-overlay-block' ) );
 
@@ -42,6 +43,8 @@ $wrapper   = get_block_wrapper_attributes( array( 'class' => 'mvs-lock-overlay-b
 $access_rules = $container->get( 'access_rules' );
 $rules        = $access_rules->get_rules( $media_id );
 $rule_types   = array_unique( array_column( $rules, 'rule_type' ) );
+
+$permalink = \WPMediaVerse\Services\MediaMeta::get_permalink( $media_id );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/lock-overlay"
@@ -60,7 +63,7 @@ $rule_types   = array_unique( array_column( $rules, 'rule_type' ) );
 	<?php if ( $has_access ) : ?>
 		<div class="mvs-lock-overlay-content mvs-lock-overlay-unlocked">
 			<?php if ( $is_image ) : ?>
-				<img src="<?php echo esc_url( $file_url ); ?>" alt="<?php echo esc_attr( $post->post_title ); ?>" loading="lazy" />
+				<img src="<?php echo esc_url( $file_url ); ?>" alt="<?php echo esc_attr( $media_title ); ?>" loading="lazy" />
 			<?php elseif ( 0 === strpos( $file_type, 'video/' ) ) : ?>
 				<video controls preload="metadata">
 					<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
@@ -72,7 +75,7 @@ $rule_types   = array_unique( array_column( $rules, 'rule_type' ) );
 			<?php else : ?>
 				<div class="mvs-lock-overlay-file">
 					<span class="dashicons dashicons-media-default"></span>
-					<span><?php echo esc_html( $post->post_title ); ?></span>
+					<span><?php echo esc_html( $media_title ); ?></span>
 				</div>
 			<?php endif; ?>
 		</div>
@@ -89,10 +92,10 @@ $rule_types   = array_unique( array_column( $rules, 'rule_type' ) );
 			</div>
 			<div class="mvs-lock-overlay-prompt">
 				<span class="dashicons dashicons-lock mvs-lock-icon"></span>
-				<h3 class="mvs-lock-overlay-title"><?php echo esc_html( $post->post_title ); ?></h3>
+				<h3 class="mvs-lock-overlay-title"><?php echo esc_html( $media_title ); ?></h3>
 				<p class="mvs-lock-overlay-info"><?php echo esc_html( $unlock_label ); ?></p>
 				<?php if ( ! $user_id ) : ?>
-					<a href="<?php echo esc_url( wp_login_url( get_permalink() ) ); ?>" class="mvs-lock-overlay-btn wp-element-button">
+					<a href="<?php echo esc_url( wp_login_url( $permalink ) ); ?>" class="mvs-lock-overlay-btn wp-element-button">
 						<?php esc_html_e( 'Log in to View', 'wpmediaverse' ); ?>
 					</a>
 				<?php else : ?>

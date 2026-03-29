@@ -2,6 +2,8 @@
 /**
  * Server-side render for the media-stats block.
  *
+ * Queries mvs_media_index + mvs_media_stats directly -- no wp_posts.
+ *
  * @package WPMediaVerse
  *
  * @var array    $attributes Block attributes.
@@ -26,6 +28,7 @@ $user_id = get_current_user_id();
 // Get user stats.
 global $wpdb;
 $stats_table = $wpdb->prefix . 'mvs_media_stats';
+$index_table = $wpdb->prefix . 'mvs_media_index';
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 $mvs_totals = $wpdb->get_row(
@@ -36,8 +39,8 @@ $mvs_totals = $wpdb->get_row(
 			COALESCE(SUM(s.reactions), 0) AS total_reactions,
 			COALESCE(SUM(s.comments), 0) AS total_comments
 		FROM {$stats_table} s
-		INNER JOIN {$wpdb->posts} p ON p.ID = s.media_id
-		WHERE p.post_author = %d AND p.post_type = 'mvs_media'",
+		INNER JOIN {$index_table} idx ON idx.media_id = s.media_id
+		WHERE idx.post_author = %d AND idx.status = 'publish'",
 		$user_id
 	),
 	ARRAY_A
@@ -53,8 +56,14 @@ if ( ! $mvs_totals ) {
 	);
 }
 
-$media_count = wp_count_posts( 'mvs_media' );
-$user_count  = isset( $media_count->publish ) ? $media_count->publish : 0;
+// Count user's published media from index table.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+$user_count = (int) $wpdb->get_var(
+	$wpdb->prepare(
+		"SELECT COUNT(*) FROM {$index_table} WHERE post_author = %d AND status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$user_id
+	)
+);
 
 $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-stats-block' ) ) : 'class="mvs-stats-block"';
 ?>
@@ -92,10 +101,10 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$top_media = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT s.media_id, s.views, s.reactions, p.post_title
+				"SELECT s.media_id, s.views, s.reactions, idx.title
 				FROM {$stats_table} s
-				INNER JOIN {$wpdb->posts} p ON p.ID = s.media_id
-				WHERE p.post_author = %d AND p.post_type = 'mvs_media'
+				INNER JOIN {$index_table} idx ON idx.media_id = s.media_id
+				WHERE idx.post_author = %d AND idx.status = 'publish'
 				ORDER BY s.views DESC
 				LIMIT %d",
 				$user_id,
@@ -119,7 +128,7 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 					<tbody>
 						<?php foreach ( $top_media as $item ) : ?>
 							<tr style="border-bottom:1px solid #f0f0f0;">
-								<td style="padding:8px;"><?php echo esc_html( $item['post_title'] ); ?></td>
+								<td style="padding:8px;"><?php echo esc_html( $item['title'] ); ?></td>
 								<td style="padding:8px;"><?php echo esc_html( number_format_i18n( (int) $item['views'] ) ); ?></td>
 								<td style="padding:8px;"><?php echo esc_html( number_format_i18n( (int) $item['reactions'] ) ); ?></td>
 							</tr>
