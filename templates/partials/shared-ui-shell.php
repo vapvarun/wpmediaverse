@@ -285,8 +285,10 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 					<div class="mvs-lightbox-comment-list">
 						<template data-wp-each="state.lightboxComments">
 							<div class="mvs-lightbox-comment">
-								<img class="mvs-lightbox-comment-avatar" data-wp-bind--src="context.item.author_avatar" alt="" width="24" height="24" />
-								<strong data-wp-text="context.item.author_name"></strong>
+								<a class="mvs-lightbox-comment-author-link" data-wp-bind--href="context.item.author_url">
+									<img class="mvs-lightbox-comment-avatar" data-wp-bind--src="context.item.author_avatar" alt="" width="24" height="24" />
+									<strong data-wp-text="context.item.author_name"></strong>
+								</a>
 								<span data-wp-text="context.item.content"></span>
 							</div>
 						</template>

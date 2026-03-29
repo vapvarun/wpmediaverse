@@ -12,6 +12,7 @@ namespace WPMediaVerse\Social;
 defined( 'ABSPATH' ) || exit;
 
 use WP_Error;
+use WPMediaVerse\Core\TemplateHelpers;
 
 /**
  * Handles threaded comments on media items using WordPress comments.
@@ -189,6 +190,7 @@ class CommentService {
 			'author'        => $cmt_author_id,
 			'author_name'   => $comment->comment_author,
 			'author_avatar' => $cmt_author_id ? (string) get_avatar_url( $cmt_author_id, array( 'size' => 48 ) ) : '',
+			'author_url'    => $cmt_author_id ? TemplateHelpers::get_user_profile_url( $cmt_author_id ) : '',
 			'content'       => $comment->comment_content,
 			'parent'        => (int) $comment->comment_parent,
 			'date'          => $comment->comment_date_gmt,
@@ -229,6 +231,7 @@ class CommentService {
 			'author'        => $author_id,
 			'author_name'   => $comment->comment_author,
 			'author_avatar' => $author_id ? (string) get_avatar_url( $author_id, array( 'size' => 48 ) ) : '',
+			'author_url'    => $author_id ? TemplateHelpers::get_user_profile_url( $author_id ) : '',
 			'content'       => $comment->comment_content,
 			'parent'        => (int) $comment->comment_parent,
 			'date'          => $comment->comment_date_gmt,

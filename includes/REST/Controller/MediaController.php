@@ -850,7 +850,7 @@ class MediaController extends WP_REST_Controller {
 		$data['author_data'] = array(
 			'name'        => get_the_author_meta( 'display_name', $author_id ),
 			'avatar'      => get_avatar_url( $author_id, array( 'size' => 64 ) ),
-			'profile_url' => get_author_posts_url( $author_id ),
+			'profile_url' => TemplateHelpers::get_user_profile_url( $author_id ),
 		);
 
 		// Add media group (gallery post) data.

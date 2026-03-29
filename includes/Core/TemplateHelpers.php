@@ -102,6 +102,35 @@ class TemplateHelpers {
 	}
 
 	/**
+	 * Get the profile URL for a user.
+	 *
+	 * Filterable via `mvs_user_profile_url` so BuddyPress, BuddyNext,
+	 * or any 3rd-party profile plugin can override.
+	 *
+	 * @param int $user_id WordPress user ID.
+	 * @return string Profile URL.
+	 */
+	public static function get_user_profile_url( int $user_id ): string {
+		// BuddyPress: use bp_members_get_user_url() if available.
+		if ( function_exists( 'bp_members_get_user_url' ) ) {
+			$url = bp_members_get_user_url( $user_id );
+		} elseif ( function_exists( 'bp_core_get_user_domain' ) ) {
+			$url = bp_core_get_user_domain( $user_id );
+		} else {
+			$user_login = get_the_author_meta( 'user_login', $user_id );
+			$url        = home_url( '/media/@' . $user_login . '/' );
+		}
+
+		/**
+		 * Filter the user profile URL.
+		 *
+		 * @param string $url     Profile URL.
+		 * @param int    $user_id User ID.
+		 */
+		return (string) apply_filters( 'mvs_user_profile_url', $url, $user_id );
+	}
+
+	/**
 	 * Render a grid item's thumbnail or type-appropriate placeholder.
 	 *
 	 * @param int    $media_id Media ID (mvs_media_index.media_id).
