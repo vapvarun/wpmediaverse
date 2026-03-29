@@ -1083,226 +1083,20 @@
 		} );
 	} )();
 
-	// ── Activity media lightbox ──────────────────────────────────────
-	// Reuse the same .mvs-lightbox-overlay that shared-ui-shell.php renders
-	// in wp_footer. This is the SAME lightbox skeleton — we just drive it
-	// from vanilla JS instead of the Interactivity API on BP pages.
 
-	var REACTION_EMOJI = { like: '\uD83D\uDC4D', love: '\u2764\uFE0F', haha: '\uD83D\uDE02', wow: '\uD83D\uDE2E', sad: '\uD83D\uDE22', angry: '\uD83D\uDE21' };
-	var currentMediaId = 0;
-
-	function getLbOverlay() { return document.querySelector( '.mvs-lightbox-overlay' ); }
-
-	function closeLb() {
-		var ov = getLbOverlay();
-		if ( ov ) ov.setAttribute( 'hidden', '' );
-		document.body.style.overflow = '';
-		currentMediaId = 0;
-	}
-
-	function apiFetchJson( path, opts ) {
-		opts = opts || {};
-		opts.credentials = 'same-origin';
-		if ( ! opts.headers ) opts.headers = {};
-		opts.headers[ 'X-WP-Nonce' ] = nonce;
-		return fetch( restUrl + path, opts ).then( function( r ) { return r.json(); } );
-	}
-
-	function openLb( mediaId ) {
-		var ov = getLbOverlay();
-		if ( ! ov ) return;
-
-		currentMediaId = mediaId;
-		ov.removeAttribute( 'hidden' );
-		document.body.style.overflow = 'hidden';
-
-		// Get references to the shared-ui lightbox elements.
-		var lbImg = ov.querySelector( '.mvs-lightbox-media img' );
-		var lbLoading = ov.querySelector( '.mvs-lightbox-loading' );
-		var lbMediaWrap = ov.querySelector( '.mvs-lightbox-media' );
-		var lbSidebar = ov.querySelector( '.mvs-lightbox-sidebar' );
-
-		if ( lbLoading ) lbLoading.removeAttribute( 'hidden' );
-		if ( lbMediaWrap ) lbMediaWrap.setAttribute( 'hidden', '' );
-		if ( lbSidebar ) lbSidebar.setAttribute( 'hidden', '' );
-
-		apiFetchJson( 'media/' + mediaId ).then( function( d ) {
-			if ( lbLoading ) lbLoading.setAttribute( 'hidden', '' );
-			if ( lbMediaWrap ) lbMediaWrap.removeAttribute( 'hidden' );
-			if ( lbSidebar ) lbSidebar.removeAttribute( 'hidden' );
-
-			// Image.
-			if ( lbImg ) {
-				lbImg.src = d.thumbnail_url || d.file_url || '';
-				lbImg.alt = d.title || '';
-			}
-
-			// Author.
-			var avatarEl = lbSidebar.querySelector( '.mvs-lightbox-author-avatar' );
-			var nameEl = lbSidebar.querySelector( '.mvs-lightbox-author strong' );
-			var authorLink = lbSidebar.querySelector( '.mvs-lightbox-author-link' );
-			if ( avatarEl ) avatarEl.src = d.author_data ? d.author_data.avatar : '';
-			if ( nameEl ) nameEl.textContent = d.author_data ? d.author_data.name : '';
-			if ( authorLink ) authorLink.href = d.author_data ? d.author_data.profile_url : '#';
-
-			// Stats.
-			var statsEl = lbSidebar.querySelector( '.mvs-lightbox-stats' );
-			if ( statsEl ) {
-				apiFetchJson( 'media/' + mediaId + '/stats' ).then( function( s ) {
-					statsEl.textContent = ( s.views || 0 ) + ' views';
-				} ).catch( function() { statsEl.textContent = ''; } );
-			}
-
-			// Reactions.
-			var reactEl = lbSidebar.querySelector( '.mvs-lightbox-reactions' );
-			if ( reactEl ) {
-				apiFetchJson( 'media/' + mediaId + '/reactions' ).then( function( r ) {
-					reactEl.textContent = '';
-					var types = [ 'like', 'love', 'haha', 'wow', 'sad', 'angry' ];
-					types.forEach( function( type ) {
-						var cnt = ( r.counts && r.counts[ type ] ) || 0;
-						var btn = document.createElement( 'button' );
-						btn.className = 'mvs-lightbox-reaction' + ( r.user_reaction === type ? ' active' : '' );
-						btn.dataset.reaction = type;
-						var emoji = document.createElement( 'span' );
-						emoji.textContent = REACTION_EMOJI[ type ];
-						btn.appendChild( emoji );
-						if ( cnt ) {
-							var cntSpan = document.createElement( 'span' );
-							cntSpan.textContent = ' ' + cnt;
-							btn.appendChild( cntSpan );
-						}
-						btn.addEventListener( 'click', function() {
-							var isActive = btn.classList.contains( 'active' );
-							apiFetchJson( 'media/' + currentMediaId + '/reactions', {
-								method: isActive ? 'DELETE' : 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-								body: JSON.stringify( { reaction_type: type } ),
-							} ).then( function() { openLb( currentMediaId ); } ).catch( function() {} );
-						} );
-						reactEl.appendChild( btn );
-					} );
-				} ).catch( function() {} );
-			}
-
-			// Actions.
-			var actionsEl = lbSidebar.querySelector( '.mvs-lightbox-actions' );
-			if ( actionsEl ) {
-				actionsEl.textContent = '';
-				var favBtn = document.createElement( 'button' );
-				favBtn.className = 'mvs-lightbox-action';
-				favBtn.textContent = '\u2661 Favorite';
-				favBtn.addEventListener( 'click', function() {
-					apiFetchJson( 'media/' + currentMediaId + '/favorite', { method: 'POST', headers: { 'X-WP-Nonce': nonce } } ).catch( function() {} );
-				} );
-				actionsEl.appendChild( favBtn );
-
-				var shareBtn = document.createElement( 'button' );
-				shareBtn.className = 'mvs-lightbox-action';
-				shareBtn.textContent = '\uD83D\uDD17 Share';
-				shareBtn.addEventListener( 'click', function() {
-					if ( navigator.clipboard ) navigator.clipboard.writeText( d.link || '' );
-				} );
-				actionsEl.appendChild( shareBtn );
-
-				var openLink = document.createElement( 'a' );
-				openLink.className = 'mvs-lightbox-action';
-				openLink.href = d.link || '#';
-				openLink.target = '_blank';
-				openLink.textContent = '\u2197\uFE0F Open';
-				actionsEl.appendChild( openLink );
-			}
-
-			// Description.
-			var descEl = lbSidebar.querySelector( '.mvs-lightbox-desc' );
-			if ( descEl ) {
-				if ( d.description ) {
-					descEl.removeAttribute( 'hidden' );
-					descEl.textContent = '';
-					var authorStrong = document.createElement( 'strong' );
-					authorStrong.textContent = d.author_data ? d.author_data.name : '';
-					descEl.appendChild( authorStrong );
-					descEl.appendChild( document.createTextNode( ' ' + d.description ) );
-				} else {
-					descEl.setAttribute( 'hidden', '' );
-				}
-			}
-
-			// Comments.
-			var comList = lbSidebar.querySelector( '.mvs-lightbox-comment-list' );
-			if ( comList ) {
-				apiFetchJson( 'media/' + mediaId + '/comments?per_page=20' ).then( function( c ) {
-					comList.textContent = '';
-					if ( Array.isArray( c ) && c.length > 0 ) {
-						c.forEach( function( cm ) {
-							var div = document.createElement( 'div' );
-							div.className = 'mvs-lightbox-comment';
-							var strong = document.createElement( 'strong' );
-							strong.textContent = cm.author_name || '';
-							div.appendChild( strong );
-							div.appendChild( document.createTextNode( ' ' + ( cm.content || '' ) ) );
-							comList.appendChild( div );
-						} );
-					} else {
-						var p = document.createElement( 'p' );
-						p.className = 'mvs-lightbox-no-comments';
-						p.textContent = 'No comments yet. Be the first!';
-						comList.appendChild( p );
-					}
-				} ).catch( function() {} );
-			}
-		} ).catch( function() {
-			if ( lbLoading ) lbLoading.setAttribute( 'hidden', '' );
-			closeLb();
-		} );
-	}
-
-	// Close button.
-	document.addEventListener( 'click', function( e ) {
-		if ( e.target.closest( '.mvs-lightbox-close' ) && currentMediaId ) {
-			closeLb();
-		}
-	} );
-	document.addEventListener( 'keydown', function( e ) {
-		if ( e.key === 'Escape' && currentMediaId ) closeLb();
-	} );
-
-	// Comment posting.
-	document.addEventListener( 'click', function( e ) {
-		if ( ! e.target.closest( '.mvs-lightbox-comment-post' ) || ! currentMediaId ) return;
-		var input = document.querySelector( '.mvs-lightbox-comment-input' );
-		if ( ! input || ! input.value.trim() ) return;
-		apiFetchJson( 'media/' + currentMediaId + '/comments', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-			body: JSON.stringify( { content: input.value.trim() } ),
-		} ).then( function() { openLb( currentMediaId ); } ).catch( function() {} );
-	} );
-
-	// Click interceptor for activity media.
+	// ── Activity media click handler ─────────────────────────────────
+	// Click on activity media navigates to /media/{slug}/ single page.
+	// That page has full social UX (reactions, comments, favorites).
+	// No separate lightbox needed — the single page IS the detail view.
 	document.addEventListener( 'click', function( e ) {
 		var link = e.target.closest( '.activity-content a' );
 		if ( ! link ) return;
-
 		var img = link.querySelector( 'img' );
-		if ( ! img ) return;
-		if ( img.classList.contains( 'avatar' ) || img.classList.contains( 'emoji' ) ) return;
+		if ( ! img || img.classList.contains( 'avatar' ) || img.classList.contains( 'emoji' ) ) return;
 
 		var href = link.getAttribute( 'href' ) || '';
-		var isMedia = href.indexOf( '/media/' ) !== -1 || href.indexOf( '/uploads/wpmediaverse/' ) !== -1;
-		if ( ! isMedia ) return;
 
-		// Get media ID.
-		var mediaEl = link.closest( '[data-mvs-media-id]' );
-		var mediaId = mediaEl ? parseInt( mediaEl.getAttribute( 'data-mvs-media-id' ), 10 ) : 0;
-
-		if ( mediaId ) {
-			e.preventDefault();
-			openLb( mediaId );
-			return;
-		}
-
-		// No media ID — for raw file URLs, redirect to permalink if available.
+		// Raw file URL (old posts) — redirect to media permalink.
 		if ( href.indexOf( '/uploads/wpmediaverse/' ) !== -1 ) {
 			var permalink = link.getAttribute( 'data-mvs-permalink' );
 			if ( permalink ) {
@@ -1310,5 +1104,6 @@
 				window.location.href = permalink;
 			}
 		}
+		// Links to /media/{slug}/ — normal navigation to single page.
 	} );
 } )();
