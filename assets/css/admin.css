@@ -297,64 +297,6 @@ a.mvs-stat-card:focus {
 }
 
 /* ==========================================================================
-   Notice / Getting Started
-   ========================================================================== */
-
-.mvs-getting-started {
-	background: #f0f6fc;
-	border: 1px solid #c3c4c7;
-	border-left: 4px solid #2271b1;
-	border-radius: 4px;
-	padding: 16px 20px;
-	margin: 20px 0;
-}
-
-.mvs-getting-started h3 {
-	margin: 0 0 8px;
-	font-size: 14px;
-}
-
-.mvs-getting-started ol {
-	margin: 0 0 0 1.5em;
-	padding: 0;
-}
-
-.mvs-getting-started li {
-	margin-bottom: 4px;
-	font-size: 13px;
-}
-
-.mvs-getting-started code {
-	background: #fff;
-	padding: 1px 5px;
-	border-radius: 3px;
-}
-
-/* ==========================================================================
-   Admin Page Header
-   ========================================================================== */
-
-.mvs-page-header {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	margin-bottom: 4px;
-}
-
-.mvs-page-header h1 {
-	margin: 0;
-}
-
-.mvs-page-header .mvs-version {
-	background: #f0f0f1;
-	border-radius: 3px;
-	padding: 2px 8px;
-	font-size: 12px;
-	color: #50575e;
-	font-weight: 400;
-}
-
-/* ==========================================================================
    Badge (moderation count)
    ========================================================================== */
 
@@ -614,12 +556,7 @@ a.mvs-stat-card:focus {
 	margin-left: 8px;
 }
 
-.mvs-page-subtitle {
-	margin-top: 0;
-	margin-bottom: 12px;
-	color: #50575e;
-	font-size: 13px;
-}
+
 
 /* Legacy header (Overview page etc.) */
 .mvs-page-header + .description {

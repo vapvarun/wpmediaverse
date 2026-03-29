@@ -84,7 +84,7 @@ class LogViewerPage {
 		$level       = isset( $_GET['level'] ) ? sanitize_text_field( wp_unslash( $_GET['level'] ) ) : '';
 		$log_context = isset( $_GET['log_context'] ) ? sanitize_text_field( wp_unslash( $_GET['log_context'] ) ) : '';
 		$paged       = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
-		$cleared     = isset( $_GET['cleared'] ) ? true : false;
+		$cleared     = isset( $_GET['cleared'] ) && '1' === $_GET['cleared'];
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$per_page = 50;

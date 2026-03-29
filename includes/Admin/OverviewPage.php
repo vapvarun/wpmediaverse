@@ -82,7 +82,7 @@ class OverviewPage {
 	 */
 	public function render_page(): void {
 		if ( ! current_user_can( 'edit_posts' ) ) {
-			return;
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
 		$stats        = $this->get_stats();
@@ -444,7 +444,7 @@ class OverviewPage {
 		$settings_url    = admin_url( 'edit.php?post_type=mvs_media&page=mvs-settings' );
 		$upload_page_id  = (int) get_option( 'mvs_page_upload', 0 );
 		$upload_url      = $upload_page_id ? get_permalink( $upload_page_id ) : admin_url( 'post-new.php?post_type=mvs_media' );
-		$permissions_url = admin_url( 'edit.php?post_type=mvs_media&page=mvs-settings&tab=permissions' );
+		$permissions_url = admin_url( 'edit.php?post_type=mvs_media&page=mvs-settings#permissions' );
 		?>
 		<div class="mvs-welcome-banner" id="mvs-welcome-banner">
 			<div class="mvs-welcome-banner__content">

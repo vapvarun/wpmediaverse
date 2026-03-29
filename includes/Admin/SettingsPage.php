@@ -1253,7 +1253,7 @@ class SettingsPage {
 	 */
 	public function render_page(): void {
 		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
-			return;
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
 		$sections = $this->get_registered_sections();
@@ -1304,6 +1304,16 @@ class SettingsPage {
 						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-analytics' ) ); ?>">
 							<span class="dashicons dashicons-chart-area"></span>
 							<?php esc_html_e( 'Analytics', 'wpmediaverse' ); ?>
+							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
+						</a>
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-quotas' ) ); ?>">
+							<span class="dashicons dashicons-dashboard"></span>
+							<?php esc_html_e( 'Quota & Credits', 'wpmediaverse' ); ?>
+							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
+						</a>
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-reports' ) ); ?>">
+							<span class="dashicons dashicons-flag"></span>
+							<?php esc_html_e( 'Reports', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 						</a>
 						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-migration' ) ); ?>">
