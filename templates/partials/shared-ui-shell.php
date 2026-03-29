@@ -295,6 +295,9 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 						<p class="mvs-lightbox-no-comments" data-wp-bind--hidden="state.lightboxHasComments">
 							<?php esc_html_e( 'No comments yet. Be the first!', 'wpmediaverse' ); ?>
 						</p>
+						<a class="mvs-lightbox-view-all-comments" data-wp-bind--href="state.lightboxPermalink" data-wp-bind--hidden="!state.lightboxHasMoreComments">
+							<?php esc_html_e( 'View all comments', 'wpmediaverse' ); ?> &rarr;
+						</a>
 					</div>
 					<div class="mvs-lightbox-comment-form">
 						<input type="text" class="mvs-lightbox-comment-input"

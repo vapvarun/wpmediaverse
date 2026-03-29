@@ -98,6 +98,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxLoading: false,
 		lightboxCommentText: '',
 		lightboxComments: [],
+		lightboxTotalComments: 0,
 		lightboxReactions: {},
 		lightboxUserReaction: '',
 		lightboxIsFavorited: false,
@@ -140,6 +141,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get lightboxHasComments() {
 			return state.lightboxComments.length > 0;
+		},
+		get lightboxHasMoreComments() {
+			return state.lightboxTotalComments > state.lightboxComments.length;
 		},
 		// Reaction count getters.
 		get lightboxReactionCount_like() { return state.lightboxReactions?.like || ''; },
@@ -500,12 +504,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxReactions = rd.counts || {};
 				state.lightboxUserReaction = rd.user_reaction || '';
 			} catch { /* ignore */ }
-			// Comments.
+			// Comments (latest 20, total from header).
 			try {
 				const c = await fetch( ctx.restUrl + 'media/' + mediaId + '/comments?per_page=20', opts );
+				state.lightboxTotalComments = parseInt( c.headers.get( 'X-WP-Total' ) || '0', 10 );
 				const cd = await c.json();
 				state.lightboxComments = Array.isArray( cd ) ? cd : [];
-			} catch { state.lightboxComments = []; }
+			} catch { state.lightboxComments = []; state.lightboxTotalComments = 0; }
 			// Stats.
 			try {
 				const s = await fetch( ctx.restUrl + 'media/' + mediaId + '/stats', opts );
@@ -616,6 +621,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.lightboxMediaData = null;
 			state.lightboxGroupItems = [];
 			state.lightboxComments = [];
+			state.lightboxTotalComments = 0;
 			state.lightboxReactions = {};
 			state.lightboxUserReaction = '';
 			state.lightboxIsFavorited = false;

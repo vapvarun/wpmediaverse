@@ -4638,6 +4638,11 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-no-comments {
 	color: #999; font-size: 14px; text-align: center; padding: 20px 0;
 }
+.mvs-lightbox-view-all-comments {
+	display: block; text-align: center; padding: 8px 0; font-size: 13px;
+	color: #8e8e8e; text-decoration: none; border-top: 1px solid #efefef;
+}
+.mvs-lightbox-view-all-comments:hover { color: #262626; }
 .mvs-lightbox-comment-form {
 	display: flex; border-top: 1px solid #efefef; padding: 0;
 }
