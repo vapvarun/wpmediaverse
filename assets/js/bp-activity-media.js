@@ -537,58 +537,67 @@
 		 * Query the shared-ui overlay element.
 		 */
 		function getOverlay() {
-			return document.querySelector( '.mvs-lightbox-overlay' );
+			// When BP lightbox is active, use the clone; otherwise fall back to original.
+			return bpLightbox || document.querySelector( '.mvs-lightbox-overlay' );
 		}
 
 		// ── Open ──
 
-		// Store original data-wp-on--click attributes so we can restore on close.
-		var savedIABindings = [];
+		// Clone of the lightbox overlay, detached from the IA container.
+		var bpLightbox = null;
 
-		function disableIABindings( overlay ) {
-			savedIABindings = [];
-			// Strip data-wp-on--click so IA handlers don't intercept clicks.
-			var clickEls = overlay.querySelectorAll( '[data-wp-on--click]' );
-			clickEls.forEach( function( el ) {
-				savedIABindings.push( { el: el, attr: 'data-wp-on--click', value: el.getAttribute( 'data-wp-on--click' ) } );
-				el.removeAttribute( 'data-wp-on--click' );
+		/**
+		 * Create a clean clone of .mvs-lightbox-overlay outside the IA container.
+		 * This prevents the Interactivity API from re-binding attributes and
+		 * intercepting clicks/events on our vanilla-JS-driven lightbox.
+		 */
+		function createBPLightbox() {
+			var original = document.querySelector( '.mvs-lightbox-overlay' );
+			if ( ! original ) { return null; }
+
+			// Clone the entire overlay.
+			var clone = original.cloneNode( true );
+			clone.classList.add( 'mvs-bp-lightbox-clone' );
+
+			// Strip ALL data-wp-* attributes to fully disconnect from IA.
+			var allEls = clone.querySelectorAll( '*' );
+			allEls.forEach( function( el ) {
+				var attrs = Array.from( el.attributes );
+				attrs.forEach( function( attr ) {
+					if ( attr.name.indexOf( 'data-wp-' ) === 0 ) {
+						el.removeAttribute( attr.name );
+					}
+				} );
 			} );
-			// Strip data-wp-bind--hidden on the overlay itself so IA doesn't re-hide it.
-			if ( overlay.hasAttribute( 'data-wp-bind--hidden' ) ) {
-				savedIABindings.push( { el: overlay, attr: 'data-wp-bind--hidden', value: overlay.getAttribute( 'data-wp-bind--hidden' ) } );
-				overlay.removeAttribute( 'data-wp-bind--hidden' );
-			}
-			// Strip data-wp-on--input on comment input.
-			var inputEls = overlay.querySelectorAll( '[data-wp-on--input]' );
-			inputEls.forEach( function( el ) {
-				savedIABindings.push( { el: el, attr: 'data-wp-on--input', value: el.getAttribute( 'data-wp-on--input' ) } );
-				el.removeAttribute( 'data-wp-on--input' );
+			// Also strip from the clone root.
+			var rootAttrs = Array.from( clone.attributes );
+			rootAttrs.forEach( function( attr ) {
+				if ( attr.name.indexOf( 'data-wp-' ) === 0 ) {
+					clone.removeAttribute( attr.name );
+				}
 			} );
-			// Strip data-wp-on--keydown on comment input.
-			var keyEls = overlay.querySelectorAll( '[data-wp-on--keydown]' );
-			keyEls.forEach( function( el ) {
-				savedIABindings.push( { el: el, attr: 'data-wp-on--keydown', value: el.getAttribute( 'data-wp-on--keydown' ) } );
-				el.removeAttribute( 'data-wp-on--keydown' );
-			} );
-			// Strip data-wp-bind--disabled on post button.
-			var disabledEls = overlay.querySelectorAll( '[data-wp-bind--disabled]' );
-			disabledEls.forEach( function( el ) {
-				savedIABindings.push( { el: el, attr: 'data-wp-bind--disabled', value: el.getAttribute( 'data-wp-bind--disabled' ) } );
-				el.removeAttribute( 'data-wp-bind--disabled' );
-				el.disabled = false;
-			} );
+
+			// Enable post button (IA would have disabled it).
+			var postBtn = clone.querySelector( '.mvs-lightbox-comment-post' );
+			if ( postBtn ) { postBtn.disabled = false; }
+
+			// Append directly to body (outside IA container).
+			document.body.appendChild( clone );
+			return clone;
 		}
 
-		function restoreIABindings() {
-			savedIABindings.forEach( function( entry ) {
-				entry.el.setAttribute( entry.attr, entry.value );
-			} );
-			savedIABindings = [];
+		function removeBPLightbox() {
+			if ( bpLightbox && bpLightbox.parentNode ) {
+				bpLightbox.parentNode.removeChild( bpLightbox );
+			}
+			bpLightbox = null;
 		}
 
 		function openSharedLightbox( mediaId, gallery, galleryIndex ) {
-			var overlay = getOverlay();
-			if ( ! overlay ) {
+			// Create a clean clone outside the IA container.
+			removeBPLightbox();
+			bpLightbox = createBPLightbox();
+			if ( ! bpLightbox ) {
 				// Fallback: navigate to single media page.
 				window.location.href = restUrl.replace( /\/wp-json\/mvs\/v1\/$/, '/media/' + mediaId + '/' );
 				return;
@@ -599,8 +608,7 @@
 			suiState.galleryIndex = galleryIndex || 0;
 			suiState.active = true;
 
-			// Disable Interactivity API click bindings so our vanilla JS handlers work.
-			disableIABindings( overlay );
+			var overlay = bpLightbox;
 
 			// Show loading, hide content panels.
 			var loading = overlay.querySelector( '.mvs-lightbox-loading' );
@@ -688,13 +696,8 @@
 		// ── Close ──
 
 		function closeSharedLightbox() {
-			// Restore Interactivity API bindings before closing.
-			restoreIABindings();
-
-			var overlay = getOverlay();
-			if ( overlay ) {
-				overlay.setAttribute( 'hidden', '' );
-			}
+			// Remove the BP lightbox clone from the DOM.
+			removeBPLightbox();
 			document.body.style.overflow = '';
 			suiState.active = false;
 			suiState.mediaId = 0;
