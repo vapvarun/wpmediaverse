@@ -529,7 +529,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					method: isActive ? 'DELETE' : 'POST',
 					credentials: 'same-origin',
 					headers,
-					body: JSON.stringify( { type } ),
+					body: JSON.stringify( { reaction_type: type } ),
 				} );
 				if ( isActive ) {
 					state.lightboxUserReaction = '';

@@ -1177,7 +1177,7 @@
 							apiFetchJson( 'media/' + currentMediaId + '/reactions', {
 								method: isActive ? 'DELETE' : 'POST',
 								headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-								body: JSON.stringify( { type: type } ),
+								body: JSON.stringify( { reaction_type: type } ),
 							} ).then( function() { openLb( currentMediaId ); } ).catch( function() {} );
 						} );
 						reactEl.appendChild( btn );
