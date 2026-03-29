@@ -24,27 +24,47 @@ class TemplateHelpers {
 	/**
 	 * Resolve the best thumbnail URL for a media item.
 	 *
-	 * Priority: WP attachment thumbnail > file_url (images only).
-	 * For video/audio, tries attachment_id first (generated poster).
+	 * Priority: custom thumbnail meta (thumb_large/thumb_medium/thumb_thumb) >
+	 * fallback to larger sizes > file_url (images only).
 	 *
 	 * @param int    $media_id Media ID (mvs_media_index.media_id).
 	 * @param string $size     WordPress image size.
 	 * @return string Thumbnail URL or empty string.
 	 */
 	public static function get_thumb_url( int $media_id, string $size = 'large' ): string {
-		$attach_id  = (int) MediaMeta::get( $media_id, 'attachment_id' );
-		$file_url   = MediaMeta::get( $media_id, 'file_url' );
 		$media_type = self::get_media_type( $media_id );
 
-		// Try WP attachment thumbnail (works for all types including video posters).
-		if ( $attach_id ) {
-			$thumb_src = wp_get_attachment_image_url( $attach_id, $size );
-			if ( $thumb_src ) {
-				return set_url_scheme( $thumb_src );
+		// Map WP size names to our meta keys.
+		$size_map = array(
+			'large'     => 'thumb_large',
+			'medium'    => 'thumb_medium',
+			'thumbnail' => 'thumb_thumb',
+		);
+
+		$meta_key = $size_map[ $size ] ?? 'thumb_large';
+
+		// Try our custom thumbnail first.
+		$thumb = MediaMeta::get( $media_id, $meta_key );
+		if ( $thumb ) {
+			return set_url_scheme( $thumb );
+		}
+
+		// Fallback: try larger sizes, then file_url for images.
+		if ( 'thumb_thumb' === $meta_key ) {
+			$thumb = MediaMeta::get( $media_id, 'thumb_medium' );
+			if ( $thumb ) {
+				return set_url_scheme( $thumb );
+			}
+		}
+		if ( 'thumb_thumb' === $meta_key || 'thumb_medium' === $meta_key ) {
+			$thumb = MediaMeta::get( $media_id, 'thumb_large' );
+			if ( $thumb ) {
+				return set_url_scheme( $thumb );
 			}
 		}
 
-		// For images, fall back to the file URL directly.
+		// For images, raw file_url works as final fallback.
+		$file_url = MediaMeta::get( $media_id, 'file_url' );
 		if ( 'image' === $media_type && $file_url ) {
 			return set_url_scheme( $file_url );
 		}
