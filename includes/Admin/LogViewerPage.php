@@ -24,6 +24,7 @@ class LogViewerPage {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
 		add_action( 'admin_init', array( $this, 'handle_actions' ) );
+		add_filter( 'parent_file', array( $this, 'highlight_parent_menu' ) );
 	}
 
 	/**
@@ -70,6 +71,20 @@ class LogViewerPage {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Keep WPMediaVerse menu highlighted on this hidden page.
+	 *
+	 * @param string $parent_file Current parent file.
+	 * @return string
+	 */
+	public function highlight_parent_menu( string $parent_file ): string {
+		$screen = get_current_screen();
+		if ( $screen && 'admin_page_' . self::PAGE_SLUG === $screen->id ) {
+			return 'edit.php?post_type=mvs_media';
+		}
+		return $parent_file;
 	}
 
 	/**
