@@ -460,6 +460,31 @@
 	} )();
 
 
+	// ── REST API helpers (shared by lightbox driver) ──
+	function apiGet( path ) {
+		return fetch( restUrl + path, {
+			credentials: 'same-origin',
+			headers: { 'X-WP-Nonce': nonce }
+		} ).then( function( r ) { return r.json(); } );
+	}
+
+	function apiPost( path, body ) {
+		return fetch( restUrl + path, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: { 'X-WP-Nonce': nonce, 'Content-Type': 'application/json' },
+			body: JSON.stringify( body || {} )
+		} ).then( function( r ) { return r.json(); } );
+	}
+
+	function apiDelete( path ) {
+		return fetch( restUrl + path, {
+			method: 'DELETE',
+			credentials: 'same-origin',
+			headers: { 'X-WP-Nonce': nonce }
+		} ).then( function( r ) { return r.json(); } );
+	}
+
 	// ── Shared-UI Lightbox Driver for BuddyPress Pages ──────────────
 	// Drives the `.mvs-lightbox-overlay` DOM rendered by shared-ui-shell.php
 	// using vanilla JS. On Explore/Instagram pages the Interactivity API
@@ -782,8 +807,17 @@
 		// ── Click Interception (data-mvs-media-id within BP containers) ──
 
 		document.addEventListener( 'click', function( e ) {
-			// Find the closest element with data-mvs-media-id.
+			// Strategy 1: element with data-mvs-media-id (new activity format).
 			var target = e.target.closest( '[data-mvs-media-id]' );
+
+			// Strategy 2: link to /media/{slug}/ containing an img (old activity format).
+			if ( ! target ) {
+				var link = e.target.closest( '.activity-content a[href*="/media/"], .activity-inner a[href*="/media/"], #buddypress a[href*="/media/"]' );
+				if ( link && link.querySelector( 'img:not(.emoji):not(.avatar)' ) ) {
+					target = link;
+				}
+			}
+
 			if ( ! target ) { return; }
 
 			// Only handle within BP context to avoid conflicting with Interactivity API.
@@ -795,23 +829,49 @@
 			e.preventDefault();
 			e.stopPropagation();
 
+			// Get media ID from attribute or resolve from slug.
 			var mediaId = parseInt( target.getAttribute( 'data-mvs-media-id' ), 10 );
-			if ( ! mediaId ) { return; }
 
-			// Collect gallery from all [data-mvs-media-id] in the same activity item.
-			var activityItem = target.closest( 'li.activity-item, li[id^="activity-"], .mvs-activity-media-grid' );
+			if ( mediaId ) {
+				// New format: media ID is known.
+				openWithMediaId( mediaId, target );
+			} else {
+				// Old format: resolve media ID from slug via REST API.
+				var href = target.getAttribute( 'href' ) || '';
+				var slugMatch = href.match( /\/media\/([^\/]+)\/?$/ );
+				if ( ! slugMatch ) { return; }
+				var slug = slugMatch[1];
+
+				apiGet( 'media?slug=' + encodeURIComponent( slug ) ).then( function( data ) {
+					var resolved = Array.isArray( data ) ? data[0] : data;
+					if ( resolved && resolved.id ) {
+						openWithMediaId( resolved.id, target );
+					}
+				} ).catch( function() {
+					// Fallback: navigate to single page.
+					window.location.href = href;
+				} );
+			}
+		} );
+
+		function openWithMediaId( mediaId, target ) {
+			// Collect gallery from all media in the same activity item.
+			var activityItem = target.closest( 'li.activity-item, li[id^="activity-"], .mvs-activity-media-grid, .activity-content' );
 			var gallery = [];
 			var clickedIndex = 0;
 
 			if ( activityItem ) {
+				// Try data-mvs-media-id first, then links.
 				var allMediaEls = activityItem.querySelectorAll( '[data-mvs-media-id]' );
-				allMediaEls.forEach( function( el, idx ) {
-					var mid = parseInt( el.getAttribute( 'data-mvs-media-id' ), 10 );
-					if ( mid ) {
-						gallery.push( { mediaId: mid, imgSrc: '' } );
-						if ( mid === mediaId ) { clickedIndex = gallery.length - 1; }
-					}
-				} );
+				if ( allMediaEls.length ) {
+					allMediaEls.forEach( function( el, idx ) {
+						var mid = parseInt( el.getAttribute( 'data-mvs-media-id' ), 10 );
+						if ( mid ) {
+							gallery.push( { mediaId: mid, imgSrc: '' } );
+							if ( mid === mediaId ) { clickedIndex = gallery.length - 1; }
+						}
+					} );
+				}
 			}
 
 			if ( ! gallery.length ) {
@@ -820,7 +880,7 @@
 			}
 
 			openSharedLightbox( mediaId, gallery, clickedIndex );
-		} );
+		}
 
 		// ── Reactions (event delegation) ──
 
