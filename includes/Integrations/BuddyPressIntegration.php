@@ -52,8 +52,10 @@ class BuddyPressIntegration {
 			add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 			add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
 			add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 3 );
-			add_action( 'mvs_comment_created', array( $this, 'sync_comment_to_activity' ), 10, 5 );
-			add_action( 'bp_activity_comment_posted', array( $this, 'sync_activity_comment_to_media' ), 10, 3 );
+			// Comments bridge disabled for v1.0 — loop prevention needs deeper fix.
+			// @todo Re-enable in v1.1 with content-hash deduplication.
+			// add_action( 'mvs_comment_created', array( $this, 'sync_comment_to_activity' ), 10, 5 );
+			// add_action( 'bp_activity_comment_posted', array( $this, 'sync_activity_comment_to_media' ), 10, 3 );
 			add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
 			add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 			add_action( 'bp_register_activity_actions', array( $this, 'register_activity_actions' ) );
