@@ -159,10 +159,9 @@ class BuddyPressIntegration {
 				? sprintf( __( '%s uploaded new media', 'wpmediaverse' ), $user_link )
 				: __( 'A member uploaded new media', 'wpmediaverse' );
 		}
-		$file_type   = MediaMeta::get( $media_id, 'file_type' );
-		$type_label  = $this->get_media_type_label( $file_type );
-		$media_title = MediaMeta::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
-		$media_link  = '<a href="' . esc_url( MediaMeta::get_permalink( $media_id ) ) . '">' . esc_html( $media_title ) . '</a>';
+		$file_type  = MediaMeta::get( $media_id, 'file_type' );
+		$type_label = $this->get_media_type_label( $file_type );
+		$user_link  = bp_core_get_userlink( $activity->user_id );
 
 		// Build group context suffix if applicable.
 		$group_suffix = '';
@@ -185,22 +184,21 @@ class BuddyPressIntegration {
 			if ( $album && 'mvs_album' === $album->post_type ) {
 				$album_link = '<a href="' . esc_url( get_permalink( $album_id ) ) . '">' . esc_html( $album->post_title ) . '</a>';
 				return sprintf(
-					/* translators: 1: user link, 2: media type, 3: media link, 4: album link */
-					__( '%1$s uploaded a new %2$s: %3$s in album %4$s', 'wpmediaverse' ),
-					bp_core_get_userlink( $activity->user_id ),
+					/* translators: 1: user link, 2: media type, 3: album link */
+					__( '%1$s uploaded a new %2$s to album %3$s', 'wpmediaverse' ),
+					$user_link,
 					esc_html( $type_label ),
-					$media_link,
 					$album_link
 				) . $group_suffix;
 			}
 		}
 
+		// Clean action: "varundubey uploaded a new photo" — no filename/hash.
 		return sprintf(
-			/* translators: 1: user link, 2: media type, 3: media link */
-			__( '%1$s uploaded a new %2$s: %3$s', 'wpmediaverse' ),
-			bp_core_get_userlink( $activity->user_id ),
-			esc_html( $type_label ),
-			$media_link
+			/* translators: 1: user link, 2: media type (photo, video, audio file) */
+			__( '%1$s uploaded a new %2$s', 'wpmediaverse' ),
+			$user_link,
+			esc_html( $type_label )
 		) . $group_suffix;
 	}
 
@@ -287,16 +285,13 @@ class BuddyPressIntegration {
 
 		// Build action string at insert time (format callback regenerates on display,
 		// but storing it prevents empty-action crashes in BP Nouveau's strpos()).
-		$file_type   = MediaMeta::get( $media_id, 'file_type' );
-		$type_label  = $this->get_media_type_label( $file_type );
-		$media_title = MediaMeta::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
-		$media_link  = '<a href="' . esc_url( MediaMeta::get_permalink( $media_id ) ) . '">' . esc_html( $media_title ) . '</a>';
+		$file_type  = MediaMeta::get( $media_id, 'file_type' );
+		$type_label = $this->get_media_type_label( $file_type );
 		$action_str = sprintf(
-			/* translators: 1: user link, 2: media type, 3: media link */
-			__( '%1$s uploaded a new %2$s: %3$s', 'wpmediaverse' ),
+			/* translators: 1: user link, 2: media type */
+			__( '%1$s uploaded a new %2$s', 'wpmediaverse' ),
 			bp_core_get_userlink( $user_id ),
-			esc_html( $type_label ),
-			$media_link
+			esc_html( $type_label )
 		);
 
 		$activity_args = array(
