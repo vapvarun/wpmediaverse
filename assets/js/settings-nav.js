@@ -42,6 +42,11 @@
 		// Click handler for sidebar nav items.
 		document.querySelectorAll( NAV_SELECTOR ).forEach( ( item ) => {
 			item.addEventListener( 'click', ( e ) => {
+				// Only handle section links (hash-based). Let external page links navigate normally.
+				const href = item.getAttribute( 'href' ) || '';
+				if ( ! href.startsWith( '#' ) ) {
+					return;
+				}
 				e.preventDefault();
 				const sectionId = item.getAttribute( 'data-section' );
 				activateSection( sectionId );
