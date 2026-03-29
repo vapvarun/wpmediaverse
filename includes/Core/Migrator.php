@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 7;
+	const CURRENT_VERSION = 8;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -299,7 +299,6 @@ class Migrator {
 				file_type varchar(100) DEFAULT '',
 				file_size bigint(20) unsigned NOT NULL DEFAULT 0,
 				file_hash varchar(64) DEFAULT '',
-				attachment_id bigint(20) unsigned DEFAULT NULL,
 				width int(11) unsigned DEFAULT NULL,
 				height int(11) unsigned DEFAULT NULL,
 				duration decimal(10,2) DEFAULT NULL,
@@ -547,7 +546,6 @@ class Migrator {
 				file_type varchar(100) DEFAULT '',
 				file_size bigint(20) unsigned NOT NULL DEFAULT 0,
 				file_hash varchar(64) DEFAULT '',
-				attachment_id bigint(20) unsigned DEFAULT NULL,
 				width int(11) unsigned DEFAULT NULL,
 				height int(11) unsigned DEFAULT NULL,
 				duration decimal(10,2) DEFAULT NULL,
@@ -568,5 +566,17 @@ class Migrator {
 				KEY file_hash (file_hash)
 			) {$charset_collate};"
 		);
+	}
+
+	/**
+	 * Migration v8: Drop attachment_id column from mvs_media_index.
+	 */
+	private function migrate_to_8(): void {
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_media_index';
+		$col = $wpdb->get_results( "SHOW COLUMNS FROM {$table} LIKE 'attachment_id'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		if ( ! empty( $col ) ) {
+			$wpdb->query( "ALTER TABLE {$table} DROP COLUMN attachment_id" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		}
 	}
 }
