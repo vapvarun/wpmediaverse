@@ -1082,4 +1082,83 @@
 			}
 		} );
 	} )();
+
+	// ── Activity media lightbox interceptor ──────────────────────────
+	// Intercept clicks on media images in the activity stream and open
+	// the shared-ui lightbox instead of navigating to the raw file.
+	document.addEventListener( 'click', function( e ) {
+		// Find the closest image link inside activity content.
+		var link = e.target.closest( '.activity-content a' );
+		if ( ! link ) return;
+
+		var img = link.querySelector( 'img' );
+		if ( ! img ) return;
+
+		// Skip avatars and emoji.
+		if ( img.classList.contains( 'avatar' ) || img.classList.contains( 'emoji' ) ) return;
+
+		// Check if this links to an MVS media page or raw file.
+		var href = link.getAttribute( 'href' ) || '';
+		var isMediaPage = href.indexOf( '/media/' ) !== -1;
+		var isUpload = href.indexOf( '/uploads/wpmediaverse/' ) !== -1;
+
+		if ( ! isMediaPage && ! isUpload ) return;
+
+		// Get media ID from data attribute or parent.
+		var mediaId = 0;
+		var mediaEl = link.closest( '[data-mvs-media-id]' );
+		if ( mediaEl ) {
+			mediaId = parseInt( mediaEl.getAttribute( 'data-mvs-media-id' ), 10 );
+		}
+
+		// If we have a media ID, open the shared-ui lightbox.
+		if ( mediaId && window.wp && window.wp.interactivity ) {
+			e.preventDefault();
+			try {
+				var sharedStore = window.wp.interactivity.store( 'mvs/shared-ui' );
+				if ( sharedStore && sharedStore.state ) {
+					var s = sharedStore.state;
+					s.lightboxVisible = true;
+					s.lightboxMediaId = mediaId;
+					s.lightboxLoading = true;
+					s.lightboxCommentText = '';
+					s.lightboxGroupItems = [];
+					s.lightboxCurrentIndex = 0;
+					document.body.style.overflow = 'hidden';
+
+					fetch( restUrl + 'media/' + mediaId, {
+						credentials: 'same-origin',
+						headers: { 'X-WP-Nonce': nonce },
+					} ).then( function( r ) { return r.json(); } )
+					.then( function( data ) {
+						s.lightboxMediaData = data;
+						s.lightboxLoading = false;
+						// Load social data.
+						if ( sharedStore.actions && sharedStore.actions.lightboxLoadSocial ) {
+							sharedStore.actions.lightboxLoadSocial(
+								{ restUrl: restUrl, nonce: nonce },
+								mediaId,
+								{ 'X-WP-Nonce': nonce }
+							);
+						}
+					} ).catch( function() {
+						s.lightboxLoading = false;
+					} );
+				}
+			} catch ( err ) {
+				// Interactivity API not available — fall through to navigation.
+			}
+			return;
+		}
+
+		// No media ID but links to a media page — let it navigate there.
+		if ( isMediaPage ) return;
+
+		// Raw file URL — redirect to the media page if permalink is in data attr.
+		var permalink = link.getAttribute( 'data-mvs-permalink' );
+		if ( permalink ) {
+			e.preventDefault();
+			window.location.href = permalink;
+		}
+	} );
 } )();
