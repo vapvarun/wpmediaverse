@@ -2096,7 +2096,7 @@ class BuddyPressIntegration {
 				'restUrl'   => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 				'bpRestUrl' => esc_url_raw( rest_url( 'buddypress/v1/' ) ),
 				'nonce'     => wp_create_nonce( 'wp_rest' ),
-				'maxMedia'  => (int) apply_filters( 'mvs_activity_max_media', 5 ),
+				'maxMedia'  => (int) apply_filters( 'mvs_activity_max_media', 6 ),
 			)
 		);
 	}
@@ -2120,8 +2120,8 @@ class BuddyPressIntegration {
 			return;
 		}
 
-		/** Filter: max media items per activity post. Default 5. */
-		$max_media = (int) apply_filters( 'mvs_activity_max_media', 5 );
+		/** Filter: max media items per activity post. Default 6. */
+		$max_media = (int) apply_filters( 'mvs_activity_max_media', 6 );
 		$media_ids = array_slice( $media_ids, 0, $max_media );
 
 		$thumbnails = '';
@@ -2150,7 +2150,7 @@ class BuddyPressIntegration {
 		}
 
 		$count       = count( $valid_ids );
-		$grid_class  = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 5 );
+		$grid_class  = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 6 );
 		$new_content = $content . '<div class="' . esc_attr( $grid_class ) . '">' . $thumbnails . '</div>';
 
 		bp_activity_update_meta( $activity_id, '_mvs_media_ids', implode( ',', $valid_ids ) );
@@ -2389,7 +2389,7 @@ class BuddyPressIntegration {
 				}
 				if ( $grid_html ) {
 					$count      = count( $bb_ids );
-					$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 5 );
+					$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 6 );
 					return $content . '<div class="' . esc_attr( $grid_class ) . '" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">' . $grid_html . '</div>';
 				}
 			}
@@ -2595,7 +2595,7 @@ class BuddyPressIntegration {
 			return $content; // Parsing failed — return original safely.
 		}
 
-		$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 5 );
+		$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 6 );
 		$output     = '';
 		if ( $text ) {
 			$output .= '<p>' . esc_html( $text ) . '</p>';
