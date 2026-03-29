@@ -154,8 +154,8 @@ class SignedUrlService {
 			exit;
 		}
 
-		$file_path_rel = get_post_meta( $media_id, '_mvs_file_path', true );
-		$file_type     = get_post_meta( $media_id, '_mvs_file_type', true );
+		$file_path_rel = MediaMeta::get( $media_id, 'file_path' );
+		$file_type     = MediaMeta::get( $media_id, 'file_type' );
 
 		if ( ! $file_path_rel ) {
 			status_header( 404 );

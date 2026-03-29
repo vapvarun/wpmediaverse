@@ -11,6 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WP_CLI;
 use WP_CLI\Utils;
+use WPMediaVerse\Services\MediaMeta;
 
 /**
  * Manage WPMediaVerse media, stats, and maintenance tasks.
@@ -217,9 +218,9 @@ class Commands {
 
 			foreach ( $post_ids as $mvs_post_id ) {
 				$mvs_post     = get_post( $mvs_post_id );
-				$privacy_meta = get_post_meta( $mvs_post_id, '_mvs_privacy', true );
+				$privacy_meta = MediaMeta::get( $mvs_post_id, 'privacy' );
 				$privacy_val  = $privacy_meta ? $privacy_meta : 'public';
-				$type_meta    = get_post_meta( $mvs_post_id, '_mvs_media_type', true );
+				$type_meta    = MediaMeta::get( $mvs_post_id, 'media_type' );
 				$media_type   = $type_meta ? $type_meta : '';
 				$created      = $mvs_post->post_date_gmt ? $mvs_post->post_date_gmt : current_time( 'mysql', true );
 

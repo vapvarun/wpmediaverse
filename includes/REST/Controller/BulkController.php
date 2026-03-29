@@ -16,6 +16,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\REST\RateLimiter;
+use WPMediaVerse\Services\MediaMeta;
 
 /**
  * REST controller for bulk media operations.
@@ -133,7 +134,7 @@ class BulkController extends WP_REST_Controller {
 
 		foreach ( $media_ids as $media_id ) {
 			$bulk_post = get_post( $media_id );
-			$file_path = get_post_meta( $media_id, '_mvs_file_path', true );
+			$file_path = MediaMeta::get( $media_id, 'file_path' );
 			if ( $file_path ) {
 				$storage = Plugin::container()->get( 'storage' );
 				$storage->get_driver()->delete( $file_path );
@@ -227,7 +228,7 @@ class BulkController extends WP_REST_Controller {
 		$updated = 0;
 
 		foreach ( $media_ids as $media_id ) {
-			update_post_meta( $media_id, '_mvs_privacy', $privacy );
+			MediaMeta::set( $media_id, 'privacy', $privacy );
 
 			$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prefix . 'mvs_media_index',

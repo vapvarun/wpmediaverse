@@ -9,6 +9,8 @@ namespace WPMediaVerse\Integrations;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\MediaMeta;
+
 /**
  * Integrates WPMediaVerse with BuddyPress.
  *
@@ -161,7 +163,7 @@ class BuddyPressIntegration {
 				? sprintf( __( '%s uploaded new media', 'wpmediaverse' ), $user_link )
 				: __( 'A member uploaded new media', 'wpmediaverse' );
 		}
-		$file_type  = get_post_meta( $media_id, '_mvs_file_type', true );
+		$file_type  = MediaMeta::get( $media_id, 'file_type' );
 		$type_label = $this->get_media_type_label( $file_type );
 		$media_link = '<a href="' . esc_url( get_permalink( $media_id ) ) . '">' . esc_html( $post->post_title ) . '</a>';
 
@@ -180,7 +182,7 @@ class BuddyPressIntegration {
 		}
 
 		// Check if this media belongs to an album.
-		$album_id = (int) get_post_meta( $media_id, '_mvs_album_id', true );
+		$album_id = (int) MediaMeta::get( $media_id, 'album_id' );
 		if ( $album_id ) {
 			$album = get_post( $album_id );
 			if ( $album && 'mvs_album' === $album->post_type ) {
@@ -251,7 +253,7 @@ class BuddyPressIntegration {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['context'] ) && 'activity' === sanitize_key( wp_unslash( $_GET['context'] ) ) ) {
-			update_post_meta( $media_id, '_mvs_activity_upload', '1' );
+			MediaMeta::set( $media_id, 'activity_upload', '1' );
 		}
 	}
 
@@ -269,12 +271,12 @@ class BuddyPressIntegration {
 		}
 
 		// Skip if this media was uploaded via the BP activity form.
-		if ( get_post_meta( $media_id, '_mvs_activity_upload', true ) ) {
+		if ( MediaMeta::get( $media_id, 'activity_upload' ) ) {
 			return;
 		}
 
 		// Skip imported media — their original source activity is preserved and rendered via transform_legacy_media_content().
-		if ( get_post_meta( $media_id, '_mvs_imported_media', true ) ) {
+		if ( MediaMeta::get( $media_id, 'imported_media' ) ) {
 			return;
 		}
 
@@ -288,7 +290,7 @@ class BuddyPressIntegration {
 
 		// Build action string at insert time (format callback regenerates on display,
 		// but storing it prevents empty-action crashes in BP Nouveau's strpos()).
-		$file_type  = get_post_meta( $media_id, '_mvs_file_type', true );
+		$file_type  = MediaMeta::get( $media_id, 'file_type' );
 		$type_label = $this->get_media_type_label( $file_type );
 		$media_link = '<a href="' . esc_url( get_permalink( $media_id ) ) . '">' . esc_html( $post->post_title ) . '</a>';
 		$action_str = sprintf(
@@ -309,7 +311,7 @@ class BuddyPressIntegration {
 		);
 
 		// If media belongs to a group, record activity in the group stream.
-		$mvs_group_id = (int) get_post_meta( $media_id, '_mvs_group_id', true );
+		$mvs_group_id = (int) MediaMeta::get( $media_id, 'group_id' );
 		if ( $mvs_group_id > 0 && bp_is_active( 'groups' ) ) {
 			$activity_args['component']         = 'groups';
 			$activity_args['item_id']           = $mvs_group_id;
@@ -321,7 +323,7 @@ class BuddyPressIntegration {
 
 		// Store the activity ID on the media post for easy lookup/updates.
 		if ( $activity_id ) {
-			update_post_meta( $media_id, '_mvs_bp_activity_id', $activity_id );
+			MediaMeta::set( $media_id, 'bp_activity_id', $activity_id );
 		}
 	}
 
@@ -523,7 +525,7 @@ class BuddyPressIntegration {
 		}
 
 		// Fast path: use stored activity ID from post meta.
-		$stored_id = (int) get_post_meta( $media_id, '_mvs_bp_activity_id', true );
+		$stored_id = (int) MediaMeta::get( $media_id, 'bp_activity_id' );
 		if ( $stored_id ) {
 			$activity = new \BP_Activity_Activity( $stored_id );
 			if ( ! empty( $activity->id ) ) {
@@ -544,7 +546,7 @@ class BuddyPressIntegration {
 
 		if ( ! empty( $activities['activities'] ) ) {
 			// Cache for next time.
-			update_post_meta( $media_id, '_mvs_bp_activity_id', $activities['activities'][0]->id );
+			MediaMeta::set( $media_id, 'bp_activity_id', $activities['activities'][0]->id );
 			return $activities['activities'][0];
 		}
 
@@ -562,7 +564,7 @@ class BuddyPressIntegration {
 		);
 
 		if ( ! empty( $activities['activities'] ) ) {
-			update_post_meta( $media_id, '_mvs_bp_activity_id', $activities['activities'][0]->id );
+			MediaMeta::set( $media_id, 'bp_activity_id', $activities['activities'][0]->id );
 			return $activities['activities'][0];
 		}
 
@@ -1626,7 +1628,7 @@ class BuddyPressIntegration {
 		}
 
 		// Verify album belongs to this group.
-		$album_group_id = (int) get_post_meta( $album->ID, '_mvs_group_id', true );
+		$album_group_id = (int) MediaMeta::get( $album->ID, 'group_id' );
 		if ( $album_group_id !== (int) $group->id ) {
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found in this group.', 'wpmediaverse' ) . '</p></div>';
 			return;
@@ -2024,10 +2026,10 @@ class BuddyPressIntegration {
 	 * @since 1.1.0 Changed from private to public for WP-CLI backfill command.
 	 */
 	public function get_media_thumbnail_html( int $media_id, string $size = 'medium' ): string {
-		$attach_id  = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
-		$file_type  = get_post_meta( $media_id, '_mvs_file_type', true );
-		$media_type = get_post_meta( $media_id, '_mvs_media_type', true );
-		$file_url   = (string) get_post_meta( $media_id, '_mvs_file_url', true );
+		$attach_id  = (int) MediaMeta::get( $media_id, 'attachment_id' );
+		$file_type  = MediaMeta::get( $media_id, 'file_type' );
+		$media_type = MediaMeta::get( $media_id, 'media_type' );
+		$file_url   = (string) MediaMeta::get( $media_id, 'file_url' );
 		$thumb_url  = '';
 
 		if ( $attach_id ) {
@@ -2073,8 +2075,8 @@ class BuddyPressIntegration {
 
 		// Audio: show compact audio card.
 		if ( 'audio' === $media_type ) {
-			$artist   = get_post_meta( $media_id, '_mvs_artist', true );
-			$duration = get_post_meta( $media_id, '_mvs_duration', true );
+			$artist   = MediaMeta::get( $media_id, 'artist' );
+			$duration = MediaMeta::get( $media_id, 'duration' );
 			$sub      = '';
 			if ( $artist ) {
 				$sub .= esc_html( $artist );
@@ -2225,7 +2227,7 @@ class BuddyPressIntegration {
 		// Store the activity ID on each media post so comments on these media
 		// can be threaded back as activity comments via find_media_upload_activity().
 		foreach ( $valid_ids as $mid ) {
-			update_post_meta( $mid, '_mvs_bp_activity_id', $activity_id );
+			MediaMeta::set( $mid, 'bp_activity_id', $activity_id );
 		}
 
 		$activity = new \BP_Activity_Activity( $activity_id );
@@ -2255,8 +2257,8 @@ class BuddyPressIntegration {
 		if ( $raw_ids ) {
 			$media_ids = array_filter( array_map( 'absint', explode( ',', $raw_ids ) ) );
 			foreach ( $media_ids as $media_id ) {
-				update_post_meta( $media_id, '_mvs_privacy', 'group' );
-				update_post_meta( $media_id, '_mvs_group_id', $group_id );
+				MediaMeta::set( $media_id, 'privacy', 'group' );
+				MediaMeta::set( $media_id, 'group_id', $group_id );
 			}
 		}
 	}
@@ -2367,8 +2369,8 @@ class BuddyPressIntegration {
 		}
 
 		$media_id   = (int) $matches[1];
-		$file_url   = get_post_meta( $media_id, '_mvs_file_url', true );
-		$media_type = get_post_meta( $media_id, '_mvs_media_type', true );
+		$file_url   = MediaMeta::get( $media_id, 'file_url' );
+		$media_type = MediaMeta::get( $media_id, 'media_type' );
 
 		if ( 'video' !== $media_type || ! $file_url ) {
 			return $content;
@@ -2378,7 +2380,7 @@ class BuddyPressIntegration {
 		$permalink = get_permalink( $media_id );
 		$poster    = '';
 
-		$attach_id = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
+		$attach_id = (int) MediaMeta::get( $media_id, 'attachment_id' );
 		if ( $attach_id ) {
 			$poster_url = wp_get_attachment_image_url( $attach_id, 'large' );
 			if ( $poster_url ) {
@@ -2388,7 +2390,7 @@ class BuddyPressIntegration {
 
 		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'
 			. '<video controls preload="metadata"' . $poster . ' style="width:100%;max-height:400px;border-radius:8px;display:block;">'
-			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( get_post_meta( $media_id, '_mvs_file_type', true ) ?: 'video/mp4' ) . '">'
+			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( MediaMeta::get( $media_id, 'file_type' ) ?: 'video/mp4' ) . '">'
 			. '</video>'
 			. '<a href="' . esc_url( $permalink ) . '" class="mvs-activity-media-link" style="display:block;text-align:center;margin-top:4px;font-size:13px;">' . esc_html__( 'View full media', 'wpmediaverse' ) . '</a>'
 			. '</div>';

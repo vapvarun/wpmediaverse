@@ -63,7 +63,7 @@ class PrivacyService {
 			return true;
 		}
 
-		$privacy = get_post_meta( $media_id, '_mvs_privacy', true );
+		$privacy = MediaMeta::get( $media_id, 'privacy' );
 		if ( ! $privacy ) {
 			$privacy = 'public';
 		}
@@ -145,7 +145,7 @@ class PrivacyService {
 			return false;
 		}
 
-		$group_id = (int) get_post_meta( $media_id, '_mvs_group_id', true );
+		$group_id = (int) MediaMeta::get( $media_id, 'group_id' );
 		if ( ! $group_id ) {
 			return false;
 		}
@@ -165,7 +165,7 @@ class PrivacyService {
 			return false;
 		}
 
-		$allowed_users = get_post_meta( $media_id, '_mvs_custom_access', true );
+		$allowed_users = MediaMeta::get( $media_id, 'custom_access' );
 		if ( ! is_array( $allowed_users ) ) {
 			return false;
 		}

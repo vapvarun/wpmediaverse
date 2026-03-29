@@ -14,6 +14,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\Services\MediaMeta;
 use WPMediaVerse\Services\ModerationService;
 use WPMediaVerse\Services\AIService;
 
@@ -306,12 +307,12 @@ class ModerationController extends WP_REST_Controller {
 			'date'              => $post->post_date_gmt,
 			'status'            => $post->post_status,
 			'moderation_status' => $this->moderation->get_status( $post->ID ),
-			'file_url'          => get_post_meta( $post->ID, '_mvs_file_url', true ),
-			'file_type'         => get_post_meta( $post->ID, '_mvs_file_type', true ),
-			'ai_description'    => get_post_meta( $post->ID, '_mvs_ai_description', true ),
-			'ai_tags'           => get_post_meta( $post->ID, '_mvs_ai_tags', true ),
-			'ai_moderation'     => get_post_meta( $post->ID, '_mvs_ai_moderation', true ),
-			'rejection_reason'  => get_post_meta( $post->ID, '_mvs_rejection_reason', true ),
+			'file_url'          => MediaMeta::get( $post->ID, 'file_url' ),
+			'file_type'         => MediaMeta::get( $post->ID, 'file_type' ),
+			'ai_description'    => MediaMeta::get( $post->ID, 'ai_description' ),
+			'ai_tags'           => MediaMeta::get( $post->ID, 'ai_tags' ),
+			'ai_moderation'     => MediaMeta::get( $post->ID, 'ai_moderation' ),
+			'rejection_reason'  => MediaMeta::get( $post->ID, 'rejection_reason' ),
 			'moderation_log'    => $this->moderation->get_log( $post->ID ),
 		);
 	}

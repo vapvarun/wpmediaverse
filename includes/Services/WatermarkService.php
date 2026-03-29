@@ -119,7 +119,7 @@ class WatermarkService {
 		}
 
 		// Only watermark images.
-		$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
+		$file_type = MediaMeta::get( $media_id, 'file_type' );
 		if ( ! $file_type || 0 !== strpos( $file_type, 'image/' ) ) {
 			$this->preview_cache[ $media_id ] = '';
 			return '';
@@ -132,15 +132,15 @@ class WatermarkService {
 		}
 
 		// Check for cached watermarked file.
-		$cached_url = get_post_meta( $media_id, '_mvs_watermark_url', true );
+		$cached_url = MediaMeta::get( $media_id, 'watermark_url' );
 		if ( $cached_url ) {
 			$this->preview_cache[ $media_id ] = $cached_url;
 			return $cached_url;
 		}
 
 		// Delegate watermark generation to Pro.
-		$file_path = get_post_meta( $media_id, '_mvs_file_path', true );
-		$file_url  = get_post_meta( $media_id, '_mvs_file_url', true );
+		$file_path = MediaMeta::get( $media_id, 'file_path' );
+		$file_url  = MediaMeta::get( $media_id, 'file_url' );
 		$config    = $this->get_config();
 
 		/**
@@ -158,7 +158,7 @@ class WatermarkService {
 		$preview_url = apply_filters( 'mvs_generate_watermark', '', $media_id, $file_path, $file_url, $config );
 
 		if ( $preview_url ) {
-			update_post_meta( $media_id, '_mvs_watermark_url', $preview_url );
+			MediaMeta::set( $media_id, 'watermark_url', $preview_url );
 		}
 
 		$this->preview_cache[ $media_id ] = $preview_url;
@@ -174,7 +174,7 @@ class WatermarkService {
 	 * @param int $media_id Media post ID.
 	 */
 	public function invalidate( int $media_id ): void {
-		delete_post_meta( $media_id, '_mvs_watermark_url' );
+		MediaMeta::delete( $media_id, 'watermark_url' );
 		unset( $this->preview_cache[ $media_id ] );
 
 		/**

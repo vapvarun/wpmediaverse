@@ -15,6 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
+use WPMediaVerse\Services\MediaMeta;
 use WPMediaVerse\Social\FavoriteService;
 
 /**
@@ -187,8 +188,8 @@ class FavoriteController extends WP_REST_Controller {
 				'media_id'   => $media_id,
 				'title'      => $post->post_title,
 				'link'       => get_permalink( $media_id ),
-				'file_url'   => set_url_scheme( get_post_meta( $media_id, '_mvs_file_url', true ) ),
-				'media_type' => get_post_meta( $media_id, '_mvs_media_type', true ),
+				'file_url'   => set_url_scheme( MediaMeta::get( $media_id, 'file_url' ) ),
+				'media_type' => MediaMeta::get( $media_id, 'media_type' ),
 				'created_at' => $item['created_at'],
 			);
 		}

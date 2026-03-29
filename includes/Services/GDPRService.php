@@ -105,11 +105,11 @@ class GDPRService {
 					),
 					array(
 						'name'  => __( 'Type', 'wpmediaverse' ),
-						'value' => get_post_meta( $post->ID, '_mvs_media_type', true ),
+						'value' => MediaMeta::get( $post->ID, 'media_type' ),
 					),
 					array(
 						'name'  => __( 'Privacy', 'wpmediaverse' ),
-						'value' => get_post_meta( $post->ID, '_mvs_privacy', true ),
+						'value' => MediaMeta::get( $post->ID, 'privacy' ),
 					),
 					array(
 						'name'  => __( 'Date', 'wpmediaverse' ),
@@ -117,7 +117,7 @@ class GDPRService {
 					),
 					array(
 						'name'  => __( 'File URL', 'wpmediaverse' ),
-						'value' => get_post_meta( $post->ID, '_mvs_file_url', true ),
+						'value' => MediaMeta::get( $post->ID, 'file_url' ),
 					),
 				),
 			);

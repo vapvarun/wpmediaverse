@@ -56,7 +56,7 @@ class ModerationService {
 	 * @return string
 	 */
 	public function get_status( int $media_id ): string {
-		$status = get_post_meta( $media_id, '_mvs_moderation_status', true );
+		$status = MediaMeta::get( $media_id, 'moderation_status' );
 		return $status ? $status : self::STATUS_APPROVED;
 	}
 
@@ -75,7 +75,7 @@ class ModerationService {
 		}
 
 		$old_status = $this->get_status( $media_id );
-		update_post_meta( $media_id, '_mvs_moderation_status', $status );
+		MediaMeta::set( $media_id, 'moderation_status', $status );
 
 		// Log moderation action.
 		$this->log_action( $media_id, $status, $user_id );
@@ -115,7 +115,7 @@ class ModerationService {
 
 			case 'hide':
 				$this->set_status( $media_id, self::STATUS_FLAGGED );
-				update_post_meta( $media_id, '_mvs_privacy', 'private' );
+				MediaMeta::set( $media_id, 'privacy', 'private' );
 				break;
 
 			case 'flag':
@@ -208,7 +208,7 @@ class ModerationService {
 			);
 
 			if ( $reason ) {
-				update_post_meta( $media_id, '_mvs_rejection_reason', sanitize_text_field( $reason ) );
+				MediaMeta::set( $media_id, 'rejection_reason', sanitize_text_field( $reason ) );
 			}
 		}
 
@@ -223,7 +223,7 @@ class ModerationService {
 	 * @param int    $user_id  Moderator user ID (0 for automated).
 	 */
 	private function log_action( int $media_id, string $status, int $user_id ): void {
-		$log = get_post_meta( $media_id, '_mvs_moderation_log', true );
+		$log = MediaMeta::get( $media_id, 'moderation_log' );
 
 		if ( ! is_array( $log ) ) {
 			$log = array();
@@ -235,7 +235,7 @@ class ModerationService {
 			'date'    => current_time( 'mysql', true ),
 		);
 
-		update_post_meta( $media_id, '_mvs_moderation_log', $log );
+		MediaMeta::set( $media_id, 'moderation_log', $log );
 	}
 
 	/**
@@ -245,7 +245,7 @@ class ModerationService {
 	 * @return array
 	 */
 	public function get_log( int $media_id ): array {
-		$log = get_post_meta( $media_id, '_mvs_moderation_log', true );
+		$log = MediaMeta::get( $media_id, 'moderation_log' );
 		return is_array( $log ) ? $log : array();
 	}
 

@@ -12,6 +12,8 @@ namespace WPMediaVerse\Core;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\MediaMeta;
+
 /**
  * Static helper methods for template rendering.
  */
@@ -28,8 +30,8 @@ class TemplateHelpers {
 	 * @return string Thumbnail URL or empty string.
 	 */
 	public static function get_thumb_url( int $media_id, string $size = 'large' ): string {
-		$attach_id  = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
-		$file_url   = get_post_meta( $media_id, '_mvs_file_url', true );
+		$attach_id  = (int) MediaMeta::get( $media_id, 'attachment_id' );
+		$file_url   = MediaMeta::get( $media_id, 'file_url' );
 		$media_type = self::get_media_type( $media_id );
 
 		// Try WordPress featured image first (set via admin editor).
@@ -64,13 +66,13 @@ class TemplateHelpers {
 	 * @return string One of: image, video, audio, document.
 	 */
 	public static function get_media_type( int $media_id ): string {
-		$media_type = get_post_meta( $media_id, '_mvs_media_type', true );
+		$media_type = MediaMeta::get( $media_id, 'media_type' );
 		if ( $media_type ) {
 			return $media_type;
 		}
 
 		// Fallback: derive from MIME type.
-		$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
+		$file_type = MediaMeta::get( $media_id, 'file_type' );
 		if ( $file_type ) {
 			if ( strpos( $file_type, 'image/' ) === 0 ) {
 				return 'image';
@@ -162,12 +164,12 @@ class TemplateHelpers {
 		}
 
 		// Check if this is a gallery group cover.
-		$media_group  = get_post_meta( $media_id, '_mvs_media_group', true );
+		$media_group  = MediaMeta::get( $media_id, 'media_group' );
 		$group_count  = 0;
 		$is_gallery   = false;
 		if ( $media_group ) {
 			$is_gallery  = true;
-			$group_count = (int) get_post_meta( $media_id, '_mvs_group_count_cache', true );
+			$group_count = (int) MediaMeta::get( $media_id, 'group_count_cache' );
 			if ( ! $group_count ) {
 				global $wpdb;
 				$group_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

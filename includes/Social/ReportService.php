@@ -13,6 +13,8 @@ namespace WPMediaVerse\Social;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\MediaMeta;
+
 /**
  * Report media/users, block users, admin report queue.
  */
@@ -92,7 +94,7 @@ class ReportService {
 			if ( $threshold > 0 ) {
 				$count = $this->get_report_count( $target_type, $target_id );
 				if ( $count >= $threshold ) {
-					update_post_meta( $target_id, '_mvs_moderation_status', 'flagged' );
+					MediaMeta::set( $target_id, 'moderation_status', 'flagged' );
 				}
 			}
 		}

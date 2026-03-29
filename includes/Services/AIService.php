@@ -72,23 +72,23 @@ class AIService {
 			return new WP_Error( 'mvs_ai_budget_exceeded', __( 'Monthly AI budget has been exceeded.', 'wpmediaverse' ) );
 		}
 
-		$image_url = get_post_meta( $media_id, '_mvs_file_url', true );
+		$image_url = MediaMeta::get( $media_id, 'file_url' );
 		if ( ! $image_url ) {
 			return new WP_Error( 'mvs_no_image', __( 'Media item has no file URL.', 'wpmediaverse' ) );
 		}
 
-		update_post_meta( $media_id, '_mvs_ai_status', 'processing' );
+		MediaMeta::set( $media_id, 'ai_status', 'processing' );
 
 		$result = $provider->analyze_image( $image_url );
 
 		if ( ! $result ) {
-			update_post_meta( $media_id, '_mvs_ai_status', 'failed' );
+			MediaMeta::set( $media_id, 'ai_status', 'failed' );
 			$this->track_usage( $provider->get_id(), 'analyze', false );
 			return new WP_Error( 'mvs_ai_failed', __( 'AI analysis failed.', 'wpmediaverse' ) );
 		}
 
-		update_post_meta( $media_id, '_mvs_ai_description', sanitize_text_field( $result['description'] ) );
-		update_post_meta( $media_id, '_mvs_ai_confidence', (float) $result['confidence'] );
+		MediaMeta::set( $media_id, 'ai_description', sanitize_text_field( $result['description'] ) );
+		MediaMeta::set( $media_id, 'ai_confidence', (float) $result['confidence'] );
 
 		$this->track_usage( $provider->get_id(), 'analyze', true );
 
@@ -111,13 +111,13 @@ class AIService {
 			return new WP_Error( 'mvs_ai_budget_exceeded', __( 'Monthly AI budget has been exceeded.', 'wpmediaverse' ) );
 		}
 
-		$image_url   = get_post_meta( $media_id, '_mvs_file_url', true );
-		$description = get_post_meta( $media_id, '_mvs_ai_description', true );
+		$image_url   = MediaMeta::get( $media_id, 'file_url' );
+		$description = MediaMeta::get( $media_id, 'ai_description' );
 
 		$tags = $provider->generate_tags( $image_url, $description ? $description : '' );
 
 		if ( ! empty( $tags ) ) {
-			update_post_meta( $media_id, '_mvs_ai_tags', $tags );
+			MediaMeta::set( $media_id, 'ai_tags', $tags );
 
 			// Apply tags to the mvs_tag taxonomy if auto-apply is enabled.
 			if ( get_option( 'mvs_ai_auto_apply_tags', false ) ) {
@@ -142,7 +142,7 @@ class AIService {
 			return new WP_Error( 'mvs_no_ai_provider', __( 'No AI provider is configured.', 'wpmediaverse' ) );
 		}
 
-		$image_url = get_post_meta( $media_id, '_mvs_file_url', true );
+		$image_url = MediaMeta::get( $media_id, 'file_url' );
 
 		$result = $provider->moderate_content( $image_url );
 
@@ -154,10 +154,10 @@ class AIService {
 			return new WP_Error( 'mvs_moderation_failed', __( 'AI moderation returned an invalid response.', 'wpmediaverse' ) );
 		}
 
-		update_post_meta( $media_id, '_mvs_ai_moderation', $result );
+		MediaMeta::set( $media_id, 'ai_moderation', $result );
 
 		if ( ! $result['safe'] ) {
-			update_post_meta( $media_id, '_mvs_moderation_status', 'flagged' );
+			MediaMeta::set( $media_id, 'moderation_status', 'flagged' );
 
 			/**
 			 * Fires when AI flags media content.
@@ -203,7 +203,7 @@ class AIService {
 			}
 		}
 
-		update_post_meta( $media_id, '_mvs_ai_status', 'complete' );
+		MediaMeta::set( $media_id, 'ai_status', 'complete' );
 
 		return $output;
 	}

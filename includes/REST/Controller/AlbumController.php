@@ -16,6 +16,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Services\AlbumService;
+use WPMediaVerse\Services\MediaMeta;
 use WPMediaVerse\Services\PrivacyService;
 
 /**
@@ -309,16 +310,16 @@ class AlbumController extends WP_REST_Controller {
 		}
 
 		$privacy = sanitize_text_field( $request->get_param( 'privacy' ) ?? 'public' );
-		update_post_meta( $album_id, '_mvs_privacy', $privacy );
+		MediaMeta::set( $album_id, 'privacy', $privacy );
 
 		$album_type = sanitize_text_field( $request->get_param( 'album_type' ) ?? 'default' );
-		update_post_meta( $album_id, '_mvs_album_type', $album_type );
+		MediaMeta::set( $album_id, 'album_type', $album_type );
 
 		// Set group association if group_id is provided and user is a member.
 		$group_id = absint( $request->get_param( 'group_id' ) );
 		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
-			update_post_meta( $album_id, '_mvs_privacy', 'group' );
-			update_post_meta( $album_id, '_mvs_group_id', $group_id );
+			MediaMeta::set( $album_id, 'privacy', 'group' );
+			MediaMeta::set( $album_id, 'group_id', $group_id );
 		}
 
 		$response = rest_ensure_response( $this->prepare_album_response( get_post( $album_id ) ) );
@@ -367,7 +368,7 @@ class AlbumController extends WP_REST_Controller {
 
 		$privacy = $request->get_param( 'privacy' );
 		if ( $privacy ) {
-			update_post_meta( $album_id, '_mvs_privacy', sanitize_text_field( $privacy ) );
+			MediaMeta::set( $album_id, 'privacy', sanitize_text_field( $privacy ) );
 		}
 
 		return rest_ensure_response( $this->prepare_album_response( get_post( $album_id ) ) );
@@ -561,8 +562,8 @@ class AlbumController extends WP_REST_Controller {
 	 */
 	private function prepare_album_response( $post, bool $include_items = false ): array {
 		$album_id      = $post->ID;
-		$privacy_value = get_post_meta( $album_id, '_mvs_privacy', true );
-		$album_type    = get_post_meta( $album_id, '_mvs_album_type', true );
+		$privacy_value = MediaMeta::get( $album_id, 'privacy' );
+		$album_type    = MediaMeta::get( $album_id, 'album_type' );
 
 		$data = array(
 			'id'          => $album_id,

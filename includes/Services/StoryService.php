@@ -52,8 +52,8 @@ class StoryService {
 	public function create( int $media_id, int $duration_hours = self::DEFAULT_DURATION_HOURS ): string {
 		$expires_at = gmdate( 'Y-m-d H:i:s', time() + ( $duration_hours * HOUR_IN_SECONDS ) );
 
-		update_post_meta( $media_id, '_mvs_is_story', '1' );
-		update_post_meta( $media_id, '_mvs_story_expires_at', $expires_at );
+		MediaMeta::set( $media_id, 'is_story', '1' );
+		MediaMeta::set( $media_id, 'story_expires_at', $expires_at );
 
 		/**
 		 * Fires after a story is created.
@@ -73,12 +73,12 @@ class StoryService {
 	 * @return bool
 	 */
 	public function is_active( int $media_id ): bool {
-		$is_story = get_post_meta( $media_id, '_mvs_is_story', true );
+		$is_story = MediaMeta::get( $media_id, 'is_story' );
 		if ( '1' !== $is_story ) {
 			return false;
 		}
 
-		$expires_at = get_post_meta( $media_id, '_mvs_story_expires_at', true );
+		$expires_at = MediaMeta::get( $media_id, 'story_expires_at' );
 		if ( ! $expires_at ) {
 			return false;
 		}
@@ -129,7 +129,7 @@ class StoryService {
 				'media_id'   => $post->ID,
 				'author'     => (int) $post->post_author,
 				'title'      => $post->post_title,
-				'expires_at' => get_post_meta( $post->ID, '_mvs_story_expires_at', true ),
+				'expires_at' => MediaMeta::get( $post->ID, 'story_expires_at' ),
 			);
 		}
 
@@ -170,8 +170,8 @@ class StoryService {
 		$cleaned = 0;
 
 		foreach ( $query->posts as $post ) {
-			delete_post_meta( $post->ID, '_mvs_is_story' );
-			delete_post_meta( $post->ID, '_mvs_story_expires_at' );
+			MediaMeta::delete( $post->ID, 'is_story' );
+			MediaMeta::delete( $post->ID, 'story_expires_at' );
 			++$cleaned;
 
 			/**

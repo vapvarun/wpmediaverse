@@ -10,6 +10,8 @@ namespace WPMediaVerse\Messaging;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\MediaMeta;
+
 class MessagingService {
 
 	/**
@@ -1517,7 +1519,7 @@ class MessagingService {
 			'id'        => $media_id,
 			'title'     => $post->post_title,
 			'permalink' => get_permalink( $media_id ),
-			'type'      => get_post_meta( $media_id, '_mvs_media_type', true ) ?: 'image',
+			'type'      => MediaMeta::get( $media_id, 'media_type' ) ?: 'image',
 		);
 
 		$thumb_id = get_post_thumbnail_id( $media_id );

@@ -9,6 +9,8 @@ namespace WPMediaVerse\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\MediaMeta;
+
 /**
  * Overview page — the landing page under WPMediaVerse admin menu.
  *
@@ -331,7 +333,7 @@ class OverviewPage {
 									<tbody>
 										<?php foreach ( $recent_media as $item ) : ?>
 											<?php
-											$thumb_id  = (int) get_post_meta( $item->ID, '_mvs_attachment_id', true );
+											$thumb_id  = (int) MediaMeta::get( $item->ID, 'attachment_id' );
 											$thumb_url = $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'thumbnail' ) : '';
 											$edit_url  = get_edit_post_link( $item->ID, 'raw' );
 											$view_url  = get_permalink( $item->ID );

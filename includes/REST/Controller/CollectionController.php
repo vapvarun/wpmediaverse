@@ -16,6 +16,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Services\CollectionService;
+use WPMediaVerse\Services\MediaMeta;
 
 /**
  * REST controller for collections.
@@ -387,14 +388,14 @@ class CollectionController extends WP_REST_Controller {
 		if ( ! $cover_url ) {
 			$first_media_id = $this->get_first_collection_media( $post->ID, $collection_type );
 			if ( $first_media_id ) {
-				$file_url   = get_post_meta( $first_media_id, '_mvs_file_url', true );
-				$media_type = get_post_meta( $first_media_id, '_mvs_media_type', true ) ?: 'image';
+				$file_url   = MediaMeta::get( $first_media_id, 'file_url' );
+				$media_type = MediaMeta::get( $first_media_id, 'media_type' ) ?: 'image';
 				if ( 'image' === $media_type && $file_url ) {
 					$cover_url = set_url_scheme( $file_url );
 				} else {
 					$att_id = get_post_thumbnail_id( $first_media_id );
 					if ( ! $att_id ) {
-						$att_id = (int) get_post_meta( $first_media_id, '_mvs_attachment_id', true );
+						$att_id = (int) MediaMeta::get( $first_media_id, 'attachment_id' );
 					}
 					if ( $att_id ) {
 						$url       = wp_get_attachment_image_url( $att_id, 'large' );

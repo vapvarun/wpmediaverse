@@ -67,6 +67,7 @@ use WPMediaVerse\REST\Controller\ReportController;
 use WPMediaVerse\REST\Controller\ActivityController;
 use WPMediaVerse\REST\Controller\ProfileController;
 use WPMediaVerse\Services\ProfileService;
+use WPMediaVerse\Services\MediaMeta;
 
 /**
  * Main plugin bootstrap class.
@@ -702,9 +703,9 @@ class Plugin {
 		);
 
 		if ( ! $idx_exists ) {
-			$privacy_meta = get_post_meta( $post_id, '_mvs_privacy', true );
+			$privacy_meta = MediaMeta::get( $post_id, 'privacy' );
 			$privacy      = $privacy_meta ? $privacy_meta : 'public';
-			$type_meta    = get_post_meta( $post_id, '_mvs_media_type', true );
+			$type_meta    = MediaMeta::get( $post_id, 'media_type' );
 			$media_type   = $type_meta ? $type_meta : '';
 			$created      = $post->post_date_gmt ? $post->post_date_gmt : $now;
 

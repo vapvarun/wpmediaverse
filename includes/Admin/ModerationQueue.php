@@ -9,6 +9,7 @@ namespace WPMediaVerse\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\MediaMeta;
 use WPMediaVerse\Services\ModerationService;
 
 /**
@@ -383,9 +384,9 @@ class ModerationQueue {
 	 * @param \WP_Post $post Post object.
 	 */
 	private function render_row( \WP_Post $post ): void {
-		$file_url  = get_post_meta( $post->ID, '_mvs_file_url', true );
-		$file_type = get_post_meta( $post->ID, '_mvs_file_type', true );
-		$ai_mod    = get_post_meta( $post->ID, '_mvs_ai_moderation', true );
+		$file_url  = MediaMeta::get( $post->ID, 'file_url' );
+		$file_type = MediaMeta::get( $post->ID, 'file_type' );
+		$ai_mod    = MediaMeta::get( $post->ID, 'ai_moderation' );
 		$flags     = ( is_array( $ai_mod ) && ! empty( $ai_mod['flags'] ) ) ? $ai_mod['flags'] : array();
 		$author    = get_userdata( $post->post_author );
 		?>

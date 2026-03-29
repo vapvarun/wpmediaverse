@@ -224,18 +224,18 @@ class UploadService {
 			return $media_id;
 		}
 
-		// Save post meta.
-		update_post_meta( $media_id, '_mvs_file_url', $file_url );
-		update_post_meta( $media_id, '_mvs_file_path', $dest_path );
-		update_post_meta( $media_id, '_mvs_file_size', (int) $actual_size );
-		update_post_meta( $media_id, '_mvs_file_type', $mime );
-		update_post_meta( $media_id, '_mvs_file_hash', $hash );
-		update_post_meta( $media_id, '_mvs_media_type', $media_type );
-		update_post_meta( $media_id, '_mvs_privacy', $privacy );
-		update_post_meta( $media_id, '_mvs_moderation_status', 'approved' );
+		// Save media meta via custom tables.
+		MediaMeta::set( $media_id, 'file_url', $file_url );
+		MediaMeta::set( $media_id, 'file_path', $dest_path );
+		MediaMeta::set( $media_id, 'file_size', (int) $actual_size );
+		MediaMeta::set( $media_id, 'file_type', $mime );
+		MediaMeta::set( $media_id, 'file_hash', $hash );
+		MediaMeta::set( $media_id, 'media_type', $media_type );
+		MediaMeta::set( $media_id, 'privacy', $privacy );
+		MediaMeta::set( $media_id, 'moderation_status', 'approved' );
 
 		if ( ! empty( $exif_raw ) ) {
-			update_post_meta( $media_id, '_mvs_exif_raw', $exif_raw );
+			MediaMeta::set( $media_id, 'exif_raw', $exif_raw );
 		}
 
 		// Extract and store media metadata (duration, dimensions, etc.).
@@ -411,23 +411,23 @@ class UploadService {
 				if ( $video_meta ) {
 					if ( ! empty( $video_meta['length'] ) ) {
 						$metadata['duration'] = (float) $video_meta['length'];
-						update_post_meta( $media_id, '_mvs_duration', $metadata['duration'] );
+						MediaMeta::set( $media_id, 'duration', $metadata['duration'] );
 					}
 					if ( ! empty( $video_meta['width'] ) ) {
 						$metadata['width'] = (int) $video_meta['width'];
-						update_post_meta( $media_id, '_mvs_width', $metadata['width'] );
+						MediaMeta::set( $media_id, 'width', $metadata['width'] );
 					}
 					if ( ! empty( $video_meta['height'] ) ) {
 						$metadata['height'] = (int) $video_meta['height'];
-						update_post_meta( $media_id, '_mvs_height', $metadata['height'] );
+						MediaMeta::set( $media_id, 'height', $metadata['height'] );
 					}
 					if ( ! empty( $video_meta['bitrate'] ) ) {
 						$metadata['bitrate'] = (int) $video_meta['bitrate'];
-						update_post_meta( $media_id, '_mvs_bitrate', $metadata['bitrate'] );
+						MediaMeta::set( $media_id, 'bitrate', $metadata['bitrate'] );
 					}
 					if ( ! empty( $video_meta['codec'] ) ) {
 						$metadata['codec'] = sanitize_text_field( $video_meta['codec'] );
-						update_post_meta( $media_id, '_mvs_codec', $metadata['codec'] );
+						MediaMeta::set( $media_id, 'codec', $metadata['codec'] );
 					}
 				}
 
@@ -443,24 +443,24 @@ class UploadService {
 				if ( $audio_meta ) {
 					if ( ! empty( $audio_meta['length'] ) ) {
 						$metadata['duration'] = (float) $audio_meta['length'];
-						update_post_meta( $media_id, '_mvs_duration', $metadata['duration'] );
+						MediaMeta::set( $media_id, 'duration', $metadata['duration'] );
 					}
 					if ( ! empty( $audio_meta['bitrate'] ) ) {
 						$metadata['bitrate'] = (int) $audio_meta['bitrate'];
-						update_post_meta( $media_id, '_mvs_bitrate', $metadata['bitrate'] );
+						MediaMeta::set( $media_id, 'bitrate', $metadata['bitrate'] );
 					}
 					if ( ! empty( $audio_meta['codec'] ) ) {
 						$metadata['codec'] = sanitize_text_field( $audio_meta['codec'] );
-						update_post_meta( $media_id, '_mvs_codec', $metadata['codec'] );
+						MediaMeta::set( $media_id, 'codec', $metadata['codec'] );
 					}
 					// ID3 tags.
 					if ( ! empty( $audio_meta['artist'] ) ) {
 						$metadata['artist'] = sanitize_text_field( $audio_meta['artist'] );
-						update_post_meta( $media_id, '_mvs_artist', $metadata['artist'] );
+						MediaMeta::set( $media_id, 'artist', $metadata['artist'] );
 					}
 					if ( ! empty( $audio_meta['album'] ) ) {
 						$metadata['album_name'] = sanitize_text_field( $audio_meta['album'] );
-						update_post_meta( $media_id, '_mvs_album_name', $metadata['album_name'] );
+						MediaMeta::set( $media_id, 'album_name', $metadata['album_name'] );
 					}
 				}
 				break;
@@ -470,8 +470,8 @@ class UploadService {
 				if ( $size ) {
 					$metadata['width']  = (int) $size[0];
 					$metadata['height'] = (int) $size[1];
-					update_post_meta( $media_id, '_mvs_width', $metadata['width'] );
-					update_post_meta( $media_id, '_mvs_height', $metadata['height'] );
+					MediaMeta::set( $media_id, 'width', $metadata['width'] );
+					MediaMeta::set( $media_id, 'height', $metadata['height'] );
 				}
 
 				// Create WP attachment for thumbnail generation.
@@ -523,7 +523,7 @@ class UploadService {
 		if ( ! is_wp_error( $attachment_id ) ) {
 			$attach_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
 			wp_update_attachment_metadata( $attachment_id, $attach_data );
-			update_post_meta( $media_id, '_mvs_attachment_id', $attachment_id );
+			MediaMeta::set( $media_id, 'attachment_id', $attachment_id );
 
 			// Set as featured image so it shows in the grid and admin.
 			set_post_thumbnail( $media_id, $attachment_id );

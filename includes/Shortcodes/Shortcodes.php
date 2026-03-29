@@ -11,6 +11,8 @@ namespace WPMediaVerse\Shortcodes;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\MediaMeta;
+
 /**
  * Registers and renders all WPMediaVerse shortcodes.
  */
@@ -372,8 +374,8 @@ class Shortcodes {
 			if ( ! $media_post || 'publish' !== $media_post->post_status ) {
 				continue;
 			}
-			$file_url   = get_post_meta( $media_id, '_mvs_file_url', true );
-			$media_type = get_post_meta( $media_id, '_mvs_media_type', true ) ?: 'image';
+			$file_url   = MediaMeta::get( $media_id, 'file_url' );
+			$media_type = MediaMeta::get( $media_id, 'media_type' ) ?: 'image';
 			$permalink  = get_permalink( $media_id );
 
 			$output .= '<div class="mvs-grid-item">';

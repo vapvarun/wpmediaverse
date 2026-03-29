@@ -9,6 +9,8 @@ namespace WPMediaVerse\PostTypes;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\MediaMeta;
+
 /**
  * Registers the mvs_media custom post type.
  */
@@ -97,8 +99,8 @@ class Media {
 	public static function render_column( string $column, int $post_id ): void {
 		switch ( $column ) {
 			case 'mvs_thumb':
-				$url  = get_post_meta( $post_id, '_mvs_file_url', true );
-				$type = get_post_meta( $post_id, '_mvs_media_type', true ) ?: 'image';
+				$url  = MediaMeta::get( $post_id, 'file_url' );
+				$type = MediaMeta::get( $post_id, 'media_type' ) ?: 'image';
 				if ( $url && 'image' === $type ) {
 					printf(
 						'<img src="%s" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" loading="lazy" />',
@@ -117,7 +119,7 @@ class Media {
 				break;
 
 			case 'mvs_type':
-				$type   = get_post_meta( $post_id, '_mvs_media_type', true ) ?: 'image';
+				$type   = MediaMeta::get( $post_id, 'media_type' ) ?: 'image';
 				$colors = array(
 					'image'    => '#2271b1',
 					'video'    => '#9b59b6',
@@ -133,7 +135,7 @@ class Media {
 				break;
 
 			case 'mvs_privacy':
-				$privacy = get_post_meta( $post_id, '_mvs_privacy', true ) ?: 'public';
+				$privacy = MediaMeta::get( $post_id, 'privacy' ) ?: 'public';
 				$labels  = array(
 					'public'  => array( '#00a32a', __( 'Public', 'wpmediaverse' ) ),
 					'members' => array( '#2271b1', __( 'Members', 'wpmediaverse' ) ),
@@ -150,7 +152,7 @@ class Media {
 				break;
 
 			case 'mvs_status':
-				$status = get_post_meta( $post_id, '_mvs_moderation_status', true ) ?: 'approved';
+				$status = MediaMeta::get( $post_id, 'moderation_status' ) ?: 'approved';
 				$labels = array(
 					'approved' => array( '#00a32a', __( 'Approved', 'wpmediaverse' ) ),
 					'pending'  => array( '#dba617', __( 'Pending', 'wpmediaverse' ) ),

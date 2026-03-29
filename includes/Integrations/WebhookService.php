@@ -9,6 +9,8 @@ namespace WPMediaVerse\Integrations;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\MediaMeta;
+
 /**
  * Outbound webhook system for media events.
  *
@@ -286,9 +288,9 @@ class WebhookService {
 			'title'     => $post->post_title,
 			'author'    => (int) $post->post_author,
 			'url'       => get_permalink( $media_id ),
-			'file_url'  => get_post_meta( $media_id, '_mvs_file_url', true ),
-			'file_type' => get_post_meta( $media_id, '_mvs_file_type', true ),
-			'privacy'   => get_post_meta( $media_id, '_mvs_privacy', true ),
+			'file_url'  => MediaMeta::get( $media_id, 'file_url' ),
+			'file_type' => MediaMeta::get( $media_id, 'file_type' ),
+			'privacy'   => MediaMeta::get( $media_id, 'privacy' ),
 			'status'    => $post->post_status,
 		);
 	}

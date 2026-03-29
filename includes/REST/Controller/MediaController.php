@@ -16,6 +16,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\REST\RateLimiter;
+use WPMediaVerse\Services\MediaMeta;
 use WPMediaVerse\Services\PrivacyService;
 
 /**
@@ -381,7 +382,7 @@ class MediaController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$group_id = get_post_meta( $media_id, '_mvs_media_group', true );
+		$group_id = MediaMeta::get( $media_id, 'media_group' );
 		if ( ! $group_id ) {
 			return rest_ensure_response( array( $this->prepare_item_for_response( $post, $request ) ) );
 		}
@@ -486,19 +487,19 @@ class MediaController extends WP_REST_Controller {
 		// Store media group (gallery post) metadata.
 		$media_group = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
 		if ( $media_group ) {
-			update_post_meta( $media_id, '_mvs_media_group', $media_group );
+			MediaMeta::set( $media_id, 'media_group', $media_group );
 			$group_position = absint( $request->get_param( 'group_position' ) );
-			update_post_meta( $media_id, '_mvs_group_position', $group_position );
+			MediaMeta::set( $media_id, 'group_position', $group_position );
 			if ( 0 === $group_position ) {
-				update_post_meta( $media_id, '_mvs_group_cover', 1 );
+				MediaMeta::set( $media_id, 'group_cover', 1 );
 			}
 		}
 
 		// Set group association if group_id is provided and user is a member.
 		$group_id = absint( $request->get_param( 'group_id' ) );
 		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
-			update_post_meta( $media_id, '_mvs_privacy', 'group' );
-			update_post_meta( $media_id, '_mvs_group_id', $group_id );
+			MediaMeta::set( $media_id, 'privacy', 'group' );
+			MediaMeta::set( $media_id, 'group_id', $group_id );
 
 			// Update index table privacy.
 			global $wpdb;
@@ -568,7 +569,7 @@ class MediaController extends WP_REST_Controller {
 		$privacy = $request->get_param( 'privacy' );
 		if ( $privacy ) {
 			$privacy = sanitize_text_field( $privacy );
-			update_post_meta( $media_id, '_mvs_privacy', $privacy );
+			MediaMeta::set( $media_id, 'privacy', $privacy );
 
 			// Update index table.
 			global $wpdb;
@@ -617,7 +618,7 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Delete stored file.
-		$file_path = get_post_meta( $media_id, '_mvs_file_path', true );
+		$file_path = MediaMeta::get( $media_id, 'file_path' );
 		if ( $file_path ) {
 			$storage = Plugin::container()->get( 'storage' );
 			$storage->get_driver()->delete( $file_path );
@@ -729,7 +730,7 @@ class MediaController extends WP_REST_Controller {
 
 		// Only expose privacy details to users who can view or own the media.
 		if ( $can_view || $is_owner ) {
-			$privacy_meta = get_post_meta( $media_id, '_mvs_privacy', true );
+			$privacy_meta = MediaMeta::get( $media_id, 'privacy' );
 			return rest_ensure_response(
 				array(
 					'media_id' => $media_id,
@@ -857,17 +858,17 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		$media_id         = $post->ID;
-		$privacy_value    = get_post_meta( $media_id, '_mvs_privacy', true );
-		$moderation_value = get_post_meta( $media_id, '_mvs_moderation_status', true );
+		$privacy_value    = MediaMeta::get( $media_id, 'privacy' );
+		$moderation_value = MediaMeta::get( $media_id, 'moderation_status' );
 
-		$file_url = get_post_meta( $media_id, '_mvs_file_url', true );
+		$file_url = MediaMeta::get( $media_id, 'file_url' );
 		if ( $file_url ) {
 			$file_url = set_url_scheme( $file_url );
 		}
 
 		// Build thumbnail URL from WP attachment if available.
 		$thumbnail_url = '';
-		$attachment_id = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
+		$attachment_id = (int) MediaMeta::get( $media_id, 'attachment_id' );
 		if ( $attachment_id ) {
 			$thumb = wp_get_attachment_image_url( $attachment_id, 'large' );
 			if ( $thumb ) {
@@ -875,7 +876,7 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
-		$media_type_value = get_post_meta( $media_id, '_mvs_media_type', true );
+		$media_type_value = MediaMeta::get( $media_id, 'media_type' );
 
 		$data = array(
 			'id'                => $media_id,
@@ -885,8 +886,8 @@ class MediaController extends WP_REST_Controller {
 			'date'              => $post->post_date_gmt,
 			'link'              => get_permalink( $media_id ),
 			'file_url'          => $file_url,
-			'file_size'         => (int) get_post_meta( $media_id, '_mvs_file_size', true ),
-			'file_type'         => get_post_meta( $media_id, '_mvs_file_type', true ),
+			'file_size'         => (int) MediaMeta::get( $media_id, 'file_size' ),
+			'file_type'         => MediaMeta::get( $media_id, 'file_type' ),
 			'media_type'        => $media_type_value,
 			'privacy'           => $privacy_value ? $privacy_value : 'public',
 			'moderation_status' => $moderation_value ? $moderation_value : 'approved',
@@ -905,11 +906,11 @@ class MediaController extends WP_REST_Controller {
 		);
 
 		// Add media group (gallery post) data.
-		$media_group = get_post_meta( $media_id, '_mvs_media_group', true );
+		$media_group = MediaMeta::get( $media_id, 'media_group' );
 		if ( $media_group ) {
 			$data['media_group']    = $media_group;
-			$data['group_position'] = (int) get_post_meta( $media_id, '_mvs_group_position', true );
-			$data['group_cover']    = (bool) get_post_meta( $media_id, '_mvs_group_cover', true );
+			$data['group_position'] = (int) MediaMeta::get( $media_id, 'group_position' );
+			$data['group_cover']    = (bool) MediaMeta::get( $media_id, 'group_cover' );
 
 			// Count group members.
 			global $wpdb;
@@ -923,9 +924,9 @@ class MediaController extends WP_REST_Controller {
 
 		// Add media-type-specific metadata.
 		if ( in_array( $media_type_value, array( 'video', 'audio' ), true ) ) {
-			$duration = get_post_meta( $media_id, '_mvs_duration', true );
-			$bitrate  = get_post_meta( $media_id, '_mvs_bitrate', true );
-			$codec    = get_post_meta( $media_id, '_mvs_codec', true );
+			$duration = MediaMeta::get( $media_id, 'duration' );
+			$bitrate  = MediaMeta::get( $media_id, 'bitrate' );
+			$codec    = MediaMeta::get( $media_id, 'codec' );
 
 			$data['duration'] = $duration ? (float) $duration : null;
 			$data['bitrate']  = $bitrate ? (int) $bitrate : null;
@@ -933,16 +934,16 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		if ( in_array( $media_type_value, array( 'video', 'image' ), true ) ) {
-			$width  = get_post_meta( $media_id, '_mvs_width', true );
-			$height = get_post_meta( $media_id, '_mvs_height', true );
+			$width  = MediaMeta::get( $media_id, 'width' );
+			$height = MediaMeta::get( $media_id, 'height' );
 
 			$data['width']  = $width ? (int) $width : null;
 			$data['height'] = $height ? (int) $height : null;
 		}
 
 		if ( 'audio' === $media_type_value ) {
-			$artist     = get_post_meta( $media_id, '_mvs_artist', true );
-			$album_name = get_post_meta( $media_id, '_mvs_album_name', true );
+			$artist     = MediaMeta::get( $media_id, 'artist' );
+			$album_name = MediaMeta::get( $media_id, 'album_name' );
 
 			$data['artist']     = $artist ? $artist : null;
 			$data['album_name'] = $album_name ? $album_name : null;

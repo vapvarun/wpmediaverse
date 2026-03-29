@@ -13,6 +13,8 @@ namespace WPMediaVerse\Social;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Services\MediaMeta;
+
 /**
  * Records and queries activity feed items.
  */
@@ -238,7 +240,7 @@ class ActivityService {
 			$media_post = get_post( (int) $row->media_id );
 			if ( $media_post ) {
 				$thumb_url = '';
-				$attach_id = (int) get_post_meta( $media_post->ID, '_mvs_attachment_id', true );
+				$attach_id = (int) MediaMeta::get( $media_post->ID, 'attachment_id' );
 				if ( $attach_id ) {
 					$thumb_src = wp_get_attachment_image_url( $attach_id, 'thumbnail' );
 					if ( $thumb_src ) {
@@ -248,7 +250,7 @@ class ActivityService {
 
 				$activity['media'] = array(
 					'title'     => $media_post->post_title,
-					'type'      => get_post_meta( $media_post->ID, '_mvs_media_type', true ),
+					'type'      => MediaMeta::get( $media_post->ID, 'media_type' ),
 					'thumbnail' => $thumb_url,
 					'link'      => get_permalink( $media_post->ID ),
 				);

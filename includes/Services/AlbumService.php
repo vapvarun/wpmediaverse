@@ -63,7 +63,7 @@ class AlbumService {
 	public function add_items( int $album_id, array $media_ids ): int {
 		global $wpdb;
 
-		$is_playlist = 'playlist' === get_post_meta( $album_id, '_mvs_album_type', true );
+		$is_playlist = 'playlist' === MediaMeta::get( $album_id, 'album_type' );
 
 		$max_pos = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
@@ -83,7 +83,7 @@ class AlbumService {
 
 			// Playlist albums only accept audio media.
 			if ( $is_playlist ) {
-				$file_type = get_post_meta( $media_id, '_mvs_file_type', true );
+				$file_type = MediaMeta::get( $media_id, 'file_type' );
 				if ( $file_type && 0 !== strpos( $file_type, 'audio/' ) ) {
 					continue;
 				}
@@ -109,7 +109,7 @@ class AlbumService {
 		// Store album association on each media item.
 		if ( $added > 0 ) {
 			foreach ( $media_ids as $mid ) {
-				update_post_meta( (int) $mid, '_mvs_album_id', $album_id );
+				MediaMeta::set( (int) $mid, 'album_id', $album_id );
 			}
 
 			/**
@@ -190,7 +190,7 @@ class AlbumService {
 		$thumb_id = get_post_thumbnail_id( $media_id );
 		if ( ! $thumb_id ) {
 			// Fallback: use _mvs_attachment_id meta (the WP attachment for this media).
-			$thumb_id = (int) get_post_meta( $media_id, '_mvs_attachment_id', true );
+			$thumb_id = (int) MediaMeta::get( $media_id, 'attachment_id' );
 		}
 		if ( ! $thumb_id ) {
 			return false;
@@ -215,12 +215,12 @@ class AlbumService {
 			if ( $first_media_id ) {
 				$thumb_id = get_post_thumbnail_id( $first_media_id );
 				if ( ! $thumb_id ) {
-					$thumb_id = (int) get_post_meta( $first_media_id, '_mvs_attachment_id', true );
+					$thumb_id = (int) MediaMeta::get( $first_media_id, 'attachment_id' );
 				}
 				// Last resort: if it's an image, use file_url directly.
 				if ( ! $thumb_id ) {
-					$file_url  = get_post_meta( $first_media_id, '_mvs_file_url', true );
-					$file_type = get_post_meta( $first_media_id, '_mvs_file_type', true );
+					$file_url  = MediaMeta::get( $first_media_id, 'file_url' );
+					$file_type = MediaMeta::get( $first_media_id, 'file_type' );
 					if ( $file_url && is_string( $file_type ) && strpos( $file_type, 'image/' ) === 0 ) {
 						return set_url_scheme( $file_url );
 					}
