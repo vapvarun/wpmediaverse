@@ -267,7 +267,8 @@ class SettingsPage {
 			self::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
-				'option' => 'mvs_allowed_file_types',
+				'option'      => 'mvs_allowed_file_types',
+				'description' => __( 'Select which file formats users can upload.', 'wpmediaverse' ),
 			)
 		);
 
@@ -287,12 +288,13 @@ class SettingsPage {
 			self::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
-				'option'  => 'mvs_default_privacy',
-				'choices' => array(
+				'option'      => 'mvs_default_privacy',
+				'choices'     => array(
 					'public'  => __( 'Public', 'wpmediaverse' ),
 					'members' => __( 'Members Only', 'wpmediaverse' ),
 					'private' => __( 'Private', 'wpmediaverse' ),
 				),
+				'description' => __( 'New uploads default to this privacy level. Users can change per upload.', 'wpmediaverse' ),
 			)
 		);
 
@@ -312,12 +314,13 @@ class SettingsPage {
 			self::PAGE_SLUG . '-general',
 			'mvs_general',
 			array(
-				'option'  => 'mvs_duplicate_action',
-				'choices' => array(
+				'option'      => 'mvs_duplicate_action',
+				'choices'     => array(
 					'warn'  => __( 'Warn (allow upload)', 'wpmediaverse' ),
 					'skip'  => __( 'Skip (reject duplicate)', 'wpmediaverse' ),
 					'allow' => __( 'Allow (no check)', 'wpmediaverse' ),
 				),
+				'description' => __( 'Controls what happens when a user uploads a file that already exists.', 'wpmediaverse' ),
 			)
 		);
 
@@ -362,12 +365,13 @@ class SettingsPage {
 				self::PAGE_SLUG . '-general',
 				'mvs_storage',
 				array(
-					'option'  => 'mvs_storage_driver',
-					'choices' => array(
+					'option'      => 'mvs_storage_driver',
+					'choices'     => array(
 						'local'    => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
 						's3'       => __( 'Amazon S3', 'wpmediaverse' ),
 						'bunnycdn' => __( 'BunnyCDN', 'wpmediaverse' ),
 					),
+					'description' => __( 'Where uploaded media files are stored. Cloud drivers require API credentials.', 'wpmediaverse' ),
 				)
 			);
 		} else {
@@ -436,12 +440,13 @@ class SettingsPage {
 			self::PAGE_SLUG . '-display',
 			'mvs_display',
 			array(
-				'option'  => 'mvs_grid_columns',
-				'choices' => array(
+				'option'      => 'mvs_grid_columns',
+				'choices'     => array(
 					2 => __( '2 columns', 'wpmediaverse' ),
 					3 => __( '3 columns', 'wpmediaverse' ),
 					4 => __( '4 columns', 'wpmediaverse' ),
 				),
+				'description' => __( 'Number of columns in the media grid on the Explore page.', 'wpmediaverse' ),
 			)
 		);
 
@@ -461,12 +466,13 @@ class SettingsPage {
 			self::PAGE_SLUG . '-display',
 			'mvs_display',
 			array(
-				'option'  => 'mvs_items_per_page',
-				'choices' => array(
+				'option'      => 'mvs_items_per_page',
+				'choices'     => array(
 					12 => __( '12', 'wpmediaverse' ),
 					24 => __( '24', 'wpmediaverse' ),
 					48 => __( '48', 'wpmediaverse' ),
 				),
+				'description' => __( 'How many media items to show before pagination.', 'wpmediaverse' ),
 			)
 		);
 
@@ -486,11 +492,12 @@ class SettingsPage {
 			self::PAGE_SLUG . '-display',
 			'mvs_display',
 			array(
-				'option'  => 'mvs_thumbnail_style',
-				'choices' => array(
+				'option'      => 'mvs_thumbnail_style',
+				'choices'     => array(
 					'square'   => __( 'Square (cropped)', 'wpmediaverse' ),
 					'original' => __( 'Original proportions', 'wpmediaverse' ),
 				),
+				'description' => __( 'Square crops images uniformly. Original preserves aspect ratios.', 'wpmediaverse' ),
 			)
 		);
 
@@ -548,12 +555,13 @@ class SettingsPage {
 				self::PAGE_SLUG . '-ai',
 				'mvs_ai',
 				array(
-					'option'  => 'mvs_ai_provider',
-					'choices' => array(
+					'option'      => 'mvs_ai_provider',
+					'choices'     => array(
 						'openai'      => __( 'OpenAI (GPT-4 Vision)', 'wpmediaverse' ),
 						'google'      => __( 'Google Vision', 'wpmediaverse' ),
 						'rekognition' => __( 'AWS Rekognition', 'wpmediaverse' ),
 					),
+					'description' => __( 'Which AI service to use for image analysis, tagging, and moderation.', 'wpmediaverse' ),
 				)
 			);
 		} else {
@@ -611,11 +619,12 @@ class SettingsPage {
 			self::PAGE_SLUG . '-ai',
 			'mvs_ai',
 			array(
-				'option'  => 'mvs_openai_model',
-				'choices' => array(
+				'option'      => 'mvs_openai_model',
+				'choices'     => array(
 					'gpt-4o-mini' => __( 'GPT-4o Mini (cheaper)', 'wpmediaverse' ),
 					'gpt-4o'      => __( 'GPT-4o (best quality)', 'wpmediaverse' ),
 				),
+				'description' => __( 'GPT-4o Mini is faster and cheaper. GPT-4o produces more accurate tags and descriptions.', 'wpmediaverse' ),
 			)
 		);
 
@@ -747,12 +756,13 @@ class SettingsPage {
 			self::PAGE_SLUG . '-ai',
 			'mvs_moderation',
 			array(
-				'option'  => 'mvs_moderation_auto_action',
-				'choices' => array(
+				'option'      => 'mvs_moderation_auto_action',
+				'choices'     => array(
 					'flag'   => __( 'Flag for review (keep visible)', 'wpmediaverse' ),
 					'hide'   => __( 'Hide (set to private)', 'wpmediaverse' ),
 					'reject' => __( 'Reject (move to draft)', 'wpmediaverse' ),
 				),
+				'description' => __( 'Action taken automatically when AI detects a policy violation in uploaded media.', 'wpmediaverse' ),
 			)
 		);
 
@@ -840,13 +850,14 @@ class SettingsPage {
 			self::PAGE_SLUG . '-general',
 			'mvs_messaging',
 			array(
-				'option'  => 'mvs_dm_access',
-				'choices' => array(
+				'option'      => 'mvs_dm_access',
+				'choices'     => array(
 					'everyone'  => __( 'Everyone', 'wpmediaverse' ),
 					'followers' => __( 'Followers only (others go to Requests)', 'wpmediaverse' ),
 					'mutual'    => __( 'Mutual followers only', 'wpmediaverse' ),
 					'nobody'    => __( 'Nobody (DMs disabled)', 'wpmediaverse' ),
 				),
+				'description' => __( 'Controls who is allowed to send direct messages to other users on the site.', 'wpmediaverse' ),
 			)
 		);
 
@@ -889,12 +900,13 @@ class SettingsPage {
 			self::PAGE_SLUG . '-general',
 			'mvs_messaging',
 			array(
-				'option'  => 'mvs_show_online_status',
-				'choices' => array(
+				'option'      => 'mvs_show_online_status',
+				'choices'     => array(
 					'everyone'  => __( 'Everyone', 'wpmediaverse' ),
 					'followers' => __( 'Followers only', 'wpmediaverse' ),
 					'nobody'    => __( 'Nobody', 'wpmediaverse' ),
 				),
+				'description' => __( 'Who can see when a user is currently online in the messaging interface.', 'wpmediaverse' ),
 			)
 		);
 	}
@@ -935,11 +947,12 @@ class SettingsPage {
 			self::PAGE_SLUG . '-general',
 			'mvs_watermark',
 			array(
-				'option'  => 'mvs_watermark_type',
-				'choices' => array(
+				'option'      => 'mvs_watermark_type',
+				'choices'     => array(
 					'text'  => __( 'Text', 'wpmediaverse' ),
 					'image' => __( 'Image', 'wpmediaverse' ),
 				),
+				'description' => __( 'Text overlays a custom string. Image uses an uploaded logo or graphic.', 'wpmediaverse' ),
 			)
 		);
 
@@ -980,8 +993,8 @@ class SettingsPage {
 			self::PAGE_SLUG . '-general',
 			'mvs_watermark',
 			array(
-				'option'  => 'mvs_watermark_position',
-				'choices' => array(
+				'option'      => 'mvs_watermark_position',
+				'choices'     => array(
 					'center'       => __( 'Center', 'wpmediaverse' ),
 					'bottom-right' => __( 'Bottom Right', 'wpmediaverse' ),
 					'bottom-left'  => __( 'Bottom Left', 'wpmediaverse' ),
@@ -989,6 +1002,7 @@ class SettingsPage {
 					'top-left'     => __( 'Top Left', 'wpmediaverse' ),
 					'tile'         => __( 'Tile (repeat)', 'wpmediaverse' ),
 				),
+				'description' => __( 'Where the watermark appears on the image. Tile repeats it across the entire surface.', 'wpmediaverse' ),
 			)
 		);
 
@@ -1049,7 +1063,10 @@ class SettingsPage {
 			array( $this, 'render_color_field' ),
 			self::PAGE_SLUG . '-general',
 			'mvs_watermark',
-			array( 'option' => 'mvs_watermark_color' )
+			array(
+				'option'      => 'mvs_watermark_color',
+				'description' => __( 'Color of the text watermark overlay.', 'wpmediaverse' ),
+			)
 		);
 	}
 
@@ -1962,6 +1979,9 @@ class SettingsPage {
 		}
 		$custom_types = array_diff( $selected, $known_mimes, array( '' ) );
 
+		if ( ! empty( $args['description'] ) ) {
+			printf( '<p class="description" style="margin-bottom:8px">%s</p>', esc_html( $args['description'] ) );
+		}
 		echo '<div class="mvs-file-types-grid">';
 		foreach ( $groups as $group_label => $mimes ) {
 			printf( '<div class="mvs-file-types-group"><strong>%s</strong>', esc_html( $group_label ) );
@@ -2058,6 +2078,9 @@ class SettingsPage {
 			);
 		}
 		echo '</select>';
+		if ( ! empty( $args['description'] ) ) {
+			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+		}
 	}
 
 	/**
@@ -2114,6 +2137,9 @@ class SettingsPage {
 			checked( $value, true, false ),
 			esc_html( $args['label'] ?? '' )
 		);
+		if ( ! empty( $args['description'] ) ) {
+			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+		}
 	}
 
 	/**
@@ -2231,6 +2257,9 @@ class SettingsPage {
 			esc_attr( $args['option'] ),
 			esc_attr( $value )
 		);
+		if ( ! empty( $args['description'] ) ) {
+			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+		}
 	}
 
 	/**
