@@ -50,11 +50,23 @@ class FavoriteController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
-		// POST /media/{id}/favorite — toggle favorite.
+		// GET/POST/DELETE /media/{id}/favorite.
 		register_rest_route(
 			$this->namespace,
 			'/media/(?P<media_id>[\d]+)/favorite',
 			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_favorite_status' ),
+					'permission_callback' => array( $this, 'auth_check' ),
+					'args'                => array(
+						'media_id' => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+					),
+				),
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'toggle_favorite' ),
@@ -119,6 +131,25 @@ class FavoriteController extends WP_REST_Controller {
 
 	/**
 	 * Toggle favorite on a media item.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function get_favorite_status( $request ) {
+		$media_id = $request->get_param( 'media_id' );
+		$user_id  = get_current_user_id();
+
+		if ( ! MediaMeta::exists( $media_id ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$favorited = $this->favorites->is_favorited( $media_id, $user_id );
+
+		return rest_ensure_response( array( 'favorited' => $favorited ) );
+	}
+
+	/**
+	 * Toggle favorite.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response|WP_Error
