@@ -54,15 +54,6 @@ class SettingsPage {
 
 		// Remove Add Media (users upload via frontend FAB or All Media screen).
 		remove_submenu_page( $parent, 'post-new.php?post_type=mvs_media' );
-
-		// Remove Logs (linked from Settings sidebar).
-		remove_submenu_page( $parent, 'mvs-logs' );
-
-		// Remove Pro pages (linked from Settings sidebar).
-		remove_submenu_page( $parent, 'mvs-quotas' );
-		remove_submenu_page( $parent, 'mvs-reports' );
-		remove_submenu_page( $parent, 'mvs-analytics' );
-		remove_submenu_page( $parent, 'mvs-migration' );
 	}
 
 	/**
@@ -1305,17 +1296,17 @@ class SettingsPage {
 				<!-- Tools links (pages removed from main menu) -->
 				<div class="mvs-settings-nav-group">
 					<span class="mvs-settings-nav-group__label"><?php esc_html_e( 'Tools', 'wpmediaverse' ); ?></span>
-					<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-logs' ) ); ?>">
+					<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-logs' ) ); ?>">
 						<span class="dashicons dashicons-list-view"></span>
 						<?php esc_html_e( 'Logs', 'wpmediaverse' ); ?>
 					</a>
 					<?php if ( $this->is_pro_active() ) : ?>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-analytics' ) ); ?>">
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-analytics' ) ); ?>">
 							<span class="dashicons dashicons-chart-area"></span>
 							<?php esc_html_e( 'Analytics', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 						</a>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-migration' ) ); ?>">
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-migration' ) ); ?>">
 							<span class="dashicons dashicons-migrate"></span>
 							<?php esc_html_e( 'Import / Migration', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>

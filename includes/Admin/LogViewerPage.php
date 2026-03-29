@@ -31,7 +31,7 @@ class LogViewerPage {
 	 */
 	public function add_menu_page(): void {
 		add_submenu_page(
-			'edit.php?post_type=mvs_media',
+			null,
 			__( 'Log Viewer', 'wpmediaverse' ),
 			__( 'Logs', 'wpmediaverse' ),
 			'manage_mvs_settings',
