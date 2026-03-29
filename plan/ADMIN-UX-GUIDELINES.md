@@ -209,13 +209,13 @@ private function render_section_cards( array $section ): void {
 
 ---
 
-## Hidden Admin Pages
+## Admin Page Registration
 
-Manager pages (Challenges, Tournaments, Battles, Quota, Analytics, Migration) are hidden from the menu and accessible from the Settings sidebar.
+ALL admin pages register under the WPMediaVerse menu. No hidden pages, no null parents, no hacks.
 
 ```php
 add_submenu_page(
-    null,
+    'edit.php?post_type=mvs_media',
     __( 'Page Title', 'wpmediaverse-pro' ),
     __( 'Page Title', 'wpmediaverse-pro' ),
     'manage_mvs_settings',
@@ -224,11 +224,18 @@ add_submenu_page(
 );
 ```
 
+This gives you:
+- Correct browser tab title
+- WPMediaVerse menu highlighted when on the page
+- Page accessible from both the menu AND the Settings sidebar
+- No workarounds needed
+
 ### Never Do
 
+- `add_submenu_page( null, ... )` — breaks menu highlighting, loses page title
 - `remove_submenu_page()` — breaks browser tab titles
+- `parent_file` / `submenu_file` filters to fix broken registration
 - Empty string as menu title
-- Temporary filters to fix broken approaches
 
 ---
 
