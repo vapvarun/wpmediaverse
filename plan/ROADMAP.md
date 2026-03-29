@@ -1,94 +1,68 @@
 # WPMediaVerse (Free) — Master Roadmap
 
-> Single source of truth. Updated: 2026-03-29
-> Architecture: Custom tables ONLY. No wp_postmeta. CPT for permalinks/admin only.
+> Updated: 2026-03-29
+> Architecture: Custom tables. CPT for permalinks/admin only (v1.0). Full custom in v1.1.
 
 ---
 
-## BLOCKER: Postmeta → Custom Table Migration
+## v1.0 — Ship with current architecture
 
-**173 postmeta calls across 29 files** must be moved to `mvs_media_index`.
+CPT + custom tables is the pragmatic v1.0 approach. Everything works, tested, demo data seeds.
 
-### Step 1: Expand mvs_media_index schema
-
-Current columns: media_id, post_author, media_type, privacy, moderation_status, created_at
-
-Add columns for ALL 21 postmeta keys:
-```sql
-ALTER TABLE mvs_media_index ADD COLUMN
-    attachment_id bigint unsigned DEFAULT NULL,
-    file_url varchar(500) DEFAULT '',
-    file_path varchar(500) DEFAULT '',
-    file_type varchar(50) DEFAULT '',
-    file_size bigint unsigned DEFAULT 0,
-    file_hash varchar(64) DEFAULT '',
-    width int unsigned DEFAULT NULL,
-    height int unsigned DEFAULT NULL,
-    exif_raw text DEFAULT NULL,
-    album_id bigint unsigned DEFAULT NULL,
-    album_type varchar(20) DEFAULT '',
-    group_id bigint unsigned DEFAULT NULL,
-    group_position int unsigned DEFAULT 0,
-    media_group varchar(50) DEFAULT '',
-    group_cover tinyint(1) DEFAULT 0,
-    bp_activity_id bigint unsigned DEFAULT NULL,
-    ai_status varchar(20) DEFAULT '',
-    ai_description text DEFAULT NULL,
-    ai_tags text DEFAULT NULL,
-    ai_confidence float DEFAULT NULL,
-    ai_moderation text DEFAULT NULL,
-    is_story tinyint(1) DEFAULT 0,
-    story_expires_at datetime DEFAULT NULL
-```
-
-Collection-specific meta (_mvs_collection_rules, _mvs_collection_type) stays on mvs_collection CPT since collections are a different post type.
-
-### Step 2: Create MediaMeta helper class
-
-```php
-class MediaMeta {
-    public static function get( int $media_id, string $key );
-    public static function set( int $media_id, string $key, $value );
-    public static function delete( int $media_id, string $key );
-    public static function get_all( int $media_id ): array;
-}
-```
-
-This reads/writes from `mvs_media_index` instead of `wp_postmeta`.
-
-### Step 3: Replace all 173 calls
-
-Search-and-replace across 29 files:
-- `get_post_meta( $id, '_mvs_file_url', true )` → `MediaMeta::get( $id, 'file_url' )`
-- `update_post_meta( $id, '_mvs_file_url', $val )` → `MediaMeta::set( $id, 'file_url', $val )`
-- `delete_post_meta( $id, '_mvs_file_url' )` → `MediaMeta::delete( $id, 'file_url' )`
-
-### Step 4: Migrate existing data
-
-One-time script: read all `_mvs_*` postmeta, write to mvs_media_index columns, then delete from wp_postmeta.
-
-### Step 5: Restore mvs_error_log table
-
-LoggerService, LogViewerPage, HealthCheckService depend on it. Re-add to free plugin Migrator.
-
----
-
-## DONE (this session)
-
-- [x] Settings page Jetonomy card layout
-- [x] All 45 admin UX audit issues fixed
-- [x] Menu cleaned to 7 items
+### What's done:
+- [x] All metadata in custom tables (MediaMeta — zero wp_postmeta for media)
+- [x] 30 custom tables (clean, no dead tables)
+- [x] 15 admin pages — all working, menu highlighting, titles, descriptions
+- [x] Settings page — Jetonomy card layout
+- [x] 7-item clean menu
+- [x] Gamification engine (battles, challenges, tournaments, boosts)
+- [x] Demo seeder (50 media, 5 users, 5 albums, competitions)
+- [x] 1-click cleanup
+- [x] Settings field descriptions
 - [x] Capabilities fixed (edit/trash actions)
-- [x] Dead tables dropped (21 → 26 clean tables)
-- [x] Unified competition schema created
-- [x] Plans consolidated
-- [x] Architecture decision: custom tables only, no postmeta
+- [x] Free + Pro tested independently
+
+### What's left for v1.0:
+- [ ] npm run build (regenerate stale block renders)
+- [ ] php -l all files
+- [ ] Remove console.log / error_log
+- [ ] Version bump
+- [ ] readme.txt
+- [ ] .distignore + .pot
+- [ ] QA suite
+- [ ] Build ZIP
 
 ---
 
-## TODO: After Postmeta Migration
+## v1.1 — Remove CPT dependency
 
-- [ ] DM integration (move from Pro to Free)
-- [ ] Gamification hooks
-- [ ] Admin page pagination
-- [ ] Pre-release checklist
+**Goal:** mvs_media is no longer a CPT. Media = row in mvs_media_index.
+
+### Why:
+- At 1M media, CPT creates 2M wp_posts rows (media + attachment)
+- wp_postmeta bloat from attachments
+- Custom tables are faster for feed queries
+- Clean separation from WordPress core
+
+### Plan:
+1. Upload → `wp_handle_upload()` only (no `wp_insert_attachment`)
+2. Store file path/URL directly in mvs_media_index
+3. Generate thumbnails ourselves (GD/Imagick)
+4. Permalinks via rewrite rules (already pattern exists for /media/battles/)
+5. Admin listing via custom page (not edit.php?post_type=)
+6. REST API already reads from custom tables
+7. Remove mvs_media CPT registration
+
+### Risk:
+- Lose WordPress SEO plugin integration
+- Lose Gutenberg block editor for media
+- Lose wp_get_attachment_image_srcset() responsive images
+- Need custom thumbnail generation
+
+---
+
+## v1.2+ — Feature roadmap
+- Layout modes (Instagram/Flickr/Pinterest masonry)
+- Social sharing buttons
+- Cursor-based pagination
+- Layout mode walkthrough in setup wizard
