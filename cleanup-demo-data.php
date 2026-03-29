@@ -20,11 +20,10 @@ $demo_user_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuer
 	"SELECT ID FROM $wpdb->users WHERE user_email LIKE '%@demo.local' AND ID != 1" // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 );
 $demo_user_count = 0;
+if ( ! function_exists( 'wp_delete_user' ) ) {
+	require_once ABSPATH . 'wp-admin/includes/user.php';
+}
 foreach ( $demo_user_ids as $duid ) {
-	// Reassign their posts to admin (user 1) before deleting.
-	if ( function_exists( 'wp_delete_user' ) ) {
-		require_once ABSPATH . 'wp-admin/includes/user.php';
-	}
 	wp_delete_user( (int) $duid, 1 );
 	++$demo_user_count;
 }

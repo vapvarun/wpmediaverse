@@ -1370,6 +1370,35 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 // Summary.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Backfill index data (hooks during wp_insert_post may create partial rows).
+// ---------------------------------------------------------------------------
+
+foreach ( $created_media as $mid ) {
+	$attach_id = (int) get_post_thumbnail_id( $mid );
+	if ( ! $attach_id ) {
+		continue;
+	}
+	$url         = wp_get_attachment_url( $attach_id );
+	$path        = get_attached_file( $attach_id );
+	$mime        = get_post_mime_type( $attach_id );
+	$size        = $path && file_exists( $path ) ? filesize( $path ) : 0;
+	$attach_meta = wp_get_attachment_metadata( $attach_id );
+
+	\WPMediaVerse\Services\MediaMeta::set_many(
+		$mid,
+		array(
+			'title'         => get_the_title( $mid ),
+			'file_url'      => $url ?: '',
+			'file_type'     => $mime ?: '',
+			'file_size'     => $size,
+			'attachment_id' => $attach_id,
+			'width'         => $attach_meta['width'] ?? null,
+			'height'        => $attach_meta['height'] ?? null,
+		)
+	);
+}
+
 mvs_seed_log( '' );
 mvs_seed_log( 'Demo data import complete!', 'success' );
 mvs_seed_log( '  Demo users: ' . count( $demo_user_ids ) );
