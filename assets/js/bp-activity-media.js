@@ -703,12 +703,6 @@
 			suiState.mediaId = 0;
 			suiState.gallery = [];
 			suiState.galleryIndex = 0;
-
-			// Reset image src to free memory.
-			if ( overlay ) {
-				var img = overlay.querySelector( '.mvs-lightbox-media img' );
-				if ( img ) { img.src = ''; }
-			}
 		}
 
 		// ── Gallery Navigation ──
