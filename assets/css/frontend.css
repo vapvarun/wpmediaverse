@@ -179,13 +179,6 @@
 
 .mvs-media-article {
 	background: var(--mvs-bg);
-	border: 1px solid #dbdbdb;
-	border-radius: 8px;
-	overflow: hidden;
-}
-
-.mvs-media-article {
-	background: var(--mvs-bg);
 	border-radius: 8px;
 	overflow: hidden;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -654,139 +647,6 @@
 }
 
 /* ==========================================================================
-   7. Upload Block
-   ========================================================================== */
-
-.mvs-upload-area {
-	border: 2px dashed #ccc;
-	border-radius: 8px;
-	padding: 48px 24px;
-	text-align: center;
-	cursor: pointer;
-	transition: border-color 0.2s, background 0.2s;
-}
-
-.mvs-upload-area:hover,
-.mvs-upload-area.mvs-drag-over {
-	border-color: var(--mvs-primary);
-	background: #f0f7fc;
-}
-
-.mvs-upload-area .dashicons {
-	font-size: 48px;
-	width: 48px;
-	height: 48px;
-	color: #999;
-	margin-bottom: 12px;
-}
-
-.mvs-upload-label {
-	display: block;
-	font-size: 1.1em;
-	color: var(--mvs-text-secondary);
-	margin-bottom: 8px;
-}
-
-.mvs-upload-hint {
-	font-size: 0.85em;
-	color: #999;
-}
-
-.mvs-upload-preview {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-	gap: 12px;
-	margin-top: 16px;
-}
-
-.mvs-upload-preview-item {
-	position: relative;
-	border-radius: 4px;
-	overflow: hidden;
-	aspect-ratio: 1;
-	background: #f5f5f5;
-}
-
-.mvs-upload-preview-item img {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-}
-
-.mvs-upload-progress {
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	height: 4px;
-	background: rgba(0, 0, 0, 0.2);
-}
-
-.mvs-upload-progress-bar {
-	height: 100%;
-	background: var(--mvs-primary);
-	transition: width 0.3s;
-}
-
-/* ==========================================================================
-   8. Media Player
-   ========================================================================== */
-
-.mvs-player-wrap {
-	max-width: 960px;
-	margin: 0 auto;
-	background: #000;
-	border-radius: 8px;
-	overflow: hidden;
-}
-
-.mvs-player-wrap video {
-	display: block;
-	width: 100%;
-	height: auto;
-}
-
-.mvs-player-wrap audio {
-	display: block;
-	width: 100%;
-	padding: 24px;
-	background: #1a1a1a;
-}
-
-.mvs-player-info {
-	padding: 16px;
-	background: #1a1a1a;
-	color: #ccc;
-}
-
-.mvs-player-title {
-	color: var(--mvs-bg);
-	font-size: 1.1em;
-	margin-bottom: 4px;
-}
-
-.mvs-player-meta {
-	font-size: 0.85em;
-}
-
-.mvs-player-download {
-	display: inline-block;
-	margin-top: 8px;
-	padding: 6px 14px;
-	background: var(--mvs-primary);
-	color: var(--mvs-bg);
-	border-radius: 4px;
-	text-decoration: none;
-	font-size: 0.85em;
-	transition: background 0.2s;
-}
-
-.mvs-player-download:hover {
-	background: var(--mvs-primary-hover);
-	color: var(--mvs-bg);
-}
-
-/* ==========================================================================
    9. Story Viewer
    ========================================================================== */
 
@@ -1016,12 +876,7 @@
 	font-weight: 600;
 }
 
-.mvs-social-bar button.mvs-guest {
-	opacity: 0.7;
-	cursor: default;
-}
-
-.mvs-view-count {
+.mvs-social-bar button.mvs-view-count {
 	color: #999;
 	font-size: 0.85em;
 }
@@ -1841,10 +1696,6 @@ a.mvs-dashboard-card-title:hover {
 	color: #555;
 }
 
-.mvs-upload-toggle {
-	margin-top: 12px;
-}
-
 .mvs-dashboard-upload-fields {
 	display: flex;
 	flex-direction: column;
@@ -2261,12 +2112,6 @@ a.mvs-dashboard-card-title:hover {
 	to { transform: rotate(360deg); }
 }
 
-.mvs-activity-media-success {
-	color: #00a32a;
-	font-size: 13px;
-	font-weight: 600;
-}
-
 .mvs-activity-media-error {
 	color: #d63638;
 	font-size: 13px;
@@ -2274,381 +2119,18 @@ a.mvs-dashboard-card-title:hover {
 
 /* ── 25. Activity Media Lightbox ── */
 
-.mvs-lb {
-	display: none;
-	position: fixed;
-	inset: 0;
-	z-index: 999999;
-	background: rgba(0, 0, 0, 0.9);
-	align-items: stretch;
-	justify-content: center;
-	padding: 0;
-	overflow: hidden;
-}
-
-.mvs-lb.mvs-lb-open {
-	display: flex;
-}
-
-.mvs-lb-container {
-	position: relative;
-	display: flex;
-	width: 100%;
-	height: 100vh;
-	background: var(--mvs-bg);
-	overflow: hidden;
-	animation: mvs-lb-fade-in 0.15s ease;
-}
-
-@keyframes mvs-lb-fade-in {
-	from { opacity: 0; transform: scale(0.95); }
-	to { opacity: 1; transform: scale(1); }
-}
-
-.mvs-lb-close {
-	position: absolute;
-	top: 16px;
-	left: 16px;
-	z-index: 10;
-	width: 44px;
-	height: 44px;
-	border: none;
-	border-radius: 50%;
-	background: rgba(255, 255, 255, 0.2);
-	color: var(--mvs-bg);
-	font-size: 26px;
-	line-height: 1;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: background 0.15s;
-	backdrop-filter: blur(8px);
-}
-
-.mvs-lb-close:hover {
-	background: rgba(255, 255, 255, 0.3);
 }
 
 /* Left: Image panel — takes remaining space */
-.mvs-lb-image {
-	position: relative;
-	flex: 1 1 auto;
-	min-width: 0;
-	background: #000;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	height: 100vh;
-}
-
-.mvs-lb-img {
-	max-width: 100%;
-	max-height: 100vh;
-	object-fit: contain;
-	display: block;
-	transition: opacity 0.12s ease;
-}
-
 /* Prev / Next navigation arrows */
-.mvs-lb-nav {
-	position: absolute;
-	top: 50%;
-	transform: translateY(-50%);
-	z-index: 10;
-	width: 52px;
-	height: 52px;
-	border: none;
-	border-radius: 50%;
-	background: rgba(255, 255, 255, 0.15);
-	color: var(--mvs-bg);
-	font-size: 36px;
-	line-height: 1;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: background 0.15s, transform 0.15s;
-	backdrop-filter: blur(8px);
-}
-.mvs-lb-nav:hover {
-	background: rgba(255, 255, 255, 0.35);
-	transform: translateY(-50%) scale(1.08);
-}
-.mvs-lb-prev { left: 16px; }
-.mvs-lb-next { right: 16px; }
-
-
 /* Right: Social panel — Facebook/X style wide sidebar */
-.mvs-lb-panel {
-	flex: 0 0 420px;
-	display: flex;
-	flex-direction: column;
-	border-left: 1px solid #e5e5e5;
-	height: 100vh;
-	overflow: hidden;
-	background: var(--mvs-bg);
-}
-
-.mvs-lb-header {
-	padding: 20px 24px;
-	border-bottom: 1px solid #efefef;
-}
-
-.mvs-lb-title {
-	margin: 0 0 6px;
-	font-size: 18px;
-	font-weight: 700;
-	color: #1a1a1a;
-	line-height: 1.4;
-	word-break: break-word;
-}
-
-.mvs-lb-stats {
-	font-size: 14px;
-	color: #65676b;
-}
-
 /* Reactions bar */
-.mvs-lb-reactions {
-	display: flex;
-	gap: 6px;
-	padding: 16px 24px;
-	border-bottom: 1px solid #efefef;
-	flex-wrap: wrap;
-}
-
-.mvs-lb-reaction {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 6px 10px;
-	border: 1px solid #dbdbdb;
-	border-radius: 20px;
-	background: #f7f8fa;
-	cursor: pointer;
-	font-size: 15px;
-	transition: all 0.15s;
-}
-
-.mvs-lb-reaction:hover {
-	background: #e8e8e8;
-	border-color: #bbb;
-	transform: scale(1.05);
-}
-
-.mvs-lb-reaction-active {
-	background: #fff0f0;
-	border-color: #ed4956;
-}
-
-.mvs-lb-reaction-emoji {
-	font-size: 20px;
-	line-height: 1;
-}
-
-.mvs-lb-reaction-emoji img.emoji {
-	width: 20px !important;
-	height: 20px !important;
-	margin: 0 !important;
-}
-
-.mvs-lb-reaction-count {
-	font-size: 13px;
-	color: #1a1a1a;
-	font-weight: 600;
-	min-width: 8px;
-}
-
 /* Action buttons */
-.mvs-lb-actions {
-	display: flex;
-	gap: 10px;
-	padding: 16px 24px;
-	border-bottom: 1px solid #efefef;
-	align-items: center;
-}
-
-.mvs-lb-fav-btn,
-.mvs-lb-share-btn {
-	padding: 10px 18px;
-	border: 1px solid #dbdbdb;
-	border-radius: 8px;
-	background: var(--mvs-bg);
-	color: var(--mvs-text);
-	font-size: 14px;
-	font-weight: 500;
-	cursor: pointer;
-	transition: all 0.15s;
-}
-
-.mvs-lb-fav-btn:hover,
-.mvs-lb-share-btn:hover {
-	background: #f0f0f0;
-	color: var(--mvs-text);
-}
-
-.mvs-lb-fav-active {
-	background: #fff0f0 !important;
-	border-color: #ed4956 !important;
-	color: #ed4956;
-	font-weight: 600;
-}
-
-.mvs-lb-view-btn {
-	margin-left: auto;
-	padding: 10px 18px;
-	font-size: 14px;
-	font-weight: 500;
-	color: #333;
-	text-decoration: none;
-	border: 1px solid #dbdbdb;
-	border-radius: 8px;
-	background: var(--mvs-bg);
-	transition: all 0.15s;
-}
-
-.mvs-lb-view-btn:hover {
-	background: #f0f0f0;
-	color: #333;
-}
-
 /* Comments section — fills remaining space */
-.mvs-lb-comments {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-	min-height: 0;
-}
-
-.mvs-lb-comments-list {
-	flex: 1;
-	overflow-y: auto;
-	padding: 16px 24px;
-}
-
-.mvs-lb-comment {
-	display: flex;
-	gap: 10px;
-	align-items: flex-start;
-	margin-bottom: 16px;
-	font-size: 15px;
-	line-height: 1.5;
-	color: #1a1a1a;
-	padding-bottom: 12px;
-	border-bottom: 1px solid #f5f5f5;
-}
-.mvs-lb-comment-avatar {
-	width: 32px;
-	height: 32px;
-	border-radius: 50%;
-	object-fit: cover;
-	flex-shrink: 0;
-}
-.mvs-lb-comment-body {
-	flex: 1;
-	min-width: 0;
-}
-
-.mvs-lb-comment:last-child {
-	border-bottom: none;
-}
-
-.mvs-lb-comment-author {
-	font-weight: 700;
-	margin-right: 6px;
-	color: #1a1a1a;
-}
-
-.mvs-lb-comment-text {
-	color: #333;
-}
-
-.mvs-lb-comment-date {
-	display: block;
-	font-size: 12px;
-	color: #8e8e8e;
-	margin-top: 4px;
-}
-
-.mvs-lb-no-comments {
-	color: #8e8e8e;
-	font-size: 15px;
-	text-align: center;
-	padding: 40px 0;
-	margin: 0;
-}
-
 /* Comment form — pinned to bottom */
-.mvs-lb-comment-form {
-	display: flex;
-	padding: 16px 24px;
-	border-top: 1px solid #e5e5e5;
-	gap: 10px;
-	background: #fafafa;
-	flex-shrink: 0;
-}
-
-.mvs-lb-comment-input {
-	flex: 1;
-	border: 1px solid #d0d0d0;
-	border-radius: 24px;
-	padding: 10px 20px;
-	font-size: 15px;
-	outline: none;
-	transition: border-color 0.15s;
-	background: var(--mvs-bg);
-}
-
-.mvs-lb-comment-input:focus {
-	border-color: #0095f6;
-	box-shadow: 0 0 0 2px rgba(0, 149, 246, 0.15);
-}
-
-.mvs-lb-comment-submit {
-	border: none;
-	background: #0095f6;
-	color: var(--mvs-bg);
-	font-weight: 600;
-	font-size: 14px;
-	cursor: pointer;
-	padding: 10px 20px;
-	border-radius: 24px;
-	transition: background 0.15s;
-}
-
-.mvs-lb-comment-submit:hover {
-	background: #007ad6;
-}
-
 /* Responsive: stack on mobile */
 @media (max-width: 900px) {
-	.mvs-lb-container {
-		flex-direction: column;
 	}
-
-	.mvs-lb-image {
-		height: 50vh;
-		flex: 0 0 auto;
-	}
-
-	.mvs-lb-img {
-		max-height: 50vh;
-	}
-
-	.mvs-lb-panel {
-		flex: 1 1 auto;
-		height: 50vh;
-		border-left: none;
-		border-top: 1px solid #e5e5e5;
-	}
-
-	.mvs-lb-close {
-		top: 8px;
-		right: 8px;
-	}
-}
 
 /* ── 26. BP Profile — Inline Album Creation ── */
 .mvs-bp-album-form {
@@ -2732,10 +2214,6 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-bp-album-msg-error {
 	color: #d63638;
-}
-
-.mvs-bp-album-msg-success {
-	color: #00a32a;
 }
 
 /* ── 27. BP Profile — Inline Upload ── */
@@ -2988,18 +2466,6 @@ a.mvs-dashboard-card-title:hover {
 /* ==========================================================================
    28. Enhanced Single Media Player
    ========================================================================== */
-
-.mvs-media-duration,
-.mvs-media-resolution {
-	color: #888;
-	font-size: 0.85em;
-}
-
-.mvs-media-duration::before,
-.mvs-media-resolution::before {
-	content: "\00b7";
-	margin: 0 6px;
-}
 
 .mvs-media-video video {
 	display: block;
@@ -3547,13 +3013,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 /* Reign BP profile/group media grids */
-.theme-flavor .mvs-bp-media-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-	gap: 12px;
-}
-
-/* BuddyBoss theme compatibility */
+.theme-flavor /* BuddyBoss theme compatibility */
 .buddyboss-theme .mvs-upload-dropzone,
 .buddyboss-theme .mvs-upload-block {
 	display: flex;
@@ -4216,24 +3676,11 @@ a.mvs-dashboard-card-title:hover {
    31. Explore Page Grid Fixes
    ========================================================================== */
 
-.mvs-explore-grid {
-	display: grid;
-	grid-template-columns: repeat(var(--mvs-grid-cols, 3), 1fr);
-	gap: 16px;
-}
-
 @media (max-width: 768px) {
-	.mvs-explore-grid {
-		grid-template-columns: repeat(2, 1fr);
-		gap: 8px;
 	}
-}
 
 @media (max-width: 480px) {
-	.mvs-explore-grid {
-		grid-template-columns: 1fr;
 	}
-}
 
 /* ==========================================================================
    32. Profile Header (Dashboard) & Profile Edit
@@ -5023,12 +4470,7 @@ a.mvs-dashboard-card-title:hover {
    RTL Support
    ========================================================================== */
 
-[dir="rtl"] .mvs-lb-prev { left: auto; right: 16px; }
-[dir="rtl"] .mvs-lb-next { right: auto; left: 16px; }
-[dir="rtl"] .mvs-lb-panel { border-left: none; border-right: 1px solid var(--mvs-border); }
-[dir="rtl"] .mvs-lb-close { right: auto; left: 16px; }
-
-[dir="rtl"] .mvs-grid-item-info { flex-direction: row-reverse; }
+[dir="rtl"] [dir="rtl"] [dir="rtl"] [dir="rtl"] [dir="rtl"] .mvs-grid-item-info { flex-direction: row-reverse; }
 [dir="rtl"] .mvs-grid-item-overlay { text-align: right; }
 
 [dir="rtl"] .mvs-search-bar { flex-direction: row-reverse; }
@@ -5039,17 +4481,13 @@ a.mvs-dashboard-card-title:hover {
 [dir="rtl"] .mvs-explore-header { text-align: right; }
 [dir="rtl"] .mvs-tag-cloud { direction: rtl; }
 
-[dir="rtl"] .mvs-media-meta { flex-direction: row-reverse; }
-[dir="rtl"] .mvs-media-actions { flex-direction: row-reverse; }
-
-[dir="rtl"] .mvs-logged-out-banner__content { text-align: right; }
+[dir="rtl"] [dir="rtl"] [dir="rtl"] .mvs-logged-out-banner__content { text-align: right; }
 [dir="rtl"] .mvs-logged-out-banner__close { right: auto; left: 16px; }
 
 [dir="rtl"] .mvs-chat-trigger { right: auto; left: 20px; }
 
 [dir="rtl"] .mvs-bp-album-form,
 [dir="rtl"] .mvs-bp-album-msg { text-align: right; }
-
 
 /* ==========================================================================
    Mobile — Search Bar Responsive Fixes
