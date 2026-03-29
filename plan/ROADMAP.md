@@ -1,93 +1,94 @@
 # WPMediaVerse (Free) — Master Roadmap
 
 > Single source of truth. Updated: 2026-03-29
-> Process: plan → review → implement. Architecture decisions are final.
+> Architecture: Custom tables ONLY. No wp_postmeta. CPT for permalinks/admin only.
 
 ---
 
-## BLOCKER: Architecture Decision (before v1.0)
+## BLOCKER: Postmeta → Custom Table Migration
 
-The plugin currently uses 31 custom tables + CPT. This is a mixed approach
-that must be resolved BEFORE release. Architecture can't change after v1.0.
+**173 postmeta calls across 29 files** must be moved to `mvs_media_index`.
 
-### Decision Needed: What stays, what goes?
+### Step 1: Expand mvs_media_index schema
 
-**KEEP (custom tables for many-to-many, justified):**
-- mvs_reactions (user × media × type)
-- mvs_favorites (user × media)
-- mvs_follows (user × user)
-- mvs_album_items (album × media)
-- mvs_activity (feed)
-- mvs_notifications (per-user read tracking)
-- mvs_blocks (user × user)
-- Messaging tables (4) — conversations, participants, messages, reactions
+Current columns: media_id, post_author, media_type, privacy, moderation_status, created_at
 
-**QUESTION: Keep or move to postmeta?**
-- mvs_media_index — duplicates wp_posts for fast queries
-- mvs_media_stats — view/download/reaction counters
-- mvs_media_views — individual view records
-- mvs_access_rules — privacy rules per media
-- mvs_access_grants — privacy grants per user
-- mvs_mentions — @mentions
-- mvs_reports — user reports
+Add columns for ALL 21 postmeta keys:
+```sql
+ALTER TABLE mvs_media_index ADD COLUMN
+    attachment_id bigint unsigned DEFAULT NULL,
+    file_url varchar(500) DEFAULT '',
+    file_path varchar(500) DEFAULT '',
+    file_type varchar(50) DEFAULT '',
+    file_size bigint unsigned DEFAULT 0,
+    file_hash varchar(64) DEFAULT '',
+    width int unsigned DEFAULT NULL,
+    height int unsigned DEFAULT NULL,
+    exif_raw text DEFAULT NULL,
+    album_id bigint unsigned DEFAULT NULL,
+    album_type varchar(20) DEFAULT '',
+    group_id bigint unsigned DEFAULT NULL,
+    group_position int unsigned DEFAULT 0,
+    media_group varchar(50) DEFAULT '',
+    group_cover tinyint(1) DEFAULT 0,
+    bp_activity_id bigint unsigned DEFAULT NULL,
+    ai_status varchar(20) DEFAULT '',
+    ai_description text DEFAULT NULL,
+    ai_tags text DEFAULT NULL,
+    ai_confidence float DEFAULT NULL,
+    ai_moderation text DEFAULT NULL,
+    is_story tinyint(1) DEFAULT 0,
+    story_expires_at datetime DEFAULT NULL
+```
 
-**DELETE (dead, replaced, or unused):**
-- mvs_battles, mvs_battle_votes (old, replaced by unified Pro schema)
-- mvs_challenges, mvs_challenge_votes (old)
-- mvs_tournaments, mvs_tournament_*, mvs_tournament_votes (old)
-- mvs_email_leads (0 rows, no feature)
-- mvs_transactions (0 rows, no feature)
-- mvs_error_log (use WP debug.log instead)
-- wptests_* (10 test artifacts)
+Collection-specific meta (_mvs_collection_rules, _mvs_collection_type) stays on mvs_collection CPT since collections are a different post type.
 
-### Factors:
-- postmeta = simpler, WordPress-native, works with all WP plugins
-- Custom tables = faster queries at scale, but more maintenance
-- v1.0 architecture is FINAL — can't restructure after release
-- Platform target: Dribbble/Flickr/Pinterest level
+### Step 2: Create MediaMeta helper class
+
+```php
+class MediaMeta {
+    public static function get( int $media_id, string $key );
+    public static function set( int $media_id, string $key, $value );
+    public static function delete( int $media_id, string $key );
+    public static function get_all( int $media_id ): array;
+}
+```
+
+This reads/writes from `mvs_media_index` instead of `wp_postmeta`.
+
+### Step 3: Replace all 173 calls
+
+Search-and-replace across 29 files:
+- `get_post_meta( $id, '_mvs_file_url', true )` → `MediaMeta::get( $id, 'file_url' )`
+- `update_post_meta( $id, '_mvs_file_url', $val )` → `MediaMeta::set( $id, 'file_url', $val )`
+- `delete_post_meta( $id, '_mvs_file_url' )` → `MediaMeta::delete( $id, 'file_url' )`
+
+### Step 4: Migrate existing data
+
+One-time script: read all `_mvs_*` postmeta, write to mvs_media_index columns, then delete from wp_postmeta.
+
+### Step 5: Restore mvs_error_log table
+
+LoggerService, LogViewerPage, HealthCheckService depend on it. Re-add to free plugin Migrator.
 
 ---
 
 ## DONE (this session)
 
 - [x] Settings page Jetonomy card layout
-- [x] Dead CSS removed
-- [x] Sidebar links (Quotas, Reports added)
-- [x] Sidebar JS fix (external links navigate)
-- [x] Overview permissions link fixed
-- [x] Permission fail → wp_die (all pages)
-- [x] All pages under WPMediaVerse menu (proper parent)
-- [x] Menu cleaned to 7 items (CSS hide for tool pages)
-- [x] Titles + menu highlighting work on all 15 pages
-- [x] Missing capabilities fixed (edit/trash row actions)
-- [x] Status badge CSS added
-- [x] Pro CSS enqueue on hidden pages
-- [x] Success feedback on form handlers
-- [x] ReportManager description added
-- [x] Tournament winner display_name
-- [x] Plans consolidated (ROADMAP.md + ADMIN-UX-GUIDELINES.md only)
+- [x] All 45 admin UX audit issues fixed
+- [x] Menu cleaned to 7 items
+- [x] Capabilities fixed (edit/trash actions)
+- [x] Dead tables dropped (21 → 26 clean tables)
+- [x] Unified competition schema created
+- [x] Plans consolidated
+- [x] Architecture decision: custom tables only, no postmeta
 
 ---
 
-## TODO: After Architecture Decision
+## TODO: After Postmeta Migration
 
-- [ ] Clean up dead tables
 - [ ] DM integration (move from Pro to Free)
-- [ ] Gamification hooks (ActivityService + NotificationService filters)
-- [ ] Admin page pagination (6 pages)
-- [ ] Pre-release checklist (version bump, build, readme, QA)
-
----
-
-## Pre-Release Checklist
-
-- [ ] Architecture decision finalized
-- [ ] php -l — zero errors
-- [ ] npm run build — blocks compile
-- [ ] Remove console.log / error_log / var_dump
-- [ ] Bump version
-- [ ] .distignore + .pot file
-- [ ] readme.txt
-- [ ] QA suite
-- [ ] Build ZIP
-- [ ] Tag + push
+- [ ] Gamification hooks
+- [ ] Admin page pagination
+- [ ] Pre-release checklist
