@@ -35,10 +35,12 @@ class TemplateLoader {
 		add_action( 'init', array( $this, 'register_rewrite_rules' ) );
 		add_filter( 'query_vars', array( $this, 'register_query_vars' ) );
 
-		// Serve media templates via template_redirect — priority 5 to run
-		// BEFORE WordPress's redirect_canonical (priority 10) which would
-		// redirect attachment slugs to the raw file URL.
+		// Serve media templates via template_redirect.
 		add_action( 'template_redirect', array( $this, 'load_media_templates' ), 5 );
+
+		// Prevent WordPress from redirecting our /media/{slug}/ URLs to
+		// attachment file URLs when slug matches a WP attachment post.
+		add_filter( 'redirect_canonical', array( $this, 'prevent_attachment_redirect' ), 10, 2 );
 
 		// CPT template filters — albums and collections only.
 		add_filter( 'single_template', array( $this, 'load_single_template' ) );
@@ -127,6 +129,29 @@ class TemplateLoader {
 	 *
 	 * Handles single media, explore archive, user profile, and profile edit.
 	 */
+	/**
+	 * Prevent WordPress canonical redirect on MVS media URLs.
+	 *
+	 * When a media slug matches a WP attachment post, WordPress tries to
+	 * redirect /media/{slug}/ to the raw file URL. This filter cancels
+	 * that redirect when our custom query vars are active.
+	 *
+	 * @param string $redirect_url The canonical URL WordPress wants to redirect to.
+	 * @param string $requested_url The original requested URL.
+	 * @return string|false The redirect URL, or false to cancel.
+	 */
+	public function prevent_attachment_redirect( $redirect_url, $requested_url ) {
+		if (
+			get_query_var( 'mvs_media_slug' )
+			|| get_query_var( 'mvs_media_archive' )
+			|| get_query_var( 'mvs_profile_user' )
+			|| get_query_var( 'mvs_edit_profile' )
+		) {
+			return false;
+		}
+		return $redirect_url;
+	}
+
 	public function load_media_templates(): void {
 		// Single media by slug.
 		$slug = get_query_var( 'mvs_media_slug' );

@@ -505,12 +505,15 @@ class UploadService {
 			require_once ABSPATH . 'wp-admin/includes/image.php';
 		}
 
+		// Prefix attachment title to prevent slug collision with our media slug.
+		// The attachment is ONLY for file storage — its slug is never user-facing.
 		$title = MediaMeta::get( $media_id, 'title' ) ?: 'media-' . $media_id;
 
 		$attachment_id = wp_insert_attachment(
 			array(
 				'post_mime_type' => $mime,
-				'post_title'     => $title,
+				'post_title'     => '_mvs_' . $title,
+				'post_name'      => '_mvs-att-' . $media_id,
 				'post_status'    => 'inherit',
 				'post_parent'    => 0,
 			),
