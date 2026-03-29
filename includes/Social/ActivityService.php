@@ -13,6 +13,7 @@ namespace WPMediaVerse\Social;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Services\MediaMeta;
 
 /**
@@ -239,14 +240,7 @@ class ActivityService {
 		if ( $row->media_id ) {
 			$media_post = get_post( (int) $row->media_id );
 			if ( $media_post ) {
-				$thumb_url = '';
-				$attach_id = (int) MediaMeta::get( $media_post->ID, 'attachment_id' );
-				if ( $attach_id ) {
-					$thumb_src = wp_get_attachment_image_url( $attach_id, 'thumbnail' );
-					if ( $thumb_src ) {
-						$thumb_url = set_url_scheme( $thumb_src );
-					}
-				}
+				$thumb_url = TemplateHelpers::get_thumb_url( $media_post->ID, 'thumbnail' );
 
 				$activity['media'] = array(
 					'title'     => $media_post->post_title,

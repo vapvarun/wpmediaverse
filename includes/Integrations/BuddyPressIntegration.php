@@ -9,6 +9,7 @@ namespace WPMediaVerse\Integrations;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Services\MediaMeta;
 
 /**
@@ -1989,15 +1990,11 @@ class BuddyPressIntegration {
 	 * @since 1.1.0 Changed from private to public for WP-CLI backfill command.
 	 */
 	public function get_media_thumbnail_html( int $media_id, string $size = 'medium' ): string {
-		$attach_id  = (int) MediaMeta::get( $media_id, 'attachment_id' );
 		$file_type  = MediaMeta::get( $media_id, 'file_type' );
 		$media_type = MediaMeta::get( $media_id, 'media_type' );
 		$file_url   = (string) MediaMeta::get( $media_id, 'file_url' );
-		$thumb_url  = '';
 
-		if ( $attach_id ) {
-			$thumb_url = wp_get_attachment_image_url( $attach_id, $size );
-		}
+		$thumb_url = TemplateHelpers::get_thumb_url( $media_id, $size );
 		if ( ! $thumb_url && $file_url && strpos( $file_type, 'image/' ) === 0 ) {
 			$thumb_url = $file_url;
 		}
@@ -2317,12 +2314,9 @@ class BuddyPressIntegration {
 		$permalink = MediaMeta::get_permalink( $media_id );
 		$poster    = '';
 
-		$attach_id = (int) MediaMeta::get( $media_id, 'attachment_id' );
-		if ( $attach_id ) {
-			$poster_url = wp_get_attachment_image_url( $attach_id, 'large' );
-			if ( $poster_url ) {
-				$poster = ' poster="' . esc_url( set_url_scheme( $poster_url ) ) . '"';
-			}
+		$poster_url = TemplateHelpers::get_thumb_url( $media_id, 'large' );
+		if ( $poster_url ) {
+			$poster = ' poster="' . esc_url( $poster_url ) . '"';
 		}
 
 		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'

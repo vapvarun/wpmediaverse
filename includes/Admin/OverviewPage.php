@@ -9,6 +9,7 @@ namespace WPMediaVerse\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Services\MediaMeta;
 
 /**
@@ -355,17 +356,19 @@ class OverviewPage {
 									<tbody>
 										<?php foreach ( $recent_media as $item ) : ?>
 											<?php
-											$thumb_id  = (int) MediaMeta::get( $item->ID, 'attachment_id' );
-											$thumb_url = $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'thumbnail' ) : '';
-											$edit_url  = get_edit_post_link( $item->ID, 'raw' );
-											$view_url  = get_permalink( $item->ID );
-											$link_url  = $edit_url ? $edit_url : $view_url;
+											$item_media_id = (int) ( $item['media_id'] ?? 0 );
+											$item_title    = $item['title'] ?? '';
+											$item_author   = (int) ( $item['post_author'] ?? 0 );
+											$item_date     = $item['created_at'] ?? '';
+											$thumb_url     = $item_media_id ? TemplateHelpers::get_thumb_url( $item_media_id, 'thumbnail' ) : '';
+											$view_url      = $item_media_id ? MediaMeta::get_permalink( $item_media_id ) : '';
+											$link_url      = $view_url;
 											?>
 											<tr>
 												<td>
 													<?php if ( $thumb_url ) : ?>
 														<img src="<?php echo esc_url( $thumb_url ); ?>"
-															alt="<?php echo esc_attr( $item->post_title ); ?>"
+															alt="<?php echo esc_attr( $item_title ); ?>"
 															class="mvs-thumb"
 															loading="lazy" />
 													<?php else : ?>
@@ -377,17 +380,19 @@ class OverviewPage {
 												<td>
 													<?php if ( $link_url ) : ?>
 														<a href="<?php echo esc_url( $link_url ); ?>">
-															<?php echo esc_html( $item->post_title ? $item->post_title : __( '(no title)', 'wpmediaverse' ) ); ?>
+															<?php echo esc_html( $item_title ? $item_title : __( '(no title)', 'wpmediaverse' ) ); ?>
 														</a>
 													<?php else : ?>
-														<?php echo esc_html( $item->post_title ? $item->post_title : __( '(no title)', 'wpmediaverse' ) ); ?>
+														<?php echo esc_html( $item_title ? $item_title : __( '(no title)', 'wpmediaverse' ) ); ?>
 													<?php endif; ?>
 												</td>
-												<td><?php echo esc_html( get_the_author_meta( 'display_name', $item->post_author ) ); ?></td>
+												<td><?php echo esc_html( get_the_author_meta( 'display_name', $item_author ) ); ?></td>
 												<td>
-													<time datetime="<?php echo esc_attr( $item->post_date ); ?>">
-														<?php echo esc_html( human_time_diff( strtotime( $item->post_date ), time() ) ); ?>
-														<?php esc_html_e( 'ago', 'wpmediaverse' ); ?>
+													<time datetime="<?php echo esc_attr( $item_date ); ?>">
+														<?php echo esc_html( $item_date ? human_time_diff( strtotime( $item_date ), time() ) : '' ); ?>
+														<?php if ( $item_date ) : ?>
+															<?php esc_html_e( 'ago', 'wpmediaverse' ); ?>
+														<?php endif; ?>
 													</time>
 												</td>
 											</tr>

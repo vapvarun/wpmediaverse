@@ -15,6 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
+use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Services\CollectionService;
 use WPMediaVerse\Services\MediaMeta;
 
@@ -378,26 +379,18 @@ class CollectionController extends WP_REST_Controller {
 	private function prepare_collection_response( $post, bool $include_items = false, int $per_page = 20, int $page = 1 ): array {
 		$collection_type = $this->collections->get_type( $post->ID );
 
-		// Get cover from post thumbnail or first media item.
-		$cover_url = null;
-		$thumb_id  = get_post_thumbnail_id( $post->ID );
-		if ( $thumb_id ) {
-			$url       = wp_get_attachment_image_url( $thumb_id, 'large' );
-			$cover_url = $url ? set_url_scheme( $url ) : null;
-		}
-		if ( ! $cover_url ) {
-			$first_media_id = $this->get_first_collection_media( $post->ID, $collection_type );
-			if ( $first_media_id ) {
-				$file_url   = MediaMeta::get( $first_media_id, 'file_url' );
-				$media_type = MediaMeta::get( $first_media_id, 'media_type' ) ?: 'image';
-				if ( 'image' === $media_type && $file_url ) {
-					$cover_url = set_url_scheme( $file_url );
-				} else {
-					$att_id = (int) MediaMeta::get( $first_media_id, 'attachment_id' );
-					if ( $att_id ) {
-						$url       = wp_get_attachment_image_url( $att_id, 'large' );
-						$cover_url = $url ? set_url_scheme( $url ) : null;
-					}
+		// Get cover from first media item.
+		$cover_url      = null;
+		$first_media_id = $this->get_first_collection_media( $post->ID, $collection_type );
+		if ( $first_media_id ) {
+			$file_url   = MediaMeta::get( $first_media_id, 'file_url' );
+			$media_type = MediaMeta::get( $first_media_id, 'media_type' ) ?: 'image';
+			if ( 'image' === $media_type && $file_url ) {
+				$cover_url = set_url_scheme( $file_url );
+			} else {
+				$thumb = TemplateHelpers::get_thumb_url( $first_media_id, 'large' );
+				if ( $thumb ) {
+					$cover_url = $thumb;
 				}
 			}
 		}

@@ -202,30 +202,22 @@ class AlbumService {
 	 * @return string|null Cover URL or null.
 	 */
 	public function get_cover_url( int $album_id, string $size = 'medium' ): ?string {
-		$thumb_id = get_post_thumbnail_id( $album_id );
-
-		// Fallback: use the first album item's image as cover.
-		if ( ! $thumb_id ) {
-			$first_media_id = $this->get_first_image_item( $album_id );
-			if ( $first_media_id ) {
-				$thumb_id = (int) MediaMeta::get( $first_media_id, 'attachment_id' );
-				// Last resort: if it's an image, use file_url directly.
-				if ( ! $thumb_id ) {
-					$file_url  = MediaMeta::get( $first_media_id, 'file_url' );
-					$file_type = MediaMeta::get( $first_media_id, 'file_type' );
-					if ( $file_url && is_string( $file_type ) && strpos( $file_type, 'image/' ) === 0 ) {
-						return set_url_scheme( $file_url );
-					}
-				}
+		// Use the first album item's thumbnail as cover.
+		$first_media_id = $this->get_first_image_item( $album_id );
+		if ( $first_media_id ) {
+			$thumb = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $first_media_id, $size );
+			if ( $thumb ) {
+				return $thumb;
+			}
+			// Fallback: if it's an image, use file_url directly.
+			$file_url  = MediaMeta::get( $first_media_id, 'file_url' );
+			$file_type = MediaMeta::get( $first_media_id, 'file_type' );
+			if ( $file_url && is_string( $file_type ) && strpos( $file_type, 'image/' ) === 0 ) {
+				return set_url_scheme( $file_url );
 			}
 		}
 
-		if ( ! $thumb_id ) {
-			return null;
-		}
-
-		$url = wp_get_attachment_image_url( $thumb_id, $size );
-		return $url ? set_url_scheme( $url ) : null;
+		return null;
 	}
 
 	/**

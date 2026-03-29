@@ -15,6 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\Core\Plugin;
+use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Services\MediaMeta;
 use WPMediaVerse\Services\PrivacyService;
@@ -825,15 +826,8 @@ class MediaController extends WP_REST_Controller {
 
 		$file_url = ! empty( $all['file_url'] ) ? set_url_scheme( $all['file_url'] ) : '';
 
-		// Build thumbnail URL from WP attachment if available.
-		$thumbnail_url = '';
-		$attachment_id = ! empty( $all['attachment_id'] ) ? (int) $all['attachment_id'] : 0;
-		if ( $attachment_id ) {
-			$thumb = wp_get_attachment_image_url( $attachment_id, 'large' );
-			if ( $thumb ) {
-				$thumbnail_url = set_url_scheme( $thumb );
-			}
-		}
+		// Build thumbnail URL from custom meta.
+		$thumbnail_url = TemplateHelpers::get_thumb_url( $media_id, 'large' );
 
 		$media_type_value = ! empty( $all['media_type'] ) ? $all['media_type'] : '';
 		$privacy_value    = ! empty( $all['privacy'] ) ? $all['privacy'] : 'public';

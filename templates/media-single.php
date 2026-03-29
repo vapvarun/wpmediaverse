@@ -70,14 +70,8 @@ $is_audio = 'audio' === $mvs_media_type;
 $artist     = \WPMediaVerse\Services\MediaMeta::get( $mvs_media_id, 'artist' );
 $album_name = \WPMediaVerse\Services\MediaMeta::get( $mvs_media_id, 'album_name' );
 
-// Poster/thumbnail from WP attachment.
-$poster_url = '';
-if ( $mvs_attach_id ) {
-	$poster_src = wp_get_attachment_image_url( $mvs_attach_id, 'large' );
-	if ( $poster_src ) {
-		$poster_url = set_url_scheme( $poster_src );
-	}
-}
+// Poster/thumbnail from media meta.
+$poster_url = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $mvs_media_id, 'large' );
 
 // Format duration for display.
 $mvs_is_owner = is_user_logged_in() && $mvs_author_id === get_current_user_id();

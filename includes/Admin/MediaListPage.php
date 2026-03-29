@@ -12,6 +12,7 @@ namespace WPMediaVerse\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Services\MediaMeta;
 
 /**
@@ -268,15 +269,11 @@ class MediaListPage {
 			<td style="width:50px;">
 				<?php
 				$thumb_url = '';
-				if ( 'image' === $type ) {
-					if ( $file_url ) {
-						$thumb_url = $file_url;
-					} elseif ( $attachment_id ) {
-						$thumb_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
-					}
-				} elseif ( $attachment_id ) {
-					// Non-image types may still have a generated thumbnail (e.g. video poster).
-					$thumb_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+				if ( 'image' === $type && $file_url ) {
+					$thumb_url = $file_url;
+				}
+				if ( ! $thumb_url ) {
+					$thumb_url = TemplateHelpers::get_thumb_url( $media_id, 'thumbnail' );
 				}
 				?>
 				<?php if ( $thumb_url ) : ?>

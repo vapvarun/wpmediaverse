@@ -907,9 +907,8 @@ if ( function_exists( 'bp_activity_add' ) ) {
 
 	$bp_activities = 0;
 	foreach ( $created_media as $media ) {
-		$thumb_id  = get_post_thumbnail_id( $media['post_id'] );
-		$thumb_url = $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium' ) : '';
-		$content   = $thumb_url ? '<div class="mvs-activity-media"><img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( get_the_title( $media['post_id'] ) ) . '"></div>' : '';
+		$thumb_url = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( (int) $media['post_id'], 'medium' );
+		$content   = $thumb_url ? '<div class="mvs-activity-media"><img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( \WPMediaVerse\Services\MediaMeta::get( (int) $media['post_id'], 'title' ) ?: '' ) . '"></div>' : '';
 
 		bp_activity_add(
 			array(
