@@ -651,45 +651,60 @@ $collections_config = array(
 // ---------------------------------------------------------------------------
 
 /**
- * Import a local image file into the WP media library.
+ * Import a local image file into the MVS uploads directory and generate thumbnails.
  *
  * @param string $source_path Full path to source image.
  * @param string $title       Image title.
- * @return int|WP_Error Attachment ID or error.
+ * @return array|false Array with file_url, file_path, mime, file_size, thumbs, or false on failure.
  */
 function mvs_seed_import_local_image( $source_path, $title ) {
-	require_once ABSPATH . 'wp-admin/includes/file.php';
-	require_once ABSPATH . 'wp-admin/includes/image.php';
-	require_once ABSPATH . 'wp-admin/includes/media.php';
-
 	$upload_dir = wp_upload_dir();
-	$filename   = sanitize_file_name( $title ) . '.jpg';
-	$dest_path  = $upload_dir['path'] . '/' . wp_unique_filename( $upload_dir['path'], $filename );
+	$dest_dir   = $upload_dir['basedir'] . '/wpmediaverse/' . gmdate( 'Y/m' );
+	wp_mkdir_p( $dest_dir );
 
-	// Copy file to uploads directory.
+	$filename  = wp_unique_filename( $dest_dir, basename( $source_path ) );
+	$dest_path = $dest_dir . '/' . $filename;
+
 	if ( ! copy( $source_path, $dest_path ) ) {
-		return new WP_Error( 'copy_failed', 'Failed to copy demo image to uploads.' );
+		return false;
 	}
 
+	$rel_dir  = 'wpmediaverse/' . gmdate( 'Y/m' );
+	$file_url = $upload_dir['baseurl'] . '/' . $rel_dir . '/' . $filename;
 	$filetype = wp_check_filetype( $dest_path );
+	$mime     = $filetype['type'] ?: 'image/jpeg';
 
-	$attachment_id = wp_insert_attachment(
-		array(
-			'post_title'     => $title,
-			'post_mime_type' => $filetype['type'],
-			'post_status'    => 'inherit',
-		),
-		$dest_path
-	);
-
-	if ( is_wp_error( $attachment_id ) ) {
-		return $attachment_id;
+	// Generate thumbnails.
+	$thumbs = array();
+	if ( str_starts_with( $mime, 'image/' ) ) {
+		if ( ! function_exists( 'wp_get_image_editor' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+		}
+		$editor = wp_get_image_editor( $dest_path );
+		if ( ! is_wp_error( $editor ) ) {
+			$sizes = array(
+				'large'  => array( 'width' => 1024, 'height' => 1024, 'crop' => false ),
+				'medium' => array( 'width' => 300,  'height' => 300,  'crop' => false ),
+				'thumb'  => array( 'width' => 150,  'height' => 150,  'crop' => true ),
+			);
+			$generated = $editor->multi_resize( $sizes );
+			$base_url  = $upload_dir['baseurl'] . '/' . $rel_dir;
+			foreach ( $generated as $size_name => $data ) {
+				$thumbs[ 'thumb_' . $size_name ] = $base_url . '/' . $data['file'];
+			}
+			$img_size = $editor->get_size();
+			$thumbs['width']  = $img_size['width'] ?? null;
+			$thumbs['height'] = $img_size['height'] ?? null;
+		}
 	}
 
-	$metadata = wp_generate_attachment_metadata( $attachment_id, $dest_path );
-	wp_update_attachment_metadata( $attachment_id, $metadata );
-
-	return $attachment_id;
+	return array(
+		'file_url'  => $file_url,
+		'file_path' => $dest_path,
+		'mime'      => $mime,
+		'file_size' => filesize( $dest_path ),
+		'thumbs'    => $thumbs,
+	);
 }
 
 // Tags and categories are now stored as MediaMeta values (no CPT taxonomy).
@@ -798,10 +813,10 @@ foreach ( $images as $idx => $img ) {
 
 	mvs_seed_log( "[{$num}/" . count( $images ) . "] Importing: {$img['title']}..." );
 
-	$attachment_id = mvs_seed_import_local_image( $source_path, $img['title'] );
+	$imported = mvs_seed_import_local_image( $source_path, $img['title'] );
 
-	if ( is_wp_error( $attachment_id ) ) {
-		mvs_seed_log( '  Failed: ' . $attachment_id->get_error_message(), 'warning' );
+	if ( ! $imported ) {
+		mvs_seed_log( '  Failed to import image.', 'warning' );
 		continue;
 	}
 
@@ -810,14 +825,6 @@ foreach ( $images as $idx => $img ) {
 	if ( ! empty( $img['user'] ) && isset( $demo_user_ids[ $img['user'] ] ) ) {
 		$post_author = $demo_user_ids[ $img['user'] ];
 	}
-
-	$file_url  = wp_get_attachment_url( $attachment_id );
-	$file_path = get_attached_file( $attachment_id );
-	$mime_type = get_post_mime_type( $attachment_id );
-	$file_size = $file_path && file_exists( $file_path ) ? filesize( $file_path ) : 0;
-
-	// Get width/height from attachment metadata.
-	$attach_meta = wp_get_attachment_metadata( $attachment_id );
 
 	// Insert into mvs_media_index (returns auto-generated media_id).
 	$media_id = \WPMediaVerse\Services\MediaMeta::insert(
@@ -829,18 +836,25 @@ foreach ( $images as $idx => $img ) {
 			'media_type'        => $img['type'],
 			'privacy'           => $img['privacy'],
 			'moderation_status' => 'approved',
-			'file_url'          => $file_url,
-			'file_type'         => $mime_type,
-			'file_size'         => $file_size,
-			'attachment_id'     => $attachment_id,
-			'width'             => $attach_meta['width'] ?? null,
-			'height'            => $attach_meta['height'] ?? null,
+			'file_url'          => $imported['file_url'],
+			'file_path'         => $imported['file_path'],
+			'file_type'         => $imported['mime'],
+			'file_size'         => $imported['file_size'],
+			'width'             => $imported['thumbs']['width'] ?? null,
+			'height'            => $imported['thumbs']['height'] ?? null,
 		)
 	);
 
 	if ( ! $media_id ) {
 		mvs_seed_log( '  Failed to insert media into index table.', 'warning' );
 		continue;
+	}
+
+	// Store thumbnails.
+	foreach ( $imported['thumbs'] as $key => $value ) {
+		if ( str_starts_with( $key, 'thumb_' ) ) {
+			\WPMediaVerse\Services\MediaMeta::set( $media_id, $key, $value );
+		}
 	}
 
 	// Store tags and category as meta (no CPT taxonomy support).
@@ -867,11 +881,10 @@ foreach ( $images as $idx => $img ) {
 	);
 
 	$created_media[] = array(
-		'media_id'      => $media_id,
-		'attachment_id' => $attachment_id,
-		'tags'          => $img['tags'],
-		'user'          => $img['user'] ?? '',
-		'author'        => $post_author,
+		'media_id' => $media_id,
+		'tags'     => $img['tags'],
+		'user'     => $img['user'] ?? '',
+		'author'   => $post_author,
 	);
 
 	mvs_seed_log( "  Created media #{$media_id}: {$img['title']} ({$img['privacy']})", 'success' );
@@ -930,12 +943,12 @@ foreach ( $albums_config as $album_cfg ) {
 		}
 	}
 
-	// Set first media as cover (use attachment from the first matching media).
+	// Set first matching media as album cover via MVS meta.
 	if ( $position > 0 ) {
 		foreach ( $created_media as $media ) {
 			$matches = array_intersect( $media['tags'], $album_cfg['media_tags'] );
-			if ( ! empty( $matches ) && ! empty( $media['attachment_id'] ) ) {
-				set_post_thumbnail( $album_id, $media['attachment_id'] );
+			if ( ! empty( $matches ) ) {
+				update_post_meta( $album_id, '_mvs_cover_media_id', $media['media_id'] );
 				break;
 			}
 		}
