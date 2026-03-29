@@ -97,12 +97,21 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxCurrentIndex: 0,
 		lightboxLoading: false,
 		lightboxCommentText: '',
+		lightboxComments: [],
+		lightboxReactions: {},
+		lightboxUserReaction: '',
+		lightboxIsFavorited: false,
+		lightboxStats: {},
 
 		get lightboxImageUrl() {
-			return state.lightboxMediaData?.file_url || '';
+			const d = state.lightboxMediaData;
+			return d?.thumbnail_url || d?.file_url || '';
 		},
 		get lightboxTitle() {
 			return state.lightboxMediaData?.title || '';
+		},
+		get lightboxDescription() {
+			return state.lightboxMediaData?.description || '';
 		},
 		get lightboxAuthor() {
 			return state.lightboxMediaData?.author_data?.name || '';
@@ -110,6 +119,42 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxAuthorAvatar() {
 			return state.lightboxMediaData?.author_data?.avatar || '';
 		},
+		get lightboxAuthorUrl() {
+			const d = state.lightboxMediaData;
+			if ( ! d?.author ) return '#';
+			return d.author_data?.profile_url || '#';
+		},
+		get lightboxPermalink() {
+			return state.lightboxMediaData?.link || '#';
+		},
+		get lightboxViewsText() {
+			const s = state.lightboxStats;
+			const views = s?.views || 0;
+			const downloads = s?.downloads || 0;
+			let text = views + ' view' + ( views !== 1 ? 's' : '' );
+			if ( downloads > 0 ) text += ' · ' + downloads + ' download' + ( downloads !== 1 ? 's' : '' );
+			return text;
+		},
+		get lightboxFavoriteLabel() {
+			return state.lightboxIsFavorited ? '\u2764\uFE0F Favorited' : '\u2661 Favorite';
+		},
+		get lightboxHasComments() {
+			return state.lightboxComments.length > 0;
+		},
+		// Reaction count getters.
+		get lightboxReactionCount_like() { return state.lightboxReactions?.like || ''; },
+		get lightboxReactionCount_love() { return state.lightboxReactions?.love || ''; },
+		get lightboxReactionCount_haha() { return state.lightboxReactions?.haha || ''; },
+		get lightboxReactionCount_wow() { return state.lightboxReactions?.wow || ''; },
+		get lightboxReactionCount_sad() { return state.lightboxReactions?.sad || ''; },
+		get lightboxReactionCount_angry() { return state.lightboxReactions?.angry || ''; },
+		// Active reaction checks.
+		get lightboxUserReactionIsLike() { return state.lightboxUserReaction === 'like'; },
+		get lightboxUserReactionIsLove() { return state.lightboxUserReaction === 'love'; },
+		get lightboxUserReactionIsHaha() { return state.lightboxUserReaction === 'haha'; },
+		get lightboxUserReactionIsWow() { return state.lightboxUserReaction === 'wow'; },
+		get lightboxUserReactionIsSad() { return state.lightboxUserReaction === 'sad'; },
+		get lightboxUserReactionIsAngry() { return state.lightboxUserReaction === 'angry'; },
 		get lightboxIsGroup() {
 			return state.lightboxGroupItems.length > 1;
 		},
@@ -439,9 +484,117 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						state.lightboxMediaData = groupData[ 0 ];
 					}
 				}
+			// Fetch social data in parallel.
+				actions.lightboxLoadSocial( ctx, mediaId, headers );
 			} catch {
 				state.lightboxLoading = false;
 				actions.showToast( 'Failed to load media.', 'error' );
+			}
+		},
+		async lightboxLoadSocial( ctx, mediaId, headers ) {
+			const opts = { credentials: 'same-origin', headers };
+			// Reactions.
+			try {
+				const r = await fetch( ctx.restUrl + 'media/' + mediaId + '/reactions', opts );
+				const rd = await r.json();
+				state.lightboxReactions = rd.counts || {};
+				state.lightboxUserReaction = rd.user_reaction || '';
+			} catch { /* ignore */ }
+			// Comments.
+			try {
+				const c = await fetch( ctx.restUrl + 'media/' + mediaId + '/comments?per_page=20', opts );
+				const cd = await c.json();
+				state.lightboxComments = Array.isArray( cd ) ? cd : [];
+			} catch { state.lightboxComments = []; }
+			// Stats.
+			try {
+				const s = await fetch( ctx.restUrl + 'media/' + mediaId + '/stats', opts );
+				state.lightboxStats = await s.json();
+			} catch { state.lightboxStats = {}; }
+			// Favorite status.
+			try {
+				const f = await fetch( ctx.restUrl + 'media/' + mediaId + '/favorite', opts );
+				const fd = await f.json();
+				state.lightboxIsFavorited = !! fd.favorited;
+			} catch { state.lightboxIsFavorited = false; }
+		},
+		async lightboxToggleReaction( event ) {
+			const ctx = getContext();
+			const type = event.target.closest( '[data-reaction]' )?.dataset.reaction;
+			if ( ! type || ! state.lightboxMediaId ) return;
+			const headers = { 'X-WP-Nonce': ctx.nonce, 'Content-Type': 'application/json' };
+			const isActive = state.lightboxUserReaction === type;
+			try {
+				await fetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/reactions', {
+					method: isActive ? 'DELETE' : 'POST',
+					credentials: 'same-origin',
+					headers,
+					body: JSON.stringify( { type } ),
+				} );
+				if ( isActive ) {
+					state.lightboxUserReaction = '';
+					const c = state.lightboxReactions[ type ];
+					state.lightboxReactions = { ...state.lightboxReactions, [ type ]: Math.max( 0, ( c || 1 ) - 1 ) };
+				} else {
+					// Remove old reaction count.
+					if ( state.lightboxUserReaction ) {
+						const old = state.lightboxUserReaction;
+						state.lightboxReactions = { ...state.lightboxReactions, [ old ]: Math.max( 0, ( state.lightboxReactions[ old ] || 1 ) - 1 ) };
+					}
+					state.lightboxUserReaction = type;
+					state.lightboxReactions = { ...state.lightboxReactions, [ type ]: ( state.lightboxReactions[ type ] || 0 ) + 1 };
+				}
+			} catch { /* ignore */ }
+		},
+		async lightboxToggleFavorite() {
+			const ctx = getContext();
+			if ( ! state.lightboxMediaId ) return;
+			const headers = { 'X-WP-Nonce': ctx.nonce };
+			try {
+				await fetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/favorite', {
+					method: state.lightboxIsFavorited ? 'DELETE' : 'POST',
+					credentials: 'same-origin',
+					headers,
+				} );
+				state.lightboxIsFavorited = ! state.lightboxIsFavorited;
+			} catch { /* ignore */ }
+		},
+		lightboxUpdateComment( event ) {
+			state.lightboxCommentText = event.target.value;
+		},
+		lightboxCommentKeydown( event ) {
+			if ( event.key === 'Enter' && state.lightboxCommentText.trim() ) {
+				actions.lightboxPostComment();
+			}
+		},
+		async lightboxPostComment() {
+			const ctx = getContext();
+			const text = state.lightboxCommentText.trim();
+			if ( ! text || ! state.lightboxMediaId ) return;
+			const headers = { 'X-WP-Nonce': ctx.nonce, 'Content-Type': 'application/json' };
+			try {
+				const r = await fetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments', {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers,
+					body: JSON.stringify( { content: text } ),
+				} );
+				const comment = await r.json();
+				if ( comment.id ) {
+					state.lightboxComments = [ ...state.lightboxComments, comment ];
+					state.lightboxCommentText = '';
+				}
+			} catch {
+				actions.showToast( 'Failed to post comment.', 'error' );
+			}
+		},
+		lightboxShare() {
+			const url = state.lightboxMediaData?.link || window.location.href;
+			if ( navigator.share ) {
+				navigator.share( { title: state.lightboxTitle, url } );
+			} else if ( navigator.clipboard ) {
+				navigator.clipboard.writeText( url );
+				actions.showToast( 'Link copied!', 'success' );
 			}
 		},
 		lightboxPrev() {
@@ -462,6 +615,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.lightboxVisible = false;
 			state.lightboxMediaData = null;
 			state.lightboxGroupItems = [];
+			state.lightboxComments = [];
+			state.lightboxReactions = {};
+			state.lightboxUserReaction = '';
+			state.lightboxIsFavorited = false;
+			state.lightboxStats = {};
+			state.lightboxCommentText = '';
 			document.body.style.overflow = '';
 		},
 		handleModalClick( event ) {

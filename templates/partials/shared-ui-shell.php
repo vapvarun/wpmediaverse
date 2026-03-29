@@ -228,13 +228,84 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 				</div>
 			</div>
 
-			<!-- Sidebar with info -->
+			<!-- Sidebar with full social features -->
 			<div class="mvs-lightbox-sidebar" data-wp-bind--hidden="state.lightboxLoading">
+				<!-- Author header -->
 				<div class="mvs-lightbox-author">
-					<img class="mvs-lightbox-author-avatar" data-wp-bind--src="state.lightboxAuthorAvatar" alt="" width="32" height="32" />
-					<strong data-wp-text="state.lightboxAuthor"></strong>
+					<a class="mvs-lightbox-author-link" data-wp-bind--href="state.lightboxAuthorUrl">
+						<img class="mvs-lightbox-author-avatar" data-wp-bind--src="state.lightboxAuthorAvatar" alt="" width="36" height="36" />
+						<strong data-wp-text="state.lightboxAuthor"></strong>
+					</a>
 				</div>
-				<h3 class="mvs-lightbox-title" data-wp-text="state.lightboxTitle"></h3>
+
+				<!-- Stats -->
+				<div class="mvs-lightbox-stats">
+					<span data-wp-text="state.lightboxViewsText"></span>
+				</div>
+
+				<!-- Reactions -->
+				<div class="mvs-lightbox-reactions">
+					<button class="mvs-lightbox-reaction" data-reaction="like" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsLike">
+						<span>&#x1F44D;</span> <span data-wp-text="state.lightboxReactionCount_like"></span>
+					</button>
+					<button class="mvs-lightbox-reaction" data-reaction="love" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsLove">
+						<span>&#x2764;&#xFE0F;</span> <span data-wp-text="state.lightboxReactionCount_love"></span>
+					</button>
+					<button class="mvs-lightbox-reaction" data-reaction="haha" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsHaha">
+						<span>&#x1F602;</span> <span data-wp-text="state.lightboxReactionCount_haha"></span>
+					</button>
+					<button class="mvs-lightbox-reaction" data-reaction="wow" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsWow">
+						<span>&#x1F62E;</span> <span data-wp-text="state.lightboxReactionCount_wow"></span>
+					</button>
+					<button class="mvs-lightbox-reaction" data-reaction="sad" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsSad">
+						<span>&#x1F622;</span> <span data-wp-text="state.lightboxReactionCount_sad"></span>
+					</button>
+					<button class="mvs-lightbox-reaction" data-reaction="angry" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsAngry">
+						<span>&#x1F621;</span> <span data-wp-text="state.lightboxReactionCount_angry"></span>
+					</button>
+				</div>
+
+				<!-- Actions bar -->
+				<div class="mvs-lightbox-actions">
+					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited">
+						<span data-wp-text="state.lightboxFavoriteLabel"></span>
+					</button>
+					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxShare">&#x1F517; <?php esc_html_e( 'Share', 'wpmediaverse' ); ?></button>
+					<a class="mvs-lightbox-action" data-wp-bind--href="state.lightboxPermalink" target="_blank">&#x2197;&#xFE0F; <?php esc_html_e( 'Open', 'wpmediaverse' ); ?></a>
+				</div>
+
+				<!-- Description -->
+				<div class="mvs-lightbox-desc" data-wp-bind--hidden="!state.lightboxDescription">
+					<strong data-wp-text="state.lightboxAuthor"></strong>
+					<span data-wp-text="state.lightboxDescription"></span>
+				</div>
+
+				<!-- Comments -->
+				<div class="mvs-lightbox-comments">
+					<div class="mvs-lightbox-comment-list">
+						<template data-wp-each="state.lightboxComments">
+							<div class="mvs-lightbox-comment">
+								<strong data-wp-text="context.item.author_name"></strong>
+								<span data-wp-text="context.item.content"></span>
+							</div>
+						</template>
+						<p class="mvs-lightbox-no-comments" data-wp-bind--hidden="state.lightboxHasComments">
+							<?php esc_html_e( 'No comments yet. Be the first!', 'wpmediaverse' ); ?>
+						</p>
+					</div>
+					<div class="mvs-lightbox-comment-form">
+						<input type="text" class="mvs-lightbox-comment-input"
+							placeholder="<?php esc_attr_e( 'Add a comment…', 'wpmediaverse' ); ?>"
+							data-wp-on--input="actions.lightboxUpdateComment"
+							data-wp-on--keydown="actions.lightboxCommentKeydown"
+							data-wp-bind--value="state.lightboxCommentText" />
+						<button class="mvs-lightbox-comment-post"
+							data-wp-on--click="actions.lightboxPostComment"
+							data-wp-bind--disabled="!state.lightboxCommentText">
+							<?php esc_html_e( 'Post', 'wpmediaverse' ); ?>
+						</button>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
