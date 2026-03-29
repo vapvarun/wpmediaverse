@@ -2277,7 +2277,10 @@ class BuddyPressIntegration {
 	 * @param string $file_type MIME type.
 	 * @return string
 	 */
-	private function get_media_type_label( string $file_type ): string {
+	private function get_media_type_label( ?string $file_type ): string {
+		if ( ! $file_type ) {
+			return __( 'media', 'wpmediaverse' );
+		}
 		if ( strpos( $file_type, 'image/' ) === 0 ) {
 			return __( 'photo', 'wpmediaverse' );
 		}
