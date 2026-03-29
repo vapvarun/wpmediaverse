@@ -216,28 +216,18 @@ class Shortcodes {
 		wp_enqueue_style( 'mvs-frontend' );
 
 		// Enqueue Interactivity API stores.
-		$shared_asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
-		$shared_asset      = file_exists( $shared_asset_file ) ? require $shared_asset_file : array(
-			'dependencies' => array(),
-			'version'      => MVS_VERSION,
-		);
 		wp_enqueue_script_module(
-			'mvs-shared-ui',
-			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
-			$shared_asset['dependencies'],
-			$shared_asset['version']
+			'@mvs/shared-ui',
+			MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js',
+			array( array( 'id' => '@wordpress/interactivity', 'import' => 'static' ) ),
+			MVS_VERSION
 		);
 
-		$dash_asset_file = MVS_PLUGIN_DIR . 'build/blocks/dashboard-view/view.asset.php';
-		$dash_asset      = file_exists( $dash_asset_file ) ? require $dash_asset_file : array(
-			'dependencies' => array(),
-			'version'      => MVS_VERSION,
-		);
 		wp_enqueue_script_module(
 			'mvs-dashboard-view',
-			MVS_PLUGIN_URL . 'build/blocks/dashboard-view/view.js',
-			$dash_asset['dependencies'],
-			$dash_asset['version']
+			MVS_PLUGIN_URL . 'src/blocks/dashboard-view/view.js',
+			array( array( 'id' => '@wordpress/interactivity', 'import' => 'static' ) ),
+			MVS_VERSION
 		);
 
 		$mvs_dash_ctx = array(
