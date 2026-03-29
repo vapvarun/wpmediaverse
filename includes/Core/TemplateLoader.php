@@ -255,7 +255,11 @@ class TemplateLoader {
 			}
 		);
 
-		$template = self::locate( 'explore.php' );
+		// Try user-profile.php first (Pro provides Instagram-style version), fall back to explore.php.
+		$template = self::locate( 'user-profile.php' );
+		if ( ! $template ) {
+			$template = self::locate( 'explore.php' );
+		}
 		if ( $template ) {
 			include $template;
 			exit;
