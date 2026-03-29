@@ -1434,24 +1434,32 @@ class BuddyPressIntegration {
 		$paged    = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$per_page = 18;
 
-		// Query media scoped to THIS group via _mvs_group_id meta.
-		$query = new \WP_Query(
-			array(
-				'post_type'      => 'mvs_media',
-				'post_status'    => 'publish',
-				'posts_per_page' => $per_page,
-				'paged'          => $paged,
-				'orderby'        => 'date',
-				'order'          => 'DESC',
-				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery
-					array(
-						'key'   => '_mvs_group_id',
-						'value' => $group->id,
-						'type'  => 'NUMERIC',
-					),
-				),
+		// Query media scoped to THIS group via mvs_media_meta custom table.
+		global $wpdb;
+		$group_media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'group_id' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				(string) $group->id
 			)
 		);
+
+		$query_args = array(
+			'post_type'      => 'mvs_media',
+			'post_status'    => 'publish',
+			'posts_per_page' => $per_page,
+			'paged'          => $paged,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+		);
+
+		if ( ! empty( $group_media_ids ) ) {
+			$query_args['post__in'] = array_map( 'intval', $group_media_ids );
+		} else {
+			// No media in this group — force empty result.
+			$query_args['post__in'] = array( 0 );
+		}
+
+		$query = new \WP_Query( $query_args );
 
 		if ( ! $query->have_posts() ) {
 			echo '<div class="mvs-empty-state"><span class="dashicons dashicons-format-gallery"></span>';
@@ -2494,33 +2502,59 @@ class BuddyPressIntegration {
 	 * @return string Thumbnail HTML or empty string.
 	 */
 	private function resolve_imported_thumbnail( int $source_id, string $primary_meta, string $fallback_meta ): string {
-		$mvs_posts = get_posts(
-			array(
-				'post_type'      => 'mvs_media',
-				'meta_key'       => $primary_meta, // phpcs:ignore WordPress.DB.SlowDBQuery
-				'meta_value'     => $source_id, // phpcs:ignore WordPress.DB.SlowDBQuery
-				'fields'         => 'ids',
-				'posts_per_page' => 1,
-			)
-		);
+		// Strip _mvs_ prefix to get the custom table key.
+		$primary_key  = preg_replace( '/^_mvs_/', '', $primary_meta );
+		$fallback_key = preg_replace( '/^_mvs_/', '', $fallback_meta );
 
-		if ( empty( $mvs_posts ) ) {
-			$mvs_posts = get_posts(
-				array(
-					'post_type'      => 'mvs_media',
-					'meta_key'       => $fallback_meta, // phpcs:ignore WordPress.DB.SlowDBQuery
-					'meta_value'     => $source_id, // phpcs:ignore WordPress.DB.SlowDBQuery
-					'fields'         => 'ids',
-					'posts_per_page' => 1,
-				)
-			);
+		$mvs_id = $this->find_media_by_meta_key( $primary_key, (string) $source_id );
+
+		if ( ! $mvs_id ) {
+			$mvs_id = $this->find_media_by_meta_key( $fallback_key, (string) $source_id );
 		}
 
-		if ( empty( $mvs_posts ) ) {
+		if ( ! $mvs_id ) {
 			return '';
 		}
 
-		return $this->get_media_thumbnail_html( $mvs_posts[0], 'large' );
+		return $this->get_media_thumbnail_html( $mvs_id, 'large' );
+	}
+
+	/**
+	 * Find a mvs_media post ID by a key/value in custom tables.
+	 *
+	 * Checks mvs_media_index first (for core columns like attachment_id),
+	 * then mvs_media_meta (for sparse keys like mpp_id, bb_media_id).
+	 *
+	 * @param string $key   Meta key (without _mvs_ prefix).
+	 * @param string $value Meta value to match.
+	 * @return int Media post ID, or 0 if not found.
+	 */
+	private function find_media_by_meta_key( string $key, string $value ): int {
+		global $wpdb;
+
+		// Check if this is an index column.
+		$index_columns = array( 'attachment_id', 'media_type', 'privacy', 'file_url', 'file_type', 'file_size', 'moderation_status', 'post_author' );
+
+		if ( in_array( $key, $index_columns, true ) ) {
+			$result = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE `{$key}` = %s LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$value
+				)
+			);
+			return $result ? (int) $result : 0;
+		}
+
+		// Otherwise check mvs_media_meta.
+		$result = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = %s AND meta_value = %s LIMIT 1",
+				$key,
+				$value
+			)
+		);
+
+		return $result ? (int) $result : 0;
 	}
 
 	/**
@@ -2740,34 +2774,16 @@ class BuddyPressIntegration {
 		}
 
 		// Find the imported MVS media that came from this MediaPress attachment.
-		$mvs_posts = get_posts(
-			array(
-				'post_type'      => 'mvs_media',
-				'meta_key'       => '_mvs_mpp_id', // phpcs:ignore WordPress.DB.SlowDBQuery
-				'meta_value'     => $mpp_media_id, // phpcs:ignore WordPress.DB.SlowDBQuery
-				'fields'         => 'ids',
-				'posts_per_page' => 1,
-			)
-		);
+		$mvs_id = $this->find_media_by_meta_key( 'mpp_id', (string) $mpp_media_id );
 
-		if ( empty( $mvs_posts ) ) {
+		if ( ! $mvs_id ) {
 			// Try finding by attachment ID directly.
-			$mvs_posts = get_posts(
-				array(
-					'post_type'      => 'mvs_media',
-					'meta_key'       => '_mvs_attachment_id', // phpcs:ignore WordPress.DB.SlowDBQuery
-					'meta_value'     => $mpp_media_id, // phpcs:ignore WordPress.DB.SlowDBQuery
-					'fields'         => 'ids',
-					'posts_per_page' => 1,
-				)
-			);
+			$mvs_id = $this->find_media_by_meta_key( 'attachment_id', (string) $mpp_media_id );
 		}
 
-		if ( empty( $mvs_posts ) ) {
+		if ( ! $mvs_id ) {
 			return $content;
 		}
-
-		$mvs_id    = $mvs_posts[0];
 		$thumbnail = $this->get_media_thumbnail_html( $mvs_id, 'large' );
 
 		if ( ! $thumbnail ) {
@@ -2854,16 +2870,6 @@ class BuddyPressIntegration {
 			return 0;
 		}
 
-		$posts = get_posts(
-			array(
-				'post_type'      => 'mvs_media',
-				'meta_key'       => '_mvs_attachment_id', // phpcs:ignore WordPress.DB.SlowDBQuery
-				'meta_value'     => $attach_id, // phpcs:ignore WordPress.DB.SlowDBQuery
-				'fields'         => 'ids',
-				'posts_per_page' => 1,
-			)
-		);
-
-		return $posts ? (int) $posts[0] : 0;
+		return $this->find_media_by_meta_key( 'attachment_id', (string) $attach_id );
 	}
 }

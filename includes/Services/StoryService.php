@@ -95,6 +95,29 @@ class StoryService {
 	 * @return array{items: array, total: int}
 	 */
 	public function get_active( ?int $author_id = null, int $per_page = 20, int $page = 1 ): array {
+		global $wpdb;
+
+		$now = current_time( 'mysql', true );
+
+		// Query active story IDs from mvs_media_meta custom table (not wp_postmeta).
+		$story_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT m1.media_id
+				FROM {$wpdb->prefix}mvs_media_meta m1
+				INNER JOIN {$wpdb->prefix}mvs_media_meta m2 ON m1.media_id = m2.media_id
+				WHERE m1.meta_key = 'is_story' AND m1.meta_value = '1'
+				AND m2.meta_key = 'story_expires_at' AND m2.meta_value > %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$now
+			)
+		);
+
+		if ( empty( $story_ids ) ) {
+			return array(
+				'items' => array(),
+				'total' => 0,
+			);
+		}
+
 		$args = array(
 			'post_type'      => 'mvs_media',
 			'post_status'    => 'publish',
@@ -102,19 +125,7 @@ class StoryService {
 			'paged'          => $page,
 			'orderby'        => 'date',
 			'order'          => 'DESC',
-			'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				'relation' => 'AND',
-				array(
-					'key'   => '_mvs_is_story',
-					'value' => '1',
-				),
-				array(
-					'key'     => '_mvs_story_expires_at',
-					'value'   => current_time( 'mysql', true ),
-					'compare' => '>',
-					'type'    => 'DATETIME',
-				),
-			),
+			'post__in'       => array_map( 'intval', $story_ids ),
 		);
 
 		if ( $author_id ) {
@@ -147,31 +158,28 @@ class StoryService {
 	 * @return int Number of stories cleaned up.
 	 */
 	public function cleanup_expired(): int {
-		$args = array(
-			'post_type'      => 'mvs_media',
-			'post_status'    => 'publish',
-			'posts_per_page' => 100,
-			'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				'relation' => 'AND',
-				array(
-					'key'   => '_mvs_is_story',
-					'value' => '1',
-				),
-				array(
-					'key'     => '_mvs_story_expires_at',
-					'value'   => current_time( 'mysql', true ),
-					'compare' => '<=',
-					'type'    => 'DATETIME',
-				),
-			),
+		global $wpdb;
+
+		$now = current_time( 'mysql', true );
+
+		// Query expired story IDs from mvs_media_meta custom table (not wp_postmeta).
+		$expired_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT m1.media_id
+				FROM {$wpdb->prefix}mvs_media_meta m1
+				INNER JOIN {$wpdb->prefix}mvs_media_meta m2 ON m1.media_id = m2.media_id
+				WHERE m1.meta_key = 'is_story' AND m1.meta_value = '1'
+				AND m2.meta_key = 'story_expires_at' AND m2.meta_value <= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$now
+			)
 		);
 
-		$query   = new \WP_Query( $args );
 		$cleaned = 0;
 
-		foreach ( $query->posts as $post ) {
-			MediaMeta::delete( $post->ID, 'is_story' );
-			MediaMeta::delete( $post->ID, 'story_expires_at' );
+		foreach ( $expired_ids as $media_id ) {
+			$media_id = (int) $media_id;
+			MediaMeta::delete( $media_id, 'is_story' );
+			MediaMeta::delete( $media_id, 'story_expires_at' );
 			++$cleaned;
 
 			/**
@@ -179,7 +187,7 @@ class StoryService {
 			 *
 			 * @param int $media_id Media post ID.
 			 */
-			do_action( 'mvs_story_expired', $post->ID );
+			do_action( 'mvs_story_expired', $media_id );
 		}
 
 		return $cleaned;

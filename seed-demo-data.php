@@ -393,13 +393,18 @@ foreach ( $images as $idx => $img ) {
 		continue;
 	}
 
-	// Set meta.
-	update_post_meta( $post_id, '_mvs_file_url', $file_url );
-	update_post_meta( $post_id, '_mvs_file_type', $mime_type );
-	update_post_meta( $post_id, '_mvs_file_size', $file_size );
-	update_post_meta( $post_id, '_mvs_media_type', $img['type'] );
-	update_post_meta( $post_id, '_mvs_privacy', $img['privacy'] );
-	update_post_meta( $post_id, '_mvs_attachment_id', $attachment_id );
+	// Set meta via custom tables (not wp_postmeta).
+	\WPMediaVerse\Services\MediaMeta::set_many(
+		$post_id,
+		array(
+			'file_url'       => $file_url,
+			'file_type'      => $mime_type,
+			'file_size'      => $file_size,
+			'media_type'     => $img['type'],
+			'privacy'        => $img['privacy'],
+			'attachment_id'  => $attachment_id,
+		)
+	);
 
 	// Set featured image.
 	set_post_thumbnail( $post_id, $attachment_id );
@@ -540,7 +545,8 @@ foreach ( $collections_config as $col_cfg ) {
 		continue;
 	}
 
-	update_post_meta( $col_id, '_mvs_collection_type', $col_cfg['type'] );
+	// Collections use wp_postmeta (no custom table for this post type).
+	update_post_meta( $col_id, '_mvs_collection_type', $col_cfg['type'] ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 
 	// Save rules — resolve tag names to term IDs.
 	$resolved_rules = array();
@@ -554,7 +560,7 @@ foreach ( $collections_config as $col_cfg ) {
 		}
 		$resolved_rules[] = $resolved_rule;
 	}
-	update_post_meta( $col_id, '_mvs_collection_rules', $resolved_rules );
+	update_post_meta( $col_id, '_mvs_collection_rules', $resolved_rules ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 
 	mvs_seed_log( "Created collection #{$col_id}: {$col_cfg['title']} ({$col_cfg['type']})", 'success' );
 }

@@ -386,26 +386,25 @@ class MediaController extends WP_REST_Controller {
 			return rest_ensure_response( array( $this->prepare_item_for_response( $post, $request ) ) );
 		}
 
-		$group_posts = get_posts(
-			array(
-				'post_type'   => 'mvs_media',
-				'post_status' => 'publish',
-				'meta_key'    => '_mvs_media_group',
-				'meta_value'  => $group_id, // phpcs:ignore WordPress.DB.SlowDBQuery
-				'orderby'     => 'meta_value_num',
-				'meta_query'  => array( // phpcs:ignore WordPress.DB.SlowDBQuery
-					array(
-						'key'     => '_mvs_group_position',
-						'compare' => 'EXISTS',
-					),
-				),
-				'order'       => 'ASC',
-				'numberposts' => 50,
+		// Query group members from mvs_media_meta custom table (not wp_postmeta).
+		global $wpdb;
+		$group_media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$group_id
 			)
 		);
 
+		if ( empty( $group_media_ids ) ) {
+			return rest_ensure_response( array( $this->prepare_item_for_response( $post, $request ) ) );
+		}
+
 		$items = array();
-		foreach ( $group_posts as $gp ) {
+		foreach ( $group_media_ids as $gid ) {
+			$gp = get_post( (int) $gid );
+			if ( ! $gp || 'publish' !== $gp->post_status ) {
+				continue;
+			}
 			$item = $this->prepare_item_for_response( $gp, $request );
 			if ( $item ) {
 				$items[] = $item;

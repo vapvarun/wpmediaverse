@@ -76,6 +76,8 @@ class CollectionService {
 			);
 		}
 
+		global $wpdb;
+
 		$args = array(
 			'post_type'      => 'mvs_media',
 			'post_status'    => 'publish',
@@ -85,9 +87,10 @@ class CollectionService {
 			'order'          => 'DESC',
 		);
 
-		$meta_query = array();
-		$tax_query  = array();
-		$date_query = array();
+		$tax_query    = array();
+		$date_query   = array();
+		$index_wheres = array();
+		$index_params = array();
 
 		foreach ( $rules as $rule ) {
 			if ( empty( $rule['key'] ) || ! isset( $rule['value'] ) ) {
@@ -96,11 +99,9 @@ class CollectionService {
 
 			switch ( $rule['key'] ) {
 				case 'media_type':
-					$meta_query[] = array(
-						'key'     => '_mvs_file_type',
-						'value'   => sanitize_text_field( $rule['value'] ),
-						'compare' => 'LIKE',
-					);
+					// Query mvs_media_index.file_type (custom table, not wp_postmeta).
+					$index_wheres[] = 'file_type LIKE %s';
+					$index_params[] = '%' . $wpdb->esc_like( sanitize_text_field( $rule['value'] ) ) . '%';
 					break;
 
 				case 'tag':
@@ -130,16 +131,31 @@ class CollectionService {
 					break;
 
 				case 'privacy':
-					$meta_query[] = array(
-						'key'   => '_mvs_privacy',
-						'value' => sanitize_text_field( $rule['value'] ),
-					);
+					// Query mvs_media_index.privacy (custom table, not wp_postmeta).
+					$index_wheres[] = 'privacy = %s';
+					$index_params[] = sanitize_text_field( $rule['value'] );
 					break;
 			}
 		}
 
-		if ( ! empty( $meta_query ) ) {
-			$args['meta_query'] = $meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+		// If any rules target custom table columns, pre-filter IDs from mvs_media_index.
+		if ( ! empty( $index_wheres ) ) {
+			$where_sql = implode( ' AND ', $index_wheres );
+			$filtered_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE {$where_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...$index_params
+				)
+			);
+
+			if ( empty( $filtered_ids ) ) {
+				return array(
+					'items' => array(),
+					'total' => 0,
+				);
+			}
+
+			$args['post__in'] = array_map( 'intval', $filtered_ids );
 		}
 
 		if ( ! empty( $tax_query ) ) {

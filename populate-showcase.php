@@ -544,14 +544,19 @@ foreach ( $stock_images as $idx => $img ) {
 		continue;
 	}
 
-	// Set meta (matching seed-demo-data.php pattern exactly).
-	update_post_meta( $post_id, '_mvs_file_url', $file_url );
-	update_post_meta( $post_id, '_mvs_file_type', $mime_type );
-	update_post_meta( $post_id, '_mvs_file_size', $file_size );
-	update_post_meta( $post_id, '_mvs_media_type', 'image' );
-	update_post_meta( $post_id, '_mvs_privacy', $img['privacy'] );
-	update_post_meta( $post_id, '_mvs_attachment_id', $attachment_id );
-	update_post_meta( $post_id, '_mvs_moderation_status', 'approved' );
+	// Set meta via custom tables (not wp_postmeta).
+	\WPMediaVerse\Services\MediaMeta::set_many(
+		$post_id,
+		array(
+			'file_url'          => $file_url,
+			'file_type'         => $mime_type,
+			'file_size'         => $file_size,
+			'media_type'        => 'image',
+			'privacy'           => $img['privacy'],
+			'attachment_id'     => $attachment_id,
+			'moderation_status' => 'approved',
+		)
+	);
 
 	set_post_thumbnail( $post_id, $attachment_id );
 
@@ -647,8 +652,9 @@ foreach ( $albums_config as $album_cfg ) {
 		continue;
 	}
 
-	update_post_meta( $album_id, '_mvs_privacy', $album_cfg['privacy'] );
-	update_post_meta( $album_id, '_mvs_album_type', 'default' );
+	// Albums use wp_postmeta (no custom table for this post type).
+	update_post_meta( $album_id, '_mvs_privacy', $album_cfg['privacy'] ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+	update_post_meta( $album_id, '_mvs_album_type', 'default' ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 
 	// Match media to album by tags.
 	$position   = 0;
@@ -666,7 +672,7 @@ foreach ( $albums_config as $album_cfg ) {
 				),
 				array( '%d', '%d', '%d', '%s' )
 			);
-			update_post_meta( $media['post_id'], '_mvs_album_id', $album_id );
+			\WPMediaVerse\Services\MediaMeta::set( $media['post_id'], 'album_id', $album_id );
 			$album_items[] = $media['post_id'];
 			++$position;
 		}
@@ -914,7 +920,7 @@ if ( function_exists( 'bp_activity_add' ) ) {
 				'content'       => $content,
 				'primary_link'  => get_permalink( $media['post_id'] ),
 				'date_recorded' => $media['date'],
-				'hide_sitewide' => ( 'public' !== get_post_meta( $media['post_id'], '_mvs_privacy', true ) ),
+				'hide_sitewide' => ( 'public' !== \WPMediaVerse\Services\MediaMeta::get( $media['post_id'], 'privacy' ) ),
 			)
 		);
 		++$bp_activities;

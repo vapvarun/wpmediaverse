@@ -50,13 +50,13 @@ store( 'mvs/explore-feed', {
 					data.forEach( ( item ) => {
 						const div = document.createElement( 'div' );
 						div.className = 'mvs-grid-item';
-						const fileUrl = item.meta?._mvs_file_url || '';
-						const fileType = item.meta?._mvs_file_type || '';
+						const fileUrl = item.file_url || item.meta?._mvs_file_url || '';
+						const fileType = item.file_type || item.meta?._mvs_file_type || '';
 
 						if ( fileUrl && fileType.startsWith( 'image/' ) ) {
 							const img = document.createElement( 'img' );
 							img.src = fileUrl;
-							img.alt = item.title?.rendered || '';
+							img.alt = item.title?.rendered || item.title || '';
 							img.loading = 'lazy';
 							div.appendChild( img );
 
@@ -64,7 +64,7 @@ store( 'mvs/explore-feed', {
 							overlay.className = 'mvs-grid-item-overlay';
 							const title = document.createElement( 'span' );
 							title.className = 'mvs-grid-item-title';
-							title.textContent = item.title?.rendered || '';
+							title.textContent = item.title?.rendered || item.title || '';
 							overlay.appendChild( title );
 							div.appendChild( overlay );
 						}
