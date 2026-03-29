@@ -1296,27 +1296,27 @@ class SettingsPage {
 				<!-- Tools links (pages removed from main menu) -->
 				<div class="mvs-settings-nav-group">
 					<span class="mvs-settings-nav-group__label"><?php esc_html_e( 'Tools', 'wpmediaverse' ); ?></span>
-					<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-logs' ) ); ?>">
+					<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-logs' ) ); ?>">
 						<span class="dashicons dashicons-list-view"></span>
 						<?php esc_html_e( 'Logs', 'wpmediaverse' ); ?>
 					</a>
 					<?php if ( $this->is_pro_active() ) : ?>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-analytics' ) ); ?>">
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-analytics' ) ); ?>">
 							<span class="dashicons dashicons-chart-area"></span>
 							<?php esc_html_e( 'Analytics', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 						</a>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-quotas' ) ); ?>">
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-quotas' ) ); ?>">
 							<span class="dashicons dashicons-dashboard"></span>
 							<?php esc_html_e( 'Quota & Credits', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 						</a>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-reports' ) ); ?>">
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-reports' ) ); ?>">
 							<span class="dashicons dashicons-flag"></span>
 							<?php esc_html_e( 'Reports', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 						</a>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-migration' ) ); ?>">
+						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'edit.php?post_type=mvs_media&page=mvs-migration' ) ); ?>">
 							<span class="dashicons dashicons-migrate"></span>
 							<?php esc_html_e( 'Import / Migration', 'wpmediaverse' ); ?>
 							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
