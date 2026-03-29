@@ -428,8 +428,8 @@ class UploadService {
 					}
 				}
 
-				// Create WP attachment for poster/thumbnail generation.
-				$this->create_wp_attachment( $media_id, $file_path, $mime );
+				// Generate thumbnails via image editor.
+				$this->generate_thumbnails( $media_id, $file_path, $mime );
 				break;
 
 			case 'audio':
@@ -471,8 +471,8 @@ class UploadService {
 					MediaMeta::set( $media_id, 'height', $metadata['height'] );
 				}
 
-				// Create WP attachment for thumbnail generation.
-				$this->create_wp_attachment( $media_id, $file_path, $mime );
+				// Generate thumbnails via image editor.
+				$this->generate_thumbnails( $media_id, $file_path, $mime );
 				break;
 		}
 
@@ -489,43 +489,46 @@ class UploadService {
 	}
 
 	/**
-	 * Create a WordPress attachment for the media file.
+	 * Generate thumbnail sizes for an image and store URLs in mvs_media_meta.
 	 *
-	 * Attachment is used ONLY for file storage (thumbnails, disk management).
-	 * It is NOT the media record — mvs_media_index is.
-	 *
-	 * @since 1.1.0
-	 *
-	 * @param int    $media_id  Media ID (from mvs_media_index).
-	 * @param string $file_path Absolute file path.
+	 * @param int    $media_id  Media ID.
+	 * @param string $file_path Absolute path to the uploaded file.
 	 * @param string $mime      MIME type.
 	 */
-	private function create_wp_attachment( int $media_id, string $file_path, string $mime ): void {
-		if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+	private function generate_thumbnails( int $media_id, string $file_path, string $mime ): void {
+		if ( ! str_starts_with( $mime, 'image/' ) ) {
+			return;
+		}
+
+		if ( ! function_exists( 'wp_get_image_editor' ) ) {
+			require_once ABSPATH . WPINC . '/class-wp-image-editor.php';
+			require_once ABSPATH . WPINC . '/class-wp-image-editor-gd.php';
+			require_once ABSPATH . WPINC . '/class-wp-image-editor-imagick.php';
 			require_once ABSPATH . 'wp-admin/includes/image.php';
 		}
 
-		// Attachment is ONLY for thumbnail generation — use a random hash slug
-		// so it never conflicts with our media slug in mvs_media_index.
-		$att_hash = substr( md5( $media_id . wp_generate_password( 8, false ) ), 0, 16 );
+		$editor = wp_get_image_editor( $file_path );
+		if ( is_wp_error( $editor ) ) {
+			return;
+		}
 
-		$attachment_id = wp_insert_attachment(
-			array(
-				'post_mime_type' => $mime,
-				'post_title'     => 'mvs-' . $att_hash,
-				'post_name'      => 'mvs-' . $att_hash,
-				'post_status'    => 'inherit',
-				'post_parent'    => 0,
-			),
-			$file_path,
-			0,
-			true
+		$sizes = array(
+			'large'  => array( 'width' => 1024, 'height' => 1024, 'crop' => false ),
+			'medium' => array( 'width' => 300,  'height' => 300,  'crop' => false ),
+			'thumb'  => array( 'width' => 150,  'height' => 150,  'crop' => true ),
 		);
 
-		if ( ! is_wp_error( $attachment_id ) ) {
-			$attach_data = wp_generate_attachment_metadata( $attachment_id, $file_path );
-			wp_update_attachment_metadata( $attachment_id, $attach_data );
-			MediaMeta::set( $media_id, 'attachment_id', $attachment_id );
+		$generated = $editor->multi_resize( $sizes );
+		if ( empty( $generated ) ) {
+			return;
+		}
+
+		$upload_dir = wp_upload_dir();
+		$rel_dir    = str_replace( $upload_dir['basedir'] . '/', '', dirname( $file_path ) );
+		$base_url   = $upload_dir['baseurl'] . '/' . $rel_dir;
+
+		foreach ( $generated as $size_name => $data ) {
+			MediaMeta::set( $media_id, 'thumb_' . $size_name, $base_url . '/' . $data['file'] );
 		}
 	}
 
