@@ -450,6 +450,7 @@ $mvs_archive_url = home_url( '/media/' );
 					<template data-wp-each="context.comments">
 						<li class="mvs-comment-item" data-wp-bind--data-comment-id="context.item.id">
 							<div class="mvs-comment-header">
+								<img class="mvs-comment-avatar" data-wp-bind--src="context.item.author_avatar" alt="" width="32" height="32" />
 								<span class="mvs-comment-author" data-wp-text="context.item.author_name"></span>
 								<span class="mvs-comment-date" data-wp-text="context.item.date"></span>
 							</div>

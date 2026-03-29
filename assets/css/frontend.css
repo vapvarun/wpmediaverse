@@ -3189,9 +3189,17 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-comment-header {
 	display: flex;
-	align-items: baseline;
+	align-items: center;
 	gap: 8px;
 	margin-bottom: 4px;
+}
+
+.mvs-comment-avatar {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
 }
 
 .mvs-comment-actions {
