@@ -28,21 +28,12 @@ foreach ( $demo_user_ids as $duid ) {
 	++$demo_user_count;
 }
 
-// Delete all media from mvs_media_index + their WP attachments.
-$media_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-	"SELECT media_id, attachment_id FROM {$wpdb->prefix}mvs_media_index" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+// Delete all media from mvs_media_index.
+$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	"SELECT media_id FROM {$wpdb->prefix}mvs_media_index" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 );
-$media_ids = array();
-foreach ( $media_rows as $row ) {
-	$media_ids[] = (int) $row->media_id;
-
-	// Delete the WP attachment (file + thumbnails) if it exists.
-	if ( ! empty( $row->attachment_id ) ) {
-		wp_delete_attachment( (int) $row->attachment_id, true );
-	}
-
-	// Delete index + meta rows for this media item.
-	\WPMediaVerse\Services\MediaMeta::delete_all( (int) $row->media_id );
+foreach ( $media_ids as $mid ) {
+	\WPMediaVerse\Services\MediaMeta::delete_all( (int) $mid );
 }
 
 // Delete albums + collections (still CPTs).
