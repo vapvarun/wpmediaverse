@@ -51,8 +51,9 @@ class BuddyPressIntegration {
 			add_action( 'mvs_before_media_insert', array( $this, 'mark_upload_in_progress' ) );
 			add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 			add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
-			add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 3 );
-			// Comments bridge disabled for v1.0 — loop prevention needs deeper fix.
+			// Comments-to-activity sync disabled for v1.0 — causes infinite loop.
+			// @todo Re-enable in v1.1 with proper deduplication guard.
+			// add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 3 );
 			// @todo Re-enable in v1.1 with content-hash deduplication.
 			// add_action( 'mvs_comment_created', array( $this, 'sync_comment_to_activity' ), 10, 5 );
 			// add_action( 'bp_activity_comment_posted', array( $this, 'sync_activity_comment_to_media' ), 10, 3 );
