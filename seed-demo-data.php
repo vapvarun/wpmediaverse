@@ -376,13 +376,13 @@ foreach ( $images as $idx => $img ) {
 	$mime_type = get_post_mime_type( $attachment_id );
 	$file_size = $file_path && file_exists( $file_path ) ? filesize( $file_path ) : 0;
 
-	// Create mvs_media post.
+	// Create mvs_media post as draft first (so publish hooks fire AFTER meta is set).
 	$post_id = wp_insert_post(
 		array(
 			'post_type'    => 'mvs_media',
 			'post_title'   => $img['title'],
 			'post_content' => $img['description'],
-			'post_status'  => 'publish',
+			'post_status'  => 'draft',
 			'post_author'  => $user_id,
 		),
 		true
@@ -393,7 +393,10 @@ foreach ( $images as $idx => $img ) {
 		continue;
 	}
 
-	// Set meta via custom tables (not wp_postmeta).
+	// Get width/height from attachment metadata.
+	$attach_meta = wp_get_attachment_metadata( $attachment_id );
+
+	// Set meta BEFORE publishing (so hooks have access to full data).
 	\WPMediaVerse\Services\MediaMeta::set_many(
 		$post_id,
 		array(
@@ -403,11 +406,17 @@ foreach ( $images as $idx => $img ) {
 			'media_type'     => $img['type'],
 			'privacy'        => $img['privacy'],
 			'attachment_id'  => $attachment_id,
+			'width'          => $attach_meta['width'] ?? null,
+			'height'         => $attach_meta['height'] ?? null,
+			'title'          => $img['title'],
 		)
 	);
 
 	// Set featured image.
 	set_post_thumbnail( $post_id, $attachment_id );
+
+	// Now publish (hooks fire with full data available).
+	wp_publish_post( $post_id );
 
 	// Set tags.
 	if ( ! empty( $img['tags'] ) ) {
@@ -656,6 +665,99 @@ for ( $i = 0; $i < min( 8, count( $created_media ) ); $i++ ) {
 }
 
 // ---------------------------------------------------------------------------
+// Competition Demo Data (requires Pro plugin).
+// ---------------------------------------------------------------------------
+
+$competition_counts = array(
+	'challenges' => 0,
+	'battles'    => 0,
+);
+
+$created_media_ids = array_map( function( $m ) {
+	return $m['post_id'];
+}, $created_media );
+
+if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $created_media_ids ) >= 5 ) {
+	mvs_seed_log( '' );
+	mvs_seed_log( 'Creating competition demo data...' );
+
+	$challenge_service = new \WPMediaVersePro\Challenges\ChallengeService();
+	$battle_service    = new \WPMediaVersePro\Battles\BattleService();
+
+	// Get test users (use the post authors from created media).
+	$test_users = array_unique( array_map( function( $id ) {
+		return (int) get_post_field( 'post_author', $id );
+	}, $created_media_ids ) );
+
+	// --- Challenge 1: Active challenge (accepting entries) ---
+	$ch1 = $challenge_service->create(
+		array(
+			'title'                => 'Golden Hour Photography',
+			'description'          => 'Capture the magic of golden hour — sunrise or sunset. Show us your best warm-light photography.',
+			'theme'                => 'Golden Hour',
+			'start_date'           => gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ),
+			'end_date'             => gmdate( 'Y-m-d H:i:s', time() + ( 7 * DAY_IN_SECONDS ) ),
+			'voting_end_date'      => gmdate( 'Y-m-d H:i:s', time() + ( 14 * DAY_IN_SECONDS ) ),
+			'max_entries_per_user' => 3,
+		),
+		1
+	);
+	if ( ! is_wp_error( $ch1 ) ) {
+		++$competition_counts['challenges'];
+		mvs_seed_log( '  Challenge: Golden Hour Photography (active)' );
+		// Submit 3 entries from demo media.
+		for ( $i = 0; $i < min( 3, count( $created_media_ids ) ); $i++ ) {
+			$author = (int) get_post_field( 'post_author', $created_media_ids[ $i ] );
+			if ( $author > 0 ) {
+				$challenge_service->submit_entry( $ch1, $author, $created_media_ids[ $i ] );
+			}
+		}
+	}
+
+	// --- Challenge 2: In voting phase ---
+	$ch2 = $challenge_service->create(
+		array(
+			'title'           => 'Street Photography Week',
+			'description'     => 'The best of urban life — candid moments, street scenes, city energy.',
+			'theme'           => 'Street Life',
+			'start_date'      => gmdate( 'Y-m-d H:i:s', time() - ( 14 * DAY_IN_SECONDS ) ),
+			'end_date'        => gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ),
+			'voting_end_date' => gmdate( 'Y-m-d H:i:s', time() + ( 7 * DAY_IN_SECONDS ) ),
+		),
+		1
+	);
+	if ( ! is_wp_error( $ch2 ) ) {
+		++$competition_counts['challenges'];
+		mvs_seed_log( '  Challenge: Street Photography Week (voting)' );
+	}
+
+	// --- Battle: Active between first 2 users ---
+	if ( count( $test_users ) >= 2 ) {
+		$b1 = $battle_service->create( $test_users[0], $test_users[1], 'Landscape vs Portrait' );
+		if ( ! is_wp_error( $b1 ) ) {
+			$battle_service->accept( $b1, $test_users[1] );
+			// Submit media from each user.
+			$user1_media = array_filter( $created_media_ids, function( $id ) use ( $test_users ) {
+				return (int) get_post_field( 'post_author', $id ) === $test_users[0];
+			} );
+			$user2_media = array_filter( $created_media_ids, function( $id ) use ( $test_users ) {
+				return (int) get_post_field( 'post_author', $id ) === $test_users[1];
+			} );
+			if ( ! empty( $user1_media ) ) {
+				$battle_service->submit_media( $b1, $test_users[0], reset( $user1_media ) );
+			}
+			if ( ! empty( $user2_media ) ) {
+				$battle_service->submit_media( $b1, $test_users[1], reset( $user2_media ) );
+			}
+			++$competition_counts['battles'];
+			mvs_seed_log( '  Battle: Landscape vs Portrait (voting)' );
+		}
+	}
+
+	mvs_seed_log( '  Competition demo data created.' );
+}
+
+// ---------------------------------------------------------------------------
 // Summary.
 // ---------------------------------------------------------------------------
 
@@ -669,17 +771,25 @@ mvs_seed_log( '  Tags: 25+' );
 mvs_seed_log( '  Comments: 5' );
 mvs_seed_log( '  Favorites: 8' );
 mvs_seed_log( '  Reactions: ' . count( $created_media ) );
+if ( $competition_counts['challenges'] > 0 || $competition_counts['battles'] > 0 ) {
+	mvs_seed_log( '  Challenges: ' . $competition_counts['challenges'] );
+	mvs_seed_log( '  Battles: ' . $competition_counts['battles'] );
+}
 
 // AJAX response.
 if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-	wp_send_json_success(
-		array(
-			'message' => sprintf(
-				'Imported %d media items, %d albums, %d collections with social interactions.',
-				count( $created_media ),
-				count( $albums_config ),
-				count( $collections_config )
-			),
-		)
+	$ajax_msg = sprintf(
+		'Imported %d media items, %d albums, %d collections with social interactions.',
+		count( $created_media ),
+		count( $albums_config ),
+		count( $collections_config )
 	);
+	if ( $competition_counts['challenges'] > 0 || $competition_counts['battles'] > 0 ) {
+		$ajax_msg .= sprintf(
+			' Plus %d challenges and %d battles.',
+			$competition_counts['challenges'],
+			$competition_counts['battles']
+		);
+	}
+	wp_send_json_success( array( 'message' => $ajax_msg ) );
 }

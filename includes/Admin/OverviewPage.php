@@ -28,6 +28,7 @@ class OverviewPage {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ), 5 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'wp_ajax_mvs_import_demo_data', array( $this, 'ajax_import_demo_data' ) );
+		add_action( 'wp_ajax_mvs_cleanup_demo_data', array( $this, 'handle_cleanup_demo' ) );
 		add_action( 'wp_ajax_mvs_dismiss_welcome', array( $this, 'ajax_dismiss_welcome' ) );
 	}
 
@@ -223,6 +224,47 @@ class OverviewPage {
 									xhr.send('action=mvs_import_demo_data&_nonce=' + btn.getAttribute('data-nonce'));
 								});
 								</script>
+							<?php else : ?>
+								<?php if ( current_user_can( 'manage_mvs_settings' ) ) : ?>
+									<div class="mvs-demo-cleanup" style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
+										<button type="button" class="button" id="mvs-cleanup-demo-btn"
+											data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_cleanup_demo' ) ); ?>"
+											style="color:#b32d2e;border-color:#b32d2e;">
+											<span class="dashicons dashicons-trash" style="margin-top:4px;"></span>
+											<?php esc_html_e( 'Delete Demo Data', 'wpmediaverse' ); ?>
+										</button>
+										<span id="mvs-cleanup-demo-status" style="margin-left:8px;"></span>
+									</div>
+									<script>
+									document.getElementById('mvs-cleanup-demo-btn').addEventListener('click', function() {
+										if (!confirm('<?php echo esc_js( __( 'Delete ALL media, albums, collections, and custom table data? This cannot be undone.', 'wpmediaverse' ) ); ?>')) {
+											return;
+										}
+										var btn = this;
+										var status = document.getElementById('mvs-cleanup-demo-status');
+										btn.disabled = true;
+										btn.textContent = '<?php echo esc_js( __( 'Deleting...', 'wpmediaverse' ) ); ?>';
+										status.textContent = '';
+										var xhr = new XMLHttpRequest();
+										xhr.open('POST', ajaxurl);
+										xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+										xhr.onload = function() {
+											var data = JSON.parse(xhr.responseText);
+											if (data.success) {
+												status.textContent = data.data.message;
+												status.style.color = '#00a32a';
+												setTimeout(function() { location.reload(); }, 1500);
+											} else {
+												status.textContent = data.data ? data.data.message : 'Cleanup failed.';
+												status.style.color = '#d63638';
+												btn.disabled = false;
+												btn.textContent = '<?php echo esc_js( __( 'Delete Demo Data', 'wpmediaverse' ) ); ?>';
+											}
+										};
+										xhr.send('action=mvs_cleanup_demo_data&_nonce=' + btn.getAttribute('data-nonce'));
+									});
+									</script>
+								<?php endif; ?>
 							<?php endif; ?>
 						</div>
 					</div>
@@ -648,5 +690,26 @@ class OverviewPage {
 
 		// If the seeder didn't send a response (shouldn't happen), send one.
 		wp_send_json_success( array( 'message' => 'Import complete.' ) );
+	}
+
+	/**
+	 * AJAX handler for demo data cleanup.
+	 */
+	public function handle_cleanup_demo(): void {
+		check_ajax_referer( 'mvs_cleanup_demo', '_nonce' );
+
+		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
+			wp_send_json_error( array( 'message' => 'Permission denied.' ) );
+		}
+
+		$cleanup = MVS_PLUGIN_DIR . 'cleanup-demo-data.php';
+		if ( ! file_exists( $cleanup ) ) {
+			wp_send_json_error( array( 'message' => 'Cleanup script not found.' ) );
+		}
+
+		require_once $cleanup;
+
+		// If the cleanup didn't send a response (shouldn't happen), send one.
+		wp_send_json_success( array( 'message' => 'Cleanup complete.' ) );
 	}
 }
