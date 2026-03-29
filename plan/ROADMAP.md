@@ -1,87 +1,85 @@
 # WPMediaVerse (Free) — Master Roadmap
 
-> Single source of truth for all free plugin work.
-> Last updated: 2026-03-29
+> Single source of truth. Updated: 2026-03-29
+> Process: plan → review with user → implement. No cowboy coding.
 
 ---
 
 ## Current Version: 1.0.0 → Target: 1.1.0
 
-### What's Built
-- 91 PHP classes, 58 REST endpoints, 23 DB tables, 13 blocks, 15 templates, 8 admin pages
-- Upload pipeline, privacy model, reactions, comments, follows, favorites, albums, collections
-- BuddyPress integration (activity feed, profiles, groups)
-- Settings page with Jetonomy-style card layout
-- Moderation queue, stats dashboard, log viewer
-- 38/38 QA tests passing
+---
+
+## DONE (this session)
+
+- [x] Settings page redesigned to Jetonomy card layout
+- [x] Dead CSS removed (50+ lines)
+- [x] Sidebar links: added Quotas, Reports (were orphaned)
+- [x] Sidebar links: JS fix — external links navigate instead of being blocked
+- [x] Overview "Customize permissions" link fixed
+- [x] Permission fail → wp_die (3 pages)
+- [x] LogViewerPage cleared check fixed
+- [x] All pages registered under WPMediaVerse menu (no hidden pages)
+- [x] Settings sidebar links use correct URLs
 
 ---
 
-## TODO: Admin UX Fixes (before release)
+## TODO: Admin Listing Pages (before release)
 
-### Navigation Fixes
-- [ ] Add Quotas + Reports links to Settings sidebar Tools section (`SettingsPage.php:1296-1314`)
-- [ ] Fix Overview "Customize permissions" link: `&tab=permissions` → `#permissions` (`OverviewPage.php:447`)
+### All Media listing (edit.php?post_type=mvs_media)
+- [ ] Missing Edit row action
+- [ ] Missing Delete row action
+- [ ] Missing Quick Edit
+- [ ] Check: are bulk actions (Trash, etc.) available?
+- [ ] Check: column sorting works?
+- [ ] Audit: what columns are shown? Do we need custom columns (Author, Views, Reactions)?
 
-### Dead CSS Removal (admin.css)
-- [ ] Remove `.mvs-getting-started` block (~lines 303-331, 29 lines)
-- [ ] Remove `.mvs-page-header` block (~lines 337-355)
-- [ ] Remove `.mvs-page-subtitle` (~lines 617-622)
-- [ ] Remove duplicate `.mvs-page-header .mvs-version` (~lines 349-355)
+### Albums listing (edit.php?post_type=mvs_album)
+- [ ] Same audit as above
 
-### Permission Fail Fix (9 pages)
-Change `return;` to `wp_die()` in render_page() for:
-- [ ] OverviewPage.php
-- [ ] SettingsPage.php
-- [ ] LogViewerPage.php
+### Collections listing (edit.php?post_type=mvs_collection)
+- [ ] Same audit as above
 
-### Minor Fixes
-- [ ] LogViewerPage.php:87 — `$cleared` uses `isset()`, should be `=== '1'`
+### WPMediaVerse submenu items — which should be visible?
+- [ ] Decide: should Logs, Analytics, Quotas, Reports, Migration, Challenges, Tournaments, Battles all show in the menu? Or should some be collapsed/grouped?
+- [ ] Too many submenu items clutters the menu — need a strategy
 
 ---
 
 ## TODO: DM Integration (move from Pro to Free)
 
-### Phase 1: Move DM Engine to Free
-- [ ] Move `MessagingService`, `MessagingController`, `RestPollingTransport`, `TransportInterface`, `NotificationListener` from Pro → Free
+- [ ] Move MessagingService, MessagingController, RestPollingTransport from Pro → Free
 - [ ] Move 4 DB tables to Free Activator.php
-- [ ] Move templates (chat-panel, chat-composer, etc.) + CSS + JS
-- [ ] Add `mvs_buddynext_active` filter to chat panel template
-- [ ] Add `mvs_can_send_message` filter
-
-### Phase 2: Pro DM Additions (future)
-- Group DM (2-49 participants)
-- Per-message read receipts
-- WebSocket transport
+- [ ] Move templates + CSS + JS
+- [ ] Add mvs_buddynext_active filter
+- [ ] Add mvs_can_send_message filter
 
 ---
 
-## TODO: Gamification Hooks (for wb-gamification integration)
+## TODO: Gamification Hooks
 
-- [ ] Add `apply_filters('mvs_activity_types', self::TYPES)` to `ActivityService`
-- [ ] Add same filter to `NotificationService`
+- [ ] Add apply_filters('mvs_activity_types') to ActivityService
+- [ ] Add same filter to NotificationService
 
 ---
 
 ## Pre-Release Checklist
 
-- [ ] `php -l` — zero errors on all PHP files
-- [ ] `npm run build` — 13 blocks compile
-- [ ] Remove `console.log` / `error_log()` / `var_dump()` from production
-- [ ] Bump version to 1.1.0 in: `wpmediaverse.php`, constant, `readme.txt`, `package.json`
-- [ ] Create `.distignore`
-- [ ] Generate `.pot` file
-- [ ] Write `readme.txt` (description, FAQ, screenshots, changelog)
-- [ ] Run full QA suite (38 tests)
-- [ ] Build distribution ZIP
-- [ ] Tag `v1.1.0` + push
-- [ ] Publish docs via `mcp__wbcom-docs__publish_product_docs`
+- [ ] php -l — zero errors
+- [ ] npm run build — 13 blocks compile
+- [ ] Remove console.log / error_log / var_dump
+- [ ] Bump version to 1.1.0
+- [ ] Create .distignore
+- [ ] Generate .pot file
+- [ ] Write readme.txt
+- [ ] Run full QA suite
+- [ ] Build ZIP
+- [ ] Tag + push
 
 ---
 
-## v1.2.0 Roadmap
+## v1.2.0+
 
-- Social sharing buttons (Facebook/Twitter/Pinterest)
-- Play event tracking in free
-- Cursor-based pagination for large libraries
-- Admin page pagination (Stats top media, Logs)
+- Social sharing buttons
+- Play event tracking
+- Cursor-based pagination
+- Admin page pagination (6 pages)
