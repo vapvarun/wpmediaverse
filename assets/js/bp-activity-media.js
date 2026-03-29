@@ -1084,29 +1084,6 @@
 	} )();
 
 
-	// ── Activity media click handler ─────────────────────────────────
-	// Click on activity media navigates to /media/{slug}/ single page.
-	// That page has full social UX (reactions, comments, favorites).
-	// No separate lightbox needed — the single page IS the detail view.
-	document.addEventListener( 'click', function( e ) {
-		var link = e.target.closest( '.activity-content a' );
-		if ( ! link ) return;
-		var img = link.querySelector( 'img' );
-		if ( ! img || img.classList.contains( 'avatar' ) || img.classList.contains( 'emoji' ) ) return;
-
-		var href = link.getAttribute( 'href' ) || '';
-
-		// Raw file URL (old posts) — redirect to media permalink.
-		if ( href.indexOf( '/uploads/wpmediaverse/' ) !== -1 ) {
-			var permalink = link.getAttribute( 'data-mvs-permalink' );
-			if ( permalink ) {
-				e.preventDefault();
-				window.location.href = permalink;
-			}
-		}
-		// Links to /media/{slug}/ — normal navigation to single page.
-	} );
-
 	// ── Shared-UI Lightbox Driver for BuddyPress Pages ──────────────
 	// Drives the `.mvs-lightbox-overlay` DOM rendered by shared-ui-shell.php
 	// using vanilla JS. On Explore/Instagram pages the Interactivity API
@@ -1129,10 +1106,20 @@
 		 * lightboxVisible set, defer to it.
 		 */
 		function interactivityApiActive() {
+			// Only defer if the Interactivity API lightbox is currently OPEN
+			// (not just loaded on the page). On BP pages the IA store may exist
+			// but BP clicks should still be handled by this driver.
 			try {
 				if ( window.wp && wp.interactivity ) {
-					var store = wp.interactivity.getConfig( 'mvs/shared-ui' );
-					if ( store ) { return true; }
+					var state = wp.interactivity.getElement
+						? null  // v6.5+ — can't easily peek at store state
+						: null;
+					// Check if the overlay is already being driven by IA
+					// (it would have data-wp-context set and not have hidden attr).
+					var overlay = document.querySelector( '.mvs-lightbox-overlay' );
+					if ( overlay && ! overlay.hasAttribute( 'hidden' ) && overlay.hasAttribute( 'data-wp-interactive' ) ) {
+						return true; // IA is currently showing the lightbox.
+					}
 				}
 			} catch ( ex ) { /* not available */ }
 			return false;
