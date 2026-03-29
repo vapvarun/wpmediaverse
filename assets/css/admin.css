@@ -1115,7 +1115,8 @@ a.mvs-stat-card:focus {
 	padding: 0;
 	position: sticky;
 	top: 62px;
-	height: calc(100vh - 62px);
+	align-self: flex-start;
+	max-height: calc(100vh - 62px);
 	overflow-y: auto;
 	z-index: 1;
 }
