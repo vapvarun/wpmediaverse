@@ -13,41 +13,37 @@
 - **TemplateHelpers::get_user_profile_url()** — filterable via `mvs_user_profile_url`, auto-detects BuddyPress.
 - **Layout Mode architecture** — `LayoutManager` + `LayoutMode` interface. Instagram layout implemented. Extensible for Flickr/Pinterest/Dribbble.
 
-## Standalone Features (DONE)
+## Browser Verified (This Session)
 
-| Feature | Status |
-|---------|--------|
-| Upload (single/multi) | Working |
-| Explore grid (Instagram feed) | Working |
-| Single media page | Working |
-| Lightbox (reactions, comments, favorites, share, stats) | Working |
-| Dashboard (My Media, Albums, Favorites) | Working |
-| User profile (`/media/@username/`) | Working |
-| Albums + Collections | Working |
-| Follow system | Working |
-| Privacy (6 levels) | Working |
-| AI Moderation | Working |
-| Admin pages (Overview, Media List, Settings, Stats, Moderation) | Working |
-| Demo data seeder | Working (wp_get_image_editor thumbnails) |
-| 12 Gutenberg blocks | Built |
+| Flow | Status | Evidence |
+|------|--------|----------|
+| Explore grid with thumbnails | VERIFIED | Playwright — images load, grid renders |
+| Lightbox on explore (IA) — all actions | VERIFIED | Playwright — reactions, fav, comments, share |
+| BP lightbox (clone) — all actions | VERIFIED | Playwright — reactions, fav, comments on activity/887 |
+| Profile media tab | VERIFIED | Playwright — 9 items displayed |
+| Demo data import (50 items) | VERIFIED | Playwright — admin import button |
+| Admin overview page | VERIFIED | Playwright — stats show correctly |
 
-## BuddyPress Integration (DONE)
+## Needs Browser Testing (Priority Order)
 
-| Feature | Status |
-|---------|--------|
-| Activity media upload (1-6 files) | Working |
-| Activity media display with `data-mvs-media-id` | Working |
-| BP lightbox (clone approach, outside IA container) | Working |
-| Lightbox reactions | Working |
-| Lightbox favorites | Working |
-| Lightbox comments (with avatar + profile link) | Working |
-| Lightbox share | Working |
-| Lightbox gallery navigation | Working |
-| Profile media tab (`/members/{user}/media/`) | Working |
-| Group media tab (`/groups/{slug}/media/`) | Working |
-| Activity action text (clean, no hash filenames) | Working |
-| Max 6 files per activity post | Working |
-| Slug-based fallback for old activity posts | Working |
+| # | Flow | Risk | Test Plan |
+|---|------|------|-----------|
+| 1 | **Upload via FAB button** | HIGH | Click FAB → select image → upload → verify in explore grid |
+| 2 | **Upload via BP activity form** | HIGH | Post activity with image → verify media appears → lightbox opens |
+| 3 | **Dashboard My Media** | MEDIUM | Navigate /my-media/ → verify media list → click lightbox |
+| 4 | **Group media tab** | MEDIUM | Navigate /groups/{slug}/media/ → verify grid |
+| 5 | **Albums (create + display)** | MEDIUM | Create album → add media → verify cover image |
+| 6 | **Single media page** | LOW | Navigate /media/{slug}/ → verify social actions |
+| 7 | **Follow system** | LOW | Follow/unfollow user → verify count updates |
+| 8 | **Admin Media List** | LOW | Navigate admin → All Media → verify thumbnails |
+
+## Known Issues
+
+| Issue | Severity | Status |
+|-------|----------|--------|
+| Comments bridge creates infinite loop | CRITICAL | Disabled for v1.0. Hooks commented out. |
+| `followed_id` column error in seeder | MINOR | Seeder uses `followed_id`, table may have `following_id` |
+| OPcache serves old PHP | DEV ONLY | Restart PHP-FPM after code changes |
 
 ## Deferred to v1.1
 
@@ -68,6 +64,14 @@
 - [x] All `attachment_id` references removed
 - [x] BP lightbox working with all actions
 - [x] Comment avatars + profile links everywhere
+- [ ] Browser test: Upload via FAB
+- [ ] Browser test: Upload via BP activity
+- [ ] Browser test: Dashboard My Media
+- [ ] Browser test: Group media tab
+- [ ] Browser test: Albums
+- [ ] Browser test: Single media page
+- [ ] Browser test: Follow system
+- [ ] Browser test: Admin Media List
 - [ ] WPCS check (major violations only)
 - [ ] Version 1.0.0 in all headers
 - [ ] .pot file generated
