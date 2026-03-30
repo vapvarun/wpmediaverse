@@ -1948,7 +1948,7 @@ class SettingsPage {
 		$custom_types = array_diff( $selected, $known_mimes, array( '' ) );
 
 		if ( ! empty( $args['description'] ) ) {
-			printf( '<p class="description" style="margin-bottom:8px">%s</p>', esc_html( $args['description'] ) );
+			printf( '<p class="description mvs-desc-mb">%s</p>', esc_html( $args['description'] ) );
 		}
 		echo '<div class="mvs-file-types-grid">';
 		foreach ( $groups as $group_label => $mimes ) {

@@ -148,19 +148,19 @@ class OverviewPage {
 							</div>
 
 							<?php if ( 0 === (int) $stats['total_media'] ) : ?>
-								<div class="mvs-demo-import" style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
-									<h4 style="margin:0 0 4px;"><?php esc_html_e( 'Quick Start with Demo Content', 'wpmediaverse' ); ?></h4>
-									<p style="margin:0 0 12px;color:#666;">
+								<div class="mvs-demo-import mvs-section-divider">
+									<h4 class="mvs-demo-title"><?php esc_html_e( 'Quick Start with Demo Content', 'wpmediaverse' ); ?></h4>
+									<p class="mvs-demo-desc">
 										<?php esc_html_e( 'Import 12 sample media items to see how everything works — albums, reactions, and your explore page will come alive.', 'wpmediaverse' ); ?>
 									</p>
 									<button type="button" class="button button-primary" id="mvs-import-demo-btn"
 										data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_import_demo' ) ); ?>">
-										<span class="dashicons dashicons-download" style="margin-top:4px;"></span>
+										<span class="dashicons dashicons-download mvs-dashicons-btn"></span>
 										<?php esc_html_e( 'Import Demo Data', 'wpmediaverse' ); ?>
 									</button>
-									<span id="mvs-import-demo-status" style="margin-left:8px;"></span>
-									<div class="mvs-import-progress" id="mvs-import-progress" style="display:none;margin-top:8px;">
-										<div class="mvs-import-progress-bar" id="mvs-import-progress-bar" style="width:0%;height:4px;background:#2271b1;border-radius:2px;transition:width 0.3s;"></div>
+									<span id="mvs-import-demo-status" class="mvs-status-inline"></span>
+									<div class="mvs-import-progress mvs-progress-container mvs-hidden" id="mvs-import-progress">
+										<div class="mvs-import-progress-bar mvs-progress-bar" id="mvs-import-progress-bar" style="width:0%;"></div>
 									</div>
 								</div>
 								<script>
@@ -172,7 +172,7 @@ class OverviewPage {
 									btn.disabled = true;
 									btn.textContent = '<?php echo esc_js( __( 'Importing...', 'wpmediaverse' ) ); ?>';
 									status.textContent = '';
-									progress.style.display = 'block';
+									progress.classList.remove('mvs-hidden');
 									bar.style.width = '30%';
 									var xhr = new XMLHttpRequest();
 									xhr.open('POST', ajaxurl);
@@ -182,7 +182,7 @@ class OverviewPage {
 										var data = JSON.parse(xhr.responseText);
 										if (data.success) {
 											status.textContent = data.data.message;
-											status.style.color = '#00a32a';
+											status.className = 'mvs-status-inline mvs-icon-success';
 											<?php
 											$explore_page_id = (int) get_option( 'mvs_page_explore', 0 );
 											$explore_url     = $explore_page_id ? get_permalink( $explore_page_id ) : '';
@@ -195,10 +195,10 @@ class OverviewPage {
 											<?php endif; ?>
 										} else {
 											status.textContent = data.data ? data.data.message : 'Import failed.';
-											status.style.color = '#d63638';
+											status.className = 'mvs-status-inline mvs-btn-text-danger';
 											btn.disabled = false;
 											btn.textContent = '<?php echo esc_js( __( 'Import Demo Data', 'wpmediaverse' ) ); ?>';
-											progress.style.display = 'none';
+											progress.classList.add('mvs-hidden');
 										}
 									};
 									setTimeout(function() { bar.style.width = '60%'; }, 500);
@@ -207,14 +207,13 @@ class OverviewPage {
 								</script>
 							<?php else : ?>
 								<?php if ( current_user_can( 'manage_mvs_settings' ) ) : ?>
-									<div class="mvs-demo-cleanup" style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
-										<button type="button" class="button" id="mvs-cleanup-demo-btn"
-											data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_cleanup_demo' ) ); ?>"
-											style="color:#b32d2e;border-color:#b32d2e;">
-											<span class="dashicons dashicons-trash" style="margin-top:4px;"></span>
+									<div class="mvs-demo-cleanup mvs-section-divider">
+										<button type="button" class="button mvs-btn-danger" id="mvs-cleanup-demo-btn"
+											data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_cleanup_demo' ) ); ?>">
+											<span class="dashicons dashicons-trash mvs-dashicons-btn"></span>
 											<?php esc_html_e( 'Delete Demo Data', 'wpmediaverse' ); ?>
 										</button>
-										<span id="mvs-cleanup-demo-status" style="margin-left:8px;"></span>
+										<span id="mvs-cleanup-demo-status" class="mvs-status-inline"></span>
 									</div>
 									<script>
 									document.getElementById('mvs-cleanup-demo-btn').addEventListener('click', function() {
@@ -233,11 +232,11 @@ class OverviewPage {
 											var data = JSON.parse(xhr.responseText);
 											if (data.success) {
 												status.textContent = data.data.message;
-												status.style.color = '#00a32a';
+												status.className = 'mvs-status-inline mvs-icon-success';
 												setTimeout(function() { location.reload(); }, 1500);
 											} else {
 												status.textContent = data.data ? data.data.message : 'Cleanup failed.';
-												status.style.color = '#d63638';
+												status.className = 'mvs-status-inline mvs-btn-text-danger';
 												btn.disabled = false;
 												btn.textContent = '<?php echo esc_js( __( 'Delete Demo Data', 'wpmediaverse' ) ); ?>';
 											}
@@ -251,7 +250,7 @@ class OverviewPage {
 					</div>
 
 					<?php // Frontend Pages Widget. ?>
-					<div class="mvs-admin-widget" style="margin-top:20px;">
+					<div class="mvs-admin-widget mvs-widget-spaced">
 						<div class="mvs-widget-header">
 							<h2><?php esc_html_e( 'Frontend Pages', 'wpmediaverse' ); ?></h2>
 						</div>
@@ -289,12 +288,12 @@ class OverviewPage {
 									?>
 									<li>
 										<span class="mvs-status-label">
-											<span class="dashicons <?php echo esc_attr( $page_info['icon'] ); ?>" style="font-size:16px;width:16px;height:16px;margin-right:4px;vertical-align:text-bottom;"></span>
+											<span class="dashicons <?php echo esc_attr( $page_info['icon'] ); ?> mvs-dashicons-inline"></span>
 											<?php echo esc_html( $page_info['label'] ); ?>
 										</span>
 										<span class="mvs-status-value">
 											<?php if ( $exists && $page_url ) : ?>
-												<a href="<?php echo esc_url( $page_url ); ?>" target="_blank" class="mvs-status-ok" style="text-decoration:none;">
+												<a href="<?php echo esc_url( $page_url ); ?>" target="_blank" class="mvs-status-ok mvs-link-plain">
 													<?php esc_html_e( 'Active', 'wpmediaverse' ); ?> &#8599;
 												</a>
 											<?php else : ?>
@@ -306,11 +305,11 @@ class OverviewPage {
 							</ul>
 
 							<?php if ( ! $all_ok ) : ?>
-								<div class="notice notice-warning inline" style="margin-top:12px;">
+								<div class="notice notice-warning inline mvs-notice-mt">
 									<p>
 										<?php esc_html_e( 'Some pages are missing. Deactivate and reactivate the plugin to create them, or add pages manually with shortcodes:', 'wpmediaverse' ); ?>
 									</p>
-									<ul style="list-style:disc;margin:4px 0 0 1.5em;">
+									<ul class="mvs-bulleted-list">
 										<?php foreach ( $pages as $option_key => $page_info ) : ?>
 											<?php
 											$page_id = (int) get_option( $option_key, 0 );
@@ -347,7 +346,7 @@ class OverviewPage {
 								<table class="mvs-recent-table">
 									<thead>
 										<tr>
-											<th style="width:56px;">&nbsp;</th>
+											<th class="column-thumb">&nbsp;</th>
 											<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
 											<th><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
 											<th><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
@@ -409,7 +408,7 @@ class OverviewPage {
 					</div>
 
 					<?php // System Status Widget. ?>
-					<div class="mvs-admin-widget" style="margin-top:20px;">
+					<div class="mvs-admin-widget mvs-widget-spaced">
 						<div class="mvs-widget-header">
 							<h2><?php esc_html_e( 'System Status', 'wpmediaverse' ); ?></h2>
 						</div>
@@ -513,7 +512,7 @@ class OverviewPage {
 		<script>
 		document.getElementById('mvs-dismiss-welcome').addEventListener('click', function() {
 			var banner = document.getElementById('mvs-welcome-banner');
-			banner.style.display = 'none';
+			banner.classList.add('mvs-hidden');
 			var xhr = new XMLHttpRequest();
 			xhr.open('POST', ajaxurl);
 			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -549,7 +548,7 @@ class OverviewPage {
 		}
 		?>
 		<div class="mvs-welcome-pages">
-			<span class="dashicons dashicons-yes-alt" style="color:#00a32a;"></span>
+			<span class="dashicons dashicons-yes-alt mvs-icon-success"></span>
 			<span><?php esc_html_e( 'Frontend pages created:', 'wpmediaverse' ); ?></span>
 			<?php foreach ( $active_pages as $page ) : ?>
 				<a href="<?php echo esc_url( $page['url'] ); ?>" target="_blank">

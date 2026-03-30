@@ -213,7 +213,7 @@ class ModerationQueue {
 			<?php endif; ?>
 
 			<?php // --- Status Counts --- ?>
-			<div class="mvs-admin-stats" style="margin-bottom:24px;">
+			<div class="mvs-admin-stats mvs-stats-mb">
 				<?php
 				$status_cards = array(
 					'flagged'  => array(
@@ -241,8 +241,7 @@ class ModerationQueue {
 					);
 					?>
 					<a href="<?php echo esc_url( $url ); ?>"
-						class="mvs-stat-card <?php echo esc_attr( $card['class'] ); ?>"
-						style="<?php echo $is_active ? 'box-shadow:0 0 0 2px #2271b1;' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>">
+						class="mvs-stat-card <?php echo esc_attr( $card['class'] ); ?> <?php echo $is_active ? 'mvs-stat-card--active' : ''; ?>">
 						<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
 						<span class="mvs-stat-label"><?php echo esc_html( $card['label'] ); ?></span>
 					</a>
@@ -281,7 +280,7 @@ class ModerationQueue {
 									<option value="bulk_reject"><?php esc_html_e( 'Reject Selected', 'wpmediaverse' ); ?></option>
 								</select>
 								<button type="submit" class="button" id="mvs-bulk-apply"><?php esc_html_e( 'Apply', 'wpmediaverse' ); ?></button>
-								<span class="mvs-bulk-count" id="mvs-bulk-count" style="display:none;">
+								<span class="mvs-bulk-count mvs-hidden" id="mvs-bulk-count">
 									<?php
 									printf(
 										/* translators: %s: placeholder replaced by JS */
@@ -292,16 +291,16 @@ class ModerationQueue {
 								</span>
 							</div>
 
-							<table class="wp-list-table widefat fixed striped">
+							<table class="mvs-moderation-table striped">
 								<thead>
 									<tr>
-										<td class="manage-column column-cb check-column" style="width:40px;">
+										<td class="manage-column column-cb check-column">
 											<label class="screen-reader-text" for="mvs-select-all">
 												<?php esc_html_e( 'Select All', 'wpmediaverse' ); ?>
 											</label>
 											<input type="checkbox" id="mvs-select-all" />
 										</td>
-										<th style="width:70px;"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
+										<th class="column-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
 										<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
 										<th><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
 										<th><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
@@ -328,7 +327,7 @@ class ModerationQueue {
 							function updateCount() {
 								var checked = form.querySelectorAll('.mvs-bulk-cb:checked');
 								countEl.textContent = checked.length;
-								countWrap.style.display = checked.length > 0 ? 'inline' : 'none';
+								countWrap.classList.toggle('mvs-hidden', checked.length === 0);
 							}
 
 							selectAll.addEventListener('change', function() {
@@ -395,9 +394,9 @@ class ModerationQueue {
 			</th>
 			<td>
 				<?php if ( $file_url && strpos( $file_type, 'image/' ) === 0 ) : ?>
-					<img src="<?php echo esc_url( $file_url ); ?>" alt="" class="mvs-thumb" style="width:60px;height:60px;" />
+					<img src="<?php echo esc_url( $file_url ); ?>" alt="" class="mvs-thumb mvs-moderation-thumb" />
 				<?php else : ?>
-					<span class="mvs-thumb-placeholder" style="width:60px;height:60px;">
+					<span class="mvs-thumb-placeholder mvs-moderation-thumb-placeholder">
 						<span class="dashicons dashicons-media-default"></span>
 					</span>
 				<?php endif; ?>
@@ -405,7 +404,7 @@ class ModerationQueue {
 			<td>
 				<strong><?php echo esc_html( $post->post_title ); ?></strong>
 				<br>
-				<small style="color:#50575e;"><?php echo esc_html( $file_type ); ?></small>
+				<small class="mvs-text-muted"><?php echo esc_html( $file_type ); ?></small>
 			</td>
 			<td><?php echo $author ? esc_html( $author->display_name ) : '&mdash;'; ?></td>
 			<td><?php echo esc_html( $file_type ); ?></td>
@@ -425,7 +424,7 @@ class ModerationQueue {
 				</time>
 			</td>
 			<td>
-				<form method="post" style="display:inline;">
+				<form method="post" class="mvs-form-inline">
 					<?php wp_nonce_field( 'mvs_moderation_action', 'mvs_moderation_nonce' ); ?>
 					<input type="hidden" name="media_id" value="<?php echo absint( $post->ID ); ?>" />
 					<input type="hidden" name="mvs_moderation_action" value="approve" />
@@ -433,11 +432,11 @@ class ModerationQueue {
 						<?php esc_html_e( 'Approve', 'wpmediaverse' ); ?>
 					</button>
 				</form>
-				<form method="post" style="display:inline;margin-left:4px;">
+				<form method="post" class="mvs-form-inline-spaced">
 					<?php wp_nonce_field( 'mvs_moderation_action', 'mvs_moderation_nonce' ); ?>
 					<input type="hidden" name="media_id" value="<?php echo absint( $post->ID ); ?>" />
 					<input type="hidden" name="mvs_moderation_action" value="reject" />
-					<button type="submit" class="button button-small" style="color:#d63638;">
+					<button type="submit" class="button button-small mvs-btn-text-danger">
 						<?php esc_html_e( 'Reject', 'wpmediaverse' ); ?>
 					</button>
 				</form>

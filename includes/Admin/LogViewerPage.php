@@ -156,11 +156,11 @@ class LogViewerPage {
 				</form>
 
 				<?php if ( $result['total'] > 0 ) : ?>
-					<form method="post" style="display:inline;" onsubmit="return confirm('<?php echo esc_js( __( 'Are you sure you want to clear all logs?', 'wpmediaverse' ) ); ?>');">
+					<form method="post" class="mvs-form-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Are you sure you want to clear all logs?', 'wpmediaverse' ) ); ?>');">
 						<?php wp_nonce_field( 'mvs_clear_logs', 'mvs_clear_logs_nonce' ); ?>
 						<input type="hidden" name="mvs_clear_logs" value="1" />
-						<button type="submit" class="button" style="color:#d63638;">
-							<span class="dashicons dashicons-trash" style="font-size:14px;width:14px;height:14px;vertical-align:text-bottom;margin-right:2px;"></span>
+						<button type="submit" class="button mvs-btn-text-danger">
+							<span class="dashicons dashicons-trash mvs-dashicons-small"></span>
 							<?php esc_html_e( 'Clear All Logs', 'wpmediaverse' ); ?>
 						</button>
 					</form>
@@ -187,21 +187,21 @@ class LogViewerPage {
 							<p><?php esc_html_e( 'No log entries found.', 'wpmediaverse' ); ?></p>
 						</div>
 					<?php else : ?>
-						<table class="wp-list-table widefat fixed striped">
+						<table class="mvs-log-table striped">
 							<thead>
 								<tr>
-									<th style="width:160px;"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
-									<th style="width:80px;"><?php esc_html_e( 'Level', 'wpmediaverse' ); ?></th>
-									<th style="width:100px;"><?php esc_html_e( 'Context', 'wpmediaverse' ); ?></th>
+									<th class="column-date"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
+									<th class="column-level"><?php esc_html_e( 'Level', 'wpmediaverse' ); ?></th>
+									<th class="column-context"><?php esc_html_e( 'Context', 'wpmediaverse' ); ?></th>
 									<th><?php esc_html_e( 'Message', 'wpmediaverse' ); ?></th>
-									<th style="width:120px;"><?php esc_html_e( 'User', 'wpmediaverse' ); ?></th>
-									<th style="width:120px;"><?php esc_html_e( 'IP', 'wpmediaverse' ); ?></th>
+									<th class="column-user"><?php esc_html_e( 'User', 'wpmediaverse' ); ?></th>
+									<th class="column-ip"><?php esc_html_e( 'IP', 'wpmediaverse' ); ?></th>
 								</tr>
 							</thead>
 							<tbody>
 								<?php foreach ( $result['items'] as $log ) : ?>
 									<?php
-									$log_level_color = $level_colors[ $log->level ] ?? '#50575e';
+									$log_level_class = isset( $level_colors[ $log->level ] ) ? 'mvs-log-level--' . $log->level : 'mvs-log-level--default';
 									$user_display    = '';
 									if ( $log->user_id > 0 ) {
 										$user         = get_userdata( $log->user_id );
@@ -215,7 +215,7 @@ class LogViewerPage {
 											</time>
 										</td>
 										<td>
-											<span class="mvs-log-level-badge" style="background:<?php echo esc_attr( $log_level_color ); ?>;">
+											<span class="mvs-log-level-badge <?php echo esc_attr( $log_level_class ); ?>">
 												<?php echo esc_html( strtoupper( $log->level ) ); ?>
 											</span>
 										</td>

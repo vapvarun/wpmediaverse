@@ -254,7 +254,7 @@ class StatsPage {
 				<?php if ( ! empty( $top_media ) ) : ?>
 					<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'mvs_export_csv', '1', $base_stats_url ), 'mvs_export_stats_csv' ) ); ?>"
 						class="button">
-						<span class="dashicons dashicons-download" style="font-size:14px;width:14px;height:14px;vertical-align:text-bottom;margin-right:2px;"></span>
+						<span class="dashicons dashicons-download mvs-dashicons-small"></span>
 						<?php esc_html_e( 'Export CSV', 'wpmediaverse' ); ?>
 					</a>
 				<?php endif; ?>

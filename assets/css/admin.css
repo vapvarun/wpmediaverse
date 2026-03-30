@@ -1460,3 +1460,66 @@ a.mvs-stat-card:focus {
 	font-size: 14px;
 	margin: 0;
 }
+
+/* ==========================================================================
+   Utility Classes (inline style replacements)
+   ========================================================================== */
+
+.mvs-hidden { display: none; }
+.mvs-form-inline { display: inline; }
+.mvs-text-muted { color: #50575e; }
+.mvs-text-secondary { color: #646970; margin: 0; }
+.mvs-mt-0 { margin-top: 0; }
+
+/* Dashboard-specific */
+.mvs-section-divider { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee; }
+.mvs-btn-danger { color: #b32d2e !important; border-color: #b32d2e !important; }
+.mvs-btn-danger:hover { background: #b32d2e !important; color: #fff !important; }
+.mvs-btn-text-danger { color: #d63638; }
+.mvs-dashicons-inline { font-size: 16px; width: 16px; height: 16px; margin-right: 4px; vertical-align: text-bottom; }
+.mvs-dashicons-small { font-size: 14px; width: 14px; height: 14px; vertical-align: text-bottom; margin-right: 2px; }
+.mvs-dashicons-btn { margin-top: 4px; }
+.mvs-icon-success { color: #00a32a; }
+.mvs-status-inline { margin-left: 8px; }
+.mvs-progress-container { margin-top: 8px; }
+.mvs-progress-bar { height: 4px; background: #2271b1; border-radius: 2px; transition: width 0.3s; }
+.mvs-bulleted-list { list-style: disc; margin: 4px 0 0 1.5em; }
+.mvs-link-plain { text-decoration: none; }
+.mvs-notice-mt { margin-top: 12px; }
+.mvs-desc-mb { margin-bottom: 8px; }
+.mvs-demo-title { margin: 0 0 4px; }
+.mvs-demo-desc { margin: 0 0 12px; color: #666; }
+.mvs-widget-spaced { margin-top: 20px; }
+.mvs-stats-mb { margin-bottom: 24px; }
+
+/* Recent table column widths */
+.mvs-recent-table .column-thumb { width: 56px; }
+
+/* Log viewer table */
+.mvs-log-table { width: 100%; border-spacing: 0; }
+.mvs-log-table th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #c3c4c7; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #50575e; }
+.mvs-log-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f1; vertical-align: middle; }
+.mvs-log-table tr:last-child td { border-bottom: none; }
+.mvs-log-table .column-date { width: 160px; }
+.mvs-log-table .column-level { width: 80px; }
+.mvs-log-table .column-context { width: 100px; }
+.mvs-log-table .column-user { width: 120px; }
+.mvs-log-table .column-ip { width: 120px; }
+
+/* Log level badge color variants */
+.mvs-log-level--error { background: #d63638; }
+.mvs-log-level--warning { background: #dba617; }
+.mvs-log-level--info { background: #2271b1; }
+.mvs-log-level--default { background: #50575e; }
+
+/* Moderation */
+.mvs-stat-card--active { box-shadow: 0 0 0 2px #2271b1; }
+.mvs-moderation-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
+.mvs-moderation-thumb-placeholder { display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: #f0f0f1; border-radius: 4px; color: #c3c4c7; }
+.mvs-form-inline-spaced { display: inline; margin-left: 4px; }
+.mvs-moderation-table { width: 100%; border-spacing: 0; }
+.mvs-moderation-table th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #c3c4c7; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #50575e; }
+.mvs-moderation-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f1; vertical-align: middle; }
+.mvs-moderation-table tr:last-child td { border-bottom: none; }
+.mvs-moderation-table .column-cb { width: 40px; }
+.mvs-moderation-table .column-thumb { width: 70px; }
