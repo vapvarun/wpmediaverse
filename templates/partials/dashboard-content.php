@@ -282,6 +282,16 @@ wp_enqueue_style( 'mvs-frontend' );
 			data-wp-on--click="actions.switchTab">
 			<?php esc_html_e( 'Collections', 'wpmediaverse' ); ?>
 		</button>
+		<?php
+		/**
+		 * Fires after the last dashboard tab button.
+		 *
+		 * Pro uses this to inject gamification tabs (Challenges, Battles, Tournaments).
+		 *
+		 * @since 1.1.0
+		 */
+		do_action( 'mvs_dashboard_tabs' );
+		?>
 	</nav>
 
 	<!-- My Media Panel -->
@@ -495,6 +505,17 @@ wp_enqueue_style( 'mvs-frontend' );
 			<p><?php esc_html_e( 'Create a smart collection to auto-organize your media!', 'wpmediaverse' ); ?></p>
 		</div>
 	</div>
+
+	<?php
+	/**
+	 * Fires after the last dashboard tab panel.
+	 *
+	 * Pro uses this to inject gamification panels (Challenges, Battles, Tournaments).
+	 *
+	 * @since 1.1.0
+	 */
+	do_action( 'mvs_dashboard_panels' );
+	?>
 
 	<!-- Collection Modal (Create/Edit with Rule Builder) -->
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.collectionModal.visible"

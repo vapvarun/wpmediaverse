@@ -117,6 +117,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get isAlbumsTab() { return state.activeTab === 'albums'; },
 		get isFavoritesTab() { return state.activeTab === 'favorites'; },
 		get isCollectionsTab() { return state.activeTab === 'collections'; },
+		// Pro gamification tabs (computed here so panels can bind without store extension).
+		get isChallengesTab() { return state.activeTab === 'challenges'; },
+		get isBattlesTab() { return state.activeTab === 'battles'; },
+		get isTournamentsTab() { return state.activeTab === 'tournaments'; },
 		get hasMoreMedia() { return state.media.page < state.media.totalPages; },
 		get hasMoreFavorites() { return state.favorites.page < state.favorites.totalPages; },
 		get hasNotifications() { return state.notifications.items.length > 0; },
