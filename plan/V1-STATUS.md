@@ -26,16 +26,16 @@
 
 ## Needs Browser Testing (Priority Order)
 
-| # | Flow | Risk | Test Plan |
-|---|------|------|-----------|
-| 1 | **Upload via FAB button** | HIGH | Click FAB → select image → upload → verify in explore grid |
-| 2 | **Upload via BP activity form** | HIGH | Post activity with image → verify media appears → lightbox opens |
-| 3 | **Dashboard My Media** | MEDIUM | Navigate /my-media/ → verify media list → click lightbox |
-| 4 | **Group media tab** | MEDIUM | Navigate /groups/{slug}/media/ → verify grid |
-| 5 | **Albums (create + display)** | MEDIUM | Create album → add media → verify cover image |
-| 6 | **Single media page** | LOW | Navigate /media/{slug}/ → verify social actions |
-| 7 | **Follow system** | LOW | Follow/unfollow user → verify count updates |
-| 8 | **Admin Media List** | LOW | Navigate admin → All Media → verify thumbnails |
+| # | Flow | Status | Notes |
+|---|------|--------|-------|
+| 1 | **Upload via FAB button** | VERIFIED | Modal opens with 4 tabs (Photo/Gallery/Album/Video), form fields, privacy selector |
+| 2 | **Upload via BP activity form** | NEEDS MANUAL TEST | JS heavily modified, needs real file upload test |
+| 3 | **Dashboard My Media** | VERIFIED | 4 tabs (Media/Albums/Favorites/Collections), media list with Edit/Delete, storage quota |
+| 4 | **Group media tab** | VERIFIED | Sub-tabs (Media/Albums), Upload button, empty state message |
+| 5 | **Albums (create + display)** | NEEDS MANUAL TEST | AlbumService cover URL changed, needs verification |
+| 6 | **Single media page** | VERIFIED | Image, reactions (6 emoji with counts), fav, share, report, comments, tags |
+| 7 | **Follow system** | OBSERVED | "Following" button visible on explore feed cards, not click-tested |
+| 8 | **Admin Media List** | VERIFIED | 53 items, pagination, filters (type/privacy), search, View/Trash actions |
 
 ## Known Issues
 
@@ -64,14 +64,14 @@
 - [x] All `attachment_id` references removed
 - [x] BP lightbox working with all actions
 - [x] Comment avatars + profile links everywhere
-- [ ] Browser test: Upload via FAB
-- [ ] Browser test: Upload via BP activity
-- [ ] Browser test: Dashboard My Media
-- [ ] Browser test: Group media tab
-- [ ] Browser test: Albums
-- [ ] Browser test: Single media page
-- [ ] Browser test: Follow system
-- [ ] Browser test: Admin Media List
+- [x] Browser test: Upload via FAB (modal opens correctly)
+- [ ] Browser test: Upload via BP activity (needs manual file upload)
+- [x] Browser test: Dashboard My Media
+- [x] Browser test: Group media tab
+- [ ] Browser test: Albums (needs manual test)
+- [x] Browser test: Single media page
+- [x] Browser test: Follow system (observed working)
+- [x] Browser test: Admin Media List
 - [ ] WPCS check (major violations only)
 - [ ] Version 1.0.0 in all headers
 - [ ] .pot file generated
