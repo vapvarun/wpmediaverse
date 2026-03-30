@@ -381,6 +381,8 @@ $mvs_archive_url = home_url( '/media/' );
 	$has_items = ! empty( $albums ) || ! empty( $media_items );
 	?>
 
+	<?php do_action( 'mvs_before_explore_grid' ); ?>
+
 	<?php if ( $has_items ) : ?>
 		<div class="mvs-media-grid mvs-cols-3 mvs-feed">
 			<?php
