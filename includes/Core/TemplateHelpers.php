@@ -131,6 +131,23 @@ class TemplateHelpers {
 	}
 
 	/**
+	 * Get the display name for a user with optional badge/decoration.
+	 *
+	 * @param int $user_id User ID.
+	 * @return string Display name (may contain HTML from filters).
+	 */
+	public static function get_display_name( int $user_id ): string {
+		$name = get_the_author_meta( 'display_name', $user_id );
+		/**
+		 * Filter the user display name for media contexts.
+		 *
+		 * @param string $name    Display name.
+		 * @param int    $user_id User ID.
+		 */
+		return (string) apply_filters( 'mvs_user_display_name', $name, $user_id );
+	}
+
+	/**
 	 * Render a grid item's thumbnail or type-appropriate placeholder.
 	 *
 	 * @param int    $media_id Media ID (mvs_media_index.media_id).
@@ -271,7 +288,7 @@ class TemplateHelpers {
 		if ( $show_author && $author_id ) {
 			echo '<div class="mvs-grid-item-info">';
 			echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
-			echo '<span class="mvs-grid-item-author">' . esc_html( get_the_author_meta( 'display_name', $author_id ) ) . '</span>';
+			echo '<span class="mvs-grid-item-author">' . wp_kses( self::get_display_name( $author_id ), array( 'span' => array( 'class' => true, 'title' => true ) ) ) . '</span>';
 			echo '</div>';
 		}
 
