@@ -74,6 +74,8 @@ async function fetchComments( ctx ) {
 					id: c.id,
 					author: c.author,
 					author_name: c.author_name || 'Anonymous',
+					author_avatar: c.author_avatar || '',
+					author_url: c.author_url || '',
 					date: new Date( c.date ).toLocaleDateString(),
 					content: c.content,
 					canEdit: isOwnComment && commentAge < editWindow,
