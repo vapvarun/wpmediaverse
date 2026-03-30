@@ -1203,8 +1203,9 @@ mvs_seed_log( "  Follows: {$follow_count}" );
 // ---------------------------------------------------------------------------
 
 $competition_counts = array(
-	'challenges' => 0,
-	'battles'    => 0,
+	'challenges'  => 0,
+	'battles'     => 0,
+	'tournaments' => 0,
 );
 
 $created_media_ids = array_map( function( $m ) {
@@ -1288,7 +1289,74 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 		}
 	}
 
+	// --- Tournament: Open for registration ---
+	if ( class_exists( '\WPMediaVersePro\Tournaments\TournamentService' ) && count( $test_users ) >= 4 ) {
+		$tournament_service = new \WPMediaVersePro\Tournaments\TournamentService();
+		$t1 = $tournament_service->create(
+			array(
+				'title'              => 'Spring Photography Championship',
+				'description'        => 'A 16-bracket single-elimination tournament. Upload your best photo each round and let the community vote!',
+				'theme'              => 'Best Shot',
+				'bracket_size'       => 16,
+				'registration_start' => gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ),
+				'registration_end'   => gmdate( 'Y-m-d H:i:s', time() + ( 7 * DAY_IN_SECONDS ) ),
+				'round_duration_hours' => 48,
+			),
+			1
+		);
+		if ( ! is_wp_error( $t1 ) ) {
+			++$competition_counts['tournaments'];
+			mvs_seed_log( '  Tournament: Spring Photography Championship (registration open)' );
+			// Register first 4 demo users.
+			foreach ( array_slice( $test_users, 0, 4 ) as $uid ) {
+				$tournament_service->register_participant( $t1, $uid );
+			}
+			mvs_seed_log( '  Registered 4 participants.' );
+		}
+	}
+
+	// --- Seed autopilot theme pool ---
+	if ( class_exists( '\WPMediaVersePro\Challenges\AutopilotService' ) ) {
+		$autopilot = new \WPMediaVersePro\Challenges\AutopilotService( $challenge_service );
+		$pool = $autopilot->get_pool();
+		if ( empty( $pool ) ) {
+			$autopilot->seed_default_pool();
+			mvs_seed_log( '  Seeded 52 autopilot themes.' );
+		}
+	}
+
 	mvs_seed_log( '  Competition demo data created.' );
+}
+
+// ---------------------------------------------------------------------------
+// Streak Demo Data (requires Pro plugin).
+// ---------------------------------------------------------------------------
+
+if ( class_exists( '\WPMediaVersePro\Streaks\StreakService' ) && ! empty( $demo_user_ids ) ) {
+	mvs_seed_log( '' );
+	mvs_seed_log( 'Setting up demo streaks...' );
+
+	// Give each demo user a varied streak so the badge shows on profiles.
+	$streak_data = array(
+		0 => array( 'current' => 23, 'longest' => 45, 'freezes' => 2 ),
+		1 => array( 'current' => 7,  'longest' => 14, 'freezes' => 1 ),
+		2 => array( 'current' => 42, 'longest' => 42, 'freezes' => 0 ),
+		3 => array( 'current' => 3,  'longest' => 30, 'freezes' => 2 ),
+		4 => array( 'current' => 100, 'longest' => 100, 'freezes' => 1 ),
+	);
+
+	$today = wp_date( 'Y-m-d' );
+	foreach ( $demo_user_ids as $i => $uid ) {
+		if ( ! isset( $streak_data[ $i ] ) ) {
+			continue;
+		}
+		$s = $streak_data[ $i ];
+		update_user_meta( $uid, '_mvs_current_streak', $s['current'] );
+		update_user_meta( $uid, '_mvs_longest_streak', $s['longest'] );
+		update_user_meta( $uid, '_mvs_last_upload_date', $today );
+		update_user_meta( $uid, '_mvs_streak_freezes', $s['freezes'] );
+	}
+	mvs_seed_log( '  Streaks set for ' . min( count( $demo_user_ids ), 5 ) . ' demo users.' );
 }
 
 // ---------------------------------------------------------------------------
@@ -1309,9 +1377,10 @@ mvs_seed_log( '  Comments: ' . $comment_count );
 mvs_seed_log( '  Favorites: ' . $favorite_count );
 mvs_seed_log( '  Reactions: ' . $reaction_count );
 mvs_seed_log( '  Follows: ' . $follow_count );
-if ( $competition_counts['challenges'] > 0 || $competition_counts['battles'] > 0 ) {
+if ( $competition_counts['challenges'] > 0 || $competition_counts['battles'] > 0 || $competition_counts['tournaments'] > 0 ) {
 	mvs_seed_log( '  Challenges: ' . $competition_counts['challenges'] );
 	mvs_seed_log( '  Battles: ' . $competition_counts['battles'] );
+	mvs_seed_log( '  Tournaments: ' . $competition_counts['tournaments'] );
 }
 
 // AJAX response.
@@ -1326,11 +1395,12 @@ if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 		$favorite_count,
 		$follow_count
 	);
-	if ( $competition_counts['challenges'] > 0 || $competition_counts['battles'] > 0 ) {
+	if ( $competition_counts['challenges'] > 0 || $competition_counts['battles'] > 0 || $competition_counts['tournaments'] > 0 ) {
 		$ajax_msg .= sprintf(
-			' Plus %d challenges and %d battles.',
+			' Plus %d challenges, %d battles, %d tournaments.',
 			$competition_counts['challenges'],
-			$competition_counts['battles']
+			$competition_counts['battles'],
+			$competition_counts['tournaments']
 		);
 	}
 	wp_send_json_success( array( 'message' => $ajax_msg ) );
