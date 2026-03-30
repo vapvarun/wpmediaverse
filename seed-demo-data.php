@@ -857,12 +857,14 @@ foreach ( $images as $idx => $img ) {
 		}
 	}
 
-	// Store tags and category as meta (no CPT taxonomy support).
+	// Store tags as meta AND assign to mvs_tag taxonomy (for tag cloud + filtering).
 	if ( ! empty( $img['tags'] ) ) {
 		\WPMediaVerse\Services\MediaMeta::set( $media_id, 'tags', $img['tags'] );
+		wp_set_object_terms( $media_id, $img['tags'], 'mvs_tag', true );
 	}
 	if ( ! empty( $img['category'] ) ) {
 		\WPMediaVerse\Services\MediaMeta::set( $media_id, 'category', $img['category'] );
+		wp_set_object_terms( $media_id, $img['category'], 'mvs_category', true );
 	}
 
 	// Create stats row with randomized views.
