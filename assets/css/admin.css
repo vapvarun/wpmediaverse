@@ -1425,6 +1425,18 @@ a.mvs-stat-card:focus {
    Empty State (admin pages)
    ========================================================================== */
 
+/* Sidebar widget stack — consistent gap between stacked widgets */
+.mvs-sidebar-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Empty state success icon */
+.mvs-empty-state-admin__success {
+	color: #00a32a !important;
+}
+
 /* Permissions capability matrix */
 .mvs-caps-table__check {
 	text-align: center;
