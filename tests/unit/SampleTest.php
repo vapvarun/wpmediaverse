@@ -16,7 +16,7 @@ class SampleTest extends WP_UnitTestCase {
 		$this->assertTrue( defined( 'MVS_PLUGIN_DIR' ), 'MVS_PLUGIN_DIR should be defined.' );
 	}
 
-	public function test_post_type_registered(): void {
-		$this->assertTrue( post_type_exists( 'mvs_media' ), 'mvs_media post type should be registered.' );
+	public function test_album_post_type_registered(): void {
+		$this->assertTrue( post_type_exists( 'mvs_album' ), 'mvs_album post type should be registered.' );
 	}
 }

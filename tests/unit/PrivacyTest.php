@@ -2,84 +2,98 @@
 /**
  * Test privacy levels and access control.
  *
+ * Uses custom table architecture (MediaMeta) instead of post meta.
+ *
  * @package WPMediaVerse
  */
 
 namespace WPMediaVerse\Tests\Unit;
 
 use WP_UnitTestCase;
+use WPMediaVerse\Services\MediaMeta;
 
 class PrivacyTest extends WP_UnitTestCase {
 
 	private int $author_id;
-	private int $other_id;
 
 	public function set_up(): void {
 		parent::set_up();
 		$this->author_id = self::factory()->user->create( array( 'role' => 'author' ) );
-		$this->other_id  = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 	}
 
-	public function test_public_privacy_meta(): void {
-		wp_set_current_user( $this->author_id );
-
-		$post_id = wp_insert_post(
+	public function test_public_privacy(): void {
+		$media_id = MediaMeta::insert(
 			array(
-				'post_type'   => 'mvs_media',
-				'post_title'  => 'Public Photo',
-				'post_status' => 'publish',
+				'title'       => 'Public Photo',
 				'post_author' => $this->author_id,
+				'privacy'     => 'public',
 			)
 		);
-		update_post_meta( $post_id, '_mvs_privacy', 'public' );
 
-		$this->assertSame( 'public', get_post_meta( $post_id, '_mvs_privacy', true ) );
+		$this->assertSame( 'public', MediaMeta::get( $media_id, 'privacy' ) );
 	}
 
-	public function test_private_privacy_meta(): void {
-		wp_set_current_user( $this->author_id );
-
-		$post_id = wp_insert_post(
+	public function test_private_privacy(): void {
+		$media_id = MediaMeta::insert(
 			array(
-				'post_type'   => 'mvs_media',
-				'post_title'  => 'Private Photo',
-				'post_status' => 'publish',
+				'title'       => 'Private Photo',
 				'post_author' => $this->author_id,
+				'privacy'     => 'private',
 			)
 		);
-		update_post_meta( $post_id, '_mvs_privacy', 'private' );
 
-		$this->assertSame( 'private', get_post_meta( $post_id, '_mvs_privacy', true ) );
+		$this->assertSame( 'private', MediaMeta::get( $media_id, 'privacy' ) );
 	}
 
-	public function test_loggedin_privacy_meta(): void {
-		$post_id = wp_insert_post(
+	public function test_loggedin_privacy(): void {
+		$media_id = MediaMeta::insert(
 			array(
-				'post_type'   => 'mvs_media',
-				'post_title'  => 'Members Only',
-				'post_status' => 'publish',
+				'title'       => 'Members Only',
 				'post_author' => $this->author_id,
+				'privacy'     => 'loggedin',
 			)
 		);
-		update_post_meta( $post_id, '_mvs_privacy', 'loggedin' );
 
-		$this->assertSame( 'loggedin', get_post_meta( $post_id, '_mvs_privacy', true ) );
+		$this->assertSame( 'loggedin', MediaMeta::get( $media_id, 'privacy' ) );
 	}
 
 	public function test_valid_privacy_levels(): void {
 		$valid = array( 'public', 'loggedin', 'friends', 'group', 'private', 'custom' );
 
 		foreach ( $valid as $level ) {
-			$post_id = wp_insert_post(
+			$media_id = MediaMeta::insert(
 				array(
-					'post_type'   => 'mvs_media',
-					'post_title'  => "Privacy: {$level}",
-					'post_status' => 'publish',
+					'title'       => "Privacy: {$level}",
 					'post_author' => $this->author_id,
+					'privacy'     => $level,
 				)
 			);
-			update_post_meta( $post_id, '_mvs_privacy', $level );
-			$this->assertSame( $level, get_post_meta( $post_id, '_mvs_privacy', true ), "Privacy level '{$level}' should persist." );
+			$this->assertSame( $level, MediaMeta::get( $media_id, 'privacy' ), "Privacy level '{$level}' should persist." );
 		}
+	}
+
+	public function test_default_privacy_is_public(): void {
+		$media_id = MediaMeta::insert(
+			array(
+				'title'       => 'Default Privacy',
+				'post_author' => $this->author_id,
+			)
+		);
+
+		$this->assertSame( 'public', MediaMeta::get( $media_id, 'privacy' ) );
+	}
+
+	public function test_update_privacy(): void {
+		$media_id = MediaMeta::insert(
+			array(
+				'title'       => 'Change Privacy',
+				'post_author' => $this->author_id,
+				'privacy'     => 'public',
+			)
+		);
+
+		MediaMeta::set( $media_id, 'privacy', 'private' );
+
+		$this->assertSame( 'private', MediaMeta::get( $media_id, 'privacy' ) );
 	}
 }

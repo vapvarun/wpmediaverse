@@ -2,6 +2,9 @@
 /**
  * Test custom post types and taxonomies registration.
  *
+ * Note: mvs_media is NO LONGER a CPT — media lives in mvs_media_index custom table.
+ * Albums and Collections remain as CPTs.
+ *
  * @package WPMediaVerse
  */
 
@@ -10,10 +13,6 @@ namespace WPMediaVerse\Tests\Unit;
 use WP_UnitTestCase;
 
 class PostTypesTest extends WP_UnitTestCase {
-
-	public function test_mvs_media_post_type_registered(): void {
-		$this->assertTrue( post_type_exists( 'mvs_media' ) );
-	}
 
 	public function test_mvs_album_post_type_registered(): void {
 		$this->assertTrue( post_type_exists( 'mvs_album' ) );
@@ -31,13 +30,7 @@ class PostTypesTest extends WP_UnitTestCase {
 		$this->assertTrue( taxonomy_exists( 'mvs_category' ) );
 	}
 
-	public function test_mvs_media_supports_rest(): void {
-		$pt = get_post_type_object( 'mvs_media' );
-		$this->assertTrue( $pt->show_in_rest );
-	}
-
-	public function test_mvs_media_has_correct_capability_type(): void {
-		$pt = get_post_type_object( 'mvs_media' );
-		$this->assertSame( 'mvs_media', $pt->capability_type );
+	public function test_mvs_media_is_not_a_cpt(): void {
+		$this->assertFalse( post_type_exists( 'mvs_media' ), 'mvs_media should NOT be a CPT — media lives in custom tables.' );
 	}
 }
