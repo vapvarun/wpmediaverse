@@ -116,6 +116,10 @@ a.mvs-stat-card:focus {
 	grid-template-columns: 1fr 2fr;
 }
 
+.mvs-admin-columns--3-2 {
+	grid-template-columns: 3fr 2fr;
+}
+
 .mvs-admin-columns--3 {
 	grid-template-columns: 1fr 1fr 1fr;
 }
@@ -130,6 +134,7 @@ a.mvs-stat-card:focus {
 	.mvs-admin-columns--2,
 	.mvs-admin-columns--2-1,
 	.mvs-admin-columns--1-2,
+	.mvs-admin-columns--3-2,
 	.mvs-admin-columns--3 {
 		grid-template-columns: 1fr;
 	}
@@ -1425,7 +1430,7 @@ a.mvs-stat-card:focus {
    Empty State (admin pages)
    ========================================================================== */
 
-/* Sidebar widget stack — consistent gap between stacked widgets */
+/* Sidebar widget stack */
 .mvs-sidebar-stack {
 	display: flex;
 	flex-direction: column;
