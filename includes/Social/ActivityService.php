@@ -60,7 +60,8 @@ class ActivityService {
 	 * @return int|false Activity ID or false.
 	 */
 	public function record( int $user_id, string $type, int $media_id = 0, int $album_id = 0, string $content = '' ) {
-		if ( ! in_array( $type, self::TYPES, true ) ) {
+		$allowed_types = apply_filters( 'mvs_activity_types', self::TYPES );
+		if ( ! in_array( $type, $allowed_types, true ) ) {
 			return false;
 		}
 
@@ -175,7 +176,7 @@ class ActivityService {
 	 * @param array $file_data File data.
 	 */
 	public function on_upload( int $media_id, array $file_data ): void {
-		$author = (int) get_post_field( 'post_author', $media_id );
+		$author = MediaMeta::get_author( $media_id );
 		if ( $author ) {
 			$this->record( $author, 'media_upload', $media_id );
 		}
