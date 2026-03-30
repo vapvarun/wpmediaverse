@@ -84,7 +84,7 @@ class MediaListPage {
 			$total = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		}
 
-		$total_pages = ceil( $total / $per_page );
+		$total_pages = (int) ceil( $total / $per_page );
 
 		// Fetch rows.
 		$orderby    = 'created_at';

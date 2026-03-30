@@ -6,6 +6,16 @@ parameters:
 			path: includes/Admin/LogViewerPage.php
 
 		-
+			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
+			count: 1
+			path: includes/Admin/MediaListPage.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int given\\.$#"
+			count: 1
+			path: includes/Admin/MediaListPage.php
+
+		-
 			message: "#^Offset 'flagged'\\|'pending'\\|'rejected' on array\\{pending\\: int, flagged\\: int, rejected\\: int\\} in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: includes/Admin/ModerationQueue.php
@@ -22,7 +32,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
+			count: 2
 			path: includes/Admin/OverviewPage.php
 
 		-
@@ -36,9 +46,19 @@ parameters:
 			path: includes/Admin/OverviewPage.php
 
 		-
-			message: "#^Parameter \\#2 \\$user_id of function get_the_author_meta expects int\\|false, string given\\.$#"
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
 			count: 1
-			path: includes/Admin/OverviewPage.php
+			path: includes/Admin/SettingsPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\SettingsPage\\:\\:get_active_tab\\(\\) is unused\\.$#"
+			count: 1
+			path: includes/Admin/SettingsPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\SettingsPage\\:\\:render_settings_panels\\(\\) is unused\\.$#"
+			count: 1
+			path: includes/Admin/SettingsPage.php
 
 		-
 			message: "#^Parameter \\#1 \\$args of function wp_dropdown_pages expects array\\{depth\\?\\: int, child_of\\?\\: int, selected\\?\\: int\\|string, echo\\?\\: bool\\|int, name\\?\\: string, id\\?\\: string, class\\?\\: string, show_option_none\\?\\: string, \\.\\.\\.\\}, array\\{name\\: mixed, selected\\: int, show_option_none\\: string, option_none_value\\: 0\\} given\\.$#"
@@ -137,12 +157,12 @@ parameters:
 
 		-
 			message: "#^Constant DB_NAME not found\\.$#"
-			count: 4
+			count: 5
 			path: includes/Core/Migrator.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 3
+			count: 4
 			path: includes/Core/Plugin.php
 
 		-
@@ -151,7 +171,12 @@ parameters:
 			path: includes/Core/Plugin.php
 
 		-
-			message: "#^Parameter \\#2 \\$user_id of function get_the_author_meta expects int\\|false, string given\\.$#"
+			message: "#^Parameter \\#3 \\$deps of function wp_enqueue_script_module expects array\\<int\\|string, array\\{id\\: string, import\\?\\: string\\}\\>, array\\{'@wordpress…'\\} given\\.$#"
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<2, max\\> given\\.$#"
 			count: 1
 			path: includes/Core/TemplateHelpers.php
 
@@ -191,18 +216,8 @@ parameters:
 			path: includes/Integrations/BuddyPressIntegration.php
 
 		-
-			message: "#^Parameter \\#1 \\$args of function get_posts expects array\\{numberposts\\?\\: int, category\\?\\: int\\|string, include\\?\\: array\\<int\\>, exclude\\?\\: array\\<int\\>, suppress_filters\\?\\: bool, attachment_id\\?\\: int, author\\?\\: int\\|string, author_name\\?\\: string, \\.\\.\\.\\}\\|null, array\\{post_type\\: 'mvs_media', meta_key\\: '_mvs_attachment_id', meta_value\\: int\\<min, \\-1\\>\\|int\\<1, max\\>, fields\\: 'ids', posts_per_page\\: 1\\} given\\.$#"
-			count: 1
-			path: includes/Integrations/BuddyPressIntegration.php
-
-		-
-			message: "#^Parameter \\#1 \\$args of function get_posts expects array\\{numberposts\\?\\: int, category\\?\\: int\\|string, include\\?\\: array\\<int\\>, exclude\\?\\: array\\<int\\>, suppress_filters\\?\\: bool, attachment_id\\?\\: int, author\\?\\: int\\|string, author_name\\?\\: string, \\.\\.\\.\\}\\|null, array\\{post_type\\: 'mvs_media', meta_key\\: string, meta_value\\: int, fields\\: 'ids', posts_per_page\\: 1\\} given\\.$#"
-			count: 2
-			path: includes/Integrations/BuddyPressIntegration.php
-
-		-
 			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
-			count: 4
+			count: 2
 			path: includes/Integrations/BuddyPressIntegration.php
 
 		-
@@ -271,24 +286,19 @@ parameters:
 			path: includes/REST/Controller/MediaController.php
 
 		-
-			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:prepare_item_for_response\\(\\) should return array but returns null\\.$#"
-			count: 1
-			path: includes/REST/Controller/MediaController.php
-
-		-
-			message: "#^Negated boolean expression is always false\\.$#"
-			count: 1
-			path: includes/REST/Controller/MediaController.php
-
-		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
 			count: 2
 			path: includes/REST/Controller/MediaController.php
 
 		-
-			message: "#^Return type \\(array\\) of method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:prepare_item_for_response\\(\\) should be compatible with return type \\(WP_Error\\|WP_REST_Response\\) of method WP_REST_Controller\\:\\:prepare_item_for_response\\(\\)$#"
+			message: "#^Return type \\(array\\|null\\) of method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:prepare_item_for_response\\(\\) should be compatible with return type \\(WP_Error\\|WP_REST_Response\\) of method WP_REST_Controller\\:\\:prepare_item_for_response\\(\\)$#"
 			count: 1
 			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Cannot cast WP_Post to int\\.$#"
+			count: 1
+			path: includes/REST/Controller/ModerationController.php
 
 		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
@@ -341,11 +351,6 @@ parameters:
 			path: includes/Services/ModerationService.php
 
 		-
-			message: "#^Parameter \\#1 \\$owner_id of method WPMediaVerse\\\\Services\\\\PrivacyService\\:\\:check_friends\\(\\) expects int, string given\\.$#"
-			count: 1
-			path: includes/Services/PrivacyService.php
-
-		-
 			message: "#^Call to function is_wp_error\\(\\) with int\\<0, max\\> will always evaluate to false\\.$#"
 			count: 1
 			path: includes/Services/ProfileService.php
@@ -366,13 +371,18 @@ parameters:
 			path: includes/Services/UploadService.php
 
 		-
+			message: "#^Constant WPINC not found\\.$#"
+			count: 3
+			path: includes/Services/UploadService.php
+
+		-
 			message: "#^is_wp_error\\(array\\) will always evaluate to false\\.$#"
 			count: 1
 			path: includes/Services/UploadService.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 9
+			count: 7
 			path: includes/Shortcodes/Shortcodes.php
 
 		-

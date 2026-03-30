@@ -204,12 +204,9 @@ class UserController extends WP_REST_Controller {
 
 		$items = array();
 		foreach ( $int_ids as $mid ) {
-			$post = get_post( $mid );
-			if ( $post ) {
-				$item = $media_ctrl->prepare_item_for_response( $post, $request );
-				if ( $item ) {
-					$items[] = $item;
-				}
+			$item = $media_ctrl->prepare_item_for_response( $mid, $request );
+			if ( $item ) {
+				$items[] = $item;
 			}
 		}
 
