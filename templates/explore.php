@@ -84,7 +84,7 @@ $mvs_archive_url = home_url( '/media/' );
 	if ( $mvs_profile ) :
 		// Count media from the index table.
 		global $wpdb;
-		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$index_table            = $wpdb->prefix . 'mvs_media_index';
 		$mvs_profile_post_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$index_table} WHERE post_author = %d AND status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -279,8 +279,8 @@ $mvs_archive_url = home_url( '/media/' );
 	// Search filter.
 	$mvs_search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 	if ( $mvs_search ) {
-		$like    = '%' . $wpdb->esc_like( $mvs_search ) . '%';
-		$where  .= ' AND (m.title LIKE %s OR m.description LIKE %s)';
+		$like     = '%' . $wpdb->esc_like( $mvs_search ) . '%';
+		$where   .= ' AND (m.title LIKE %s OR m.description LIKE %s)';
 		$params[] = $like;
 		$params[] = $like;
 	}
@@ -372,9 +372,9 @@ $mvs_archive_url = home_url( '/media/' );
 	// Fetch media items.
 	$media_items = array();
 	if ( $media_limit > 0 ) {
-		$media_sql = "SELECT m.* FROM {$index_table} m {$mvs_tag_join} {$mvs_cat_join} {$where} ORDER BY m.created_at DESC LIMIT %d OFFSET %d";
-		$all_params   = array_merge( $params, array( $media_limit, $media_offset ) );
-		$media_items  = $wpdb->get_results( $wpdb->prepare( $media_sql, ...$all_params ), ARRAY_A );
+		$media_sql   = "SELECT m.* FROM {$index_table} m {$mvs_tag_join} {$mvs_cat_join} {$where} ORDER BY m.created_at DESC LIMIT %d OFFSET %d";
+		$all_params  = array_merge( $params, array( $media_limit, $media_offset ) );
+		$media_items = $wpdb->get_results( $wpdb->prepare( $media_sql, ...$all_params ), ARRAY_A );
 	}
 	// phpcs:enable
 
@@ -426,8 +426,8 @@ $mvs_archive_url = home_url( '/media/' );
 			$stats_data          = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( array_map( 'intval', $media_ids_for_stats ) );
 
 			foreach ( $media_items as $item ) :
-				$item_id   = (int) $item['media_id'];
-				$my_stats  = $stats_data[ $item_id ] ?? array();
+				$item_id  = (int) $item['media_id'];
+				$my_stats = $stats_data[ $item_id ] ?? array();
 				\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
 					$item_id,
 					$my_stats,

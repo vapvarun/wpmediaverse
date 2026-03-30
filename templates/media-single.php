@@ -18,20 +18,20 @@ if ( ! $mvs_media || empty( $mvs_media['media_id'] ) ) {
 	return;
 }
 
-$mvs_media_id  = (int) $mvs_media['media_id'];
-$mvs_author_id = (int) $mvs_media['post_author'];
-$mvs_title     = $mvs_media['title'] ?? '';
-$mvs_desc      = $mvs_media['description'] ?? '';
-$mvs_status    = $mvs_media['status'] ?? 'publish';
-$mvs_privacy   = $mvs_media['privacy'] ?? 'public';
-$mvs_file_url  = $mvs_media['file_url'] ?? '';
-$mvs_file_type = $mvs_media['file_type'] ?? '';
+$mvs_media_id   = (int) $mvs_media['media_id'];
+$mvs_author_id  = (int) $mvs_media['post_author'];
+$mvs_title      = $mvs_media['title'] ?? '';
+$mvs_desc       = $mvs_media['description'] ?? '';
+$mvs_status     = $mvs_media['status'] ?? 'publish';
+$mvs_privacy    = $mvs_media['privacy'] ?? 'public';
+$mvs_file_url   = $mvs_media['file_url'] ?? '';
+$mvs_file_type  = $mvs_media['file_type'] ?? '';
 $mvs_media_type = $mvs_media['media_type'] ?? '';
-$mvs_width     = $mvs_media['width'] ?? '';
-$mvs_height    = $mvs_media['height'] ?? '';
-$mvs_duration  = $mvs_media['duration'] ?? '';
-$mvs_attach_id = (int) ( $mvs_media['attachment_id'] ?? 0 );
-$mvs_created   = $mvs_media['created_at'] ?? '';
+$mvs_width      = $mvs_media['width'] ?? '';
+$mvs_height     = $mvs_media['height'] ?? '';
+$mvs_duration   = $mvs_media['duration'] ?? '';
+$mvs_attach_id  = (int) ( $mvs_media['attachment_id'] ?? 0 );
+$mvs_created    = $mvs_media['created_at'] ?? '';
 
 // Privacy gate: block access to non-public media for unauthorized viewers.
 if ( 'public' !== $mvs_privacy ) {
@@ -90,8 +90,8 @@ if ( $mvs_duration ) {
 }
 
 // Author info.
-$mvs_author      = get_userdata( $mvs_author_id );
-$mvs_author_name = $mvs_author ? $mvs_author->display_name : __( 'Unknown', 'wpmediaverse' );
+$mvs_author       = get_userdata( $mvs_author_id );
+$mvs_author_name  = $mvs_author ? $mvs_author->display_name : __( 'Unknown', 'wpmediaverse' );
 $mvs_author_login = $mvs_author ? $mvs_author->user_login : '';
 
 // Format date.

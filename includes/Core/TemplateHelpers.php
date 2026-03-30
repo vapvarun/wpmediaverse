@@ -288,7 +288,15 @@ class TemplateHelpers {
 		if ( $show_author && $author_id ) {
 			echo '<div class="mvs-grid-item-info">';
 			echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
-			echo '<span class="mvs-grid-item-author">' . wp_kses( self::get_display_name( $author_id ), array( 'span' => array( 'class' => true, 'title' => true ) ) ) . '</span>';
+			echo '<span class="mvs-grid-item-author">' . wp_kses(
+				self::get_display_name( $author_id ),
+				array(
+					'span' => array(
+						'class' => true,
+						'title' => true,
+					),
+				)
+			) . '</span>';
 			echo '</div>';
 		}
 

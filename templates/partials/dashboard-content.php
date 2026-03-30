@@ -69,7 +69,12 @@ wp_enqueue_script_module(
 wp_enqueue_script_module(
 	'mvs-dashboard-view',
 	( defined( 'MVS_PLUGIN_URL' ) ? MVS_PLUGIN_URL : '' ) . 'src/blocks/dashboard-view/view.js',
-	array( array( 'id' => '@wordpress/interactivity', 'import' => 'static' ) ),
+	array(
+		array(
+			'id'     => '@wordpress/interactivity',
+			'import' => 'static',
+		),
+	),
 	defined( 'MVS_VERSION' ) ? MVS_VERSION : '1.0.0'
 );
 
