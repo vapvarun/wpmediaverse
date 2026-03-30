@@ -1233,6 +1233,10 @@ a.mvs-stat-card:focus {
 	line-height: 1.5;
 }
 
+.mvs-settings-card__body {
+	padding: 16px 20px;
+}
+
 /* form-table inside a card */
 .mvs-settings-card .form-table {
 	margin: 0;
