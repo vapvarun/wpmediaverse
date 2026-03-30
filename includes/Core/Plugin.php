@@ -783,11 +783,11 @@ class Plugin {
 		}
 
 		$order_map = array(
-			self::ADMIN_SLUG  => 1,
-			'mvs-media'       => 5,
-			'mvs-settings'    => 50,
-			'mvs-moderation'  => 51,
-			'mvs-stats'       => 52,
+			self::ADMIN_SLUG => 1,
+			'mvs-media'      => 5,
+			'mvs-settings'   => 50,
+			'mvs-moderation' => 51,
+			'mvs-stats'      => 52,
 		);
 
 		usort(

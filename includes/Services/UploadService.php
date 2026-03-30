@@ -513,9 +513,21 @@ class UploadService {
 		}
 
 		$sizes = array(
-			'large'  => array( 'width' => 1024, 'height' => 1024, 'crop' => false ),
-			'medium' => array( 'width' => 300,  'height' => 300,  'crop' => false ),
-			'thumb'  => array( 'width' => 150,  'height' => 150,  'crop' => true ),
+			'large'  => array(
+				'width'  => 1024,
+				'height' => 1024,
+				'crop'   => false,
+			),
+			'medium' => array(
+				'width'  => 300,
+				'height' => 300,
+				'crop'   => false,
+			),
+			'thumb'  => array(
+				'width'  => 150,
+				'height' => 150,
+				'crop'   => true,
+			),
 		);
 
 		$generated = $editor->multi_resize( $sizes );

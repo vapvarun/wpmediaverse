@@ -36,9 +36,9 @@ class MediaListPage {
 		$table = $wpdb->prefix . 'mvs_media_index';
 
 		// Filters.
-		$search     = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
-		$type_filter   = isset( $_GET['media_type'] ) ? sanitize_text_field( wp_unslash( $_GET['media_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
-		$status_filter = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		$search         = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		$type_filter    = isset( $_GET['media_type'] ) ? sanitize_text_field( wp_unslash( $_GET['media_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		$status_filter  = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 		$privacy_filter = isset( $_GET['privacy'] ) ? sanitize_text_field( wp_unslash( $_GET['privacy'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 
 		// Pagination.
@@ -87,11 +87,11 @@ class MediaListPage {
 		$total_pages = ceil( $total / $per_page );
 
 		// Fetch rows.
-		$orderby = 'created_at';
-		$order   = 'DESC';
-		$query   = "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$orderby    = 'created_at';
+		$order      = 'DESC';
+		$query      = "SELECT * FROM {$table} WHERE {$where_sql} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$all_params = array_merge( $params, array( $per_page, $offset ) );
-		$items = $wpdb->get_results( $wpdb->prepare( $query, ...$all_params ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$items      = $wpdb->get_results( $wpdb->prepare( $query, ...$all_params ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 
 		// Status counts for tabs.
 		$status_counts = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
@@ -198,11 +198,11 @@ class MediaListPage {
 		}
 
 		$statuses = array(
-			''          => array( __( 'All', 'wpmediaverse' ), $all_count ),
-			'publish'   => array( __( 'Published', 'wpmediaverse' ), (int) ( $status_counts['publish']->cnt ?? 0 ) ),
-			'draft'     => array( __( 'Draft', 'wpmediaverse' ), (int) ( $status_counts['draft']->cnt ?? 0 ) ),
-			'pending'   => array( __( 'Pending', 'wpmediaverse' ), (int) ( $status_counts['pending']->cnt ?? 0 ) ),
-			'trash'     => array( __( 'Trash', 'wpmediaverse' ), (int) ( $status_counts['trash']->cnt ?? 0 ) ),
+			''        => array( __( 'All', 'wpmediaverse' ), $all_count ),
+			'publish' => array( __( 'Published', 'wpmediaverse' ), (int) ( $status_counts['publish']->cnt ?? 0 ) ),
+			'draft'   => array( __( 'Draft', 'wpmediaverse' ), (int) ( $status_counts['draft']->cnt ?? 0 ) ),
+			'pending' => array( __( 'Pending', 'wpmediaverse' ), (int) ( $status_counts['pending']->cnt ?? 0 ) ),
+			'trash'   => array( __( 'Trash', 'wpmediaverse' ), (int) ( $status_counts['trash']->cnt ?? 0 ) ),
 		);
 		?>
 		<ul class="subsubsub">
@@ -295,10 +295,55 @@ class MediaListPage {
 				<div class="row-actions">
 					<span class="view"><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php esc_html_e( 'View', 'wpmediaverse' ); ?></a></span>
 					<?php if ( 'trash' !== $status ) : ?>
-						| <span class="trash"><a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'trash', 'media_id' => $media_id ), admin_url( 'admin.php?page=mvs-media' ) ), 'mvs_trash_media_' . $media_id ) ); ?>" class="submitdelete"><?php esc_html_e( 'Trash', 'wpmediaverse' ); ?></a></span>
+						| <span class="trash"><a href="
+						<?php
+						echo esc_url(
+							wp_nonce_url(
+								add_query_arg(
+									array(
+										'action'   => 'trash',
+										'media_id' => $media_id,
+									),
+									admin_url( 'admin.php?page=mvs-media' )
+								),
+								'mvs_trash_media_' . $media_id
+							)
+						);
+						?>
+														" class="submitdelete"><?php esc_html_e( 'Trash', 'wpmediaverse' ); ?></a></span>
 					<?php else : ?>
-						| <span class="untrash"><a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'restore', 'media_id' => $media_id ), admin_url( 'admin.php?page=mvs-media' ) ), 'mvs_restore_media_' . $media_id ) ); ?>"><?php esc_html_e( 'Restore', 'wpmediaverse' ); ?></a></span>
-						| <span class="delete"><a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'delete', 'media_id' => $media_id ), admin_url( 'admin.php?page=mvs-media' ) ), 'mvs_delete_media_' . $media_id ) ); ?>" class="submitdelete"><?php esc_html_e( 'Delete Permanently', 'wpmediaverse' ); ?></a></span>
+						| <span class="untrash"><a href="
+						<?php
+						echo esc_url(
+							wp_nonce_url(
+								add_query_arg(
+									array(
+										'action'   => 'restore',
+										'media_id' => $media_id,
+									),
+									admin_url( 'admin.php?page=mvs-media' )
+								),
+								'mvs_restore_media_' . $media_id
+							)
+						);
+						?>
+															"><?php esc_html_e( 'Restore', 'wpmediaverse' ); ?></a></span>
+						| <span class="delete"><a href="
+						<?php
+						echo esc_url(
+							wp_nonce_url(
+								add_query_arg(
+									array(
+										'action'   => 'delete',
+										'media_id' => $media_id,
+									),
+									admin_url( 'admin.php?page=mvs-media' )
+								),
+								'mvs_delete_media_' . $media_id
+							)
+						);
+						?>
+														" class="submitdelete"><?php esc_html_e( 'Delete Permanently', 'wpmediaverse' ); ?></a></span>
 					<?php endif; ?>
 				</div>
 			</td>
@@ -320,11 +365,13 @@ class MediaListPage {
 	 */
 	private static function render_pagination( int $total, int $total_pages, int $paged ): void {
 		if ( $total_pages <= 1 ) {
-			echo '<div class="tablenav-pages one-page"><span class="displaying-num">' . esc_html( sprintf(
+			echo '<div class="tablenav-pages one-page"><span class="displaying-num">' . esc_html(
+				sprintf(
 				/* translators: %s: number of items */
-				_n( '%s item', '%s items', $total, 'wpmediaverse' ),
-				number_format_i18n( $total )
-			) ) . '</span></div>';
+					_n( '%s item', '%s items', $total, 'wpmediaverse' ),
+					number_format_i18n( $total )
+				)
+			) . '</span></div>';
 			return;
 		}
 
@@ -341,11 +388,13 @@ class MediaListPage {
 		);
 
 		echo '<div class="tablenav-pages">';
-		echo '<span class="displaying-num">' . esc_html( sprintf(
+		echo '<span class="displaying-num">' . esc_html(
+			sprintf(
 			/* translators: %s: number of items */
-			_n( '%s item', '%s items', $total, 'wpmediaverse' ),
-			number_format_i18n( $total )
-		) ) . '</span>';
+				_n( '%s item', '%s items', $total, 'wpmediaverse' ),
+				number_format_i18n( $total )
+			)
+		) . '</span>';
 		echo '<span class="pagination-links">' . implode( "\n", $page_links ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- paginate_links returns safe HTML
 		echo '</div>';
 	}

@@ -100,7 +100,10 @@ class MediaMeta {
 			if ( $exists ) {
 				$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 					$wpdb->prefix . 'mvs_media_index',
-					array( $key => $value, 'updated_at' => current_time( 'mysql', true ) ),
+					array(
+						$key         => $value,
+						'updated_at' => current_time( 'mysql', true ),
+					),
 					array( 'media_id' => $media_id )
 				);
 			} else {
@@ -218,7 +221,10 @@ class MediaMeta {
 
 		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_media_meta',
-			array( 'media_id' => $media_id, 'meta_key' => $key ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			array(
+				'media_id' => $media_id,
+				'meta_key' => $key,
+			), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 			array( '%d', '%s' )
 		);
 	}

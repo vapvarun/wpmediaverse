@@ -18,7 +18,10 @@
 /CLAUDE.md
 /ARCHITECTURE.md
 /docs
+/plan
 /seed-demo-data.php
+/cleanup-demo-data.php
+/populate-showcase.php
 *.md
 !readme.txt
 .phpunit.result.cache

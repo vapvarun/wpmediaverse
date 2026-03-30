@@ -97,13 +97,13 @@ class CollectionService {
 
 				case 'tag':
 				case 'category':
-					$taxonomy  = 'tag' === $rule['key'] ? 'mvs_tag' : 'mvs_category';
-					$alias_tr  = 'tr' . $join_idx;
-					$alias_tt  = 'tt' . $join_idx;
-					$joins[]   = "INNER JOIN {$wpdb->term_relationships} AS {$alias_tr} ON {$alias_tr}.object_id = idx.media_id";
-					$joins[]   = "INNER JOIN {$wpdb->term_taxonomy} AS {$alias_tt} ON {$alias_tt}.term_taxonomy_id = {$alias_tr}.term_taxonomy_id AND {$alias_tt}.taxonomy = %s AND {$alias_tt}.term_id = %d";
-					$params[]  = $taxonomy;
-					$params[]  = (int) $rule['value'];
+					$taxonomy = 'tag' === $rule['key'] ? 'mvs_tag' : 'mvs_category';
+					$alias_tr = 'tr' . $join_idx;
+					$alias_tt = 'tt' . $join_idx;
+					$joins[]  = "INNER JOIN {$wpdb->term_relationships} AS {$alias_tr} ON {$alias_tr}.object_id = idx.media_id";
+					$joins[]  = "INNER JOIN {$wpdb->term_taxonomy} AS {$alias_tt} ON {$alias_tt}.term_taxonomy_id = {$alias_tr}.term_taxonomy_id AND {$alias_tt}.taxonomy = %s AND {$alias_tt}.term_id = %d";
+					$params[] = $taxonomy;
+					$params[] = (int) $rule['value'];
 					++$join_idx;
 					break;
 
@@ -136,8 +136,8 @@ class CollectionService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		// Count total matches.
-		$count_sql   = "SELECT COUNT(DISTINCT idx.media_id) FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql}";
-		$total       = ! empty( $params )
+		$count_sql = "SELECT COUNT(DISTINCT idx.media_id) FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql}";
+		$total     = ! empty( $params )
 			? (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) )
 			: (int) $wpdb->get_var( $count_sql );
 

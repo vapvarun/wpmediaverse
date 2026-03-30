@@ -535,11 +535,13 @@ class BuddyPressIntegration {
 
 		self::$posting_to_activity = true;
 
-		bp_activity_new_comment( array(
-			'activity_id' => $activity_id,
-			'content'     => $content,
-			'user_id'     => $user_id,
-		) );
+		bp_activity_new_comment(
+			array(
+				'activity_id' => $activity_id,
+				'content'     => $content,
+				'user_id'     => $user_id,
+			)
+		);
 
 		self::$posting_to_activity = false;
 	}
@@ -859,7 +861,7 @@ class BuddyPressIntegration {
 		}
 
 		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_media_index';
+		$table  = $wpdb->prefix . 'mvs_media_index';
 		$offset = ( $paged - 1 ) * $per_page;
 
 		$total_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -2070,8 +2072,8 @@ class BuddyPressIntegration {
 
 		// Link to the media single page. The lightbox is handled by the shared-ui
 		// Interactivity API module when the user clicks from the activity stream.
-		$href       = $permalink ?: $file_url;
-		$data_mid   = ' data-mvs-media-id="' . esc_attr( $media_id ) . '"';
+		$href     = $permalink ?: $file_url;
+		$data_mid = ' data-mvs-media-id="' . esc_attr( $media_id ) . '"';
 
 		// Image or video with poster thumbnail.
 		if ( $thumb_url ) {

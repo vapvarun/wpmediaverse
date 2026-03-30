@@ -574,7 +574,7 @@ class Migrator {
 	private function migrate_to_8(): void {
 		global $wpdb;
 		$table = $wpdb->prefix . 'mvs_media_index';
-		$col = $wpdb->get_results( "SHOW COLUMNS FROM {$table} LIKE 'attachment_id'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$col   = $wpdb->get_results( "SHOW COLUMNS FROM {$table} LIKE 'attachment_id'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		if ( ! empty( $col ) ) {
 			$wpdb->query( "ALTER TABLE {$table} DROP COLUMN attachment_id" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		}

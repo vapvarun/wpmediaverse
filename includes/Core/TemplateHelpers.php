@@ -195,12 +195,12 @@ class TemplateHelpers {
 			return;
 		}
 
-		$media_title  = $media_row['title'] ?? '';
-		$author_id    = (int) ( $media_row['post_author'] ?? 0 );
-		$permalink    = MediaMeta::get_permalink( $media_id );
-		$views        = isset( $stats['views'] ) ? (int) $stats['views'] : 0;
-		$reactions    = isset( $stats['reactions'] ) ? (int) $stats['reactions'] : 0;
-		$comments     = isset( $stats['comments'] ) ? (int) $stats['comments'] : 0;
+		$media_title = $media_row['title'] ?? '';
+		$author_id   = (int) ( $media_row['post_author'] ?? 0 );
+		$permalink   = MediaMeta::get_permalink( $media_id );
+		$views       = isset( $stats['views'] ) ? (int) $stats['views'] : 0;
+		$reactions   = isset( $stats['reactions'] ) ? (int) $stats['reactions'] : 0;
+		$comments    = isset( $stats['comments'] ) ? (int) $stats['comments'] : 0;
 
 		// Build data attributes string.
 		$data_attrs['media-id']   = $media_id;
@@ -211,9 +211,9 @@ class TemplateHelpers {
 		}
 
 		// Check if this is a gallery group cover.
-		$media_group  = MediaMeta::get( $media_id, 'media_group' );
-		$group_count  = 0;
-		$is_gallery   = false;
+		$media_group = MediaMeta::get( $media_id, 'media_group' );
+		$group_count = 0;
+		$is_gallery  = false;
 		if ( $media_group ) {
 			$is_gallery  = true;
 			$group_count = (int) MediaMeta::get( $media_id, 'group_count_cache' );

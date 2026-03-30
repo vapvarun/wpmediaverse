@@ -219,14 +219,24 @@ class Shortcodes {
 		wp_enqueue_script_module(
 			'@mvs/shared-ui',
 			MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js',
-			array( array( 'id' => '@wordpress/interactivity', 'import' => 'static' ) ),
+			array(
+				array(
+					'id'     => '@wordpress/interactivity',
+					'import' => 'static',
+				),
+			),
 			MVS_VERSION
 		);
 
 		wp_enqueue_script_module(
 			'mvs-dashboard-view',
 			MVS_PLUGIN_URL . 'src/blocks/dashboard-view/view.js',
-			array( array( 'id' => '@wordpress/interactivity', 'import' => 'static' ) ),
+			array(
+				array(
+					'id'     => '@wordpress/interactivity',
+					'import' => 'static',
+				),
+			),
 			MVS_VERSION
 		);
 

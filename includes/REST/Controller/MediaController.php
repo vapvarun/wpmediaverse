@@ -846,14 +846,14 @@ class MediaController extends WP_REST_Controller {
 		);
 
 		// Add author data for lightbox sidebar.
-		$author_id              = $data['author'];
-		$author_name            = get_the_author_meta( 'display_name', $author_id );
-		$author_avatar          = get_avatar_url( $author_id, array( 'size' => 64 ) );
-		$author_url             = TemplateHelpers::get_user_profile_url( $author_id );
-		$data['author_name']    = $author_name;
-		$data['author_avatar']  = $author_avatar;
-		$data['author_url']     = $author_url;
-		$data['author_data']    = array(
+		$author_id             = $data['author'];
+		$author_name           = get_the_author_meta( 'display_name', $author_id );
+		$author_avatar         = get_avatar_url( $author_id, array( 'size' => 64 ) );
+		$author_url            = TemplateHelpers::get_user_profile_url( $author_id );
+		$data['author_name']   = $author_name;
+		$data['author_avatar'] = $author_avatar;
+		$data['author_url']    = $author_url;
+		$data['author_data']   = array(
 			'name'        => $author_name,
 			'avatar'      => $author_avatar,
 			'profile_url' => $author_url,
