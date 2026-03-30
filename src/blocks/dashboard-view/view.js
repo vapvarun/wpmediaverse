@@ -96,6 +96,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 			items: [],
 			loading: false,
 		},
+		// Pro gamification tabs (data populated by lazy-load actions).
+		challenges: { items: [], loading: false, activeChallenge: null },
+		battles: { items: [], loading: false },
+		tournaments: { items: [], loading: false, openTournament: null },
 		// Collection modal
 		collectionModal: {
 			visible: false,
@@ -128,6 +132,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get showAlbumsEmpty() { return state.albums.items.length === 0 && ! state.albums.loading; },
 		get showFavoritesEmpty() { return state.favorites.items.length === 0 && ! state.favorites.loading; },
 		get showCollectionsEmpty() { return state.collections.items.length === 0 && ! state.collections.loading; },
+		get showChallengesEmpty() { return state.challenges.items.length === 0 && ! state.challenges.loading; },
+		get showBattlesEmpty() { return state.battles.items.length === 0 && ! state.battles.loading; },
+		get showTournamentsEmpty() { return state.tournaments.items.length === 0 && ! state.tournaments.loading; },
+		get hasActiveChallenge() { return state.challenges.activeChallenge !== null; },
+		get hasOpenTournament() { return state.tournaments.openTournament !== null; },
 		get mediaThumbUrl() {
 			const ctx = getContext();
 			const item = ctx.item;
@@ -289,6 +298,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 				actions.loadFavorites( ctx );
 			} else if ( tab === 'collections' && state.collections.items.length === 0 ) {
 				actions.loadCollections( ctx );
+			} else if ( tab === 'challenges' && state.challenges.items.length === 0 ) {
+				actions.loadChallenges( ctx );
+			} else if ( tab === 'battles' && state.battles.items.length === 0 ) {
+				actions.loadBattles( ctx );
+			} else if ( tab === 'tournaments' && state.tournaments.items.length === 0 ) {
+				actions.loadTournaments( ctx );
 			}
 		},
 
@@ -818,6 +833,54 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.collections.loading = false;
 		},
 
+		/* =====================================================================
+		   Pro Gamification – Challenges / Battles / Tournaments
+		   ===================================================================== */
+		async loadChallenges( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			if ( ! ctx.userId ) return;
+			state.challenges.loading = true;
+			try {
+				const res = await apiFetch( ctx, 'mvs-pro/v1/challenges?participant=' + ctx.userId + '&per_page=20' );
+				state.challenges.items = await res.json();
+				const activeRes = await apiFetch( ctx, 'mvs-pro/v1/challenges?status=active&per_page=1' );
+				const activeData = await activeRes.json();
+				state.challenges.activeChallenge = activeData.length > 0 ? activeData[ 0 ] : null;
+			} catch {
+				state.challenges.items = [];
+			}
+			state.challenges.loading = false;
+		},
+
+		async loadBattles( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			if ( ! ctx.userId ) return;
+			state.battles.loading = true;
+			try {
+				const res = await apiFetch( ctx, 'mvs-pro/v1/battles?participant=' + ctx.userId + '&per_page=20' );
+				state.battles.items = await res.json();
+			} catch {
+				state.battles.items = [];
+			}
+			state.battles.loading = false;
+		},
+
+		async loadTournaments( ctxOrEvent ) {
+			const ctx = typeof ctxOrEvent?.restUrl === 'string' ? ctxOrEvent : getContext();
+			if ( ! ctx.userId ) return;
+			state.tournaments.loading = true;
+			try {
+				const res = await apiFetch( ctx, 'mvs-pro/v1/tournaments?participant=' + ctx.userId + '&per_page=20' );
+				state.tournaments.items = await res.json();
+				const openRes = await apiFetch( ctx, 'mvs-pro/v1/tournaments?status=registration&per_page=1' );
+				const openData = await openRes.json();
+				state.tournaments.openTournament = openData.length > 0 ? openData[ 0 ] : null;
+			} catch {
+				state.tournaments.items = [];
+			}
+			state.tournaments.loading = false;
+		},
+
 		openCreateCollection() {
 			state.collectionModal.visible = true;
 			state.collectionModal.isEdit = false;
@@ -1096,7 +1159,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 	callbacks: {
 		init() {
 			const ctx = getContext();
-			const validTabs = [ 'media', 'albums', 'favorites', 'collections' ];
+			const validTabs = [ 'media', 'albums', 'favorites', 'collections', 'challenges', 'battles', 'tournaments' ];
 			const hashTab = window.location.hash.replace( '#', '' );
 			if ( hashTab && validTabs.includes( hashTab ) ) {
 				state.activeTab = hashTab;
@@ -1108,6 +1171,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 				actions.loadFavorites( ctx );
 			} else if ( state.activeTab === 'collections' ) {
 				actions.loadCollections( ctx );
+			} else if ( state.activeTab === 'challenges' ) {
+				actions.loadChallenges( ctx );
+			} else if ( state.activeTab === 'battles' ) {
+				actions.loadBattles( ctx );
+			} else if ( state.activeTab === 'tournaments' ) {
+				actions.loadTournaments( ctx );
 			} else {
 				actions.loadMedia( ctx );
 			}
