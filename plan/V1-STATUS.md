@@ -41,7 +41,7 @@
 
 | Issue | Severity | Status |
 |-------|----------|--------|
-| Comments bridge creates infinite loop | CRITICAL | Disabled for v1.0. Hooks commented out. |
+| ~~Comments bridge loop~~ | RESOLVED | One-way sync (media→activity). Static flag prevents re-entry. |
 | `followed_id` column error in seeder | MINOR | Seeder uses `followed_id`, table may have `following_id` |
 | OPcache serves old PHP | DEV ONLY | Restart PHP-FPM after code changes |
 
@@ -49,7 +49,7 @@
 
 | Feature | Reason |
 |---------|--------|
-| Comments bridge (media <-> activity) | Infinite loop bug. Needs content-hash dedup. |
+| ~~Comments bridge~~ | DONE — one-way sync (media→activity). No reverse, no loops. |
 | Flickr/Pinterest/Dribbble layout modes | Pro differentiator, not blocking v1.0 |
 | Challenge/Battle/Tournament frontend UIs | Pro v1.1 |
 | Single media page enhancements (related media, download, EXIF) | Nice-to-have |
