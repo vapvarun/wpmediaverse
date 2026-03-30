@@ -104,6 +104,7 @@ class MediaListPage {
 		<div class="wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'All Media', 'wpmediaverse' ); ?></h1>
 			<hr class="wp-header-end">
+			<p class="description"><?php esc_html_e( 'Manage all uploaded media across your community.', 'wpmediaverse' ); ?></p>
 
 			<?php self::render_status_tabs( $status_counts, $status_filter, $base_url ); ?>
 
@@ -113,69 +114,80 @@ class MediaListPage {
 					<input type="hidden" name="status" value="<?php echo esc_attr( $status_filter ); ?>" />
 				<?php endif; ?>
 
-				<div class="tablenav top">
-					<div class="alignleft actions">
-						<select name="media_type">
-							<option value=""><?php esc_html_e( 'All Types', 'wpmediaverse' ); ?></option>
-							<?php foreach ( array( 'image', 'video', 'audio', 'document' ) as $t ) : ?>
-								<option value="<?php echo esc_attr( $t ); ?>" <?php selected( $type_filter, $t ); ?>><?php echo esc_html( ucfirst( $t ) ); ?></option>
-							<?php endforeach; ?>
-						</select>
-						<select name="privacy">
-							<option value=""><?php esc_html_e( 'All Privacy', 'wpmediaverse' ); ?></option>
-							<?php foreach ( array( 'public', 'members', 'private', 'friends', 'group' ) as $p ) : ?>
-								<option value="<?php echo esc_attr( $p ); ?>" <?php selected( $privacy_filter, $p ); ?>><?php echo esc_html( ucfirst( $p ) ); ?></option>
-							<?php endforeach; ?>
-						</select>
-						<?php submit_button( __( 'Filter', 'wpmediaverse' ), '', 'filter_action', false ); ?>
+				<div class="mvs-admin-widget">
+					<div class="mvs-widget-header mvs-widget-header--toolbar">
+						<div class="alignleft actions">
+							<select name="media_type">
+								<option value=""><?php esc_html_e( 'All Types', 'wpmediaverse' ); ?></option>
+								<?php foreach ( array( 'image', 'video', 'audio', 'document' ) as $t ) : ?>
+									<option value="<?php echo esc_attr( $t ); ?>" <?php selected( $type_filter, $t ); ?>><?php echo esc_html( ucfirst( $t ) ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<select name="privacy">
+								<option value=""><?php esc_html_e( 'All Privacy', 'wpmediaverse' ); ?></option>
+								<?php foreach ( array( 'public', 'members', 'private', 'friends', 'group' ) as $p ) : ?>
+									<option value="<?php echo esc_attr( $p ); ?>" <?php selected( $privacy_filter, $p ); ?>><?php echo esc_html( ucfirst( $p ) ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<?php submit_button( __( 'Filter', 'wpmediaverse' ), '', 'filter_action', false ); ?>
+						</div>
+
+						<p class="search-box">
+							<input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>" />
+							<?php submit_button( __( 'Search', 'wpmediaverse' ), '', '', false ); ?>
+						</p>
+
+						<?php self::render_pagination( $total, $total_pages, $paged ); ?>
 					</div>
 
-					<p class="search-box">
-						<input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>" />
-						<?php submit_button( __( 'Search', 'wpmediaverse' ), '', '', false ); ?>
-					</p>
+					<div class="mvs-widget-body mvs-widget-body--flush">
+						<table class="wp-list-table widefat fixed striped table-view-list">
+							<thead>
+								<tr>
+									<td class="manage-column column-cb check-column"><input type="checkbox" /></td>
+									<th class="manage-column mvs-col-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
+									<th class="manage-column column-primary"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
+									<th class="manage-column"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
+									<th class="manage-column"><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
+									<th class="manage-column"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></th>
+									<th class="manage-column"><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
+									<th class="manage-column"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php if ( empty( $items ) ) : ?>
+									<tr>
+										<td colspan="8">
+											<div class="mvs-empty-state-admin">
+												<span class="dashicons dashicons-format-gallery"></span>
+												<p><?php esc_html_e( 'No media items found.', 'wpmediaverse' ); ?></p>
+											</div>
+										</td>
+									</tr>
+								<?php else : ?>
+									<?php foreach ( $items as $item ) : ?>
+										<?php self::render_row( $item ); ?>
+									<?php endforeach; ?>
+								<?php endif; ?>
+							</tbody>
+							<tfoot>
+								<tr>
+									<td class="manage-column column-cb check-column"><input type="checkbox" /></td>
+									<th class="manage-column mvs-col-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
+									<th class="manage-column column-primary"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
+									<th class="manage-column"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
+									<th class="manage-column"><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
+									<th class="manage-column"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></th>
+									<th class="manage-column"><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
+									<th class="manage-column"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
+								</tr>
+							</tfoot>
+						</table>
+					</div>
 
-					<?php self::render_pagination( $total, $total_pages, $paged ); ?>
-				</div>
-
-				<table class="wp-list-table widefat fixed striped table-view-list">
-					<thead>
-						<tr>
-							<td class="manage-column column-cb check-column"><input type="checkbox" /></td>
-							<th class="manage-column" style="width:50px;"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
-							<th class="manage-column column-primary"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
-							<th class="manage-column"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
-							<th class="manage-column"><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
-							<th class="manage-column"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></th>
-							<th class="manage-column"><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
-							<th class="manage-column"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
-						</tr>
-					</thead>
-					<tbody>
-						<?php if ( empty( $items ) ) : ?>
-							<tr><td colspan="8"><?php esc_html_e( 'No media items found.', 'wpmediaverse' ); ?></td></tr>
-						<?php else : ?>
-							<?php foreach ( $items as $item ) : ?>
-								<?php self::render_row( $item ); ?>
-							<?php endforeach; ?>
-						<?php endif; ?>
-					</tbody>
-					<tfoot>
-						<tr>
-							<td class="manage-column column-cb check-column"><input type="checkbox" /></td>
-							<th class="manage-column" style="width:50px;"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
-							<th class="manage-column column-primary"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
-							<th class="manage-column"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
-							<th class="manage-column"><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
-							<th class="manage-column"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></th>
-							<th class="manage-column"><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
-							<th class="manage-column"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
-						</tr>
-					</tfoot>
-				</table>
-
-				<div class="tablenav bottom">
-					<?php self::render_pagination( $total, $total_pages, $paged ); ?>
+					<div class="mvs-widget-footer">
+						<?php self::render_pagination( $total, $total_pages, $paged ); ?>
+					</div>
 				</div>
 			</form>
 		</div>
@@ -198,30 +210,29 @@ class MediaListPage {
 		}
 
 		$statuses = array(
-			''        => array( __( 'All', 'wpmediaverse' ), $all_count ),
-			'publish' => array( __( 'Published', 'wpmediaverse' ), (int) ( $status_counts['publish']->cnt ?? 0 ) ),
-			'draft'   => array( __( 'Draft', 'wpmediaverse' ), (int) ( $status_counts['draft']->cnt ?? 0 ) ),
-			'pending' => array( __( 'Pending', 'wpmediaverse' ), (int) ( $status_counts['pending']->cnt ?? 0 ) ),
-			'trash'   => array( __( 'Trash', 'wpmediaverse' ), (int) ( $status_counts['trash']->cnt ?? 0 ) ),
+			''        => array( __( 'All', 'wpmediaverse' ), $all_count, 'mvs-stat-card--accent' ),
+			'publish' => array( __( 'Published', 'wpmediaverse' ), (int) ( $status_counts['publish']->cnt ?? 0 ), 'mvs-stat-card--success' ),
+			'pending' => array( __( 'Pending', 'wpmediaverse' ), (int) ( $status_counts['pending']->cnt ?? 0 ), 'mvs-stat-card--warning' ),
+			'draft'   => array( __( 'Draft', 'wpmediaverse' ), (int) ( $status_counts['draft']->cnt ?? 0 ), '' ),
+			'trash'   => array( __( 'Trash', 'wpmediaverse' ), (int) ( $status_counts['trash']->cnt ?? 0 ), 'mvs-stat-card--danger' ),
 		);
 		?>
-		<ul class="subsubsub">
-			<?php $i = 0; ?>
+		<div class="mvs-admin-stats">
 			<?php foreach ( $statuses as $key => $info ) : ?>
 				<?php
 				if ( 0 === $info[1] && '' !== $key ) {
 					continue;
 				}
-				$url   = $key ? add_query_arg( 'status', $key, $base_url ) : $base_url;
-				$class = ( $current === $key ) ? ' class="current"' : '';
-				if ( $i > 0 ) {
-					echo ' | ';
-				}
+				$url       = $key ? add_query_arg( 'status', $key, $base_url ) : $base_url;
+				$variant   = ( $current === $key ) ? $info[2] : '';
+				$classes   = 'mvs-stat-card' . ( $variant ? ' ' . $variant : '' );
 				?>
-				<li><a href="<?php echo esc_url( $url ); ?>"<?php echo $class; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php echo esc_html( $info[0] ); ?> <span class="count">(<?php echo esc_html( $info[1] ); ?>)</span></a></li>
-				<?php ++$i; ?>
+				<a href="<?php echo esc_url( $url ); ?>" class="<?php echo esc_attr( $classes ); ?>">
+					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $info[1] ) ); ?></span>
+					<span class="mvs-stat-label"><?php echo esc_html( $info[0] ); ?></span>
+				</a>
 			<?php endforeach; ?>
-		</ul>
+		</div>
 		<?php
 	}
 
@@ -239,33 +250,11 @@ class MediaListPage {
 		$file_url = $item['file_url'] ?? '';
 		$author   = get_userdata( (int) $item['post_author'] );
 
-		$type_colors = array(
-			'image'    => '#2271b1',
-			'video'    => '#9b59b6',
-			'audio'    => '#e67e22',
-			'document' => '#27ae60',
-		);
-
-		$privacy_colors = array(
-			'public'  => '#00a32a',
-			'members' => '#2271b1',
-			'private' => '#d63638',
-			'group'   => '#9b59b6',
-			'friends' => '#e67e22',
-		);
-
-		$status_colors = array(
-			'publish' => '#00a32a',
-			'draft'   => '#646970',
-			'pending' => '#dba617',
-			'trash'   => '#d63638',
-		);
-
 		$view_url = MediaMeta::get_permalink( $media_id );
 		?>
 		<tr>
 			<th scope="row" class="check-column"><input type="checkbox" name="media_ids[]" value="<?php echo esc_attr( $media_id ); ?>" /></th>
-			<td style="width:50px;">
+			<td class="mvs-col-thumb">
 				<?php
 				$thumb_url = '';
 				if ( 'image' === $type && $file_url ) {
@@ -276,7 +265,7 @@ class MediaListPage {
 				}
 				?>
 				<?php if ( $thumb_url ) : ?>
-					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" loading="lazy" />
+					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="" class="mvs-thumb" loading="lazy" />
 				<?php else : ?>
 					<?php
 					$icons = array(
@@ -287,7 +276,7 @@ class MediaListPage {
 					);
 					$icon  = $icons[ $type ] ?? 'dashicons-media-default';
 					?>
-					<span class="dashicons <?php echo esc_attr( $icon ); ?>" style="font-size:28px;width:40px;height:40px;line-height:40px;color:#646970;"></span>
+					<span class="mvs-thumb-placeholder"><span class="dashicons <?php echo esc_attr( $icon ); ?>"></span></span>
 				<?php endif; ?>
 			</td>
 			<td class="column-primary">
@@ -348,9 +337,9 @@ class MediaListPage {
 				</div>
 			</td>
 			<td><?php echo $author ? esc_html( $author->display_name ) : '—'; ?></td>
-			<td><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:<?php echo esc_attr( $type_colors[ $type ] ?? '#646970' ); ?>;"><?php echo esc_html( ucfirst( $type ) ); ?></span></td>
-			<td><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:<?php echo esc_attr( $privacy_colors[ $privacy ] ?? '#646970' ); ?>;"><?php echo esc_html( ucfirst( $privacy ) ); ?></span></td>
-			<td><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:<?php echo esc_attr( $status_colors[ $status ] ?? '#646970' ); ?>;"><?php echo esc_html( ucfirst( $status ) ); ?></span></td>
+			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $type ); ?>"><?php echo esc_html( ucfirst( $type ) ); ?></span></td>
+			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $privacy ); ?>"><?php echo esc_html( ucfirst( $privacy ) ); ?></span></td>
+			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $status ); ?>"><?php echo esc_html( ucfirst( $status ) ); ?></span></td>
 			<td><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $item['created_at'] ) ) ); ?></td>
 		</tr>
 		<?php

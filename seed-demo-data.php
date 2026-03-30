@@ -1367,6 +1367,111 @@ if ( class_exists( '\WPMediaVersePro\Streaks\StreakService' ) && ! empty( $demo_
 
 // No backfill needed — all fields are set during MediaMeta::insert() above.
 
+// ---------------------------------------------------------------------------
+// Seed user reports (requires mvs_reports table).
+// ---------------------------------------------------------------------------
+
+$reports_table = $wpdb->prefix . 'mvs_reports';
+$reports_exist = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $reports_table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+$report_count  = 0;
+
+if ( $reports_exist && count( $created_media ) >= 5 && count( $all_user_ids ) >= 2 ) {
+	mvs_seed_log( '' );
+	mvs_seed_log( 'Creating sample reports...' );
+
+	$report_samples = array(
+		array(
+			'reason'  => 'spam',
+			'details' => 'This image appears to be AI-generated and misleading.',
+			'status'  => 'pending',
+		),
+		array(
+			'reason'  => 'copyright',
+			'details' => 'Contains watermarked stock photo used without permission.',
+			'status'  => 'pending',
+		),
+		array(
+			'reason'  => 'inappropriate',
+			'details' => 'Potentially offensive content that may not meet community guidelines.',
+			'status'  => 'resolved',
+		),
+	);
+
+	foreach ( $report_samples as $rs ) {
+		$target_media = $created_media[ wp_rand( 0, count( $created_media ) - 1 ) ];
+		$media_author = $target_media['author'];
+
+		$eligible_reporters = array_values( array_filter( $all_user_ids, function ( $uid ) use ( $media_author ) {
+			return $uid !== $media_author;
+		} ) );
+
+		if ( empty( $eligible_reporters ) ) {
+			continue;
+		}
+
+		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$reports_table,
+			array(
+				'reporter_id' => $eligible_reporters[ wp_rand( 0, count( $eligible_reporters ) - 1 ) ],
+				'target_type' => 'media',
+				'target_id'   => $target_media['media_id'],
+				'reason'      => $rs['reason'],
+				'details'     => $rs['details'],
+				'status'      => $rs['status'],
+				'created_at'  => gmdate( 'Y-m-d H:i:s', time() - wp_rand( HOUR_IN_SECONDS, 7 * DAY_IN_SECONDS ) ),
+			),
+			array( '%d', '%s', '%d', '%s', '%s', '%s', '%s' )
+		);
+		++$report_count;
+	}
+
+	mvs_seed_log( "  Reports: {$report_count} (2 pending, 1 resolved)", 'success' );
+}
+
+// ---------------------------------------------------------------------------
+// Seed play events / analytics (requires Pro mvs_play_events table).
+// ---------------------------------------------------------------------------
+
+$play_table     = $wpdb->prefix . 'mvs_play_events';
+$play_tbl_exist = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $play_table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+$play_count     = 0;
+
+if ( $play_tbl_exist && count( $created_media ) >= 5 ) {
+	mvs_seed_log( '' );
+	mvs_seed_log( 'Creating analytics play events...' );
+
+	$event_types    = array( 'play', 'pause', 'seek', 'complete' );
+	$analytics_pool = array_slice( $created_media, 0, min( 10, count( $created_media ) ) );
+
+	foreach ( $analytics_pool as $media ) {
+		$mid        = $media['media_id'];
+		$num_events = wp_rand( 3, 8 );
+		$duration   = (float) wp_rand( 30, 300 );
+
+		for ( $ei = 0; $ei < $num_events; $ei++ ) {
+			$viewer = ! empty( $all_user_ids ) ? $all_user_ids[ wp_rand( 0, count( $all_user_ids ) - 1 ) ] : 0;
+			$etype  = $event_types[ $ei % count( $event_types ) ];
+
+			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$play_table,
+				array(
+					'media_id'         => $mid,
+					'user_id'          => $viewer,
+					'session_id'       => wp_generate_uuid4(),
+					'event_type'       => $etype,
+					'position_seconds' => (float) wp_rand( 0, (int) $duration ),
+					'duration_seconds' => 'complete' === $etype ? $duration : null,
+					'created_at'       => gmdate( 'Y-m-d H:i:s', time() - wp_rand( 0, 30 * DAY_IN_SECONDS ) ),
+				),
+				array( '%d', '%d', '%s', '%s', '%f', '%s', '%s' )
+			);
+			++$play_count;
+		}
+	}
+
+	mvs_seed_log( "  Play events: {$play_count}", 'success' );
+}
+
 mvs_seed_log( '' );
 mvs_seed_log( 'Demo data import complete!', 'success' );
 mvs_seed_log( '  Demo users: ' . count( $demo_user_ids ) );
@@ -1383,6 +1488,12 @@ if ( $competition_counts['challenges'] > 0 || $competition_counts['battles'] > 0
 	mvs_seed_log( '  Challenges: ' . $competition_counts['challenges'] );
 	mvs_seed_log( '  Battles: ' . $competition_counts['battles'] );
 	mvs_seed_log( '  Tournaments: ' . $competition_counts['tournaments'] );
+}
+if ( $report_count > 0 ) {
+	mvs_seed_log( '  Reports: ' . $report_count );
+}
+if ( $play_count > 0 ) {
+	mvs_seed_log( '  Play events: ' . $play_count );
 }
 
 // AJAX response.

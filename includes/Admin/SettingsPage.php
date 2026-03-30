@@ -52,11 +52,6 @@ class SettingsPage {
 		// This preserves page titles and menu highlighting while keeping the menu clean.
 		// Pages are accessible via Settings sidebar links.
 		$hide_slugs = array(
-			'mvs-logs',
-			'mvs-quotas',
-			'mvs-reports',
-			'mvs-analytics',
-			'mvs-migration',
 			'mvs-challenges',
 			'mvs-tournaments',
 			'mvs-battles',
@@ -339,10 +334,10 @@ class SettingsPage {
 		);
 
 		// Storage section.
-		add_settings_section( 'mvs_storage', __( 'Storage', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-general' );
+		add_settings_section( 'mvs_storage', __( 'Storage', 'wpmediaverse' ), '__return_null', self::PAGE_SLUG . '-storage' );
 
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_storage',
 			'mvs_storage_driver',
 			array(
 				'type'              => 'string',
@@ -355,7 +350,7 @@ class SettingsPage {
 				'mvs_storage_driver',
 				__( 'Storage Driver', 'wpmediaverse' ),
 				array( $this, 'render_select_field' ),
-				self::PAGE_SLUG . '-general',
+				self::PAGE_SLUG . '-storage',
 				'mvs_storage',
 				array(
 					'option'      => 'mvs_storage_driver',
@@ -372,7 +367,7 @@ class SettingsPage {
 				'mvs_storage_driver',
 				__( 'Storage Driver', 'wpmediaverse' ),
 				array( $this, 'render_pro_select_field' ),
-				self::PAGE_SLUG . '-general',
+				self::PAGE_SLUG . '-storage',
 				'mvs_storage',
 				array(
 					'current' => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
@@ -386,7 +381,7 @@ class SettingsPage {
 
 		// Signed URL TTL.
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_storage',
 			'mvs_signed_url_ttl',
 			array(
 				'type'              => 'integer',
@@ -398,7 +393,7 @@ class SettingsPage {
 			'mvs_signed_url_ttl',
 			__( 'Signed URL Expiry (seconds)', 'wpmediaverse' ),
 			array( $this, 'render_number_field' ),
-			self::PAGE_SLUG . '-general',
+			self::PAGE_SLUG . '-storage',
 			'mvs_storage',
 			array(
 				'option'      => 'mvs_signed_url_ttl',
@@ -823,12 +818,12 @@ class SettingsPage {
 					esc_html__( 'Configure direct messaging privacy and spam prevention.', 'wpmediaverse' )
 				);
 			},
-			self::PAGE_SLUG . '-general'
+			self::PAGE_SLUG . '-social'
 		);
 
 		// DM access level.
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_social',
 			'mvs_dm_access',
 			array(
 				'type'              => 'string',
@@ -840,7 +835,7 @@ class SettingsPage {
 			'mvs_dm_access',
 			__( 'Who Can Send DMs', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG . '-general',
+			self::PAGE_SLUG . '-social',
 			'mvs_messaging',
 			array(
 				'option'      => 'mvs_dm_access',
@@ -856,7 +851,7 @@ class SettingsPage {
 
 		// Min account age.
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_social',
 			'mvs_dm_min_age',
 			array(
 				'type'              => 'integer',
@@ -868,7 +863,7 @@ class SettingsPage {
 			'mvs_dm_min_age',
 			__( 'Minimum Account Age (days)', 'wpmediaverse' ),
 			array( $this, 'render_number_field' ),
-			self::PAGE_SLUG . '-general',
+			self::PAGE_SLUG . '-social',
 			'mvs_messaging',
 			array(
 				'option'      => 'mvs_dm_min_age',
@@ -878,7 +873,7 @@ class SettingsPage {
 
 		// Online status visibility.
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_social',
 			'mvs_show_online_status',
 			array(
 				'type'              => 'string',
@@ -890,7 +885,7 @@ class SettingsPage {
 			'mvs_show_online_status',
 			__( 'Online Status Visibility', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG . '-general',
+			self::PAGE_SLUG . '-social',
 			'mvs_messaging',
 			array(
 				'option'      => 'mvs_show_online_status',
@@ -921,11 +916,11 @@ class SettingsPage {
 					esc_html__( 'Add a text or image watermark to uploaded images.', 'wpmediaverse' )
 				);
 			},
-			self::PAGE_SLUG . '-general'
+			self::PAGE_SLUG . '-watermark'
 		);
 
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_watermark',
 			'mvs_watermark_type',
 			array(
 				'type'              => 'string',
@@ -937,7 +932,7 @@ class SettingsPage {
 			'mvs_watermark_type',
 			__( 'Watermark Type', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG . '-general',
+			self::PAGE_SLUG . '-watermark',
 			'mvs_watermark',
 			array(
 				'option'      => 'mvs_watermark_type',
@@ -950,7 +945,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_watermark',
 			'mvs_watermark_text',
 			array(
 				'type'              => 'string',
@@ -962,7 +957,7 @@ class SettingsPage {
 			'mvs_watermark_text',
 			__( 'Watermark Text', 'wpmediaverse' ),
 			array( $this, 'render_text_field' ),
-			self::PAGE_SLUG . '-general',
+			self::PAGE_SLUG . '-watermark',
 			'mvs_watermark',
 			array(
 				'option'      => 'mvs_watermark_text',
@@ -971,7 +966,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_watermark',
 			'mvs_watermark_position',
 			array(
 				'type'              => 'string',
@@ -983,7 +978,7 @@ class SettingsPage {
 			'mvs_watermark_position',
 			__( 'Position', 'wpmediaverse' ),
 			array( $this, 'render_select_field' ),
-			self::PAGE_SLUG . '-general',
+			self::PAGE_SLUG . '-watermark',
 			'mvs_watermark',
 			array(
 				'option'      => 'mvs_watermark_position',
@@ -1000,7 +995,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_watermark',
 			'mvs_watermark_opacity',
 			array(
 				'type'              => 'integer',
@@ -1012,7 +1007,7 @@ class SettingsPage {
 			'mvs_watermark_opacity',
 			__( 'Opacity (%)', 'wpmediaverse' ),
 			array( $this, 'render_number_field' ),
-			self::PAGE_SLUG . '-general',
+			self::PAGE_SLUG . '-watermark',
 			'mvs_watermark',
 			array(
 				'option'      => 'mvs_watermark_opacity',
@@ -1021,7 +1016,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_watermark',
 			'mvs_watermark_font_size',
 			array(
 				'type'              => 'integer',
@@ -1033,7 +1028,7 @@ class SettingsPage {
 			'mvs_watermark_font_size',
 			__( 'Font Size (px)', 'wpmediaverse' ),
 			array( $this, 'render_number_field' ),
-			self::PAGE_SLUG . '-general',
+			self::PAGE_SLUG . '-watermark',
 			'mvs_watermark',
 			array(
 				'option'      => 'mvs_watermark_font_size',
@@ -1042,7 +1037,7 @@ class SettingsPage {
 		);
 
 		register_setting(
-			self::OPTION_GROUP . '_general',
+			self::OPTION_GROUP . '_watermark',
 			'mvs_watermark_color',
 			array(
 				'type'              => 'string',
@@ -1054,7 +1049,7 @@ class SettingsPage {
 			'mvs_watermark_color',
 			__( 'Text Color', 'wpmediaverse' ),
 			array( $this, 'render_color_field' ),
-			self::PAGE_SLUG . '-general',
+			self::PAGE_SLUG . '-watermark',
 			'mvs_watermark',
 			array(
 				'option'      => 'mvs_watermark_color',
@@ -1151,8 +1146,8 @@ class SettingsPage {
 				'label'        => __( 'Social', 'wpmediaverse' ),
 				'icon'         => 'dashicons-format-chat',
 				'description'  => __( 'Direct messaging, privacy, and spam prevention.', 'wpmediaverse' ),
-				'option_group' => self::OPTION_GROUP . '_general',
-				'page_slug'    => self::PAGE_SLUG . '-general',
+				'option_group' => self::OPTION_GROUP . '_social',
+				'page_slug'    => self::PAGE_SLUG . '-social',
 				'section_ids'  => array( 'mvs_messaging' ),
 				'is_pro'       => false,
 				'priority'     => 30,
@@ -1162,8 +1157,8 @@ class SettingsPage {
 				'label'        => __( 'Storage', 'wpmediaverse' ),
 				'icon'         => 'dashicons-database',
 				'description'  => __( 'Choose where media files are stored.', 'wpmediaverse' ),
-				'option_group' => self::OPTION_GROUP . '_general',
-				'page_slug'    => self::PAGE_SLUG . '-general',
+				'option_group' => self::OPTION_GROUP . '_storage',
+				'page_slug'    => self::PAGE_SLUG . '-storage',
 				'section_ids'  => array( 'mvs_storage' ),
 				'is_pro'       => false,
 				'priority'     => 40,
@@ -1184,8 +1179,8 @@ class SettingsPage {
 				'label'        => __( 'Watermark', 'wpmediaverse' ),
 				'icon'         => 'dashicons-art',
 				'description'  => __( 'Add a text or image watermark to uploaded images.', 'wpmediaverse' ),
-				'option_group' => self::OPTION_GROUP . '_general',
-				'page_slug'    => self::PAGE_SLUG . '-general',
+				'option_group' => self::OPTION_GROUP . '_watermark',
+				'page_slug'    => self::PAGE_SLUG . '-watermark',
 				'section_ids'  => array( 'mvs_watermark' ),
 				'is_pro'       => false,
 				'priority'     => 60,
@@ -1328,36 +1323,14 @@ class SettingsPage {
 					</div>
 				<?php endforeach; ?>
 
-				<!-- Tools links (pages removed from main menu) -->
-				<div class="mvs-settings-nav-group">
-					<span class="mvs-settings-nav-group__label"><?php esc_html_e( 'Tools', 'wpmediaverse' ); ?></span>
-					<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-logs' ) ); ?>">
-						<span class="dashicons dashicons-list-view"></span>
-						<?php esc_html_e( 'Logs', 'wpmediaverse' ); ?>
-					</a>
-					<?php if ( $this->is_pro_active() ) : ?>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-analytics' ) ); ?>">
-							<span class="dashicons dashicons-chart-area"></span>
-							<?php esc_html_e( 'Analytics', 'wpmediaverse' ); ?>
-							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
-						</a>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-quotas' ) ); ?>">
-							<span class="dashicons dashicons-dashboard"></span>
-							<?php esc_html_e( 'Quota & Credits', 'wpmediaverse' ); ?>
-							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
-						</a>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-reports' ) ); ?>">
-							<span class="dashicons dashicons-flag"></span>
-							<?php esc_html_e( 'Reports', 'wpmediaverse' ); ?>
-							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
-						</a>
-						<a class="mvs-settings-nav-item" href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-migration' ) ); ?>">
-							<span class="dashicons dashicons-migrate"></span>
-							<?php esc_html_e( 'Import / Migration', 'wpmediaverse' ); ?>
-							<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
-						</a>
-					<?php endif; ?>
-				</div>
+				<?php
+				/**
+				 * Fires after the settings sidebar sections.
+				 *
+				 * @since 1.0.0
+				 */
+				do_action( 'mvs_settings_sidebar_after' );
+				?>
 			</div>
 
 			<!-- Content -->
@@ -1380,7 +1353,9 @@ class SettingsPage {
 									</p>
 									<p class="mvs-settings-card__desc"><?php echo esc_html( $section['description'] ); ?></p>
 								</div>
-								<?php $this->render_permissions_tab(); ?>
+								<div class="mvs-settings-card__body">
+									<?php $this->render_permissions_tab(); ?>
+								</div>
 							</div>
 						<?php elseif ( ! empty( $section['page_slug'] ) ) : ?>
 							<form action="options.php" method="post">
@@ -1738,12 +1713,12 @@ class SettingsPage {
 					<?php esc_html_e( 'Control which user roles can perform each media action. Uncheck to revoke a capability.', 'wpmediaverse' ); ?>
 				</p>
 
-				<table class="wp-list-table widefat fixed striped mvs-caps-table" style="margin-top:1em;">
+				<table class="mvs-recent-table mvs-caps-table">
 					<thead>
 						<tr>
-							<th scope="col" style="width:140px;"><?php esc_html_e( 'Role', 'wpmediaverse' ); ?></th>
+							<th><?php esc_html_e( 'Role', 'wpmediaverse' ); ?></th>
 							<?php foreach ( $caps as $cap_key => $cap_label ) : ?>
-								<th scope="col" style="text-align:center;"><?php echo esc_html( $cap_label ); ?></th>
+								<th class="mvs-caps-table__check"><?php echo esc_html( $cap_label ); ?></th>
 							<?php endforeach; ?>
 						</tr>
 					</thead>
@@ -1753,7 +1728,7 @@ class SettingsPage {
 							<tr>
 								<td><strong><?php echo esc_html( $role_label ); ?></strong></td>
 								<?php foreach ( $caps as $cap_key => $cap_label ) : ?>
-									<td style="text-align:center;">
+									<td class="mvs-caps-table__check">
 										<?php
 										$has_cap = $role_obj && ! empty( $role_obj->capabilities[ $cap_key ] );
 										printf(

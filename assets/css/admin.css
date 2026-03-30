@@ -175,6 +175,14 @@ a.mvs-stat-card:focus {
 	text-decoration: none;
 }
 
+.mvs-admin-widget .mvs-widget-header--toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
 /* ==========================================================================
    Quick Links
    ========================================================================== */
@@ -1323,4 +1331,116 @@ a.mvs-stat-card:focus {
 	.mvs-settings-content {
 		padding: 16px;
 	}
+}
+
+/* ==========================================================================
+   Media List — Badges
+   ========================================================================== */
+
+.mvs-media-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	color: #fff;
+	line-height: 1.4;
+}
+
+.mvs-media-badge--image { background: #2271b1; }
+.mvs-media-badge--video { background: #9b59b6; }
+.mvs-media-badge--audio { background: #e67e22; }
+.mvs-media-badge--document { background: #27ae60; }
+
+.mvs-media-badge--public { background: #00a32a; }
+.mvs-media-badge--members { background: #2271b1; }
+.mvs-media-badge--private { background: #d63638; }
+.mvs-media-badge--group { background: #9b59b6; }
+.mvs-media-badge--friends { background: #e67e22; }
+
+.mvs-media-badge--publish { background: #00a32a; }
+.mvs-media-badge--draft { background: #646970; }
+.mvs-media-badge--pending { background: #dba617; }
+.mvs-media-badge--trash { background: #d63638; }
+
+/* ==========================================================================
+   Media List — Column widths & Thumb
+   ========================================================================== */
+
+.mvs-col-thumb {
+	width: 50px;
+}
+
+.mvs-thumb {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+	border-radius: 4px;
+}
+
+.mvs-thumb-placeholder {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	background: #f0f0f1;
+	border-radius: 4px;
+	color: #646970;
+}
+
+.mvs-thumb-placeholder .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+}
+
+/* ==========================================================================
+   Media List — Widget table overrides
+   ========================================================================== */
+
+.mvs-admin-widget .wp-list-table {
+	border: none;
+	box-shadow: none;
+}
+
+.mvs-admin-widget .mvs-widget-header .search-box {
+	margin: 0;
+}
+
+.mvs-admin-widget .mvs-widget-header .tablenav-pages {
+	margin: 0;
+}
+
+.mvs-admin-widget .mvs-widget-header .actions {
+	margin: 0;
+	padding: 0;
+}
+
+/* ==========================================================================
+   Empty State (admin pages)
+   ========================================================================== */
+
+/* Permissions capability matrix */
+.mvs-caps-table__check {
+	text-align: center;
+}
+
+.mvs-empty-state-admin {
+	text-align: center;
+	padding: 40px 20px;
+	color: #646970;
+}
+
+.mvs-empty-state-admin .dashicons {
+	font-size: 48px;
+	width: 48px;
+	height: 48px;
+	color: #c3c4c7;
+	margin-bottom: 12px;
+}
+
+.mvs-empty-state-admin p {
+	font-size: 14px;
+	margin: 0;
 }
