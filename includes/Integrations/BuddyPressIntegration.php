@@ -51,12 +51,9 @@ class BuddyPressIntegration {
 			add_action( 'mvs_before_media_insert', array( $this, 'mark_upload_in_progress' ) );
 			add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 			add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
-			// Comments-to-activity sync disabled for v1.0 — causes infinite loop.
-			// @todo Re-enable in v1.1 with proper deduplication guard.
-			// add_action( 'mvs_comment_created', array( $this, 'record_comment_activity' ), 10, 3 );
-			// @todo Re-enable in v1.1 with content-hash deduplication.
-			// add_action( 'mvs_comment_created', array( $this, 'sync_comment_to_activity' ), 10, 5 );
-			// add_action( 'bp_activity_comment_posted', array( $this, 'sync_activity_comment_to_media' ), 10, 3 );
+			// One-way sync: media comment → BP activity comment.
+			// No reverse (BP→media) to prevent loops.
+			add_action( 'mvs_comment_created', array( $this, 'sync_media_comment_to_activity' ), 10, 5 );
 			add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
 			add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 			add_action( 'bp_register_activity_actions', array( $this, 'register_activity_actions' ) );
@@ -488,15 +485,35 @@ class BuddyPressIntegration {
 	 * @param string $source     Source of the comment.
 	 */
 	/**
-	 * Flag to prevent infinite comment sync loops.
+	 * Static flag — prevents re-entry when bp_activity_new_comment fires hooks.
 	 *
 	 * @var bool
 	 */
-	private $syncing_comment = false;
+	private static $posting_to_activity = false;
 
-	public function sync_comment_to_activity( int $media_id, int $user_id, int $comment_id, string $content, string $source = '' ): void {
-		// Prevent infinite loop — skip if source is BP or if we're already syncing.
-		if ( 'bp_activity' === $source || $this->syncing_comment ) {
+	/**
+	 * One-way sync: media comment → BP activity comment.
+	 *
+	 * Works for both single-media and multi-media activities:
+	 * - 1 media activity: comments on that media → activity comments
+	 * - N media activity: comments on ANY of those media → same activity comments
+	 *
+	 * No reverse sync (BP→media) — prevents infinite loops entirely.
+	 *
+	 * @param int    $media_id   Media ID.
+	 * @param int    $user_id    Commenter user ID.
+	 * @param int    $comment_id Comment ID.
+	 * @param string $content    Comment content.
+	 * @param string $source     Source of the comment.
+	 */
+	public function sync_media_comment_to_activity( int $media_id, int $user_id, int $comment_id, string $content, string $source = '' ): void {
+		// Skip if this comment was created by a BP→media sync (prevents loops).
+		if ( 'bp_activity' === $source ) {
+			return;
+		}
+
+		// Skip if we're already posting to activity (re-entry guard).
+		if ( self::$posting_to_activity ) {
 			return;
 		}
 
@@ -504,61 +521,27 @@ class BuddyPressIntegration {
 			return;
 		}
 
+		// Get the linked BP activity ID for this media.
 		$activity_id = (int) MediaMeta::get( $media_id, 'bp_activity_id' );
 		if ( ! $activity_id ) {
 			return;
 		}
 
-		$this->syncing_comment = true;
+		// Verify the activity exists.
+		$activity = new \BP_Activity_Activity( $activity_id );
+		if ( ! $activity->id ) {
+			return;
+		}
+
+		self::$posting_to_activity = true;
+
 		bp_activity_new_comment( array(
 			'activity_id' => $activity_id,
 			'content'     => $content,
 			'user_id'     => $user_id,
 		) );
-		$this->syncing_comment = false;
-	}
 
-	/**
-	 * Sync a BP activity comment to the associated media item as a media comment.
-	 *
-	 * @param int    $comment_id      Activity comment ID.
-	 * @param array  $params          Comment parameters.
-	 * @param object $activity_comment Activity comment object.
-	 */
-	public function sync_activity_comment_to_media( int $comment_id, array $params, object $activity_comment ): void {
-		// Prevent infinite loop.
-		if ( $this->syncing_comment ) {
-			return;
-		}
-
-		$activity_id = $params['activity_id'] ?? 0;
-		if ( ! $activity_id ) {
-			return;
-		}
-
-		$raw_ids = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
-		if ( ! $raw_ids ) {
-			return;
-		}
-
-		$media_ids = array_filter( array_map( 'absint', explode( ',', $raw_ids ) ) );
-		if ( empty( $media_ids ) ) {
-			return;
-		}
-
-		$user_id = $params['user_id'] ?? get_current_user_id();
-		$content = $params['content'] ?? '';
-		if ( ! $content || ! $user_id ) {
-			return;
-		}
-
-		$this->syncing_comment = true;
-
-		// Create comment on the primary media item with 'bp_activity' source to prevent loop.
-		$comment_service = new \WPMediaVerse\Social\CommentService();
-		$comment_service->add( $media_ids[0], $user_id, $content, 0, 'bp_activity' );
-
-		$this->syncing_comment = false;
+		self::$posting_to_activity = false;
 	}
 
 	/**
