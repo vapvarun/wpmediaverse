@@ -1,33 +1,52 @@
-# Stories
+# Stories (Coming Soon)
 
-> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+> **Planned Feature** — Stories infrastructure exists in the codebase but is not yet available as a user-facing feature.
 
+## Current Status
 
-Stories are time-limited media sequences — similar to Instagram or WhatsApp Stories — displayed in a full-screen viewer with auto-advance.
+The backend `StoryService` is built and can mark any media item as a time-limited story with automatic expiration. However, there is currently:
 
-![Story viewer in full-screen mode](../images/lightbox.png)
+- No "Post as Story" option in the upload form
+- No dedicated REST endpoint for creating stories
+- No story viewer UI for browsing stories
 
-## Displaying Stories
+## What Works Today
 
-**Gutenberg Block:** Add the **WPMediaVerse: Story Viewer** block to any page.
+### Instagram Layout — Recent Uploaders Bar
 
-The Story Viewer block queries recent media that has been designated as a story and presents them in a horizontal story-rail UI.
+When the **Instagram layout** is active (Pro), the explore page shows a horizontal bar of circular avatars above the feed. This displays users who uploaded recently — similar to the Instagram stories tray visual style, but these are links to user profiles, not ephemeral story content.
 
-## How Stories Work
+![Instagram layout with story-style avatar bar](../images/layout-instagram.png)
 
-1. When uploading, users can mark media as a story via the REST API (`is_story: true` parameter).
-2. Story media is stored as standard `mvs_media` posts with the `_mvs_is_story` meta key set to `true`.
-3. The `StoryService` resolves active (non-expired) stories and serves them via the REST API.
-4. Stories expire based on the TTL configured in your General settings.
+### Backend Service
 
-## REST API for Stories
+The `StoryService` class provides:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/mvs/v1/stories` | List active stories for a user or feed |
-| `POST` | `/mvs/v1/stories` | Create a story (upload + mark as story) |
-| `DELETE` | `/mvs/v1/stories/{id}` | Delete a story |
+- `create( $media_id, $duration_hours )` — mark media as a story with expiration
+- `is_active( $media_id )` — check if a story is still live
+- `cleanup_expired()` — hourly cron removes expired story flags
+- Default duration: 24 hours
 
-## Story Privacy
+### Meta Keys
 
-Stories inherit the privacy level of their underlying `mvs_media` post. Public stories appear in the global story rail. Friends-only stories appear only for BuddyPress friends of the uploader.
+| Key | Value | Description |
+|-----|-------|-------------|
+| `is_story` | `1` | Media is marked as a story |
+| `story_expires_at` | `2026-04-01 12:00:00` | UTC expiration datetime |
+
+### Hooks
+
+| Hook | When | Parameters |
+|------|------|------------|
+| `mvs_story_created` | Media marked as story | `$media_id`, `$expires_at` |
+| `mvs_story_expired` | Story auto-expired by cleanup cron | `$media_id` |
+
+## Planned Features
+
+The following are planned for a future release:
+
+- "Post as Story" toggle in the upload modal
+- Full-screen story viewer with tap-to-advance navigation
+- Story highlight reels on user profiles
+- Story reactions and reply-to-story DMs
+- REST API endpoints for story CRUD

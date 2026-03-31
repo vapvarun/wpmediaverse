@@ -49,15 +49,16 @@ The selected mode applies to the explore archive, user profile media tab, and an
 
 ## Instagram Mode
 
-Perfect for photo-sharing communities, daily uploads, and story-driven sites.
+Perfect for photo-sharing communities and daily uploads.
 
-![Instagram layout with story circles and vertical card feed](../images/layout-instagram.png)
+![Instagram layout with recent uploaders bar and vertical card feed](../images/layout-instagram.png)
 
-The Instagram layout renders a uniform square grid. Each thumbnail is cropped to a 1:1 ratio regardless of the original file dimensions.
+The Instagram layout renders a vertical card feed. Each post shows the author avatar, full-width photo, reaction/comment/share buttons, like count, caption, and inline comment box — identical to the Instagram experience.
 
-- Stories appear as circular avatar-style thumbnails above the grid
-- Clicking a grid item opens the lightbox with a swipe-enabled carousel
-- Profile page shows a pinned highlight reel of the user's most-reacted media above the grid
+- Recent uploaders appear as circular avatars above the feed (links to their profiles)
+- Each card has heart, comment, share, and bookmark buttons
+- Clicking "Expand" opens the lightbox with the full media detail view
+- Other users' posts show a "Following" button in the card header
 
 **Feed template:** `templates/feed/instagram.php`
 **Profile template:** `templates/profile/instagram.php`

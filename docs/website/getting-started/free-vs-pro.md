@@ -35,7 +35,7 @@ WPMediaVerse Free is a full-featured media platform. WPMediaVerse Pro unlocks ad
 | **Content Organization** | | |
 | Albums with cover photos | Yes | Yes |
 | Collections (curated boards) | Yes | Yes |
-| Stories (24h ephemeral posts) | Yes | Yes |
+| Stories (coming soon) | Planned | Planned |
 | Gallery groups (multi-photo posts) | Yes | Yes |
 | **Privacy & Moderation** | | |
 | Public / Members Only / Private | Yes | Yes |
@@ -124,7 +124,7 @@ WPMediaVerse Free is a full-featured media platform. WPMediaVerse Pro unlocks ad
 WPMediaVerse Free is not a stripped-down trial. It is a complete media platform with:
 
 - Full upload system with drag & drop, bulk upload, and duplicate detection
-- Albums, collections, stories, and gallery groups
+- Albums, collections, and gallery groups
 - Complete social layer: follows, reactions, comments, favorites, mentions, sharing
 - Built-in direct messaging with voice messages, file sharing, and read receipts
 - User profiles with follow/message buttons and media grids

@@ -15,7 +15,7 @@ WPMediaVerse registers 8 Gutenberg blocks under the **WPMediaVerse** block categ
 | Media Grid | `wpmediaverse/media-grid` | Filterable, paginated media gallery grid |
 | Media Player | `wpmediaverse/media-player` | Single-item audio/video player with controls |
 | Album Viewer | `wpmediaverse/album-viewer` | Displays a single album's media in a grid |
-| Story Viewer | `wpmediaverse/story-viewer` | Horizontal story rail with full-screen viewer |
+| Story Viewer | `wpmediaverse/story-viewer` | Recent uploaders bar — full story viewer coming soon |
 | Media Stats | `wpmediaverse/media-stats` | Site-wide or per-user media statistics |
 | Explore Feed | `wpmediaverse/explore-feed` | Infinite-scroll explore feed (all public media) |
 | Lock Overlay | `wpmediaverse/lock-overlay` | Paywall/restriction overlay for any block |
@@ -65,9 +65,9 @@ Grid columns and pagination inherit from **Media > Settings > Display**.
 - Columns override
 - Show Title / Show Description
 
-## Story Viewer Block
+## Story Viewer Block (Coming Soon)
 
-The Story Viewer has no editor-side settings. It automatically loads active stories for the page context (global, user, or group depending on the page).
+Currently displays a horizontal bar of recent uploaders with circular avatars (visible in Instagram layout mode). A full story viewer with tap-to-advance navigation is planned for a future release.
 
 ## Media Stats Block
 
