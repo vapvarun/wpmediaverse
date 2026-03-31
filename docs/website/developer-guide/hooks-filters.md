@@ -899,6 +899,46 @@ add_filter( 'mvs_dm_max_upload_size', function() {
 
 ---
 
+### Additional Free Actions
+
+These actions are available in the free plugin:
+
+| Hook | When | Parameters |
+|------|------|------------|
+| `mvs_access_rule_created` | Access rule created for a media item | `$media_id`, `$rule_id`, `$rule_data` |
+| `mvs_access_rule_deleted` | Access rule removed | `$media_id`, `$rule_id` |
+| `mvs_access_granted` | User granted access to restricted media | `$media_id`, `$user_id`, `$source` |
+| `mvs_access_revoked` | User access revoked | `$media_id`, `$user_id` |
+| `mvs_avatar_deleted` | Custom avatar removed | `$user_id` |
+| `mvs_conversation_read` | User reads a DM conversation | `$conversation_id`, `$user_id` |
+| `mvs_message_deleted` | Message deleted (soft or hard) | `$message_id`, `$user_id`, `$is_unsend` |
+| `mvs_message_reaction_added` | Emoji reaction added to a message | `$message_id`, `$user_id`, `$emoji` |
+| `mvs_voice_message_sent` | Voice message sent in DM | `$message_id`, `$conversation_id`, `$duration` |
+| `mvs_watermark_invalidated` | Single media watermark cleared | `$media_id` |
+| `mvs_watermarks_invalidated_all` | All watermarks cleared site-wide | -- |
+| `mvs_settings_sidebar_after` | After settings sidebar sections render | -- |
+
+### Additional Free Filters
+
+| Filter | Description | Parameters | Default |
+|--------|-------------|------------|---------|
+| `mvs_activity_types` | Register activity feed types | `$types` | Built-in types |
+| `mvs_activity_max_media` | Max media per activity post | `$count` | `6` |
+| `mvs_avatar_allowed_types` | Allowed MIME types for avatar upload | `$types` | JPEG, PNG, GIF, WebP |
+| `mvs_buddynext_active` | Whether BuddyNext integration is active | `$active` | Auto-detected |
+| `mvs_generate_watermark` | Override watermark generation | `$image`, `$media_id`, `$config` | null |
+| `mvs_locate_template` | Override template file location | `$path`, `$template_name`, `$subdir` | Plugin template |
+| `mvs_media_metadata` | Filter extracted media metadata | `$metadata`, `$media_id` | Raw metadata |
+| `mvs_privacy_can_view` | Override privacy access check | `$allowed`, `$media_id`, `$user_id`, `$privacy` | null |
+| `mvs_profile_data` | Filter profile data in REST response | `$data`, `$user_id` | Raw profile |
+| `mvs_profile_update_fields` | Filter allowed profile update fields | `$fields`, `$user_id` | Default fields |
+| `mvs_settings_sections` | Register settings sidebar sections | `$sections` | Built-in sections |
+| `mvs_settings_group_labels` | Override settings group labels | `$labels` | Default labels |
+| `mvs_show_online_status` | Filter online status visibility | `$show`, `$viewer_id`, `$user_id` | Based on setting |
+| `mvs_theme_json` | Filter theme.json data | `$data` | Default theme.json |
+
+---
+
 ### `bp_activity_allowed_tags` (BP filter extended by WPMediaVerse)
 
 WPMediaVerse extends this filter to allow its custom HTML attributes through BP kses sanitization. This is handled internally and does not require developer configuration.
@@ -913,3 +953,90 @@ These actions are fired by `BuddyPressIntegration` and only run when BuddyPress 
 |------|------|------------|
 | `mvs_bp_upload_activity_recorded` | After upload activity is saved to BP | `$activity_id`, `$media_id` |
 | `mvs_bp_comment_activity_recorded` | After comment activity is saved to BP | `$activity_id`, `$comment_id` |
+
+---
+
+## Pro-Only Actions **(Pro)**
+
+These actions are fired by WPMediaVerse Pro and only available when the Pro plugin is active.
+
+### Competition Actions
+
+| Hook | When | Parameters |
+|------|------|------------|
+| `mvs_challenge_created` | Admin creates a new challenge | `$competition_id`, `$args`, `$created_by` |
+| `mvs_challenge_entry_submitted` | User submits entry to a challenge | `$challenge_id`, `$user_id`, `$media_id` |
+| `mvs_challenge_finalized` | Challenge voting ends, winners determined | `$challenge_id`, `$results` |
+| `mvs_battle_created` | User creates a battle | `$competition_id`, `$challenger_id`, `$opponent_id` |
+| `mvs_battle_accepted` | Opponent accepts a battle invite | `$battle_id`, `$user_id` |
+| `mvs_battle_resolved` | Battle voting ends, winner determined | `$battle_id`, `$winner_id`, `$loser_id` |
+| `mvs_tournament_created` | Admin creates a tournament | `$competition_id`, `$args`, `$created_by` |
+| `mvs_tournament_started` | Tournament registration closes, bracket generated | `$tournament_id` |
+| `mvs_tournament_match_resolved` | A single bracket match is resolved | `$match_id`, `$winner_id` |
+| `mvs_tournament_finalized` | Tournament ends, champion crowned | `$competition_id`, `$champion_id` |
+
+### Autopilot Actions
+
+| Hook | When | Parameters |
+|------|------|------------|
+| `mvs_autopilot_challenge_created` | Autopilot successfully creates a weekly challenge | `$competition_id`, `$theme` |
+| `mvs_autopilot_create_failed` | Autopilot failed to create a challenge | `$error`, `$theme` |
+| `mvs_autopilot_no_theme_available` | All themes in the pool have been used | -- |
+| `mvs_autopilot_pool_reset` | Theme pool recycled back to the beginning | `$pool` |
+
+### Streak Actions
+
+| Hook | When | Parameters |
+|------|------|------------|
+| `mvs_streak_milestone` | User reaches a streak milestone (7, 30, 100, 365 days) | `$user_id`, `$days`, `$xp_awarded` |
+
+### Video & Caption Actions
+
+| Hook | When | Parameters |
+|------|------|------------|
+| `mvs_pro_transcode_complete` | All transcode presets finished for a media item | `$media_id`, `$results`, `$final_status` |
+| `mvs_pro_captions_generated` | Whisper transcription saved as WebVTT | `$media_id`, `$vtt_url` |
+
+### Quota & Membership Actions
+
+| Hook | When | Parameters |
+|------|------|------------|
+| `mvs_pro_credits_added` | Credits added to a user's quota | `$user_id`, `$media_type`, `$amount`, `$source` |
+| `mvs_pro_woo_package_assigned` | WooCommerce order assigns a quota package | `$user_id`, `$product_id`, `$package_id`, `$order_status` |
+| `mvs_pro_woo_package_reverted` | WooCommerce order cancelled, reverted to default | `$user_id`, `$default_package_id`, `$order_status` |
+| `mvs_pro_memberpress_package_assigned` | MemberPress membership assigns a package | `$user_id`, `$membership_id`, `$package_id` |
+| `mvs_pro_memberpress_package_reverted` | MemberPress membership expired, reverted | `$user_id`, `$default_package_id` |
+| `mvs_pro_pmpro_package_assigned` | PMPro level assigns a package | `$user_id`, `$level_id`, `$package_id` |
+| `mvs_pro_pmpro_package_reverted` | PMPro level cancelled, reverted | `$user_id`, `$default_package_id` |
+| `mvs_quota_render_mapping_fields` | Admin quota page renders mapping fields | -- |
+| `mvs_quota_save_mapping` | Admin saves quota mapping | -- |
+
+### Layout Actions
+
+| Hook | When | Parameters |
+|------|------|------------|
+| `mvs_layout_assets` | After the active layout's CSS/JS is enqueued | `$layout_instance`, `$slug` |
+
+---
+
+## Pro-Only Filters **(Pro)**
+
+### Layout Filters
+
+| Filter | Description | Parameters | Default |
+|--------|-------------|------------|---------|
+| `mvs_active_layout` | Override the active layout slug | `$slug` | Value of `mvs_pro_feed_layout` option |
+| `mvs_layout_modes` | Register custom layout modes | `$modes` (slug => class) | Built-in 4 modes |
+| `mvs_layout_template_map` | Override template file mapping for active layout | `$map`, `$layout_instance` | Layout's default map |
+
+### Messaging Filters (Pro copy)
+
+These filters exist in both free and Pro. When Pro is active, its messaging service takes priority.
+
+| Filter | Description | Parameters | Default |
+|--------|-------------|------------|---------|
+| `mvs_dm_access_level` | Override DM access check result | `$access`, `$sender_id`, `$recipient_id` | Site setting |
+| `mvs_dm_message_rate_limit` | Max messages per minute per user | `$limit` | `20` |
+| `mvs_dm_convo_rate_limit` | Max new conversations per hour | `$limit` | `10` |
+| `mvs_message_max_length` | Max message character length | `$length` | `2000` |
+| `mvs_dm_max_upload_size` | Max DM attachment file size in bytes | `$bytes` | `10 * MB_IN_BYTES` |
