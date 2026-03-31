@@ -1,0 +1,275 @@
+# Integrations
+
+WPMediaVerse connects with 12+ third-party services and plugins out of the box. No custom code, no middleware — configure credentials in settings and the integration activates.
+
+## Integration Map
+
+| Integration | Plugin | What It Does | Free | Pro |
+|-------------|--------|-------------|:----:|:---:|
+| **BuddyPress** | Free | Profile media tabs, group media, activity stream, notifications | Yes | Yes |
+| **BuddyNext** | Free | Enhanced member directory and profile blocks | Yes | Yes |
+| **wb-gamification** | Pro | XP points, badges, leaderboards for all competitions | -- | Yes |
+| **Amazon S3** | Pro | Store all media files on S3 with CDN delivery | -- | Yes |
+| **BunnyCDN** | Pro | Store and deliver media via BunnyCDN edge network | -- | Yes |
+| **OpenAI** | Free | AI content moderation, auto-tagging, description generation | Yes | Yes |
+| **Google Cloud Vision** | Pro | Advanced image labeling, object detection, safe search | -- | Yes |
+| **AWS Rekognition** | Pro | Face detection, content moderation, celebrity recognition | -- | Yes |
+| **OpenAI Whisper** | Pro | Automatic video/audio transcription to WebVTT captions | -- | Yes |
+| **MemberPress** | Pro | Auto-assign quota packages based on membership level | -- | Yes |
+| **Paid Memberships Pro** | Pro | Auto-assign quota packages based on PMPro level | -- | Yes |
+| **WooCommerce** | Pro | Sell upload quota packages as WooCommerce products | -- | Yes |
+| **WordPress Webhooks** | Free | Send real-time HTTP notifications on media events | Yes | Yes |
+
+## Community & Social
+
+### BuddyPress
+
+WPMediaVerse is the most complete media solution for BuddyPress communities. The integration activates automatically when BuddyPress is detected — no configuration needed.
+
+**What users get:**
+- A **Media** tab on every member profile showing their uploads in a grid
+- A **Media** tab in every group where members upload and share within the group
+- Media uploads appear as activity items in the BuddyPress activity stream with thumbnails
+- Notifications when someone likes, comments on, or shares your media
+- One-click media sharing from the lightbox directly into BuddyPress activity
+
+**What admins get:**
+- Zero configuration — activate BuddyPress and the integration works
+- Media tab visibility follows BuddyPress privacy settings
+- Activity items follow BuddyPress moderation rules
+- Compatible with BuddyPress 12.0+
+
+See [BuddyPress Integration](../buddypress/overview.md) for full details.
+
+### BuddyNext
+
+If you use the BuddyNext theme, WPMediaVerse detects it automatically and enhances the member directory with media counts and the profile layout with media grid blocks.
+
+### wb-gamification **(Pro)**
+
+WPMediaVerse Pro registers 14 gamification actions with the wb-gamification plugin:
+
+| Action | When | Default XP |
+|--------|------|-----------|
+| Upload a photo | User uploads media | 10 |
+| Receive a like | Someone reacts to your media | 5 |
+| Receive a comment | Someone comments on your media | 5 |
+| Follow a user | User follows someone | 2 |
+| Enter a challenge | User submits to a challenge | 10 |
+| Win a challenge (1st) | First place in challenge | 100 |
+| Win a challenge (2nd) | Second place | 50 |
+| Win a challenge (3rd) | Third place | 25 |
+| Create a battle | User starts a 1v1 battle | 5 |
+| Win a battle | Win a head-to-head battle | 50 |
+| Register for tournament | User joins a tournament | 10 |
+| Win a tournament match | Advance one round | 25 |
+| Win a tournament | Tournament champion | 200 |
+| Reach streak milestone | 7/30/100/365 day streak | 50-5000 |
+
+All XP values are configurable in **Media > Settings > Gamification**. The wb-gamification plugin handles points, badges, leaderboards, and leveling — WPMediaVerse triggers the actions.
+
+## Cloud Storage
+
+### Amazon S3 **(Pro)**
+
+Offload every upload to an S3 bucket. Files are served from S3 directly (or via CloudFront if configured).
+
+**What you get:**
+- Unlimited storage (pay-as-you-go with AWS)
+- Global CDN delivery when paired with CloudFront
+- Signed URLs for private/members-only media
+- Automatic retry (3 attempts) on upload failure
+- Connection test button in admin to verify credentials
+
+**Setup:** Paste your bucket name, region, access key, and secret key into **Media > Settings > Storage > Amazon S3**. Click "Test Connection" to verify. New uploads go to S3 immediately.
+
+**Security:** Store credentials in `wp-config.php` instead of the database:
+```php
+define( 'MVS_PRO_AWS_ACCESS_KEY', 'AKIA...' );
+define( 'MVS_PRO_AWS_SECRET_KEY', '...' );
+```
+
+See [Cloud Storage](../pro-features/cloud-storage.md) for IAM policy and full setup guide.
+
+### BunnyCDN **(Pro)**
+
+Store and deliver media through BunnyCDN's global edge network.
+
+**What you get:**
+- 114 edge locations worldwide
+- Automatic image optimization
+- Per-request pricing (no minimum commitment)
+- Simpler setup than AWS (one API key)
+
+**Setup:** Enter your storage zone name, API key, and CDN hostname into **Media > Settings > Storage > BunnyCDN**.
+
+### Custom Storage Drivers
+
+WPMediaVerse uses a `StorageDriverInterface` that any developer can implement. Build drivers for Google Cloud Storage, DigitalOcean Spaces, Wasabi, Backblaze B2, or any S3-compatible service.
+
+See [Custom Storage Drivers](../developer-guide/custom-storage-drivers.md) for the interface spec.
+
+## AI & Machine Learning
+
+### OpenAI (GPT + Vision)
+
+Built into the free plugin. Uses the OpenAI API for:
+
+- **Content moderation** — Automatically flag inappropriate uploads before they appear on the site
+- **Auto-tagging** — AI suggests relevant tags based on image content
+- **Description generation** — Generate alt text and descriptions for accessibility
+- **Monthly budget cap** — Set a dollar limit to prevent unexpected API costs
+
+**Setup:** Paste your OpenAI API key into **Media > Settings > AI & Moderation**.
+
+### Google Cloud Vision **(Pro)**
+
+Adds Google's image analysis capabilities:
+
+- **Label detection** — Identify objects, locations, activities in photos
+- **Safe search** — Detect explicit, violent, or medical content
+- **Text detection** — Extract text from images (OCR)
+- Circuit breaker pattern prevents API hammering on failures
+
+**Setup:** Paste your Google Cloud API key into **Media > Settings > AI & Moderation > Google Vision**.
+
+### AWS Rekognition **(Pro)**
+
+Adds Amazon's image and video analysis:
+
+- **Object and scene detection** — Identify objects with confidence scores
+- **Face detection** — Detect faces with attributes (smile, glasses, age range)
+- **Content moderation** — Flag suggestive, violent, or explicit content
+- Circuit breaker pattern with automatic recovery
+
+**Setup:** Uses the same AWS credentials as S3 storage, or set separate credentials in **Media > Settings > AI & Moderation > AWS Rekognition**.
+
+### OpenAI Whisper **(Pro)**
+
+Automatic speech-to-text transcription for video and audio uploads:
+
+- Generates WebVTT caption files
+- Captions are searchable and displayed as subtitles in the video player
+- Process runs asynchronously via Action Scheduler
+- Supports 50+ languages
+
+**Setup:** Enable at **Media > Settings > Video > Auto-Captions** (uses the same OpenAI API key).
+
+## Monetization
+
+### MemberPress **(Pro)**
+
+Automatically assign upload quota packages based on MemberPress membership levels.
+
+**How it works:**
+1. Create quota packages in **Media > Quotas** (e.g., "Free: 50 photos", "Premium: unlimited")
+2. Map each MemberPress membership to a quota package
+3. When a user purchases or is assigned a membership, their quota updates automatically
+4. When a membership expires, the user reverts to the default package
+
+### Paid Memberships Pro **(Pro)**
+
+Same automatic package assignment, but using PMPro membership levels instead of MemberPress.
+
+### WooCommerce **(Pro)**
+
+Sell upload quota packages as WooCommerce products:
+
+**How it works:**
+1. Create quota packages in **Media > Quotas**
+2. Create a WooCommerce product and map it to a quota package
+3. When a customer completes checkout, their quota package activates
+4. If the order is refunded or cancelled, the package reverts to default
+
+This lets you sell storage tiers directly from your WooCommerce store.
+
+## Webhooks
+
+WPMediaVerse can send real-time HTTP POST notifications to external services when events occur:
+
+| Event | Payload |
+|-------|---------|
+| Media uploaded | Media ID, file URL, author, type, privacy |
+| Media deleted | Media ID |
+| Comment posted | Comment ID, media ID, author, content |
+| Reaction added | Media ID, user ID, reaction type |
+| Report submitted | Media ID, reporter ID, reason |
+| Moderation changed | Media ID, old status, new status |
+
+**Use cases:**
+- Notify a Slack channel when new media is uploaded
+- Trigger a Zapier workflow on media events
+- Sync media metadata to an external CMS or DAM
+- Log moderation actions to an audit system
+
+**Setup:** Add webhook URLs at **Media > Settings > Webhooks**. Each webhook can filter by event type.
+
+See [Webhooks](../settings/webhooks.md) for payload formats and authentication.
+
+## WordPress Core
+
+### Site Health
+
+WPMediaVerse registers 3 custom tests in **Tools > Site Health**:
+
+- **Database tables** — Verifies all custom tables exist and have the expected schema
+- **Upload directory** — Checks that the wpmediaverse upload directory is writable
+- **Required pages** — Confirms Dashboard, Explore, and Upload pages are assigned
+
+### GDPR / Privacy Tools
+
+- **Export Personal Data** — Exports all user media, comments, reactions, favorites, DMs, and follow relationships
+- **Erase Personal Data** — Removes all of the above when processing an erasure request
+- **Privacy Policy** — Suggests privacy policy text via WordPress's built-in privacy policy tool
+
+See [GDPR & Privacy Compliance](../features/gdpr-privacy.md).
+
+### REST API
+
+WPMediaVerse exposes 50+ REST endpoints in the free plugin and 30+ additional endpoints in Pro, all under the `mvs/v1` and `mvs-pro/v1` namespaces. Any external application, mobile app, or headless frontend can consume the full API.
+
+See [REST API Reference](../developer-guide/rest-api.md) and [Pro REST API Reference](../developer-guide/pro-rest-api.md).
+
+### WP-CLI
+
+8 CLI commands for automation, migration, and maintenance:
+
+```
+wp mvs stats              # Show media stats
+wp mvs migrate            # Run database migrations
+wp mvs reindex            # Rebuild media index
+wp mvs cache-flush        # Flush all caches
+wp mvs prune-views        # Clean old view records
+wp mvs cleanup-expired    # Remove expired stories/tokens
+wp mvs moderation-stats   # Show moderation queue stats
+wp mvs import-rtmedia     # Import from rtMedia (Pro)
+```
+
+See [WP-CLI Commands](../developer-guide/wp-cli.md).
+
+### Gutenberg Blocks
+
+5 blocks for the block editor:
+
+| Block | Description |
+|-------|-------------|
+| Media Grid | Display a filtered grid of media items |
+| Explore Feed | Full explore page with search, tags, and pagination |
+| Album Viewer | Display an album's contents |
+| Lock Overlay | Restrict content visibility with a paywall-style overlay |
+| Profile Edit | Inline profile editing block |
+
+See [Gutenberg Blocks](../features/blocks.md).
+
+### Shortcodes
+
+For classic editor and page builders:
+
+| Shortcode | Description |
+|-----------|-------------|
+| `[mvs_gallery]` | Media grid with filtering |
+| `[mvs_upload]` | Upload form |
+| `[mvs_dashboard]` | User's media dashboard |
+| `[mvs_profile]` | User profile card |
+
+See [Shortcodes](../features/shortcodes.md).
