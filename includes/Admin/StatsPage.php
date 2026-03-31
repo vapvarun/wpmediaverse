@@ -107,7 +107,7 @@ class StatsPage {
 			);
 		}
 
-		fclose( $output );
+		fclose( $output ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- CSV export to php://output requires native stream ops.
 		exit;
 	}
 

@@ -247,8 +247,8 @@ class Commands {
 			}
 
 			WP_CLI::log( "Processed {$total} media items..." );
-
-		} while ( count( $rows ) === $batch_size );
+			$row_count = count( $rows );
+		} while ( $row_count === $batch_size );
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		WP_CLI::success( "Reindex complete. {$total} media items checked, {$stats_added} stats rows created." );

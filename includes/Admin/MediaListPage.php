@@ -223,9 +223,9 @@ class MediaListPage {
 				if ( 0 === $info[1] && '' !== $key ) {
 					continue;
 				}
-				$url       = $key ? add_query_arg( 'status', $key, $base_url ) : $base_url;
-				$variant   = ( $current === $key ) ? $info[2] : '';
-				$classes   = 'mvs-stat-card' . ( $variant ? ' ' . $variant : '' );
+				$url     = $key ? add_query_arg( 'status', $key, $base_url ) : $base_url;
+				$variant = ( $current === $key ) ? $info[2] : '';
+				$classes = 'mvs-stat-card' . ( $variant ? ' ' . $variant : '' );
 				?>
 				<a href="<?php echo esc_url( $url ); ?>" class="<?php echo esc_attr( $classes ); ?>">
 					<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $info[1] ) ); ?></span>
