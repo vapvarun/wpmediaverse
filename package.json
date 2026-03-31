@@ -1,18 +1,29 @@
 {
 	"name": "wpmediaverse",
 	"version": "1.0.0",
-	"description": "A general-purpose WordPress media platform plugin.",
+	"private": true,
+	"description": "Complete media platform for WordPress.",
 	"author": "WBCom Designs",
 	"license": "GPL-2.0-or-later",
-	"main": "build/index.js",
 	"scripts": {
 		"build": "wp-scripts build --webpack-src-dir=src/blocks --output-path=build/blocks --experimental-modules",
 		"start": "wp-scripts start --webpack-src-dir=src/blocks --output-path=build/blocks --experimental-modules",
 		"lint:js": "wp-scripts lint-js",
-		"lint:css": "wp-scripts lint-style",
-		"packages-update": "wp-scripts packages-update"
+		"lint:css": "wp-scripts lint-style"
 	},
 	"devDependencies": {
-		"@wordpress/scripts": "^30.0.0"
+		"@wordpress/scripts": "^30.0.0",
+		"grunt": "^1.6.1",
+		"grunt-contrib-clean": "^2.0.1",
+		"grunt-contrib-compress": "^2.0.0",
+		"grunt-contrib-copy": "^1.0.0",
+		"grunt-contrib-cssmin": "^5.0.0",
+		"grunt-contrib-uglify": "^5.2.2",
+		"grunt-rtlcss": "^2.0.2",
+		"grunt-wp-i18n": "^1.0.4"
+	},
+	"dependencies": {
+		"@wordpress/interactivity": "^6.0.0",
+		"rtlcss": "^4.3.0"
 	}
 }
