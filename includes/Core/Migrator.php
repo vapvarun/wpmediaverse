@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 8;
+	const CURRENT_VERSION = 9;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -578,5 +578,51 @@ class Migrator {
 		if ( ! empty( $col ) ) {
 			$wpdb->query( "ALTER TABLE {$table} DROP COLUMN attachment_id" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		}
+	}
+
+	/**
+	 * Migration v9 — create mvs_media_meta + mvs_transactions if missing.
+	 *
+	 * These tables were used by MediaMeta service and quota tracking but
+	 * were not included in the initial migration scripts.
+	 *
+	 * @since 1.0.1
+	 */
+	private function migrate_to_9(): void {
+		global $wpdb;
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$prefix          = $wpdb->prefix;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		// Sparse key-value metadata for media items.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
+			"CREATE TABLE IF NOT EXISTS {$prefix}mvs_media_meta (
+				media_id bigint(20) unsigned NOT NULL,
+				meta_key varchar(100) NOT NULL,
+				meta_value longtext,
+				PRIMARY KEY (media_id, meta_key),
+				KEY meta_key (meta_key)
+			) {$charset_collate}"
+		);
+
+		// Quota usage transactions.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
+			"CREATE TABLE IF NOT EXISTS {$prefix}mvs_transactions (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				user_id bigint(20) unsigned NOT NULL,
+				media_type varchar(20) NOT NULL,
+				delta int NOT NULL,
+				balance_after int NOT NULL DEFAULT 0,
+				reason varchar(100) NOT NULL DEFAULT '',
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY (id),
+				KEY user_type (user_id, media_type),
+				KEY created_at (created_at)
+			) {$charset_collate}"
+		);
 	}
 }
