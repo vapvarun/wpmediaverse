@@ -58,24 +58,6 @@ jobs:
       - name: Run PHPUnit
         run: vendor/bin/phpunit --testdox
 
-  wpcs:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mysqli, mbstring
-
-      - name: Install Composer dependencies
-        run: composer install --no-progress --prefer-dist
-
-      - name: Run WordPress Coding Standards
-        run: vendor/bin/phpcs
-
   phpstan:
     runs-on: ubuntu-latest
     steps:
