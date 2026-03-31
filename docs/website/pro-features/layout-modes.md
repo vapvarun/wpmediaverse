@@ -51,7 +51,7 @@ The selected mode applies to the explore archive, user profile media tab, and an
 
 Perfect for photo-sharing communities, daily uploads, and story-driven sites.
 
-![Instagram layout showing a 3-column square grid](../images/explore-feed.png)
+![Instagram layout with story circles and vertical card feed](../images/layout-instagram.png)
 
 The Instagram layout renders a uniform square grid. Each thumbnail is cropped to a 1:1 ratio regardless of the original file dimensions.
 
@@ -68,7 +68,7 @@ The Instagram layout renders a uniform square grid. Each thumbnail is cropped to
 
 Ideal for inspiration boards, discovery-focused sites, and mixed-format content.
 
-![Pinterest masonry layout with cards of varying heights](../images/explore-feed.png)
+![Pinterest masonry layout with cards of varying heights](../images/layout-pinterest.png)
 
 The Pinterest layout uses a masonry algorithm that preserves each image's original proportions. Cards include the media title and a truncated description below the image.
 
@@ -85,7 +85,7 @@ The Pinterest layout uses a masonry algorithm that preserves each image's origin
 
 Best for photography portfolios, camera clubs, and image-quality-focused communities.
 
-![Flickr justified gallery layout](../images/explore-feed.png)
+![Flickr justified gallery layout with full-width rows](../images/layout-flickr.png)
 
 The Flickr layout uses a justified gallery algorithm: images in each row are resized to fill the full container width while maintaining a consistent row height. The default row height is 200px and is configurable per shortcode.
 
