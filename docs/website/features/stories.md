@@ -2,7 +2,7 @@
 
 Stories are time-limited media sequences — similar to Instagram or WhatsApp Stories — displayed in a full-screen viewer with auto-advance.
 
-[screenshot: Story viewer in full-screen mode with progress bar at top]
+![Story viewer in full-screen mode](../images/lightbox.png)
 
 ## Displaying Stories
 

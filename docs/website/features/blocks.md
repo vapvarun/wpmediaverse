@@ -2,7 +2,7 @@
 
 WPMediaVerse registers 8 Gutenberg blocks under the **WPMediaVerse** block category. All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
 
-[screenshot: Gutenberg block inserter showing the WPMediaVerse block category with all 8 blocks]
+![Gutenberg block inserter showing the WPMediaVerse block category](../images/admin-overview.png)
 
 ## Block List
 
@@ -27,7 +27,7 @@ All 8 blocks can be used in Full Site Editing (FSE) templates, template parts, a
 
 ## Media Upload Block
 
-[screenshot: Media Upload block in the editor with settings panel showing max files option]
+![Media Upload block in the editor](../images/upload-page.png)
 
 **Block Settings:**
 - Max Files per Upload (default: 10)
@@ -35,7 +35,7 @@ All 8 blocks can be used in Full Site Editing (FSE) templates, template parts, a
 
 ## Media Grid Block
 
-[screenshot: Media Grid block in editor showing filter controls and grid layout]
+![Media Grid block showing filter controls and grid layout](../images/explore-feed.png)
 
 **Block Settings:**
 - Media Type Filter (image/video/audio/all)

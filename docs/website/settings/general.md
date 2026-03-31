@@ -2,7 +2,7 @@
 
 Access these settings at **Media > Settings > General**.
 
-[screenshot: General settings tab showing all sections]
+![General settings tab](../images/admin-settings-general.png)
 
 ## General Section
 
@@ -23,20 +23,16 @@ Access these settings at **Media > Settings > General**.
 
 > **Changing the storage driver** only affects new uploads. Existing files remain in their original storage location. A notice appears after saving if the driver is changed.
 
-## Direct Messages Section
+## Pages Section
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| Enable Direct Messages | Enabled | Allow users to send direct messages to each other. |
-| Who Can Send Messages | Members Only | Restrict who can initiate direct messages. |
+Assign existing WordPress pages to WPMediaVerse page roles. WPMediaVerse uses these assignments to generate links in the navigation, chat panel, and notification emails.
 
-## Defining the API Key via wp-config.php
+| Option | Option Key | Description |
+|--------|-----------|-------------|
+| Dashboard Page | `mvs_page_dashboard` | The main logged-in user dashboard. Displays the follow feed, quick upload, and activity summary. |
+| Explore Page | `mvs_page_explore` | The public media browse archive. Used as the landing page for non-logged-in visitors. |
+| Upload Page | `mvs_page_upload` | The dedicated upload form page. Linked from the dashboard and the navigation bar. |
 
-Instead of storing your OpenAI API key in the database, define it as a constant:
+Create a standard WordPress page for each role, then select it from the corresponding dropdown. Each page should contain only the matching WPMediaVerse shortcode (`[mvs_dashboard]`, `[mvs_explore]`, `[mvs_upload]`) with no other content.
 
-```php
-// wp-config.php
-define( 'MVS_OPENAI_API_KEY', 'sk-...' );
-```
-
-The settings page shows a notice when this constant is detected and the database field is ignored.
+> If a page assignment is empty, WPMediaVerse falls back to the site home URL for that link. Set all three pages to avoid broken navigation.

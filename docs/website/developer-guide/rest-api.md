@@ -357,18 +357,6 @@ Get per-item statistics (views, downloads, reactions).
 
 ---
 
-## Notifications
-
-### GET /notifications
-
-List the current user's WPMediaVerse notifications.
-
-### PUT /notifications/{id}
-
-Mark a notification as read/unread.
-
----
-
 ## Reports
 
 ### POST /media/{id}/report
@@ -393,6 +381,232 @@ List `mvs_tag` terms. Supports `search`, `per_page`.
 ### POST /tags
 
 Create a new tag. Requires `moderate_mvs_media`.
+
+### GET /tags/cloud
+
+Return all tags with usage counts, suitable for rendering a tag cloud.
+
+### POST /tags/merge
+
+Merge two tags. Requires `moderate_mvs_media`. All media carrying `source_id` will be re-tagged with `target_id` and `source_id` will be deleted.
+
+```json
+{
+  "source_id": 12,
+  "target_id": 7
+}
+```
+
+### PUT /tags/{id}
+
+Rename a tag. Requires `moderate_mvs_media`.
+
+```json
+{ "name": "New Tag Name" }
+```
+
+---
+
+## Notifications
+
+### GET /notifications
+
+List the current user's WPMediaVerse notifications.
+
+### PUT /notifications/{id}
+
+Mark a notification as read/unread.
+
+### POST /notifications/mark-all-read
+
+Mark all of the current user's notifications as read.
+
+---
+
+## Messaging
+
+**Base path:** `/wp-json/mvs/v1/`
+
+All messaging endpoints require authentication. Message requests (conversations from users you do not follow) land in the **Requests** tab until accepted or declined.
+
+### GET /me/conversations
+
+List the current user's conversations.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `tab` | string | `all` | Filter conversations: `all`, `unread`, `requests` |
+| `per_page` | int | `20` | Conversations per page (max: 50) |
+| `page` | int | `1` | Page number |
+
+### POST /conversations
+
+Start a new conversation.
+
+```json
+{ "recipient_id": 42 }
+```
+
+**Response:** `201 Created` with the new conversation object.
+
+### GET /conversations/{id}/messages
+
+List messages in a conversation. Returns newest-first.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `per_page` | int | `30` | Messages per page (max: 100) |
+| `before` | int | (none) | Return messages with ID less than this value (cursor pagination) |
+
+### POST /conversations/{id}/messages
+
+Send a message. Requires that the conversation is not in a declined-request state.
+
+```json
+{
+  "content": "Hey, love the photo!",
+  "parent_id": null,
+  "message_type": "text",
+  "media_id": null
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `content` | Yes (if no `media_id`) | Message text (max length controlled by `mvs_message_max_length`) |
+| `parent_id` | No | Reply to this message ID |
+| `message_type` | No | `text` (default) or `media` |
+| `media_id` | No | Attach an existing media post to the message |
+
+### PATCH /conversations/{id}
+
+Update conversation preferences for the current user.
+
+```json
+{
+  "is_muted": true,
+  "is_pinned": false,
+  "is_archived": false
+}
+```
+
+### DELETE /conversations/{id}
+
+Leave (soft-delete) the conversation for the current user.
+
+### POST /conversations/{id}/read
+
+Mark all messages in the conversation as read for the current user.
+
+### POST /conversations/{id}/typing
+
+Send a typing indicator event. Typically called while the user is composing. No persistent storage — triggers a real-time event only.
+
+### POST /conversations/{id}/accept
+
+Accept a message request. Moves the conversation from the **Requests** tab to **All**.
+
+### POST /conversations/{id}/decline
+
+Decline a message request. The conversation is removed from the inbox.
+
+### DELETE /messages/{id}
+
+Soft-delete a message for the current user. The message content is hidden but the record is retained.
+
+### DELETE /messages/{id}/unsend
+
+Hard-delete (unsend) a message. Only available within the edit window defined by `mvs_comment_edit_window`. Requires message ownership.
+
+### POST /messages/{id}/reactions
+
+Add an emoji reaction to a message.
+
+```json
+{ "emoji": "heart" }
+```
+
+### DELETE /messages/{id}/reactions
+
+Remove your emoji reaction from a message.
+
+### POST /messages/upload
+
+Upload an attachment to use in a DM. Returns a temporary media reference ID to pass as `media_id` when sending the message.
+
+**Body:** `multipart/form-data` with a single `file` field. Max size controlled by `mvs_dm_max_upload_size`.
+
+**Response:**
+
+```json
+{ "media_id": 204, "url": "https://example.com/..." }
+```
+
+### GET /me/messages/unread-count
+
+Return the total unread message count for the current user.
+
+**Response:**
+
+```json
+{ "count": 3 }
+```
+
+### GET /messages/poll
+
+Long-poll for new messages since a given message ID. The server holds the connection open (up to 30 seconds) and responds as soon as a new message arrives or the timeout is reached.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `since` | int | Return messages with ID greater than this value |
+
+---
+
+## Activity Feed
+
+### GET /mvs/v1/feed
+
+Return the activity feed for the current user.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `scope` | string | `public` | Feed scope: `public` (all public media) or `following` (media from followed users) |
+| `per_page` | int | `20` | Items per page (max: 100) |
+| `page` | int | `1` | Page number |
+
+### GET /mvs/v1/users/{id}/activity
+
+Return the public activity for a specific user — media uploads, album creations, and reactions.
+
+---
+
+## Users
+
+### GET /mvs/v1/users/{id}
+
+Get a user's public profile, including bio, avatar URL, follower/following counts, and public media count.
+
+### GET /mvs/v1/users/{id}/media
+
+List a user's public media. Supports `page`, `per_page`, `media_type`, `orderby`, `order`.
+
+### GET /mvs/v1/users/search
+
+Search for users by display name or username.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `q` | string | Search term (minimum 2 characters) |
 
 ---
 

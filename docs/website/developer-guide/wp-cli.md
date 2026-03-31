@@ -125,6 +125,68 @@ The command outputs progress as it processes each batch and shows a final count 
 
 ---
 
+## wp mvs cache-flush
+
+Flush all WPMediaVerse caches — both object cache groups and plugin-managed transients. Run this after making direct database changes or when stale data is suspected.
+
+```bash
+wp mvs cache-flush
+```
+
+**Output:**
+
+```
+Success: WPMediaVerse caches flushed.
+```
+
+---
+
+## wp mvs moderation-stats
+
+Display the current moderation queue statistics broken down by status.
+
+```bash
+wp mvs moderation-stats
+```
+
+**Output:**
+
+```
++----------+-------+
+| Status   | Count |
++----------+-------+
+| Pending  | 14    |
+| Approved | 3281  |
+| Rejected | 57    |
++----------+-------+
+```
+
+---
+
+## wp mvs backfill-activity-thumbnails
+
+Backfill BuddyPress activity thumbnails for media items that were imported without them (e.g., bulk imports or migrations from another plugin). Processes items in batches to avoid memory exhaustion.
+
+```bash
+# Backfill with default batch size.
+wp mvs backfill-activity-thumbnails
+
+# Use a smaller batch on memory-constrained hosts.
+wp mvs backfill-activity-thumbnails --batch-size=25
+
+# Preview what would be updated without writing to the database.
+wp mvs backfill-activity-thumbnails --dry-run
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--batch-size=<size>` | `50` | Number of activity records to process per batch |
+| `--dry-run` | off | Count eligible records without updating them |
+
+---
+
 ## Scheduling Maintenance with WP-CLI Cron
 
 Add these commands to your server cron for automated maintenance:

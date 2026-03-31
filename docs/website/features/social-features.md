@@ -1,12 +1,68 @@
 # Social Features
 
-WPMediaVerse includes reactions, comments, favorites, follows, mentions, and sharing — all built on a custom database layer separate from WordPress comments.
+React, comment, follow, and share — WPMediaVerse turns your media site into a living community where every photo starts a conversation.
+
+## What You Can Do
+
+- React to any photo or video with emoji reactions (like, love, wow, and more)
+- Comment on media and edit your comment within 15 minutes of posting
+- Follow photographers you love — their new uploads appear in your feed
+- Save media to your favorites for quick access later
+- @mention other members in comments to notify them directly
+- Share any public media item to social networks or copy a direct link
+- Report inappropriate content directly from the media page
+
+## How It Works (for Users)
+
+### Following Someone
+
+1. Visit any member's profile page
+2. Click **Follow** — their public uploads now appear in your feed
+3. To stop following, click **Unfollow** on their profile
+4. See everyone you follow under **My Media > Following**
+
+### Reacting to Media
+
+1. Open any media item
+2. Click the reaction bar below the photo
+3. Choose your reaction — like, love, wow, haha, sad, or angry
+4. Your reaction is shown instantly. Click the same reaction to remove it
+5. Click a different reaction to change yours
+
+![Media item with reaction bar showing emoji counts](../images/single-media.jpg)
+
+### Commenting
+
+1. Scroll to the comments section below any media item
+2. Type your comment in the text box and press Enter or click **Post**
+3. To @mention someone, type `@` followed by their username — they receive a notification
+4. To edit your comment, click the pencil icon next to it (available within 15 minutes of posting)
+5. To delete your comment, click the trash icon
+
+### Saving to Favorites
+
+1. Click the heart icon on any media item
+2. The item is added to your favorites list
+3. Find all your favorites under **My Media > Favorites** in your dashboard
+4. To save to a named collection instead, click the bookmark icon and choose or create a collection
+
+### Sharing Media
+
+1. Open any public media item
+2. Click **Share** to see options: copy the direct link, or share to social networks
+3. The share link respects the media's privacy — private media returns an error for unauthorized viewers
+
+## For Site Owners
+
+1. All social features are enabled by default
+2. Configure reaction types and moderation in **Media > Settings > Social**
+3. Set the comment edit window (default: 15 minutes) in **Media > Settings > Social**
+4. Set the auto-hide threshold: when a media item receives a certain number of reports, it is automatically hidden and sent to the moderation queue
+5. BuddyPress notifications fire automatically for reactions, comments, and mentions when BuddyPress is active
 
 ## Reactions
 
-Users can react to media items with emoji reactions (like, love, wow, etc.).
-
-[screenshot: Media item with reaction bar showing emoji counts]
+WPMediaVerse uses a custom reactions system stored in a dedicated database table, separate from WordPress post meta.
 
 ### REST API
 
@@ -28,7 +84,7 @@ do_action( 'mvs_reaction_added', $media_id, $user_id, $reaction_type );
 
 WPMediaVerse uses a custom comments system stored in a dedicated table, separate from WordPress's `wp_comments`.
 
-[screenshot: Comment section below a media item with reply threading]
+![Comment section below a media item](../images/single-media.jpg)
 
 ### REST API
 

@@ -2,7 +2,7 @@
 
 When BuddyPress is active, WPMediaVerse adds a **Media** tab to every user's BuddyPress profile page.
 
-[screenshot: BuddyPress member profile with Media tab active, showing user's media grid]
+![BuddyPress member profile with Media tab active](../images/bp-profile-media.jpg)
 
 ## Tab Location
 
@@ -24,7 +24,7 @@ The Media tab displays the profile owner's published media items in a paginated 
 - The profile owner sees all their own media.
 - Moderators (`moderate_mvs_media`) see all media.
 
-[screenshot: Media tab content — grid of photos with privacy badges]
+![Media tab content showing grid of photos with privacy badges](../images/bp-profile-media.jpg)
 
 ## Profile URL Pattern
 

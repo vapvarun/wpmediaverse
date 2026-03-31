@@ -118,4 +118,4 @@ Displays a profile edit form for the logged-in user, allowing them to update the
 
 No configurable attributes. The form is powered by the `mvs/profile-edit` Interactivity API store and saves to `/mvs/v1/profile`.
 
-[screenshot: Profile edit form with avatar upload, name fields, and bio textarea]
+![Profile edit form with avatar upload and name fields](../images/profile-own.png)

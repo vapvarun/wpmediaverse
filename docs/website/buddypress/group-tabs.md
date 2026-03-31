@@ -2,7 +2,7 @@
 
 When BuddyPress Groups is active, WPMediaVerse adds a **Media** tab to every BuddyPress group.
 
-[screenshot: BuddyPress group page with Media tab showing group's media grid]
+![BuddyPress group page with Media tab](../images/bp-group-media.jpg)
 
 ## Tab Location
 
@@ -46,7 +46,7 @@ do_action( 'mvs_media_group_assigned', $media_id, $group_id );
 
 The BuddyPress integration listens to this action and re-scopes the upload's activity item from the member component to the groups component, so it appears in the group's activity stream rather than the member's personal stream.
 
-[screenshot: BuddyPress group activity stream showing a media upload activity item with thumbnail]
+![BuddyPress group activity stream with media upload](../images/bp-activity-stream.jpg)
 
 ## Group Activity in the Activity Post Form
 

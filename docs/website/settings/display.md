@@ -2,7 +2,7 @@
 
 Access these settings at **Media > Settings > Display**.
 
-[screenshot: Display settings tab showing grid and thumbnail options]
+![Display settings tab showing grid and thumbnail options](../images/admin-settings-display.png)
 
 ## Media Display Section
 

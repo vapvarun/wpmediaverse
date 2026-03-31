@@ -1,14 +1,14 @@
 # Setup Wizard
 
-After activation, WPMediaVerse redirects you to a 3-step setup wizard. You can also access it at any time via **Media > Setup** in your admin menu.
+After you activate WPMediaVerse, a 3-step wizard guides you through the only settings you need to make your first upload possible. The whole thing takes about two minutes.
 
-[screenshot: Setup wizard welcome screen showing step indicator]
+![Setup wizard welcome screen](../images/admin-overview.png)
 
 ## Step 1: Permissions
 
 Configure which user roles can upload and manage media.
 
-[screenshot: Setup wizard permissions step with role checkboxes]
+![Setup wizard permissions step with role checkboxes](../images/admin-settings-general.png)
 
 By default, the wizard grants upload access to Subscribers, Authors, Editors, and Administrators. You can restrict or expand this per role.
 
@@ -28,7 +28,7 @@ You can change role capabilities at any time in **Media > Settings > Permissions
 
 Configure how media appears on your site.
 
-[screenshot: Setup wizard display step showing grid column and items-per-page dropdowns]
+![Setup wizard display step showing grid column and items-per-page options](../images/admin-settings-display.png)
 
 | Option | Choices | Default |
 |--------|---------|---------|
@@ -40,7 +40,7 @@ Configure how media appears on your site.
 
 The wizard marks setup as complete and redirects you to the **Media Overview** dashboard.
 
-[screenshot: Setup wizard completion screen with link to media overview]
+![Setup wizard completion screen](../images/admin-overview.png)
 
 From here you can:
 - Upload your first media file

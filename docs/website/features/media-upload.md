@@ -1,8 +1,53 @@
 # Media Upload
 
-WPMediaVerse provides a frontend upload form powered by the WordPress Interactivity API. Users upload files directly from the front end — no admin access required.
+Share photos, videos, and audio with your community — no admin access needed, straight from any page on your site.
 
-[screenshot: Frontend upload form with drag-and-drop zone, title field, and privacy dropdown]
+## What You Can Do
+
+- Drag and drop files directly onto the upload zone
+- Paste an image from your clipboard to upload instantly
+- Select multiple files at once for bulk upload
+- Set a title, description, and tags for each file before submitting
+- Choose who can see each file: public, members only, friends, or private
+- Upload JPEG, PNG, GIF, WebP images; MP4 and WebM videos; MP3 and OGG audio
+
+## How It Works (for Users)
+
+1. Go to the upload page your site administrator set up (often `/upload/` or `/media/upload/`)
+2. Drag your files onto the upload zone, or click **Browse** to pick files from your device
+3. To paste a screenshot or copied image, click inside the upload zone and press Ctrl+V (Cmd+V on Mac)
+4. For each file, enter a title and optional tags. Select a privacy level from the dropdown
+5. Click **Upload** — a progress bar shows each file uploading
+6. When finished, your files appear in your media dashboard and your profile page
+7. Find all your uploads anytime under **My Media** or your profile's Media tab
+
+![Frontend upload form with drag-and-drop zone and privacy dropdown](../images/upload-page.png)
+
+## For Site Owners
+
+1. Go to **Media > Settings > General** and confirm the allowed file types match what your community needs
+2. Add the upload form to any page: in the block editor, insert the **WPMediaVerse: Media Upload** block; in the classic editor, add `[mvs_upload]`
+3. Set the default privacy level and maximum file size for your site
+4. Enable **Strip EXIF Data** (on by default) to automatically remove GPS coordinates from photos before storage
+5. Users see the upload form immediately on that page when logged in
+
+## Supported File Formats
+
+| Type | Formats |
+|------|---------|
+| Images | JPEG, PNG, GIF, WebP |
+| Video | MP4, WebM |
+| Audio | MP3 (MPEG), OGG |
+
+Customize allowed types in **Media > Settings > General**.
+
+## What Happens After Upload
+
+- Thumbnails are generated automatically for images and videos
+- EXIF GPS data is stripped from JPEG files (other metadata like camera model is kept)
+- A SHA-256 hash is computed to detect duplicate files
+- If AI moderation is enabled, the file is queued for automatic review
+- BuddyPress activity is recorded if BuddyPress is active on your site
 
 ## Adding the Upload Form
 

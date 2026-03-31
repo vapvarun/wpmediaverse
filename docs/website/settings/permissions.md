@@ -2,7 +2,7 @@
 
 Access these settings at **Media > Settings > Permissions**.
 
-[screenshot: Permissions tab showing role-capability matrix with checkboxes]
+![Permissions tab showing role-capability matrix](../images/admin-settings-general.png)
 
 ## Custom Capabilities
 

@@ -1,6 +1,6 @@
 # Installation
 
-WPMediaVerse requires WordPress 6.5 or higher and PHP 7.4 or higher.
+Get WPMediaVerse running on your WordPress site in under five minutes — install, activate, and your community is ready to start uploading.
 
 ## Requirements
 
@@ -15,7 +15,7 @@ WPMediaVerse requires WordPress 6.5 or higher and PHP 7.4 or higher.
 2. Search for **WPMediaVerse**.
 3. Click **Install Now**, then **Activate**.
 
-[screenshot: WordPress plugin search showing WPMediaVerse install button]
+![WordPress plugin search showing WPMediaVerse install button](../images/admin-overview.png)
 
 ## Installing via ZIP Upload
 
@@ -24,7 +24,7 @@ WPMediaVerse requires WordPress 6.5 or higher and PHP 7.4 or higher.
 3. Choose the ZIP file and click **Install Now**.
 4. Click **Activate Plugin**.
 
-[screenshot: Upload plugin screen with WPMediaVerse ZIP selected]
+![Upload plugin screen with WPMediaVerse ZIP selected](../images/admin-overview.png)
 
 ## Installing via FTP
 

@@ -32,7 +32,8 @@
         { "slug": "display", "title": "Display Settings" },
         { "slug": "permissions", "title": "Permissions" },
         { "slug": "ai-moderation", "title": "AI & Moderation" },
-        { "slug": "webhooks", "title": "Webhooks" }
+        { "slug": "webhooks", "title": "Webhooks" },
+        { "slug": "social", "title": "Social & Messaging Settings" }
       ]
     },
     {
@@ -45,10 +46,13 @@
         { "slug": "collections", "title": "Collections" },
         { "slug": "stories", "title": "Stories" },
         { "slug": "social-features", "title": "Social Features" },
+        { "slug": "direct-messages", "title": "Direct Messages" },
         { "slug": "privacy-access-control", "title": "Privacy & Access Control" },
         { "slug": "ai-moderation", "title": "AI Moderation" },
         { "slug": "shortcodes", "title": "Shortcodes" },
-        { "slug": "blocks", "title": "Gutenberg Blocks" }
+        { "slug": "blocks", "title": "Gutenberg Blocks" },
+        { "slug": "gdpr-privacy", "title": "GDPR & Privacy Compliance" },
+        { "slug": "user-blocking", "title": "User Blocking & Reporting" }
       ]
     },
     {
@@ -64,15 +68,49 @@
       ]
     },
     {
+      "slug": "pro-features",
+      "title": "Pro Features",
+      "icon": "awards",
+      "pages": [
+        { "slug": "overview", "title": "Pro Overview" },
+        { "slug": "layout-modes", "title": "Layout Modes" },
+        { "slug": "cloud-storage", "title": "Cloud Storage (S3 & BunnyCDN)" },
+        { "slug": "video-transcoding", "title": "Video Transcoding" },
+        { "slug": "video-chapters", "title": "Video Chapters & Resume" },
+        { "slug": "auto-captions", "title": "Auto Captions & Transcription" },
+        { "slug": "watermarking", "title": "Watermarking" },
+        { "slug": "video-analytics", "title": "Video Analytics & Heatmaps" },
+        { "slug": "ai-providers", "title": "AI Providers (Vision & Rekognition)" },
+        { "slug": "quotas", "title": "Quotas & Credit Packages" },
+        { "slug": "advanced-privacy", "title": "Advanced Privacy Controls" }
+      ]
+    },
+    {
+      "slug": "gamification",
+      "title": "Gamification",
+      "icon": "superhero",
+      "pages": [
+        { "slug": "overview", "title": "Gamification Overview" },
+        { "slug": "challenges", "title": "Photo Challenges" },
+        { "slug": "battles", "title": "Photo Battles" },
+        { "slug": "tournaments", "title": "Tournaments" },
+        { "slug": "boosts", "title": "Media Boosts" },
+        { "slug": "streaks", "title": "Upload Streaks" },
+        { "slug": "admin-dashboard", "title": "Admin Dashboard" }
+      ]
+    },
+    {
       "slug": "developer-guide",
       "title": "Developer Guide",
       "icon": "editor-code",
       "pages": [
         { "slug": "rest-api", "title": "REST API Reference" },
+        { "slug": "pro-rest-api", "title": "Pro REST API Reference" },
         { "slug": "hooks-filters", "title": "Hooks & Filters" },
         { "slug": "template-overrides", "title": "Template Overrides" },
         { "slug": "custom-storage-drivers", "title": "Custom Storage Drivers" },
-        { "slug": "wp-cli", "title": "WP-CLI Commands" }
+        { "slug": "wp-cli", "title": "WP-CLI Commands" },
+        { "slug": "migration-tools", "title": "Migration Tools" }
       ]
     }
   ]

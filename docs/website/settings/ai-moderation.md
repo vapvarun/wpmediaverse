@@ -2,7 +2,7 @@
 
 Access these settings at **Media > Settings > AI & Moderation**.
 
-[screenshot: AI and Moderation settings tab]
+![AI and Moderation settings tab](../images/admin-settings-general.png)
 
 ## AI Features Section
 
@@ -37,7 +37,7 @@ When this constant is defined, the settings page field is disabled and shows a n
 
 Administrators with the `moderate_mvs_media` capability can review flagged media at **Media > Moderation Queue**.
 
-[screenshot: Moderation queue with pending media items and approve/reject actions]
+![Moderation queue with pending media items](../images/admin-moderation.jpg)
 
 The queue shows:
 - Media flagged by AI
@@ -48,7 +48,7 @@ The queue shows:
 
 The AI & moderation activity log is available at **Media > AI Logs**. It shows each AI call, the result, estimated cost, and any action taken.
 
-[screenshot: AI log viewer showing a list of analysis results with cost column]
+![AI log viewer showing analysis results](../images/admin-stats.png)
 
 ## Budget Alerts
 

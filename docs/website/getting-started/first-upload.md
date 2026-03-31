@@ -1,6 +1,6 @@
 # Your First Upload
 
-This guide walks you through uploading your first media file using the frontend upload form.
+Upload your first photo in two minutes — drag, drop, set privacy, done. Here is exactly how it works.
 
 ## Option 1: Use the Upload Block or Shortcode
 
@@ -13,7 +13,7 @@ Add the upload form to any page using either the Gutenberg block or shortcode.
 [mvs_upload]
 ```
 
-[screenshot: Page with the media upload form showing drag-and-drop area and privacy selector]
+![Frontend media upload form with drag-and-drop area and privacy selector](../images/upload-page.png)
 
 ## Option 2: Upload via REST API
 

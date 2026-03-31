@@ -30,7 +30,7 @@ Notifications appear in the BuddyPress notification bell with these formats:
 | Comment | **Username** commented on your media **[media title]** |
 | Mention | **Username** mentioned you in a comment on **[media title]** |
 
-[screenshot: BuddyPress notification dropdown showing WPMediaVerse reaction and comment notifications]
+![BuddyPress notification dropdown showing WPMediaVerse notifications](../images/bp-profile-media.jpg)
 
 ## Notification Filters (BP Nouveau)
 

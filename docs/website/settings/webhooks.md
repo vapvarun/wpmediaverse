@@ -4,7 +4,7 @@ Access these settings at **Media > Settings > Webhooks**.
 
 Webhooks allow WPMediaVerse to send signed HTTP POST notifications to external services when media events occur.
 
-[screenshot: Webhooks settings tab showing webhook URL list with event checkboxes]
+![Webhooks settings tab showing webhook URL list](../images/admin-settings-general.png)
 
 ## Supported Events
 
@@ -26,7 +26,7 @@ Webhooks allow WPMediaVerse to send signed HTTP POST notifications to external s
 5. Optionally enter a **secret key** for signature verification.
 6. Click **Save Webhooks**.
 
-[screenshot: Add webhook form with URL field, event checkboxes, and secret key field]
+![Add webhook form with URL field and event checkboxes](../images/admin-settings-general.png)
 
 ## Payload Format
 

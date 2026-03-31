@@ -26,7 +26,7 @@ These appear in the BuddyPress activity filter dropdown.
 
 ## Activity Format
 
-[screenshot: BuddyPress activity item showing a media upload with thumbnail, title, and reaction count]
+![BuddyPress activity item showing a media upload](../images/bp-activity-stream.jpg)
 
 Upload activities use the format:
 > **Username** uploaded a **[type]** — [media title]
@@ -47,7 +47,7 @@ Inline video players are injected for video media via `inject_video_player_in_ac
 
 The **Attach Media** button appears in the BuddyPress activity post form for members and inside groups.
 
-[screenshot: BuddyPress activity post form with Attach Media button highlighted]
+![BuddyPress activity post form with Attach Media button](../images/bp-activity-media-grid.jpg)
 
 Users select previously uploaded media or upload new files inline. The media IDs are attached to the activity via `bp_activity_posted_update` / `bp_groups_posted_update`.
 
