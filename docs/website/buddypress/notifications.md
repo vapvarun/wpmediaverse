@@ -1,6 +1,6 @@
 # BuddyPress Notifications
 
-> **Included in Free** — BuddyPress integration works with the free version of WPMediaVerse.
+> **Included in Free** — WPMediaVerse is the most complete media solution for BuddyPress communities. Integration is optional — the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
 
 When BuddyPress Notifications is active, WPMediaVerse sends in-app notifications for media social events.

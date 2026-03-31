@@ -1,6 +1,6 @@
 # Activity Stream Media
 
-> **Included in Free** — BuddyPress integration works with the free version of WPMediaVerse.
+> **Included in Free** — WPMediaVerse is the most complete media solution for BuddyPress communities. Integration is optional — the plugin works standalone on any WordPress site, but when BuddyPress is active, it unlocks profile tabs, group media, activity stream, and notifications automatically.
 
 
 WPMediaVerse records media events as BuddyPress activity items and enhances existing activity with media thumbnails and inline video players.
