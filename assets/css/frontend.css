@@ -115,26 +115,35 @@
 
 .mvs-profile-header-card {
 	display: flex;
-	align-items: center;
-	gap: 20px;
-	padding: 24px 0;
-	margin-bottom: 16px;
-	border-bottom: 1px solid var(--mvs-border);
+	align-items: flex-start;
+	gap: 32px;
+	padding: 32px;
+	margin-bottom: 24px;
+	background: #fff;
+	border-radius: 12px;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .mvs-profile-header-avatar {
-	width: 96px;
-	height: 96px;
+	width: 120px;
+	height: 120px;
 	border-radius: 50%;
 	object-fit: cover;
 	flex-shrink: 0;
+	border: 3px solid #f0f0f0;
+}
+
+.mvs-profile-header-info {
+	flex: 1;
+	min-width: 0;
 }
 
 .mvs-profile-header-top {
 	display: flex;
 	align-items: center;
 	gap: 12px;
-	margin-bottom: 8px;
+	margin-bottom: 12px;
+	flex-wrap: wrap;
 }
 
 .mvs-profile-header-name {
@@ -143,24 +152,85 @@
 	font-weight: 700;
 }
 
+.mvs-follow-toggle {
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s;
+}
+
+.mvs-follow-toggle--following {
+	background: #f0f0f0;
+	color: #1e1e1e;
+	border: 1px solid #ddd;
+}
+
+.mvs-follow-toggle--following:hover {
+	background: #fde8e8;
+	color: #d63638;
+	border-color: #f5c6c6;
+}
+
+.mvs-follow-toggle:disabled {
+	opacity: 0.6;
+	cursor: wait;
+}
+
+.mvs-message-btn {
+	transition: background 0.15s;
+}
+
 .mvs-profile-header-stats {
 	display: flex;
-	gap: 20px;
+	gap: 28px;
 	font-size: 0.9375rem;
 	color: var(--mvs-text-secondary);
-	margin-bottom: 8px;
+	margin-bottom: 12px;
+}
+
+.mvs-profile-header-stats span {
+	display: flex;
+	align-items: baseline;
+	gap: 4px;
 }
 
 .mvs-profile-header-stats strong {
 	color: var(--mvs-text);
-	font-weight: 600;
+	font-size: 1.125rem;
+	font-weight: 700;
 }
 
 .mvs-profile-header-bio {
 	margin: 0;
 	color: var(--mvs-text);
-	font-size: 0.875rem;
-	line-height: 1.5;
+	font-size: 0.9rem;
+	line-height: 1.6;
+	max-width: 600px;
+}
+
+@media (max-width: 640px) {
+	.mvs-profile-header-card {
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 16px;
+		padding: 24px 16px;
+	}
+
+	.mvs-profile-header-avatar {
+		width: 96px;
+		height: 96px;
+	}
+
+	.mvs-profile-header-top {
+		justify-content: center;
+	}
+
+	.mvs-profile-header-stats {
+		justify-content: center;
+	}
+
+	.mvs-profile-header-bio {
+		max-width: 100%;
+	}
 }
 
 /* ==========================================================================
@@ -365,6 +435,7 @@
 	max-width: 1200px;
 	margin: 0 auto;
 	padding: 20px;
+	width: 100%;
 }
 
 .mvs-explore-header {

@@ -1216,7 +1216,13 @@ const { state, actions } = store( 'mvs/messaging', {
 		// Check deep link hash.
 		onInit() {
 			const hash = window.location.hash;
-			if ( hash.startsWith( '#mvs-chat/' ) ) {
+			if ( hash.startsWith( '#mvs-chat/user/' ) ) {
+				// Deep link to DM a specific user: #mvs-chat/user/{userId}
+				const userId = parseInt( hash.split( '/' )[2], 10 );
+				if ( userId ) {
+					actions.openWithRecipient( userId );
+				}
+			} else if ( hash.startsWith( '#mvs-chat/' ) ) {
 				const convId = hash.split( '/' )[1];
 				if ( convId ) {
 					state.chatPanelOpen = true;
@@ -1226,6 +1232,21 @@ const { state, actions } = store( 'mvs/messaging', {
 					actions.startPolling();
 				}
 			}
+
+			// Listen for message-user events from non-Interactivity templates.
+			document.addEventListener( 'mvs-open-conversation', ( e ) => {
+				if ( e.detail?.userId ) {
+					actions.openWithRecipient( e.detail.userId );
+				} else if ( e.detail?.conversationId ) {
+					state.chatPanelOpen = true;
+					state.activeConversationId = e.detail.conversationId;
+					state.chatView = 'conversation';
+					state.messages = [];
+					state.hasMoreMessages = true;
+					actions.loadMessages();
+					actions.startPolling();
+				}
+			} );
 
 			// Start background unread polling for all logged-in pages.
 			actions.refreshUnreadCount();

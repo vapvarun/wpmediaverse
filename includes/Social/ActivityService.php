@@ -239,15 +239,16 @@ class ActivityService {
 
 		// Attach media summary if present.
 		if ( $row->media_id ) {
-			$media_post = get_post( (int) $row->media_id );
-			if ( $media_post ) {
-				$thumb_url = TemplateHelpers::get_thumb_url( $media_post->ID, 'thumbnail' );
+			$media_row = MediaMeta::get_all( (int) $row->media_id );
+			if ( ! empty( $media_row ) && ! empty( $media_row['media_id'] ) ) {
+				$mid       = (int) $media_row['media_id'];
+				$thumb_url = TemplateHelpers::get_thumb_url( $mid, 'thumbnail' );
 
 				$activity['media'] = array(
-					'title'     => $media_post->post_title,
-					'type'      => MediaMeta::get( $media_post->ID, 'media_type' ),
+					'title'     => $media_row['title'] ?? '',
+					'type'      => $media_row['media_type'] ?? '',
 					'thumbnail' => $thumb_url,
-					'link'      => get_permalink( $media_post->ID ),
+					'link'      => MediaMeta::get_permalink( $mid ),
 				);
 			}
 		}

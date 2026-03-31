@@ -119,6 +119,12 @@ $mvs_archive_url = home_url( '/media/' );
 					<a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="<?php echo esc_url( $mvs_dashboard_link ); ?>">
 						<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
 					</a>
+				<?php elseif ( is_user_logged_in() ) : ?>
+					<?php
+					$mvs_profile_id     = $mvs_profile->ID;
+					$mvs_is_own_profile = false;
+					include MVS_PLUGIN_DIR . 'templates/partials/profile-actions.php';
+					?>
 				<?php endif; ?>
 			</div>
 			<div class="mvs-profile-header-stats">
@@ -481,5 +487,11 @@ wp_enqueue_script_module(
 );
 
 do_action( 'mvs_after_content' );
+
+if ( $mvs_profile ) {
+	$mvs_profile_id     = $mvs_profile->ID;
+	$mvs_is_own_profile = is_user_logged_in() && get_current_user_id() === $mvs_profile->ID;
+	include MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php';
+}
 
 get_footer();
