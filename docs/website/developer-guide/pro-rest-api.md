@@ -1,5 +1,8 @@
 # Pro REST API Reference
 
+> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
+
+
 **Base URL:** `/wp-json/mvs-pro/v1/`
 
 WPMediaVerse Pro registers its own REST namespace. All endpoints require an active Pro license. Authentication uses the same mechanism as the free API: pass `X-WP-Nonce` with a nonce from `wp_create_nonce( 'wp_rest' )`.

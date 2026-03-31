@@ -1,5 +1,8 @@
 # Template Overrides
 
+> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
+
+
 WPMediaVerse uses a template loading system that checks your active theme before falling back to plugin templates. This lets you fully customize media page layouts without modifying the plugin.
 
 ## How It Works

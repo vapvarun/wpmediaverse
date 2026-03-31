@@ -1,5 +1,8 @@
 # Media Upload
 
+> **Free + Pro** — Core functionality is included free. Features marked with **(Pro)** require WPMediaVerse Pro.
+
+
 Share photos, videos, and audio with your community — no admin access needed, straight from any page on your site.
 
 ## What You Can Do

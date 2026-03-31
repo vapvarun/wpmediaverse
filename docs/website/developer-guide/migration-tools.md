@@ -1,5 +1,8 @@
 # Migration Tools
 
+> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
+
+
 WPMediaVerse Pro includes WP-CLI commands to import media from three popular WordPress media plugins. Each command reads the source plugin's data, maps it to WPMediaVerse's `mvs_media` post type and `wp_mvs_media_index` table, and preserves the original upload dates, author attribution, and file URLs.
 
 **WPMediaVerse Pro is required.** The migration commands are not available in the free plugin.

@@ -1,5 +1,8 @@
 # REST API Reference
 
+> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
+
+
 **Base URL:** `/wp-json/mvs/v1/`
 
 All write operations require authentication. Pass the `X-WP-Nonce` header with a nonce generated via `wp_create_nonce( 'wp_rest' )`.

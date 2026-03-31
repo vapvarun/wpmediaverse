@@ -1,5 +1,8 @@
 # Activity Stream Media
 
+> **Included in Free** — BuddyPress integration works with the free version of WPMediaVerse.
+
+
 WPMediaVerse records media events as BuddyPress activity items and enhances existing activity with media thumbnails and inline video players.
 
 ## Activity Types Registered

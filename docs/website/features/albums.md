@@ -1,5 +1,8 @@
 # Albums
 
+> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+
+
 Group your photos into beautiful collections — tell a story, document a trip, or organize your portfolio with a single shareable album.
 
 ## What You Can Do

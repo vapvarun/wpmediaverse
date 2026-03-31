@@ -1,5 +1,8 @@
 # Direct Messages
 
+> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+
+
 Send private messages, share photos, record voice notes, and have real conversations — all without leaving your media community.
 
 ## What You Can Do

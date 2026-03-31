@@ -1,5 +1,8 @@
 # Collections
 
+> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+
+
 Save and curate media from anyone on your site into personal boards — like Pinterest boards, but for your community's photos and videos.
 
 ## What You Can Do

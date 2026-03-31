@@ -1,5 +1,10 @@
 # Quotas
 
+> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+
+
+> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+
 Limit free users to 50 photos, give premium members unlimited uploads — quota packages let you build a tiered media community where upgrades have real value.
 
 ## What Users See

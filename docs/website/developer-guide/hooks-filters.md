@@ -1,5 +1,8 @@
 # Hooks & Filters
 
+> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
+
+
 All hooks and filters use the `mvs_` prefix.
 
 ---

@@ -1,5 +1,10 @@
 # Video Chapters
 
+> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+
+
+> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+
 WPMediaVerse Pro lets you add chapter markers to video files and tracks each viewer's resume position so they can pick up where they left off.
 
 ![Video player showing chapter markers on the progress bar](../images/lightbox.png)

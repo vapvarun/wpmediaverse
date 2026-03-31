@@ -1,5 +1,8 @@
 # Privacy & Access Control
 
+> **Free + Pro** — Core functionality is included free. Features marked with **(Pro)** require WPMediaVerse Pro.
+
+
 WPMediaVerse provides 6 privacy levels for media items, albums, and collections. Access checks run on every REST API call and on the explore archive query.
 
 ## Privacy Levels

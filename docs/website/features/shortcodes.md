@@ -1,5 +1,8 @@
 # Shortcodes
 
+> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+
+
 WPMediaVerse provides 8 shortcodes for embedding media features in pages, posts, and classic editor content.
 
 ## [mvs_gallery]

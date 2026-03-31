@@ -1,5 +1,10 @@
 # Cloud Storage
 
+> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+
+
+> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+
 Stop storing media on your web server — offload every photo and video to Amazon S3 or BunnyCDN for faster delivery, lower server load, and global CDN performance.
 
 ## Why Use Cloud Storage

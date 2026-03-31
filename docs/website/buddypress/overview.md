@@ -1,5 +1,8 @@
 # BuddyPress Integration Overview
 
+> **Included in Free** — BuddyPress integration works with the free version of WPMediaVerse.
+
+
 WPMediaVerse integrates with BuddyPress to add media features directly into the BuddyPress social layer. The integration is automatic — no configuration needed. It activates when BuddyPress is active and gracefully skips all BP-specific code when BuddyPress is not installed.
 
 ## Requirements

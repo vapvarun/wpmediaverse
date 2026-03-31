@@ -1,5 +1,8 @@
 # WP-CLI Commands
 
+> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
+
+
 WPMediaVerse registers all its commands under the `wp mvs` namespace.
 
 ## wp mvs stats

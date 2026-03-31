@@ -1,5 +1,10 @@
 # Photo Battles
 
+> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+
+
+> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+
 Challenge any photographer on the site to a head-to-head photo duel — your best shot vs. theirs, side by side, with the community deciding the winner.
 
 ## What You Can Do (as a User)

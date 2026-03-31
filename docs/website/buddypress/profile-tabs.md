@@ -1,5 +1,8 @@
 # Profile Media Tab
 
+> **Included in Free** — BuddyPress integration works with the free version of WPMediaVerse.
+
+
 When BuddyPress is active, WPMediaVerse adds a **Media** tab to every user's BuddyPress profile page.
 
 ![BuddyPress member profile with Media tab active](../images/bp-profile-media.jpg)

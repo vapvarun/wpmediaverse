@@ -1,5 +1,8 @@
 # BuddyPress Notifications
 
+> **Included in Free** — BuddyPress integration works with the free version of WPMediaVerse.
+
+
 When BuddyPress Notifications is active, WPMediaVerse sends in-app notifications for media social events.
 
 ## Notification Types

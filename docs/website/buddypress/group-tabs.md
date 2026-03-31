@@ -1,5 +1,8 @@
 # Group Media Tab
 
+> **Included in Free** — BuddyPress integration works with the free version of WPMediaVerse.
+
+
 When BuddyPress Groups is active, WPMediaVerse adds a **Media** tab to every BuddyPress group.
 
 ![BuddyPress group page with Media tab](../images/bp-group-media.jpg)

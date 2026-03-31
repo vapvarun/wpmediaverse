@@ -1,5 +1,8 @@
 # Custom Storage Drivers
 
+> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
+
+
 WPMediaVerse uses a pluggable storage driver system. The free plugin ships with a **Local** driver (stores files in the WordPress uploads directory). WPMediaVerse Pro adds Amazon S3 and BunnyCDN drivers. You can implement your own driver by implementing the `StorageDriverInterface`.
 
 ## StorageDriverInterface

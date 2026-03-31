@@ -1,5 +1,8 @@
 # Stories
 
+> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+
+
 Stories are time-limited media sequences — similar to Instagram or WhatsApp Stories — displayed in a full-screen viewer with auto-advance.
 
 ![Story viewer in full-screen mode](../images/lightbox.png)

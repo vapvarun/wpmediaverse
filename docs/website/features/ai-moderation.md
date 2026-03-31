@@ -1,5 +1,8 @@
 # AI Moderation
 
+> **Free + Pro** — Core functionality is included free. Features marked with **(Pro)** require WPMediaVerse Pro.
+
+
 WPMediaVerse integrates with OpenAI Vision (GPT-4o or GPT-4o Mini) to automatically analyze and moderate uploaded media. WPMediaVerse Pro adds support for Google Vision and AWS Rekognition.
 
 ![AI moderation result on a media post](../images/admin-moderation.jpg)

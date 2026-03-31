@@ -20,7 +20,8 @@
       "pages": [
         { "slug": "installation", "title": "Installation" },
         { "slug": "setup-wizard", "title": "Setup Wizard" },
-        { "slug": "first-upload", "title": "Your First Upload" }
+        { "slug": "first-upload", "title": "Your First Upload" },
+        { "slug": "free-vs-pro", "title": "Free vs Pro Comparison" }
       ]
     },
     {

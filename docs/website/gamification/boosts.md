@@ -1,5 +1,10 @@
 # Media Boosts
 
+> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+
+
+> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+
 Spend your earned points to push a photo to the top of the Explore feed — get more eyes on your best work right when you want it seen.
 
 ## What You Can Do (as a User)

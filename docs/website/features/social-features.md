@@ -1,5 +1,8 @@
 # Social Features
 
+> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+
+
 React, comment, follow, and share — WPMediaVerse turns your media site into a living community where every photo starts a conversation.
 
 ## What You Can Do
