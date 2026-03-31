@@ -3,7 +3,6 @@
 > **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 WPMediaVerse Pro adds Google Cloud Vision and AWS Rekognition as AI analysis providers alongside the built-in OpenAI Vision option. All three providers support auto-tagging and content moderation.
 

@@ -3,7 +3,6 @@
 > **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 Enter a single-elimination bracket competition — submit your best photo, survive each round of community voting, and claim the championship title.
 

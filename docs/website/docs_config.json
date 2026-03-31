@@ -18,6 +18,7 @@
       "title": "Getting Started",
       "icon": "rocket",
       "pages": [
+        { "slug": "why-wpmediaverse", "title": "Why WPMediaVerse" },
         { "slug": "installation", "title": "Installation" },
         { "slug": "setup-wizard", "title": "Setup Wizard" },
         { "slug": "first-upload", "title": "Your First Upload" },

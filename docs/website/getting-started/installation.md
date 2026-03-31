@@ -36,8 +36,8 @@ Get WPMediaVerse running on your WordPress site in under five minutes — instal
 
 When you activate WPMediaVerse, the plugin automatically:
 
-- Creates 8 custom database tables for stats, reactions, favorites, media index, collections, access grants, webhooks, and view tracking.
-- Registers the `mvs_media`, `mvs_album`, and `mvs_collection` custom post types.
+- Creates custom database tables for media index, stats, reactions, comments, favorites, follows, conversations, messages, collections, access grants, and webhooks — all separate from wp_posts for maximum performance.
+- Registers the `mvs_album` and `mvs_collection` custom post types (media itself uses the custom `mvs_media_index` table, not wp_posts).
 - Registers the `mvs_tag` and `mvs_category` taxonomies.
 - Adds default capabilities to the Administrator, Editor, Author, Contributor, and Subscriber roles.
 - Redirects you to the **Setup Wizard** for initial configuration.

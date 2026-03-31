@@ -3,7 +3,6 @@
 > **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 Transform your media community's look with one click — choose the visual style that fits your audience, from Instagram-style grids to Pinterest masonry boards.
 

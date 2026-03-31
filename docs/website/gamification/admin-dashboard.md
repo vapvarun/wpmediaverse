@@ -3,7 +3,6 @@
 > **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 The Gamification admin area is accessible at **Media > Competitions**. It provides a unified view of all active and pending competitions, plus dedicated managers for challenges, tournaments, and battles.
 

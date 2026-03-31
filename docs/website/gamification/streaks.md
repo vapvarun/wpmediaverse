@@ -3,7 +3,6 @@
 > **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 Upload one photo a day and watch your streak grow — hit milestones to earn XP rewards, and use freeze tokens to protect your streak on days you miss.
 

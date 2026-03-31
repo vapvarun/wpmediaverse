@@ -3,7 +3,6 @@
 > **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 Run weekly themed photo competitions — your community submits their best shots, votes for their favorites, and the top three photographers win XP prizes.
 

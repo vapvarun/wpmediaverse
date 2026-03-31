@@ -2,10 +2,16 @@
 
 > **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
-
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
-
 Stop storing media on your web server — offload every photo and video to Amazon S3 or BunnyCDN for faster delivery, lower server load, and global CDN performance.
+
+## Pluggable Storage Architecture
+
+WPMediaVerse separates **where media records live** (always in your WordPress database) from **where files are stored** (local, S3, or BunnyCDN). Every upload goes through a `StorageDriverInterface` — a clean abstraction that means:
+
+- **Switch drivers anytime** — Change from local to S3 in one setting. Existing files continue to serve from their original location; new uploads go to the new driver.
+- **Build your own driver** — Developers can register custom drivers (Google Cloud Storage, DigitalOcean Spaces, Wasabi) by implementing the `StorageDriverInterface`. See [Custom Storage Drivers](../developer-guide/custom-storage-drivers.md).
+- **Signed URLs for private media** — Cloud drivers generate time-limited signed URLs so private and members-only media stays protected even when served from a public CDN.
+- **No lock-in** — Media metadata stays in your WordPress database regardless of storage driver. Switch providers without losing any data.
 
 ## Why Use Cloud Storage
 

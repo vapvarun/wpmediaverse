@@ -3,7 +3,6 @@
 > **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 WPMediaVerse Pro applies text or logo watermarks to image files using PHP's GD library. Watermarks are applied at download time so your stored originals are never modified.
 

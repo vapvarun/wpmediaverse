@@ -3,7 +3,6 @@
 > **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
 
 WPMediaVerse Pro extends the free plugin with advanced layout modes, cloud storage, video processing, AI providers, quota management, and granular privacy controls.
 
