@@ -1218,6 +1218,14 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 	mvs_seed_log( '' );
 	mvs_seed_log( 'Creating competition demo data...' );
 
+	// Enable all competition features so demo data is visible.
+	update_option( 'mvs_challenges_enabled', '1' );
+	update_option( 'mvs_battles_enabled', '1' );
+	update_option( 'mvs_tournaments_enabled', '1' );
+	update_option( 'mvs_autopilot_enabled', '1' );
+	update_option( 'mvs_streaks_enabled', '1' );
+	mvs_seed_log( '  Enabled: Challenges, Battles, Tournaments, Autopilot, Streaks' );
+
 	$challenge_service = new \WPMediaVersePro\Challenges\ChallengeService();
 	$battle_service    = new \WPMediaVersePro\Battles\BattleService();
 
