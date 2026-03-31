@@ -25,6 +25,17 @@ function apiFetch( ctx, path, opts = {} ) {
 	return fetch( ctx.restUrl + path, opts );
 }
 
+function proApiFetch( ctx, path, opts = {} ) {
+	// Pro REST endpoints live at /wp-json/mvs-pro/v1/ — derive from ctx.restUrl
+	// which is /wp-json/mvs/v1/ by replacing the namespace.
+	const proUrl = ctx.restUrl.replace( 'mvs/v1/', 'mvs-pro/v1/' );
+	opts.credentials = 'same-origin';
+	if ( ! opts.headers ) {
+		opts.headers = apiHeaders( ctx.nonce );
+	}
+	return fetch( proUrl + path, opts );
+}
+
 const { state, actions } = store( 'mvs/dashboard', {
 	state: {
 		activeTab: 'media',
@@ -841,9 +852,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ! ctx.userId ) return;
 			state.challenges.loading = true;
 			try {
-				const res = await apiFetch( ctx, 'mvs-pro/v1/challenges?participant=' + ctx.userId + '&per_page=20' );
+				const res = await proApiFetch( ctx, 'challenges?participant=' + ctx.userId + '&per_page=20' );
 				state.challenges.items = await res.json();
-				const activeRes = await apiFetch( ctx, 'mvs-pro/v1/challenges?status=active&per_page=1' );
+				const activeRes = await proApiFetch( ctx, 'challenges?status=active&per_page=1' );
 				const activeData = await activeRes.json();
 				state.challenges.activeChallenge = activeData.length > 0 ? activeData[ 0 ] : null;
 			} catch {
@@ -857,7 +868,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ! ctx.userId ) return;
 			state.battles.loading = true;
 			try {
-				const res = await apiFetch( ctx, 'mvs-pro/v1/battles?participant=' + ctx.userId + '&per_page=20' );
+				const res = await proApiFetch( ctx, 'battles?participant=' + ctx.userId + '&per_page=20' );
 				state.battles.items = await res.json();
 			} catch {
 				state.battles.items = [];
@@ -870,9 +881,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ! ctx.userId ) return;
 			state.tournaments.loading = true;
 			try {
-				const res = await apiFetch( ctx, 'mvs-pro/v1/tournaments?participant=' + ctx.userId + '&per_page=20' );
+				const res = await proApiFetch( ctx, 'tournaments?participant=' + ctx.userId + '&per_page=20' );
 				state.tournaments.items = await res.json();
-				const openRes = await apiFetch( ctx, 'mvs-pro/v1/tournaments?status=registration&per_page=1' );
+				const openRes = await proApiFetch( ctx, 'tournaments?status=registration&per_page=1' );
 				const openData = await openRes.json();
 				state.tournaments.openTournament = openData.length > 0 ? openData[ 0 ] : null;
 			} catch {
