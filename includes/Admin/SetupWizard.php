@@ -256,11 +256,6 @@ class SetupWizard {
 				'icon'  => 'images',
 				'desc'  => __( 'Public gallery page where visitors browse all media.', 'wpmediaverse' ),
 			),
-			'mvs_page_upload'    => array(
-				'label' => __( 'Upload Media', 'wpmediaverse' ),
-				'icon'  => 'upload',
-				'desc'  => __( 'Frontend upload page for community members.', 'wpmediaverse' ),
-			),
 			'mvs_page_dashboard' => array(
 				'label' => __( 'My Media', 'wpmediaverse' ),
 				'icon'  => 'users',
@@ -426,7 +421,6 @@ class SetupWizard {
 	 */
 	private function render_step_done(): void {
 		$explore_id   = (int) get_option( 'mvs_page_explore', 0 );
-		$upload_id    = (int) get_option( 'mvs_page_upload', 0 );
 		$dashboard_id = (int) get_option( 'mvs_page_dashboard', 0 );
 		?>
 		<div class="mvs-setup-step mvs-setup-step--done">
@@ -437,12 +431,6 @@ class SetupWizard {
 			<p><?php esc_html_e( 'WPMediaVerse is configured and ready to use. Here are some next steps:', 'wpmediaverse' ); ?></p>
 
 			<div class="mvs-setup-done-links">
-				<?php if ( $upload_id ) : ?>
-					<a href="<?php echo esc_url( get_permalink( $upload_id ) ); ?>" class="mvs-btn mvs-btn--primary">
-						<i data-lucide="upload"></i>
-						<?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
-					</a>
-				<?php endif; ?>
 				<?php if ( $explore_id ) : ?>
 					<a href="<?php echo esc_url( get_permalink( $explore_id ) ); ?>" class="mvs-btn">
 						<i data-lucide="images"></i>

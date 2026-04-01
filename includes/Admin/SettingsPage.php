@@ -1090,7 +1090,6 @@ class SettingsPage {
 		$pages = array(
 			'mvs_page_dashboard' => __( 'Dashboard Page', 'wpmediaverse' ),
 			'mvs_page_explore'   => __( 'Explore Page', 'wpmediaverse' ),
-			'mvs_page_upload'    => __( 'Upload Page', 'wpmediaverse' ),
 		);
 
 		foreach ( $pages as $option => $label ) {

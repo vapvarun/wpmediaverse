@@ -61,11 +61,6 @@ class Activator {
 				'slug'      => 'my-media',
 				'shortcode' => '[mvs_dashboard]',
 			),
-			'mvs_page_upload'    => array(
-				'title'     => __( 'Upload Media', 'wpmediaverse' ),
-				'slug'      => 'upload-media',
-				'shortcode' => '[mvs_upload]',
-			),
 		);
 
 		foreach ( $pages as $option_key => $page_data ) {

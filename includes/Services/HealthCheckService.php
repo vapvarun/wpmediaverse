@@ -170,7 +170,6 @@ class HealthCheckService {
 		$pages = array(
 			'mvs_page_explore'   => __( 'Explore Media', 'wpmediaverse' ),
 			'mvs_page_dashboard' => __( 'My Media', 'wpmediaverse' ),
-			'mvs_page_upload'    => __( 'Upload Media', 'wpmediaverse' ),
 		);
 
 		$missing = array();

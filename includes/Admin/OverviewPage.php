@@ -288,11 +288,6 @@ class OverviewPage {
 									'icon'  => 'images',
 									'code'  => '[mvs_gallery]',
 								),
-								'mvs_page_upload'    => array(
-									'label' => __( 'Upload Page', 'wpmediaverse' ),
-									'icon'  => 'upload',
-									'code'  => '[mvs_upload]',
-								),
 								'mvs_page_dashboard' => array(
 									'label' => __( 'My Media Page', 'wpmediaverse' ),
 									'icon'  => 'users',
@@ -505,8 +500,8 @@ class OverviewPage {
 		}
 
 		$settings_url    = admin_url( 'admin.php?page=mvs-settings' );
-		$upload_page_id  = (int) get_option( 'mvs_page_upload', 0 );
-		$upload_url      = $upload_page_id ? get_permalink( $upload_page_id ) : admin_url( 'admin.php?page=mvs-media' );
+		$explore_page_id = (int) get_option( 'mvs_page_explore', 0 );
+		$explore_url_wb  = $explore_page_id ? get_permalink( $explore_page_id ) : home_url( '/media/' );
 		$permissions_url = admin_url( 'admin.php?page=mvs-settings#permissions' );
 		?>
 		<div class="mvs-welcome-banner" id="mvs-welcome-banner">
@@ -521,7 +516,7 @@ class OverviewPage {
 							<span><?php esc_html_e( 'Upload limits, privacy, file types', 'wpmediaverse' ); ?></span>
 						</span>
 					</a>
-					<a href="<?php echo esc_url( $upload_url ); ?>" class="mvs-welcome-step">
+					<a href="<?php echo esc_url( $explore_url_wb ); ?>" class="mvs-welcome-step">
 						<span class="mvs-welcome-step__number">2</span>
 						<span class="mvs-welcome-step__text">
 							<strong><?php esc_html_e( 'Upload your first media', 'wpmediaverse' ); ?></strong>
@@ -563,7 +558,6 @@ class OverviewPage {
 	private function render_pages_created_notice(): void {
 		$pages = array(
 			'mvs_page_explore'   => __( 'Explore Media', 'wpmediaverse' ),
-			'mvs_page_upload'    => __( 'Upload Media', 'wpmediaverse' ),
 			'mvs_page_dashboard' => __( 'My Media', 'wpmediaverse' ),
 		);
 
