@@ -2254,6 +2254,14 @@ class SettingsPage {
 				'option_none_value' => 0,
 			)
 		);
+
+		if ( $selected > 0 && 'publish' === get_post_status( $selected ) ) {
+			printf(
+				' <a href="%s" target="_blank" class="mvs-btn mvs-btn--sm" style="margin-left:8px;"><i data-lucide="external-link" class="mvs-icon--sm"></i> %s</a>',
+				esc_url( get_permalink( $selected ) ),
+				esc_html__( 'View Page', 'wpmediaverse' )
+			);
+		}
 	}
 
 	/**
