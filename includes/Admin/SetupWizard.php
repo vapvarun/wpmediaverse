@@ -134,6 +134,22 @@ class SetupWizard {
 			MVS_VERSION
 		);
 
+		wp_enqueue_script(
+			'lucide',
+			MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
+			array(),
+			'0.460.0',
+			true
+		);
+
+		wp_enqueue_script(
+			'mvs-icons',
+			MVS_PLUGIN_URL . 'assets/js/admin/icons.js',
+			array( 'lucide' ),
+			MVS_VERSION,
+			true
+		);
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$step = isset( $_GET['step'] ) ? sanitize_key( $_GET['step'] ) : 'welcome';
 
@@ -210,15 +226,15 @@ class SetupWizard {
 			<h2><?php esc_html_e( 'Welcome to WPMediaVerse!', 'wpmediaverse' ); ?></h2>
 			<p><?php esc_html_e( 'Transform your WordPress site into a media sharing platform. Upload, organize, and share images, videos, and audio with your community.', 'wpmediaverse' ); ?></p>
 			<ul class="mvs-setup-features">
-				<li><span class="dashicons dashicons-format-image"></span> <?php esc_html_e( 'Upload and organize media in albums and collections', 'wpmediaverse' ); ?></li>
-				<li><span class="dashicons dashicons-groups"></span> <?php esc_html_e( 'Social features: reactions, comments, favorites, follows', 'wpmediaverse' ); ?></li>
-				<li><span class="dashicons dashicons-shield"></span> <?php esc_html_e( 'AI-powered moderation and privacy controls', 'wpmediaverse' ); ?></li>
-				<li><span class="dashicons dashicons-buddicons-buddypress-logo"></span> <?php esc_html_e( 'Optional BuddyPress integration', 'wpmediaverse' ); ?></li>
+				<li><i data-lucide="image"></i> <?php esc_html_e( 'Upload and organize media in albums and collections', 'wpmediaverse' ); ?></li>
+				<li><i data-lucide="users"></i> <?php esc_html_e( 'Social features: reactions, comments, favorites, follows', 'wpmediaverse' ); ?></li>
+				<li><i data-lucide="shield"></i> <?php esc_html_e( 'AI-powered moderation and privacy controls', 'wpmediaverse' ); ?></li>
+				<li><i data-lucide="message-square"></i> <?php esc_html_e( 'Optional BuddyPress integration', 'wpmediaverse' ); ?></li>
 			</ul>
 			<p><?php esc_html_e( 'This quick setup will help you configure the essentials. You can change any setting later.', 'wpmediaverse' ); ?></p>
 			<div class="mvs-setup-actions">
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&step=pages' ) ); ?>"
-					class="button button-primary button-hero">
+					class="mvs-btn mvs-btn--primary mvs-btn--hero">
 					<?php esc_html_e( "Let's Get Started", 'wpmediaverse' ); ?>
 				</a>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-overview' ) ); ?>"
@@ -237,17 +253,17 @@ class SetupWizard {
 		$pages = array(
 			'mvs_page_explore'   => array(
 				'label' => __( 'Explore Media', 'wpmediaverse' ),
-				'icon'  => 'dashicons-images-alt2',
+				'icon'  => 'images',
 				'desc'  => __( 'Public gallery page where visitors browse all media.', 'wpmediaverse' ),
 			),
 			'mvs_page_upload'    => array(
 				'label' => __( 'Upload Media', 'wpmediaverse' ),
-				'icon'  => 'dashicons-upload',
+				'icon'  => 'upload',
 				'desc'  => __( 'Frontend upload page for community members.', 'wpmediaverse' ),
 			),
 			'mvs_page_dashboard' => array(
 				'label' => __( 'My Media', 'wpmediaverse' ),
-				'icon'  => 'dashicons-admin-users',
+				'icon'  => 'users',
 				'desc'  => __( 'Personal dashboard for users to manage their uploads.', 'wpmediaverse' ),
 			),
 		);
@@ -265,7 +281,7 @@ class SetupWizard {
 					$slug    = $exists ? get_post_field( 'post_name', $page_id ) : '';
 					?>
 					<div class="mvs-setup-page-card">
-						<span class="dashicons <?php echo esc_attr( $page_info['icon'] ); ?>"></span>
+						<i data-lucide="<?php echo esc_attr( $page_info['icon'] ); ?>"></i>
 						<div class="mvs-setup-page-info">
 							<strong><?php echo esc_html( $page_info['label'] ); ?></strong>
 							<span><?php echo esc_html( $page_info['desc'] ); ?></span>
@@ -277,7 +293,7 @@ class SetupWizard {
 						</div>
 						<?php if ( $exists ) : ?>
 							<span class="mvs-setup-page-status" style="color:#00a32a;">
-								<span class="dashicons dashicons-yes-alt"></span>
+								<i data-lucide="check-circle"></i>
 							</span>
 						<?php endif; ?>
 					</div>
@@ -286,7 +302,7 @@ class SetupWizard {
 
 			<div class="mvs-setup-actions">
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&step=permissions' ) ); ?>"
-					class="button button-primary">
+					class="mvs-btn mvs-btn--primary">
 					<?php esc_html_e( 'Continue', 'wpmediaverse' ); ?>
 				</a>
 			</div>
@@ -334,7 +350,7 @@ class SetupWizard {
 				<p class="description"><?php esc_html_e( 'You can fine-tune permissions later in Settings > Permissions.', 'wpmediaverse' ); ?></p>
 
 				<div class="mvs-setup-actions">
-					<button type="submit" class="button button-primary">
+					<button type="submit" class="mvs-btn mvs-btn--primary">
 						<?php esc_html_e( 'Continue', 'wpmediaverse' ); ?>
 					</button>
 				</div>
@@ -396,7 +412,7 @@ class SetupWizard {
 				</table>
 
 				<div class="mvs-setup-actions">
-					<button type="submit" class="button button-primary">
+					<button type="submit" class="mvs-btn mvs-btn--primary">
 						<?php esc_html_e( 'Continue', 'wpmediaverse' ); ?>
 					</button>
 				</div>
@@ -415,27 +431,27 @@ class SetupWizard {
 		?>
 		<div class="mvs-setup-step mvs-setup-step--done">
 			<div class="mvs-setup-done-icon">
-				<span class="dashicons dashicons-yes-alt"></span>
+				<i data-lucide="check-circle"></i>
 			</div>
 			<h2><?php esc_html_e( 'Your Media Hub is Ready!', 'wpmediaverse' ); ?></h2>
 			<p><?php esc_html_e( 'WPMediaVerse is configured and ready to use. Here are some next steps:', 'wpmediaverse' ); ?></p>
 
 			<div class="mvs-setup-done-links">
 				<?php if ( $upload_id ) : ?>
-					<a href="<?php echo esc_url( get_permalink( $upload_id ) ); ?>" class="button button-primary">
-						<span class="dashicons dashicons-upload"></span>
+					<a href="<?php echo esc_url( get_permalink( $upload_id ) ); ?>" class="mvs-btn mvs-btn--primary">
+						<i data-lucide="upload"></i>
 						<?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
 					</a>
 				<?php endif; ?>
 				<?php if ( $explore_id ) : ?>
-					<a href="<?php echo esc_url( get_permalink( $explore_id ) ); ?>" class="button">
-						<span class="dashicons dashicons-images-alt2"></span>
+					<a href="<?php echo esc_url( get_permalink( $explore_id ) ); ?>" class="mvs-btn">
+						<i data-lucide="images"></i>
 						<?php esc_html_e( 'Visit Explore Page', 'wpmediaverse' ); ?>
 					</a>
 				<?php endif; ?>
 				<?php if ( $dashboard_id ) : ?>
-					<a href="<?php echo esc_url( get_permalink( $dashboard_id ) ); ?>" class="button">
-						<span class="dashicons dashicons-admin-users"></span>
+					<a href="<?php echo esc_url( get_permalink( $dashboard_id ) ); ?>" class="mvs-btn">
+						<i data-lucide="users"></i>
 						<?php esc_html_e( 'My Dashboard', 'wpmediaverse' ); ?>
 					</a>
 				<?php endif; ?>
@@ -444,7 +460,7 @@ class SetupWizard {
 			<form method="post" style="margin-top:24px;">
 				<?php wp_nonce_field( 'mvs_setup_wizard', 'mvs_wizard_nonce' ); ?>
 				<input type="hidden" name="mvs_wizard_step" value="done" />
-				<button type="submit" class="button button-hero button-primary">
+				<button type="submit" class="mvs-btn mvs-btn--primary mvs-btn--hero">
 					<?php esc_html_e( 'Go to Overview', 'wpmediaverse' ); ?>
 				</button>
 			</form>

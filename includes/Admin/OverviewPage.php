@@ -58,6 +58,30 @@ class OverviewPage {
 				array(),
 				MVS_VERSION
 			);
+
+			wp_enqueue_script(
+				'lucide',
+				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
+				array(),
+				'0.460.0',
+				true
+			);
+
+			wp_enqueue_script(
+				'mvs-icons',
+				MVS_PLUGIN_URL . 'assets/js/admin/icons.js',
+				array( 'lucide' ),
+				MVS_VERSION,
+				true
+			);
+
+			wp_enqueue_script(
+				'mvs-toast',
+				MVS_PLUGIN_URL . 'assets/js/admin/toast.js',
+				array(),
+				MVS_VERSION,
+				true
+			);
 		}
 	}
 
@@ -73,15 +97,17 @@ class OverviewPage {
 		$recent_media = $this->get_recent_media();
 		$system_info  = $this->get_system_info();
 		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline">
-				<?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?>
-				<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
-			</h1>
-			<hr class="wp-header-end">
-			<p class="description">
-				<?php esc_html_e( 'Your media sharing platform at a glance.', 'wpmediaverse' ); ?>
-			</p>
+		<div class="wrap wpmediaverse-admin">
+			<div class="mvs-page-header">
+				<div class="mvs-page-header__left">
+					<h1 class="mvs-page-header__title">
+						<i data-lucide="images"></i>
+						<?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?>
+						<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
+					</h1>
+					<p class="mvs-page-header__desc"><?php esc_html_e( 'Your media sharing platform at a glance.', 'wpmediaverse' ); ?></p>
+				</div>
+			</div>
 
 			<?php $this->render_getting_started(); ?>
 
@@ -124,25 +150,25 @@ class OverviewPage {
 						</div>
 						<div class="mvs-widget-body">
 							<div class="mvs-quick-links">
-								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>" class="button button-primary">
-									<span class="dashicons dashicons-plus-alt2"></span>
+								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>" class="mvs-btn mvs-btn--primary">
+									<i data-lucide="plus"></i>
 									<?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
 								</a>
-								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-settings' ) ); ?>" class="button">
-									<span class="dashicons dashicons-admin-generic"></span>
+								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-settings' ) ); ?>" class="mvs-btn">
+									<i data-lucide="settings"></i>
 									<?php esc_html_e( 'Settings', 'wpmediaverse' ); ?>
 								</a>
 								<?php if ( current_user_can( 'moderate_mvs_media' ) ) : ?>
-									<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-moderation' ) ); ?>" class="button">
-										<span class="dashicons dashicons-shield"></span>
+									<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-moderation' ) ); ?>" class="mvs-btn">
+										<i data-lucide="shield"></i>
 										<?php esc_html_e( 'Moderation', 'wpmediaverse' ); ?>
 										<?php if ( $stats['pending_moderation'] > 0 ) : ?>
 											<span class="mvs-badge"><?php echo esc_html( $stats['pending_moderation'] ); ?></span>
 										<?php endif; ?>
 									</a>
 								<?php endif; ?>
-								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-stats' ) ); ?>" class="button">
-									<span class="dashicons dashicons-chart-bar"></span>
+								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-stats' ) ); ?>" class="mvs-btn">
+									<i data-lucide="bar-chart-3"></i>
 									<?php esc_html_e( 'Stats', 'wpmediaverse' ); ?>
 								</a>
 							</div>
@@ -153,9 +179,9 @@ class OverviewPage {
 									<p class="mvs-demo-desc">
 										<?php esc_html_e( 'Import 12 sample media items to see how everything works — albums, reactions, and your explore page will come alive.', 'wpmediaverse' ); ?>
 									</p>
-									<button type="button" class="button button-primary" id="mvs-import-demo-btn"
+									<button type="button" class="mvs-btn mvs-btn--primary" id="mvs-import-demo-btn"
 										data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_import_demo' ) ); ?>">
-										<span class="dashicons dashicons-download mvs-dashicons-btn"></span>
+										<i data-lucide="download"></i>
 										<?php esc_html_e( 'Import Demo Data', 'wpmediaverse' ); ?>
 									</button>
 									<span id="mvs-import-demo-status" class="mvs-status-inline"></span>
@@ -208,9 +234,9 @@ class OverviewPage {
 							<?php else : ?>
 								<?php if ( current_user_can( 'manage_mvs_settings' ) ) : ?>
 									<div class="mvs-demo-cleanup mvs-section-divider">
-										<button type="button" class="button mvs-btn-danger" id="mvs-cleanup-demo-btn"
+										<button type="button" class="mvs-btn mvs-btn--danger" id="mvs-cleanup-demo-btn"
 											data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_cleanup_demo' ) ); ?>">
-											<span class="dashicons dashicons-trash mvs-dashicons-btn"></span>
+											<i data-lucide="trash-2"></i>
 											<?php esc_html_e( 'Delete Demo Data', 'wpmediaverse' ); ?>
 										</button>
 										<span id="mvs-cleanup-demo-status" class="mvs-status-inline"></span>
@@ -259,17 +285,17 @@ class OverviewPage {
 							$pages = array(
 								'mvs_page_explore'   => array(
 									'label' => __( 'Explore Page', 'wpmediaverse' ),
-									'icon'  => 'dashicons-images-alt2',
+									'icon'  => 'images',
 									'code'  => '[mvs_gallery]',
 								),
 								'mvs_page_upload'    => array(
 									'label' => __( 'Upload Page', 'wpmediaverse' ),
-									'icon'  => 'dashicons-upload',
+									'icon'  => 'upload',
 									'code'  => '[mvs_upload]',
 								),
 								'mvs_page_dashboard' => array(
 									'label' => __( 'My Media Page', 'wpmediaverse' ),
-									'icon'  => 'dashicons-admin-users',
+									'icon'  => 'users',
 									'code'  => '[mvs_dashboard]',
 								),
 							);
@@ -288,7 +314,7 @@ class OverviewPage {
 									?>
 									<li>
 										<span class="mvs-status-label">
-											<span class="dashicons <?php echo esc_attr( $page_info['icon'] ); ?> mvs-dashicons-inline"></span>
+											<i data-lucide="<?php echo esc_attr( $page_info['icon'] ); ?>"></i>
 											<?php echo esc_html( $page_info['label'] ); ?>
 										</span>
 										<span class="mvs-status-value">
@@ -336,9 +362,9 @@ class OverviewPage {
 						<div class="mvs-widget-body mvs-widget-body--flush">
 							<?php if ( empty( $recent_media ) ) : ?>
 								<div class="mvs-empty-state">
-									<span class="dashicons dashicons-format-image"></span>
+									<i data-lucide="image"></i>
 									<p><?php esc_html_e( 'No media uploaded yet.', 'wpmediaverse' ); ?></p>
-									<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>" class="button button-primary">
+									<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>" class="mvs-btn mvs-btn--primary">
 										<?php esc_html_e( 'Upload First Media', 'wpmediaverse' ); ?>
 									</a>
 								</div>
@@ -372,7 +398,7 @@ class OverviewPage {
 															loading="lazy" />
 													<?php else : ?>
 														<span class="mvs-thumb-placeholder">
-															<span class="dashicons dashicons-format-image"></span>
+															<i data-lucide="image"></i>
 														</span>
 													<?php endif; ?>
 												</td>
@@ -515,7 +541,7 @@ class OverviewPage {
 			<button type="button" class="mvs-welcome-banner__dismiss" id="mvs-dismiss-welcome"
 				data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_dismiss_welcome' ) ); ?>"
 				aria-label="<?php esc_attr_e( 'Dismiss welcome banner', 'wpmediaverse' ); ?>">
-				<span class="dashicons dashicons-no-alt"></span>
+				<i data-lucide="x"></i>
 			</button>
 		</div>
 		<script>
@@ -557,7 +583,7 @@ class OverviewPage {
 		}
 		?>
 		<div class="mvs-welcome-pages">
-			<span class="dashicons dashicons-yes-alt mvs-icon-success"></span>
+			<i data-lucide="check-circle" class="mvs-icon-success"></i>
 			<span><?php esc_html_e( 'Frontend pages created:', 'wpmediaverse' ); ?></span>
 			<?php foreach ( $active_pages as $page ) : ?>
 				<a href="<?php echo esc_url( $page['url'] ); ?>" target="_blank">

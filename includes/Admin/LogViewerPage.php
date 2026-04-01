@@ -109,13 +109,16 @@ class LogViewerPage {
 		$base_url = admin_url( 'admin.php?page=' . self::PAGE_SLUG );
 
 		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline">
-				<?php esc_html_e( 'Log Viewer', 'wpmediaverse' ); ?>
-				<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
-			</h1>
-			<hr class="wp-header-end">
-			<p class="description"><?php esc_html_e( 'View plugin logs for debugging and monitoring. Logs older than 30 days are automatically removed.', 'wpmediaverse' ); ?></p>
+		<div class="wrap wpmediaverse-admin">
+			<div class="mvs-page-header">
+				<div class="mvs-page-header__left">
+					<h1 class="mvs-page-header__title">
+						<i data-lucide="scroll-text"></i>
+						<?php esc_html_e( 'Log Viewer', 'wpmediaverse' ); ?>
+					</h1>
+					<p class="mvs-page-header__desc"><?php esc_html_e( 'View plugin logs for debugging and monitoring. Logs older than 30 days are automatically removed.', 'wpmediaverse' ); ?></p>
+				</div>
+			</div>
 
 			<?php if ( $cleared ) : ?>
 				<div class="notice notice-success is-dismissible">
@@ -148,10 +151,10 @@ class LogViewerPage {
 						<?php endforeach; ?>
 					</select>
 
-					<button type="submit" class="button"><?php esc_html_e( 'Filter', 'wpmediaverse' ); ?></button>
+					<button type="submit" class="mvs-btn mvs-btn--sm"><?php esc_html_e( 'Filter', 'wpmediaverse' ); ?></button>
 
 					<?php if ( $level || $log_context ) : ?>
-						<a href="<?php echo esc_url( $base_url ); ?>" class="button"><?php esc_html_e( 'Reset', 'wpmediaverse' ); ?></a>
+						<a href="<?php echo esc_url( $base_url ); ?>" class="mvs-btn mvs-btn--sm"><?php esc_html_e( 'Reset', 'wpmediaverse' ); ?></a>
 					<?php endif; ?>
 				</form>
 
@@ -159,8 +162,8 @@ class LogViewerPage {
 					<form method="post" class="mvs-form-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Are you sure you want to clear all logs?', 'wpmediaverse' ) ); ?>');">
 						<?php wp_nonce_field( 'mvs_clear_logs', 'mvs_clear_logs_nonce' ); ?>
 						<input type="hidden" name="mvs_clear_logs" value="1" />
-						<button type="submit" class="button mvs-btn-text-danger">
-							<span class="dashicons dashicons-trash mvs-dashicons-small"></span>
+						<button type="submit" class="mvs-btn mvs-btn--danger">
+							<i data-lucide="trash-2" class="mvs-icon--sm"></i>
 							<?php esc_html_e( 'Clear All Logs', 'wpmediaverse' ); ?>
 						</button>
 					</form>
@@ -183,7 +186,7 @@ class LogViewerPage {
 				<div class="mvs-widget-body mvs-widget-body--flush">
 					<?php if ( empty( $result['items'] ) ) : ?>
 						<div class="mvs-empty-state">
-							<span class="dashicons dashicons-media-text"></span>
+							<i data-lucide="file-text"></i>
 							<p><?php esc_html_e( 'No log entries found.', 'wpmediaverse' ); ?></p>
 						</div>
 					<?php else : ?>

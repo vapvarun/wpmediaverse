@@ -1131,7 +1131,7 @@ class SettingsPage {
 			'general'     => array(
 				'group'        => 'general',
 				'label'        => __( 'General', 'wpmediaverse' ),
-				'icon'         => 'dashicons-admin-generic',
+				'icon'         => 'settings',
 				'description'  => __( 'Upload limits, file types, privacy defaults, and page assignments.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_general',
 				'page_slug'    => self::PAGE_SLUG . '-general',
@@ -1142,7 +1142,7 @@ class SettingsPage {
 			'display'     => array(
 				'group'        => 'general',
 				'label'        => __( 'Display', 'wpmediaverse' ),
-				'icon'         => 'dashicons-format-gallery',
+				'icon'         => 'images',
 				'description'  => __( 'Grid layout, columns, thumbnails, and feed preferences.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_display',
 				'page_slug'    => self::PAGE_SLUG . '-display',
@@ -1153,7 +1153,7 @@ class SettingsPage {
 			'social'      => array(
 				'group'        => 'general',
 				'label'        => __( 'Social', 'wpmediaverse' ),
-				'icon'         => 'dashicons-format-chat',
+				'icon'         => 'message-circle',
 				'description'  => __( 'Direct messaging, privacy, and spam prevention.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_social',
 				'page_slug'    => self::PAGE_SLUG . '-social',
@@ -1164,7 +1164,7 @@ class SettingsPage {
 			'storage'     => array(
 				'group'        => 'storage',
 				'label'        => __( 'Storage', 'wpmediaverse' ),
-				'icon'         => 'dashicons-database',
+				'icon'         => 'database',
 				'description'  => __( 'Choose where media files are stored.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_storage',
 				'page_slug'    => self::PAGE_SLUG . '-storage',
@@ -1175,7 +1175,7 @@ class SettingsPage {
 			'ai'          => array(
 				'group'        => 'ai',
 				'label'        => __( 'AI & Moderation', 'wpmediaverse' ),
-				'icon'         => 'dashicons-welcome-learn-more',
+				'icon'         => 'book-open',
 				'description'  => __( 'AI providers, auto-analysis, tagging, and content moderation.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_ai',
 				'page_slug'    => self::PAGE_SLUG . '-ai',
@@ -1186,7 +1186,7 @@ class SettingsPage {
 			'watermark'   => array(
 				'group'        => 'advanced',
 				'label'        => __( 'Watermark', 'wpmediaverse' ),
-				'icon'         => 'dashicons-art',
+				'icon'         => 'palette',
 				'description'  => __( 'Add a text or image watermark to uploaded images.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_watermark',
 				'page_slug'    => self::PAGE_SLUG . '-watermark',
@@ -1197,7 +1197,7 @@ class SettingsPage {
 			'permissions' => array(
 				'group'        => 'advanced',
 				'label'        => __( 'Permissions', 'wpmediaverse' ),
-				'icon'         => 'dashicons-admin-users',
+				'icon'         => 'users',
 				'description'  => __( 'Role-based access control for media features.', 'wpmediaverse' ),
 				'option_group' => '',
 				'page_slug'    => '',
@@ -1209,7 +1209,7 @@ class SettingsPage {
 			'webhooks'    => array(
 				'group'        => 'advanced',
 				'label'        => __( 'Webhooks', 'wpmediaverse' ),
-				'icon'         => 'dashicons-rest-api',
+				'icon'         => 'plug',
 				'description'  => __( 'Send event notifications to external services.', 'wpmediaverse' ),
 				'option_group' => self::OPTION_GROUP . '_webhooks',
 				'page_slug'    => self::PAGE_SLUG . '-webhooks',
@@ -1310,7 +1310,7 @@ class SettingsPage {
 			<!-- Sidebar -->
 			<div class="mvs-settings-sidebar">
 				<div class="mvs-settings-sidebar__brand">
-					<span class="mvs-settings-sidebar__logo dashicons dashicons-format-gallery"></span>
+					<span class="mvs-settings-sidebar__logo"><i data-lucide="images"></i></span>
 					<div>
 						<strong><?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?></strong>
 						<span><?php esc_html_e( 'SETTINGS', 'wpmediaverse' ); ?></span>
@@ -1322,7 +1322,7 @@ class SettingsPage {
 						<span class="mvs-settings-nav-group__label"><?php echo esc_html( $group['label'] ); ?></span>
 						<?php foreach ( $group['sections'] as $section_id => $section ) : ?>
 							<a class="mvs-settings-nav-item" href="#<?php echo esc_attr( $section_id ); ?>" data-section="<?php echo esc_attr( $section_id ); ?>">
-								<span class="dashicons <?php echo esc_attr( $section['icon'] ); ?>"></span>
+								<i data-lucide="<?php echo esc_attr( $section['icon'] ); ?>"></i>
 								<?php echo esc_html( $section['label'] ); ?>
 								<?php if ( ! empty( $section['is_pro'] ) ) : ?>
 									<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
@@ -1345,7 +1345,7 @@ class SettingsPage {
 			<!-- Content -->
 			<div class="mvs-settings-content">
 				<?php if ( isset( $_GET['settings-updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification ?>
-					<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'wpmediaverse' ); ?></p></div>
+					<div class="notice notice-success mvs-notice is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'wpmediaverse' ); ?></p></div>
 				<?php endif; ?>
 
 				<?php foreach ( $sections as $section_id => $section ) : ?>
@@ -1521,43 +1521,43 @@ class SettingsPage {
 	private function get_panel_meta(): array {
 		return array(
 			'mvs_general'       => array(
-				'icon'   => 'dashicons-upload',
+				'icon'   => 'upload',
 				'desc'   => __( 'Upload limits, file types, and privacy defaults.', 'wpmediaverse' ),
 				'class'  => '',
 				'driver' => '',
 			),
 			'mvs_storage'       => array(
-				'icon'   => 'dashicons-database',
+				'icon'   => 'database',
 				'desc'   => __( 'Choose where media files are stored.', 'wpmediaverse' ),
 				'class'  => '',
 				'driver' => '',
 			),
 			'mvs_pro_license'   => array(
-				'icon'   => 'dashicons-admin-network',
+				'icon'   => 'globe',
 				'desc'   => __( 'Activate your license to receive updates and support.', 'wpmediaverse' ),
 				'class'  => 'mvs-settings-panel--pro',
 				'driver' => '',
 			),
 			'mvs_pro_s3'        => array(
-				'icon'   => 'dashicons-cloud',
+				'icon'   => 'cloud',
 				'desc'   => __( 'Connect to Amazon S3 for cloud storage.', 'wpmediaverse' ),
 				'class'  => 'mvs-settings-panel--pro',
 				'driver' => 's3',
 			),
 			'mvs_pro_bunny'     => array(
-				'icon'   => 'dashicons-performance',
+				'icon'   => 'gauge',
 				'desc'   => __( 'Connect to BunnyCDN for global content delivery.', 'wpmediaverse' ),
 				'class'  => 'mvs-settings-panel--pro',
 				'driver' => 'bunnycdn',
 			),
 			'mvs_pro_transcode' => array(
-				'icon'   => 'dashicons-video-alt3',
+				'icon'   => 'video',
 				'desc'   => __( 'Convert videos to multiple quality levels with FFmpeg.', 'wpmediaverse' ),
 				'class'  => 'mvs-settings-panel--pro',
 				'driver' => '',
 			),
 			'mvs_pro_webhook'   => array(
-				'icon'   => 'dashicons-rest-api',
+				'icon'   => 'plug',
 				'desc'   => __( 'Accept credits from external systems via HMAC-signed webhooks.', 'wpmediaverse' ),
 				'class'  => 'mvs-settings-panel--pro',
 				'driver' => '',
@@ -1620,7 +1620,7 @@ class SettingsPage {
 
 			// Panel header.
 			echo '<div class="mvs-settings-panel__header">';
-			printf( '<span class="dashicons %s mvs-settings-panel__icon"></span>', esc_attr( $meta['icon'] ) );
+			printf( '<i data-lucide="%s" class="mvs-settings-panel__icon"></i>', esc_attr( $meta['icon'] ) );
 			echo '<div>';
 			printf( '<h2 class="mvs-settings-panel__title">%s', esc_html( $section['title'] ) );
 			if ( $meta['class'] ) {

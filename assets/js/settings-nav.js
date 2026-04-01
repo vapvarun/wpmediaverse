@@ -85,6 +85,17 @@
 		} );
 	}
 
+	// Ctrl+S / Cmd+S to save the active section's form.
+	document.addEventListener( 'keydown', function ( e ) {
+		if ( ( e.ctrlKey || e.metaKey ) && e.key === 's' ) {
+			e.preventDefault();
+			var form = document.querySelector( '.mvs-settings-section.' + ACTIVE_CLASS + ' form' );
+			if ( form ) {
+				form.submit();
+			}
+		}
+	} );
+
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', init );
 	} else {

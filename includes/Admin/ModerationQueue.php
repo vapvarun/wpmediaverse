@@ -174,13 +174,16 @@ class ModerationQueue {
 		$updated = isset( $_GET['updated'] ) ? sanitize_text_field( wp_unslash( $_GET['updated'] ) ) : '';
 
 		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline">
-				<?php esc_html_e( 'Moderation Queue', 'wpmediaverse' ); ?>
-				<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
-			</h1>
-			<hr class="wp-header-end">
-			<p class="description"><?php esc_html_e( 'Review and manage flagged or pending media items.', 'wpmediaverse' ); ?></p>
+		<div class="wrap wpmediaverse-admin">
+			<div class="mvs-page-header">
+				<div class="mvs-page-header__left">
+					<h1 class="mvs-page-header__title">
+						<i data-lucide="shield-check"></i>
+						<?php esc_html_e( 'Moderation Queue', 'wpmediaverse' ); ?>
+					</h1>
+					<p class="mvs-page-header__desc"><?php esc_html_e( 'Review and manage flagged or pending media items.', 'wpmediaverse' ); ?></p>
+				</div>
+			</div>
 
 			<?php
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -265,7 +268,7 @@ class ModerationQueue {
 				<div class="mvs-widget-body mvs-widget-body--flush">
 					<?php if ( empty( $result['items'] ) ) : ?>
 						<div class="mvs-empty-state">
-							<span class="dashicons dashicons-shield-alt"></span>
+							<i data-lucide="shield-check"></i>
 							<p><?php esc_html_e( 'No items in this queue. All clear!', 'wpmediaverse' ); ?></p>
 						</div>
 					<?php else : ?>
@@ -279,7 +282,7 @@ class ModerationQueue {
 									<option value="bulk_approve"><?php esc_html_e( 'Approve Selected', 'wpmediaverse' ); ?></option>
 									<option value="bulk_reject"><?php esc_html_e( 'Reject Selected', 'wpmediaverse' ); ?></option>
 								</select>
-								<button type="submit" class="button" id="mvs-bulk-apply"><?php esc_html_e( 'Apply', 'wpmediaverse' ); ?></button>
+								<button type="submit" class="mvs-btn mvs-btn--sm" id="mvs-bulk-apply"><?php esc_html_e( 'Apply', 'wpmediaverse' ); ?></button>
 								<span class="mvs-bulk-count mvs-hidden" id="mvs-bulk-count">
 									<?php
 									printf(
@@ -397,7 +400,7 @@ class ModerationQueue {
 					<img src="<?php echo esc_url( $file_url ); ?>" alt="" class="mvs-thumb mvs-moderation-thumb" />
 				<?php else : ?>
 					<span class="mvs-thumb-placeholder mvs-moderation-thumb-placeholder">
-						<span class="dashicons dashicons-media-default"></span>
+						<i data-lucide="file"></i>
 					</span>
 				<?php endif; ?>
 			</td>
@@ -428,7 +431,7 @@ class ModerationQueue {
 					<?php wp_nonce_field( 'mvs_moderation_action', 'mvs_moderation_nonce' ); ?>
 					<input type="hidden" name="media_id" value="<?php echo absint( $post->ID ); ?>" />
 					<input type="hidden" name="mvs_moderation_action" value="approve" />
-					<button type="submit" class="button button-small button-primary">
+					<button type="submit" class="mvs-btn mvs-btn--sm mvs-btn--primary">
 						<?php esc_html_e( 'Approve', 'wpmediaverse' ); ?>
 					</button>
 				</form>
@@ -436,7 +439,7 @@ class ModerationQueue {
 					<?php wp_nonce_field( 'mvs_moderation_action', 'mvs_moderation_nonce' ); ?>
 					<input type="hidden" name="media_id" value="<?php echo absint( $post->ID ); ?>" />
 					<input type="hidden" name="mvs_moderation_action" value="reject" />
-					<button type="submit" class="button button-small mvs-btn-text-danger">
+					<button type="submit" class="mvs-btn mvs-btn--sm mvs-btn--danger">
 						<?php esc_html_e( 'Reject', 'wpmediaverse' ); ?>
 					</button>
 				</form>

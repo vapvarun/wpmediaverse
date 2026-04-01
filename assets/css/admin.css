@@ -7,6 +7,68 @@
  */
 
 /* ==========================================================================
+   Suppress Third-Party Notices on MVS Pages
+   ========================================================================== */
+
+.toplevel_page_wpmediaverse .notice:not(.mvs-notice),
+.toplevel_page_wpmediaverse .update-nag,
+.toplevel_page_wpmediaverse div.error:not(.mvs-notice),
+.toplevel_page_wpmediaverse div.updated:not(.mvs-notice),
+[class*="wpmediaverse_page"] .notice:not(.mvs-notice),
+[class*="wpmediaverse_page"] .update-nag,
+[class*="wpmediaverse_page"] div.error:not(.mvs-notice),
+[class*="wpmediaverse_page"] div.updated:not(.mvs-notice) {
+	display: none !important;
+}
+
+/* ==========================================================================
+   Page Header
+   ========================================================================== */
+
+.mvs-page-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	margin-bottom: 20px;
+}
+
+.mvs-page-header__title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 23px;
+	font-weight: 400;
+	margin: 0;
+	line-height: 1.3;
+}
+
+.mvs-page-header__title [data-lucide] {
+	width: 22px;
+	height: 22px;
+	stroke-width: 1.75;
+	color: #2271b1;
+}
+
+.mvs-page-header__desc {
+	color: #50575e;
+	margin: 4px 0 0;
+	font-size: 13px;
+}
+
+.mvs-page-header__actions {
+	display: flex;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+@media (max-width: 782px) {
+	.mvs-page-header {
+		flex-direction: column;
+		gap: 12px;
+	}
+}
+
+/* ==========================================================================
    Stat Cards Grid
    ========================================================================== */
 
@@ -204,11 +266,10 @@ a.mvs-stat-card:focus {
 	gap: 4px;
 }
 
-.mvs-quick-links .dashicons {
-	font-size: 16px;
+.mvs-quick-links [data-lucide] {
 	width: 16px;
 	height: 16px;
-	line-height: 1;
+	stroke-width: 1.75;
 }
 
 /* ==========================================================================
@@ -259,10 +320,10 @@ a.mvs-stat-card:focus {
 	color: #c3c4c7;
 }
 
-.mvs-recent-table .mvs-thumb-placeholder .dashicons {
-	font-size: 20px;
+.mvs-recent-table .mvs-thumb-placeholder [data-lucide] {
 	width: 20px;
 	height: 20px;
+	stroke-width: 1.5;
 }
 
 /* ==========================================================================
@@ -354,10 +415,10 @@ a.mvs-stat-card:focus {
 	color: #50575e;
 }
 
-.mvs-empty-state .dashicons {
-	font-size: 48px;
+.mvs-empty-state [data-lucide] {
 	width: 48px;
 	height: 48px;
+	stroke-width: 1;
 	color: #c3c4c7;
 	margin-bottom: 12px;
 }
@@ -920,11 +981,11 @@ a.mvs-stat-card:focus {
 	color: #1d2327;
 }
 
-.mvs-setup-features .dashicons {
+.mvs-setup-features [data-lucide] {
 	color: #2271b1;
-	font-size: 18px;
 	width: 18px;
 	height: 18px;
+	stroke-width: 1.75;
 }
 
 .mvs-setup-actions {
@@ -961,11 +1022,11 @@ a.mvs-stat-card:focus {
 	background: #fafafa;
 }
 
-.mvs-setup-page-card .dashicons {
+.mvs-setup-page-card [data-lucide] {
 	color: #2271b1;
-	font-size: 24px;
 	width: 24px;
 	height: 24px;
+	stroke-width: 1.5;
 }
 
 .mvs-setup-page-info {
@@ -1017,10 +1078,10 @@ a.mvs-stat-card:focus {
 	margin-bottom: 12px;
 }
 
-.mvs-setup-done-icon .dashicons {
-	font-size: 64px;
+.mvs-setup-done-icon [data-lucide] {
 	width: 64px;
 	height: 64px;
+	stroke-width: 1;
 	color: #00a32a;
 }
 
@@ -1038,10 +1099,10 @@ a.mvs-stat-card:focus {
 	gap: 4px;
 }
 
-.mvs-setup-done-links .dashicons {
-	font-size: 16px;
+.mvs-setup-done-links [data-lucide] {
 	width: 16px;
 	height: 16px;
+	stroke-width: 1.75;
 }
 
 /* ==========================================================================
@@ -1158,15 +1219,15 @@ a.mvs-stat-card:focus {
 	font-weight: 600;
 }
 
-.mvs-settings-nav-item .dashicons {
-	font-size: 16px;
+.mvs-settings-nav-item [data-lucide] {
 	width: 16px;
 	height: 16px;
+	stroke-width: 1.75;
 	color: inherit;
 	opacity: 0.7;
 }
 
-.mvs-settings-nav-item.is-active .dashicons {
+.mvs-settings-nav-item.is-active [data-lucide] {
 	opacity: 1;
 }
 
@@ -1398,10 +1459,10 @@ a.mvs-stat-card:focus {
 	color: #646970;
 }
 
-.mvs-thumb-placeholder .dashicons {
-	font-size: 20px;
+.mvs-thumb-placeholder [data-lucide] {
 	width: 20px;
 	height: 20px;
+	stroke-width: 1.5;
 }
 
 /* ==========================================================================
@@ -1453,10 +1514,10 @@ a.mvs-stat-card:focus {
 	color: #646970;
 }
 
-.mvs-empty-state-admin .dashicons {
-	font-size: 48px;
+.mvs-empty-state-admin [data-lucide] {
 	width: 48px;
 	height: 48px;
+	stroke-width: 1;
 	color: #c3c4c7;
 	margin-bottom: 12px;
 }
@@ -1477,13 +1538,117 @@ a.mvs-stat-card:focus {
 .mvs-mt-0 { margin-top: 0; }
 
 /* Dashboard-specific */
+/* ==========================================================================
+   Button System
+   ========================================================================== */
+
+.mvs-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 32px;
+	padding: 0 14px;
+	font-size: 13px;
+	font-weight: 500;
+	border-radius: 6px;
+	border: 1px solid #e2e8f0;
+	background: #fff;
+	color: #1e1e1e;
+	cursor: pointer;
+	text-decoration: none;
+	transition: all 0.12s ease;
+	line-height: 1;
+}
+
+.mvs-btn:hover {
+	background: #f6f7f7;
+	color: #1e1e1e;
+	text-decoration: none;
+}
+
+.mvs-btn:active {
+	transform: scale(0.97);
+}
+
+.mvs-btn--primary {
+	background: #2271b1;
+	color: #fff;
+	border-color: #2271b1;
+}
+
+.mvs-btn--primary:hover {
+	background: #135e96;
+	color: #fff;
+}
+
+.mvs-btn--danger {
+	color: #d63638;
+	border-color: #d63638;
+}
+
+.mvs-btn--danger:hover {
+	background: #d63638;
+	color: #fff;
+}
+
+.mvs-btn--sm {
+	height: 28px;
+	font-size: 12px;
+	padding: 0 10px;
+}
+
+.mvs-btn--hero {
+	height: 46px;
+	padding: 0 36px;
+	font-size: 17px;
+	font-weight: 600;
+	border-radius: 8px;
+}
+
+.mvs-btn--full {
+	width: 100%;
+	justify-content: center;
+}
+
+.mvs-btn [data-lucide] {
+	width: 16px;
+	height: 16px;
+}
+
+/* Override WP submit_button() in our settings footer */
+.mvs-settings-section__footer .button-primary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 32px;
+	padding: 0 14px;
+	font-size: 13px;
+	font-weight: 500;
+	border-radius: 6px;
+	border: 1px solid #2271b1;
+	background: #2271b1;
+	color: #fff;
+	cursor: pointer;
+	transition: all 0.12s ease;
+	line-height: 1;
+}
+
+.mvs-settings-section__footer .button-primary:hover {
+	background: #135e96;
+	border-color: #135e96;
+}
+
+.mvs-settings-section__footer .button-primary:active {
+	transform: scale(0.97);
+}
+
 .mvs-section-divider { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee; }
-.mvs-btn-danger { color: #b32d2e !important; border-color: #b32d2e !important; }
-.mvs-btn-danger:hover { background: #b32d2e !important; color: #fff !important; }
 .mvs-btn-text-danger { color: #d63638; }
-.mvs-dashicons-inline { font-size: 16px; width: 16px; height: 16px; margin-right: 4px; vertical-align: text-bottom; }
-.mvs-dashicons-small { font-size: 14px; width: 14px; height: 14px; vertical-align: text-bottom; margin-right: 2px; }
-.mvs-dashicons-btn { margin-top: 4px; }
+/* Lucide icon base and size variants */
+.wpmediaverse-admin [data-lucide] { width: 18px; height: 18px; stroke-width: 1.75; }
+.mvs-icon--sm { width: 14px; height: 14px; }
+.mvs-icon--lg { width: 24px; height: 24px; }
+.mvs-icon--xl { width: 32px; height: 32px; }
 .mvs-icon-success { color: #00a32a; }
 .mvs-status-inline { margin-left: 8px; }
 .mvs-progress-container { margin-top: 8px; }
@@ -1528,3 +1693,105 @@ a.mvs-stat-card:focus {
 .mvs-moderation-table tr:last-child td { border-bottom: none; }
 .mvs-moderation-table .column-cb { width: 40px; }
 .mvs-moderation-table .column-thumb { width: 70px; }
+
+/* ==========================================================================
+   Settings Sidebar — Responsive (782px)
+   ========================================================================== */
+
+@media (max-width: 782px) {
+	.mvs-settings-wrap {
+		flex-direction: column;
+	}
+
+	.mvs-settings-sidebar {
+		width: 100%;
+		border-right: none;
+		border-bottom: 1px solid var(--mvs-admin-border);
+	}
+
+	.mvs-settings-sidebar__brand {
+		padding: 12px 16px;
+	}
+
+	.mvs-settings-nav-group {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 8px 12px;
+	}
+
+	.mvs-settings-nav-group__label {
+		width: 100%;
+	}
+
+	.mvs-settings-nav-item {
+		flex: 0 0 auto;
+		border-left: none;
+		border-radius: 4px;
+		padding: 6px 10px;
+	}
+
+	.mvs-settings-nav-item.is-active {
+		border-left-color: transparent;
+		background: #2271b1;
+		color: #fff;
+	}
+
+	.mvs-settings-nav-item.is-active [data-lucide] {
+		color: #fff;
+	}
+
+	.mvs-settings-content {
+		padding: 16px;
+	}
+}
+
+/* ==========================================================================
+   Toast Notifications
+   ========================================================================== */
+
+.mvs-toast-container {
+	position: fixed;
+	bottom: 24px;
+	right: 24px;
+	z-index: 100100;
+	display: flex;
+	flex-direction: column-reverse;
+	gap: 8px;
+}
+
+.mvs-toast {
+	padding: 10px 16px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 500;
+	color: #fff;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	opacity: 0;
+	transform: translateY(8px);
+	transition: opacity 0.3s ease, transform 0.3s ease;
+	max-width: 360px;
+}
+
+.mvs-toast.is-visible {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.mvs-toast--success { background: #00a32a; }
+.mvs-toast--error { background: #d63638; }
+.mvs-toast--info { background: #2271b1; }
+.mvs-toast--warning { background: #dba617; color: #1e1e1e; }
+
+/* ==========================================================================
+   Accessibility — Reduced Motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+	.wpmediaverse-admin *,
+	.mvs-settings-wrap * {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}

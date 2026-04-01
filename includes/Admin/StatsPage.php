@@ -222,13 +222,17 @@ class StatsPage {
 		$storage_formatted = size_format( (int) $storage_size );
 
 		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline">
-				<?php esc_html_e( 'Media Stats', 'wpmediaverse' ); ?>
-				<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
-			</h1>
-			<hr class="wp-header-end">
-			<p class="description"><?php esc_html_e( 'Track views, downloads, reactions, and AI usage across your media library.', 'wpmediaverse' ); ?></p>
+		<div class="wrap wpmediaverse-admin">
+			<div class="mvs-page-header">
+				<div class="mvs-page-header__left">
+					<h1 class="mvs-page-header__title">
+						<i data-lucide="bar-chart-3"></i>
+						<?php esc_html_e( 'Media Stats', 'wpmediaverse' ); ?>
+						<span class="mvs-version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
+					</h1>
+					<p class="mvs-page-header__desc"><?php esc_html_e( 'Track views, downloads, reactions, and AI usage across your media library.', 'wpmediaverse' ); ?></p>
+				</div>
+			</div>
 
 			<!-- Date Range Selector -->
 			<div class="mvs-stats-toolbar">
@@ -253,8 +257,8 @@ class StatsPage {
 				</div>
 				<?php if ( ! empty( $top_media ) ) : ?>
 					<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'mvs_export_csv', '1', $base_stats_url ), 'mvs_export_stats_csv' ) ); ?>"
-						class="button">
-						<span class="dashicons dashicons-download mvs-dashicons-small"></span>
+						class="mvs-btn mvs-btn--sm">
+						<i data-lucide="download" class="mvs-icon--sm"></i>
 						<?php esc_html_e( 'Export CSV', 'wpmediaverse' ); ?>
 					</a>
 				<?php endif; ?>
@@ -331,7 +335,7 @@ class StatsPage {
 							</table>
 						<?php else : ?>
 							<div class="mvs-empty-state">
-								<span class="dashicons dashicons-chart-bar"></span>
+								<i data-lucide="bar-chart-3"></i>
 								<p><?php esc_html_e( 'No stats data yet. Views will appear once users start browsing media.', 'wpmediaverse' ); ?></p>
 							</div>
 						<?php endif; ?>

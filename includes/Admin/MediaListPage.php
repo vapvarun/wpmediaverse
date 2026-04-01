@@ -101,10 +101,16 @@ class MediaListPage {
 
 		$base_url = admin_url( 'admin.php?page=mvs-media' );
 		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'All Media', 'wpmediaverse' ); ?></h1>
-			<hr class="wp-header-end">
-			<p class="description"><?php esc_html_e( 'Manage all uploaded media across your community.', 'wpmediaverse' ); ?></p>
+		<div class="wrap wpmediaverse-admin">
+			<div class="mvs-page-header">
+				<div class="mvs-page-header__left">
+					<h1 class="mvs-page-header__title">
+						<i data-lucide="images"></i>
+						<?php esc_html_e( 'All Media', 'wpmediaverse' ); ?>
+					</h1>
+					<p class="mvs-page-header__desc"><?php esc_html_e( 'Manage all uploaded media across your community.', 'wpmediaverse' ); ?></p>
+				</div>
+			</div>
 
 			<?php self::render_status_tabs( $status_counts, $status_filter, $base_url ); ?>
 
@@ -159,7 +165,7 @@ class MediaListPage {
 									<tr>
 										<td colspan="8">
 											<div class="mvs-empty-state-admin">
-												<span class="dashicons dashicons-format-gallery"></span>
+												<i data-lucide="images"></i>
 												<p><?php esc_html_e( 'No media items found.', 'wpmediaverse' ); ?></p>
 											</div>
 										</td>
@@ -269,14 +275,14 @@ class MediaListPage {
 				<?php else : ?>
 					<?php
 					$icons = array(
-						'video'    => 'dashicons-video-alt3',
-						'audio'    => 'dashicons-format-audio',
-						'document' => 'dashicons-media-document',
-						'image'    => 'dashicons-format-image',
+						'video'    => 'video',
+						'audio'    => 'music',
+						'document' => 'file-text',
+						'image'    => 'image',
 					);
-					$icon  = $icons[ $type ] ?? 'dashicons-media-default';
+					$icon  = $icons[ $type ] ?? 'file';
 					?>
-					<span class="mvs-thumb-placeholder"><span class="dashicons <?php echo esc_attr( $icon ); ?>"></span></span>
+					<span class="mvs-thumb-placeholder"><i data-lucide="<?php echo esc_attr( $icon ); ?>"></i></span>
 				<?php endif; ?>
 			</td>
 			<td class="column-primary">
