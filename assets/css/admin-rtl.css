@@ -1321,6 +1321,10 @@ a.mvs-stat-card:focus {
 	padding: 14px 20px;
 }
 
+.mvs-settings-card .form-table td select {
+	max-width: 320px;
+}
+
 .mvs-settings-card .form-table tr {
 	border-bottom: 1px solid var(--mvs-admin-surface-2);
 }

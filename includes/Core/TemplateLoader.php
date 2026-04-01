@@ -167,8 +167,9 @@ class TemplateLoader {
 			return;
 		}
 
-		// Media archive (explore).
-		if ( get_query_var( 'mvs_media_archive' ) ) {
+		// Media archive (explore) — via rewrite rule or mapped page.
+		$explore_page_id = (int) get_option( 'mvs_page_explore', 0 );
+		if ( get_query_var( 'mvs_media_archive' ) || ( $explore_page_id && is_page( $explore_page_id ) ) ) {
 			$this->serve_media_archive();
 			return;
 		}
