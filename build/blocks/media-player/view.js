@@ -1,1 +1,0 @@
-import{getContext as t,store as e}from"@wordpress/interactivity";e("mvs/media-player",{actions:{onPlay(){t().playing=!0},onPause(){t().playing=!1},async trackView(){const e=t();if(e.restUrl)try{await fetch(e.restUrl,{method:"POST",headers:{"Content-Type":"application/json","X-WP-Nonce":e.nonce}})}catch(t){}}}});

@@ -86,9 +86,9 @@
 - [x] Browser tested: explore, lightbox, BP lightbox, profile tab, group tab, dashboard, single page, admin list, upload
 - [x] Upload end-to-end verified (thumbnails generated correctly)
 - [x] Comment sync working (media → BP activity, no loops)
-- [ ] WPCS check
-- [ ] .pot file
-- [ ] Version headers verified
-- [ ] .distignore verified
-- [ ] Build ZIP
+- [x] WPCS check (0 errors, 0 warnings — phpcs.xml config applied)
+- [x] .pot file (4498 lines, languages/wpmediaverse.pot)
+- [x] Version headers verified (1.0.0 across plugin header, MVS_VERSION, readme.txt, package.json)
+- [x] .distignore verified (excludes node_modules, .git, /src, /tests, dev files, *.md except readme.txt)
+- [x] Build ZIP (wpmediaverse-1.0.0.zip — 2.1MB, 308 files, vendor=EDD SDK only, no docs/md/plans)
 - [ ] Git tag v1.0.0

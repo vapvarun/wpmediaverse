@@ -8,37 +8,56 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
+The media layer your community site is missing. Custom database tables, AI moderation, and a full social layer — without requiring BuddyPress.
 
 == Description ==
 
-WPMediaVerse transforms WordPress into a complete media sharing platform. Upload images, videos, audio, and documents with privacy controls, social features, and AI-powered moderation.
+WPMediaVerse is a complete media platform for WordPress — built on custom database tables, not wp_posts. Your community gets photo uploads, albums, reactions, comments, follows, direct messaging, AI moderation, and a full lightbox experience. Your site stays fast no matter how many uploads come in.
 
-**Core Features**
+**Why WPMediaVerse?**
 
-* **Media Upload** — Drag & drop uploader with MIME validation, EXIF stripping, and duplicate detection
-* **Albums & Playlists** — Create ordered collections with cover images and playlist support
-* **Smart Collections** — Auto-curated collections based on rules (type, tag, date range)
-* **Privacy Controls** — 6 privacy levels (public, logged-in, friends, group, private, custom) with BuddyPress fallback
-* **Social Features** — Reactions (6 types), threaded comments, favorites, @mentions, sharing
-* **AI Moderation** — Automatic content analysis via OpenAI Vision with approve/reject queue
-* **Gutenberg Blocks** — 8 blocks including media grid, player, upload, album viewer, stories, and explore feed
-* **Shortcodes** — 8 shortcodes for embedding media features anywhere
-* **Template System** — Override templates from your theme (media-single, album, explore)
-* **Monetization** — Access rules, signed URLs, payment bridges, lock overlay
-* **BuddyPress Integration** — Activity feed, profile/group media tabs, notifications
-* **Webhooks** — Outbound event webhooks with HMAC-SHA256 signing
-* **WP-CLI** — 8 commands for management and maintenance
-* **REST API** — 40+ endpoints for full headless/decoupled usage
+Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores uploads in wp_posts. On active communities, that table grows into tens of thousands of mixed rows. WPMediaVerse uses three dedicated, indexed tables — media queries never touch your posts, pages, or products.
+
+**What You Get (Free)**
+
+* **Custom Table Architecture** — Three indexed tables keep media separate from WordPress core data
+* **Media Uploads** — Drag & drop with MIME validation, EXIF stripping, duplicate detection, thumbnail generation
+* **Albums & Collections** — Ordered albums with cover images, smart collections with auto-curation rules
+* **Social Layer** — Reactions (6 types), threaded comments, favorites, @mentions, follow/unfollow, sharing
+* **Direct Messaging** — Text and media messaging between members, no third-party service needed
+* **AI Moderation** — OpenAI Vision scans uploads automatically. Flag, quarantine, or reject before they go public
+* **Privacy Controls** — 6 levels per upload: public, members-only, friends-only, group, private, custom
+* **Explore Feed** — Public media grid with filtering by tag, album, user, and media type
+* **Lightbox** — Full-screen with reactions, comments, favorites, share, gallery navigation — no page reload
+* **BuddyPress Integration** — Activity uploads (1-6 per post), profile/group media tabs, lightbox in feed
+* **13 Gutenberg Blocks** — Media grid, upload, player, album viewer, explore feed, stories, and more
+* **80+ REST API Endpoints** — 17 controllers covering every operation for headless/decoupled builds
+* **8 WP-CLI Commands** — Bulk operations, migrations, cache management, moderation
+* **8 Shortcodes** — Drop media features into any page or widget
+* **Webhooks** — Outbound event webhooks with HMAC-SHA256 signing via Action Scheduler
+* **GDPR** — Full data export and erasure via WordPress privacy tools
+
+**Pro Adds**
+
+* 5 layout modes (Grid, Instagram, Pinterest, Flickr, Dribbble)
+* Photo Challenges, 1v1 Battles, Tournament Brackets
+* Points, Streaks, Boosts gamification engine
+* S3 and BunnyCDN cloud storage drivers
+* Video transcoding with HLS adaptive streaming
+* Auto-captions via Whisper AI
+* Per-user storage quotas (MemberPress, WooCommerce, PMPro integration)
+* Voice messages, read receipts, typing indicators in DMs
+* Google Vision + AWS Rekognition moderation
+* Migration importers (rtMedia, MediaPress, BuddyBoss)
 
 **For Developers**
 
-* Clean PSR-4 architecture with service container
-* Comprehensive REST API with proper authentication and validation
-* Filter/action hooks throughout for extensibility
-* Template override system
-* AI provider abstraction (bring your own provider)
-* Storage driver pattern (local default, extensible to S3/CDN)
+* PSR-4 architecture with service container and lazy-loaded dependencies
+* 80+ action and filter hooks for extensibility
+* Template override system — copy to your theme and customize
+* AI provider abstraction — bring your own provider
+* Storage driver pattern — local, S3, BunnyCDN, or custom
+* WordPress Interactivity API — zero legacy JavaScript
 
 == Installation ==
 
@@ -90,21 +109,20 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 == Changelog ==
 
 = 1.0.0 =
-* Initial release
-* Core media management with 3 custom post types
-* 9 custom database tables for performance
-* 6-level privacy system with BuddyPress support
-* Social features: reactions, comments, favorites, mentions, sharing
-* AI moderation with OpenAI Vision
-* 8 Gutenberg blocks with Interactivity API
-* 8 shortcodes
+* Initial release — complete media platform for WordPress
+* Custom database tables (mvs_media_index, mvs_media_meta, mvs_media_stats) — zero wp_posts pollution
+* 38 features across core platform, social layer, BuddyPress integration, and developer tools
+* 6-level privacy system with BuddyPress-aware fallback
+* Full social layer: reactions (6 types), threaded comments, favorites, follows, DMs, @mentions, sharing
+* AI moderation with OpenAI Vision — flag, quarantine, or reject uploads automatically
+* 13 Gutenberg blocks powered by WordPress Interactivity API
+* 8 shortcodes for embedding media features anywhere
+* BuddyPress integration: activity uploads (1-6 per post), profile/group media tabs, lightbox in activity feed
+* 80+ REST API endpoints across 17 controllers
+* 8 WP-CLI commands for bulk operations and maintenance
+* Outbound webhooks with HMAC-SHA256 signing via Action Scheduler
 * Template override system
-* Monetization: access rules, signed URLs, payment bridges
-* BuddyPress integration: activity, profile, groups, notifications
-* Webhook system with HMAC signing
-* WP-CLI commands
-* rtMedia import tool
-* 40+ REST API endpoints
+* GDPR data export and erasure
 
 == Upgrade Notice ==
 

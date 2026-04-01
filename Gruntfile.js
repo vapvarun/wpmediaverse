@@ -83,48 +83,80 @@ module.exports = function( grunt ) {
 						expand: true,
 						src: [
 							'**',
-							// Git / CI
+
+							// ── Git / CI ──
 							'!.git/**',
 							'!.gitignore',
 							'!.distignore',
 							'!.github/**',
-							// Dev tooling
+
+							// ── Dev tooling ──
 							'!node_modules/**',
 							'!tests/**',
 							'!bin/**',
 							'!dist/**',
 							'!src/**',
-							// Docs & plans (stay on GitHub only)
+
+							// ── Docs, plans, marketing (GitHub only) ──
 							'!docs/**',
 							'!plan/**',
 							'!plans/**',
-							// Dev config
-							'!phpunit.xml.dist',
+							'!marketing/**',
+
+							// ── Dev config files ──
 							'!phpunit.xml',
+							'!phpunit.xml.dist',
+							'!phpstan.neon',
 							'!phpstan.neon.dist',
 							'!phpstan-baseline.neon',
 							'!phpcs.xml',
+							'!.phpcs.xml.dist',
 							'!package.json',
 							'!package-lock.json',
 							'!composer.json',
 							'!composer.lock',
 							'!Gruntfile.js',
+							'!webpack.config.js',
+							'!.editorconfig',
+							'!.eslintrc*',
+							'!.babelrc',
+							'!.browserslistrc',
 							'!CLAUDE.md',
+							'!ARCHITECTURE.md',
 							'!.playwright-mcp/**',
-							// Seed data (not for production)
+							'!.phpunit*',
+
+							// ── Seed / dev-only PHP ──
 							'!seed-demo-data.php',
+							'!cleanup-demo-data.php',
 							'!populate-showcase.php',
-							// Markdown files (changelogs kept)
+
+							// ── Markdown files (keep readme.txt only) ──
 							'!**/*.md',
 							'!readme.txt.bak',
-							// Vendor dev deps (keep EDD SDK)
+
+							// ── Vendor: strip ALL dev deps ──
+							// Keep: easy-digital-downloads (license SDK)
+							// Keep: woocommerce (Action Scheduler)
+							// Keep: composer (autoloader)
 							'!vendor/bin/**',
 							'!vendor/phpunit/**',
 							'!vendor/squizlabs/**',
 							'!vendor/wp-coding-standards/**',
 							'!vendor/phpcompatibility/**',
+							'!vendor/phpcsstandards/**',
 							'!vendor/szepeviktor/**',
 							'!vendor/phpstan/**',
+							'!vendor/php-stubs/**',
+							'!vendor/nikic/**',
+							'!vendor/dealerdirect/**',
+							'!vendor/doctrine/**',
+							'!vendor/myclabs/**',
+							'!vendor/phar-io/**',
+							'!vendor/theseer/**',
+							'!vendor/yoast/**',
+							'!vendor/sebastian/**',
+							'!vendor/symfony/**',
 						],
 						dest: 'dist/wpmediaverse/',
 					},
@@ -199,11 +231,47 @@ module.exports = function( grunt ) {
 		} );
 	} );
 
-	// Build: RTL + minify + pot
-	grunt.registerTask( 'build', [ 'rtlcss', 'cssmin', 'uglify', 'makepot' ] );
+	// Run npm run build for Gutenberg blocks
+	grunt.registerTask( 'blocks', 'Build Gutenberg blocks via webpack.', function() {
+		var done = this.async();
+		var execFile = require( 'child_process' ).execFile;
+		grunt.log.writeln( 'Building blocks (npm run build)...' );
+		execFile( 'npx', [ 'wp-scripts', 'build' ], function( err, stdout, stderr ) {
+			if ( err ) {
+				grunt.log.error( stderr || stdout );
+				done( false );
+				return;
+			}
+			grunt.log.ok( 'Blocks built successfully.' );
+			done();
+		} );
+	} );
 
-	// Dist: CI check + build + package zip
-	grunt.registerTask( 'dist', [ 'ci-check', 'build', 'clean:dist', 'copy:dist', 'compress:dist' ] );
+	// Print dist summary
+	grunt.registerTask( 'dist-summary', 'Show dist ZIP info.', function() {
+		var pkg = grunt.config( 'pkg' );
+		var zipPath = 'dist/wpmediaverse-' + pkg.version + '.zip';
+		if ( grunt.file.exists( zipPath ) ) {
+			var fs = require( 'fs' );
+			var stats = fs.statSync( zipPath );
+			var sizeMB = ( stats.size / 1024 / 1024 ).toFixed( 1 );
+			grunt.log.writeln( '' );
+			grunt.log.ok( 'ZIP: ' + zipPath + ' (' + sizeMB + ' MB)' );
+			grunt.log.ok( 'Version: ' + pkg.version );
+			grunt.log.writeln( '' );
+			grunt.log.writeln( 'Vendor includes: EDD license SDK, Action Scheduler, Composer autoloader' );
+			grunt.log.writeln( 'Import in WordPress: Plugins → Add New → Upload → ' + zipPath );
+		}
+	} );
+
+	// Build: blocks + RTL + minify + pot
+	grunt.registerTask( 'build', [ 'blocks', 'rtlcss', 'cssmin', 'uglify', 'makepot' ] );
+
+	// Dist: full build + package zip (no CI gate)
+	grunt.registerTask( 'dist', [ 'build', 'clean:dist', 'copy:dist', 'compress:dist', 'dist-summary' ] );
+
+	// Release: CI check + dist (for production releases)
+	grunt.registerTask( 'release', [ 'ci-check', 'dist' ] );
 
 	// Default
 	grunt.registerTask( 'default', [ 'build' ] );

@@ -4,12 +4,14 @@
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892BF?logo=php)](https://php.net/)
 [![License](https://img.shields.io/badge/License-GPLv2-green)](https://www.gnu.org/licenses/gpl-2.0.html)
 [![BuddyPress](https://img.shields.io/badge/BuddyPress-Compatible-orange)](https://buddypress.org/)
-[![Gutenberg](https://img.shields.io/badge/Gutenberg-8%20Blocks-purple)](https://developer.wordpress.org/block-editor/)
-[![REST API](https://img.shields.io/badge/REST%20API-40%2B%20Endpoints-red)](https://developer.wordpress.org/rest-api/)
+[![Gutenberg](https://img.shields.io/badge/Gutenberg-13%20Blocks-purple)](https://developer.wordpress.org/block-editor/)
+[![REST API](https://img.shields.io/badge/REST%20API-80%2B%20Endpoints-red)](https://developer.wordpress.org/rest-api/)
 
-**A multi-purpose WordPress media platform** for building photo galleries, social media hubs, digital asset libraries, membership media portals, and community-driven content sharing sites — all from a single plugin.
+**The media layer your community site is missing.** Custom database tables, AI moderation, and a full social layer — without requiring BuddyPress. The only WordPress media plugin that doesn't store uploads in wp_posts.
 
 **Built by** [vapvarun](https://github.com/vapvarun) & [Wbcom Designs](https://wbcomdesigns.com/)
+
+> **Why WPMediaVerse?** Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores uploads in `wp_posts`. On active communities, that table grows into tens of thousands of mixed rows. WPMediaVerse uses three dedicated, indexed MySQL tables — media queries never touch your posts, pages, or products. Performance stays predictable at 100,000+ media items.
 
 ---
 
@@ -106,7 +108,7 @@ Deeply integrated with BuddyPress — all features activate automatically when B
 
 ### Gutenberg Blocks
 
-8 blocks, all powered by the **WordPress Interactivity API** — zero legacy JavaScript:
+13 blocks, all powered by the **WordPress Interactivity API** — zero legacy JavaScript:
 
 | Block | Slug | Description |
 |-------|------|-------------|
@@ -116,7 +118,11 @@ Deeply integrated with BuddyPress — all features activate automatically when B
 | Album Viewer | `mvs/album-viewer` | Album display with ordered items |
 | Story Viewer | `mvs/story-viewer` | Instagram-style stories carousel |
 | Media Stats | `mvs/media-stats` | User stats dashboard cards |
+| Media Social | `mvs/media-social` | Social actions bar (reactions, comments, share) |
 | Explore Feed | `mvs/explore-feed` | Public explore feed with search and filters |
+| Explore View | `mvs/explore-view` | Explore page layout with browse modes |
+| Dashboard View | `mvs/dashboard-view` | User dashboard (My Media, Albums, Favorites) |
+| Shared UI | `mvs/shared-ui` | Lightbox shell, FAB uploader, shared components |
 | Lock Overlay | `mvs/lock-overlay` | Paywall overlay with blurred preview + unlock prompt |
 
 ### Shortcodes
@@ -156,7 +162,7 @@ your-theme/wpmediaverse/
 
 ### REST API
 
-40+ endpoints under `mvs/v1/` for full headless/decoupled usage:
+80+ endpoints across 17 controllers under `mvs/v1/` for full headless/decoupled usage:
 
 | Endpoint Group | Routes | Methods |
 |----------------|--------|---------|
@@ -166,15 +172,21 @@ your-theme/wpmediaverse/
 | Reactions | `/media/{id}/reactions` | GET, POST, DELETE |
 | Comments | `/media/{id}/comments`, `/media/{id}/comments/{cid}` | GET, POST, DELETE |
 | Favorites | `/media/{id}/favorite`, `/me/favorites` | GET, POST, DELETE |
+| Follows | `/users/{id}/follow`, `/me/following`, `/me/followers` | GET, POST, DELETE |
 | Tags | `/tags`, `/tags/cloud`, `/tags/merge`, `/tags/{id}` | GET, POST, PUT |
 | Stats | `/media/{id}/stats`, `/me/stats` | GET |
+| Profiles | `/profiles/{username}`, `/me/profile` | GET, PUT |
+| Notifications | `/me/notifications` | GET, PUT |
+| Activity | `/activity`, `/activity/{id}/media` | GET, POST |
 | Access Rules | `/media/{id}/rules`, `/media/{id}/grant`, `/me/grants` | GET, POST, DELETE |
 | Signed URLs | `/media/{id}/signed-url`, `/serve` | GET |
 | Checkout | `/checkout`, `/checkout/redeem`, `/media/{id}/pricing` | GET, POST |
 | Moderation | `/moderation`, `/moderation/counts`, `/moderation/{id}/approve` | GET, POST |
 | Bulk | `/media/bulk` | POST |
+| Reports | `/media/{id}/report` | POST |
+| Users | `/users`, `/users/{id}` | GET |
 
-All endpoints support proper authentication (nonce + cookie), validation, and error handling.
+All endpoints support proper authentication (nonce + cookie), validation, and error handling. Rate limiting included.
 
 ### Admin Dashboard
 
@@ -243,12 +255,12 @@ wpmediaverse/
 │   ├── Taxonomies/      2 taxonomies: mvs_tag, mvs_category
 │   ├── Services/        Upload, Storage, AI, Moderation, Stats, Cache, Album
 │   ├── Social/          Reactions, Comments, Favorites, Mentions, Shares
-│   ├── REST/            11 controllers, 40+ routes
+│   ├── REST/            17 controllers, 80+ routes
 │   ├── Capabilities/    15 capabilities across 5 roles
 │   ├── Integrations/    BuddyPress, Webhooks
 │   ├── Admin/           Overview, Settings, Stats, Moderation Queue
 │   └── CLI/             WP-CLI commands
-├── src/blocks/          8 Gutenberg blocks (JSX + Interactivity API)
+├── src/blocks/          13 Gutenberg blocks (JSX + Interactivity API)
 ├── templates/           4 overridable frontend templates
 ├── assets/
 │   ├── css/             Frontend + admin stylesheets

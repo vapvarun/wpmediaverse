@@ -1,1 +1,0 @@
-import{store as i}from"@wordpress/interactivity";i("mvs/media-grid",{actions:{}});

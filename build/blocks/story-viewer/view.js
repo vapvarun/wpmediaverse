@@ -1,1 +1,0 @@
-import{getContext as o,store as t}from"@wordpress/interactivity";t("mvs/story-viewer",{actions:{openStory(){const t=o(),r=o();r.viewing=!0,r.currentAuthor=t.authorId,r.storyUrl=t.storyUrl,document.body.style.overflow="hidden"},closeStory(){const t=o();t.viewing=!1,t.storyUrl="",document.body.style.overflow=""}}});
