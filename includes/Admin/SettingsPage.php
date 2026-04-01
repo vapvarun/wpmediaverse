@@ -84,6 +84,15 @@ class SettingsPage {
 			return;
 		}
 
+		/**
+		 * Fires before WPMediaVerse settings are saved.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param string $option_page The settings page being saved.
+		 */
+		do_action( 'mvs_settings_before_save', $option_page );
+
 		$old_driver = get_option( 'mvs_storage_driver', 'local' );
 		set_transient( 'mvs_old_storage_driver_' . get_current_user_id(), $old_driver, 30 );
 	}

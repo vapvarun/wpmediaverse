@@ -455,9 +455,18 @@ class OverviewPage {
 					</div>
 				</div>
 
-			</div>
+			<?php
+			/**
+			 * Fires after the overview page widgets, for third-party dashboard widgets.
+			 *
+			 * @since 1.1.0
+			 */
+			do_action( 'mvs_dashboard_widgets' );
+			?>
+
 		</div>
-		<?php
+	</div>
+	<?php
 	}
 
 	/**

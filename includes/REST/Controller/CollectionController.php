@@ -428,7 +428,15 @@ class CollectionController extends WP_REST_Controller {
 			}
 		}
 
-		return $data;
+		/**
+		 * Filters the collection REST response data.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array $data          Collection response data.
+		 * @param int   $collection_id Collection post ID.
+		 */
+		return apply_filters( 'mvs_collection_response', $data, $post->ID );
 	}
 
 	/**

@@ -67,10 +67,33 @@ class NotificationService {
 			return false;
 		}
 
-		global $wpdb;
+		/**
+		 * Filters whether a notification should be sent.
+		 *
+		 * Return false to suppress the notification.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param bool   $should_send Whether to send the notification.
+		 * @param int    $user_id     Recipient user ID.
+		 * @param string $type        Notification type.
+		 * @param int    $actor_id    User who triggered it.
+		 * @param int    $media_id    Related media ID (0 if none).
+		 */
+		if ( ! apply_filters( 'mvs_should_send_notification', true, $user_id, $type, $actor_id, $media_id ) ) {
+			return false;
+		}
 
-		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'mvs_notifications',
+		/**
+		 * Filters the notification data before it is stored.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array  $data Notification data array.
+		 * @param string $type Notification type.
+		 */
+		$notification_data = apply_filters(
+			'mvs_notification_data',
 			array(
 				'user_id'    => $user_id,
 				'type'       => $type,
@@ -79,11 +102,33 @@ class NotificationService {
 				'comment_id' => $comment_id,
 				'created_at' => current_time( 'mysql', true ),
 			),
+			$type
+		);
+
+		global $wpdb;
+
+		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_notifications',
+			$notification_data,
 			array( '%d', '%s', '%d', '%d', '%d', '%s' )
 		);
 
 		if ( $wpdb->insert_id ) {
 			wp_cache_delete( 'mvs_notif_count_' . $user_id, 'mvs' );
+
+			/**
+			 * Fires after a notification is created.
+			 *
+			 * @since 1.1.0
+			 *
+			 * @param int    $notification_id New notification ID.
+			 * @param int    $user_id         Recipient user ID.
+			 * @param string $type            Notification type.
+			 * @param int    $actor_id        User who triggered it.
+			 * @param int    $media_id        Related media ID.
+			 */
+			do_action( 'mvs_notification_created', $wpdb->insert_id, $user_id, $type, $actor_id, $media_id );
+
 			return $wpdb->insert_id;
 		}
 

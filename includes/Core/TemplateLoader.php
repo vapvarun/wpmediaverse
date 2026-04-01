@@ -452,9 +452,19 @@ class TemplateLoader {
 		add_filter(
 			'body_class',
 			static function ( array $classes ): array {
-				if ( ! in_array( 'mvs-page', $classes, true ) ) {
-					$classes[] = 'mvs-page';
-					$classes[] = 'no-sidebar';
+				/**
+				 * Filters the body classes added to WPMediaVerse pages.
+				 *
+				 * @since 1.1.0
+				 *
+				 * @param string[] $mvs_classes MVS-specific body classes.
+				 */
+				$mvs_classes = apply_filters( 'mvs_body_classes', array( 'mvs-page', 'no-sidebar' ) );
+
+				foreach ( $mvs_classes as $cls ) {
+					if ( ! in_array( $cls, $classes, true ) ) {
+						$classes[] = $cls;
+					}
 				}
 				return $classes;
 			}
@@ -517,10 +527,40 @@ class TemplateLoader {
 			return;
 		}
 
+		/**
+		 * Filters template variables before rendering.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array  $args          Template variables.
+		 * @param string $template_name Template file name.
+		 */
+		$args = apply_filters( 'mvs_template_variables', $args, $template_name );
+
 		if ( ! empty( $args ) ) {
 			extract( $args, EXTR_SKIP ); // phpcs:ignore WordPress.PHP.DontExtract.extract_extract
 		}
 
+		/**
+		 * Fires before a template part is rendered.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param string $template_name Template file name.
+		 * @param array  $args          Template variables.
+		 */
+		do_action( 'mvs_before_template_render', $template_name, $args );
+
 		include $template;
+
+		/**
+		 * Fires after a template part is rendered.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param string $template_name Template file name.
+		 * @param array  $args          Template variables.
+		 */
+		do_action( 'mvs_after_template_render', $template_name, $args );
 	}
 }

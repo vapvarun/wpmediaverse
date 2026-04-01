@@ -582,7 +582,15 @@ class AlbumController extends WP_REST_Controller {
 			$data['items'] = array_map( 'intval', array_column( $this->albums->get_items( $album_id ), 'media_id' ) );
 		}
 
-		return $data;
+		/**
+		 * Filters the album REST response data.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array $data     Album response data.
+		 * @param int   $album_id Album post ID.
+		 */
+		return apply_filters( 'mvs_album_response', $data, $album_id );
 	}
 
 	/**

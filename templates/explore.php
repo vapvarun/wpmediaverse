@@ -476,6 +476,15 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php endif; ?>
 		</div>
 	<?php endif; ?>
+
+	<?php
+	/**
+	 * Fires after the explore grid, symmetric with mvs_before_explore_grid.
+	 *
+	 * @since 1.1.0
+	 */
+	do_action( 'mvs_after_explore_grid' );
+	?>
 </div>
 <?php
 // Enqueue Interactivity API stores.

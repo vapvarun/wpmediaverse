@@ -156,6 +156,16 @@ class AIService {
 
 		MediaMeta::set( $media_id, 'ai_moderation', $result );
 
+		/**
+		 * Filters the AI moderation result before the flagging decision.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array $result   Moderation result with 'safe' key.
+		 * @param int   $media_id Media post ID.
+		 */
+		$result = apply_filters( 'mvs_ai_moderation_result', $result, $media_id );
+
 		if ( ! $result['safe'] ) {
 			MediaMeta::set( $media_id, 'moderation_status', 'flagged' );
 
@@ -186,6 +196,20 @@ class AIService {
 			'moderation'  => null,
 		);
 
+		/**
+		 * Filters whether AI analysis should run on a media item.
+		 *
+		 * Return false to skip AI processing entirely.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param bool $should_analyze Whether to analyze the media.
+		 * @param int  $media_id       Media post ID.
+		 */
+		if ( ! apply_filters( 'mvs_should_ai_analyze', true, $media_id ) ) {
+			return $output;
+		}
+
 		$analysis = $this->analyze( $media_id );
 		if ( ! is_wp_error( $analysis ) ) {
 			$output['description'] = $analysis['description'];
@@ -205,7 +229,15 @@ class AIService {
 
 		MediaMeta::set( $media_id, 'ai_status', 'complete' );
 
-		return $output;
+		/**
+		 * Filters the combined AI processing result before returning.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array $output   Combined AI results (description, tags, moderation).
+		 * @param int   $media_id Media post ID.
+		 */
+		return apply_filters( 'mvs_ai_result', $output, $media_id );
 	}
 
 	/**

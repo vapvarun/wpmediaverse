@@ -293,6 +293,40 @@ class MediaController extends WP_REST_Controller {
 
 		$where_sql = implode( ' AND ', $where );
 
+		/**
+		 * Filters the media feed query arguments.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array           $query_args {
+		 *     @type string[] $where    WHERE clause fragments.
+		 *     @type array    $params   Prepared statement parameters.
+		 *     @type string   $orderby  Sort order (date|trending|popular).
+		 *     @type int      $per_page Items per page.
+		 *     @type int      $offset   Query offset.
+		 * }
+		 * @param WP_REST_Request $request REST request object.
+		 */
+		$feed_args = apply_filters(
+			'mvs_feed_query_args',
+			array(
+				'where'    => $where,
+				'params'   => $params,
+				'orderby'  => $request->get_param( 'orderby' ),
+				'per_page' => $per_page,
+				'offset'   => $offset,
+			),
+			$request
+		);
+
+		// Re-extract in case the filter modified them.
+		$where    = $feed_args['where'];
+		$params   = $feed_args['params'];
+		$per_page = $feed_args['per_page'];
+		$offset   = $feed_args['offset'];
+
+		$where_sql = implode( ' AND ', $where );
+
 		// Count query.
 		$count_sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE {$where_sql}";
 		$total     = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
@@ -913,7 +947,14 @@ class MediaController extends WP_REST_Controller {
 				'type'              => 'integer',
 				'default'           => 20,
 				'minimum'           => 1,
-				'maximum'           => 100,
+				/**
+				 * Filters the maximum items per page for media feed REST requests.
+				 *
+				 * @since 1.1.0
+				 *
+				 * @param int $maximum Maximum per_page value.
+				 */
+				'maximum'           => apply_filters( 'mvs_rest_pagination_max', 100 ),
 				'sanitize_callback' => 'absint',
 			),
 			'page'       => array(
@@ -938,7 +979,14 @@ class MediaController extends WP_REST_Controller {
 			'orderby'    => array(
 				'type'              => 'string',
 				'default'           => 'date',
-				'enum'              => array( 'date', 'trending', 'popular' ),
+				/**
+				 * Filters the available sort options for the media feed.
+				 *
+				 * @since 1.1.0
+				 *
+				 * @param string[] $options Sort option slugs.
+				 */
+				'enum'              => apply_filters( 'mvs_feed_sort_options', array( 'date', 'trending', 'popular' ) ),
 				'sanitize_callback' => 'sanitize_text_field',
 			),
 		);

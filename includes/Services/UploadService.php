@@ -57,6 +57,17 @@ class UploadService {
 
 		// Check file size using server-side measurement (not client-reported).
 		$max_size    = (int) get_option( 'mvs_max_upload_size', 104857600 );
+
+		/**
+		 * Filters the maximum upload file size in bytes.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int $max_size Maximum upload size in bytes.
+		 * @param int $user_id  Uploading user ID.
+		 */
+		$max_size = (int) apply_filters( 'mvs_max_upload_size', $max_size, $user_id );
+
 		$actual_size = filesize( $file['tmp_name'] );
 		if ( false === $actual_size || $actual_size > $max_size ) {
 			return new WP_Error(
@@ -158,11 +169,22 @@ class UploadService {
 		}
 
 		// Generate storage path.
+		/**
+		 * Filters the upload destination subdirectory.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param string $subdir    Subdirectory path (default: Y/m date format).
+		 * @param int    $user_id   Uploading user ID.
+		 * @param string $media_type Media type (image|video|audio|document).
+		 */
+		$dest_subdir = apply_filters( 'mvs_upload_directory', gmdate( 'Y/m' ), $user_id, $media_type );
+
 		$filename  = wp_unique_filename(
-			wp_upload_dir()['basedir'] . '/wpmediaverse/' . gmdate( 'Y/m' ),
+			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_subdir,
 			sanitize_file_name( $file['name'] )
 		);
-		$dest_path = gmdate( 'Y/m' ) . '/' . $filename;
+		$dest_path = $dest_subdir . '/' . $filename;
 
 		// Store file.
 		$driver = $this->storage->get_driver();
@@ -274,7 +296,15 @@ class UploadService {
 	 */
 	private function get_allowed_types(): array {
 		$types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );
-		return array_map( 'trim', explode( ',', $types ) );
+
+		/**
+		 * Filters the allowed file MIME types for upload.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param string[] $types Array of allowed MIME type strings.
+		 */
+		return apply_filters( 'mvs_allowed_file_types', array_map( 'trim', explode( ',', $types ) ) );
 	}
 
 	/**
@@ -530,6 +560,17 @@ class UploadService {
 			),
 		);
 
+		/**
+		 * Fires before thumbnail generation begins.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int    $media_id  Media ID.
+		 * @param string $file_path Absolute path to the source image.
+		 * @param array  $sizes     Thumbnail size definitions.
+		 */
+		do_action( 'mvs_before_thumbnail_generation', $media_id, $file_path, $sizes );
+
 		$generated = $editor->multi_resize( $sizes );
 		if ( empty( $generated ) ) {
 			return;
@@ -542,6 +583,17 @@ class UploadService {
 		foreach ( $generated as $size_name => $data ) {
 			MediaMeta::set( $media_id, 'thumb_' . $size_name, $base_url . '/' . $data['file'] );
 		}
+
+		/**
+		 * Fires after thumbnails have been generated and stored.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int    $media_id  Media ID.
+		 * @param array  $generated Array of generated thumbnail data keyed by size name.
+		 * @param string $file_path Absolute path to the source image.
+		 */
+		do_action( 'mvs_after_thumbnail_generation', $media_id, $generated, $file_path );
 	}
 
 	/**
