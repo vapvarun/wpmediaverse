@@ -69,7 +69,7 @@ class SetupWizard {
 
 			case 'done':
 				update_option( 'mvs_setup_complete', true );
-				wp_safe_redirect( admin_url( 'admin.php?page=mvs-overview' ) );
+				wp_safe_redirect( admin_url( 'admin.php?page=wpmediaverse' ) );
 				exit;
 		}
 	}
@@ -237,7 +237,7 @@ class SetupWizard {
 					class="mvs-btn mvs-btn--primary mvs-btn--hero">
 					<?php esc_html_e( "Let's Get Started", 'wpmediaverse' ); ?>
 				</a>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-overview' ) ); ?>"
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=wpmediaverse' ) ); ?>"
 					class="mvs-setup-skip">
 					<?php esc_html_e( 'Skip setup', 'wpmediaverse' ); ?>
 				</a>

@@ -20,7 +20,7 @@ use WPMediaVerse\Services\MediaMeta;
  */
 class OverviewPage {
 
-	const PAGE_SLUG = 'mvs-overview';
+	const PAGE_SLUG = 'wpmediaverse';
 
 	/**
 	 * Constructor. Registers the admin submenu.
