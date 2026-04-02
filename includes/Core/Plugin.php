@@ -1043,7 +1043,12 @@ class Plugin {
 		wp_enqueue_script_module(
 			'@mvs/shared-ui',
 			MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js',
-			array( '@wordpress/interactivity' ),
+			array(
+				array(
+					'id'     => '@wordpress/interactivity',
+					'import' => 'static',
+				),
+			),
 			MVS_VERSION
 		);
 	}
