@@ -597,6 +597,8 @@ class Plugin {
 			'mvs-media',
 			array( \WPMediaVerse\Admin\MediaListPage::class, 'render' )
 		);
+
+		// Albums and Collections register themselves via show_in_menu => 'wpmediaverse'.
 	}
 
 	/**

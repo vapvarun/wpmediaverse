@@ -40,7 +40,7 @@ class Collection {
 			'show_in_rest'    => true,
 			'rest_base'       => 'mvs-collections',
 			'supports'        => array( 'title', 'editor', 'author', 'thumbnail' ),
-			'capability_type' => array( 'mvs_media', 'mvs_medias' ),
+			'capability_type' => 'post',
 			'map_meta_cap'    => true,
 			'rewrite'         => array( 'slug' => 'collection' ),
 			'show_in_menu'    => 'wpmediaverse',

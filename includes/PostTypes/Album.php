@@ -40,7 +40,7 @@ class Album {
 			'show_in_rest'    => true,
 			'rest_base'       => 'mvs-albums',
 			'supports'        => array( 'title', 'editor', 'author', 'thumbnail' ),
-			'capability_type' => array( 'mvs_media', 'mvs_medias' ),
+			'capability_type' => 'post',
 			'map_meta_cap'    => true,
 			'rewrite'         => array( 'slug' => 'album' ),
 			'show_in_menu'    => 'wpmediaverse',
