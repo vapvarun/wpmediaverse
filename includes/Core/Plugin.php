@@ -1040,12 +1040,11 @@ class Plugin {
 			MVS_VERSION
 		);
 
-		wp_enqueue_script(
-			'mvs-shared-ui',
-			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
-			array( 'wp-interactivity' ),
-			MVS_VERSION,
-			true
+		wp_enqueue_script_module(
+			'@mvs/shared-ui',
+			MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js',
+			array( '@wordpress/interactivity' ),
+			MVS_VERSION
 		);
 	}
 

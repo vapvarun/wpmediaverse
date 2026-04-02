@@ -95,7 +95,7 @@ module.exports = function( grunt ) {
 							'!tests/**',
 							'!bin/**',
 							'!dist/**',
-							'!src/**',
+							// src/ included — templates load ES module view.js from src/blocks/.
 
 							// ── Docs, plans, marketing (GitHub only) ──
 							'!docs/**',
