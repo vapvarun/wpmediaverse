@@ -218,7 +218,7 @@ class Shortcodes {
 		// Enqueue Interactivity API stores.
 		wp_enqueue_script_module(
 			'@mvs/shared-ui',
-			MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js',
+			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
 			array(
 				array(
 					'id'     => '@wordpress/interactivity',
@@ -230,7 +230,7 @@ class Shortcodes {
 
 		wp_enqueue_script_module(
 			'mvs-dashboard-view',
-			MVS_PLUGIN_URL . 'src/blocks/dashboard-view/view.js',
+			MVS_PLUGIN_URL . 'build/blocks/dashboard-view/view.js',
 			array(
 				array(
 					'id'     => '@wordpress/interactivity',
@@ -268,7 +268,7 @@ class Shortcodes {
 		$template = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/render.php';
 
 		if ( ! file_exists( $template ) ) {
-			$template = MVS_PLUGIN_DIR . 'src/blocks/' . $block_name . '/render.php';
+			$template = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/render.php';
 		}
 
 		// Ensure frontend + block styles are loaded.
