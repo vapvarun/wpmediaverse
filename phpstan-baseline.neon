@@ -32,7 +32,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
+			count: 4
 			path: includes/Admin/OverviewPage.php
 
 		-
@@ -82,7 +82,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
+			count: 3
 			path: includes/Admin/SetupWizard.php
 
 		-
