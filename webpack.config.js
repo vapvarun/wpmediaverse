@@ -3,11 +3,20 @@ const path = require( 'path' );
 
 // View-only Interactivity API stores that only have view.js (no index.js).
 // wp-scripts only discovers index.js entries, so we add these manually.
+// All blocks with view.js (Interactivity API stores).
+// wp-scripts doesn't always auto-discover view.js entries,
+// so we add them all explicitly.
 const viewOnlyStores = [
 	'dashboard-view',
 	'media-social',
 	'explore-view',
 	'shared-ui',
+	'explore-feed',
+	'lock-overlay',
+	'media-grid',
+	'media-player',
+	'media-upload',
+	'story-viewer',
 ];
 
 const viewEntries = {};
