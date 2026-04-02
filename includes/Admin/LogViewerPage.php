@@ -52,7 +52,7 @@ class LogViewerPage {
 			return;
 		}
 
-		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_mvs_settings' ) ) {
 			return;
 		}
 
@@ -76,7 +76,7 @@ class LogViewerPage {
 	 * Render the log viewer page.
 	 */
 	public function render_page(): void {
-		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_mvs_settings' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 

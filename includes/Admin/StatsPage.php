@@ -63,7 +63,7 @@ class StatsPage {
 			return;
 		}
 
-		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_mvs_settings' ) ) {
 			return;
 		}
 
@@ -136,7 +136,7 @@ class StatsPage {
 	 * Render the stats page.
 	 */
 	public function render_page(): void {
-		if ( ! current_user_can( 'upload_mvs_media' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'upload_mvs_media' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 

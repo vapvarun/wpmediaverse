@@ -680,7 +680,7 @@ class OverviewPage {
 	public function ajax_import_demo_data(): void {
 		check_ajax_referer( 'mvs_import_demo', '_nonce' );
 
-		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_mvs_settings' ) ) {
 			wp_send_json_error( array( 'message' => 'Permission denied.' ) );
 		}
 
@@ -701,7 +701,7 @@ class OverviewPage {
 	public function handle_cleanup_demo(): void {
 		check_ajax_referer( 'mvs_cleanup_demo', '_nonce' );
 
-		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_mvs_settings' ) ) {
 			wp_send_json_error( array( 'message' => 'Permission denied.' ) );
 		}
 

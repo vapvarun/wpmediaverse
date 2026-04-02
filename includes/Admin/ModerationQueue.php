@@ -68,7 +68,7 @@ class ModerationQueue {
 	 * Handle approve/reject form submissions (single and bulk).
 	 */
 	public function handle_actions(): void {
-		if ( ! current_user_can( 'moderate_mvs_media' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
 			return;
 		}
 
@@ -152,7 +152,7 @@ class ModerationQueue {
 	 * Render the moderation queue page.
 	 */
 	public function render_page(): void {
-		if ( ! current_user_can( 'moderate_mvs_media' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 

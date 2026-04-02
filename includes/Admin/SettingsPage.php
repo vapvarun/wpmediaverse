@@ -1290,7 +1290,7 @@ class SettingsPage {
 	 * Render the settings page with sidebar navigation.
 	 */
 	public function render_page(): void {
-		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_mvs_settings' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
@@ -1852,7 +1852,7 @@ class SettingsPage {
 			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
 		}
 
-		if ( ! current_user_can( 'manage_mvs_settings' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_mvs_settings' ) ) {
 			wp_die( esc_html__( 'You do not have permission to change these settings.', 'wpmediaverse' ) );
 		}
 

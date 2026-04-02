@@ -24,7 +24,7 @@ class MediaListPage {
 	 * Render the media listing page.
 	 */
 	public static function render(): void {
-		if ( ! current_user_can( 'upload_mvs_media' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'upload_mvs_media' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
