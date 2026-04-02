@@ -215,29 +215,21 @@ class Shortcodes {
 
 		wp_enqueue_style( 'mvs-frontend' );
 
-		// Enqueue Interactivity API stores.
-		wp_enqueue_script_module(
-			'@mvs/shared-ui',
+		// Enqueue Interactivity API stores (IIFE format, loaded as regular scripts).
+		wp_enqueue_script(
+			'mvs-shared-ui',
 			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
-			array(
-				array(
-					'id'     => '@wordpress/interactivity',
-					'import' => 'static',
-				),
-			),
-			MVS_VERSION
+			array( 'wp-interactivity' ),
+			MVS_VERSION,
+			true
 		);
 
-		wp_enqueue_script_module(
+		wp_enqueue_script(
 			'mvs-dashboard-view',
 			MVS_PLUGIN_URL . 'build/blocks/dashboard-view/view.js',
-			array(
-				array(
-					'id'     => '@wordpress/interactivity',
-					'import' => 'static',
-				),
-			),
-			MVS_VERSION
+			array( 'wp-interactivity', 'mvs-shared-ui' ),
+			MVS_VERSION,
+			true
 		);
 
 		$mvs_dash_ctx = array(
@@ -290,11 +282,12 @@ class Shortcodes {
 				'dependencies' => array(),
 				'version'      => filemtime( $block_view ),
 			);
-			wp_enqueue_script_module(
+			wp_enqueue_script(
 				'mvs-block-' . $block_name . '-view',
 				MVS_PLUGIN_URL . 'build/blocks/' . $block_name . '/view.js',
-				$asset['dependencies'],
-				$asset['version']
+				array( 'wp-interactivity' ),
+				$asset['version'],
+				true
 			);
 		}
 
