@@ -1350,7 +1350,7 @@ class SettingsPage {
 				<?php foreach ( $sections as $section_id => $section ) : ?>
 					<div class="mvs-settings-section" id="section-<?php echo esc_attr( $section_id ); ?>">
 
-						<?php if ( ! empty( $section['renderer'] ) && 'permissions' === $section['renderer'] ) : ?>
+						<?php if ( ! empty( $section['renderer'] ) ) : ?>
 							<div class="mvs-settings-card">
 								<div class="mvs-settings-card__head">
 									<p class="mvs-settings-card__title">
@@ -1362,7 +1362,19 @@ class SettingsPage {
 									<p class="mvs-settings-card__desc"><?php echo esc_html( $section['description'] ); ?></p>
 								</div>
 								<div class="mvs-settings-card__body">
-									<?php $this->render_permissions_tab(); ?>
+									<?php
+									if ( 'permissions' === $section['renderer'] ) {
+										$this->render_permissions_tab();
+									} else {
+										/**
+										 * Fires to render custom settings section content.
+										 *
+										 * @since 1.0.0
+										 * @param array $section Section configuration.
+										 */
+										do_action( 'mvs_settings_render_' . $section['renderer'], $section );
+									}
+									?>
 								</div>
 							</div>
 						<?php elseif ( ! empty( $section['page_slug'] ) ) : ?>
