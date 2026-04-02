@@ -7,6 +7,7 @@ const viewOnlyStores = [
 	'dashboard-view',
 	'media-social',
 	'explore-view',
+	'shared-ui',
 ];
 
 const viewEntries = {};
