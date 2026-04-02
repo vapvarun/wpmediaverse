@@ -45,7 +45,7 @@ class StatsPage {
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
 			__( 'Media Stats', 'wpmediaverse' ),
 			__( 'Stats', 'wpmediaverse' ),
-			'upload_mvs_media',
+			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);

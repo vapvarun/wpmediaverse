@@ -34,7 +34,7 @@ class LogViewerPage {
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
 			__( 'Log Viewer', 'wpmediaverse' ),
 			__( 'Logs', 'wpmediaverse' ),
-			'manage_mvs_settings',
+			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);

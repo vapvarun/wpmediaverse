@@ -32,7 +32,7 @@ class SetupWizard {
 			'', // Hidden — no parent.
 			__( 'WPMediaVerse Setup', 'wpmediaverse' ),
 			__( 'Setup', 'wpmediaverse' ),
-			'manage_mvs_settings',
+			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_wizard' )
 		);

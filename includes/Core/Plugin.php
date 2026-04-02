@@ -87,6 +87,15 @@ class Plugin {
 		// Load textdomain.
 		load_plugin_textdomain( 'wpmediaverse', false, 'wpmediaverse/languages' );
 
+		// Ensure capabilities are registered. The activation hook can fail
+		// on some hosts (fatal error, WP-CLI without --activate, etc.).
+		// This version-gated check runs once per version and is a no-op
+		// after the first successful load.
+		if ( get_option( 'mvs_caps_version' ) !== MVS_VERSION ) {
+			\WPMediaVerse\Capabilities\MediaCapabilities::add_caps();
+			update_option( 'mvs_caps_version', MVS_VERSION, true );
+		}
+
 		// Run pending DB migrations on every load (cheap version check).
 		$migrator = new Migrator();
 		$migrator->run();
@@ -571,7 +580,7 @@ class Plugin {
 		add_menu_page(
 			__( 'WPMediaVerse', 'wpmediaverse' ),
 			__( 'WPMediaVerse', 'wpmediaverse' ),
-			'upload_mvs_media',
+			'manage_options',
 			self::ADMIN_SLUG,
 			array( self::$container->get( 'admin.overview' ), 'render_page' ),
 			'dashicons-format-gallery',
@@ -583,7 +592,7 @@ class Plugin {
 			self::ADMIN_SLUG,
 			__( 'Overview', 'wpmediaverse' ),
 			__( 'Overview', 'wpmediaverse' ),
-			'upload_mvs_media',
+			'manage_options',
 			self::ADMIN_SLUG,
 			array( self::$container->get( 'admin.overview' ), 'render_page' )
 		);
@@ -593,7 +602,7 @@ class Plugin {
 			self::ADMIN_SLUG,
 			__( 'All Media', 'wpmediaverse' ),
 			__( 'All Media', 'wpmediaverse' ),
-			'upload_mvs_media',
+			'manage_options',
 			'mvs-media',
 			array( \WPMediaVerse\Admin\MediaListPage::class, 'render' )
 		);

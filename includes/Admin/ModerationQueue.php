@@ -58,7 +58,7 @@ class ModerationQueue {
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
 			__( 'Media Moderation', 'wpmediaverse' ),
 			$menu_title,
-			'moderate_mvs_media',
+			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
