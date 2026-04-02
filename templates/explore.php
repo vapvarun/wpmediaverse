@@ -488,11 +488,12 @@ $mvs_archive_url = home_url( '/media/' );
 </div>
 <?php
 // Enqueue Interactivity API stores.
-wp_enqueue_script_module(
-	'@mvs/explore-view',
-	MVS_PLUGIN_URL . 'src/blocks/explore-view/view.js',
-	array( '@wordpress/interactivity' ),
-	MVS_VERSION
+wp_enqueue_script(
+	'mvs-explore-view',
+	MVS_PLUGIN_URL . 'build/blocks/explore-view/view.js',
+	array( 'wp-interactivity' ),
+	MVS_VERSION,
+	true
 );
 
 do_action( 'mvs_after_content' );

@@ -66,16 +66,12 @@ wp_enqueue_script_module(
 );
 
 // Enqueue dashboard store (mvs/dashboard — handles media/albums/favorites/collections tabs).
-wp_enqueue_script_module(
+wp_enqueue_script(
 	'mvs-dashboard-view',
-	( defined( 'MVS_PLUGIN_URL' ) ? MVS_PLUGIN_URL : '' ) . 'src/blocks/dashboard-view/view.js',
-	array(
-		array(
-			'id'     => '@wordpress/interactivity',
-			'import' => 'static',
-		),
-	),
-	defined( 'MVS_VERSION' ) ? MVS_VERSION : '1.0.0'
+	( defined( 'MVS_PLUGIN_URL' ) ? MVS_PLUGIN_URL : '' ) . 'build/blocks/dashboard-view/view.js',
+	array( 'wp-interactivity' ),
+	defined( 'MVS_VERSION' ) ? MVS_VERSION : '1.0.0',
+	true
 );
 
 // Enqueue frontend CSS.
