@@ -264,11 +264,43 @@ module.exports = function( grunt ) {
 		}
 	} );
 
+	// Composer: strip dev deps so autoloader only references production packages.
+	grunt.registerTask( 'composer-prod', 'Run composer install --no-dev to clean autoloader.', function() {
+		var done = this.async();
+		var execFile = require( 'child_process' ).execFile;
+		grunt.log.writeln( 'Running composer install --no-dev...' );
+		execFile( 'composer', [ 'install', '--no-dev', '--optimize-autoloader', '--no-interaction' ], function( err, stdout, stderr ) {
+			if ( err ) {
+				grunt.log.error( stderr || stdout );
+				done( false );
+				return;
+			}
+			grunt.log.ok( 'Composer: dev dependencies removed, autoloader optimized.' );
+			done();
+		} );
+	} );
+
+	// Composer: restore dev deps after dist build.
+	grunt.registerTask( 'composer-restore', 'Restore dev dependencies after dist.', function() {
+		var done = this.async();
+		var execFile = require( 'child_process' ).execFile;
+		grunt.log.writeln( 'Restoring composer dev dependencies...' );
+		execFile( 'composer', [ 'install', '--no-interaction' ], function( err, stdout, stderr ) {
+			if ( err ) {
+				grunt.log.error( stderr || stdout );
+				done( false );
+				return;
+			}
+			grunt.log.ok( 'Composer: dev dependencies restored.' );
+			done();
+		} );
+	} );
+
 	// Build: blocks + RTL + minify + pot
 	grunt.registerTask( 'build', [ 'blocks', 'rtlcss', 'cssmin', 'uglify', 'makepot' ] );
 
-	// Dist: full build + package zip (no CI gate)
-	grunt.registerTask( 'dist', [ 'build', 'clean:dist', 'copy:dist', 'compress:dist', 'dist-summary' ] );
+	// Dist: full build + strip dev deps + package zip + restore dev deps
+	grunt.registerTask( 'dist', [ 'build', 'composer-prod', 'clean:dist', 'copy:dist', 'compress:dist', 'composer-restore', 'dist-summary' ] );
 
 	// Release: CI check + dist (for production releases)
 	grunt.registerTask( 'release', [ 'ci-check', 'dist' ] );
