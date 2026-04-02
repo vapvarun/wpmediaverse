@@ -126,8 +126,7 @@ module.exports = function( grunt ) {
 							'!.playwright-mcp/**',
 							'!.phpunit*',
 
-							// ── Seed / dev-only PHP ──
-							'!seed-demo-data.php',
+							// ── Dev-only PHP (keep seed-demo-data for customer demo import) ──
 							'!cleanup-demo-data.php',
 							'!populate-showcase.php',
 

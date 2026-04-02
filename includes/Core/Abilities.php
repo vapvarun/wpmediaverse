@@ -275,7 +275,7 @@ class Abilities {
 	 * @return bool
 	 */
 	public static function can_upload(): bool {
-		return current_user_can( 'upload_mvs_media' );
+		return current_user_can( 'manage_options' ) || current_user_can( 'upload_mvs_media' );
 	}
 
 	/**
