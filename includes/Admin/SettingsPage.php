@@ -2281,7 +2281,7 @@ class SettingsPage {
 	 * @param string $active_tab Current tab slug.
 	 */
 	private function render_pro_upsell( string $active_tab ): void {
-		$pro_url  = 'https://wbcomdesigns.com/downloads/wpmediaverse-pro/';
+		$pro_url  = 'https://store.wbcomdesigns.com/wpmediaverse-pro/';
 		$features = $this->get_pro_features_for_tab( $active_tab );
 
 		if ( empty( $features ) ) {

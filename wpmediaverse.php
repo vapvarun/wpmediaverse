@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: WPMediaVerse
- * Plugin URI:  https://wbcomdesigns.com/downloads/wpmediaverse/
+ * Plugin URI:  https://store.wbcomdesigns.com/wpmediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
  * Version:     1.0.0
  * Author:      vapvarun, wbcomdesigns

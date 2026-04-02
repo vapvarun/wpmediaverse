@@ -19,7 +19,7 @@ Get WPMediaVerse running on your WordPress site in under five minutes — instal
 
 ## Installing via ZIP Upload
 
-1. Download the `wpmediaverse.zip` file from [wbcomdesigns.com](https://wbcomdesigns.com/downloads/wpmediaverse/).
+1. Download the `wpmediaverse.zip` file from [wbcomdesigns.com](https://store.wbcomdesigns.com/wpmediaverse/).
 2. Go to **Plugins > Add New Plugin > Upload Plugin**.
 3. Choose the ZIP file and click **Install Now**.
 4. Click **Activate Plugin**.

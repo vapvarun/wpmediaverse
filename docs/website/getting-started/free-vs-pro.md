@@ -149,7 +149,7 @@ WPMediaVerse Pro is for sites that need professional-grade features:
 
 ## Upgrading
 
-1. Purchase a Pro license at [wbcomdesigns.com](https://wbcomdesigns.com/downloads/wpmediaverse-pro/)
+1. Purchase a Pro license at [wbcomdesigns.com](https://store.wbcomdesigns.com/wpmediaverse-pro/)
 2. Upload and activate the `wpmediaverse-pro.zip` plugin
 3. Enter your license key at **Media > License**
 4. Pro features activate immediately — no data migration needed, no settings lost
