@@ -165,10 +165,6 @@ parameters:
 			count: 6
 			path: includes/Core/Plugin.php
 
-		-
-			message: "#^Parameter \\#3 \\$deps of function wp_enqueue_script_module expects array\\<int\\|string, array\\{id\\: string, import\\?\\: string\\}\\>, array\\{'@wordpress…'\\} given\\.$#"
-			count: 1
-			path: includes/Core/Plugin.php
 
 		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<2, max\\> given\\.$#"
