@@ -255,6 +255,47 @@ class MediaController extends WP_REST_Controller {
 			$params[] = (int) $author;
 		}
 
+		// Tag filter (by slug).
+		$join_clauses = array();
+		$tag_slug     = $request->get_param( 'tag' );
+		if ( $tag_slug ) {
+			$tag_term = get_term_by( 'slug', $tag_slug, 'mvs_tag' );
+			if ( $tag_term ) {
+				$join_clauses[] = $wpdb->prepare(
+					"INNER JOIN {$wpdb->term_relationships} mvs_tr ON mvs_tr.object_id = i.media_id AND mvs_tr.term_taxonomy_id = %d",
+					$tag_term->term_taxonomy_id
+				);
+			}
+		}
+
+		// Category filter (by slug).
+		$cat_slug = $request->get_param( 'category' );
+		if ( $cat_slug ) {
+			$cat_term = get_term_by( 'slug', $cat_slug, 'mvs_category' );
+			if ( $cat_term ) {
+				$join_clauses[] = $wpdb->prepare(
+					"INNER JOIN {$wpdb->term_relationships} mvs_cr ON mvs_cr.object_id = i.media_id AND mvs_cr.term_taxonomy_id = %d",
+					$cat_term->term_taxonomy_id
+				);
+			}
+		}
+
+		// Search filter.
+		$search = $request->get_param( 's' );
+		if ( $search ) {
+			$like     = '%' . $wpdb->esc_like( $search ) . '%';
+			$where[]  = '(title LIKE %s OR description LIKE %s)';
+			$params[] = $like;
+			$params[] = $like;
+		}
+
+		// Scope filter.
+		$scope = $request->get_param( 'scope' );
+		if ( 'public' === $scope ) {
+			$where[]  = 'privacy = %s';
+			$params[] = 'public';
+		}
+
 		// Exclude media from blocked users.
 		if ( $user_id ) {
 			$blocked_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -273,15 +314,16 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Exclude non-cover gallery group items from feeds (only when explicitly requested).
-		$show_group_covers = $request->get_param( 'group_covers' );
-		if ( 'true' === $show_group_covers || '1' === $show_group_covers ) {
-			$meta_table = $wpdb->prefix . 'mvs_media_meta';
-			$where[]    = "media_id NOT IN (
-				SELECT mm1.media_id FROM {$meta_table} mm1
-				INNER JOIN {$meta_table} mm2 ON mm1.media_id = mm2.media_id
-				WHERE mm1.meta_key = 'media_group'
-				AND mm2.meta_key = 'group_position' AND mm2.meta_value != '0'
-			)";
+		$group_covers = $request->get_param( 'group_covers' );
+		if ( $group_covers ) {
+			$where[] = "(media_id NOT IN (
+				SELECT mm.media_id FROM {$wpdb->prefix}mvs_media_meta mm
+				WHERE mm.meta_key = 'media_group' AND mm.media_id != (
+					SELECT mm2.media_id FROM {$wpdb->prefix}mvs_media_meta mm2
+					WHERE mm2.meta_key = 'media_group' AND mm2.meta_value = mm.meta_value
+					ORDER BY mm2.media_id ASC LIMIT 1
+				)
+			))";
 		}
 
 		// Filter by specific media group ID.
@@ -326,9 +368,10 @@ class MediaController extends WP_REST_Controller {
 		$offset   = $feed_args['offset'];
 
 		$where_sql = implode( ' AND ', $where );
+		$join_sql  = ! empty( $join_clauses ) ? ' ' . implode( ' ', $join_clauses ) : '';
 
 		// Count query.
-		$count_sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE {$where_sql}";
+		$count_sql = "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index i{$join_sql} WHERE {$where_sql}"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$total     = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
 
 		// Determine sort order.
@@ -344,7 +387,7 @@ class MediaController extends WP_REST_Controller {
 				((COALESCE(s.reactions, 0) * 3 + COALESCE(s.comments, 0) * 5 + COALESCE(s.views, 0))
 				/ POWER(GREATEST(TIMESTAMPDIFF(HOUR, i.created_at, NOW()), 1), 1.5)) AS trending_score
 				FROM {$wpdb->prefix}mvs_media_index i
-				LEFT JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id
+				LEFT JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id{$join_sql}
 				WHERE {$where_sql}
 				ORDER BY trending_score DESC
 				LIMIT %d OFFSET %d";
@@ -352,12 +395,12 @@ class MediaController extends WP_REST_Controller {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$data_sql = "SELECT i.media_id
 				FROM {$wpdb->prefix}mvs_media_index i
-				LEFT JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id
+				LEFT JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id{$join_sql}
 				WHERE {$where_sql}
 				ORDER BY COALESCE(s.views, 0) DESC
 				LIMIT %d OFFSET %d";
 		} else {
-			$data_sql = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE {$where_sql} ORDER BY created_at DESC LIMIT %d OFFSET %d";
+			$data_sql = "SELECT i.media_id FROM {$wpdb->prefix}mvs_media_index i{$join_sql} WHERE {$where_sql} ORDER BY i.created_at DESC LIMIT %d OFFSET %d"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		}
 
 		$results = $wpdb->get_col( $wpdb->prepare( $data_sql, ...$params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
@@ -845,6 +888,8 @@ class MediaController extends WP_REST_Controller {
 	 * @return array|null
 	 */
 	public function prepare_item_for_response( $media_id, $request ) {
+		global $wpdb;
+
 		$media_id = (int) $media_id;
 		$all      = MediaMeta::get_all( $media_id );
 
@@ -901,7 +946,6 @@ class MediaController extends WP_REST_Controller {
 			$data['group_cover']    = ! empty( $all['group_cover'] ) ? (bool) $all['group_cover'] : false;
 
 			// Count group members.
-			global $wpdb;
 			$data['group_count'] = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -926,6 +970,21 @@ class MediaController extends WP_REST_Controller {
 			$data['artist']     = ! empty( $all['artist'] ) ? $all['artist'] : null;
 			$data['album_name'] = ! empty( $all['album_name'] ) ? $all['album_name'] : null;
 		}
+
+		// Include engagement stats for card builders.
+		$stats_row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT views, reactions, comments FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$media_id
+			),
+			ARRAY_A
+		);
+
+		$data['stats'] = array(
+			'views'     => (int) ( $stats_row['views'] ?? 0 ),
+			'reactions' => (int) ( $stats_row['reactions'] ?? 0 ),
+			'comments'  => (int) ( $stats_row['comments'] ?? 0 ),
+		);
 
 		/**
 		 * Filter the media item REST response data.
@@ -976,7 +1035,7 @@ class MediaController extends WP_REST_Controller {
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_title',
 			),
-			'orderby'    => array(
+			'orderby'      => array(
 				'type'              => 'string',
 				'default'           => 'date',
 				/**
@@ -988,6 +1047,29 @@ class MediaController extends WP_REST_Controller {
 				 */
 				'enum'              => apply_filters( 'mvs_feed_sort_options', array( 'date', 'trending', 'popular' ) ),
 				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'tag'          => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'category'     => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			's'            => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'scope'        => array(
+				'type'              => 'string',
+				'enum'              => array( 'public', 'all' ),
+				'default'           => 'all',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'group_covers' => array(
+				'type'              => 'boolean',
+				'default'           => false,
+				'sanitize_callback' => 'rest_sanitize_boolean',
 			),
 		);
 	}
