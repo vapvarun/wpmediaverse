@@ -1040,16 +1040,14 @@ class Plugin {
 			MVS_VERSION
 		);
 
+		$mvs_shared_ui_asset = file_exists( MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php' )
+			? require MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php'
+			: array( 'dependencies' => array(), 'version' => MVS_VERSION );
 		wp_enqueue_script_module(
 			'@mvs/shared-ui',
-			MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js',
-			array(
-				array(
-					'id'     => '@wordpress/interactivity',
-					'import' => 'static',
-				),
-			),
-			MVS_VERSION
+			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
+			$mvs_shared_ui_asset['dependencies'],
+			$mvs_shared_ui_asset['version']
 		);
 	}
 
