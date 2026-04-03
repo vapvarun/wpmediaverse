@@ -169,6 +169,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( state.lightboxGroupItems.length < 2 ) return '';
 			return ( state.lightboxCurrentIndex + 1 ) + ' / ' + state.lightboxGroupItems.length;
 		},
+		get lightboxHasPrev() {
+			if ( state.lightboxGroupItems.length > 1 ) return true;
+			const gridIds = window.mvsGridRegistry || [];
+			const idx = gridIds.indexOf( state.lightboxMediaId );
+			return idx > 0;
+		},
+		get lightboxHasNext() {
+			if ( state.lightboxGroupItems.length > 1 ) return true;
+			const gridIds = window.mvsGridRegistry || [];
+			const idx = gridIds.indexOf( state.lightboxMediaId );
+			return idx >= 0 && idx < gridIds.length - 1;
+		},
 	},
 	actions: {
 		// --- Toast ---
@@ -495,6 +507,60 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.showToast( 'Failed to load media.', 'error' );
 			}
 		},
+		async openLightboxById( mediaId ) {
+			if ( ! mediaId ) return;
+
+			state.lightboxMediaId = mediaId;
+			state.lightboxVisible = true;
+			state.lightboxLoading = true;
+			state.lightboxCommentText = '';
+			state.lightboxGroupItems = [];
+			state.lightboxCurrentIndex = 0;
+			document.body.style.overflow = 'hidden';
+
+			// Find REST URL + nonce from any existing Interactivity context on the page.
+			let restUrl = '/wp-json/mvs/v1/';
+			let nonce = '';
+			const ctxEl = document.querySelector( '[data-wp-interactive="mvs/shared-ui"][data-wp-context]' );
+			if ( ctxEl ) {
+				try {
+					const parsed = JSON.parse( ctxEl.dataset.wpContext );
+					restUrl = parsed.restUrl || restUrl;
+					nonce = parsed.nonce || nonce;
+				} catch { /* use defaults */ }
+			}
+
+			try {
+				const headers = {};
+				if ( nonce ) headers[ 'X-WP-Nonce' ] = nonce;
+				const res = await fetch( restUrl + 'media/' + mediaId, {
+					credentials: 'same-origin',
+					headers,
+				} );
+				const data = await res.json();
+				state.lightboxMediaData = data;
+				state.lightboxLoading = false;
+
+				if ( data.media_group && data.group_count > 1 ) {
+					const groupRes = await fetch( restUrl + 'media/' + mediaId + '/group', {
+						credentials: 'same-origin',
+						headers,
+					} );
+					const groupData = await groupRes.json();
+					if ( Array.isArray( groupData ) && groupData.length > 1 ) {
+						state.lightboxGroupItems = groupData;
+						state.lightboxCurrentIndex = 0;
+						state.lightboxMediaData = groupData[ 0 ];
+					}
+				}
+
+				actions.lightboxLoadSocial( { restUrl, nonce }, mediaId, headers );
+			} catch {
+				state.lightboxLoading = false;
+				actions.showToast( 'Failed to load media.', 'error' );
+			}
+		},
+		noop() {},
 		async lightboxLoadSocial( ctx, mediaId, headers ) {
 			const opts = { credentials: 'same-origin', headers };
 			// Reactions.
@@ -603,18 +669,32 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		lightboxPrev() {
-			if ( state.lightboxGroupItems.length < 2 ) return;
-			let idx = state.lightboxCurrentIndex - 1;
-			if ( idx < 0 ) idx = state.lightboxGroupItems.length - 1;
-			state.lightboxCurrentIndex = idx;
-			state.lightboxMediaData = state.lightboxGroupItems[ idx ];
+			if ( state.lightboxGroupItems.length > 1 ) {
+				let idx = state.lightboxCurrentIndex - 1;
+				if ( idx < 0 ) idx = state.lightboxGroupItems.length - 1;
+				state.lightboxCurrentIndex = idx;
+				state.lightboxMediaData = state.lightboxGroupItems[ idx ];
+				return;
+			}
+			const gridIds = window.mvsGridRegistry || [];
+			const currentIdx = gridIds.indexOf( state.lightboxMediaId );
+			if ( currentIdx > 0 ) {
+				actions.openLightboxById( gridIds[ currentIdx - 1 ] );
+			}
 		},
 		lightboxNext() {
-			if ( state.lightboxGroupItems.length < 2 ) return;
-			let idx = state.lightboxCurrentIndex + 1;
-			if ( idx >= state.lightboxGroupItems.length ) idx = 0;
-			state.lightboxCurrentIndex = idx;
-			state.lightboxMediaData = state.lightboxGroupItems[ idx ];
+			if ( state.lightboxGroupItems.length > 1 ) {
+				let idx = state.lightboxCurrentIndex + 1;
+				if ( idx >= state.lightboxGroupItems.length ) idx = 0;
+				state.lightboxCurrentIndex = idx;
+				state.lightboxMediaData = state.lightboxGroupItems[ idx ];
+				return;
+			}
+			const gridIds = window.mvsGridRegistry || [];
+			const currentIdx = gridIds.indexOf( state.lightboxMediaId );
+			if ( currentIdx >= 0 && currentIdx < gridIds.length - 1 ) {
+				actions.openLightboxById( gridIds[ currentIdx + 1 ] );
+			}
 		},
 		closeLightbox() {
 			state.lightboxVisible = false;
@@ -639,10 +719,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				} else if ( state.lightboxVisible ) {
 					actions.closeLightbox();
 				}
-			} else if ( state.lightboxVisible && state.lightboxGroupItems.length > 1 ) {
-				if ( event.key === 'ArrowLeft' ) {
+			} else if ( state.lightboxVisible ) {
+				if ( event.key === 'ArrowLeft' && state.lightboxHasPrev ) {
 					actions.lightboxPrev();
-				} else if ( event.key === 'ArrowRight' ) {
+				} else if ( event.key === 'ArrowRight' && state.lightboxHasNext ) {
 					actions.lightboxNext();
 				}
 			}
