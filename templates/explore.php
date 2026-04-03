@@ -279,7 +279,7 @@ $mvs_archive_url = home_url( '/media/' );
 	$offset      = ( $paged - 1 ) * $per_page;
 
 	// Build WHERE clauses.
-	$where  = "WHERE m.status = 'publish'";
+	$where  = "WHERE m.status = 'publish' AND m.moderation_status = 'approved'";
 	$params = array();
 
 	// Search filter.
@@ -390,7 +390,7 @@ $mvs_archive_url = home_url( '/media/' );
 	<?php do_action( 'mvs_before_explore_grid' ); ?>
 
 	<?php if ( $has_items ) : ?>
-		<div class="mvs-media-grid mvs-cols-3 mvs-feed">
+		<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container>
 			<?php
 			// Render albums first.
 			foreach ( $albums as $album_post ) :
@@ -444,22 +444,26 @@ $mvs_archive_url = home_url( '/media/' );
 		</div>
 
 		<?php if ( $max_pages > 1 ) : ?>
-			<div class="mvs-pagination">
-				<?php
-				echo wp_kses_post(
-					paginate_links(
-						array(
-							'base'      => trailingslashit( $mvs_archive_url ) . 'page/%#%/',
-							'format'    => '',
-							'total'     => $max_pages,
-							'current'   => $paged,
-							'prev_text' => __( '&laquo; Previous', 'wpmediaverse' ),
-							'next_text' => __( 'Next &raquo;', 'wpmediaverse' ),
-						)
-					)
-				);
-				?>
+			<div class="mvs-load-more">
+				<button type="button" class="mvs-load-more-btn"
+					data-rest-url="<?php echo esc_attr( rest_url( 'mvs/v1/' ) ); ?>"
+					data-nonce="<?php echo esc_attr( wp_create_nonce( 'wp_rest' ) ); ?>"
+					data-page="<?php echo esc_attr( $paged ); ?>"
+					data-per-page="<?php echo esc_attr( $per_page ); ?>"
+					data-endpoint="media"
+					data-layout="grid"
+					data-tag="<?php echo esc_attr( get_query_var( 'mvs_tag', '' ) ); ?>"
+					data-category="<?php echo esc_attr( get_query_var( 'mvs_category', '' ) ); ?>"
+					data-search="<?php echo esc_attr( get_query_var( 's', '' ) ); ?>"
+					data-scope="public"
+					data-group-covers="true">
+					<span class="mvs-load-more-label"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></span>
+					<span class="mvs-load-more-spinner"></span>
+				</button>
 			</div>
+			<p class="mvs-load-more-end" hidden>
+				<?php esc_html_e( "You're all caught up!", 'wpmediaverse' ); ?>
+			</p>
 		<?php endif; ?>
 	<?php else : ?>
 		<div class="mvs-empty-state-frontend">
