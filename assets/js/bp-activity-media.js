@@ -89,6 +89,7 @@
 			removeBtn.type = 'button';
 			removeBtn.className = 'mvs-activity-media-remove';
 			removeBtn.textContent = '\u00D7';
+			removeBtn.setAttribute( 'aria-label', 'Remove media' );
 			removeBtn.addEventListener( 'click', function() {
 				attachedMedia.splice( idx, 1 );
 				renderPreview();
@@ -187,7 +188,7 @@
 		}
 	} );
 
-	// Also intercept the BP Nouveau AJAX post button click.
+	// jQuery required: BP Nouveau fires jQuery events with no vanilla JS equivalent.
 	if ( typeof jQuery !== 'undefined' ) {
 		jQuery( document ).on( 'click', '#aw-whats-new-submit', function() {
 			if ( attachedMedia.length ) {

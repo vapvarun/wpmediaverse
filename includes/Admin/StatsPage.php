@@ -336,7 +336,8 @@ class StatsPage {
 						<?php else : ?>
 							<div class="mvs-empty-state">
 								<i data-lucide="bar-chart-3"></i>
-								<p><?php esc_html_e( 'No stats data yet. Views will appear once users start browsing media.', 'wpmediaverse' ); ?></p>
+								<h3><?php esc_html_e( 'No Stats Yet', 'wpmediaverse' ); ?></h3>
+								<p><?php esc_html_e( 'Views will appear once users start browsing media.', 'wpmediaverse' ); ?></p>
 							</div>
 						<?php endif; ?>
 					</div>

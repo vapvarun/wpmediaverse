@@ -166,6 +166,7 @@ class MediaListPage {
 										<td colspan="8">
 											<div class="mvs-empty-state-admin">
 												<i data-lucide="images"></i>
+												<h3><?php esc_html_e( 'No Media Found', 'wpmediaverse' ); ?></h3>
 												<p><?php esc_html_e( 'No media items found.', 'wpmediaverse' ); ?></p>
 											</div>
 										</td>

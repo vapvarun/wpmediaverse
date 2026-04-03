@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.8
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,21 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** — AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.1.0 =
+* Enhancement: Complete admin UX overhaul following wbcom-modern-admin rulebook
+* Enhancement: CSS design token system — 20 semantic tokens replace 90+ hardcoded hex values
+* Enhancement: Semantic badge variants (success, warn, danger, default, muted)
+* Enhancement: Canonical .mvs-card component aliases alongside .mvs-settings-card
+* Enhancement: Empty state components now include h3 titles on all admin pages
+* Enhancement: submit_button() CSS overrides cover all admin pages consistently
+* Fix: Accessibility — visible focus rings on settings nav via :focus-visible
+* Fix: Accessibility — aria-current="page" on active settings nav item
+* Fix: Accessibility — aria-label on media remove button
+* Fix: Accessibility — reduced-motion defense in toast notifications
+* Fix: Removed all inline styles from admin PHP templates (14 instances)
+* Fix: Replaced WordPress .button class with mvs-btn in Collection meta box
+* Fix: Removed dead .mvs-quick-links .button CSS rule
 
 = 1.0.0 =
 * Initial release — complete media platform for WordPress

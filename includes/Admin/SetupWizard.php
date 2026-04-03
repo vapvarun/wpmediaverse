@@ -283,11 +283,11 @@ class SetupWizard {
 							<?php if ( $exists ) : ?>
 								<code>/<?php echo esc_html( $slug ); ?>/</code>
 							<?php else : ?>
-								<span style="color:#d63638;"><?php esc_html_e( 'Not created — please reactivate the plugin.', 'wpmediaverse' ); ?></span>
+								<span class="mvs-text-danger"><?php esc_html_e( 'Not created — please reactivate the plugin.', 'wpmediaverse' ); ?></span>
 							<?php endif; ?>
 						</div>
 						<?php if ( $exists ) : ?>
-							<span class="mvs-setup-page-status" style="color:#00a32a;">
+							<span class="mvs-setup-page-status mvs-text-success">
 								<i data-lucide="check-circle"></i>
 							</span>
 						<?php endif; ?>
@@ -445,7 +445,7 @@ class SetupWizard {
 				<?php endif; ?>
 			</div>
 
-			<form method="post" style="margin-top:24px;">
+			<form method="post" class="mvs-setup-finish-form">
 				<?php wp_nonce_field( 'mvs_setup_wizard', 'mvs_wizard_nonce' ); ?>
 				<input type="hidden" name="mvs_wizard_step" value="done" />
 				<button type="submit" class="mvs-btn mvs-btn--primary mvs-btn--hero">

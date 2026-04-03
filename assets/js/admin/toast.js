@@ -20,6 +20,8 @@
 		return container;
 	}
 
+	var prefersReducedMotion = window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+
 	window.mvsToast = function( message, type ) {
 		type = type || 'success';
 
@@ -34,14 +36,18 @@
 		// Trigger enter animation.
 		setTimeout( function() {
 			el.classList.add( 'is-visible' );
-		}, 10 );
+		}, prefersReducedMotion ? 0 : 10 );
 
 		// Auto-dismiss after 4 seconds.
 		setTimeout( function() {
 			el.classList.remove( 'is-visible' );
-			setTimeout( function() {
+			if ( prefersReducedMotion ) {
 				el.remove();
-			}, 300 );
+			} else {
+				setTimeout( function() {
+					el.remove();
+				}, 300 );
+			}
 		}, 4000 );
 	};
 } )();

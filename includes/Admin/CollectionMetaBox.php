@@ -125,11 +125,11 @@ class CollectionMetaBox {
 			</label>
 		</div>
 
-		<p class="mvs-metabox-hint" id="mvs-manual-hint" <?php echo 'manual' !== $collection_type ? 'style="display:none"' : ''; ?>>
+		<p class="mvs-metabox-hint<?php echo 'manual' !== $collection_type ? ' mvs-hidden' : ''; ?>" id="mvs-manual-hint">
 			<?php esc_html_e( 'Manual collections are populated via the Favorites button on media items.', 'wpmediaverse' ); ?>
 		</p>
 
-		<div id="mvs-rules-wrap" class="mvs-metabox-rules-wrap" <?php echo 'smart' !== $collection_type ? 'style="display:none"' : ''; ?>>
+		<div id="mvs-rules-wrap" class="mvs-metabox-rules-wrap<?php echo 'smart' !== $collection_type ? ' mvs-hidden' : ''; ?>">
 			<p><strong><?php esc_html_e( 'Rules (all must match):', 'wpmediaverse' ); ?></strong></p>
 			<div id="mvs-rules-list">
 				<?php
@@ -146,7 +146,7 @@ class CollectionMetaBox {
 				endforeach;
 				?>
 			</div>
-			<button type="button" class="button mvs-metabox-add-rule" id="mvs-add-rule">
+			<button type="button" class="mvs-btn mvs-metabox-add-rule" id="mvs-add-rule">
 				+ <?php esc_html_e( 'Add Rule', 'wpmediaverse' ); ?>
 			</button>
 
@@ -164,7 +164,7 @@ class CollectionMetaBox {
 		</div>
 
 		<!-- Template for new rule rows (cloned via JS) -->
-		<table style="display:none" id="mvs-rule-template-wrap">
+		<table class="mvs-hidden" id="mvs-rule-template-wrap">
 			<tbody>
 				<tr>
 					<td>
@@ -288,8 +288,8 @@ class CollectionMetaBox {
 			</select>
 
 			<!-- Media Type -->
-			<select name="mvs_rules[<?php echo esc_attr( $index ); ?>][value]" class="mvs-metabox-rule-value"
-				data-for-key="media_type" <?php echo 'media_type' !== $key ? 'style="display:none" disabled' : ''; ?>>
+			<select name="mvs_rules[<?php echo esc_attr( $index ); ?>][value]" class="mvs-metabox-rule-value<?php echo 'media_type' !== $key ? ' mvs-hidden' : ''; ?>"
+				data-for-key="media_type" <?php echo 'media_type' !== $key ? 'disabled' : ''; ?>>
 				<option value=""><?php esc_html_e( '-- Select --', 'wpmediaverse' ); ?></option>
 				<option value="image" <?php selected( $value, 'image' ); ?>><?php esc_html_e( 'Image', 'wpmediaverse' ); ?></option>
 				<option value="video" <?php selected( $value, 'video' ); ?>><?php esc_html_e( 'Video', 'wpmediaverse' ); ?></option>
@@ -298,8 +298,8 @@ class CollectionMetaBox {
 			</select>
 
 			<!-- Privacy -->
-			<select name="mvs_rules[<?php echo esc_attr( $index ); ?>][value]" class="mvs-metabox-rule-value"
-				data-for-key="privacy" <?php echo 'privacy' !== $key ? 'style="display:none" disabled' : ''; ?>>
+			<select name="mvs_rules[<?php echo esc_attr( $index ); ?>][value]" class="mvs-metabox-rule-value<?php echo 'privacy' !== $key ? ' mvs-hidden' : ''; ?>"
+				data-for-key="privacy" <?php echo 'privacy' !== $key ? 'disabled' : ''; ?>>
 				<option value=""><?php esc_html_e( '-- Select --', 'wpmediaverse' ); ?></option>
 				<option value="public" <?php selected( $value, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 				<option value="members" <?php selected( $value, 'members' ); ?>><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
@@ -307,8 +307,8 @@ class CollectionMetaBox {
 			</select>
 
 			<!-- Tag -->
-			<select name="mvs_rules[<?php echo esc_attr( $index ); ?>][value]" class="mvs-metabox-rule-value"
-				data-for-key="tag" <?php echo 'tag' !== $key ? 'style="display:none" disabled' : ''; ?>>
+			<select name="mvs_rules[<?php echo esc_attr( $index ); ?>][value]" class="mvs-metabox-rule-value<?php echo 'tag' !== $key ? ' mvs-hidden' : ''; ?>"
+				data-for-key="tag" <?php echo 'tag' !== $key ? 'disabled' : ''; ?>>
 				<option value=""><?php esc_html_e( '-- Select --', 'wpmediaverse' ); ?></option>
 				<?php foreach ( $tags as $tag ) : ?>
 					<option value="<?php echo esc_attr( $tag->term_id ); ?>" <?php selected( $value, $tag->term_id ); ?>>
@@ -318,8 +318,8 @@ class CollectionMetaBox {
 			</select>
 
 			<!-- Category -->
-			<select name="mvs_rules[<?php echo esc_attr( $index ); ?>][value]" class="mvs-metabox-rule-value"
-				data-for-key="category" <?php echo 'category' !== $key ? 'style="display:none" disabled' : ''; ?>>
+			<select name="mvs_rules[<?php echo esc_attr( $index ); ?>][value]" class="mvs-metabox-rule-value<?php echo 'category' !== $key ? ' mvs-hidden' : ''; ?>"
+				data-for-key="category" <?php echo 'category' !== $key ? 'disabled' : ''; ?>>
 				<option value=""><?php esc_html_e( '-- Select --', 'wpmediaverse' ); ?></option>
 				<?php foreach ( $categories as $cat ) : ?>
 					<option value="<?php echo esc_attr( $cat->term_id ); ?>" <?php selected( $value, $cat->term_id ); ?>>
@@ -331,13 +331,15 @@ class CollectionMetaBox {
 			<!-- Date -->
 			<input type="date" name="mvs_rules[<?php echo esc_attr( $index ); ?>][value]" class="mvs-metabox-rule-value-date"
 				value="<?php echo esc_attr( ( 'date_after' === $key || 'date_before' === $key ) ? $value : '' ); ?>"
-				<?php echo ( 'date_after' !== $key && 'date_before' !== $key ) ? 'style="display:none" disabled' : ''; ?> />
+				class="mvs-metabox-rule-value-date<?php echo ( 'date_after' !== $key && 'date_before' !== $key ) ? ' mvs-hidden' : ''; ?>"
+				<?php echo ( 'date_after' !== $key && 'date_before' !== $key ) ? 'disabled' : ''; ?> />
 
 			<!-- Author (user ID) -->
 			<input type="number" name="mvs_rules[<?php echo esc_attr( $index ); ?>][value]" class="mvs-metabox-rule-value-number"
 				placeholder="<?php esc_attr_e( 'User ID', 'wpmediaverse' ); ?>"
 				value="<?php echo esc_attr( 'author' === $key ? $value : '' ); ?>"
-				<?php echo 'author' !== $key ? 'style="display:none" disabled' : ''; ?> />
+				class="mvs-metabox-rule-value-number<?php echo 'author' !== $key ? ' mvs-hidden' : ''; ?>"
+				<?php echo 'author' !== $key ? 'disabled' : ''; ?> />
 
 			<button type="button" class="mvs-metabox-remove-rule">&times;</button>
 		</div>

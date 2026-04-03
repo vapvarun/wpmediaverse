@@ -14,7 +14,10 @@
 
 	function activateSection( sectionId ) {
 		// Deactivate all nav items and sections.
-		document.querySelectorAll( NAV_SELECTOR ).forEach( ( el ) => el.classList.remove( ACTIVE_CLASS ) );
+		document.querySelectorAll( NAV_SELECTOR ).forEach( ( el ) => {
+			el.classList.remove( ACTIVE_CLASS );
+			el.removeAttribute( 'aria-current' );
+		} );
 		document.querySelectorAll( SECTION_SELECTOR ).forEach( ( el ) => el.classList.remove( ACTIVE_CLASS ) );
 
 		// Activate target nav item and section.
@@ -23,12 +26,16 @@
 
 		if ( navItem && section ) {
 			navItem.classList.add( ACTIVE_CLASS );
+			navItem.setAttribute( 'aria-current', 'page' );
 			section.classList.add( ACTIVE_CLASS );
 		} else {
 			// Fallback: activate the first section.
 			const firstNav = document.querySelector( NAV_SELECTOR );
 			const firstSection = document.querySelector( SECTION_SELECTOR );
-			if ( firstNav ) firstNav.classList.add( ACTIVE_CLASS );
+			if ( firstNav ) {
+				firstNav.classList.add( ACTIVE_CLASS );
+				firstNav.setAttribute( 'aria-current', 'page' );
+			}
 			if ( firstSection ) firstSection.classList.add( ACTIVE_CLASS );
 		}
 	}

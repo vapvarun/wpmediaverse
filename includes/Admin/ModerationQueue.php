@@ -269,6 +269,7 @@ class ModerationQueue {
 					<?php if ( empty( $result['items'] ) ) : ?>
 						<div class="mvs-empty-state">
 							<i data-lucide="shield-check"></i>
+							<h3><?php esc_html_e( 'Queue is Clear', 'wpmediaverse' ); ?></h3>
 							<p><?php esc_html_e( 'No items in this queue. All clear!', 'wpmediaverse' ); ?></p>
 						</div>
 					<?php else : ?>

@@ -187,6 +187,7 @@ class LogViewerPage {
 					<?php if ( empty( $result['items'] ) ) : ?>
 						<div class="mvs-empty-state">
 							<i data-lucide="file-text"></i>
+							<h3><?php esc_html_e( 'No Log Entries', 'wpmediaverse' ); ?></h3>
 							<p><?php esc_html_e( 'No log entries found.', 'wpmediaverse' ); ?></p>
 						</div>
 					<?php else : ?>
