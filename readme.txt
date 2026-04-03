@@ -12,6 +12,8 @@ The media layer your community site is missing. Custom database tables, AI moder
 
 == Description ==
 
+**[Try Live Demo](https://app.instawp.io/launch?s=wpmediaverse&d=v2)** | **[Get Pro](https://store.wbcomdesigns.com/wpmediaverse-pro/)** | **[Documentation](https://store.wbcomdesigns.com/wpmediaverse/docs/)**
+
 WPMediaVerse is a complete media platform for WordPress — built on custom database tables, not wp_posts. Your community gets photo uploads, albums, reactions, comments, follows, direct messaging, AI moderation, and a full lightbox experience. Your site stays fast no matter how many uploads come in.
 
 **Why WPMediaVerse?**

@@ -11,6 +11,8 @@
 
 **Built by** [vapvarun](https://github.com/vapvarun) & [Wbcom Designs](https://wbcomdesigns.com/)
 
+[Try Live Demo](https://app.instawp.io/launch?s=wpmediaverse&d=v2) | [Download Free](https://store.wbcomdesigns.com/wpmediaverse/) | [Get Pro](https://store.wbcomdesigns.com/wpmediaverse-pro/) | [Documentation](https://store.wbcomdesigns.com/wpmediaverse/docs/) | [Announcement](https://vapvarun.com/why-i-built-wpmediaverse/)
+
 > **Why WPMediaVerse?** Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores uploads in `wp_posts`. On active communities, that table grows into tens of thousands of mixed rows. WPMediaVerse uses three dedicated, indexed MySQL tables — media queries never touch your posts, pages, or products. Performance stays predictable at 100,000+ media items.
 
 ---
