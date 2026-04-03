@@ -646,7 +646,7 @@ class BuddyPressIntegration {
 		$user_id  = bp_displayed_user_id();
 		$is_own   = is_user_logged_in() && get_current_user_id() === $user_id;
 		$paged    = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$per_page = 18;
+		$per_page = absint( get_option( 'mvs_items_per_page', 12 ) );
 
 		// Inline upload for own profile.
 		if ( $is_own ) {
@@ -823,7 +823,7 @@ class BuddyPressIntegration {
 		// Collect IDs for batch stats query.
 		$stats_map = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( $media_ids );
 
-		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed">';
+		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container>';
 		foreach ( $media_ids as $mid ) {
 			\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
 				$mid,
@@ -833,20 +833,26 @@ class BuddyPressIntegration {
 		}
 		echo '</div>';
 
-		// Pagination.
+		// Load More.
 		$max_pages = (int) ceil( $total_count / $per_page );
 		if ( $max_pages > 1 ) {
-			$pagination = paginate_links(
-				array(
-					'base'    => add_query_arg( 'mpage', '%#%' ),
-					'format'  => '',
-					'current' => $paged,
-					'total'   => $max_pages,
-				)
-			);
-			if ( $pagination ) {
-				echo '<div class="mvs-pagination">' . wp_kses_post( $pagination ) . '</div>';
-			}
+			$mvs_bp_user_id = bp_displayed_user_id();
+			echo '<div class="mvs-load-more">';
+			echo '<button type="button" class="mvs-load-more-btn"';
+			echo ' data-rest-url="' . esc_attr( rest_url( 'mvs/v1/' ) ) . '"';
+			echo ' data-nonce="' . esc_attr( wp_create_nonce( 'wp_rest' ) ) . '"';
+			echo ' data-page="' . esc_attr( $paged ) . '"';
+			echo ' data-per-page="' . esc_attr( $per_page ) . '"';
+			echo ' data-endpoint="media"';
+			echo ' data-layout="grid"';
+			echo ' data-author="' . absint( $mvs_bp_user_id ) . '"';
+			echo ' data-scope=""';
+			echo ' data-group-covers="true">';
+			echo '<span class="mvs-load-more-label">' . esc_html__( 'Load More', 'wpmediaverse' ) . '</span>';
+			echo '<span class="mvs-load-more-spinner"></span>';
+			echo '</button>';
+			echo '</div>';
+			echo '<p class="mvs-load-more-end" hidden>' . esc_html__( "You're all caught up!", 'wpmediaverse' ) . '</p>';
 		}
 	}
 
@@ -1393,7 +1399,7 @@ class BuddyPressIntegration {
 		}
 
 		$paged    = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$per_page = 18;
+		$per_page = absint( get_option( 'mvs_items_per_page', 12 ) );
 
 		// Query media scoped to THIS group via mvs_media_meta custom table.
 		global $wpdb;
@@ -1427,7 +1433,7 @@ class BuddyPressIntegration {
 		// Batch fetch stats.
 		$stats_map = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( $media_ids );
 
-		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed">';
+		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container>';
 		foreach ( $media_ids as $mid ) {
 			\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
 				$mid,
@@ -1437,19 +1443,25 @@ class BuddyPressIntegration {
 		}
 		echo '</div>';
 
+		// Load More.
 		$max_pages = (int) ceil( $total_count / $per_page );
 		if ( $max_pages > 1 ) {
-			$pagination = paginate_links(
-				array(
-					'base'    => add_query_arg( 'mpage', '%#%' ),
-					'format'  => '',
-					'current' => $paged,
-					'total'   => $max_pages,
-				)
-			);
-			if ( $pagination ) {
-				echo '<div class="mvs-pagination">' . wp_kses_post( $pagination ) . '</div>';
-			}
+			echo '<div class="mvs-load-more">';
+			echo '<button type="button" class="mvs-load-more-btn"';
+			echo ' data-rest-url="' . esc_attr( rest_url( 'mvs/v1/' ) ) . '"';
+			echo ' data-nonce="' . esc_attr( wp_create_nonce( 'wp_rest' ) ) . '"';
+			echo ' data-page="' . esc_attr( $paged ) . '"';
+			echo ' data-per-page="' . esc_attr( $per_page ) . '"';
+			echo ' data-endpoint="media"';
+			echo ' data-layout="grid"';
+			echo ' data-author=""';
+			echo ' data-scope=""';
+			echo ' data-group-covers="true">';
+			echo '<span class="mvs-load-more-label">' . esc_html__( 'Load More', 'wpmediaverse' ) . '</span>';
+			echo '<span class="mvs-load-more-spinner"></span>';
+			echo '</button>';
+			echo '</div>';
+			echo '<p class="mvs-load-more-end" hidden>' . esc_html__( "You're all caught up!", 'wpmediaverse' ) . '</p>';
 		}
 	}
 
