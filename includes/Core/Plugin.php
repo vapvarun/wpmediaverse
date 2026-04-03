@@ -735,6 +735,29 @@ class Plugin {
 				MVS_VERSION
 			);
 
+			wp_enqueue_style(
+				'mvs-load-more',
+				MVS_PLUGIN_URL . 'assets/css/frontend/load-more.css',
+				array(),
+				MVS_VERSION
+			);
+
+			wp_enqueue_script(
+				'mvs-card-builders',
+				MVS_PLUGIN_URL . 'assets/js/frontend/card-builders.js',
+				array(),
+				MVS_VERSION,
+				true
+			);
+
+			wp_enqueue_script(
+				'mvs-load-more',
+				MVS_PLUGIN_URL . 'assets/js/frontend/load-more.js',
+				array( 'mvs-card-builders' ),
+				MVS_VERSION,
+				true
+			);
+
 			// Lightbox is handled by shared-ui Interactivity API module — no legacy JS needed.
 		} else {
 			// Register for on-demand loading by blocks/shortcodes.
