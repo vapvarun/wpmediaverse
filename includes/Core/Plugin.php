@@ -777,15 +777,13 @@ class Plugin {
 				)
 			);
 
-			// Lightbox module — needed for click-to-lightbox on all MVS pages (logged in or out).
-			$mvs_sui_asset = file_exists( MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php' )
-				? require MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php'
-				: array( 'dependencies' => array(), 'version' => MVS_VERSION );
+			// Lightbox + shared UI store — needed on all MVS pages (logged in or out).
+			// Use src/ (ESM source) not build/ (IIFE) — matches explore-view pattern.
 			wp_enqueue_script_module(
 				'@mvs/shared-ui',
-				MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
-				$mvs_sui_asset['dependencies'],
-				$mvs_sui_asset['version']
+				MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js',
+				array( '@wordpress/interactivity' ),
+				MVS_VERSION
 			);
 
 			wp_enqueue_style(
