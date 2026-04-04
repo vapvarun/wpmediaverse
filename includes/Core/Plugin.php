@@ -84,7 +84,9 @@ class Plugin {
 	 * Initialize the plugin.
 	 */
 	public static function init(): void {
-		// Load textdomain.
+		// Load textdomain — still needed for plugin-bundled translations;
+		// WordPress auto-loads from wp-content/languages/plugins/ since 4.6.
+		// phpcs:ignore WordPress.WP.I18n.LowLevelTranslationFunction -- Required for bundled .mo files in languages/.
 		load_plugin_textdomain( 'wpmediaverse', false, 'wpmediaverse/languages' );
 
 		// Ensure capabilities are registered. The activation hook can fail
@@ -758,7 +760,10 @@ class Plugin {
 				MVS_PLUGIN_URL . 'assets/js/frontend/card-builders.js',
 				array(),
 				MVS_VERSION,
-				true
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
 			);
 
 			wp_enqueue_script(
@@ -766,7 +771,10 @@ class Plugin {
 				MVS_PLUGIN_URL . 'assets/js/frontend/load-more.js',
 				array( 'mvs-card-builders' ),
 				MVS_VERSION,
-				true
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
 			);
 
 			// Lightbox module — needed for click-to-lightbox on all MVS pages (logged in or out).

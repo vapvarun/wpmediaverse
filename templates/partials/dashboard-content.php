@@ -114,8 +114,9 @@ wp_enqueue_style( 'mvs-frontend' );
 			data-wp-bind--hidden="!context.editingProfile">
 			<div data-wp-interactive="mvs/profile-edit"
 			<?php
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 			echo wp_interactivity_data_wp_context(
-				array( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				array(
 				'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 				'nonce'           => wp_create_nonce( 'wp_rest' ),
 				'firstName'       => $mvs_current_user->first_name,

@@ -142,19 +142,21 @@ $mvs_archive_url = home_url( '/media/' );
 				<span class="mvs-follow-btn-wrap"
 					data-wp-interactive="mvs/media-social"
 					<?php
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 					echo wp_interactivity_data_wp_context(
 						array(
 							'followAuthorId' => $mvs_author_id,
 							'restUrl'        => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 							'nonce'          => wp_create_nonce( 'wp_rest' ),
 						)
-					); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					);
 					?>
 					data-wp-init="callbacks.initFollow">
 					<button class="mvs-btn mvs-btn--small mvs-follow-btn" type="button"
 						data-wp-class--active="context.isFollowing"
 						data-wp-on--click="actions.toggleFollow"
-						aria-label="<?php echo esc_attr( sprintf( __( 'Follow %s', 'wpmediaverse' ), $mvs_author_name ) ); ?>">
+						aria-label="<?php // translators: %s: author display name.
+						echo esc_attr( sprintf( __( 'Follow %s', 'wpmediaverse' ), $mvs_author_name ) ); ?>">
 						<span data-wp-bind--hidden="context.isFollowing"><?php esc_html_e( 'Follow', 'wpmediaverse' ); ?></span>
 						<span data-wp-bind--hidden="!context.isFollowing"><?php esc_html_e( 'Following', 'wpmediaverse' ); ?></span>
 					</button>
@@ -173,6 +175,7 @@ $mvs_archive_url = home_url( '/media/' );
 				<div class="mvs-media-video"
 					data-wp-interactive="mvs/media-player"
 					<?php
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 					echo wp_interactivity_data_wp_context(
 						array(
 							'mediaId' => $mvs_media_id,
@@ -180,7 +183,7 @@ $mvs_archive_url = home_url( '/media/' );
 							'nonce'   => wp_create_nonce( 'wp_rest' ),
 							'playing' => false,
 						)
-					); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					);
 					?>
 					data-wp-init="actions.trackView">
 					<video controls preload="metadata"
@@ -194,6 +197,7 @@ $mvs_archive_url = home_url( '/media/' );
 				<div class="mvs-media-audio"
 					data-wp-interactive="mvs/media-player"
 					<?php
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 					echo wp_interactivity_data_wp_context(
 						array(
 							'mediaId' => $mvs_media_id,
@@ -201,7 +205,7 @@ $mvs_archive_url = home_url( '/media/' );
 							'nonce'   => wp_create_nonce( 'wp_rest' ),
 							'playing' => false,
 						)
-					); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					);
 					?>
 					data-wp-init="actions.trackView">
 					<?php if ( $artist || $album_name ) : ?>

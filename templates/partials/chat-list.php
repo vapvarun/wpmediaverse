@@ -24,21 +24,30 @@ defined( 'ABSPATH' ) || exit;
 	<button
 		class="mvs-chat-tabs__tab"
 		data-wp-on--click="actions.setTab"
-		<?php echo wp_interactivity_data_wp_context( array( 'tab' => 'all' ) ); ?>
+		<?php
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
+		echo wp_interactivity_data_wp_context( array( 'tab' => 'all' ) );
+		?>
 		data-wp-bind--data-active="state.isTabAll"
 		type="button"
 	>All</button>
 	<button
 		class="mvs-chat-tabs__tab"
 		data-wp-on--click="actions.setTab"
-		<?php echo wp_interactivity_data_wp_context( array( 'tab' => 'unread' ) ); ?>
+		<?php
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
+		echo wp_interactivity_data_wp_context( array( 'tab' => 'unread' ) );
+		?>
 		data-wp-bind--data-active="state.isTabUnread"
 		type="button"
 	>Unread</button>
 	<button
 		class="mvs-chat-tabs__tab"
 		data-wp-on--click="actions.setTab"
-		<?php echo wp_interactivity_data_wp_context( array( 'tab' => 'requests' ) ); ?>
+		<?php
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
+		echo wp_interactivity_data_wp_context( array( 'tab' => 'requests' ) );
+		?>
 		data-wp-bind--data-active="state.isTabRequests"
 		type="button"
 	>Requests</button>

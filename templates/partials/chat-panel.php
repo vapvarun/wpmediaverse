@@ -16,7 +16,10 @@ if ( ! $user_id ) {
 <div
 	data-wp-interactive="mvs/messaging"
 	data-wp-init="callbacks.onInit"
-	<?php echo wp_interactivity_data_wp_context( array( 'panelId' => 'chat-panel' ) ); ?>
+	<?php
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
+	echo wp_interactivity_data_wp_context( array( 'panelId' => 'chat-panel' ) );
+	?>
 >
 	<!-- Floating Chat Button -->
 	<button

@@ -140,8 +140,8 @@ class SettingsPage {
 				printf(
 					'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
 					sprintf(
-						/* translators: %d: number of roles */
 						esc_html(
+							// translators: %d: number of roles whose permissions were updated.
 							_n(
 								'Permissions updated for %d role.',
 								'Permissions updated for %d roles.',
@@ -1305,7 +1305,10 @@ class SettingsPage {
 			MVS_PLUGIN_URL . 'assets/js/settings-nav.js',
 			array(),
 			MVS_VERSION,
-			true
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
 		);
 		?>
 		<div class="wrap wpmediaverse-admin">
@@ -1646,12 +1649,11 @@ class SettingsPage {
 				$classes .= ' ' . $meta['class'];
 			}
 
-			$driver_attr = '';
+			echo '<div class="' . esc_attr( $classes ) . '"';
 			if ( $meta['driver'] ) {
-				$driver_attr = sprintf( ' data-mvs-driver="%s"', esc_attr( $meta['driver'] ) );
+				echo ' data-mvs-driver="' . esc_attr( $meta['driver'] ) . '"';
 			}
-
-			printf( '<div class="%s"%s%s>', esc_attr( $classes ), $driver_attr, $hidden );
+			echo esc_attr( $hidden ) . '>';
 
 			// Panel header.
 			echo '<div class="mvs-settings-panel__header">';
@@ -2003,7 +2005,7 @@ class SettingsPage {
 					'<label><input type="checkbox" name="%s[]" value="%s"%s /> %s</label>',
 					esc_attr( $args['option'] ),
 					esc_attr( $mime ),
-					$checked,
+					esc_attr( $checked ),
 					esc_html( $label )
 				);
 			}
@@ -2283,9 +2285,9 @@ class SettingsPage {
 		$selected = (int) get_option( $args['option'], 0 );
 		wp_dropdown_pages(
 			array(
-				'name'              => $args['option'],
-				'selected'          => $selected,
-				'show_option_none'  => __( '— Select —', 'wpmediaverse' ),
+				'name'              => esc_attr( $args['option'] ),
+				'selected'          => esc_attr( $selected ),
+				'show_option_none'  => esc_html__( '— Select —', 'wpmediaverse' ),
 				'option_none_value' => 0,
 			)
 		);

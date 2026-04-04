@@ -1,1 +1,0 @@
-(()=>{"use strict";(0,window.wp.interactivity.store)("mvs/lock-overlay",{actions:{requestAccess(){}}})})();

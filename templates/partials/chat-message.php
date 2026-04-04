@@ -39,7 +39,10 @@ defined( 'ABSPATH' ) || exit;
 			<button
 				class="mvs-chat-msg__context-btn"
 				data-wp-on--click="actions.addReaction"
-				<?php echo wp_interactivity_data_wp_context( array( 'emoji' => $emoji ) ); ?>
+				<?php
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
+				echo wp_interactivity_data_wp_context( array( 'emoji' => $emoji ) );
+				?>
 				type="button"
 			><?php echo esc_html( $emoji ); ?></button>
 		<?php endforeach; ?>

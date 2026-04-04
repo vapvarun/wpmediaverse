@@ -1,1 +1,0 @@
-(()=>{"use strict";const t=window.wp.interactivity;(0,t.store)("mvs/story-viewer",{actions:{openStory(){const o=(0,t.getContext)(),e=(0,t.getContext)();e.viewing=!0,e.currentAuthor=o.authorId,e.storyUrl=o.storyUrl,document.body.style.overflow="hidden"},closeStory(){const o=(0,t.getContext)();o.viewing=!1,o.storyUrl="",document.body.style.overflow=""}}})})();

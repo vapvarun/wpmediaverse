@@ -64,7 +64,10 @@ class OverviewPage {
 				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
 				array(),
 				'0.460.0',
-				true
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
 			);
 
 			wp_enqueue_script(
@@ -72,7 +75,10 @@ class OverviewPage {
 				MVS_PLUGIN_URL . 'assets/js/admin/icons.js',
 				array( 'lucide' ),
 				MVS_VERSION,
-				true
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
 			);
 
 			wp_enqueue_script(
@@ -80,7 +86,10 @@ class OverviewPage {
 				MVS_PLUGIN_URL . 'assets/js/admin/toast.js',
 				array(),
 				MVS_VERSION,
-				true
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
 			);
 		}
 	}

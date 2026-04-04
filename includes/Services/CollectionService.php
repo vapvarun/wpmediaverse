@@ -133,13 +133,21 @@ class CollectionService {
 		$where_sql = implode( ' AND ', $wheres );
 		$offset    = ( $page - 1 ) * $per_page;
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
 		// Count total matches.
-		$count_sql = "SELECT COUNT(DISTINCT idx.media_id) FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql}";
-		$total     = ! empty( $params )
-			? (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) )
-			: (int) $wpdb->get_var( $count_sql );
+		if ( ! empty( $params ) ) {
+			$total = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(DISTINCT idx.media_id) FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...$params
+				)
+			);
+		} else {
+			$total = (int) $wpdb->get_var(
+				"SELECT COUNT(DISTINCT idx.media_id) FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			);
+		}
 
 		if ( 0 === $total ) {
 			return array(
@@ -149,11 +157,16 @@ class CollectionService {
 		}
 
 		// Fetch page of results.
-		$select_sql = "SELECT DISTINCT idx.media_id, idx.created_at FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql} ORDER BY idx.created_at DESC LIMIT %d OFFSET %d";
 		$all_params = array_merge( $params, array( $per_page, $offset ) );
-		$rows       = $wpdb->get_results( $wpdb->prepare( $select_sql, ...$all_params ), ARRAY_A );
+		$rows       = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT DISTINCT idx.media_id, idx.created_at FROM {$index_table} AS idx {$join_sql} WHERE {$where_sql} ORDER BY idx.created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$all_params
+			),
+			ARRAY_A
+		);
 
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
 		$items = array();
 		foreach ( $rows as $row ) {

@@ -102,5 +102,6 @@
 	<exclude-pattern>assets/*</exclude-pattern>
 	<exclude-pattern>build/*</exclude-pattern>
 	<exclude-pattern>src/*</exclude-pattern>
+	<exclude-pattern>dist/*</exclude-pattern>
 
 </ruleset>

@@ -20,6 +20,7 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 <div class="mvs-app-shell"
 	data-wp-interactive="mvs/shared-ui"
 	<?php
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 	echo wp_interactivity_data_wp_context(
 		array(
 			'restUrl'       => $mvs_rest_url,

@@ -156,6 +156,7 @@ class BuddyPressIntegration {
 			// Always return a valid action string — empty strings crash BP Nouveau's strpos().
 			$user_link = bp_core_get_userlink( $activity->user_id );
 			return $user_link
+				// translators: %s: linked user name.
 				? sprintf( __( '%s uploaded new media', 'wpmediaverse' ), $user_link )
 				: __( 'A member uploaded new media', 'wpmediaverse' );
 		}
@@ -214,6 +215,7 @@ class BuddyPressIntegration {
 		if ( ! MediaMeta::exists( $media_id ) ) {
 			$user_link = bp_core_get_userlink( $activity->user_id );
 			return $user_link
+				// translators: %s: linked user name.
 				? sprintf( __( '%s commented on a media item', 'wpmediaverse' ), $user_link )
 				: __( 'A member commented on a media item', 'wpmediaverse' );
 		}
@@ -1011,7 +1013,7 @@ class BuddyPressIntegration {
 		printf(
 			/* translators: %d: number of items */
 			esc_html( _n( '%d item', '%d items', $item_count, 'wpmediaverse' ) ),
-			$item_count
+			(int) $item_count
 		);
 		echo '</span>';
 		echo '</div>';
@@ -1638,7 +1640,7 @@ class BuddyPressIntegration {
 		printf(
 			/* translators: %d: number of items */
 			esc_html( _n( '%d item', '%d items', $item_count, 'wpmediaverse' ) ),
-			$item_count
+			(int) $item_count
 		);
 		echo '</span>';
 		echo '</div>';
@@ -2027,6 +2029,7 @@ class BuddyPressIntegration {
 
 		// Video without poster: show dark placeholder with play icon.
 		if ( 'video' === $media_type ) {
+			// translators: %s: video title.
 			return '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . ' style="position:relative;overflow:hidden;"><a href="' . esc_url( $href ) . '" class="mvs-activity-vid-link" aria-label="' . esc_attr( sprintf( __( 'Play video: %s', 'wpmediaverse' ), $title ) ) . '"><span class="mvs-activity-play-icon" aria-hidden="true"></span><span class="mvs-activity-media-label">' . esc_html( $title ) . '</span></a></div>';
 		}
 
@@ -2094,7 +2097,10 @@ class BuddyPressIntegration {
 			$plugin_url . 'assets/js/bp-activity-media.js',
 			array( 'jquery' ),
 			filemtime( $js_path ),
-			true
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
 		);
 		wp_localize_script(
 			'mvs-bp-activity-media',

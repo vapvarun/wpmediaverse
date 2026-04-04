@@ -284,7 +284,7 @@ function mvs_showcase_download_image( $seed, $title, $width = 1200, $height = 80
 	$attachment_id = media_handle_sideload( $file_array, 0, $title );
 
 	if ( is_wp_error( $attachment_id ) ) {
-		@unlink( $tmp_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		wp_delete_file( $tmp_file );
 		return $attachment_id;
 	}
 

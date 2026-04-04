@@ -384,32 +384,39 @@ class NotificationService {
 				return sprintf( __( '%s started following you', 'wpmediaverse' ), $actor_name );
 
 			case 'media_reaction':
-				/* translators: 1: user name, 2: media title */
-				return $media_title
-					? sprintf( __( '%1$s reacted to %2$s', 'wpmediaverse' ), $actor_name, $media_title )
-					: sprintf( __( '%s reacted to your media', 'wpmediaverse' ), $actor_name );
+				if ( $media_title ) {
+					/* translators: 1: user name, 2: media title */
+					return sprintf( __( '%1$s reacted to %2$s', 'wpmediaverse' ), $actor_name, $media_title );
+				}
+				/* translators: %s: user name */
+				return sprintf( __( '%s reacted to your media', 'wpmediaverse' ), $actor_name );
 
 			case 'media_comment':
-				/* translators: 1: user name, 2: media title */
-				return $media_title
-					? sprintf( __( '%1$s commented on %2$s', 'wpmediaverse' ), $actor_name, $media_title )
-					: sprintf( __( '%s commented on your media', 'wpmediaverse' ), $actor_name );
+				if ( $media_title ) {
+					/* translators: 1: user name, 2: media title */
+					return sprintf( __( '%1$s commented on %2$s', 'wpmediaverse' ), $actor_name, $media_title );
+				}
+				/* translators: %s: user name */
+				return sprintf( __( '%s commented on your media', 'wpmediaverse' ), $actor_name );
 
 			case 'media_mention':
 				/* translators: %s: user name */
 				return sprintf( __( '%s mentioned you', 'wpmediaverse' ), $actor_name );
 
 			case 'media_favorite':
-				/* translators: 1: user name, 2: media title */
-				return $media_title
-					? sprintf( __( '%1$s favorited %2$s', 'wpmediaverse' ), $actor_name, $media_title )
-					: sprintf( __( '%s favorited your media', 'wpmediaverse' ), $actor_name );
+				if ( $media_title ) {
+					/* translators: 1: user name, 2: media title */
+					return sprintf( __( '%1$s favorited %2$s', 'wpmediaverse' ), $actor_name, $media_title );
+				}
+				/* translators: %s: user name */
+				return sprintf( __( '%s favorited your media', 'wpmediaverse' ), $actor_name );
 
 			case 'new_message':
 				/* translators: %s: user name */
 				return sprintf( __( '%s sent you a message', 'wpmediaverse' ), $actor_name );
 
 			default:
+				/* translators: %s: user name */
 				return sprintf( __( '%s interacted with your content', 'wpmediaverse' ), $actor_name );
 		}
 	}

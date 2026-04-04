@@ -139,7 +139,10 @@ class SetupWizard {
 			MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
 			array(),
 			'0.460.0',
-			true
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
 		);
 
 		wp_enqueue_script(
@@ -147,7 +150,10 @@ class SetupWizard {
 			MVS_PLUGIN_URL . 'assets/js/admin/icons.js',
 			array( 'lucide' ),
 			MVS_VERSION,
-			true
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
 		);
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended

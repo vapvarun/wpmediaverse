@@ -1523,6 +1523,18 @@ a.mvs-dashboard-card-title:hover {
 	gap: 8px;
 }
 
+.mvs-report-reason-select {
+	display: block;
+	width: 100%;
+	padding: 8px 12px;
+	margin: 12px 0 0;
+	font-size: 14px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	background: #f9f9f9;
+	color: #333;
+}
+
 /* ==========================================================================
    18. Toast Notification
    ========================================================================== */
@@ -3667,6 +3679,13 @@ a.mvs-dashboard-card-title:hover {
 	color: var(--mvs-bg);
 }
 
+/* Read-only reactions for logged-out users */
+.mvs-reactions--readonly .mvs-reaction-btn {
+	cursor: default;
+	opacity: 0.7;
+	pointer-events: none;
+}
+
 .mvs-favorite-btn {
 	padding: 5px 12px;
 	border: 1px solid #efefef;
@@ -4024,7 +4043,15 @@ a.mvs-dashboard-card-title:hover {
 .mvs-btn--text {
 	background: none;
 	border: none;
-	padding: 0.25rem 0;
+	padding: 0.25rem 0.5rem;
+	border-radius: 4px;
+	color: #50575e;
+	transition: background 0.15s, color 0.15s;
+}
+
+.mvs-btn--text:hover {
+	background: rgba(214, 54, 56, 0.08);
+	color: #d63638;
 }
 
 /* Mobile */
@@ -4680,6 +4707,8 @@ a.mvs-dashboard-card-title:hover {
 }
 .mvs-lightbox-action:hover { background: #f5f5f5; }
 .mvs-lightbox-action.active { color: #e11d48; }
+.mvs-lightbox-action--report { margin-right: auto; color: #666; font-size: 13px; }
+.mvs-lightbox-action--report:hover { color: #e11d48; background: #fef2f2; }
 .mvs-lightbox-desc {
 	padding: 10px 16px; font-size: 14px; line-height: 1.5;
 	border-bottom: 1px solid #efefef;
