@@ -43,7 +43,15 @@
 [class*="wpmediaverse_page"] .notice:not(.mvs-notice),
 [class*="wpmediaverse_page"] .update-nag,
 [class*="wpmediaverse_page"] div.error:not(.mvs-notice),
-[class*="wpmediaverse_page"] div.updated:not(.mvs-notice) {
+[class*="wpmediaverse_page"] div.updated:not(.mvs-notice),
+.post-type-mvs_album .notice:not(.mvs-notice),
+.post-type-mvs_album .update-nag,
+.post-type-mvs_album div.error:not(.mvs-notice),
+.post-type-mvs_album div.updated:not(.mvs-notice),
+.post-type-mvs_collection .notice:not(.mvs-notice),
+.post-type-mvs_collection .update-nag,
+.post-type-mvs_collection div.error:not(.mvs-notice),
+.post-type-mvs_collection div.updated:not(.mvs-notice) {
 	display: none !important;
 }
 
