@@ -260,9 +260,7 @@ class TemplateHelpers {
 			. ' data-wp-interactive="mvs/shared-ui" '
 			. $lightbox_ctx // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			. '>';
-		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link"'
-			. ' data-wp-on--click="actions.openLightbox"'
-			. '>';
+		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';
 
 		self::render_grid_thumbnail( $media_id, $size, $media_title );
 
