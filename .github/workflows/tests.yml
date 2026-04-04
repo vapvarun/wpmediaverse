@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.1', '8.2', '8.3']
+        php: ['8.1', '8.2', '8.3', '8.4']
         wp: ['6.7', '6.8', '6.9']
       fail-fast: false
 
@@ -74,3 +74,109 @@ jobs:
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse -c phpstan.neon.dist --memory-limit=2G
+
+  php-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+      - name: PHP Lint
+        run: find includes/ templates/ src/ -name '*.php' -exec php -l {} + && php -l wpmediaverse.php
+
+  wpcs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: Install Composer dependencies
+        run: composer install --no-progress --prefer-dist
+      - name: Run WPCS (errors block, warnings pass)
+        run: |
+          ERRORS=$(vendor/bin/phpcs --standard=phpcs.xml --report=json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['totals']['errors'])")
+          echo "WPCS errors: $ERRORS"
+          if [ "$ERRORS" -gt 0 ]; then
+            vendor/bin/phpcs --standard=phpcs.xml
+            exit 1
+          fi
+
+  plugin-check:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wp_pcp
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli, mbstring
+
+      - name: Setup WordPress
+        run: |
+          mkdir -p /tmp/wp
+          curl -sL https://wordpress.org/latest.tar.gz | tar xz -C /tmp/wp --strip-components=1
+          cp /tmp/wp/wp-config-sample.php /tmp/wp/wp-config.php
+          sed -i "s/database_name_here/wp_pcp/" /tmp/wp/wp-config.php
+          sed -i "s/username_here/root/" /tmp/wp/wp-config.php
+          sed -i "s/password_here/root/" /tmp/wp/wp-config.php
+          sed -i "s/localhost/127.0.0.1/" /tmp/wp/wp-config.php
+
+      - name: Install WP-CLI
+        run: |
+          curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x wp-cli.phar
+          sudo mv wp-cli.phar /usr/local/bin/wp
+
+      - name: Install WordPress
+        working-directory: /tmp/wp
+        run: |
+          wp core install --url=http://localhost --title=Test --admin_user=admin --admin_password=admin --admin_email=test@test.com --skip-email
+
+      - name: Install Plugin Check
+        working-directory: /tmp/wp
+        run: |
+          wp plugin install plugin-check --activate
+          # If that fails, clone from git
+          if [ $? -ne 0 ]; then
+            git clone --depth=1 https://github.com/WordPress/plugin-check.git wp-content/plugins/plugin-check
+            cd wp-content/plugins/plugin-check && composer install --no-dev
+            cd /tmp/wp && wp plugin activate plugin-check
+          fi
+
+      - name: Copy plugin
+        run: |
+          cp -r $GITHUB_WORKSPACE /tmp/wp/wp-content/plugins/wpmediaverse
+
+      - name: Run Plugin Check
+        working-directory: /tmp/wp
+        run: |
+          RESULT=$(wp plugin check wpmediaverse --format=table 2>&1)
+          echo "$RESULT"
+          # Count errors excluding test files, hidden files, compressed files, application files
+          CODE_ERRORS=$(echo "$RESULT" | grep -P '\tERROR\t' | grep -v 'compressed_files\|hidden_files\|application_detected\|missing_direct_file_access_protection' | grep -v 'tests/' | wc -l)
+          echo "Code errors: $CODE_ERRORS"
+          if [ "$CODE_ERRORS" -gt 0 ]; then
+            echo "::error::Plugin Check found $CODE_ERRORS code errors"
+            exit 1
+          fi

@@ -2283,11 +2283,12 @@ class SettingsPage {
 	 */
 	public function render_page_dropdown_field( array $args ): void {
 		$selected = (int) get_option( $args['option'], 0 );
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_dropdown_pages escapes internally.
 		wp_dropdown_pages(
 			array(
-				'name'              => esc_attr( $args['option'] ),
-				'selected'          => esc_attr( $selected ),
-				'show_option_none'  => esc_html__( '— Select —', 'wpmediaverse' ),
+				'name'              => $args['option'],
+				'selected'          => $selected,
+				'show_option_none'  => __( '— Select —', 'wpmediaverse' ),
 				'option_none_value' => 0,
 			)
 		);
