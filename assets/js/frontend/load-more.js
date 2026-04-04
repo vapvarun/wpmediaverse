@@ -66,12 +66,9 @@
 		var mediaId = parseInt( card.dataset.mediaId, 10 );
 		if ( ! mediaId ) return;
 
-		// Bridge to Interactivity API lightbox.
-		if ( window.wp && window.wp.interactivity ) {
-			var sharedUI = window.wp.interactivity.store( 'mvs/shared-ui' );
-			if ( sharedUI && sharedUI.actions && sharedUI.actions.openLightboxById ) {
-				sharedUI.actions.openLightboxById( mediaId );
-			}
+		// Bridge to Interactivity API lightbox via global function exposed by shared-ui store.
+		if ( window.mvsOpenLightbox ) {
+			window.mvsOpenLightbox( mediaId );
 		}
 	} );
 

@@ -729,3 +729,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 	},
 } );
+
+// Bridge: expose openLightboxById to vanilla JS (used by load-more.js delegated click handler).
+window.mvsOpenLightbox = function ( mediaId ) {
+	actions.openLightboxById( mediaId );
+};

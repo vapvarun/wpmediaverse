@@ -758,6 +758,24 @@ class Plugin {
 				true
 			);
 
+			// Lightbox module — needed for click-to-lightbox on all MVS pages (logged in or out).
+			$mvs_sui_asset = file_exists( MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php' )
+				? require MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php'
+				: array( 'dependencies' => array(), 'version' => MVS_VERSION );
+			wp_enqueue_script_module(
+				'@mvs/shared-ui',
+				MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
+				$mvs_sui_asset['dependencies'],
+				$mvs_sui_asset['version']
+			);
+
+			wp_enqueue_style(
+				'mvs-shared-ui-shell',
+				MVS_PLUGIN_URL . 'assets/css/shared-ui-shell.css',
+				array(),
+				MVS_VERSION
+			);
+
 			// Lightbox is handled by shared-ui Interactivity API module — no legacy JS needed.
 		} else {
 			// Register for on-demand loading by blocks/shortcodes.
@@ -1078,7 +1096,19 @@ class Plugin {
 	 * Render the shared UI shell in wp_footer (FAB, upload modal, lightbox).
 	 */
 	public static function render_shared_ui_shell(): void {
-		if ( ! is_user_logged_in() || is_admin() ) {
+		if ( is_admin() ) {
+			return;
+		}
+
+		// Render on all MVS frontend pages (lightbox needed for all users).
+		// The template itself handles hiding upload FAB for logged-out users.
+		$post_type  = get_post_type();
+		$is_mvs     = in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true );
+		$is_archive = is_post_type_archive( 'mvs_album' );
+		$is_mvs_tax = is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' );
+		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
+
+		if ( ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl ) {
 			return;
 		}
 
