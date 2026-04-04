@@ -90,7 +90,7 @@ wp_enqueue_style( 'mvs-frontend' );
 	<div class="mvs-dashboard-profile-header">
 		<div class="mvs-dashboard-profile-view" data-wp-bind--hidden="context.editingProfile">
 			<img class="mvs-dashboard-profile-avatar" data-wp-bind--src="context.avatarUrl"
-				alt="" width="64" height="64" />
+				alt="" data-wp-bind--alt="context.displayName" width="64" height="64" />
 			<div class="mvs-dashboard-profile-info">
 				<h2 class="mvs-dashboard-profile-name" data-wp-text="context.displayName"></h2>
 				<p class="mvs-dashboard-profile-bio" data-wp-bind--hidden="!context.bio"

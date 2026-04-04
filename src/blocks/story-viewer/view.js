@@ -13,6 +13,7 @@ store( 'mvs/story-viewer', {
 			const ctx = getContext();
 			ctx.viewing = true;
 			ctx.currentAuthor = itemCtx.authorId;
+			ctx.authorName = itemCtx.authorName || '';
 			ctx.storyUrl = itemCtx.storyUrl;
 			document.body.style.overflow = 'hidden';
 		},

@@ -85,8 +85,9 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'mvs-story-viewer-blo
 				<?php
 				echo wp_json_encode(
 					array(
-						'authorId' => $author_id,
-						'storyUrl' => $file_url,
+						'authorId'    => $author_id,
+						'authorName'  => $user ? $user->display_name : '',
+						'storyUrl'    => $file_url,
 					)
 				);
 				?>
@@ -114,7 +115,7 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'mvs-story-viewer-blo
 		<img class="mvs-story-image"
 			data-wp-bind--src="context.storyUrl"
 			style="max-width:100%;max-height:100%;object-fit:contain;"
-			alt=""
+			alt="" data-wp-bind--alt="context.authorName"
 		/>
 	</div>
 </div>

@@ -1458,6 +1458,12 @@ a.mvs-dashboard-card-title:hover {
 	flex: 1;
 }
 
+.mvs-tag-text-input:focus-visible {
+	outline: 2px solid #0073aa;
+	outline-offset: -2px;
+	border-radius: 2px;
+}
+
 .mvs-tag-autocomplete {
 	position: absolute;
 	top: 100%;
@@ -4158,6 +4164,12 @@ a.mvs-dashboard-card-title:hover {
 	min-width: 0;
 }
 
+.mvs-search-field input:focus-visible {
+	outline: 2px solid #0073aa;
+	outline-offset: -2px;
+	border-radius: 2px;
+}
+
 .mvs-search-field input::placeholder {
 	color: var(--mvs-text-muted);
 }
@@ -4746,6 +4758,10 @@ a.mvs-dashboard-card-title:hover {
 }
 .mvs-lightbox-comment-input {
 	flex: 1; border: none; padding: 14px 16px; font-size: 14px; outline: none;
+}
+.mvs-lightbox-comment-input:focus-visible {
+	outline: 2px solid #0073aa;
+	outline-offset: -2px;
 }
 .mvs-lightbox-comment-post {
 	background: none; border: none; color: #3b82f6; font-weight: 600;

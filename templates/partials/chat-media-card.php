@@ -21,7 +21,7 @@ defined( 'ABSPATH' ) || exit;
 		class="mvs-chat-msg__media-card-thumb"
 		data-wp-bind--src="context.item.media_share.thumbnail"
 		data-wp-bind--hidden="!context.item.media_share.thumbnail"
-		alt=""
+		alt="" data-wp-bind--alt="context.item.media_share.title"
 		loading="lazy"
 	/>
 	<div class="mvs-chat-msg__media-card-body">

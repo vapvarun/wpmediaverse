@@ -75,7 +75,7 @@ defined( 'ABSPATH' ) || exit;
 			class="mvs-chat-msg__image"
 			data-wp-bind--hidden="context.item.notImage"
 			data-wp-bind--src="context.item.attachment.thumbnail"
-			alt=""
+			alt="" data-wp-bind--alt="context.item.attachment.name"
 			loading="lazy"
 		/>
 
