@@ -13,12 +13,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
-if ( ! is_user_logged_in() ) {
-	return;
-}
-
-$mvs_rest_url = esc_url_raw( rest_url( 'mvs/v1/' ) );
-$mvs_nonce    = wp_create_nonce( 'wp_rest' );
+$mvs_is_logged_in = is_user_logged_in();
+$mvs_rest_url     = esc_url_raw( rest_url( 'mvs/v1/' ) );
+$mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 ?>
 <div class="mvs-app-shell"
 	data-wp-interactive="mvs/shared-ui"
@@ -32,7 +29,8 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 	?>
 	data-wp-on--keydown="actions.handleLightboxKeydown"
 >
-	<!-- Floating Action Button -->
+	<!-- Floating Action Button (logged-in only) -->
+	<?php if ( $mvs_is_logged_in ) : ?>
 	<div class="mvs-fab-container">
 		<button class="mvs-fab" data-wp-on--click="actions.openUploadModal"
 			data-wp-context='{"uploadMode":"photo"}'
@@ -185,6 +183,7 @@ $mvs_nonce    = wp_create_nonce( 'wp_rest' );
 			</div>
 		</div>
 	</div>
+	<?php endif; ?>
 
 	<!-- Lightbox Overlay -->
 	<div class="mvs-lightbox-overlay" hidden data-wp-bind--hidden="!state.lightboxVisible" data-wp-on--click="actions.closeLightbox">
