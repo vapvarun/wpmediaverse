@@ -866,7 +866,7 @@ class BuddyPressIntegration {
 		$user_id  = bp_displayed_user_id();
 		$is_own   = is_user_logged_in() && get_current_user_id() === $user_id;
 		$paged    = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$per_page = 18;
+		$per_page = absint( get_option( 'mvs_items_per_page', 12 ) );
 
 		// Action buttons for own profile.
 		if ( $is_own ) {
@@ -1505,7 +1505,7 @@ class BuddyPressIntegration {
 		}
 
 		$paged    = isset( $_GET['mpage'] ) ? absint( $_GET['mpage'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$per_page = 18;
+		$per_page = absint( get_option( 'mvs_items_per_page', 12 ) );
 
 		$query = new \WP_Query(
 			array(
