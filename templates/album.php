@@ -478,7 +478,7 @@ endif;
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
 			<button class="mvs-btn mvs-btn--danger" type="button"
-				data-wp-on--click="actions.handleConfirmYes"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+				data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>
 		</div>
 	</div>
 </div>

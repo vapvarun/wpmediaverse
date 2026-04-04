@@ -472,7 +472,7 @@ store( 'mvs/media-social', {
 				if ( res.ok ) {
 					window.location.href = ctx.archiveUrl || '/';
 				}
-			} );
+			}, 'Delete' );
 		},
 
 		/* --- Report Media --- */
@@ -482,24 +482,38 @@ store( 'mvs/media-social', {
 				sharedUI.actions.showToast( 'Please log in to report content.', 'error' );
 				return;
 			}
+
+			// Build a reason selector dropdown.
 			const reasons = [
 				{ value: 'spam', label: 'Spam' },
 				{ value: 'harassment', label: 'Harassment' },
-				{ value: 'nudity', label: 'Nudity' },
-				{ value: 'violence', label: 'Violence' },
-				{ value: 'copyright', label: 'Copyright' },
+				{ value: 'nudity', label: 'Nudity or sexual content' },
+				{ value: 'violence', label: 'Violence or dangerous acts' },
+				{ value: 'copyright', label: 'Copyright infringement' },
 				{ value: 'misinformation', label: 'Misinformation' },
 				{ value: 'other', label: 'Other' },
 			];
-			const list = reasons.map( ( r ) => r.label ).join( ', ' );
+
+			// Create a temporary select element in the DOM.
+			const select = document.createElement( 'select' );
+			select.className = 'mvs-report-reason-select';
+			reasons.forEach( ( r ) => {
+				const opt = document.createElement( 'option' );
+				opt.value = r.value;
+				opt.textContent = r.label;
+				select.appendChild( opt );
+			} );
+
+			// Inject select into confirm message area after dialog opens.
 			sharedUI.actions.showConfirm(
-				'Report this media? Select a reason:\n\n' + list + '\n\nThis will be sent to the site moderators.',
+				'Why are you reporting this media?',
 				async () => {
+					const reason = select.value || 'other';
 					const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/report', {
 						method: 'POST',
 						headers: apiHeaders( ctx.nonce ),
 						credentials: 'same-origin',
-						body: JSON.stringify( { reason: 'other', details: 'Reported via media page' } ),
+						body: JSON.stringify( { reason, details: 'Reported via media page' } ),
 					} );
 					if ( res.ok ) {
 						sharedUI.actions.showToast( 'Report submitted. Thank you.', 'success' );
@@ -508,8 +522,17 @@ store( 'mvs/media-social', {
 						const data = await res.json().catch( () => ( {} ) );
 						sharedUI.actions.showToast( data.message || 'Already reported or error occurred.', 'error' );
 					}
-				}
+				},
+				'Report'
 			);
+
+			// Append select to the confirm dialog message area.
+			requestAnimationFrame( () => {
+				const msgEl = document.querySelector( '.mvs-confirm p' );
+				if ( msgEl && ! msgEl.querySelector( 'select' ) ) {
+					msgEl.after( select );
+				}
+			} );
 		},
 
 		stopPropagation( event ) {

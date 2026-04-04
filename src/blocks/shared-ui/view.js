@@ -31,6 +31,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		confirmMessage: '',
 		confirmVisible: false,
 		confirmCallback: null,
+		confirmButtonLabel: 'Confirm',
 
 		// --- Tag Autocomplete (flat) ---
 		tagQuery: '',
@@ -198,9 +199,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 
 		// --- Confirm ---
-		showConfirm( msg, callback ) {
+		showConfirm( msg, callback, buttonLabel = 'Confirm' ) {
 			state.confirmMessage = msg;
 			state.confirmCallback = callback;
+			state.confirmButtonLabel = buttonLabel;
 			state.confirmVisible = true;
 		},
 		handleConfirmYes() {
