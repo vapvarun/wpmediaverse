@@ -181,8 +181,19 @@ jobs:
         run: |
           RESULT=$(wp plugin check wpmediaverse --format=table 2>&1)
           echo "$RESULT"
-          # Count errors excluding test files, hidden files, compressed files, application files
-          CODE_ERRORS=$(echo "$RESULT" | grep -P '\tERROR\t' | grep -v 'compressed_files\|hidden_files\|application_detected\|missing_direct_file_access_protection\|outdated_tested_upto_header' | grep -v 'tests/' | wc -l)
+          # Count real code errors (skip test files, build artifacts, dev files)
+          NOISE='compressed_files|hidden_files|application_detected|missing_direct_file_access_protection|outdated_tested_upto_header'
+          CODE_ERRORS=$(echo "$RESULT" | awk -v noise="$NOISE" '
+            /^FILE:/ { file=$2 }
+            /\tERROR\t/ {
+              if (file ~ /^tests\//) next
+              if (file ~ /^bin\//) next
+              if (file ~ /^dist\//) next
+              for (i=1; i<=NF; i++) if ($i ~ noise) next
+              count++
+            }
+            END { print count+0 }
+          ')
           echo "Code errors: $CODE_ERRORS"
           if [ "$CODE_ERRORS" -gt 0 ]; then
             echo "::error::Plugin Check found $CODE_ERRORS code errors"
