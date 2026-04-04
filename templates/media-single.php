@@ -548,9 +548,9 @@ wp_enqueue_script_module(
 
 <div class="mvs-confirm-overlay" hidden
 	data-wp-interactive="mvs/shared-ui"
-	data-wp-bind--hidden="!state.confirm.visible">
+	data-wp-bind--hidden="!state.confirmVisible">
 	<div class="mvs-confirm">
-		<p data-wp-text="state.confirm.message"></p>
+		<p data-wp-text="state.confirmMessage"></p>
 		<div class="mvs-confirm-actions">
 			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
