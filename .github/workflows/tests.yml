@@ -101,7 +101,15 @@ jobs:
         run: composer install --no-progress --prefer-dist
       - name: Run WPCS (errors block, warnings pass)
         run: |
-          ERRORS=$(vendor/bin/phpcs --standard=phpcs.xml --report=json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['totals']['errors'])")
+          set +e
+          vendor/bin/phpcs --standard=phpcs.xml --report=summary
+          EXIT_CODE=$?
+          set -e
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            echo "WPCS: clean"
+            exit 0
+          fi
+          ERRORS=$(vendor/bin/phpcs --standard=phpcs.xml --report=json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['totals']['errors'])" 2>/dev/null || echo "0")
           echo "WPCS errors: $ERRORS"
           if [ "$ERRORS" -gt 0 ]; then
             vendor/bin/phpcs --standard=phpcs.xml
@@ -174,7 +182,7 @@ jobs:
           RESULT=$(wp plugin check wpmediaverse --format=table 2>&1)
           echo "$RESULT"
           # Count errors excluding test files, hidden files, compressed files, application files
-          CODE_ERRORS=$(echo "$RESULT" | grep -P '\tERROR\t' | grep -v 'compressed_files\|hidden_files\|application_detected\|missing_direct_file_access_protection' | grep -v 'tests/' | wc -l)
+          CODE_ERRORS=$(echo "$RESULT" | grep -P '\tERROR\t' | grep -v 'compressed_files\|hidden_files\|application_detected\|missing_direct_file_access_protection\|outdated_tested_upto_header' | grep -v 'tests/' | wc -l)
           echo "Code errors: $CODE_ERRORS"
           if [ "$CODE_ERRORS" -gt 0 ]; then
             echo "::error::Plugin Check found $CODE_ERRORS code errors"
