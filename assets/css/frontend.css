@@ -4024,7 +4024,15 @@ a.mvs-dashboard-card-title:hover {
 .mvs-btn--text {
 	background: none;
 	border: none;
-	padding: 0.25rem 0;
+	padding: 0.25rem 0.5rem;
+	border-radius: 4px;
+	color: #50575e;
+	transition: background 0.15s, color 0.15s;
+}
+
+.mvs-btn--text:hover {
+	background: rgba(214, 54, 56, 0.08);
+	color: #d63638;
 }
 
 /* Mobile */
