@@ -312,7 +312,7 @@ $mvs_archive_url = home_url( '/media/' );
 
 			<!-- Social Interactions Bar -->
 			<div class="mvs-social-bar">
-				<div class="mvs-reactions">
+				<div class="mvs-reactions<?php echo ! is_user_logged_in() ? ' mvs-reactions--readonly' : ''; ?>">
 					<template data-wp-each="context.reactions">
 						<button class="mvs-reaction-btn"
 							data-wp-class--active="context.item.active"
@@ -327,12 +327,12 @@ $mvs_archive_url = home_url( '/media/' );
 			</div>
 			<div class="mvs-social-actions">
 				<div class="mvs-social-actions-left">
-					<?php if ( is_user_logged_in() ) : ?>
+					<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
 						<button class="mvs-favorite-btn" type="button"
 							data-wp-class--active="context.isFavorite"
 							data-wp-on--click="actions.toggleFavorite"
 							aria-label="<?php esc_attr_e( 'Add to favorites', 'wpmediaverse' ); ?>">&#x2764; <?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></button>
-					<?php else : ?>
+					<?php elseif ( ! is_user_logged_in() ) : ?>
 						<a href="<?php echo esc_url( wp_login_url( $mvs_permalink ) ); ?>" class="mvs-favorite-btn mvs-login-prompt"
 							title="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
 							aria-label="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>">&#x2764; <?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></a>

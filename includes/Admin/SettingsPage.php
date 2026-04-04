@@ -55,6 +55,9 @@ class SettingsPage {
 			'mvs-challenges',
 			'mvs-tournaments',
 			'mvs-battles',
+			'mvs-migration',
+			'mvs-reports',
+			'mvs-analytics',
 		);
 
 		add_action(

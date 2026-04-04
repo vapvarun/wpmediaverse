@@ -438,6 +438,9 @@ class Plugin {
 		}
 		add_action( 'mvs_prune_logs', array( \WPMediaVerse\Services\LoggerService::class, 'prune' ) );
 
+		// Wire LoggerService into key operations.
+		\WPMediaVerse\Services\LoggerService::register_hooks();
+
 		// GDPR compliance.
 		$gdpr = new \WPMediaVerse\Services\GDPRService();
 		$gdpr->init();

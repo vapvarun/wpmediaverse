@@ -112,7 +112,15 @@ class StatsController extends WP_REST_Controller {
 		$stats = $this->stats->get_for_media( $media_id );
 
 		if ( ! $stats ) {
-			return new WP_Error( 'mvs_no_stats', __( 'Stats not available.', 'wpmediaverse' ), array( 'status' => 404 ) );
+			$stats = array(
+				'media_id'   => $media_id,
+				'views'      => 0,
+				'downloads'  => 0,
+				'reactions'  => 0,
+				'comments'   => 0,
+				'shares'     => 0,
+				'updated_at' => null,
+			);
 		}
 
 		return rest_ensure_response( $stats );

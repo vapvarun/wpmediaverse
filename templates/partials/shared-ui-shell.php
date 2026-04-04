@@ -22,8 +22,9 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 	<?php
 	echo wp_interactivity_data_wp_context(
 		array(
-			'restUrl' => $mvs_rest_url,
-			'nonce'   => $mvs_nonce,
+			'restUrl'       => $mvs_rest_url,
+			'nonce'         => $mvs_nonce,
+			'currentUserId' => $mvs_is_logged_in ? get_current_user_id() : 0,
 		)
 	);
 	?>
@@ -276,12 +277,19 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 				<!-- Actions bar -->
 				<div class="mvs-lightbox-actions">
 					<?php if ( $mvs_is_logged_in ) : ?>
-						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited">
+						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited"
+							data-wp-bind--hidden="state.lightboxIsOwner">
 							<span data-wp-text="state.lightboxFavoriteLabel"></span>
 						</button>
 					<?php endif; ?>
 					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxShare">&#x1F517; <?php esc_html_e( 'Share', 'wpmediaverse' ); ?></button>
 					<a class="mvs-lightbox-action" data-wp-bind--href="state.lightboxPermalink" target="_blank">&#x2197;&#xFE0F; <?php esc_html_e( 'Open', 'wpmediaverse' ); ?></a>
+					<?php if ( $mvs_is_logged_in ) : ?>
+						<button class="mvs-lightbox-action mvs-lightbox-action--report" data-wp-on--click="actions.lightboxReport"
+							data-wp-bind--hidden="state.lightboxIsOwner">
+							<?php esc_html_e( 'Report', 'wpmediaverse' ); ?>
+						</button>
+					<?php endif; ?>
 				</div>
 
 				<!-- Description -->

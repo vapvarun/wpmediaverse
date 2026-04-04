@@ -149,26 +149,46 @@ class ModerationQueue {
 	}
 
 	/**
-	 * Render the moderation queue page.
+	 * Render the moderation page with tabs.
 	 */
 	public function render_page(): void {
 		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
-		$status   = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : 'flagged'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$paged    = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$per_page = 20;
+		$counts = $this->moderation->get_counts();
 
-		$result = $this->moderation->get_queue(
-			array(
-				'status'   => $status,
-				'per_page' => $per_page,
-				'page'     => $paged,
-			)
+		// Build tabs — Pro can inject "User Reports" via this filter.
+		$tabs = array(
+			'ai-flagged' => array(
+				'label' => __( 'AI Flagged', 'wpmediaverse' ),
+				'count' => $counts['flagged'],
+			),
+			'pending'    => array(
+				'label' => __( 'Pending Review', 'wpmediaverse' ),
+				'count' => $counts['pending'],
+			),
+			'resolved'   => array(
+				'label' => __( 'Resolved / Rejected', 'wpmediaverse' ),
+				'count' => $counts['rejected'],
+			),
 		);
 
-		$counts = $this->moderation->get_counts();
+		/**
+		 * Filter moderation page tabs.
+		 *
+		 * Pro plugin uses this to inject the "User Reports" tab.
+		 * Each tab entry: 'slug' => array( 'label' => string, 'count' => int, 'callback' => callable ).
+		 *
+		 * @param array $tabs Tab definitions.
+		 */
+		$tabs = apply_filters( 'mvs_moderation_tabs', $tabs );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'ai-flagged';
+		if ( ! isset( $tabs[ $active_tab ] ) ) {
+			$active_tab = 'ai-flagged';
+		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$updated = isset( $_GET['updated'] ) ? sanitize_text_field( wp_unslash( $_GET['updated'] ) ) : '';
@@ -179,9 +199,9 @@ class ModerationQueue {
 				<div class="mvs-page-header__left">
 					<h1 class="mvs-page-header__title">
 						<i data-lucide="shield-check"></i>
-						<?php esc_html_e( 'Moderation Queue', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'Moderation', 'wpmediaverse' ); ?>
 					</h1>
-					<p class="mvs-page-header__desc"><?php esc_html_e( 'Review and manage flagged or pending media items.', 'wpmediaverse' ); ?></p>
+					<p class="mvs-page-header__desc"><?php esc_html_e( 'Review and manage flagged, pending, and reported media items.', 'wpmediaverse' ); ?></p>
 				</div>
 			</div>
 
@@ -193,10 +213,14 @@ class ModerationQueue {
 				<div class="notice notice-success is-dismissible">
 					<p>
 						<?php
-						if ( 'approve' === $updated ) {
-							esc_html_e( 'Media item approved.', 'wpmediaverse' );
-						} elseif ( 'reject' === $updated ) {
-							esc_html_e( 'Media item rejected.', 'wpmediaverse' );
+						$update_messages = array(
+							'approve'       => __( 'Media item approved.', 'wpmediaverse' ),
+							'reject'        => __( 'Media item rejected.', 'wpmediaverse' ),
+							'resolved'      => __( 'Report marked as resolved.', 'wpmediaverse' ),
+							'dismissed'     => __( 'Report dismissed.', 'wpmediaverse' ),
+						);
+						if ( isset( $update_messages[ $updated ] ) ) {
+							echo esc_html( $update_messages[ $updated ] );
 						} elseif ( 'bulk_approved' === $updated ) {
 							printf(
 								/* translators: %d: number of items */
@@ -215,166 +239,175 @@ class ModerationQueue {
 				</div>
 			<?php endif; ?>
 
-			<?php // --- Status Counts --- ?>
-			<div class="mvs-admin-stats mvs-stats-mb">
-				<?php
-				$status_cards = array(
-					'flagged'  => array(
-						'label' => __( 'Flagged', 'wpmediaverse' ),
-						'class' => 'mvs-stat-card--danger',
-					),
-					'pending'  => array(
-						'label' => __( 'Pending', 'wpmediaverse' ),
-						'class' => 'mvs-stat-card--warning',
-					),
-					'rejected' => array(
-						'label' => __( 'Rejected', 'wpmediaverse' ),
-						'class' => 'mvs-stat-card--accent',
-					),
-				);
-				foreach ( $status_cards as $key => $card ) :
-					$count     = isset( $counts[ $key ] ) ? $counts[ $key ] : 0;
-					$is_active = ( $status === $key );
-					$url       = add_query_arg(
+			<?php // --- Tab Navigation --- ?>
+			<nav class="mvs-admin-tabs">
+				<?php foreach ( $tabs as $slug => $tab ) : ?>
+					<?php
+					$tab_url = add_query_arg(
 						array(
-							'page'   => self::PAGE_SLUG,
-							'status' => $key,
+							'page' => self::PAGE_SLUG,
+							'tab'  => $slug,
 						),
 						admin_url( 'admin.php' )
 					);
+					$count      = isset( $tab['count'] ) ? (int) $tab['count'] : 0;
+					$is_active  = ( $slug === $active_tab );
+					$count_cls  = $count > 0 ? 'mvs-tab-count' : 'mvs-tab-count mvs-tab-count--zero';
 					?>
-					<a href="<?php echo esc_url( $url ); ?>"
-						class="mvs-stat-card <?php echo esc_attr( $card['class'] ); ?> <?php echo $is_active ? 'mvs-stat-card--active' : ''; ?>">
-						<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
-						<span class="mvs-stat-label"><?php echo esc_html( $card['label'] ); ?></span>
+					<a href="<?php echo esc_url( $tab_url ); ?>"
+						class="mvs-admin-tab <?php echo $is_active ? 'is-active' : ''; ?>">
+						<?php echo esc_html( $tab['label'] ); ?>
+						<span class="<?php echo esc_attr( $count_cls ); ?>"><?php echo esc_html( $count ); ?></span>
 					</a>
 				<?php endforeach; ?>
-			</div>
+			</nav>
 
-			<?php // --- Queue Table --- ?>
-			<div class="mvs-admin-widget">
-				<div class="mvs-widget-header">
-					<h2>
-						<?php
-						$status_labels = array(
-							'flagged'  => __( 'Flagged Items', 'wpmediaverse' ),
-							'pending'  => __( 'Pending Items', 'wpmediaverse' ),
-							'rejected' => __( 'Rejected Items', 'wpmediaverse' ),
-						);
-						echo esc_html( $status_labels[ $status ] ?? __( 'Queue', 'wpmediaverse' ) );
-						?>
-					</h2>
-				</div>
-				<div class="mvs-widget-body mvs-widget-body--flush">
-					<?php if ( empty( $result['items'] ) ) : ?>
-						<div class="mvs-empty-state">
-							<i data-lucide="shield-check"></i>
-							<h3><?php esc_html_e( 'Queue is Clear', 'wpmediaverse' ); ?></h3>
-							<p><?php esc_html_e( 'No items in this queue. All clear!', 'wpmediaverse' ); ?></p>
+			<?php
+			// Render the active tab content.
+			if ( isset( $tabs[ $active_tab ]['callback'] ) && is_callable( $tabs[ $active_tab ]['callback'] ) ) {
+				call_user_func( $tabs[ $active_tab ]['callback'] );
+			} else {
+				$this->render_queue_tab( $active_tab );
+			}
+			?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render a moderation queue tab (AI Flagged, Pending, or Resolved).
+	 *
+	 * @param string $tab Active tab slug.
+	 */
+	private function render_queue_tab( string $tab ): void {
+		$status_map = array(
+			'ai-flagged' => 'flagged',
+			'pending'    => 'pending',
+			'resolved'   => 'rejected',
+		);
+
+		$status   = $status_map[ $tab ] ?? 'flagged';
+		$paged    = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$per_page = 20;
+
+		$result = $this->moderation->get_queue(
+			array(
+				'status'   => $status,
+				'per_page' => $per_page,
+				'page'     => $paged,
+			)
+		);
+
+		?>
+		<div class="mvs-admin-widget">
+			<div class="mvs-widget-body mvs-widget-body--flush">
+				<?php if ( empty( $result['items'] ) ) : ?>
+					<div class="mvs-empty-state">
+						<i data-lucide="shield-check"></i>
+						<h3><?php esc_html_e( 'Queue is Clear', 'wpmediaverse' ); ?></h3>
+						<p><?php esc_html_e( 'No items in this queue. All clear!', 'wpmediaverse' ); ?></p>
+					</div>
+				<?php else : ?>
+					<form method="post" id="mvs-moderation-bulk-form">
+						<?php wp_nonce_field( 'mvs_moderation_bulk', 'mvs_moderation_bulk_nonce' ); ?>
+
+						<div class="mvs-bulk-actions-bar">
+							<select name="mvs_bulk_action" id="mvs-bulk-action-select">
+								<option value=""><?php esc_html_e( 'Bulk Actions', 'wpmediaverse' ); ?></option>
+								<option value="bulk_approve"><?php esc_html_e( 'Approve Selected', 'wpmediaverse' ); ?></option>
+								<option value="bulk_reject"><?php esc_html_e( 'Reject Selected', 'wpmediaverse' ); ?></option>
+							</select>
+							<button type="submit" class="mvs-btn mvs-btn--sm" id="mvs-bulk-apply"><?php esc_html_e( 'Apply', 'wpmediaverse' ); ?></button>
+							<span class="mvs-bulk-count mvs-hidden" id="mvs-bulk-count">
+								<?php
+								printf(
+									/* translators: %s: placeholder replaced by JS */
+									esc_html__( '%s selected', 'wpmediaverse' ),
+									'<strong id="mvs-selected-count">0</strong>'
+								);
+								?>
+							</span>
 						</div>
-					<?php else : ?>
-						<form method="post" id="mvs-moderation-bulk-form">
-							<?php wp_nonce_field( 'mvs_moderation_bulk', 'mvs_moderation_bulk_nonce' ); ?>
 
-							<!-- Bulk Actions Bar -->
-							<div class="mvs-bulk-actions-bar">
-								<select name="mvs_bulk_action" id="mvs-bulk-action-select">
-									<option value=""><?php esc_html_e( 'Bulk Actions', 'wpmediaverse' ); ?></option>
-									<option value="bulk_approve"><?php esc_html_e( 'Approve Selected', 'wpmediaverse' ); ?></option>
-									<option value="bulk_reject"><?php esc_html_e( 'Reject Selected', 'wpmediaverse' ); ?></option>
-								</select>
-								<button type="submit" class="mvs-btn mvs-btn--sm" id="mvs-bulk-apply"><?php esc_html_e( 'Apply', 'wpmediaverse' ); ?></button>
-								<span class="mvs-bulk-count mvs-hidden" id="mvs-bulk-count">
-									<?php
-									printf(
-										/* translators: %s: placeholder replaced by JS */
-										esc_html__( '%s selected', 'wpmediaverse' ),
-										'<strong id="mvs-selected-count">0</strong>'
-									);
-									?>
-								</span>
-							</div>
+						<table class="mvs-moderation-table striped">
+							<thead>
+								<tr>
+									<td class="manage-column column-cb check-column">
+										<label class="screen-reader-text" for="mvs-select-all">
+											<?php esc_html_e( 'Select All', 'wpmediaverse' ); ?>
+										</label>
+										<input type="checkbox" id="mvs-select-all" />
+									</td>
+									<th class="column-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'AI Flags', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
+									<th><?php esc_html_e( 'Actions', 'wpmediaverse' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach ( $result['items'] as $post ) : ?>
+									<?php $this->render_row( $post ); ?>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</form>
 
-							<table class="mvs-moderation-table striped">
-								<thead>
-									<tr>
-										<td class="manage-column column-cb check-column">
-											<label class="screen-reader-text" for="mvs-select-all">
-												<?php esc_html_e( 'Select All', 'wpmediaverse' ); ?>
-											</label>
-											<input type="checkbox" id="mvs-select-all" />
-										</td>
-										<th class="column-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
-										<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
-										<th><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
-										<th><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
-										<th><?php esc_html_e( 'AI Flags', 'wpmediaverse' ); ?></th>
-										<th><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
-										<th><?php esc_html_e( 'Actions', 'wpmediaverse' ); ?></th>
-									</tr>
-								</thead>
-								<tbody>
-									<?php foreach ( $result['items'] as $post ) : ?>
-										<?php $this->render_row( $post ); ?>
-									<?php endforeach; ?>
-								</tbody>
-							</table>
-						</form>
+					<script>
+					(function() {
+						var selectAll = document.getElementById('mvs-select-all');
+						var form = document.getElementById('mvs-moderation-bulk-form');
+						var countWrap = document.getElementById('mvs-bulk-count');
+						var countEl = document.getElementById('mvs-selected-count');
 
-						<script>
-						(function() {
-							var selectAll = document.getElementById('mvs-select-all');
-							var form = document.getElementById('mvs-moderation-bulk-form');
-							var countWrap = document.getElementById('mvs-bulk-count');
-							var countEl = document.getElementById('mvs-selected-count');
-
-							function updateCount() {
-								var checked = form.querySelectorAll('.mvs-bulk-cb:checked');
-								countEl.textContent = checked.length;
-								countWrap.classList.toggle('mvs-hidden', checked.length === 0);
-							}
-
-							selectAll.addEventListener('change', function() {
-								var boxes = form.querySelectorAll('.mvs-bulk-cb');
-								boxes.forEach(function(cb) { cb.checked = selectAll.checked; });
-								updateCount();
-							});
-
-							form.addEventListener('change', function(e) {
-								if (e.target.classList.contains('mvs-bulk-cb')) {
-									updateCount();
-								}
-							});
-
-							form.addEventListener('submit', function(e) {
-								var action = document.getElementById('mvs-bulk-action-select').value;
-								var checked = form.querySelectorAll('.mvs-bulk-cb:checked');
-								if (!action || checked.length === 0) {
-									e.preventDefault();
-									return;
-								}
-							});
-						})();
-						</script>
-
-						<?php
-						if ( $result['pages'] > 1 ) {
-							echo '<div class="tablenav bottom"><div class="tablenav-pages">';
-							echo wp_kses_post(
-								paginate_links(
-									array(
-										'base'    => add_query_arg( 'paged', '%#%' ),
-										'format'  => '',
-										'current' => $paged,
-										'total'   => $result['pages'],
-									)
-								)
-							);
-							echo '</div></div>';
+						function updateCount() {
+							var checked = form.querySelectorAll('.mvs-bulk-cb:checked');
+							countEl.textContent = checked.length;
+							countWrap.classList.toggle('mvs-hidden', checked.length === 0);
 						}
-						?>
-					<?php endif; ?>
-				</div>
+
+						selectAll.addEventListener('change', function() {
+							var boxes = form.querySelectorAll('.mvs-bulk-cb');
+							boxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+							updateCount();
+						});
+
+						form.addEventListener('change', function(e) {
+							if (e.target.classList.contains('mvs-bulk-cb')) {
+								updateCount();
+							}
+						});
+
+						form.addEventListener('submit', function(e) {
+							var action = document.getElementById('mvs-bulk-action-select').value;
+							var checked = form.querySelectorAll('.mvs-bulk-cb:checked');
+							if (!action || checked.length === 0) {
+								e.preventDefault();
+								return;
+							}
+						});
+					})();
+					</script>
+
+					<?php
+					if ( $result['pages'] > 1 ) {
+						echo '<div class="tablenav bottom"><div class="tablenav-pages">';
+						echo wp_kses_post(
+							paginate_links(
+								array(
+									'base'    => add_query_arg( 'paged', '%#%' ),
+									'format'  => '',
+									'current' => $paged,
+									'total'   => $result['pages'],
+								)
+							)
+						);
+						echo '</div></div>';
+					}
+					?>
+				<?php endif; ?>
 			</div>
 		</div>
 		<?php

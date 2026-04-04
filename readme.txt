@@ -111,19 +111,27 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 == Changelog ==
 
 = 1.1.0 =
+* New: Unified Load More across all layouts (event delegation, no page reloads)
+* New: Full-grid lightbox navigation (prev/next browses all loaded items)
+* New: Unified Moderation page — AI Flagged, Pending, User Reports (Pro), Resolved tabs
+* New: Unified Stats page — Overview + Video Analytics (Pro) tab
+* New: Activity logging for uploads, moderation, reports, and user actions
+* New: Settings page header bar with version badge and Setup Wizard link
 * Enhancement: Complete admin UX overhaul following wbcom-modern-admin rulebook
 * Enhancement: CSS design token system — 20 semantic tokens replace 90+ hardcoded hex values
-* Enhancement: Semantic badge variants (success, warn, danger, default, muted)
-* Enhancement: Canonical .mvs-card component aliases alongside .mvs-settings-card
-* Enhancement: Empty state components now include h3 titles on all admin pages
-* Enhancement: submit_button() CSS overrides cover all admin pages consistently
-* Fix: Accessibility — visible focus rings on settings nav via :focus-visible
-* Fix: Accessibility — aria-current="page" on active settings nav item
-* Fix: Accessibility — aria-label on media remove button
-* Fix: Accessibility — reduced-motion defense in toast notifications
+* Enhancement: Lightbox works for logged-out users (read-only reactions, comments visible)
+* Enhancement: REST API tag, category, search, scope, group_covers filters + stats in response
+* Enhancement: Cleaner admin menu — Migration, Reports, Analytics hidden from sidebar
+* Fix: Stats REST endpoint returns zeros for new media (was 404)
+* Fix: Confirm dialog dynamic button labels (Report/Delete)
+* Fix: Report dialog with reason dropdown selector
+* Fix: Third-party notice suppression on all admin pages including CPTs
+* Fix: Interactivity API shared-ui loading from build path
+* Fix: moderation_status filter on explore page
+* Fix: Unified per_page to use mvs_items_per_page setting everywhere
+* Fix: Accessibility — visible focus rings, aria-current, aria-label, reduced-motion
 * Fix: Removed all inline styles from admin PHP templates (14 instances)
-* Fix: Replaced WordPress .button class with mvs-btn in Collection meta box
-* Fix: Removed dead .mvs-quick-links .button CSS rule
+* Cleanup: Removed dead infinite scroll code
 
 = 1.0.0 =
 * Initial release — complete media platform for WordPress

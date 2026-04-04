@@ -2027,7 +2027,7 @@ class BuddyPressIntegration {
 
 		// Video without poster: show dark placeholder with play icon.
 		if ( 'video' === $media_type ) {
-			return '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . ' style="position:relative;overflow:hidden;"><a href="' . esc_url( $href ) . '" class="mvs-activity-vid-link"><span class="mvs-activity-play-icon" aria-hidden="true"></span><span class="mvs-activity-media-label">' . esc_html( $title ) . '</span></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . ' style="position:relative;overflow:hidden;"><a href="' . esc_url( $href ) . '" class="mvs-activity-vid-link" aria-label="' . esc_attr( sprintf( __( 'Play video: %s', 'wpmediaverse' ), $title ) ) . '"><span class="mvs-activity-play-icon" aria-hidden="true"></span><span class="mvs-activity-media-label">' . esc_html( $title ) . '</span></a></div>';
 		}
 
 		// Audio: show compact audio card.

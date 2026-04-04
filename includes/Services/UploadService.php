@@ -48,6 +48,7 @@ class UploadService {
 		$mime    = $this->detect_mime( $file['tmp_name'] );
 
 		if ( ! in_array( $mime, $allowed, true ) ) {
+			LoggerService::error( 'upload', 'Invalid file type rejected', array( 'mime' => $mime, 'user_id' => $user_id ) );
 			return new WP_Error(
 				'mvs_invalid_type',
 				__( 'This file type is not allowed.', 'wpmediaverse' ),
@@ -70,6 +71,7 @@ class UploadService {
 
 		$actual_size = filesize( $file['tmp_name'] );
 		if ( false === $actual_size || $actual_size > $max_size ) {
+			LoggerService::error( 'upload', 'File too large', array( 'size' => $actual_size, 'max' => $max_size, 'user_id' => $user_id ) );
 			return new WP_Error(
 				'mvs_file_too_large',
 				sprintf(
@@ -191,6 +193,7 @@ class UploadService {
 		$stored = $driver->store( $file['tmp_name'], $dest_path );
 
 		if ( ! $stored ) {
+			LoggerService::error( 'upload', 'Storage write failed', array( 'path' => $dest_path, 'user_id' => $user_id ) );
 			return new WP_Error(
 				'mvs_storage_failed',
 				__( 'Failed to store the uploaded file.', 'wpmediaverse' ),
@@ -248,6 +251,7 @@ class UploadService {
 
 		if ( ! $media_id ) {
 			$driver->delete( $dest_path );
+			LoggerService::error( 'upload', 'Database insert failed', array( 'user_id' => $user_id ) );
 			return new WP_Error(
 				'mvs_insert_failed',
 				__( 'Failed to create media record.', 'wpmediaverse' ),

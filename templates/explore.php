@@ -263,10 +263,11 @@ $mvs_archive_url = home_url( '/media/' );
 		<a class="mvs-tag-cloud-item <?php echo empty( $mvs_explore_ctx['activeTag'] ) && empty( $_GET['s'] ) ? 'active' : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>"
 			href="<?php echo esc_url( $mvs_archive_url ); ?>"><?php esc_html_e( 'All', 'wpmediaverse' ); ?></a>
 		<template data-wp-each="context.tags">
-			<a class="mvs-tag-cloud-item"
+			<a class="mvs-tag-cloud-item" href="#"
 				data-wp-bind--href="context.item.href"
 				data-wp-text="context.item.name"
-				data-wp-class--active="context.item.active"></a>
+				data-wp-class--active="context.item.active"
+				role="link"></a>
 		</template>
 	</div>
 

@@ -160,6 +160,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxUserReactionIsWow() { return state.lightboxUserReaction === 'wow'; },
 		get lightboxUserReactionIsSad() { return state.lightboxUserReaction === 'sad'; },
 		get lightboxUserReactionIsAngry() { return state.lightboxUserReaction === 'angry'; },
+		get lightboxIsOwner() {
+			const ctx = getContext();
+			const authorId = state.lightboxMediaData?.author;
+			return ctx.currentUserId > 0 && authorId > 0 && ctx.currentUserId === authorId;
+		},
 		get lightboxIsGroup() {
 			return state.lightboxGroupItems.length > 1;
 		},
@@ -668,6 +673,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			} else if ( navigator.clipboard ) {
 				navigator.clipboard.writeText( url );
 				actions.showToast( 'Link copied!', 'success' );
+			}
+		},
+		lightboxReport() {
+			// Navigate to the single media page where the full report dialog lives.
+			const url = state.lightboxMediaData?.link;
+			if ( url ) {
+				window.location.href = url + '#report';
 			}
 		},
 		lightboxPrev() {

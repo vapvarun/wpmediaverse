@@ -22,6 +22,104 @@ class LoggerService {
 	const PRUNE_DAYS = 30;
 
 	/**
+	 * Register action hooks for automatic logging of key operations.
+	 */
+	public static function register_hooks(): void {
+		// Media upload success.
+		add_action(
+			'mvs_media_uploaded',
+			function ( int $media_id, array $file_data ): void {
+				self::info(
+					'upload',
+					sprintf( 'Media uploaded: %s (%s)', $file_data['media_type'] ?? '', size_format( $file_data['file_size'] ?? 0 ) ),
+					array(
+						'media_id'   => $media_id,
+						'file_type'  => $file_data['file_type'] ?? '',
+						'file_size'  => $file_data['file_size'] ?? 0,
+						'media_type' => $file_data['media_type'] ?? '',
+					)
+				);
+			},
+			10,
+			2
+		);
+
+		// AI moderation flag.
+		add_action(
+			'mvs_media_flagged',
+			function ( int $media_id, array $result ): void {
+				self::warning(
+					'moderation',
+					'AI flagged media content',
+					array(
+						'media_id' => $media_id,
+						'flags'    => $result['flags'] ?? array(),
+						'provider' => $result['provider'] ?? '',
+					)
+				);
+			},
+			10,
+			2
+		);
+
+		// Moderation status change (approve/reject).
+		add_action(
+			'mvs_moderation_changed',
+			function ( int $media_id, string $status, string $old_status, int $user_id ): void {
+				self::info(
+					'moderation',
+					sprintf( 'Media moderation: %s → %s', $old_status, $status ),
+					array(
+						'media_id'     => $media_id,
+						'new_status'   => $status,
+						'old_status'   => $old_status,
+						'moderator_id' => $user_id,
+					)
+				);
+			},
+			10,
+			4
+		);
+
+		// User report submitted.
+		add_action(
+			'mvs_report_submitted',
+			function ( int $report_id, int $reporter_id, string $target_type, int $target_id, string $reason ): void {
+				self::info(
+					'report',
+					sprintf( 'Report submitted: %s #%d — %s', $target_type, $target_id, $reason ),
+					array(
+						'report_id'   => $report_id,
+						'reporter_id' => $reporter_id,
+						'target_type' => $target_type,
+						'target_id'   => $target_id,
+						'reason'      => $reason,
+					)
+				);
+			},
+			10,
+			5
+		);
+
+		// User blocked.
+		add_action(
+			'mvs_user_blocked',
+			function ( int $blocker_id, int $blocked_id ): void {
+				self::info(
+					'user',
+					sprintf( 'User #%d blocked user #%d', $blocker_id, $blocked_id ),
+					array(
+						'blocker_id' => $blocker_id,
+						'blocked_id' => $blocked_id,
+					)
+				);
+			},
+			10,
+			2
+		);
+	}
+
+	/**
 	 * Log an error.
 	 *
 	 * @param string $context  Context (e.g. 'storage', 'ai', 'webhook').
