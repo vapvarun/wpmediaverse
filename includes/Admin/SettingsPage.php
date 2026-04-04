@@ -1305,6 +1305,26 @@ class SettingsPage {
 			true
 		);
 		?>
+		<div class="wrap wpmediaverse-admin">
+			<!-- Page Header -->
+			<div class="mvs-settings-page-header">
+				<div class="mvs-settings-page-header__left">
+					<h1 class="mvs-settings-page-header__title">
+						<?php esc_html_e( 'WPMediaVerse', 'wpmediaverse' ); ?>
+						<span class="mvs-settings-page-header__version"><?php echo esc_html( 'v' . MVS_VERSION ); ?></span>
+					</h1>
+					<p class="mvs-settings-page-header__desc">
+						<?php esc_html_e( 'Media platform settings and configuration', 'wpmediaverse' ); ?>
+					</p>
+				</div>
+				<div class="mvs-settings-page-header__actions">
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-setup' ) ); ?>" class="mvs-btn">
+						<i data-lucide="wand-2" class="mvs-icon--sm"></i>
+						<?php esc_html_e( 'Run Setup Wizard', 'wpmediaverse' ); ?>
+					</a>
+				</div>
+			</div>
+
 		<div class="mvs-settings-wrap">
 			<!-- Sidebar -->
 			<div class="mvs-settings-sidebar">
@@ -1399,6 +1419,7 @@ class SettingsPage {
 				?>
 			</div>
 		</div>
+		</div><!-- .wrap -->
 		<?php
 	}
 

@@ -1139,6 +1139,61 @@ a.mvs-stat-card:focus {
 }
 
 /* ==========================================================================
+   Settings Page — Top Header Bar
+   ========================================================================== */
+
+.mvs-settings-page-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: var(--mvs-surface);
+	border: 1px solid var(--mvs-border);
+	border-radius: var(--mvs-radius-lg);
+	padding: 16px 24px;
+	margin: 20px 0 0;
+}
+
+.mvs-settings-page-header__title {
+	font-size: 20px;
+	font-weight: 600;
+	margin: 0;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.mvs-settings-page-header__version {
+	display: inline-block;
+	background: var(--mvs-bg);
+	border: 1px solid var(--mvs-border);
+	border-radius: var(--mvs-radius-sm);
+	padding: 2px 8px;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--mvs-text-muted);
+}
+
+.mvs-settings-page-header__desc {
+	margin: 4px 0 0;
+	font-size: 13px;
+	color: var(--mvs-text-muted);
+}
+
+.mvs-settings-page-header__actions {
+	display: flex;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+@media (max-width: 782px) {
+	.mvs-settings-page-header {
+		flex-direction: column;
+		gap: 12px;
+		align-items: flex-start;
+	}
+}
+
+/* ==========================================================================
    Settings Page — Sidebar Navigation Layout
    ========================================================================== */
 
