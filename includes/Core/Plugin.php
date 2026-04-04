@@ -726,8 +726,16 @@ class Plugin {
 		$is_mvs_tax = is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' );
 		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
 
+		// Detect mapped MVS pages (explore, dashboard, upload) — globals aren't set yet at enqueue time.
+		$mvs_page_ids = array_filter( array_map( 'absint', array(
+			get_option( 'mvs_page_explore', 0 ),
+			get_option( 'mvs_page_dashboard', 0 ),
+			get_option( 'mvs_page_upload', 0 ),
+		) ) );
+		$is_mvs_page = is_page( $mvs_page_ids );
+
 		// Always enqueue on MVS pages or pages with dashboard shortcode.
-		if ( $is_mvs || $is_archive || $is_mvs_tax || $is_mvs_tpl ) {
+		if ( $is_mvs || $is_archive || $is_mvs_tax || $is_mvs_tpl || $is_mvs_page ) {
 			wp_enqueue_style(
 				'mvs-frontend',
 				MVS_PLUGIN_URL . 'assets/css/frontend.css',
@@ -1108,7 +1116,15 @@ class Plugin {
 		$is_mvs_tax = is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' );
 		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
 
-		if ( ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl ) {
+		// Detect mapped MVS pages.
+		$mvs_shell_page_ids = array_filter( array_map( 'absint', array(
+			get_option( 'mvs_page_explore', 0 ),
+			get_option( 'mvs_page_dashboard', 0 ),
+			get_option( 'mvs_page_upload', 0 ),
+		) ) );
+		$is_mvs_shell_page = ! empty( $mvs_shell_page_ids ) && is_page( $mvs_shell_page_ids );
+
+		if ( ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl && ! $is_mvs_shell_page ) {
 			return;
 		}
 
