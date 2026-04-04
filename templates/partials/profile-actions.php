@@ -12,6 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
+$mvs_is_own_profile = $mvs_is_own_profile ?? $mvs_is_own ?? false;
 if ( ! isset( $mvs_profile_id ) || $mvs_is_own_profile || ! is_user_logged_in() ) {
 	return;
 }
