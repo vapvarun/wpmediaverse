@@ -496,7 +496,7 @@ class OverviewPage {
 
 		</div>
 	</div>
-	<?php
+		<?php
 	}
 
 	/**

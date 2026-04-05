@@ -214,10 +214,10 @@ class ModerationQueue {
 					<p>
 						<?php
 						$update_messages = array(
-							'approve'       => __( 'Media item approved.', 'wpmediaverse' ),
-							'reject'        => __( 'Media item rejected.', 'wpmediaverse' ),
-							'resolved'      => __( 'Report marked as resolved.', 'wpmediaverse' ),
-							'dismissed'     => __( 'Report dismissed.', 'wpmediaverse' ),
+							'approve'   => __( 'Media item approved.', 'wpmediaverse' ),
+							'reject'    => __( 'Media item rejected.', 'wpmediaverse' ),
+							'resolved'  => __( 'Report marked as resolved.', 'wpmediaverse' ),
+							'dismissed' => __( 'Report dismissed.', 'wpmediaverse' ),
 						);
 						if ( isset( $update_messages[ $updated ] ) ) {
 							echo esc_html( $update_messages[ $updated ] );
@@ -243,16 +243,16 @@ class ModerationQueue {
 			<nav class="mvs-admin-tabs">
 				<?php foreach ( $tabs as $slug => $tab ) : ?>
 					<?php
-					$tab_url = add_query_arg(
+					$tab_url   = add_query_arg(
 						array(
 							'page' => self::PAGE_SLUG,
 							'tab'  => $slug,
 						),
 						admin_url( 'admin.php' )
 					);
-					$count      = isset( $tab['count'] ) ? (int) $tab['count'] : 0;
-					$is_active  = ( $slug === $active_tab );
-					$count_cls  = $count > 0 ? 'mvs-tab-count' : 'mvs-tab-count mvs-tab-count--zero';
+					$count     = isset( $tab['count'] ) ? (int) $tab['count'] : 0;
+					$is_active = ( $slug === $active_tab );
+					$count_cls = $count > 0 ? 'mvs-tab-count' : 'mvs-tab-count mvs-tab-count--zero';
 					?>
 					<a href="<?php echo esc_url( $tab_url ); ?>"
 						class="mvs-admin-tab <?php echo $is_active ? 'is-active' : ''; ?>">

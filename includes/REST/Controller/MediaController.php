@@ -1014,7 +1014,7 @@ class MediaController extends WP_REST_Controller {
 	 */
 	public function get_collection_params() {
 		return array(
-			'per_page'   => array(
+			'per_page'     => array(
 				'type'              => 'integer',
 				'default'           => 20,
 				'minimum'           => 1,
@@ -1028,22 +1028,22 @@ class MediaController extends WP_REST_Controller {
 				'maximum'           => apply_filters( 'mvs_rest_pagination_max', 100 ),
 				'sanitize_callback' => 'absint',
 			),
-			'page'       => array(
+			'page'         => array(
 				'type'              => 'integer',
 				'default'           => 1,
 				'minimum'           => 1,
 				'sanitize_callback' => 'absint',
 			),
-			'media_type' => array(
+			'media_type'   => array(
 				'type'              => 'string',
 				'enum'              => array( 'image', 'video', 'audio', 'document' ),
 				'sanitize_callback' => 'sanitize_text_field',
 			),
-			'author'     => array(
+			'author'       => array(
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
 			),
-			'slug'       => array(
+			'slug'         => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_title',
 			),
