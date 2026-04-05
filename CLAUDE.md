@@ -24,7 +24,8 @@
 | Namespace | Responsibility | Key Classes |
 |-----------|---------------|-------------|
 | `Core\` | Bootstrap, DI container, migrations, templates | `Plugin`, `ServiceContainer`, `Migrator`, `Loader`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers`, `Abilities` |
-| `Admin\` | WP admin pages, settings, moderation queue | `SettingsPage`, `OverviewPage`, `StatsPage`, `ModerationQueue`, `LogViewerPage`, `SetupWizard`, `CollectionMetaBox`, `MediaListPage` |
+| `Admin\` | WP admin pages, moderation queue | `OverviewPage`, `StatsPage`, `ModerationQueue`, `LogViewerPage`, `SetupWizard`, `CollectionMetaBox`, `MediaListPage` |
+| `Admin\Settings\` | Settings page (5 focused classes) | `SettingsPage`, `SettingsRegistrar`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
 | `REST\Controller\` | REST API endpoints (18 controllers) | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `AccessController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController` |
 | `REST\` | Rate limiting middleware | `RateLimiter` |
 | `Services\` | Business logic, storage, AI, caching | `UploadService`, `StorageService`, `PrivacyService`, `AlbumService`, `CollectionService`, `StoryService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AccessRulesService`, `SignedUrlService`, `WatermarkService`, `CacheService`, `LoggerService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `LocalDriver` |
@@ -137,7 +138,7 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 | File | Lines | Status |
 |------|------:|--------|
 | `includes/Integrations/BuddyPress/` | DONE | Split into 7 classes (was 2,811-line god class) |
-| `includes/Admin/SettingsPage.php` | 2,401 | God class — needs section-per-file refactor |
+| `includes/Admin/Settings/` | DONE | Split into 5 classes (was 2,401-line god class) |
 | `includes/Messaging/MessagingService.php` | 1,606 | God class — extract conversation/message sub-services |
 | `includes/Core/Plugin.php` | 1,208 | Bootstrap monolith — acceptable but avoid adding logic |
 | `includes/REST/Controller/MediaController.php` | 1,105 | Largest controller — extract bulk/filter helpers |
