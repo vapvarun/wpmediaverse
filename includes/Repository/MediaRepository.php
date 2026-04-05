@@ -280,6 +280,368 @@ class MediaRepository {
 	}
 
 	/**
+	 * Look up a media item by its slug.
+	 *
+	 * @param string $slug   Media slug.
+	 * @param string $status Post status to match.
+	 * @return array|null Row as associative array or null.
+	 */
+	public static function get_by_slug( string $slug, string $status = 'publish' ): ?array {
+		global $wpdb;
+
+		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s AND status = %s LIMIT 1",
+				$slug,
+				$status
+			),
+			ARRAY_A
+		);
+
+		return $row ?: null;
+	}
+
+	/**
+	 * Fetch multiple media items by their IDs.
+	 *
+	 * @param array $media_ids Array of media IDs.
+	 * @return array Associative array keyed by media_id.
+	 */
+	public static function get_batch( array $media_ids ): array {
+		global $wpdb;
+
+		if ( empty( $media_ids ) ) {
+			return array();
+		}
+
+		$media_ids    = array_map( 'absint', $media_ids );
+		$placeholders = implode( ',', array_fill( 0, count( $media_ids ), '%d' ) );
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE media_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$media_ids
+			),
+			ARRAY_A
+		);
+
+		$result = array();
+		foreach ( $rows as $row ) {
+			$result[ $row['media_id'] ] = $row;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Find a media ID by a specific meta key-value pair.
+	 *
+	 * @param string $meta_key   Meta key to search.
+	 * @param string $meta_value Meta value to match.
+	 * @return int|null Media ID or null if not found.
+	 */
+	public static function find_by_meta( string $meta_key, string $meta_value ): ?int {
+		global $wpdb;
+
+		$id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = %s AND meta_value = %s LIMIT 1",
+				$meta_key,
+				$meta_value
+			)
+		);
+
+		return $id ? (int) $id : null;
+	}
+
+	/* ---------------------------------------------------------------
+	 * Count Methods
+	 * ------------------------------------------------------------- */
+
+	/**
+	 * Count all published media items.
+	 *
+	 * @return int
+	 */
+	public static function count_published(): int {
+		global $wpdb;
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = %s",
+				'publish'
+			)
+		);
+	}
+
+	/**
+	 * Count media items by a specific author.
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $status  Post status to match.
+	 * @return int
+	 */
+	public static function count_by_author( int $user_id, string $status = 'publish' ): int {
+		global $wpdb;
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = %s",
+				$user_id,
+				$status
+			)
+		);
+	}
+
+	/**
+	 * Count media items by moderation status.
+	 *
+	 * @param string $status Moderation status.
+	 * @return int
+	 */
+	public static function count_by_moderation( string $status ): int {
+		global $wpdb;
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE moderation_status = %s",
+				$status
+			)
+		);
+	}
+
+	/**
+	 * Get counts grouped by moderation status.
+	 *
+	 * @return array Associative array of status => count.
+	 */
+	public static function get_moderation_counts(): array {
+		global $wpdb;
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			"SELECT moderation_status, COUNT(*) as cnt FROM {$wpdb->prefix}mvs_media_index GROUP BY moderation_status",
+			ARRAY_A
+		);
+
+		$counts = array();
+		foreach ( $rows as $row ) {
+			$counts[ $row['moderation_status'] ] = (int) $row['cnt'];
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * Count published media items belonging to a BuddyPress group.
+	 *
+	 * @param string $group_id Group ID stored in meta.
+	 * @return int
+	 */
+	public static function count_by_group( string $group_id ): int {
+		global $wpdb;
+
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$meta_table  = $wpdb->prefix . 'mvs_media_meta';
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$index_table} mi
+				JOIN {$meta_table} mm ON mi.media_id = mm.media_id
+				WHERE mm.meta_key = 'group_id' AND mm.meta_value = %s AND mi.status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$group_id
+			)
+		);
+	}
+
+	/* ---------------------------------------------------------------
+	 * Stats Methods
+	 * ------------------------------------------------------------- */
+
+	/**
+	 * Get aggregated statistics for a media item.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return array|null Stats row or null.
+	 */
+	public static function get_stats( int $media_id ): ?array {
+		global $wpdb;
+
+		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT views, downloads, reactions, comments, shares, updated_at FROM {$wpdb->prefix}mvs_media_stats WHERE media_id = %d",
+				$media_id
+			),
+			ARRAY_A
+		);
+
+		return $row ?: null;
+	}
+
+	/**
+	 * Get aggregated statistics for a user across all their published media.
+	 *
+	 * @param int $user_id User ID.
+	 * @return array Stats with total_media, total_views, total_downloads, total_reactions, total_comments, total_shares.
+	 */
+	public static function get_user_stats( int $user_id ): array {
+		global $wpdb;
+
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$stats_table = $wpdb->prefix . 'mvs_media_stats';
+
+		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT
+					COUNT(*) as total_media,
+					COALESCE(SUM(s.views), 0) as total_views,
+					COALESCE(SUM(s.downloads), 0) as total_downloads,
+					COALESCE(SUM(s.reactions), 0) as total_reactions,
+					COALESCE(SUM(s.comments), 0) as total_comments,
+					COALESCE(SUM(s.shares), 0) as total_shares
+				FROM {$index_table} i
+				LEFT JOIN {$stats_table} s ON i.media_id = s.media_id
+				WHERE i.post_author = %d AND i.status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id
+			),
+			ARRAY_A
+		);
+
+		$defaults = array(
+			'total_media'     => 0,
+			'total_views'     => 0,
+			'total_downloads' => 0,
+			'total_reactions' => 0,
+			'total_comments'  => 0,
+			'total_shares'    => 0,
+		);
+
+		return $row ? array_map( 'intval', $row ) : $defaults;
+	}
+
+	/**
+	 * Initialize a stats row for a media item with all zeros.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool True on success.
+	 */
+	public static function init_stats( int $media_id ): bool {
+		global $wpdb;
+
+		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_media_stats',
+			array(
+				'media_id'   => $media_id,
+				'views'      => 0,
+				'downloads'  => 0,
+				'reactions'  => 0,
+				'comments'   => 0,
+				'shares'     => 0,
+				'updated_at' => current_time( 'mysql', true ),
+			),
+			array( '%d', '%d', '%d', '%d', '%d', '%d', '%s' )
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Increment a single stat column by 1.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $column   Column name (views, downloads, reactions, comments, shares).
+	 * @return bool True on success.
+	 */
+	public static function increment_stat( int $media_id, string $column ): bool {
+		global $wpdb;
+
+		$allowed = array( 'views', 'downloads', 'reactions', 'comments', 'shares' );
+		if ( ! in_array( $column, $allowed, true ) ) {
+			return false;
+		}
+
+		$result = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}mvs_media_stats SET `{$column}` = `{$column}` + 1, updated_at = %s WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				current_time( 'mysql', true ),
+				$media_id
+			)
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Set a single stat column to a specific value.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $column   Column name (views, downloads, reactions, comments, shares).
+	 * @param int    $value    Value to set.
+	 * @return bool True on success.
+	 */
+	public static function set_stat( int $media_id, string $column, int $value ): bool {
+		global $wpdb;
+
+		$allowed = array( 'views', 'downloads', 'reactions', 'comments', 'shares' );
+		if ( ! in_array( $column, $allowed, true ) ) {
+			return false;
+		}
+
+		$result = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}mvs_media_stats SET `{$column}` = %d, updated_at = %s WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$value,
+				current_time( 'mysql', true ),
+				$media_id
+			)
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Record a view/event for analytics tracking.
+	 *
+	 * @param int    $media_id   Media ID.
+	 * @param int    $user_id    User ID (0 for guests).
+	 * @param string $ip_hash    Hashed IP address.
+	 * @param string $event_type Event type (default: 'view').
+	 */
+	public static function record_event( int $media_id, int $user_id, string $ip_hash, string $event_type = 'view' ): void {
+		global $wpdb;
+
+		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_media_views',
+			array(
+				'media_id'   => $media_id,
+				'user_id'    => $user_id,
+				'ip_hash'    => $ip_hash,
+				'event_type' => $event_type,
+				'created_at' => current_time( 'mysql', true ),
+			),
+			array( '%d', '%d', '%s', '%s', '%s' )
+		);
+	}
+
+	/**
+	 * Prune old view/event records beyond a given age.
+	 *
+	 * @param int $days_old Number of days to retain (default: 90).
+	 * @return int Number of deleted rows.
+	 */
+	public static function prune_events( int $days_old = 90 ): int {
+		global $wpdb;
+
+		$deleted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->prefix}mvs_media_views WHERE created_at < DATE_SUB(NOW(), INTERVAL %d DAY)",
+				$days_old
+			)
+		);
+
+		return (int) $deleted;
+	}
+
+	/**
 	 * Get the author (owner) of a media item.
 	 *
 	 * @param int $media_id Media ID.
