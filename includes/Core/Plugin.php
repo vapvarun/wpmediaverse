@@ -66,7 +66,7 @@ use WPMediaVerse\REST\Controller\ReportController;
 use WPMediaVerse\REST\Controller\ActivityController;
 use WPMediaVerse\REST\Controller\ProfileController;
 use WPMediaVerse\Services\ProfileService;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Main plugin bootstrap class.
@@ -489,6 +489,13 @@ class Plugin {
 				$service = new ProfileService();
 				$service->init();
 				return $service;
+			}
+		);
+
+		self::$container->register(
+			'media_repository',
+			function () {
+				return new MediaRepository();
 			}
 		);
 	}
