@@ -15,7 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Social\ReactionService;
 
 /**
@@ -233,6 +233,6 @@ class ReactionController extends WP_REST_Controller {
 	 * @return bool
 	 */
 	private function media_exists( int $media_id ): bool {
-		return MediaMeta::exists( $media_id );
+		return MediaRepository::exists( $media_id );
 	}
 }

@@ -16,7 +16,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\REST\RateLimiter;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * REST controller for bulk media operations.
@@ -133,8 +133,8 @@ class BulkController extends WP_REST_Controller {
 		$deleted = 0;
 
 		foreach ( $media_ids as $media_id ) {
-			$author_id = MediaMeta::get_author( $media_id );
-			$file_path = MediaMeta::get( $media_id, 'file_path' );
+			$author_id = MediaRepository::get_author( $media_id );
+			$file_path = MediaRepository::get( $media_id, 'file_path' );
 
 			// Delete stored file.
 			if ( $file_path ) {
@@ -143,7 +143,7 @@ class BulkController extends WP_REST_Controller {
 			}
 
 			// Delete from custom tables.
-			MediaMeta::delete_all( $media_id );
+			MediaRepository::delete_all( $media_id );
 			$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->delete( $wpdb->prefix . 'mvs_reactions', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->delete( $wpdb->prefix . 'mvs_favorites', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -230,7 +230,7 @@ class BulkController extends WP_REST_Controller {
 		$updated = 0;
 
 		foreach ( $media_ids as $media_id ) {
-			MediaMeta::set( $media_id, 'privacy', $privacy );
+			MediaRepository::set( $media_id, 'privacy', $privacy );
 			++$updated;
 		}
 
@@ -257,10 +257,10 @@ class BulkController extends WP_REST_Controller {
 		return array_filter(
 			$media_ids,
 			function ( $media_id ) use ( $user_id, $can_edit_others ) {
-				if ( ! MediaMeta::exists( $media_id ) ) {
+				if ( ! MediaRepository::exists( $media_id ) ) {
 					return false;
 				}
-				return $can_edit_others || MediaMeta::get_author( $media_id ) === $user_id;
+				return $can_edit_others || MediaRepository::get_author( $media_id ) === $user_id;
 			}
 		);
 	}

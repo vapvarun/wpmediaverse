@@ -10,7 +10,7 @@ namespace WPMediaVerse\Messaging;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 class MessagingService {
 
@@ -1510,18 +1510,18 @@ class MessagingService {
 	 * @return array|null
 	 */
 	private function get_media_share_data( int $media_id ) {
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return null;
 		}
 
 		$data = array(
 			'id'        => $media_id,
-			'title'     => MediaMeta::get( $media_id, 'title' ),
-			'permalink' => MediaMeta::get_permalink( $media_id ),
-			'type'      => MediaMeta::get( $media_id, 'media_type' ) ?: 'image',
+			'title'     => MediaRepository::get( $media_id, 'title' ),
+			'permalink' => MediaRepository::get_permalink( $media_id ),
+			'type'      => MediaRepository::get( $media_id, 'media_type' ) ?: 'image',
 		);
 
-		$file_url = MediaMeta::get( $media_id, 'file_url' );
+		$file_url = MediaRepository::get( $media_id, 'file_url' );
 		if ( $file_url ) {
 			$data['thumbnail'] = set_url_scheme( $file_url );
 		}

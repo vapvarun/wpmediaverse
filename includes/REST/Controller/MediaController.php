@@ -17,7 +17,7 @@ use WP_REST_Server;
 use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\REST\RateLimiter;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Services\PrivacyService;
 
 /**
@@ -431,7 +431,7 @@ class MediaController extends WP_REST_Controller {
 	 */
 	public function get_item( $request ) {
 		$media_id = (int) $request->get_param( 'id' );
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -447,11 +447,11 @@ class MediaController extends WP_REST_Controller {
 	public function get_group_items( $request ) {
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$group_id = MediaMeta::get( $media_id, 'media_group' );
+		$group_id = MediaRepository::get( $media_id, 'media_group' );
 		if ( ! $group_id ) {
 			return rest_ensure_response( array( $this->prepare_item_for_response( $media_id, $request ) ) );
 		}
@@ -553,20 +553,20 @@ class MediaController extends WP_REST_Controller {
 		// Store media group (gallery post) metadata.
 		$media_group = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
 		if ( $media_group ) {
-			MediaMeta::set( $media_id, 'media_group', $media_group );
+			MediaRepository::set( $media_id, 'media_group', $media_group );
 			$group_position = absint( $request->get_param( 'group_position' ) );
-			MediaMeta::set( $media_id, 'group_position', $group_position );
+			MediaRepository::set( $media_id, 'group_position', $group_position );
 			if ( 0 === $group_position ) {
-				MediaMeta::set( $media_id, 'group_cover', 1 );
+				MediaRepository::set( $media_id, 'group_cover', 1 );
 			}
 		}
 
 		// Set group association if group_id is provided and user is a member.
 		$group_id = absint( $request->get_param( 'group_id' ) );
 		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
-			// privacy is an index column — MediaMeta::set writes directly to mvs_media_index.
-			MediaMeta::set( $media_id, 'privacy', 'group' );
-			MediaMeta::set( $media_id, 'group_id', $group_id );
+			// privacy is an index column — MediaRepository::set writes directly to mvs_media_index.
+			MediaRepository::set( $media_id, 'privacy', 'group' );
+			MediaRepository::set( $media_id, 'group_id', $group_id );
 
 			/**
 			 * Fires after media is assigned to a group.
@@ -597,7 +597,7 @@ class MediaController extends WP_REST_Controller {
 
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -606,7 +606,7 @@ class MediaController extends WP_REST_Controller {
 		$title = $request->get_param( 'title' );
 		if ( null !== $title ) {
 			$update_data['title'] = sanitize_text_field( $title );
-			$update_data['slug']  = MediaMeta::generate_unique_slug( $update_data['title'] );
+			$update_data['slug']  = MediaRepository::generate_unique_slug( $update_data['title'] );
 		}
 
 		$description = $request->get_param( 'description' );
@@ -622,7 +622,7 @@ class MediaController extends WP_REST_Controller {
 
 		// Write all index/meta changes in one call.
 		if ( ! empty( $update_data ) ) {
-			MediaMeta::set_many( $media_id, $update_data );
+			MediaRepository::set_many( $media_id, $update_data );
 		}
 
 		// Update tags if provided.
@@ -654,14 +654,14 @@ class MediaController extends WP_REST_Controller {
 
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$author_id = MediaMeta::get_author( $media_id );
+		$author_id = MediaRepository::get_author( $media_id );
 
 		// Delete stored file.
-		$file_path = MediaMeta::get( $media_id, 'file_path' );
+		$file_path = MediaRepository::get( $media_id, 'file_path' );
 		if ( $file_path ) {
 			$storage = Plugin::container()->get( 'storage' );
 			$storage->get_driver()->delete( $file_path );
@@ -669,7 +669,7 @@ class MediaController extends WP_REST_Controller {
 
 		// Remove from custom tables.
 		global $wpdb;
-		MediaMeta::delete_all( $media_id );
+		MediaRepository::delete_all( $media_id );
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 		// Remove taxonomy relationships.
@@ -705,7 +705,7 @@ class MediaController extends WP_REST_Controller {
 
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -753,17 +753,17 @@ class MediaController extends WP_REST_Controller {
 	public function check_access( $request ) {
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		$user_id  = get_current_user_id();
 		$can_view = $this->privacy->can_view( $media_id, $user_id );
-		$is_owner = $user_id && MediaMeta::get_author( $media_id ) === $user_id;
+		$is_owner = $user_id && MediaRepository::get_author( $media_id ) === $user_id;
 
 		// Only expose privacy details to users who can view or own the media.
 		if ( $can_view || $is_owner ) {
-			$privacy_meta = MediaMeta::get( $media_id, 'privacy' );
+			$privacy_meta = MediaRepository::get( $media_id, 'privacy' );
 			return rest_ensure_response(
 				array(
 					'media_id' => $media_id,
@@ -815,7 +815,7 @@ class MediaController extends WP_REST_Controller {
 	public function get_item_permissions_check( $request ) {
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -837,11 +837,11 @@ class MediaController extends WP_REST_Controller {
 		$media_id = (int) $request->get_param( 'id' );
 		$user_id  = get_current_user_id();
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		if ( MediaMeta::get_author( $media_id ) === $user_id && current_user_can( 'edit_mvs_medias' ) ) {
+		if ( MediaRepository::get_author( $media_id ) === $user_id && current_user_can( 'edit_mvs_medias' ) ) {
 			return true;
 		}
 
@@ -862,11 +862,11 @@ class MediaController extends WP_REST_Controller {
 		$media_id = (int) $request->get_param( 'id' );
 		$user_id  = get_current_user_id();
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		if ( MediaMeta::get_author( $media_id ) === $user_id && current_user_can( 'delete_mvs_medias' ) ) {
+		if ( MediaRepository::get_author( $media_id ) === $user_id && current_user_can( 'delete_mvs_medias' ) ) {
 			return true;
 		}
 
@@ -891,7 +891,7 @@ class MediaController extends WP_REST_Controller {
 		global $wpdb;
 
 		$media_id = (int) $media_id;
-		$all      = MediaMeta::get_all( $media_id );
+		$all      = MediaRepository::get_all( $media_id );
 
 		if ( empty( $all ) ) {
 			return null;
@@ -912,7 +912,7 @@ class MediaController extends WP_REST_Controller {
 			'description'       => ! empty( $all['description'] ) ? $all['description'] : '',
 			'author'            => ! empty( $all['post_author'] ) ? (int) $all['post_author'] : 0,
 			'date'              => ! empty( $all['created_at'] ) ? $all['created_at'] : '',
-			'link'              => MediaMeta::get_permalink( $media_id ),
+			'link'              => MediaRepository::get_permalink( $media_id ),
 			'file_url'          => $file_url,
 			'file_size'         => ! empty( $all['file_size'] ) ? (int) $all['file_size'] : 0,
 			'file_type'         => ! empty( $all['file_type'] ) ? $all['file_type'] : '',

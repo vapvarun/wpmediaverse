@@ -10,7 +10,7 @@ namespace WPMediaVerse\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\TemplateHelpers;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Overview page — the landing page under WPMediaVerse admin menu.
@@ -390,7 +390,7 @@ class OverviewPage {
 											$item_author   = (int) ( $item['post_author'] ?? 0 );
 											$item_date     = $item['created_at'] ?? '';
 											$thumb_url     = $item_media_id ? TemplateHelpers::get_thumb_url( $item_media_id, 'thumbnail' ) : '';
-											$view_url      = $item_media_id ? MediaMeta::get_permalink( $item_media_id ) : '';
+											$view_url      = $item_media_id ? MediaRepository::get_permalink( $item_media_id ) : '';
 											$link_url      = $view_url;
 											?>
 											<tr>

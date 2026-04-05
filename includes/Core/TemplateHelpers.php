@@ -5,7 +5,7 @@
  * Shared rendering utilities used by all templates and BuddyPress integration
  * to ensure consistent thumbnail resolution, placeholders, and grid markup.
  *
- * All media lookups go through mvs_media_index / MediaMeta -- never get_post().
+ * All media lookups go through mvs_media_index / MediaRepository -- never get_post().
  *
  * @package WPMediaVerse
  */
@@ -14,7 +14,7 @@ namespace WPMediaVerse\Core;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Static helper methods for template rendering.
@@ -44,27 +44,27 @@ class TemplateHelpers {
 		$meta_key = $size_map[ $size ] ?? 'thumb_large';
 
 		// Try our custom thumbnail first.
-		$thumb = MediaMeta::get( $media_id, $meta_key );
+		$thumb = MediaRepository::get( $media_id, $meta_key );
 		if ( $thumb ) {
 			return set_url_scheme( $thumb );
 		}
 
 		// Fallback: try larger sizes, then file_url for images.
 		if ( 'thumb_thumb' === $meta_key ) {
-			$thumb = MediaMeta::get( $media_id, 'thumb_medium' );
+			$thumb = MediaRepository::get( $media_id, 'thumb_medium' );
 			if ( $thumb ) {
 				return set_url_scheme( $thumb );
 			}
 		}
 		if ( 'thumb_thumb' === $meta_key || 'thumb_medium' === $meta_key ) {
-			$thumb = MediaMeta::get( $media_id, 'thumb_large' );
+			$thumb = MediaRepository::get( $media_id, 'thumb_large' );
 			if ( $thumb ) {
 				return set_url_scheme( $thumb );
 			}
 		}
 
 		// For images, raw file_url works as final fallback.
-		$file_url = MediaMeta::get( $media_id, 'file_url' );
+		$file_url = MediaRepository::get( $media_id, 'file_url' );
 		if ( 'image' === $media_type && $file_url ) {
 			return set_url_scheme( $file_url );
 		}
@@ -79,13 +79,13 @@ class TemplateHelpers {
 	 * @return string One of: image, video, audio, document.
 	 */
 	public static function get_media_type( int $media_id ): string {
-		$media_type = MediaMeta::get( $media_id, 'media_type' );
+		$media_type = MediaRepository::get( $media_id, 'media_type' );
 		if ( $media_type ) {
 			return $media_type;
 		}
 
 		// Fallback: derive from MIME type.
-		$file_type = MediaMeta::get( $media_id, 'file_type' );
+		$file_type = MediaRepository::get( $media_id, 'file_type' );
 		if ( $file_type ) {
 			if ( strpos( $file_type, 'image/' ) === 0 ) {
 				return 'image';
@@ -159,7 +159,7 @@ class TemplateHelpers {
 		$media_type = self::get_media_type( $media_id );
 
 		if ( ! $alt ) {
-			$title = MediaMeta::get( $media_id, 'title' );
+			$title = MediaRepository::get( $media_id, 'title' );
 			$alt   = $title ? $title : '';
 		}
 
@@ -186,7 +186,7 @@ class TemplateHelpers {
 	/**
 	 * Render a complete grid item (thumbnail + overlay + info row).
 	 *
-	 * Reads media data from mvs_media_index via MediaMeta -- no get_post().
+	 * Reads media data from mvs_media_index via MediaRepository -- no get_post().
 	 *
 	 * @param int   $media_id Media ID (mvs_media_index.media_id).
 	 * @param array $stats    Optional stats array with 'views', 'reactions', 'comments' keys.
@@ -203,7 +203,7 @@ class TemplateHelpers {
 		$size         = $options['size'] ?? get_option( 'mvs_thumbnail_size', 'large' );
 
 		// Read core fields from mvs_media_index.
-		$media_row = MediaMeta::get_all( $media_id );
+		$media_row = MediaRepository::get_all( $media_id );
 		if ( empty( $media_row ) || empty( $media_row['media_id'] ) ) {
 			return;
 		}
@@ -214,7 +214,7 @@ class TemplateHelpers {
 
 		$media_title = $media_row['title'] ?? '';
 		$author_id   = (int) ( $media_row['post_author'] ?? 0 );
-		$permalink   = MediaMeta::get_permalink( $media_id );
+		$permalink   = MediaRepository::get_permalink( $media_id );
 		$views       = isset( $stats['views'] ) ? (int) $stats['views'] : 0;
 		$reactions   = isset( $stats['reactions'] ) ? (int) $stats['reactions'] : 0;
 		$comments    = isset( $stats['comments'] ) ? (int) $stats['comments'] : 0;
@@ -228,12 +228,12 @@ class TemplateHelpers {
 		}
 
 		// Check if this is a gallery group cover.
-		$media_group = MediaMeta::get( $media_id, 'media_group' );
+		$media_group = MediaRepository::get( $media_id, 'media_group' );
 		$group_count = 0;
 		$is_gallery  = false;
 		if ( $media_group ) {
 			$is_gallery  = true;
-			$group_count = (int) MediaMeta::get( $media_id, 'group_count_cache' );
+			$group_count = (int) MediaRepository::get( $media_id, 'group_count_cache' );
 			if ( ! $group_count ) {
 				global $wpdb;
 				$group_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

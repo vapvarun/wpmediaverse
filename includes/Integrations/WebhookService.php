@@ -9,7 +9,7 @@ namespace WPMediaVerse\Integrations;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Outbound webhook system for media events.
@@ -259,7 +259,7 @@ class WebhookService {
 	 * @return array
 	 */
 	private function build_media_payload( int $media_id ): array {
-		$data = MediaMeta::get_all( $media_id );
+		$data = MediaRepository::get_all( $media_id );
 		if ( empty( $data ) ) {
 			return array( 'media_id' => $media_id );
 		}
@@ -268,7 +268,7 @@ class WebhookService {
 			'media_id'  => $media_id,
 			'title'     => $data['title'] ?? '',
 			'author'    => (int) ( $data['post_author'] ?? 0 ),
-			'url'       => MediaMeta::get_permalink( $media_id ),
+			'url'       => MediaRepository::get_permalink( $media_id ),
 			'file_url'  => $data['file_url'] ?? '',
 			'file_type' => $data['file_type'] ?? '',
 			'privacy'   => $data['privacy'] ?? 'public',

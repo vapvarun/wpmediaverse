@@ -11,7 +11,7 @@ namespace WPMediaVerse\Shortcodes;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Registers and renders all WPMediaVerse shortcodes.
@@ -375,17 +375,17 @@ class Shortcodes {
 		$output  = '<div class="mvs-media-grid mvs-collection-embed" style="--mvs-grid-cols: ' . $columns . '">';
 
 		foreach ( $media_ids as $media_id ) {
-			if ( ! MediaMeta::exists( $media_id ) ) {
+			if ( ! MediaRepository::exists( $media_id ) ) {
 				continue;
 			}
-			$status = MediaMeta::get( $media_id, 'status' );
+			$status = MediaRepository::get( $media_id, 'status' );
 			if ( 'publish' !== $status ) {
 				continue;
 			}
-			$title      = MediaMeta::get( $media_id, 'title' );
-			$file_url   = MediaMeta::get( $media_id, 'file_url' );
-			$media_type = MediaMeta::get( $media_id, 'media_type' ) ?: 'image';
-			$permalink  = MediaMeta::get_permalink( $media_id );
+			$title      = MediaRepository::get( $media_id, 'title' );
+			$file_url   = MediaRepository::get( $media_id, 'file_url' );
+			$media_type = MediaRepository::get( $media_id, 'media_type' ) ?: 'image';
+			$permalink  = MediaRepository::get_permalink( $media_id );
 
 			$output .= '<div class="mvs-grid-item">';
 			$output .= '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';

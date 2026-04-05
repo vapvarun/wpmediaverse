@@ -11,6 +11,8 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Repository\MediaRepository;
+
 /**
  * Manages time-limited media stories.
  */
@@ -52,8 +54,8 @@ class StoryService {
 	public function create( int $media_id, int $duration_hours = self::DEFAULT_DURATION_HOURS ): string {
 		$expires_at = gmdate( 'Y-m-d H:i:s', time() + ( $duration_hours * HOUR_IN_SECONDS ) );
 
-		MediaMeta::set( $media_id, 'is_story', '1' );
-		MediaMeta::set( $media_id, 'story_expires_at', $expires_at );
+		MediaRepository::set( $media_id, 'is_story', '1' );
+		MediaRepository::set( $media_id, 'story_expires_at', $expires_at );
 
 		/**
 		 * Fires after a story is created.
@@ -73,12 +75,12 @@ class StoryService {
 	 * @return bool
 	 */
 	public function is_active( int $media_id ): bool {
-		$is_story = MediaMeta::get( $media_id, 'is_story' );
+		$is_story = MediaRepository::get( $media_id, 'is_story' );
 		if ( '1' !== $is_story ) {
 			return false;
 		}
 
-		$expires_at = MediaMeta::get( $media_id, 'story_expires_at' );
+		$expires_at = MediaRepository::get( $media_id, 'story_expires_at' );
 		if ( ! $expires_at ) {
 			return false;
 		}
@@ -154,7 +156,7 @@ class StoryService {
 				'media_id'   => (int) $row['media_id'],
 				'author'     => (int) $row['post_author'],
 				'title'      => $row['title'],
-				'expires_at' => MediaMeta::get( (int) $row['media_id'], 'story_expires_at' ),
+				'expires_at' => MediaRepository::get( (int) $row['media_id'], 'story_expires_at' ),
 			);
 		}
 
@@ -192,8 +194,8 @@ class StoryService {
 
 		foreach ( $expired_ids as $media_id ) {
 			$media_id = (int) $media_id;
-			MediaMeta::delete( $media_id, 'is_story' );
-			MediaMeta::delete( $media_id, 'story_expires_at' );
+			MediaRepository::delete( $media_id, 'is_story' );
+			MediaRepository::delete( $media_id, 'story_expires_at' );
 			++$cleaned;
 
 			/**

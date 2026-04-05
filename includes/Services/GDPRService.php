@@ -10,6 +10,8 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Repository\MediaRepository;
+
 class GDPRService {
 
 	/**
@@ -357,7 +359,7 @@ class GDPRService {
 			$media_id = (int) $media_id;
 
 			// Remove all custom table data (index + meta).
-			MediaMeta::delete_all( $media_id );
+			MediaRepository::delete_all( $media_id );
 
 			// Clean up stats row.
 			$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery

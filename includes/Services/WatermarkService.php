@@ -12,6 +12,8 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Repository\MediaRepository;
+
 /**
  * Watermark service — generates watermarked preview images for gated content.
  */
@@ -119,7 +121,7 @@ class WatermarkService {
 		}
 
 		// Only watermark images.
-		$file_type = MediaMeta::get( $media_id, 'file_type' );
+		$file_type = MediaRepository::get( $media_id, 'file_type' );
 		if ( ! $file_type || 0 !== strpos( $file_type, 'image/' ) ) {
 			$this->preview_cache[ $media_id ] = '';
 			return '';
@@ -132,15 +134,15 @@ class WatermarkService {
 		}
 
 		// Check for cached watermarked file.
-		$cached_url = MediaMeta::get( $media_id, 'watermark_url' );
+		$cached_url = MediaRepository::get( $media_id, 'watermark_url' );
 		if ( $cached_url ) {
 			$this->preview_cache[ $media_id ] = $cached_url;
 			return $cached_url;
 		}
 
 		// Delegate watermark generation to Pro.
-		$file_path = MediaMeta::get( $media_id, 'file_path' );
-		$file_url  = MediaMeta::get( $media_id, 'file_url' );
+		$file_path = MediaRepository::get( $media_id, 'file_path' );
+		$file_url  = MediaRepository::get( $media_id, 'file_url' );
 		$config    = $this->get_config();
 
 		/**
@@ -158,7 +160,7 @@ class WatermarkService {
 		$preview_url = apply_filters( 'mvs_generate_watermark', '', $media_id, $file_path, $file_url, $config );
 
 		if ( $preview_url ) {
-			MediaMeta::set( $media_id, 'watermark_url', $preview_url );
+			MediaRepository::set( $media_id, 'watermark_url', $preview_url );
 		}
 
 		$this->preview_cache[ $media_id ] = $preview_url;
@@ -174,7 +176,7 @@ class WatermarkService {
 	 * @param int $media_id Media post ID.
 	 */
 	public function invalidate( int $media_id ): void {
-		MediaMeta::delete( $media_id, 'watermark_url' );
+		MediaRepository::delete( $media_id, 'watermark_url' );
 		unset( $this->preview_cache[ $media_id ] );
 
 		/**

@@ -14,7 +14,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Services\StatsService;
 use WPMediaVerse\Services\PrivacyService;
 
@@ -100,7 +100,7 @@ class StatsController extends WP_REST_Controller {
 	public function get_media_stats( $request ) {
 		$media_id = $request->get_param( 'media_id' );
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 

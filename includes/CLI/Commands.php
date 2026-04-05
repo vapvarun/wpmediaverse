@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WP_CLI;
 use WP_CLI\Utils;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Manage WPMediaVerse media, stats, and maintenance tasks.
@@ -354,7 +354,7 @@ class Commands {
 				$media_id = (int) $act->secondary_item_id;
 			}
 
-			if ( ! $media_id || ! MediaMeta::exists( $media_id ) ) {
+			if ( ! $media_id || ! MediaRepository::exists( $media_id ) ) {
 				++$skipped;
 				$progress->tick();
 				continue;
@@ -368,7 +368,7 @@ class Commands {
 					'buddyboss'  => 'bb_media_id',
 				);
 				$check_key = $meta_keys[ $source ] ?? '';
-				if ( $check_key && ! MediaMeta::get( (int) $media_id, $check_key ) ) {
+				if ( $check_key && ! MediaRepository::get( (int) $media_id, $check_key ) ) {
 					++$skipped;
 					$progress->tick();
 					continue;

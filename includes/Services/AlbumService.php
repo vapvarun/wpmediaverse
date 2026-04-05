@@ -11,6 +11,8 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Repository\MediaRepository;
+
 /**
  * Manages album item membership, ordering, and metadata.
  */
@@ -63,7 +65,7 @@ class AlbumService {
 	public function add_items( int $album_id, array $media_ids ): int {
 		global $wpdb;
 
-		$is_playlist = 'playlist' === MediaMeta::get( $album_id, 'album_type' );
+		$is_playlist = 'playlist' === MediaRepository::get( $album_id, 'album_type' );
 
 		$max_pos = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
@@ -76,13 +78,13 @@ class AlbumService {
 		foreach ( $media_ids as $media_id ) {
 			$media_id = (int) $media_id;
 
-			if ( ! MediaMeta::exists( $media_id ) ) {
+			if ( ! MediaRepository::exists( $media_id ) ) {
 				continue;
 			}
 
 			// Playlist albums only accept audio media.
 			if ( $is_playlist ) {
-				$file_type = MediaMeta::get( $media_id, 'file_type' );
+				$file_type = MediaRepository::get( $media_id, 'file_type' );
 				if ( $file_type && 0 !== strpos( $file_type, 'audio/' ) ) {
 					continue;
 				}
@@ -108,7 +110,7 @@ class AlbumService {
 		// Store album association on each media item.
 		if ( $added > 0 ) {
 			foreach ( $media_ids as $mid ) {
-				MediaMeta::set( (int) $mid, 'album_id', $album_id );
+				MediaRepository::set( (int) $mid, 'album_id', $album_id );
 			}
 
 			/**
@@ -197,8 +199,8 @@ class AlbumService {
 				return $thumb;
 			}
 			// Fallback: if it's an image, use file_url directly.
-			$file_url  = MediaMeta::get( $first_media_id, 'file_url' );
-			$file_type = MediaMeta::get( $first_media_id, 'file_type' );
+			$file_url  = MediaRepository::get( $first_media_id, 'file_url' );
+			$file_type = MediaRepository::get( $first_media_id, 'file_type' );
 			if ( $file_url && is_string( $file_type ) && strpos( $file_type, 'image/' ) === 0 ) {
 				return set_url_scheme( $file_url );
 			}

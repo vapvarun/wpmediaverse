@@ -10,7 +10,7 @@ namespace WPMediaVerse\Integrations;
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\TemplateHelpers;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Integrates WPMediaVerse with BuddyPress.
@@ -152,7 +152,7 @@ class BuddyPressIntegration {
 		$is_group = ( 'groups' === $activity->component && $activity->secondary_item_id > 0 );
 		$media_id = $is_group ? (int) $activity->secondary_item_id : (int) $activity->item_id;
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			// Always return a valid action string — empty strings crash BP Nouveau's strpos().
 			$user_link = bp_core_get_userlink( $activity->user_id );
 			return $user_link
@@ -160,7 +160,7 @@ class BuddyPressIntegration {
 				? sprintf( __( '%s uploaded new media', 'wpmediaverse' ), $user_link )
 				: __( 'A member uploaded new media', 'wpmediaverse' );
 		}
-		$file_type  = MediaMeta::get( $media_id, 'file_type' );
+		$file_type  = MediaRepository::get( $media_id, 'file_type' );
 		$type_label = $this->get_media_type_label( $file_type );
 		$user_link  = bp_core_get_userlink( $activity->user_id );
 
@@ -179,7 +179,7 @@ class BuddyPressIntegration {
 		}
 
 		// Check if this media belongs to an album.
-		$album_id = (int) MediaMeta::get( $media_id, 'album_id' );
+		$album_id = (int) MediaRepository::get( $media_id, 'album_id' );
 		if ( $album_id ) {
 			$album = get_post( $album_id );
 			if ( $album && 'mvs_album' === $album->post_type ) {
@@ -212,19 +212,19 @@ class BuddyPressIntegration {
 	 */
 	public function format_activity_action_comment( $action, $activity ) {
 		$media_id = (int) $activity->item_id;
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			$user_link = bp_core_get_userlink( $activity->user_id );
 			return $user_link
 				// translators: %s: linked user name.
 				? sprintf( __( '%s commented on a media item', 'wpmediaverse' ), $user_link )
 				: __( 'A member commented on a media item', 'wpmediaverse' );
 		}
-		$media_title = MediaMeta::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
+		$media_title = MediaRepository::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 		return sprintf(
 			/* translators: 1: user link, 2: media link */
 			__( '%1$s commented on %2$s', 'wpmediaverse' ),
 			bp_core_get_userlink( $activity->user_id ),
-			'<a href="' . esc_url( MediaMeta::get_permalink( $media_id ) ) . '">' . esc_html( $media_title ) . '</a>'
+			'<a href="' . esc_url( MediaRepository::get_permalink( $media_id ) ) . '">' . esc_html( $media_title ) . '</a>'
 		);
 	}
 
@@ -251,7 +251,7 @@ class BuddyPressIntegration {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['context'] ) && 'activity' === sanitize_key( wp_unslash( $_GET['context'] ) ) ) {
-			MediaMeta::set( $media_id, 'activity_upload', '1' );
+			MediaRepository::set( $media_id, 'activity_upload', '1' );
 		}
 	}
 
@@ -269,25 +269,25 @@ class BuddyPressIntegration {
 		}
 
 		// Skip if this media was uploaded via the BP activity form.
-		if ( MediaMeta::get( $media_id, 'activity_upload' ) ) {
+		if ( MediaRepository::get( $media_id, 'activity_upload' ) ) {
 			return;
 		}
 
 		// Skip imported media — their original source activity is preserved and rendered via transform_legacy_media_content().
-		if ( MediaMeta::get( $media_id, 'imported_media' ) ) {
+		if ( MediaRepository::get( $media_id, 'imported_media' ) ) {
 			return;
 		}
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return;
 		}
 
-		$user_id   = MediaMeta::get_author( $media_id );
+		$user_id   = MediaRepository::get_author( $media_id );
 		$thumbnail = $this->get_media_thumbnail_html( $media_id, 'large' );
 
 		// Build action string at insert time (format callback regenerates on display,
 		// but storing it prevents empty-action crashes in BP Nouveau's strpos()).
-		$file_type  = MediaMeta::get( $media_id, 'file_type' );
+		$file_type  = MediaRepository::get( $media_id, 'file_type' );
 		$type_label = $this->get_media_type_label( $file_type );
 		$action_str = sprintf(
 			/* translators: 1: user link, 2: media type */
@@ -306,7 +306,7 @@ class BuddyPressIntegration {
 		);
 
 		// If media belongs to a group, record activity in the group stream.
-		$mvs_group_id = (int) MediaMeta::get( $media_id, 'group_id' );
+		$mvs_group_id = (int) MediaRepository::get( $media_id, 'group_id' );
 		if ( $mvs_group_id > 0 && bp_is_active( 'groups' ) ) {
 			$activity_args['component']         = 'groups';
 			$activity_args['item_id']           = $mvs_group_id;
@@ -318,7 +318,7 @@ class BuddyPressIntegration {
 
 		// Store the activity ID on the media post for easy lookup/updates.
 		if ( $activity_id ) {
-			MediaMeta::set( $media_id, 'bp_activity_id', $activity_id );
+			MediaRepository::set( $media_id, 'bp_activity_id', $activity_id );
 		}
 	}
 
@@ -451,7 +451,7 @@ class BuddyPressIntegration {
 		}
 
 		// Get the linked BP activity ID for this media.
-		$activity_id = (int) MediaMeta::get( $media_id, 'bp_activity_id' );
+		$activity_id = (int) MediaRepository::get( $media_id, 'bp_activity_id' );
 		if ( ! $activity_id ) {
 			return;
 		}
@@ -487,7 +487,7 @@ class BuddyPressIntegration {
 		}
 
 		// Fast path: use stored activity ID from post meta.
-		$stored_id = (int) MediaMeta::get( $media_id, 'bp_activity_id' );
+		$stored_id = (int) MediaRepository::get( $media_id, 'bp_activity_id' );
 		if ( $stored_id ) {
 			$activity = new \BP_Activity_Activity( $stored_id );
 			if ( ! empty( $activity->id ) ) {
@@ -508,7 +508,7 @@ class BuddyPressIntegration {
 
 		if ( ! empty( $activities['activities'] ) ) {
 			// Cache for next time.
-			MediaMeta::set( $media_id, 'bp_activity_id', $activities['activities'][0]->id );
+			MediaRepository::set( $media_id, 'bp_activity_id', $activities['activities'][0]->id );
 			return $activities['activities'][0];
 		}
 
@@ -526,7 +526,7 @@ class BuddyPressIntegration {
 		);
 
 		if ( ! empty( $activities['activities'] ) ) {
-			MediaMeta::set( $media_id, 'bp_activity_id', $activities['activities'][0]->id );
+			MediaRepository::set( $media_id, 'bp_activity_id', $activities['activities'][0]->id );
 			return $activities['activities'][0];
 		}
 
@@ -1603,7 +1603,7 @@ class BuddyPressIntegration {
 		}
 
 		// Verify album belongs to this group.
-		$album_group_id = (int) MediaMeta::get( $album->ID, 'group_id' );
+		$album_group_id = (int) MediaRepository::get( $album->ID, 'group_id' );
 		if ( $album_group_id !== (int) $group->id ) {
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found in this group.', 'wpmediaverse' ) . '</p></div>';
 			return;
@@ -1817,7 +1817,7 @@ class BuddyPressIntegration {
 			return;
 		}
 
-		$owner_id = MediaMeta::get_author( $media_id );
+		$owner_id = MediaRepository::get_author( $media_id );
 		if ( ! $owner_id || $owner_id === $user_id ) {
 			return;
 		}
@@ -1848,7 +1848,7 @@ class BuddyPressIntegration {
 		}
 
 		$comment  = get_comment( $comment_id );
-		$owner_id = MediaMeta::get_author( $media_id );
+		$owner_id = MediaRepository::get_author( $media_id );
 		if ( ! $comment || ! $owner_id || $owner_id === (int) $comment->user_id ) {
 			return;
 		}
@@ -1875,7 +1875,7 @@ class BuddyPressIntegration {
 			return;
 		}
 
-		$actor_id = MediaMeta::get_author( $media_id );
+		$actor_id = MediaRepository::get_author( $media_id );
 
 		foreach ( $mentioned_ids as $mentioned_id ) {
 			if ( (int) $mentioned_id === $actor_id ) {
@@ -1957,7 +1957,7 @@ class BuddyPressIntegration {
 		}
 
 		$user_name = bp_core_get_user_displayname( $secondary_item_id );
-		$link      = MediaMeta::exists( $item_id ) ? MediaMeta::get_permalink( $item_id ) : '';
+		$link      = MediaRepository::exists( $item_id ) ? MediaRepository::get_permalink( $item_id ) : '';
 
 		switch ( $component_action ) {
 			case 'mvs_new_reaction':
@@ -1999,17 +1999,17 @@ class BuddyPressIntegration {
 	 * @since 1.1.0 Changed from private to public for WP-CLI backfill command.
 	 */
 	public function get_media_thumbnail_html( int $media_id, string $size = 'medium' ): string {
-		$file_type  = MediaMeta::get( $media_id, 'file_type' );
-		$media_type = MediaMeta::get( $media_id, 'media_type' );
-		$file_url   = (string) MediaMeta::get( $media_id, 'file_url' );
+		$file_type  = MediaRepository::get( $media_id, 'file_type' );
+		$media_type = MediaRepository::get( $media_id, 'media_type' );
+		$file_url   = (string) MediaRepository::get( $media_id, 'file_url' );
 
 		$thumb_url = TemplateHelpers::get_thumb_url( $media_id, $size );
 		if ( ! $thumb_url && $file_url && strpos( $file_type, 'image/' ) === 0 ) {
 			$thumb_url = $file_url;
 		}
 
-		$permalink = MediaMeta::get_permalink( $media_id );
-		$title     = MediaMeta::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
+		$permalink = MediaRepository::get_permalink( $media_id );
+		$title     = MediaRepository::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 
 		// Link to the media single page. The lightbox is handled by the shared-ui
 		// Interactivity API module when the user clicks from the activity stream.
@@ -2035,8 +2035,8 @@ class BuddyPressIntegration {
 
 		// Audio: show compact audio card.
 		if ( 'audio' === $media_type ) {
-			$artist   = MediaMeta::get( $media_id, 'artist' );
-			$duration = MediaMeta::get( $media_id, 'duration' );
+			$artist   = MediaRepository::get( $media_id, 'artist' );
+			$duration = MediaRepository::get( $media_id, 'duration' );
 			$sub      = '';
 			if ( $artist ) {
 				$sub .= esc_html( $artist );
@@ -2140,18 +2140,18 @@ class BuddyPressIntegration {
 		$thumbnails = '';
 		$valid_ids  = array();
 		foreach ( $media_ids as $media_id ) {
-			if ( ! MediaMeta::exists( $media_id ) ) {
+			if ( ! MediaRepository::exists( $media_id ) ) {
 				continue;
 			}
-			$media_author = MediaMeta::get_author( $media_id );
+			$media_author = MediaRepository::get_author( $media_id );
 			if ( $media_author !== $user_id ) {
 				continue;
 			}
 
 			// Publish draft media now that the activity is being posted.
-			$media_status = MediaMeta::get( $media_id, 'status' );
+			$media_status = MediaRepository::get( $media_id, 'status' );
 			if ( 'draft' === $media_status ) {
-				MediaMeta::set( $media_id, 'status', 'publish' );
+				MediaRepository::set( $media_id, 'status', 'publish' );
 			}
 
 			$valid_ids[] = $media_id;
@@ -2171,7 +2171,7 @@ class BuddyPressIntegration {
 		// Store the activity ID on each media post so comments on these media
 		// can be threaded back as activity comments via find_media_upload_activity().
 		foreach ( $valid_ids as $mid ) {
-			MediaMeta::set( $mid, 'bp_activity_id', $activity_id );
+			MediaRepository::set( $mid, 'bp_activity_id', $activity_id );
 		}
 
 		$activity = new \BP_Activity_Activity( $activity_id );
@@ -2201,8 +2201,8 @@ class BuddyPressIntegration {
 		if ( $raw_ids ) {
 			$media_ids = array_filter( array_map( 'absint', explode( ',', $raw_ids ) ) );
 			foreach ( $media_ids as $media_id ) {
-				MediaMeta::set( $media_id, 'privacy', 'group' );
-				MediaMeta::set( $media_id, 'group_id', $group_id );
+				MediaRepository::set( $media_id, 'privacy', 'group' );
+				MediaRepository::set( $media_id, 'group_id', $group_id );
 			}
 		}
 	}
@@ -2316,15 +2316,15 @@ class BuddyPressIntegration {
 		}
 
 		$media_id   = (int) $matches[1];
-		$file_url   = MediaMeta::get( $media_id, 'file_url' );
-		$media_type = MediaMeta::get( $media_id, 'media_type' );
+		$file_url   = MediaRepository::get( $media_id, 'file_url' );
+		$media_type = MediaRepository::get( $media_id, 'media_type' );
 
 		if ( 'video' !== $media_type || ! $file_url ) {
 			return $content;
 		}
 
 		$file_url  = set_url_scheme( $file_url );
-		$permalink = MediaMeta::get_permalink( $media_id );
+		$permalink = MediaRepository::get_permalink( $media_id );
 		$poster    = '';
 
 		$poster_url = TemplateHelpers::get_thumb_url( $media_id, 'large' );
@@ -2334,7 +2334,7 @@ class BuddyPressIntegration {
 
 		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'
 			. '<video controls preload="metadata"' . $poster . ' style="width:100%;max-height:400px;border-radius:8px;display:block;">'
-			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( MediaMeta::get( $media_id, 'file_type' ) ?: 'video/mp4' ) . '">'
+			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( MediaRepository::get( $media_id, 'file_type' ) ?: 'video/mp4' ) . '">'
 			. '</video>'
 			. '<a href="' . esc_url( $permalink ) . '" class="mvs-activity-media-link" style="display:block;text-align:center;margin-top:4px;font-size:13px;">' . esc_html__( 'View full media', 'wpmediaverse' ) . '</a>'
 			. '</div>';
@@ -2416,7 +2416,7 @@ class BuddyPressIntegration {
 			} elseif ( 'groups' === $activity->component && $activity->secondary_item_id > 0 ) {
 				$media_id = (int) $activity->secondary_item_id;
 			}
-			if ( $media_id && MediaMeta::exists( $media_id ) ) {
+			if ( $media_id && MediaRepository::exists( $media_id ) ) {
 				$thumbnail = $this->get_media_thumbnail_html( $media_id, 'large' );
 				if ( $thumbnail ) {
 					return $content . $thumbnail;
@@ -2658,7 +2658,7 @@ class BuddyPressIntegration {
 			$media_id = (int) $activity->secondary_item_id;
 		}
 
-		if ( ! $media_id || ! MediaMeta::exists( $media_id ) ) {
+		if ( ! $media_id || ! MediaRepository::exists( $media_id ) ) {
 			return;
 		}
 
@@ -2773,7 +2773,7 @@ class BuddyPressIntegration {
 			$media_id = (int) $activity->secondary_item_id;
 		}
 
-		if ( ! $media_id || ! MediaMeta::exists( $media_id ) ) {
+		if ( ! $media_id || ! MediaRepository::exists( $media_id ) ) {
 			return $content;
 		}
 

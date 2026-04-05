@@ -1,6 +1,6 @@
 <?php
 /**
- * Test MediaMeta service (custom-table architecture).
+ * Test MediaRepository service (custom-table architecture).
  *
  * Replaces the old MediaCRUDTest which relied on wp_insert_post / CPTs.
  * All media data now lives in mvs_media_index + mvs_media_meta tables.
@@ -11,9 +11,9 @@
 namespace WPMediaVerse\Tests\Unit;
 
 use WP_UnitTestCase;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
-class MediaMetaTest extends WP_UnitTestCase {
+class MediaRepositoryTest extends WP_UnitTestCase {
 
 	/**
 	 * Admin user ID used across tests.
@@ -77,7 +77,7 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * insert() returns an auto-increment int > 0.
 	 */
 	public function test_insert_returns_media_id(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Sunset Beach',
 				'post_author' => $this->admin_id,
@@ -93,14 +93,14 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * insert() auto-generates a sanitized slug from the title.
 	 */
 	public function test_insert_auto_generates_slug(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'My Awesome Photo!',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		$slug = MediaMeta::get( $media_id, 'slug' );
+		$slug = MediaRepository::get( $media_id, 'slug' );
 		$this->assertSame( 'my-awesome-photo', $slug );
 	}
 
@@ -108,21 +108,21 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * Two inserts with the same title get distinct slugs (second gets -1 suffix).
 	 */
 	public function test_insert_unique_slug_suffix(): void {
-		$id1 = MediaMeta::insert(
+		$id1 = MediaRepository::insert(
 			array(
 				'title'       => 'Duplicate Title',
 				'post_author' => $this->admin_id,
 			)
 		);
-		$id2 = MediaMeta::insert(
+		$id2 = MediaRepository::insert(
 			array(
 				'title'       => 'Duplicate Title',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		$slug1 = MediaMeta::get( $id1, 'slug' );
-		$slug2 = MediaMeta::get( $id2, 'slug' );
+		$slug1 = MediaRepository::get( $id1, 'slug' );
+		$slug2 = MediaRepository::get( $id2, 'slug' );
 
 		$this->assertSame( 'duplicate-title', $slug1 );
 		$this->assertSame( 'duplicate-title-1', $slug2 );
@@ -132,16 +132,16 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * insert() applies default status, privacy, and moderation_status.
 	 */
 	public function test_insert_defaults(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Defaults Test',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		$this->assertSame( 'publish', MediaMeta::get( $media_id, 'status' ) );
-		$this->assertSame( 'public', MediaMeta::get( $media_id, 'privacy' ) );
-		$this->assertSame( 'approved', MediaMeta::get( $media_id, 'moderation_status' ) );
+		$this->assertSame( 'publish', MediaRepository::get( $media_id, 'status' ) );
+		$this->assertSame( 'public', MediaRepository::get( $media_id, 'privacy' ) );
+		$this->assertSame( 'approved', MediaRepository::get( $media_id, 'moderation_status' ) );
 	}
 
 	/* ------------------------------------------------------------------
@@ -152,7 +152,7 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * get() retrieves an index column set during insert.
 	 */
 	public function test_get_index_column(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Mountain View',
 				'post_author' => $this->admin_id,
@@ -160,26 +160,26 @@ class MediaMetaTest extends WP_UnitTestCase {
 			)
 		);
 
-		$this->assertSame( 'Mountain View', MediaMeta::get( $media_id, 'title' ) );
-		$this->assertSame( 'image', MediaMeta::get( $media_id, 'media_type' ) );
+		$this->assertSame( 'Mountain View', MediaRepository::get( $media_id, 'title' ) );
+		$this->assertSame( 'image', MediaRepository::get( $media_id, 'media_type' ) );
 	}
 
 	/**
 	 * get() retrieves a meta (non-index) field via mvs_media_meta.
 	 */
 	public function test_get_meta_field(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Meta Field Test',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		MediaMeta::set( $media_id, 'thumb_large', 'https://example.com/thumb-lg.jpg' );
+		MediaRepository::set( $media_id, 'thumb_large', 'https://example.com/thumb-lg.jpg' );
 
 		$this->assertSame(
 			'https://example.com/thumb-lg.jpg',
-			MediaMeta::get( $media_id, 'thumb_large' )
+			MediaRepository::get( $media_id, 'thumb_large' )
 		);
 	}
 
@@ -187,8 +187,8 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * get() returns null for a non-existent media_id.
 	 */
 	public function test_get_nonexistent_returns_null(): void {
-		$this->assertNull( MediaMeta::get( 999999, 'title' ) );
-		$this->assertNull( MediaMeta::get( 999999, 'some_custom_key' ) );
+		$this->assertNull( MediaRepository::get( 999999, 'title' ) );
+		$this->assertNull( MediaRepository::get( 999999, 'some_custom_key' ) );
 	}
 
 	/* ------------------------------------------------------------------
@@ -199,30 +199,30 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * set() updates an existing index column.
 	 */
 	public function test_set_index_column(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Original Title',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		MediaMeta::set( $media_id, 'title', 'Updated Title' );
+		MediaRepository::set( $media_id, 'title', 'Updated Title' );
 
-		$this->assertSame( 'Updated Title', MediaMeta::get( $media_id, 'title' ) );
+		$this->assertSame( 'Updated Title', MediaRepository::get( $media_id, 'title' ) );
 	}
 
 	/**
 	 * set() stores a custom meta key in mvs_media_meta and retrieves it.
 	 */
 	public function test_set_meta_field(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Meta Write Test',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		MediaMeta::set( $media_id, 'camera_model', 'Canon EOS R5' );
+		MediaRepository::set( $media_id, 'camera_model', 'Canon EOS R5' );
 
 		// Verify via direct DB query.
 		global $wpdb;
@@ -235,14 +235,14 @@ class MediaMetaTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( 'Canon EOS R5', $value );
-		$this->assertSame( 'Canon EOS R5', MediaMeta::get( $media_id, 'camera_model' ) );
+		$this->assertSame( 'Canon EOS R5', MediaRepository::get( $media_id, 'camera_model' ) );
 	}
 
 	/**
 	 * set() JSON-encodes array values in mvs_media_meta.
 	 */
 	public function test_set_meta_serializes_array(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Array Meta Test',
 				'post_author' => $this->admin_id,
@@ -256,7 +256,7 @@ class MediaMetaTest extends WP_UnitTestCase {
 			'focal_length' => '50mm',
 		);
 
-		MediaMeta::set( $media_id, 'exif_data', $exif_data );
+		MediaRepository::set( $media_id, 'exif_data', $exif_data );
 
 		// Raw DB value should be JSON-encoded.
 		global $wpdb;
@@ -281,14 +281,14 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * set_many() handles a mix of index columns and meta keys in one call.
 	 */
 	public function test_set_many_mixed(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Bulk Set Test',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		MediaMeta::set_many(
+		MediaRepository::set_many(
 			$media_id,
 			array(
 				// Index columns.
@@ -303,14 +303,14 @@ class MediaMetaTest extends WP_UnitTestCase {
 		);
 
 		// Verify index columns.
-		$this->assertSame( 'A beautiful landscape photo.', MediaMeta::get( $media_id, 'description' ) );
-		$this->assertSame( 'image', MediaMeta::get( $media_id, 'media_type' ) );
-		$this->assertEquals( 1920, MediaMeta::get( $media_id, 'width' ) );
-		$this->assertEquals( 1080, MediaMeta::get( $media_id, 'height' ) );
+		$this->assertSame( 'A beautiful landscape photo.', MediaRepository::get( $media_id, 'description' ) );
+		$this->assertSame( 'image', MediaRepository::get( $media_id, 'media_type' ) );
+		$this->assertEquals( 1920, MediaRepository::get( $media_id, 'width' ) );
+		$this->assertEquals( 1080, MediaRepository::get( $media_id, 'height' ) );
 
 		// Verify meta keys.
-		$this->assertSame( 'https://example.com/thumb-sm.jpg', MediaMeta::get( $media_id, 'thumb_small' ) );
-		$this->assertSame( '#3498db', MediaMeta::get( $media_id, 'color_hex' ) );
+		$this->assertSame( 'https://example.com/thumb-sm.jpg', MediaRepository::get( $media_id, 'thumb_small' ) );
+		$this->assertSame( '#3498db', MediaRepository::get( $media_id, 'color_hex' ) );
 	}
 
 	/* ------------------------------------------------------------------
@@ -321,7 +321,7 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * delete() sets an index column to NULL.
 	 */
 	public function test_delete_index_column(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Delete Column Test',
 				'post_author' => $this->admin_id,
@@ -329,30 +329,30 @@ class MediaMetaTest extends WP_UnitTestCase {
 			)
 		);
 
-		$this->assertSame( 'image', MediaMeta::get( $media_id, 'media_type' ) );
+		$this->assertSame( 'image', MediaRepository::get( $media_id, 'media_type' ) );
 
-		MediaMeta::delete( $media_id, 'media_type' );
+		MediaRepository::delete( $media_id, 'media_type' );
 
-		$this->assertNull( MediaMeta::get( $media_id, 'media_type' ) );
+		$this->assertNull( MediaRepository::get( $media_id, 'media_type' ) );
 	}
 
 	/**
 	 * delete() removes a meta row from mvs_media_meta.
 	 */
 	public function test_delete_meta_field(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Delete Meta Test',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		MediaMeta::set( $media_id, 'temp_flag', 'should_be_removed' );
-		$this->assertSame( 'should_be_removed', MediaMeta::get( $media_id, 'temp_flag' ) );
+		MediaRepository::set( $media_id, 'temp_flag', 'should_be_removed' );
+		$this->assertSame( 'should_be_removed', MediaRepository::get( $media_id, 'temp_flag' ) );
 
-		MediaMeta::delete( $media_id, 'temp_flag' );
+		MediaRepository::delete( $media_id, 'temp_flag' );
 
-		$this->assertNull( MediaMeta::get( $media_id, 'temp_flag' ) );
+		$this->assertNull( MediaRepository::get( $media_id, 'temp_flag' ) );
 
 		// Confirm row is actually gone in DB.
 		global $wpdb;
@@ -374,7 +374,7 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * get_all() merges index columns and meta keys into one array.
 	 */
 	public function test_get_all_merges_index_and_meta(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Get All Test',
 				'post_author' => $this->admin_id,
@@ -382,10 +382,10 @@ class MediaMetaTest extends WP_UnitTestCase {
 			)
 		);
 
-		MediaMeta::set( $media_id, 'encoding', 'h264' );
-		MediaMeta::set( $media_id, 'bitrate', '5000kbps' );
+		MediaRepository::set( $media_id, 'encoding', 'h264' );
+		MediaRepository::set( $media_id, 'bitrate', '5000kbps' );
 
-		$all = MediaMeta::get_all( $media_id );
+		$all = MediaRepository::get_all( $media_id );
 
 		// Index columns present.
 		$this->assertSame( 'Get All Test', $all['title'] );
@@ -410,21 +410,21 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * exists() returns true for an existing media item.
 	 */
 	public function test_exists_true_for_existing(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Exists Test',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		$this->assertTrue( MediaMeta::exists( $media_id ) );
+		$this->assertTrue( MediaRepository::exists( $media_id ) );
 	}
 
 	/**
 	 * exists() returns false for a non-existent ID.
 	 */
 	public function test_exists_false_for_missing(): void {
-		$this->assertFalse( MediaMeta::exists( 999999 ) );
+		$this->assertFalse( MediaRepository::exists( 999999 ) );
 	}
 
 	/* ------------------------------------------------------------------
@@ -435,14 +435,14 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * get_author() returns the post_author as an integer.
 	 */
 	public function test_get_author(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Author Test',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		$author = MediaMeta::get_author( $media_id );
+		$author = MediaRepository::get_author( $media_id );
 
 		$this->assertIsInt( $author );
 		$this->assertSame( $this->admin_id, $author );
@@ -456,14 +456,14 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * get_permalink() returns /media/{slug}/ format.
 	 */
 	public function test_get_permalink(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Permalink Test Photo',
 				'post_author' => $this->admin_id,
 			)
 		);
 
-		$permalink = MediaMeta::get_permalink( $media_id );
+		$permalink = MediaRepository::get_permalink( $media_id );
 
 		$this->assertStringContainsString( '/media/permalink-test-photo/', $permalink );
 		$this->assertStringStartsWith( home_url(), $permalink );
@@ -477,7 +477,7 @@ class MediaMetaTest extends WP_UnitTestCase {
 	 * delete_all() removes rows from both mvs_media_index and mvs_media_meta.
 	 */
 	public function test_delete_all(): void {
-		$media_id = MediaMeta::insert(
+		$media_id = MediaRepository::insert(
 			array(
 				'title'       => 'Delete All Test',
 				'post_author' => $this->admin_id,
@@ -486,16 +486,16 @@ class MediaMetaTest extends WP_UnitTestCase {
 		);
 
 		// Add some meta too.
-		MediaMeta::set( $media_id, 'thumb_url', 'https://example.com/thumb.jpg' );
-		MediaMeta::set( $media_id, 'source', 'upload' );
+		MediaRepository::set( $media_id, 'thumb_url', 'https://example.com/thumb.jpg' );
+		MediaRepository::set( $media_id, 'source', 'upload' );
 
 		// Sanity check — item exists before deletion.
-		$this->assertTrue( MediaMeta::exists( $media_id ) );
+		$this->assertTrue( MediaRepository::exists( $media_id ) );
 
-		MediaMeta::delete_all( $media_id );
+		MediaRepository::delete_all( $media_id );
 
 		// Index row gone.
-		$this->assertFalse( MediaMeta::exists( $media_id ) );
+		$this->assertFalse( MediaRepository::exists( $media_id ) );
 
 		// Meta rows gone.
 		global $wpdb;

@@ -15,7 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Social\FavoriteService;
 
 /**
@@ -139,7 +139,7 @@ class FavoriteController extends WP_REST_Controller {
 		$media_id = $request->get_param( 'media_id' );
 		$user_id  = get_current_user_id();
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -162,7 +162,7 @@ class FavoriteController extends WP_REST_Controller {
 
 		$media_id = $request->get_param( 'media_id' );
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -210,15 +210,15 @@ class FavoriteController extends WP_REST_Controller {
 		$enriched = array();
 		foreach ( $result['items'] as $item ) {
 			$media_id = (int) $item['media_id'];
-			if ( ! MediaMeta::exists( $media_id ) ) {
+			if ( ! MediaRepository::exists( $media_id ) ) {
 				continue;
 			}
 			$enriched[] = array(
 				'media_id'   => $media_id,
-				'title'      => MediaMeta::get( $media_id, 'title' ),
-				'link'       => MediaMeta::get_permalink( $media_id ),
-				'file_url'   => set_url_scheme( MediaMeta::get( $media_id, 'file_url' ) ),
-				'media_type' => MediaMeta::get( $media_id, 'media_type' ),
+				'title'      => MediaRepository::get( $media_id, 'title' ),
+				'link'       => MediaRepository::get_permalink( $media_id ),
+				'file_url'   => set_url_scheme( MediaRepository::get( $media_id, 'file_url' ) ),
+				'media_type' => MediaRepository::get( $media_id, 'media_type' ),
 				'created_at' => $item['created_at'],
 			);
 		}

@@ -583,7 +583,7 @@ class Migrator {
 	/**
 	 * Migration v9 — create mvs_media_meta + mvs_transactions if missing.
 	 *
-	 * These tables were used by MediaMeta service and quota tracking but
+	 * These tables were used by MediaRepository service and quota tracking but
 	 * were not included in the initial migration scripts.
 	 *
 	 * @since 1.0.1

@@ -13,7 +13,7 @@ namespace WPMediaVerse\Core;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Handles template loading with theme override support.

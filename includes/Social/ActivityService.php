@@ -14,7 +14,7 @@ namespace WPMediaVerse\Social;
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\TemplateHelpers;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Records and queries activity feed items.
@@ -176,7 +176,7 @@ class ActivityService {
 	 * @param array $file_data File data.
 	 */
 	public function on_upload( int $media_id, array $file_data ): void {
-		$author = MediaMeta::get_author( $media_id );
+		$author = MediaRepository::get_author( $media_id );
 		if ( $author ) {
 			$this->record( $author, 'media_upload', $media_id );
 		}
@@ -239,7 +239,7 @@ class ActivityService {
 
 		// Attach media summary if present.
 		if ( $row->media_id ) {
-			$media_row = MediaMeta::get_all( (int) $row->media_id );
+			$media_row = MediaRepository::get_all( (int) $row->media_id );
 			if ( ! empty( $media_row ) && ! empty( $media_row['media_id'] ) ) {
 				$mid       = (int) $media_row['media_id'];
 				$thumb_url = TemplateHelpers::get_thumb_url( $mid, 'thumbnail' );
@@ -248,7 +248,7 @@ class ActivityService {
 					'title'     => $media_row['title'] ?? '',
 					'type'      => $media_row['media_type'] ?? '',
 					'thumbnail' => $thumb_url,
-					'link'      => MediaMeta::get_permalink( $mid ),
+					'link'      => MediaRepository::get_permalink( $mid ),
 				);
 			}
 		}

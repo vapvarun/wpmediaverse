@@ -17,7 +17,7 @@ use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Services\CollectionService;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * REST controller for collections.
@@ -383,8 +383,8 @@ class CollectionController extends WP_REST_Controller {
 		$cover_url      = null;
 		$first_media_id = $this->get_first_collection_media( $post->ID, $collection_type );
 		if ( $first_media_id ) {
-			$file_url   = MediaMeta::get( $first_media_id, 'file_url' );
-			$media_type = MediaMeta::get( $first_media_id, 'media_type' ) ?: 'image';
+			$file_url   = MediaRepository::get( $first_media_id, 'file_url' );
+			$media_type = MediaRepository::get( $first_media_id, 'media_type' ) ?: 'image';
 			if ( 'image' === $media_type && $file_url ) {
 				$cover_url = set_url_scheme( $file_url );
 			} else {

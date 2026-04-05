@@ -16,7 +16,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Services\AccessRulesService;
-use WPMediaVerse\Services\MediaMeta;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * REST controller for access rules and grants.
@@ -386,12 +386,12 @@ class AccessController extends WP_REST_Controller {
 
 		$media_id = $request->get_param( 'media_id' );
 
-		if ( ! MediaMeta::exists( $media_id ) ) {
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		// Owner or user with manage_mvs_access capability.
-		if ( get_current_user_id() === MediaMeta::get_author( $media_id ) || current_user_can( 'manage_mvs_access' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown
+		if ( get_current_user_id() === MediaRepository::get_author( $media_id ) || current_user_can( 'manage_mvs_access' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown
 			return true;
 		}
 
@@ -418,7 +418,7 @@ class AccessController extends WP_REST_Controller {
 	 * @return bool
 	 */
 	private function media_exists( int $media_id ): bool {
-		return MediaMeta::exists( $media_id );
+		return MediaRepository::exists( $media_id );
 	}
 
 	/**

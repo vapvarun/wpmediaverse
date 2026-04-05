@@ -11,6 +11,8 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Repository\MediaRepository;
+
 /**
  * Handles media visibility checks based on privacy levels.
  */
@@ -53,10 +55,10 @@ class PrivacyService {
 	 */
 	private function check_access( int $media_id, int $user_id ): bool {
 		// Check custom tables first (media items live in mvs_media_index).
-		$is_media = MediaMeta::exists( $media_id );
+		$is_media = MediaRepository::exists( $media_id );
 
 		if ( $is_media ) {
-			$author_id = MediaMeta::get_author( $media_id );
+			$author_id = MediaRepository::get_author( $media_id );
 		} else {
 			// Albums and collections are still CPTs.
 			$post          = get_post( $media_id );
@@ -72,7 +74,7 @@ class PrivacyService {
 			return true;
 		}
 
-		$privacy = MediaMeta::get( $media_id, 'privacy' );
+		$privacy = MediaRepository::get( $media_id, 'privacy' );
 		if ( ! $privacy ) {
 			$privacy = 'public';
 		}
@@ -154,7 +156,7 @@ class PrivacyService {
 			return false;
 		}
 
-		$group_id = (int) MediaMeta::get( $media_id, 'group_id' );
+		$group_id = (int) MediaRepository::get( $media_id, 'group_id' );
 		if ( ! $group_id ) {
 			return false;
 		}
@@ -174,7 +176,7 @@ class PrivacyService {
 			return false;
 		}
 
-		$allowed_users = MediaMeta::get( $media_id, 'custom_access' );
+		$allowed_users = MediaRepository::get( $media_id, 'custom_access' );
 		if ( ! is_array( $allowed_users ) ) {
 			return false;
 		}

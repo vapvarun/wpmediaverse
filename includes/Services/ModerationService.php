@@ -11,6 +11,8 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Repository\MediaRepository;
+
 /**
  * Manages content moderation queue and approval workflows.
  */
@@ -56,7 +58,7 @@ class ModerationService {
 	 * @return string
 	 */
 	public function get_status( int $media_id ): string {
-		$status = MediaMeta::get( $media_id, 'moderation_status' );
+		$status = MediaRepository::get( $media_id, 'moderation_status' );
 		return $status ? $status : self::STATUS_APPROVED;
 	}
 
@@ -75,7 +77,7 @@ class ModerationService {
 		}
 
 		$old_status = $this->get_status( $media_id );
-		MediaMeta::set( $media_id, 'moderation_status', $status );
+		MediaRepository::set( $media_id, 'moderation_status', $status );
 
 		// Log moderation action.
 		$this->log_action( $media_id, $status, $user_id );
@@ -115,7 +117,7 @@ class ModerationService {
 
 			case 'hide':
 				$this->set_status( $media_id, self::STATUS_FLAGGED );
-				MediaMeta::set( $media_id, 'privacy', 'private' );
+				MediaRepository::set( $media_id, 'privacy', 'private' );
 				break;
 
 			case 'flag':
@@ -222,7 +224,7 @@ class ModerationService {
 			);
 
 			if ( $reason ) {
-				MediaMeta::set( $media_id, 'rejection_reason', sanitize_text_field( $reason ) );
+				MediaRepository::set( $media_id, 'rejection_reason', sanitize_text_field( $reason ) );
 			}
 		}
 
@@ -237,7 +239,7 @@ class ModerationService {
 	 * @param int    $user_id  Moderator user ID (0 for automated).
 	 */
 	private function log_action( int $media_id, string $status, int $user_id ): void {
-		$log = MediaMeta::get( $media_id, 'moderation_log' );
+		$log = MediaRepository::get( $media_id, 'moderation_log' );
 
 		if ( ! is_array( $log ) ) {
 			$log = array();
@@ -249,7 +251,7 @@ class ModerationService {
 			'date'    => current_time( 'mysql', true ),
 		);
 
-		MediaMeta::set( $media_id, 'moderation_log', $log );
+		MediaRepository::set( $media_id, 'moderation_log', $log );
 	}
 
 	/**
@@ -259,7 +261,7 @@ class ModerationService {
 	 * @return array
 	 */
 	public function get_log( int $media_id ): array {
-		$log = MediaMeta::get( $media_id, 'moderation_log' );
+		$log = MediaRepository::get( $media_id, 'moderation_log' );
 		return is_array( $log ) ? $log : array();
 	}
 

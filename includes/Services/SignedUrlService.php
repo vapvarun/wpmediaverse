@@ -11,6 +11,8 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Repository\MediaRepository;
+
 /**
  * Generates and validates signed URLs for protected media files.
  */
@@ -154,8 +156,8 @@ class SignedUrlService {
 			exit;
 		}
 
-		$file_path_rel = MediaMeta::get( $media_id, 'file_path' );
-		$file_type     = MediaMeta::get( $media_id, 'file_type' );
+		$file_path_rel = MediaRepository::get( $media_id, 'file_path' );
+		$file_type     = MediaRepository::get( $media_id, 'file_type' );
 
 		if ( ! $file_path_rel ) {
 			status_header( 404 );
