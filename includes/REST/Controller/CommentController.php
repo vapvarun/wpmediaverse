@@ -213,7 +213,7 @@ class CommentController extends WP_REST_Controller {
 		$from_activity = (int) $request->get_param( 'from_activity' );
 
 		// When comment originates from a BP activity lightbox, the JS already
-		// posts a BP activity reply. Set a flag so BuddyPressIntegration skips
+		// posts a BP activity reply. Set a flag so ActivitySyncIntegration skips
 		// creating a duplicate standalone activity.
 		if ( $from_activity > 0 ) {
 			if ( ! defined( 'MVS_COMMENT_FROM_ACTIVITY' ) ) {

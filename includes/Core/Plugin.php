@@ -52,7 +52,7 @@ use WPMediaVerse\Social\MentionService;
 use WPMediaVerse\Social\ShareService;
 use WPMediaVerse\Services\StatsService;
 use WPMediaVerse\Services\AccessRulesService;
-use WPMediaVerse\Integrations\BuddyPressIntegration;
+use WPMediaVerse\Integrations\BuddyPress\BuddyPressManager;
 use WPMediaVerse\Integrations\WebhookService;
 use WPMediaVerse\Services\CacheService;
 use WPMediaVerse\Social\FollowService;
@@ -410,7 +410,7 @@ class Plugin {
 		self::$container->register(
 			'integration.buddypress',
 			function () {
-				$bp = new BuddyPressIntegration();
+				$bp = new BuddyPressManager();
 				$bp->init();
 				return $bp;
 			}

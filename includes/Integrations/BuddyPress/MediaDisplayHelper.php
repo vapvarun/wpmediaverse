@@ -2,9 +2,8 @@
 /**
  * MediaDisplayHelper — shared thumbnail and label utilities for BuddyPress integration.
  *
- * Extracted from BuddyPressIntegration so activity-stream callbacks and any
- * future sub-integrations can reuse these pure-output helpers without pulling
- * in the full god class.
+ * Shared thumbnail and label utilities reused by activity-stream callbacks
+ * and other BuddyPress sub-integrations.
  *
  * @package WPMediaVerse\Integrations\BuddyPress
  */

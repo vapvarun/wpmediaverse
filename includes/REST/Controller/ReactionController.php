@@ -174,7 +174,7 @@ class ReactionController extends WP_REST_Controller {
 
 		// Fire specific hooks for integrations (BuddyPress, webhooks).
 		if ( 'added' === $result['action'] || 'updated' === $result['action'] ) {
-			/** This action is documented in includes/Integrations/BuddyPressIntegration.php */
+			/** This action is documented in includes/Integrations/BuddyPress/ActivitySyncIntegration.php */
 			do_action( 'mvs_reaction_added', $media_id, get_current_user_id(), $reaction_type );
 		}
 
