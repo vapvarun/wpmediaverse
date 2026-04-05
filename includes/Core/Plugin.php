@@ -13,7 +13,7 @@ use WPMediaVerse\PostTypes\Album;
 use WPMediaVerse\PostTypes\Collection;
 use WPMediaVerse\Taxonomies\MediaTag;
 use WPMediaVerse\Taxonomies\MediaCategory;
-use WPMediaVerse\Admin\SettingsPage;
+use WPMediaVerse\Admin\Settings\SettingsPage;
 use WPMediaVerse\Services\UploadService;
 use WPMediaVerse\Services\StorageService;
 use WPMediaVerse\Services\PrivacyService;
