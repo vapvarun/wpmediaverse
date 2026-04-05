@@ -36,44 +36,39 @@ parameters:
 			path: includes/Admin/OverviewPage.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
-			path: includes/Admin/SettingsPage.php
-
-		-
-			message: "#^Method WPMediaVerse\\\\Admin\\\\SettingsPage\\:\\:get_active_tab\\(\\) is unused\\.$#"
-			count: 1
-			path: includes/Admin/SettingsPage.php
-
-		-
-			message: "#^Method WPMediaVerse\\\\Admin\\\\SettingsPage\\:\\:render_settings_panels\\(\\) is unused\\.$#"
-			count: 1
-			path: includes/Admin/SettingsPage.php
-
-		-
 			message: "#^Parameter \\#1 \\$args of function wp_dropdown_pages expects array\\{depth\\?\\: int, child_of\\?\\: int, selected\\?\\: int\\|string, echo\\?\\: bool\\|int, name\\?\\: string, id\\?\\: string, class\\?\\: string, show_option_none\\?\\: string, \\.\\.\\.\\}, array\\{name\\: mixed, selected\\: int, show_option_none\\: string, option_none_value\\: 0\\} given\\.$#"
 			count: 1
-			path: includes/Admin/SettingsPage.php
+			path: includes/Admin/Settings/FieldRenderer.php
 
 		-
 			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, float given\\.$#"
 			count: 2
-			path: includes/Admin/SettingsPage.php
+			path: includes/Admin/Settings/FieldRenderer.php
 
 		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, float given\\.$#"
 			count: 1
-			path: includes/Admin/SettingsPage.php
+			path: includes/Admin/Settings/FieldRenderer.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/Settings/SettingsPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsPage\\:\\:get_active_tab\\(\\) is unused\\.$#"
+			count: 1
+			path: includes/Admin/Settings/SettingsPage.php
+
+		-
+			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsPage\\:\\:render_settings_panels\\(\\) is unused\\.$#"
+			count: 1
+			path: includes/Admin/Settings/SettingsPage.php
 
 		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<1, max\\> given\\.$#"
 			count: 1
-			path: includes/Admin/SettingsPage.php
-
-		-
-			message: "#^Static property WPMediaVerse\\\\Admin\\\\SettingsPage\\:\\:\\$tabs is never read, only written\\.$#"
-			count: 1
-			path: includes/Admin/SettingsPage.php
+			path: includes/Admin/Settings/SettingsPage.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
@@ -173,37 +168,57 @@ parameters:
 		-
 			message: "#^Access to an undefined property object\\:\\:\\$component\\.$#"
 			count: 4
-			path: includes/Integrations/BuddyPressIntegration.php
+			path: includes/Integrations/BuddyPress/ActivityContentIntegration.php
 
 		-
 			message: "#^Access to an undefined property object\\:\\:\\$item_id\\.$#"
 			count: 2
-			path: includes/Integrations/BuddyPressIntegration.php
+			path: includes/Integrations/BuddyPress/ActivityContentIntegration.php
 
 		-
 			message: "#^Access to an undefined property object\\:\\:\\$secondary_item_id\\.$#"
 			count: 2
-			path: includes/Integrations/BuddyPressIntegration.php
+			path: includes/Integrations/BuddyPress/ActivityContentIntegration.php
 
 		-
 			message: "#^Callback expects 1 parameter, \\$accepted_args is set to 2\\.$#"
 			count: 1
-			path: includes/Integrations/BuddyPressIntegration.php
+			path: includes/Integrations/BuddyPress/ActivityContentIntegration.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
+			count: 1
+			path: includes/Integrations/BuddyPress/ActivityContentIntegration.php
 
 		-
 			message: "#^Function buddypress not found\\.$#"
-			count: 4
-			path: includes/Integrations/BuddyPressIntegration.php
+			count: 2
+			path: includes/Integrations/BuddyPress/ActivitySyncIntegration.php
 
 		-
 			message: "#^Function groups_get_current_group not found\\.$#"
 			count: 4
-			path: includes/Integrations/BuddyPressIntegration.php
+			path: includes/Integrations/BuddyPress/GroupTabIntegration.php
 
 		-
 			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
-			count: 6
-			path: includes/Integrations/BuddyPressIntegration.php
+			count: 2
+			path: includes/Integrations/BuddyPress/GroupTabIntegration.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
+			count: 1
+			path: includes/Integrations/BuddyPress/MediaDisplayHelper.php
+
+		-
+			message: "#^Function buddypress not found\\.$#"
+			count: 2
+			path: includes/Integrations/BuddyPress/ProfileTabIntegration.php
+
+		-
+			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
+			count: 2
+			path: includes/Integrations/BuddyPress/ProfileTabIntegration.php
 
 		-
 			message: "#^Call to function is_wp_error\\(\\) with int\\<0, max\\> will always evaluate to false\\.$#"
