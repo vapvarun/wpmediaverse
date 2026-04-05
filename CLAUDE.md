@@ -27,7 +27,7 @@
 | `Admin\` | WP admin pages, settings, moderation queue | `SettingsPage`, `OverviewPage`, `StatsPage`, `ModerationQueue`, `LogViewerPage`, `SetupWizard`, `CollectionMetaBox`, `MediaListPage` |
 | `REST\Controller\` | REST API endpoints (18 controllers) | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `AccessController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController` |
 | `REST\` | Rate limiting middleware | `RateLimiter` |
-| `Services\` | Business logic, storage, AI, caching | `UploadService`, `StorageService`, `PrivacyService`, `AlbumService`, `CollectionService`, `StoryService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AccessRulesService`, `SignedUrlService`, `WatermarkService`, `CacheService`, `LoggerService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `MediaMeta`, `LocalDriver` |
+| `Services\` | Business logic, storage, AI, caching | `UploadService`, `StorageService`, `PrivacyService`, `AlbumService`, `CollectionService`, `StoryService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AccessRulesService`, `SignedUrlService`, `WatermarkService`, `CacheService`, `LoggerService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `LocalDriver` |
 | `Social\` | Social interactions (reactions, comments, follows) | `ReactionService`, `CommentService`, `FavoriteService`, `MentionService`, `ShareService`, `FollowService`, `NotificationService`, `ReportService`, `ActivityService` |
 | `Integrations\` | Third-party platform bridges | `BuddyPressIntegration`, `WebhookService` |
 | `PostTypes\` | Custom post type registration | `Album`, `Collection` |
@@ -36,6 +36,7 @@
 | `Shortcodes\` | Legacy shortcode support | `Shortcodes` |
 | `CLI\` | WP-CLI commands | `Commands` |
 | `Messaging\` | Direct messaging engine + REST routes | `MessagingService`, `MessagingController`, `NotificationListener`, `RestPollingTransport`, `TransportInterface` |
+| `Repository\` | Central data access layer | `MediaRepository` |
 | `Capabilities\` | Role/capability management | `MediaCapabilities` |
 
 ---
@@ -79,8 +80,9 @@ Registered in `includes/Core/Plugin.php` via `register_services()` and `init_mes
 | `activity` | `ActivityService` | 477 |
 | `profile` | `ProfileService` | 486 |
 | `messaging` | `MessagingService` | 992 |
+| `media_repository` | `MediaRepository` | 496 |
 
-**33 services total.**
+**34 services total.**
 
 ---
 
