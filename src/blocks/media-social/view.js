@@ -76,7 +76,7 @@ async function fetchComments( ctx ) {
 					author_name: c.author_name || 'Anonymous',
 					author_avatar: c.author_avatar || '',
 					author_url: c.author_url || '',
-					date: c.date_display || c.date,
+					date: new Date( c.date ).toLocaleDateString(),
 					content: c.content,
 					canEdit: isOwnComment && commentAge < editWindow,
 					editing: false,
@@ -137,11 +137,6 @@ store( 'mvs/media-social', {
 		tagDropdownVisible: false,
 		saving: false,
 		shareLabel: '\u{1F517} Share',
-		get commentCountLabel() {
-			const ctx = getContext();
-			const count = ctx.comments?.length || 0;
-			return count > 0 ? `(${ count })` : '';
-		},
 		get hideCommentActions() {
 			const item = getContext().item;
 			return ! item?.canEdit || item?.editing;
