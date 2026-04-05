@@ -23,13 +23,13 @@ if ( ! $media_id ) {
 }
 
 // Verify media exists in the index table.
-if ( ! \WPMediaVerse\Services\MediaMeta::exists( $media_id ) ) {
+if ( ! \WPMediaVerse\Repository\MediaRepository::exists( $media_id ) ) {
 	return;
 }
 
-$file_url   = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_url' );
-$file_type  = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_type' );
-$media_title = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'title' );
+$file_url   = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_url' );
+$file_type  = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_type' );
+$media_title = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'title' );
 
 if ( ! $file_url ) {
 	return;

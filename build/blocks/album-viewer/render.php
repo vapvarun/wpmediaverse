@@ -66,7 +66,7 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 				$file_type  = $item_row['file_type'] ?? '';
 				$media_type = $item_row['media_type'] ?? '';
 				$item_title = $item_row['title'] ?? '';
-				$permalink  = \WPMediaVerse\Services\MediaMeta::get_permalink( $media_id );
+				$permalink  = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_id );
 				$thumb_url = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $media_id, 'large' );
 				if ( ! $thumb_url && 'image' === $media_type && $file_url ) {
 					$thumb_url = set_url_scheme( $file_url );

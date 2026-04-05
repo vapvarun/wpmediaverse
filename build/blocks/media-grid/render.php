@@ -101,7 +101,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 			foreach ( $media_items as $item ) :
 				$item_id             = (int) $item['media_id'];
 				$mvs_grid_media_type = \WPMediaVerse\Core\TemplateHelpers::get_media_type( $item_id );
-				$mvs_grid_group      = \WPMediaVerse\Services\MediaMeta::get( $item_id, 'media_group' );
+				$mvs_grid_group      = \WPMediaVerse\Repository\MediaRepository::get( $item_id, 'media_group' );
 				$mvs_grid_group_cnt  = 0;
 				if ( $mvs_grid_group ) {
 					$mvs_grid_group_cnt = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -111,7 +111,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				}
 				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group ? ' mvs-grid-item--gallery' : '' );
 				$item_title          = $item['title'] ?? '';
-				$item_permalink      = \WPMediaVerse\Services\MediaMeta::get_permalink( $item_id );
+				$item_permalink      = \WPMediaVerse\Repository\MediaRepository::get_permalink( $item_id );
 				?>
 				<div class="<?php echo esc_attr( $mvs_grid_item_class ); ?>"
 					data-media-id="<?php echo absint( $item_id ); ?>"

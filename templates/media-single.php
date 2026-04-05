@@ -67,8 +67,8 @@ $is_video = 'video' === $mvs_media_type;
 $is_audio = 'audio' === $mvs_media_type;
 
 // Extra metadata from meta table.
-$artist     = \WPMediaVerse\Services\MediaMeta::get( $mvs_media_id, 'artist' );
-$album_name = \WPMediaVerse\Services\MediaMeta::get( $mvs_media_id, 'album_name' );
+$artist     = \WPMediaVerse\Repository\MediaRepository::get( $mvs_media_id, 'artist' );
+$album_name = \WPMediaVerse\Repository\MediaRepository::get( $mvs_media_id, 'album_name' );
 
 // Poster/thumbnail from media meta.
 $poster_url = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $mvs_media_id, 'large' );
@@ -98,7 +98,7 @@ $mvs_author_login = $mvs_author ? $mvs_author->user_login : '';
 $mvs_date_display = $mvs_created ? date_i18n( get_option( 'date_format' ), strtotime( $mvs_created ) ) : '';
 
 // Permalink for this media.
-$mvs_permalink = \WPMediaVerse\Services\MediaMeta::get_permalink( $mvs_media_id );
+$mvs_permalink = \WPMediaVerse\Repository\MediaRepository::get_permalink( $mvs_media_id );
 
 // Archive URL (base media page).
 $mvs_archive_url = home_url( '/media/' );
@@ -239,7 +239,7 @@ $mvs_archive_url = home_url( '/media/' );
 
 		// Get tags from taxonomy (media_id -> mvs_tag term relationships via mvs_media_meta).
 		$mvs_tag_names = array();
-		$mvs_tags_raw  = \WPMediaVerse\Services\MediaMeta::get( $mvs_media_id, 'tags' );
+		$mvs_tags_raw  = \WPMediaVerse\Repository\MediaRepository::get( $mvs_media_id, 'tags' );
 		if ( $mvs_tags_raw ) {
 			// Handle both JSON array and comma-separated formats.
 			$decoded = json_decode( $mvs_tags_raw, true );

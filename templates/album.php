@@ -46,11 +46,11 @@ $mvs_archive_url = home_url( '/media/' );
 		?>
 
 		<?php
-		$album_privacy = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'privacy' );
+		$album_privacy = \WPMediaVerse\Repository\MediaRepository::get( get_the_ID(), 'privacy' );
 		if ( ! $album_privacy ) {
 			$album_privacy = 'public';
 		}
-		$album_type         = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'album_type' );
+		$album_type         = \WPMediaVerse\Repository\MediaRepository::get( get_the_ID(), 'album_type' );
 		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
 		?>
 
@@ -311,7 +311,7 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php endif; ?>
 
 			<?php
-			$album_type  = \WPMediaVerse\Services\MediaMeta::get( get_the_ID(), 'album_type' );
+			$album_type  = \WPMediaVerse\Repository\MediaRepository::get( get_the_ID(), 'album_type' );
 			$is_playlist = 'playlist' === $album_type;
 			?>
 
@@ -322,7 +322,7 @@ $mvs_archive_url = home_url( '/media/' );
 				$tracks = array();
 				foreach ( $items as $track_idx => $item_row ) {
 					$track_media_id = (int) $item_row['media_id'];
-					$track_art      = \WPMediaVerse\Services\MediaMeta::get( $track_media_id, 'artist' );
+					$track_art      = \WPMediaVerse\Repository\MediaRepository::get( $track_media_id, 'artist' );
 					$dur_label      = '';
 					if ( ! empty( $item_row['duration'] ) ) {
 						$d         = (float) $item_row['duration'];
@@ -335,7 +335,7 @@ $mvs_archive_url = home_url( '/media/' );
 						'url'      => ! empty( $item_row['file_url'] ) ? set_url_scheme( $item_row['file_url'] ) : '',
 						'type'     => $item_row['file_type'] ?? '',
 						'duration' => $dur_label,
-						'link'     => \WPMediaVerse\Services\MediaMeta::get_permalink( $track_media_id ),
+						'link'     => \WPMediaVerse\Repository\MediaRepository::get_permalink( $track_media_id ),
 					);
 				}
 				?>

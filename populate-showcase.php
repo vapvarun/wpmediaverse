@@ -545,7 +545,7 @@ foreach ( $stock_images as $idx => $img ) {
 	}
 
 	// Set meta via custom tables (not wp_postmeta).
-	\WPMediaVerse\Services\MediaMeta::set_many(
+	\WPMediaVerse\Repository\MediaRepository::set_many(
 		$post_id,
 		array(
 			'file_url'          => $file_url,
@@ -672,7 +672,7 @@ foreach ( $albums_config as $album_cfg ) {
 				),
 				array( '%d', '%d', '%d', '%s' )
 			);
-			\WPMediaVerse\Services\MediaMeta::set( $media['post_id'], 'album_id', $album_id );
+			\WPMediaVerse\Repository\MediaRepository::set( $media['post_id'], 'album_id', $album_id );
 			$album_items[] = $media['post_id'];
 			++$position;
 		}
@@ -908,7 +908,7 @@ if ( function_exists( 'bp_activity_add' ) ) {
 	$bp_activities = 0;
 	foreach ( $created_media as $media ) {
 		$thumb_url = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( (int) $media['post_id'], 'medium' );
-		$content   = $thumb_url ? '<div class="mvs-activity-media"><img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( \WPMediaVerse\Services\MediaMeta::get( (int) $media['post_id'], 'title' ) ?: '' ) . '"></div>' : '';
+		$content   = $thumb_url ? '<div class="mvs-activity-media"><img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( \WPMediaVerse\Repository\MediaRepository::get( (int) $media['post_id'], 'title' ) ?: '' ) . '"></div>' : '';
 
 		bp_activity_add(
 			array(
@@ -919,7 +919,7 @@ if ( function_exists( 'bp_activity_add' ) ) {
 				'content'       => $content,
 				'primary_link'  => get_permalink( $media['post_id'] ),
 				'date_recorded' => $media['date'],
-				'hide_sitewide' => ( 'public' !== \WPMediaVerse\Services\MediaMeta::get( $media['post_id'], 'privacy' ) ),
+				'hide_sitewide' => ( 'public' !== \WPMediaVerse\Repository\MediaRepository::get( $media['post_id'], 'privacy' ) ),
 			)
 		);
 		++$bp_activities;

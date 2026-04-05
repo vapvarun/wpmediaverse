@@ -33,7 +33,7 @@ $media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	"SELECT media_id FROM {$wpdb->prefix}mvs_media_index" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 );
 foreach ( $media_ids as $mid ) {
-	\WPMediaVerse\Services\MediaMeta::delete_all( (int) $mid );
+	\WPMediaVerse\Repository\MediaRepository::delete_all( (int) $mid );
 }
 
 // Delete albums + collections (still CPTs).

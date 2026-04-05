@@ -24,18 +24,18 @@ if ( ! $media_id ) {
 }
 
 // Verify media exists in the index table.
-if ( ! \WPMediaVerse\Services\MediaMeta::exists( $media_id ) ) {
+if ( ! \WPMediaVerse\Repository\MediaRepository::exists( $media_id ) ) {
 	return;
 }
 
-$media_title = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'title' ) ?: '';
+$media_title = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'title' ) ?: '';
 $user_id     = get_current_user_id();
 $container   = \WPMediaVerse\Core\Plugin::container();
 $privacy     = $container->get( 'privacy' );
 $has_access  = $privacy->can_view( $media_id, $user_id );
 
-$file_url  = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_url' );
-$file_type = \WPMediaVerse\Services\MediaMeta::get( $media_id, 'file_type' );
+$file_url  = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_url' );
+$file_type = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_type' );
 $is_image  = $file_url && 0 === strpos( $file_type, 'image/' );
 $wrapper   = get_block_wrapper_attributes( array( 'class' => 'mvs-lock-overlay-block' ) );
 
@@ -44,7 +44,7 @@ $access_rules = $container->get( 'access_rules' );
 $rules        = $access_rules->get_rules( $media_id );
 $rule_types   = array_unique( array_column( $rules, 'rule_type' ) );
 
-$permalink = \WPMediaVerse\Services\MediaMeta::get_permalink( $media_id );
+$permalink = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_id );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/lock-overlay"

@@ -827,7 +827,7 @@ foreach ( $images as $idx => $img ) {
 	}
 
 	// Insert into mvs_media_index (returns auto-generated media_id).
-	$media_id = \WPMediaVerse\Services\MediaMeta::insert(
+	$media_id = \WPMediaVerse\Repository\MediaRepository::insert(
 		array(
 			'title'             => $img['title'],
 			'description'       => $img['description'],
@@ -853,17 +853,17 @@ foreach ( $images as $idx => $img ) {
 	// Store thumbnails.
 	foreach ( $imported['thumbs'] as $key => $value ) {
 		if ( str_starts_with( $key, 'thumb_' ) ) {
-			\WPMediaVerse\Services\MediaMeta::set( $media_id, $key, $value );
+			\WPMediaVerse\Repository\MediaRepository::set( $media_id, $key, $value );
 		}
 	}
 
 	// Store tags as meta AND assign to mvs_tag taxonomy (for tag cloud + filtering).
 	if ( ! empty( $img['tags'] ) ) {
-		\WPMediaVerse\Services\MediaMeta::set( $media_id, 'tags', $img['tags'] );
+		\WPMediaVerse\Repository\MediaRepository::set( $media_id, 'tags', $img['tags'] );
 		wp_set_object_terms( $media_id, $img['tags'], 'mvs_tag', true );
 	}
 	if ( ! empty( $img['category'] ) ) {
-		\WPMediaVerse\Services\MediaMeta::set( $media_id, 'category', $img['category'] );
+		\WPMediaVerse\Repository\MediaRepository::set( $media_id, 'category', $img['category'] );
 		wp_set_object_terms( $media_id, $img['category'], 'mvs_category', true );
 	}
 
@@ -1231,7 +1231,7 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 
 	// Get test users (use the authors from created media).
 	$test_users = array_unique( array_map( function( $id ) {
-		return (int) \WPMediaVerse\Services\MediaMeta::get_author( $id );
+		return (int) \WPMediaVerse\Repository\MediaRepository::get_author( $id );
 	}, $created_media_ids ) );
 
 	// --- Challenge 1: Active challenge (accepting entries) ---
@@ -1252,7 +1252,7 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 		mvs_seed_log( '  Challenge: Golden Hour Photography (active)' );
 		// Submit 3 entries from demo media.
 		for ( $i = 0; $i < min( 3, count( $created_media_ids ) ); $i++ ) {
-			$author = (int) \WPMediaVerse\Services\MediaMeta::get_author( $created_media_ids[ $i ] );
+			$author = (int) \WPMediaVerse\Repository\MediaRepository::get_author( $created_media_ids[ $i ] );
 			if ( $author > 0 ) {
 				$challenge_service->submit_entry( $ch1, $author, $created_media_ids[ $i ] );
 			}
@@ -1283,10 +1283,10 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 			$battle_service->accept( $b1, $test_users[1] );
 			// Submit media from each user.
 			$user1_media = array_filter( $created_media_ids, function( $id ) use ( $test_users ) {
-				return (int) \WPMediaVerse\Services\MediaMeta::get_author( $id ) === $test_users[0];
+				return (int) \WPMediaVerse\Repository\MediaRepository::get_author( $id ) === $test_users[0];
 			} );
 			$user2_media = array_filter( $created_media_ids, function( $id ) use ( $test_users ) {
-				return (int) \WPMediaVerse\Services\MediaMeta::get_author( $id ) === $test_users[1];
+				return (int) \WPMediaVerse\Repository\MediaRepository::get_author( $id ) === $test_users[1];
 			} );
 			if ( ! empty( $user1_media ) ) {
 				$battle_service->submit_media( $b1, $test_users[0], reset( $user1_media ) );
