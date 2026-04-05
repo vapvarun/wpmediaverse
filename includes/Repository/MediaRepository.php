@@ -738,14 +738,83 @@ class MediaRepository {
 	}
 
 	/**
-	 * Delete all data for a media item (both index and meta).
+	 * Delete all data for a media item (delegates to delete_cascade).
 	 *
 	 * @param int $media_id Media ID.
 	 */
 	public static function delete_all( int $media_id ): void {
+		self::delete_cascade( $media_id );
+	}
+
+	/* ---------------------------------------------------------------
+	 * Lifecycle Methods
+	 * ------------------------------------------------------------- */
+
+	/**
+	 * Soft-delete a media item by setting its status to 'trash'.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool True on success.
+	 */
+	public static function trash( int $media_id ): bool {
 		global $wpdb;
 
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_meta', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$result = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_media_index',
+			array(
+				'status'     => 'trash',
+				'updated_at' => current_time( 'mysql', true ),
+			),
+			array( 'media_id' => $media_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Restore a trashed media item back to 'publish' status.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool True on success.
+	 */
+	public static function restore( int $media_id ): bool {
+		global $wpdb;
+
+		$result = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_media_index',
+			array(
+				'status'     => 'publish',
+				'updated_at' => current_time( 'mysql', true ),
+			),
+			array( 'media_id' => $media_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Permanently delete a media item and all related data.
+	 *
+	 * Removes rows from stats, views, meta, and index tables (in that order).
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool Always true.
+	 */
+	public static function delete_cascade( int $media_id ): bool {
+		global $wpdb;
+
+		$where  = array( 'media_id' => $media_id );
+		$format = array( '%d' );
+
+		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $wpdb->prefix . 'mvs_media_views', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $wpdb->prefix . 'mvs_media_meta', $where, $format );  // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		return true;
 	}
 }
