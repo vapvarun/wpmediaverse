@@ -408,6 +408,18 @@ class MediaController extends WP_REST_Controller {
 
 		$int_ids = array_map( 'intval', $ids );
 
+		/**
+		 * Filter the final list of media IDs returned by the feed query.
+		 *
+		 * Allows Pro to reorder results (e.g. promote boosted media).
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int[]           $int_ids Media IDs in display order.
+		 * @param WP_REST_Request $request REST request object.
+		 */
+		$int_ids = apply_filters( 'mvs_feed_media_ids', $int_ids, $request );
+
 		$items = array();
 		foreach ( $int_ids as $media_id ) {
 			$item = $this->prepare_item_for_response( $media_id, $request );

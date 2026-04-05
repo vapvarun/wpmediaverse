@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.1.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-04-04 14:49:46+00:00\n"
+"POT-Creation-Date: 2026-04-04 14:56:04+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -1979,11 +1979,11 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:1664
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2229
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2242
-#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2320
+#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2321
 #: includes/Admin/SettingsPage.php:1353 includes/Admin/SettingsPage.php:1385
 #: includes/Admin/SettingsPage.php:1458 includes/Admin/SettingsPage.php:1496
 #: includes/Admin/SettingsPage.php:1664 includes/Admin/SettingsPage.php:2229
-#: includes/Admin/SettingsPage.php:2242 includes/Admin/SettingsPage.php:2321
+#: includes/Admin/SettingsPage.php:2242 includes/Admin/SettingsPage.php:2322
 msgid "Pro"
 msgstr ""
 
@@ -2189,93 +2189,93 @@ msgstr ""
 msgid "All events"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2290
+#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2291
 #: includes/Admin/SettingsPage.php:2291
 msgid "— Select —"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2299
-#: includes/Admin/SettingsPage.php:2300
+#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2300
+#: includes/Admin/SettingsPage.php:2301
 msgid "View Page"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2319
-#: includes/Admin/SettingsPage.php:2320
+#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2320
+#: includes/Admin/SettingsPage.php:2321
 msgid "Unlock More with WPMediaVerse Pro"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2328
-#: includes/Admin/SettingsPage.php:2329
+#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2329
+#: includes/Admin/SettingsPage.php:2330
 msgid "Upgrade to Pro"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2343
-#: includes/Admin/SettingsPage.php:2344
-msgid "Amazon S3 cloud storage for unlimited scalability"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2344
 #: includes/Admin/SettingsPage.php:2345
-msgid "BunnyCDN integration for global content delivery"
+msgid "Amazon S3 cloud storage for unlimited scalability"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2345
 #: includes/Admin/SettingsPage.php:2346
-msgid "Image watermarking with custom position and opacity"
+msgid "BunnyCDN integration for global content delivery"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2346
 #: includes/Admin/SettingsPage.php:2347
-msgid "Advanced privacy controls per media item"
+msgid "Image watermarking with custom position and opacity"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2349
-#: includes/Admin/SettingsPage.php:2350
-msgid "Custom player skins and branding"
+#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2347
+#: includes/Admin/SettingsPage.php:2348
+msgid "Advanced privacy controls per media item"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2350
 #: includes/Admin/SettingsPage.php:2351
-msgid "Video chapters and resume playback"
+msgid "Custom player skins and branding"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2351
 #: includes/Admin/SettingsPage.php:2352
-msgid "Auto-generated video captions (Whisper AI)"
+msgid "Video chapters and resume playback"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2354
-#: includes/Admin/SettingsPage.php:2355
-msgid "Google Vision AI provider"
+#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2352
+#: includes/Admin/SettingsPage.php:2353
+msgid "Auto-generated video captions (Whisper AI)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2355
 #: includes/Admin/SettingsPage.php:2356
-msgid "AWS Rekognition AI provider"
+msgid "Google Vision AI provider"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2356
 #: includes/Admin/SettingsPage.php:2357
-msgid "AI provider fallback chains and comparison mode"
+msgid "AWS Rekognition AI provider"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2357
 #: includes/Admin/SettingsPage.php:2358
-msgid "Per-category moderation thresholds"
+msgid "AI provider fallback chains and comparison mode"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2360
-#: includes/Admin/SettingsPage.php:2361
-msgid "Multiple webhook endpoints"
+#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2358
+#: includes/Admin/SettingsPage.php:2359
+msgid "Per-category moderation thresholds"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2361
 #: includes/Admin/SettingsPage.php:2362
-msgid "Webhook delivery logs and retry management"
+msgid "Multiple webhook endpoints"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SettingsPage.php:2362
 #: includes/Admin/SettingsPage.php:2363
+msgid "Webhook delivery logs and retry management"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/SettingsPage.php:2363
+#: includes/Admin/SettingsPage.php:2364
 msgid "Custom webhook event filters"
 msgstr ""
 
