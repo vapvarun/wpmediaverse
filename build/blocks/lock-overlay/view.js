@@ -1,1 +1,1 @@
-import{store as s}from"@wordpress/interactivity";s("mvs/lock-overlay",{actions:{requestAccess(){}}});
+(()=>{"use strict";(0,window.wp.interactivity.store)("mvs/lock-overlay",{actions:{requestAccess(){}}})})();

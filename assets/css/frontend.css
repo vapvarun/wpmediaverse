@@ -1001,48 +1001,73 @@
    ========================================================================== */
 
 .mvs-comments-section {
-	padding: 12px 16px 16px;
+	padding: 16px 20px 20px;
 	border-top: 1px solid #efefef;
 }
 
 .mvs-comments-title {
 	font-size: 0.9375rem;
 	font-weight: 600;
-	margin: 0 0 12px;
+	margin: 0 0 16px;
 	color: #262626;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.mvs-comments-count {
+	font-weight: 400;
+	font-size: 0.8125rem;
+	color: #8e8e8e;
 }
 
 .mvs-comment-form {
 	display: flex;
 	gap: 8px;
-	margin-bottom: 16px;
+	margin-bottom: 20px;
+	align-items: flex-end;
 }
 
 .mvs-comment-form textarea {
 	flex: 1;
-	padding: 10px 12px;
+	padding: 10px 14px;
 	border: 1px solid #dbdbdb;
-	border-radius: 8px;
+	border-radius: 20px;
 	resize: none;
 	min-height: 40px;
+	max-height: 120px;
 	font-family: inherit;
 	font-size: 0.875rem;
+	line-height: 1.4;
+	background: #fafafa;
+	transition: border-color 0.2s, background 0.2s;
+}
+
+.mvs-comment-form textarea:focus {
+	border-color: var(--mvs-primary);
+	background: #fff;
+	outline: none;
 }
 
 .mvs-comment-form button {
-	padding: 10px 16px;
+	padding: 8px 20px;
 	background: var(--mvs-primary);
-	color: var(--mvs-bg);
+	color: #fff;
 	border: none;
-	border-radius: 6px;
+	border-radius: 20px;
 	cursor: pointer;
-	font-size: 0.9em;
-	align-self: flex-end;
-	transition: background 0.2s;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	transition: background 0.2s, transform 0.1s;
+	white-space: nowrap;
 }
 
 .mvs-comment-form button:hover {
 	background: var(--mvs-primary-hover);
+}
+
+.mvs-comment-form button:active {
+	transform: scale(0.96);
 }
 
 .mvs-comment-list {
@@ -1052,39 +1077,59 @@
 }
 
 .mvs-comment-item {
-	padding: 12px 0;
-	border-bottom: 1px solid #f0f0f0;
+	padding: 6px 0;
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
 }
 
 .mvs-comment-item:last-child {
 	border-bottom: none;
 }
 
+.mvs-comment-header {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-bottom: 2px;
+}
+
 .mvs-comment-author-link {
 	display: inline-flex;
 	align-items: center;
-	gap: 8px;
+	gap: 10px;
 	text-decoration: none;
 	color: inherit;
+	flex-shrink: 0;
 }
 .mvs-comment-author-link:hover .mvs-comment-author { text-decoration: underline; }
 
 .mvs-comment-author {
 	font-weight: 600;
-	font-size: 0.9em;
+	font-size: 0.8125rem;
+	color: #050505;
 }
 
-.mvs-comment-date {
-	font-size: 0.8em;
-	color: #999;
-	margin-left: 8px;
+.mvs-comment-body {
+	flex: 1;
+	min-width: 0;
 }
 
 .mvs-comment-text {
-	margin-top: 4px;
-	font-size: 0.9em;
-	line-height: 1.5;
-	color: #333;
+	font-size: 0.875rem;
+	line-height: 1.4;
+	color: #1c1e21;
+	word-break: break-word;
+	margin-top: 1px;
+	padding-left: 46px;
+}
+
+.mvs-comment-date {
+	font-size: 0.75rem;
+	color: #8e8e8e;
+	font-weight: 400;
+	margin-left: auto;
+	white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -3283,25 +3328,35 @@ a.mvs-dashboard-card-title:hover {
    28. Comment Edit/Delete Actions
    ========================================================================== */
 
-.mvs-comment-header {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-bottom: 4px;
-}
-
 .mvs-comment-avatar {
-	width: 32px;
-	height: 32px;
+	width: 36px;
+	height: 36px;
 	border-radius: 50%;
 	object-fit: cover;
 	flex-shrink: 0;
+	display: block;
 }
 
 .mvs-comment-actions {
 	display: flex;
-	gap: 6px;
-	margin-top: 6px;
+	gap: 8px;
+	padding: 2px 14px 0;
+}
+
+.mvs-comment-actions button {
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: #65676b;
+	background: none;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	transition: color 0.15s;
+}
+
+.mvs-comment-actions button:hover {
+	color: #050505;
+	text-decoration: underline;
 }
 
 .mvs-comment-edit-form {

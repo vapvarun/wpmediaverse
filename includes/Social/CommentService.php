@@ -194,6 +194,7 @@ class CommentService {
 			'content'       => $comment->comment_content,
 			'parent'        => (int) $comment->comment_parent,
 			'date'          => $comment->comment_date_gmt,
+			'date_display'  => human_time_diff( strtotime( $comment->comment_date_gmt ), time() ) . ' ' . __( 'ago', 'wpmediaverse' ),
 		);
 
 		if ( $include_replies ) {
@@ -235,6 +236,7 @@ class CommentService {
 			'content'       => $comment->comment_content,
 			'parent'        => (int) $comment->comment_parent,
 			'date'          => $comment->comment_date_gmt,
+			'date_display'  => human_time_diff( strtotime( $comment->comment_date_gmt ), time() ) . ' ' . __( 'ago', 'wpmediaverse' ),
 			'replies'       => array(),
 		);
 
