@@ -25,6 +25,60 @@ class LoggerService {
 	 * Register action hooks for automatic logging of key operations.
 	 */
 	public static function register_hooks(): void {
+		// Reaction added.
+		add_action(
+			'mvs_reaction_added',
+			function ( int $media_id, int $user_id, string $type ): void {
+				self::info(
+					'social',
+					sprintf( 'Reaction added: %s on media #%d', $type, $media_id ),
+					array(
+						'media_id' => $media_id,
+						'user_id'  => $user_id,
+						'type'     => $type,
+					)
+				);
+			},
+			10,
+			3
+		);
+
+		// Comment created.
+		add_action(
+			'mvs_comment_created',
+			function ( int $media_id, int $user_id, int $comment_id ): void {
+				self::info(
+					'social',
+					sprintf( 'Comment #%d on media #%d', $comment_id, $media_id ),
+					array(
+						'comment_id' => $comment_id,
+						'media_id'   => $media_id,
+						'user_id'    => $user_id,
+					)
+				);
+			},
+			10,
+			3
+		);
+
+		// Favorite toggled.
+		add_action(
+			'mvs_favorite_toggled',
+			function ( int $media_id, int $user_id, string $action ): void {
+				self::info(
+					'social',
+					sprintf( 'Media #%d %s by user #%d', $media_id, $action, $user_id ),
+					array(
+						'media_id' => $media_id,
+						'user_id'  => $user_id,
+						'action'   => $action,
+					)
+				);
+			},
+			10,
+			3
+		);
+
 		// Media upload success.
 		add_action(
 			'mvs_media_uploaded',
