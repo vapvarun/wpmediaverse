@@ -112,7 +112,7 @@ class CommentService {
 				'number'  => $per_page,
 				'offset'  => ( $page - 1 ) * $per_page,
 				'orderby' => 'comment_date_gmt',
-				'order'   => 'ASC',
+				'order'   => 'DESC',
 			)
 		);
 
