@@ -739,12 +739,17 @@ class Plugin {
 		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
 
 		// Detect mapped MVS pages (explore, dashboard, upload) — globals aren't set yet at enqueue time.
-		$mvs_page_ids = array_filter( array_map( 'absint', array(
-			get_option( 'mvs_page_explore', 0 ),
-			get_option( 'mvs_page_dashboard', 0 ),
-			get_option( 'mvs_page_upload', 0 ),
-		) ) );
-		$is_mvs_page = is_page( $mvs_page_ids );
+		$mvs_page_ids = array_filter(
+			array_map(
+				'absint',
+				array(
+					get_option( 'mvs_page_explore', 0 ),
+					get_option( 'mvs_page_dashboard', 0 ),
+					get_option( 'mvs_page_upload', 0 ),
+				)
+			)
+		);
+		$is_mvs_page  = is_page( $mvs_page_ids );
 
 		// Always enqueue on MVS pages or pages with dashboard shortcode.
 		if ( $is_mvs || $is_archive || $is_mvs_tax || $is_mvs_tpl || $is_mvs_page ) {
@@ -1107,7 +1112,10 @@ class Plugin {
 
 		$mvs_shared_ui_asset = file_exists( MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php' )
 			? require MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php'
-			: array( 'dependencies' => array(), 'version' => MVS_VERSION );
+			: array(
+				'dependencies' => array(),
+				'version'      => MVS_VERSION,
+			);
 		wp_enqueue_script_module(
 			'@mvs/shared-ui',
 			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
@@ -1133,12 +1141,17 @@ class Plugin {
 		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
 
 		// Detect mapped MVS pages.
-		$mvs_shell_page_ids = array_filter( array_map( 'absint', array(
-			get_option( 'mvs_page_explore', 0 ),
-			get_option( 'mvs_page_dashboard', 0 ),
-			get_option( 'mvs_page_upload', 0 ),
-		) ) );
-		$is_mvs_shell_page = ! empty( $mvs_shell_page_ids ) && is_page( $mvs_shell_page_ids );
+		$mvs_shell_page_ids = array_filter(
+			array_map(
+				'absint',
+				array(
+					get_option( 'mvs_page_explore', 0 ),
+					get_option( 'mvs_page_dashboard', 0 ),
+					get_option( 'mvs_page_upload', 0 ),
+				)
+			)
+		);
+		$is_mvs_shell_page  = ! empty( $mvs_shell_page_ids ) && is_page( $mvs_shell_page_ids );
 
 		if ( ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl && ! $is_mvs_shell_page ) {
 			return;
