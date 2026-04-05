@@ -29,7 +29,8 @@
 | `REST\` | Rate limiting middleware | `RateLimiter` |
 | `Services\` | Business logic, storage, AI, caching | `UploadService`, `StorageService`, `PrivacyService`, `AlbumService`, `CollectionService`, `StoryService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AccessRulesService`, `SignedUrlService`, `WatermarkService`, `CacheService`, `LoggerService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `LocalDriver` |
 | `Social\` | Social interactions (reactions, comments, follows) | `ReactionService`, `CommentService`, `FavoriteService`, `MentionService`, `ShareService`, `FollowService`, `NotificationService`, `ReportService`, `ActivityService` |
-| `Integrations\` | Third-party platform bridges | `BuddyPressIntegration`, `WebhookService` |
+| `Integrations\` | Third-party platform bridges | `WebhookService` |
+| `Integrations\BuddyPress\` | BuddyPress integration (7 focused classes) | `BuddyPressManager`, `ActivitySyncIntegration`, `ActivityContentIntegration`, `ProfileTabIntegration`, `GroupTabIntegration`, `NotificationIntegration`, `ActivityFormIntegration`, `MediaDisplayHelper` |
 | `PostTypes\` | Custom post type registration | `Album`, `Collection` |
 | `Taxonomies\` | Custom taxonomy registration | `MediaTag`, `MediaCategory` |
 | `Blocks\` | Gutenberg block registration | `BlockRegistrar` |
@@ -135,7 +136,7 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 
 | File | Lines | Status |
 |------|------:|--------|
-| `includes/Integrations/BuddyPressIntegration.php` | 2,811 | God class — needs split into sub-integrations |
+| `includes/Integrations/BuddyPress/` | DONE | Split into 7 classes (was 2,811-line god class) |
 | `includes/Admin/SettingsPage.php` | 2,401 | God class — needs section-per-file refactor |
 | `includes/Messaging/MessagingService.php` | 1,606 | God class — extract conversation/message sub-services |
 | `includes/Core/Plugin.php` | 1,208 | Bootstrap monolith — acceptable but avoid adding logic |
