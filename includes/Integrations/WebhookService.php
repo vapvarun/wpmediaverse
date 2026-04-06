@@ -199,7 +199,7 @@ class WebhookService {
 				'body'      => $body,
 				'headers'   => $headers,
 				'timeout'   => 15,
-				'sslverify' => true,
+				'sslverify' => (bool) apply_filters( 'mvs_webhook_sslverify', ! wp_is_local_environment(), $url ),
 			)
 		);
 

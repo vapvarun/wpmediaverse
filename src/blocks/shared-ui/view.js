@@ -48,6 +48,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalTotal: 0,
 		uploadModalDone: 0,
 		uploadModalFailed: 0,
+		uploadModalLastError: '',
 		uploadModalTitle: '',
 		uploadModalDescription: '',
 		uploadModalTags: '',
@@ -283,6 +284,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalProgress = 0;
 			state.uploadModalDone = 0;
 			state.uploadModalFailed = 0;
+			state.uploadModalLastError = '';
 			state.uploadModalTitle = '';
 			state.uploadModalDescription = '';
 			state.uploadModalTags = '';
@@ -311,11 +313,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		handleFileSelect( event ) {
-			const files = Array.from( event.target.files );
+			const rawFiles = Array.from( event.target.files );
+			if ( ! rawFiles.length ) return;
+
+			const files = actions.filterFilesByMode( rawFiles );
 			if ( ! files.length ) return;
 
-			// In photo/video mode, only keep last file.
-			if ( state.uploadModalMode === 'photo' || state.uploadModalMode === 'video' ) {
+			// In photo/video/audio mode, only keep last file.
+			if ( state.uploadModalMode === 'photo' || state.uploadModalMode === 'video' || state.uploadModalMode === 'audio' ) {
 				state.uploadModalFiles = [ files[ files.length - 1 ] ];
 			} else {
 				state.uploadModalFiles = [ ...state.uploadModalFiles, ...files ];
@@ -337,10 +342,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		handleUploadDrop( event ) {
 			event.preventDefault();
-			const files = Array.from( event.dataTransfer.files );
+			const rawFiles = Array.from( event.dataTransfer.files );
+			if ( ! rawFiles.length ) return;
+
+			const files = actions.filterFilesByMode( rawFiles );
 			if ( ! files.length ) return;
 
-			if ( state.uploadModalMode === 'photo' || state.uploadModalMode === 'video' ) {
+			if ( state.uploadModalMode === 'photo' || state.uploadModalMode === 'video' || state.uploadModalMode === 'audio' ) {
 				state.uploadModalFiles = [ files[ 0 ] ];
 			} else {
 				state.uploadModalFiles = [ ...state.uploadModalFiles, ...files ];
@@ -361,6 +369,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		handleUploadDragOver( event ) {
 			event.preventDefault();
+		},
+		filterFilesByMode( files ) {
+			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
+			const prefix = prefixes[ state.uploadModalMode ] || 'image/';
+			const valid = files.filter( ( f ) => f.type.startsWith( prefix ) );
+			const rejected = files.length - valid.length;
+			if ( rejected > 0 ) {
+				actions.showToast( rejected + ' file(s) not allowed for ' + state.uploadModalMode + ' upload.', 'error' );
+			}
+			return valid;
 		},
 		updateUploadTitle( event ) {
 			state.uploadModalTitle = event.target.value;
@@ -463,7 +481,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						credentials: 'same-origin',
 						body: fd,
 					} );
-					if ( ! res.ok ) state.uploadModalFailed++;
+					if ( ! res.ok ) {
+						state.uploadModalFailed++;
+						try {
+							const errData = await res.json();
+							state.uploadModalLastError = errData.message || 'Upload failed.';
+						} catch { /* ignore parse error */ }
+					}
 				} catch {
 					state.uploadModalFailed++;
 				}
@@ -474,13 +498,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalUploading = false;
 
 			if ( uploaded > 0 ) {
-				actions.showToast( uploaded + ' file(s) uploaded!' );
+				const msg = state.uploadModalFailed > 0
+					? uploaded + ' uploaded, ' + state.uploadModalFailed + ' failed.'
+					: uploaded + ' file(s) uploaded!';
+				actions.showToast( msg, state.uploadModalFailed > 0 ? 'error' : 'success' );
 				setTimeout( () => {
 					actions.closeUploadModal();
 					window.location.reload();
 				}, 800 );
 			} else {
-				actions.showToast( 'Upload failed. Please try again.', 'error' );
+				actions.showToast( state.uploadModalLastError || 'Upload failed. Please try again.', 'error' );
 			}
 		},
 

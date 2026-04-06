@@ -1194,10 +1194,13 @@ body.mvs-page {
 
 .mvs-btn--danger {
 	background: #dc3545;
+	color: #fff;
 }
 
-.mvs-btn--danger:hover {
+.mvs-btn--danger:hover,
+.mvs-btn--danger:focus {
 	background: #c82333;
+	color: #fff;
 }
 
 .mvs-btn--small {
