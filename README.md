@@ -103,7 +103,7 @@ Deeply integrated with BuddyPress — all features activate automatically when B
 **Additional BP features:**
 - Activity media attachment — Photo/Video button in "What's New" form
 - Multi-image grid layout in activity stream (Facebook-style)
-- Instagram-style lightbox on activity images (reactions, comments, favorites, share)
+- Instagram-style lightbox on activity media — images, video player, and audio player (reactions, comments, favorites, share)
 - BP notifications for reactions, comments, and mentions
 - Media count badge on profile tab ("Media 49")
 - Activity filter dropdown includes Media Uploads
@@ -124,7 +124,7 @@ Deeply integrated with BuddyPress — all features activate automatically when B
 | Explore Feed | `mvs/explore-feed` | Public explore feed with search and filters |
 | Explore View | `mvs/explore-view` | Explore page layout with browse modes |
 | Dashboard View | `mvs/dashboard-view` | User dashboard (My Media, Albums, Favorites) |
-| Shared UI | `mvs/shared-ui` | Lightbox shell, FAB uploader, shared components |
+| Shared UI | `mvs/shared-ui` | Lightbox shell (image/video/audio), FAB uploader, shared components |
 | Lock Overlay | `mvs/lock-overlay` | Paywall overlay with blurred preview + unlock prompt |
 
 ### Shortcodes
