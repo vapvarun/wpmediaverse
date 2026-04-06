@@ -117,11 +117,25 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * New: Unified Stats page — Overview + Video Analytics (Pro) tab
 * New: Activity logging for uploads, moderation, reports, and user actions
 * New: Settings page header bar with version badge and Setup Wizard link
+* New: Lightbox video and audio playback — native player controls for all media types
+* New: Upload capabilities granted to all roles on activation (including custom and BuddyPress roles)
 * Enhancement: Complete admin UX overhaul following wbcom-modern-admin rulebook
 * Enhancement: CSS design token system — 20 semantic tokens replace 90+ hardcoded hex values
 * Enhancement: Lightbox works for logged-out users (read-only reactions, comments visible)
 * Enhancement: REST API tag, category, search, scope, group_covers filters + stats in response
 * Enhancement: Cleaner admin menu — Migration, Reports, Analytics hidden from sidebar
+* Enhancement: FAB upload button only shows on MVS pages for focused UX
+* Enhancement: BuddyPress activity lightbox supports video and audio inline playback
+* Fix: Delete button not working (state binding mismatch in confirm dialog)
+* Fix: Media single URLs with underscores redirecting to wrong page
+* Fix: Setup wizard page mapping using wrong page IDs after site reset
+* Fix: Grid columns setting ignored due to block.json default override
+* Fix: Toast notification bindings across all templates
+* Fix: Notification items missing clickable links
+* Fix: Album cover image quality upgraded from medium to large
+* Fix: Share button link generation with proper error handling
+* Fix: Default privacy not applied to new uploads
+* Fix: BP Activity form script loading from wrong path
 * Fix: Stats REST endpoint returns zeros for new media (was 404)
 * Fix: Confirm dialog dynamic button labels (Report/Delete)
 * Fix: Report dialog with reason dropdown selector
@@ -131,7 +145,10 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * Fix: Unified per_page to use mvs_items_per_page setting everywhere
 * Fix: Accessibility — visible focus rings, aria-current, aria-label, reduced-motion
 * Fix: Removed all inline styles from admin PHP templates (14 instances)
+* Security: Sanitized $_SERVER['REQUEST_URI'] in login redirect
+* Security: Webhook SSL verify uses wp_is_local_environment for local dev
 * Cleanup: Removed dead infinite scroll code
+* Cleanup: Removed unused setup wizard permissions step
 
 = 1.0.0 =
 * Initial release — complete media platform for WordPress
