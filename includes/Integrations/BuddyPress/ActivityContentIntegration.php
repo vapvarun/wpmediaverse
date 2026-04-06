@@ -630,17 +630,35 @@ class ActivityContentIntegration {
 	 * @return int MVS post ID, or 0 if not found.
 	 */
 	private function get_mvs_id_from_file_url( string $url ): int {
+		global $wpdb;
+
 		// Strip thumbnail size suffix (e.g. -320x240.png → .png).
 		$clean = preg_replace( '/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $url );
 
+		// 1. Direct lookup in mvs_media_index by file_url (handles imported media).
+		$media_id = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_url = %s OR file_url = %s LIMIT 1",
+				$clean,
+				set_url_scheme( $clean )
+			)
+		);
+		if ( $media_id ) {
+			return $media_id;
+		}
+
+		// 2. Fallback: resolve WP attachment ID → find via wp_attachment_id meta.
 		$attach_id = attachment_url_to_postid( $clean );
 		if ( ! $attach_id && $clean !== $url ) {
 			$attach_id = attachment_url_to_postid( $url );
 		}
-		if ( ! $attach_id ) {
-			return 0;
+		if ( $attach_id ) {
+			$found = $this->find_media_by_meta_key( 'wp_attachment_id', (string) $attach_id );
+			if ( $found ) {
+				return $found;
+			}
 		}
 
-		return $this->find_media_by_meta_key( 'attachment_id', (string) $attach_id );
+		return 0;
 	}
 }
