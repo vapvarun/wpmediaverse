@@ -121,14 +121,21 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxIsAudio() {
 			return state.lightboxMediaData?.media_type === 'audio';
 		},
+		get lightboxHideVideo() {
+			return state.lightboxMediaData?.media_type !== 'video';
+		},
+		get lightboxHideAudio() {
+			return state.lightboxMediaData?.media_type !== 'audio';
+		},
+		get lightboxHideImage() {
+			const t = state.lightboxMediaData?.media_type;
+			return t === 'video' || t === 'audio';
+		},
 		get lightboxVideoUrl() {
 			return state.lightboxMediaData?.file_url || '';
 		},
 		get lightboxFileType() {
 			return state.lightboxMediaData?.file_type || '';
-		},
-		get lightboxIsImage() {
-			return ! state.lightboxIsVideo && ! state.lightboxIsAudio;
 		},
 		get lightboxTitle() {
 			return state.lightboxMediaData?.title || '';

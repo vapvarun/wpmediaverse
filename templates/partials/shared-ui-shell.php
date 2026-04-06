@@ -225,15 +225,15 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 				</button>
 
 				<video class="mvs-lightbox-video" controls playsinline
-					data-wp-bind--hidden="!state.lightboxIsVideo"
+					data-wp-bind--hidden="state.lightboxHideVideo"
 					data-wp-bind--src="state.lightboxVideoUrl">
 				</video>
 				<audio class="mvs-lightbox-audio" controls
-					data-wp-bind--hidden="!state.lightboxIsAudio"
+					data-wp-bind--hidden="state.lightboxHideAudio"
 					data-wp-bind--src="state.lightboxVideoUrl">
 				</audio>
 				<img data-wp-bind--src="state.lightboxImageUrl" data-wp-bind--alt="state.lightboxTitle"
-					data-wp-bind--hidden="!state.lightboxIsImage" />
+					data-wp-bind--hidden="state.lightboxHideImage" />
 
 				<!-- Next arrow (gallery groups only) -->
 				<button class="mvs-lightbox-nav mvs-lightbox-nav--next"
