@@ -47,7 +47,7 @@ class SettingsPage {
 		add_action( 'admin_menu', array( $this, 'cleanup_admin_menu' ), 999 );
 		add_action( 'admin_init', array( $this->registrar, 'register_all' ) );
 		add_action( 'admin_init', array( $this, 'track_settings_changes' ) );
-		add_action( 'admin_notices', array( $this, 'render_contextual_notices' ) );
+		add_action( 'admin_notices', array( $this, 'handle_settings_notices' ), 1 );
 
 		$this->permissions->init();
 	}
@@ -113,25 +113,40 @@ class SettingsPage {
 	}
 
 	/**
-	 * Show contextual success notices after settings save.
+	 * Handle all settings page notices in a single callback.
+	 *
+	 * WordPress generates one "Settings saved." notice per option group via the
+	 * settings_errors transient. Since our page has multiple option groups, this
+	 * produces duplicate notices. We suppress them here and render a single
+	 * notice below the Save button in the template instead.
+	 *
+	 * Contextual notices (storage driver change, permissions) are rendered here
+	 * as standard admin notices since they convey unique information.
 	 */
-	public function render_contextual_notices(): void {
+	public function handle_settings_notices(): void {
 		$screen = get_current_screen();
 		if ( ! $screen || false === strpos( $screen->id, 'mvs-settings' ) ) {
 			return;
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! isset( $_GET['settings-updated'] ) || 'true' !== $_GET['settings-updated'] ) {
+		if ( ! isset( $_GET['settings-updated'] ) ) {
 			return;
 		}
 
+		// Suppress WP's duplicate "Settings saved." notices.
+		delete_transient( 'settings_errors' );
+		global $wp_settings_errors;
+		$wp_settings_errors = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		// Storage driver change notice.
 		$user_id    = get_current_user_id();
 		$old_driver = get_transient( 'mvs_old_storage_driver_' . $user_id );
 		$new_driver = get_option( 'mvs_storage_driver', 'local' );
 
+		delete_transient( 'mvs_old_storage_driver_' . $user_id );
+
 		if ( false !== $old_driver && $old_driver !== $new_driver ) {
-			delete_transient( 'mvs_old_storage_driver_' . $user_id );
 			printf(
 				'<div class="notice notice-info is-dismissible"><p>%s</p></div>',
 				sprintf(
@@ -140,36 +155,32 @@ class SettingsPage {
 					'<strong>' . esc_html( ucfirst( $new_driver ) ) . '</strong>'
 				)
 			);
-		} else {
-			delete_transient( 'mvs_old_storage_driver_' . $user_id );
 		}
 
 		// Permissions save notice.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$perms_saved = isset( $_GET['permissions-saved'] ) ? absint( $_GET['permissions-saved'] ) : -1;
-		if ( $perms_saved >= 0 ) {
-			if ( $perms_saved > 0 ) {
-				printf(
-					'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
-					sprintf(
-						esc_html(
-							// translators: %d: number of roles whose permissions were updated.
-							_n(
-								'Permissions updated for %d role.',
-								'Permissions updated for %d roles.',
-								$perms_saved,
-								'wpmediaverse'
-							)
-						),
-						esc_html( $perms_saved )
-					)
-				);
-			} else {
-				printf(
-					'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
-					esc_html__( 'Permissions saved. No changes were needed.', 'wpmediaverse' )
-				);
-			}
+		if ( $perms_saved > 0 ) {
+			printf(
+				'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+				sprintf(
+					esc_html(
+						// translators: %d: number of roles whose permissions were updated.
+						_n(
+							'Permissions updated for %d role.',
+							'Permissions updated for %d roles.',
+							$perms_saved,
+							'wpmediaverse'
+						)
+					),
+					esc_html( $perms_saved )
+				)
+			);
+		} elseif ( 0 === $perms_saved ) {
+			printf(
+				'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+				esc_html__( 'Permissions saved. No changes were needed.', 'wpmediaverse' )
+			);
 		}
 	}
 
@@ -185,18 +196,6 @@ class SettingsPage {
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
-	}
-
-	/**
-	 * Return the active tab slug, defaulting to 'general'.
-	 *
-	 * @return string
-	 */
-	private function get_active_tab(): string {
-		$allowed = array( 'general', 'display', 'permissions', 'ai', 'webhooks' );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'general';
-		return in_array( $tab, $allowed, true ) ? $tab : 'general';
 	}
 
 	/**
@@ -461,9 +460,6 @@ class SettingsPage {
 
 			<!-- Content -->
 			<div class="mvs-settings-content">
-				<?php if ( isset( $_GET['settings-updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification ?>
-					<div class="notice notice-success mvs-notice is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'wpmediaverse' ); ?></p></div>
-				<?php endif; ?>
 
 				<?php foreach ( $sections as $section_id => $section ) : ?>
 					<div class="mvs-settings-section" id="section-<?php echo esc_attr( $section_id ); ?>">
@@ -501,6 +497,9 @@ class SettingsPage {
 								<?php $this->render_section_cards( $section, $section_id ); ?>
 								<div class="mvs-settings-section__footer">
 									<?php submit_button( __( 'Save Changes', 'wpmediaverse' ), 'primary', 'submit', false ); ?>
+									<?php if ( isset( $_GET['settings-updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification ?>
+										<div class="mvs-save-notice"><p><?php esc_html_e( 'Settings saved.', 'wpmediaverse' ); ?></p></div>
+									<?php endif; ?>
 								</div>
 							</form>
 						<?php endif; ?>
@@ -642,141 +641,6 @@ class SettingsPage {
 	// -------------------------------------------------------------------------
 	// Settings Panels Renderer (General tab)
 	// -------------------------------------------------------------------------
-
-	/**
-	 * Panel metadata for each settings section on the General tab.
-	 *
-	 * @return array<string,array{icon:string,desc:string,class:string,driver:string}>
-	 */
-	private function get_panel_meta(): array {
-		return array(
-			'mvs_general'       => array(
-				'icon'   => 'upload',
-				'desc'   => __( 'Upload limits, file types, and privacy defaults.', 'wpmediaverse' ),
-				'class'  => '',
-				'driver' => '',
-			),
-			'mvs_storage'       => array(
-				'icon'   => 'database',
-				'desc'   => __( 'Choose where media files are stored.', 'wpmediaverse' ),
-				'class'  => '',
-				'driver' => '',
-			),
-			'mvs_pro_license'   => array(
-				'icon'   => 'globe',
-				'desc'   => __( 'Activate your license to receive updates and support.', 'wpmediaverse' ),
-				'class'  => 'mvs-settings-panel--pro',
-				'driver' => '',
-			),
-			'mvs_pro_s3'        => array(
-				'icon'   => 'cloud',
-				'desc'   => __( 'Connect to Amazon S3 for cloud storage.', 'wpmediaverse' ),
-				'class'  => 'mvs-settings-panel--pro',
-				'driver' => 's3',
-			),
-			'mvs_pro_bunny'     => array(
-				'icon'   => 'gauge',
-				'desc'   => __( 'Connect to BunnyCDN for global content delivery.', 'wpmediaverse' ),
-				'class'  => 'mvs-settings-panel--pro',
-				'driver' => 'bunnycdn',
-			),
-			'mvs_pro_transcode' => array(
-				'icon'   => 'video',
-				'desc'   => __( 'Convert videos to multiple quality levels with FFmpeg.', 'wpmediaverse' ),
-				'class'  => 'mvs-settings-panel--pro',
-				'driver' => '',
-			),
-			'mvs_pro_webhook'   => array(
-				'icon'   => 'plug',
-				'desc'   => __( 'Accept credits from external systems via HMAC-signed webhooks.', 'wpmediaverse' ),
-				'class'  => 'mvs-settings-panel--pro',
-				'driver' => '',
-			),
-		);
-	}
-
-	/**
-	 * Render settings as styled panels instead of flat do_settings_sections().
-	 *
-	 * @param string $page_slug The settings page slug.
-	 */
-	private function render_settings_panels( string $page_slug ): void {
-		global $wp_settings_sections, $wp_settings_fields;
-
-		if ( empty( $wp_settings_sections[ $page_slug ] ) ) {
-			return;
-		}
-
-		$panel_meta     = $this->get_panel_meta();
-		$current_driver = get_option( 'mvs_storage_driver', 'local' );
-
-		foreach ( (array) $wp_settings_sections[ $page_slug ] as $section ) {
-			$section_id = $section['id'];
-			$meta       = $panel_meta[ $section_id ] ?? null;
-
-			// Fallback: sections without panel metadata render normally.
-			if ( ! $meta ) {
-				if ( $section['title'] ) {
-					echo '<h2>' . esc_html( $section['title'] ) . '</h2>';
-				}
-				if ( $section['callback'] ) {
-					call_user_func( $section['callback'], $section );
-				}
-				if ( ! empty( $wp_settings_fields[ $page_slug ][ $section_id ] ) ) {
-					echo '<table class="form-table" role="presentation">';
-					do_settings_fields( $page_slug, $section_id );
-					echo '</table>';
-				}
-				continue;
-			}
-
-			// Determine hidden state for driver-specific panels.
-			$hidden = '';
-			if ( $meta['driver'] && $meta['driver'] !== $current_driver ) {
-				$hidden = ' hidden';
-			}
-
-			$classes = 'mvs-settings-panel';
-			if ( $meta['class'] ) {
-				$classes .= ' ' . $meta['class'];
-			}
-
-			echo '<div class="' . esc_attr( $classes ) . '"';
-			if ( $meta['driver'] ) {
-				echo ' data-mvs-driver="' . esc_attr( $meta['driver'] ) . '"';
-			}
-			echo esc_attr( $hidden ) . '>';
-
-			// Panel header.
-			echo '<div class="mvs-settings-panel__header">';
-			printf( '<i data-lucide="%s" class="mvs-settings-panel__icon"></i>', esc_attr( $meta['icon'] ) );
-			echo '<div>';
-			printf( '<h2 class="mvs-settings-panel__title">%s', esc_html( $section['title'] ) );
-			if ( $meta['class'] ) {
-				echo ' <span class="mvs-pro-badge">' . esc_html__( 'Pro', 'wpmediaverse' ) . '</span>';
-			}
-			echo '</h2>';
-			if ( $meta['desc'] ) {
-				printf( '<p class="mvs-settings-panel__desc">%s</p>', esc_html( $meta['desc'] ) );
-			}
-			echo '</div>';
-			echo '</div>';
-
-			// Panel body.
-			echo '<div class="mvs-settings-panel__body">';
-			if ( $section['callback'] ) {
-				call_user_func( $section['callback'], $section );
-			}
-			if ( ! empty( $wp_settings_fields[ $page_slug ][ $section_id ] ) ) {
-				echo '<table class="form-table" role="presentation">';
-				do_settings_fields( $page_slug, $section_id );
-				echo '</table>';
-			}
-			echo '</div>';
-
-			echo '</div>'; // .mvs-settings-panel
-		}
-	}
 
 	/**
 	 * Render inline JS for toggling storage driver panels.

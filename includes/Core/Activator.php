@@ -143,12 +143,20 @@ class Activator {
 	 */
 	private static function set_defaults(): void {
 		$defaults = array(
-			'mvs_max_upload_size'    => 104857600, // 100MB in bytes.
-			'mvs_allowed_file_types' => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg',
-			'mvs_default_privacy'    => 'public',
-			'mvs_duplicate_action'   => 'warn',
-			'mvs_strip_exif'         => true,
-			'mvs_storage_driver'     => 'local',
+			// General.
+			'mvs_max_upload_size'     => 104857600, // 100MB in bytes.
+			'mvs_allowed_file_types'  => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg',
+			'mvs_default_privacy'     => 'public',
+			'mvs_duplicate_action'    => 'warn',
+			'mvs_strip_exif'          => true,
+			'mvs_storage_driver'      => 'local',
+			// Watermark.
+			'mvs_watermark_type'      => 'text',
+			'mvs_watermark_text'      => get_bloginfo( 'name' ),
+			'mvs_watermark_position'  => 'center',
+			'mvs_watermark_opacity'   => 40,
+			'mvs_watermark_font_size' => 24,
+			'mvs_watermark_color'     => '#ffffff',
 		);
 
 		foreach ( $defaults as $key => $value ) {
