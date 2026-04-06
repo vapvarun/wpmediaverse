@@ -77,6 +77,15 @@
        Follows BuddyNext type scale. Works with or without BuddyNext.
    ========================================================================== */
 
+/* WordPress defers global-styles-inline-css to <body> when Interactivity API
+   script modules are used. This overrides theme body font-size rules that loaded
+   in <head>. We reset body font-size on MVS pages to the theme's own CSS variable
+   (--font-size-regular) if available, falling back to 1rem. This ensures consistent
+   typography regardless of stylesheet load order. */
+body.mvs-page {
+	font-size: var(--font-size-regular, 1rem);
+}
+
 /* Scope: all MVS template wrappers use these classes.
    font-family set here so BuddyNext's Inter/Plus Jakarta Sans carries through. */
 .mvs-single-media,

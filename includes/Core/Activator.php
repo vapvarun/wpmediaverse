@@ -150,7 +150,8 @@ class Activator {
 			'mvs_duplicate_action'    => 'warn',
 			'mvs_strip_exif'          => true,
 			'mvs_storage_driver'      => 'local',
-			// Watermark.
+			// Watermark (Pro controls the UI; free seeds defaults).
+			'mvs_watermark_enabled'   => false,
 			'mvs_watermark_type'      => 'text',
 			'mvs_watermark_text'      => get_bloginfo( 'name' ),
 			'mvs_watermark_position'  => 'center',

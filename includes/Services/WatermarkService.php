@@ -75,14 +75,17 @@ class WatermarkService {
 	 * @return bool
 	 */
 	public function is_enabled(): bool {
+		$enabled = (bool) get_option( 'mvs_watermark_enabled', false );
+
 		/**
 		 * Filter whether watermarking is enabled.
 		 *
-		 * Pro plugins should return true to enable watermark generation.
+		 * The option value is read first, then passed through this filter
+		 * so Pro or third-party code can override if needed.
 		 *
-		 * @param bool $enabled Whether watermarking is enabled. Default false (stub).
+		 * @param bool $enabled Whether watermarking is enabled.
 		 */
-		return (bool) apply_filters( 'mvs_watermark_enabled', false );
+		return (bool) apply_filters( 'mvs_watermark_enabled', $enabled );
 	}
 
 	/**

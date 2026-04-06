@@ -276,17 +276,6 @@ class SettingsPage {
 				'is_pro'       => false,
 				'priority'     => 50,
 			),
-			'watermark'   => array(
-				'group'        => 'advanced',
-				'label'        => __( 'Watermark', 'wpmediaverse' ),
-				'icon'         => 'palette',
-				'description'  => __( 'Add a text or image watermark to uploaded images.', 'wpmediaverse' ),
-				'option_group' => self::OPTION_GROUP . '_watermark',
-				'page_slug'    => self::PAGE_SLUG . '-watermark',
-				'section_ids'  => array( 'mvs_watermark' ),
-				'is_pro'       => false,
-				'priority'     => 60,
-			),
 			'permissions' => array(
 				'group'        => 'advanced',
 				'label'        => __( 'Permissions', 'wpmediaverse' ),
@@ -311,11 +300,6 @@ class SettingsPage {
 				'priority'     => 80,
 			),
 		);
-
-		// Remove free watermark if Pro handles it on display tab.
-		if ( $this->is_pro_active() ) {
-			unset( $sections['watermark'] );
-		}
 
 		/**
 		 * Filter the settings sections for sidebar navigation.

@@ -138,45 +138,5 @@
 			"contentSize": "720px",
 			"wideSize": "1200px"
 		}
-	},
-	"styles": {
-		"elements": {
-			"button": {
-				"border": {
-					"radius": "8px"
-				},
-				"color": {
-					"background": "var(--wp--preset--color--mvs-primary)",
-					"text": "#ffffff"
-				},
-				"typography": {
-					"fontSize": "var(--wp--preset--font-size--mvs-sm)",
-					"fontWeight": "600"
-				},
-				"spacing": {
-					"padding": {
-						"top": "0.625rem",
-						"bottom": "0.625rem",
-						"left": "1.25rem",
-						"right": "1.25rem"
-					}
-				},
-				":hover": {
-					"color": {
-						"background": "var(--wp--preset--color--mvs-primary-hover)"
-					}
-				}
-			},
-			"link": {
-				"color": {
-					"text": "var(--wp--preset--color--mvs-primary)"
-				},
-				":hover": {
-					"color": {
-						"text": "var(--wp--preset--color--mvs-primary-hover)"
-					}
-				}
-			}
-		}
 	}
 }
