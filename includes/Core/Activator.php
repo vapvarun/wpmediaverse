@@ -64,10 +64,13 @@ class Activator {
 		);
 
 		foreach ( $pages as $option_key => $page_data ) {
-			// 1. If the option already points to a live page, nothing to do.
+			// 1. If the option already points to a live page with our shortcode, nothing to do.
 			$existing_id = (int) get_option( $option_key );
 			if ( $existing_id > 0 && 'publish' === get_post_status( $existing_id ) ) {
-				continue;
+				$existing_content = get_post_field( 'post_content', $existing_id );
+				if ( strpos( $existing_content, $page_data['shortcode'] ) !== false ) {
+					continue;
+				}
 			}
 
 			// 2. Try to find an existing published page with the expected slug.

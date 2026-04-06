@@ -438,6 +438,27 @@
 	object-fit: contain;
 }
 
+.mvs-lightbox-media img[hidden],
+.mvs-lightbox-media video[hidden],
+.mvs-lightbox-media audio[hidden] {
+	display: none !important;
+}
+
+.mvs-lightbox-video {
+	max-width: 100%;
+	max-height: 80vh;
+	display: block;
+	margin: 0 auto;
+	border-radius: 8px;
+}
+
+.mvs-lightbox-audio {
+	width: 100%;
+	max-width: 500px;
+	margin: 0 auto;
+	display: block;
+}
+
 /* Lightbox gallery navigation arrows */
 .mvs-lightbox-nav {
 	position: absolute;

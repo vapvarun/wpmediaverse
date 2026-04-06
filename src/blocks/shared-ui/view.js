@@ -18,6 +18,24 @@ import { store, getContext } from '@wordpress/interactivity';
 let toastTimer = null;
 let tagSearchTimer = null;
 
+/**
+ * After lightbox data is set, tell <video>/<audio> to load the new src.
+ * The Interactivity API updates `src` via data-wp-bind, but <video>/<audio>
+ * elements require an explicit .load() call to fetch a dynamically changed src.
+ */
+function loadLightboxMedia() {
+	requestAnimationFrame( () => {
+		const video = document.querySelector( '.mvs-lightbox-video:not([hidden])' );
+		if ( video ) {
+			video.load();
+		}
+		const audio = document.querySelector( '.mvs-lightbox-audio:not([hidden])' );
+		if ( audio ) {
+			audio.load();
+		}
+	} );
+}
+
 const { state, actions } = store( 'mvs/shared-ui', {
 	state: {
 		// --- Toast (flat) ---
@@ -113,13 +131,26 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 		get lightboxImageUrl() {
 			const d = state.lightboxMediaData;
-			return d?.thumbnail_url || d?.file_url || '';
+			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+				return '';
+			}
+			return d.thumbnail_url || d.file_url || '';
 		},
 		get lightboxIsVideo() {
 			return state.lightboxMediaData?.media_type === 'video';
 		},
 		get lightboxIsAudio() {
 			return state.lightboxMediaData?.media_type === 'audio';
+		},
+		get lightboxHideImage() {
+			const t = state.lightboxMediaData?.media_type;
+			return t === 'video' || t === 'audio';
+		},
+		get lightboxHideVideo() {
+			return state.lightboxMediaData?.media_type !== 'video';
+		},
+		get lightboxHideAudio() {
+			return state.lightboxMediaData?.media_type !== 'audio';
 		},
 		get lightboxVideoUrl() {
 			return state.lightboxMediaData?.file_url || '';
@@ -535,6 +566,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const data = await res.json();
 				state.lightboxMediaData = data;
 				state.lightboxLoading = false;
+				loadLightboxMedia();
 
 				// If this item is part of a gallery group, fetch all group members.
 				if ( data.media_group && data.group_count > 1 ) {
@@ -549,6 +581,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						state.lightboxCurrentIndex = 0;
 						// Show the first image.
 						state.lightboxMediaData = groupData[ 0 ];
+						loadLightboxMedia();
 					}
 				}
 			// Fetch social data in parallel.
@@ -591,6 +624,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const data = await res.json();
 				state.lightboxMediaData = data;
 				state.lightboxLoading = false;
+				loadLightboxMedia();
 
 				if ( data.media_group && data.group_count > 1 ) {
 					const groupRes = await fetch( restUrl + 'media/' + mediaId + '/group', {
@@ -602,6 +636,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						state.lightboxGroupItems = groupData;
 						state.lightboxCurrentIndex = 0;
 						state.lightboxMediaData = groupData[ 0 ];
+						loadLightboxMedia();
 					}
 				}
 
@@ -763,6 +798,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		closeLightbox() {
+			// Pause any playing video/audio before closing.
+			const video = document.querySelector( '.mvs-lightbox-video' );
+			if ( video ) {
+				video.pause();
+				video.removeAttribute( 'src' );
+			}
+			const audio = document.querySelector( '.mvs-lightbox-audio' );
+			if ( audio ) {
+				audio.pause();
+				audio.removeAttribute( 'src' );
+			}
 			state.lightboxVisible = false;
 			state.lightboxMediaData = null;
 			state.lightboxGroupItems = [];

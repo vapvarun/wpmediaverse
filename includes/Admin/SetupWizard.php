@@ -70,33 +70,6 @@ class SetupWizard {
 	}
 
 	/**
-	 * Save permissions step.
-	 */
-	private function save_permissions(): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
-		$upload_roles = isset( $_POST['mvs_upload_roles'] ) && is_array( $_POST['mvs_upload_roles'] )
-			? array_map( 'sanitize_key', wp_unslash( $_POST['mvs_upload_roles'] ) ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			: array( 'administrator', 'editor', 'author' );
-
-		$all_roles = array( 'administrator', 'editor', 'author', 'contributor', 'subscriber' );
-
-		foreach ( $all_roles as $role_slug ) {
-			$role = get_role( $role_slug );
-			if ( ! $role ) {
-				continue;
-			}
-
-			if ( in_array( $role_slug, $upload_roles, true ) ) {
-				$role->add_cap( 'upload_mvs_media' );
-				$role->add_cap( 'edit_mvs_media' );
-				$role->add_cap( 'delete_mvs_media' );
-			} else {
-				$role->remove_cap( 'upload_mvs_media' );
-			}
-		}
-	}
-
-	/**
 	 * Save display step.
 	 */
 	private function save_display(): void {
@@ -303,56 +276,7 @@ class SetupWizard {
 	}
 
 	/**
-	 * Step 3: Permissions.
-	 */
-	private function render_step_permissions(): void {
-		$all_roles = array(
-			'subscriber'  => __( 'Subscriber', 'wpmediaverse' ),
-			'contributor' => __( 'Contributor', 'wpmediaverse' ),
-			'author'      => __( 'Author', 'wpmediaverse' ),
-			'editor'      => __( 'Editor', 'wpmediaverse' ),
-		);
-
-		$default_upload = array( 'author', 'editor' );
-		?>
-		<div class="mvs-setup-step">
-			<h2><?php esc_html_e( 'Who Can Upload?', 'wpmediaverse' ); ?></h2>
-			<p><?php esc_html_e( 'Choose which user roles can upload media to your site. Administrators always have full access.', 'wpmediaverse' ); ?></p>
-
-			<form method="post">
-				<?php wp_nonce_field( 'mvs_setup_wizard', 'mvs_wizard_nonce' ); ?>
-				<input type="hidden" name="mvs_wizard_step" value="permissions" />
-
-				<div class="mvs-setup-role-list">
-					<?php
-					foreach ( $all_roles as $slug => $label ) :
-						$role    = get_role( $slug );
-						$has_cap = $role && $role->has_cap( 'upload_mvs_media' );
-						$checked = $has_cap || in_array( $slug, $default_upload, true );
-						?>
-						<label class="mvs-setup-role-item">
-							<input type="checkbox" name="mvs_upload_roles[]"
-								value="<?php echo esc_attr( $slug ); ?>"
-								<?php checked( $checked ); ?> />
-							<span><?php echo esc_html( $label ); ?></span>
-						</label>
-					<?php endforeach; ?>
-				</div>
-
-				<p class="description"><?php esc_html_e( 'You can fine-tune permissions later in Settings > Permissions.', 'wpmediaverse' ); ?></p>
-
-				<div class="mvs-setup-actions">
-					<button type="submit" class="mvs-btn mvs-btn--primary">
-						<?php esc_html_e( 'Continue', 'wpmediaverse' ); ?>
-					</button>
-				</div>
-			</form>
-		</div>
-		<?php
-	}
-
-	/**
-	 * Step 4: Display settings.
+	 * Step 3: Display settings.
 	 */
 	private function render_step_display(): void {
 		$columns  = (int) get_option( 'mvs_grid_columns', 3 );

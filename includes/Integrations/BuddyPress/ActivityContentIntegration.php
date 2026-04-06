@@ -91,21 +91,21 @@ class ActivityContentIntegration {
 		);
 
 		// Allow class/style and Interactivity API attrs on <a> for MVS media links.
-		$tags['a']['class']              = array();
-		$tags['a']['style']              = array();
-		$tags['a']['href']               = array();
-		$tags['a']['data-mvs-permalink'] = array();
+		$tags['a']['class']               = array();
+		$tags['a']['style']               = array();
+		$tags['a']['href']                = array();
+		$tags['a']['data-mvs-permalink']  = array();
 		$tags['a']['data-wp-interactive'] = array();
-		$tags['a']['data-wp-context']    = array();
-		$tags['a']['data-wp-on--click']  = array();
-		$tags['img']['src']              = array();
-		$tags['img']['alt']              = array();
-		$tags['img']['width']            = array();
-		$tags['img']['height']           = array();
-		$tags['img']['style']            = array();
-		$tags['img']['loading']          = array();
-		$tags['img']['class']            = array();
-		$tags['span']                    = array(
+		$tags['a']['data-wp-context']     = array();
+		$tags['a']['data-wp-on--click']   = array();
+		$tags['img']['src']               = array();
+		$tags['img']['alt']               = array();
+		$tags['img']['width']             = array();
+		$tags['img']['height']            = array();
+		$tags['img']['style']             = array();
+		$tags['img']['loading']           = array();
+		$tags['img']['class']             = array();
+		$tags['span']                     = array(
 			'class'       => array(),
 			'aria-hidden' => array(),
 		);

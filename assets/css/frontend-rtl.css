@@ -4418,10 +4418,6 @@ a.mvs-dashboard-card-title:hover {
 	}
 }
 
-/* Hidden attribute override — ensure hidden works even with inline display */
-[hidden] {
-	display: none !important;
-}
 
 /* ==========================================================================
    36. Mobile Touch Targets & Responsiveness
@@ -4665,6 +4661,17 @@ a.mvs-dashboard-card-title:hover {
 }
 .mvs-lightbox-media img {
 	max-width: 100%; max-height: 92vh; object-fit: contain; display: block;
+}
+.mvs-lightbox-media img[hidden],
+.mvs-lightbox-media video[hidden],
+.mvs-lightbox-media audio[hidden] {
+	display: none !important;
+}
+.mvs-lightbox-video {
+	max-width: 100%; max-height: 80vh; display: block; margin: 0 auto; border-radius: 8px;
+}
+.mvs-lightbox-audio {
+	width: 100%; max-width: 500px; margin: 0 auto; display: block;
 }
 .mvs-lightbox-nav {
 	position: absolute; top: 50%; transform: translateY(-50%);

@@ -16,6 +16,20 @@ defined( 'ABSPATH' ) || exit;
 $mvs_is_logged_in = is_user_logged_in();
 $mvs_rest_url     = esc_url_raw( rest_url( 'mvs/v1/' ) );
 $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
+
+// Show FAB only on MVS pages (explore, dashboard, media single/archive).
+$mvs_page_ids = array_filter( array_map( 'absint', array(
+	get_option( 'mvs_page_explore', 0 ),
+	get_option( 'mvs_page_dashboard', 0 ),
+) ) );
+$mvs_show_fab = $mvs_is_logged_in && (
+	( ! empty( $mvs_page_ids ) && is_page( $mvs_page_ids ) )
+	|| ! empty( $GLOBALS['mvs_current_media'] )
+	|| ! empty( $GLOBALS['mvs_is_media_archive'] )
+	|| is_post_type_archive( 'mvs_album' )
+	|| is_tax( 'mvs_tag' )
+	|| is_tax( 'mvs_category' )
+);
 ?>
 <div class="mvs-app-shell"
 	data-wp-interactive="mvs/shared-ui"
@@ -32,8 +46,8 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 	?>
 	data-wp-on--keydown="actions.handleLightboxKeydown"
 >
-	<!-- Floating Action Button (logged-in only) -->
-	<?php if ( $mvs_is_logged_in ) : ?>
+	<!-- Floating Action Button (MVS pages only) -->
+	<?php if ( $mvs_show_fab ) : ?>
 	<div class="mvs-fab-container">
 		<button class="mvs-fab" data-wp-on--click="actions.openUploadModal"
 			data-wp-context='{"uploadMode":"photo"}'
@@ -224,7 +238,9 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><polyline points="15 18 9 12 15 6"></polyline></svg>
 				</button>
 
-				<img data-wp-bind--src="state.lightboxImageUrl" data-wp-bind--alt="state.lightboxTitle" />
+				<img data-wp-bind--src="state.lightboxImageUrl" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
+				<video class="mvs-lightbox-video" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
+				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
 
 				<!-- Next arrow (gallery groups only) -->
 				<button class="mvs-lightbox-nav mvs-lightbox-nav--next"
@@ -344,7 +360,7 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 						</div>
 					<?php else : ?>
 						<p class="mvs-lightbox-login-prompt">
-							<a href="<?php echo esc_url( wp_login_url( home_url( $_SERVER['REQUEST_URI'] ?? '/' ) ) ); ?>">
+							<a href="<?php echo esc_url( wp_login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ) ); ?>">
 								<?php esc_html_e( 'Log in to comment', 'wpmediaverse' ); ?>
 							</a>
 						</p>

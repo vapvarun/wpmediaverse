@@ -109,9 +109,9 @@ class TemplateLoader {
 				'page',
 			)
 		);
-		$exclude  = implode( '|', array_map( 'preg_quote', $reserved ) );
+		$exclude  = implode( '|', array_map( static fn( $p ) => preg_quote( $p, '#' ), $reserved ) );
 		add_rewrite_rule(
-			'^media/(?!' . $exclude . '/)([a-z0-9][a-z0-9\-]*)/?$',
+			'^media/(?!' . $exclude . '/)([a-z0-9][a-z0-9_\-]*)/?$',
 			'index.php?mvs_media_slug=$matches[1]',
 			'top'
 		);

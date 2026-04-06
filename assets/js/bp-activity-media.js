@@ -656,11 +656,42 @@
 			if ( media )   { media.removeAttribute( 'hidden' ); }
 			if ( sidebar ) { sidebar.removeAttribute( 'hidden' ); }
 
-			// Image.
+			// Media: show the right element (img/video/audio) based on type.
 			var img = media ? media.querySelector( 'img' ) : null;
+			var vid = media ? media.querySelector( 'video' ) : null;
+			var aud = media ? media.querySelector( 'audio' ) : null;
+			var isVideo = data.media_type === 'video';
+			var isAudio = data.media_type === 'audio';
+
 			if ( img ) {
-				img.src = data.file_url || data.thumbnail_url || '';
-				img.alt = data.title || '';
+				if ( isVideo || isAudio ) {
+					img.removeAttribute( 'src' );
+					img.setAttribute( 'hidden', '' );
+				} else {
+					img.src = data.thumbnail_url || data.file_url || '';
+					img.alt = data.title || '';
+					img.removeAttribute( 'hidden' );
+				}
+			}
+			if ( vid ) {
+				if ( isVideo ) {
+					vid.src = data.file_url || '';
+					vid.removeAttribute( 'hidden' );
+					vid.load();
+				} else {
+					vid.removeAttribute( 'src' );
+					vid.setAttribute( 'hidden', '' );
+				}
+			}
+			if ( aud ) {
+				if ( isAudio ) {
+					aud.src = data.file_url || '';
+					aud.removeAttribute( 'hidden' );
+					aud.load();
+				} else {
+					aud.removeAttribute( 'src' );
+					aud.setAttribute( 'hidden', '' );
+				}
 			}
 
 			// Author.
@@ -697,6 +728,13 @@
 		// ── Close ──
 
 		function closeSharedLightbox() {
+			// Pause any playing media before closing.
+			if ( bpLightbox ) {
+				var vid = bpLightbox.querySelector( 'video' );
+				var aud = bpLightbox.querySelector( 'audio' );
+				if ( vid ) { vid.pause(); vid.removeAttribute( 'src' ); }
+				if ( aud ) { aud.pause(); aud.removeAttribute( 'src' ); }
+			}
 			// Remove the BP lightbox clone from the DOM.
 			removeBPLightbox();
 			document.body.style.overflow = '';
