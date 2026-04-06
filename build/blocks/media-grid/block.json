@@ -29,8 +29,7 @@
   },
   "attributes": {
     "columns": {
-      "type": "number",
-      "default": 3
+      "type": "number"
     },
     "perPage": {
       "type": "number",

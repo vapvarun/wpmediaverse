@@ -715,6 +715,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 						headers: apiHeaders( ctx.nonce ),
 						body: JSON.stringify( payload ),
 					} );
+					// Sync album items in edit mode.
+					if ( state.albumModal.selectedIds.length ) {
+						await apiFetch( ctx, 'albums/' + albumId + '/items', {
+							method: 'POST',
+							headers: apiHeaders( ctx.nonce ),
+							body: JSON.stringify( { media_ids: state.albumModal.selectedIds } ),
+						} );
+					}
 				} else {
 					const res = await apiFetch( ctx, 'albums', {
 						method: 'POST',
@@ -1116,6 +1124,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 						? data.map( ( n ) => ( {
 							id: n.id,
 							message: n.message || '',
+							url: n.url || '',
 							date: new Date( n.created_at ).toLocaleDateString(),
 							read: !! n.is_read,
 						} ) )

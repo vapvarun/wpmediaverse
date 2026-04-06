@@ -353,10 +353,18 @@ class NotificationService {
 
 		$message = $this->build_notification_message( $row->type, $actor_name, $media_title );
 
+		$url = '';
+		if ( $row->media_id ) {
+			$url = \WPMediaVerse\Repository\MediaRepository::get_permalink( (int) $row->media_id );
+		} elseif ( 'new_follower' === $row->type ) {
+			$url = get_author_posts_url( (int) $row->actor_id );
+		}
+
 		return array(
 			'id'         => (int) $row->id,
 			'type'       => $row->type,
 			'message'    => $message,
+			'url'        => $url,
 			'actor'      => array(
 				'id'     => (int) $row->actor_id,
 				'name'   => $actor_name,

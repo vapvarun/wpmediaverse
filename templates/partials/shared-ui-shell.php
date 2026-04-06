@@ -23,9 +23,10 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 	echo wp_interactivity_data_wp_context(
 		array(
-			'restUrl'       => $mvs_rest_url,
-			'nonce'         => $mvs_nonce,
-			'currentUserId' => $mvs_is_logged_in ? get_current_user_id() : 0,
+			'restUrl'        => $mvs_rest_url,
+			'nonce'          => $mvs_nonce,
+			'currentUserId'  => $mvs_is_logged_in ? get_current_user_id() : 0,
+			'defaultPrivacy' => get_option( 'mvs_default_privacy', 'public' ),
 		)
 	);
 	?>
@@ -91,6 +92,15 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 						<rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
 					</svg>
 					<?php esc_html_e( 'Video', 'wpmediaverse' ); ?>
+				</button>
+				<button class="mvs-modal-tab" data-wp-class--active="state.isAudioMode"
+					data-wp-on--click="actions.setUploadMode" data-wp-context='{"uploadMode":"audio"}'>
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+						<path d="M9 18V5l12-2v13"></path>
+						<circle cx="6" cy="18" r="3"></circle>
+						<circle cx="18" cy="16" r="3"></circle>
+					</svg>
+					<?php esc_html_e( 'Audio', 'wpmediaverse' ); ?>
 				</button>
 			</div>
 
@@ -165,7 +175,8 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 						<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 							data-wp-on--input="actions.updateUploadTags"
 							data-wp-bind--value="state.uploadModalTags" />
-						<select data-wp-on--change="actions.updateUploadPrivacy">
+						<select data-wp-on--change="actions.updateUploadPrivacy"
+							data-wp-bind--value="state.uploadModalPrivacy">
 							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 							<option value="loggedin"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
 							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
@@ -213,7 +224,16 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><polyline points="15 18 9 12 15 6"></polyline></svg>
 				</button>
 
-				<img data-wp-bind--src="state.lightboxImageUrl" data-wp-bind--alt="state.lightboxTitle" />
+				<video class="mvs-lightbox-video" controls playsinline
+					data-wp-bind--hidden="!state.lightboxIsVideo"
+					data-wp-bind--src="state.lightboxVideoUrl">
+				</video>
+				<audio class="mvs-lightbox-audio" controls
+					data-wp-bind--hidden="!state.lightboxIsAudio"
+					data-wp-bind--src="state.lightboxVideoUrl">
+				</audio>
+				<img data-wp-bind--src="state.lightboxImageUrl" data-wp-bind--alt="state.lightboxTitle"
+					data-wp-bind--hidden="!state.lightboxIsImage" />
 
 				<!-- Next arrow (gallery groups only) -->
 				<button class="mvs-lightbox-nav mvs-lightbox-nav--next"

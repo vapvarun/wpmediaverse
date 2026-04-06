@@ -117,21 +117,21 @@ wp_enqueue_style( 'mvs-frontend' );
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 			echo wp_interactivity_data_wp_context(
 				array(
-				'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-				'nonce'           => wp_create_nonce( 'wp_rest' ),
-				'firstName'       => $mvs_current_user->first_name,
-				'lastName'        => $mvs_current_user->last_name,
-				'displayName'     => $mvs_current_user->display_name,
-				'bio'             => $mvs_current_user->description,
-				'avatarUrl'       => $mvs_avatar_url ?: '',
-				'hasCustomAvatar' => $mvs_has_custom,
-				'uploadingAvatar' => false,
-				'savingProfile'   => false,
-				'saving'          => false,
-				'profileMessage'  => '',
-				'profileError'    => '',
-				'savedMessage'    => '',
-				'errorMessage'    => '',
+					'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+					'nonce'           => wp_create_nonce( 'wp_rest' ),
+					'firstName'       => $mvs_current_user->first_name,
+					'lastName'        => $mvs_current_user->last_name,
+					'displayName'     => $mvs_current_user->display_name,
+					'bio'             => $mvs_current_user->description,
+					'avatarUrl'       => $mvs_avatar_url ?: '',
+					'hasCustomAvatar' => $mvs_has_custom,
+					'uploadingAvatar' => false,
+					'savingProfile'   => false,
+					'saving'          => false,
+					'profileMessage'  => '',
+					'profileError'    => '',
+					'savedMessage'    => '',
+					'errorMessage'    => '',
 				)
 			);
 			?>
@@ -250,8 +250,10 @@ wp_enqueue_style( 'mvs-frontend' );
 				<ul class="mvs-notification-list">
 					<template data-wp-each="state.notifications.items">
 						<li class="mvs-notification-item" data-wp-class--mvs-notification-unread="!context.item.read">
-							<span data-wp-text="context.item.message"></span>
-							<span class="mvs-notification-time" data-wp-text="context.item.date"></span>
+							<a class="mvs-notification-link" data-wp-bind--href="context.item.url">
+								<span data-wp-text="context.item.message"></span>
+								<span class="mvs-notification-time" data-wp-text="context.item.date"></span>
+							</a>
 						</li>
 					</template>
 				</ul>
@@ -776,22 +778,22 @@ wp_enqueue_style( 'mvs-frontend' );
 	<!-- Toast (shared-ui) -->
 	<div class="mvs-toast" hidden
 		data-wp-interactive="mvs/shared-ui"
-		data-wp-bind--hidden="!state.toast.visible"
-		data-wp-text="state.toast.message"
+		data-wp-bind--hidden="!state.toastVisible"
+		data-wp-text="state.toastMessage"
 		data-wp-class--mvs-toast--success="state.isToastSuccess"
 		data-wp-class--mvs-toast--error="state.isToastError"></div>
 
 	<!-- Confirm Dialog (shared-ui) -->
 	<div class="mvs-confirm-overlay" hidden
 		data-wp-interactive="mvs/shared-ui"
-		data-wp-bind--hidden="!state.confirm.visible">
+		data-wp-bind--hidden="!state.confirmVisible">
 		<div class="mvs-confirm">
-			<p data-wp-text="state.confirm.message"></p>
+			<p data-wp-text="state.confirmMessage"></p>
 			<div class="mvs-confirm-actions">
 				<button class="mvs-btn mvs-btn--secondary" type="button"
 					data-wp-on--click="actions.handleConfirmCancel"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
 				<button class="mvs-btn mvs-btn--danger" type="button"
-					data-wp-on--click="actions.handleConfirmYes"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+					data-wp-on--click="actions.handleConfirmYes" data-wp-text="state.confirmButtonLabel"></button>
 			</div>
 		</div>
 	</div>

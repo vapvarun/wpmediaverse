@@ -56,16 +56,6 @@ parameters:
 			path: includes/Admin/Settings/SettingsPage.php
 
 		-
-			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsPage\\:\\:get_active_tab\\(\\) is unused\\.$#"
-			count: 1
-			path: includes/Admin/Settings/SettingsPage.php
-
-		-
-			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsPage\\:\\:render_settings_panels\\(\\) is unused\\.$#"
-			count: 1
-			path: includes/Admin/Settings/SettingsPage.php
-
-		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<1, max\\> given\\.$#"
 			count: 1
 			path: includes/Admin/Settings/SettingsPage.php
@@ -189,6 +179,16 @@ parameters:
 			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
 			count: 1
 			path: includes/Integrations/BuddyPress/ActivityContentIntegration.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Integrations/BuddyPress/ActivityFormIntegration.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Integrations/BuddyPress/ActivityFormIntegration.php
 
 		-
 			message: "#^Function buddypress not found\\.$#"

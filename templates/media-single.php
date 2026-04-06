@@ -155,8 +155,12 @@ $mvs_archive_url = home_url( '/media/' );
 					<button class="mvs-btn mvs-btn--small mvs-follow-btn" type="button"
 						data-wp-class--active="context.isFollowing"
 						data-wp-on--click="actions.toggleFollow"
-						aria-label="<?php // translators: %s: author display name.
-						echo esc_attr( sprintf( __( 'Follow %s', 'wpmediaverse' ), $mvs_author_name ) ); ?>">
+						aria-label="
+						<?php
+						// translators: %s: author display name.
+						echo esc_attr( sprintf( __( 'Follow %s', 'wpmediaverse' ), $mvs_author_name ) );
+						?>
+						">
 						<span data-wp-bind--hidden="context.isFollowing"><?php esc_html_e( 'Follow', 'wpmediaverse' ); ?></span>
 						<span data-wp-bind--hidden="!context.isFollowing"><?php esc_html_e( 'Following', 'wpmediaverse' ); ?></span>
 					</button>
@@ -492,7 +496,7 @@ $mvs_archive_url = home_url( '/media/' );
 					<?php foreach ( $mvs_tag_names as $tag_name ) : ?>
 						<?php
 						$tag_term = get_term_by( 'name', $tag_name, 'mvs_tag' );
-						$tag_url  = $tag_term ? get_term_link( $tag_term ) : add_query_arg( 'mvs_tag', urlencode( $tag_name ), $mvs_archive_url );
+						$tag_url  = $tag_term ? get_term_link( $tag_term ) : add_query_arg( 'mvs_tag', rawurlencode( $tag_name ), $mvs_archive_url );
 						?>
 						<a href="<?php echo esc_url( $tag_url ); ?>" class="mvs-tag">
 							<?php echo esc_html( $tag_name ); ?>
@@ -545,8 +549,8 @@ wp_enqueue_script_module(
 ?>
 <div class="mvs-toast" hidden
 	data-wp-interactive="mvs/shared-ui"
-	data-wp-bind--hidden="!state.toast.visible"
-	data-wp-text="state.toast.message"
+	data-wp-bind--hidden="!state.toastVisible"
+	data-wp-text="state.toastMessage"
 	data-wp-class--mvs-toast--success="state.isToastSuccess"
 	data-wp-class--mvs-toast--error="state.isToastError"></div>
 

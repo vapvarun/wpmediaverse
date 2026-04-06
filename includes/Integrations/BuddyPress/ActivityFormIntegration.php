@@ -60,8 +60,6 @@ class ActivityFormIntegration {
 		// Always enqueue frontend CSS and lightbox on BP pages for all visitors.
 		wp_enqueue_style( 'mvs-frontend' );
 
-		$plugin_url = plugin_dir_url( dirname( __DIR__ ) );
-
 		// Lightbox handled by shared-ui Interactivity API module — no legacy JS needed.
 
 		// Upload button and activity-media JS only for logged-in users.
@@ -69,14 +67,14 @@ class ActivityFormIntegration {
 			return;
 		}
 
-		$js_path = plugin_dir_path( dirname( __DIR__ ) ) . 'assets/js/bp-activity-media.js';
+		$js_path = MVS_PLUGIN_DIR . 'assets/js/bp-activity-media.js';
 		if ( ! file_exists( $js_path ) ) {
 			return;
 		}
 
 		wp_enqueue_script(
 			'mvs-bp-activity-media',
-			$plugin_url . 'assets/js/bp-activity-media.js',
+			MVS_PLUGIN_URL . 'assets/js/bp-activity-media.js',
 			array( 'jquery' ),
 			filemtime( $js_path ),
 			array(

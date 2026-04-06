@@ -190,7 +190,7 @@ class AlbumService {
 	 * @param string $size     Image size.
 	 * @return string|null Cover URL or null.
 	 */
-	public function get_cover_url( int $album_id, string $size = 'medium' ): ?string {
+	public function get_cover_url( int $album_id, string $size = 'large' ): ?string {
 		// Use the first album item's thumbnail as cover.
 		$first_media_id = $this->get_first_image_item( $album_id );
 		if ( $first_media_id ) {

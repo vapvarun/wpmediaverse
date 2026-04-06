@@ -464,8 +464,8 @@ endif;
 ?>
 <div class="mvs-toast" hidden
 	data-wp-interactive="mvs/shared-ui"
-	data-wp-bind--hidden="!state.toast.visible"
-	data-wp-text="state.toast.message"
+	data-wp-bind--hidden="!state.toastVisible"
+	data-wp-text="state.toastMessage"
 	data-wp-class--mvs-toast--success="state.isToastSuccess"
 	data-wp-class--mvs-toast--error="state.isToastError"></div>
 

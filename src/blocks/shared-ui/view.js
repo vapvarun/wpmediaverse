@@ -57,11 +57,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalMediaGroup: null,
 
 		get uploadModalHeading() {
-			const titles = { photo: 'Upload Photo', gallery: 'Create Gallery Post', album: 'Create Album', video: 'Upload Video' };
+			const titles = { photo: 'Upload Photo', gallery: 'Create Gallery Post', album: 'Create Album', video: 'Upload Video', audio: 'Upload Audio' };
 			return titles[ state.uploadModalMode ] || 'Upload';
 		},
 		get uploadAccept() {
-			return state.uploadModalMode === 'video' ? 'video/*' : 'image/*';
+			if ( state.uploadModalMode === 'video' ) return 'video/*';
+			if ( state.uploadModalMode === 'audio' ) return 'audio/*';
+			return 'image/*';
 		},
 		get uploadMultiple() {
 			return state.uploadModalMode === 'gallery';
@@ -77,6 +79,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get isVideoMode() {
 			return state.uploadModalMode === 'video';
+		},
+		get isAudioMode() {
+			return state.uploadModalMode === 'audio';
 		},
 		get hasFiles() {
 			return state.uploadModalFiles.length > 0;
@@ -108,6 +113,21 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxImageUrl() {
 			const d = state.lightboxMediaData;
 			return d?.thumbnail_url || d?.file_url || '';
+		},
+		get lightboxIsVideo() {
+			return state.lightboxMediaData?.media_type === 'video';
+		},
+		get lightboxIsAudio() {
+			return state.lightboxMediaData?.media_type === 'audio';
+		},
+		get lightboxVideoUrl() {
+			return state.lightboxMediaData?.file_url || '';
+		},
+		get lightboxFileType() {
+			return state.lightboxMediaData?.file_type || '';
+		},
+		get lightboxIsImage() {
+			return ! state.lightboxIsVideo && ! state.lightboxIsAudio;
 		},
 		get lightboxTitle() {
 			return state.lightboxMediaData?.title || '';
@@ -266,7 +286,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalTitle = '';
 			state.uploadModalDescription = '';
 			state.uploadModalTags = '';
-			state.uploadModalPrivacy = 'public';
+			state.uploadModalPrivacy = ctx.defaultPrivacy || 'public';
 			state.uploadModalAlbumTitle = '';
 			state.uploadModalAlbumDescription = '';
 			state.uploadModalMediaGroup = null;
@@ -666,13 +686,21 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.showToast( 'Failed to post comment.', 'error' );
 			}
 		},
-		lightboxShare() {
+		async lightboxShare() {
 			const url = state.lightboxMediaData?.link || window.location.href;
 			if ( navigator.share ) {
-				navigator.share( { title: state.lightboxTitle, url } );
+				try {
+					await navigator.share( { title: state.lightboxTitle, url } );
+				} catch { /* user cancelled share dialog */ }
 			} else if ( navigator.clipboard ) {
-				navigator.clipboard.writeText( url );
-				actions.showToast( 'Link copied!', 'success' );
+				try {
+					await navigator.clipboard.writeText( url );
+					actions.showToast( 'Link copied!', 'success' );
+				} catch {
+					actions.showToast( 'Could not copy link.', 'error' );
+				}
+			} else {
+				window.prompt( 'Copy this link:', url );
 			}
 		},
 		lightboxReport() {
