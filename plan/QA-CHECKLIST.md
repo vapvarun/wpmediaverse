@@ -321,7 +321,7 @@ Site URL:    http://mediaverse.local
 - [ ] Click emoji → count increments, button highlights
 - [ ] Click different emoji → switches reaction
 - [ ] Click same emoji again → removes reaction (count decrements)
-- [ ] `POST /mvs/v1/media/{id}/reactions` — toggle reaction (body: type)
+- [ ] `POST /mvs/v1/media/{media_id}/reactions` — toggle reaction (body: type)
 - [ ] `mvs_reaction_toggled` action fires
 
 ---
@@ -338,11 +338,11 @@ Site URL:    http://mediaverse.local
 
 ### 8.2 REST API
 
-- [ ] `GET /mvs/v1/comments` — list (with media_id filter)
-- [ ] `POST /mvs/v1/comments` — create
-- [ ] `GET /mvs/v1/comments/{id}` — read
-- [ ] `PUT /mvs/v1/comments/{id}` — update (within edit window)
-- [ ] `DELETE /mvs/v1/comments/{id}` — delete (owner only)
+- [ ] `GET /mvs/v1/media/{media_id}/comments` — list comments for media
+- [ ] `POST /mvs/v1/media/{media_id}/comments` — create comment
+- [ ] `GET /mvs/v1/media/{media_id}/comments/{comment_id}` — read
+- [ ] `PUT /mvs/v1/media/{media_id}/comments/{comment_id}` — update (within edit window)
+- [ ] `DELETE /mvs/v1/media/{media_id}/comments/{comment_id}` — delete (owner only)
 
 ### 8.3 Hooks
 
@@ -356,7 +356,7 @@ Site URL:    http://mediaverse.local
 - [ ] Click "Favorite" on single page → changes to "Favorited" with filled heart
 - [ ] Click again → unfavorites
 - [ ] Favorites tab in dashboard shows favorited media
-- [ ] `POST /mvs/v1/media/{id}/favorite` — toggle favorite
+- [ ] `POST /mvs/v1/media/{media_id}/favorite` — toggle favorite
 - [ ] `GET /mvs/v1/me/favorites` — list user favorites
 - [ ] `mvs_favorite_toggled` action fires
 
@@ -493,12 +493,12 @@ Site URL:    http://mediaverse.local
 - [ ] Private media → shows lock message for non-owners
 - [ ] Members-only → visible when logged in, hidden when logged out
 - [ ] `mvs_privacy_can_view` filter controls access
-- [ ] `GET /mvs/v1/media/{id}/rules` — list rules
-- [ ] `POST /mvs/v1/media/{id}/rules` — create rule
-- [ ] `DELETE /mvs/v1/media/{id}/rules/{rule_id}` — delete rule
-- [ ] `POST /mvs/v1/media/{id}/grant` — grant access
-- [ ] `DELETE /mvs/v1/media/{id}/access/{user_id}` — revoke access
-- [ ] `GET /mvs/v1/media/{id}/signed-url` — generate signed URL
+- [ ] `GET /mvs/v1/media/{media_id}/rules` — list rules
+- [ ] `POST /mvs/v1/media/{media_id}/rules` — create rule
+- [ ] `DELETE /mvs/v1/media/{media_id}/rules/{rule_id}` — delete rule
+- [ ] `POST /mvs/v1/media/{media_id}/grant` — grant access
+- [ ] `DELETE /mvs/v1/media/{media_id}/grant/{user_id}` — revoke access
+- [ ] `GET /mvs/v1/media/{media_id}/signed-url` — generate signed URL
 - [ ] `GET /mvs/v1/serve` — serve file via signed URL
 
 ---
@@ -672,16 +672,17 @@ Site URL:    http://mediaverse.local
 
 ### 20.4 Stats & Tags REST
 
-- [ ] `GET /mvs/v1/media/{id}/stats` — media stats
+- [ ] `GET /mvs/v1/media/{media_id}/stats` — media stats
 - [ ] `GET /mvs/v1/me/stats` — user stats
 - [ ] `GET /mvs/v1/tags` — list
 - [ ] `GET /mvs/v1/tags/{id}` — read
 - [ ] `POST /mvs/v1/tags` — create
-- [ ] `POST /mvs/v1/tags/{source_id}/merge/{target_id}` — merge tags
+- [ ] `POST /mvs/v1/tags/merge` — merge tags (body: source_id, target_id)
+- [ ] `GET /mvs/v1/tags/cloud` — tag cloud
 
 ### 20.5 Bulk Operations & Activity
 
-- [ ] `POST /mvs/v1/bulk` — bulk update/delete
+- [ ] `POST /mvs/v1/media/bulk` — bulk update/delete
 - [ ] `GET /mvs/v1/feed` — activity feed
 - [ ] `GET /mvs/v1/users/{id}/activity` — user activity
 - [ ] `mvs_activity_types` filter customizes activity types
