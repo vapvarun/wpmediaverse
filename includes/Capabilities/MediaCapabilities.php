@@ -78,8 +78,12 @@ class MediaCapabilities {
 				'publish_mvs_medias',
 			),
 			'contributor'   => array(
+				'upload_mvs_media',
+				'edit_mvs_media',
+				'delete_mvs_media',
 				'read_mvs_media',
 				'edit_mvs_medias',
+				'delete_mvs_medias',
 			),
 			'subscriber'    => array(
 				'upload_mvs_media',
@@ -91,15 +95,52 @@ class MediaCapabilities {
 	}
 
 	/**
+	 * Base upload/edit/delete caps granted to every role.
+	 *
+	 * @return string[]
+	 */
+	private static function get_base_member_caps(): array {
+		return array(
+			'upload_mvs_media',
+			'edit_mvs_media',
+			'delete_mvs_media',
+			'read_mvs_media',
+			'edit_mvs_medias',
+			'delete_mvs_medias',
+		);
+	}
+
+	/**
 	 * Add capabilities to roles (on activation).
+	 *
+	 * Named roles get their full cap set from get_role_caps().
+	 * All other roles (custom, BuddyPress, bbPress, etc.) get base member caps.
 	 */
 	public static function add_caps(): void {
-		foreach ( self::get_role_caps() as $role_name => $caps ) {
+		$named = self::get_role_caps();
+
+		foreach ( $named as $role_name => $caps ) {
 			$role = get_role( $role_name );
 			if ( ! $role ) {
 				continue;
 			}
 			foreach ( $caps as $cap ) {
+				$role->add_cap( $cap );
+			}
+		}
+
+		// Grant base caps to all other roles not in the named list.
+		global $wp_roles;
+		$base_caps = self::get_base_member_caps();
+		foreach ( $wp_roles->roles as $role_slug => $role_data ) {
+			if ( isset( $named[ $role_slug ] ) ) {
+				continue;
+			}
+			$role = get_role( $role_slug );
+			if ( ! $role ) {
+				continue;
+			}
+			foreach ( $base_caps as $cap ) {
 				$role->add_cap( $cap );
 			}
 		}
@@ -109,15 +150,29 @@ class MediaCapabilities {
 	 * Remove capabilities from roles (on uninstall).
 	 */
 	public static function remove_caps(): void {
-		$all_caps = array();
-		foreach ( self::get_role_caps() as $caps ) {
-			$all_caps = array_merge( $all_caps, $caps );
-		}
-		$all_caps = array_unique( $all_caps );
+		$all_caps = array_merge(
+			self::get_base_member_caps(),
+			array(
+				'edit_others_mvs_media',
+				'delete_others_mvs_media',
+				'moderate_mvs_media',
+				'manage_mvs_settings',
+				'manage_mvs_access',
+				'publish_mvs_media',
+				'edit_others_mvs_medias',
+				'edit_published_mvs_medias',
+				'edit_private_mvs_medias',
+				'delete_others_mvs_medias',
+				'delete_published_mvs_medias',
+				'delete_private_mvs_medias',
+				'publish_mvs_medias',
+				'read_private_mvs_medias',
+			)
+		);
 
-		$roles = array( 'administrator', 'editor', 'author', 'contributor', 'subscriber' );
-		foreach ( $roles as $role_name ) {
-			$role = get_role( $role_name );
+		global $wp_roles;
+		foreach ( $wp_roles->roles as $role_slug => $role_data ) {
+			$role = get_role( $role_slug );
 			if ( ! $role ) {
 				continue;
 			}

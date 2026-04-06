@@ -57,11 +57,6 @@ class SetupWizard {
 		$step = sanitize_text_field( wp_unslash( $_POST['mvs_wizard_step'] ) );
 
 		switch ( $step ) {
-			case 'permissions':
-				$this->save_permissions();
-				wp_safe_redirect( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&step=display' ) );
-				exit;
-
 			case 'display':
 				$this->save_display();
 				wp_safe_redirect( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&step=done' ) );
@@ -160,11 +155,10 @@ class SetupWizard {
 		$step = isset( $_GET['step'] ) ? sanitize_key( $_GET['step'] ) : 'welcome';
 
 		$steps         = array(
-			'welcome'     => __( 'Welcome', 'wpmediaverse' ),
-			'pages'       => __( 'Pages', 'wpmediaverse' ),
-			'permissions' => __( 'Permissions', 'wpmediaverse' ),
-			'display'     => __( 'Display', 'wpmediaverse' ),
-			'done'        => __( 'Done', 'wpmediaverse' ),
+			'welcome' => __( 'Welcome', 'wpmediaverse' ),
+			'pages'   => __( 'Pages', 'wpmediaverse' ),
+			'display' => __( 'Display', 'wpmediaverse' ),
+			'done'    => __( 'Done', 'wpmediaverse' ),
 		);
 		$step_keys     = array_keys( $steps );
 		$current_index = array_search( $step, $step_keys, true );
@@ -206,9 +200,6 @@ class SetupWizard {
 						break;
 					case 'pages':
 						$this->render_step_pages();
-						break;
-					case 'permissions':
-						$this->render_step_permissions();
 						break;
 					case 'display':
 						$this->render_step_display();
@@ -302,7 +293,7 @@ class SetupWizard {
 			</div>
 
 			<div class="mvs-setup-actions">
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&step=permissions' ) ); ?>"
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_SLUG . '&step=display' ) ); ?>"
 					class="mvs-btn mvs-btn--primary">
 					<?php esc_html_e( 'Continue', 'wpmediaverse' ); ?>
 				</a>
