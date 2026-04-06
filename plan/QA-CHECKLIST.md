@@ -1,17 +1,17 @@
 # WPMediaVerse (Free) — QA Checklist
 
-> Comprehensive audit checklist covering backend, frontend, REST API, developer hooks, template overrides, and data integrity.
+> Feature-grouped checklist. Each section is self-contained: settings, admin UI, frontend, REST API, database, hooks, and mobile checks all together.
 > Mark PASS/FAIL for each item. Note issues inline.
 
 ---
 
-## 1. Automated Scans (wp-plugin-qa MCP)
+## 1. Platform Foundation
 
-Run these first — they catch code quality, accessibility, and structural issues automatically.
+### 1.1 Automated Scans (wp-plugin-qa MCP)
 
 ```
 Plugin Path: /path/to/wp-content/plugins/wpmediaverse
-Site URL:    http://mediaverse.local (for live checks)
+Site URL:    http://mediaverse.local
 ```
 
 - [ ] `wppqa_scan_plugin` — feature manifest matches this checklist
@@ -19,19 +19,46 @@ Site URL:    http://mediaverse.local (for live checks)
 - [ ] `wppqa_check_a11y` — WCAG 2.1 AA (form labels, alt text, ARIA, focus, contrast, keyboard nav)
 - [ ] `wppqa_check_ux` — help text, error messages, empty states, visual feedback, onboarding
 - [ ] `wppqa_check_templates` — template files, override paths, lifecycle hooks
-- [ ] `wppqa_check_api` — REST endpoints auth/unauth, nonce, malformed input (requires site_url)
-- [ ] `wppqa_check_database` — custom tables, settings persistence, orphan data (requires site_url)
-- [ ] `wppqa_check_browser` — generate Playwright E2E specs (requires site_url)
+- [ ] `wppqa_check_api` — REST endpoints auth/unauth, nonce, malformed input
+- [ ] `wppqa_check_database` — custom tables, settings persistence, orphan data
+- [ ] `wppqa_check_browser` — generate Playwright E2E specs
 - [ ] `wppqa_evaluate_product` — admin UI + frontend + marketing readiness scoring
+
+### 1.2 Setup Wizard
+
+- [ ] Step 1: Welcome → Next
+- [ ] Step 2: Pages creation (Explore, Upload, Dashboard)
+- [ ] Step 3: Settings configuration
+- [ ] Completion → `mvs_setup_complete` option set to true
+- [ ] Wizard doesn't show again after completion
+
+### 1.3 Admin Overview Page
+
+- [ ] Stats cards show: Total Media, Albums, Pending Review, Total Views, Storage Used
+- [ ] Quick links: Add Media, Settings, Moderation, Stats → navigate correctly
+- [ ] Import Demo Data button → creates 50 items, 5 users, 5 albums
+- [ ] Admin dashboard widgets render via `mvs_dashboard_widgets` hook
+
+### 1.4 WP-CLI Commands
+
+- [ ] `wp mvs stats` — displays plugin statistics (media count, albums, views, reactions)
+- [ ] `wp mvs migrate` — runs database migrations
+- [ ] `wp mvs migrate --check` — checks migration status without running
+
+### 1.5 Deactivation & Uninstall
+
+- [ ] Deactivate plugin → rewrite rules flushed
+- [ ] Uninstall plugin → all custom tables dropped (if clean uninstall enabled)
+- [ ] Uninstall → all `mvs_*` options removed
 
 ---
 
-## 2. Admin Settings
+## 2. Settings & Configuration
 
 ### 2.1 General Tab
 
 - [ ] `mvs_max_upload_size` — change value, save, reload → persists (default: 104857600)
-- [ ] `mvs_allowed_file_types` — edit MIME types, save → persists (default: image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg)
+- [ ] `mvs_allowed_file_types` — edit MIME types, save → persists
 - [ ] `mvs_default_privacy` — toggle public/members/private, save → persists
 - [ ] `mvs_duplicate_action` — toggle warn/skip/allow, save → persists
 - [ ] `mvs_strip_exif` — toggle on/off, save → persists
@@ -57,44 +84,14 @@ Site URL:    http://mediaverse.local (for live checks)
 - [ ] Save role permissions → capabilities persist
 - [ ] New user gets correct defaults
 
-### 2.5 AI & Moderation Tab
+### 2.5 Settings Page Chrome
 
-- [ ] `mvs_ai_provider` — select provider, save → persists
-- [ ] `mvs_openai_api_key` — enter key, save → masked on reload
-- [ ] `mvs_openai_model` — select model, save → persists
-- [ ] `mvs_ai_auto_moderate` — toggle, save → uploads trigger moderation
-- [ ] `mvs_ai_auto_analyze` — toggle, save → uploads trigger analysis
-- [ ] `mvs_ai_auto_apply_tags` — toggle, save → tags auto-applied
-- [ ] `mvs_ai_monthly_budget` — set budget, save → enforced
-- [ ] `mvs_ai_cost_per_call` — set cost, save → tracked
-- [ ] `mvs_moderation_auto_action` — set flag/hide/delete, save → auto-action works
-- [ ] `mvs_report_auto_hide_threshold` — set threshold, save → auto-hide triggers
+- [ ] All tabs render without errors: General, Display, Permissions, AI & Moderation, Webhooks, Messaging, Watermark, Pages
+- [ ] Tab switching preserves unsaved state (or warns)
+- [ ] `mvs_settings_before_save` action fires on save
+- [ ] `mvs_settings_sidebar_after` action renders sidebar content
 
-### 2.6 Webhooks Tab
-
-- [ ] Add webhook (URL + events), save → webhook fires on event
-- [ ] Edit webhook, save → changes persist
-- [ ] Delete webhook → removed
-- [ ] Webhook delivery uses HMAC-SHA256 signature
-- [ ] Failed delivery tracked in `mvs_webhook_failures`
-
-### 2.7 Messaging Tab
-
-- [ ] `mvs_dm_access` — set access level, save → DM rules enforced
-- [ ] `mvs_dm_min_age` — set days, save → new accounts blocked from DM
-- [ ] `mvs_show_online_status` — toggle, save → online indicator shows/hides
-
-### 2.8 Watermark Tab
-
-- [ ] `mvs_watermark_type` — toggle text/image, save → watermark type changes
-- [ ] `mvs_watermark_text` — enter text, save → visible on media
-- [ ] `mvs_watermark_position` — select from 9 positions, save → placement changes
-- [ ] `mvs_watermark_opacity` — set 0-100, save → opacity changes
-- [ ] `mvs_watermark_font_size` — set size, save → font size changes
-- [ ] `mvs_watermark_color` — pick color, save → color changes
-- [ ] `mvs_watermark_image` — select image, save → image watermark applied
-
-### 2.9 Settings Sanitization
+### 2.6 Sanitization & Security
 
 - [ ] XSS payload in text fields → stripped on save
 - [ ] Invalid MIME types → rejected or sanitized
@@ -103,16 +100,58 @@ Site URL:    http://mediaverse.local (for live checks)
 
 ---
 
-## 3. Admin Pages
+## 3. Media Upload & Storage
 
-### 3.1 Overview Page
+### 3.1 FAB Upload — Photo
 
-- [ ] Stats cards show: Total Media, Albums, Pending Review, Total Views, Storage Used
-- [ ] Quick links: Add Media, Settings, Moderation, Stats → navigate correctly
-- [ ] Import Demo Data button → creates 50 items, 5 users, 5 albums
-- [ ] Admin dashboard widgets render via `mvs_dashboard_widgets` hook
+- [ ] Click (+) FAB on explore page → modal opens
+- [ ] Select "Photo" tab → pick image → preview shows
+- [ ] Add title, description, tags → select privacy → click Upload
+- [ ] Success toast appears → media visible in explore feed
+- [ ] 3 thumbnail sizes generated (check `mvs_media_meta`: thumb_large, thumb_medium, thumb_thumb)
 
-### 3.2 All Media List
+### 3.2 FAB Upload — Gallery
+
+- [ ] Click (+) FAB → select "Gallery" tab
+- [ ] Select 2-4 images → previews show
+- [ ] Upload → gallery post appears as single card with badge
+
+### 3.3 FAB Upload — Video
+
+- [ ] Click (+) FAB → select "Video" tab
+- [ ] Select video file → upload completes
+- [ ] Video card appears in feed
+
+### 3.4 Dashboard Upload
+
+- [ ] "Drop files here or click to upload" area works
+- [ ] File appears in Media tab after upload
+
+### 3.5 REST API Upload
+
+- [ ] `POST /mvs/v1/media` with file → 201 response with media data
+- [ ] Thumbnails generated server-side
+
+### 3.6 Validation
+
+- [ ] Upload disallowed MIME type → error message
+- [ ] Upload file exceeding `mvs_max_upload_size` → error message
+- [ ] Duplicate file with `mvs_duplicate_action=warn` → warning shown
+- [ ] Duplicate file with `mvs_duplicate_action=skip` → silently skipped
+- [ ] EXIF stripping: upload with `mvs_strip_exif=true` → EXIF removed from file
+
+### 3.7 REST API — Media CRUD
+
+- [ ] `GET /mvs/v1/media` — list with pagination, filtering
+- [ ] `GET /mvs/v1/media/{id}` — read single
+- [ ] `PUT /mvs/v1/media/{id}` ��� update (owner/admin only)
+- [ ] `DELETE /mvs/v1/media/{id}` — delete (owner/admin only)
+- [ ] `POST /mvs/v1/media/{id}/view` — record view (increments count)
+- [ ] `GET /mvs/v1/media/{id}/access` — check access
+- [ ] `GET /mvs/v1/media/{id}/group` — get gallery group items
+- [ ] `GET /mvs/v1/me/media` — current user's media
+
+### 3.8 Admin — All Media List
 
 - [ ] Table columns: Thumbnail, Title, Author, Type, Privacy, Status, Date
 - [ ] Type filter dropdown → filters by media type
@@ -122,44 +161,26 @@ Site URL:    http://mediaverse.local (for live checks)
 - [ ] View row action → opens single media
 - [ ] Trash row action → moves to trash
 
-### 3.3 Settings Page
+### 3.9 Database
 
-- [ ] All tabs render without errors: General, Display, Permissions, AI & Moderation, Webhooks, Messaging, Watermark, Pages
-- [ ] Tab switching preserves unsaved state (or warns)
-- [ ] `mvs_settings_before_save` action fires on save
-- [ ] `mvs_settings_sidebar_after` action renders sidebar content
+- [ ] New upload → row in `mvs_media_index` + `mvs_media_meta` (thumb sizes)
+- [ ] New upload → NO row in `wp_posts` with `post_type='attachment'`
+- [ ] Thumbnail files exist on disk at `uploads/wpmediaverse/YYYY/MM/`
+- [ ] Delete media → rows removed from `mvs_media_index`, `mvs_media_meta`, `mvs_media_stats`
+- [ ] Delete media → file removed from disk
+- [ ] No orphaned meta entries after media deletion
 
-### 3.4 Moderation Queue
+### 3.10 Hooks
 
-- [ ] Queue shows flagged media items
-- [ ] Approve action → media published
-- [ ] Reject action → media removed/hidden
-- [ ] `mvs_moderation_tabs` filter → custom tabs appear
-- [ ] Empty state message when no flagged items
-
-### 3.5 Stats Page
-
-- [ ] Charts/metrics display correctly
-- [ ] `mvs_stats_tabs` filter → custom tabs appear
-- [ ] Date range filtering (if applicable)
-
-### 3.6 Log Viewer
-
-- [ ] Error log entries display with timestamp, level, message
-- [ ] Pagination works
-- [ ] Empty state when no logs
-
-### 3.7 Setup Wizard
-
-- [ ] Step 1: Welcome → Next
-- [ ] Step 2: Pages creation (Explore, Upload, Dashboard)
-- [ ] Step 3: Settings configuration
-- [ ] Completion → `mvs_setup_complete` option set to true
-- [ ] Wizard doesn't show again after completion
+- [ ] `mvs_media_uploaded` action fires on successful upload
+- [ ] `mvs_media_deleted` action fires on media delete
+- [ ] `mvs_max_upload_size` filter enforces upload limit
+- [ ] `mvs_allowed_file_types` filter controls MIME types
+- [ ] `mvs_media_response` filter modifies REST media response
 
 ---
 
-## 4. Frontend Pages & Templates
+## 4. Media Display
 
 ### 4.1 URL Routing
 
@@ -171,7 +192,27 @@ Site URL:    http://mediaverse.local (for live checks)
 - [ ] `/media/@{username}/page/2/` → paginated profile loads
 - [ ] `/media/edit-profile/` → profile edit form loads (logged in)
 
-### 4.2 Template Files
+### 4.2 Explore / Feed
+
+- [ ] Instagram grid layout displays correctly
+- [ ] Card shows: thumbnail (not original size), author avatar + name, like count
+- [ ] Long description has "more" button
+- [ ] Comment preview shows (if comments exist)
+- [ ] Timestamp shows (e.g. "3 hours ago")
+- [ ] Stories bar shows at top with recent uploaders
+- [ ] Pagination: scroll past items → more load
+- [ ] `mvs_feed_sort_options` filter → custom sort options appear (default: date, trending, popular)
+- [ ] `mvs_feed_args` filter → modifies feed query
+
+### 4.3 Single Media Page
+
+- [ ] `/media/{slug}/` loads correctly
+- [ ] Image/video/audio renders
+- [ ] Title, description, author, date show
+- [ ] Tags displayed as clickable links
+- [ ] View count shows
+
+### 4.4 Template Files
 
 - [ ] `templates/explore.php` renders explore grid
 - [ ] `templates/media-single.php` renders single media
@@ -182,7 +223,7 @@ Site URL:    http://mediaverse.local (for live checks)
 - [ ] `templates/partials/shared-ui-shell.php` renders FAB + lightbox shell
 - [ ] `templates/partials/dashboard-content.php` renders dashboard
 
-### 4.3 Theme Override System
+### 4.5 Theme Override System
 
 - [ ] Copy `templates/explore.php` to `theme/wpmediaverse/explore.php` → plugin uses theme copy
 - [ ] Modify theme copy → changes visible on frontend
@@ -195,83 +236,9 @@ Site URL:    http://mediaverse.local (for live checks)
 
 ---
 
-## 5. Upload Flows
+## 5. Lightbox
 
-### 5.1 FAB Button — Photo
-
-- [ ] Click (+) FAB on explore page → modal opens
-- [ ] Select "Photo" tab → pick image → preview shows
-- [ ] Add title, description, tags → select privacy → click Upload
-- [ ] Success toast appears → media visible in explore feed
-- [ ] 3 thumbnail sizes generated (check `mvs_media_meta`: thumb_large, thumb_medium, thumb_thumb)
-
-### 5.2 FAB Button — Gallery
-
-- [ ] Click (+) FAB → select "Gallery" tab
-- [ ] Select 2-4 images → previews show
-- [ ] Upload → gallery post appears as single card with badge
-
-### 5.3 FAB Button — Video
-
-- [ ] Click (+) FAB → select "Video" tab
-- [ ] Select video file → upload completes
-- [ ] Video card appears in feed
-
-### 5.4 BP Activity — Single Image
-
-- [ ] Go to /activity/ → click media attachment button
-- [ ] Select 1 image → preview shows in form
-- [ ] Post update → activity appears with text + media
-- [ ] Image has `data-mvs-media-id` attribute
-
-### 5.5 BP Activity — Multi Image
-
-- [ ] Post activity with 3 images → grid layout displays (mvs-activity-grid-3)
-- [ ] Each image clickable for lightbox
-
-### 5.6 BP Activity — Group
-
-- [ ] Go to group page → post activity with image
-- [ ] Media appears in group activity stream
-- [ ] Media appears in `/groups/{slug}/media/` tab
-
-### 5.7 Dashboard Upload
-
-- [ ] "Drop files here or click to upload" area works
-- [ ] File appears in Media tab after upload
-
-### 5.8 REST API Upload
-
-- [ ] `POST /mvs/v1/media` with file → 201 response with media data
-- [ ] Thumbnails generated server-side
-
-### 5.9 Validation
-
-- [ ] Upload disallowed MIME type → error message
-- [ ] Upload file exceeding `mvs_max_upload_size` → error message
-- [ ] Duplicate file with `mvs_duplicate_action=warn` → warning shown
-- [ ] Duplicate file with `mvs_duplicate_action=skip` → silently skipped
-- [ ] EXIF stripping: upload with `mvs_strip_exif=true` → EXIF removed from file
-
----
-
-## 6. Explore / Feed
-
-- [ ] Instagram grid layout displays correctly
-- [ ] Card shows: thumbnail (not original size), author avatar + name, like count
-- [ ] Long description has "more" button
-- [ ] Comment preview shows (if comments exist)
-- [ ] Timestamp shows (e.g. "3 hours ago")
-- [ ] Stories bar shows at top with recent uploaders
-- [ ] Pagination: scroll past items → more load
-- [ ] `mvs_feed_sort_options` filter → custom sort options appear (default: date, trending, popular)
-- [ ] `mvs_feed_args` filter → modifies feed query
-
----
-
-## 7. Lightbox (Interactivity API)
-
-### 7.1 Open / Close
+### 5.1 Open / Close
 
 - [ ] Click image on explore → lightbox opens with dark overlay
 - [ ] Image displays full size, author avatar + name + link in sidebar
@@ -281,207 +248,276 @@ Site URL:    http://mediaverse.local (for live checks)
 - [ ] Press Escape → closes
 - [ ] Body scroll restored after close
 
-### 7.2 Reactions
-
-- [ ] Click emoji → count increments, button highlights
-- [ ] Click different emoji → switches reaction (previous deactivates)
-- [ ] Click same emoji again → removes reaction (count decrements)
-- [ ] `mvs_reaction_toggled` action fires (verify via debug log or hook test)
-
-### 7.3 Favorites
-
-- [ ] Click "Favorite" → changes to "Favorited" with filled heart
-- [ ] Click again → unfavorites
-- [ ] `mvs_favorite_toggled` action fires
-
-### 7.4 Comments
-
-- [ ] Type comment → click Post → comment appears in list
-- [ ] Comment shows: avatar + author name (clickable) + text
-- [ ] "No comments yet" message hides after first comment
-- [ ] `mvs_comment_created` action fires
-
-### 7.5 Share
-
-- [ ] Click Share → "Copied!" feedback (or native share dialog)
-
-### 7.6 Open Link
-
-- [ ] Click "Open" → navigates to `/media/{slug}/` single page
-
-### 7.7 Gallery Navigation
+### 5.2 Gallery Navigation
 
 - [ ] Open gallery post → prev/next arrows visible
 - [ ] Click arrows → cycles through gallery images
 - [ ] Position indicator shows (e.g. "2 / 4")
 
+### 5.3 Reactions (in Lightbox)
+
+- [ ] Click emoji → count increments, button highlights
+- [ ] Click different emoji → switches reaction (previous deactivates)
+- [ ] Click same emoji again → removes reaction (count decrements)
+
+### 5.4 Favorites (in Lightbox)
+
+- [ ] Click "Favorite" → changes to "Favorited" with filled heart
+- [ ] Click again → unfavorites
+
+### 5.5 Comments (in Lightbox)
+
+- [ ] Type comment → click Post → comment appears in list
+- [ ] Comment shows: avatar + author name (clickable) + text
+- [ ] "No comments yet" message hides after first comment
+
+### 5.6 Share & Open Link
+
+- [ ] Click Share → "Copied!" feedback (or native share dialog)
+- [ ] Click "Open" → navigates to `/media/{slug}/` single page
+
 ---
 
-## 8. Single Media Page
+## 6. Albums & Collections
 
-### 8.1 Display
+### 6.1 Albums
 
-- [ ] `/media/{slug}/` loads correctly
-- [ ] Image/video/audio renders
-- [ ] Title, description, author, date show
-- [ ] Tags displayed as clickable links
+- [ ] Album page renders at `/media/album/{id}/`
+- [ ] Create new album form works
+- [ ] Shows user's albums (or empty state) in dashboard
 
-### 8.2 Social Actions
+### 6.2 REST API — Albums
 
-- [ ] Reactions bar — 6 emojis with counts
-- [ ] Favorite button toggles
-- [ ] Share button copies link
-- [ ] Report button visible
+- [ ] `GET /mvs/v1/albums` — list
+- [ ] `POST /mvs/v1/albums` — create
+- [ ] `GET /mvs/v1/albums/{id}` — read
+- [ ] `PUT /mvs/v1/albums/{id}` — update
+- [ ] `DELETE /mvs/v1/albums/{id}` — delete
+- [ ] `POST /mvs/v1/albums/{id}/reorder` — reorder items
+- [ ] `GET /mvs/v1/albums/{id}/items` — list items
+- [ ] `POST /mvs/v1/albums/{id}/items` — add items
+- [ ] `DELETE /mvs/v1/albums/{id}/items/{media_id}` — remove item
+- [ ] `PUT /mvs/v1/albums/{id}/cover` — set cover image
 
-### 8.3 Comments
+### 6.3 Collections
 
-- [ ] Comment form visible (logged in)
+- [ ] Collection page renders at `/media/collection/{id}/`
+- [ ] Shows user's collections in dashboard
+
+### 6.4 REST API — Collections
+
+- [ ] `GET /mvs/v1/collections` — list
+- [ ] `POST /mvs/v1/collections` — create
+- [ ] `GET /mvs/v1/collections/{id}` — read
+- [ ] `PUT /mvs/v1/collections/{id}` — update
+- [ ] `DELETE /mvs/v1/collections/{id}` — delete
+- [ ] `GET /mvs/v1/collections/{id}/rules` — get smart collection rules
+
+---
+
+## 7. Reactions
+
+- [ ] Reactions bar on single media page — 6 emojis with counts
+- [ ] Click emoji → count increments, button highlights
+- [ ] Click different emoji → switches reaction
+- [ ] Click same emoji again → removes reaction (count decrements)
+- [ ] `POST /mvs/v1/media/{id}/reactions` — toggle reaction (body: type)
+- [ ] `mvs_reaction_toggled` action fires
+
+---
+
+## 8. Comments
+
+### 8.1 Frontend
+
+- [ ] Comment form visible on single page (logged in)
 - [ ] Post comment → appears with avatar + author link
 - [ ] Edit own comment → inline edit form (within `mvs_comment_edit_window` = 15 min)
 - [ ] Delete own comment → removed
+- [ ] Preview comments (latest 2) show on feed cards
 
-### 8.4 Follow
+### 8.2 REST API
 
-- [ ] Follow button shows for non-owner
-- [ ] Click Follow → changes to "Following"
-- [ ] Click again → unfollows
-- [ ] `mvs_user_followed` / `mvs_user_unfollowed` actions fire
+- [ ] `GET /mvs/v1/comments` — list (with media_id filter)
+- [ ] `POST /mvs/v1/comments` — create
+- [ ] `GET /mvs/v1/comments/{id}` — read
+- [ ] `PUT /mvs/v1/comments/{id}` — update (within edit window)
+- [ ] `DELETE /mvs/v1/comments/{id}` — delete (owner only)
 
-### 8.5 Privacy
+### 8.3 Hooks
 
-- [ ] Private media → shows lock message for non-owners
-- [ ] Members-only → visible when logged in, hidden when logged out
-- [ ] `mvs_privacy_can_view` filter controls access
+- [ ] `mvs_comment_created` action fires
+- [ ] `mvs_comment_edit_window` filter changes edit window (default: 15 min)
 
 ---
 
-## 9. Dashboard (/my-media/)
+## 9. Favorites & Bookmarks
 
-### 9.1 Layout
+- [ ] Click "Favorite" on single page → changes to "Favorited" with filled heart
+- [ ] Click again → unfavorites
+- [ ] Favorites tab in dashboard shows favorited media
+- [ ] `POST /mvs/v1/media/{id}/favorite` — toggle favorite
+- [ ] `GET /mvs/v1/me/favorites` — list user favorites
+- [ ] `mvs_favorite_toggled` action fires
+
+---
+
+## 10. Follow System
+
+- [ ] Follow button shows for non-owner on profile/media
+- [ ] Click Follow → changes to "Following"
+- [ ] Click again → unfollows
+- [ ] Follower/following counts update
+- [ ] `POST /mvs/v1/users/{id}/follow` — follow/unfollow
+- [ ] `GET /mvs/v1/users/{id}/followers` — followers list
+- [ ] `GET /mvs/v1/users/{id}/following` — following list
+- [ ] `GET /mvs/v1/me/following` — current user following
+- [ ] `GET /mvs/v1/me/followers` — current user followers
+- [ ] `mvs_user_followed` action fires
+- [ ] `mvs_user_unfollowed` action fires
+
+---
+
+## 11. Notifications
+
+- [ ] Notification created on: follow, reaction, comment, mention, favorite
+- [ ] Unread count accurate
+- [ ] Mark read works
+- [ ] `GET /mvs/v1/me/notifications` — list notifications
+- [ ] `POST /mvs/v1/me/notifications/read` — mark read
+- [ ] `GET /mvs/v1/me/notifications/count` — unread count
+- [ ] `mvs_notification_created` action fires
+- [ ] `mvs_should_send_notification` filter can suppress
+
+---
+
+## 12. User Profiles & Dashboard
+
+### 12.1 Profile Page
+
+- [ ] `/media/@{username}/` loads user profile
+- [ ] Profile header with avatar, username, stats
+- [ ] Media grid displays
+- [ ] Follow button visible for non-owner
+
+### 12.2 Dashboard (/my-media/)
 
 - [ ] Profile header with avatar, username, View/Edit Profile links
 - [ ] 4 tabs: Media, Albums, Favorites, Collections
+- [ ] Media tab: user's uploads with thumbnail, title, privacy badge, Edit/Delete buttons
+- [ ] Albums tab: user's albums (or empty state)
+- [ ] Favorites tab: media user has favorited
+- [ ] Collections tab: user's collections
+- [ ] Storage Quota: Images/Videos/Audio counts + limit display
 
-### 9.2 Media Tab
+### 12.3 Profile Edit
 
-- [ ] Shows user's uploaded media
-- [ ] Each item: thumbnail, title, privacy badge, Edit/Delete buttons
-- [ ] Upload area ("Drop files here or click to upload")
+- [ ] `/media/edit-profile/` loads form
+- [ ] Edit display name, bio, avatar → save → persists
 
-### 9.3 Albums Tab
+### 12.4 REST API
 
-- [ ] Shows user's albums (or empty state)
-- [ ] Create new album form works
-
-### 9.4 Favorites Tab
-
-- [ ] Shows media user has favorited
-
-### 9.5 Collections Tab
-
-- [ ] Shows user's collections
-
-### 9.6 Storage Quota
-
-- [ ] Shows Images/Videos/Audio counts
-- [ ] Shows quota limit (Unlimited or specific)
+- [ ] `GET /mvs/v1/users/{id}` — user profile
+- [ ] `GET /mvs/v1/users/{id}/media` — user's media
+- [ ] `GET /mvs/v1/users/search` — search users
+- [ ] `GET /mvs/v1/me/profile` — get profile
+- [ ] `PUT /mvs/v1/me/profile` — update profile
+- [ ] `POST /mvs/v1/me/avatar` — upload avatar
 
 ---
 
-## 10. Social Features
+## 13. Content Moderation & Reporting
 
-### 10.1 Follow System
+### 13.1 AI Moderation Settings
 
-- [ ] Follow user → appears in following list
-- [ ] Unfollow user → removed from following list
-- [ ] Follower/following counts update
-- [ ] `GET /mvs/v1/users/{id}/followers` returns correct list
-- [ ] `GET /mvs/v1/users/{id}/following` returns correct list
+- [ ] `mvs_ai_provider` — select provider, save → persists
+- [ ] `mvs_openai_api_key` — enter key, save → masked on reload
+- [ ] `mvs_openai_model` — select model, save → persists
+- [ ] `mvs_ai_auto_moderate` — toggle, save → uploads trigger moderation
+- [ ] `mvs_ai_auto_analyze` — toggle, save → uploads trigger analysis
+- [ ] `mvs_ai_auto_apply_tags` — toggle, save → tags auto-applied
+- [ ] `mvs_ai_monthly_budget` — set budget, save → enforced
+- [ ] `mvs_ai_cost_per_call` — set cost, save → tracked
+- [ ] `mvs_moderation_auto_action` — set flag/hide/delete, save → auto-action works
+- [ ] `mvs_report_auto_hide_threshold` — set threshold, save → auto-hide triggers
 
-### 10.2 Notifications
+### 13.2 Admin Moderation Queue
 
-- [ ] Notification created on: follow, reaction, comment, mention, favorite
-- [ ] `mvs_notification_created` action fires
-- [ ] `mvs_should_send_notification` filter can suppress
-- [ ] Unread count (`GET /me/notifications/count`) accurate
-- [ ] Mark read (`POST /me/notifications/read`) works
+- [ ] Queue shows flagged media items
+- [ ] Approve action → media published
+- [ ] Reject action → media removed/hidden
+- [ ] `mvs_moderation_tabs` filter → custom tabs appear
+- [ ] Empty state message when no flagged items
 
-### 10.3 Mentions
+### 13.3 Admin Stats Page
 
-- [ ] Type @username in comment → mention created
-- [ ] `mvs_mentions_created` action fires
-- [ ] Mentioned user gets notification
+- [ ] Charts/metrics display correctly
+- [ ] `mvs_stats_tabs` filter → custom tabs appear
 
-### 10.4 Blocking & Reporting
+### 13.4 Admin Log Viewer
 
+- [ ] Error log entries display with timestamp, level, message
+- [ ] Pagination works
+- [ ] Empty state when no logs
+
+### 13.5 Reporting & Blocking
+
+- [ ] Report button visible on media
 - [ ] Report media → `mvs_report_submitted` action fires
 - [ ] Report user → report created
 - [ ] Block user → `mvs_user_blocked` action fires
 - [ ] Blocked user's content hidden from blocker
 
-### 10.5 Activity Feed
+### 13.6 REST API
 
-- [ ] `GET /mvs/v1/feed` returns recent activity
-- [ ] `GET /mvs/v1/users/{id}/activity` returns user activity
-- [ ] `mvs_activity_types` filter customizes activity types
+- [ ] `GET /mvs/v1/moderation` — list flagged
+- [ ] `GET /mvs/v1/moderation/counts` — counts
+- [ ] `POST /mvs/v1/moderation/{id}/approve` — approve
+- [ ] `POST /mvs/v1/moderation/{id}/reject` — reject
+- [ ] `POST /mvs/v1/moderation/{id}/analyze` — AI analyze
+- [ ] `GET /mvs/v1/ai/usage` — AI usage stats
+- [ ] `POST /mvs/v1/media/{id}/report` — report media
+- [ ] `POST /mvs/v1/users/{id}/report` — report user
+- [ ] `POST /mvs/v1/users/{id}/block` — block user
+- [ ] `GET /mvs/v1/me/blocked` — list blocked users
 
----
+### 13.7 Hooks
 
-## 11. BuddyPress Integration
-
-### 11.1 Activity Media Upload
-
-- [ ] Post activity with 1 image → media attached with `data-mvs-media-id`
-- [ ] Post activity with 3 images → grid layout (mvs-activity-grid-3)
-- [ ] Max 6 media per activity (`mvs_activity_max_media` filter, default: 6)
-
-### 11.2 BP Lightbox (Clone Approach)
-
-- [ ] Click media in BP activity → lightbox opens
-- [ ] Same sidebar layout as explore lightbox
-- [ ] Reactions, favorites, comments all work
-- [ ] Gallery navigation works for multi-image activities
-
-### 11.3 Comment Sync
-
-- [ ] Post comment on media via lightbox → appears as BP activity comment
-- [ ] One-way sync only (media → activity)
-- [ ] No infinite loop — 1 comment = 1 BP activity comment
-- [ ] Check `/wp-admin/admin.php?page=bp-activity` → no duplicate flood
-- [ ] Multi-image activity: comments on different media all appear on same activity
-
-### 11.4 Profile Media Tab
-
-- [ ] `/members/{user}/media/` → Media tab active in profile nav
-- [ ] Shows media count badge (e.g. "Media 9")
-- [ ] Grid with stats overlay (views, likes, comments)
-- [ ] Click image → lightbox opens
-- [ ] Sub-tabs: Media (default), Albums
-
-### 11.5 Group Media Tab
-
-- [ ] `/groups/{slug}/media/` → Media tab active in group nav
-- [ ] Sub-tabs: Media | Albums
-- [ ] Shows media uploaded via group activity
-- [ ] Empty state for groups with no media
-- [ ] "Upload Media" button visible for group members
-
-### 11.6 URL Integration
-
-- [ ] `mvs_user_profile_url` filter auto-detects BP → returns BP profile URL
-- [ ] Slug-based fallback for old activity posts (no `data-mvs-media-id`)
+- [ ] `mvs_media_flagged` action fires when AI flags media
+- [ ] `mvs_ai_moderation_result` filter modifies moderation result
 
 ---
 
-## 12. Direct Messaging
+## 14. Privacy & Access Control
 
-### 12.1 Conversations
+- [ ] Private media → shows lock message for non-owners
+- [ ] Members-only → visible when logged in, hidden when logged out
+- [ ] `mvs_privacy_can_view` filter controls access
+- [ ] `GET /mvs/v1/media/{id}/rules` — list rules
+- [ ] `POST /mvs/v1/media/{id}/rules` — create rule
+- [ ] `DELETE /mvs/v1/media/{id}/rules/{rule_id}` — delete rule
+- [ ] `POST /mvs/v1/media/{id}/grant` — grant access
+- [ ] `DELETE /mvs/v1/media/{id}/access/{user_id}` — revoke access
+- [ ] `GET /mvs/v1/media/{id}/signed-url` — generate signed URL
+- [ ] `GET /mvs/v1/serve` — serve file via signed URL
+
+---
+
+## 15. Direct Messaging
+
+### 15.1 Settings
+
+- [ ] `mvs_dm_access` — set access level, save → DM rules enforced
+- [ ] `mvs_dm_min_age` — set days, save → new accounts blocked from DM
+- [ ] `mvs_show_online_status` — toggle, save → online indicator shows/hides
+
+### 15.2 Conversations
 
 - [ ] Create new conversation → `mvs_conversation_created` action fires
 - [ ] List conversations → shows recent with preview
 - [ ] Delete/archive conversation works
 
-### 12.2 Messages
+### 15.3 Messages
 
 - [ ] Send text message → appears in chat
 - [ ] Send media attachment → card displays
@@ -490,13 +526,13 @@ Site URL:    http://mediaverse.local (for live checks)
 - [ ] Edit message (within window) works
 - [ ] Delete message → `mvs_message_deleted` action fires
 
-### 12.3 Real-time
+### 15.4 Real-time
 
 - [ ] Read receipts (conversation marked read → `mvs_conversation_read` fires)
 - [ ] Online status indicator (when `mvs_show_online_status` enabled)
 - [ ] Message reactions (emoji on message → `mvs_message_reaction_added` fires)
 
-### 12.4 Access Control
+### 15.5 Access Control
 
 - [ ] `mvs_can_send_message` filter → blocks unauthorized DMs
 - [ ] `mvs_dm_access_level` filter → respects access level
@@ -508,146 +544,83 @@ Site URL:    http://mediaverse.local (for live checks)
 
 ---
 
-## 13. REST API Endpoints
+## 16. Watermarks
 
-### 13.1 Media (`/mvs/v1/media`)
-
-- [ ] `GET /media` — list with pagination, filtering
-- [ ] `POST /media` — create (auth required)
-- [ ] `GET /media/{id}` — read single
-- [ ] `PUT /media/{id}` — update (owner/admin only)
-- [ ] `DELETE /media/{id}` — delete (owner/admin only)
-- [ ] `POST /media/{id}/view` — record view (increments count)
-- [ ] `GET /media/{id}/access` — check access
-- [ ] `GET /media/{id}/group` — get gallery group items
-- [ ] `GET /me/media` — current user's media
-
-### 13.2 Albums (`/mvs/v1/albums`)
-
-- [ ] `GET /albums` — list
-- [ ] `POST /albums` — create
-- [ ] `GET /albums/{id}` — read
-- [ ] `PUT /albums/{id}` — update
-- [ ] `DELETE /albums/{id}` — delete
-- [ ] `POST /albums/{id}/reorder` — reorder items
-- [ ] `GET /albums/{id}/items` — list items
-- [ ] `POST /albums/{id}/items` — add items
-- [ ] `DELETE /albums/{id}/items/{media_id}` — remove item
-- [ ] `PUT /albums/{id}/cover` — set cover image
-
-### 13.3 Collections (`/mvs/v1/collections`)
-
-- [ ] `GET /collections` — list
-- [ ] `POST /collections` — create
-- [ ] `GET /collections/{id}` — read
-- [ ] `PUT /collections/{id}` — update
-- [ ] `DELETE /collections/{id}` — delete
-- [ ] `GET /collections/{id}/rules` — get smart collection rules
-
-### 13.4 Reactions (`/mvs/v1/media/{id}/reactions`)
-
-- [ ] `POST /media/{id}/reactions` — toggle reaction (body: type)
-
-### 13.5 Comments (`/mvs/v1/comments`)
-
-- [ ] `GET /comments` — list (with media_id filter)
-- [ ] `POST /comments` — create
-- [ ] `GET /comments/{id}` — read
-- [ ] `PUT /comments/{id}` — update (within edit window)
-- [ ] `DELETE /comments/{id}` — delete (owner only)
-
-### 13.6 Favorites (`/mvs/v1`)
-
-- [ ] `POST /media/{id}/favorite` — toggle favorite
-- [ ] `GET /me/favorites` — list user favorites
-
-### 13.7 Stats (`/mvs/v1`)
-
-- [ ] `GET /media/{id}/stats` — media stats
-- [ ] `GET /me/stats` — user stats
-
-### 13.8 Tags (`/mvs/v1/tags`)
-
-- [ ] `GET /tags` — list
-- [ ] `GET /tags/{id}` — read
-- [ ] `POST /tags` — create
-- [ ] `POST /tags/{source_id}/merge/{target_id}` — merge tags
-
-### 13.9 Moderation (`/mvs/v1/moderation`)
-
-- [ ] `GET /moderation` — list flagged
-- [ ] `GET /moderation/counts` — counts
-- [ ] `POST /moderation/{id}/approve` — approve
-- [ ] `POST /moderation/{id}/reject` — reject
-- [ ] `POST /moderation/{id}/analyze` — AI analyze
-- [ ] `GET /ai/usage` — AI usage stats
-
-### 13.10 Access Control (`/mvs/v1/media/{id}`)
-
-- [ ] `GET /media/{id}/rules` — list rules
-- [ ] `POST /media/{id}/rules` — create rule
-- [ ] `DELETE /media/{id}/rules/{rule_id}` — delete rule
-- [ ] `POST /media/{id}/grant` — grant access
-- [ ] `DELETE /media/{id}/access/{user_id}` — revoke access
-
-### 13.11 Signed URLs (`/mvs/v1`)
-
-- [ ] `GET /media/{id}/signed-url` — generate signed URL
-- [ ] `GET /serve` — serve file via signed URL
-
-### 13.12 Bulk Operations (`/mvs/v1/bulk`)
-
-- [ ] `POST /bulk` — bulk update/delete
-
-### 13.13 Reports (`/mvs/v1`)
-
-- [ ] `POST /media/{id}/report` — report media
-- [ ] `POST /users/{id}/report` — report user
-- [ ] `POST /users/{id}/block` — block user
-- [ ] `GET /me/blocked` — list blocked users
-
-### 13.14 Activity (`/mvs/v1`)
-
-- [ ] `GET /feed` — activity feed
-- [ ] `GET /users/{id}/activity` — user activity
-
-### 13.15 Users (`/mvs/v1/users`)
-
-- [ ] `GET /users/{id}` — user profile
-- [ ] `GET /users/{id}/media` — user's media
-- [ ] `GET /users/search` — search users
-
-### 13.16 Follow (`/mvs/v1/users`)
-
-- [ ] `POST /users/{id}/follow` — follow/unfollow
-- [ ] `GET /users/{id}/followers` — followers list
-- [ ] `GET /users/{id}/following` — following list
-- [ ] `GET /me/following` — current user following
-- [ ] `GET /me/followers` — current user followers
-
-### 13.17 Notifications (`/mvs/v1/me`)
-
-- [ ] `GET /me/notifications` — list notifications
-- [ ] `POST /me/notifications/read` — mark read
-- [ ] `GET /me/notifications/count` — unread count
-
-### 13.18 Profile (`/mvs/v1/me`)
-
-- [ ] `GET /me/profile` — get profile
-- [ ] `PUT /me/profile` — update profile
-- [ ] `POST /me/avatar` — upload avatar
-
-### 13.19 API Security
-
-- [ ] Unauthenticated request to protected endpoint → 401
-- [ ] Non-owner request to owner-only endpoint → 403
-- [ ] Missing nonce → 403
-- [ ] Malformed JSON body → 400 with error details
-- [ ] `mvs_rest_pagination_max` filter → enforces max page size (default: 100)
+- [ ] `mvs_watermark_type` — toggle text/image, save → watermark type changes
+- [ ] `mvs_watermark_text` — enter text, save → visible on media
+- [ ] `mvs_watermark_position` — select from 9 positions, save → placement changes
+- [ ] `mvs_watermark_opacity` — set 0-100, save → opacity changes
+- [ ] `mvs_watermark_font_size` — set size, save → font size changes
+- [ ] `mvs_watermark_color` — pick color, save → color changes
+- [ ] `mvs_watermark_image` — select image, save → image watermark applied
 
 ---
 
-## 14. Shortcodes
+## 17. Webhooks
+
+- [ ] Add webhook (URL + events), save → webhook fires on event
+- [ ] Edit webhook, save → changes persist
+- [ ] Delete webhook → removed
+- [ ] Webhook delivery uses HMAC-SHA256 signature
+- [ ] Failed delivery tracked in `mvs_webhook_failures`
+
+---
+
+## 18. BuddyPress Integration
+
+### 18.1 Activity Media Upload
+
+- [ ] Post activity with 1 image → media attached with `data-mvs-media-id`
+- [ ] Post activity with 3 images → grid layout (mvs-activity-grid-3)
+- [ ] Max 6 media per activity (`mvs_activity_max_media` filter, default: 6)
+
+### 18.2 BP Activity — Group
+
+- [ ] Go to group page → post activity with image
+- [ ] Media appears in group activity stream
+- [ ] Media appears in `/groups/{slug}/media/` tab
+
+### 18.3 BP Lightbox (Clone Approach)
+
+- [ ] Click media in BP activity → lightbox opens
+- [ ] Same sidebar layout as explore lightbox
+- [ ] Reactions, favorites, comments all work
+- [ ] Gallery navigation works for multi-image activities
+
+### 18.4 Comment Sync
+
+- [ ] Post comment on media via lightbox → appears as BP activity comment
+- [ ] One-way sync only (media → activity)
+- [ ] No infinite loop — 1 comment = 1 BP activity comment
+- [ ] Check `/wp-admin/admin.php?page=bp-activity` → no duplicate flood
+- [ ] Multi-image activity: comments on different media all appear on same activity
+
+### 18.5 Profile Media Tab
+
+- [ ] `/members/{user}/media/` → Media tab active in profile nav
+- [ ] Shows media count badge (e.g. "Media 9")
+- [ ] Grid with stats overlay (views, likes, comments)
+- [ ] Click image → lightbox opens
+- [ ] Sub-tabs: Media (default), Albums
+
+### 18.6 Group Media Tab
+
+- [ ] `/groups/{slug}/media/` → Media tab active in group nav
+- [ ] Sub-tabs: Media | Albums
+- [ ] Shows media uploaded via group activity
+- [ ] Empty state for groups with no media
+- [ ] "Upload Media" button visible for group members
+
+### 18.7 URL Integration
+
+- [ ] `mvs_user_profile_url` filter auto-detects BP → returns BP profile URL
+- [ ] Slug-based fallback for old activity posts (no `data-mvs-media-id`)
+
+---
+
+## 19. Shortcodes & Blocks
+
+### 19.1 Shortcodes
 
 - [ ] `[mvs_gallery]` — renders media grid; test attrs: type, category, tag, orderby
 - [ ] `[mvs_upload]` — renders upload form; test attrs: max_files, show_privacy
@@ -658,9 +631,7 @@ Site URL:    http://mediaverse.local (for live checks)
 - [ ] `[mvs_collection id="X"]` — renders collection; test attrs: columns, per_page
 - [ ] `[mvs_profile_edit]` — renders profile edit (requires login)
 
----
-
-## 15. Gutenberg Blocks
+### 19.2 Gutenberg Blocks
 
 - [ ] `wpmediaverse/media-upload` — renders in editor + frontend
 - [ ] `wpmediaverse/media-grid` — renders in editor + frontend
@@ -675,97 +646,51 @@ Site URL:    http://mediaverse.local (for live checks)
 
 ---
 
-## 16. Developer Hooks & Filters
+## 20. Developer Hooks & Interfaces
 
-### 16.1 Action Hooks (spot-check critical ones)
+### 20.1 Action Hooks (spot-check)
 
 - [ ] `mvs_loaded` — fires after init, passes ServiceContainer
-- [ ] `mvs_media_uploaded` — fires on successful upload
-- [ ] `mvs_comment_created` — fires on comment post
-- [ ] `mvs_reaction_toggled` — fires on reaction toggle
-- [ ] `mvs_favorite_toggled` — fires on favorite toggle
-- [ ] `mvs_user_followed` — fires on follow
-- [ ] `mvs_user_unfollowed` — fires on unfollow
-- [ ] `mvs_media_deleted` — fires on media delete
-- [ ] `mvs_notification_created` — fires on notification create
+- [ ] `mvs_story_created` — fires on story creation
 - [ ] `mvs_before_template_render` — fires before template output
 - [ ] `mvs_after_template_render` — fires after template output
-- [ ] `mvs_media_flagged` — fires when AI flags media
-- [ ] `mvs_story_created` — fires on story creation
-- [ ] `mvs_report_submitted` — fires on report
-- [ ] `mvs_user_blocked` — fires on block
 
-### 16.2 Filter Hooks (spot-check critical ones)
+### 20.2 Filter Hooks (spot-check)
 
-- [ ] `mvs_media_response` — modifies REST media response
-- [ ] `mvs_feed_args` — modifies feed query args
 - [ ] `mvs_feed_sort_options` — customizes sort options
-- [ ] `mvs_privacy_can_view` — controls media access
 - [ ] `mvs_user_profile_url` — customizes profile URL
 - [ ] `mvs_user_display_name` — customizes display name
-- [ ] `mvs_locate_template` — overrides template location
-- [ ] `mvs_template_variables` — injects template data
-- [ ] `mvs_body_classes` — adds CSS body classes
-- [ ] `mvs_max_upload_size` — enforces upload limit
-- [ ] `mvs_allowed_file_types` — filters MIME types
-- [ ] `mvs_should_send_notification` — suppresses notifications
-- [ ] `mvs_comment_edit_window` — changes edit window (default: 15 min)
-- [ ] `mvs_activity_max_media` — changes max media per activity (default: 6)
-- [ ] `mvs_can_send_message` — controls DM sending
 - [ ] `mvs_settings_sections` — adds settings sections
-- [ ] `mvs_moderation_tabs` — adds moderation tabs
-- [ ] `mvs_stats_tabs` — adds stats tabs
-- [ ] `mvs_ai_moderation_result` — modifies moderation result
 - [ ] `mvs_theme_json` — customizes design tokens
+- [ ] `mvs_rest_pagination_max` filter → enforces max page size (default: 100)
 
-### 16.3 Interfaces (extensibility)
+### 20.3 Interfaces
 
 - [ ] `StorageDriverInterface` — custom storage driver can be registered via `mvs_storage_drivers` filter
 - [ ] `AIProviderInterface` — custom AI provider can be registered via `mvs_ai_providers` hook
 - [ ] `TransportInterface` — custom messaging transport can replace REST polling
 
----
+### 20.4 Stats & Tags REST
 
-## 17. WP-CLI Commands
+- [ ] `GET /mvs/v1/media/{id}/stats` — media stats
+- [ ] `GET /mvs/v1/me/stats` — user stats
+- [ ] `GET /mvs/v1/tags` — list
+- [ ] `GET /mvs/v1/tags/{id}` — read
+- [ ] `POST /mvs/v1/tags` — create
+- [ ] `POST /mvs/v1/tags/{source_id}/merge/{target_id}` — merge tags
 
-- [ ] `wp mvs stats` — displays plugin statistics (media count, albums, views, reactions)
-- [ ] `wp mvs migrate` — runs database migrations
-- [ ] `wp mvs migrate --check` — checks migration status without running
+### 20.5 Bulk Operations & Activity
 
----
-
-## 18. Edge Cases & Mobile
-
-### 18.1 Logged Out User
-
-- [ ] Explore page → public media visible
-- [ ] Click image → lightbox opens (no social actions / login prompt)
-- [ ] Single media page → visible, "Log in to comment" message
-- [ ] Private media → not visible or shows lock icon
-- [ ] Dashboard → redirects to login
-
-### 18.2 Non-Owner User
-
-- [ ] Cannot edit/delete another user's media
-- [ ] Can react, comment, favorite
-- [ ] Follow button visible on other's profile/media
-- [ ] Cannot access other user's draft/private media
-
-### 18.3 Mobile (390px viewport)
-
-- [ ] Explore grid responsive (single column or 2-col)
-- [ ] Lightbox fills screen properly
-- [ ] Upload modal usable on touch
-- [ ] BP activity media sized correctly
-- [ ] Dashboard tabs navigable
-- [ ] Settings page usable (tabs scroll or stack)
-- [ ] FAB button positioned correctly
+- [ ] `POST /mvs/v1/bulk` — bulk update/delete
+- [ ] `GET /mvs/v1/feed` — activity feed
+- [ ] `GET /mvs/v1/users/{id}/activity` — user activity
+- [ ] `mvs_activity_types` filter customizes activity types
 
 ---
 
-## 19. Database Integrity
+## 21. Database Integrity
 
-### 19.1 Custom Tables
+### 21.1 Custom Tables (21 total)
 
 - [ ] `mvs_media_index` — exists, AUTO_INCREMENT PK
 - [ ] `mvs_media_meta` — exists
@@ -789,20 +714,44 @@ Site URL:    http://mediaverse.local (for live checks)
 - [ ] `mvs_transactions` — exists
 - [ ] `mvs_error_log` — exists
 
-### 19.2 Data Integrity
+### 21.2 Options
 
-- [ ] New upload → row in `mvs_media_index` + `mvs_media_meta` (thumb sizes)
-- [ ] New upload → NO row in `wp_posts` with `post_type='attachment'`
-- [ ] Thumbnail files exist on disk at `uploads/wpmediaverse/YYYY/MM/`
-- [ ] Delete media → rows removed from `mvs_media_index`, `mvs_media_meta`, `mvs_media_stats`
-- [ ] Delete media → file removed from disk
 - [ ] `mvs_db_version` option matches current migration version
 - [ ] `mvs_caps_version` option exists
 - [ ] `mvs_rewrite_version` option exists
 
-### 19.3 Cleanup
+---
 
-- [ ] Deactivate plugin → rewrite rules flushed
-- [ ] Uninstall plugin → all custom tables dropped (if clean uninstall enabled)
-- [ ] Uninstall → all `mvs_*` options removed
-- [ ] No orphaned meta entries after media deletion
+## 22. Mobile & Edge Cases
+
+### 22.1 REST API Security
+
+- [ ] Unauthenticated request to protected endpoint → 401
+- [ ] Non-owner request to owner-only endpoint → 403
+- [ ] Missing nonce → 403
+- [ ] Malformed JSON body → 400 with error details
+
+### 22.2 Logged Out User
+
+- [ ] Explore page → public media visible
+- [ ] Click image → lightbox opens (no social actions / login prompt)
+- [ ] Single media page → visible, "Log in to comment" message
+- [ ] Private media → not visible or shows lock icon
+- [ ] Dashboard → redirects to login
+
+### 22.3 Non-Owner User
+
+- [ ] Cannot edit/delete another user's media
+- [ ] Can react, comment, favorite
+- [ ] Follow button visible on other's profile/media
+- [ ] Cannot access other user's draft/private media
+
+### 22.4 Mobile (390px viewport)
+
+- [ ] Explore grid responsive (single column or 2-col)
+- [ ] Lightbox fills screen properly
+- [ ] Upload modal usable on touch
+- [ ] BP activity media sized correctly
+- [ ] Dashboard tabs navigable
+- [ ] Settings page usable (tabs scroll or stack)
+- [ ] FAB button positioned correctly
