@@ -419,25 +419,16 @@ class ActivityContentIntegration {
 				}
 
 				if ( $src ) {
-					// Resolve MVS post ID for lightbox support.
+					// Resolve MVS media ID — use permalink for link (same as regular uploads).
 					$mvs_id   = $this->get_mvs_id_from_file_url( $src );
 					$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
-
-					// Use direct file URL as link (deactivation-safe; strip size suffix for full image).
 					$full_src = preg_replace( '/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $src );
-					$link     = $full_src ?: $src;
+					$link     = $mvs_id ? MediaRepository::get_permalink( $mvs_id ) : ( $full_src ?: $src );
 
-					// Build lightbox attributes when MVS media ID is available.
-					$lightbox_attrs = '';
-					if ( $mvs_id ) {
-						$lightbox_attrs = ' data-wp-interactive="mvs/shared-ui"'
-							. ' data-wp-context=\'{"mediaId":' . $mvs_id . '}\''
-							. ' data-wp-on--click="actions.openLightbox"';
-					}
-
-					$media_html .= '<div class="mvs-activity-media mvs-activity-media--image"' . $data_mid . ' style="position:relative;overflow:hidden;">'
-								. '<a href="' . esc_url( $link ) . '"' . $lightbox_attrs . '>'
-								. '<img src="' . $src . '" alt="' . $alt . '" loading="lazy" style="max-width:100%;width:auto;height:auto;display:block;border-radius:8px;" />'
+					// Output same format as regular MVS media upload activity.
+					$media_html .= '<div class="mvs-activity-media mvs-activity-media--image"' . $data_mid . '>'
+								. '<a href="' . esc_url( $link ) . '">'
+								. '<img src="' . ( $full_src ?: $src ) . '" alt="' . $alt . '" loading="lazy" />'
 								. '</a></div>';
 				}
 			}

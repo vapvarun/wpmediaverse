@@ -224,16 +224,7 @@ $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><polyline points="15 18 9 12 15 6"></polyline></svg>
 				</button>
 
-				<video class="mvs-lightbox-video" controls playsinline
-					data-wp-bind--hidden="state.lightboxHideVideo"
-					data-wp-bind--src="state.lightboxVideoUrl">
-				</video>
-				<audio class="mvs-lightbox-audio" controls
-					data-wp-bind--hidden="state.lightboxHideAudio"
-					data-wp-bind--src="state.lightboxVideoUrl">
-				</audio>
-				<img data-wp-bind--src="state.lightboxImageUrl" data-wp-bind--alt="state.lightboxTitle"
-					data-wp-bind--hidden="state.lightboxHideImage" />
+				<img data-wp-bind--src="state.lightboxImageUrl" data-wp-bind--alt="state.lightboxTitle" />
 
 				<!-- Next arrow (gallery groups only) -->
 				<button class="mvs-lightbox-nav mvs-lightbox-nav--next"
