@@ -53,11 +53,14 @@ class ActivityContentIntegration {
 	public function allow_mvs_activity_tags( array $tags ): array {
 		// Grid container and per-item wrappers.
 		$tags['div'] = array(
-			'class'              => array(),
-			'style'              => array(),
-			'data-mvs-media-id'  => array(),
-			'data-mvs-src'       => array(),
-			'data-mvs-permalink' => array(),
+			'class'               => array(),
+			'style'               => array(),
+			'data-mvs-media-id'   => array(),
+			'data-mvs-src'        => array(),
+			'data-mvs-permalink'  => array(),
+			'data-wp-interactive' => array(),
+			'data-wp-context'     => array(),
+			'data-wp-on--click'   => array(),
 		);
 
 		// Allow inline <video> player.
@@ -87,11 +90,14 @@ class ActivityContentIntegration {
 			'class'    => array(),
 		);
 
-		// Allow class/style on <a>, <span>, <img> for MVS media links.
+		// Allow class/style and Interactivity API attrs on <a> for MVS media links.
 		$tags['a']['class']              = array();
 		$tags['a']['style']              = array();
 		$tags['a']['href']               = array();
 		$tags['a']['data-mvs-permalink'] = array();
+		$tags['a']['data-wp-interactive'] = array();
+		$tags['a']['data-wp-context']    = array();
+		$tags['a']['data-wp-on--click']  = array();
 		$tags['img']['src']              = array();
 		$tags['img']['alt']              = array();
 		$tags['img']['width']            = array();
