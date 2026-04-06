@@ -360,8 +360,15 @@ class ActivityContentIntegration {
 				$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
 				$data_src = $link ? ' data-mvs-src="' . esc_attr( $link ) . '"' : '';
 
+				$lightbox_attrs = '';
+				if ( $mvs_id ) {
+					$lightbox_attrs = ' data-wp-interactive="mvs/shared-ui"'
+						. ' data-wp-context=\'{"mediaId":' . $mvs_id . '}\''
+						. ' data-wp-on--click="actions.openLightbox"';
+				}
+
 				$media_html .= '<div class="mvs-activity-media mvs-activity-media--video mvs-activity-media--placeholder"' . $data_mid . $data_src . '>'
-							. '<a href="' . esc_url( $link ) . '" class="mvs-activity-vid-link">'
+							. '<a href="' . esc_url( $link ) . '" class="mvs-activity-vid-link"' . $lightbox_attrs . '>'
 							. '<span class="mvs-activity-play-icon" aria-hidden="true"></span>'
 							. ( $title ? '<span class="mvs-activity-media-label">' . $title . '</span>' : '' )
 							. '</a></div>';
@@ -381,8 +388,15 @@ class ActivityContentIntegration {
 				$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
 				$data_src = $src ? ' data-mvs-src="' . esc_attr( $src ) . '"' : '';
 
+				$lightbox_attrs = '';
+				if ( $mvs_id ) {
+					$lightbox_attrs = ' data-wp-interactive="mvs/shared-ui"'
+						. ' data-wp-context=\'{"mediaId":' . $mvs_id . '}\''
+						. ' data-wp-on--click="actions.openLightbox"';
+				}
+
 				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . $data_src . ' style="border-radius:12px;">'
-							. '<a href="' . esc_url( $link ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">'
+							. '<a href="' . esc_url( $link ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;"' . $lightbox_attrs . '>'
 							. '<span style="font-size:1.5em;flex-shrink:0;">&#9835;</span>'
 							. '<span style="min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>'
 							. '</a></div>';
@@ -407,8 +421,16 @@ class ActivityContentIntegration {
 					$full_src = preg_replace( '/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $src );
 					$link     = $full_src ?: $src;
 
+					// Build lightbox attributes when MVS media ID is available.
+					$lightbox_attrs = '';
+					if ( $mvs_id ) {
+						$lightbox_attrs = ' data-wp-interactive="mvs/shared-ui"'
+							. ' data-wp-context=\'{"mediaId":' . $mvs_id . '}\''
+							. ' data-wp-on--click="actions.openLightbox"';
+					}
+
 					$media_html .= '<div class="mvs-activity-media mvs-activity-media--image"' . $data_mid . ' style="position:relative;overflow:hidden;">'
-								. '<a href="' . esc_url( $link ) . '">'
+								. '<a href="' . esc_url( $link ) . '"' . $lightbox_attrs . '>'
 								. '<img src="' . $src . '" alt="' . $alt . '" loading="lazy" style="max-width:100%;width:auto;height:auto;display:block;border-radius:8px;" />'
 								. '</a></div>';
 				}
