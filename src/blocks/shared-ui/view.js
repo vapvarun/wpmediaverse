@@ -128,8 +128,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return state.lightboxMediaData?.media_type !== 'audio';
 		},
 		get lightboxHideImage() {
-			const t = state.lightboxMediaData?.media_type;
-			return t === 'video' || t === 'audio';
+			return state.lightboxMediaData?.media_type !== 'image';
 		},
 		get lightboxVideoUrl() {
 			return state.lightboxMediaData?.file_url || '';
