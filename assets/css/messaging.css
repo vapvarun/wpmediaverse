@@ -887,7 +887,7 @@
 
 .mvs-chat-composer__row {
 	display: flex;
-	align-items: flex-end;
+	align-items: flex-start;
 	gap: 8px;
 }
 

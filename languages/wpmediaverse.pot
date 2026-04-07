@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.1.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-04-07 10:31:58+00:00\n"
+"POT-Creation-Date: 2026-04-07 10:52:24+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -477,8 +477,8 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:109 includes/Core/Plugin.php:615
-#: includes/Core/Plugin.php:616
+#: includes/Admin/MediaListPage.php:109 includes/Admin/OverviewPage.php:164
+#: includes/Core/Plugin.php:615 includes/Core/Plugin.php:616
 msgid "All Media"
 msgstr ""
 
@@ -701,13 +701,6 @@ msgstr ""
 
 #: includes/Admin/OverviewPage.php:158
 msgid "Quick Links"
-msgstr ""
-
-#: includes/Admin/OverviewPage.php:164
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:510
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:525
-#: templates/album.php:185
-msgid "Add Media"
 msgstr ""
 
 #: includes/Admin/OverviewPage.php:168
@@ -2078,6 +2071,12 @@ msgid "%d item"
 msgid_plural "%d items"
 msgstr[0] ""
 msgstr[1] ""
+
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:510
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:525
+#: templates/album.php:185
+msgid "Add Media"
+msgstr ""
 
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:518
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:533
