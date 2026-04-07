@@ -44,6 +44,7 @@ $mvs_dash_ctx['savingProfile']   = false;
 $mvs_dash_ctx['uploadingAvatar'] = false;
 $mvs_dash_ctx['profileMessage']  = '';
 $mvs_dash_ctx['profileError']    = '';
+$mvs_dash_ctx['defaultPrivacy']  = get_option( 'mvs_default_privacy', 'public' );
 
 // Enqueue profile edit store.
 $mvs_pe_asset_file = MVS_PLUGIN_DIR . 'build/blocks/profile-edit/view.asset.php';
@@ -327,10 +328,11 @@ wp_enqueue_style( 'mvs-frontend' );
 				<div class="mvs-dashboard-upload-row">
 					<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-tags"
 						data-wp-on--input="actions.setUploadTags" />
+					<?php $mvs_def_priv = get_option( 'mvs_default_privacy', 'public' ); ?>
 					<select class="mvs-upload-meta-privacy" data-wp-on--change="actions.setUploadPrivacy">
-						<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-						<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-						<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+						<option value="public" <?php selected( $mvs_def_priv, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+						<option value="members" <?php selected( $mvs_def_priv, 'members' ); ?>><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+						<option value="private" <?php selected( $mvs_def_priv, 'private' ); ?>><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 					</select>
 				</div>
 			</div>

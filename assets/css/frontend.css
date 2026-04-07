@@ -522,6 +522,14 @@ body.mvs-page {
 	transform: scale(1.05);
 }
 
+.mvs-grid--original .mvs-grid-item {
+	aspect-ratio: auto;
+}
+
+.mvs-grid--original .mvs-grid-item img {
+	height: auto;
+}
+
 .mvs-grid-item-placeholder {
 	display: flex;
 	align-items: center;

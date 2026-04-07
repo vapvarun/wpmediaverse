@@ -357,7 +357,8 @@ class NotificationService {
 		if ( $row->media_id ) {
 			$url = \WPMediaVerse\Repository\MediaRepository::get_permalink( (int) $row->media_id );
 		} elseif ( 'new_follower' === $row->type ) {
-			$url = get_author_posts_url( (int) $row->actor_id );
+			$actor_login = get_the_author_meta( 'user_login', (int) $row->actor_id );
+			$url         = $actor_login ? home_url( '/media/@' . $actor_login . '/' ) : '';
 		}
 
 		return array(

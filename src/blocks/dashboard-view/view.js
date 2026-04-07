@@ -364,6 +364,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			state.upload.uploading = true;
 			const total = files.length;
+			let uploaded = 0;
+			let lastError = '';
 
 			for ( let i = 0; i < total; i++ ) {
 				state.upload.status = `Uploading ${ i + 1 } of ${ total }...`;
@@ -377,12 +379,20 @@ const { state, actions } = store( 'mvs/dashboard', {
 						.forEach( ( tag ) => formData.append( 'tags[]', tag ) );
 				}
 				try {
-					await fetch( ctx.restUrl + 'media', {
+					const res = await fetch( ctx.restUrl + 'media', {
 						method: 'POST',
 						headers: { 'X-WP-Nonce': ctx.nonce },
 						credentials: 'same-origin',
 						body: formData,
 					} );
+					if ( res.ok ) {
+						uploaded++;
+					} else {
+						try {
+							const errData = await res.json();
+							lastError = errData.message || 'Upload failed.';
+						} catch { /* ignore parse error */ }
+					}
 				} catch {
 					// Continue with remaining.
 				}
@@ -390,9 +400,17 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			state.upload.uploading = false;
 			state.upload.status = '';
-			sharedUI.actions.showToast( total + ' file(s) uploaded!', 'success' );
-			state.media.page = 1;
-			actions.loadMedia( ctx, 1 );
+			if ( uploaded === 0 ) {
+				sharedUI.actions.showToast( lastError || 'Upload failed. Please try again.', 'error' );
+			} else if ( uploaded < total ) {
+				sharedUI.actions.showToast( uploaded + ' of ' + total + ' file(s) uploaded.', 'error' );
+			} else {
+				sharedUI.actions.showToast( total + ' file(s) uploaded!', 'success' );
+			}
+			if ( uploaded > 0 ) {
+				state.media.page = 1;
+				actions.loadMedia( ctx, 1 );
+			}
 		},
 
 		/* =====================================================================
@@ -1179,6 +1197,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 	callbacks: {
 		init() {
 			const ctx = getContext();
+			// Apply admin default privacy to upload state.
+			if ( ctx.defaultPrivacy ) {
+				state.upload.privacy = ctx.defaultPrivacy;
+			}
 			const validTabs = [ 'media', 'albums', 'favorites', 'collections', 'challenges', 'battles', 'tournaments' ];
 			const hashTab = window.location.hash.replace( '#', '' );
 			if ( hashTab && validTabs.includes( hashTab ) ) {

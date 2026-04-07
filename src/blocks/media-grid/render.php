@@ -14,6 +14,7 @@
 defined( 'ABSPATH' ) || exit;
 
 $columns        = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : absint( get_option( 'mvs_grid_columns', 3 ) );
+$thumb_style    = get_option( 'mvs_thumbnail_style', 'square' );
 $mvs_per_page   = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : absint( get_option( 'mvs_items_per_page', 12 ) );
 $media_type     = isset( $attributes['mediaType'] ) ? sanitize_text_field( $attributes['mediaType'] ) : '';
 $category       = isset( $attributes['category'] ) ? sanitize_text_field( $attributes['category'] ) : '';
@@ -96,7 +97,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( ! empty( $media_items ) ) : ?>
-		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px">
+		<div class="mvs-media-grid mvs-cols-<?php echo absint( $columns ); ?><?php echo 'original' === $thumb_style ? ' mvs-grid--original' : ''; ?>" style="--mvs-grid-gap: <?php echo absint( $gap ); ?>px">
 			<?php
 			foreach ( $media_items as $item ) :
 				$item_id             = (int) $item['media_id'];
