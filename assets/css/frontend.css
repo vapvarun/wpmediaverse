@@ -4176,6 +4176,10 @@ a.mvs-dashboard-card-title:hover {
 	min-width: 0;
 }
 
+.mvs-search-field input#mvs-search-input:focus {
+	outline: none;
+}
+
 .mvs-search-field input:focus-visible {
 	outline: 2px solid #0073aa;
 	outline-offset: -2px;
