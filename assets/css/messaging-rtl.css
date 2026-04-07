@@ -291,6 +291,7 @@
 	color: var(--mvs-chat-text-secondary);
 	background: none;
 	border: none;
+	border-radius: 0;
 	border-bottom: 2px solid transparent;
 	cursor: pointer;
 	transition: color 0.2s, border-color 0.2s;
@@ -378,8 +379,10 @@
 	text-align: right;
 }
 
-.mvs-chat-conv-item:hover {
+.mvs-chat-conv-item:hover,
+.mvs-chat-conv-item:focus {
 	background: var(--mvs-chat-surface);
+	border: none;
 }
 
 .mvs-chat-conv-item[data-pinned="true"] {
@@ -656,6 +659,7 @@
 .mvs-chat-msg__context-btn {
 	width: 32px;
 	height: 32px;
+	padding: 0;
 	border-radius: 50%;
 	border: none;
 	background: none;
@@ -667,8 +671,13 @@
 	transition: background 0.15s;
 }
 
+.mvs-chat-msg__context-btn svg {
+	color: var(--mvs-chat-text);
+}
+
 .mvs-chat-msg__context-btn:hover {
 	background: var(--mvs-chat-surface);
+	border: none;
 }
 
 .mvs-chat-msg__context-btn--delete,
@@ -780,6 +789,7 @@
 .mvs-chat-msg__voice-play {
 	width: 32px;
 	height: 32px;
+	padding: 0;
 	border-radius: 50%;
 	border: none;
 	background: rgba(255, 255, 255, 0.2);
@@ -890,6 +900,7 @@
 .mvs-chat-composer__btn {
 	width: 36px;
 	height: 36px;
+	padding: 0;
 	border-radius: 50%;
 	border: none;
 	background: none;
@@ -901,8 +912,11 @@
 	transition: color 0.15s;
 }
 
-.mvs-chat-composer__btn:hover {
+.mvs-chat-composer__btn:hover,
+.mvs-chat-composer__btn:focus {
 	color: var(--mvs-chat-primary);
+	background: none;
+	border: none;
 }
 
 .mvs-chat-composer__btn svg {
@@ -938,6 +952,7 @@
 .mvs-chat-composer__send {
 	width: 36px;
 	height: 36px;
+	padding: 0;
 	border-radius: 50%;
 	border: none;
 	background: var(--mvs-chat-primary);

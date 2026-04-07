@@ -1179,6 +1179,7 @@ body.mvs-page {
     padding: 12px 24px;
     background: none;
     border: none;
+	border-radius: 0;
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     cursor: pointer;
@@ -1243,6 +1244,7 @@ body.mvs-page {
 .mvs-btn--secondary {
     background: #f0f0f0;
     color: #333;
+	border: none;
 }
 
 .mvs-btn--secondary:hover {
@@ -4115,12 +4117,12 @@ a.mvs-dashboard-card-title:hover {
 .mvs-btn--secondary {
     background: var(--mvs-bg);
     color: #333;
-    border-color: #ccc;
 }
 
 .mvs-btn--secondary:hover {
     background: #f0f0f0;
     color: #333;
+	border: none;
 }
 
 .mvs-btn--text {
