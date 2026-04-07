@@ -4113,6 +4113,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-btn--primary:hover {
     background: #005f8d;
+    border: none;
 }
 
 .mvs-btn--primary:disabled {
@@ -4143,6 +4144,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-btn--text:hover {
     background: rgba(214, 54, 56, 0.08);
     color: #d63638;
+    border: none;
 }
 
 /* Mobile */
@@ -4480,6 +4482,13 @@ a.mvs-dashboard-card-title:hover {
     color: #856404;
     padding: 4px;
     line-height: 1;
+}
+
+.mvs-profile-prompt-close:hover,
+.mvs-profile-prompt-close:focus {
+    color: var(--mvs-primary);
+    background: none;
+    border: none;
 }
 
 /* ==========================================================================
