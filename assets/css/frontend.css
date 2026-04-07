@@ -1254,12 +1254,14 @@ body.mvs-page {
 .mvs-btn--danger {
     background: #dc3545;
     color: #fff;
+    border: none;
 }
 
 .mvs-btn--danger:hover,
 .mvs-btn--danger:focus {
     background: #c82333;
     color: #fff;
+    border: none;
 }
 
 .mvs-btn--small {
@@ -3917,6 +3919,10 @@ a.mvs-dashboard-card-title:hover {
     flex-shrink: 0;
 }
 
+.mvs-dashboard-profile-actions .mvs-btn {
+    font-size: 0.875rem;
+}
+
 .mvs-dashboard-profile-edit-btn {
     flex-shrink: 0;
 }
@@ -4158,8 +4164,9 @@ a.mvs-dashboard-card-title:hover {
         flex-wrap: wrap;
     }
 
-    .mvs-dashboard-profile-edit-btn {
-        width: 100%;
+    .mvs-dashboard-profile-actions {
+        flex: 0 0 100%;
+        flex-wrap: wrap;
     }
 
     .mvs-profile-field-row {
@@ -4665,6 +4672,10 @@ a.mvs-dashboard-card-title:hover {
 
     .mvs-dashboard-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .mvs-dashboard-card-actions {
+        flex-wrap: wrap;
     }
 
     /* Comment form stacked on mobile */
