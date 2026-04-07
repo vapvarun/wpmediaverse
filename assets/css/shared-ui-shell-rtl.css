@@ -124,10 +124,17 @@
 	color: #666;
 	transition: color 0.15s, border-color 0.15s;
 	white-space: nowrap;
+	border-radius: 0;
 }
 
-.mvs-modal-tab:hover {
+.mvs-modal-tab:hover,
+.mvs-modal-tab:focus {
 	color: #333;
+	background: none;
+	border: none;
+	border-bottom: 2px solid transparent;
+	border-bottom-color: #0073aa;
+	border-radius: 0;
 }
 
 .mvs-modal-tab.active {

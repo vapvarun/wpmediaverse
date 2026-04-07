@@ -315,7 +315,11 @@ $mvs_show_fab = $mvs_is_logged_in && (
 					<?php if ( $mvs_is_logged_in ) : ?>
 						<button class="mvs-lightbox-action mvs-lightbox-action--report" data-wp-on--click="actions.lightboxReport"
 							data-wp-bind--hidden="state.lightboxIsOwner">
-							<?php esc_html_e( 'Report', 'wpmediaverse' ); ?>
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+								<path d="M5 4v16"></path>
+								<path d="M5 5h9l-1.5 3L14 11H5"></path>
+							</svg>
+							<span><?php esc_html_e( 'Report', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php endif; ?>
 				</div>

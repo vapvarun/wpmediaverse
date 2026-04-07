@@ -182,6 +182,15 @@
 	color: var(--mvs-chat-text);
 }
 
+.mvs-chat-header__back:hover,
+.mvs-chat-header__back:focus {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 4px;
+	color: var(--mvs-chat-primary);
+}
+
 .mvs-chat-header__back svg {
 	width: 24px;
 	height: 24px;
@@ -230,6 +239,19 @@
 	align-items: center;
 }
 
+.mvs-chat-header__new:hover,
+.mvs-chat-header__new:focus,
+.mvs-chat-header__close:hover,
+.mvs-chat-header__close:focus,
+.mvs-chat-header__menu:hover,
+.mvs-chat-header__menu:focus {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 4px;
+	color: var(--mvs-chat-primary);
+}
+
 .mvs-chat-header__new svg,
 .mvs-chat-header__close svg,
 .mvs-chat-header__menu svg {
@@ -274,9 +296,20 @@
 	transition: color 0.2s, border-color 0.2s;
 }
 
+.mvs-chat-tabs__tab:hover,
+.mvs-chat-tabs__tab:focus {
+	background: none;
+	color: var(--mvs-chat-primary);
+	border: none;
+	border-bottom: 2px solid transparent;
+	border-bottom-color: var(--mvs-chat-primary);
+	border-radius: 0;
+}
+
 .mvs-chat-tabs__tab[data-active="true"] {
 	color: var(--mvs-chat-primary);
 	border-bottom-color: var(--mvs-chat-primary);
+	border-radius: 0;
 }
 
 .mvs-chat-tabs__badge {
