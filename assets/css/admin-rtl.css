@@ -1161,6 +1161,27 @@ a.mvs-stat-card:focus {
 	margin: 20px 0 0;
 }
 
+/* Hide WP's auto-generated duplicate "Settings saved" notices on our settings page.
+   We render a single notice below the Save button instead. */
+.wpmediaverse-admin > .wrap > .notice,
+.wpmediaverse-admin .mvs-settings-page-header .notice {
+	display: none;
+}
+
+.mvs-save-notice {
+	margin: 12px 0 0;
+	padding: 10px 14px;
+	background: #fff;
+	border-right: 4px solid #00a32a;
+	border-radius: 2px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	flex-basis: 100%;
+}
+
+.mvs-save-notice p {
+	margin: 0;
+}
+
 .mvs-settings-page-header__title {
 	font-size: 20px;
 	font-weight: 600;
