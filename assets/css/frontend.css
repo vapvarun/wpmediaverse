@@ -4448,9 +4448,21 @@ a.mvs-dashboard-card-title:hover {
     color: #856404;
 }
 
-.mvs-profile-prompt-text a {
+.mvs-profile-prompt-text .mvs-dashboard-profile-edit-btn {
+    background: transparent;
     color: #533f03;
     font-weight: 600;
+	border: 0;
+	padding: 0;
+}
+
+.mvs-profile-prompt-text .mvs-dashboard-profile-edit-btn:hover,
+.mvs-profile-prompt-text .mvs-dashboard-profile-edit-btn:focus {
+    background: transparent;
+    color: var(--mvs-primary);
+	border: 0;
+	padding: 0;
+	box-shadow: none;
 }
 
 .mvs-profile-prompt-close {
