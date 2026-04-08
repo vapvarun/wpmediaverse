@@ -710,10 +710,10 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Store new file.
-		$storage  = Plugin::container()->get( 'storage' );
-		$driver   = $storage->get_driver();
-		$dest_sub = gmdate( 'Y/m' );
-		$filename = wp_unique_filename(
+		$storage   = Plugin::container()->get( 'storage' );
+		$driver    = $storage->get_driver();
+		$dest_sub  = gmdate( 'Y/m' );
+		$filename  = wp_unique_filename(
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_sub,
 			sanitize_file_name( $file['name'] )
 		);
