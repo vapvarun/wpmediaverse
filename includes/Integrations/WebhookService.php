@@ -35,12 +35,7 @@ class WebhookService {
 	 * Initialize the webhook service.
 	 */
 	public function init(): void {
-		$webhooks = $this->get_webhooks();
-		if ( empty( $webhooks ) ) {
-			return;
-		}
-
-		// Media lifecycle events (custom table based — no CPT hooks).
+		// Always register hooks — dispatch() checks for configured webhooks at send time.
 		add_action( 'mvs_media_uploaded', array( $this, 'on_media_uploaded' ) );
 		add_action( 'mvs_media_deleted', array( $this, 'on_media_deleted' ), 10, 2 );
 		add_action( 'mvs_media_moderated', array( $this, 'on_media_moderated' ), 10, 2 );

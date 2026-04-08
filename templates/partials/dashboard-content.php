@@ -46,6 +46,28 @@ $mvs_dash_ctx['profileMessage']  = '';
 $mvs_dash_ctx['profileError']    = '';
 $mvs_dash_ctx['defaultPrivacy']  = get_option( 'mvs_default_privacy', 'public' );
 
+// Allowed file extensions for client-side upload validation.
+$mvs_allowed_mimes = array_map( 'trim', explode( ',', get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' ) ) );
+$mvs_mime_to_ext   = array(
+	'image/jpeg' => '.jpg,.jpeg',
+	'image/png'  => '.png',
+	'image/gif'  => '.gif',
+	'image/webp' => '.webp',
+	'video/mp4'  => '.mp4',
+	'video/webm' => '.webm',
+	'audio/mpeg' => '.mp3',
+	'audio/ogg'  => '.ogg',
+	'application/pdf' => '.pdf',
+);
+$mvs_allowed_exts = array();
+foreach ( $mvs_allowed_mimes as $mvs_mime ) {
+	if ( isset( $mvs_mime_to_ext[ $mvs_mime ] ) ) {
+		$mvs_allowed_exts[] = $mvs_mime_to_ext[ $mvs_mime ];
+	}
+}
+$mvs_dash_ctx['allowedExtensions'] = implode( ',', $mvs_allowed_exts );
+$mvs_dash_ctx['allowedMimeTypes']  = implode( ',', $mvs_allowed_mimes );
+
 // Enqueue profile edit store.
 $mvs_pe_asset_file = MVS_PLUGIN_DIR . 'build/blocks/profile-edit/view.asset.php';
 $mvs_pe_asset      = file_exists( $mvs_pe_asset_file )
@@ -312,7 +334,7 @@ wp_enqueue_style( 'mvs-frontend' );
 				aria-label="<?php esc_attr_e( 'Upload media files', 'wpmediaverse' ); ?>">
 				<span class="mvs-dashboard-dropzone-icon">&#x2B06;&#xFE0F;</span>
 				<span class="mvs-dashboard-dropzone-label"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
-				<input type="file" multiple accept="image/*,video/*,audio/*" class="mvs-upload-file-input" style="display:none"
+				<input type="file" multiple accept="<?php echo esc_attr( $mvs_dash_ctx['allowedMimeTypes'] ); ?>" class="mvs-upload-file-input" style="display:none"
 					data-wp-on--change="actions.handleUploadFileSelect" />
 			</div>
 			<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
@@ -329,11 +351,13 @@ wp_enqueue_style( 'mvs-frontend' );
 					<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-tags"
 						data-wp-on--input="actions.setUploadTags" />
 					<?php $mvs_def_priv = get_option( 'mvs_default_privacy', 'public' ); ?>
+					<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
 					<select class="mvs-upload-meta-privacy" data-wp-on--change="actions.setUploadPrivacy">
 						<option value="public" <?php selected( $mvs_def_priv, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 						<option value="members" <?php selected( $mvs_def_priv, 'members' ); ?>><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
 						<option value="private" <?php selected( $mvs_def_priv, 'private' ); ?>><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 					</select>
+					<?php endif; ?>
 				</div>
 			</div>
 			<div class="mvs-dashboard-upload-status" data-wp-bind--hidden="!state.upload.uploading"
@@ -680,6 +704,13 @@ wp_enqueue_style( 'mvs-frontend' );
 						</div>
 					</div>
 				</div>
+			</div>
+			<div style="padding: 0 24px 12px; border-top: 1px solid #eee; margin-top: 12px; padding-top: 12px;">
+				<label class="mvs-btn mvs-btn--secondary mvs-btn--small" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+					&#8635; <?php esc_html_e( 'Replace File', 'wpmediaverse' ); ?>
+					<input type="file" hidden data-wp-on--change="actions.handleReplaceFile" />
+				</label>
+				<span style="color: #666; font-size: 12px; margin-left: 8px;"><?php esc_html_e( 'Upload a new file. Metadata is preserved.', 'wpmediaverse' ); ?></span>
 			</div>
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"

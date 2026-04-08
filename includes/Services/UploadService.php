@@ -317,6 +317,15 @@ class UploadService {
 	}
 
 	/**
+	 * Get allowed MIME types (public accessor for other controllers).
+	 *
+	 * @return string[]
+	 */
+	public function get_allowed_types_public(): array {
+		return $this->get_allowed_types();
+	}
+
+	/**
 	 * Get allowed MIME types from settings.
 	 *
 	 * @return string[]

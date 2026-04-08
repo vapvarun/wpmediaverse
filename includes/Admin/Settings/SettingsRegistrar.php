@@ -123,6 +123,28 @@ class SettingsRegistrar {
 
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_general',
+			'mvs_allow_user_privacy',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			'mvs_allow_user_privacy',
+			__( 'Allow Users to Set Privacy', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-general',
+			'mvs_general',
+			array(
+				'option'      => 'mvs_allow_user_privacy',
+				'label'       => __( 'Allow users to choose privacy level when uploading media.', 'wpmediaverse' ),
+				'description' => __( 'When disabled, all uploads use the Default Privacy Level above. The privacy selector is hidden from users.', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_general',
 			'mvs_duplicate_action',
 			array(
 				'type'              => 'string',

@@ -185,7 +185,10 @@ $mvs_archive_url = home_url( '/media/' );
 						<span class="dashicons dashicons-plus-alt"></span> <?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
 					</button>
 					<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;">
-						<input type="file" multiple accept="image/*,video/*,audio/*" id="mvs-album-file-input" style="display:none" />
+						<?php
+						$mvs_album_mimes = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );
+						?>
+						<input type="file" multiple accept="<?php echo esc_attr( $mvs_album_mimes ); ?>" id="mvs-album-file-input" style="display:none" />
 						<div class="mvs-bp-dropzone" id="mvs-album-dropzone">
 							<span class="dashicons dashicons-cloud-upload"></span>
 							<span class="mvs-bp-dropzone-text"><?php esc_html_e( 'Drop files here or click to upload into this album', 'wpmediaverse' ); ?></span>

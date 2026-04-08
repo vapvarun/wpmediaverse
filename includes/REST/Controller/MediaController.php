@@ -123,6 +123,24 @@ class MediaController extends WP_REST_Controller {
 			)
 		);
 
+		// POST /media/{id}/replace — replace the file for an existing media item.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/replace',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'replace_file' ),
+				'permission_callback' => array( $this, 'update_item_permissions_check' ),
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
 		// POST /media/{id}/view — record a view.
 		register_rest_route(
 			$this->namespace,
@@ -648,6 +666,86 @@ class MediaController extends WP_REST_Controller {
 		if ( null !== $categories && is_array( $categories ) ) {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
 		}
+
+		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
+	}
+
+	/**
+	 * Replace the file of an existing media item.
+	 *
+	 * Accepts a new file upload, stores it, updates the media index,
+	 * and deletes the old file. Preserves all metadata, reactions, and comments.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function replace_file( $request ) {
+		$rate_check = RateLimiter::check( 'media_replace', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
+		$media_id = (int) $request->get_param( 'id' );
+
+		if ( ! MediaRepository::exists( $media_id ) ) {
+			return new \WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$files = $request->get_file_params();
+		if ( empty( $files['file'] ) ) {
+			return new \WP_Error( 'mvs_no_file', __( 'No file provided.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		$file = $files['file'];
+
+		// Validate MIME type using UploadService.
+		$upload_service = Plugin::container()->get( 'upload' );
+		$allowed        = $upload_service->get_allowed_types_public();
+		$finfo          = finfo_open( FILEINFO_MIME_TYPE );
+		$mime           = finfo_file( $finfo, $file['tmp_name'] );
+		finfo_close( $finfo );
+
+		if ( ! in_array( $mime, $allowed, true ) ) {
+			return new \WP_Error( 'mvs_invalid_type', __( 'This file type is not allowed.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		// Store new file.
+		$storage  = Plugin::container()->get( 'storage' );
+		$driver   = $storage->get_driver();
+		$dest_sub = gmdate( 'Y/m' );
+		$filename = wp_unique_filename(
+			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_sub,
+			sanitize_file_name( $file['name'] )
+		);
+		$dest_path = $dest_sub . '/' . $filename;
+
+		if ( ! $driver->store( $file['tmp_name'], $dest_path ) ) {
+			return new \WP_Error( 'mvs_storage_failed', __( 'Failed to store the file.', 'wpmediaverse' ), array( 'status' => 500 ) );
+		}
+
+		// Delete old file.
+		$old_path = MediaRepository::get( $media_id, 'file_path' );
+		if ( $old_path ) {
+			$driver->delete( $old_path );
+		}
+
+		// Update media index with new file data.
+		$media_type = explode( '/', $mime )[0]; // image, video, audio.
+		if ( ! in_array( $media_type, array( 'image', 'video', 'audio' ), true ) ) {
+			$media_type = 'document';
+		}
+
+		MediaRepository::set_many(
+			$media_id,
+			array(
+				'file_url'   => $driver->url( $dest_path ),
+				'file_path'  => $dest_path,
+				'file_type'  => $mime,
+				'file_size'  => filesize( $file['tmp_name'] ) ?: 0,
+				'file_hash'  => hash_file( 'sha256', $file['tmp_name'] ),
+				'media_type' => $media_type,
+			)
+		);
 
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
 	}

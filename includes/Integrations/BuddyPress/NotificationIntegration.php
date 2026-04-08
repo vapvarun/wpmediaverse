@@ -189,7 +189,9 @@ class NotificationIntegration {
 		}
 
 		$user_name = bp_core_get_user_displayname( $secondary_item_id );
-		$link      = MediaRepository::exists( $item_id ) ? MediaRepository::get_permalink( $item_id ) : '';
+		$link      = MediaRepository::exists( $item_id )
+			? MediaRepository::get_permalink( $item_id )
+			: bp_get_notifications_permalink();
 
 		switch ( $component_action ) {
 			case 'mvs_new_reaction':

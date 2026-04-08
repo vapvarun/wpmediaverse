@@ -12,10 +12,13 @@ export default function Edit( { attributes, setAttributes } ) {
 				<PanelBody title={ __( 'Grid Settings', 'wpmediaverse' ) }>
 					<RangeControl
 						label={ __( 'Columns', 'wpmediaverse' ) }
-						value={ columns }
+						value={ columns || undefined }
 						onChange={ ( val ) => setAttributes( { columns: val } ) }
 						min={ 2 }
 						max={ 5 }
+						allowReset
+						resetFallbackValue={ undefined }
+						help={ ! columns ? __( 'Using admin default from Settings → Display.', 'wpmediaverse' ) : '' }
 					/>
 					<RangeControl
 						label={ __( 'Items Per Page', 'wpmediaverse' ) }
@@ -79,7 +82,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				<div className={ `mvs-media-grid mvs-cols-${ columns }` } style={ { gap: `${ gap }px` } }>
+				<div className={ `mvs-media-grid mvs-cols-${ columns || 3 }` } style={ { gap: `${ gap }px` } }>
 					{ Array.from( { length: Math.min( perPage, 6 ) } ).map( ( _, i ) => (
 						<div key={ i } className="mvs-grid-item" style={ { background: '#f0f0f0', aspectRatio: '1' } }>
 							<span className="dashicons dashicons-format-image" style={ { fontSize: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.3 } }></span>

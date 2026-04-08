@@ -192,7 +192,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						<select data-wp-on--change="actions.updateUploadPrivacy"
 							data-wp-bind--value="state.uploadModalPrivacy">
 							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-							<option value="loggedin"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
+							<option value="members"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
 							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 						</select>
 					</div>

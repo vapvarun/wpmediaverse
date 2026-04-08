@@ -55,7 +55,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			title: '',
 			description: '',
 			tags: '',
-			privacy: 'public',
+			privacy: '',
 		},
 		// Edit modal
 		editModal: {
@@ -362,6 +362,30 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 		async uploadFiles( files ) {
 			const ctx = getContext();
+
+			// Client-side file type filter.
+			if ( ctx.allowedExtensions ) {
+				const exts = ctx.allowedExtensions.split( ',' ).map( ( e ) => e.trim().toLowerCase() );
+				const rejected = [];
+				const accepted = [];
+				for ( const f of files ) {
+					const ext = '.' + f.name.split( '.' ).pop().toLowerCase();
+					if ( exts.some( ( allowed ) => allowed.includes( ext ) ) ) {
+						accepted.push( f );
+					} else {
+						rejected.push( f.name );
+					}
+				}
+				if ( rejected.length ) {
+					sharedUI.actions.showToast(
+						'File type not allowed: ' + rejected.join( ', ' ) + '. Supported: ' + ctx.allowedExtensions,
+						'error'
+					);
+				}
+				if ( ! accepted.length ) return;
+				files = accepted;
+			}
+
 			state.upload.uploading = true;
 			const total = files.length;
 			let uploaded = 0;
@@ -559,6 +583,46 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 		},
 
+		handleReplaceFile( event ) {
+			const file = event.target.files[ 0 ];
+			if ( ! file ) return;
+			event.target.value = '';
+			actions.replaceMediaFile( file );
+		},
+
+		async replaceMediaFile( file ) {
+			const ctx = getContext();
+			const mediaId = state.editModal.itemId;
+			if ( ! mediaId ) return;
+
+			state.editModal.saving = true;
+			const formData = new FormData();
+			formData.append( 'file', file );
+
+			try {
+				const res = await fetch( ctx.restUrl + 'media/' + mediaId + '/replace', {
+					method: 'POST',
+					headers: { 'X-WP-Nonce': ctx.nonce },
+					credentials: 'same-origin',
+					body: formData,
+				} );
+				if ( res.ok ) {
+					const updated = await res.json();
+					const idx = state.media.items.findIndex( ( m ) => m.id === mediaId );
+					if ( idx !== -1 ) {
+						state.media.items[ idx ] = { ...state.media.items[ idx ], ...updated };
+					}
+					sharedUI.actions.showToast( 'File replaced!', 'success' );
+				} else {
+					const err = await res.json().catch( () => ( {} ) );
+					sharedUI.actions.showToast( err.message || 'Replace failed.', 'error' );
+				}
+			} catch {
+				sharedUI.actions.showToast( 'Replace failed.', 'error' );
+			}
+			state.editModal.saving = false;
+		},
+
 		async saveEdit() {
 			const ctx = getContext();
 			state.editModal.saving = true;
@@ -655,6 +719,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.description = album?.description || '';
 			state.albumModal.privacy = album?.privacy || 'public';
 			state.albumModal.selectedIds = album?.items ? [ ...album.items ] : [];
+			state.albumModal.originalItems = album?.items ? [ ...album.items ] : [];
 			state.albumModal.coverId = album?.cover_media_id || 0;
 			state.albumModal.saving = false;
 
@@ -733,12 +798,22 @@ const { state, actions } = store( 'mvs/dashboard', {
 						headers: apiHeaders( ctx.nonce ),
 						body: JSON.stringify( payload ),
 					} );
-					// Sync album items in edit mode.
-					if ( state.albumModal.selectedIds.length ) {
+					// Sync album items: add new, remove deselected.
+					const currentItems = state.albumModal.originalItems || [];
+					const selected = state.albumModal.selectedIds;
+					const toAdd = selected.filter( ( id ) => ! currentItems.includes( id ) );
+					const toRemove = currentItems.filter( ( id ) => ! selected.includes( id ) );
+					if ( toAdd.length ) {
 						await apiFetch( ctx, 'albums/' + albumId + '/items', {
 							method: 'POST',
 							headers: apiHeaders( ctx.nonce ),
-							body: JSON.stringify( { media_ids: state.albumModal.selectedIds } ),
+							body: JSON.stringify( { media_ids: toAdd } ),
+						} );
+					}
+					for ( const removeId of toRemove ) {
+						await apiFetch( ctx, 'albums/' + albumId + '/items/' + removeId, {
+							method: 'DELETE',
+							headers: apiHeaders( ctx.nonce ),
 						} );
 					}
 				} else {
