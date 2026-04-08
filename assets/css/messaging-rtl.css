@@ -61,6 +61,7 @@
 	z-index: 99999;
 	width: 56px;
 	height: 56px;
+	padding: 0;
 	border-radius: 50%;
 	background: var(--mvs-chat-primary);
 	color: #fff;
@@ -127,6 +128,16 @@
 @media screen and (max-width: 782px) {
 	.admin-bar .mvs-chat-panel {
 		top: 46px;
+	}
+
+	.mvs-chat-trigger {
+		width: 48px;
+		height: 48px;
+	}
+
+	.mvs-chat-trigger svg {
+		width: 18px;
+		height: 18px;
 	}
 }
 

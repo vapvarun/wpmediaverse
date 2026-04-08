@@ -2710,6 +2710,7 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 .mvs-grid-item-placeholder--audio {
@@ -4349,6 +4350,10 @@ a.mvs-dashboard-card-title:hover {
     position: relative;
 }
 
+.wb-grid>.mvs-logged-out-banner {
+    flex: 0 0 100%;
+}
+
 .mvs-logged-out-banner__content {
     font-size: 0.9375rem;
 }
@@ -4361,6 +4366,7 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     gap: 8px;
     flex-shrink: 0;
+    margin-left: 15px;
 }
 
 .mvs-logged-out-banner__actions .mvs-btn--primary {
@@ -4384,12 +4390,14 @@ a.mvs-dashboard-card-title:hover {
     padding: 4px;
     line-height: 1;
     position: absolute;
-    top: 8px;
+    top: 18px;
     left: 8px;
 }
 
 .mvs-logged-out-banner__close:hover {
+    background: none;
     color: var(--mvs-bg);
+    border: none;
 }
 
 @media (max-width: 600px) {
