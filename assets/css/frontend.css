@@ -3315,7 +3315,7 @@ a.mvs-dashboard-card-title:hover {
     border: 1px solid var(--mvs-border, #ddd);
     border-radius: 8px;
     box-shadow: var(--mvs-shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.18));
-    z-index: 9999;
+    z-index: 998;
     margin-top: 8px;
 }
 
