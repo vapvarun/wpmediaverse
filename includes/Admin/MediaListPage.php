@@ -339,7 +339,7 @@ class MediaListPage {
 							)
 						);
 						?>
-														" class="submitdelete"><?php esc_html_e( 'Delete Permanently', 'wpmediaverse' ); ?></a></span>
+														" class="submitdelete" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to permanently delete this media? This cannot be undone.', 'wpmediaverse' ); ?>')"><?php esc_html_e( 'Delete Permanently', 'wpmediaverse' ); ?></a></span>
 					<?php endif; ?>
 				</div>
 			</td>

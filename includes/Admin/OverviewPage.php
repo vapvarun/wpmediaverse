@@ -335,7 +335,7 @@ class OverviewPage {
 							</ul>
 
 							<?php if ( ! $all_ok ) : ?>
-								<div class="notice notice-warning inline mvs-notice-mt">
+								<div class="notice notice-warning inline mvs-notice-mt is-dismissible">
 									<p>
 										<?php esc_html_e( 'Some pages are missing. Deactivate and reactivate the plugin to create them, or add pages manually with shortcodes:', 'wpmediaverse' ); ?>
 									</p>

@@ -1477,6 +1477,10 @@ a.mvs-dashboard-card-title:hover {
 	min-width: 80px;
 	flex: 1;
 }
+.mvs-tag-text-input:focus-visible {
+	outline: 2px solid var(--mvs-primary, #0073aa);
+	outline-offset: -2px;
+}
 
 .mvs-tag-text-input:focus-visible {
 	outline: 2px solid #0073aa;
@@ -4182,6 +4186,10 @@ a.mvs-dashboard-card-title:hover {
 	color: var(--mvs-text);
 	padding: 6px 0;
 	min-width: 0;
+}
+.mvs-search-field input:focus-visible {
+	outline: 2px solid var(--mvs-primary, #0073aa);
+	outline-offset: -2px;
 }
 
 .mvs-search-field input:focus-visible {
