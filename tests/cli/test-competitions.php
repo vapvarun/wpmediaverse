@@ -7,6 +7,10 @@
  */
 
 function run_competitions_tests(): array {
+	if ( ! is_pro_active() ) {
+		echo '  ⏭️  Entire suite skipped — Pro plugin not active' . PHP_EOL;
+		return array( 0, 0 );
+	}
 	$p    = 0;
 	$f    = 0;
 	$data = get_test_data();

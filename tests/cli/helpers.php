@@ -8,6 +8,24 @@
 $GLOBALS['test_failures'] = array();
 
 /**
+ * Check if Pro plugin is active.
+ */
+function is_pro_active(): bool {
+	return defined( 'MVS_PRO_VERSION' ) || class_exists( '\WPMediaVersePro\Core\Plugin' );
+}
+
+/**
+ * Skip a test when Pro is not active.
+ */
+function skip_without_pro( string $name ): bool {
+	if ( ! is_pro_active() ) {
+		echo "  ⏭️  $name — skipped (Pro not active)" . PHP_EOL;
+		return true;
+	}
+	return false;
+}
+
+/**
  * Assert a test condition.
  */
 function assert_test( string $name, bool $pass, string $detail = '' ): bool {
