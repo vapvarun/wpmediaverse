@@ -432,6 +432,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 				sharedUI.actions.showToast( total + ' file(s) uploaded!', 'success' );
 			}
 			if ( uploaded > 0 ) {
+				// Reset upload form so old data doesn't carry forward.
+				state.upload.title = '';
+				state.upload.description = '';
+				state.upload.tags = '';
+				state.upload.privacy = ctx.defaultPrivacy || 'public';
+				state.upload.showFields = false;
 				state.media.page = 1;
 				actions.loadMedia( ctx, 1 );
 			}

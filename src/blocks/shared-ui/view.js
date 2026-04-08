@@ -326,6 +326,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalVisible = false;
 			state.uploadModalFiles = [];
 			state.uploadModalPreviews = [];
+			state.uploadModalTitle = '';
+			state.uploadModalDescription = '';
+			state.uploadModalTags = '';
+			state.uploadModalPrivacy = 'public';
+			state.uploadModalAlbumTitle = '';
+			state.uploadModalAlbumDescription = '';
+			state.uploadModalUploading = false;
+			state.uploadModalDone = 0;
+			state.uploadModalFailed = 0;
+			state.uploadModalLastError = '';
 			document.body.style.overflow = '';
 		},
 		setUploadMode() {
