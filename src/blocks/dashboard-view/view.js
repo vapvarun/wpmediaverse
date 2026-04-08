@@ -51,7 +51,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			dragOver: false,
 			uploading: false,
 			status: '',
-			showFields: false,
+			showFields: true,
 			title: '',
 			description: '',
 			tags: '',
