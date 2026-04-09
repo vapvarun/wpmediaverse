@@ -633,12 +633,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Find REST URL + nonce from any existing Interactivity context on the page.
 			let restUrl = '/wp-json/mvs/v1/';
 			let nonce = '';
+			let isLoggedIn = false;
 			const ctxEl = document.querySelector( '[data-wp-interactive="mvs/shared-ui"][data-wp-context]' );
 			if ( ctxEl ) {
 				try {
 					const parsed = JSON.parse( ctxEl.dataset.wpContext );
 					restUrl = parsed.restUrl || restUrl;
 					nonce = parsed.nonce || nonce;
+					isLoggedIn = !! parsed.currentUserId;
 				} catch { /* use defaults */ }
 			}
 
@@ -668,7 +670,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					}
 				}
 
-				actions.lightboxLoadSocial( { restUrl, nonce }, mediaId, headers );
+				actions.lightboxLoadSocial( { restUrl, nonce, isLoggedIn }, mediaId, headers );
 			} catch {
 				state.lightboxLoading = false;
 				actions.showToast( 'Failed to load media.', 'error' );
@@ -696,12 +698,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const s = await fetch( ctx.restUrl + 'media/' + mediaId + '/stats', opts );
 				state.lightboxStats = await s.json();
 			} catch { state.lightboxStats = {}; }
-			// Favorite status.
-			try {
-				const f = await fetch( ctx.restUrl + 'media/' + mediaId + '/favorite', opts );
-				const fd = await f.json();
-				state.lightboxIsFavorited = !! fd.favorited;
-			} catch { state.lightboxIsFavorited = false; }
+			// Favorite status (requires authentication).
+			if ( ctx.isLoggedIn ) {
+				try {
+					const f = await fetch( ctx.restUrl + 'media/' + mediaId + '/favorite', opts );
+					const fd = await f.json();
+					state.lightboxIsFavorited = !! fd.favorited;
+				} catch { state.lightboxIsFavorited = false; }
+			} else {
+				state.lightboxIsFavorited = false;
+			}
 		},
 		async lightboxToggleReaction( event ) {
 			const ctx = getContext();
