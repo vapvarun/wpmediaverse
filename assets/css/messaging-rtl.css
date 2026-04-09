@@ -37,18 +37,16 @@
 	--mvs-chat-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
-/* Standalone fallback: OS dark mode when BuddyNext is not active. */
-@media (prefers-color-scheme: dark) {
-	:root:not([data-theme]) {
-		--mvs-chat-bg: #000;
-		--mvs-chat-surface: #1a1a1a;
-		--mvs-chat-border: #363636;
-		--mvs-chat-text: #f5f5f5;
-		--mvs-chat-text-secondary: #a8a8a8;
-		--mvs-chat-bubble-received: #262626;
-		--mvs-chat-bubble-received-text: #f5f5f5;
-		--mvs-chat-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-	}
+/* Dark mode: theme-controlled via data-theme="dark" on <html>, not OS preference. */
+:root[data-theme="dark"] {
+	--mvs-chat-bg: #000;
+	--mvs-chat-surface: #1a1a1a;
+	--mvs-chat-border: #363636;
+	--mvs-chat-text: #f5f5f5;
+	--mvs-chat-text-secondary: #a8a8a8;
+	--mvs-chat-bubble-received: #262626;
+	--mvs-chat-bubble-received-text: #f5f5f5;
+	--mvs-chat-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* ----------------------------------------------------------------

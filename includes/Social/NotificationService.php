@@ -43,6 +43,7 @@ class NotificationService {
 		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 3 );
 		add_action( 'mvs_mentions_created', array( $this, 'on_mentions' ), 10, 4 );
 		add_action( 'mvs_favorite_added', array( $this, 'on_favorite' ), 10, 2 );
+		add_action( 'mvs_message_sent', array( $this, 'on_message' ), 10, 4 );
 	}
 
 	/**
@@ -337,6 +338,20 @@ class NotificationService {
 	}
 
 	/**
+	 * Handle new DM sent event.
+	 *
+	 * @param int   $message_id      Message ID.
+	 * @param int   $conversation_id Conversation ID.
+	 * @param int   $sender_id       Sender user ID.
+	 * @param int[] $recipient_ids   Recipient user IDs.
+	 */
+	public function on_message( int $message_id, int $conversation_id, int $sender_id, array $recipient_ids ): void {
+		foreach ( $recipient_ids as $recipient_id ) {
+			$this->create( (int) $recipient_id, 'new_message', $sender_id );
+		}
+	}
+
+	/**
 	 * Format a notification row for REST output.
 	 *
 	 * @param object $row Database row.
@@ -359,6 +374,8 @@ class NotificationService {
 		} elseif ( 'new_follower' === $row->type ) {
 			$actor_login = get_the_author_meta( 'user_login', (int) $row->actor_id );
 			$url         = $actor_login ? home_url( '/media/@' . $actor_login . '/' ) : '';
+		} elseif ( 'new_message' === $row->type ) {
+			$url = home_url( '/messages/' );
 		}
 
 		return array(
