@@ -295,7 +295,7 @@ class NotificationService {
 	 * @param string $type     Reaction type.
 	 */
 	public function on_reaction( int $media_id, int $user_id, string $type ): void {
-		$owner = (int) get_post_field( 'post_author', $media_id );
+		$owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
 		$this->create( $owner, 'media_reaction', $user_id, $media_id );
 	}
 
@@ -307,7 +307,7 @@ class NotificationService {
 	 * @param int $comment_id Comment ID.
 	 */
 	public function on_comment( int $media_id, int $user_id, int $comment_id ): void {
-		$owner = (int) get_post_field( 'post_author', $media_id );
+		$owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
 		$this->create( $owner, 'media_comment', $user_id, $media_id, $comment_id );
 	}
 
@@ -333,7 +333,7 @@ class NotificationService {
 	 * @param int $user_id  User who favorited.
 	 */
 	public function on_favorite( int $media_id, int $user_id ): void {
-		$owner = (int) get_post_field( 'post_author', $media_id );
+		$owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
 		$this->create( $owner, 'media_favorite', $user_id, $media_id );
 	}
 
