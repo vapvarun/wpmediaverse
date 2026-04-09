@@ -362,8 +362,7 @@ class NotificationService {
 		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 		$media_title = '';
 		if ( $row->media_id ) {
-			$post        = get_post( (int) $row->media_id );
-			$media_title = $post ? $post->post_title : '';
+			$media_title = \WPMediaVerse\Repository\MediaRepository::get( (int) $row->media_id, 'title' ) ?: '';
 		}
 
 		$message = $this->build_notification_message( $row->type, $actor_name, $media_title );
