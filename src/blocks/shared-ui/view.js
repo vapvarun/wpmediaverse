@@ -80,12 +80,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return titles[ state.uploadModalMode ] || 'Upload';
 		},
 		get uploadAccept() {
-			if ( state.uploadModalMode === 'video' ) return 'video/*';
-			if ( state.uploadModalMode === 'audio' ) return 'audio/*';
-			return 'image/*';
+			const allowed = getContext().allowedTypes || '';
+			const types = allowed ? allowed.split( ',' ).map( ( t ) => t.trim() ) : [];
+			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
+			const prefix = prefixes[ state.uploadModalMode ] || 'image/';
+			const filtered = types.filter( ( t ) => t.startsWith( prefix ) );
+			return filtered.length ? filtered.join( ',' ) : prefix + '*';
 		},
 		get uploadMultiple() {
-			return state.uploadModalMode === 'gallery';
+			return state.uploadModalMode === 'gallery' || state.uploadModalMode === 'album';
 		},
 		get isPhotoMode() {
 			return state.uploadModalMode === 'photo';
@@ -490,6 +493,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					} );
 					const albumData = await albumRes.json();
 					if ( albumData.id ) {
+						state._pendingAlbumId = albumData.id;
 						actions.showToast( 'Album "' + albumData.title + '" created!' );
 						if ( ! files.length ) {
 							state.uploadModalUploading = false;
@@ -510,6 +514,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					return;
 				}
 			}
+
+			const uploadedMediaIds = [];
 
 			// Generate group ID for gallery mode.
 			let mediaGroup = null;
@@ -546,7 +552,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						credentials: 'same-origin',
 						body: fd,
 					} );
-					if ( ! res.ok ) {
+					if ( res.ok ) {
+						try {
+							const mediaData = await res.json();
+							if ( mediaData.id ) uploadedMediaIds.push( mediaData.id );
+						} catch { /* ignore */ }
+					} else {
 						state.uploadModalFailed++;
 						try {
 							const errData = await res.json();
@@ -557,6 +568,19 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					state.uploadModalFailed++;
 				}
 				state.uploadModalDone = i + 1;
+			}
+
+			// Link uploaded media to album if in album mode.
+			if ( state._pendingAlbumId && uploadedMediaIds.length ) {
+				try {
+					await fetch( restUrl + 'albums/' + state._pendingAlbumId + '/items', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
+						credentials: 'same-origin',
+						body: JSON.stringify( { media_ids: uploadedMediaIds } ),
+					} );
+				} catch { /* linking failed — media still uploaded */ }
+				state._pendingAlbumId = null;
 			}
 
 			const uploaded = files.length - state.uploadModalFailed;

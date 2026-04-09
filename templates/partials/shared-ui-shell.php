@@ -41,6 +41,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 			'nonce'          => $mvs_nonce,
 			'currentUserId'  => $mvs_is_logged_in ? get_current_user_id() : 0,
 			'defaultPrivacy' => get_option( 'mvs_default_privacy', 'public' ),
+			'allowedTypes'   => get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' ),
 		)
 	);
 	?>
