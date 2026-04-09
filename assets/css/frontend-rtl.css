@@ -530,6 +530,15 @@ body.mvs-page {
 	height: auto;
 }
 
+.mvs-grid--original .mvs-dashboard-card-thumb {
+	aspect-ratio: auto;
+}
+
+.mvs-grid--original .mvs-dashboard-card-thumb img {
+	height: auto;
+	object-fit: contain;
+}
+
 .mvs-grid-item-placeholder {
 	display: flex;
 	align-items: center;
