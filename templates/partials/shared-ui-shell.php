@@ -149,7 +149,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 					<!-- Preview thumbnails -->
 					<div class="mvs-modal-previews" data-wp-bind--hidden="!state.hasFiles">
 						<template data-wp-each="state.uploadModalPreviews">
-							<img class="mvs-modal-preview-thumb" data-wp-bind--src="context.item" alt="" />
+							<img class="mvs-modal-preview-thumb" data-wp-bind--src="context.item" data-wp-bind--hidden="!context.item" alt="" />
 						</template>
 					</div>
 

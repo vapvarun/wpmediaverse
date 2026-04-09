@@ -365,18 +365,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 
 			// Generate previews.
-			state.uploadModalPreviews = [];
-			state.uploadModalFiles.forEach( ( file ) => {
-				if ( file.type.startsWith( 'image/' ) ) {
-					const reader = new FileReader();
-					reader.onload = ( e ) => {
-						state.uploadModalPreviews = [ ...state.uploadModalPreviews, e.target.result ];
-					};
-					reader.readAsDataURL( file );
-				} else {
-					state.uploadModalPreviews = [ ...state.uploadModalPreviews, '' ];
-				}
-			} );
+			actions.generatePreviews();
 		},
 		handleUploadDrop( event ) {
 			event.preventDefault();
@@ -392,21 +381,50 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.uploadModalFiles = [ ...state.uploadModalFiles, ...files ];
 			}
 
+			actions.generatePreviews();
+		},
+		handleUploadDragOver( event ) {
+			event.preventDefault();
+		},
+		generatePreviews() {
 			state.uploadModalPreviews = [];
-			state.uploadModalFiles.forEach( ( file ) => {
+			state.uploadModalFiles.forEach( ( file, idx ) => {
 				if ( file.type.startsWith( 'image/' ) ) {
 					const reader = new FileReader();
 					reader.onload = ( e ) => {
 						state.uploadModalPreviews = [ ...state.uploadModalPreviews, e.target.result ];
 					};
 					reader.readAsDataURL( file );
+				} else if ( file.type.startsWith( 'video/' ) ) {
+					// Generate thumbnail from video first frame.
+					const video = document.createElement( 'video' );
+					video.preload = 'metadata';
+					video.muted = true;
+					video.playsInline = true;
+					const url = URL.createObjectURL( file );
+					video.src = url;
+					video.addEventListener( 'loadeddata', () => {
+						video.currentTime = 1;
+					} );
+					video.addEventListener( 'seeked', () => {
+						try {
+							const canvas = document.createElement( 'canvas' );
+							canvas.width = video.videoWidth || 320;
+							canvas.height = video.videoHeight || 180;
+							canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+							const thumb = canvas.toDataURL( 'image/jpeg', 0.7 );
+							state.uploadModalPreviews = [ ...state.uploadModalPreviews, thumb ];
+						} catch {
+							// CORS or other error — use placeholder.
+							state.uploadModalPreviews = [ ...state.uploadModalPreviews, '' ];
+						}
+						URL.revokeObjectURL( url );
+					} );
 				} else {
+					// Audio or other — no preview.
 					state.uploadModalPreviews = [ ...state.uploadModalPreviews, '' ];
 				}
 			} );
-		},
-		handleUploadDragOver( event ) {
-			event.preventDefault();
 		},
 		filterFilesByMode( files ) {
 			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
