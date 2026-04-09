@@ -151,6 +151,7 @@ class MediaListPage {
 							<thead>
 								<tr>
 									<td class="manage-column column-cb check-column"><input type="checkbox" /></td>
+									<th class="manage-column mvs-col-id"><?php esc_html_e( 'ID', 'wpmediaverse' ); ?></th>
 									<th class="manage-column mvs-col-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
 									<th class="manage-column column-primary"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
@@ -180,6 +181,7 @@ class MediaListPage {
 							<tfoot>
 								<tr>
 									<td class="manage-column column-cb check-column"><input type="checkbox" /></td>
+									<th class="manage-column mvs-col-id"><?php esc_html_e( 'ID', 'wpmediaverse' ); ?></th>
 									<th class="manage-column mvs-col-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
 									<th class="manage-column column-primary"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Author', 'wpmediaverse' ); ?></th>
@@ -261,6 +263,7 @@ class MediaListPage {
 		?>
 		<tr>
 			<th scope="row" class="check-column"><input type="checkbox" name="media_ids[]" value="<?php echo esc_attr( $media_id ); ?>" /></th>
+			<td class="mvs-col-id"><?php echo absint( $media_id ); ?></td>
 			<td class="mvs-col-thumb">
 				<?php
 				$thumb_url = '';
