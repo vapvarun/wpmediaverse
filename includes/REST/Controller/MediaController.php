@@ -1007,7 +1007,14 @@ class MediaController extends WP_REST_Controller {
 			return null;
 		}
 
-		$file_url = ! empty( $all['file_url'] ) ? set_url_scheme( $all['file_url'] ) : '';
+		// Use signed URL to bypass .htaccess protection on uploads directory.
+		$file_url = '';
+		if ( ! empty( $all['file_url'] ) ) {
+			$signed_urls = Plugin::container()->get( 'signed_urls' );
+			$viewer_id   = get_current_user_id();
+			$signed      = $signed_urls ? $signed_urls->generate( $media_id, $viewer_id ) : false;
+			$file_url    = $signed ? $signed : set_url_scheme( $all['file_url'] );
+		}
 
 		// Build thumbnail URL from custom meta.
 		$thumbnail_url = TemplateHelpers::get_thumb_url( $media_id, 'large' );
