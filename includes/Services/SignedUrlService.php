@@ -156,19 +156,23 @@ class SignedUrlService {
 			exit;
 		}
 
-		$file_path_rel = MediaRepository::get( $media_id, 'file_path' );
+		$file_path_raw = MediaRepository::get( $media_id, 'file_path' );
 		$file_type     = MediaRepository::get( $media_id, 'file_type' );
 
-		if ( ! $file_path_rel ) {
+		if ( ! $file_path_raw ) {
 			status_header( 404 );
 			header( 'Content-Type: text/plain' );
 			echo esc_html( 'File not found.' );
 			exit;
 		}
 
-		// Resolve full path via storage driver.
+		// Resolve full path — handle both absolute and relative stored paths.
 		$upload_dir = wp_upload_dir();
-		$full_path  = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . $file_path_rel;
+		if ( 0 === strpos( $file_path_raw, ABSPATH ) || 0 === strpos( $file_path_raw, '/' ) ) {
+			$full_path = $file_path_raw;
+		} else {
+			$full_path = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . $file_path_raw;
+		}
 
 		if ( ! file_exists( $full_path ) ) {
 			status_header( 404 );
