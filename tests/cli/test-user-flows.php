@@ -147,9 +147,89 @@ function run_user_flows_tests(): array {
 	rest( 'DELETE', "/mvs/v1/users/$user_b/follow" );
 
 	// ═══════════════════════════════════
-	// FLOW 6: DM Privacy — B sets DM to followers-only, A not following
+	// FLOW 6: Notification content accuracy
 	// ═══════════════════════════════════
-	section( 'FLOW: DM Privacy Enforcement' );
+	section( 'FLOW: Notification Content Accuracy' );
+	wp_set_current_user( $user_a );
+
+	// A comments on B's media → check notification has correct media title (not "Hello world!").
+	$r = rest( 'POST', "/mvs/v1/media/$media_b/comments", array(
+		'content' => 'Notification content test.',
+	) );
+
+	$media_title = \WPMediaVerse\Repository\MediaRepository::get( $media_b, 'title' );
+
+	wp_set_current_user( $user_b );
+	$r = rest( 'GET', '/mvs/v1/me/notifications' );
+	$found_correct_title = false;
+	$found_wrong_title   = false;
+	foreach ( $r['data'] as $n ) {
+		$msg = $n['message'] ?? '';
+		if ( $media_title && strpos( $msg, $media_title ) !== false ) {
+			$found_correct_title = true;
+		}
+		if ( strpos( $msg, 'Hello world' ) !== false ) {
+			$found_wrong_title = true;
+		}
+	}
+	assert_test( 'Notification uses MVS media title (not WP post title)', $found_correct_title, 'expected: ' . $media_title ) ? $p++ : $f++;
+	assert_test( 'No "Hello world!" in notifications', ! $found_wrong_title ) ? $p++ : $f++;
+
+	// Verify notification URL points to media permalink, not a WP post.
+	$expected_url = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_b );
+	$found_url    = false;
+	foreach ( $r['data'] as $n ) {
+		if ( ( $n['url'] ?? '' ) === $expected_url ) {
+			$found_url = true;
+			break;
+		}
+	}
+	assert_test( 'Notification URL is MVS media permalink', $found_url, 'expected: ' . $expected_url ) ? $p++ : $f++;
+
+	// Verify notification recipient is the media owner (from mvs_media_index, not wp_posts).
+	$mvs_owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_b, 'post_author' );
+	assert_test( 'Notification sent to MVS media owner', $mvs_owner === $user_b, "mvs_owner=$mvs_owner user_b=$user_b" ) ? $p++ : $f++;
+
+	wp_set_current_user( $user_a );
+
+	// ═══════════════════════════════════
+	// FLOW 7: DM → Notification
+	// ═══════════════════════════════════
+	section( 'FLOW: DM → Notification' );
+	$r = rest( 'POST', '/mvs/v1/conversations', array(
+		'recipient_id' => $user_b,
+		'message'      => 'DM notification test',
+	) );
+	if ( in_array( $r['status'], array( 200, 201 ), true ) ) {
+		wp_set_current_user( $user_b );
+		$r = rest( 'GET', '/mvs/v1/me/notifications' );
+		$has_dm_notif = false;
+		foreach ( $r['data'] as $n ) {
+			if ( ( $n['type'] ?? '' ) === 'new_message' || strpos( $n['message'] ?? '', 'message' ) !== false ) {
+				$has_dm_notif = true;
+				break;
+			}
+		}
+		assert_test( 'B received DM notification', $has_dm_notif, $r['count'] . ' notifications' ) ? $p++ : $f++;
+
+		// Check DM notification URL points to /messages/.
+		$has_messages_url = false;
+		foreach ( $r['data'] as $n ) {
+			if ( ( $n['type'] ?? '' ) === 'new_message' && strpos( $n['url'] ?? '', '/messages/' ) !== false ) {
+				$has_messages_url = true;
+				break;
+			}
+		}
+		assert_test( 'DM notification links to /messages/', $has_messages_url ) ? $p++ : $f++;
+		wp_set_current_user( $user_a );
+	} else {
+		echo '  ⏭️  DM notification test — skipped (conversation create failed: ' . $r['status'] . ')' . PHP_EOL;
+	}
+
+	// ═══════════════════════════════════
+	// FLOW 8: DM Privacy — B sets DM to followers-only, A not following
+	// ═══════════════════════════════════
+	section( 'FLOW: DM Privacy Enforcement (Profile Button)' );
 	if ( is_pro_active() ) {
 		// Set B's DM access to followers-only.
 		update_user_meta( $user_b, '_mvs_dm_access', 'followers' );

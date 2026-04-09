@@ -139,5 +139,36 @@ function run_settings_tests(): array {
 
 	update_option( 'mvs_max_upload_size', $original_size );
 
+	// ═══════════════════════════════════
+	// DATA SOURCE INTEGRITY — no get_post() for MVS media IDs
+	// ═══════════════════════════════════
+	section( 'DATA SOURCE INTEGRITY' );
+
+	// NotificationService must NOT use get_post() or get_post_field() for media lookups.
+	$notif_src = file_get_contents( ABSPATH . 'wp-content/plugins/wpmediaverse/includes/Social/NotificationService.php' );
+	$uses_get_post       = preg_match( '/get_post\s*\(/', $notif_src );
+	$uses_get_post_field = preg_match( '/get_post_field\s*\(/', $notif_src );
+	assert_test( 'NotificationService: no get_post() for media lookups', ! $uses_get_post ) ? $p++ : $f++;
+	assert_test( 'NotificationService: no get_post_field() for media lookups', ! $uses_get_post_field ) ? $p++ : $f++;
+
+	// CacheService must NOT use get_post_field() for media author.
+	$cache_src = file_get_contents( ABSPATH . 'wp-content/plugins/wpmediaverse/includes/Services/CacheService.php' );
+	$cache_uses_gpf = preg_match( '/get_post_field\s*\(\s*[\'"]post_author/', $cache_src );
+	assert_test( 'CacheService: no get_post_field for media author', ! $cache_uses_gpf ) ? $p++ : $f++;
+
+	// Plugin.php must enqueue @mvs/media-social script module.
+	$plugin_src = file_get_contents( ABSPATH . 'wp-content/plugins/wpmediaverse/includes/Core/Plugin.php' );
+	$has_social_enqueue = strpos( $plugin_src, '@mvs/media-social' ) !== false;
+	assert_test( 'Plugin.php enqueues @mvs/media-social module', $has_social_enqueue ) ? $p++ : $f++;
+
+	// Shared-ui-shell must pass allowedTypes to context.
+	$shell_src = file_get_contents( ABSPATH . 'wp-content/plugins/wpmediaverse/templates/partials/shared-ui-shell.php' );
+	$has_allowed_types = strpos( $shell_src, 'allowedTypes' ) !== false;
+	assert_test( 'shared-ui-shell passes allowedTypes to context', $has_allowed_types ) ? $p++ : $f++;
+
+	// NotificationService must hook mvs_message_sent for DM notifications.
+	$has_dm_hook = strpos( $notif_src, 'mvs_message_sent' ) !== false;
+	assert_test( 'NotificationService hooks mvs_message_sent', $has_dm_hook ) ? $p++ : $f++;
+
 	return array( $p, $f );
 }
