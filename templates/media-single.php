@@ -508,43 +508,6 @@ $mvs_archive_url = home_url( '/media/' );
 	</article>
 </div>
 <?php
-// Enqueue Interactivity API stores.
-$mvs_player_asset_file = MVS_PLUGIN_DIR . 'build/blocks/media-player/view.asset.php';
-$mvs_player_asset      = file_exists( $mvs_player_asset_file ) ? require $mvs_player_asset_file : array(
-	'dependencies' => array(),
-	'version'      => MVS_VERSION,
-);
-wp_enqueue_script_module(
-	'mvs-media-player',
-	MVS_PLUGIN_URL . 'build/blocks/media-player/view.js',
-	$mvs_player_asset['dependencies'],
-	$mvs_player_asset['version']
-);
-
-$mvs_shared_asset_file = MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php';
-$mvs_shared_asset      = file_exists( $mvs_shared_asset_file ) ? require $mvs_shared_asset_file : array(
-	'dependencies' => array(),
-	'version'      => MVS_VERSION,
-);
-wp_enqueue_script_module(
-	'mvs-shared-ui',
-	MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
-	$mvs_shared_asset['dependencies'],
-	$mvs_shared_asset['version']
-);
-
-$mvs_social_asset_file = MVS_PLUGIN_DIR . 'build/blocks/media-social/view.asset.php';
-$mvs_social_asset      = file_exists( $mvs_social_asset_file ) ? require $mvs_social_asset_file : array(
-	'dependencies' => array(),
-	'version'      => MVS_VERSION,
-);
-wp_enqueue_script_module(
-	'mvs-media-social',
-	MVS_PLUGIN_URL . 'build/blocks/media-social/view.js',
-	$mvs_social_asset['dependencies'],
-	$mvs_social_asset['version']
-);
-
 // Shared UI: Toast + Confirm Dialog (required for delete/share actions).
 ?>
 <div class="mvs-toast" hidden

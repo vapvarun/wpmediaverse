@@ -1557,7 +1557,7 @@ a.mvs-dashboard-card-title:hover {
 	display: block;
 	width: 100%;
 	padding: 8px 12px;
-	margin: 12px 0 0;
+	margin: 12px 0 16px;
 	font-size: 14px;
 	border: 1px solid #ddd;
 	border-radius: 6px;
