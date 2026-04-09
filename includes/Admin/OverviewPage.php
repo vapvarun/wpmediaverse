@@ -160,8 +160,8 @@ class OverviewPage {
 						<div class="mvs-widget-body">
 							<div class="mvs-quick-links">
 								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>" class="mvs-btn mvs-btn--primary">
-									<i data-lucide="plus"></i>
-									<?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
+									<i data-lucide="images"></i>
+									<?php esc_html_e( 'All Media', 'wpmediaverse' ); ?>
 								</a>
 								<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-settings' ) ); ?>" class="mvs-btn">
 									<i data-lucide="settings"></i>

@@ -1565,6 +1565,7 @@ a.mvs-stat-card:focus {
 .mvs-media-badge--private { background: var(--mvs-danger); }
 .mvs-media-badge--group { background: #9b59b6; }
 .mvs-media-badge--friends { background: #e67e22; }
+.mvs-media-badge--loggedin { background: #3498db; }
 
 .mvs-media-badge--publish { background: var(--mvs-success); }
 .mvs-media-badge--draft { background: #646970; }

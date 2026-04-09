@@ -234,20 +234,16 @@ wp_enqueue_style( 'mvs-frontend' );
 	<?php
 	// Profile completion prompt (if no custom avatar or empty bio).
 	$mvs_profile_incomplete = ! $mvs_has_custom || empty( $mvs_current_user->description );
-	if ( $mvs_profile_incomplete ) :
-		$mvs_dashboard_page_id = (int) get_option( 'mvs_page_dashboard', 0 );
-		$mvs_edit_profile_url  = $mvs_dashboard_page_id ? get_permalink( $mvs_dashboard_page_id ) : '';
-		if ( ! $mvs_edit_profile_url ) {
-			// Fallback: find the dashboard page by slug.
-			$mvs_dash_page        = get_page_by_path( 'my-media' );
-			$mvs_edit_profile_url = $mvs_dash_page ? get_permalink( $mvs_dash_page ) : home_url( '/' );
-		}
-		?>
+	if ( $mvs_profile_incomplete ) : ?>
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
 		<span class="mvs-profile-prompt-icon">&#x1F464;</span>
 		<span class="mvs-profile-prompt-text">
 			<?php esc_html_e( 'Complete your profile — add an avatar and bio to help others find you.', 'wpmediaverse' ); ?>
-			<a href="<?php echo esc_url( $mvs_edit_profile_url ); ?>"><?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?></a>
+			<button class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-dashboard-profile-edit-btn"
+				type="button"
+				data-wp-on--click="actions.toggleProfileEdit">
+				<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
+			</button>
 		</span>
 		<button type="button" class="mvs-profile-prompt-close" id="mvs-profile-prompt-close"
 			aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">&times;</button>
