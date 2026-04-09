@@ -562,6 +562,25 @@ class MediaController extends WP_REST_Controller {
 			return $media_id;
 		}
 
+		// Save client-generated video thumbnail if provided and no server thumbnail exists.
+		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
+			$existing_thumb = MediaRepository::get( $media_id, 'thumb_large' );
+			if ( ! $existing_thumb ) {
+				$upload_dir  = wp_upload_dir();
+				$thumb_dir   = $upload_dir['basedir'] . '/wpmediaverse/thumbs';
+				wp_mkdir_p( $thumb_dir );
+				$thumb_name  = 'video-thumb-' . $media_id . '.jpg';
+				$thumb_path  = $thumb_dir . '/' . $thumb_name;
+				// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+				if ( @move_uploaded_file( $files['thumbnail']['tmp_name'], $thumb_path ) ) {
+					$thumb_url = $upload_dir['baseurl'] . '/wpmediaverse/thumbs/' . $thumb_name;
+					MediaRepository::set( $media_id, 'thumb_large', $thumb_url );
+					MediaRepository::set( $media_id, 'thumb_medium', $thumb_url );
+					MediaRepository::set( $media_id, 'thumb_thumb', $thumb_url );
+				}
+			}
+		}
+
 		// Apply tags and categories if provided.
 		$tags = $request->get_param( 'tags' );
 		if ( $tags ) {

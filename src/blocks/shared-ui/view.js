@@ -529,6 +529,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					fd.append( 'media_group', mediaGroup );
 					fd.append( 'group_position', String( i ) );
 				}
+				// Send client-generated video thumbnail if available.
+				const preview = state.uploadModalPreviews[ i ];
+				if ( files[ i ].type.startsWith( 'video/' ) && preview && preview.startsWith( 'data:' ) ) {
+					try {
+						const resp = await fetch( preview );
+						const blob = await resp.blob();
+						fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
+					} catch { /* skip thumbnail */ }
+				}
 
 				try {
 					const res = await fetch( restUrl + 'media', {
