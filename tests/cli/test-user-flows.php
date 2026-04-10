@@ -231,16 +231,49 @@ function run_user_flows_tests(): array {
 	// ═══════════════════════════════════
 	section( 'FLOW: DM Privacy Enforcement (Profile Button)' );
 	if ( is_pro_active() ) {
-		// Set B's DM access to followers-only.
-		update_user_meta( $user_b, '_mvs_dm_access', 'followers' );
-
-		wp_set_current_user( $user_a );
-		// A is NOT following B → should not be able to DM.
-		$r = rest( 'POST', '/mvs/v1/conversations', array(
-			'recipient_id' => $user_b,
-			'message'      => 'Should be blocked',
+		// Use a fresh user pair with no prior conversation to test DM privacy.
+		// A→B already has a conversation from FLOW 7, so we test with a different user.
+		global $wpdb;
+		$dm_test_user = (int) $wpdb->get_var( $wpdb->prepare(
+			"SELECT ID FROM {$wpdb->users} WHERE ID NOT IN (%d, %d, 1) LIMIT 1",
+			$user_a,
+			$user_b
 		) );
-		assert_test( 'Non-follower blocked from DM', $r['status'] >= 400, 'status:' . $r['status'] ) ? $p++ : $f++;
+
+		if ( $dm_test_user ) {
+			// Delete any existing conversation between user_a and dm_test_user.
+			$existing_conv = $wpdb->get_var( $wpdb->prepare(
+				"SELECT p1.conversation_id FROM {$wpdb->prefix}mvs_conversation_participants p1
+				INNER JOIN {$wpdb->prefix}mvs_conversation_participants p2 ON p1.conversation_id = p2.conversation_id
+				WHERE p1.user_id = %d AND p2.user_id = %d LIMIT 1",
+				$user_a,
+				$dm_test_user
+			) );
+			if ( $existing_conv ) {
+				$wpdb->delete( $wpdb->prefix . 'mvs_messages', array( 'conversation_id' => $existing_conv ) );
+				$wpdb->delete( $wpdb->prefix . 'mvs_conversation_participants', array( 'conversation_id' => $existing_conv ) );
+				$wpdb->delete( $wpdb->prefix . 'mvs_conversations', array( 'id' => $existing_conv ) );
+			}
+
+			// Set DM access to followers-only.
+			update_user_meta( $dm_test_user, '_mvs_dm_access', 'followers' );
+
+			wp_set_current_user( $user_a );
+			// A is NOT following dm_test_user → should not be able to create NEW conversation.
+			$r = rest( 'POST', '/mvs/v1/conversations', array(
+				'recipient_id' => $dm_test_user,
+				'message'      => 'Should be blocked',
+			) );
+			assert_test( 'Non-follower blocked from DM', $r['status'] >= 400, 'status:' . $r['status'] ) ? $p++ : $f++;
+
+			// Cleanup.
+			delete_user_meta( $dm_test_user, '_mvs_dm_access' );
+		} else {
+			echo '  ⏭️  DM privacy test — skipped (need 3+ users)' . PHP_EOL;
+		}
+
+		// Set B's DM access to followers-only for the follow→DM test.
+		update_user_meta( $user_b, '_mvs_dm_access', 'followers' );
 
 		// A follows B → now DM should work.
 		rest( 'POST', "/mvs/v1/users/$user_b/follow" );
