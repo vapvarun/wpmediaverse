@@ -2736,16 +2736,21 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-grid-item-placeholder--audio {
-    background: linear-gradient(-135deg, #4a1272, #1a0a2e);
-    aspect-ratio: 1;
+    background: linear-gradient(-135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    aspect-ratio: 1;
+    font-size: 48px;
 }
 
 .mvs-grid-audio-icon {
-    font-size: 36px;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 56px;
+    color: #fff;
+    line-height: 1;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* ==========================================================================

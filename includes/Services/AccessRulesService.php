@@ -495,6 +495,20 @@ class AccessRulesService {
 			return $result;
 		}
 
+		// Owner and admin always have access — don't let rules block them.
+		$author_id = 0;
+		$post      = get_post( $media_id );
+		if ( $post ) {
+			$author_id = (int) $post->post_author;
+		}
+		if ( ! $author_id ) {
+			// Try mvs_media_index for non-CPT media.
+			$author_id = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
+		}
+		if ( $user_id && ( $author_id === $user_id || user_can( $user_id, 'moderate_mvs_media' ) ) ) {
+			return true;
+		}
+
 		// No rules = passthrough to default privacy logic.
 		if ( ! $this->has_active_rules( $media_id ) ) {
 			return null;

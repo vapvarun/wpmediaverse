@@ -415,6 +415,133 @@ class Commands {
 	}
 
 	/**
+	 * Batch generate video thumbnails using ffmpeg.
+	 *
+	 * Queries all video media from mvs_media_index and generates a thumbnail
+	 * frame at 1 second using ffmpeg. Saves the thumbnail to the uploads
+	 * directory and stores the URL in mvs_media_meta.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--force]
+	 * : Regenerate thumbnails even if they already exist.
+	 *
+	 * [--dry-run]
+	 * : List what would be processed without generating anything.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs generate-video-thumbnails
+	 *     wp mvs generate-video-thumbnails --force
+	 *     wp mvs generate-video-thumbnails --dry-run
+	 *
+	 * @subcommand generate-video-thumbnails
+	 */
+	public function generate_video_thumbnails( $args, $assoc_args ) {
+		global $wpdb;
+
+		$force   = (bool) Utils\get_flag_value( $assoc_args, 'force', false );
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+
+		// Check if ffmpeg is available.
+		$ffmpeg_check = shell_exec( 'which ffmpeg 2>/dev/null' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec
+		if ( empty( $ffmpeg_check ) ) {
+			WP_CLI::error( 'ffmpeg is not installed or not available in PATH. Install ffmpeg to use this command.' );
+		}
+
+		// Prepare thumbs directory.
+		$upload_dir = wp_upload_dir();
+		$thumb_dir  = $upload_dir['basedir'] . '/wpmediaverse/thumbs';
+		$thumb_url  = $upload_dir['baseurl'] . '/wpmediaverse/thumbs';
+
+		if ( ! $dry_run ) {
+			wp_mkdir_p( $thumb_dir );
+		}
+
+		// Query all video media.
+		$videos = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id, title FROM {$wpdb->prefix}mvs_media_index WHERE media_type = %s ORDER BY media_id ASC",
+				'video'
+			)
+		);
+
+		if ( empty( $videos ) ) {
+			WP_CLI::success( 'No video media found. Nothing to do.' );
+			return;
+		}
+
+		$generated = 0;
+		$skipped   = 0;
+
+		foreach ( $videos as $video ) {
+			$media_id = (int) $video->media_id;
+			$title    = $video->title ?: "(ID: {$media_id})";
+
+			// Check if thumbnail already exists.
+			$existing_thumb = MediaRepository::get( $media_id, 'thumb_large' );
+			if ( $existing_thumb && ! $force ) {
+				++$skipped;
+				if ( $dry_run ) {
+					WP_CLI::log( "Skip (has thumbnail): media {$media_id}: {$title}" );
+				}
+				continue;
+			}
+
+			// Get the file path from the index.
+			$file_path = MediaRepository::get( $media_id, 'file_path' );
+			if ( empty( $file_path ) ) {
+				++$skipped;
+				WP_CLI::warning( "No file_path for media {$media_id}: {$title} — skipping." );
+				continue;
+			}
+
+			if ( ! file_exists( $file_path ) ) {
+				++$skipped;
+				WP_CLI::warning( "File not found for media {$media_id}: {$file_path} — skipping." );
+				continue;
+			}
+
+			if ( $dry_run ) {
+				WP_CLI::log( "Would generate thumbnail for media {$media_id}: {$title}" );
+				++$generated;
+				continue;
+			}
+
+			// Generate thumbnail with ffmpeg.
+			$thumb_name = 'video-thumb-' . $media_id . '.jpg';
+			$thumb_path = $thumb_dir . '/' . $thumb_name;
+
+			$escaped_input  = escapeshellarg( $file_path );
+			$escaped_output = escapeshellarg( $thumb_path );
+			$command        = "ffmpeg -y -i {$escaped_input} -ss 00:00:01 -vframes 1 -q:v 2 {$escaped_output} 2>&1";
+			$output         = array();
+			$return_code    = 0;
+
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec -- CLI-only, inputs sanitized with escapeshellarg.
+			exec( $command, $output, $return_code );
+
+			if ( 0 !== $return_code || ! file_exists( $thumb_path ) ) {
+				++$skipped;
+				WP_CLI::warning( "ffmpeg failed for media {$media_id}: {$title} (exit code {$return_code})." );
+				continue;
+			}
+
+			// Store thumb URLs in meta.
+			$full_thumb_url = $thumb_url . '/' . $thumb_name;
+			MediaRepository::set( $media_id, 'thumb_large', $full_thumb_url );
+			MediaRepository::set( $media_id, 'thumb_medium', $full_thumb_url );
+			MediaRepository::set( $media_id, 'thumb_thumb', $full_thumb_url );
+
+			++$generated;
+			WP_CLI::log( "Generated thumbnail for media {$media_id}: {$title}" );
+		}
+
+		$action = $dry_run ? 'Would generate' : 'Generated';
+		WP_CLI::success( "Done. {$action} {$generated} thumbnails, skipped {$skipped}." );
+	}
+
+	/**
 	 * Show moderation queue statistics.
 	 *
 	 * ## EXAMPLES
