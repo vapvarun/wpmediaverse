@@ -19,6 +19,23 @@ function run_moderation_tests(): array {
 	$other_id = $data['other_id'];
 	$mid      = $data['own_media'];
 
+	// ── CLEANUP: clear any stale reports from prior runs ──
+	global $wpdb;
+	wp_set_current_user( $admin_id );
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->prefix}mvs_reports WHERE target_type = 'media' AND target_id = %d",
+			$mid
+		)
+	);
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->prefix}mvs_reports WHERE target_type = 'user' AND target_id = %d AND reporter_id = %d",
+			$other_id,
+			$admin_id
+		)
+	);
+
 	// ═══════════════════════════════════
 	// USER: REPORT MEDIA
 	// ═══════════════════════════════════

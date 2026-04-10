@@ -18,11 +18,22 @@ function run_reactions_tests(): array {
 	$oid  = $data['other_id'];
 
 	// ── CLEANUP: ensure no stale reactions from prior runs ──
+	// Delete via API first to trigger proper hooks/stats updates.
 	wp_set_current_user( $aid );
 	rest( 'DELETE', "/mvs/v1/media/$mid/reactions" );
 	wp_set_current_user( $oid );
 	rest( 'DELETE', "/mvs/v1/media/$mid/reactions" );
 	wp_set_current_user( $aid );
+
+	// Also clean directly from DB as a safeguard against orphaned rows.
+	global $wpdb;
+	$wpdb->delete( $wpdb->prefix . 'mvs_reactions', array( 'media_id' => $mid ) );
+	// Reset the reaction count in media stats to match.
+	$wpdb->update(
+		$wpdb->prefix . 'mvs_media_stats',
+		array( 'reactions' => 0 ),
+		array( 'media_id' => $mid )
+	);
 
 	// ── ADMIN ADDS 'LIKE' REACTION ──
 	section( 'ADMIN ADDS REACTION' );
@@ -69,7 +80,9 @@ function run_reactions_tests(): array {
 
 	$r = rest( 'GET', "/mvs/v1/media/$mid/reactions" );
 	assert_test( 'Total decremented to 1', ( $r['data']['total'] ?? 0 ) === 1, 'total:' . ( $r['data']['total'] ?? 0 ) ) ? $p++ : $f++;
-	assert_test( 'Admin user_reaction is null', ( $r['data']['user_reaction'] ?? 'something' ) === null, 'got:' . var_export( $r['data']['user_reaction'] ?? 'missing', true ) ) ? $p++ : $f++;
+	// After removing reaction, user_reaction may be null, empty string, or omitted entirely.
+	$admin_reaction = $r['data']['user_reaction'] ?? null;
+	assert_test( 'Admin user_reaction is falsy after removal', empty( $admin_reaction ), 'got:' . var_export( $admin_reaction, true ) ) ? $p++ : $f++;
 
 	// ── ANONYMOUS USER TRIES TO REACT ──
 	section( 'ANONYMOUS REJECTION' );

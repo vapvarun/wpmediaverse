@@ -20,12 +20,22 @@ function run_privacy_tests(): array {
 	$other_id = $data['other_id'];
 	$mid      = $data['own_media'];
 
+	// Helper: flush the PrivacyService in-memory cache so privacy changes
+	// take effect immediately within the same CLI process.
+	$flush_privacy_cache = function () {
+		$privacy_svc = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
+		if ( $privacy_svc && method_exists( $privacy_svc, 'flush_cache' ) ) {
+			$privacy_svc->flush_cache();
+		}
+	};
+
 	// ═══════════════════════════════════
 	// PUBLIC MEDIA
 	// ═══════════════════════════════════
 	section( 'PUBLIC MEDIA' );
 	wp_set_current_user( $admin_id );
 	rest( 'POST', "/mvs/v1/media/$mid", array( 'privacy' => 'public' ) );
+	$flush_privacy_cache();
 
 	// As owner.
 	$r = rest( 'GET', "/mvs/v1/media/$mid" );
@@ -47,6 +57,7 @@ function run_privacy_tests(): array {
 	section( 'MEMBERS-ONLY MEDIA' );
 	wp_set_current_user( $admin_id );
 	rest( 'POST', "/mvs/v1/media/$mid", array( 'privacy' => 'members' ) );
+	$flush_privacy_cache();
 
 	// As owner.
 	$r = rest( 'GET', "/mvs/v1/media/$mid" );
@@ -70,6 +81,7 @@ function run_privacy_tests(): array {
 	section( 'PRIVATE MEDIA' );
 	wp_set_current_user( $admin_id );
 	rest( 'POST', "/mvs/v1/media/$mid", array( 'privacy' => 'private' ) );
+	$flush_privacy_cache();
 
 	// As owner.
 	$r = rest( 'GET', "/mvs/v1/media/$mid" );
@@ -92,6 +104,7 @@ function run_privacy_tests(): array {
 	section( 'PRIVACY IN FEED LISTING' );
 	wp_set_current_user( $admin_id );
 	rest( 'POST', "/mvs/v1/media/$mid", array( 'privacy' => 'private' ) );
+	$flush_privacy_cache();
 
 	// Other user's feed should NOT include this private media.
 	wp_set_current_user( $other_id );
@@ -143,6 +156,7 @@ function run_privacy_tests(): array {
 	// ═══════════════════════════════════
 	wp_set_current_user( $admin_id );
 	rest( 'POST', "/mvs/v1/media/$mid", array( 'privacy' => 'public' ) );
+	$flush_privacy_cache();
 
 	return array( $p, $f );
 }
