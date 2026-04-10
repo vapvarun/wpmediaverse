@@ -1067,7 +1067,7 @@ body.mvs-page {
 .mvs-social-actions button:focus {
     background: none;
     color: var(--mvs-primary);
-    border-color: var(--mvs-primary);
+    border: 1px solid var(--mvs-primary);
 }
 
 .mvs-social-actions button.active {
@@ -1628,11 +1628,11 @@ a.mvs-dashboard-card-title:hover {
     display: block;
     width: 100%;
     padding: 8px 12px;
-    margin: 12px 0 0;
+    margin: 12px 0;
     font-size: 14px;
     border: 1px solid #ddd;
     border-radius: 6px;
-    background: #f9f9f9;
+    background-color: #f9f9f9;
     color: #333;
 }
 

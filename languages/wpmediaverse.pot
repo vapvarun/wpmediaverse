@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.1.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-04-09 11:53:19+00:00\n"
+"POT-Creation-Date: 2026-04-10 10:48:22+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -64,7 +64,7 @@ msgstr ""
 #: includes/Admin/CollectionMetaBox.php:297
 #: includes/Admin/Settings/FieldRenderer.php:77
 #: src/blocks/explore-feed/render.php:79
-#: templates/partials/shared-ui-shell.php:108
+#: templates/partials/shared-ui-shell.php:109
 msgid "Video"
 msgstr ""
 
@@ -72,7 +72,7 @@ msgstr ""
 #: includes/Admin/CollectionMetaBox.php:298
 #: includes/Admin/Settings/FieldRenderer.php:81
 #: src/blocks/explore-feed/render.php:80
-#: templates/partials/shared-ui-shell.php:117
+#: templates/partials/shared-ui-shell.php:118
 msgid "Audio"
 msgstr ""
 
@@ -119,12 +119,12 @@ msgid "Page %1$d of %2$d (%3$d items)"
 msgstr ""
 
 #: build/blocks/media-grid/render.php:153 src/blocks/media-grid/render.php:153
-#: templates/partials/shared-ui-shell.php:239
+#: templates/partials/shared-ui-shell.php:240
 msgid "Previous"
 msgstr ""
 
 #: build/blocks/media-grid/render.php:154 src/blocks/media-grid/render.php:154
-#: templates/partials/shared-ui-shell.php:251
+#: templates/partials/shared-ui-shell.php:252
 msgid "Next"
 msgstr ""
 
@@ -174,7 +174,7 @@ msgstr ""
 
 #: build/blocks/media-upload/render.php:59
 #: src/blocks/media-upload/render.php:59
-#: templates/partials/shared-ui-shell.php:163
+#: templates/partials/shared-ui-shell.php:164
 msgid "Drag & drop files here or click to browse"
 msgstr ""
 
@@ -185,14 +185,14 @@ msgstr ""
 #: templates/partials/dashboard-content.php:352
 #: templates/partials/dashboard-content.php:671
 #: templates/partials/dashboard-content.php:749
-#: templates/partials/shared-ui-shell.php:195
+#: templates/partials/shared-ui-shell.php:196
 msgid "Public"
 msgstr ""
 
 #: build/blocks/media-upload/render.php:70
 #: includes/Admin/Settings/SettingsRegistrar.php:117
 #: src/blocks/media-upload/render.php:70
-#: templates/partials/shared-ui-shell.php:196
+#: templates/partials/shared-ui-shell.php:197
 msgid "Members Only"
 msgstr ""
 
@@ -203,14 +203,14 @@ msgstr ""
 #: templates/partials/dashboard-content.php:354
 #: templates/partials/dashboard-content.php:673
 #: templates/partials/dashboard-content.php:751
-#: templates/partials/shared-ui-shell.php:197
+#: templates/partials/shared-ui-shell.php:198
 msgid "Private"
 msgstr ""
 
 #: build/blocks/media-upload/render.php:78
 #: src/blocks/media-upload/render.php:78
 #: templates/partials/dashboard-content.php:342
-#: templates/partials/shared-ui-shell.php:179
+#: templates/partials/shared-ui-shell.php:180
 msgid "Title (optional)"
 msgstr ""
 
@@ -219,14 +219,14 @@ msgstr ""
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:383
 #: src/blocks/media-upload/render.php:81
 #: templates/partials/dashboard-content.php:344
-#: templates/partials/shared-ui-shell.php:184
+#: templates/partials/shared-ui-shell.php:185
 msgid "Description (optional)"
 msgstr ""
 
 #: build/blocks/media-upload/render.php:84
 #: src/blocks/media-upload/render.php:84
 #: templates/partials/dashboard-content.php:347
-#: templates/partials/shared-ui-shell.php:189
+#: templates/partials/shared-ui-shell.php:190
 msgid "Tags (comma separated)"
 msgstr ""
 
@@ -983,7 +983,7 @@ msgid "Subscriber"
 msgstr ""
 
 #: includes/Admin/Settings/PermissionsManager.php:46
-#: templates/partials/shared-ui-shell.php:210
+#: templates/partials/shared-ui-shell.php:211
 msgid "Upload"
 msgstr ""
 
@@ -1996,7 +1996,7 @@ msgid "Untitled"
 msgstr ""
 
 #: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:184
-#: includes/Social/NotificationService.php:406
+#: includes/Social/NotificationService.php:422
 #. translators: 1: user link, 2: media link
 #. translators: 1: user name, 2: media title
 msgid "%1$s commented on %2$s"
@@ -2021,7 +2021,7 @@ msgstr ""
 #: templates/partials/dashboard-content.php:713
 #: templates/partials/dashboard-content.php:793
 #: templates/partials/dashboard-content.php:823
-#: templates/partials/shared-ui-shell.php:207
+#: templates/partials/shared-ui-shell.php:208
 #: vendor/woocommerce/action-scheduler/classes/ActionScheduler_ListTable.php:133
 msgid "Cancel"
 msgstr ""
@@ -2045,13 +2045,13 @@ msgstr ""
 
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:350
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:381
-#: templates/partials/shared-ui-shell.php:126
+#: templates/partials/shared-ui-shell.php:127
 msgid "Album Name"
 msgstr ""
 
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:351
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:382
-#: templates/partials/shared-ui-shell.php:128
+#: templates/partials/shared-ui-shell.php:129
 msgid "Enter album name..."
 msgstr ""
 
@@ -2152,21 +2152,21 @@ msgid "Media Mentions"
 msgstr ""
 
 #: includes/Integrations/BuddyPress/NotificationIntegration.php:199
-#: includes/Social/NotificationService.php:401
+#: includes/Social/NotificationService.php:417
 #. translators: %s: user display name
 #. translators: %s: user name
 msgid "%s reacted to your media"
 msgstr ""
 
 #: includes/Integrations/BuddyPress/NotificationIntegration.php:203
-#: includes/Social/NotificationService.php:409
+#: includes/Social/NotificationService.php:425
 #. translators: %s: user display name
 #. translators: %s: user name
 msgid "%s commented on your media"
 msgstr ""
 
 #: includes/Integrations/BuddyPress/NotificationIntegration.php:207
-#: includes/Social/NotificationService.php:413
+#: includes/Social/NotificationService.php:429
 #. translators: %s: user display name
 #. translators: %s: user name
 msgid "%s mentioned you"
@@ -2188,7 +2188,7 @@ msgstr ""
 msgid "This user hasn't created any albums yet."
 msgstr ""
 
-#: includes/PostTypes/Album.php:23 templates/partials/shared-ui-shell.php:100
+#: includes/PostTypes/Album.php:23 templates/partials/shared-ui-shell.php:101
 msgid "Album"
 msgstr ""
 
@@ -2272,15 +2272,15 @@ msgstr ""
 #: includes/REST/Controller/CommentController.php:204
 #: includes/REST/Controller/FavoriteController.php:166
 #: includes/REST/Controller/MediaController.php:465
-#: includes/REST/Controller/MediaController.php:481
-#: includes/REST/Controller/MediaController.php:650
-#: includes/REST/Controller/MediaController.php:710
-#: includes/REST/Controller/MediaController.php:787
-#: includes/REST/Controller/MediaController.php:838
-#: includes/REST/Controller/MediaController.php:886
-#: includes/REST/Controller/MediaController.php:948
-#: includes/REST/Controller/MediaController.php:970
-#: includes/REST/Controller/MediaController.php:995
+#: includes/REST/Controller/MediaController.php:489
+#: includes/REST/Controller/MediaController.php:658
+#: includes/REST/Controller/MediaController.php:718
+#: includes/REST/Controller/MediaController.php:795
+#: includes/REST/Controller/MediaController.php:846
+#: includes/REST/Controller/MediaController.php:894
+#: includes/REST/Controller/MediaController.php:956
+#: includes/REST/Controller/MediaController.php:978
+#: includes/REST/Controller/MediaController.php:1003
 #: includes/REST/Controller/ReactionController.php:119
 #: includes/REST/Controller/ReactionController.php:156
 #: includes/REST/Controller/ReactionController.php:204
@@ -2463,44 +2463,48 @@ msgstr ""
 msgid "Unable to follow this user."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:537
+#: includes/REST/Controller/MediaController.php:472
+msgid "You do not have permission to view this media."
+msgstr ""
+
+#: includes/REST/Controller/MediaController.php:545
 msgid "No file was uploaded."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:542
+#: includes/REST/Controller/MediaController.php:550
 msgid "File upload error."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:715
+#: includes/REST/Controller/MediaController.php:723
 msgid "No file provided."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:728
+#: includes/REST/Controller/MediaController.php:736
 #: includes/Services/UploadService.php:62
 msgid "This file type is not allowed."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:742
+#: includes/REST/Controller/MediaController.php:750
 msgid "Failed to store the file."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:844
-#: includes/REST/Controller/MediaController.php:954
+#: includes/REST/Controller/MediaController.php:852
+#: includes/REST/Controller/MediaController.php:962
 #: includes/REST/Controller/SignedUrlController.php:153
 #: includes/REST/Controller/SignedUrlController.php:224
 #: includes/REST/Controller/StatsController.php:109
 msgid "You do not have access to this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:933
+#: includes/REST/Controller/MediaController.php:941
 msgid "You do not have permission to upload media."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:981
+#: includes/REST/Controller/MediaController.php:989
 msgid "You do not have permission to edit this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:1006
+#: includes/REST/Controller/MediaController.php:1014
 msgid "You do not have permission to delete this media item."
 msgstr ""
 
@@ -2609,7 +2613,7 @@ msgstr ""
 #: templates/media-single.php:388 templates/partials/dashboard-content.php:563
 #: templates/partials/dashboard-content.php:664
 #: templates/partials/dashboard-content.php:742
-#: templates/partials/shared-ui-shell.php:132
+#: templates/partials/shared-ui-shell.php:133
 msgid "Description"
 msgstr ""
 
@@ -2852,36 +2856,36 @@ msgstr ""
 msgid "You cannot delete this comment."
 msgstr ""
 
-#: includes/Social/NotificationService.php:347
+#: includes/Social/NotificationService.php:362
 msgid "Someone"
 msgstr ""
 
-#: includes/Social/NotificationService.php:393
+#: includes/Social/NotificationService.php:409
 #. translators: %s: user name
 msgid "%s started following you"
 msgstr ""
 
-#: includes/Social/NotificationService.php:398
+#: includes/Social/NotificationService.php:414
 #. translators: 1: user name, 2: media title
 msgid "%1$s reacted to %2$s"
 msgstr ""
 
-#: includes/Social/NotificationService.php:418
+#: includes/Social/NotificationService.php:434
 #. translators: 1: user name, 2: media title
 msgid "%1$s favorited %2$s"
 msgstr ""
 
-#: includes/Social/NotificationService.php:421
+#: includes/Social/NotificationService.php:437
 #. translators: %s: user name
 msgid "%s favorited your media"
 msgstr ""
 
-#: includes/Social/NotificationService.php:425
+#: includes/Social/NotificationService.php:441
 #. translators: %s: user name
 msgid "%s sent you a message"
 msgstr ""
 
-#: includes/Social/NotificationService.php:429
+#: includes/Social/NotificationService.php:445
 #. translators: %s: user name
 msgid "%s interacted with your content"
 msgstr ""
@@ -3140,7 +3144,7 @@ msgstr ""
 msgid "Report this media"
 msgstr ""
 
-#: templates/media-single.php:373 templates/partials/shared-ui-shell.php:324
+#: templates/media-single.php:373 templates/partials/shared-ui-shell.php:325
 msgid "Report"
 msgstr ""
 
@@ -3160,7 +3164,7 @@ msgstr ""
 msgid "Post comment"
 msgstr ""
 
-#: templates/media-single.php:452 templates/partials/shared-ui-shell.php:364
+#: templates/media-single.php:452 templates/partials/shared-ui-shell.php:365
 msgid "Post"
 msgstr ""
 
@@ -3248,8 +3252,8 @@ msgstr ""
 #: templates/partials/dashboard-content.php:554
 #: templates/partials/dashboard-content.php:655
 #: templates/partials/dashboard-content.php:733
-#: templates/partials/shared-ui-shell.php:68
-#: templates/partials/shared-ui-shell.php:221
+#: templates/partials/shared-ui-shell.php:69
+#: templates/partials/shared-ui-shell.php:222
 msgid "Close"
 msgstr ""
 
@@ -3307,43 +3311,43 @@ msgstr ""
 msgid "Cover"
 msgstr ""
 
-#: templates/partials/shared-ui-shell.php:54
+#: templates/partials/shared-ui-shell.php:55
 msgid "Upload media"
 msgstr ""
 
-#: templates/partials/shared-ui-shell.php:85
+#: templates/partials/shared-ui-shell.php:86
 msgid "Photo"
 msgstr ""
 
-#: templates/partials/shared-ui-shell.php:93
+#: templates/partials/shared-ui-shell.php:94
 msgid "Gallery"
 msgstr ""
 
-#: templates/partials/shared-ui-shell.php:134
+#: templates/partials/shared-ui-shell.php:135
 msgid "Album description (optional)..."
 msgstr ""
 
-#: templates/partials/shared-ui-shell.php:315
+#: templates/partials/shared-ui-shell.php:316
 msgid "Share"
 msgstr ""
 
-#: templates/partials/shared-ui-shell.php:316
+#: templates/partials/shared-ui-shell.php:317
 msgid "Open"
 msgstr ""
 
-#: templates/partials/shared-ui-shell.php:348
+#: templates/partials/shared-ui-shell.php:349
 msgid "No comments yet. Be the first!"
 msgstr ""
 
-#: templates/partials/shared-ui-shell.php:351
+#: templates/partials/shared-ui-shell.php:352
 msgid "View all comments"
 msgstr ""
 
-#: templates/partials/shared-ui-shell.php:357
+#: templates/partials/shared-ui-shell.php:358
 msgid "Add a comment…"
 msgstr ""
 
-#: templates/partials/shared-ui-shell.php:370
+#: templates/partials/shared-ui-shell.php:371
 msgid "Log in to comment"
 msgstr ""
 

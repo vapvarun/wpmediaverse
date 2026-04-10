@@ -37,7 +37,8 @@
 	--mvs-chat-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
-/* Dark mode: theme-controlled via data-theme="dark" on <html>, not OS preference. */
+/* Dark mode: theme-controlled via data-theme="dark" on <html>, not OS preference.
+   See frontend.css line 59 for rationale. */
 :root[data-theme="dark"] {
 	--mvs-chat-bg: #000;
 	--mvs-chat-surface: #1a1a1a;
