@@ -123,6 +123,24 @@ class MediaController extends WP_REST_Controller {
 			)
 		);
 
+		// POST /media/{id}/replace — replace the file for an existing media item.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/replace',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'replace_file' ),
+				'permission_callback' => array( $this, 'update_item_permissions_check' ),
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
 		// POST /media/{id}/view — record a view.
 		register_rest_route(
 			$this->namespace,
@@ -447,6 +465,14 @@ class MediaController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		$privacy = MediaRepository::get( $media_id, 'privacy' );
+		if ( 'public' !== $privacy ) {
+			$viewer_id = get_current_user_id();
+			if ( ! $this->privacy->can_view( $media_id, $viewer_id ) ) {
+				return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to view this media.', 'wpmediaverse' ), array( 'status' => 403 ) );
+			}
+		}
+
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
 	}
 
@@ -542,6 +568,25 @@ class MediaController extends WP_REST_Controller {
 
 		if ( is_wp_error( $media_id ) ) {
 			return $media_id;
+		}
+
+		// Save client-generated video thumbnail if provided and no server thumbnail exists.
+		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
+			$existing_thumb = MediaRepository::get( $media_id, 'thumb_large' );
+			if ( ! $existing_thumb ) {
+				$upload_dir  = wp_upload_dir();
+				$thumb_dir   = $upload_dir['basedir'] . '/wpmediaverse/thumbs';
+				wp_mkdir_p( $thumb_dir );
+				$thumb_name  = 'video-thumb-' . $media_id . '.jpg';
+				$thumb_path  = $thumb_dir . '/' . $thumb_name;
+				// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+				if ( @move_uploaded_file( $files['thumbnail']['tmp_name'], $thumb_path ) ) {
+					$thumb_url = $upload_dir['baseurl'] . '/wpmediaverse/thumbs/' . $thumb_name;
+					MediaRepository::set( $media_id, 'thumb_large', $thumb_url );
+					MediaRepository::set( $media_id, 'thumb_medium', $thumb_url );
+					MediaRepository::set( $media_id, 'thumb_thumb', $thumb_url );
+				}
+			}
 		}
 
 		// Apply tags and categories if provided.
@@ -648,6 +693,86 @@ class MediaController extends WP_REST_Controller {
 		if ( null !== $categories && is_array( $categories ) ) {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
 		}
+
+		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
+	}
+
+	/**
+	 * Replace the file of an existing media item.
+	 *
+	 * Accepts a new file upload, stores it, updates the media index,
+	 * and deletes the old file. Preserves all metadata, reactions, and comments.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function replace_file( $request ) {
+		$rate_check = RateLimiter::check( 'media_replace', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
+		$media_id = (int) $request->get_param( 'id' );
+
+		if ( ! MediaRepository::exists( $media_id ) ) {
+			return new \WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$files = $request->get_file_params();
+		if ( empty( $files['file'] ) ) {
+			return new \WP_Error( 'mvs_no_file', __( 'No file provided.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		$file = $files['file'];
+
+		// Validate MIME type using UploadService.
+		$upload_service = Plugin::container()->get( 'upload' );
+		$allowed        = $upload_service->get_allowed_types_public();
+		$finfo          = finfo_open( FILEINFO_MIME_TYPE );
+		$mime           = finfo_file( $finfo, $file['tmp_name'] );
+		finfo_close( $finfo );
+
+		if ( ! in_array( $mime, $allowed, true ) ) {
+			return new \WP_Error( 'mvs_invalid_type', __( 'This file type is not allowed.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		// Store new file.
+		$storage   = Plugin::container()->get( 'storage' );
+		$driver    = $storage->get_driver();
+		$dest_sub  = gmdate( 'Y/m' );
+		$filename  = wp_unique_filename(
+			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_sub,
+			sanitize_file_name( $file['name'] )
+		);
+		$dest_path = $dest_sub . '/' . $filename;
+
+		if ( ! $driver->store( $file['tmp_name'], $dest_path ) ) {
+			return new \WP_Error( 'mvs_storage_failed', __( 'Failed to store the file.', 'wpmediaverse' ), array( 'status' => 500 ) );
+		}
+
+		// Delete old file.
+		$old_path = MediaRepository::get( $media_id, 'file_path' );
+		if ( $old_path ) {
+			$driver->delete( $old_path );
+		}
+
+		// Update media index with new file data.
+		$media_type = explode( '/', $mime )[0]; // image, video, audio.
+		if ( ! in_array( $media_type, array( 'image', 'video', 'audio' ), true ) ) {
+			$media_type = 'document';
+		}
+
+		MediaRepository::set_many(
+			$media_id,
+			array(
+				'file_url'   => $driver->url( $dest_path ),
+				'file_path'  => $dest_path,
+				'file_type'  => $mime,
+				'file_size'  => filesize( $file['tmp_name'] ) ?: 0,
+				'file_hash'  => hash_file( 'sha256', $file['tmp_name'] ),
+				'media_type' => $media_type,
+			)
+		);
 
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
 	}
@@ -909,7 +1034,14 @@ class MediaController extends WP_REST_Controller {
 			return null;
 		}
 
-		$file_url = ! empty( $all['file_url'] ) ? set_url_scheme( $all['file_url'] ) : '';
+		// Use signed URL to bypass .htaccess protection on uploads directory.
+		$file_url = '';
+		if ( ! empty( $all['file_url'] ) ) {
+			$signed_urls = Plugin::container()->get( 'signed_urls' );
+			$viewer_id   = get_current_user_id();
+			$signed      = $signed_urls ? $signed_urls->generate( $media_id, $viewer_id ) : false;
+			$file_url    = $signed ? $signed : set_url_scheme( $all['file_url'] );
+		}
 
 		// Build thumbnail URL from custom meta.
 		$thumbnail_url = TemplateHelpers::get_thumb_url( $media_id, 'large' );

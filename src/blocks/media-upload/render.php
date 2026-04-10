@@ -59,7 +59,7 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 		<p class="mvs-upload-text"><?php esc_html_e( 'Drag & drop files here or click to browse', 'wpmediaverse' ); ?></p>
 		<input type="file" class="mvs-upload-input" multiple
 			data-wp-on--change="actions.handleFileSelect"
-			accept="image/*,video/*,audio/*"
+			accept="<?php echo esc_attr( $allowed_types ); ?>"
 		/>
 		<?php
 		if ( $show_privacy ) :

@@ -49,6 +49,7 @@ class PermissionsManager {
 			'delete_mvs_media'        => __( 'Delete Own', 'wpmediaverse' ),
 			'delete_others_mvs_media' => __( 'Delete Others', 'wpmediaverse' ),
 			'moderate_mvs_media'      => __( 'Moderate', 'wpmediaverse' ),
+			'manage_mvs_access'       => __( 'Manage Access', 'wpmediaverse' ),
 			'manage_mvs_settings'     => __( 'Manage Settings', 'wpmediaverse' ),
 		);
 
@@ -115,6 +116,17 @@ class PermissionsManager {
 	 *
 	 * @return int Number of roles updated.
 	 */
+	/**
+	 * Singular caps that have a matching plural CPT cap (edit_mvs_media → edit_mvs_medias).
+	 * Both must stay in sync so MediaController permission checks work.
+	 */
+	const PLURAL_CAP_MAP = array(
+		'edit_mvs_media'          => 'edit_mvs_medias',
+		'edit_others_mvs_media'   => 'edit_others_mvs_medias',
+		'delete_mvs_media'        => 'delete_mvs_medias',
+		'delete_others_mvs_media' => 'delete_others_mvs_medias',
+	);
+
 	public function process_role_caps_save(): int {
 		$roles = array( 'administrator', 'editor', 'author', 'contributor', 'subscriber' );
 		$caps  = array(
@@ -124,6 +136,7 @@ class PermissionsManager {
 			'delete_mvs_media',
 			'delete_others_mvs_media',
 			'moderate_mvs_media',
+			'manage_mvs_access',
 			'manage_mvs_settings',
 		);
 
@@ -159,6 +172,15 @@ class PermissionsManager {
 					$role_obj->add_cap( $cap );
 				} else {
 					$role_obj->remove_cap( $cap );
+				}
+				// Keep plural CPT caps in sync with singular caps.
+				if ( isset( self::PLURAL_CAP_MAP[ $cap ] ) ) {
+					$plural = self::PLURAL_CAP_MAP[ $cap ];
+					if ( $granted ) {
+						$role_obj->add_cap( $plural );
+					} else {
+						$role_obj->remove_cap( $plural );
+					}
 				}
 			}
 			if ( $changed ) {

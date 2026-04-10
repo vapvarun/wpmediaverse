@@ -41,6 +41,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 			'nonce'          => $mvs_nonce,
 			'currentUserId'  => $mvs_is_logged_in ? get_current_user_id() : 0,
 			'defaultPrivacy' => get_option( 'mvs_default_privacy', 'public' ),
+			'allowedTypes'   => get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' ),
 		)
 	);
 	?>
@@ -149,7 +150,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 					<!-- Preview thumbnails -->
 					<div class="mvs-modal-previews" data-wp-bind--hidden="!state.hasFiles">
 						<template data-wp-each="state.uploadModalPreviews">
-							<img class="mvs-modal-preview-thumb" data-wp-bind--src="context.item" alt="" />
+							<img class="mvs-modal-preview-thumb" data-wp-bind--src="context.item" data-wp-bind--hidden="!context.item" alt="" />
 						</template>
 					</div>
 
@@ -189,12 +190,14 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 							data-wp-on--input="actions.updateUploadTags"
 							data-wp-bind--value="state.uploadModalTags" />
+						<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
 						<select data-wp-on--change="actions.updateUploadPrivacy"
 							data-wp-bind--value="state.uploadModalPrivacy">
 							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-							<option value="loggedin"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
+							<option value="members"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
 							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 						</select>
+						<?php endif; ?>
 					</div>
 				</div>
 			</div>
@@ -238,7 +241,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><polyline points="15 18 9 12 15 6"></polyline></svg>
 				</button>
 
-				<img data-wp-bind--src="state.lightboxImageUrl" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
+				<img data-wp-bind--src="state.lightboxImageUrl" alt="" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
 				<video class="mvs-lightbox-video" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
 
@@ -319,7 +322,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 								<path d="M5 4v16"></path>
 								<path d="M5 5h9l-1.5 3L14 11H5"></path>
 							</svg>
-							<span><?php esc_html_e( 'Report', 'wpmediaverse' ); ?></span>
+							<?php esc_html_e( 'Report', 'wpmediaverse' ); ?>
 						</button>
 					<?php endif; ?>
 				</div>

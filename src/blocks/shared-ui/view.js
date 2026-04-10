@@ -80,12 +80,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return titles[ state.uploadModalMode ] || 'Upload';
 		},
 		get uploadAccept() {
-			if ( state.uploadModalMode === 'video' ) return 'video/*';
-			if ( state.uploadModalMode === 'audio' ) return 'audio/*';
-			return 'image/*';
+			const allowed = getContext().allowedTypes || '';
+			const types = allowed ? allowed.split( ',' ).map( ( t ) => t.trim() ) : [];
+			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
+			const prefix = prefixes[ state.uploadModalMode ] || 'image/';
+			const filtered = types.filter( ( t ) => t.startsWith( prefix ) );
+			return filtered.length ? filtered.join( ',' ) : prefix + '*';
 		},
 		get uploadMultiple() {
-			return state.uploadModalMode === 'gallery';
+			return state.uploadModalMode === 'gallery' || state.uploadModalMode === 'album';
 		},
 		get isPhotoMode() {
 			return state.uploadModalMode === 'photo';
@@ -326,6 +329,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalVisible = false;
 			state.uploadModalFiles = [];
 			state.uploadModalPreviews = [];
+			state.uploadModalTitle = '';
+			state.uploadModalDescription = '';
+			state.uploadModalTags = '';
+			state.uploadModalPrivacy = 'public';
+			state.uploadModalAlbumTitle = '';
+			state.uploadModalAlbumDescription = '';
+			state.uploadModalUploading = false;
+			state.uploadModalDone = 0;
+			state.uploadModalFailed = 0;
+			state.uploadModalLastError = '';
 			document.body.style.overflow = '';
 		},
 		setUploadMode() {
@@ -355,18 +368,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 
 			// Generate previews.
-			state.uploadModalPreviews = [];
-			state.uploadModalFiles.forEach( ( file ) => {
-				if ( file.type.startsWith( 'image/' ) ) {
-					const reader = new FileReader();
-					reader.onload = ( e ) => {
-						state.uploadModalPreviews = [ ...state.uploadModalPreviews, e.target.result ];
-					};
-					reader.readAsDataURL( file );
-				} else {
-					state.uploadModalPreviews = [ ...state.uploadModalPreviews, '' ];
-				}
-			} );
+			actions.generatePreviews();
 		},
 		handleUploadDrop( event ) {
 			event.preventDefault();
@@ -382,21 +384,50 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.uploadModalFiles = [ ...state.uploadModalFiles, ...files ];
 			}
 
+			actions.generatePreviews();
+		},
+		handleUploadDragOver( event ) {
+			event.preventDefault();
+		},
+		generatePreviews() {
 			state.uploadModalPreviews = [];
-			state.uploadModalFiles.forEach( ( file ) => {
+			state.uploadModalFiles.forEach( ( file, idx ) => {
 				if ( file.type.startsWith( 'image/' ) ) {
 					const reader = new FileReader();
 					reader.onload = ( e ) => {
 						state.uploadModalPreviews = [ ...state.uploadModalPreviews, e.target.result ];
 					};
 					reader.readAsDataURL( file );
+				} else if ( file.type.startsWith( 'video/' ) ) {
+					// Generate thumbnail from video first frame.
+					const video = document.createElement( 'video' );
+					video.preload = 'metadata';
+					video.muted = true;
+					video.playsInline = true;
+					const url = URL.createObjectURL( file );
+					video.src = url;
+					video.addEventListener( 'loadeddata', () => {
+						video.currentTime = 1;
+					} );
+					video.addEventListener( 'seeked', () => {
+						try {
+							const canvas = document.createElement( 'canvas' );
+							canvas.width = video.videoWidth || 320;
+							canvas.height = video.videoHeight || 180;
+							canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+							const thumb = canvas.toDataURL( 'image/jpeg', 0.7 );
+							state.uploadModalPreviews = [ ...state.uploadModalPreviews, thumb ];
+						} catch {
+							// CORS or other error — use placeholder.
+							state.uploadModalPreviews = [ ...state.uploadModalPreviews, '' ];
+						}
+						URL.revokeObjectURL( url );
+					} );
 				} else {
+					// Audio or other — no preview.
 					state.uploadModalPreviews = [ ...state.uploadModalPreviews, '' ];
 				}
 			} );
-		},
-		handleUploadDragOver( event ) {
-			event.preventDefault();
 		},
 		filterFilesByMode( files ) {
 			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
@@ -462,6 +493,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					} );
 					const albumData = await albumRes.json();
 					if ( albumData.id ) {
+						state._pendingAlbumId = albumData.id;
 						actions.showToast( 'Album "' + albumData.title + '" created!' );
 						if ( ! files.length ) {
 							state.uploadModalUploading = false;
@@ -483,6 +515,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				}
 			}
 
+			const uploadedMediaIds = [];
+
 			// Generate group ID for gallery mode.
 			let mediaGroup = null;
 			if ( state.uploadModalMode === 'gallery' && files.length > 1 ) {
@@ -501,6 +535,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					fd.append( 'media_group', mediaGroup );
 					fd.append( 'group_position', String( i ) );
 				}
+				// Send client-generated video thumbnail if available.
+				const preview = state.uploadModalPreviews[ i ];
+				if ( files[ i ].type.startsWith( 'video/' ) && preview && preview.startsWith( 'data:' ) ) {
+					try {
+						const resp = await fetch( preview );
+						const blob = await resp.blob();
+						fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
+					} catch { /* skip thumbnail */ }
+				}
 
 				try {
 					const res = await fetch( restUrl + 'media', {
@@ -509,7 +552,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						credentials: 'same-origin',
 						body: fd,
 					} );
-					if ( ! res.ok ) {
+					if ( res.ok ) {
+						try {
+							const mediaData = await res.json();
+							if ( mediaData.id ) uploadedMediaIds.push( mediaData.id );
+						} catch { /* ignore */ }
+					} else {
 						state.uploadModalFailed++;
 						try {
 							const errData = await res.json();
@@ -520,6 +568,19 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					state.uploadModalFailed++;
 				}
 				state.uploadModalDone = i + 1;
+			}
+
+			// Link uploaded media to album if in album mode.
+			if ( state._pendingAlbumId && uploadedMediaIds.length ) {
+				try {
+					await fetch( restUrl + 'albums/' + state._pendingAlbumId + '/items', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
+						credentials: 'same-origin',
+						body: JSON.stringify( { media_ids: uploadedMediaIds } ),
+					} );
+				} catch { /* linking failed — media still uploaded */ }
+				state._pendingAlbumId = null;
 			}
 
 			const uploaded = files.length - state.uploadModalFailed;
@@ -605,12 +666,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// Find REST URL + nonce from any existing Interactivity context on the page.
 			let restUrl = '/wp-json/mvs/v1/';
 			let nonce = '';
+			let isLoggedIn = false;
 			const ctxEl = document.querySelector( '[data-wp-interactive="mvs/shared-ui"][data-wp-context]' );
 			if ( ctxEl ) {
 				try {
 					const parsed = JSON.parse( ctxEl.dataset.wpContext );
 					restUrl = parsed.restUrl || restUrl;
 					nonce = parsed.nonce || nonce;
+					isLoggedIn = !! parsed.currentUserId;
 				} catch { /* use defaults */ }
 			}
 
@@ -640,7 +703,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					}
 				}
 
-				actions.lightboxLoadSocial( { restUrl, nonce }, mediaId, headers );
+				actions.lightboxLoadSocial( { restUrl, nonce, isLoggedIn }, mediaId, headers );
 			} catch {
 				state.lightboxLoading = false;
 				actions.showToast( 'Failed to load media.', 'error' );
@@ -668,12 +731,16 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const s = await fetch( ctx.restUrl + 'media/' + mediaId + '/stats', opts );
 				state.lightboxStats = await s.json();
 			} catch { state.lightboxStats = {}; }
-			// Favorite status.
-			try {
-				const f = await fetch( ctx.restUrl + 'media/' + mediaId + '/favorite', opts );
-				const fd = await f.json();
-				state.lightboxIsFavorited = !! fd.favorited;
-			} catch { state.lightboxIsFavorited = false; }
+			// Favorite status (requires authentication).
+			if ( ctx.isLoggedIn ) {
+				try {
+					const f = await fetch( ctx.restUrl + 'media/' + mediaId + '/favorite', opts );
+					const fd = await f.json();
+					state.lightboxIsFavorited = !! fd.favorited;
+				} catch { state.lightboxIsFavorited = false; }
+			} else {
+				state.lightboxIsFavorited = false;
+			}
 		},
 		async lightboxToggleReaction( event ) {
 			const ctx = getContext();

@@ -798,6 +798,14 @@ class Plugin {
 				MVS_VERSION
 			);
 
+			// Media social store — reactions, comments, favorites, follow, report on single media/album pages.
+			wp_enqueue_script_module(
+				'@mvs/media-social',
+				MVS_PLUGIN_URL . 'src/blocks/media-social/view.js',
+				array( array( 'id' => '@wordpress/interactivity' ) ),
+				MVS_VERSION
+			);
+
 			wp_enqueue_style(
 				'mvs-shared-ui-shell',
 				MVS_PLUGIN_URL . 'assets/css/shared-ui-shell.css',

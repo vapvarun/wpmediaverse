@@ -26,9 +26,12 @@ if ( class_exists( '\WPMediaVerse\Core\Plugin' ) ) {
 	}
 }
 
-// Messaging enabled?
-$mvs_dm_access      = get_option( 'mvs_dm_access', 'everyone' );
-$mvs_messaging_on   = ( 'nobody' !== $mvs_dm_access );
+// Messaging enabled? Check recipient-level DM privacy first, then fall back to global.
+$mvs_dm_access    = get_user_meta( $mvs_profile_id, '_mvs_dm_access', true );
+if ( ! $mvs_dm_access ) {
+	$mvs_dm_access = get_option( 'mvs_dm_access', 'everyone' );
+}
+$mvs_messaging_on = ( 'nobody' !== $mvs_dm_access );
 ?>
 <button type="button" class="mvs-btn mvs-btn--small mvs-follow-toggle <?php echo $mvs_is_following ? 'mvs-follow-toggle--following' : 'mvs-btn--primary'; ?>"
 	data-user-id="<?php echo esc_attr( $mvs_profile_id ); ?>"

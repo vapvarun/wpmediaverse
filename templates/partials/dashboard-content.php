@@ -44,6 +44,29 @@ $mvs_dash_ctx['savingProfile']   = false;
 $mvs_dash_ctx['uploadingAvatar'] = false;
 $mvs_dash_ctx['profileMessage']  = '';
 $mvs_dash_ctx['profileError']    = '';
+$mvs_dash_ctx['defaultPrivacy']  = get_option( 'mvs_default_privacy', 'public' );
+
+// Allowed file extensions for client-side upload validation.
+$mvs_allowed_mimes = array_map( 'trim', explode( ',', get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' ) ) );
+$mvs_mime_to_ext   = array(
+	'image/jpeg' => '.jpg,.jpeg',
+	'image/png'  => '.png',
+	'image/gif'  => '.gif',
+	'image/webp' => '.webp',
+	'video/mp4'  => '.mp4',
+	'video/webm' => '.webm',
+	'audio/mpeg' => '.mp3',
+	'audio/ogg'  => '.ogg',
+	'application/pdf' => '.pdf',
+);
+$mvs_allowed_exts = array();
+foreach ( $mvs_allowed_mimes as $mvs_mime ) {
+	if ( isset( $mvs_mime_to_ext[ $mvs_mime ] ) ) {
+		$mvs_allowed_exts[] = $mvs_mime_to_ext[ $mvs_mime ];
+	}
+}
+$mvs_dash_ctx['allowedExtensions'] = implode( ',', $mvs_allowed_exts );
+$mvs_dash_ctx['allowedMimeTypes']  = implode( ',', $mvs_allowed_mimes );
 
 // Enqueue profile edit store.
 $mvs_pe_asset_file = MVS_PLUGIN_DIR . 'build/blocks/profile-edit/view.asset.php';
@@ -307,7 +330,7 @@ wp_enqueue_style( 'mvs-frontend' );
 				aria-label="<?php esc_attr_e( 'Upload media files', 'wpmediaverse' ); ?>">
 				<span class="mvs-dashboard-dropzone-icon">&#x2B06;&#xFE0F;</span>
 				<span class="mvs-dashboard-dropzone-label"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
-				<input type="file" multiple accept="image/*,video/*,audio/*" class="mvs-upload-file-input" style="display:none"
+				<input type="file" multiple accept="<?php echo esc_attr( $mvs_dash_ctx['allowedMimeTypes'] ); ?>" class="mvs-upload-file-input" style="display:none"
 					data-wp-on--change="actions.handleUploadFileSelect" />
 			</div>
 			<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
@@ -323,11 +346,14 @@ wp_enqueue_style( 'mvs-frontend' );
 				<div class="mvs-dashboard-upload-row">
 					<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" class="mvs-upload-meta-tags"
 						data-wp-on--input="actions.setUploadTags" />
+					<?php $mvs_def_priv = get_option( 'mvs_default_privacy', 'public' ); ?>
+					<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
 					<select class="mvs-upload-meta-privacy" data-wp-on--change="actions.setUploadPrivacy">
-						<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-						<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-						<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+						<option value="public" <?php selected( $mvs_def_priv, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+						<option value="members" <?php selected( $mvs_def_priv, 'members' ); ?>><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+						<option value="private" <?php selected( $mvs_def_priv, 'private' ); ?>><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 					</select>
+					<?php endif; ?>
 				</div>
 			</div>
 			<div class="mvs-dashboard-upload-status" data-wp-bind--hidden="!state.upload.uploading"
@@ -340,7 +366,7 @@ wp_enqueue_style( 'mvs-frontend' );
 				<div class="mvs-dashboard-card" data-wp-bind--data-media-id="context.item.id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
 						data-wp-on--click="actions.openMediaLightbox">
-						<img data-wp-bind--hidden="!state.mediaThumbUrl" data-wp-bind--src="state.mediaThumbUrl" data-wp-bind--alt="context.item.title" loading="lazy" />
+						<img data-wp-bind--hidden="!state.mediaThumbUrl" data-wp-bind--src="state.mediaThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 							data-wp-bind--hidden="!state.showMediaVideoPlaceholder">
 							<span class="mvs-grid-play-icon">&#9654;</span>
@@ -387,7 +413,7 @@ wp_enqueue_style( 'mvs-frontend' );
 			<template data-wp-each="state.albums.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-album-id="context.item.id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link">
-						<img data-wp-bind--hidden="!state.hasAlbumCover" data-wp-bind--src="context.item.cover_url" data-wp-bind--alt="context.item.title" loading="lazy" />
+						<img data-wp-bind--hidden="!state.hasAlbumCover" data-wp-bind--src="context.item.cover_url" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--album"
 							data-wp-bind--hidden="state.hasAlbumCover">
 							<span class="mvs-grid-album-icon">&#128193;</span>
@@ -420,7 +446,7 @@ wp_enqueue_style( 'mvs-frontend' );
 				<div class="mvs-dashboard-card" data-wp-bind--data-fav-id="context.item.media_id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
 						data-wp-on--click="actions.openFavLightbox">
-						<img data-wp-bind--hidden="!state.favThumbUrl" data-wp-bind--src="state.favThumbUrl" data-wp-bind--alt="context.item.title" loading="lazy" />
+						<img data-wp-bind--hidden="!state.favThumbUrl" data-wp-bind--src="state.favThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 							data-wp-bind--hidden="!state.showFavVideoPlaceholder">
 							<span class="mvs-grid-play-icon">&#9654;</span>
@@ -468,7 +494,7 @@ wp_enqueue_style( 'mvs-frontend' );
 				<div class="mvs-dashboard-card mvs-collection-card" data-wp-bind--data-collection-id="context.item.id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link">
 						<img data-wp-bind--src="state.collectionCoverUrl"
-							data-wp-bind--alt="state.itemTitle"
+							alt="" data-wp-bind--alt="state.itemTitle"
 							data-wp-bind--hidden="!state.hasCollectionCover"
 							loading="lazy" />
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--collection"
@@ -675,6 +701,13 @@ wp_enqueue_style( 'mvs-frontend' );
 					</div>
 				</div>
 			</div>
+			<div style="padding: 0 24px 12px; border-top: 1px solid #eee; margin-top: 12px; padding-top: 12px;">
+				<label class="mvs-btn mvs-btn--secondary mvs-btn--small" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+					&#8635; <?php esc_html_e( 'Replace File', 'wpmediaverse' ); ?>
+					<input type="file" hidden data-wp-on--change="actions.handleReplaceFile" />
+				</label>
+				<span style="color: #666; font-size: 12px; margin-left: 8px;"><?php esc_html_e( 'Upload a new file. Metadata is preserved.', 'wpmediaverse' ); ?></span>
+			</div>
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"
 					data-wp-on--click="actions.closeEditModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
@@ -733,7 +766,7 @@ wp_enqueue_style( 'mvs-frontend' );
 								data-wp-bind--data-picker-id="context.item.id"
 								data-wp-class--mvs-media-picker-cover="state.isPickerCover"
 								data-wp-on--click="actions.togglePickerItem">
-								<img data-wp-bind--hidden="!state.pickerThumbUrl" data-wp-bind--src="state.pickerThumbUrl" data-wp-bind--alt="context.item.title" loading="lazy" />
+								<img data-wp-bind--hidden="!state.pickerThumbUrl" data-wp-bind--src="state.pickerThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
 								<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 									data-wp-bind--hidden="!state.showPickerVideoPlaceholder">
 									<span class="mvs-grid-play-icon">&#9654;</span>

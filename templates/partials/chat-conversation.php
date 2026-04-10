@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
 		<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/></svg>
 	</button>
 	<div class="mvs-chat-header__avatar">
-		<img data-wp-bind--src="state.otherAvatar" alt="" width="36" height="36" />
+		<img data-wp-bind--src="state.otherAvatar" data-wp-bind--hidden="!state.otherAvatar" alt="" width="36" height="36" />
 		<span class="mvs-online-dot" data-wp-bind--hidden="!state.otherIsOnline"></span>
 	</div>
 	<div style="flex:1;min-width:0;">

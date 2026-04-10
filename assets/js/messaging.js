@@ -1248,6 +1248,13 @@ const { state, actions } = store( 'mvs/messaging', {
 				}
 			} );
 
+			// Full /messages/ page: auto-load conversations and start polling.
+			if ( document.querySelector( '.mvs-messages-page' ) ) {
+				state.chatPanelOpen = true;
+				actions.loadConversations();
+				actions.startPolling();
+			}
+
 			// Start background unread polling for all logged-in pages.
 			actions.refreshUnreadCount();
 			state.unreadTimer = setInterval( () => actions.refreshUnreadCount(), TRANSPORT.intervals.background );

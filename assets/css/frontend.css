@@ -574,6 +574,23 @@ body.mvs-page {
     transform: scale(1.05);
 }
 
+.mvs-grid--original .mvs-grid-item {
+    aspect-ratio: auto;
+}
+
+.mvs-grid--original .mvs-grid-item img {
+    height: auto;
+}
+
+.mvs-grid--original .mvs-dashboard-card-thumb {
+    aspect-ratio: auto;
+}
+
+.mvs-grid--original .mvs-dashboard-card-thumb img {
+    height: auto;
+    object-fit: contain;
+}
+
 .mvs-grid-item-placeholder {
     display: flex;
     align-items: center;
@@ -1050,7 +1067,7 @@ body.mvs-page {
 .mvs-social-actions button:focus {
     background: none;
     color: var(--mvs-primary);
-    border-color: var(--mvs-primary);
+    border: 1px solid var(--mvs-primary);
 }
 
 .mvs-social-actions button.active {
@@ -1179,7 +1196,7 @@ body.mvs-page {
     padding: 12px 24px;
     background: none;
     border: none;
-	border-radius: 0;
+    border-radius: 0;
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     cursor: pointer;
@@ -1244,7 +1261,7 @@ body.mvs-page {
 .mvs-btn--secondary {
     background: #f0f0f0;
     color: #333;
-	border: none;
+    border: none;
 }
 
 .mvs-btn--secondary:hover {
@@ -1532,6 +1549,11 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-tag-text-input:focus-visible {
+    outline: 2px solid var(--mvs-primary, #0073aa);
+    outline-offset: -2px;
+}
+
+.mvs-tag-text-input:focus-visible {
     outline: 2px solid #0073aa;
     outline-offset: -2px;
     border-radius: 2px;
@@ -1606,11 +1628,11 @@ a.mvs-dashboard-card-title:hover {
     display: block;
     width: 100%;
     padding: 8px 12px;
-    margin: 12px 0 0;
+    margin: 12px 0;
     font-size: 14px;
     border: 1px solid #ddd;
     border-radius: 6px;
-    background: #f9f9f9;
+    background-color: #f9f9f9;
     color: #333;
 }
 
@@ -4114,7 +4136,6 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-btn--primary:hover {
     background: #005f8d;
-    border: none;
 }
 
 .mvs-btn--primary:disabled {
@@ -4130,7 +4151,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-btn--secondary:hover {
     background: #f0f0f0;
     color: #333;
-	border: none;
+    border: none;
 }
 
 .mvs-btn--text {
@@ -4255,6 +4276,11 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-search-field input#mvs-search-input:focus {
     outline: none;
+}
+
+.mvs-search-field input:focus-visible {
+    outline: 2px solid var(--mvs-primary, #0073aa);
+    outline-offset: -2px;
 }
 
 .mvs-search-field input:focus-visible {
@@ -4395,8 +4421,8 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-logged-out-banner__close:hover {
-    background: none;
     color: var(--mvs-bg);
+    background: none;
     border: none;
 }
 
@@ -4469,17 +4495,17 @@ a.mvs-dashboard-card-title:hover {
     background: transparent;
     color: #533f03;
     font-weight: 600;
-	border: 0;
-	padding: 0;
+    border: 0;
+    padding: 0;
 }
 
 .mvs-profile-prompt-text .mvs-dashboard-profile-edit-btn:hover,
 .mvs-profile-prompt-text .mvs-dashboard-profile-edit-btn:focus {
     background: transparent;
     color: var(--mvs-primary);
-	border: 0;
-	padding: 0;
-	box-shadow: none;
+    border: 0;
+    padding: 0;
+    box-shadow: none;
 }
 
 .mvs-profile-prompt-close {
@@ -4987,7 +5013,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-reaction>span:empty {
-	display: none;
+    display: none;
 }
 
 .mvs-lightbox-reaction:hover {
@@ -5009,17 +5035,17 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-action {
-	display: flex;
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-	gap: 5px;
+    gap: 5px;
     background: none;
     border: none;
     cursor: pointer;
     font-size: 14px;
     padding: 6px 12px;
-	text-align: center;
+    text-align: center;
     border-radius: 6px;
     text-decoration: none;
     color: #333;
@@ -5037,8 +5063,14 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-action--report svg {
-	width: 16px;
-	height: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.mvs-lightbox-action--report {
+    margin-left: auto;
+    color: #666;
+    font-size: 13px;
 }
 
 .mvs-lightbox-action--report:hover {
@@ -5128,7 +5160,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-comment-form {
     display: flex;
-	gap: 10px;
+    gap: 10px;
     border-top: 1px solid #efefef;
     padding: 0;
     padding-top: 10px;

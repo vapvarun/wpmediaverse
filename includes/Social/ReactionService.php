@@ -88,6 +88,17 @@ class ReactionService {
 
 		$this->sync_stats( $media_id );
 
+		/**
+		 * Fires after a reaction is added to a media item.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int    $media_id      Media ID.
+		 * @param int    $user_id       User who reacted.
+		 * @param string $reaction_type Reaction type (like, love, etc.).
+		 */
+		do_action( 'mvs_reaction_added', $media_id, $user_id, $reaction_type );
+
 		return array(
 			'action'        => 'added',
 			'reaction_type' => $reaction_type,
@@ -186,7 +197,7 @@ class ReactionService {
 	}
 
 	/**
-	 * Sync the reaction count in the stats table.
+	 * Sync the reaction count in the stats table and the denormalized index.
 	 *
 	 * @param int $media_id Media post ID.
 	 */
@@ -203,6 +214,15 @@ class ReactionService {
 			),
 			array( 'media_id' => $media_id ),
 			array( '%d', '%s' ),
+			array( '%d' )
+		);
+
+		// Keep the denormalized reaction_count in mvs_media_index in sync.
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_media_index',
+			array( 'reaction_count' => $total ),
+			array( 'media_id' => $media_id ),
+			array( '%d' ),
 			array( '%d' )
 		);
 	}

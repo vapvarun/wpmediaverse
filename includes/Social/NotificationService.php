@@ -43,6 +43,7 @@ class NotificationService {
 		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 3 );
 		add_action( 'mvs_mentions_created', array( $this, 'on_mentions' ), 10, 4 );
 		add_action( 'mvs_favorite_added', array( $this, 'on_favorite' ), 10, 2 );
+		add_action( 'mvs_message_sent', array( $this, 'on_message' ), 10, 4 );
 	}
 
 	/**
@@ -294,7 +295,7 @@ class NotificationService {
 	 * @param string $type     Reaction type.
 	 */
 	public function on_reaction( int $media_id, int $user_id, string $type ): void {
-		$owner = (int) get_post_field( 'post_author', $media_id );
+		$owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
 		$this->create( $owner, 'media_reaction', $user_id, $media_id );
 	}
 
@@ -306,7 +307,7 @@ class NotificationService {
 	 * @param int $comment_id Comment ID.
 	 */
 	public function on_comment( int $media_id, int $user_id, int $comment_id ): void {
-		$owner = (int) get_post_field( 'post_author', $media_id );
+		$owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
 		$this->create( $owner, 'media_comment', $user_id, $media_id, $comment_id );
 	}
 
@@ -332,8 +333,22 @@ class NotificationService {
 	 * @param int $user_id  User who favorited.
 	 */
 	public function on_favorite( int $media_id, int $user_id ): void {
-		$owner = (int) get_post_field( 'post_author', $media_id );
+		$owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
 		$this->create( $owner, 'media_favorite', $user_id, $media_id );
+	}
+
+	/**
+	 * Handle new DM sent event.
+	 *
+	 * @param int   $message_id      Message ID.
+	 * @param int   $conversation_id Conversation ID.
+	 * @param int   $sender_id       Sender user ID.
+	 * @param int[] $recipient_ids   Recipient user IDs.
+	 */
+	public function on_message( int $message_id, int $conversation_id, int $sender_id, array $recipient_ids ): void {
+		foreach ( $recipient_ids as $recipient_id ) {
+			$this->create( (int) $recipient_id, 'new_message', $sender_id );
+		}
 	}
 
 	/**
@@ -347,8 +362,7 @@ class NotificationService {
 		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 		$media_title = '';
 		if ( $row->media_id ) {
-			$post        = get_post( (int) $row->media_id );
-			$media_title = $post ? $post->post_title : '';
+			$media_title = \WPMediaVerse\Repository\MediaRepository::get( (int) $row->media_id, 'title' ) ?: '';
 		}
 
 		$message = $this->build_notification_message( $row->type, $actor_name, $media_title );
@@ -357,7 +371,10 @@ class NotificationService {
 		if ( $row->media_id ) {
 			$url = \WPMediaVerse\Repository\MediaRepository::get_permalink( (int) $row->media_id );
 		} elseif ( 'new_follower' === $row->type ) {
-			$url = get_author_posts_url( (int) $row->actor_id );
+			$actor_login = get_the_author_meta( 'user_login', (int) $row->actor_id );
+			$url         = $actor_login ? home_url( '/media/@' . $actor_login . '/' ) : '';
+		} elseif ( 'new_message' === $row->type ) {
+			$url = home_url( '/messages/' );
 		}
 
 		return array(

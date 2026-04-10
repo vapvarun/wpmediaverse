@@ -57,6 +57,16 @@ class FavoriteService {
 			array( '%d', '%d', '%d', '%s' )
 		);
 
+		/**
+		 * Fires after a media item is favorited.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int $media_id Media ID that was favorited.
+		 * @param int $user_id  User who favorited it.
+		 */
+		do_action( 'mvs_favorite_added', $media_id, $user_id );
+
 		return array(
 			'action'    => 'added',
 			'favorited' => true,

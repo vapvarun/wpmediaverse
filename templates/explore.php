@@ -391,7 +391,7 @@ $mvs_archive_url = home_url( '/media/' );
 	<?php do_action( 'mvs_before_explore_grid' ); ?>
 
 	<?php if ( $has_items ) : ?>
-		<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container>
+		<div class="mvs-media-grid mvs-cols-3 mvs-feed<?php echo 'original' === get_option( 'mvs_thumbnail_style', 'square' ) ? ' mvs-grid--original' : ''; ?>" data-mvs-grid-container>
 			<?php
 			// Render albums first.
 			foreach ( $albums as $album_post ) :
