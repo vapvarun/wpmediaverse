@@ -60,10 +60,11 @@ class CapabilitiesTest extends WP_UnitTestCase {
 		$this->assertFalse( current_user_can( 'moderate_mvs_media' ) );
 	}
 
-	public function test_contributor_cannot_upload(): void {
+	public function test_contributor_can_upload(): void {
 		$contributor = self::factory()->user->create( array( 'role' => 'contributor' ) );
 		wp_set_current_user( $contributor );
 
-		$this->assertFalse( current_user_can( 'upload_mvs_media' ), 'Contributors should NOT have upload capability.' );
+		// Since 1.1.0 all roles including contributors get upload capability on activation.
+		$this->assertTrue( current_user_can( 'upload_mvs_media' ), 'Contributors should have upload capability since 1.1.0.' );
 	}
 }

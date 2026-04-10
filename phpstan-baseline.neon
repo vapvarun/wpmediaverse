@@ -87,22 +87,22 @@ parameters:
 
 		-
 			message: "#^Call to static method error\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 1
+			count: 2
 			path: includes/CLI/Commands.php
 
 		-
 			message: "#^Call to static method log\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 6
-			path: includes/CLI/Commands.php
-
-		-
-			message: "#^Call to static method success\\(\\) on an unknown class WP_CLI\\.$#"
 			count: 9
 			path: includes/CLI/Commands.php
 
 		-
+			message: "#^Call to static method success\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 11
+			path: includes/CLI/Commands.php
+
+		-
 			message: "#^Call to static method warning\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 2
+			count: 5
 			path: includes/CLI/Commands.php
 
 		-
@@ -112,7 +112,7 @@ parameters:
 
 		-
 			message: "#^Function WP_CLI\\\\Utils\\\\get_flag_value not found\\.$#"
-			count: 7
+			count: 9
 			path: includes/CLI/Commands.php
 
 		-
@@ -142,7 +142,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 11
+			count: 12
 			path: includes/Core/Plugin.php
 
 		-
@@ -221,11 +221,6 @@ parameters:
 			path: includes/Integrations/BuddyPress/ProfileTabIntegration.php
 
 		-
-			message: "#^Function wp_is_local_environment not found\\.$#"
-			count: 1
-			path: includes/Integrations/WebhookService.php
-
-		-
 			message: "#^Call to function is_wp_error\\(\\) with int\\<0, max\\> will always evaluate to false\\.$#"
 			count: 1
 			path: includes/Messaging/MessagingController.php
@@ -297,6 +292,11 @@ parameters:
 
 		-
 			message: "#^Return type \\(array\\|null\\) of method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:prepare_item_for_response\\(\\) should be compatible with return type \\(WP_Error\\|WP_REST_Response\\) of method WP_REST_Controller\\:\\:prepare_item_for_response\\(\\)$#"
+			count: 1
+			path: includes/REST/Controller/MediaController.php
+
+		-
+			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/REST/Controller/MediaController.php
 
