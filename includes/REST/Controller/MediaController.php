@@ -465,6 +465,14 @@ class MediaController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		$privacy = MediaRepository::get( $media_id, 'privacy' );
+		if ( 'public' !== $privacy ) {
+			$viewer_id = get_current_user_id();
+			if ( ! $this->privacy->can_view( $media_id, $viewer_id ) ) {
+				return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to view this media.', 'wpmediaverse' ), array( 'status' => 403 ) );
+			}
+		}
+
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
 	}
 

@@ -346,6 +346,10 @@ class MessagingService {
 		 */
 		do_action( 'mvs_conversation_created', $conv_id, $user_a, array( $user_a, $user_b ) );
 
+		// Fire message_sent hook so DM notifications reach the recipient even
+		// when the conversation is created without an initial send_message() call.
+		do_action( 'mvs_message_sent', 0, $conv_id, $user_a, array( $user_b ) );
+
 		return array(
 			'conversation_id' => $conv_id,
 			'created'         => true,
