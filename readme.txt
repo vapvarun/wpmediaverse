@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,36 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** — AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.1.1 =
+* Fix: Single media page — comments, reactions, favorites, follow, and report now work (Interactivity API store loading)
+* Fix: Signed URL serving for all media files — images and videos load correctly with .htaccess protection
+* Fix: Anonymous users can now view public media in lightbox without 401/403 errors
+* Fix: Notification titles show correct media name from mvs_media_index (not WordPress post title)
+* Fix: Notification owner lookup uses MediaRepository instead of get_post_field()
+* Fix: DM notifications now fire when messages are sent via REST API
+* Fix: Favorite notifications now fire on toggle
+* Fix: Reaction counts properly sync to mvs_media_index on add/remove
+* Fix: Delete cascade cleans up reactions, favorites, comments, mentions, album items, notifications, and activity
+* Fix: Privacy enforcement on REST API — anonymous users blocked from members/private media
+* Fix: Block bypass prevented — cannot follow a blocked user
+* Fix: Profile Message button respects recipient-level DM privacy setting
+* Fix: Messaging page dark mode uses theme data-theme attribute instead of OS prefers-color-scheme
+* Fix: Messages page auto-loads conversations on /messages/ (was blank)
+* Fix: Chat header avatar hidden when no conversation selected (no broken image)
+* Fix: Report modal spacing between dropdown and buttons
+* Fix: Allowed file types admin setting wired to frontend upload UIs
+* Fix: Album upload links files to album after creation
+* Fix: Album mode allows multiple file selection
+* Fix: Admin grid columns setting is now the source of truth for all media-grid blocks
+* Fix: Thumbnail style setting applied to explore and dashboard grids
+* Fix: ID column added to admin All Media table
+* Fix: Video thumbnail preview in upload modal (canvas frame capture)
+* New: CLI command `wp mvs generate-video-thumbnails` — batch generates video thumbnails via ffmpeg
+* New: Auto-generate video thumbnails from browser during upload
+* New: Improved audio placeholder in media grid (gradient background, larger icon)
+* Enhancement: Social settings docs updated to match actual implementation
+* Enhancement: 609 CLI test assertions across 30 suites (was 271 across 14)
 
 = 1.1.0 =
 * New: Unified Load More across all layouts (event delegation, no page reloads)
