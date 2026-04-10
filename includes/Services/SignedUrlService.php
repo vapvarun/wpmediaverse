@@ -106,7 +106,8 @@ class SignedUrlService {
 		$required = array( self::PARAM_MEDIA_ID, self::PARAM_USER, self::PARAM_EXPIRES, self::PARAM_SIGNATURE );
 
 		foreach ( $required as $key ) {
-			if ( empty( $params[ $key ] ) ) {
+			// Use isset check — empty() rejects 0 which is valid for anonymous user ID.
+			if ( ! isset( $params[ $key ] ) || '' === $params[ $key ] ) {
 				return false;
 			}
 		}
