@@ -600,6 +600,7 @@ class MediaController extends WP_REST_Controller {
 			$tags = array_filter( array_map( 'sanitize_text_field', $tags ) );
 			if ( $tags ) {
 				wp_set_object_terms( $media_id, $tags, 'mvs_tag' );
+				MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( $tags ) ) );
 			}
 		}
 
@@ -686,7 +687,9 @@ class MediaController extends WP_REST_Controller {
 		// Update tags if provided.
 		$tags = $request->get_param( 'tags' );
 		if ( null !== $tags && is_array( $tags ) ) {
-			wp_set_object_terms( $media_id, array_map( 'sanitize_text_field', $tags ), 'mvs_tag' );
+			$sanitized_tags = array_map( 'sanitize_text_field', $tags );
+			wp_set_object_terms( $media_id, $sanitized_tags, 'mvs_tag' );
+			MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( $sanitized_tags ) ) );
 		}
 
 		// Update categories if provided.

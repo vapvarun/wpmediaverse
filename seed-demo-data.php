@@ -859,7 +859,7 @@ foreach ( $images as $idx => $img ) {
 
 	// Store tags as meta AND assign to mvs_tag taxonomy (for tag cloud + filtering).
 	if ( ! empty( $img['tags'] ) ) {
-		\WPMediaVerse\Repository\MediaRepository::set( $media_id, 'tags', $img['tags'] );
+		\WPMediaVerse\Repository\MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( $img['tags'] ) ) );
 		wp_set_object_terms( $media_id, $img['tags'], 'mvs_tag', true );
 	}
 	if ( ! empty( $img['category'] ) ) {

@@ -528,9 +528,13 @@ store( 'mvs/media-social', {
 
 			// Append select to the confirm dialog message area.
 			requestAnimationFrame( () => {
-				const msgEl = document.querySelector( '.mvs-confirm p' );
-				if ( msgEl && ! msgEl.querySelector( 'select' ) ) {
-					msgEl.after( select );
+				const container = document.querySelector( '.mvs-confirm' );
+				if ( container ) {
+					container.querySelectorAll( '.mvs-report-reason-select' ).forEach( ( el ) => el.remove() );
+					const msgEl = container.querySelector( 'p' );
+					if ( msgEl ) {
+						msgEl.after( select );
+					}
 				}
 			} );
 		},
