@@ -125,6 +125,24 @@ class TagController extends WP_REST_Controller {
 				),
 			)
 		);
+
+		// DELETE /tags/{id} — delete tag.
+		register_rest_route(
+			$this->namespace,
+			'/tags/(?P<id>[\d]+)',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_tag' ),
+				'permission_callback' => array( $this, 'admin_check' ),
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -294,6 +312,38 @@ class TagController extends WP_REST_Controller {
 		}
 
 		return rest_ensure_response( $this->format_term( get_term( $term_id, 'mvs_tag' ) ) );
+	}
+
+	/**
+	 * Delete a tag.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function delete_tag( $request ) {
+		$term_id = $request->get_param( 'id' );
+
+		$term = get_term( $term_id, 'mvs_tag' );
+		if ( ! $term || is_wp_error( $term ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Tag not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$result = wp_delete_term( $term_id, 'mvs_tag' );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		if ( false === $result ) {
+			return new WP_Error( 'mvs_delete_failed', __( 'Failed to delete tag.', 'wpmediaverse' ), array( 'status' => 500 ) );
+		}
+
+		return rest_ensure_response(
+			array(
+				'deleted' => true,
+				'previous' => $this->format_term( $term ),
+			)
+		);
 	}
 
 	/**

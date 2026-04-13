@@ -250,6 +250,13 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'admin.tags',
+			function () {
+				return new \WPMediaVerse\Admin\TagManagementPage();
+			}
+		);
+
+		self::$container->register(
 			'privacy',
 			function () {
 				return new PrivacyService();
@@ -617,6 +624,16 @@ class Plugin {
 			'manage_options',
 			'mvs-media',
 			array( \WPMediaVerse\Admin\MediaListPage::class, 'render' )
+		);
+
+		// Tags — tag management page.
+		add_submenu_page(
+			self::ADMIN_SLUG,
+			__( 'Tags', 'wpmediaverse' ),
+			__( 'Tags', 'wpmediaverse' ),
+			'manage_options',
+			'mvs-tags',
+			array( self::$container->get( 'admin.tags' ), 'render' )
 		);
 
 		// Albums and Collections register themselves via show_in_menu => 'wpmediaverse'.
