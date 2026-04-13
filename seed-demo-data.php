@@ -863,7 +863,8 @@ foreach ( $images as $idx => $img ) {
 		wp_set_object_terms( $media_id, $img['tags'], 'mvs_tag', true );
 	}
 	if ( ! empty( $img['category'] ) ) {
-		\WPMediaVerse\Repository\MediaRepository::set( $media_id, 'category', $img['category'] );
+		$cat_value = is_array( $img['category'] ) ? $img['category'] : array( $img['category'] );
+		\WPMediaVerse\Repository\MediaRepository::set( $media_id, 'category', wp_json_encode( array_values( $cat_value ) ) );
 		wp_set_object_terms( $media_id, $img['category'], 'mvs_category', true );
 	}
 

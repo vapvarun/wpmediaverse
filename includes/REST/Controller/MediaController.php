@@ -607,6 +607,10 @@ class MediaController extends WP_REST_Controller {
 		$categories = $request->get_param( 'categories' );
 		if ( $categories && is_array( $categories ) ) {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
+			$cat_terms = get_the_terms( $media_id, 'mvs_category' );
+			if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
+				MediaRepository::set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
+			}
 		}
 
 		// Store media group (gallery post) metadata.
@@ -696,6 +700,10 @@ class MediaController extends WP_REST_Controller {
 		$categories = $request->get_param( 'categories' );
 		if ( null !== $categories && is_array( $categories ) ) {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
+			$cat_terms = get_the_terms( $media_id, 'mvs_category' );
+			if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
+				MediaRepository::set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
+			}
 		}
 
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
