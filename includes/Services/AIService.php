@@ -123,6 +123,10 @@ class AIService {
 			// Apply tags to the mvs_tag taxonomy if auto-apply is enabled.
 			if ( get_option( 'mvs_ai_auto_apply_tags', false ) ) {
 				wp_set_object_terms( $media_id, $tags, 'mvs_tag', true );
+				$all_terms = get_the_terms( $media_id, 'mvs_tag' );
+				if ( $all_terms && ! is_wp_error( $all_terms ) ) {
+					MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
+				}
 			}
 		}
 

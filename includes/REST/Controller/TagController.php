@@ -14,6 +14,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * REST controller for media tags (mvs_tag taxonomy).
@@ -264,6 +265,14 @@ class TagController extends WP_REST_Controller {
 
 		// Delete source tag.
 		wp_delete_term( $source_id, 'mvs_tag' );
+
+		// Sync MediaRepository tags for each affected media item.
+		foreach ( $posts as $mid ) {
+			$all_terms = get_the_terms( $mid, 'mvs_tag' );
+			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
+				MediaRepository::set( $mid, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
+			}
+		}
 
 		/**
 		 * Fires after tags are merged.
