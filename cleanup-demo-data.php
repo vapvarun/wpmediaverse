@@ -42,6 +42,47 @@ $wpdb->query( "DELETE FROM $wpdb->posts WHERE post_type IN ('mvs_album', 'mvs_co
 // Clean orphaned postmeta (for albums/collections).
 $wpdb->query( "DELETE pm FROM $wpdb->postmeta pm LEFT JOIN $wpdb->posts p ON pm.post_id = p.ID WHERE p.ID IS NULL" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
+// Clean orphaned taxonomy term relationships (from deleted media).
+// Media IDs in term_relationships no longer exist in mvs_media_index after deletion.
+$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	"DELETE tr FROM $wpdb->term_relationships tr
+	LEFT JOIN {$wpdb->prefix}mvs_media_index m ON tr.object_id = m.media_id
+	WHERE m.media_id IS NULL
+	AND tr.term_taxonomy_id IN (
+		SELECT tt.term_taxonomy_id FROM $wpdb->term_taxonomy tt
+		WHERE tt.taxonomy IN ( 'mvs_tag', 'mvs_category' )
+	)"
+);
+
+// Clean orphaned taxonomy terms (terms with count = 0 after demo media deletion).
+// This removes demo tags/categories that no longer have any associated media.
+// Safety: Only deletes terms where count = 0, preserving user-created terms still in use.
+$demo_taxonomies = array( 'mvs_tag', 'mvs_category' );
+$deleted_terms   = 0;
+
+foreach ( $demo_taxonomies as $taxonomy ) {
+	$terms = get_terms(
+		array(
+			'taxonomy'   => $taxonomy,
+			'hide_empty' => false,
+		)
+	);
+
+	if ( is_wp_error( $terms ) || empty( $terms ) ) {
+		continue;
+	}
+
+	foreach ( $terms as $term ) {
+		// Only delete terms with zero count (orphaned after media deletion).
+		if ( (int) $term->count === 0 ) {
+			$result = wp_delete_term( $term->term_id, $taxonomy );
+			if ( $result && ! is_wp_error( $result ) ) {
+				++$deleted_terms;
+			}
+		}
+	}
+}
+
 // Truncate all custom tables.
 $tables = array(
 	'mvs_media_index',
