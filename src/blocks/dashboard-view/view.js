@@ -538,7 +538,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.editModal.title = item.title || '';
 			state.editModal.description = item.description || '';
 			state.editModal.privacy = item.privacy || 'public';
-			state.editModal.tags = item.tags ? [ ...item.tags ] : [];
+			// Use Array.from() — `item.tags` may be a WordPress Interactivity
+			// Proxy or a JSON-parsed array. Array.from() handles both safely
+			// and always yields a plain array for JSON serialization.
+			state.editModal.tags = Array.isArray( item.tags ) || item.tags
+				? Array.from( item.tags )
+				: [];
 			state.editModal.tagInput = '';
 			state.editModal.tagResults = [];
 			state.editModal.tagDropdownVisible = false;
@@ -635,11 +640,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			state.editModal.saving = true;
 
+			// Array.from() unwraps the Interactivity Proxy so JSON.stringify
+			// produces a real array. Without it the Proxy can serialize to `{}`
+			// or drop entries, which the server then reads as "clear all tags".
 			const payload = {
 				title: state.editModal.title,
 				description: state.editModal.description,
 				privacy: state.editModal.privacy,
-				tags: state.editModal.tags,
+				tags: Array.from( state.editModal.tags || [] ),
 			};
 
 			try {

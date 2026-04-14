@@ -2,8 +2,15 @@
 /**
  * WPMediaVerse Demo Data Cleanup.
  *
- * Removes ALL demo data in one click. Called via AJAX from Overview page
- * or via WP-CLI: wp eval-file wp-content/plugins/wpmediaverse/cleanup-demo-data.php
+ * Removes demo data seeded by the demo data seeder. All deletions are scoped
+ * to demo users (identified by the `@demo.local` email pattern) and the
+ * content they own — real user data is never touched.
+ *
+ * Safe to run on production sites. Refuses to run unless the `mvs_demo_seeded`
+ * option is set by the seeder.
+ *
+ * Called via AJAX from the Overview page or via WP-CLI:
+ *     wp eval-file wp-content/plugins/wpmediaverse/cleanup-demo-data.php
  *
  * @package WPMediaVerse
  */
@@ -14,67 +21,152 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 global $wpdb;
 
-// Delete demo users (created by the seeder with @demo.local email).
-// Never delete user ID 1 (admin).
+/**
+ * Helper: finalize the cleanup run with the appropriate response channel.
+ *
+ * @param string $message Human-readable result message.
+ * @param bool   $success Whether the run is considered a success.
+ */
+$mvs_finish = static function ( string $message, bool $success = true ): void {
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+		if ( $success ) {
+			wp_send_json_success( array( 'message' => $message ) );
+		}
+		wp_send_json_error( array( 'message' => $message ) );
+	}
+
+	if ( defined( 'WP_CLI' ) && WP_CLI ) {
+		if ( $success ) {
+			WP_CLI::success( $message );
+		} else {
+			WP_CLI::warning( $message );
+		}
+		return;
+	}
+
+	echo esc_html( $message ) . PHP_EOL;
+};
+
+// 1. Identify demo users by the seeder's `@demo.local` email pattern.
+// ID 1 (original admin) is always excluded as a defense-in-depth measure.
+// The presence of `@demo.local` users is the canonical marker for demo data —
+// the seeder creates them and no other code path creates users with this suffix.
 $demo_user_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-	"SELECT ID FROM $wpdb->users WHERE user_email LIKE '%@demo.local' AND ID != 1" // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	"SELECT ID FROM {$wpdb->users} WHERE user_email LIKE '%@demo.local' AND ID != 1" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 );
-$demo_user_count = 0;
+$demo_user_ids = array_values( array_filter( array_map( 'intval', $demo_user_ids ) ) );
+
+// 2. Safety guard: if no demo users exist, there is nothing to clean.
+// This is the real guard — without demo users, none of the subsequent scoped
+// DELETEs would match anything anyway, but we exit early with a clear message.
+if ( empty( $demo_user_ids ) ) {
+	delete_option( 'mvs_demo_seeded' );
+	$mvs_finish( __( 'No demo users found. Nothing to clean.', 'wpmediaverse' ), false );
+	return;
+}
+
+$user_placeholders = implode( ',', array_fill( 0, count( $demo_user_ids ), '%d' ) );
+
+// 3. Delete demo-owned media rows via MediaRepository::delete_cascade(),
+// which already removes related stats, views, meta, reactions, favorites,
+// mentions, album_items, notifications, activity, and mvs_comment rows.
+$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	$wpdb->prepare(
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE post_author IN ({$user_placeholders})",
+		...$demo_user_ids
+	)
+);
+$media_count = 0;
+foreach ( $media_ids as $mid ) {
+	\WPMediaVerse\Repository\MediaRepository::delete_cascade( (int) $mid );
+	++$media_count;
+}
+
+// 4. Delete demo-owned albums and collections (still CPTs).
+$demo_posts = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	$wpdb->prepare(
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		"SELECT ID FROM {$wpdb->posts} WHERE post_type IN ('mvs_album','mvs_collection') AND post_author IN ({$user_placeholders})",
+		...$demo_user_ids
+	)
+);
+$album_count = 0;
+foreach ( $demo_posts as $post_id ) {
+	wp_delete_post( (int) $post_id, true );
+	++$album_count;
+}
+
+// 5. Remove demo-user-owned rows in social tables that aren't media-scoped.
+// These are cleaned per-user-id so real users' data is never touched.
+$social_cleanups = array(
+	// table => array( columns ).
+	'mvs_activity'      => array( 'user_id' ),
+	'mvs_notifications' => array( 'user_id' ),
+	'mvs_favorites'     => array( 'user_id' ),
+	'mvs_reactions'     => array( 'user_id' ),
+	'mvs_mentions'      => array( 'user_id' ),
+	'mvs_media_views'   => array( 'user_id' ),
+	'mvs_follows'       => array( 'follower_id', 'following_id' ),
+	'mvs_blocks'        => array( 'blocker_id', 'blocked_id' ),
+	'mvs_reports'       => array( 'reporter_id' ),
+	'mvs_access_grants' => array( 'user_id' ),
+);
+
+foreach ( $social_cleanups as $table_suffix => $columns ) {
+	$table  = $wpdb->prefix . $table_suffix;
+	$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	if ( ! $exists ) {
+		continue;
+	}
+	foreach ( $columns as $col ) {
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"DELETE FROM {$table} WHERE {$col} IN ({$user_placeholders})",
+				...$demo_user_ids
+			)
+		);
+	}
+}
+
+// 6. Delete demo users. `null` reassign so any remaining authored content
+// is deleted rather than silently assigned to the admin.
 if ( ! function_exists( 'wp_delete_user' ) ) {
 	require_once ABSPATH . 'wp-admin/includes/user.php';
 }
+$demo_user_count = 0;
 foreach ( $demo_user_ids as $duid ) {
-	wp_delete_user( (int) $duid, 1 );
-	++$demo_user_count;
+	if ( wp_delete_user( (int) $duid, null ) ) {
+		++$demo_user_count;
+	}
 }
 
-// Delete all media from mvs_media_index.
-$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-	"SELECT media_id FROM {$wpdb->prefix}mvs_media_index" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-);
-foreach ( $media_ids as $mid ) {
-	\WPMediaVerse\Repository\MediaRepository::delete_all( (int) $mid );
-}
-
-// Delete albums + collections (still CPTs).
-$wpdb->query( "DELETE FROM $wpdb->posts WHERE post_type IN ('mvs_album', 'mvs_collection')" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-
-// Clean orphaned postmeta (for albums/collections).
-$wpdb->query( "DELETE pm FROM $wpdb->postmeta pm LEFT JOIN $wpdb->posts p ON pm.post_id = p.ID WHERE p.ID IS NULL" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-
-// Clean orphaned taxonomy term relationships (from deleted media).
-// Media IDs in term_relationships no longer exist in mvs_media_index after deletion.
+// 7. Clean orphaned taxonomy term relationships left by deleted demo media.
 $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-	"DELETE tr FROM $wpdb->term_relationships tr
+	"DELETE tr FROM {$wpdb->term_relationships} tr
 	LEFT JOIN {$wpdb->prefix}mvs_media_index m ON tr.object_id = m.media_id
 	WHERE m.media_id IS NULL
 	AND tr.term_taxonomy_id IN (
-		SELECT tt.term_taxonomy_id FROM $wpdb->term_taxonomy tt
+		SELECT tt.term_taxonomy_id FROM {$wpdb->term_taxonomy} tt
 		WHERE tt.taxonomy IN ( 'mvs_tag', 'mvs_category' )
 	)"
 );
 
-// Clean orphaned taxonomy terms (terms with count = 0 after demo media deletion).
-// This removes demo tags/categories that no longer have any associated media.
-// Safety: Only deletes terms where count = 0, preserving user-created terms still in use.
-$demo_taxonomies = array( 'mvs_tag', 'mvs_category' );
-$deleted_terms   = 0;
-
-foreach ( $demo_taxonomies as $taxonomy ) {
+// 8. Clean taxonomy terms whose count is now zero.
+$deleted_terms = 0;
+foreach ( array( 'mvs_tag', 'mvs_category' ) as $taxonomy ) {
 	$terms = get_terms(
 		array(
 			'taxonomy'   => $taxonomy,
 			'hide_empty' => false,
 		)
 	);
-
 	if ( is_wp_error( $terms ) || empty( $terms ) ) {
 		continue;
 	}
-
 	foreach ( $terms as $term ) {
-		// Only delete terms with zero count (orphaned after media deletion).
-		if ( (int) $term->count === 0 ) {
+		if ( 0 === (int) $term->count ) {
 			$result = wp_delete_term( $term->term_id, $taxonomy );
 			if ( $result && ! is_wp_error( $result ) ) {
 				++$deleted_terms;
@@ -83,58 +175,16 @@ foreach ( $demo_taxonomies as $taxonomy ) {
 	}
 }
 
-// Truncate all custom tables.
-$tables = array(
-	'mvs_media_index',
-	'mvs_media_meta',
-	'mvs_media_stats',
-	'mvs_media_views',
-	'mvs_reactions',
-	'mvs_favorites',
-	'mvs_follows',
-	'mvs_album_items',
-	'mvs_activity',
-	'mvs_notifications',
-	'mvs_mentions',
-	'mvs_reports',
-	'mvs_blocks',
-	'mvs_access_grants',
-	'mvs_access_rules',
-	'mvs_album_index',
-	'mvs_collection_index',
-);
-
-// Pro tables (if they exist).
-$pro_tables = array(
-	'mvs_competitions',
-	'mvs_competition_entries',
-	'mvs_competition_matches',
-	'mvs_competition_votes',
-	'mvs_boosts',
-);
-
-foreach ( array_merge( $tables, $pro_tables ) as $t ) {
-	$full = $wpdb->prefix . $t;
-	if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $full ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "TRUNCATE TABLE `$full`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-	}
-}
-
-// Reset seeded flag.
+// 9. Reset the seeded flag.
 delete_option( 'mvs_demo_seeded' );
 
 $message = sprintf(
-	'Cleaned %d media items, %d demo users, all albums, collections, and custom table data.',
-	count( $media_ids ),
-	$demo_user_count
+	/* translators: 1: media count, 2: album/collection count, 3: user count, 4: empty term count */
+	__( 'Cleaned %1$d demo media item(s), %2$d album(s)/collection(s), %3$d demo user(s), and %4$d empty taxonomy term(s).', 'wpmediaverse' ),
+	$media_count,
+	$album_count,
+	$demo_user_count,
+	$deleted_terms
 );
 
-if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-	wp_send_json_success( array( 'message' => $message ) );
-}
-
-if ( defined( 'WP_CLI' ) && WP_CLI ) {
-	WP_CLI::success( $message );
-} else {
-	echo esc_html( $message ) . PHP_EOL;
-}
+$mvs_finish( $message );

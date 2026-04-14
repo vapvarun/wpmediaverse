@@ -1505,6 +1505,11 @@ if ( $play_count > 0 ) {
 	mvs_seed_log( '  Play events: ' . $play_count );
 }
 
+// Record that demo data has been seeded so the cleanup script and UI can
+// detect the presence of demo content without relying solely on the
+// `@demo.local` email heuristic.
+update_option( 'mvs_demo_seeded', time(), false );
+
 // AJAX response.
 if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 	$ajax_msg = sprintf(

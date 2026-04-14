@@ -688,21 +688,35 @@ class MediaController extends WP_REST_Controller {
 			MediaRepository::set_many( $media_id, $update_data );
 		}
 
-		// Update tags if provided.
-		$tags = $request->get_param( 'tags' );
-		if ( null !== $tags && is_array( $tags ) ) {
-			$sanitized_tags = array_map( 'sanitize_text_field', $tags );
-			wp_set_object_terms( $media_id, $sanitized_tags, 'mvs_tag' );
-			MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( $sanitized_tags ) ) );
+		// Update tags / categories only when explicitly sent in the request body.
+		// Using $request->get_json_params() + array_key_exists distinguishes
+		// "key not sent" (leave existing data alone) from "key sent as empty
+		// array" (caller intentionally cleared the list). Previously we used
+		// `null !== $tags` which treated both cases identically and wiped tags
+		// on any unrelated save.
+		$json_params = $request->get_json_params();
+		$json_params = is_array( $json_params ) ? $json_params : array();
+
+		if ( array_key_exists( 'tags', $json_params ) ) {
+			$tags = $request->get_param( 'tags' );
+			if ( is_array( $tags ) ) {
+				$sanitized_tags = array_map( 'sanitize_text_field', $tags );
+				wp_set_object_terms( $media_id, $sanitized_tags, 'mvs_tag' );
+				MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( $sanitized_tags ) ) );
+			}
 		}
 
-		// Update categories if provided.
-		$categories = $request->get_param( 'categories' );
-		if ( null !== $categories && is_array( $categories ) ) {
-			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
-			$cat_terms = get_the_terms( $media_id, 'mvs_category' );
-			if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
-				MediaRepository::set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
+		if ( array_key_exists( 'categories', $json_params ) ) {
+			$categories = $request->get_param( 'categories' );
+			if ( is_array( $categories ) ) {
+				wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
+				$cat_terms = get_the_terms( $media_id, 'mvs_category' );
+				if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
+					MediaRepository::set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
+				} else {
+					// Empty array sent → user cleared categories, so clear the cached list too.
+					MediaRepository::set( $media_id, 'category', wp_json_encode( array() ) );
+				}
 			}
 		}
 

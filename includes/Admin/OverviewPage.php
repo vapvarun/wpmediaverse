@@ -252,7 +252,7 @@ class OverviewPage {
 									</div>
 									<script>
 									document.getElementById('mvs-cleanup-demo-btn').addEventListener('click', function() {
-										if (!confirm('<?php echo esc_js( __( 'Delete ALL media, albums, collections, and custom table data? This cannot be undone.', 'wpmediaverse' ) ); ?>')) {
+										if (!confirm('<?php echo esc_js( __( 'Delete all demo users and the media, albums, and collections they own? Your real user data will not be touched. This cannot be undone.', 'wpmediaverse' ) ); ?>')) {
 											return;
 										}
 										var btn = this;
@@ -711,12 +711,12 @@ class OverviewPage {
 		check_ajax_referer( 'mvs_cleanup_demo', '_nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_mvs_settings' ) ) {
-			wp_send_json_error( array( 'message' => 'Permission denied.' ) );
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wpmediaverse' ) ) );
 		}
 
 		$cleanup = MVS_PLUGIN_DIR . 'cleanup-demo-data.php';
 		if ( ! file_exists( $cleanup ) ) {
-			wp_send_json_error( array( 'message' => 'Cleanup script not found.' ) );
+			wp_send_json_error( array( 'message' => __( 'Cleanup script not found.', 'wpmediaverse' ) ) );
 		}
 
 		require_once $cleanup;
