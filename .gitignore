@@ -9,3 +9,31 @@ CLAUDE.md
 
 # Dev reports
 wpcs-report.md
+
+# Unused webpack side-output.
+#
+# `wp-scripts build --experimental-modules` emits two bundles per block:
+#   1. An ES module at build/blocks/<name>/view.js (referenced by
+#      block.json `viewScriptModule`, used at runtime).
+#   2. A legacy IIFE at build/blocks/blocks/<name>/view.js (never
+#      referenced — dead fallback for non-module environments).
+#
+# The legacy output is not used by any block.json in this plugin, so it
+# is ignored here to keep it out of commits. The top-level build/<name>/
+# entries cover another pattern: running `wp-scripts build` without
+# `--webpack-src-dir=src/blocks` scans the whole `src/` tree and emits
+# output at build/<name>/ instead of build/blocks/<name>/. These should
+# never be committed either.
+/build/blocks/blocks/
+/build/album-viewer/
+/build/dashboard-view/
+/build/explore-feed/
+/build/explore-view/
+/build/lock-overlay/
+/build/media-grid/
+/build/media-player/
+/build/media-social/
+/build/media-stats/
+/build/media-upload/
+/build/shared-ui/
+/build/story-viewer/
