@@ -1284,7 +1284,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ctx.defaultPrivacy ) {
 				state.upload.privacy = ctx.defaultPrivacy;
 			}
-			const validTabs = [ 'media', 'albums', 'favorites', 'collections', 'challenges', 'battles', 'tournaments' ];
+			const validTabs = [ 'media', 'albums', 'favorites', 'collections', 'challenges', 'battles', 'tournaments', 'connectors' ];
 			const hashTab = window.location.hash.replace( '#', '' );
 			if ( hashTab && validTabs.includes( hashTab ) ) {
 				state.activeTab = hashTab;
