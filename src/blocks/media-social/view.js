@@ -76,7 +76,10 @@ async function fetchComments( ctx ) {
 					author_name: c.author_name || 'Anonymous',
 					author_avatar: c.author_avatar || '',
 					author_url: c.author_url || '',
-					date: new Date( c.date ).toLocaleDateString(),
+					// Keep ISO for the <time datetime> attribute and tooltip; display
+					// the human-readable "2 days ago" coming from the REST payload.
+					date: c.date,
+					date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
 					content: c.content,
 					canEdit: isOwnComment && commentAge < editWindow,
 					editing: false,

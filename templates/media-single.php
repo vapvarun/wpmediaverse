@@ -461,33 +461,37 @@ $mvs_archive_url = home_url( '/media/' );
 				<ul class="mvs-comment-list">
 					<template data-wp-each="context.comments">
 						<li class="mvs-comment-item" data-wp-bind--data-comment-id="context.item.id">
-							<div class="mvs-comment-header">
-								<a class="mvs-comment-author-link" data-wp-bind--href="context.item.author_url">
-									<img class="mvs-comment-avatar" data-wp-bind--src="context.item.author_avatar" alt="" width="32" height="32" />
-									<span class="mvs-comment-author" data-wp-text="context.item.author_name"></span>
-								</a>
-								<span class="mvs-comment-date" data-wp-text="context.item.date"></span>
-							</div>
-							<div class="mvs-comment-body" data-wp-bind--hidden="context.item.editing">
-								<div class="mvs-comment-text" data-wp-text="context.item.content"></div>
-							</div>
-							<div class="mvs-comment-edit-form" data-wp-bind--hidden="!context.item.editing">
-								<textarea class="mvs-comment-edit-textarea" rows="2"
-									data-wp-bind--value="context.item.editText"
-									data-wp-on--input="actions.updateEditCommentText"></textarea>
-								<div class="mvs-comment-edit-actions">
-									<button class="mvs-btn mvs-btn--small" type="button"
-										data-wp-on--click="actions.saveEditComment"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></button>
-									<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
-										data-wp-on--click="actions.cancelEditComment"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+							<a class="mvs-comment-avatar-link" data-wp-bind--href="context.item.author_url">
+								<img class="mvs-comment-avatar" data-wp-bind--src="context.item.author_avatar" alt="" width="40" height="40" loading="lazy" />
+							</a>
+							<div class="mvs-comment-body-wrap">
+								<div class="mvs-comment-header">
+									<a class="mvs-comment-author-link" data-wp-bind--href="context.item.author_url">
+										<span class="mvs-comment-author" data-wp-text="context.item.author_name"></span>
+									</a>
+									<time class="mvs-comment-date" data-wp-bind--datetime="context.item.date" data-wp-text="context.item.date_human"></time>
 								</div>
-							</div>
-							<div class="mvs-comment-actions" data-wp-bind--hidden="state.hideCommentActions">
-								<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
-									data-wp-on--click="actions.startEditComment"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
-								<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
-									data-wp-on--click="actions.deleteComment"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
-							</div>
+								<div class="mvs-comment-body" data-wp-bind--hidden="context.item.editing">
+									<div class="mvs-comment-text" data-wp-text="context.item.content"></div>
+								</div>
+								<div class="mvs-comment-edit-form" data-wp-bind--hidden="!context.item.editing">
+									<textarea class="mvs-comment-edit-textarea" rows="2"
+										data-wp-bind--value="context.item.editText"
+										data-wp-on--input="actions.updateEditCommentText"></textarea>
+									<div class="mvs-comment-edit-actions">
+										<button class="mvs-btn mvs-btn--small" type="button"
+											data-wp-on--click="actions.saveEditComment"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></button>
+										<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+											data-wp-on--click="actions.cancelEditComment"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+									</div>
+								</div>
+								<div class="mvs-comment-actions" data-wp-bind--hidden="state.hideCommentActions">
+									<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
+										data-wp-on--click="actions.startEditComment"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></button>
+									<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
+										data-wp-on--click="actions.deleteComment"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></button>
+								</div>
+							</div><!-- /.mvs-comment-body-wrap -->
 						</li>
 					</template>
 				</ul>
