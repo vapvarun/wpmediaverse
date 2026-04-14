@@ -80,7 +80,7 @@ $images = array(
 		'user'        => 'oliver_brooks',
 	),
 	array(
-		'file'        => 'alpine-mountain-sunrise.jpg',
+		'file'        => 'mountain-cabin.jpg',
 		'title'       => 'Mountain Peak at Dawn',
 		'description' => 'First light breaking over jagged mountain peaks as the valley below remains blanketed in a thin layer of morning fog.',
 		'type'        => 'image',
@@ -120,7 +120,7 @@ $images = array(
 		'user'        => 'oliver_brooks',
 	),
 	array(
-		'file'        => 'misty-forest-path.jpg',
+		'file'        => 'bamboo-forest.jpg',
 		'title'       => 'Enchanted Woodland Trail',
 		'description' => 'Soft diffused light filters through towering trees along a moss-covered trail deep in the old-growth forest.',
 		'type'        => 'image',
@@ -160,7 +160,7 @@ $images = array(
 		'user'        => 'mina_aoki',
 	),
 	array(
-		'file'        => 'tropical-beach-paradise.jpg',
+		'file'        => 'greek-harbor.jpg',
 		'title'       => 'Island Shoreline',
 		'description' => 'Gentle waves lapping against pristine white sand with palm trees swaying in the warm tropical breeze at midday.',
 		'type'        => 'image',
@@ -192,7 +192,7 @@ $images = array(
 		'user'        => 'liam_oconnor',
 	),
 	array(
-		'file'        => 'modern-glass-building.jpg',
+		'file'        => 'rooftop-bar.jpg',
 		'title'       => 'Reflections in Steel',
 		'description' => 'Cloud reflections distorted across the curved glass panels of a skyscraper, blending nature with urban engineering.',
 		'type'        => 'image',
@@ -232,7 +232,7 @@ $images = array(
 		'user'        => 'liam_oconnor',
 	),
 	array(
-		'file'        => 'urban-street-night.jpg',
+		'file'        => 'neon-light.jpg',
 		'title'       => 'Neon City Nightlife',
 		'description' => 'Glowing neon signs and wet pavement reflections transform an ordinary city block into a cinematic scene after dark.',
 		'type'        => 'image',
@@ -242,7 +242,7 @@ $images = array(
 		'user'        => 'liam_oconnor',
 	),
 	array(
-		'file'        => 'urban-street-night.jpg',
+		'file'        => 'venice-canal.jpg',
 		'title'       => 'After Hours Downtown',
 		'description' => 'Long exposure captures the flow of traffic and pedestrians through downtown streets well past midnight.',
 		'type'        => 'image',
@@ -274,7 +274,7 @@ $images = array(
 		'user'        => 'emma_williams',
 	),
 	array(
-		'file'        => 'creative-studio-portrait.jpg',
+		'file'        => 'vintage-camera.jpg',
 		'title'       => 'Fashion Editorial Close-up',
 		'description' => 'Bold fashion editorial shot with high contrast and saturated tones, styled for a contemporary magazine spread.',
 		'type'        => 'image',
@@ -284,7 +284,7 @@ $images = array(
 		'user'        => 'priya_sharma',
 	),
 	array(
-		'file'        => 'creative-studio-portrait.jpg',
+		'file'        => 'art-gallery.jpg',
 		'title'       => 'Artist in the Studio',
 		'description' => 'Behind-the-scenes portrait of a creative professional at work, surrounded by the tools of their craft.',
 		'type'        => 'image',
@@ -314,7 +314,7 @@ $images = array(
 		'user'        => 'priya_sharma',
 	),
 	array(
-		'file'        => 'outdoor-portrait.jpg',
+		'file'        => 'festival-friends.jpg',
 		'title'       => 'Street Style Portrait',
 		'description' => 'Candid street style portrait capturing personality and attitude against an urban backdrop of textured walls.',
 		'type'        => 'image',
@@ -324,7 +324,7 @@ $images = array(
 		'user'        => 'emma_williams',
 	),
 	array(
-		'file'        => 'outdoor-portrait.jpg',
+		'file'        => 'northern-lights.jpg',
 		'title'       => 'Park Bench Portrait',
 		'description' => 'Relaxed environmental portrait taken on a park bench with dappled shade and soft green background.',
 		'type'        => 'image',
@@ -356,7 +356,7 @@ $images = array(
 		'user'        => 'priya_sharma',
 	),
 	array(
-		'file'        => 'artisan-pizza.jpg',
+		'file'        => 'wine-vineyard.jpg',
 		'title'       => 'Pizza Night at Home',
 		'description' => 'Homemade pizza night with a variety of toppings laid out on a rustic wooden board ready to share.',
 		'type'        => 'image',
@@ -366,7 +366,7 @@ $images = array(
 		'user'        => 'emma_williams',
 	),
 	array(
-		'file'        => 'artisan-pizza.jpg',
+		'file'        => 'chocolate-truffles.jpg',
 		'title'       => 'Neapolitan Craft',
 		'description' => 'Perfectly leopard-spotted Neapolitan crust topped with bubbling cheese and fresh herbs, captured from above.',
 		'type'        => 'image',
@@ -396,7 +396,7 @@ $images = array(
 		'user'        => 'priya_sharma',
 	),
 	array(
-		'file'        => 'gourmet-dish-plating.jpg',
+		'file'        => 'matcha-latte.jpg',
 		'title'       => 'Modern Gastronomy',
 		'description' => 'Deconstructed dessert plate featuring molecular gastronomy techniques with foams, gels, and micro herbs.',
 		'type'        => 'image',
@@ -458,7 +458,7 @@ $images = array(
 		'user'        => 'priya_sharma',
 	),
 	array(
-		'file'        => 'tropical-beach-paradise.jpg',
+		'file'        => 'desert-dunes.jpg',
 		'title'       => 'Coastline Discovery',
 		'description' => 'Walking along an untouched coastline where the jungle meets the sea and every turn reveals a new cove.',
 		'type'        => 'image',
@@ -488,7 +488,7 @@ $images = array(
 		'user'        => 'priya_sharma',
 	),
 	array(
-		'file'        => 'urban-street-night.jpg',
+		'file'        => 'japanese-garden.jpg',
 		'title'       => 'Backstreet Adventures',
 		'description' => 'Wandering through narrow backstreets of a foreign city at dusk, discovering hidden cafes and local life.',
 		'type'        => 'image',
@@ -510,7 +510,7 @@ $images = array(
 		'user'        => 'liam_oconnor',
 	),
 	array(
-		'file'        => 'tech-workspace.jpg',
+		'file'        => 'developer-desk.jpg',
 		'title'       => 'Developer Desk Setup',
 		'description' => 'A meticulously arranged developer workspace with dual monitors, mechanical keyboard, and ambient LED lighting.',
 		'type'        => 'image',
@@ -520,7 +520,7 @@ $images = array(
 		'user'        => 'liam_oconnor',
 	),
 	array(
-		'file'        => 'tech-workspace.jpg',
+		'file'        => 'server-room.jpg',
 		'title'       => 'Hardware Lab',
 		'description' => 'Prototype boards and oscilloscope traces fill a hardware engineering lab where the next innovation takes shape.',
 		'type'        => 'image',
@@ -530,7 +530,7 @@ $images = array(
 		'user'        => 'oliver_brooks',
 	),
 	array(
-		'file'        => 'tech-workspace.jpg',
+		'file'        => 'vintage-camera.jpg',
 		'title'       => 'Circuit Board Macro',
 		'description' => 'Extreme macro photography of a circuit board reveals the intricate pathways and solder joints at component level.',
 		'type'        => 'image',
@@ -550,7 +550,7 @@ $images = array(
 		'user'        => 'liam_oconnor',
 	),
 	array(
-		'file'        => 'premium-wallpaper.jpg',
+		'file'        => 'abstract-light.jpg',
 		'title'       => 'Abstract Data Flow',
 		'description' => 'Visualization of data streams rendered as flowing particles and light trails against a dark background.',
 		'type'        => 'image',
@@ -560,7 +560,7 @@ $images = array(
 		'user'        => 'liam_oconnor',
 	),
 	array(
-		'file'        => 'premium-wallpaper.jpg',
+		'file'        => 'neon-grid.jpg',
 		'title'       => 'Neon Grid Horizon',
 		'description' => 'Retro-futuristic neon grid stretching to the horizon with glowing wireframe mountains and a synthetic sunset.',
 		'type'        => 'image',
@@ -570,7 +570,7 @@ $images = array(
 		'user'        => 'oliver_brooks',
 	),
 	array(
-		'file'        => 'premium-wallpaper.jpg',
+		'file'        => 'art-gallery.jpg',
 		'title'       => 'Digital Texture Art',
 		'description' => 'Generative art piece combining algorithmic patterns with hand-tuned color palettes for a unique digital texture.',
 		'type'        => 'image',
