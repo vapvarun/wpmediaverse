@@ -826,14 +826,17 @@ wp_enqueue_style( 'mvs-frontend' );
 			</div>
 		</div>
 	</div>
+
+	<?php
+	/**
+	 * Fires after the dashboard content is rendered.
+	 *
+	 * Pro uses this to display the quota usage widget below the media grid.
+	 * Fired INSIDE the .mvs-dashboard wrapper so Interactivity API directives
+	 * (e.g. data-wp-bind--hidden) work in the rendered markup.
+	 *
+	 * @since 1.1.0
+	 */
+	do_action( 'mvs_dashboard_after_content' );
+	?>
 </div>
-<?php
-/**
- * Fires after the dashboard content is rendered.
- *
- * Pro uses this to display the quota usage widget below the media grid.
- *
- * @since 1.1.0
- */
-do_action( 'mvs_dashboard_after_content' );
-?>
