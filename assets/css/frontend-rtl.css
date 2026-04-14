@@ -17,26 +17,38 @@
     --mvs-font: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
     --mvs-font-heading: var(--font-display, var(--mvs-font));
 
-    /* Brand — BuddyNext first, then hardcoded fallback */
-    --mvs-primary: var(--brand, #0073aa);
-    --mvs-primary-hover: var(--brand-hover, #005a87);
+    /* Brand — BuddyX Pro → BuddyNext → fallback */
+    --mvs-primary: var(--color-theme-primary, var(--brand, #0073aa));
+    --mvs-primary-hover: var(--color-link-hover, var(--brand-hover, #005a87));
     --mvs-primary-rgb: 0, 115, 170;
     --mvs-danger: var(--red, #d63638);
+    --mvs-danger-rgb: 214, 54, 56;
     --mvs-success: var(--green, #44b700);
+    --mvs-success-rgb: 68, 183, 0;
+    --mvs-warning: #b58105;
+    --mvs-warning-rgb: 181, 129, 5;
 
-    /* Surfaces — BuddyNext first, then hardcoded fallback */
-    --mvs-bg: var(--bg, #ffffff);
-    --mvs-surface: var(--bg-subtle, #f6f7f7);
-    --mvs-surface-2: var(--bg-hover, #eeeeee);
+    /* Semantic backgrounds — derived tints (work in light + dark via alpha) */
+    --mvs-info-bg: rgba(var(--mvs-primary-rgb), 0.08);
+    --mvs-info-bg-light: rgba(var(--mvs-primary-rgb), 0.04);
+    --mvs-info-border: rgba(var(--mvs-primary-rgb), 0.30);
+    --mvs-success-bg: rgba(var(--mvs-success-rgb), 0.10);
+    --mvs-warning-bg: rgba(var(--mvs-warning-rgb), 0.12);
+    --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.10);
+
+    /* Surfaces — BuddyX Pro → BuddyNext → fallback */
+    --mvs-bg: var(--color-theme-body, var(--bg, #ffffff));
+    --mvs-surface: var(--color-theme-white-box, var(--bg-subtle, #f6f7f7));
+    --mvs-surface-2: var(--color-layout-boxed, var(--bg-hover, #eeeeee));
     --mvs-overlay: rgba(0, 0, 0, 0.72);
 
-    /* Text — BuddyNext first, then hardcoded fallback */
-    --mvs-text: var(--text-1, #1e1e1e);
-    --mvs-text-secondary: var(--text-2, #646970);
+    /* Text — BuddyX Pro → BuddyNext → fallback */
+    --mvs-text: var(--global-font-color, var(--text-1, #1e1e1e));
+    --mvs-text-secondary: var(--global-body-lightcolor, var(--text-2, #646970));
     --mvs-text-muted: var(--text-3, #a7aaad);
 
-    /* Borders & Shadows — BuddyNext first where applicable */
-    --mvs-border: var(--border, #dcdcde);
+    /* Borders & Shadows — BuddyX Pro → BuddyNext → fallback */
+    --mvs-border: var(--global-border-color, var(--border, #dcdcde));
     --mvs-border-light: var(--border-soft, #e9e9ea);
     --mvs-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.10);
     --mvs-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.14);
@@ -54,22 +66,33 @@
     --mvs-bp-desktop: 1024px;
 }
 
-/* Dark mode: two layers.
-   Dark mode is ONLY controlled by the WordPress theme via [data-theme="dark"]
-   attribute on <html>. We do NOT use OS prefers-color-scheme because the theme
-   must explicitly enable dark mode — we can't assume the user wants it. */
-[data-theme="dark"] {
-    --mvs-bg: #121212;
-    --mvs-surface: #1e1e1e;
-    --mvs-surface-2: #2a2a2a;
-    --mvs-text: #f0f0f0;
-    --mvs-text-secondary: #b0b0b0;
+/* Dark mode: theme-controlled only (no prefers-color-scheme).
+   Supports both signals:
+   - [data-theme="dark"] on <html> (BuddyNext, generic themes)
+   - .dark-mode on <html> or <body> (BuddyX / BuddyX Pro)
+   When BuddyX is active its own --color-* vars cascade through the
+   :root mapping above, so we only set hardcoded values for sites
+   without a dark-mode-aware parent theme. */
+[data-theme="dark"],
+html.dark-mode,
+body.dark-mode {
+    --mvs-bg: var(--color-theme-body, #121212);
+    --mvs-surface: var(--color-theme-white-box, #1e1e1e);
+    --mvs-surface-2: var(--color-layout-boxed, #2a2a2a);
+    --mvs-text: var(--global-font-color, #f0f0f0);
+    --mvs-text-secondary: var(--global-body-lightcolor, #b0b0b0);
     --mvs-text-muted: #888888;
-    --mvs-border: #363636;
+    --mvs-border: var(--global-border-color, #363636);
     --mvs-border-light: #2e2e2e;
     --mvs-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
     --mvs-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
     --mvs-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
+    --mvs-warning: #f0b73a;
+    --mvs-info-bg: rgba(var(--mvs-primary-rgb), 0.18);
+    --mvs-info-bg-light: rgba(var(--mvs-primary-rgb), 0.10);
+    --mvs-success-bg: rgba(var(--mvs-success-rgb), 0.18);
+    --mvs-warning-bg: rgba(240, 183, 58, 0.15);
+    --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.18);
 }
 
 /* ==========================================================================
@@ -178,7 +201,7 @@ body.mvs-page {
     gap: 32px;
     padding: 32px;
     margin-bottom: 24px;
-    background: #fff;
+    background: var(--mvs-surface);
     border-radius: 12px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
@@ -189,7 +212,7 @@ body.mvs-page {
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
-    border: 3px solid #f0f0f0;
+    border: 3px solid var(--mvs-surface-2);
 }
 
 .mvs-profile-header-info {
@@ -217,15 +240,15 @@ body.mvs-page {
 }
 
 .mvs-follow-toggle--following {
-    background: #f0f0f0;
-    color: #1e1e1e;
-    border: 1px solid #ddd;
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text);
+    border: 1px solid var(--mvs-border);
 }
 
 .mvs-follow-toggle--following:hover {
-    background: #fde8e8;
-    color: #d63638;
-    border-color: #f5c6c6;
+    background: var(--mvs-danger-bg);
+    color: var(--mvs-danger);
+    border-color: var(--mvs-danger);
 }
 
 .mvs-follow-toggle:disabled {
@@ -345,7 +368,7 @@ body.mvs-page {
 .mvs-media-author-name {
     font-weight: 600;
     font-size: 0.9375rem;
-    color: #1a1a1a;
+    color: var(--mvs-text);
     text-decoration: none;
     white-space: nowrap;
     overflow: hidden;
@@ -358,7 +381,7 @@ body.mvs-page {
 
 .mvs-media-date {
     font-size: 0.8125rem;
-    color: #8e8e8e;
+    color: var(--mvs-text-muted);
 }
 
 .mvs-media-sep {
@@ -378,7 +401,7 @@ body.mvs-page {
 
 .mvs-media-image {
     width: 100%;
-    background: #f0f0f0;
+    background: var(--mvs-surface-2);
 }
 
 .mvs-media-image img {
@@ -389,7 +412,7 @@ body.mvs-page {
 
 .mvs-media-video {
     width: 100%;
-    background: #000;
+    background: var(--mvs-overlay);
 }
 
 .mvs-media-video video {
@@ -409,7 +432,7 @@ body.mvs-page {
 .mvs-media-description {
     padding: 12px 16px 0;
     line-height: 1.6;
-    color: #262626;
+    color: var(--mvs-text);
     font-size: 0.9375rem;
 }
 
@@ -431,7 +454,7 @@ body.mvs-page {
 .mvs-tag {
     display: inline-block;
     padding: 4px 12px;
-    background: #eff7ff;
+    background: var(--mvs-info-bg);
     border-radius: 16px;
     font-size: 0.8125rem;
     color: var(--mvs-primary);
@@ -472,7 +495,7 @@ body.mvs-page {
 }
 
 .mvs-album-description {
-    color: #555;
+    color: var(--mvs-text-secondary);
     margin-bottom: 12px;
     line-height: 1.6;
 }
@@ -480,7 +503,7 @@ body.mvs-page {
 .mvs-album-count {
     display: inline-block;
     padding: 4px 12px;
-    background: #f0f0f0;
+    background: var(--mvs-surface-2);
     border-radius: 16px;
     font-size: 0.85em;
     color: var(--mvs-text-secondary);
@@ -551,7 +574,7 @@ body.mvs-page {
     position: relative;
     overflow: hidden;
     border-radius: 8px;
-    background: #f5f5f5;
+    background: var(--mvs-surface-2);
     aspect-ratio: 1;
     min-width: 0;
 }
@@ -597,7 +620,7 @@ body.mvs-page {
     justify-content: center;
     width: 100%;
     height: 100%;
-    color: #999;
+    color: var(--mvs-text-muted);
 }
 
 .mvs-grid-item-placeholder .dashicons {
@@ -691,7 +714,7 @@ body.mvs-page {
 
 .mvs-grid-item-author {
     font-weight: 600;
-    color: #262626;
+    color: var(--mvs-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -731,7 +754,7 @@ body.mvs-page {
     align-items: center;
     gap: 2px;
     background: rgba(0, 0, 0, 0.6);
-    color: #fff;
+    color: var(--mvs-surface);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.8em;
@@ -744,7 +767,7 @@ body.mvs-page {
     font-size: 16px;
     width: 16px;
     height: 16px;
-    color: #fff;
+    color: var(--mvs-surface);
 }
 
 /* ==========================================================================
@@ -766,10 +789,10 @@ body.mvs-page {
 .mvs-pagination .page-numbers {
     display: inline-block;
     padding: 8px 14px;
-    background: #f0f0f0;
+    background: var(--mvs-surface-2);
     border-radius: 4px;
     text-decoration: none;
-    color: #333;
+    color: var(--mvs-text);
     font-size: 0.9em;
     transition: background 0.2s;
 }
@@ -787,7 +810,7 @@ body.mvs-page {
 .mvs-no-media {
     text-align: center;
     padding: 48px 24px;
-    color: #999;
+    color: var(--mvs-text-muted);
     font-size: 1.1em;
 }
 
@@ -799,7 +822,7 @@ body.mvs-page {
     position: relative;
     max-width: 400px;
     margin: 0 auto;
-    background: #000;
+    background: var(--mvs-overlay);
     border-radius: 12px;
     overflow: hidden;
     aspect-ratio: 9/16;
@@ -982,7 +1005,7 @@ body.mvs-page {
     flex-wrap: wrap;
     gap: 8px 12px;
     padding: 12px 24px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--mvs-border-light);
 }
 
 .mvs-reactions {
@@ -998,11 +1021,11 @@ body.mvs-page {
     gap: 6px;
     padding: 6px 12px;
     background: none;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 20px;
     cursor: pointer;
     font-size: 0.9em;
-    color: #555;
+    color: var(--mvs-text-secondary);
     transition: all 0.2s;
 }
 
@@ -1022,7 +1045,7 @@ body.mvs-page {
 }
 
 .mvs-social-bar button.mvs-view-count {
-    color: #999;
+    color: var(--mvs-text-muted);
     font-size: 0.85em;
 }
 
@@ -1055,11 +1078,11 @@ body.mvs-page {
     gap: 6px;
     padding: 6px 12px;
     background: none;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 20px;
     cursor: pointer;
     font-size: 0.9em;
-    color: #555;
+    color: var(--mvs-text-secondary);
     transition: all 0.2s;
 }
 
@@ -1082,14 +1105,14 @@ body.mvs-page {
 
 .mvs-comments-section {
     padding: 12px 16px 16px;
-    border-top: 1px solid #efefef;
+    border-top: 1px solid var(--mvs-border-light);
 }
 
 .mvs-comments-title {
     font-size: 0.9375rem;
     font-weight: 600;
     margin: 0 0 12px;
-    color: #262626;
+    color: var(--mvs-text);
 }
 
 .mvs-comment-form {
@@ -1101,7 +1124,7 @@ body.mvs-page {
 .mvs-comment-form textarea {
     flex: 1;
     padding: 10px 12px;
-    border: 1px solid #dbdbdb;
+    border: 1px solid var(--mvs-border);
     border-radius: 8px;
     resize: none;
     min-height: 40px;
@@ -1133,7 +1156,7 @@ body.mvs-page {
 
 .mvs-comment-item {
     padding: 12px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--mvs-surface-2);
 }
 
 .mvs-comment-item:last-child {
@@ -1159,7 +1182,7 @@ body.mvs-page {
 
 .mvs-comment-date {
     font-size: 0.8em;
-    color: #999;
+    color: var(--mvs-text-muted);
     margin-right: 8px;
 }
 
@@ -1167,7 +1190,7 @@ body.mvs-page {
     margin-top: 4px;
     font-size: 0.9em;
     line-height: 1.5;
-    color: #333;
+    color: var(--mvs-text);
 }
 
 /* ==========================================================================
@@ -1188,7 +1211,7 @@ body.mvs-page {
 .mvs-dashboard-tabs {
     display: flex;
     gap: 0;
-    border-bottom: 2px solid #eee;
+    border-bottom: 2px solid var(--mvs-border-light);
     margin-bottom: 24px;
 }
 
@@ -1202,8 +1225,15 @@ body.mvs-page {
     cursor: pointer;
     font-size: 0.95em;
     font-weight: 600;
-    color: var(--mvs-text-secondary);
+    color: var(--mvs-text);
+    opacity: 0.75;
     transition: all 0.2s;
+}
+
+.mvs-dashboard-tab:hover,
+.mvs-dashboard-tab:focus,
+.mvs-dashboard-tab.active {
+    opacity: 1;
 }
 
 .mvs-dashboard-tab:hover,
@@ -1259,8 +1289,8 @@ body.mvs-page {
 }
 
 .mvs-btn--secondary {
-    background: #f0f0f0;
-    color: #333;
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text);
     border: none;
 }
 
@@ -1269,15 +1299,15 @@ body.mvs-page {
 }
 
 .mvs-btn--danger {
-    background: #dc3545;
-    color: #fff;
+    background: var(--mvs-danger);
+    color: var(--mvs-surface);
     border: none;
 }
 
 .mvs-btn--danger:hover,
 .mvs-btn--danger:focus {
-    background: #c82333;
-    color: #fff;
+    background: var(--mvs-danger);
+    color: var(--mvs-surface);
     border: none;
 }
 
@@ -1311,7 +1341,7 @@ body.mvs-page {
 .mvs-dashboard-card-thumb {
     display: block;
     aspect-ratio: 1;
-    background: #f5f5f5;
+    background: var(--mvs-surface-2);
     overflow: hidden;
     text-decoration: none;
     color: inherit;
@@ -1338,7 +1368,7 @@ body.mvs-page {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #262626;
+    color: var(--mvs-text);
     text-decoration: none;
 }
 
@@ -1348,7 +1378,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-dashboard-card-meta {
     font-size: 0.8em;
-    color: #999;
+    color: var(--mvs-text-muted);
     margin-bottom: 8px;
 }
 
@@ -1370,18 +1400,18 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-privacy-badge--public {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--mvs-success-bg);
+    color: var(--mvs-success);
 }
 
 .mvs-privacy-badge--members {
-    background: #fff3e0;
-    color: #e65100;
+    background: var(--mvs-warning-bg);
+    color: var(--mvs-warning);
 }
 
 .mvs-privacy-badge--private {
-    background: #fce4ec;
-    color: #c62828;
+    background: var(--mvs-danger-bg);
+    color: var(--mvs-danger);
 }
 
 /* Load More */
@@ -1423,7 +1453,7 @@ a.mvs-dashboard-card-title:hover {
     justify-content: space-between;
     align-items: center;
     padding: 20px 24px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--mvs-border-light);
 }
 
 .mvs-modal-header h2 {
@@ -1436,7 +1466,7 @@ a.mvs-dashboard-card-title:hover {
     border: none;
     font-size: 1.5em;
     cursor: pointer;
-    color: #999;
+    color: var(--mvs-text-muted);
     padding: 0;
     line-height: 1;
 }
@@ -1444,7 +1474,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-modal-close:hover {
     background: none;
     border: none;
-    color: #333;
+    color: var(--mvs-text);
 }
 
 .mvs-modal-body {
@@ -1456,7 +1486,7 @@ a.mvs-dashboard-card-title:hover {
     justify-content: flex-end;
     gap: 8px;
     padding: 16px 24px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--mvs-border-light);
 }
 
 /* Form Fields */
@@ -1469,7 +1499,7 @@ a.mvs-dashboard-card-title:hover {
     margin-bottom: 4px;
     font-weight: 600;
     font-size: 0.9em;
-    color: #333;
+    color: var(--mvs-text);
 }
 
 .mvs-field input[type="text"],
@@ -1477,7 +1507,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-field select {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 6px;
     font-size: 0.9em;
     font-family: inherit;
@@ -1506,7 +1536,7 @@ a.mvs-dashboard-card-title:hover {
     flex-wrap: wrap;
     gap: 4px;
     padding: 6px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 6px;
     min-height: 38px;
     align-items: center;
@@ -1554,7 +1584,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-tag-text-input:focus-visible {
-    outline: 2px solid #0073aa;
+    outline: 2px solid var(--mvs-primary);
     outline-offset: -2px;
     border-radius: 2px;
 }
@@ -1565,7 +1595,7 @@ a.mvs-dashboard-card-title:hover {
     right: 0;
     left: 0;
     background: var(--mvs-bg);
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-top: none;
     border-radius: 0 0 6px 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -1581,7 +1611,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-tag-autocomplete-item:hover {
-    background: #f0f7fc;
+    background: var(--mvs-info-bg);
     color: var(--mvs-primary);
 }
 
@@ -1615,7 +1645,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-confirm p {
     margin: 0 0 20px;
     font-size: 1em;
-    color: #333;
+    color: var(--mvs-text);
 }
 
 .mvs-confirm-actions {
@@ -1630,10 +1660,10 @@ a.mvs-dashboard-card-title:hover {
     padding: 8px 12px;
     margin: 12px 0;
     font-size: 14px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 6px;
-    background-color: #f9f9f9;
-    color: #333;
+    background-color: var(--mvs-surface-2);
+    color: var(--mvs-text);
 }
 
 /* ==========================================================================
@@ -1645,7 +1675,7 @@ a.mvs-dashboard-card-title:hover {
     bottom: 24px;
     left: 24px;
     padding: 12px 24px;
-    background: #333;
+    background: var(--mvs-text);
     color: var(--mvs-bg);
     border-radius: 8px;
     font-size: 0.9em;
@@ -1655,11 +1685,11 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-toast--success {
-    background: #2e7d32;
+    background: var(--mvs-success);
 }
 
 .mvs-toast--error {
-    background: #c62828;
+    background: var(--mvs-danger);
 }
 
 @keyframes mvsToastIn {
@@ -1703,7 +1733,7 @@ a.mvs-dashboard-card-title:hover {
     max-height: 300px;
     overflow-y: auto;
     padding: 8px;
-    border: 1px solid #eee;
+    border: 1px solid var(--mvs-border-light);
     border-radius: 6px;
     margin-top: 8px;
 }
@@ -1766,8 +1796,8 @@ a.mvs-dashboard-card-title:hover {
 /* Inline edit form on single pages */
 .mvs-inline-edit {
     padding: 16px 24px;
-    border-top: 1px solid #eee;
-    background: #fafafa;
+    border-top: 1px solid var(--mvs-border-light);
+    background: var(--mvs-surface-2);
 }
 
 .mvs-inline-edit .mvs-field {
@@ -1798,10 +1828,10 @@ a.mvs-dashboard-card-title:hover {
 .mvs-tag-cloud-item {
     display: inline-block;
     padding: 4px 14px;
-    background: #f0f0f0;
+    background: var(--mvs-surface-2);
     border-radius: 16px;
     font-size: 0.85em;
-    color: #333;
+    color: var(--mvs-text);
     text-decoration: none;
     transition: background 0.2s, color 0.2s;
 }
@@ -1827,7 +1857,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-upload-fields textarea {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 6px;
     font-size: 0.9em;
     font-family: inherit;
@@ -1858,21 +1888,21 @@ a.mvs-dashboard-card-title:hover {
     gap: 12px;
     margin: 0 0 1rem;
     padding: 28px 20px;
-    border: 2px dashed #d0d5dd;
+    border: 2px dashed var(--mvs-border-light);
     border-radius: 8px;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
-    background: #fafbfc;
+    background: var(--mvs-surface-2);
 }
 
 .mvs-dashboard-dropzone:hover {
     border-color: var(--mvs-primary);
-    background: #f0f7fc;
+    background: var(--mvs-info-bg);
 }
 
 .mvs-dashboard-dropzone.mvs-drag-active {
     border-color: var(--mvs-primary);
-    background: #e6f2fa;
+    background: var(--mvs-info-bg);
     border-style: solid;
 }
 
@@ -1883,7 +1913,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-dashboard-dropzone-label {
     font-size: 0.95em;
-    color: #555;
+    color: var(--mvs-text-secondary);
 }
 
 .mvs-dashboard-upload-fields {
@@ -1892,7 +1922,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 10px;
     margin-top: 12px;
     padding: 12px;
-    background: #f9fafb;
+    background: var(--mvs-surface-2);
     border-radius: 6px;
 }
 
@@ -1901,7 +1931,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-dashboard-upload-fields select {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 6px;
     font-size: 0.9em;
     font-family: inherit;
@@ -1966,7 +1996,7 @@ a.mvs-dashboard-card-title:hover {
     font-size: 48px;
     width: 48px;
     height: 48px;
-    color: #ccc;
+    color: var(--mvs-border-light);
     display: block;
     margin: 0 auto 12px;
 }
@@ -1974,7 +2004,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-empty-state p {
     font-size: 1em;
     margin: 8px 0 0;
-    color: #999;
+    color: var(--mvs-text-muted);
 }
 
 /* ==========================================================================
@@ -2011,17 +2041,17 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 10px;
     padding: 16px 20px;
-    border: 2px dashed #ccc;
+    border: 2px dashed var(--mvs-border-light);
     border-radius: 8px;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
-    background: #fafafa;
+    background: var(--mvs-surface-2);
 }
 
 .mvs-bp-dropzone:hover,
 .mvs-bp-dropzone--active {
     border-color: var(--mvs-primary);
-    background: #f0f7fc;
+    background: var(--mvs-info-bg);
 }
 
 .mvs-bp-dropzone .dashicons {
@@ -2040,14 +2070,14 @@ a.mvs-dashboard-card-title:hover {
     padding: 10px 16px;
     margin-top: 8px;
     border-radius: 6px;
-    background: #f0f6fc;
+    background: var(--mvs-info-bg);
     color: var(--mvs-primary);
     font-size: 0.9em;
 }
 
 .mvs-bp-upload-status--success {
-    background: #e6f7e6;
-    color: #00a32a;
+    background: var(--mvs-success-bg);
+    color: var(--mvs-success);
 }
 
 /* ==========================================================================
@@ -2105,7 +2135,7 @@ a.mvs-dashboard-card-title:hover {
     margin-top: 0;
     overflow: hidden;
     position: relative;
-    background: #f0f2f5;
+    background: var(--mvs-surface-2);
 }
 
 .mvs-activity-media-grid .mvs-activity-media a {
@@ -2203,7 +2233,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-activity-comment-text {
     margin-top: 8px;
     font-size: 0.95em;
-    color: #333;
+    color: var(--mvs-text);
     line-height: 1.5;
 }
 
@@ -2220,20 +2250,20 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    background: #f7f8fa;
-    border: 1px solid #ddd;
+    background: var(--mvs-surface-2);
+    border: 1px solid var(--mvs-border);
     border-radius: 20px;
     cursor: pointer;
-    color: #555;
+    color: var(--mvs-text-secondary);
     font-size: 13px;
     font-weight: 500;
     transition: all 0.2s;
 }
 
 .mvs-activity-media-btn:hover {
-    border-color: #0095f6;
-    color: #0095f6;
-    background: #f0f7ff;
+    border-color: var(--mvs-primary);
+    color: var(--mvs-primary);
+    background: var(--mvs-info-bg);
 }
 
 .mvs-activity-media-btn .dashicons {
@@ -2281,7 +2311,7 @@ a.mvs-dashboard-card-title:hover {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    color: #0095f6;
+    color: var(--mvs-primary);
     font-size: 13px;
     font-weight: 600;
     padding: 8px 0;
@@ -2291,7 +2321,7 @@ a.mvs-dashboard-card-title:hover {
     content: "";
     width: 16px;
     height: 16px;
-    border: 2px solid #0095f6;
+    border: 2px solid var(--mvs-primary);
     border-top-color: transparent;
     border-radius: 50%;
     animation: mvs-spin 0.8s linear infinite;
@@ -2305,7 +2335,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-activity-media-error {
-    color: #d63638;
+    color: var(--mvs-danger);
     font-size: 13px;
 }
 
@@ -2326,7 +2356,7 @@ a.mvs-dashboard-card-title:hover {
     margin: 16px 0;
     padding: 20px;
     background: var(--mvs-bg);
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 8px;
 }
 
@@ -2335,14 +2365,14 @@ a.mvs-dashboard-card-title:hover {
     font-weight: 600;
     font-size: 14px;
     margin-bottom: 4px;
-    color: #1d2327;
+    color: var(--mvs-text);
 }
 
 .mvs-bp-album-form-inner input[type="text"],
 .mvs-bp-album-form-inner textarea {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--mvs-border-light);
     border-radius: 6px;
     font-size: 14px;
     margin-bottom: 12px;
@@ -2351,9 +2381,9 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-bp-album-form-inner input[type="text"]:focus,
 .mvs-bp-album-form-inner textarea:focus {
-    border-color: #2271b1;
+    border-color: var(--mvs-primary);
     outline: none;
-    box-shadow: 0 0 0 1px #2271b1;
+    box-shadow: 0 0 0 1px var(--mvs-primary);
 }
 
 .mvs-bp-album-form-actions {
@@ -2363,7 +2393,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-btn-primary {
-    background: #2271b1;
+    background: var(--mvs-primary);
     color: var(--mvs-bg);
     border: none;
     padding: 8px 20px;
@@ -2374,7 +2404,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-btn-primary:hover {
-    background: #135e96;
+    background: var(--mvs-primary-hover);
 }
 
 .mvs-btn-primary:disabled {
@@ -2383,9 +2413,9 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-btn-secondary {
-    background: #f0f0f0;
-    color: #50575e;
-    border: 1px solid #ccc;
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text-secondary);
+    border: 1px solid var(--mvs-border-light);
     padding: 8px 20px;
     border-radius: 6px;
     font-size: 14px;
@@ -2393,7 +2423,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-btn-secondary:hover {
-    background: #e0e0e0;
+    background: var(--mvs-border);
 }
 
 .mvs-bp-album-msg {
@@ -2402,7 +2432,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-bp-album-msg-error {
-    color: #d63638;
+    color: var(--mvs-danger);
 }
 
 /* ── 27. BP Profile — Inline Upload ── */
@@ -2410,7 +2440,7 @@ a.mvs-dashboard-card-title:hover {
     margin: 16px 0;
     padding: 20px;
     background: var(--mvs-bg);
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 8px;
 }
 
@@ -2431,7 +2461,7 @@ a.mvs-dashboard-card-title:hover {
     height: 80px;
     object-fit: cover;
     border-radius: 6px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
 }
 
 .mvs-bp-upload-thumb-name {
@@ -2453,13 +2483,13 @@ a.mvs-dashboard-card-title:hover {
     padding: 8px 12px;
     border-radius: 6px;
     font-size: 13px;
-    background: #f0f6fc;
-    color: #2271b1;
+    background: var(--mvs-info-bg);
+    color: var(--mvs-primary);
 }
 
 .mvs-bp-upload-status--success {
-    background: #edfaef;
-    color: #00a32a;
+    background: var(--mvs-success-bg);
+    color: var(--mvs-success);
 }
 
 /* ── 28. BP Profile — Single Album View ── */
@@ -2468,7 +2498,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-bp-back-link a {
-    color: #2271b1;
+    color: var(--mvs-primary);
     text-decoration: none;
     font-size: 14px;
 }
@@ -2487,7 +2517,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-bp-sub-tabs {
     display: flex;
-    border-bottom: 2px solid #e0e0e0;
+    border-bottom: 2px solid var(--mvs-border);
     margin-bottom: 20px;
     gap: 0;
 }
@@ -2504,13 +2534,13 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-bp-sub-tab:hover {
-    color: #1e1e1e;
+    color: var(--mvs-text);
     text-decoration: none;
 }
 
 .mvs-bp-sub-tab.active {
-    color: #1e1e1e;
-    border-bottom-color: #2271b1;
+    color: var(--mvs-text);
+    border-bottom-color: var(--mvs-primary);
 }
 
 /* ==========================================================================
@@ -2583,7 +2613,7 @@ a.mvs-dashboard-card-title:hover {
     justify-content: center;
     gap: 12px;
     text-decoration: none;
-    color: #ccc;
+    color: var(--mvs-border-light);
     padding: 32px;
     width: 100%;
     height: 100%;
@@ -2616,7 +2646,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 14px;
     padding: 16px 20px;
     text-decoration: none;
-    color: #fff;
+    color: var(--mvs-surface);
 }
 
 .mvs-activity-audio-icon {
@@ -2628,7 +2658,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     justify-content: center;
     font-size: 22px;
-    color: #fff;
+    color: var(--mvs-surface);
     flex-shrink: 0;
 }
 
@@ -2649,7 +2679,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-activity-audio-meta {
     font-size: 0.82em;
-    color: #888;
+    color: var(--mvs-text-muted);
 }
 
 /* ==========================================================================
@@ -2674,7 +2704,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-audio-artist {
     font-weight: 600;
-    color: #333;
+    color: var(--mvs-text);
 }
 
 .mvs-audio-album::before {
@@ -2737,7 +2767,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-grid-item-placeholder--audio {
     background: linear-gradient(-135deg, #667eea 0%, #764ba2 100%);
-    color: #fff;
+    color: var(--mvs-surface);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2748,7 +2778,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-grid-audio-icon {
     font-size: 56px;
-    color: #fff;
+    color: var(--mvs-surface);
     line-height: 1;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
@@ -2760,15 +2790,15 @@ a.mvs-dashboard-card-title:hover {
 .mvs-playlist {
     max-width: 700px;
     margin: 20px auto;
-    background: #fafafa;
-    border: 1px solid #e0e0e0;
+    background: var(--mvs-surface-2);
+    border: 1px solid var(--mvs-border);
     border-radius: 8px;
     overflow: hidden;
 }
 
 .mvs-playlist-player {
     padding: 16px 20px;
-    background: #1a1a1a;
+    background: var(--mvs-text);
 }
 
 .mvs-playlist-player audio {
@@ -2793,7 +2823,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-playlist-track {
     display: flex;
     align-items: center;
-    border-bottom: 1px solid #e8e8e8;
+    border-bottom: 1px solid var(--mvs-border-light);
     transition: background 0.15s;
 }
 
@@ -2802,15 +2832,15 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-playlist-track:hover {
-    background: #f0f0f0;
+    background: var(--mvs-surface-2);
 }
 
 .mvs-playlist-track--active {
-    background: #e8f4fc;
+    background: var(--mvs-info-bg);
 }
 
 .mvs-playlist-track--active:hover {
-    background: #dbeefa;
+    background: var(--mvs-info-bg-light);
 }
 
 .mvs-playlist-track-btn {
@@ -2831,7 +2861,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-playlist-track-num {
     width: 28px;
     text-align: center;
-    color: #888;
+    color: var(--mvs-text-muted);
     font-size: 0.85em;
     flex-shrink: 0;
 }
@@ -2858,18 +2888,18 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-playlist-track-artist {
     font-size: 0.82em;
-    color: #888;
+    color: var(--mvs-text-muted);
 }
 
 .mvs-playlist-track-duration {
-    color: #888;
+    color: var(--mvs-text-muted);
     font-size: 0.85em;
     flex-shrink: 0;
 }
 
 .mvs-playlist-track-link {
     padding: 12px 14px;
-    color: #888;
+    color: var(--mvs-text-muted);
     text-decoration: none;
     font-size: 1.1em;
 }
@@ -2887,8 +2917,8 @@ a.mvs-dashboard-card-title:hover {
     justify-content: space-between;
     align-items: center;
     padding: 10px 14px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #eee;
+    background: var(--mvs-surface-2);
+    border-bottom: 1px solid var(--mvs-border-light);
 }
 
 /* --- Collection Single Page --- */
@@ -2902,7 +2932,7 @@ a.mvs-dashboard-card-title:hover {
 /* Info Card */
 .mvs-collection-card-info {
     background: var(--mvs-bg);
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--mvs-border-light);
     border-radius: 12px;
     padding: 24px 28px;
     margin-bottom: 24px;
@@ -2914,7 +2944,7 @@ a.mvs-dashboard-card-title:hover {
     font-size: 1.6em;
     font-weight: 700;
     line-height: 1.3;
-    color: #111827;
+    color: var(--mvs-text);
 }
 
 .mvs-collection-card-meta {
@@ -2923,7 +2953,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 14px;
     flex-wrap: wrap;
     font-size: 0.9em;
-    color: #6b7280;
+    color: var(--mvs-text-secondary);
 }
 
 .mvs-collection-meta-author {
@@ -2933,7 +2963,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-collection-meta-author a {
-    color: #dc2626;
+    color: var(--mvs-danger);
     text-decoration: none;
     font-weight: 500;
 }
@@ -2949,14 +2979,14 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-collection-meta-text {
-    color: #6b7280;
+    color: var(--mvs-text-secondary);
 }
 
 .mvs-collection-card-desc {
     margin-top: 14px;
     padding-top: 14px;
-    border-top: 1px solid #f3f4f6;
-    color: #4b5563;
+    border-top: 1px solid var(--mvs-surface-2);
+    color: var(--mvs-text-secondary);
     font-size: 0.95em;
     line-height: 1.6;
 }
@@ -2978,7 +3008,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-search-input {
     flex: 1;
     padding: 10px 16px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--mvs-border-light);
     border-radius: 0 8px 8px 0;
     font-size: 0.95em;
     background: var(--mvs-bg);
@@ -2987,16 +3017,16 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-collection-search-input:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: var(--mvs-primary);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .mvs-collection-search-btn {
     padding: 10px 20px;
-    border: 1px solid #3b82f6;
+    border: 1px solid var(--mvs-primary);
     border-right: 0;
     border-radius: 8px 0 0 8px;
-    background: #3b82f6;
+    background: var(--mvs-primary);
     color: var(--mvs-bg);
     font-size: 0.95em;
     font-weight: 500;
@@ -3005,7 +3035,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-collection-search-btn:hover {
-    background: #2563eb;
+    background: var(--mvs-primary-hover);
 }
 
 /* Rules display (inline in meta) */
@@ -3013,8 +3043,8 @@ a.mvs-dashboard-card-title:hover {
     padding: 3px 10px;
     border-radius: 16px;
     font-size: 0.85em;
-    background: #f3f4f6;
-    color: #374151;
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text-secondary);
     font-weight: 500;
 }
 
@@ -3026,8 +3056,8 @@ a.mvs-dashboard-card-title:hover {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    background: #e8f0fe;
-    color: #1a73e8;
+    background: var(--mvs-info-bg);
+    color: var(--mvs-primary);
 }
 
 .mvs-collection-count {
@@ -3047,15 +3077,16 @@ a.mvs-dashboard-card-title:hover {
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 0.75em;
-    background: #f0f0f0;
-    color: #555;
+    background: rgba(var(--mvs-primary-rgb), 0.15);
+    color: var(--mvs-primary);
+    border: 1px solid rgba(var(--mvs-primary-rgb), 0.30);
 }
 
 /* Type toggle */
 .mvs-collection-type-toggle {
     display: flex;
     gap: 0;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 6px;
     overflow: hidden;
     width: fit-content;
@@ -3067,12 +3098,12 @@ a.mvs-dashboard-card-title:hover {
     background: var(--mvs-bg);
     cursor: pointer;
     font-size: 0.9em;
-    color: #555;
+    color: var(--mvs-text-secondary);
     transition: background 0.15s, color 0.15s;
 }
 
 .mvs-toggle-btn:not(:last-child) {
-    border-left: 1px solid #ddd;
+    border-left: 1px solid var(--mvs-border);
 }
 
 .mvs-toggle-btn.active {
@@ -3083,7 +3114,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-field-hint {
     margin-top: 6px;
     font-size: 0.85em;
-    color: #888;
+    color: var(--mvs-text-muted);
     font-style: italic;
 }
 
@@ -3114,7 +3145,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-rule-row select,
 .mvs-rule-row input {
     padding: 8px 10px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 4px;
     font-size: 0.9em;
 }
@@ -3134,10 +3165,10 @@ a.mvs-dashboard-card-title:hover {
     flex: 0 0 auto;
     width: 32px;
     height: 32px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 4px;
     background: var(--mvs-bg);
-    color: #cc0000;
+    color: var(--mvs-danger);
     font-size: 1.2em;
     cursor: pointer;
     display: flex;
@@ -3148,18 +3179,18 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-rule-remove:hover,
 .mvs-rule-remove:focus {
-    background: #fee;
-    color: #cc0000;
-    border-color: #cc0000;
+    background: var(--mvs-danger-bg);
+    color: var(--mvs-danger);
+    border-color: var(--mvs-danger);
 }
 
 .mvs-rules-preview {
     margin-top: 12px;
     padding: 10px 14px;
-    background: #e8f5e9;
+    background: var(--mvs-success-bg);
     border-radius: 6px;
     font-size: 0.9em;
-    color: #2e7d32;
+    color: var(--mvs-success);
     font-weight: 500;
 }
 
@@ -3266,12 +3297,13 @@ a.mvs-dashboard-card-title:hover {
     position: absolute;
     top: 8px;
     left: 8px;
-    background: rgba(0, 0, 0, 0.6);
-    color: var(--mvs-bg);
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 11px;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .mvs-collection-card .mvs-dashboard-card-thumb {
@@ -3319,7 +3351,7 @@ a.mvs-dashboard-card-title:hover {
     position: absolute;
     top: -6px;
     left: -8px;
-    background: #d63638;
+    background: var(--mvs-danger);
     color: var(--mvs-bg);
     font-size: 11px;
     font-weight: 700;
@@ -3351,7 +3383,7 @@ a.mvs-dashboard-card-title:hover {
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--mvs-border-light);
 }
 
 .mvs-notification-list {
@@ -3362,7 +3394,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-notification-item {
     padding: 10px 16px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--mvs-surface-2);
     font-size: 0.9em;
     display: flex;
     flex-direction: column;
@@ -3374,18 +3406,18 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-notification-unread {
-    background: #f0f7ff;
+    background: var(--mvs-info-bg);
 }
 
 .mvs-notification-time {
-    color: #999;
+    color: var(--mvs-text-muted);
     font-size: 0.8em;
 }
 
 .mvs-notification-empty {
     padding: 20px 16px;
     text-align: center;
-    color: #999;
+    color: var(--mvs-text-muted);
     margin: 0;
 }
 
@@ -3421,7 +3453,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-comment-edit-textarea {
     width: 100%;
     padding: 8px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 4px;
     font-size: 0.9em;
     resize: vertical;
@@ -3450,24 +3482,24 @@ a.mvs-dashboard-card-title:hover {
     font-size: 0.8125rem;
     font-weight: 600;
     transition: all 0.2s;
-    background: #0095f6;
+    background: var(--mvs-primary);
     color: var(--mvs-bg);
-    border: 1px solid #0095f6;
+    border: 1px solid var(--mvs-primary);
 }
 
 .mvs-follow-btn:hover {
-    background: #1877f2;
-    border-color: #1877f2;
+    background: var(--mvs-primary-hover);
+    border-color: var(--mvs-primary-hover);
 }
 
 .mvs-follow-btn.active {
     background: var(--mvs-bg);
-    color: #333;
+    color: var(--mvs-text);
     border-color: var(--mvs-border);
 }
 
 .mvs-follow-btn.active:hover {
-    background: #fafafa;
+    background: var(--mvs-surface-2);
     border-color: var(--mvs-border);
 }
 
@@ -3513,7 +3545,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-media-picker-cover {
-    outline: 3px solid #0073aa;
+    outline: 3px solid var(--mvs-primary);
     outline-offset: -3px;
 }
 
@@ -3551,24 +3583,24 @@ a.mvs-dashboard-card-title:hover {
 .mvs-grid-pagination-links span {
     display: inline-block;
     padding: 8px 14px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--mvs-border);
     border-radius: 4px;
     text-decoration: none;
     font-size: 13px;
-    color: #333;
+    color: var(--mvs-text);
     background: var(--mvs-bg);
     transition: all 0.15s;
 }
 
 .mvs-grid-pagination-links a:hover {
-    background: #f0f0f0;
-    border-color: #bbb;
+    background: var(--mvs-surface-2);
+    border-color: var(--mvs-border-light);
 }
 
 .mvs-grid-pagination-links .current {
-    background: #2271b1;
+    background: var(--mvs-primary);
     color: var(--mvs-bg);
-    border-color: #2271b1;
+    border-color: var(--mvs-primary);
     font-weight: 600;
 }
 
@@ -3587,23 +3619,23 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-upload-dropzone {
-    border: 2px dashed #c3c4c7;
+    border: 2px dashed var(--mvs-border);
     border-radius: 8px;
     padding: 40px 20px;
     text-align: center;
     cursor: pointer;
     transition: all 0.2s;
-    background: #fafafa;
+    background: var(--mvs-surface-2);
 }
 
 .mvs-upload-dropzone:hover,
 .mvs-upload-dropzone.mvs-dragover {
-    border-color: #2271b1;
-    background: #f0f6fc;
+    border-color: var(--mvs-primary);
+    background: var(--mvs-info-bg);
 }
 
 .mvs-upload-icon {
-    color: #999;
+    color: var(--mvs-text-muted);
     margin-bottom: 12px;
 }
 
@@ -3620,7 +3652,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-upload-privacy {
     margin-top: 12px;
     padding: 6px 12px;
-    border: 1px solid #c3c4c7;
+    border: 1px solid var(--mvs-border);
     border-radius: 4px;
     font-size: 13px;
 }
@@ -3636,7 +3668,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-upload-fields textarea {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #c3c4c7;
+    border: 1px solid var(--mvs-border);
     border-radius: 4px;
     font-size: 13px;
 }
@@ -3650,7 +3682,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    border: 1px solid #c3c4c7;
+    border: 1px solid var(--mvs-border);
     border-radius: 4px;
     background: var(--mvs-bg);
     color: var(--mvs-text);
@@ -3663,9 +3695,9 @@ a.mvs-dashboard-card-title:hover {
 }
 
 #mvs-activity-media-btn:hover {
-    background: #f0f0f0;
+    background: var(--mvs-surface-2);
     color: var(--mvs-text);
-    border-color: #999;
+    border-color: var(--mvs-text-muted);
 }
 
 #mvs-activity-media-btn .dashicons {
@@ -3682,8 +3714,8 @@ a.mvs-dashboard-card-title:hover {
     gap: 8px;
     margin-top: 12px;
     padding: 10px;
-    background: #f8f9fa;
-    border: 1px solid #e0e0e0;
+    background: var(--mvs-surface-2);
+    border: 1px solid var(--mvs-border);
     border-radius: 8px;
     overflow-x: auto;
     max-width: 100%;
@@ -3708,7 +3740,7 @@ a.mvs-dashboard-card-title:hover {
     min-width: 100px;
     border-radius: 6px;
     overflow: hidden;
-    background: #eee;
+    background: var(--mvs-border-light);
     flex-shrink: 0;
 }
 
@@ -3760,7 +3792,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 8px;
     flex-wrap: wrap;
     padding: 10px 16px;
-    border-top: 1px solid #efefef;
+    border-top: 1px solid var(--mvs-border-light);
 }
 
 .mvs-reactions {
@@ -3773,7 +3805,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 3px;
     padding: 5px 10px;
-    border: 1px solid #efefef;
+    border: 1px solid var(--mvs-border-light);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -3783,8 +3815,8 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-reaction-btn:hover,
 .mvs-reaction-btn.active {
-    background: #f0f6fc;
-    border-color: #0095f6;
+    background: var(--mvs-info-bg);
+    border-color: var(--mvs-primary);
 }
 
 .mvs-reaction-btn .mvs-count {
@@ -3805,7 +3837,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-favorite-btn {
     padding: 5px 12px;
-    border: 1px solid #efefef;
+    border: 1px solid var(--mvs-border-light);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -3815,14 +3847,14 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-favorite-btn:hover,
 .mvs-favorite-btn.active {
-    background: #fce4e4;
-    border-color: #ed4956;
-    color: #ed4956;
+    background: var(--mvs-danger-bg);
+    border-color: var(--mvs-danger);
+    color: var(--mvs-danger);
 }
 
 .mvs-share-btn {
     padding: 5px 12px;
-    border: 1px solid #efefef;
+    border: 1px solid var(--mvs-border-light);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -3831,14 +3863,14 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-share-btn:hover {
-    border-color: #0095f6;
-    color: #0095f6;
+    border-color: var(--mvs-primary);
+    color: var(--mvs-primary);
 }
 
 .mvs-view-count {
     margin-right: auto;
     font-size: 0.8125rem;
-    color: #8e8e8e;
+    color: var(--mvs-text-muted);
 }
 
 /* Single Media Responsive */
@@ -3902,7 +3934,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-dashboard-profile-header {
     margin-bottom: 1.5rem;
     padding: 1.25rem;
-    background: #f8f9fa;
+    background: var(--mvs-surface-2);
     border: 1px solid var(--mvs-border, #dcdcde);
     border-radius: 12px;
 }
@@ -3998,14 +4030,14 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-profile-message--success {
-    background: #d4edda;
-    color: #155724;
+    background: var(--mvs-success-bg);
+    color: var(--mvs-success);
     border: 1px solid #c3e6cb;
 }
 
 .mvs-profile-message--error {
-    background: #f8d7da;
-    color: #721c24;
+    background: var(--mvs-danger-bg);
+    color: var(--mvs-danger);
     border: 1px solid #f5c6cb;
 }
 
@@ -4016,7 +4048,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 1.5rem;
     margin-bottom: 2rem;
     padding: 1.5rem;
-    background: #f8f9fa;
+    background: var(--mvs-surface-2);
     border-radius: 12px;
 }
 
@@ -4029,7 +4061,7 @@ a.mvs-dashboard-card-title:hover {
     height: 96px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid #fff;
+    border: 3px solid var(--mvs-surface);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -4050,7 +4082,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-profile-avatar-remove {
     font-size: 0.8125rem;
-    color: #dc3545;
+    color: var(--mvs-danger);
     background: none;
     border: none;
     cursor: pointer;
@@ -4084,13 +4116,13 @@ a.mvs-dashboard-card-title:hover {
 .mvs-profile-field label {
     font-weight: 600;
     font-size: 0.875rem;
-    color: #333;
+    color: var(--mvs-text);
 }
 
 .mvs-profile-field input[type="text"],
 .mvs-profile-field textarea {
     padding: 0.625rem 0.75rem;
-    border: 1px solid #ccc;
+    border: 1px solid var(--mvs-border-light);
     border-radius: 6px;
     font-size: 0.9375rem;
     font-family: inherit;
@@ -4140,7 +4172,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-btn--primary:hover {
-    background: #005f8d;
+    background: var(--mvs-primary-hover);
 }
 
 .mvs-btn--primary:disabled {
@@ -4148,15 +4180,21 @@ a.mvs-dashboard-card-title:hover {
     cursor: not-allowed;
 }
 
-.mvs-btn--secondary {
-    background: var(--mvs-bg);
-    color: #333;
+/* Secondary buttons inherit theme button tokens.
+   BuddyX Pro / BuddyX expose dedicated button vars that flip per mode:
+   --button-background-color, --button-text-color, --button-border-color
+   (and matching :hover variants). We use those directly — no hardcoding. */
+.mvs-btn.mvs-btn--secondary {
+    background: var(--button-background-color, var(--mvs-surface-2));
+    color: var(--button-text-color, var(--mvs-text));
+    border: 1px solid var(--button-border-color, var(--mvs-border));
 }
 
-.mvs-btn--secondary:hover {
-    background: #f0f0f0;
-    color: #333;
-    border: none;
+.mvs-btn.mvs-btn--secondary:hover,
+.mvs-btn.mvs-btn--secondary:focus {
+    background: var(--button-background-hover-color, var(--mvs-border));
+    color: var(--button-text-hover-color, var(--mvs-text));
+    border-color: var(--button-border-hover-color, var(--mvs-border));
 }
 
 .mvs-btn--text {
@@ -4164,13 +4202,13 @@ a.mvs-dashboard-card-title:hover {
     border: none;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
-    color: #50575e;
+    color: var(--mvs-text-secondary);
     transition: background 0.15s, color 0.15s;
 }
 
 .mvs-btn--text:hover {
     background: rgba(214, 54, 56, 0.08);
-    color: #d63638;
+    color: var(--mvs-danger);
     border: none;
 }
 
@@ -4211,7 +4249,7 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     align-items: center;
     background: var(--mvs-bg);
-    border: 1.5px solid #e2e2e2;
+    border: 1.5px solid var(--mvs-border-light);
     border-radius: 100px;
     padding: 5px 6px 5px 5px;
     gap: 0;
@@ -4289,7 +4327,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-search-field input:focus-visible {
-    outline: 2px solid #0073aa;
+    outline: 2px solid var(--mvs-primary);
     outline-offset: -2px;
     border-radius: 2px;
 }
@@ -4313,7 +4351,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border: 1px solid #dbdbdb;
+    border: 1px solid var(--mvs-border);
     border-radius: 8px;
     margin-bottom: 8px;
     text-decoration: none;
@@ -4338,12 +4376,12 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-user-card-info strong {
     font-size: 0.9375rem;
-    color: #1a1a1a;
+    color: var(--mvs-text);
 }
 
 .mvs-user-card-info span {
     font-size: 0.8125rem;
-    color: #8e8e8e;
+    color: var(--mvs-text-muted);
 }
 
 /* Login prompt links styled like buttons */
@@ -4460,7 +4498,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-empty-state-frontend h3 {
     margin: 0 0 8px;
     font-size: 1.125rem;
-    color: #333;
+    color: var(--mvs-text);
 }
 
 .mvs-empty-state-frontend p {
@@ -4477,8 +4515,8 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: #fef3cd;
-    border: 1px solid #ffc107;
+    background: var(--mvs-warning-bg);
+    border: 1px solid var(--mvs-warning);
     border-radius: 6px;
     padding: 10px 16px;
     margin-bottom: 16px;
@@ -4493,13 +4531,14 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-profile-prompt-text {
     flex: 1;
-    color: #856404;
+    color: var(--mvs-warning);
 }
 
 .mvs-profile-prompt-text .mvs-dashboard-profile-edit-btn {
     background: transparent;
-    color: #533f03;
-    font-weight: 600;
+    color: var(--mvs-warning);
+    font-weight: 700;
+    text-decoration: underline;
     border: 0;
     padding: 0;
 }
@@ -4518,7 +4557,7 @@ a.mvs-dashboard-card-title:hover {
     border: none;
     font-size: 18px;
     cursor: pointer;
-    color: #856404;
+    color: var(--mvs-warning);
     padding: 4px;
     line-height: 1;
 }
@@ -4547,7 +4586,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-notification-bell:focus-visible,
 .mvs-modal-close:focus-visible,
 .mvs-dashboard-dropzone:focus-visible {
-    outline: 2px solid #0073aa;
+    outline: 2px solid var(--mvs-primary);
     outline-offset: 2px;
 }
 
@@ -4610,7 +4649,7 @@ a.mvs-dashboard-card-title:hover {
         z-index: 10;
         background: var(--mvs-bg);
         padding: 8px 0;
-        border-bottom: 1px solid #dbdbdb;
+        border-bottom: 1px solid var(--mvs-border);
         margin: 0 -20px;
         padding-right: 20px;
         padding-left: 20px;
@@ -4650,7 +4689,7 @@ a.mvs-dashboard-card-title:hover {
         position: sticky;
         bottom: 0;
         background: var(--mvs-bg);
-        border-top: 1px solid #dbdbdb;
+        border-top: 1px solid var(--mvs-border);
         padding: 8px 16px;
         margin: 0 -16px;
         z-index: 5;
@@ -4835,7 +4874,7 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     max-width: 95vw;
     max-height: 92vh;
-    background: #fff;
+    background: var(--mvs-surface);
     border-radius: 6px;
     overflow: hidden;
     position: relative;
@@ -4856,7 +4895,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #fff;
+    color: var(--mvs-surface);
 }
 
 .mvs-lightbox-close:hover {
@@ -4882,7 +4921,7 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #000;
+    background: var(--mvs-overlay);
     position: relative;
     max-height: 92vh;
 }
@@ -4938,7 +4977,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-nav:hover {
-    background: #fff;
+    background: var(--mvs-surface);
 }
 
 .mvs-lightbox-nav--prev {
@@ -4955,7 +4994,7 @@ a.mvs-dashboard-card-title:hover {
     right: 50%;
     transform: translateX(50%);
     background: rgba(0, 0, 0, .6);
-    color: #fff;
+    color: var(--mvs-surface);
     padding: 4px 12px;
     border-radius: 12px;
     font-size: 13px;
@@ -4967,13 +5006,13 @@ a.mvs-dashboard-card-title:hover {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #efefef;
+    border-right: 1px solid var(--mvs-border-light);
     overflow-y: auto;
 }
 
 .mvs-lightbox-author {
     padding: 14px 16px;
-    border-bottom: 1px solid #efefef;
+    border-bottom: 1px solid var(--mvs-border-light);
 }
 
 .mvs-lightbox-author-link {
@@ -4994,19 +5033,19 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-stats {
     padding: 6px 16px;
     font-size: 13px;
-    color: #666;
+    color: var(--mvs-text-secondary);
 }
 
 .mvs-lightbox-reactions {
     display: flex;
     gap: 2px;
     padding: 8px 16px;
-    border-bottom: 1px solid #efefef;
+    border-bottom: 1px solid var(--mvs-border-light);
 }
 
 .mvs-lightbox-reaction {
     background: none;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--mvs-border);
     border-radius: 20px;
     padding: 4px 10px;
     cursor: pointer;
@@ -5022,21 +5061,21 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-reaction:hover {
-    background: #f5f5f5;
-    border-color: #ccc;
+    background: var(--mvs-surface-2);
+    border-color: var(--mvs-border-light);
 }
 
 .mvs-lightbox-reaction.active {
-    background: #eff6ff;
-    border-color: #3b82f6;
-    color: #1d4ed8;
+    background: var(--mvs-info-bg);
+    border-color: var(--mvs-primary);
+    color: var(--mvs-primary);
 }
 
 .mvs-lightbox-actions {
     display: flex;
     gap: 8px;
     padding: 10px 16px;
-    border-bottom: 1px solid #efefef;
+    border-bottom: 1px solid var(--mvs-border-light);
 }
 
 .mvs-lightbox-action {
@@ -5053,18 +5092,18 @@ a.mvs-dashboard-card-title:hover {
     text-align: center;
     border-radius: 6px;
     text-decoration: none;
-    color: #333;
+    color: var(--mvs-text);
 }
 
 .mvs-lightbox-action:hover,
 .mvs-lightbox-action:focus {
-    background: #f5f5f5;
-    color: #333;
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text);
     border: none;
 }
 
 .mvs-lightbox-action.active {
-    color: #e11d48;
+    color: var(--mvs-danger);
 }
 
 .mvs-lightbox-action--report svg {
@@ -5074,20 +5113,20 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-action--report {
     margin-right: auto;
-    color: #666;
+    color: var(--mvs-text-secondary);
     font-size: 13px;
 }
 
 .mvs-lightbox-action--report:hover {
-    color: #e11d48;
-    background: #fef2f2;
+    color: var(--mvs-danger);
+    background: var(--mvs-danger-bg);
 }
 
 .mvs-lightbox-desc {
     padding: 10px 16px;
     font-size: 14px;
     line-height: 1.5;
-    border-bottom: 1px solid #efefef;
+    border-bottom: 1px solid var(--mvs-border-light);
 }
 
 .mvs-lightbox-desc strong {
@@ -5143,7 +5182,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-no-comments {
-    color: #999;
+    color: var(--mvs-text-muted);
     font-size: 14px;
     text-align: center;
     padding: 20px 0;
@@ -5154,19 +5193,19 @@ a.mvs-dashboard-card-title:hover {
     text-align: center;
     padding: 8px 0;
     font-size: 13px;
-    color: #8e8e8e;
+    color: var(--mvs-text-muted);
     text-decoration: none;
-    border-top: 1px solid #efefef;
+    border-top: 1px solid var(--mvs-border-light);
 }
 
 .mvs-lightbox-view-all-comments:hover {
-    color: #262626;
+    color: var(--mvs-text);
 }
 
 .mvs-lightbox-comment-form {
     display: flex;
     gap: 10px;
-    border-top: 1px solid #efefef;
+    border-top: 1px solid var(--mvs-border-light);
     padding: 0;
     padding-top: 10px;
 }
@@ -5180,14 +5219,14 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-comment-input:focus-visible {
-    outline: 2px solid #0073aa;
+    outline: 2px solid var(--mvs-primary);
     outline-offset: -2px;
 }
 
 .mvs-lightbox-comment-post {
-    background: #3b82f6;
-    border-color: #3b82f6;
-    color: #fff;
+    background: var(--mvs-primary);
+    border-color: var(--mvs-primary);
+    color: var(--mvs-surface);
     font-weight: 600;
     padding: 10px 16px;
     cursor: pointer;
@@ -5195,12 +5234,12 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-comment-post:disabled {
-    color: #ccc;
+    color: var(--mvs-border-light);
     cursor: default;
 }
 
 .mvs-lightbox-comment-post:not(:disabled):hover {
-    color: #fff;
+    color: var(--mvs-surface);
 }
 
 @media (max-width: 768px) {
@@ -5213,10 +5252,30 @@ a.mvs-dashboard-card-title:hover {
         width: 100%;
         max-height: 45vh;
         border-right: none;
-        border-top: 1px solid #efefef;
+        border-top: 1px solid var(--mvs-border-light);
     }
 
     .mvs-lightbox-media {
         max-height: 50vh;
     }
+}
+/* Replace-file row inside edit modal */
+.mvs-replace-file-row {
+    padding: 0 24px 12px;
+    border-top: 1px solid var(--mvs-border-light);
+    margin-top: 12px;
+    padding-top: 12px;
+}
+
+.mvs-replace-file-label {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mvs-replace-file-hint {
+    color: var(--mvs-text-secondary);
+    font-size: 12px;
+    margin-right: 8px;
 }

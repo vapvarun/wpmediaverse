@@ -24,7 +24,7 @@
 	align-items: center;
 	gap: 8px;
 	padding: 16px;
-	background: #f9f9f9;
+	background: var(--mvs-surface-2);
 	border-radius: 8px;
 }
 
@@ -73,7 +73,7 @@
 	background: rgba(0, 0, 0, var(--mvs-overlay-opacity, 0.6));
 	text-align: center;
 	padding: 24px;
-	color: #fff;
+	color: var(--mvs-surface);
 }
 
 .mvs-lock-icon {
@@ -88,7 +88,7 @@
 	font-size: 1.25rem;
 	font-weight: 600;
 	margin: 0 0 8px;
-	color: #fff;
+	color: var(--mvs-surface);
 }
 
 .mvs-lock-overlay-price {
@@ -103,8 +103,8 @@
 	padding: 12px 32px;
 	font-size: 1rem;
 	font-weight: 600;
-	background: #fff;
-	color: #333;
+	background: var(--mvs-surface);
+	color: var(--mvs-text);
 	border: none;
 	border-radius: 6px;
 	cursor: pointer;
@@ -113,7 +113,7 @@
 }
 
 .mvs-lock-overlay-btn:hover {
-	background: #f0f0f0;
+	background: var(--mvs-surface-2);
 	transform: translateY(-1px);
 }
 

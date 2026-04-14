@@ -701,12 +701,12 @@ wp_enqueue_style( 'mvs-frontend' );
 					</div>
 				</div>
 			</div>
-			<div style="padding: 0 24px 12px; border-top: 1px solid #eee; margin-top: 12px; padding-top: 12px;">
-				<label class="mvs-btn mvs-btn--secondary mvs-btn--small" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+				<div class="mvs-replace-file-row">
+					<label class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-replace-file-label">
 					&#8635; <?php esc_html_e( 'Replace File', 'wpmediaverse' ); ?>
 					<input type="file" hidden data-wp-on--change="actions.handleReplaceFile" />
 				</label>
-				<span style="color: #666; font-size: 12px; margin-left: 8px;"><?php esc_html_e( 'Upload a new file. Metadata is preserved.', 'wpmediaverse' ); ?></span>
+					<span class="mvs-replace-file-hint"><?php esc_html_e( "Upload a new file. Metadata is preserved.", "wpmediaverse" ); ?></span>
 			</div>
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"

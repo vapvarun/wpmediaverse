@@ -18,18 +18,18 @@
 	font-size: 14px;
 	font-weight: 500;
 	border-radius: 6px;
-	border: 1px solid #e2e8f0;
-	background: #fff;
-	color: #1e1e1e;
+	border: 1px solid var(--mvs-border-light);
+	background: var(--mvs-surface);
+	color: var(--mvs-text);
 	cursor: pointer;
 	text-decoration: none;
 	transition: background 0.15s, border-color 0.15s;
 }
 
 .mvs-load-more-btn:hover {
-	background: #f6f7f7;
-	color: #1e1e1e;
-	border-color: #c3c4c7;
+	background: var(--mvs-surface-2);
+	color: var(--mvs-text);
+	border-color: var(--mvs-border);
 }
 
 .mvs-load-more-btn.is-loading {
@@ -41,8 +41,8 @@
 	display: none;
 	width: 16px;
 	height: 16px;
-	border: 2px solid #c3c4c7;
-	border-top-color: #2271b1;
+	border: 2px solid var(--mvs-border);
+	border-top-color: var(--mvs-primary);
 	border-radius: 50%;
 	animation: mvs-spin 0.6s linear infinite;
 }
@@ -62,7 +62,7 @@
 .mvs-load-more-end {
 	text-align: center;
 	padding: 24px 0;
-	color: #50575e;
+	color: var(--mvs-text-secondary);
 	font-size: 14px;
 }
 

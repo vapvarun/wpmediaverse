@@ -5,13 +5,13 @@
    ---------------------------------------------------------------- */
 :root {
 	--mvs-chat-font: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
-	--mvs-chat-primary: #0095f6;
-	--mvs-chat-primary-hover: #1877f2;
-	--mvs-chat-bg: #fff;
-	--mvs-chat-surface: #f8f9fa;
-	--mvs-chat-border: #dbdbdb;
-	--mvs-chat-text: #262626;
-	--mvs-chat-text-secondary: #8e8e8e;
+	--mvs-chat-primary: var(--color-theme-primary, #0095f6);
+	--mvs-chat-primary-hover: var(--color-link-hover, #1877f2);
+	--mvs-chat-bg: var(--color-theme-body, #fff);
+	--mvs-chat-surface: var(--color-theme-white-box, #f8f9fa);
+	--mvs-chat-border: var(--global-border-color, #dbdbdb);
+	--mvs-chat-text: var(--global-font-color, #262626);
+	--mvs-chat-text-secondary: var(--global-body-lightcolor, #8e8e8e);
 	--mvs-chat-bubble-sent: #0095f6;
 	--mvs-chat-bubble-sent-text: #fff;
 	--mvs-chat-bubble-received: #efefef;
@@ -25,26 +25,18 @@
 	--mvs-chat-sidebar-width: 320px;
 }
 
-/* Dark mode: BuddyNext controls via [data-theme="dark"]. */
-[data-theme="dark"] {
-	--mvs-chat-bg: #000;
-	--mvs-chat-surface: #1a1a1a;
-	--mvs-chat-border: #363636;
-	--mvs-chat-text: #f5f5f5;
-	--mvs-chat-text-secondary: #a8a8a8;
-	--mvs-chat-bubble-received: #262626;
-	--mvs-chat-bubble-received-text: #f5f5f5;
-	--mvs-chat-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-}
-
-/* Dark mode: theme-controlled via data-theme="dark" on <html>, not OS preference.
-   See frontend.css line 59 for rationale. */
-:root[data-theme="dark"] {
-	--mvs-chat-bg: #000;
-	--mvs-chat-surface: #1a1a1a;
-	--mvs-chat-border: #363636;
-	--mvs-chat-text: #f5f5f5;
-	--mvs-chat-text-secondary: #a8a8a8;
+/* Dark mode: theme-controlled. Supports both signals:
+   - [data-theme="dark"] on <html> (BuddyNext, generic themes)
+   - .dark-mode on <html> or <body> (BuddyX / BuddyX Pro)
+   Inherits theme --color-* vars when present, else uses Instagram-style fallbacks. */
+[data-theme="dark"],
+html.dark-mode,
+body.dark-mode {
+	--mvs-chat-bg: var(--color-theme-body, #000);
+	--mvs-chat-surface: var(--color-theme-white-box, #1a1a1a);
+	--mvs-chat-border: var(--global-border-color, #363636);
+	--mvs-chat-text: var(--global-font-color, #f5f5f5);
+	--mvs-chat-text-secondary: var(--global-body-lightcolor, #a8a8a8);
 	--mvs-chat-bubble-received: #262626;
 	--mvs-chat-bubble-received-text: #f5f5f5;
 	--mvs-chat-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);

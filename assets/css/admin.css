@@ -11,18 +11,18 @@
    ========================================================================== */
 
 :root {
-	--mvs-bg: #f0f0f1;
-	--mvs-text: #1d2327;
-	--mvs-text-muted: #50575e;
-	--mvs-accent: #2271b1;
-	--mvs-accent-hover: #135e96;
-	--mvs-success: #00a32a;
-	--mvs-warn: #dba617;
-	--mvs-danger: #d63638;
-	--mvs-border: #c3c4c7;
-	--mvs-border-light: #e2e8f0;
-	--mvs-surface: #fff;
-	--mvs-surface-alt: #f6f7f7;
+	--mvs-bg: var(--mvs-surface-2);
+	--mvs-text: var(--mvs-text);
+	--mvs-text-muted: var(--mvs-text-secondary);
+	--mvs-accent: var(--mvs-primary);
+	--mvs-accent-hover: var(--mvs-primary-hover);
+	--mvs-success: var(--mvs-success);
+	--mvs-warn: var(--mvs-warning);
+	--mvs-danger: var(--mvs-danger);
+	--mvs-border: var(--mvs-border);
+	--mvs-border-light: var(--mvs-border-light);
+	--mvs-surface: var(--mvs-surface);
+	--mvs-surface-alt: var(--mvs-surface-2);
 	--mvs-surface-muted: #f1f5f9;
 	--mvs-shadow-sm: 0 1px 2px rgba(0, 0, 0, .04);
 	--mvs-shadow-md: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
@@ -156,7 +156,7 @@
 }
 
 .mvs-stat-card--warning .mvs-stat-number {
-	color: #996800;
+	color: var(--mvs-warning);
 }
 
 .mvs-stat-card--danger {
@@ -411,7 +411,7 @@ a.mvs-stat-card:focus {
 	padding: 0 5px;
 	border-radius: 9px;
 	background: var(--mvs-danger);
-	color: #fff;
+	color: var(--mvs-surface);
 	font-size: 11px;
 	font-weight: 600;
 	line-height: 1;
@@ -419,7 +419,7 @@ a.mvs-stat-card:focus {
 }
 
 .mvs-badge--success { background: var(--mvs-success); }
-.mvs-badge--warn    { background: var(--mvs-warn); color: #1e1e1e; }
+.mvs-badge--warn    { background: var(--mvs-warn); color: var(--mvs-text); }
 .mvs-badge--danger  { background: var(--mvs-danger); }
 .mvs-badge--default { background: var(--mvs-text-muted); }
 .mvs-badge--muted   { background: var(--mvs-surface-alt); color: var(--mvs-text-muted); }
@@ -431,7 +431,7 @@ a.mvs-stat-card:focus {
 .mvs-flag-pill {
 	display: inline-block;
 	background: var(--mvs-danger);
-	color: #fff;
+	color: var(--mvs-surface);
 	padding: 2px 8px;
 	border-radius: 3px;
 	font-size: 11px;
@@ -476,7 +476,7 @@ a.mvs-stat-card:focus {
 .mvs-pro-badge {
 	display: inline-block;
 	background: linear-gradient(135deg, #6366f1, #8b5cf6);
-	color: #fff;
+	color: var(--mvs-surface);
 	font-size: 10px;
 	font-weight: 700;
 	letter-spacing: 0.5px;
@@ -527,7 +527,7 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	gap: 4px;
 	background: linear-gradient(135deg, #6366f1, #8b5cf6);
-	color: #fff;
+	color: var(--mvs-surface);
 	padding: 6px 16px;
 	border-radius: 4px;
 	text-decoration: none;
@@ -537,7 +537,7 @@ a.mvs-stat-card:focus {
 
 .mvs-pro-section .mvs-pro-cta:hover {
 	opacity: 0.9;
-	color: #fff;
+	color: var(--mvs-surface);
 }
 
 /* ==========================================================================
@@ -570,7 +570,7 @@ a.mvs-stat-card:focus {
 	gap: 12px;
 	padding: 16px 20px;
 	border-bottom: 1px solid var(--mvs-bg);
-	background: #fafafa;
+	background: var(--mvs-surface-2);
 }
 
 .mvs-settings-panel__icon {
@@ -687,7 +687,7 @@ a.mvs-stat-card:focus {
 .mvs-welcome-banner {
 	display: flex;
 	align-items: flex-start;
-	background: linear-gradient(135deg, #f0f6fc 0%, #e8f0fe 100%);
+	background: linear-gradient(135deg, var(--mvs-info-bg) 0%, var(--mvs-info-bg) 100%);
 	border: 1px solid var(--mvs-border);
 	border-left: 4px solid var(--mvs-accent);
 	border-radius: var(--mvs-radius-sm);
@@ -760,7 +760,7 @@ a.mvs-stat-card:focus {
 	height: 32px;
 	border-radius: 50%;
 	background: var(--mvs-accent);
-	color: #fff;
+	color: var(--mvs-surface);
 	font-weight: 700;
 	font-size: 14px;
 	flex-shrink: 0;
@@ -830,7 +830,7 @@ a.mvs-stat-card:focus {
 
 .mvs-log-level-badge {
 	display: inline-block;
-	color: #fff;
+	color: var(--mvs-surface);
 	padding: 2px 8px;
 	border-radius: 3px;
 	font-size: 10px;
@@ -919,7 +919,7 @@ a.mvs-stat-card:focus {
 
 .mvs-range-btn.active {
 	background: var(--mvs-accent);
-	color: #fff;
+	color: var(--mvs-surface);
 }
 
 /* ==========================================================================
@@ -954,7 +954,7 @@ a.mvs-stat-card:focus {
 	gap: 4px;
 	padding: 20px 28px;
 	border-bottom: 1px solid var(--mvs-bg);
-	background: #fafafa;
+	background: var(--mvs-surface-2);
 }
 
 .mvs-setup-progress-step {
@@ -969,7 +969,7 @@ a.mvs-stat-card:focus {
 
 .mvs-setup-progress-step.active {
 	background: var(--mvs-accent);
-	color: #fff;
+	color: var(--mvs-surface);
 }
 
 .mvs-setup-progress-step.completed {
@@ -1060,7 +1060,7 @@ a.mvs-stat-card:focus {
 	padding: 12px 16px;
 	border: 1px solid var(--mvs-border);
 	border-radius: var(--mvs-radius-md);
-	background: #fafafa;
+	background: var(--mvs-surface-2);
 }
 
 .mvs-setup-page-card [data-lucide] {
@@ -1108,7 +1108,7 @@ a.mvs-stat-card:focus {
 }
 
 .mvs-setup-role-item:hover {
-	background: #f0f6fc;
+	background: var(--mvs-info-bg);
 }
 
 .mvs-setup-step--done {
@@ -1171,8 +1171,8 @@ a.mvs-stat-card:focus {
 .mvs-save-notice {
 	margin: 12px 0 0;
 	padding: 10px 14px;
-	background: #fff;
-	border-left: 4px solid #00a32a;
+	background: var(--mvs-surface);
+	border-left: 4px solid var(--mvs-success);
 	border-radius: 2px;
 	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
 	flex-basis: 100%;
@@ -1239,7 +1239,7 @@ a.mvs-stat-card:focus {
 	width: 260px;
 	flex-shrink: 0;
 	background: var(--mvs-surface);
-	border-right: 1px solid #e0e0e0;
+	border-right: 1px solid var(--mvs-border);
 	padding: 0;
 	position: sticky;
 	top: 62px;
@@ -1263,7 +1263,7 @@ a.mvs-stat-card:focus {
 	width: 32px;
 	height: 32px;
 	background: linear-gradient(135deg, var(--mvs-accent), var(--mvs-accent-hover));
-	color: #fff;
+	color: var(--mvs-surface);
 	border-radius: var(--mvs-radius-lg);
 	display: flex;
 	align-items: center;
@@ -1285,7 +1285,7 @@ a.mvs-stat-card:focus {
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 1px;
-	color: #999;
+	color: var(--mvs-text-muted);
 }
 
 /* --- Nav Groups --- */
@@ -1299,7 +1299,7 @@ a.mvs-stat-card:focus {
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
-	color: #999;
+	color: var(--mvs-text-muted);
 	padding: 14px 20px 6px;
 }
 
@@ -1335,7 +1335,7 @@ a.mvs-stat-card:focus {
 
 .mvs-settings-nav-item.is-active {
 	color: var(--mvs-accent);
-	background: #f0f6fc;
+	background: var(--mvs-info-bg);
 	border-left-color: var(--mvs-accent);
 	font-weight: 600;
 }
@@ -1367,7 +1367,7 @@ a.mvs-stat-card:focus {
 	--mvs-admin-surface-2: var(--mvs-surface-muted);
 	--mvs-admin-text: var(--mvs-text);
 	--mvs-admin-text-muted: #64748b;
-	--mvs-admin-text-field: #374151;
+	--mvs-admin-text-field: var(--mvs-text-secondary);
 }
 
 /* --- Content Area --- */
@@ -1498,7 +1498,7 @@ a.mvs-stat-card:focus {
 		height: auto;
 		position: static;
 		border-right: none;
-		border-bottom: 1px solid #e0e0e0;
+		border-bottom: 1px solid var(--mvs-border);
 		display: flex;
 		flex-wrap: wrap;
 		padding: 12px;
@@ -1533,7 +1533,7 @@ a.mvs-stat-card:focus {
 	.mvs-settings-nav-item.is-active {
 		border-left: none;
 		background: var(--mvs-accent);
-		color: #fff;
+		color: var(--mvs-surface);
 	}
 
 	.mvs-settings-content {
@@ -1551,7 +1551,7 @@ a.mvs-stat-card:focus {
 	border-radius: 3px;
 	font-size: 11px;
 	font-weight: 600;
-	color: #fff;
+	color: var(--mvs-surface);
 	line-height: 1.4;
 }
 
@@ -1568,7 +1568,7 @@ a.mvs-stat-card:focus {
 .mvs-media-badge--loggedin { background: #3498db; }
 
 .mvs-media-badge--publish { background: var(--mvs-success); }
-.mvs-media-badge--draft { background: #646970; }
+.mvs-media-badge--draft { background: var(--mvs-text-secondary); }
 .mvs-media-badge--pending { background: var(--mvs-warn); }
 .mvs-media-badge--trash { background: var(--mvs-danger); }
 
@@ -1595,7 +1595,7 @@ a.mvs-stat-card:focus {
 	height: 40px;
 	background: var(--mvs-bg);
 	border-radius: var(--mvs-radius-sm);
-	color: #646970;
+	color: var(--mvs-text-secondary);
 }
 
 .mvs-thumb-placeholder [data-lucide] {
@@ -1650,7 +1650,7 @@ a.mvs-stat-card:focus {
 .mvs-empty-state-admin {
 	text-align: center;
 	padding: 40px 20px;
-	color: #646970;
+	color: var(--mvs-text-secondary);
 }
 
 .mvs-empty-state-admin [data-lucide] {
@@ -1680,7 +1680,7 @@ a.mvs-stat-card:focus {
 .mvs-hidden { display: none; }
 .mvs-form-inline { display: inline; }
 .mvs-text-muted { color: var(--mvs-text-muted); }
-.mvs-text-secondary { color: #646970; margin: 0; }
+.mvs-text-secondary { color: var(--mvs-text-secondary); margin: 0; }
 .mvs-text-danger { color: var(--mvs-danger); }
 .mvs-text-success { color: var(--mvs-success); }
 .mvs-mt-0 { margin-top: 0; }
@@ -1702,7 +1702,7 @@ a.mvs-stat-card:focus {
 	border-radius: var(--mvs-radius-md);
 	border: 1px solid var(--mvs-border-light);
 	background: var(--mvs-surface);
-	color: #1e1e1e;
+	color: var(--mvs-text);
 	cursor: pointer;
 	text-decoration: none;
 	transition: all 0.12s ease;
@@ -1711,7 +1711,7 @@ a.mvs-stat-card:focus {
 
 .mvs-btn:hover {
 	background: var(--mvs-surface-alt);
-	color: #1e1e1e;
+	color: var(--mvs-text);
 	text-decoration: none;
 }
 
@@ -1721,13 +1721,13 @@ a.mvs-stat-card:focus {
 
 .mvs-btn--primary {
 	background: var(--mvs-accent);
-	color: #fff;
+	color: var(--mvs-surface);
 	border-color: var(--mvs-accent);
 }
 
 .mvs-btn--primary:hover {
 	background: var(--mvs-accent-hover);
-	color: #fff;
+	color: var(--mvs-surface);
 }
 
 .mvs-btn--danger {
@@ -1737,7 +1737,7 @@ a.mvs-stat-card:focus {
 
 .mvs-btn--danger:hover {
 	background: var(--mvs-danger);
-	color: #fff;
+	color: var(--mvs-surface);
 }
 
 .mvs-btn--sm {
@@ -1778,7 +1778,7 @@ a.mvs-stat-card:focus {
 	border-radius: var(--mvs-radius-md);
 	border: 1px solid var(--mvs-border-light);
 	background: var(--mvs-surface);
-	color: #1e1e1e;
+	color: var(--mvs-text);
 	cursor: pointer;
 	transition: all 0.12s ease;
 	line-height: 1;
@@ -1788,7 +1788,7 @@ a.mvs-stat-card:focus {
 .mvs-settings-section__footer .button-primary {
 	border-color: var(--mvs-accent);
 	background: var(--mvs-accent);
-	color: #fff;
+	color: var(--mvs-surface);
 }
 
 .wpmediaverse-admin .submit .button:hover {
@@ -1807,7 +1807,7 @@ a.mvs-stat-card:focus {
 	transform: scale(0.97);
 }
 
-.mvs-section-divider { margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee; }
+.mvs-section-divider { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--mvs-border-light); }
 .mvs-btn-text-danger { color: var(--mvs-danger); }
 /* Lucide icon base and size variants */
 .wpmediaverse-admin [data-lucide] { width: 18px; height: 18px; stroke-width: 1.75; }
@@ -1823,7 +1823,7 @@ a.mvs-stat-card:focus {
 .mvs-notice-mt { margin-top: 12px; }
 .mvs-desc-mb { margin-bottom: 8px; }
 .mvs-demo-title { margin: 0 0 4px; }
-.mvs-demo-desc { margin: 0 0 12px; color: #666; }
+.mvs-demo-desc { margin: 0 0 12px; color: var(--mvs-text-secondary); }
 .mvs-widget-spaced { margin-top: 20px; }
 .mvs-stats-mb { margin-bottom: 24px; }
 
@@ -1899,11 +1899,11 @@ a.mvs-stat-card:focus {
 	.mvs-settings-nav-item.is-active {
 		border-left-color: transparent;
 		background: var(--mvs-accent);
-		color: #fff;
+		color: var(--mvs-surface);
 	}
 
 	.mvs-settings-nav-item.is-active [data-lucide] {
-		color: #fff;
+		color: var(--mvs-surface);
 	}
 
 	.mvs-settings-content {
@@ -1930,7 +1930,7 @@ a.mvs-stat-card:focus {
 	border-radius: 6px;
 	font-size: 13px;
 	font-weight: 500;
-	color: #fff;
+	color: var(--mvs-surface);
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 	opacity: 0;
 	transform: translateY(8px);
@@ -1946,7 +1946,7 @@ a.mvs-stat-card:focus {
 .mvs-toast--success { background: var(--mvs-success); }
 .mvs-toast--error { background: var(--mvs-danger); }
 .mvs-toast--info { background: var(--mvs-accent); }
-.mvs-toast--warning { background: var(--mvs-warn); color: #1e1e1e; }
+.mvs-toast--warning { background: var(--mvs-warn); color: var(--mvs-text); }
 
 /* ==========================================================================
    Admin Page Horizontal Tabs
@@ -1993,7 +1993,7 @@ a.mvs-stat-card:focus {
 .mvs-tab-count {
 	display: inline-block;
 	background: var(--mvs-danger);
-	color: #fff;
+	color: var(--mvs-surface);
 	border-radius: 10px;
 	padding: 0 6px;
 	font-size: 11px;
