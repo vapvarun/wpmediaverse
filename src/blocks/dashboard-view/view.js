@@ -136,6 +136,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get isChallengesTab() { return state.activeTab === 'challenges'; },
 		get isBattlesTab() { return state.activeTab === 'battles'; },
 		get isTournamentsTab() { return state.activeTab === 'tournaments'; },
+		// Pro connectors tab.
+		get isConnectorsTab() { return state.activeTab === 'connectors'; },
 		get hasMoreMedia() { return state.media.page < state.media.totalPages; },
 		get hasMoreFavorites() { return state.favorites.page < state.favorites.totalPages; },
 		get hasNotifications() { return state.notifications.items.length > 0; },
