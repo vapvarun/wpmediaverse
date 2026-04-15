@@ -143,6 +143,21 @@ foreach ( $demo_user_ids as $duid ) {
 }
 
 // 7. Clean orphaned taxonomy term relationships left by deleted demo media.
+// Capture which term_taxonomy_ids were affected so we can refresh their cached
+// counts — direct SQL DELETE on term_relationships does not fire the hooks
+// that keep wp_term_taxonomy.count in sync.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$affected_tt_ids = $wpdb->get_col(
+	"SELECT DISTINCT tr.term_taxonomy_id
+	FROM {$wpdb->term_relationships} tr
+	LEFT JOIN {$wpdb->prefix}mvs_media_index m ON tr.object_id = m.media_id
+	WHERE m.media_id IS NULL
+	AND tr.term_taxonomy_id IN (
+		SELECT tt.term_taxonomy_id FROM {$wpdb->term_taxonomy} tt
+		WHERE tt.taxonomy IN ( 'mvs_tag', 'mvs_category' )
+	)"
+);
+
 $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	"DELETE tr FROM {$wpdb->term_relationships} tr
 	LEFT JOIN {$wpdb->prefix}mvs_media_index m ON tr.object_id = m.media_id
@@ -153,38 +168,34 @@ $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	)"
 );
 
-// 8. Clean taxonomy terms whose count is now zero.
-$deleted_terms = 0;
-foreach ( array( 'mvs_tag', 'mvs_category' ) as $taxonomy ) {
-	$terms = get_terms(
-		array(
-			'taxonomy'   => $taxonomy,
-			'hide_empty' => false,
-		)
-	);
-	if ( is_wp_error( $terms ) || empty( $terms ) ) {
-		continue;
-	}
-	foreach ( $terms as $term ) {
-		if ( 0 === (int) $term->count ) {
-			$result = wp_delete_term( $term->term_id, $taxonomy );
-			if ( $result && ! is_wp_error( $result ) ) {
-				++$deleted_terms;
-			}
-		}
-	}
+// 8. Refresh cached term counts for every taxonomy that lost relationships.
+// We do NOT delete orphaned terms any more — the previous loop relied on the
+// stale cached count before this refresh and silently nuked real user-owned
+// tags whose count hadn't been updated yet. Empty tags stay visible in the
+// admin Tags page (B13) and the admin can bulk-delete them from there.
+if ( ! empty( $affected_tt_ids ) ) {
+	$affected_tt_ids = array_map( 'intval', $affected_tt_ids );
+	wp_update_term_count_now( $affected_tt_ids, 'mvs_tag' );
+	wp_update_term_count_now( $affected_tt_ids, 'mvs_category' );
 }
 
 // 9. Reset the seeded flag.
 delete_option( 'mvs_demo_seeded' );
 
+// 10. Invalidate cached Overview widgets so the "Import Demo Data" button
+// appears immediately after the AJAX reload. OverviewPage::get_stats() and
+// get_recent_uploads() cache their results in the wpmediaverse group for
+// five minutes, which otherwise kept the "Delete Demo Data" button visible
+// even when total_media was already zero. See OverviewPage.php:640, 679.
+wp_cache_delete( 'mvs_overview_stats', 'wpmediaverse' );
+wp_cache_delete( 'mvs_overview_recent', 'wpmediaverse' );
+
 $message = sprintf(
-	/* translators: 1: media count, 2: album/collection count, 3: user count, 4: empty term count */
-	__( 'Cleaned %1$d demo media item(s), %2$d album(s)/collection(s), %3$d demo user(s), and %4$d empty taxonomy term(s).', 'wpmediaverse' ),
+	/* translators: 1: media count, 2: album/collection count, 3: user count */
+	__( 'Cleaned %1$d demo media item(s), %2$d album(s)/collection(s), and %3$d demo user(s).', 'wpmediaverse' ),
 	$media_count,
 	$album_count,
-	$demo_user_count,
-	$deleted_terms
+	$demo_user_count
 );
 
 $mvs_finish( $message );

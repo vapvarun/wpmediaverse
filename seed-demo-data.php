@@ -1510,6 +1510,13 @@ if ( $play_count > 0 ) {
 // `@demo.local` email heuristic.
 update_option( 'mvs_demo_seeded', time(), false );
 
+// Invalidate Overview page stat caches so the toggle between "Import Demo
+// Data" and "Delete Demo Data" reflects the new total_media immediately
+// after the AJAX reload. OverviewPage::get_stats() / get_recent_uploads()
+// cache these keys for five minutes otherwise.
+wp_cache_delete( 'mvs_overview_stats', 'wpmediaverse' );
+wp_cache_delete( 'mvs_overview_recent', 'wpmediaverse' );
+
 // AJAX response.
 if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 	$ajax_msg = sprintf(
