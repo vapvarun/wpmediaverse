@@ -64,7 +64,19 @@ class NotificationService {
 			return false;
 		}
 
-		if ( ! in_array( $type, self::TYPES, true ) ) {
+		/**
+		 * Filters the allowed notification type list.
+		 *
+		 * Pro extensions hook this to register additional notification types
+		 * (e.g. challenge_entry_received) without having to fork the service.
+		 *
+		 * @since 1.1.2
+		 *
+		 * @param string[] $types Allowed notification type strings.
+		 */
+		$allowed_types = (array) apply_filters( 'mvs_notification_types', self::TYPES );
+
+		if ( ! in_array( $type, $allowed_types, true ) ) {
 			return false;
 		}
 
@@ -403,6 +415,23 @@ class NotificationService {
 	 * @return string
 	 */
 	private function build_notification_message( string $type, string $actor_name, string $media_title ): string {
+		/**
+		 * Allows Pro / extensions to supply a label for custom notification types
+		 * without having to extend the switch below. Return a non-empty string to
+		 * override the default label; return null to fall through.
+		 *
+		 * @since 1.1.2
+		 *
+		 * @param string|null $label       Custom label or null to use the default switch.
+		 * @param string      $type        Notification type.
+		 * @param string      $actor_name  Actor display name.
+		 * @param string      $media_title Media title (if any).
+		 */
+		$custom_label = apply_filters( 'mvs_notification_message', null, $type, $actor_name, $media_title );
+		if ( is_string( $custom_label ) && '' !== $custom_label ) {
+			return $custom_label;
+		}
+
 		switch ( $type ) {
 			case 'new_follower':
 				/* translators: %s: user name */
