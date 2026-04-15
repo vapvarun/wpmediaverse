@@ -574,11 +574,11 @@ class MediaController extends WP_REST_Controller {
 		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
 			$existing_thumb = MediaRepository::get( $media_id, 'thumb_large' );
 			if ( ! $existing_thumb ) {
-				$upload_dir  = wp_upload_dir();
-				$thumb_dir   = $upload_dir['basedir'] . '/wpmediaverse/thumbs';
+				$upload_dir = wp_upload_dir();
+				$thumb_dir  = $upload_dir['basedir'] . '/wpmediaverse/thumbs';
 				wp_mkdir_p( $thumb_dir );
-				$thumb_name  = 'video-thumb-' . $media_id . '.jpg';
-				$thumb_path  = $thumb_dir . '/' . $thumb_name;
+				$thumb_name = 'video-thumb-' . $media_id . '.jpg';
+				$thumb_path = $thumb_dir . '/' . $thumb_name;
 				// Use copy + unlink instead of move_uploaded_file (forbidden by plugin-check).
 				if ( copy( $files['thumbnail']['tmp_name'], $thumb_path ) ) {
 					unlink( $files['thumbnail']['tmp_name'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
@@ -640,7 +640,16 @@ class MediaController extends WP_REST_Controller {
 			do_action( 'mvs_media_group_assigned', $media_id, $group_id );
 		}
 
-		$response = rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
+		$data = $this->prepare_item_for_response( $media_id, $request );
+
+		// Surface a duplicate upload warning ("warn" mode) so the client can display a notice.
+		$duplicate_of = $upload_service->get_last_duplicate_warning();
+		if ( $duplicate_of > 0 ) {
+			$data['duplicate_warning'] = true;
+			$data['existing_media_id'] = $duplicate_of;
+		}
+
+		$response = rest_ensure_response( $data );
 		$response->set_status( 201 );
 
 		return $response;

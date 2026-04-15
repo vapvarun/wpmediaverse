@@ -291,6 +291,11 @@ parameters:
 			path: includes/REST/Controller/MediaController.php
 
 		-
+			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
+			count: 1
+			path: includes/REST/Controller/MediaController.php
+
+		-
 			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/REST/Controller/MediaController.php

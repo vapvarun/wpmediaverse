@@ -66,6 +66,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalTotal: 0,
 		uploadModalDone: 0,
 		uploadModalFailed: 0,
+		uploadModalDuplicates: 0,
+		uploadModalLastDuplicateId: 0,
 		uploadModalLastError: '',
 		uploadModalTitle: '',
 		uploadModalDescription: '',
@@ -315,6 +317,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalProgress = 0;
 			state.uploadModalDone = 0;
 			state.uploadModalFailed = 0;
+			state.uploadModalDuplicates = 0;
+			state.uploadModalLastDuplicateId = 0;
 			state.uploadModalLastError = '';
 			state.uploadModalTitle = '';
 			state.uploadModalDescription = '';
@@ -338,6 +342,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalUploading = false;
 			state.uploadModalDone = 0;
 			state.uploadModalFailed = 0;
+			state.uploadModalDuplicates = 0;
+			state.uploadModalLastDuplicateId = 0;
 			state.uploadModalLastError = '';
 			document.body.style.overflow = '';
 		},
@@ -472,6 +478,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalTotal = files.length;
 			state.uploadModalDone = 0;
 			state.uploadModalFailed = 0;
+			state.uploadModalDuplicates = 0;
+			state.uploadModalLastDuplicateId = 0;
 
 			// For album mode, create album first.
 			if ( state.uploadModalMode === 'album' ) {
@@ -556,6 +564,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						try {
 							const mediaData = await res.json();
 							if ( mediaData.id ) uploadedMediaIds.push( mediaData.id );
+							if ( mediaData.duplicate_warning ) {
+								state.uploadModalDuplicates++;
+								state.uploadModalLastDuplicateId = mediaData.existing_media_id || 0;
+							}
 						} catch { /* ignore */ }
 					} else {
 						state.uploadModalFailed++;
@@ -587,14 +599,23 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalUploading = false;
 
 			if ( uploaded > 0 ) {
-				const msg = state.uploadModalFailed > 0
-					? uploaded + ' uploaded, ' + state.uploadModalFailed + ' failed.'
-					: uploaded + ' file(s) uploaded!';
-				actions.showToast( msg, state.uploadModalFailed > 0 ? 'error' : 'success' );
+				let msg;
+				let toastType;
+				if ( state.uploadModalFailed > 0 ) {
+					msg = uploaded + ' uploaded, ' + state.uploadModalFailed + ' failed.';
+					toastType = 'error';
+				} else if ( state.uploadModalDuplicates > 0 ) {
+					msg = uploaded + ' uploaded — ' + state.uploadModalDuplicates + ' duplicate(s) detected (existing media #' + state.uploadModalLastDuplicateId + ').';
+					toastType = 'warning';
+				} else {
+					msg = uploaded + ' file(s) uploaded!';
+					toastType = 'success';
+				}
+				actions.showToast( msg, toastType );
 				setTimeout( () => {
 					actions.closeUploadModal();
 					window.location.reload();
-				}, 800 );
+				}, state.uploadModalDuplicates > 0 ? 2500 : 800 );
 			} else {
 				actions.showToast( state.uploadModalLastError || 'Upload failed. Please try again.', 'error' );
 			}

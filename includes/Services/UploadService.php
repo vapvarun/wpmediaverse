@@ -27,12 +27,30 @@ class UploadService {
 	private $storage;
 
 	/**
+	 * Existing media ID when the most recent upload tripped the "warn" duplicate action.
+	 * Reset at the start of every handle() call. Consumed by the REST controller
+	 * so the response can surface a duplicate notice to the client.
+	 *
+	 * @var int
+	 */
+	private $last_duplicate_warning = 0;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param StorageService $storage Storage service instance.
 	 */
 	public function __construct( StorageService $storage ) {
 		$this->storage = $storage;
+	}
+
+	/**
+	 * Get the existing media ID from the most recent warn-mode duplicate detection.
+	 *
+	 * @return int Existing media ID, or 0 when no duplicate was detected.
+	 */
+	public function get_last_duplicate_warning(): int {
+		return $this->last_duplicate_warning;
 	}
 
 	/**
@@ -44,6 +62,9 @@ class UploadService {
 	 * @return int|WP_Error Media post ID on success.
 	 */
 	public function handle( array $file, int $user_id, array $args = array() ) {
+		// Reset the duplicate warning flag at the start of every call.
+		$this->last_duplicate_warning = 0;
+
 		// Validate MIME type.
 		$allowed = $this->get_allowed_types();
 		$mime    = $this->detect_mime( $file['tmp_name'] );
@@ -117,7 +138,9 @@ class UploadService {
 						)
 					);
 				}
-				// 'warn' — continue but include notice.
+				// 'warn' — upload proceeds, but record the existing ID so the
+				// REST response can surface a warning via $upload_service->get_last_duplicate_warning().
+				$this->last_duplicate_warning = (int) $existing;
 			}
 		}
 
