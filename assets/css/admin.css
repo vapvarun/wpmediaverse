@@ -11,25 +11,35 @@
    ========================================================================== */
 
 :root {
-	--mvs-bg: var(--mvs-surface-2);
-	--mvs-text: var(--mvs-text);
-	--mvs-text-muted: var(--mvs-text-secondary);
-	--mvs-accent: var(--mvs-primary);
-	--mvs-accent-hover: var(--mvs-primary-hover);
-	--mvs-success: var(--mvs-success);
-	--mvs-warn: var(--mvs-warning);
-	--mvs-danger: var(--mvs-danger);
-	--mvs-border: var(--mvs-border);
-	--mvs-border-light: var(--mvs-border-light);
-	--mvs-surface: var(--mvs-surface);
-	--mvs-surface-alt: var(--mvs-surface-2);
+	/* Admin design tokens.
+	   Hardcoded concrete values (not var() aliases) because frontend.css is
+	   NOT enqueued on wp-admin, so we cannot inherit its :root tokens.
+	   Previous circular refs like `--mvs-surface: var(--mvs-surface)` resolved
+	   to transparent and stripped all stat-card backgrounds/borders. */
+	--mvs-bg:            #f0f0f1;
+	--mvs-surface:       #ffffff;
+	--mvs-surface-alt:   #f6f7f7;
+	--mvs-surface-2:     #f6f7f7;
 	--mvs-surface-muted: #f1f5f9;
-	--mvs-shadow-sm: 0 1px 2px rgba(0, 0, 0, .04);
-	--mvs-shadow-md: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
-	--mvs-radius-sm: 4px;
-	--mvs-radius-md: 6px;
-	--mvs-radius-lg: 8px;
-	--mvs-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	--mvs-text:          #1d2327;
+	--mvs-text-muted:    #646970;
+	--mvs-text-secondary:#646970;
+	--mvs-border:        #dcdcde;
+	--mvs-border-light:  #e5e5e7;
+	--mvs-accent:        #d63638;
+	--mvs-accent-hover:  #b02426;
+	--mvs-primary:       #d63638;
+	--mvs-primary-hover: #b02426;
+	--mvs-success:       #00a32a;
+	--mvs-warning:       #dba617;
+	--mvs-warn:          #dba617;
+	--mvs-danger:        #d63638;
+	--mvs-shadow-sm:     0 1px 2px rgba(0, 0, 0, .04);
+	--mvs-shadow-md:     0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
+	--mvs-radius-sm:     4px;
+	--mvs-radius-md:     6px;
+	--mvs-radius-lg:     8px;
+	--mvs-font:          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
 /* ==========================================================================
