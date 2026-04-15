@@ -22,20 +22,44 @@ class SetupWizard {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_hidden_page' ) );
 		add_action( 'admin_init', array( $this, 'handle_wizard_save' ) );
+		add_action( 'admin_head', array( $this, 'hide_from_menu' ) );
 	}
 
 	/**
 	 * Add a hidden admin page (not in menu).
+	 *
+	 * Registered under the 'wpmediaverse' parent so the admin screen $title
+	 * global is populated correctly — passing an empty parent left $title
+	 * null, which triggered a strip_tags() deprecation notice in
+	 * wp-admin/admin-header.php on PHP 8.1+. The submenu entry itself is
+	 * hidden via CSS (see hide_from_menu()) so the capability check in
+	 * user_can_access_admin_page() still finds the page.
 	 */
 	public function add_hidden_page(): void {
 		add_submenu_page(
-			'', // Hidden — no parent.
+			'wpmediaverse',
 			__( 'WPMediaVerse Setup', 'wpmediaverse' ),
 			__( 'Setup', 'wpmediaverse' ),
 			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_wizard' )
 		);
+	}
+
+	/**
+	 * Hide the wizard submenu entry from the admin sidebar.
+	 *
+	 * The entry is kept in the $submenu global so that
+	 * user_can_access_admin_page() can still resolve the capability when a
+	 * user visits the wizard via direct URL. We use CSS instead of
+	 * remove_submenu_page() because the latter drops the entry from
+	 * $submenu, which breaks the capability lookup in recent WordPress.
+	 */
+	public function hide_from_menu(): void {
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return;
+		}
+		echo '<style id="mvs-hide-setup-wizard-menu">#toplevel_page_wpmediaverse .wp-submenu a[href$="page=' . esc_attr( self::PAGE_SLUG ) . '"]{display:none!important;}</style>';
 	}
 
 	/**
