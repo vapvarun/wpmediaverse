@@ -64,8 +64,14 @@ class FieldRenderer {
 	 * @param array $args Field arguments.
 	 */
 	public static function render_file_types_field( array $args ): void {
-		$current  = get_option( $args['option'], '' );
-		$selected = array_map( 'trim', explode( ',', $current ) );
+		// Pass null so WordPress returns the registered default when the option
+		// is absent on fresh installs. Previous empty-string fallback short-circuited
+		// register_setting()'s default, leaving every checkbox unchecked.
+		$current = get_option( $args['option'], null );
+		if ( null === $current || '' === $current ) {
+			$current = SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES;
+		}
+		$selected = array_map( 'trim', explode( ',', (string) $current ) );
 
 		$groups = array(
 			__( 'Images', 'wpmediaverse' )    => array(

@@ -15,6 +15,17 @@ defined( 'ABSPATH' ) || exit;
 class SettingsRegistrar {
 
 	/**
+	 * Single source of truth for the default allowed MIME types.
+	 *
+	 * Referenced by register_setting() (as the stored default) and by
+	 * FieldRenderer/Sanitizers so a fresh install never sees an empty list
+	 * and an accidental "save with no checkboxes" does not blow the default away.
+	 *
+	 * @var string
+	 */
+	public const DEFAULT_ALLOWED_FILE_TYPES = 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg,application/pdf';
+
+	/**
 	 * Register all settings, sections, and fields.
 	 */
 	public function register_all(): void {
@@ -80,7 +91,7 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_file_types' ),
-				'default'           => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg',
+				'default'           => self::DEFAULT_ALLOWED_FILE_TYPES,
 			)
 		);
 		add_settings_field(
