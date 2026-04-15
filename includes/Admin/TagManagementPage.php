@@ -56,9 +56,13 @@ class TagManagementPage {
 		$offset   = ( $paged - 1 ) * $per_page;
 
 		// Build args for get_terms.
+		// hide_empty must be false so newly created tags (count=0) and tags
+		// whose last media was deleted are still manageable from the admin.
+		// Tags created via POST /mvs/v1/tags land with count=0 until a media
+		// upload attaches to them — before this fix they were invisible here.
 		$args = array(
 			'taxonomy'   => 'mvs_tag',
-			'hide_empty' => true, // Only show tags that are used (visible on explore page)
+			'hide_empty' => false,
 			'number'     => $per_page,
 			'offset'     => $offset,
 			'orderby'    => 'name',
@@ -69,10 +73,10 @@ class TagManagementPage {
 			$args['search'] = $search;
 		}
 
-		// Get total count.
+		// Get total count — must match the display query so pagination is correct.
 		$count_args = array(
 			'taxonomy'   => 'mvs_tag',
-			'hide_empty' => true, // Only count tags that are used
+			'hide_empty' => false,
 		);
 		if ( $search ) {
 			$count_args['search'] = $search;
