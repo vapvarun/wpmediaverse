@@ -176,6 +176,9 @@ class Plugin {
 		// Initialize profile service (avatar filter hooks).
 		self::$container->get( 'profile' );
 
+		// Initialize user deletion cascade (deleted_user hook — cleans orphaned MVS rows).
+		self::$container->get( 'user_deletion' );
+
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
 		self::$container->get( 'integration.webhooks' );
@@ -494,6 +497,15 @@ class Plugin {
 			'profile',
 			function () {
 				$service = new ProfileService();
+				$service->init();
+				return $service;
+			}
+		);
+
+		self::$container->register(
+			'user_deletion',
+			function () {
+				$service = new \WPMediaVerse\Services\UserDeletionService();
 				$service->init();
 				return $service;
 			}

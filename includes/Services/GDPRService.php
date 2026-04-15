@@ -268,14 +268,22 @@ class GDPRService {
 		$removed = 0;
 
 		$tables = array(
-			'mvs_reactions'     => 'user_id',
-			'mvs_favorites'     => 'user_id',
-			'mvs_follows'       => 'follower_id',
-			'mvs_notifications' => 'user_id',
-			'mvs_reports'       => 'reporter_id',
-			'mvs_blocks'        => 'blocker_id',
-			'mvs_activity'      => 'user_id',
-			'mvs_mentions'      => 'mentioned_user_id',
+			'mvs_reactions'                 => 'user_id',
+			'mvs_favorites'                 => 'user_id',
+			'mvs_follows'                   => 'follower_id',
+			'mvs_notifications'             => 'user_id',
+			'mvs_reports'                   => 'reporter_id',
+			'mvs_blocks'                    => 'blocker_id',
+			'mvs_activity'                  => 'user_id',
+			'mvs_mentions'                  => 'mentioned_user_id',
+			// Additions — previously missed by GDPR erasure, causing orphaned rows to
+			// survive a user wipe. `mvs_conversations` is intentionally retained so
+			// threads with other participants keep working; we only erase the
+			// requesting user's participation + their sent messages.
+			'mvs_media_views'               => 'user_id',
+			'mvs_access_grants'             => 'user_id',
+			'mvs_conversation_participants' => 'user_id',
+			'mvs_messages'                  => 'sender_id',
 		);
 
 		foreach ( $tables as $table => $column ) {
