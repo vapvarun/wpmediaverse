@@ -301,11 +301,6 @@ parameters:
 			path: includes/REST/Controller/MediaController.php
 
 		-
-			message: "#^Cannot cast WP_Post to int\\.$#"
-			count: 1
-			path: includes/REST/Controller/ModerationController.php
-
-		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
 			count: 2
 			path: includes/REST/Controller/ModerationController.php
