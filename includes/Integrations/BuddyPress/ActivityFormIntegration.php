@@ -41,6 +41,9 @@ class ActivityFormIntegration {
 		if ( ! is_user_logged_in() ) {
 			return;
 		}
+
+		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
+		$default_privacy    = (string) get_option( 'mvs_default_privacy', 'public' );
 		?>
 		<div id="mvs-activity-media-btn-wrap" class="mvs-activity-media-btn-wrap">
 			<input type="file" id="mvs-activity-media-file" accept="image/*,video/*,audio/*" multiple style="display:none" />
@@ -49,6 +52,13 @@ class ActivityFormIntegration {
 			</button>
 			<div id="mvs-activity-media-preview" class="mvs-activity-media-preview" style="display:none"></div>
 			<input type="hidden" id="mvs-activity-media-ids" name="mvs_activity_media_ids" value="" />
+			<?php if ( $allow_user_privacy ) : ?>
+				<select id="mvs-activity-privacy" class="mvs-activity-privacy" name="mvs_activity_privacy" style="display:none" aria-label="<?php esc_attr_e( 'Privacy level for attached media', 'wpmediaverse' ); ?>">
+					<option value="public" <?php selected( $default_privacy, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+					<option value="members" <?php selected( $default_privacy, 'members' ); ?>><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
+					<option value="private" <?php selected( $default_privacy, 'private' ); ?>><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+				</select>
+			<?php endif; ?>
 		</div>
 		<?php
 	}

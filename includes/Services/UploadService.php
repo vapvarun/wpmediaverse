@@ -248,8 +248,24 @@ class UploadService {
 		}
 
 		$file_url = $driver->url( $dest_path );
-		$privacy  = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : get_option( 'mvs_default_privacy', 'public' );
-		$title    = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
+
+		// Privacy — honour the user's choice only when the admin setting allows
+		// it. When mvs_allow_user_privacy is off, every upload is forced to the
+		// configured default, so a client cannot bypass the admin control by
+		// sending a crafted privacy field directly to the REST API.
+		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
+		$default_privacy    = (string) get_option( 'mvs_default_privacy', 'public' );
+		if ( $allow_user_privacy && isset( $args['privacy'] ) ) {
+			$privacy = sanitize_text_field( $args['privacy'] );
+		} else {
+			$privacy = $default_privacy;
+		}
+		// Reject unknown privacy values so a typo or hostile input cannot slip through.
+		if ( ! in_array( $privacy, array( 'public', 'members', 'friends', 'private', 'group', 'custom' ), true ) ) {
+			$privacy = $default_privacy;
+		}
+
+		$title = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
 
 		// Determine status.
 		$status = 'publish';
