@@ -219,12 +219,23 @@ class TagManagementPage {
 	 * @param WP_Term $tag Tag object.
 	 */
 	private function render_row( WP_Term $tag ): void {
-		$edit_url = add_query_arg(
+		$edit_url   = add_query_arg(
 			array(
 				'action' => 'edit',
 				'tag_id' => $tag->term_id,
 			),
 			admin_url( 'admin.php?page=mvs-tags' )
+		);
+		$delete_url = wp_nonce_url(
+			add_query_arg(
+				array(
+					'page'        => 'mvs-tags',
+					'form_action' => 'delete',
+					'tag_id'      => $tag->term_id,
+				),
+				admin_url( 'admin.php' )
+			),
+			'delete-tag_' . $tag->term_id
 		);
 		?>
 		<tr>
@@ -239,12 +250,7 @@ class TagManagementPage {
 			<td class="column-count"><?php echo esc_html( $tag->count ); ?></td>
 			<td class="column-actions">
 				<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></a>
-				<form method="post" action="" style="display:inline;">
-					<?php wp_nonce_field( 'delete-tag_' . $tag->term_id, '_wpnonce' ); ?>
-					<input type="hidden" name="form_action" value="delete" />
-					<input type="hidden" name="tag_id" value="<?php echo esc_attr( $tag->term_id ); ?>" />
-					<input type="submit" class="button button-small" value="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>" onclick="return confirm('<?php esc_attr_e( 'Are you sure you want to delete this tag?', 'wpmediaverse' ); ?>');" />
-				</form>
+				<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this tag?', 'wpmediaverse' ) ); ?>');"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></a>
 			</td>
 		</tr>
 		<?php
@@ -398,18 +404,27 @@ class TagManagementPage {
 	 * Handle individual delete action.
 	 */
 	public function handle_single_delete(): void {
-		if ( ! isset( $_POST['form_action'] ) || 'delete' !== $_POST['form_action'] ) {
+		// Only act on the tag management page so we don't intercept other admin requests.
+		if ( ! isset( $_GET['page'] ) || 'mvs-tags' !== $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}
 
-		if ( ! isset( $_POST['tag_id'] ) ) {
+		if ( ! isset( $_GET['form_action'] ) || 'delete' !== $_GET['form_action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}
 
-		$tag_id = absint( $_POST['tag_id'] );
+		if ( ! isset( $_GET['tag_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		$tag_id = absint( $_GET['tag_id'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
+			wp_die( esc_html__( 'You do not have permission to delete tags.', 'wpmediaverse' ) );
+		}
 
 		// Verify nonce.
-		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'delete-tag_' . $tag_id ) ) {
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'delete-tag_' . $tag_id ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
 		}
 
@@ -423,12 +438,12 @@ class TagManagementPage {
 		$redirect_url = add_query_arg(
 			array(
 				'deleted' => 1,
-				'paged'   => isset( $_POST['paged'] ) ? absint( $_POST['paged'] ) : 1, // phpcs:ignore WordPress.Security.NonceVerification
-				's'       => isset( $_POST['s'] ) ? sanitize_text_field( wp_unslash( $_POST['s'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification
+				'paged'   => isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				's'       => isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			),
 			admin_url( 'admin.php?page=mvs-tags' )
 		);
-		wp_redirect( esc_url_raw( $redirect_url ) );
+		wp_safe_redirect( $redirect_url );
 		exit;
 	}
 
