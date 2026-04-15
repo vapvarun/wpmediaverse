@@ -411,7 +411,8 @@ $mvs_archive_url = home_url( '/media/' );
 				})();
 				</script>
 			<?php elseif ( ! empty( $items ) ) : ?>
-				<div class="mvs-media-grid mvs-cols-3">
+				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
+				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 					<?php
 					foreach ( $items as $item_row ) :
 						$media_id = (int) $item_row['media_id'];

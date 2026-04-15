@@ -290,8 +290,9 @@ class SettingsRegistrar {
 					2 => __( '2 columns', 'wpmediaverse' ),
 					3 => __( '3 columns', 'wpmediaverse' ),
 					4 => __( '4 columns', 'wpmediaverse' ),
+					5 => __( '5 columns', 'wpmediaverse' ),
 				),
-				'description' => __( 'Number of columns in the media grid on the Explore page.', 'wpmediaverse' ),
+				'description' => __( 'Number of columns in the media grid on the Explore page, single album view, collections, and dashboard grids.', 'wpmediaverse' ),
 			)
 		);
 

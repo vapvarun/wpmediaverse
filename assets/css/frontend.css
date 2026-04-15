@@ -553,10 +553,22 @@ body.mvs-page {
     grid-template-columns: repeat(4, 1fr);
 }
 
+.mvs-cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+@media (max-width: 1024px) {
+
+    .mvs-cols-5 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
 
     .mvs-cols-3,
-    .mvs-cols-4 {
+    .mvs-cols-4,
+    .mvs-cols-5 {
         grid-template-columns: repeat(2, 1fr);
     }
 }
@@ -565,7 +577,8 @@ body.mvs-page {
 
     .mvs-cols-2,
     .mvs-cols-3,
-    .mvs-cols-4 {
+    .mvs-cols-4,
+    .mvs-cols-5 {
         grid-template-columns: 1fr;
     }
 }
@@ -1369,12 +1382,20 @@ body.mvs-page {
     font-size: 0.8em;
 }
 
-/* Dashboard Grid */
+/* Dashboard Grid — explicit column count is driven by a .mvs-cols-N
+   modifier class added from the dashboard-content template, derived from
+   the mvs_grid_columns admin setting. Auto-fill fallback keeps layouts
+   sane if no modifier is present (e.g. third-party code reusing the class). */
 .mvs-dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
 }
+
+.mvs-dashboard-grid.mvs-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.mvs-dashboard-grid.mvs-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.mvs-dashboard-grid.mvs-cols-4 { grid-template-columns: repeat(4, 1fr); }
+.mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(5, 1fr); }
 
 .mvs-dashboard-card {
     position: relative;

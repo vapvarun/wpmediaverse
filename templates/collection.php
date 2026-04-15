@@ -124,7 +124,8 @@ do_action( 'mvs_before_content' );
 			<!-- Media Grid -->
 			<?php if ( ! empty( $items ) ) : ?>
 				<?php $stats_map = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( array_map( 'intval', $items ) ); ?>
-				<div class="mvs-media-grid mvs-cols-3 mvs-feed">
+				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
+				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed">
 					<?php
 					foreach ( $items as $media_id ) :
 						$media_id     = (int) $media_id;
