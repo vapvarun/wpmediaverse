@@ -19,7 +19,7 @@
 
     /* Brand — BuddyX Pro → BuddyNext → fallback */
     --mvs-primary: var(--color-theme-primary, var(--brand, #0073aa));
-    --mvs-primary-hover: var(--color-link-hover, var(--brand-hover, #005a87));
+    --mvs-primary-hover: var(--color-theme-primary, var(--brand-hover, #005a87));
     --mvs-primary-rgb: 0, 115, 170;
     --mvs-danger: var(--red, #d63638);
     --mvs-danger-rgb: 214, 54, 56;
@@ -37,15 +37,15 @@
     --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.10);
 
     /* Surfaces — BuddyX Pro → BuddyNext → fallback */
-    --mvs-bg: var(--color-theme-body, var(--bg, #ffffff));
-    --mvs-surface: var(--color-theme-white-box, var(--bg-subtle, #f6f7f7));
-    --mvs-surface-2: var(--color-layout-boxed, var(--bg-hover, #eeeeee));
+    --mvs-bg: var(--color-theme-white-box, var(--bg, #ffffff));
+    --mvs-surface: var(--global-body-lightcolor, var(--bg-subtle, #f6f7f7));
+    --mvs-surface-2: var(--global-body-lightcolor, var(--bg-hover, #eeeeee));
     --mvs-overlay: rgba(0, 0, 0, 0.72);
 
     /* Text — BuddyX Pro → BuddyNext → fallback */
-    --mvs-text: var(--global-font-color, var(--text-1, #1e1e1e));
-    --mvs-text-secondary: var(--global-body-lightcolor, var(--text-2, #646970));
-    --mvs-text-muted: var(--text-3, #a7aaad);
+    --mvs-text: var(--global-title-color, var(--text-1, #1e1e1e));
+    --mvs-text-secondary: var(--global-font-color, var(--text-2, #646970));
+    --mvs-text-muted: var(--color-meta, var(--text-3, #a7aaad));
 
     /* Borders & Shadows — BuddyX Pro → BuddyNext → fallback */
     --mvs-border: var(--global-border-color, var(--border, #dcdcde));
@@ -76,12 +76,12 @@
 [data-theme="dark"],
 html.dark-mode,
 body.dark-mode {
-    --mvs-bg: var(--color-theme-body, #121212);
-    --mvs-surface: var(--color-theme-white-box, #1e1e1e);
-    --mvs-surface-2: var(--color-layout-boxed, #2a2a2a);
-    --mvs-text: var(--global-font-color, #f0f0f0);
-    --mvs-text-secondary: var(--global-body-lightcolor, #b0b0b0);
-    --mvs-text-muted: #888888;
+    --mvs-bg: var(--color-theme-white-box, #121212);
+    --mvs-surface: var(--global-body-lightcolor, #1e1e1e);
+    --mvs-surface-2: var(--global-body-lightcolor, #2a2a2a);
+    --mvs-text: var(--global-title-color, #f0f0f0);
+    --mvs-text-secondary: var(--global-font-color, #b0b0b0);
+    --mvs-text-muted: var(--color-meta, #888888);
     --mvs-border: var(--global-border-color, #363636);
     --mvs-border-light: #2e2e2e;
     --mvs-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
@@ -1135,7 +1135,7 @@ body.mvs-page {
 .mvs-comment-form button {
     padding: 10px 16px;
     background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    color: #fff;
     border: none;
     border-radius: 6px;
     cursor: pointer;

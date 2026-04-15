@@ -10,8 +10,8 @@
 	--mvs-chat-bg: var(--color-theme-body, #fff);
 	--mvs-chat-surface: var(--color-theme-white-box, #f8f9fa);
 	--mvs-chat-border: var(--global-border-color, #dbdbdb);
-	--mvs-chat-text: var(--global-font-color, #262626);
-	--mvs-chat-text-secondary: var(--global-body-lightcolor, #8e8e8e);
+	--mvs-chat-text: var(--global-title-color, #262626);
+	--mvs-chat-text-secondary: var(--global-font-color, #8e8e8e);
 	--mvs-chat-bubble-sent: #0095f6;
 	--mvs-chat-bubble-sent-text: #fff;
 	--mvs-chat-bubble-received: #efefef;
@@ -35,8 +35,8 @@ body.dark-mode {
 	--mvs-chat-bg: var(--color-theme-body, #000);
 	--mvs-chat-surface: var(--color-theme-white-box, #1a1a1a);
 	--mvs-chat-border: var(--global-border-color, #363636);
-	--mvs-chat-text: var(--global-font-color, #f5f5f5);
-	--mvs-chat-text-secondary: var(--global-body-lightcolor, #a8a8a8);
+	--mvs-chat-text: var(--global-title-color, #f5f5f5);
+	--mvs-chat-text-secondary: var(--global-font-color, #a8a8a8);
 	--mvs-chat-bubble-received: #262626;
 	--mvs-chat-bubble-received-text: #f5f5f5;
 	--mvs-chat-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
