@@ -348,8 +348,8 @@ class ModerationQueue {
 								</tr>
 							</thead>
 							<tbody>
-								<?php foreach ( $result['items'] as $post ) : ?>
-									<?php $this->render_row( $post ); ?>
+								<?php foreach ( $result['items'] as $media_id ) : ?>
+									<?php $this->render_row( (int) $media_id ); ?>
 								<?php endforeach; ?>
 							</tbody>
 						</table>
@@ -416,21 +416,33 @@ class ModerationQueue {
 	/**
 	 * Render a single queue row.
 	 *
-	 * @param \WP_Post $post Post object.
+	 * @param int $media_id Media ID from the mvs_media_index table.
 	 */
-	private function render_row( \WP_Post $post ): void {
-		$file_url  = MediaRepository::get( $post->ID, 'file_url' );
-		$file_type = MediaRepository::get( $post->ID, 'file_type' );
-		$ai_mod    = MediaRepository::get( $post->ID, 'ai_moderation' );
-		$flags     = ( is_array( $ai_mod ) && ! empty( $ai_mod['flags'] ) ) ? $ai_mod['flags'] : array();
-		$author    = get_userdata( $post->post_author );
+	private function render_row( int $media_id ): void {
+		$data = MediaRepository::get_all( $media_id );
+		if ( empty( $data ) ) {
+			return;
+		}
+
+		$file_url   = $data['file_url'] ?? '';
+		$file_type  = $data['file_type'] ?? '';
+		$title      = $data['title'] ?? '';
+		$created_at = $data['created_at'] ?? '';
+		$author_id  = (int) ( $data['post_author'] ?? 0 );
+		$author     = $author_id ? get_userdata( $author_id ) : false;
+		$ai_mod     = $data['ai_moderation'] ?? '';
+		if ( is_string( $ai_mod ) && '' !== $ai_mod ) {
+			$decoded = json_decode( $ai_mod, true );
+			$ai_mod  = is_array( $decoded ) ? $decoded : array();
+		}
+		$flags = ( is_array( $ai_mod ) && ! empty( $ai_mod['flags'] ) ) ? $ai_mod['flags'] : array();
 		?>
 		<tr>
 			<th scope="row" class="check-column">
-				<input type="checkbox" name="mvs_bulk_ids[]" value="<?php echo absint( $post->ID ); ?>" class="mvs-bulk-cb" />
+				<input type="checkbox" name="mvs_bulk_ids[]" value="<?php echo absint( $media_id ); ?>" class="mvs-bulk-cb" />
 			</th>
 			<td>
-				<?php if ( $file_url && strpos( $file_type, 'image/' ) === 0 ) : ?>
+				<?php if ( $file_url && strpos( (string) $file_type, 'image/' ) === 0 ) : ?>
 					<img src="<?php echo esc_url( $file_url ); ?>" alt="" class="mvs-thumb mvs-moderation-thumb" />
 				<?php else : ?>
 					<span class="mvs-thumb-placeholder mvs-moderation-thumb-placeholder">
@@ -439,7 +451,7 @@ class ModerationQueue {
 				<?php endif; ?>
 			</td>
 			<td>
-				<strong><?php echo esc_html( $post->post_title ); ?></strong>
+				<strong><?php echo esc_html( $title ); ?></strong>
 				<br>
 				<small class="mvs-text-muted"><?php echo esc_html( $file_type ); ?></small>
 			</td>
@@ -455,15 +467,19 @@ class ModerationQueue {
 				<?php endif; ?>
 			</td>
 			<td>
-				<time datetime="<?php echo esc_attr( $post->post_date ); ?>">
-					<?php echo esc_html( human_time_diff( strtotime( $post->post_date ), time() ) ); ?>
-					<?php esc_html_e( 'ago', 'wpmediaverse' ); ?>
+				<?php $created_ts = $created_at ? strtotime( $created_at . ' UTC' ) : 0; ?>
+				<time datetime="<?php echo esc_attr( $created_at ); ?>">
+					<?php echo $created_ts ? esc_html( human_time_diff( $created_ts, time() ) ) : '&mdash;'; ?>
+					<?php
+					if ( $created_ts ) {
+						esc_html_e( 'ago', 'wpmediaverse' ); }
+					?>
 				</time>
 			</td>
 			<td>
 				<form method="post" class="mvs-form-inline">
 					<?php wp_nonce_field( 'mvs_moderation_action', 'mvs_moderation_nonce' ); ?>
-					<input type="hidden" name="media_id" value="<?php echo absint( $post->ID ); ?>" />
+					<input type="hidden" name="media_id" value="<?php echo absint( $media_id ); ?>" />
 					<input type="hidden" name="mvs_moderation_action" value="approve" />
 					<button type="submit" class="mvs-btn mvs-btn--sm mvs-btn--primary">
 						<?php esc_html_e( 'Approve', 'wpmediaverse' ); ?>
@@ -471,7 +487,7 @@ class ModerationQueue {
 				</form>
 				<form method="post" class="mvs-form-inline-spaced">
 					<?php wp_nonce_field( 'mvs_moderation_action', 'mvs_moderation_nonce' ); ?>
-					<input type="hidden" name="media_id" value="<?php echo absint( $post->ID ); ?>" />
+					<input type="hidden" name="media_id" value="<?php echo absint( $media_id ); ?>" />
 					<input type="hidden" name="mvs_moderation_action" value="reject" />
 					<button type="submit" class="mvs-btn mvs-btn--sm mvs-btn--danger">
 						<?php esc_html_e( 'Reject', 'wpmediaverse' ); ?>

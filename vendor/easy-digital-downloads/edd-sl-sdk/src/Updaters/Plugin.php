@@ -89,6 +89,12 @@ class Plugin extends Updater {
 			$_data = $edd_api_request_transient;
 		}
 
+		// If we still don't have an object here, the API call failed and there's no cache.
+		// Let WordPress fall back to its default plugin info instead of fataling on PHP 8+.
+		if ( ! is_object( $_data ) ) {
+			return $_data;
+		}
+
 		// Convert sections into an associative array, since we're getting an object, but Core expects an array.
 		if ( isset( $_data->sections ) && ! is_array( $_data->sections ) ) {
 			$_data->sections = $this->convert_object_to_array( $_data->sections );
@@ -275,8 +281,8 @@ class Plugin extends Updater {
 		$limited_data->banners      = $this->convert_object_to_array( $version_info->banners );
 		$limited_data->new_version  = $version_info->new_version ?? '';
 		$limited_data->tested       = $version_info->tested ?? '';
-		$limited_data->requires     = $version_info->requires;
-		$limited_data->requires_php = $version_info->requires_php;
+		$limited_data->requires     = $version_info->requires ?? '';
+		$limited_data->requires_php = $version_info->requires_php ?? '';
 
 		return $limited_data;
 	}

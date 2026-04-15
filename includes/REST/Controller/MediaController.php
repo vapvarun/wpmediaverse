@@ -574,11 +574,11 @@ class MediaController extends WP_REST_Controller {
 		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
 			$existing_thumb = MediaRepository::get( $media_id, 'thumb_large' );
 			if ( ! $existing_thumb ) {
-				$upload_dir  = wp_upload_dir();
-				$thumb_dir   = $upload_dir['basedir'] . '/wpmediaverse/thumbs';
+				$upload_dir = wp_upload_dir();
+				$thumb_dir  = $upload_dir['basedir'] . '/wpmediaverse/thumbs';
 				wp_mkdir_p( $thumb_dir );
-				$thumb_name  = 'video-thumb-' . $media_id . '.jpg';
-				$thumb_path  = $thumb_dir . '/' . $thumb_name;
+				$thumb_name = 'video-thumb-' . $media_id . '.jpg';
+				$thumb_path = $thumb_dir . '/' . $thumb_name;
 				// Use copy + unlink instead of move_uploaded_file (forbidden by plugin-check).
 				if ( copy( $files['thumbnail']['tmp_name'], $thumb_path ) ) {
 					unlink( $files['thumbnail']['tmp_name'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
@@ -600,12 +600,17 @@ class MediaController extends WP_REST_Controller {
 			$tags = array_filter( array_map( 'sanitize_text_field', $tags ) );
 			if ( $tags ) {
 				wp_set_object_terms( $media_id, $tags, 'mvs_tag' );
+				MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( $tags ) ) );
 			}
 		}
 
 		$categories = $request->get_param( 'categories' );
 		if ( $categories && is_array( $categories ) ) {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
+			$cat_terms = get_the_terms( $media_id, 'mvs_category' );
+			if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
+				MediaRepository::set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
+			}
 		}
 
 		// Store media group (gallery post) metadata.
@@ -635,7 +640,16 @@ class MediaController extends WP_REST_Controller {
 			do_action( 'mvs_media_group_assigned', $media_id, $group_id );
 		}
 
-		$response = rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
+		$data = $this->prepare_item_for_response( $media_id, $request );
+
+		// Surface a duplicate upload warning ("warn" mode) so the client can display a notice.
+		$duplicate_of = $upload_service->get_last_duplicate_warning();
+		if ( $duplicate_of > 0 ) {
+			$data['duplicate_warning'] = true;
+			$data['existing_media_id'] = $duplicate_of;
+		}
+
+		$response = rest_ensure_response( $data );
 		$response->set_status( 201 );
 
 		return $response;
@@ -683,16 +697,36 @@ class MediaController extends WP_REST_Controller {
 			MediaRepository::set_many( $media_id, $update_data );
 		}
 
-		// Update tags if provided.
-		$tags = $request->get_param( 'tags' );
-		if ( null !== $tags && is_array( $tags ) ) {
-			wp_set_object_terms( $media_id, array_map( 'sanitize_text_field', $tags ), 'mvs_tag' );
+		// Update tags / categories only when explicitly sent in the request body.
+		// Using $request->get_json_params() + array_key_exists distinguishes
+		// "key not sent" (leave existing data alone) from "key sent as empty
+		// array" (caller intentionally cleared the list). Previously we used
+		// `null !== $tags` which treated both cases identically and wiped tags
+		// on any unrelated save.
+		$json_params = $request->get_json_params();
+		$json_params = is_array( $json_params ) ? $json_params : array();
+
+		if ( array_key_exists( 'tags', $json_params ) ) {
+			$tags = $request->get_param( 'tags' );
+			if ( is_array( $tags ) ) {
+				$sanitized_tags = array_map( 'sanitize_text_field', $tags );
+				wp_set_object_terms( $media_id, $sanitized_tags, 'mvs_tag' );
+				MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( $sanitized_tags ) ) );
+			}
 		}
 
-		// Update categories if provided.
-		$categories = $request->get_param( 'categories' );
-		if ( null !== $categories && is_array( $categories ) ) {
-			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
+		if ( array_key_exists( 'categories', $json_params ) ) {
+			$categories = $request->get_param( 'categories' );
+			if ( is_array( $categories ) ) {
+				wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
+				$cat_terms = get_the_terms( $media_id, 'mvs_category' );
+				if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
+					MediaRepository::set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
+				} else {
+					// Empty array sent → user cleared categories, so clear the cached list too.
+					MediaRepository::set( $media_id, 'category', wp_json_encode( array() ) );
+				}
+			}
 		}
 
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );

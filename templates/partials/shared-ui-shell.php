@@ -335,23 +335,33 @@ $mvs_show_fab = $mvs_is_logged_in && (
 
 				<!-- Comments -->
 				<div class="mvs-lightbox-comments">
-					<div class="mvs-lightbox-comment-list">
+					<h3 class="mvs-lightbox-comments-heading" data-wp-bind--hidden="!state.lightboxHasComments">
+						<?php esc_html_e( 'Comments', 'wpmediaverse' ); ?>
+					</h3>
+					<ul class="mvs-lightbox-comment-list" role="list">
 						<template data-wp-each="state.lightboxComments">
-							<div class="mvs-lightbox-comment">
-								<a class="mvs-lightbox-comment-author-link" data-wp-bind--href="context.item.author_url">
-									<img class="mvs-lightbox-comment-avatar" data-wp-bind--src="context.item.author_avatar" alt="" width="24" height="24" />
-									<strong data-wp-text="context.item.author_name"></strong>
+							<li class="mvs-lightbox-comment">
+								<a class="mvs-lightbox-comment-avatar-link" data-wp-bind--href="context.item.author_url">
+									<img class="mvs-lightbox-comment-avatar" data-wp-bind--src="context.item.author_avatar" alt="" width="40" height="40" loading="lazy" />
 								</a>
-								<span data-wp-text="context.item.content"></span>
-							</div>
+								<div class="mvs-lightbox-comment-body">
+									<div class="mvs-lightbox-comment-header">
+										<a class="mvs-lightbox-comment-author-link" data-wp-bind--href="context.item.author_url">
+											<strong class="mvs-lightbox-comment-author" data-wp-text="context.item.author_name"></strong>
+										</a>
+										<time class="mvs-lightbox-comment-time" data-wp-bind--datetime="context.item.date" data-wp-text="context.item.date_human"></time>
+									</div>
+									<p class="mvs-lightbox-comment-content" data-wp-text="context.item.content"></p>
+								</div>
+							</li>
 						</template>
-						<p class="mvs-lightbox-no-comments" data-wp-bind--hidden="state.lightboxHasComments">
-							<?php esc_html_e( 'No comments yet. Be the first!', 'wpmediaverse' ); ?>
-						</p>
-						<a class="mvs-lightbox-view-all-comments" data-wp-bind--href="state.lightboxPermalink" data-wp-bind--hidden="!state.lightboxHasMoreComments">
-							<?php esc_html_e( 'View all comments', 'wpmediaverse' ); ?> &rarr;
-						</a>
-					</div>
+					</ul>
+					<p class="mvs-lightbox-no-comments" data-wp-bind--hidden="state.lightboxHasComments">
+						<?php esc_html_e( 'No comments yet. Be the first to say something!', 'wpmediaverse' ); ?>
+					</p>
+					<a class="mvs-lightbox-view-all-comments" data-wp-bind--href="state.lightboxPermalink" data-wp-bind--hidden="!state.lightboxHasMoreComments">
+						<?php esc_html_e( 'View all comments', 'wpmediaverse' ); ?> &rarr;
+					</a>
 					<?php if ( $mvs_is_logged_in ) : ?>
 						<div class="mvs-lightbox-comment-form">
 							<input type="text" class="mvs-lightbox-comment-input"

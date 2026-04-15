@@ -16,7 +16,9 @@ if ( ! is_user_logged_in() || ! current_user_can( 'upload_mvs_media' ) ) {
 }
 
 $max_files     = isset( $attributes['maxFiles'] ) ? absint( $attributes['maxFiles'] ) : 10;
-$show_privacy  = ! empty( $attributes['showPrivacy'] );
+// Admin setting "Allow users to set privacy for their content" can force-hide
+// the dropdown regardless of the block attribute (matches Dashboard + FAB modal behaviour).
+$show_privacy  = ! empty( $attributes['showPrivacy'] ) && (bool) get_option( 'mvs_allow_user_privacy', true );
 $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-upload-block' ) ) : 'class="mvs-upload-block"';
 $rest_url      = esc_url( rest_url( 'mvs/v1/media' ) );
 $nonce         = wp_create_nonce( 'wp_rest' );

@@ -1,0 +1,183 @@
+/* WP Career Board — Marketing Composites — shared tokens */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --ink:        #0A0E1A;
+  --ink-2:      #151B2E;
+  --ink-3:      #232B44;
+  --paper:      #F5F0E6;
+  --paper-2:    #EDE7D8;
+  --primary:    #2B4DF3;
+  --primary-2:  #0B2EDC;
+  --accent:     #FF6B3D;
+  --accent-2:   #FFD166;
+  --gold:       #B68C4F;
+  --line:       rgba(10,14,26,0.12);
+
+  --display: 'Fraunces', 'Times New Roman', serif;
+  --body:    'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  --shadow-soft: 0 30px 80px -20px rgba(10,14,26,0.35), 0 10px 30px -10px rgba(10,14,26,0.25);
+  --shadow-hard: 0 60px 120px -30px rgba(10,14,26,0.55);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--body);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01", "ss02", "cv11";
+}
+
+/* Reusable: gradient-mesh backdrop */
+.mesh {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 12% 18%, rgba(255, 107, 61, 0.45), transparent 60%),
+    radial-gradient(ellipse 70% 70% at 88% 22%, rgba(43, 77, 243, 0.55), transparent 55%),
+    radial-gradient(ellipse 90% 70% at 78% 90%, rgba(255, 209, 102, 0.38), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 22% 82%, rgba(182, 140, 79, 0.35), transparent 60%),
+    linear-gradient(160deg, #0A0E1A 0%, #151B2E 55%, #232B44 100%);
+  filter: saturate(1.1);
+}
+.mesh::after {
+  /* subtle grain */
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.35;
+  pointer-events: none;
+}
+.mesh.paper {
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 10%, rgba(43, 77, 243, 0.18), transparent 60%),
+    radial-gradient(ellipse 70% 70% at 95% 20%, rgba(255, 107, 61, 0.18), transparent 55%),
+    radial-gradient(ellipse 90% 70% at 80% 95%, rgba(255, 209, 102, 0.22), transparent 60%),
+    linear-gradient(180deg, #F5F0E6 0%, #EDE7D8 100%);
+  filter: none;
+}
+
+/* Small-caps label */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+.eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 36px;
+  height: 1px;
+  background: currentColor;
+}
+
+/* Laptop frame — pure CSS (no external image) */
+.laptop {
+  position: relative;
+  width: 1040px;
+  aspect-ratio: 16 / 10;
+  perspective: 1600px;
+}
+.laptop__screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #0A0E1A;
+  border-radius: 18px 18px 6px 6px;
+  padding: 18px 18px 22px 18px;
+  border: 1px solid #2a3355;
+  box-shadow: var(--shadow-hard), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.laptop__screen::before {
+  /* camera notch */
+  content: '';
+  position: absolute;
+  top: 6px; left: 50%;
+  transform: translateX(-50%);
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #1d2340;
+  box-shadow: 0 0 0 1px #2a3355;
+}
+.laptop__screen img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 6px;
+}
+.laptop__base {
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  bottom: -14px;
+  height: 14px;
+  background: linear-gradient(180deg, #1a2134 0%, #0a0e1a 100%);
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 20px 40px -10px rgba(10,14,26,0.6);
+}
+.laptop__base::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 0;
+  transform: translateX(-50%);
+  width: 14%; height: 4px;
+  background: #232b44;
+  border-radius: 0 0 6px 6px;
+}
+
+/* Phone frame */
+.phone {
+  position: relative;
+  width: 360px;
+  aspect-ratio: 9 / 19.5;
+  background: #0A0E1A;
+  border-radius: 44px;
+  padding: 14px;
+  box-shadow: var(--shadow-hard), inset 0 0 0 1px rgba(255,255,255,0.08);
+  border: 1px solid #2a3355;
+}
+.phone::before {
+  content: '';
+  position: absolute;
+  top: 14px; left: 50%;
+  transform: translateX(-50%);
+  width: 120px; height: 30px;
+  background: #0A0E1A;
+  border-radius: 0 0 18px 18px;
+  z-index: 2;
+}
+.phone img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 30px;
+}
+
+/* Utility */
+.stack { display: flex; flex-direction: column; }
+.row { display: flex; }
+.noise-overlay {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.12;
+}

@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,26 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** — AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.1.2 =
+* Fix: Moderation queue now renders flagged media rows from mvs_media_index — the AI Flagged tab was empty due to a type mismatch between get_queue() (returns int IDs) and render_row() (expected WP_Post)
+* Fix: Duplicate upload "Warn" mode now actually surfaces the warning — backend records existing_media_id, REST response carries duplicate_warning + existing_media_id, frontend shows a warning toast in the FAB upload modal and Gutenberg media-upload block
+* Fix: Three database orphan paths plugged — delete_cascade() now cleans mvs_access_rules + mvs_access_grants, new UserDeletionService cascade-deletes all user-owned data on deleted_user / remove_user_from_blog, GDPRService::erase_social() extended to cover mvs_media_views / mvs_access_grants / mvs_conversation_participants / mvs_messages
+* Fix: Fresh-install Allowed File Types now render checked on first visit — FieldRenderer used an empty-string fallback that short-circuited the registered default; Sanitizers no longer wipes the default when the form is submitted with no checkboxes ticked
+* Fix: mvs_allow_user_privacy admin setting now honoured on every upload surface — Gutenberg block, BuddyPress activity form, BP activity JS, and UploadService backend enforcement (cannot be bypassed via forged REST POST)
+* Fix: BuddyPress activity form now renders a privacy selector when mvs_allow_user_privacy is enabled, revealed on file selection, sent with the upload request
+* Fix: Album category taxonomy wired end-to-end across REST + template — create/update accept categories array, response exposes a categories field, single-album template renders pill links, delete cascades term relationships
+* New: docs/MOBILE_UX_GUIDELINE.md — long-term Apple-quality mobile UX contract covering touch targets, back navigation, FAB safe areas, icon-collapse pattern, tab strip overflow, bottom-sheet modals, sticky action bars, accessibility floor
+* New: Mobile UX base layer — every interactive element clears the 44×44 touch floor below the desktop breakpoint, every detail page renders a back-link via TemplateHelpers::render_back_link(), FAB safe-area padding prevents content overlap, tab strip pattern with edge-fade mask + scroll-snap + auto-scroll-to-active
+* New: Bottom-sheet modal pattern on mobile — modals slide up from bottom with a drag handle, max 90vh, safe-area-inset for iOS home indicator, prefers-reduced-motion respected
+* New: Sticky bottom action bar on single-media on mobile — Like / Share / Edit / Delete pinned to viewport bottom with backdrop-saturate blur, Instagram/iOS Photos style
+* New: Optimistic UI on reactions / favorites / follow — visual state flips immediately on tap, rolls back on REST error
+* New: Skeleton loader component (.mvs-skeleton with text/avatar/thumb modifiers) for waiting-on-REST surfaces, dark-mode and reduced-motion aware
+* New: Lucide icon set self-contained on the frontend — no longer depends on the active theme to load it
+* New: Icon-with-tooltip button pattern (.mvs-btn--icon-collapse + [data-mvs-tooltip]) for dense action rows on mobile, applied to single-media social actions and album owner actions
+* New: bin/mobile-audit.mjs — local Playwright auditor (`npm run audit:mobile`) walks every WPMediaVerse-owned route at 390×844 and fails on horizontal scroll or sub-44 touch targets
+* New: NotificationService extension filters mvs_notification_types and mvs_notification_message so Pro can register custom notification types without forking
+* Enhancement: Stale phpstan baseline entries cleaned up after Fix 1's get_queue type contract change
 
 = 1.1.1 =
 * Fix: Single media page — comments, reactions, favorites, follow, and report now work (Interactivity API store loading)

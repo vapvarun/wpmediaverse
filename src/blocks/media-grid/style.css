@@ -34,7 +34,7 @@
 	right: 0;
 	padding: 8px;
 	background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
-	color: #fff;
+	color: var(--mvs-surface);
 	font-size: 12px;
 	opacity: 0;
 	transition: opacity 0.2s ease;
@@ -69,7 +69,7 @@
 	position: absolute;
 	top: 20px;
 	right: 20px;
-	color: #fff;
+	color: var(--mvs-surface);
 	font-size: 32px;
 	cursor: pointer;
 	background: none;
@@ -86,9 +86,9 @@
 
 .mvs-grid-pagination button {
 	padding: 8px 16px;
-	border: 1px solid #ddd;
+	border: 1px solid var(--mvs-border);
 	border-radius: 4px;
-	background: #fff;
+	background: var(--mvs-surface);
 	cursor: pointer;
 }
 
@@ -100,7 +100,7 @@
 .mvs-no-media {
 	text-align: center;
 	padding: 40px;
-	color: #757575;
+	color: var(--mvs-text-muted);
 }
 
 @media (max-width: 600px) {

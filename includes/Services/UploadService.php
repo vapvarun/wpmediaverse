@@ -27,12 +27,30 @@ class UploadService {
 	private $storage;
 
 	/**
+	 * Existing media ID when the most recent upload tripped the "warn" duplicate action.
+	 * Reset at the start of every handle() call. Consumed by the REST controller
+	 * so the response can surface a duplicate notice to the client.
+	 *
+	 * @var int
+	 */
+	private $last_duplicate_warning = 0;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param StorageService $storage Storage service instance.
 	 */
 	public function __construct( StorageService $storage ) {
 		$this->storage = $storage;
+	}
+
+	/**
+	 * Get the existing media ID from the most recent warn-mode duplicate detection.
+	 *
+	 * @return int Existing media ID, or 0 when no duplicate was detected.
+	 */
+	public function get_last_duplicate_warning(): int {
+		return $this->last_duplicate_warning;
 	}
 
 	/**
@@ -44,6 +62,9 @@ class UploadService {
 	 * @return int|WP_Error Media post ID on success.
 	 */
 	public function handle( array $file, int $user_id, array $args = array() ) {
+		// Reset the duplicate warning flag at the start of every call.
+		$this->last_duplicate_warning = 0;
+
 		// Validate MIME type.
 		$allowed = $this->get_allowed_types();
 		$mime    = $this->detect_mime( $file['tmp_name'] );
@@ -117,7 +138,9 @@ class UploadService {
 						)
 					);
 				}
-				// 'warn' — continue but include notice.
+				// 'warn' — upload proceeds, but record the existing ID so the
+				// REST response can surface a warning via $upload_service->get_last_duplicate_warning().
+				$this->last_duplicate_warning = (int) $existing;
 			}
 		}
 
@@ -225,8 +248,24 @@ class UploadService {
 		}
 
 		$file_url = $driver->url( $dest_path );
-		$privacy  = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : get_option( 'mvs_default_privacy', 'public' );
-		$title    = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
+
+		// Privacy — honour the user's choice only when the admin setting allows
+		// it. When mvs_allow_user_privacy is off, every upload is forced to the
+		// configured default, so a client cannot bypass the admin control by
+		// sending a crafted privacy field directly to the REST API.
+		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
+		$default_privacy    = (string) get_option( 'mvs_default_privacy', 'public' );
+		if ( $allow_user_privacy && isset( $args['privacy'] ) ) {
+			$privacy = sanitize_text_field( $args['privacy'] );
+		} else {
+			$privacy = $default_privacy;
+		}
+		// Reject unknown privacy values so a typo or hostile input cannot slip through.
+		if ( ! in_array( $privacy, array( 'public', 'members', 'friends', 'private', 'group', 'custom' ), true ) ) {
+			$privacy = $default_privacy;
+		}
+
+		$title = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
 
 		// Determine status.
 		$status = 'publish';

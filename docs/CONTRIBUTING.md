@@ -352,9 +352,9 @@ Make the targeted change in the source file. Keep the diff minimal — only chan
 
 **Do not add lines to known-debt files** (`BuddyPressIntegration.php`, `SettingsPage.php`, `MessagingService.php`, `Plugin.php`, `MediaController.php`, `MessagingController.php`). Extract code out of them first if the fix requires touching those files.
 
-### Step 5 — Run phpcs, phpstan, and tests
+### Step 5 — Run phpcs, phpstan, tests, and the activation smoke test
 
-All three checks must pass before the commit:
+All three static checks must pass before the commit:
 
 ```bash
 composer run phpcs      # WordPress coding standards
@@ -363,6 +363,10 @@ composer run phpstan    # static analysis (baseline: phpstan-baseline.neon)
 ```
 
 Fix any new violations introduced by your change. Do not suppress errors with `// phpcs:ignore` unless you add a comment explaining why it is unavoidable.
+
+**Then run the activation smoke test** — green static checks do not prove the plugin activates. See `docs/LOCAL_TESTING.md` §1 for the 30-second WP-CLI check that catches broken autoload, missing classes, and fatal activation hooks before they reach QA.
+
+If your change touches `vendor/`, `composer.json`, or the main plugin file, also run the fresh-clone fatal check in `docs/LOCAL_TESTING.md` §2 — this is the check that would have caught Pro #9788342062 on 2026-04-15.
 
 ### Step 6 — Run WP Plugin QA MCP check
 

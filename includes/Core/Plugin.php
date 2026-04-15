@@ -176,6 +176,9 @@ class Plugin {
 		// Initialize profile service (avatar filter hooks).
 		self::$container->get( 'profile' );
 
+		// Initialize user deletion cascade (deleted_user hook — cleans orphaned MVS rows).
+		self::$container->get( 'user_deletion' );
+
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
 		self::$container->get( 'integration.webhooks' );
@@ -246,6 +249,13 @@ class Plugin {
 			'admin.settings',
 			function () {
 				return new SettingsPage();
+			}
+		);
+
+		self::$container->register(
+			'admin.tags',
+			function () {
+				return new \WPMediaVerse\Admin\TagManagementPage();
 			}
 		);
 
@@ -493,6 +503,15 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'user_deletion',
+			function () {
+				$service = new \WPMediaVerse\Services\UserDeletionService();
+				$service->init();
+				return $service;
+			}
+		);
+
+		self::$container->register(
 			'media_repository',
 			function () {
 				return new MediaRepository();
@@ -619,6 +638,16 @@ class Plugin {
 			array( \WPMediaVerse\Admin\MediaListPage::class, 'render' )
 		);
 
+		// Tags — tag management page.
+		add_submenu_page(
+			self::ADMIN_SLUG,
+			__( 'Tags', 'wpmediaverse' ),
+			__( 'Tags', 'wpmediaverse' ),
+			'manage_options',
+			'mvs-tags',
+			array( self::$container->get( 'admin.tags' ), 'render' )
+		);
+
 		// Albums and Collections register themselves via show_in_menu => 'wpmediaverse'.
 	}
 
@@ -736,7 +765,11 @@ class Plugin {
 		$is_mvs     = in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true );
 		$is_archive = is_post_type_archive( 'mvs_album' );
 		$is_mvs_tax = is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' );
-		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
+		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] )
+			|| ! empty( $GLOBALS['mvs_is_media_archive'] )
+			|| (bool) get_query_var( 'mvs_edit_profile' )
+			|| (bool) get_query_var( 'mvs_profile_user' )
+			|| (bool) get_query_var( 'mvs_media_archive' );
 
 		// Detect mapped MVS pages (explore, dashboard, upload) — globals aren't set yet at enqueue time.
 		$mvs_page_ids = array_filter(
@@ -765,6 +798,25 @@ class Plugin {
 				MVS_PLUGIN_URL . 'assets/css/frontend/load-more.css',
 				array(),
 				MVS_VERSION
+			);
+
+			// Lucide icon set — required by templates that use <i data-lucide>.
+			// Self-contained on the frontend so we don't depend on the active theme
+			// (Reign, BuddyX) loading lucide. Re-running createIcons() after page
+			// load picks up icons added by every template helper.
+			wp_enqueue_script(
+				'mvs-lucide',
+				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
+				array(),
+				MVS_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+			wp_add_inline_script(
+				'mvs-lucide',
+				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
 			);
 
 			wp_enqueue_script(

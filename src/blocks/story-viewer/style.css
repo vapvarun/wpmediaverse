@@ -19,7 +19,7 @@
 }
 
 .mvs-stories-bar::-webkit-scrollbar-thumb {
-	background: #ccc;
+	background: var(--mvs-border-light);
 	border-radius: 2px;
 }
 
@@ -28,11 +28,11 @@
 	width: 64px;
 	height: 64px;
 	border-radius: 50%;
-	border: 3px solid #0073aa;
+	border: 3px solid var(--mvs-primary);
 	padding: 2px;
 	cursor: pointer;
 	transition: transform 0.2s;
-	background: #f0f0f0;
+	background: var(--mvs-surface-2);
 	overflow: hidden;
 }
 
@@ -75,7 +75,7 @@
 	z-index: 100001;
 	background: rgba(255, 255, 255, 0.2);
 	border: none;
-	color: #fff;
+	color: var(--mvs-surface);
 	font-size: 24px;
 	width: 40px;
 	height: 40px;

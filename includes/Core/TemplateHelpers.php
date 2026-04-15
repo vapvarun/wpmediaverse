@@ -333,4 +333,115 @@ class TemplateHelpers {
 
 		return $map;
 	}
+
+	/**
+	 * Resolve the parent route for a detail/edit page so the template can render
+	 * a back-link in its header.
+	 *
+	 * Defined by docs/MOBILE_UX_GUIDELINE.md §6.3. Pages call this with a
+	 * context string and receive a `[ 'url' => ..., 'label' => ... ]` pair (or
+	 * null if the parent can't be resolved — in which case the template should
+	 * skip the back link instead of rendering a broken one).
+	 *
+	 * Pro extensions can register their own contexts via the
+	 * `mvs_parent_url` filter.
+	 *
+	 * @param string $context Page context — one of:
+	 *                        'single-media', 'album', 'edit-profile',
+	 *                        'challenge', 'battle', 'tournament'.
+	 * @param array  $args    Optional context-specific args (e.g. media_id).
+	 * @return array{url: string, label: string}|null
+	 */
+	public static function get_parent_route( string $context, array $args = array() ): ?array {
+		$parent = null;
+
+		switch ( $context ) {
+			case 'single-media':
+				$parent = array(
+					'url'   => home_url( '/media/' ),
+					'label' => __( 'Explore', 'wpmediaverse' ),
+				);
+				break;
+
+			case 'album':
+				$author_id = isset( $args['author_id'] ) ? (int) $args['author_id'] : 0;
+				if ( $author_id ) {
+					$parent = array(
+						'url'   => self::get_user_profile_url( $author_id ),
+						'label' => __( 'Profile', 'wpmediaverse' ),
+					);
+				} else {
+					$parent = array(
+						'url'   => home_url( '/media/' ),
+						'label' => __( 'Explore', 'wpmediaverse' ),
+					);
+				}
+				break;
+
+			case 'edit-profile':
+				$user_id = isset( $args['user_id'] ) ? (int) $args['user_id'] : get_current_user_id();
+				if ( $user_id ) {
+					$parent = array(
+						'url'   => self::get_user_profile_url( $user_id ),
+						'label' => __( 'My profile', 'wpmediaverse' ),
+					);
+				}
+				break;
+
+			case 'challenge':
+				$parent = array(
+					'url'   => home_url( '/media/challenges/' ),
+					'label' => __( 'Challenges', 'wpmediaverse' ),
+				);
+				break;
+
+			case 'battle':
+				$parent = array(
+					'url'   => home_url( '/media/battles/' ),
+					'label' => __( 'Battles', 'wpmediaverse' ),
+				);
+				break;
+
+			case 'tournament':
+				$parent = array(
+					'url'   => home_url( '/media/tournaments/' ),
+					'label' => __( 'Tournaments', 'wpmediaverse' ),
+				);
+				break;
+		}
+
+		/**
+		 * Filter the parent route resolved for a back-link.
+		 *
+		 * Pro extensions register their own contexts here (e.g. 'leaderboard').
+		 *
+		 * @param array|null $parent  ['url' => ..., 'label' => ...] or null.
+		 * @param string     $context Context string passed by the template.
+		 * @param array      $args    Context args.
+		 */
+		return apply_filters( 'mvs_parent_route', $parent, $context, $args );
+	}
+
+	/**
+	 * Render a back-link header for a detail/edit page.
+	 *
+	 * Echoes `<a class="mvs-back-link" ...>` per docs/MOBILE_UX_GUIDELINE.md §6.2.
+	 * Silently no-ops if the parent route can't be resolved.
+	 *
+	 * @param string $context See get_parent_route().
+	 * @param array  $args    See get_parent_route().
+	 */
+	public static function render_back_link( string $context, array $args = array() ): void {
+		$parent = self::get_parent_route( $context, $args );
+		if ( ! $parent || empty( $parent['url'] ) ) {
+			return;
+		}
+		$label = ! empty( $parent['label'] ) ? (string) $parent['label'] : __( 'Back', 'wpmediaverse' );
+		printf(
+			'<a class="mvs-back-link" href="%1$s" aria-label="%2$s" data-mvs-tooltip="%2$s"><i data-lucide="arrow-left" aria-hidden="true"></i><span class="mvs-back-link__label">%3$s</span></a>',
+			esc_url( $parent['url'] ),
+			esc_attr( sprintf( /* translators: %s: parent page label */ __( 'Back to %s', 'wpmediaverse' ), $label ) ),
+			esc_html( $label )
+		);
+	}
 }

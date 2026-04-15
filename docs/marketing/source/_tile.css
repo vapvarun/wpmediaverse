@@ -1,0 +1,94 @@
+/* LinkedIn tile 1080×1080 */
+html, body { width: 1080px; height: 1080px; overflow: hidden; }
+body { background: var(--ink); }
+.tile { position: relative; width: 1080px; height: 1080px; overflow: hidden; isolation: isolate; }
+.tile .mesh { z-index: 0; }
+.tile > .inner {
+  position: relative; z-index: 3;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  padding: 88px;
+  color: var(--paper);
+}
+
+.tile .mark {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.tile .mark span {
+  position: absolute;
+  right: -50px; bottom: -220px;
+  font-family: var(--display);
+  font-size: 760px; font-weight: 300; font-style: italic;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(255, 107, 61, 0.16);
+  line-height: 0.8;
+}
+
+.tile .brand {
+  font-family: var(--mono);
+  font-size: 16px; font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--paper);
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 40px;
+}
+.tile .brand::before {
+  content: ''; width: 12px; height: 12px;
+  background: var(--accent); border-radius: 50%;
+  box-shadow: 0 0 0 6px rgba(255,107,61,0.15);
+}
+.tile .num {
+  font-family: var(--display);
+  font-style: italic; font-weight: 400;
+  font-size: 280px; line-height: 0.82;
+  letter-spacing: -0.03em;
+  color: var(--accent-2);
+  margin: -20px 0 20px 0;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+}
+.tile h1 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 108px; line-height: 0.92;
+  letter-spacing: -0.03em;
+  margin: 0 0 32px 0;
+  font-variation-settings: "opsz" 144;
+}
+.tile h1 em { font-style: italic; color: var(--accent-2); font-weight: 300; }
+.tile p.lede {
+  font-size: 26px; line-height: 1.45;
+  color: rgba(245, 240, 230, 0.8);
+  margin: 0; max-width: 780px;
+}
+.tile .spacer { flex: 1; }
+.tile .footer {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 13px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgba(245, 240, 230, 0.55);
+  padding-top: 28px;
+  border-top: 1px solid rgba(245, 240, 230, 0.18);
+}
+.tile .footer .swipe { color: var(--accent); }
+
+/* Tile 5: CTA variant on paper */
+.tile.paper > .inner { color: var(--ink); }
+.tile.paper h1 em { color: var(--primary-2); }
+.tile.paper .brand { color: var(--ink); }
+.tile.paper .brand::before { background: var(--primary); box-shadow: 0 0 0 6px rgba(43,77,243,0.15); }
+.tile.paper p.lede { color: rgba(10,14,26,0.7); }
+.tile.paper .footer { color: rgba(10,14,26,0.55); border-top-color: rgba(10,14,26,0.18); }
+.tile.paper .footer .swipe { color: var(--accent); }
+.tile.paper .cta {
+  display: inline-flex; align-items: center;
+  padding: 26px 48px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  font-family: var(--body);
+  font-size: 26px; font-weight: 600;
+  letter-spacing: -0.01em;
+  box-shadow: 0 30px 60px -20px rgba(10,14,26,0.5);
+  margin-top: 20px;
+}

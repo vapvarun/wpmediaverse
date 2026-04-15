@@ -136,6 +136,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get isChallengesTab() { return state.activeTab === 'challenges'; },
 		get isBattlesTab() { return state.activeTab === 'battles'; },
 		get isTournamentsTab() { return state.activeTab === 'tournaments'; },
+		// Pro connectors tab.
+		get isConnectorsTab() { return state.activeTab === 'connectors'; },
 		get hasMoreMedia() { return state.media.page < state.media.totalPages; },
 		get hasMoreFavorites() { return state.favorites.page < state.favorites.totalPages; },
 		get hasNotifications() { return state.notifications.items.length > 0; },
@@ -296,10 +298,16 @@ const { state, actions } = store( 'mvs/dashboard', {
 		   Tabs
 		   ===================================================================== */
 		switchTab( event ) {
-			const tab = event.target.closest( '[data-tab]' )?.dataset.tab;
+			const tabBtn = event.target.closest( '[data-tab]' );
+			const tab = tabBtn?.dataset.tab;
 			if ( ! tab ) return;
 			state.activeTab = tab;
 			window.location.hash = tab;
+			// Mobile §5.2: scroll the tapped tab into view so users can see what's
+			// next when the strip overflows. Center inline keeps neighbours visible.
+			if ( tabBtn && typeof tabBtn.scrollIntoView === 'function' ) {
+				tabBtn.scrollIntoView( { inline: 'center', block: 'nearest', behavior: 'smooth' } );
+			}
 			const ctx = getContext();
 			if ( tab === 'media' && state.media.items.length === 0 ) {
 				actions.loadMedia( ctx );
@@ -536,7 +544,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.editModal.title = item.title || '';
 			state.editModal.description = item.description || '';
 			state.editModal.privacy = item.privacy || 'public';
-			state.editModal.tags = item.tags ? [ ...item.tags ] : [];
+			// Use Array.from() — `item.tags` may be a WordPress Interactivity
+			// Proxy or a JSON-parsed array. Array.from() handles both safely
+			// and always yields a plain array for JSON serialization.
+			state.editModal.tags = Array.isArray( item.tags ) || item.tags
+				? Array.from( item.tags )
+				: [];
 			state.editModal.tagInput = '';
 			state.editModal.tagResults = [];
 			state.editModal.tagDropdownVisible = false;
@@ -633,11 +646,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			state.editModal.saving = true;
 
+			// Array.from() unwraps the Interactivity Proxy so JSON.stringify
+			// produces a real array. Without it the Proxy can serialize to `{}`
+			// or drop entries, which the server then reads as "clear all tags".
 			const payload = {
 				title: state.editModal.title,
 				description: state.editModal.description,
 				privacy: state.editModal.privacy,
-				tags: state.editModal.tags,
+				tags: Array.from( state.editModal.tags || [] ),
 			};
 
 			try {
@@ -1250,6 +1266,37 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 		},
 
+		// Mark an individual notification as read when the user clicks it.
+		// The default link navigation still fires — this runs alongside it so
+		// the unread count decrements and the row is restyled without waiting
+		// for the next page load.
+		async markNotificationRead() {
+			const clicked = getContext().item;
+			if ( ! clicked || clicked.read ) {
+				return;
+			}
+			// Optimistically flip the UI so the badge updates immediately —
+			// the network call happens in the background as the browser navigates.
+			clicked.read = true;
+			if ( state.notifications.count > 0 ) {
+				state.notifications.count -= 1;
+			}
+			const ctx = getContext();
+			try {
+				await apiFetch( ctx, 'me/notifications/read', {
+					method: 'POST',
+					headers: apiHeaders( ctx.nonce ),
+					body: JSON.stringify( { ids: [ clicked.id ] } ),
+				} );
+			} catch ( err ) {
+				// Roll back the optimistic update so the user can try again.
+				clicked.read = false;
+				state.notifications.count += 1;
+				// eslint-disable-next-line no-console
+				console.error( 'mvs: failed to mark notification read', err );
+			}
+		},
+
 		async loadNotificationCount( ctx ) {
 			try {
 				const res = await apiFetch( ctx, 'me/notifications/count' );
@@ -1282,7 +1329,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ctx.defaultPrivacy ) {
 				state.upload.privacy = ctx.defaultPrivacy;
 			}
-			const validTabs = [ 'media', 'albums', 'favorites', 'collections', 'challenges', 'battles', 'tournaments' ];
+			const validTabs = [ 'media', 'albums', 'favorites', 'collections', 'challenges', 'battles', 'tournaments', 'connectors' ];
 			const hashTab = window.location.hash.replace( '#', '' );
 			if ( hashTab && validTabs.includes( hashTab ) ) {
 				state.activeTab = hashTab;
@@ -1304,6 +1351,18 @@ const { state, actions } = store( 'mvs/dashboard', {
 				actions.loadMedia( ctx );
 			}
 			actions.loadNotificationCount( ctx );
+
+			// Mobile §5.2: when the dashboard tab strip overflows on small viewports,
+			// scroll the active tab into view so users see context (and the fact that
+			// more tabs exist) on first paint. Wait one frame so the active class is
+			// applied by the Interactivity API before measuring.
+			requestAnimationFrame( () => {
+				const strip = document.querySelector( '.mvs-dashboard-tabs' );
+				const active = strip?.querySelector( '.mvs-dashboard-tab.active, [data-tab="' + state.activeTab + '"]' );
+				if ( strip && active && strip.scrollWidth > strip.clientWidth ) {
+					active.scrollIntoView( { inline: 'center', block: 'nearest' } );
+				}
+			} );
 		},
 	},
 } );

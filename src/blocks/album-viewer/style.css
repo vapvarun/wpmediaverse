@@ -13,7 +13,7 @@
 }
 
 .mvs-album-viewer-block .mvs-album-description {
-	color: #555;
+	color: var(--mvs-text-secondary);
 	margin-bottom: 16px;
 	line-height: 1.6;
 }
@@ -27,7 +27,7 @@
 	position: relative;
 	overflow: hidden;
 	border-radius: 6px;
-	background: #f0f0f0;
+	background: var(--mvs-surface-2);
 	aspect-ratio: 1;
 }
 
@@ -48,7 +48,7 @@
 	align-items: center;
 	justify-content: center;
 	height: 100%;
-	color: #999;
+	color: var(--mvs-text-muted);
 	font-size: 2em;
 }
 
@@ -59,7 +59,7 @@
 	right: 0;
 	padding: 8px 12px;
 	background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
-	color: #fff;
+	color: var(--mvs-surface);
 	font-size: 0.85em;
 	opacity: 0;
 	transition: opacity 0.3s;

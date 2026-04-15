@@ -14,6 +14,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * REST controller for media tags (mvs_tag taxonomy).
@@ -32,29 +33,48 @@ class TagController extends WP_REST_Controller {
 	 */
 	public function register_routes(): void {
 		// GET /tags — search/autocomplete.
+		// POST /tags — create a new tag (any user who can upload media).
 		register_rest_route(
 			$this->namespace,
 			'/tags',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_tags' ),
-				'permission_callback' => '__return_true',
-				'args'                => array(
-					'search'   => array(
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_tags' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'search'   => array(
+							'type'              => 'string',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'per_page' => array(
+							'type'              => 'integer',
+							'default'           => 20,
+							'minimum'           => 1,
+							'maximum'           => 100,
+							'sanitize_callback' => 'absint',
+						),
+						'orderby'  => array(
+							'type'    => 'string',
+							'default' => 'name',
+							'enum'    => array( 'name', 'count' ),
+						),
 					),
-					'per_page' => array(
-						'type'              => 'integer',
-						'default'           => 20,
-						'minimum'           => 1,
-						'maximum'           => 100,
-						'sanitize_callback' => 'absint',
-					),
-					'orderby'  => array(
-						'type'    => 'string',
-						'default' => 'name',
-						'enum'    => array( 'name', 'count' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'create_tag' ),
+					'permission_callback' => array( $this, 'create_tag_permissions_check' ),
+					'args'                => array(
+						'name' => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'slug' => array(
+							'type'              => 'string',
+							'sanitize_callback' => 'sanitize_title',
+						),
 					),
 				),
 			)
@@ -121,6 +141,24 @@ class TagController extends WP_REST_Controller {
 						'type'              => 'string',
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
+
+		// DELETE /tags/{id} — delete tag.
+		register_rest_route(
+			$this->namespace,
+			'/tags/(?P<id>[\d]+)',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_tag' ),
+				'permission_callback' => array( $this, 'admin_check' ),
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
 					),
 				),
 			)
@@ -247,6 +285,14 @@ class TagController extends WP_REST_Controller {
 		// Delete source tag.
 		wp_delete_term( $source_id, 'mvs_tag' );
 
+		// Sync MediaRepository tags for each affected media item.
+		foreach ( $posts as $mid ) {
+			$all_terms = get_the_terms( $mid, 'mvs_tag' );
+			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
+				MediaRepository::set( $mid, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
+			}
+		}
+
 		/**
 		 * Fires after tags are merged.
 		 *
@@ -297,6 +343,38 @@ class TagController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Delete a tag.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function delete_tag( $request ) {
+		$term_id = $request->get_param( 'id' );
+
+		$term = get_term( $term_id, 'mvs_tag' );
+		if ( ! $term || is_wp_error( $term ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Tag not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$result = wp_delete_term( $term_id, 'mvs_tag' );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		if ( false === $result ) {
+			return new WP_Error( 'mvs_delete_failed', __( 'Failed to delete tag.', 'wpmediaverse' ), array( 'status' => 500 ) );
+		}
+
+		return rest_ensure_response(
+			array(
+				'deleted' => true,
+				'previous' => $this->format_term( $term ),
+			)
+		);
+	}
+
+	/**
 	 * Format a term for API response.
 	 *
 	 * @param \WP_Term $term Term object.
@@ -309,6 +387,72 @@ class TagController extends WP_REST_Controller {
 			'slug'  => $term->slug,
 			'count' => $term->count,
 		);
+	}
+
+	/**
+	 * Create a new tag.
+	 *
+	 * Any logged-in user who can upload media can create tags. Admin-only
+	 * operations (rename, merge, delete) remain gated by admin_check().
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function create_tag( $request ) {
+		$name = trim( (string) $request->get_param( 'name' ) );
+		$slug = (string) $request->get_param( 'slug' );
+
+		if ( '' === $name ) {
+			return new WP_Error( 'mvs_invalid_name', __( 'Tag name cannot be empty.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		$args = array();
+		if ( '' !== $slug ) {
+			$args['slug'] = $slug;
+		}
+
+		$result = wp_insert_term( $name, 'mvs_tag', $args );
+
+		if ( is_wp_error( $result ) ) {
+			if ( 'term_exists' === $result->get_error_code() ) {
+				$existing_id = (int) $result->get_error_data();
+				$existing    = $existing_id ? get_term( $existing_id, 'mvs_tag' ) : null;
+				return new WP_Error(
+					'mvs_tag_exists',
+					__( 'Tag already exists.', 'wpmediaverse' ),
+					array(
+						'status'   => 409,
+						'existing' => $existing && ! is_wp_error( $existing ) ? $this->format_term( $existing ) : null,
+					)
+				);
+			}
+			return $result;
+		}
+
+		$term = get_term( $result['term_id'], 'mvs_tag' );
+		if ( ! $term || is_wp_error( $term ) ) {
+			return new WP_Error( 'mvs_create_failed', __( 'Failed to load created tag.', 'wpmediaverse' ), array( 'status' => 500 ) );
+		}
+
+		$response = rest_ensure_response( $this->format_term( $term ) );
+		$response->set_status( 201 );
+		return $response;
+	}
+
+	/**
+	 * Permissions: create tag (any user who can upload media).
+	 *
+	 * Mirrors MediaController::create_item_permissions_check() so the capability
+	 * for creating tags stays aligned with the capability for uploading media.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return bool|WP_Error
+	 */
+	public function create_tag_permissions_check( $request ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'upload_mvs_media' ) ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to create tags.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+		return true;
 	}
 
 	/**

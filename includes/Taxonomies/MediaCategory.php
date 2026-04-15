@@ -42,7 +42,9 @@ class MediaCategory {
 			'rewrite'           => array( 'slug' => 'media-category' ),
 		);
 
-		// Registered on mvs_album for admin UI. Media-category associations stored in custom tables.
+		// Registered on mvs_album. Category relationships are stored via the standard
+		// wp_term_relationships table; AlbumController writes them with wp_set_object_terms()
+		// on create/update and reads them via get_the_terms() when building the REST response.
 		register_taxonomy( 'mvs_category', 'mvs_album', $args );
 	}
 }

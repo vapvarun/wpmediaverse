@@ -214,7 +214,18 @@ class OverviewPage {
 									xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 									xhr.onload = function() {
 										bar.style.width = '100%';
-										var data = JSON.parse(xhr.responseText);
+										var data;
+										try {
+											data = JSON.parse(xhr.responseText);
+										} catch (err) {
+											status.textContent = '<?php echo esc_js( __( 'Import failed — server returned an invalid response. Check wp-content/debug.log.', 'wpmediaverse' ) ); ?>';
+											status.className = 'mvs-status-inline mvs-btn-text-danger';
+											btn.disabled = false;
+											btn.textContent = '<?php echo esc_js( __( 'Import Demo Data', 'wpmediaverse' ) ); ?>';
+											progress.classList.add('mvs-hidden');
+											console.error('mvs_import_demo_data: invalid JSON response', err, xhr.responseText);
+											return;
+										}
 										if (data.success) {
 											status.textContent = data.data.message;
 											status.className = 'mvs-status-inline mvs-icon-success';
@@ -252,7 +263,7 @@ class OverviewPage {
 									</div>
 									<script>
 									document.getElementById('mvs-cleanup-demo-btn').addEventListener('click', function() {
-										if (!confirm('<?php echo esc_js( __( 'Delete ALL media, albums, collections, and custom table data? This cannot be undone.', 'wpmediaverse' ) ); ?>')) {
+										if (!confirm('<?php echo esc_js( __( 'Delete all demo users and the media, albums, and collections they own? Your real user data will not be touched. This cannot be undone.', 'wpmediaverse' ) ); ?>')) {
 											return;
 										}
 										var btn = this;
@@ -264,7 +275,17 @@ class OverviewPage {
 										xhr.open('POST', ajaxurl);
 										xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 										xhr.onload = function() {
-											var data = JSON.parse(xhr.responseText);
+											var data;
+											try {
+												data = JSON.parse(xhr.responseText);
+											} catch (err) {
+												status.textContent = '<?php echo esc_js( __( 'Cleanup failed — server returned an invalid response. Check wp-content/debug.log.', 'wpmediaverse' ) ); ?>';
+												status.className = 'mvs-status-inline mvs-btn-text-danger';
+												btn.disabled = false;
+												btn.textContent = '<?php echo esc_js( __( 'Delete Demo Data', 'wpmediaverse' ) ); ?>';
+												console.error('mvs_cleanup_demo: invalid JSON response', err, xhr.responseText);
+												return;
+											}
 											if (data.success) {
 												status.textContent = data.data.message;
 												status.className = 'mvs-status-inline mvs-icon-success';
@@ -690,18 +711,24 @@ class OverviewPage {
 		check_ajax_referer( 'mvs_import_demo', '_nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_mvs_settings' ) ) {
-			wp_send_json_error( array( 'message' => 'Permission denied.' ) );
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wpmediaverse' ) ) );
 		}
 
 		$seeder = MVS_PLUGIN_DIR . 'seed-demo-data.php';
 		if ( ! file_exists( $seeder ) ) {
-			wp_send_json_error( array( 'message' => 'Demo data seeder not found.' ) );
+			wp_send_json_error( array( 'message' => __( 'Demo data seeder not found.', 'wpmediaverse' ) ) );
 		}
 
+		// Buffer and discard any stray output (PHP notices, DB errors with
+		// WP_DEBUG_DISPLAY on, etc.) so the JSON response stays clean.
+		ob_start();
 		require_once $seeder;
+		ob_end_clean();
 
-		// If the seeder didn't send a response (shouldn't happen), send one.
-		wp_send_json_success( array( 'message' => 'Import complete.' ) );
+		// The seeder always terminates via wp_send_json_success()/wp_die() when
+		// DOING_AJAX is true (see seed-demo-data.php line 1533). If execution
+		// reaches this line, the seeder returned without sending a response.
+		wp_send_json_error( array( 'message' => __( 'Seeder did not return a response.', 'wpmediaverse' ) ) );
 	}
 
 	/**
@@ -711,17 +738,21 @@ class OverviewPage {
 		check_ajax_referer( 'mvs_cleanup_demo', '_nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_mvs_settings' ) ) {
-			wp_send_json_error( array( 'message' => 'Permission denied.' ) );
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'wpmediaverse' ) ) );
 		}
 
 		$cleanup = MVS_PLUGIN_DIR . 'cleanup-demo-data.php';
 		if ( ! file_exists( $cleanup ) ) {
-			wp_send_json_error( array( 'message' => 'Cleanup script not found.' ) );
+			wp_send_json_error( array( 'message' => __( 'Cleanup script not found.', 'wpmediaverse' ) ) );
 		}
 
+		// Buffer and discard stray output so the JSON response stays clean.
+		ob_start();
 		require_once $cleanup;
+		ob_end_clean();
 
-		// If the cleanup didn't send a response (shouldn't happen), send one.
-		wp_send_json_success( array( 'message' => 'Cleanup complete.' ) );
+		// The cleanup script terminates via wp_send_json_success()/wp_die() when
+		// DOING_AJAX is true. Reaching this point means the script is broken.
+		wp_send_json_error( array( 'message' => __( 'Cleanup did not return a response.', 'wpmediaverse' ) ) );
 	}
 }

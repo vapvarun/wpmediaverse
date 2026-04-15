@@ -183,6 +183,8 @@ const { state, actions } = store( 'mvs/media-upload', {
 			ctx.uploadError = '';
 			ctx.uploadMessage = `Uploading ${ files.length } file(s)...`;
 			let successCount = 0;
+			let duplicateCount = 0;
+			let lastDuplicateId = 0;
 
 			// Pre-upload quota check (Pro only — endpoint may not exist).
 			try {
@@ -238,6 +240,15 @@ const { state, actions } = store( 'mvs/media-upload', {
 					} );
 					if ( resp.ok ) {
 						successCount++;
+						try {
+							const mediaData = await resp.json();
+							if ( mediaData && mediaData.duplicate_warning ) {
+								duplicateCount++;
+								lastDuplicateId = mediaData.existing_media_id || 0;
+							}
+						} catch {
+							// Response parsing is non-critical for success path.
+						}
 					} else {
 						const err = await resp.json().catch( () => ( {} ) );
 						ctx.uploadError = err.message || `Upload failed for ${ files[ i ].name }.`;
@@ -255,6 +266,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 				ctx.successMessage = `${ successCount } of ${ files.length } file(s) uploaded.`;
 			} else {
 				ctx.successMessage = '';
+			}
+			if ( duplicateCount > 0 ) {
+				ctx.uploadError = `${ duplicateCount } duplicate file(s) detected. Existing media #${ lastDuplicateId } already contains this content.`;
 			}
 
 			// Reset form fields after upload.

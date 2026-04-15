@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MediaVerse · Marketing Assets</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0A0E1A;
+    --paper: #F5F0E6;
+    --accent: #FF6B3D;
+    --primary: #2B4DF3;
+    --line: rgba(10,14,26,0.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Manrope', system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 56px 48px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hdr {
+    max-width: 1400px;
+    margin: 0 auto 56px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 32px;
+    align-items: end;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .eyebrow::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 72px;
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    margin: 0;
+    font-variation-settings: 'opsz' 144;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--primary);
+    font-weight: 300;
+  }
+  .lede {
+    font-size: 18px;
+    line-height: 1.55;
+    color: rgba(10,14,26,0.7);
+    margin: 0;
+    max-width: 460px;
+    justify-self: end;
+  }
+  section {
+    max-width: 1400px;
+    margin: 0 auto 64px;
+  }
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 32px;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.02em;
+  }
+  .section-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(10,14,26,0.55);
+    margin-bottom: 28px;
+  }
+  .grid {
+    display: grid;
+    gap: 24px;
+  }
+  .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  figure {
+    margin: 0;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+  }
+  figure:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -20px rgba(10,14,26,0.25);
+  }
+  figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  figcaption {
+    padding: 16px 20px;
+    font-size: 13px;
+    color: rgba(10,14,26,0.7);
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  figcaption strong {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  figcaption .dims {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: rgba(10,14,26,0.45);
+  }
+  .phone-figure img { max-height: 720px; object-fit: contain; }
+  @media (max-width: 960px) {
+    body { padding: 32px 20px; }
+    .hdr { grid-template-columns: 1fr; gap: 20px; }
+    .lede { justify-self: start; }
+    h1 { font-size: 48px; }
+    .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <header class="hdr">
+    <div>
+      <div class="eyebrow">WPMediaVerse · Pro · Marketing Assets</div>
+      <h1>Your community,<br>their <em>lens.</em></h1>
+    </div>
+    <p class="lede">Editorial-grade marketing visuals generated from the live MediaVerse sandbox. Every asset ships at a known dimension, ready for web, social and decks.</p>
+  </header>
+
+  <section>
+    <h2>Hero</h2>
+    <div class="section-meta">Laptop 1920×1080 · Phone 1080×1920</div>
+    <div class="grid cols-2">
+      <figure>
+        <img src="hero/hero-laptop-1920x1080.png" alt="Hero laptop">
+        <figcaption><strong>hero-laptop</strong><span class="dims">1920×1080</span></figcaption>
+      </figure>
+      <figure class="phone-figure">
+        <img src="hero/hero-phone-1080x1920.png" alt="Hero phone">
+        <figcaption><strong>hero-phone</strong><span class="dims">1080×1920</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Feature cards</h2>
+    <div class="section-meta">1200×900 · six cards</div>
+    <div class="grid cols-3">
+      <figure>
+        <img src="feature-cards/card-01-my-media.png" alt="">
+        <figcaption><strong>01 · My Media</strong><span class="dims">1200×900</span></figcaption>
+      </figure>
+      <figure>
+        <img src="feature-cards/card-02-compete.png" alt="">
+        <figcaption><strong>02 · Compete</strong><span class="dims">1200×900</span></figcaption>
+      </figure>
+      <figure>
+        <img src="feature-cards/card-03-albums.png" alt="">
+        <figcaption><strong>03 · Albums</strong><span class="dims">1200×900</span></figcaption>
+      </figure>
+      <figure>
+        <img src="feature-cards/card-04-creators.png" alt="">
+        <figcaption><strong>04 · Creators</strong><span class="dims">1200×900</span></figcaption>
+      </figure>
+      <figure>
+        <img src="feature-cards/card-05-media.png" alt="">
+        <figcaption><strong>05 · Media</strong><span class="dims">1200×900</span></figcaption>
+      </figure>
+      <figure>
+        <img src="feature-cards/card-06-gamification.png" alt="">
+        <figcaption><strong>06 · Gamification</strong><span class="dims">1200×900</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tech comparison</h2>
+    <div class="section-meta">1600×900 · editorial table</div>
+    <div class="grid cols-2">
+      <figure style="grid-column: span 2;">
+        <img src="feature-cards/compare-tech-1600x900.png" alt="">
+        <figcaption><strong>Why creators pick us</strong><span class="dims">1600×900</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Social</h2>
+    <div class="section-meta">OG 1200×630 · Twitter/LinkedIn 1600×900</div>
+    <div class="grid cols-2">
+      <figure>
+        <img src="social/og-1200x630.png" alt="">
+        <figcaption><strong>og-1200x630</strong><span class="dims">1200×630</span></figcaption>
+      </figure>
+      <figure>
+        <img src="social/twitter-1600x900.png" alt="">
+        <figcaption><strong>twitter-1600x900</strong><span class="dims">1600×900</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Raw captures</h2>
+    <div class="section-meta">Source of truth · element-cropped · re-generatable</div>
+    <div class="grid cols-3">
+      <figure><img src="raw/hero-dashboard-1440.png" alt=""><figcaption><strong>hero-dashboard</strong><span class="dims">my-media</span></figcaption></figure>
+      <figure><img src="raw/hero-frontend-1440.png" alt=""><figcaption><strong>hero-frontend</strong><span class="dims">album</span></figcaption></figure>
+      <figure><img src="raw/hero-mobile-390.png" alt=""><figcaption><strong>hero-mobile</strong><span class="dims">home</span></figcaption></figure>
+      <figure><img src="raw/card-compete-hub.png" alt=""><figcaption><strong>compete-hub</strong><span class="dims">/compete/</span></figcaption></figure>
+      <figure><img src="raw/card-member-profile.png" alt=""><figcaption><strong>member-profile</strong><span class="dims">kenji_tanaka</span></figcaption></figure>
+      <figure><img src="raw/card-media-comments.png" alt=""><figcaption><strong>media-comments</strong><span class="dims">single media</span></figcaption></figure>
+      <figure><img src="raw/card-portraits-album.png" alt=""><figcaption><strong>portraits-album</strong><span class="dims">20 photos</span></figcaption></figure>
+      <figure><img src="raw/card-home-full.png" alt=""><figcaption><strong>leaderboard</strong><span class="dims">home hero</span></figcaption></figure>
+    </div>
+  </section>
+
+</body>
+</html>

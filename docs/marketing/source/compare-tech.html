@@ -1,0 +1,219 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Why MediaVerse</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  html, body { width: 1600px; height: 900px; overflow: hidden; }
+  body { background: var(--paper); }
+  .stage {
+    position: relative; width: 1600px; height: 900px;
+    overflow: hidden; isolation: isolate;
+  }
+  .stage .mesh { z-index: 0; opacity: 0.9; }
+  .content {
+    position: absolute; inset: 0; z-index: 3;
+    padding: 80px 100px;
+    display: flex; flex-direction: column;
+  }
+  .top {
+    display: flex; justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 52px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .eyebrow::before { content:''; width:10px; height:10px; background: var(--accent); border-radius: 50%; }
+
+  h1 {
+    font-family: var(--display); font-weight: 400;
+    font-size: 84px; line-height: 0.92; letter-spacing: -0.03em;
+    margin: 20px 0 0 0; color: var(--ink);
+    font-variation-settings: "opsz" 144;
+    max-width: 900px;
+  }
+  h1 em { font-style: italic; color: var(--primary-2); font-weight: 300; }
+
+  .brand-plate {
+    text-align: right;
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-3); line-height: 1.8;
+  }
+  .brand-plate strong {
+    font-family: var(--display); font-style: italic;
+    font-size: 32px; font-weight: 400;
+    color: var(--ink); display: block;
+    letter-spacing: -0.01em;
+  }
+
+  .table-wrap {
+    flex: 1;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -25px rgba(10,14,26,0.18);
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  }
+
+  .col { display: flex; flex-direction: column; }
+  .col + .col { border-left: 1px solid var(--line); }
+
+  .col .head {
+    padding: 26px 28px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--ink-3);
+    display: flex; align-items: center; gap: 10px;
+    min-height: 74px;
+  }
+  .col.us .head {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--display); font-style: italic;
+    font-size: 26px; font-weight: 400;
+    letter-spacing: -0.01em;
+    text-transform: none;
+  }
+  .col.us .head::before {
+    content: ''; width: 12px; height: 12px;
+    background: var(--accent); border-radius: 50%;
+  }
+  .col.feature-col .head { background: var(--paper-2); }
+
+  .col .cell {
+    padding: 16px 28px;
+    font-family: var(--body); font-size: 15px;
+    color: var(--ink);
+    min-height: 58px;
+    display: flex; align-items: center;
+    border-bottom: 1px solid var(--line);
+    line-height: 1.35;
+  }
+  .col .cell:last-child { border-bottom: none; }
+  .col .cell.label {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .col .cell .check {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .check.yes { color: var(--primary-2); }
+  .check.no  { color: rgba(10,14,26,0.35); }
+  .check.meh { color: var(--accent); }
+  .check .dot {
+    display: inline-block;
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .check.yes .dot { background: var(--primary); box-shadow: 0 0 0 3px rgba(43,77,243,0.18); }
+  .check.no .dot  { background: var(--line); border: 1px solid rgba(10,14,26,0.25); }
+  .check.meh .dot { background: var(--accent); box-shadow: 0 0 0 3px rgba(255,107,61,0.18); }
+
+  .col.us .cell { background: rgba(43,77,243,0.04); }
+
+  .footer-line {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 40px;
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .footer-line em {
+    font-family: var(--display); font-style: italic;
+    font-size: 16px; color: var(--ink);
+    text-transform: none; letter-spacing: -0.01em;
+  }
+
+  /* decorative numeral */
+  .mark {
+    position: absolute;
+    right: -80px; bottom: -320px;
+    font-family: var(--display);
+    font-size: 760px; font-weight: 300; font-style: italic;
+    color: transparent;
+    -webkit-text-stroke: 2px rgba(43, 77, 243, 0.08);
+    line-height: 0.8; z-index: 1;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="mesh paper"></div>
+    <div class="mark">07</div>
+    <div class="content">
+      <div class="top">
+        <div>
+          <div class="eyebrow">Built on the stack you already own</div>
+          <h1>Why creators pick<br>us over the <em>SaaS crowd.</em></h1>
+        </div>
+        <div class="brand-plate">
+          <strong>WPMediaVerse · Pro</strong>
+          A Wbcom Designs product<br>
+          Native WordPress · Gutenberg · REST
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="col feature-col">
+          <div class="head">Capability</div>
+          <div class="cell label">Media storage &amp; ownership</div>
+          <div class="cell label">Block editor (Gutenberg)</div>
+          <div class="cell label">REST API included</div>
+          <div class="cell label">Theme-native templates</div>
+          <div class="cell label">Per-seat pricing</div>
+          <div class="cell label">White-label / brand control</div>
+          <div class="cell label">BuddyPress / bbPress native</div>
+          <div class="cell label">Photo competitions &amp; battles</div>
+        </div>
+
+        <div class="col us">
+          <div class="head">WPMediaVerse</div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>Your server</span></div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>Native blocks</span></div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>/wp-json/mvs/v1/*</span></div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>Any theme</span></div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>One license</span></div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>100%</span></div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>Out of the box</span></div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>Yes</span></div>
+        </div>
+
+        <div class="col">
+          <div class="head">Hosted SaaS boards</div>
+          <div class="cell"><span class="check no"><span class="dot"></span>Vendor cloud</span></div>
+          <div class="cell"><span class="check no"><span class="dot"></span>Embed only</span></div>
+          <div class="cell"><span class="check meh"><span class="dot"></span>Limited</span></div>
+          <div class="cell"><span class="check no"><span class="dot"></span>iframe</span></div>
+          <div class="cell"><span class="check no"><span class="dot"></span>Per user</span></div>
+          <div class="cell"><span class="check meh"><span class="dot"></span>Upsell</span></div>
+          <div class="cell"><span class="check no"><span class="dot"></span>No</span></div>
+          <div class="cell"><span class="check no"><span class="dot"></span>Their DB</span></div>
+        </div>
+
+        <div class="col">
+          <div class="head">Legacy WP plugins</div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>Your server</span></div>
+          <div class="cell"><span class="check no"><span class="dot"></span>Shortcodes</span></div>
+          <div class="cell"><span class="check no"><span class="dot"></span>No</span></div>
+          <div class="cell"><span class="check meh"><span class="dot"></span>Patchy</span></div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>One license</span></div>
+          <div class="cell"><span class="check meh"><span class="dot"></span>Partial</span></div>
+          <div class="cell"><span class="check no"><span class="dot"></span>No</span></div>
+          <div class="cell"><span class="check yes"><span class="dot"></span>Yes</span></div>
+        </div>
+      </div>
+
+      <div class="footer-line">
+        <span>Same PHP, same MySQL, same theme — nothing new to learn.</span>
+        <em>store.wbcomdesigns.com/wpmediaverse-pro</em>
+      </div>
+    </div>
+  </div>
+</body></html>

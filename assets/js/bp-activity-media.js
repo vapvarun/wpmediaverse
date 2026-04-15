@@ -142,6 +142,14 @@
 		fd.append( 'file', file );
 		fd.append( 'status', 'draft' );
 
+		// Include the user's chosen privacy level when the admin setting
+		// exposes the selector. Backend still enforces `mvs_allow_user_privacy`
+		// so a forged privacy param is overridden server-side.
+		var privacySel = document.getElementById( 'mvs-activity-privacy' );
+		if ( privacySel && privacySel.value ) {
+			fd.append( 'privacy', privacySel.value );
+		}
+
 		var uploadPromise = fetch( restUrl + 'media?context=activity', {
 			method: 'POST',
 			headers: { 'X-WP-Nonce': nonce },
@@ -228,6 +236,14 @@
 
 		btn.disabled = true;
 		btn.style.opacity = '0.5';
+
+		// Reveal the privacy selector (if admin enabled it) now that the user
+		// has chosen files — it stays hidden until there is something to apply
+		// the privacy level to.
+		var privacySel = document.getElementById( 'mvs-activity-privacy' );
+		if ( privacySel ) {
+			privacySel.style.display = '';
+		}
 
 		// Show uploading state.
 		var uploadingText = document.createElement( 'span' );

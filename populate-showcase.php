@@ -565,6 +565,7 @@ foreach ( $stock_images as $idx => $img ) {
 		$tag_ids = mvs_showcase_ensure_tags( $img['tags'] );
 		if ( $tag_ids ) {
 			wp_set_object_terms( $post_id, $tag_ids, 'mvs_tag' );
+			\WPMediaVerse\Repository\MediaRepository::set( $post_id, 'tags', wp_json_encode( array_values( $img['tags'] ) ) );
 		}
 	}
 
@@ -572,6 +573,7 @@ foreach ( $stock_images as $idx => $img ) {
 		$cat_id = mvs_showcase_ensure_category( $img['category'] );
 		if ( $cat_id ) {
 			wp_set_object_terms( $post_id, array( $cat_id ), 'mvs_category' );
+			\WPMediaVerse\Repository\MediaRepository::set( $post_id, 'category', wp_json_encode( array( $img['category'] ) ) );
 		}
 	}
 

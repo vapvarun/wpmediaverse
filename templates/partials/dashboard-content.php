@@ -19,6 +19,9 @@ defined( 'ABSPATH' ) || exit;
  */
 do_action( 'mvs_dashboard_before_content' );
 
+// Grid column count from the display setting, clamped to supported range.
+$mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) );
+
 // Profile data for the header.
 $mvs_current_user = wp_get_current_user();
 $mvs_avatar_url   = get_avatar_url( $mvs_current_user->ID, array( 'size' => 96 ) );
@@ -269,7 +272,8 @@ wp_enqueue_style( 'mvs-frontend' );
 				<ul class="mvs-notification-list">
 					<template data-wp-each="state.notifications.items">
 						<li class="mvs-notification-item" data-wp-class--mvs-notification-unread="!context.item.read">
-							<a class="mvs-notification-link" data-wp-bind--href="context.item.url">
+							<a class="mvs-notification-link" data-wp-bind--href="context.item.url"
+								data-wp-on--click="actions.markNotificationRead">
 								<span data-wp-text="context.item.message"></span>
 								<span class="mvs-notification-time" data-wp-text="context.item.date"></span>
 							</a>
@@ -361,7 +365,7 @@ wp_enqueue_style( 'mvs-frontend' );
 		</div>
 
 		<!-- Media Grid -->
-		<div class="mvs-dashboard-grid">
+		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.media.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-media-id="context.item.id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
@@ -409,7 +413,7 @@ wp_enqueue_style( 'mvs-frontend' );
 			<button class="mvs-btn" type="button"
 				data-wp-on--click="actions.openCreateAlbum">+ <?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></button>
 		</div>
-		<div class="mvs-dashboard-grid">
+		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.albums.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-album-id="context.item.id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link">
@@ -441,7 +445,7 @@ wp_enqueue_style( 'mvs-frontend' );
 
 	<!-- My Favorites Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isFavoritesTab">
-		<div class="mvs-dashboard-grid">
+		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.favorites.items">
 				<div class="mvs-dashboard-card" data-wp-bind--data-fav-id="context.item.media_id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
@@ -489,7 +493,7 @@ wp_enqueue_style( 'mvs-frontend' );
 			<button class="mvs-btn" type="button"
 				data-wp-on--click="actions.openCreateCollection">+ <?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></button>
 		</div>
-		<div class="mvs-dashboard-grid">
+		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 			<template data-wp-each="state.collections.items">
 				<div class="mvs-dashboard-card mvs-collection-card" data-wp-bind--data-collection-id="context.item.id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link">
@@ -701,12 +705,12 @@ wp_enqueue_style( 'mvs-frontend' );
 					</div>
 				</div>
 			</div>
-			<div style="padding: 0 24px 12px; border-top: 1px solid #eee; margin-top: 12px; padding-top: 12px;">
-				<label class="mvs-btn mvs-btn--secondary mvs-btn--small" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+				<div class="mvs-replace-file-row">
+					<label class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-replace-file-label">
 					&#8635; <?php esc_html_e( 'Replace File', 'wpmediaverse' ); ?>
 					<input type="file" hidden data-wp-on--change="actions.handleReplaceFile" />
 				</label>
-				<span style="color: #666; font-size: 12px; margin-left: 8px;"><?php esc_html_e( 'Upload a new file. Metadata is preserved.', 'wpmediaverse' ); ?></span>
+					<span class="mvs-replace-file-hint"><?php esc_html_e( "Upload a new file. Metadata is preserved.", "wpmediaverse" ); ?></span>
 			</div>
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"
@@ -826,14 +830,17 @@ wp_enqueue_style( 'mvs-frontend' );
 			</div>
 		</div>
 	</div>
+
+	<?php
+	/**
+	 * Fires after the dashboard content is rendered.
+	 *
+	 * Pro uses this to display the quota usage widget below the media grid.
+	 * Fired INSIDE the .mvs-dashboard wrapper so Interactivity API directives
+	 * (e.g. data-wp-bind--hidden) work in the rendered markup.
+	 *
+	 * @since 1.1.0
+	 */
+	do_action( 'mvs_dashboard_after_content' );
+	?>
 </div>
-<?php
-/**
- * Fires after the dashboard content is rendered.
- *
- * Pro uses this to display the quota usage widget below the media grid.
- *
- * @since 1.1.0
- */
-do_action( 'mvs_dashboard_after_content' );
-?>

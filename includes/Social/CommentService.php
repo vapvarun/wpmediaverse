@@ -185,15 +185,18 @@ class CommentService {
 	 */
 	private function format_comment( $comment, bool $include_replies = false ): array {
 		$cmt_author_id = (int) $comment->user_id;
+		$comment_ts    = strtotime( $comment->comment_date_gmt );
 		$data          = array(
 			'id'            => (int) $comment->comment_ID,
 			'author'        => $cmt_author_id,
 			'author_name'   => $comment->comment_author,
-			'author_avatar' => $cmt_author_id ? (string) get_avatar_url( $cmt_author_id, array( 'size' => 48 ) ) : '',
+			'author_avatar' => $cmt_author_id ? (string) get_avatar_url( $cmt_author_id, array( 'size' => 96 ) ) : '',
 			'author_url'    => $cmt_author_id ? TemplateHelpers::get_user_profile_url( $cmt_author_id ) : '',
 			'content'       => $comment->comment_content,
 			'parent'        => (int) $comment->comment_parent,
 			'date'          => $comment->comment_date_gmt,
+			/* translators: %s: human-readable time difference, e.g. "2 days" */
+			'date_human'    => $comment_ts ? sprintf( __( '%s ago', 'wpmediaverse' ), human_time_diff( $comment_ts, time() ) ) : '',
 		);
 
 		if ( $include_replies ) {
@@ -226,15 +229,18 @@ class CommentService {
 	private function format_comment_with_replies( $comment, array $replies_map ): array {
 		$comment_id = (int) $comment->comment_ID;
 		$author_id  = (int) $comment->user_id;
+		$comment_ts = strtotime( $comment->comment_date_gmt );
 		$data       = array(
 			'id'            => $comment_id,
 			'author'        => $author_id,
 			'author_name'   => $comment->comment_author,
-			'author_avatar' => $author_id ? (string) get_avatar_url( $author_id, array( 'size' => 48 ) ) : '',
+			'author_avatar' => $author_id ? (string) get_avatar_url( $author_id, array( 'size' => 96 ) ) : '',
 			'author_url'    => $author_id ? TemplateHelpers::get_user_profile_url( $author_id ) : '',
 			'content'       => $comment->comment_content,
 			'parent'        => (int) $comment->comment_parent,
 			'date'          => $comment->comment_date_gmt,
+			/* translators: %s: human-readable time difference, e.g. "2 days" */
+			'date_human'    => $comment_ts ? sprintf( __( '%s ago', 'wpmediaverse' ), human_time_diff( $comment_ts, time() ) ) : '',
 			'replies'       => array(),
 		);
 

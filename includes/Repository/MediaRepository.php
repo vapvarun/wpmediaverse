@@ -119,33 +119,21 @@ class MediaRepository {
 			return;
 		}
 
-		// Meta table: upsert.
-		$existing = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT meta_id FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key = %s",
-				$media_id,
-				$key
-			)
-		);
-
+		// Meta table: upsert via composite primary key (media_id, meta_key).
+		// `$wpdb->replace()` handles the INSERT-or-UPDATE atomically without needing
+		// a non-existent `meta_id` column — the table's composite primary key is the
+		// natural uniqueness constraint.
 		$serialized = is_array( $value ) || is_object( $value ) ? wp_json_encode( $value ) : $value;
 
-		if ( $existing ) {
-			$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_media_meta',
-				array( 'meta_value' => $serialized ),
-				array( 'meta_id' => $existing )
-			);
-		} else {
-			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prefix . 'mvs_media_meta',
-				array(
-					'media_id'   => $media_id,
-					'meta_key'   => $key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-					'meta_value' => $serialized, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-				)
-			);
-		}
+		$wpdb->replace( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_media_meta',
+			array(
+				'media_id'   => $media_id,
+				'meta_key'   => $key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => $serialized, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			),
+			array( '%d', '%s', '%s' )
+		);
 	}
 
 	/**
@@ -822,6 +810,8 @@ class MediaRepository {
 		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->delete( $wpdb->prefix . 'mvs_notifications', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->delete( $wpdb->prefix . 'mvs_activity', $where, $format );    // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $wpdb->prefix . 'mvs_access_rules', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $wpdb->prefix . 'mvs_access_grants', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = 'mvs_comment'", $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 

@@ -55,6 +55,8 @@ $mvs_archive_url = home_url( '/media/' );
 		?>
 
 		<article id="mvs-album-<?php the_ID(); ?>" <?php post_class( 'mvs-album-article' ); ?>>
+			<?php \WPMediaVerse\Core\TemplateHelpers::render_back_link( 'album', array( 'author_id' => (int) get_the_author_meta( 'ID' ) ) ); ?>
+
 			<!-- Info Card -->
 			<div class="mvs-collection-card-info">
 				<h1 class="mvs-collection-card-title"><?php the_title(); ?></h1>
@@ -90,6 +92,18 @@ $mvs_archive_url = home_url( '/media/' );
 					</span>
 					<span class="mvs-collection-type-badge"><?php echo esc_html( $album_type ? $album_type : 'album' ); ?></span>
 					<span class="mvs-privacy-badge"><?php echo esc_html( ucfirst( $album_privacy ) ); ?></span>
+					<?php
+					$mvs_album_categories = get_the_terms( get_the_ID(), 'mvs_category' );
+					if ( $mvs_album_categories && ! is_wp_error( $mvs_album_categories ) ) :
+						?>
+						<span class="mvs-collection-meta-categories">
+							<?php foreach ( $mvs_album_categories as $mvs_album_cat ) : ?>
+								<a class="mvs-category-pill" href="<?php echo esc_url( get_term_link( $mvs_album_cat ) ); ?>">
+									<?php echo esc_html( $mvs_album_cat->name ); ?>
+								</a>
+							<?php endforeach; ?>
+						</span>
+					<?php endif; ?>
 				</div>
 				<?php if ( get_the_content() ) : ?>
 					<div class="mvs-collection-card-desc"><?php the_content(); ?></div>
@@ -132,13 +146,19 @@ $mvs_archive_url = home_url( '/media/' );
 						<?php echo wp_interactivity_data_wp_context( $mvs_album_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						data-wp-init="callbacks.init">
 						<div class="mvs-owner-actions">
-							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
-								data-wp-on--click="actions.toggleEdit">
-								<?php esc_html_e( 'Edit Album', 'wpmediaverse' ); ?>
+							<button class="mvs-btn mvs-btn--small mvs-btn--secondary mvs-btn--icon-collapse" type="button"
+								data-wp-on--click="actions.toggleEdit"
+								data-mvs-tooltip="<?php esc_attr_e( 'Edit album', 'wpmediaverse' ); ?>"
+								aria-label="<?php esc_attr_e( 'Edit album', 'wpmediaverse' ); ?>">
+								<i data-lucide="pencil" aria-hidden="true"></i>
+								<span class="mvs-btn__label"><?php esc_html_e( 'Edit Album', 'wpmediaverse' ); ?></span>
 							</button>
-							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
-								data-wp-on--click="actions.confirmDelete">
-								<?php esc_html_e( 'Delete Album', 'wpmediaverse' ); ?>
+							<button class="mvs-btn mvs-btn--small mvs-btn--danger mvs-btn--icon-collapse" type="button"
+								data-wp-on--click="actions.confirmDelete"
+								data-mvs-tooltip="<?php esc_attr_e( 'Delete album', 'wpmediaverse' ); ?>"
+								aria-label="<?php esc_attr_e( 'Delete album', 'wpmediaverse' ); ?>">
+								<i data-lucide="trash-2" aria-hidden="true"></i>
+								<span class="mvs-btn__label"><?php esc_html_e( 'Delete Album', 'wpmediaverse' ); ?></span>
 							</button>
 						</div>
 						<div class="mvs-inline-edit" data-wp-bind--hidden="!context.editVisible">
@@ -411,7 +431,8 @@ $mvs_archive_url = home_url( '/media/' );
 				})();
 				</script>
 			<?php elseif ( ! empty( $items ) ) : ?>
-				<div class="mvs-media-grid mvs-cols-3">
+				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
+				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 					<?php
 					foreach ( $items as $item_row ) :
 						$media_id = (int) $item_row['media_id'];

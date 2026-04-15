@@ -8,9 +8,9 @@
 
 .mvs-explore-filter-btn {
 	padding: 6px 16px;
-	border: 1px solid #ddd;
+	border: 1px solid var(--mvs-border);
 	border-radius: 20px;
-	background: #fff;
+	background: var(--mvs-surface);
 	cursor: pointer;
 	font-size: 13px;
 	transition: all 0.2s;
@@ -18,39 +18,39 @@
 
 .mvs-explore-filter-btn:hover,
 .mvs-explore-filter-btn.active {
-	background: #0073aa;
-	color: #fff;
-	border-color: #0073aa;
+	background: var(--mvs-primary);
+	color: var(--mvs-surface);
+	border-color: var(--mvs-primary);
 }
 
 .mvs-explore-search {
 	flex: 1;
 	min-width: 200px;
 	padding: 8px 16px;
-	border: 1px solid #ddd;
+	border: 1px solid var(--mvs-border);
 	border-radius: 20px;
 	font-size: 14px;
 }
 
 .mvs-explore-search:focus {
 	outline: none;
-	border-color: #0073aa;
-	box-shadow: 0 0 0 1px #0073aa;
+	border-color: var(--mvs-primary);
+	box-shadow: 0 0 0 1px var(--mvs-primary);
 }
 
 .mvs-load-more {
 	display: block;
 	margin: 24px auto 0;
 	padding: 10px 24px;
-	border: 1px solid #0073aa;
+	border: 1px solid var(--mvs-primary);
 	border-radius: 4px;
 	background: transparent;
-	color: #0073aa;
+	color: var(--mvs-primary);
 	cursor: pointer;
 	font-size: 14px;
 }
 
 .mvs-load-more:hover {
-	background: #0073aa;
-	color: #fff;
+	background: var(--mvs-primary);
+	color: var(--mvs-surface);
 }
