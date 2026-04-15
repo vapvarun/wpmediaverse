@@ -1189,9 +1189,9 @@ if ( $follows_exist && count( $all_user_ids ) >= 2 ) {
 		$wpdb->replace( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$follows_table,
 			array(
-				'follower_id' => $pair[0],
-				'followed_id' => $pair[1],
-				'created_at'  => gmdate( 'Y-m-d H:i:s', time() - wp_rand( 0, 30 * DAY_IN_SECONDS ) ),
+				'follower_id'  => $pair[0],
+				'following_id' => $pair[1],
+				'created_at'   => gmdate( 'Y-m-d H:i:s', time() - wp_rand( 0, 30 * DAY_IN_SECONDS ) ),
 			),
 			array( '%d', '%d', '%s' )
 		);
