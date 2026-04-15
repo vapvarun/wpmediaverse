@@ -33,29 +33,48 @@ class TagController extends WP_REST_Controller {
 	 */
 	public function register_routes(): void {
 		// GET /tags — search/autocomplete.
+		// POST /tags — create a new tag (any user who can upload media).
 		register_rest_route(
 			$this->namespace,
 			'/tags',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_tags' ),
-				'permission_callback' => '__return_true',
-				'args'                => array(
-					'search'   => array(
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_tags' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'search'   => array(
+							'type'              => 'string',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'per_page' => array(
+							'type'              => 'integer',
+							'default'           => 20,
+							'minimum'           => 1,
+							'maximum'           => 100,
+							'sanitize_callback' => 'absint',
+						),
+						'orderby'  => array(
+							'type'    => 'string',
+							'default' => 'name',
+							'enum'    => array( 'name', 'count' ),
+						),
 					),
-					'per_page' => array(
-						'type'              => 'integer',
-						'default'           => 20,
-						'minimum'           => 1,
-						'maximum'           => 100,
-						'sanitize_callback' => 'absint',
-					),
-					'orderby'  => array(
-						'type'    => 'string',
-						'default' => 'name',
-						'enum'    => array( 'name', 'count' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'create_tag' ),
+					'permission_callback' => array( $this, 'create_tag_permissions_check' ),
+					'args'                => array(
+						'name' => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'slug' => array(
+							'type'              => 'string',
+							'sanitize_callback' => 'sanitize_title',
+						),
 					),
 				),
 			)
@@ -368,6 +387,72 @@ class TagController extends WP_REST_Controller {
 			'slug'  => $term->slug,
 			'count' => $term->count,
 		);
+	}
+
+	/**
+	 * Create a new tag.
+	 *
+	 * Any logged-in user who can upload media can create tags. Admin-only
+	 * operations (rename, merge, delete) remain gated by admin_check().
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function create_tag( $request ) {
+		$name = trim( (string) $request->get_param( 'name' ) );
+		$slug = (string) $request->get_param( 'slug' );
+
+		if ( '' === $name ) {
+			return new WP_Error( 'mvs_invalid_name', __( 'Tag name cannot be empty.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		$args = array();
+		if ( '' !== $slug ) {
+			$args['slug'] = $slug;
+		}
+
+		$result = wp_insert_term( $name, 'mvs_tag', $args );
+
+		if ( is_wp_error( $result ) ) {
+			if ( 'term_exists' === $result->get_error_code() ) {
+				$existing_id = (int) $result->get_error_data();
+				$existing    = $existing_id ? get_term( $existing_id, 'mvs_tag' ) : null;
+				return new WP_Error(
+					'mvs_tag_exists',
+					__( 'Tag already exists.', 'wpmediaverse' ),
+					array(
+						'status'   => 409,
+						'existing' => $existing && ! is_wp_error( $existing ) ? $this->format_term( $existing ) : null,
+					)
+				);
+			}
+			return $result;
+		}
+
+		$term = get_term( $result['term_id'], 'mvs_tag' );
+		if ( ! $term || is_wp_error( $term ) ) {
+			return new WP_Error( 'mvs_create_failed', __( 'Failed to load created tag.', 'wpmediaverse' ), array( 'status' => 500 ) );
+		}
+
+		$response = rest_ensure_response( $this->format_term( $term ) );
+		$response->set_status( 201 );
+		return $response;
+	}
+
+	/**
+	 * Permissions: create tag (any user who can upload media).
+	 *
+	 * Mirrors MediaController::create_item_permissions_check() so the capability
+	 * for creating tags stays aligned with the capability for uploading media.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return bool|WP_Error
+	 */
+	public function create_tag_permissions_check( $request ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'upload_mvs_media' ) ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You do not have permission to create tags.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+		return true;
 	}
 
 	/**
