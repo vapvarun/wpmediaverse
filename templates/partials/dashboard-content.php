@@ -269,7 +269,8 @@ wp_enqueue_style( 'mvs-frontend' );
 				<ul class="mvs-notification-list">
 					<template data-wp-each="state.notifications.items">
 						<li class="mvs-notification-item" data-wp-class--mvs-notification-unread="!context.item.read">
-							<a class="mvs-notification-link" data-wp-bind--href="context.item.url">
+							<a class="mvs-notification-link" data-wp-bind--href="context.item.url"
+								data-wp-on--click="actions.markNotificationRead">
 								<span data-wp-text="context.item.message"></span>
 								<span class="mvs-notification-time" data-wp-text="context.item.date"></span>
 							</a>

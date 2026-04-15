@@ -1260,6 +1260,37 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 		},
 
+		// Mark an individual notification as read when the user clicks it.
+		// The default link navigation still fires — this runs alongside it so
+		// the unread count decrements and the row is restyled without waiting
+		// for the next page load.
+		async markNotificationRead() {
+			const clicked = getContext().item;
+			if ( ! clicked || clicked.read ) {
+				return;
+			}
+			// Optimistically flip the UI so the badge updates immediately —
+			// the network call happens in the background as the browser navigates.
+			clicked.read = true;
+			if ( state.notifications.count > 0 ) {
+				state.notifications.count -= 1;
+			}
+			const ctx = getContext();
+			try {
+				await apiFetch( ctx, 'me/notifications/read', {
+					method: 'POST',
+					headers: apiHeaders( ctx.nonce ),
+					body: JSON.stringify( { ids: [ clicked.id ] } ),
+				} );
+			} catch ( err ) {
+				// Roll back the optimistic update so the user can try again.
+				clicked.read = false;
+				state.notifications.count += 1;
+				// eslint-disable-next-line no-console
+				console.error( 'mvs: failed to mark notification read', err );
+			}
+		},
+
 		async loadNotificationCount( ctx ) {
 			try {
 				const res = await apiFetch( ctx, 'me/notifications/count' );
