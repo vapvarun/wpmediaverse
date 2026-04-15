@@ -322,6 +322,13 @@ class AlbumController extends WP_REST_Controller {
 			MediaRepository::set( $album_id, 'group_id', $group_id );
 		}
 
+		// Apply categories if provided — mvs_category is registered on mvs_album so this writes
+		// to the standard taxonomy tables. Accepts an array of term IDs.
+		$categories = $request->get_param( 'categories' );
+		if ( is_array( $categories ) ) {
+			wp_set_object_terms( $album_id, array_map( 'absint', array_filter( $categories ) ), 'mvs_category' );
+		}
+
 		$response = rest_ensure_response( $this->prepare_album_response( get_post( $album_id ) ) );
 		$response->set_status( 201 );
 
@@ -371,6 +378,17 @@ class AlbumController extends WP_REST_Controller {
 			MediaRepository::set( $album_id, 'privacy', sanitize_text_field( $privacy ) );
 		}
 
+		// Categories — distinguish "not sent" from "explicitly cleared" by checking the JSON body,
+		// same pattern MediaController uses for tags/categories updates so an unrelated save
+		// never wipes the existing category list.
+		$json_params = (array) $request->get_json_params();
+		if ( array_key_exists( 'categories', $json_params ) ) {
+			$categories = $request->get_param( 'categories' );
+			if ( is_array( $categories ) ) {
+				wp_set_object_terms( $album_id, array_map( 'absint', array_filter( $categories ) ), 'mvs_category' );
+			}
+		}
+
 		return rest_ensure_response( $this->prepare_album_response( get_post( $album_id ) ) );
 	}
 
@@ -394,6 +412,9 @@ class AlbumController extends WP_REST_Controller {
 		}
 
 		$this->albums->delete_all_items( $album_id );
+
+		// Clean up taxonomy relationships so deleted albums don't leave dangling term assignments.
+		wp_delete_object_term_relationships( $album_id, array( 'mvs_category' ) );
 
 		$deleted = wp_delete_post( $album_id, true );
 
@@ -565,6 +586,18 @@ class AlbumController extends WP_REST_Controller {
 		$privacy_value = MediaRepository::get( $album_id, 'privacy' );
 		$album_type    = MediaRepository::get( $album_id, 'album_type' );
 
+		$category_terms = get_the_terms( $album_id, 'mvs_category' );
+		$categories     = array();
+		if ( $category_terms && ! is_wp_error( $category_terms ) ) {
+			foreach ( $category_terms as $term ) {
+				$categories[] = array(
+					'id'   => (int) $term->term_id,
+					'name' => $term->name,
+					'slug' => $term->slug,
+				);
+			}
+		}
+
 		$data = array(
 			'id'          => $album_id,
 			'title'       => $post->post_title,
@@ -576,6 +609,7 @@ class AlbumController extends WP_REST_Controller {
 			'album_type'  => $album_type ? $album_type : 'default',
 			'media_count' => $this->albums->get_item_count( $album_id ),
 			'cover_url'   => $this->albums->get_cover_url( $album_id ),
+			'categories'  => $categories,
 		);
 
 		if ( $include_items ) {

@@ -90,6 +90,18 @@ $mvs_archive_url = home_url( '/media/' );
 					</span>
 					<span class="mvs-collection-type-badge"><?php echo esc_html( $album_type ? $album_type : 'album' ); ?></span>
 					<span class="mvs-privacy-badge"><?php echo esc_html( ucfirst( $album_privacy ) ); ?></span>
+					<?php
+					$mvs_album_categories = get_the_terms( get_the_ID(), 'mvs_category' );
+					if ( $mvs_album_categories && ! is_wp_error( $mvs_album_categories ) ) :
+						?>
+						<span class="mvs-collection-meta-categories">
+							<?php foreach ( $mvs_album_categories as $mvs_album_cat ) : ?>
+								<a class="mvs-category-pill" href="<?php echo esc_url( get_term_link( $mvs_album_cat ) ); ?>">
+									<?php echo esc_html( $mvs_album_cat->name ); ?>
+								</a>
+							<?php endforeach; ?>
+						</span>
+					<?php endif; ?>
 				</div>
 				<?php if ( get_the_content() ) : ?>
 					<div class="mvs-collection-card-desc"><?php the_content(); ?></div>
