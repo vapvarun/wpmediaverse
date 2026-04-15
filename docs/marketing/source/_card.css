@@ -1,0 +1,132 @@
+/* Feature card template — 1200×900 */
+html, body { width: 1200px; height: 900px; overflow: hidden; }
+body { background: var(--paper); }
+
+.card {
+  position: relative;
+  width: 1200px; height: 900px;
+  overflow: hidden;
+  isolation: isolate;
+}
+.card .mesh { z-index: 0; }
+.card > .content {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  height: 100%;
+  padding: 80px;
+  gap: 60px;
+  align-items: center;
+}
+
+.card .copy {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.card .eyebrow-line {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+.card .eyebrow-line .num {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 0.8;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+}
+.card .eyebrow-line .rule {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.card h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 72px;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  margin: 0;
+  color: var(--ink);
+  font-variation-settings: "opsz" 144;
+}
+.card h2 em {
+  font-style: italic;
+  color: var(--primary-2);
+  font-weight: 300;
+}
+.card p.lede {
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1.55;
+  color: rgba(10, 14, 26, 0.72);
+  margin: 0;
+  max-width: 440px;
+}
+.card .meta {
+  display: flex;
+  gap: 24px;
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.card .meta span { display: flex; align-items: center; gap: 8px; }
+.card .meta span::before {
+  content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
+}
+
+.card .shot-wrap {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow:
+    0 30px 60px -25px rgba(10,14,26,0.35),
+    0 10px 20px -10px rgba(10,14,26,0.2),
+    0 0 0 1px rgba(10,14,26,0.06);
+  transform: rotate(-1.5deg);
+}
+.card .shot-wrap::before {
+  /* glow backdrop */
+  content: '';
+  position: absolute;
+  inset: -60px;
+  background: radial-gradient(ellipse at center, rgba(43, 77, 243, 0.2), transparent 65%);
+  z-index: -1;
+  filter: blur(40px);
+}
+.card .shot-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: top left;
+  display: block;
+}
+.card .brand-footer {
+  position: absolute;
+  left: 80px; bottom: 40px;
+  z-index: 4;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.card .brand-footer::before {
+  content: ''; width: 8px; height: 8px; background: var(--accent); border-radius: 50%;
+}

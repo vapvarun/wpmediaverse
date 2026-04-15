@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MediaVerse — Phone Hero</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  html, body { width: 1080px; height: 1920px; overflow: hidden; }
+  body { background: var(--ink); }
+
+  .stage {
+    position: relative;
+    width: 1080px; height: 1920px;
+    overflow: hidden; isolation: isolate;
+  }
+  .mark {
+    position: absolute;
+    left: -120px; top: -160px;
+    font-family: var(--display);
+    font-size: 900px; font-weight: 300; font-style: italic;
+    color: transparent;
+    -webkit-text-stroke: 2px rgba(255, 209, 102, 0.18);
+    line-height: 0.8; z-index: 1;
+  }
+  .content {
+    position: absolute;
+    left: 80px; right: 80px; top: 120px;
+    z-index: 3;
+    color: var(--paper);
+  }
+  .brand {
+    font-family: var(--mono);
+    font-size: 18px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--paper);
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 40px;
+  }
+  .brand::before {
+    content: ''; width: 14px; height: 14px;
+    background: var(--accent); border-radius: 50%;
+    box-shadow: 0 0 0 6px rgba(255,107,61,0.15);
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 140px;
+    line-height: 0.9;
+    letter-spacing: -0.035em;
+    margin: 0 0 40px 0;
+    font-variation-settings: "opsz" 144;
+  }
+  h1 em {
+    font-style: italic; color: var(--accent-2); font-weight: 300;
+  }
+  .lede {
+    font-size: 34px;
+    line-height: 1.4;
+    color: rgba(245, 240, 230, 0.8);
+    max-width: 800px;
+    margin: 0;
+  }
+
+  .device-wrap {
+    position: absolute;
+    left: 50%; transform: translateX(-50%) rotate(-3deg);
+    top: 780px;
+    z-index: 2;
+  }
+  .device-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -140px;
+    background: radial-gradient(ellipse at center, rgba(43, 77, 243, 0.45), transparent 65%);
+    filter: blur(80px);
+    z-index: -1;
+  }
+  .device-wrap .phone { width: 540px; }
+
+  .footer-strip {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 140px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 80px;
+    z-index: 4;
+    font-family: var(--mono);
+    font-size: 22px; font-weight: 600;
+    color: var(--ink);
+    letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .footer-strip span { display: flex; align-items: center; gap: 18px; }
+  .footer-strip span::before {
+    content: '·'; font-size: 40px; line-height: 0;
+  }
+  .footer-strip span:first-child::before { display: none; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="mesh"></div>
+    <div class="mark">02</div>
+    <div class="content">
+      <div class="brand">WPMediaVerse · Pro</div>
+      <h1>A creator network<br>inside your <em>site.</em></h1>
+      <p class="lede">Upload, react, follow, compete — every interaction creators expect, built into WordPress.</p>
+    </div>
+    <div class="device-wrap">
+      <div class="phone">
+        <img src="../raw/hero-mobile-390.png" alt="">
+      </div>
+    </div>
+    <div class="footer-strip">
+      <span>Albums</span>
+      <span>Competitions</span>
+      <span>Gamification</span>
+      <span>Creators</span>
+    </div>
+  </div>
+</body>
+</html>

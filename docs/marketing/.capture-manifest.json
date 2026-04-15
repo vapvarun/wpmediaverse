@@ -1,0 +1,73 @@
+{
+  "sandbox": "http://mediaverse.local",
+  "autologin": "?autologin=1",
+  "plugin_slug": "wpmediaverse",
+  "captures": [
+    {
+      "id": "hero-dashboard-1440",
+      "url": "/my-media/",
+      "viewport": [1440, 900],
+      "wait_ms": 1200,
+      "description": "Admin My Media dashboard showing populated Albums tab"
+    },
+    {
+      "id": "hero-frontend-1440",
+      "url": "/album/mountain-escapes/",
+      "viewport": [1440, 900],
+      "wait_ms": 1200,
+      "description": "Single album with 20 populated photos grid"
+    },
+    {
+      "id": "hero-mobile-390",
+      "url": "/",
+      "viewport": [390, 844],
+      "wait_ms": 1200,
+      "description": "Custom MediaVerse home hero on mobile"
+    },
+    {
+      "id": "card-compete-hub",
+      "url": "/compete/",
+      "viewport": [1440, 900],
+      "wait_ms": 1200,
+      "description": "Compete hub — Active Challenge + Tournaments + Battles"
+    },
+    {
+      "id": "card-gamification",
+      "url": "/",
+      "viewport": [1440, 1600],
+      "wait_ms": 1200,
+      "scroll_to": "top-creators",
+      "description": "Top Creators leaderboard from home page"
+    },
+    {
+      "id": "card-member-profile",
+      "url": "/members/kenji_tanaka/",
+      "viewport": [1440, 900],
+      "wait_ms": 1200,
+      "description": "Kenji's profile with avatar + activity feed"
+    },
+    {
+      "id": "card-media-comments",
+      "url": "/media/sliced-cake-on-black-plate-s8_7aqkzcwy/",
+      "viewport": [1440, 1100],
+      "wait_ms": 1200,
+      "description": "Single media with redesigned comment list + timestamps"
+    },
+    {
+      "id": "card-albums-grid",
+      "url": "/my-media/#albums",
+      "viewport": [1440, 900],
+      "wait_ms": 1500,
+      "description": "My Media Albums tab — 8 album cards"
+    },
+    {
+      "id": "card-portraits-album",
+      "url": "/album/portrait-series/",
+      "viewport": [1440, 1200],
+      "wait_ms": 1200,
+      "description": "Portrait Series album — 20 diverse portraits"
+    }
+  ],
+  "hide_chrome": "references/hide-chrome.js",
+  "composite_base_url": "http://mediaverse.local/wp-content/plugins/wpmediaverse/docs/marketing/source"
+}

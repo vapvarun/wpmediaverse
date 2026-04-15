@@ -1,0 +1,85 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>OG · 1200×630</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { background: var(--ink); }
+  .stage { position: relative; width: 1200px; height: 630px; overflow: hidden; isolation: isolate; }
+  .mark {
+    position: absolute; right: -80px; top: -100px;
+    font-family: var(--display); font-size: 620px; font-weight: 300; font-style: italic;
+    color: transparent; -webkit-text-stroke: 2px rgba(255, 107, 61, 0.18);
+    line-height: 0.8; z-index: 1;
+  }
+  .content {
+    position: absolute; left: 72px; top: 72px; right: 72px; bottom: 72px;
+    z-index: 3;
+    display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px;
+    align-items: center;
+  }
+  .copy { color: var(--paper); }
+  .brand {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--paper);
+    display: flex; align-items: center; gap: 14px; margin-bottom: 28px;
+  }
+  .brand::before {
+    content: ''; width: 10px; height: 10px; background: var(--accent); border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(255,107,61,0.15);
+  }
+  h1 {
+    font-family: var(--display); font-weight: 400;
+    font-size: 88px; line-height: 0.93; letter-spacing: -0.03em;
+    margin: 0 0 28px 0;
+    font-variation-settings: "opsz" 144;
+  }
+  h1 em {
+    font-style: italic; color: var(--accent-2); font-weight: 300;
+  }
+  .lede {
+    font-size: 19px; line-height: 1.45;
+    color: rgba(245, 240, 230, 0.78);
+    margin: 0; max-width: 520px;
+  }
+  .device-wrap {
+    position: relative; transform: rotate(-2deg);
+  }
+  .device-wrap::before {
+    content: ''; position: absolute; inset: -60px;
+    background: radial-gradient(ellipse at center, rgba(43, 77, 243, 0.4), transparent 65%);
+    filter: blur(50px); z-index: -1;
+  }
+  .device-wrap img {
+    width: 100%; display: block;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 40px 80px -20px rgba(0,0,0,0.6);
+  }
+  .footer-row {
+    position: absolute; left: 72px; right: 72px; bottom: 30px;
+    z-index: 3;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(245, 240, 230, 0.55);
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="mesh"></div>
+    <div class="mark">.</div>
+    <div class="content">
+      <div class="copy">
+        <div class="brand">WPMediaVerse · Pro</div>
+        <h1>Photo challenges,<br>tournaments, <em>gamified.</em></h1>
+        <p class="lede">WPMediaVerse ships albums, weekly challenges, single-elimination brackets, 1v1 battles, points, badges and streaks — all native WordPress, all one plugin.</p>
+      </div>
+      <div class="device-wrap"><img src="../raw/hero-frontend-1440.png" alt=""></div>
+    </div>
+    <div class="footer-row">
+      <span>store.wbcomdesigns.com/wp-career-board-pro</span>
+      <span>A Wbcom Designs product</span>
+    </div>
+  </div>
+</body></html>

@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Tile · Stack</title>
+<link rel="stylesheet" href="_shared.css"><link rel="stylesheet" href="_tile.css">
+<style>
+  .tile .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 40px;
+    margin-top: 36px;
+  }
+  .tile .stack-grid .item {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 18px 0;
+    border-top: 1px solid rgba(245, 240, 230, 0.18);
+  }
+  .tile .stack-grid .item .key {
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--accent);
+  }
+  .tile .stack-grid .item .val {
+    font-family: var(--display); font-style: italic; font-weight: 400;
+    font-size: 44px; line-height: 0.9;
+    color: var(--paper);
+    letter-spacing: -0.015em;
+    font-variation-settings: "opsz" 144;
+  }
+  .tile .stack-intro {
+    font-family: var(--display); font-weight: 400;
+    font-size: 86px; line-height: 0.9; letter-spacing: -0.03em;
+    margin: 0;
+    font-variation-settings: "opsz" 144;
+  }
+  .tile .stack-intro em { font-style: italic; color: var(--accent-2); font-weight: 300; }
+</style></head>
+<body><div class="tile"><div class="mesh"></div><div class="mark"><span>.</span></div>
+<div class="inner">
+  <div class="brand">Built on the stack you know</div>
+  <div class="spacer"></div>
+  <h1 class="stack-intro">Same PHP.<br>Same MySQL.<br><em>No lock-in.</em></h1>
+  <div class="stack-grid">
+    <div class="item"><span class="key">Language</span><span class="val">PHP 8.1+</span></div>
+    <div class="item"><span class="key">Platform</span><span class="val">WordPress 6.x</span></div>
+    <div class="item"><span class="key">Editor</span><span class="val">Gutenberg blocks</span></div>
+    <div class="item"><span class="key">API</span><span class="val">REST (wp-json)</span></div>
+    <div class="item"><span class="key">Database</span><span class="val">Your MySQL</span></div>
+    <div class="item"><span class="key">Data</span><span class="val">You own it.</span></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="footer"><span>06 / 06</span><span>Wbcom Designs</span></div>
+</div></div></body></html>

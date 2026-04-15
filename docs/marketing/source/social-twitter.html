@@ -1,0 +1,83 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Twitter · 1600×900</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  html, body { width: 1600px; height: 900px; overflow: hidden; }
+  body { background: var(--ink); }
+  .stage { position: relative; width: 1600px; height: 900px; overflow: hidden; isolation: isolate; }
+  .mark {
+    position: absolute; left: -60px; bottom: -160px;
+    font-family: var(--display); font-size: 880px; font-weight: 300; font-style: italic;
+    color: transparent; -webkit-text-stroke: 2px rgba(255, 209, 102, 0.12);
+    line-height: 0.8; z-index: 1;
+  }
+  .content {
+    position: absolute; left: 100px; top: 100px; right: 100px; bottom: 100px;
+    z-index: 3;
+    display: grid; grid-template-columns: 1fr 1.15fr; gap: 80px;
+    align-items: center;
+  }
+  .copy { color: var(--paper); }
+  .brand {
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--paper);
+    display: flex; align-items: center; gap: 14px; margin-bottom: 40px;
+  }
+  .brand::before {
+    content: ''; width: 12px; height: 12px; background: var(--accent); border-radius: 50%;
+    box-shadow: 0 0 0 5px rgba(255,107,61,0.15);
+  }
+  h1 {
+    font-family: var(--display); font-weight: 400;
+    font-size: 112px; line-height: 0.92; letter-spacing: -0.035em;
+    margin: 0 0 32px 0;
+    font-variation-settings: "opsz" 144;
+  }
+  h1 em { font-style: italic; color: var(--accent-2); font-weight: 300; }
+  .lede {
+    font-size: 22px; line-height: 1.45;
+    color: rgba(245, 240, 230, 0.78);
+    margin: 0; max-width: 540px;
+  }
+  .device-wrap { position: relative; transform: rotate(-2.5deg); }
+  .device-wrap::before {
+    content: ''; position: absolute; inset: -80px;
+    background: radial-gradient(ellipse at center, rgba(43, 77, 243, 0.45), transparent 65%);
+    filter: blur(60px); z-index: -1;
+  }
+  .device-wrap img {
+    width: 100%; display: block;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 50px 100px -20px rgba(0,0,0,0.7);
+  }
+  .foot {
+    position: absolute; left: 100px; right: 100px; bottom: 40px;
+    font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(245, 240, 230, 0.6);
+    display: flex; justify-content: space-between;
+  }
+  .ruler { position: absolute; left: 100px; right: 100px; top: 60px; height: 1px; background: rgba(245,240,230,0.18); z-index: 2; }
+  .ruler::before, .ruler::after { content:''; position: absolute; top:-3px; width:7px; height:7px; border-radius:50%; background: var(--accent); }
+  .ruler::before{left:0} .ruler::after{right:0;background:var(--accent-2)}
+</style></head>
+<body>
+  <div class="stage">
+    <div class="mesh"></div>
+    <div class="mark">.</div>
+    <div class="ruler"></div>
+    <div class="content">
+      <div class="copy">
+        <div class="brand">WPMediaVerse · Pro</div>
+        <h1>The photo community<br>layer for <em>WordPress.</em></h1>
+        <p class="lede">Albums · Collections · Challenges · Tournaments · Battles · Badges · Leaderboards · Direct Messages — one plugin, native, no SaaS.</p>
+      </div>
+      <div class="device-wrap"><img src="../raw/hero-frontend-1440.png" alt=""></div>
+    </div>
+    <div class="foot">
+      <span>store.wbcomdesigns.com / wp-career-board-pro</span>
+      <span>A Wbcom Designs product</span>
+    </div>
+  </div>
+</body></html>
