@@ -137,7 +137,7 @@ class ModerationService {
 	 *     @type int    $per_page Items per page. Default 20.
 	 *     @type int    $page     Page number. Default 1.
 	 * }
-	 * @return array{items: \WP_Post[], total: int, pages: int}
+	 * @return array{items: int[], total: int, pages: int} Items are media IDs — resolve to WP_Post at the render site.
 	 */
 	public function get_queue( array $args = array() ): array {
 		$defaults = array(

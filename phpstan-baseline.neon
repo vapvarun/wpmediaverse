@@ -16,11 +16,6 @@ parameters:
 			path: includes/Admin/ModerationQueue.php
 
 		-
-			message: "#^Parameter \\#1 \\$user_id of function get_userdata expects int, string given\\.$#"
-			count: 1
-			path: includes/Admin/ModerationQueue.php
-
-		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 2
 			path: includes/Admin/OverviewPage.php
