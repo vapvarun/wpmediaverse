@@ -229,6 +229,37 @@ module.exports = function( grunt ) {
 		} );
 	} );
 
+	// Rewrite legacy script handle names in generated view.asset.php files.
+	// @wordpress/scripts <30 still emits the legacy 'wp-interactivity' handle
+	// as a Script Modules dependency, but WP 6.9.1+ expects the module ID
+	// '@wordpress/interactivity'. Patch the generated files in place so block
+	// registration via view.asset.php resolves the dependency correctly.
+	grunt.registerTask( 'fix-script-module-deps', 'Rewrite legacy script handle names in view.asset.php files.', function() {
+		var fs = require( 'fs' );
+		var path = require( 'path' );
+		var blocksDir = path.join( __dirname, 'build/blocks' );
+
+		if ( ! fs.existsSync( blocksDir ) ) {
+			grunt.log.writeln( 'No build/blocks directory — skipping.' );
+			return;
+		}
+
+		var patched = 0;
+		fs.readdirSync( blocksDir ).forEach( function( entry ) {
+			var assetFile = path.join( blocksDir, entry, 'view.asset.php' );
+			if ( ! fs.existsSync( assetFile ) ) {
+				return;
+			}
+			var contents = fs.readFileSync( assetFile, 'utf8' );
+			var rewritten = contents.replace( /'wp-interactivity'/g, "'@wordpress/interactivity'" );
+			if ( rewritten !== contents ) {
+				fs.writeFileSync( assetFile, rewritten );
+				patched++;
+			}
+		} );
+		grunt.log.ok( 'Patched ' + patched + ' view.asset.php file(s) for script module compat.' );
+	} );
+
 	// Run npm run build for Gutenberg blocks
 	grunt.registerTask( 'blocks', 'Build Gutenberg blocks via webpack.', function() {
 		var done = this.async();
@@ -241,6 +272,7 @@ module.exports = function( grunt ) {
 				return;
 			}
 			grunt.log.ok( 'Blocks built successfully.' );
+			grunt.task.run( 'fix-script-module-deps' );
 			done();
 		} );
 	} );
