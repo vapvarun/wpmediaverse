@@ -41,6 +41,7 @@
     --mvs-surface: var(--global-body-lightcolor, var(--bg-subtle, #f6f7f7));
     --mvs-surface-2: var(--global-body-lightcolor, var(--bg-hover, #eeeeee));
     --mvs-overlay: rgba(0, 0, 0, 0.72);
+    --mvs-bg-muted: var(--global-body-lightcolor, #f9fafb);
 
     /* Text — BuddyX Pro → BuddyNext → fallback */
     --mvs-text: var(--global-title-color, var(--text-1, #1e1e1e));
