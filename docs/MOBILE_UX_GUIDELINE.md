@@ -639,7 +639,44 @@ Each item should be a single commit that touches the **base layer**
 
 ## 15. Compliance enforcement
 
-A future PR should add a CI check that runs Playwright at 390×844 across all
-routes in section §9 and **fails** if any element exceeds the viewport width or
-any interactive element reports < 44px in either dimension. Until that exists,
-the §13 checklist is the contract.
+### 15.1 Local audit script
+
+`bin/mobile-audit.mjs` walks every WPMediaVerse-owned route at 390×844 in a
+headless Chromium and fails the build if any rule from this doc is violated.
+Run it locally before opening a PR:
+
+```bash
+# default base URL is http://mediaverse.local
+npm run audit:mobile
+
+# or against a different site
+npm run audit:mobile -- --base http://localhost:8889 --verbose
+```
+
+What it checks:
+
+- **No horizontal scroll** on `<body>` or any visible non-themed element
+- **44×44 touch target floor** on every `.mvs-btn`, `.mvs-icon-btn`, `.mvs-tab`,
+  `.mvs-action-icon`, `.mvs-fab`, `.mvs-back-link`, `.mvs-toast-close`,
+  `.mvs-modal-close`, `.mvs-dashboard-tab`
+- **Page navigation** — every route in the audit table loads without a 4xx/5xx
+
+Skips classes namespaced under common themes (`reign-`, `bp-`, `buddyx-`,
+`astra`) so theme overflows on un-MVS pages don't fail the build.
+
+Exit codes: `0` pass · `1` rule violated · `2` bootstrap error (Playwright
+missing, base URL unreachable).
+
+Requires the autologin mu-plugin (see CLAUDE.md) so the audit hits logged-in
+routes like `/my-media/` and `/media/edit-profile/`.
+
+### 15.2 CI integration (next sprint)
+
+`audit:mobile` is currently local-only. The next CI pass should:
+
+1. Bring up a wp-env / Playground instance with the plugin + a fixture user
+2. Run `npm run audit:mobile -- --base $WP_URL`
+3. Fail the PR if exit code ≠ 0
+
+Until that lands, the §13 PR checklist is the contract and contributors are
+expected to run `npm run audit:mobile` locally before opening a PR.
