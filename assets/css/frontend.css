@@ -65,6 +65,41 @@
     --mvs-bp-mobile: 480px;
     --mvs-bp-tablet: 768px;
     --mvs-bp-desktop: 1024px;
+
+    /* ─── Mobile UX guideline tokens (see docs/MOBILE_UX_GUIDELINE.md §2.2) ── */
+
+    /* Touch target floor — Apple HIG / WCAG 2.5.5 (AAA). Every interactive
+       element below the desktop breakpoint must clear this in both axes. */
+    --mvs-touch-min: 44px;
+
+    /* Spacing scale — mirrors theme.json so PHP and CSS share one ramp. */
+    --mvs-space-1: 0.25rem;  /*  4px */
+    --mvs-space-2: 0.5rem;   /*  8px */
+    --mvs-space-3: 1rem;     /* 16px — base gutter */
+    --mvs-space-4: 1.5rem;   /* 24px */
+    --mvs-space-5: 2rem;     /* 32px */
+    --mvs-space-6: 3rem;     /* 48px */
+    --mvs-space-7: 4rem;     /* 64px */
+
+    /* Z-index layers — never use bare integers in plugin CSS. */
+    --mvs-z-base:    1;
+    --mvs-z-sticky:  50;
+    --mvs-z-fab:     100;
+    --mvs-z-overlay: 200;
+    --mvs-z-modal:   300;
+    --mvs-z-toast:   400;
+    --mvs-z-tooltip: 500;
+
+    /* Motion */
+    --mvs-duration-fast: 120ms;
+    --mvs-duration-base: 200ms;
+    --mvs-duration-slow: 320ms;
+    --mvs-easing: cubic-bezier(0.2, 0, 0, 1);
+
+    /* FAB sizing + safe area so floating elements never overlap content. */
+    --mvs-fab-size:   48px;
+    --mvs-fab-offset: 16px;
+    --mvs-fab-safe:   calc(var(--mvs-fab-size) + var(--mvs-fab-offset) * 2);
 }
 
 /* Dark mode: theme-controlled only (no prefers-color-scheme).
@@ -190,6 +225,199 @@ body.mvs-page {
 .mvs-profile-edit textarea {
     font-family: inherit;
     font-size: inherit;
+}
+
+/* ==========================================================================
+   0c. Mobile UX base layer
+       Defined by docs/MOBILE_UX_GUIDELINE.md. Lives here so every template
+       inherits Apple-quality defaults without per-page CSS overrides.
+   ========================================================================== */
+
+/* §3.1 — Universal touch-target floor below the desktop breakpoint.
+   Every interactive element clears 44×44 in both axes, expanding via padding
+   when the visible chip is smaller. */
+@media (max-width: 1023px) /* var(--mvs-bp-desktop) */ {
+    .mvs-page .mvs-btn,
+    .mvs-page .mvs-icon-btn,
+    .mvs-page .mvs-fab,
+    .mvs-page .mvs-tab,
+    .mvs-page .mvs-action-icon,
+    .mvs-page .mvs-toast-close,
+    .mvs-page .mvs-modal-close,
+    .mvs-page .mvs-back-link,
+    .mvs-page .mvs-tag-pill,
+    .mvs-single-media .mvs-btn,
+    .mvs-single-album .mvs-btn,
+    .mvs-profile-edit .mvs-btn,
+    .mvs-dashboard .mvs-btn {
+        min-height: var(--mvs-touch-min);
+        min-width: var(--mvs-touch-min);
+    }
+    /* Small chips/tags expand their hit area via padding instead of growing
+       the visible bubble. */
+    .mvs-page .mvs-tag-pill {
+        display: inline-flex;
+        align-items: center;
+    }
+}
+
+/* §6 — Back link component for every detail page header. */
+.mvs-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    color: var(--mvs-text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    line-height: 1;
+    padding: var(--mvs-space-2) var(--mvs-space-3) var(--mvs-space-2) var(--mvs-space-2);
+    margin-bottom: var(--mvs-space-3);
+    border-radius: var(--mvs-radius-md);
+    transition: color var(--mvs-duration-fast) var(--mvs-easing),
+                background var(--mvs-duration-fast) var(--mvs-easing);
+}
+
+.mvs-back-link:hover,
+.mvs-back-link:focus-visible {
+    color: var(--mvs-primary);
+    background: var(--mvs-info-bg-light);
+}
+
+.mvs-back-link i,
+.mvs-back-link svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+    /* Hide textual label — keep the chevron only.
+       The screen-reader label stays via aria-label on the anchor. */
+    .mvs-back-link__label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+    .mvs-back-link {
+        padding: var(--mvs-space-2);
+    }
+}
+
+/* §7 — FAB safe area: every page that hosts a FAB pads its bottom so content
+   never sits behind it. iOS notch supported via env(safe-area-inset-bottom). */
+.mvs-page,
+.mvs-single-media,
+.mvs-single-album,
+.mvs-single-collection,
+.mvs-profile-edit,
+.mvs-explore,
+.mvs-dashboard {
+    padding-bottom: calc(var(--mvs-fab-safe) + env(safe-area-inset-bottom, 0px));
+}
+
+/* §4.1/§4.2 — Icon-collapse buttons: text-and-icon control that collapses to
+   icon-only below the tablet breakpoint and exposes a CSS-only tooltip. */
+.mvs-btn--icon-collapse {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    position: relative;
+}
+
+.mvs-btn--icon-collapse i,
+.mvs-btn--icon-collapse svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+    .mvs-btn--icon-collapse .mvs-btn__label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+    .mvs-btn--icon-collapse {
+        padding-inline: var(--mvs-space-2);
+        gap: 0;
+        justify-content: center;
+    }
+}
+
+/* CSS-only tooltip: shows on :hover (mouse) and :focus-visible (touch + kb).
+   Pages set data-mvs-tooltip="Label" on any element to opt in. */
+[data-mvs-tooltip] {
+    position: relative;
+}
+
+[data-mvs-tooltip]::after {
+    content: attr(data-mvs-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--mvs-text);
+    color: var(--mvs-bg);
+    font-size: 0.75rem;
+    line-height: 1;
+    padding: var(--mvs-space-2) var(--mvs-space-2);
+    border-radius: var(--mvs-radius-sm);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--mvs-duration-fast) var(--mvs-easing),
+                transform var(--mvs-duration-fast) var(--mvs-easing);
+    z-index: var(--mvs-z-tooltip);
+}
+
+[data-mvs-tooltip]:hover::after,
+[data-mvs-tooltip]:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-mvs-tooltip]::after { transition: none; }
+}
+
+/* §5 — Tab strip pattern: horizontal scroll with edge-fade mask + scroll-snap.
+   Components opt in by adding the .mvs-tabs-strip class. */
+.mvs-tabs-strip {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* Edge-fade telegraphs that more tabs exist beyond the right edge. */
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
+}
+
+.mvs-tabs-strip::-webkit-scrollbar { display: none; }
+
+.mvs-tabs-strip > * {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+}
+
+/* When the strip fits without scrolling, drop the mask so the right edge is solid. */
+@supports selector(:has(*)) {
+    .mvs-tabs-strip:not(:hover):not(:focus-within):where(:not([data-overflow="true"])) {
+        /* Re-enabled by JS via [data-overflow="true"] when scrollWidth > clientWidth. */
+    }
 }
 
 /* ==========================================================================
@@ -4686,11 +4914,11 @@ a.mvs-dashboard-card-title:hover {
         gap: 8px;
     }
 
-    /* Sticky dashboard tabs */
+    /* Sticky dashboard tabs — mobile guideline §5.2 */
     .mvs-dashboard-tabs {
         position: sticky;
         top: 0;
-        z-index: 10;
+        z-index: var(--mvs-z-sticky);
         background: var(--mvs-bg);
         padding: 8px 0;
         border-bottom: 1px solid var(--mvs-border);
@@ -4700,6 +4928,24 @@ a.mvs-dashboard-card-title:hover {
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        /* Edge-fade so users see there are more tabs to swipe to. */
+        -webkit-mask-image: linear-gradient(to right,
+            black 0,
+            black calc(100% - 24px),
+            transparent 100%);
+        mask-image: linear-gradient(to right,
+            black 0,
+            black calc(100% - 24px),
+            transparent 100%);
+    }
+
+    .mvs-dashboard-tabs::-webkit-scrollbar { display: none; }
+
+    .mvs-dashboard-tabs > .mvs-dashboard-tab {
+        scroll-snap-align: start;
     }
 
     .mvs-dashboard-tab {

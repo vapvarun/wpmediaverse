@@ -765,7 +765,11 @@ class Plugin {
 		$is_mvs     = in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true );
 		$is_archive = is_post_type_archive( 'mvs_album' );
 		$is_mvs_tax = is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' );
-		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
+		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] )
+			|| ! empty( $GLOBALS['mvs_is_media_archive'] )
+			|| (bool) get_query_var( 'mvs_edit_profile' )
+			|| (bool) get_query_var( 'mvs_profile_user' )
+			|| (bool) get_query_var( 'mvs_media_archive' );
 
 		// Detect mapped MVS pages (explore, dashboard, upload) — globals aren't set yet at enqueue time.
 		$mvs_page_ids = array_filter(
@@ -794,6 +798,25 @@ class Plugin {
 				MVS_PLUGIN_URL . 'assets/css/frontend/load-more.css',
 				array(),
 				MVS_VERSION
+			);
+
+			// Lucide icon set — required by templates that use <i data-lucide>.
+			// Self-contained on the frontend so we don't depend on the active theme
+			// (Reign, BuddyX) loading lucide. Re-running createIcons() after page
+			// load picks up icons added by every template helper.
+			wp_enqueue_script(
+				'mvs-lucide',
+				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
+				array(),
+				MVS_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+			wp_add_inline_script(
+				'mvs-lucide',
+				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
 			);
 
 			wp_enqueue_script(

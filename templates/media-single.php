@@ -18,24 +18,24 @@ if ( ! $mvs_media || empty( $mvs_media['media_id'] ) ) {
 	return;
 }
 
-$mvs_media_id   = (int) $mvs_media['media_id'];
-$mvs_author_id  = (int) $mvs_media['post_author'];
-$mvs_title      = $mvs_media['title'] ?? '';
-$mvs_desc       = $mvs_media['description'] ?? '';
-$mvs_status     = $mvs_media['status'] ?? 'publish';
-$mvs_privacy    = $mvs_media['privacy'] ?? 'public';
+$mvs_media_id  = (int) $mvs_media['media_id'];
+$mvs_author_id = (int) $mvs_media['post_author'];
+$mvs_title     = $mvs_media['title'] ?? '';
+$mvs_desc      = $mvs_media['description'] ?? '';
+$mvs_status    = $mvs_media['status'] ?? 'publish';
+$mvs_privacy   = $mvs_media['privacy'] ?? 'public';
 // Generate signed URL to bypass .htaccess protection on uploads directory.
 $mvs_file_url_raw = $mvs_media['file_url'] ?? '';
 $mvs_signed_urls  = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 $mvs_signed       = $mvs_signed_urls ? $mvs_signed_urls->generate( (int) $mvs_media['media_id'], get_current_user_id() ) : false;
 $mvs_file_url     = $mvs_signed ? $mvs_signed : $mvs_file_url_raw;
-$mvs_file_type  = $mvs_media['file_type'] ?? '';
-$mvs_media_type = $mvs_media['media_type'] ?? '';
-$mvs_width      = $mvs_media['width'] ?? '';
-$mvs_height     = $mvs_media['height'] ?? '';
-$mvs_duration   = $mvs_media['duration'] ?? '';
-$mvs_attach_id  = (int) ( $mvs_media['attachment_id'] ?? 0 );
-$mvs_created    = $mvs_media['created_at'] ?? '';
+$mvs_file_type    = $mvs_media['file_type'] ?? '';
+$mvs_media_type   = $mvs_media['media_type'] ?? '';
+$mvs_width        = $mvs_media['width'] ?? '';
+$mvs_height       = $mvs_media['height'] ?? '';
+$mvs_duration     = $mvs_media['duration'] ?? '';
+$mvs_attach_id    = (int) ( $mvs_media['attachment_id'] ?? 0 );
+$mvs_created      = $mvs_media['created_at'] ?? '';
 
 // Privacy gate: block access to non-public media for unauthorized viewers.
 if ( 'public' !== $mvs_privacy ) {
@@ -107,7 +107,8 @@ $mvs_permalink = \WPMediaVerse\Repository\MediaRepository::get_permalink( $mvs_m
 // Archive URL (base media page).
 $mvs_archive_url = home_url( '/media/' );
 ?>
-<div class="mvs-single-media">
+<div class="mvs-single-media mvs-page">
+	<?php \WPMediaVerse\Core\TemplateHelpers::render_back_link( 'single-media' ); ?>
 	<article id="mvs-media-<?php echo absint( $mvs_media_id ); ?>" class="mvs-media-article">
 		<header class="mvs-media-header">
 			<div class="mvs-media-header-row">
@@ -340,37 +341,56 @@ $mvs_archive_url = home_url( '/media/' );
 			<div class="mvs-social-actions">
 				<div class="mvs-social-actions-left">
 					<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
-						<button class="mvs-favorite-btn" type="button"
+						<button class="mvs-favorite-btn mvs-btn--icon-collapse" type="button"
 							data-wp-class--active="context.isFavorite"
 							data-wp-on--click="actions.toggleFavorite"
-							aria-label="<?php esc_attr_e( 'Add to favorites', 'wpmediaverse' ); ?>">&#x2764; <?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></button>
+							data-mvs-tooltip="<?php esc_attr_e( 'Favorite', 'wpmediaverse' ); ?>"
+							aria-label="<?php esc_attr_e( 'Add to favorites', 'wpmediaverse' ); ?>">
+							<i data-lucide="heart" aria-hidden="true"></i>
+							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
+						</button>
 					<?php elseif ( ! is_user_logged_in() ) : ?>
-						<a href="<?php echo esc_url( wp_login_url( $mvs_permalink ) ); ?>" class="mvs-favorite-btn mvs-login-prompt"
+						<a href="<?php echo esc_url( wp_login_url( $mvs_permalink ) ); ?>" class="mvs-favorite-btn mvs-btn--icon-collapse mvs-login-prompt"
+							data-mvs-tooltip="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
 							title="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
-							aria-label="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>">&#x2764; <?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></a>
+							aria-label="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>">
+							<i data-lucide="heart" aria-hidden="true"></i>
+							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
+						</a>
 					<?php endif; ?>
-					<button class="mvs-share-btn" type="button"
+					<button class="mvs-share-btn mvs-btn--icon-collapse" type="button"
 						data-wp-on--click="actions.handleShare"
-						data-wp-text="context.shareLabel"
-						aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>"></button>
+						data-mvs-tooltip="<?php esc_attr_e( 'Share', 'wpmediaverse' ); ?>"
+						aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>">
+						<i data-lucide="share-2" aria-hidden="true"></i>
+						<span class="mvs-btn__label" data-wp-text="context.shareLabel"><?php esc_html_e( 'Share', 'wpmediaverse' ); ?></span>
+					</button>
 				</div>
 				<span class="mvs-view-count" data-wp-text="context.viewCount"></span>
 				<div class="mvs-social-actions-right">
 					<?php if ( $mvs_is_owner ) : ?>
-						<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
-							data-wp-on--click="actions.toggleEdit">
-							<?php esc_html_e( 'Edit', 'wpmediaverse' ); ?>
+						<button class="mvs-btn mvs-btn--small mvs-btn--secondary mvs-btn--icon-collapse" type="button"
+							data-wp-on--click="actions.toggleEdit"
+							data-mvs-tooltip="<?php esc_attr_e( 'Edit', 'wpmediaverse' ); ?>"
+							aria-label="<?php esc_attr_e( 'Edit this media', 'wpmediaverse' ); ?>">
+							<i data-lucide="pencil" aria-hidden="true"></i>
+							<span class="mvs-btn__label"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></span>
 						</button>
-						<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
-							data-wp-on--click="actions.confirmDelete">
-							<?php esc_html_e( 'Delete', 'wpmediaverse' ); ?>
+						<button class="mvs-btn mvs-btn--small mvs-btn--danger mvs-btn--icon-collapse" type="button"
+							data-wp-on--click="actions.confirmDelete"
+							data-mvs-tooltip="<?php esc_attr_e( 'Delete', 'wpmediaverse' ); ?>"
+							aria-label="<?php esc_attr_e( 'Delete this media', 'wpmediaverse' ); ?>">
+							<i data-lucide="trash-2" aria-hidden="true"></i>
+							<span class="mvs-btn__label"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php elseif ( is_user_logged_in() ) : ?>
-						<button class="mvs-btn mvs-btn--small mvs-btn--text" type="button"
+						<button class="mvs-btn mvs-btn--small mvs-btn--text mvs-btn--icon-collapse" type="button"
 							data-wp-on--click="actions.reportMedia"
 							data-wp-bind--hidden="context.reported"
+							data-mvs-tooltip="<?php esc_attr_e( 'Report', 'wpmediaverse' ); ?>"
 							aria-label="<?php esc_attr_e( 'Report this media', 'wpmediaverse' ); ?>">
-							<?php esc_html_e( 'Report', 'wpmediaverse' ); ?>
+							<i data-lucide="flag" aria-hidden="true"></i>
+							<span class="mvs-btn__label"><?php esc_html_e( 'Report', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php endif; ?>
 				</div>

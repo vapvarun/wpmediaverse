@@ -55,6 +55,8 @@ $mvs_archive_url = home_url( '/media/' );
 		?>
 
 		<article id="mvs-album-<?php the_ID(); ?>" <?php post_class( 'mvs-album-article' ); ?>>
+			<?php \WPMediaVerse\Core\TemplateHelpers::render_back_link( 'album', array( 'author_id' => (int) get_the_author_meta( 'ID' ) ) ); ?>
+
 			<!-- Info Card -->
 			<div class="mvs-collection-card-info">
 				<h1 class="mvs-collection-card-title"><?php the_title(); ?></h1>

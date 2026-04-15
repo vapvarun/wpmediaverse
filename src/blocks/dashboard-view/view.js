@@ -298,10 +298,16 @@ const { state, actions } = store( 'mvs/dashboard', {
 		   Tabs
 		   ===================================================================== */
 		switchTab( event ) {
-			const tab = event.target.closest( '[data-tab]' )?.dataset.tab;
+			const tabBtn = event.target.closest( '[data-tab]' );
+			const tab = tabBtn?.dataset.tab;
 			if ( ! tab ) return;
 			state.activeTab = tab;
 			window.location.hash = tab;
+			// Mobile §5.2: scroll the tapped tab into view so users can see what's
+			// next when the strip overflows. Center inline keeps neighbours visible.
+			if ( tabBtn && typeof tabBtn.scrollIntoView === 'function' ) {
+				tabBtn.scrollIntoView( { inline: 'center', block: 'nearest', behavior: 'smooth' } );
+			}
 			const ctx = getContext();
 			if ( tab === 'media' && state.media.items.length === 0 ) {
 				actions.loadMedia( ctx );
@@ -1345,6 +1351,18 @@ const { state, actions } = store( 'mvs/dashboard', {
 				actions.loadMedia( ctx );
 			}
 			actions.loadNotificationCount( ctx );
+
+			// Mobile §5.2: when the dashboard tab strip overflows on small viewports,
+			// scroll the active tab into view so users see context (and the fact that
+			// more tabs exist) on first paint. Wait one frame so the active class is
+			// applied by the Interactivity API before measuring.
+			requestAnimationFrame( () => {
+				const strip = document.querySelector( '.mvs-dashboard-tabs' );
+				const active = strip?.querySelector( '.mvs-dashboard-tab.active, [data-tab="' + state.activeTab + '"]' );
+				if ( strip && active && strip.scrollWidth > strip.clientWidth ) {
+					active.scrollIntoView( { inline: 'center', block: 'nearest' } );
+				}
+			} );
 		},
 	},
 } );
