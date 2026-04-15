@@ -146,13 +146,19 @@ $mvs_archive_url = home_url( '/media/' );
 						<?php echo wp_interactivity_data_wp_context( $mvs_album_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						data-wp-init="callbacks.init">
 						<div class="mvs-owner-actions">
-							<button class="mvs-btn mvs-btn--small mvs-btn--secondary" type="button"
-								data-wp-on--click="actions.toggleEdit">
-								<?php esc_html_e( 'Edit Album', 'wpmediaverse' ); ?>
+							<button class="mvs-btn mvs-btn--small mvs-btn--secondary mvs-btn--icon-collapse" type="button"
+								data-wp-on--click="actions.toggleEdit"
+								data-mvs-tooltip="<?php esc_attr_e( 'Edit album', 'wpmediaverse' ); ?>"
+								aria-label="<?php esc_attr_e( 'Edit album', 'wpmediaverse' ); ?>">
+								<i data-lucide="pencil" aria-hidden="true"></i>
+								<span class="mvs-btn__label"><?php esc_html_e( 'Edit Album', 'wpmediaverse' ); ?></span>
 							</button>
-							<button class="mvs-btn mvs-btn--small mvs-btn--danger" type="button"
-								data-wp-on--click="actions.confirmDelete">
-								<?php esc_html_e( 'Delete Album', 'wpmediaverse' ); ?>
+							<button class="mvs-btn mvs-btn--small mvs-btn--danger mvs-btn--icon-collapse" type="button"
+								data-wp-on--click="actions.confirmDelete"
+								data-mvs-tooltip="<?php esc_attr_e( 'Delete album', 'wpmediaverse' ); ?>"
+								aria-label="<?php esc_attr_e( 'Delete album', 'wpmediaverse' ); ?>">
+								<i data-lucide="trash-2" aria-hidden="true"></i>
+								<span class="mvs-btn__label"><?php esc_html_e( 'Delete Album', 'wpmediaverse' ); ?></span>
 							</button>
 						</div>
 						<div class="mvs-inline-edit" data-wp-bind--hidden="!context.editVisible">

@@ -156,24 +156,58 @@ store( 'mvs/media-social', {
 			const type = event.target.closest( '[data-reaction-type]' )?.dataset.reactionType;
 			if ( ! type ) return;
 
-			const wasActive = ctx.userReaction === type;
 			const headers = apiHeaders( ctx.nonce );
+			const previousReaction = ctx.userReaction;
+			const previousReactions = ctx.reactions.map( ( r ) => ( { ...r } ) );
+			const wasActive = previousReaction === type;
 
-			if ( wasActive ) {
-				await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
-					method: 'DELETE',
-					headers,
-					credentials: 'same-origin',
-				} );
-			} else {
-				await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
-					method: 'POST',
-					headers,
-					credentials: 'same-origin',
-					body: JSON.stringify( { reaction_type: type } ),
-				} );
+			// Optimistic UI: update count + active state immediately, then call REST.
+			ctx.reactions = ctx.reactions.map( ( r ) => {
+				const next = { ...r };
+				if ( wasActive && r.type === type ) {
+					next.count = Math.max( 0, ( r.count || 0 ) - 1 );
+					next.active = false;
+				} else if ( ! wasActive && r.type === type ) {
+					next.count = ( r.count || 0 ) + 1;
+					next.active = true;
+				} else if ( ! wasActive && r.type === previousReaction ) {
+					// User had a different reaction — decrement the old one.
+					next.count = Math.max( 0, ( r.count || 0 ) - 1 );
+					next.active = false;
+				} else {
+					next.active = false;
+				}
+				return next;
+			} );
+			ctx.userReaction = wasActive ? '' : type;
+
+			try {
+				const res = wasActive
+					? await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
+						method: 'DELETE',
+						headers,
+						credentials: 'same-origin',
+					} )
+					: await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
+						method: 'POST',
+						headers,
+						credentials: 'same-origin',
+						body: JSON.stringify( { reaction_type: type } ),
+					} );
+				if ( ! res.ok ) {
+					// Roll back the optimistic update.
+					ctx.userReaction = previousReaction;
+					ctx.reactions = previousReactions;
+					sharedUI.actions.showToast( 'Could not save reaction.', 'error' );
+					return;
+				}
+				// Reconcile with server-truth so the count matches reality after race conditions.
+				await fetchReactions( ctx );
+			} catch ( e ) {
+				ctx.userReaction = previousReaction;
+				ctx.reactions = previousReactions;
+				sharedUI.actions.showToast( 'Network error.', 'error' );
 			}
-			await fetchReactions( ctx );
 		},
 
 		/* --- Favorites --- */
@@ -183,14 +217,24 @@ store( 'mvs/media-social', {
 				sharedUI.actions.showToast( 'Please log in to favorite.', 'error' );
 				return;
 			}
-			const method = ctx.isFavorite ? 'DELETE' : 'POST';
-			const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/favorite', {
-				method,
-				headers: apiHeaders( ctx.nonce ),
-				credentials: 'same-origin',
-			} );
-			if ( res.ok ) {
-				ctx.isFavorite = ! ctx.isFavorite;
+			// Optimistic UI: flip the state immediately so the heart fills/empties
+			// before the REST round-trip. Roll back on error.
+			const previous = !! ctx.isFavorite;
+			ctx.isFavorite = ! previous;
+			const method = previous ? 'DELETE' : 'POST';
+			try {
+				const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/favorite', {
+					method,
+					headers: apiHeaders( ctx.nonce ),
+					credentials: 'same-origin',
+				} );
+				if ( ! res.ok ) {
+					ctx.isFavorite = previous;
+					sharedUI.actions.showToast( 'Could not update favorite.', 'error' );
+				}
+			} catch ( e ) {
+				ctx.isFavorite = previous;
+				sharedUI.actions.showToast( 'Network error.', 'error' );
 			}
 		},
 
@@ -329,17 +373,22 @@ store( 'mvs/media-social', {
 			const ctx = getContext();
 			const authorId = ctx.followAuthorId || ctx.authorId;
 			if ( ! authorId ) return;
-			const method = ctx.isFollowing ? 'DELETE' : 'POST';
+			// Optimistic UI: flip Following/Follow label immediately, roll back on error.
+			const previous = !! ctx.isFollowing;
+			ctx.isFollowing = ! previous;
+			const method = previous ? 'DELETE' : 'POST';
 			try {
 				const res = await fetch( ctx.restUrl + 'users/' + authorId + '/follow', {
 					method,
 					headers: apiHeaders( ctx.nonce ),
 					credentials: 'same-origin',
 				} );
-				if ( res.ok ) {
-					ctx.isFollowing = ! ctx.isFollowing;
+				if ( ! res.ok ) {
+					ctx.isFollowing = previous;
+					sharedUI.actions.showToast( 'Follow action failed.', 'error' );
 				}
 			} catch {
+				ctx.isFollowing = previous;
 				sharedUI.actions.showToast( 'Follow action failed.', 'error' );
 			}
 		},

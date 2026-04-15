@@ -392,6 +392,90 @@ body.mvs-page {
     [data-mvs-tooltip]::after { transition: none; }
 }
 
+/* §-skeleton — Loading shimmer placeholders.
+   Drop-in component for any "waiting on REST" surface. Pages add the
+   .mvs-skeleton class to a sized box; the shimmer animation pulses across.
+   Reduced motion swaps to a static muted background. */
+.mvs-skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--mvs-surface);
+    border-radius: var(--mvs-radius-md);
+    isolation: isolate;
+}
+
+.mvs-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0,
+        rgba(255, 255, 255, 0.4) 50%,
+        transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: mvs-skeleton-shimmer 1.4s var(--mvs-easing) infinite;
+}
+
+[data-theme="dark"] .mvs-skeleton::after,
+html.dark-mode .mvs-skeleton::after,
+body.dark-mode .mvs-skeleton::after {
+    background: linear-gradient(
+        90deg,
+        transparent 0,
+        rgba(255, 255, 255, 0.06) 50%,
+        transparent 100%
+    );
+}
+
+@keyframes mvs-skeleton-shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mvs-skeleton::after {
+        animation: none;
+    }
+}
+
+.mvs-skeleton--text {
+    height: 0.875rem;
+    margin-bottom: 0.5rem;
+    border-radius: var(--mvs-radius-sm);
+}
+
+.mvs-skeleton--text:last-child {
+    margin-bottom: 0;
+    width: 60%;
+}
+
+.mvs-skeleton--avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.mvs-skeleton--thumb {
+    aspect-ratio: 1 / 1;
+    border-radius: var(--mvs-radius-md);
+}
+
+.mvs-skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--mvs-space-2);
+}
+
+@media (min-width: 768px) /* var(--mvs-bp-tablet) */ {
+    .mvs-skeleton-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: var(--mvs-space-3);
+    }
+}
+
 /* §5 — Tab strip pattern: horizontal scroll with edge-fade mask + scroll-snap.
    Components opt in by adding the .mvs-tabs-strip class. */
 .mvs-tabs-strip {
@@ -1328,6 +1412,60 @@ body.mvs-page {
     color: var(--mvs-bg);
 }
 
+/* §-sticky-action-bar — Mobile only.
+   On phones, pin the social action row to the bottom of the viewport so the
+   primary actions (Favorite, Share, Edit, Delete) are always thumb-reachable
+   without scrolling. Like the iOS Photos / Instagram bottom bar.
+
+   The page wrapper already reserves --mvs-fab-safe via §0c, so we sit just
+   above the FAB column. Backdrop-blur fades the content scrolling beneath. */
+@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+    .mvs-single-media .mvs-social-actions {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: var(--mvs-z-sticky);
+        background: color-mix(in srgb, var(--mvs-bg) 92%, transparent);
+        -webkit-backdrop-filter: saturate(180%) blur(12px);
+        backdrop-filter: saturate(180%) blur(12px);
+        border-top: 1px solid var(--mvs-border-light);
+        padding: var(--mvs-space-2) var(--mvs-space-3);
+        padding-bottom: calc(var(--mvs-space-2) + env(safe-area-inset-bottom, 0px));
+        gap: var(--mvs-space-2);
+        justify-content: space-between;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Reserve viewport space so the article isn't hidden by the bar.
+       The page wrapper's --mvs-fab-safe stacks BELOW the action bar so the
+       FAB still avoids the action bar too. */
+    .mvs-single-media {
+        padding-bottom: calc(72px + var(--mvs-fab-safe) + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Hide the view count on mobile to reclaim space — it's a passive metric. */
+    .mvs-single-media .mvs-social-actions .mvs-view-count {
+        display: none;
+    }
+
+    /* Tighten action subgroups to share the bar width. */
+    .mvs-single-media .mvs-social-actions-left,
+    .mvs-single-media .mvs-social-actions-right {
+        gap: var(--mvs-space-2);
+    }
+}
+
+/* When the FAB sits above the sticky action bar on mobile, push it up by
+   the bar height so the two don't overlap. */
+@media (max-width: 767px) {
+    .mvs-single-media + .mvs-fab,
+    .mvs-single-media ~ .mvs-fab,
+    body.mvs-page--single-media .mvs-fab {
+        bottom: calc(var(--mvs-fab-offset) + 72px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
 /* ==========================================================================
    13. Comments Section (for Step 47d)
    ========================================================================== */
@@ -1708,26 +1846,73 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 100000;
+    inset: 0;
+    background: var(--mvs-overlay);
+    z-index: var(--mvs-z-modal);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
+    /* Allow taps outside the panel to dismiss without scrolling the body. */
+    overscroll-behavior: contain;
 }
 
 .mvs-modal {
     background: var(--mvs-bg);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     width: 100%;
     max-width: 560px;
     max-height: 85vh;
     overflow-y: auto;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--mvs-shadow-lg);
+    position: relative;
+}
+
+/* §11 — Bottom-sheet on mobile.
+   Modal slides up from the bottom edge with a drag handle, max 90vh,
+   safe-area-inset honored for iOS home indicator. Animation respects
+   prefers-reduced-motion. */
+@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+    .mvs-modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .mvs-modal {
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: var(--mvs-radius-lg) var(--mvs-radius-lg) 0 0;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+        animation: mvs-modal-slide-up var(--mvs-duration-base) var(--mvs-easing) both;
+    }
+
+    /* Drag handle pill — pure CSS, no JS dismiss yet but gives the affordance. */
+    .mvs-modal::before {
+        content: "";
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: var(--mvs-text-muted);
+        opacity: 0.5;
+        border-radius: var(--mvs-radius-pill);
+        margin: 8px auto 0;
+        flex-shrink: 0;
+    }
+}
+
+@keyframes mvs-modal-slide-up {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mvs-modal {
+        animation: none !important;
+    }
 }
 
 .mvs-modal-header {
@@ -1954,16 +2139,28 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-toast {
     position: fixed;
-    bottom: 24px;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     right: 24px;
     padding: 12px 24px;
     background: var(--mvs-text);
     color: var(--mvs-bg);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     font-size: 0.9em;
-    z-index: 100002;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-    animation: mvsToastIn 0.3s ease;
+    z-index: var(--mvs-z-toast);
+    box-shadow: var(--mvs-shadow-md);
+    animation: mvsToastIn var(--mvs-duration-base) var(--mvs-easing);
+    /* Honor the FAB safe area so toasts never collide with the upload button. */
+}
+
+@media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
+    .mvs-toast {
+        /* On mobile, sit above both the FAB safe area and the home indicator. */
+        bottom: calc(var(--mvs-fab-safe) + 8px + env(safe-area-inset-bottom, 0px));
+        right: 16px;
+        left: 16px;
+        max-width: none;
+        text-align: center;
+    }
 }
 
 .mvs-toast--success {
