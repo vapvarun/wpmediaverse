@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.1.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-04-16 08:35:26+00:00\n"
+"POT-Creation-Date: 2026-04-16 09:00:31+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -133,10 +133,10 @@ msgstr ""
 #: build/blocks/explore-feed/render.php:123
 #: build/blocks/media-grid/render.php:187
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:123
-#: dist/wpmediaverse/build/blocks/media-grid/render.php:166
+#: dist/wpmediaverse/build/blocks/media-grid/render.php:187
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:171
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:123
-#: dist/wpmediaverse/src/blocks/media-grid/render.php:166
+#: dist/wpmediaverse/src/blocks/media-grid/render.php:187
 #: includes/Admin/MediaListPage.php:171 src/blocks/explore-feed/render.php:123
 #: src/blocks/media-grid/render.php:187
 msgid "No media items found."
@@ -166,16 +166,16 @@ msgid ""
 msgstr ""
 
 #: build/blocks/media-grid/render.php:166
-#: dist/wpmediaverse/build/blocks/media-grid/render.php:145
-#: dist/wpmediaverse/src/blocks/media-grid/render.php:145
+#: dist/wpmediaverse/build/blocks/media-grid/render.php:166
+#: dist/wpmediaverse/src/blocks/media-grid/render.php:166
 #: src/blocks/media-grid/render.php:166
 #. translators: 1: current page, 2: total pages
 msgid "Page %1$d of %2$d (%3$d items)"
 msgstr ""
 
 #: build/blocks/media-grid/render.php:176
-#: dist/wpmediaverse/build/blocks/media-grid/render.php:155
-#: dist/wpmediaverse/src/blocks/media-grid/render.php:155
+#: dist/wpmediaverse/build/blocks/media-grid/render.php:176
+#: dist/wpmediaverse/src/blocks/media-grid/render.php:176
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:240
 #: src/blocks/media-grid/render.php:176
 #: templates/partials/shared-ui-shell.php:240
@@ -183,8 +183,8 @@ msgid "Previous"
 msgstr ""
 
 #: build/blocks/media-grid/render.php:177
-#: dist/wpmediaverse/build/blocks/media-grid/render.php:156
-#: dist/wpmediaverse/src/blocks/media-grid/render.php:156
+#: dist/wpmediaverse/build/blocks/media-grid/render.php:177
+#: dist/wpmediaverse/src/blocks/media-grid/render.php:177
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:252
 #: src/blocks/media-grid/render.php:177
 #: templates/partials/shared-ui-shell.php:252
@@ -267,7 +267,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:741
 #: includes/Admin/MediaListPage.php:156 includes/Admin/MediaListPage.php:186
 #: includes/Admin/ModerationQueue.php:342 includes/Admin/OverviewPage.php:401
-#: includes/Admin/StatsPage.php:370 includes/Admin/TagManagementPage.php:558
+#: includes/Admin/StatsPage.php:370 includes/Admin/TagManagementPage.php:583
 #: includes/Services/GDPRService.php:109 src/blocks/media-stats/render.php:123
 #: templates/album.php:166 templates/media-single.php:403
 #: templates/partials/dashboard-content.php:562
@@ -701,7 +701,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Services/GDPRService.php:235
 #: includes/Admin/LogViewerPage.php:197 includes/Admin/MediaListPage.php:161
 #: includes/Admin/MediaListPage.php:191 includes/Admin/ModerationQueue.php:346
-#: includes/Admin/OverviewPage.php:403 includes/Admin/TagManagementPage.php:560
+#: includes/Admin/OverviewPage.php:403 includes/Admin/TagManagementPage.php:585
 #: includes/Services/GDPRService.php:125 includes/Services/GDPRService.php:184
 #: includes/Services/GDPRService.php:210 includes/Services/GDPRService.php:235
 msgid "Date"
@@ -778,9 +778,9 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:195
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:557
 #: includes/Admin/MediaListPage.php:154 includes/Admin/MediaListPage.php:184
-#: includes/Admin/TagManagementPage.php:168
-#: includes/Admin/TagManagementPage.php:195
-#: includes/Admin/TagManagementPage.php:557
+#: includes/Admin/TagManagementPage.php:178
+#: includes/Admin/TagManagementPage.php:220
+#: includes/Admin/TagManagementPage.php:582
 msgid "ID"
 msgstr ""
 
@@ -801,7 +801,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:572
 #: includes/Admin/MediaListPage.php:158 includes/Admin/MediaListPage.php:188
 #: includes/Admin/ModerationQueue.php:344
-#: includes/Admin/TagManagementPage.php:559
+#: includes/Admin/TagManagementPage.php:584
 #: includes/Services/GDPRService.php:117 includes/Services/GDPRService.php:180
 #: templates/partials/dashboard-content.php:572
 msgid "Type"
@@ -970,8 +970,8 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:154
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:208
 #: includes/Admin/ModerationQueue.php:316
-#: includes/Admin/TagManagementPage.php:154
-#: includes/Admin/TagManagementPage.php:208
+#: includes/Admin/TagManagementPage.php:164
+#: includes/Admin/TagManagementPage.php:233
 msgid "Bulk Actions"
 msgstr ""
 
@@ -989,8 +989,8 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:157
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:211
 #: includes/Admin/ModerationQueue.php:320
-#: includes/Admin/TagManagementPage.php:157
-#: includes/Admin/TagManagementPage.php:211
+#: includes/Admin/TagManagementPage.php:167
+#: includes/Admin/TagManagementPage.php:236
 msgid "Apply"
 msgstr ""
 
@@ -1014,8 +1014,8 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:172
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:199
 #: includes/Admin/ModerationQueue.php:347
-#: includes/Admin/TagManagementPage.php:172
-#: includes/Admin/TagManagementPage.php:199
+#: includes/Admin/TagManagementPage.php:197
+#: includes/Admin/TagManagementPage.php:224
 msgid "Actions"
 msgstr ""
 
@@ -1559,8 +1559,8 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:383
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:437
 #: includes/Admin/Settings/PermissionsManager.php:204
-#: includes/Admin/TagManagementPage.php:383
-#: includes/Admin/TagManagementPage.php:437
+#: includes/Admin/TagManagementPage.php:408
+#: includes/Admin/TagManagementPage.php:462
 msgid "Security check failed."
 msgstr ""
 
@@ -2526,34 +2526,34 @@ msgstr ""
 #: dist/wpmediaverse/includes/Taxonomies/MediaTag.php:35
 #: dist/wpmediaverse/templates/media-single.php:423
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:681
-#: includes/Admin/TagManagementPage.php:98 includes/Core/Plugin.php:644
+#: includes/Admin/TagManagementPage.php:105 includes/Core/Plugin.php:644
 #: includes/Core/Plugin.php:645 includes/Taxonomies/MediaTag.php:35
 #: templates/media-single.php:423 templates/partials/dashboard-content.php:681
 msgid "Tags"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:99
-#: includes/Admin/TagManagementPage.php:99
+#: includes/Admin/TagManagementPage.php:107
 msgid "Refresh"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:132
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:134
 #: dist/wpmediaverse/includes/Taxonomies/MediaTag.php:24
-#: includes/Admin/TagManagementPage.php:132
-#: includes/Admin/TagManagementPage.php:134 includes/Taxonomies/MediaTag.php:24
+#: includes/Admin/TagManagementPage.php:140
+#: includes/Admin/TagManagementPage.php:142 includes/Taxonomies/MediaTag.php:24
 msgid "Search Tags"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:136
-#: includes/Admin/TagManagementPage.php:136
+#: includes/Admin/TagManagementPage.php:144
 msgid "Clear"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:152
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:206
-#: includes/Admin/TagManagementPage.php:152
-#: includes/Admin/TagManagementPage.php:206
+#: includes/Admin/TagManagementPage.php:162
+#: includes/Admin/TagManagementPage.php:231
 msgid "Select bulk action"
 msgstr ""
 
@@ -2568,9 +2568,9 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:525
 #: dist/wpmediaverse/vendor/easy-digital-downloads/edd-sl-sdk/src/Messenger.php:273
 #: dist/wpmediaverse/vendor/woocommerce/action-scheduler/classes/ActionScheduler_ListTable.php:92
-#: includes/Admin/TagManagementPage.php:155
-#: includes/Admin/TagManagementPage.php:209
-#: includes/Admin/TagManagementPage.php:257 templates/media-single.php:381
+#: includes/Admin/TagManagementPage.php:165
+#: includes/Admin/TagManagementPage.php:234
+#: includes/Admin/TagManagementPage.php:282 templates/media-single.php:381
 #: templates/media-single.php:384 templates/media-single.php:512
 #: templates/partials/dashboard-content.php:393
 #: templates/partials/dashboard-content.php:433
@@ -2583,18 +2583,18 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:169
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:196
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:524
-#: includes/Admin/TagManagementPage.php:169
-#: includes/Admin/TagManagementPage.php:196
-#: includes/Admin/TagManagementPage.php:524
+#: includes/Admin/TagManagementPage.php:179
+#: includes/Admin/TagManagementPage.php:221
+#: includes/Admin/TagManagementPage.php:549
 msgid "Name"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:170
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:197
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:531
-#: includes/Admin/TagManagementPage.php:170
-#: includes/Admin/TagManagementPage.php:197
-#: includes/Admin/TagManagementPage.php:531
+#: includes/Admin/TagManagementPage.php:180
+#: includes/Admin/TagManagementPage.php:222
+#: includes/Admin/TagManagementPage.php:556
 msgid "Slug"
 msgstr ""
 
@@ -2602,21 +2602,21 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:198
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:538
 #: dist/wpmediaverse/vendor/woocommerce/action-scheduler/classes/ActionScheduler_wcSystemStatus.php:123
-#: includes/Admin/TagManagementPage.php:171
-#: includes/Admin/TagManagementPage.php:198
-#: includes/Admin/TagManagementPage.php:538
+#: includes/Admin/TagManagementPage.php:181
+#: includes/Admin/TagManagementPage.php:223
+#: includes/Admin/TagManagementPage.php:563
 #: vendor/woocommerce/action-scheduler/classes/ActionScheduler_wcSystemStatus.php:123
 msgid "Count"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:181
-#: includes/Admin/TagManagementPage.php:181
+#: includes/Admin/TagManagementPage.php:206
 msgid "No Tags Found"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:182
 #: dist/wpmediaverse/includes/Taxonomies/MediaTag.php:34
-#: includes/Admin/TagManagementPage.php:182 includes/Taxonomies/MediaTag.php:34
+#: includes/Admin/TagManagementPage.php:207 includes/Taxonomies/MediaTag.php:34
 msgid "No tags found."
 msgstr ""
 
@@ -2628,7 +2628,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:431
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:523
 #: dist/wpmediaverse/vendor/woocommerce/action-scheduler/classes/data-stores/ActionScheduler_wpPostStore_PostTypeRegistrar.php:39
-#: includes/Admin/TagManagementPage.php:256 templates/media-single.php:374
+#: includes/Admin/TagManagementPage.php:281 templates/media-single.php:374
 #: templates/media-single.php:377 templates/media-single.php:510
 #: templates/partials/dashboard-content.php:391
 #: templates/partials/dashboard-content.php:431
@@ -2638,74 +2638,74 @@ msgid "Edit"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:257
-#: includes/Admin/TagManagementPage.php:257
+#: includes/Admin/TagManagementPage.php:282
 msgid "Are you sure you want to delete this tag?"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:301
-#: includes/Admin/TagManagementPage.php:301
+#: includes/Admin/TagManagementPage.php:326
 msgid "%s items"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:432
-#: includes/Admin/TagManagementPage.php:432
+#: includes/Admin/TagManagementPage.php:457
 msgid "You do not have permission to delete tags."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:477
 #: dist/wpmediaverse/includes/REST/Controller/TagController.php:326
 #: dist/wpmediaverse/includes/REST/Controller/TagController.php:356
-#: includes/Admin/TagManagementPage.php:477
+#: includes/Admin/TagManagementPage.php:502
 #: includes/REST/Controller/TagController.php:326
 #: includes/REST/Controller/TagController.php:356
 msgid "Tag not found."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:509
-#: includes/Admin/TagManagementPage.php:509
+#: includes/Admin/TagManagementPage.php:534
 #. translators: %s: tag name.
 msgid "Edit Tag: %s"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:514
-#: includes/Admin/TagManagementPage.php:514
+#: includes/Admin/TagManagementPage.php:539
 msgid "← Back to Tags"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:527
-#: includes/Admin/TagManagementPage.php:527
+#: includes/Admin/TagManagementPage.php:552
 msgid "The tag name as it appears on the site."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:534
-#: includes/Admin/TagManagementPage.php:534
+#: includes/Admin/TagManagementPage.php:559
 msgid "The \"nice\" name for the tag URL. Usually lowercase."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:545
 #: dist/wpmediaverse/includes/Taxonomies/MediaTag.php:28
-#: includes/Admin/TagManagementPage.php:545 includes/Taxonomies/MediaTag.php:28
+#: includes/Admin/TagManagementPage.php:570 includes/Taxonomies/MediaTag.php:28
 msgid "Update Tag"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:550
-#: includes/Admin/TagManagementPage.php:550
+#: includes/Admin/TagManagementPage.php:575
 msgid "Linked Media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:552
-#: includes/Admin/TagManagementPage.php:552
+#: includes/Admin/TagManagementPage.php:577
 msgid "No media items are linked to this tag."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:590
-#: includes/Admin/TagManagementPage.php:590
+#: includes/Admin/TagManagementPage.php:615
 #. translators: %d: number of media items.
 msgid "This tag is linked to %d media item(s)."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:613
-#: includes/Admin/TagManagementPage.php:613
+#: includes/Admin/TagManagementPage.php:638
 #. translators: %d: number of deleted tags.
 msgid "%d tag deleted."
 msgid_plural "%d tags deleted."
@@ -2713,7 +2713,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:621
-#: includes/Admin/TagManagementPage.php:621
+#: includes/Admin/TagManagementPage.php:646
 msgid "Tag updated successfully."
 msgstr ""
 
@@ -4387,7 +4387,7 @@ msgid "Edit Tag"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Taxonomies/MediaTag.php:29
-#: includes/Taxonomies/MediaTag.php:29
+#: includes/Admin/TagManagementPage.php:106 includes/Taxonomies/MediaTag.php:29
 msgid "Add New Tag"
 msgstr ""
 
