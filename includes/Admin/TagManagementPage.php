@@ -111,7 +111,7 @@ class TagManagementPage {
 				<input type="hidden" name="page" value="mvs-tags" />
 				<?php
 				$this->render_search_form( $search, $base_url );
-				$this->render_bulk_actions_form( $tags, $base_url );
+				$this->render_bulk_actions_form( $tags, $base_url, $orderby, $order );
 				?>
 			</form>
 		</div>
@@ -150,10 +150,12 @@ class TagManagementPage {
 	/**
 	 * Render bulk actions form with tag table.
 	 *
-	 * @param array  $tags    Array of WP_Term objects.
+	 * @param array  $tags     Array of WP_Term objects.
 	 * @param string $base_url Base URL.
+	 * @param string $orderby  Current sort column.
+	 * @param string $order    Current sort direction (ASC/DESC).
 	 */
-	private function render_bulk_actions_form( array $tags, string $base_url ): void {
+	private function render_bulk_actions_form( array $tags, string $base_url, string $orderby = 'name', string $order = 'ASC' ): void {
 		?>
 		<div class="tablenav top">
 			<div class="alignleft actions bulkactions">
