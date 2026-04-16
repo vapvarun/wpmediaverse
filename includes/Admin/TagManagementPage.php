@@ -344,11 +344,16 @@ class TagManagementPage {
 			}
 		}
 
-		// Redirect with success message.
+		// Recalculate valid page after deletion so we don't redirect to an empty page.
+		$paged       = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
+		$remaining   = (int) wp_count_terms( array( 'taxonomy' => 'mvs_tag', 'hide_empty' => false ) );
+		$max_page    = max( 1, (int) ceil( $remaining / 20 ) );
+		$paged       = min( $paged, $max_page );
+
 		$redirect_url = add_query_arg(
 			array(
 				'deleted' => $deleted,
-				'paged'   => isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 1, // phpcs:ignore WordPress.Security.NonceVerification
+				'paged'   => $paged,
 				's'       => isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification
 			),
 			admin_url( 'admin.php?page=mvs-tags' )
@@ -438,11 +443,16 @@ class TagManagementPage {
 			wp_die( esc_html( $result->get_error_message() ) );
 		}
 
-		// Redirect with success message.
+		// Recalculate valid page after deletion so we don't redirect to an empty page.
+		$paged       = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$remaining   = (int) wp_count_terms( array( 'taxonomy' => 'mvs_tag', 'hide_empty' => false ) );
+		$max_page    = max( 1, (int) ceil( $remaining / 20 ) );
+		$paged       = min( $paged, $max_page );
+
 		$redirect_url = add_query_arg(
 			array(
 				'deleted' => 1,
-				'paged'   => isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				'paged'   => $paged,
 				's'       => isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			),
 			admin_url( 'admin.php?page=mvs-tags' )
