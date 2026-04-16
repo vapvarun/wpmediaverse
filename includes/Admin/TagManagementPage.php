@@ -60,13 +60,20 @@ class TagManagementPage {
 		// whose last media was deleted are still manageable from the admin.
 		// Tags created via POST /mvs/v1/tags land with count=0 until a media
 		// upload attaches to them — before this fix they were invisible here.
+		$allowed_orderby = array( 'name', 'term_id', 'slug', 'count' );
+		$orderby         = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'name'; // phpcs:ignore WordPress.Security.NonceVerification
+		$order           = isset( $_GET['order'] ) && 'desc' === strtolower( $_GET['order'] ) ? 'DESC' : 'ASC'; // phpcs:ignore WordPress.Security.NonceVerification
+		if ( ! in_array( $orderby, $allowed_orderby, true ) ) {
+			$orderby = 'name';
+		}
+
 		$args = array(
 			'taxonomy'   => 'mvs_tag',
 			'hide_empty' => false,
 			'number'     => $per_page,
 			'offset'     => $offset,
-			'orderby'    => 'name',
-			'order'      => 'ASC',
+			'orderby'    => $orderby,
+			'order'      => $order,
 		);
 
 		if ( $search ) {
@@ -96,6 +103,7 @@ class TagManagementPage {
 		?>
 		<div class="wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></h1>
+			<a href="<?php echo esc_url( add_query_arg( 'action', 'new', $base_url ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New Tag', 'wpmediaverse' ); ?></a>
 			<a href="<?php echo esc_url( $base_url ); ?>" class="page-title-action"><?php esc_html_e( 'Refresh', 'wpmediaverse' ); ?></a>
 			<hr class="wp-header-end">
 
@@ -163,12 +171,27 @@ class TagManagementPage {
 
 		<table class="wp-list-table widefat fixed striped table-view-list">
 			<thead>
+				<?php
+				$sort_columns = array(
+					'term_id' => array( 'label' => __( 'ID', 'wpmediaverse' ), 'class' => 'column-id' ),
+					'name'    => array( 'label' => __( 'Name', 'wpmediaverse' ), 'class' => 'column-primary' ),
+					'slug'    => array( 'label' => __( 'Slug', 'wpmediaverse' ), 'class' => 'column-slug' ),
+					'count'   => array( 'label' => __( 'Count', 'wpmediaverse' ), 'class' => 'column-count' ),
+				);
+				?>
 				<tr>
 					<td class="manage-column column-cb check-column"><input type="checkbox" id="cb-select-all-1" /></td>
-					<th class="manage-column column-id"><?php esc_html_e( 'ID', 'wpmediaverse' ); ?></th>
-					<th class="manage-column column-primary"><?php esc_html_e( 'Name', 'wpmediaverse' ); ?></th>
-					<th class="manage-column column-slug"><?php esc_html_e( 'Slug', 'wpmediaverse' ); ?></th>
-					<th class="manage-column column-count"><?php esc_html_e( 'Count', 'wpmediaverse' ); ?></th>
+					<?php foreach ( $sort_columns as $col_key => $col ) : ?>
+						<?php
+						$is_current   = ( $orderby === $col_key );
+						$next_order   = ( $is_current && 'ASC' === $order ) ? 'desc' : 'asc';
+						$sort_url     = add_query_arg( array( 'orderby' => $col_key, 'order' => $next_order ), $base_url );
+						$sorted_class = $is_current ? ' sorted ' . strtolower( $order ) : ' sortable asc';
+						?>
+						<th class="manage-column <?php echo esc_attr( $col['class'] . $sorted_class ); ?>">
+							<a href="<?php echo esc_url( $sort_url ); ?>"><span><?php echo esc_html( $col['label'] ); ?></span><span class="sorting-indicators"><span class="sorting-indicator asc" aria-hidden="true"></span><span class="sorting-indicator desc" aria-hidden="true"></span></span></a>
+						</th>
+					<?php endforeach; ?>
 					<th class="manage-column column-actions"><?php esc_html_e( 'Actions', 'wpmediaverse' ); ?></th>
 				</tr>
 			</thead>
@@ -271,7 +294,7 @@ class TagManagementPage {
 		$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 		$count_args = array(
 			'taxonomy'   => 'mvs_tag',
-			'hide_empty' => true, // Only count tags that are used
+			'hide_empty' => false,
 		);
 		if ( $search ) {
 			$count_args['search'] = $search;
