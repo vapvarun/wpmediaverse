@@ -168,15 +168,43 @@ $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	)"
 );
 
-// 8. Refresh cached term counts for every taxonomy that lost relationships.
-// We do NOT delete orphaned terms any more — the previous loop relied on the
-// stale cached count before this refresh and silently nuked real user-owned
-// tags whose count hadn't been updated yet. Empty tags stay visible in the
-// admin Tags page (B13) and the admin can bulk-delete them from there.
+// 8a. Refresh cached term counts FIRST so counts are accurate before deletion.
 if ( ! empty( $affected_tt_ids ) ) {
 	$affected_tt_ids = array_map( 'intval', $affected_tt_ids );
 	wp_update_term_count_now( $affected_tt_ids, 'mvs_tag' );
 	wp_update_term_count_now( $affected_tt_ids, 'mvs_category' );
+}
+
+// 8b. Delete demo-created taxonomy terms that are no longer in use.
+// Only terms flagged with _mvs_demo_term meta (set by the seeder) are candidates.
+// Terms still referenced by real user media are preserved (flag removed).
+$demo_term_count = 0;
+foreach ( array( 'mvs_tag', 'mvs_category' ) as $demo_taxonomy ) {
+	$demo_terms = get_terms(
+		array(
+			'taxonomy'   => $demo_taxonomy,
+			'hide_empty' => false,
+			'meta_key'   => '_mvs_demo_term', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			'meta_value' => '1',              // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+		)
+	);
+
+	if ( is_wp_error( $demo_terms ) || empty( $demo_terms ) ) {
+		continue;
+	}
+
+	foreach ( $demo_terms as $term ) {
+		if ( (int) $term->count > 0 ) {
+			// A real user is still using this tag — remove the demo flag.
+			delete_term_meta( $term->term_id, '_mvs_demo_term' );
+			continue;
+		}
+
+		$result = wp_delete_term( $term->term_id, $demo_taxonomy );
+		if ( $result && ! is_wp_error( $result ) ) {
+			++$demo_term_count;
+		}
+	}
 }
 
 // 9. Reset the seeded flag.
@@ -191,11 +219,12 @@ wp_cache_delete( 'mvs_overview_stats', 'wpmediaverse' );
 wp_cache_delete( 'mvs_overview_recent', 'wpmediaverse' );
 
 $message = sprintf(
-	/* translators: 1: media count, 2: album/collection count, 3: user count */
-	__( 'Cleaned %1$d demo media item(s), %2$d album(s)/collection(s), and %3$d demo user(s).', 'wpmediaverse' ),
+	/* translators: 1: media count, 2: album/collection count, 3: user count, 4: term count */
+	__( 'Cleaned %1$d demo media item(s), %2$d album(s)/collection(s), %3$d demo user(s), and %4$d demo tag(s)/category(ies).', 'wpmediaverse' ),
 	$media_count,
 	$album_count,
-	$demo_user_count
+	$demo_user_count,
+	$demo_term_count
 );
 
 $mvs_finish( $message );
