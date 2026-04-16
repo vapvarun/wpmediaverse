@@ -115,10 +115,31 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group ? ' mvs-grid-item--gallery' : '' );
 				$item_title          = $item['title'] ?? '';
 				$item_permalink      = \WPMediaVerse\Repository\MediaRepository::get_permalink( $item_id );
+				$mvs_grid_author_id  = ! empty( $item['post_author'] ) ? (int) $item['post_author'] : 0;
+				$mvs_grid_thumb_url  = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $item_id, 'large' );
+				$mvs_grid_lightbox   = array(
+					'id'            => $item_id,
+					'title'         => $item_title,
+					'description'   => $item['description'] ?? '',
+					'media_type'    => $mvs_grid_media_type,
+					'file_url'      => $item['file_url'] ?? '',
+					'file_type'     => $item['file_type'] ?? '',
+					'thumbnail_url' => $mvs_grid_thumb_url,
+					'link'          => $item_permalink,
+					'media_group'   => $mvs_grid_group ?: '',
+					'group_count'   => $mvs_grid_group_cnt,
+					'author'        => $mvs_grid_author_id,
+					'author_data'   => array(
+						'name'        => get_the_author_meta( 'display_name', $mvs_grid_author_id ),
+						'avatar'      => get_avatar_url( $mvs_grid_author_id, array( 'size' => 64 ) ),
+						'profile_url' => \WPMediaVerse\Core\TemplateHelpers::get_user_profile_url( $mvs_grid_author_id ),
+					),
+				);
 				?>
 				<div class="<?php echo esc_attr( $mvs_grid_item_class ); ?>"
 					data-media-id="<?php echo absint( $item_id ); ?>"
 					data-media-type="<?php echo esc_attr( $mvs_grid_media_type ); ?>"
+					data-media-json="<?php echo esc_attr( wp_json_encode( $mvs_grid_lightbox ) ); ?>"
 				>
 					<a href="<?php echo esc_url( $item_permalink ); ?>" class="mvs-grid-item-link">
 					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( $item_id, 'large', $item_title ); ?>

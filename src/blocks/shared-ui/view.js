@@ -698,14 +698,32 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				} catch { /* use defaults */ }
 			}
 
+			// Try to read pre-embedded media data from the grid card DOM first.
+			// This avoids a REST call entirely and works even when REST is blocked.
+			const cardEl = document.querySelector( '[data-media-id="' + mediaId + '"][data-media-json]' );
+			let embeddedData = null;
+			if ( cardEl ) {
+				try {
+					embeddedData = JSON.parse( cardEl.dataset.mediaJson );
+				} catch { /* fall through to REST */ }
+			}
+
 			try {
 				const headers = {};
 				if ( nonce ) headers[ 'X-WP-Nonce' ] = nonce;
-				const res = await fetch( restUrl + 'media/' + mediaId, {
-					credentials: 'same-origin',
-					headers,
-				} );
-				const data = await res.json();
+				let data;
+
+				if ( embeddedData ) {
+					// Use embedded data — instant, no network request.
+					data = embeddedData;
+				} else {
+					const res = await fetch( restUrl + 'media/' + mediaId, {
+						credentials: 'same-origin',
+						headers,
+					} );
+					data = await res.json();
+				}
+
 				state.lightboxMediaData = data;
 				state.lightboxLoading = false;
 				loadLightboxMedia();
