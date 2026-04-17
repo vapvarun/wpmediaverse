@@ -111,6 +111,11 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 == Changelog ==
 
 = 1.1.2 =
+* Fix: Setting Grid Columns to 5 now actually renders 5 columns on the Explore page, single-album view, collections, and dashboard grids (was collapsing to a single column because the 5-column CSS rule was missing)
+* Fix: Stats page Today / This Week / This Month / All Time filters now change the Media count and Albums count — previously these cards ignored the date range and looked identical for every filter
+* Fix: New tags now show up in the Explore tag cloud immediately after upload (tag count used to stay at 0 because WordPress couldn't count media stored in our custom table — now counted correctly for both tags and categories, plus a one-time backfill for existing tags)
+* Fix: Favorite button in the lightbox is now visible to all signed-in users, including the media owner (matches the behaviour of the single-media page)
+* Fix: Lightbox Share button no longer shows two icons — now uses the same clean Lucide icon set as the single-media page (Favorite / Share / Open / Report all unified)
 * New: Add New Tag button on the Tags admin screen
 * New: Sortable columns on the Tags admin table
 * New: Back button on every detail page on mobile

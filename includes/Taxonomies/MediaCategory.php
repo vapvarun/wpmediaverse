@@ -34,17 +34,20 @@ class MediaCategory {
 		);
 
 		$args = array(
-			'labels'            => $labels,
-			'hierarchical'      => true,
-			'public'            => true,
-			'show_in_rest'      => true,
-			'show_admin_column' => true,
-			'rewrite'           => array( 'slug' => 'media-category' ),
+			'labels'                => $labels,
+			'hierarchical'          => true,
+			'public'                => true,
+			'show_in_rest'          => true,
+			'show_admin_column'     => true,
+			'rewrite'               => array( 'slug' => 'media-category' ),
+			'update_count_callback' => array( MediaTag::class, 'update_term_count' ),
 		);
 
 		// Registered on mvs_album. Category relationships are stored via the standard
 		// wp_term_relationships table; AlbumController writes them with wp_set_object_terms()
 		// on create/update and reads them via get_the_terms() when building the REST response.
+		// Custom update_count_callback (shared with MediaTag) counts media in mvs_media_index,
+		// not wp_posts — see MediaTag::update_term_count() docblock.
 		register_taxonomy( 'mvs_category', 'mvs_album', $args );
 	}
 }

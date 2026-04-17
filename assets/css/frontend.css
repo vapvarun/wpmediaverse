@@ -866,10 +866,22 @@ body.dark-mode .mvs-skeleton::after {
     grid-template-columns: repeat(4, 1fr);
 }
 
+.mvs-cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+@media (max-width: 1024px) {
+
+    .mvs-cols-5 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
 
     .mvs-cols-3,
-    .mvs-cols-4 {
+    .mvs-cols-4,
+    .mvs-cols-5 {
         grid-template-columns: repeat(2, 1fr);
     }
 }
@@ -878,7 +890,8 @@ body.dark-mode .mvs-skeleton::after {
 
     .mvs-cols-2,
     .mvs-cols-3,
-    .mvs-cols-4 {
+    .mvs-cols-4,
+    .mvs-cols-5 {
         grid-template-columns: 1fr;
     }
 }
@@ -5240,7 +5253,9 @@ a.mvs-dashboard-card-title:hover {
         /* Prevent zoom on iOS */
     }
 
-    .mvs-media-grid.mvs-cols-3 {
+    .mvs-media-grid.mvs-cols-3,
+    .mvs-media-grid.mvs-cols-4,
+    .mvs-media-grid.mvs-cols-5 {
         grid-template-columns: repeat(2, 1fr);
     }
 
@@ -5593,9 +5608,11 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-danger);
 }
 
-.mvs-lightbox-action--report svg {
-    width: 16px;
-    height: 16px;
+.mvs-lightbox-action [data-lucide],
+.mvs-lightbox-action svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
 }
 
 .mvs-lightbox-action--report {

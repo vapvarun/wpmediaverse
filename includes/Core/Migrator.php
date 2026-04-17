@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 9;
+	const CURRENT_VERSION = 10;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -624,5 +624,47 @@ class Migrator {
 				KEY created_at (created_at)
 			) {$charset_collate}"
 		);
+	}
+
+	/**
+	 * Migration v10 — recount mvs_tag and mvs_category terms against mvs_media_index.
+	 *
+	 * Previously term counts stayed at 0 because the default term-count callback
+	 * counts wp_posts rows of registered post types, but our media lives in the
+	 * mvs_media_index custom table. This backfill brings existing tag/category
+	 * counts in line with the new custom update_count_callback.
+	 *
+	 * @since 1.1.2
+	 */
+	private function migrate_to_10(): void {
+		global $wpdb;
+
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+
+		// Recount mvs_tag and mvs_category terms.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$term_rows = $wpdb->get_results(
+			"SELECT tt.term_taxonomy_id
+			FROM {$wpdb->term_taxonomy} tt
+			WHERE tt.taxonomy IN ( 'mvs_tag', 'mvs_category' )"
+		);
+
+		foreach ( $term_rows as $row ) {
+			$ttid  = (int) $row->term_taxonomy_id;
+			$count = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->term_relationships} tr
+					INNER JOIN {$index_table} m ON m.media_id = tr.object_id
+					WHERE tr.term_taxonomy_id = %d AND m.status = 'publish'",
+					$ttid
+				)
+			);
+			$wpdb->update(
+				$wpdb->term_taxonomy,
+				array( 'count' => $count ),
+				array( 'term_taxonomy_id' => $ttid )
+			);
+		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 }

@@ -133,6 +133,25 @@ class StatsPage {
 	}
 
 	/**
+	 * Get the date-range cutoff datetime (UTC) for a given range key.
+	 *
+	 * @param string $range Date range key.
+	 * @return string|null UTC datetime string (Y-m-d H:i:s) or null for "all".
+	 */
+	private function get_range_start( string $range ): ?string {
+		switch ( $range ) {
+			case 'today':
+				return gmdate( 'Y-m-d 00:00:00' );
+			case 'week':
+				return gmdate( 'Y-m-d 00:00:00', strtotime( '-7 days' ) );
+			case 'month':
+				return gmdate( 'Y-m-d 00:00:00', strtotime( '-30 days' ) );
+			default:
+				return null;
+		}
+	}
+
+	/**
 	 * Render the stats page with tabs.
 	 */
 	public function render_page(): void {
@@ -219,13 +238,31 @@ class StatsPage {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$range       = isset( $_GET['range'] ) ? sanitize_text_field( wp_unslash( $_GET['range'] ) ) : 'all';
 		$date_filter = $this->get_date_filter( $range );
+		$range_start = $this->get_range_start( $range );
 
-		// Overall counts.
-		$total_media  = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish'" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		);
-		$album_counts = wp_count_posts( 'mvs_album' );
-		$total_albums = isset( $album_counts->publish ) ? (int) $album_counts->publish : 0;
+		// Overall counts (apply date filter so cards change across Today / Week / Month / All).
+		if ( $range_start ) {
+			$total_media = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$range_start
+				)
+			);
+			$total_albums = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s AND post_status = %s AND post_date_gmt >= %s",
+					'mvs_album',
+					'publish',
+					$range_start
+				)
+			);
+		} else {
+			$total_media  = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish'" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			);
+			$album_counts = wp_count_posts( 'mvs_album' );
+			$total_albums = isset( $album_counts->publish ) ? (int) $album_counts->publish : 0;
+		}
 
 		// Stats totals.
 		$stats_table = $wpdb->prefix . 'mvs_media_stats';

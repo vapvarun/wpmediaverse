@@ -308,20 +308,23 @@ $mvs_show_fab = $mvs_is_logged_in && (
 				<!-- Actions bar -->
 				<div class="mvs-lightbox-actions">
 					<?php if ( $mvs_is_logged_in ) : ?>
-						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited"
-							data-wp-bind--hidden="state.lightboxIsOwner">
+						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited">
+							<i data-lucide="heart" aria-hidden="true"></i>
 							<span data-wp-text="state.lightboxFavoriteLabel"></span>
 						</button>
 					<?php endif; ?>
-					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxShare">&#x1F517; <?php esc_html_e( 'Share', 'wpmediaverse' ); ?></button>
-					<a class="mvs-lightbox-action" data-wp-bind--href="state.lightboxPermalink" target="_blank">&#x2197;&#xFE0F; <?php esc_html_e( 'Open', 'wpmediaverse' ); ?></a>
+					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxShare">
+						<i data-lucide="share-2" aria-hidden="true"></i>
+						<?php esc_html_e( 'Share', 'wpmediaverse' ); ?>
+					</button>
+					<a class="mvs-lightbox-action" data-wp-bind--href="state.lightboxPermalink" target="_blank">
+						<i data-lucide="external-link" aria-hidden="true"></i>
+						<?php esc_html_e( 'Open', 'wpmediaverse' ); ?>
+					</a>
 					<?php if ( $mvs_is_logged_in ) : ?>
 						<button class="mvs-lightbox-action mvs-lightbox-action--report" data-wp-on--click="actions.lightboxReport"
 							data-wp-bind--hidden="state.lightboxIsOwner">
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
-								<path d="M5 4v16"></path>
-								<path d="M5 5h9l-1.5 3L14 11H5"></path>
-							</svg>
+							<i data-lucide="flag" aria-hidden="true"></i>
 							<?php esc_html_e( 'Report', 'wpmediaverse' ); ?>
 						</button>
 					<?php endif; ?>
