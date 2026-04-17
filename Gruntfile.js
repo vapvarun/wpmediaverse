@@ -133,6 +133,11 @@ module.exports = function( grunt ) {
 							'!**/*.md',
 							'!readme.txt.bak',
 
+							// ── OS / placeholder files (plugin-check rejects hidden files) ──
+							'!**/.DS_Store',
+							'!**/.gitkeep',
+							'!**/Thumbs.db',
+
 							// ── Vendor: strip ALL dev deps ──
 							// Keep: easy-digital-downloads (license SDK)
 							// Keep: woocommerce (Action Scheduler)

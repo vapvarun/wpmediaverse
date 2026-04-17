@@ -72,7 +72,7 @@ class TagManagementPage {
 		// upload attaches to them — before this fix they were invisible here.
 		$allowed_orderby = array( 'name', 'term_id', 'slug', 'count' );
 		$orderby         = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'name'; // phpcs:ignore WordPress.Security.NonceVerification
-		$order           = isset( $_GET['order'] ) && 'desc' === strtolower( $_GET['order'] ) ? 'DESC' : 'ASC'; // phpcs:ignore WordPress.Security.NonceVerification
+		$order           = isset( $_GET['order'] ) && 'desc' === strtolower( sanitize_text_field( wp_unslash( $_GET['order'] ) ) ) ? 'DESC' : 'ASC'; // phpcs:ignore WordPress.Security.NonceVerification
 		if ( ! in_array( $orderby, $allowed_orderby, true ) ) {
 			$orderby = 'name';
 		}
@@ -322,9 +322,29 @@ class TagManagementPage {
 		}
 
 		echo '<div class="tablenav-pages">';
-		echo '<span class="displaying-num">' . sprintf( esc_html__( '%s items', 'wpmediaverse' ), number_format_i18n( $total ) ) . '</span>';
+		printf(
+			'<span class="displaying-num">%s</span>',
+			esc_html(
+				sprintf(
+					/* translators: %s: number of items, formatted for the current locale. */
+					_n( '%s item', '%s items', $total, 'wpmediaverse' ),
+					number_format_i18n( $total )
+				)
+			)
+		);
 		echo '<span class="pagination-links">';
-		echo implode( "\n", $page_links );
+		echo wp_kses(
+			implode( "\n", $page_links ),
+			array(
+				'a'    => array(
+					'href'  => true,
+					'class' => true,
+				),
+				'span' => array(
+					'class' => true,
+				),
+			)
+		);
 		echo '</span>';
 		echo '</div>';
 	}
@@ -455,23 +475,22 @@ class TagManagementPage {
 			return;
 		}
 
-		if ( ! isset( $_POST['tag_name'] ) || '' === trim( $_POST['tag_name'] ) ) {
-			return;
+		// Verify nonce before reading any other POST fields.
+		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'create-tag' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
 		}
 
 		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
 			wp_die( esc_html__( 'You do not have permission to create tags.', 'wpmediaverse' ) );
 		}
 
-		// Verify nonce.
-		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'create-tag' ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
+		$tag_name = isset( $_POST['tag_name'] ) ? sanitize_text_field( wp_unslash( $_POST['tag_name'] ) ) : '';
+		if ( '' === trim( $tag_name ) ) {
+			return;
 		}
 
-		$tag_name = sanitize_text_field( wp_unslash( $_POST['tag_name'] ) );
-		$tag_slug = isset( $_POST['tag_slug'] ) && '' !== trim( $_POST['tag_slug'] )
-			? sanitize_title( wp_unslash( $_POST['tag_slug'] ) )
-			: sanitize_title( $tag_name );
+		$tag_slug_raw = isset( $_POST['tag_slug'] ) ? sanitize_text_field( wp_unslash( $_POST['tag_slug'] ) ) : '';
+		$tag_slug     = '' !== trim( $tag_slug_raw ) ? sanitize_title( $tag_slug_raw ) : sanitize_title( $tag_name );
 
 		$result = wp_insert_term(
 			$tag_name,
@@ -550,7 +569,7 @@ class TagManagementPage {
 		$tag_id = isset( $_GET['tag_id'] ) ? absint( $_GET['tag_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
 
 		if ( ! $tag_id ) {
-			wp_redirect( admin_url( 'admin.php?page=mvs-tags' ) );
+			wp_safe_redirect( admin_url( 'admin.php?page=mvs-tags' ) );
 			exit;
 		}
 
@@ -722,6 +741,7 @@ class TagManagementPage {
 	 * Show admin notices for success/error messages.
 	 */
 	public function show_admin_notices(): void {
+		// Read-only success-flag reads; nonce is verified by the action that set the flag. phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( ! isset( $_GET['page'] ) || 'mvs-tags' !== $_GET['page'] ) {
 			return;
 		}
@@ -745,5 +765,6 @@ class TagManagementPage {
 		if ( isset( $_GET['created'] ) ) {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Tag created successfully.', 'wpmediaverse' ) . '</p></div>';
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 }
