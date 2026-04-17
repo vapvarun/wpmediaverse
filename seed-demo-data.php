@@ -728,6 +728,21 @@ function mvs_seed_log( $message, $type = 'log' ) {
 	}
 }
 
+/**
+ * Flag taxonomy terms created by the demo seeder so cleanup can identify them.
+ *
+ * @param string[] $term_names Term names assigned via wp_set_object_terms().
+ * @param string   $taxonomy   Taxonomy slug ('mvs_tag' or 'mvs_category').
+ */
+function mvs_seed_flag_demo_terms( array $term_names, string $taxonomy ): void {
+	foreach ( $term_names as $name ) {
+		$term = get_term_by( 'name', $name, $taxonomy );
+		if ( $term && ! is_wp_error( $term ) && ! get_term_meta( $term->term_id, '_mvs_demo_term', true ) ) {
+			add_term_meta( $term->term_id, '_mvs_demo_term', '1', true );
+		}
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Check for existing demo data.
 // ---------------------------------------------------------------------------
@@ -861,11 +876,13 @@ foreach ( $images as $idx => $img ) {
 	if ( ! empty( $img['tags'] ) ) {
 		\WPMediaVerse\Repository\MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( $img['tags'] ) ) );
 		wp_set_object_terms( $media_id, $img['tags'], 'mvs_tag', true );
+		mvs_seed_flag_demo_terms( $img['tags'], 'mvs_tag' );
 	}
 	if ( ! empty( $img['category'] ) ) {
 		$cat_value = is_array( $img['category'] ) ? $img['category'] : array( $img['category'] );
 		\WPMediaVerse\Repository\MediaRepository::set( $media_id, 'category', wp_json_encode( array_values( $cat_value ) ) );
 		wp_set_object_terms( $media_id, $img['category'], 'mvs_category', true );
+		mvs_seed_flag_demo_terms( $cat_value, 'mvs_category' );
 	}
 
 	// Create stats row with randomized views.

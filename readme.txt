@@ -111,24 +111,34 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 == Changelog ==
 
 = 1.1.2 =
-* Fix: Moderation queue now renders flagged media rows from mvs_media_index — the AI Flagged tab was empty due to a type mismatch between get_queue() (returns int IDs) and render_row() (expected WP_Post)
-* Fix: Duplicate upload "Warn" mode now actually surfaces the warning — backend records existing_media_id, REST response carries duplicate_warning + existing_media_id, frontend shows a warning toast in the FAB upload modal and Gutenberg media-upload block
-* Fix: Three database orphan paths plugged — delete_cascade() now cleans mvs_access_rules + mvs_access_grants, new UserDeletionService cascade-deletes all user-owned data on deleted_user / remove_user_from_blog, GDPRService::erase_social() extended to cover mvs_media_views / mvs_access_grants / mvs_conversation_participants / mvs_messages
-* Fix: Fresh-install Allowed File Types now render checked on first visit — FieldRenderer used an empty-string fallback that short-circuited the registered default; Sanitizers no longer wipes the default when the form is submitted with no checkboxes ticked
-* Fix: mvs_allow_user_privacy admin setting now honoured on every upload surface — Gutenberg block, BuddyPress activity form, BP activity JS, and UploadService backend enforcement (cannot be bypassed via forged REST POST)
-* Fix: BuddyPress activity form now renders a privacy selector when mvs_allow_user_privacy is enabled, revealed on file selection, sent with the upload request
-* Fix: Album category taxonomy wired end-to-end across REST + template — create/update accept categories array, response exposes a categories field, single-album template renders pill links, delete cascades term relationships
-* New: docs/MOBILE_UX_GUIDELINE.md — long-term Apple-quality mobile UX contract covering touch targets, back navigation, FAB safe areas, icon-collapse pattern, tab strip overflow, bottom-sheet modals, sticky action bars, accessibility floor
-* New: Mobile UX base layer — every interactive element clears the 44×44 touch floor below the desktop breakpoint, every detail page renders a back-link via TemplateHelpers::render_back_link(), FAB safe-area padding prevents content overlap, tab strip pattern with edge-fade mask + scroll-snap + auto-scroll-to-active
-* New: Bottom-sheet modal pattern on mobile — modals slide up from bottom with a drag handle, max 90vh, safe-area-inset for iOS home indicator, prefers-reduced-motion respected
-* New: Sticky bottom action bar on single-media on mobile — Like / Share / Edit / Delete pinned to viewport bottom with backdrop-saturate blur, Instagram/iOS Photos style
-* New: Optimistic UI on reactions / favorites / follow — visual state flips immediately on tap, rolls back on REST error
-* New: Skeleton loader component (.mvs-skeleton with text/avatar/thumb modifiers) for waiting-on-REST surfaces, dark-mode and reduced-motion aware
-* New: Lucide icon set self-contained on the frontend — no longer depends on the active theme to load it
-* New: Icon-with-tooltip button pattern (.mvs-btn--icon-collapse + [data-mvs-tooltip]) for dense action rows on mobile, applied to single-media social actions and album owner actions
-* New: bin/mobile-audit.mjs — local Playwright auditor (`npm run audit:mobile`) walks every WPMediaVerse-owned route at 390×844 and fails on horizontal scroll or sub-44 touch targets
-* New: NotificationService extension filters mvs_notification_types and mvs_notification_message so Pro can register custom notification types without forking
-* Enhancement: Stale phpstan baseline entries cleaned up after Fix 1's get_queue type contract change
+* New: Add New Tag button on the Tags admin screen
+* New: Sortable columns on the Tags admin table
+* New: Back button on every detail page on mobile
+* New: Touch targets now meet Apple's 44×44 minimum everywhere on mobile
+* New: Floating upload button respects the iOS safe area (no more overlap with the home bar)
+* New: Bottom-sheet modals on mobile — slide up from the bottom with a drag handle, like native iOS apps
+* New: Sticky action bar on the single-media page on mobile — Like, Share, Edit, and Delete stay pinned to the bottom with a blurred backdrop
+* New: Skeleton loaders while content is loading (smoother than spinners)
+* New: Instant visual feedback when you tap Like, Favorite, or Follow — the button rolls back automatically if the action fails
+* New: Tab strips on mobile now scroll horizontally with an edge fade and snap to the active tab
+* New: Compact icon-with-tooltip buttons on dense action rows on mobile
+* New: Lucide icons now ship with the plugin — no longer dependent on the active theme to load them
+* New: Filters to let extensions register custom notification types (`mvs_notification_types`, `mvs_notification_message`)
+* Fix: Bulk-deleting tags no longer produces an error
+* Fix: Tag admin pagination count now matches the actual number of tags
+* Fix: Sort order is preserved when using bulk actions on tags
+* Fix: Deleting a tag now redirects back to a valid page instead of an error page
+* Fix: Lightbox opens instantly from media grids — no extra loading delay
+* Fix: Moderation queue's AI Flagged tab now correctly lists flagged media (was showing empty)
+* Fix: Duplicate-upload "Warn" mode now actually shows a warning when a matching file already exists
+* Fix: Fresh installs now have the default Allowed File Types ticked on first visit
+* Fix: Album categories are now fully wired — create, update, filter by category, and see category links on single-album pages
+* Fix: Demo data cleanup now also removes the tags created by the demo seeder
+* Fix: "Allow per-upload privacy" admin setting is now honoured on every upload surface — block editor, BuddyPress activity form, and the backend upload handler
+* Fix: BuddyPress activity upload now shows a privacy selector once a file is selected, when per-upload privacy is enabled
+* Fix: User deletion and GDPR erasure now clean up all related data — access rules, access grants, view history, direct messages, and conversation participants — so no orphan records are left behind
+* Security: Tag management screens now verify user capability and nonce on every action
+* Enhancement: Updated translation template (POT) with all new strings
 
 = 1.1.1 =
 * Fix: Single media page — comments, reactions, favorites, follow, and report now work (Interactivity API store loading)

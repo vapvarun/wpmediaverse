@@ -19,11 +19,18 @@ use WP_Term;
 class TagManagementPage {
 
 	/**
+	 * Number of tags displayed per page.
+	 */
+	private const PER_PAGE = 20;
+
+	/**
 	 * Constructor. Registers hooks for handling tag actions.
 	 */
 	public function __construct() {
+		add_action( 'admin_init', array( $this, 'handle_bulk_actions' ) );
 		add_action( 'admin_init', array( $this, 'handle_single_delete' ) );
 		add_action( 'admin_init', array( $this, 'handle_edit' ) );
+		add_action( 'admin_init', array( $this, 'handle_create' ) );
 		add_action( 'admin_notices', array( $this, 'show_admin_notices' ) );
 	}
 
@@ -42,8 +49,11 @@ class TagManagementPage {
 			return;
 		}
 
-		// Handle bulk actions.
-		$this->handle_bulk_actions();
+		// Check if we're in new tag mode.
+		if ( isset( $_GET['action'] ) && 'new' === $_GET['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification
+			$this->render_new_form();
+			return;
+		}
 
 		global $wpdb;
 
@@ -51,7 +61,7 @@ class TagManagementPage {
 		$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 
 		// Pagination.
-		$per_page = 20;
+		$per_page = self::PER_PAGE;
 		$paged    = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
 		$offset   = ( $paged - 1 ) * $per_page;
 
@@ -60,13 +70,20 @@ class TagManagementPage {
 		// whose last media was deleted are still manageable from the admin.
 		// Tags created via POST /mvs/v1/tags land with count=0 until a media
 		// upload attaches to them — before this fix they were invisible here.
+		$allowed_orderby = array( 'name', 'term_id', 'slug', 'count' );
+		$orderby         = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'name'; // phpcs:ignore WordPress.Security.NonceVerification
+		$order           = isset( $_GET['order'] ) && 'desc' === strtolower( $_GET['order'] ) ? 'DESC' : 'ASC'; // phpcs:ignore WordPress.Security.NonceVerification
+		if ( ! in_array( $orderby, $allowed_orderby, true ) ) {
+			$orderby = 'name';
+		}
+
 		$args = array(
 			'taxonomy'   => 'mvs_tag',
 			'hide_empty' => false,
 			'number'     => $per_page,
 			'offset'     => $offset,
-			'orderby'    => 'name',
-			'order'      => 'ASC',
+			'orderby'    => $orderby,
+			'order'      => $order,
 		);
 
 		if ( $search ) {
@@ -96,14 +113,16 @@ class TagManagementPage {
 		?>
 		<div class="wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></h1>
+			<a href="<?php echo esc_url( add_query_arg( 'action', 'new', $base_url ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New Tag', 'wpmediaverse' ); ?></a>
 			<a href="<?php echo esc_url( $base_url ); ?>" class="page-title-action"><?php esc_html_e( 'Refresh', 'wpmediaverse' ); ?></a>
 			<hr class="wp-header-end">
 
 			<form method="get" action="">
 				<input type="hidden" name="page" value="mvs-tags" />
+				<?php wp_nonce_field( 'bulk-tags', '_wpnonce' ); ?>
 				<?php
 				$this->render_search_form( $search, $base_url );
-				$this->render_bulk_actions_form( $tags, $base_url );
+				$this->render_bulk_actions_form( $tags, $base_url, $orderby, $order, $total, $paged, $total_pages );
 				?>
 			</form>
 		</div>
@@ -142,10 +161,15 @@ class TagManagementPage {
 	/**
 	 * Render bulk actions form with tag table.
 	 *
-	 * @param array  $tags    Array of WP_Term objects.
-	 * @param string $base_url Base URL.
+	 * @param array  $tags        Array of WP_Term objects.
+	 * @param string $base_url    Base URL.
+	 * @param string $orderby     Current sort column.
+	 * @param string $order       Current sort direction (ASC/DESC).
+	 * @param int    $total       Total number of tags.
+	 * @param int    $paged       Current page number.
+	 * @param int    $total_pages Total number of pages.
 	 */
-	private function render_bulk_actions_form( array $tags, string $base_url ): void {
+	private function render_bulk_actions_form( array $tags, string $base_url, string $orderby, string $order, int $total, int $paged, int $total_pages ): void {
 		?>
 		<div class="tablenav top">
 			<div class="alignleft actions bulkactions">
@@ -155,20 +179,34 @@ class TagManagementPage {
 					<option value="delete"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></option>
 				</select>
 				<input type="submit" name="doaction" id="doaction" class="button action" value="<?php esc_attr_e( 'Apply', 'wpmediaverse' ); ?>" />
-				<?php wp_nonce_field( 'bulk-tags', '_wpnonce' ); ?>
 			</div>
-			<?php $this->render_pagination( $tags, $base_url ); ?>
+			<?php $this->render_pagination( $base_url, $total, $paged, $total_pages ); ?>
 			<br class="clear" />
 		</div>
 
 		<table class="wp-list-table widefat fixed striped table-view-list">
 			<thead>
+				<?php
+				$sort_columns = array(
+					'term_id' => array( 'label' => __( 'ID', 'wpmediaverse' ), 'class' => 'column-id' ),
+					'name'    => array( 'label' => __( 'Name', 'wpmediaverse' ), 'class' => 'column-primary' ),
+					'slug'    => array( 'label' => __( 'Slug', 'wpmediaverse' ), 'class' => 'column-slug' ),
+					'count'   => array( 'label' => __( 'Count', 'wpmediaverse' ), 'class' => 'column-count' ),
+				);
+				?>
 				<tr>
 					<td class="manage-column column-cb check-column"><input type="checkbox" id="cb-select-all-1" /></td>
-					<th class="manage-column column-id"><?php esc_html_e( 'ID', 'wpmediaverse' ); ?></th>
-					<th class="manage-column column-primary"><?php esc_html_e( 'Name', 'wpmediaverse' ); ?></th>
-					<th class="manage-column column-slug"><?php esc_html_e( 'Slug', 'wpmediaverse' ); ?></th>
-					<th class="manage-column column-count"><?php esc_html_e( 'Count', 'wpmediaverse' ); ?></th>
+					<?php foreach ( $sort_columns as $col_key => $col ) : ?>
+						<?php
+						$is_current   = ( $orderby === $col_key );
+						$next_order   = ( $is_current && 'ASC' === $order ) ? 'desc' : 'asc';
+						$sort_url     = add_query_arg( array( 'orderby' => $col_key, 'order' => $next_order ), $base_url );
+						$sorted_class = $is_current ? ' sorted ' . strtolower( $order ) : ' sortable asc';
+						?>
+						<th class="manage-column <?php echo esc_attr( $col['class'] . $sorted_class ); ?>">
+							<a href="<?php echo esc_url( $sort_url ); ?>"><span><?php echo esc_html( $col['label'] ); ?></span><span class="sorting-indicators"><span class="sorting-indicator asc" aria-hidden="true"></span><span class="sorting-indicator desc" aria-hidden="true"></span></span></a>
+						</th>
+					<?php endforeach; ?>
 					<th class="manage-column column-actions"><?php esc_html_e( 'Actions', 'wpmediaverse' ); ?></th>
 				</tr>
 			</thead>
@@ -209,9 +247,8 @@ class TagManagementPage {
 					<option value="delete"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></option>
 				</select>
 				<input type="submit" name="doaction2" id="doaction2" class="button action" value="<?php esc_attr_e( 'Apply', 'wpmediaverse' ); ?>" />
-				<?php wp_nonce_field( 'bulk-tags', '_wpnonce' ); ?>
 			</div>
-			<?php $this->render_pagination( $tags, $base_url ); ?>
+			<?php $this->render_pagination( $base_url, $total, $paged, $total_pages ); ?>
 			<br class="clear" />
 		</div>
 		<?php
@@ -263,25 +300,12 @@ class TagManagementPage {
 	/**
 	 * Render pagination.
 	 *
-	 * @param array  $tags    Array of tags.
-	 * @param string $base_url Base URL.
+	 * @param string $base_url    Base URL.
+	 * @param int    $total       Total number of items.
+	 * @param int    $paged       Current page number.
+	 * @param int    $total_pages Total number of pages.
 	 */
-	private function render_pagination( array $tags, string $base_url ): void {
-		// Get total count for pagination.
-		$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
-		$count_args = array(
-			'taxonomy'   => 'mvs_tag',
-			'hide_empty' => true, // Only count tags that are used
-		);
-		if ( $search ) {
-			$count_args['search'] = $search;
-		}
-		$all_tags = get_terms( $count_args );
-		$total    = is_wp_error( $all_tags ) ? 0 : count( $all_tags );
-
-		$per_page     = 20;
-		$paged        = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
-		$total_pages  = (int) ceil( $total / $per_page );
+	private function render_pagination( string $base_url, int $total, int $paged, int $total_pages ): void {
 
 		if ( $total_pages <= 1 ) {
 			return;
@@ -306,9 +330,14 @@ class TagManagementPage {
 	}
 
 	/**
-	 * Handle bulk actions (delete).
+	 * Handle bulk actions (delete). Runs on admin_init before output starts.
 	 */
-	private function handle_bulk_actions(): void {
+	public function handle_bulk_actions(): void {
+		// Only act on the tag management page so we don't intercept other admin requests.
+		if ( ! isset( $_GET['page'] ) || 'mvs-tags' !== $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
 		// Check if this is a bulk action submission.
 		if ( ! isset( $_REQUEST['action'] ) && ! isset( $_REQUEST['action2'] ) ) {
 			return;
@@ -323,6 +352,10 @@ class TagManagementPage {
 
 		if ( 'delete' !== $action ) {
 			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
+			wp_die( esc_html__( 'You do not have permission to delete tags.', 'wpmediaverse' ) );
 		}
 
 		// Verify nonce for bulk actions.
@@ -344,16 +377,21 @@ class TagManagementPage {
 			}
 		}
 
-		// Redirect with success message.
+		// Recalculate valid page after deletion so we don't redirect to an empty page.
+		$paged       = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
+		$remaining   = (int) wp_count_terms( array( 'taxonomy' => 'mvs_tag', 'hide_empty' => false ) );
+		$max_page    = max( 1, (int) ceil( $remaining / self::PER_PAGE ) );
+		$paged       = min( $paged, $max_page );
+
 		$redirect_url = add_query_arg(
 			array(
 				'deleted' => $deleted,
-				'paged'   => isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 1, // phpcs:ignore WordPress.Security.NonceVerification
+				'paged'   => $paged,
 				's'       => isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification
 			),
 			admin_url( 'admin.php?page=mvs-tags' )
 		);
-		wp_redirect( esc_url_raw( $redirect_url ) );
+		wp_safe_redirect( $redirect_url );
 		exit;
 	}
 
@@ -369,14 +407,19 @@ class TagManagementPage {
 			return;
 		}
 
-		$tag_id   = absint( $_POST['tag_id'] );
-		$tag_name = sanitize_text_field( wp_unslash( $_POST['tag_name'] ) );
-		$tag_slug = isset( $_POST['tag_slug'] ) ? sanitize_title( wp_unslash( $_POST['tag_slug'] ) ) : sanitize_title( $tag_name );
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
+			wp_die( esc_html__( 'You do not have permission to edit tags.', 'wpmediaverse' ) );
+		}
 
-		// Verify nonce.
+		$tag_id = absint( $_POST['tag_id'] );
+
+		// Verify nonce before reading remaining input.
 		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'edit-tag_' . $tag_id ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
 		}
+
+		$tag_name = sanitize_text_field( wp_unslash( $_POST['tag_name'] ) );
+		$tag_slug = isset( $_POST['tag_slug'] ) ? sanitize_title( wp_unslash( $_POST['tag_slug'] ) ) : sanitize_title( $tag_name );
 
 		$result = wp_update_term(
 			$tag_id,
@@ -400,7 +443,51 @@ class TagManagementPage {
 			),
 			admin_url( 'admin.php?page=mvs-tags' )
 		);
-		wp_redirect( esc_url_raw( $redirect_url ) );
+		wp_safe_redirect( $redirect_url );
+		exit;
+	}
+
+	/**
+	 * Handle new tag creation form submission.
+	 */
+	public function handle_create(): void {
+		if ( ! isset( $_POST['form_action'] ) || 'save_new' !== $_POST['form_action'] ) {
+			return;
+		}
+
+		if ( ! isset( $_POST['tag_name'] ) || '' === trim( $_POST['tag_name'] ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
+			wp_die( esc_html__( 'You do not have permission to create tags.', 'wpmediaverse' ) );
+		}
+
+		// Verify nonce.
+		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'create-tag' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
+		}
+
+		$tag_name = sanitize_text_field( wp_unslash( $_POST['tag_name'] ) );
+		$tag_slug = isset( $_POST['tag_slug'] ) && '' !== trim( $_POST['tag_slug'] )
+			? sanitize_title( wp_unslash( $_POST['tag_slug'] ) )
+			: sanitize_title( $tag_name );
+
+		$result = wp_insert_term(
+			$tag_name,
+			'mvs_tag',
+			array( 'slug' => $tag_slug )
+		);
+
+		if ( is_wp_error( $result ) ) {
+			wp_die( esc_html( $result->get_error_message() ) );
+		}
+
+		$redirect_url = add_query_arg(
+			array( 'created' => 1 ),
+			admin_url( 'admin.php?page=mvs-tags' )
+		);
+		wp_safe_redirect( $redirect_url );
 		exit;
 	}
 
@@ -438,11 +525,16 @@ class TagManagementPage {
 			wp_die( esc_html( $result->get_error_message() ) );
 		}
 
-		// Redirect with success message.
+		// Recalculate valid page after deletion so we don't redirect to an empty page.
+		$paged       = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$remaining   = (int) wp_count_terms( array( 'taxonomy' => 'mvs_tag', 'hide_empty' => false ) );
+		$max_page    = max( 1, (int) ceil( $remaining / self::PER_PAGE ) );
+		$paged       = min( $paged, $max_page );
+
 		$redirect_url = add_query_arg(
 			array(
 				'deleted' => 1,
-				'paged'   => isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				'paged'   => $paged,
 				's'       => isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			),
 			admin_url( 'admin.php?page=mvs-tags' )
@@ -588,6 +680,45 @@ class TagManagementPage {
 	}
 
 	/**
+	 * Render the "Add New Tag" form.
+	 */
+	private function render_new_form(): void {
+		$cancel_url  = admin_url( 'admin.php?page=mvs-tags' );
+		$form_action = admin_url( 'admin.php?page=mvs-tags' );
+		?>
+		<div class="wrap">
+			<h1 class="wp-heading-inline"><?php esc_html_e( 'Add New Tag', 'wpmediaverse' ); ?></h1>
+			<a href="<?php echo esc_url( $cancel_url ); ?>" class="page-title-action"><?php esc_html_e( '&larr; Back to Tags', 'wpmediaverse' ); ?></a>
+			<hr class="wp-header-end">
+
+			<form method="post" action="<?php echo esc_url( $form_action ); ?>">
+				<?php wp_nonce_field( 'create-tag', '_wpnonce' ); ?>
+				<input type="hidden" name="form_action" value="save_new" />
+
+				<table class="form-table">
+					<tr>
+						<th scope="row"><label for="tag-name"><?php esc_html_e( 'Name', 'wpmediaverse' ); ?></label></th>
+						<td>
+							<input type="text" name="tag_name" id="tag-name" class="regular-text" value="" required />
+							<p class="description"><?php esc_html_e( 'The tag name as it appears on the site.', 'wpmediaverse' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="tag-slug"><?php esc_html_e( 'Slug', 'wpmediaverse' ); ?></label></th>
+						<td>
+							<input type="text" name="tag_slug" id="tag-slug" class="regular-text" value="" />
+							<p class="description"><?php esc_html_e( 'The "nice" name for the tag URL. Usually lowercase. Leave blank to auto-generate from name.', 'wpmediaverse' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<?php submit_button( esc_html__( 'Add New Tag', 'wpmediaverse' ), 'primary', 'submit' ); ?>
+			</form>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Show admin notices for success/error messages.
 	 */
 	public function show_admin_notices(): void {
@@ -609,6 +740,10 @@ class TagManagementPage {
 
 		if ( isset( $_GET['updated'] ) ) {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Tag updated successfully.', 'wpmediaverse' ) . '</p></div>';
+		}
+
+		if ( isset( $_GET['created'] ) ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Tag created successfully.', 'wpmediaverse' ) . '</p></div>';
 		}
 	}
 }
