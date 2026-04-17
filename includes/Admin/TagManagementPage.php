@@ -281,14 +281,14 @@ class TagManagementPage {
 		?>
 		<tr>
 			<th class="check-column">
-				<input type="checkbox" name="tag_ids[]" value="<?php echo esc_attr( $tag->term_id ); ?>" />
+				<input type="checkbox" name="tag_ids[]" value="<?php echo esc_attr( (string) $tag->term_id ); ?>" />
 			</th>
-			<td class="column-id"><?php echo esc_html( $tag->term_id ); ?></td>
+			<td class="column-id"><?php echo esc_html( (string) $tag->term_id ); ?></td>
 			<td class="column-primary">
 				<strong><a href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $tag->name ); ?></a></strong>
 			</td>
 			<td class="column-slug"><?php echo esc_html( $tag->slug ); ?></td>
-			<td class="column-count"><?php echo esc_html( $tag->count ); ?></td>
+			<td class="column-count"><?php echo esc_html( (string) $tag->count ); ?></td>
 			<td class="column-actions">
 				<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></a>
 				<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this tag?', 'wpmediaverse' ) ); ?>');"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></a>
@@ -315,9 +315,9 @@ class TagManagementPage {
 
 		for ( $i = 1; $i <= $total_pages; $i++ ) {
 			if ( $i === $paged ) {
-				$page_links[] = '<span class="page-numbers current">' . esc_html( $i ) . '</span>';
+				$page_links[] = '<span class="page-numbers current">' . esc_html( (string) $i ) . '</span>';
 			} else {
-				$page_links[] = '<a class="page-numbers" href="' . esc_url( add_query_arg( 'paged', $i, $base_url ) ) . '">' . esc_html( $i ) . '</a>';
+				$page_links[] = '<a class="page-numbers" href="' . esc_url( add_query_arg( 'paged', $i, $base_url ) ) . '">' . esc_html( (string) $i ) . '</a>';
 			}
 		}
 
@@ -598,7 +598,7 @@ class TagManagementPage {
 
 			<form method="post" action="<?php echo esc_url( $form_action ); ?>">
 				<?php wp_nonce_field( 'edit-tag_' . $tag_id, '_wpnonce' ); ?>
-				<input type="hidden" name="tag_id" value="<?php echo esc_attr( $tag_id ); ?>" />
+				<input type="hidden" name="tag_id" value="<?php echo esc_attr( (string) $tag_id ); ?>" />
 				<input type="hidden" name="form_action" value="save_edit" />
 
 				<table class="form-table">
@@ -619,7 +619,7 @@ class TagManagementPage {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Count', 'wpmediaverse' ); ?></th>
 						<td>
-							<?php echo esc_html( $tag->count ); ?>
+							<?php echo esc_html( (string) $tag->count ); ?>
 						</td>
 					</tr>
 				</table>
