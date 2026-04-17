@@ -7,6 +7,8 @@
  * @package WPMediaVerse
  */
 
+// Prevent direct access — uninstall.php must only be loaded by WP core during plugin uninstall.
+defined( 'ABSPATH' ) || exit;
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 global $wpdb;
