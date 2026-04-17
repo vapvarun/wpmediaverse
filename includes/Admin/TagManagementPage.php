@@ -741,7 +741,8 @@ class TagManagementPage {
 	 * Show admin notices for success/error messages.
 	 */
 	public function show_admin_notices(): void {
-		// Read-only success-flag reads; nonce is verified by the action that set the flag. phpcs:disable WordPress.Security.NonceVerification.Recommended
+		// Read-only success-flag reads; nonce is verified by the action that set the flag.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( ! isset( $_GET['page'] ) || 'mvs-tags' !== $_GET['page'] ) {
 			return;
 		}
