@@ -222,7 +222,7 @@ class ActivityContentIntegration {
 				if ( $grid_html ) {
 					$count      = count( $bb_ids );
 					$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 6 );
-					return $content . '<div class="' . esc_attr( $grid_class ) . '" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">' . $grid_html . '</div>';
+					return $content . '<div class="' . esc_attr( $grid_class ) . '">' . $grid_html . '</div>';
 				}
 			}
 		}
@@ -445,7 +445,7 @@ class ActivityContentIntegration {
 		if ( $text ) {
 			$output .= '<p>' . esc_html( $text ) . '</p>';
 		}
-		$output .= '<div class="' . esc_attr( $grid_class ) . '" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">' . $media_html . '</div>';
+		$output .= '<div class="' . esc_attr( $grid_class ) . '">' . $media_html . '</div>';
 
 		return $output;
 	}
