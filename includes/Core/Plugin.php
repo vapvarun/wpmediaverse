@@ -1170,6 +1170,30 @@ class Plugin {
 			MVS_VERSION
 		);
 
+		// The lightbox markup in shared-ui-shell.php uses `<i data-lucide="…">`
+		// (heart, share-2, external-link, flag). Those tags stay empty unless
+		// Lucide's JS runs on the page — on non-MVS frontend pages like BP
+		// /activity/, the main enqueue path doesn't fire, so the icons were
+		// missing there. Always load Lucide wherever the shell is enqueued.
+		if ( ! wp_script_is( 'mvs-lucide', 'registered' ) ) {
+			wp_enqueue_script(
+				'mvs-lucide',
+				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
+				array(),
+				MVS_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+			wp_add_inline_script(
+				'mvs-lucide',
+				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
+			);
+		} else {
+			wp_enqueue_script( 'mvs-lucide' );
+		}
+
 		$mvs_shared_ui_asset = file_exists( MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php' )
 			? require MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php'
 			: array(
