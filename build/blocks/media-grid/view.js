@@ -1,1 +1,1 @@
-(()=>{"use strict";(0,window.wp.interactivity.store)("mvs/media-grid",{actions:{}})})();
+import{store as i}from"@wordpress/interactivity";i("mvs/media-grid",{actions:{}});
