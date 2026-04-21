@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,15 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** — AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.1.3 =
+* Fix: Album cover selection now persists — picking a cover from the album edit page writes to the post meta instead of silently no-op'ing, and the album preview shows the chosen image
+* Fix: Albums without an explicitly pinned cover fall back to the first image in the album so they never render with a broken/placeholder cover
+* Fix: Lightbox "Favorite" label no longer ships with a duplicated heart emoji prefix — the Lucide icon renders alone as intended
+* Fix: 5 free bug cards carried over from 1.1.2 — grid columns=5 rendering, stats page filter date ranges, tag cloud count accuracy, lightbox Favorite visibility for signed-in users, lightbox Share double-icon
+* Build: shared-ui Gutenberg blocks (view.js) now build as true ES modules via `npm run build` so the Interactivity API hydrates correctly — fixes `window.wp.interactivity is undefined` on block-rendered pages
+* Security: `uninstall.php` now has an `ABSPATH` guard alongside the existing `WP_UNINSTALL_PLUGIN` check
+* Docs: Service method docblocks (@param / @return) restored across Album, Moderation, and Tag services
 
 = 1.1.2 =
 * Fix: Setting Grid Columns to 5 now actually renders 5 columns on the Explore page, single-album view, collections, and dashboard grids (was collapsing to a single column because the 5-column CSS rule was missing)
