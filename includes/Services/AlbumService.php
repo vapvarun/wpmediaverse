@@ -172,14 +172,8 @@ class AlbumService {
 	}
 
 	/**
-	 * Post meta key that stores the user-chosen cover media ID for an album.
-	 *
-	 * Prior to 1.1.3, set_cover was a no-op returning false — the REST
-	 * controller translated that into `400 Could not set cover image.`
-	 * every time the dashboard-view album modal tried to persist the
-	 * user's pick (Basecamp cards 9793124633 / 9793136344). Now we store
-	 * the chosen media ID in post meta and get_cover_url prefers it,
-	 * falling back to first-image-in-items when unset or stale.
+	 * Post meta key storing the user-chosen cover media ID for an album.
+	 * When unset, get_cover_url falls back to the first image item.
 	 */
 	const COVER_META_KEY = '_mvs_album_cover_media_id';
 
@@ -236,16 +230,12 @@ class AlbumService {
 	/**
 	 * Get the cover image URL for an album.
 	 *
-	 * Precedence:
-	 *   1. Explicit pinned cover (COVER_META_KEY) — user's choice wins when still
-	 *      a valid item. Auto-cleaned when the pinned media is removed from the album.
-	 *   2. First image item in the album (legacy behavior).
-	 *   3. First item of any type (fallback for video/audio-only albums).
-	 *   4. null.
+	 * Resolution order: pinned cover → first image item → first item of any
+	 * type → null. Stale pinned meta is cleaned on read.
 	 *
 	 * @param int    $album_id Album post ID.
-	 * @param string $size     Image size.
-	 * @return string|null Cover URL or null.
+	 * @param string $size     Image size key (e.g. 'large', 'thumbnail').
+	 * @return string|null Cover URL, or null when the album has no renderable media.
 	 */
 	public function get_cover_url( int $album_id, string $size = 'large' ): ?string {
 		$pinned_id = (int) get_post_meta( $album_id, self::COVER_META_KEY, true );
@@ -256,8 +246,6 @@ class AlbumService {
 			}
 		}
 
-		// Pinned media was removed or became invalid — clean up the stale meta
-		// so subsequent reads don't keep paying the ownership-check cost.
 		if ( $pinned_id ) {
 			delete_post_meta( $album_id, self::COVER_META_KEY );
 		}
@@ -294,6 +282,9 @@ class AlbumService {
 
 	/**
 	 * Check whether a given media ID is part of an album's items table.
+	 *
+	 * @param int $album_id Album post ID.
+	 * @param int $media_id Media ID.
 	 */
 	private function is_item_in_album( int $album_id, int $media_id ): bool {
 		global $wpdb;

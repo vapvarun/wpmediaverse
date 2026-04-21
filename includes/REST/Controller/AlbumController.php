@@ -499,9 +499,6 @@ class AlbumController extends WP_REST_Controller {
 
 		$result = $this->albums->set_cover( $album_id, $media_id );
 
-		// Service returns WP_Error with a surfaced reason (not_in_album /
-		// not_image / not_found). Pass it through so the frontend can show
-		// a useful message instead of the old generic 400.
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
