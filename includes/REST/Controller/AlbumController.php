@@ -494,18 +494,22 @@ class AlbumController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function set_cover( $request ) {
-		$album_id = $request->get_param( 'id' );
-		$media_id = $request->get_param( 'media_id' );
+		$album_id = (int) $request->get_param( 'id' );
+		$media_id = (int) $request->get_param( 'media_id' );
 
 		$result = $this->albums->set_cover( $album_id, $media_id );
 
-		if ( ! $result ) {
-			return new WP_Error( 'mvs_cover_failed', __( 'Could not set cover image.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		// Service returns WP_Error with a surfaced reason (not_in_album /
+		// not_image / not_found). Pass it through so the frontend can show
+		// a useful message instead of the old generic 400.
+		if ( is_wp_error( $result ) ) {
+			return $result;
 		}
 
 		return rest_ensure_response(
 			array(
 				'album_id'  => $album_id,
+				'media_id'  => $media_id,
 				'cover_url' => $this->albums->get_cover_url( $album_id ),
 			)
 		);
