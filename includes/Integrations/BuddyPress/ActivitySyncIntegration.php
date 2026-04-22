@@ -54,6 +54,7 @@ class ActivitySyncIntegration {
 		add_action( 'mvs_before_media_insert', array( $this, 'mark_upload_in_progress' ) );
 		add_action( 'mvs_media_uploaded', array( $this, 'flag_activity_upload' ), 5 );
 		add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
+		add_action( 'mvs_media_deleted', array( $this, 'clean_activities_for_media' ), 10, 2 );
 		add_action( 'mvs_comment_created', array( $this, 'sync_media_comment_to_activity' ), 10, 5 );
 		add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
 		add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
@@ -294,6 +295,95 @@ class ActivitySyncIntegration {
 	 */
 	public function maybe_record_publish_activity( int $post_id, \WP_Post $post ): void {
 		// No-op: media no longer uses wp_posts. Activity is created via mvs_media_uploaded.
+	}
+
+	/**
+	 * Remove BP activities that reference a deleted media item.
+	 *
+	 * Two kinds of activity entries can end up pointing at a media row:
+	 *
+	 *  1. The standalone "upload" activity recorded by record_upload_activity().
+	 *     Its id is back-referenced on the media row via the `bp_activity_id`
+	 *     key, and it carries `item_id = media_id` (or `secondary_item_id = media_id`
+	 *     for group uploads) so we can find it even if the back-reference is
+	 *     missing (e.g. legacy imports).
+	 *
+	 *  2. "post_update" activities posted via the BP activity form that
+	 *     bundled this media. `ActivityFormIntegration::attach_media_to_activity()`
+	 *     stores the attached media IDs in activity meta `_mvs_media_ids`.
+	 *     If the deleted media was the only attachment, the activity becomes
+	 *     a broken-thumbnail shell and should go; if it was one of several,
+	 *     we just strip the id from the meta list so the activity re-renders
+	 *     with the remaining tiles.
+	 *
+	 * Without this cleanup, group activity streams leak broken cards after
+	 * an owner uses the delete action in the profile/group media grid.
+	 *
+	 * @param int $media_id  Media row id that was deleted.
+	 * @param int $author_id Author id (passed for symmetry; unused here).
+	 */
+	public function clean_activities_for_media( int $media_id, int $author_id ): void {
+		unset( $author_id ); // Reserved for future per-author hardening.
+
+		if ( ! function_exists( 'bp_activity_delete' ) || ! bp_is_active( 'activity' ) ) {
+			return;
+		}
+
+		// 1. Standalone upload activity via back-reference.
+		$stored_activity_id = (int) MediaRepository::get( $media_id, 'bp_activity_id' );
+		if ( $stored_activity_id > 0 ) {
+			bp_activity_delete( array( 'id' => $stored_activity_id ) );
+		}
+
+		// 2. Any other activities still pointing at this media via item_id or
+		//    secondary_item_id (covers legacy rows where the back-ref was lost).
+		bp_activity_delete(
+			array(
+				'type'    => 'mvs_media_upload',
+				'item_id' => $media_id,
+			)
+		);
+		bp_activity_delete(
+			array(
+				'component'         => 'groups',
+				'type'              => 'mvs_media_upload',
+				'secondary_item_id' => $media_id,
+			)
+		);
+
+		// 3. post_update activities with this id in `_mvs_media_ids` meta.
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$activity_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT activity_id FROM {$wpdb->prefix}bp_activity_meta WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s OR meta_value LIKE %s OR meta_value LIKE %s )",
+				'_mvs_media_ids',
+				(string) $media_id,
+				'%,' . $wpdb->esc_like( (string) $media_id ),
+				$wpdb->esc_like( (string) $media_id ) . ',%',
+				'%,' . $wpdb->esc_like( (string) $media_id ) . ',%'
+			)
+		);
+
+		foreach ( array_map( 'intval', (array) $activity_ids ) as $activity_id ) {
+			if ( $activity_id <= 0 ) {
+				continue;
+			}
+			$raw = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
+			$ids = array_filter( array_map( 'intval', explode( ',', (string) $raw ) ) );
+			$remaining = array_values( array_diff( $ids, array( $media_id ) ) );
+
+			if ( empty( $remaining ) ) {
+				// This media was the only attachment — drop the whole activity
+				// rather than leaving a post with a broken thumbnail.
+				bp_activity_delete( array( 'id' => $activity_id ) );
+				continue;
+			}
+
+			// Keep the activity but update the attached-media list so the
+			// template helper renders only the surviving tiles.
+			bp_activity_update_meta( $activity_id, '_mvs_media_ids', implode( ',', $remaining ) );
+		}
 	}
 
 	/**

@@ -260,6 +260,22 @@ class TemplateHelpers {
 			. ' data-wp-interactive="mvs/shared-ui" '
 			. $lightbox_ctx // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			. '>';
+
+		// Owner actions (delete) — rendered when the viewer authored this media
+		// or has site-wide manage_options. Shown on all server-rendered grids
+		// (profile, group, shortcodes); CSS hides them at rest and reveals on
+		// hover inside BP screens. The card-builders.js mirror of this logic
+		// keeps the same markup on lazy-loaded cards.
+		$viewer_id = get_current_user_id();
+		$can_edit  = $viewer_id > 0 && ( $viewer_id === $author_id || user_can( $viewer_id, 'manage_options' ) );
+		if ( $can_edit ) {
+			echo '<div class="mvs-grid-item-actions">';
+			echo '<button type="button" class="mvs-grid-item-action mvs-grid-item-action--danger mvs-media-delete-btn" data-media-id="' . esc_attr( (string) $media_id ) . '" aria-label="' . esc_attr__( 'Delete media', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Delete media', 'wpmediaverse' ) . '">';
+			echo '<span class="dashicons dashicons-trash" aria-hidden="true"></span>';
+			echo '</button>';
+			echo '</div>';
+		}
+
 		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';
 
 		self::render_grid_thumbnail( $media_id, $size, $media_title );
