@@ -229,6 +229,25 @@
 			'data-media-type': mediaType,
 		} );
 
+		// Owner-only per-item actions (delete). The container only renders
+		// when the REST response marks `can_edit` true — the server is the
+		// source of truth, the UI just surfaces what the user is allowed to
+		// do. CSS hides the actions by default and fades them in on hover.
+		if ( item.can_edit ) {
+			var actions = el( 'div', 'mvs-grid-item-actions' );
+			var delBtn = el( 'button', 'mvs-grid-item-action mvs-grid-item-action--danger mvs-media-delete-btn', {
+				type: 'button',
+				'data-media-id': mediaId,
+				'aria-label': 'Delete media',
+				title: 'Delete media',
+			} );
+			var delIcon = el( 'span', 'dashicons dashicons-trash' );
+			delIcon.setAttribute( 'aria-hidden', 'true' );
+			delBtn.appendChild( delIcon );
+			actions.appendChild( delBtn );
+			root.appendChild( actions );
+		}
+
 		// Link wrapping image + overlay.
 		var anchor = el( 'a', 'mvs-grid-item-link', { href: link } );
 

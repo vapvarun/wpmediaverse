@@ -142,6 +142,17 @@ class ProfileTabIntegration {
 		// Ensure frontend CSS is loaded.
 		wp_enqueue_style( 'mvs-frontend' );
 		wp_enqueue_style( 'mvs-bp-integration' );
+		wp_enqueue_script( 'mvs-bp-actions' );
+		wp_localize_script(
+			'mvs-bp-actions',
+			'mvsBpActions',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
+		echo '<div class="mvs-bp-screen">';
 
 		$user_id  = bp_displayed_user_id();
 		$is_own   = is_user_logged_in() && get_current_user_id() === $user_id;
@@ -354,6 +365,8 @@ class ProfileTabIntegration {
 			echo '</div>';
 			echo '<p class="mvs-load-more-end" hidden>' . esc_html__( "You're all caught up!", 'wpmediaverse' ) . '</p>';
 		}
+
+		echo '</div>'; // close mvs-bp-screen.
 	}
 
 	/**
@@ -363,6 +376,17 @@ class ProfileTabIntegration {
 		// Ensure frontend CSS is loaded.
 		wp_enqueue_style( 'mvs-frontend' );
 		wp_enqueue_style( 'mvs-bp-integration' );
+		wp_enqueue_script( 'mvs-bp-actions' );
+		wp_localize_script(
+			'mvs-bp-actions',
+			'mvsBpActions',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
+		echo '<div class="mvs-bp-screen">';
 
 		$user_id  = bp_displayed_user_id();
 		$is_own   = is_user_logged_in() && get_current_user_id() === $user_id;
@@ -430,7 +454,20 @@ class ProfileTabIntegration {
 			$album_post = get_post( $album_id );
 			$album_link = trailingslashit( bp_displayed_user_domain() . 'media/albums/' . $album_post->post_name );
 
-			echo '<div class="mvs-grid-item mvs-grid-item--album">';
+			echo '<div class="mvs-grid-item mvs-grid-item--album" data-album-id="' . esc_attr( (string) $album_id ) . '">';
+
+			// Owner-only actions (edit, delete) overlaid on the thumbnail.
+			if ( $is_own ) {
+				echo '<div class="mvs-grid-item-actions">';
+				echo '<button type="button" class="mvs-grid-item-action mvs-bp-album-edit" data-album-id="' . esc_attr( (string) $album_id ) . '" data-album-title="' . esc_attr( get_the_title() ) . '" aria-label="' . esc_attr__( 'Edit album', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Edit album', 'wpmediaverse' ) . '">';
+				echo '<span class="dashicons dashicons-edit" aria-hidden="true"></span>';
+				echo '</button>';
+				echo '<button type="button" class="mvs-grid-item-action mvs-grid-item-action--danger mvs-bp-album-delete" data-album-id="' . esc_attr( (string) $album_id ) . '" aria-label="' . esc_attr__( 'Delete album', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Delete album', 'wpmediaverse' ) . '">';
+				echo '<span class="dashicons dashicons-trash" aria-hidden="true"></span>';
+				echo '</button>';
+				echo '</div>';
+			}
+
 			echo '<a href="' . esc_url( $album_link ) . '" class="mvs-grid-item-link">';
 			if ( $cover_url ) {
 				echo '<img src="' . esc_url( $cover_url ) . '" alt="' . esc_attr( get_the_title() ) . '" loading="lazy" />';
@@ -462,6 +499,8 @@ class ProfileTabIntegration {
 		}
 
 		wp_reset_postdata();
+
+		echo '</div>'; // close mvs-bp-screen.
 	}
 
 	/**
@@ -472,6 +511,17 @@ class ProfileTabIntegration {
 	public function profile_single_album_content(): void {
 		wp_enqueue_style( 'mvs-frontend' );
 		wp_enqueue_style( 'mvs-bp-integration' );
+		wp_enqueue_script( 'mvs-bp-actions' );
+		wp_localize_script(
+			'mvs-bp-actions',
+			'mvsBpActions',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
+		echo '<div class="mvs-bp-screen">';
 
 		$album_slug = bp_action_variable( 0 );
 		$user_id    = bp_displayed_user_id();
@@ -479,6 +529,7 @@ class ProfileTabIntegration {
 		$album = get_page_by_path( $album_slug, OBJECT, 'mvs_album' );
 		if ( ! $album || (int) $album->post_author !== $user_id ) {
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
+			echo '</div>'; // close mvs-bp-screen.
 			return;
 		}
 
@@ -675,5 +726,7 @@ class ProfileTabIntegration {
 			}
 			echo '</div>';
 		}
+
+		echo '</div>'; // close mvs-bp-screen.
 	}
 }

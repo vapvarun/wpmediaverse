@@ -1085,11 +1085,16 @@ class MediaController extends WP_REST_Controller {
 		$privacy_value    = ! empty( $all['privacy'] ) ? $all['privacy'] : 'public';
 		$moderation_value = ! empty( $all['moderation_status'] ) ? $all['moderation_status'] : 'approved';
 
+		$author_id_raw = ! empty( $all['post_author'] ) ? (int) $all['post_author'] : 0;
+		$viewer_id     = get_current_user_id();
+		$can_edit      = $viewer_id > 0
+			&& ( $viewer_id === $author_id_raw || user_can( $viewer_id, 'manage_options' ) );
+
 		$data = array(
 			'id'                => $media_id,
 			'title'             => ! empty( $all['title'] ) ? $all['title'] : '',
 			'description'       => ! empty( $all['description'] ) ? $all['description'] : '',
-			'author'            => ! empty( $all['post_author'] ) ? (int) $all['post_author'] : 0,
+			'author'            => $author_id_raw,
 			'date'              => ! empty( $all['created_at'] ) ? $all['created_at'] : '',
 			'link'              => MediaRepository::get_permalink( $media_id ),
 			'file_url'          => $file_url,
@@ -1101,6 +1106,7 @@ class MediaController extends WP_REST_Controller {
 			'tags'              => self::parse_meta_list( $all['tags'] ?? '' ),
 			'categories'        => self::parse_meta_list( $all['category'] ?? '' ),
 			'thumbnail_url'     => $thumbnail_url,
+			'can_edit'          => $can_edit,
 		);
 
 		// Add author data for lightbox sidebar.

@@ -108,9 +108,21 @@ class GroupTabIntegration {
 	public function group_media_content(): void {
 		wp_enqueue_style( 'mvs-frontend' );
 		wp_enqueue_style( 'mvs-bp-integration' );
+		wp_enqueue_script( 'mvs-bp-actions' );
+		wp_localize_script(
+			'mvs-bp-actions',
+			'mvsBpActions',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
+		echo '<div class="mvs-bp-screen">';
 
 		$group = groups_get_current_group();
 		if ( ! $group ) {
+			echo '</div>';
 			return;
 		}
 
@@ -321,6 +333,8 @@ class GroupTabIntegration {
 			echo '</div>';
 			echo '<p class="mvs-load-more-end" hidden>' . esc_html__( "You're all caught up!", 'wpmediaverse' ) . '</p>';
 		}
+
+		echo '</div>'; // close mvs-bp-screen.
 	}
 
 	/**
@@ -329,6 +343,17 @@ class GroupTabIntegration {
 	public function group_albums_content(): void {
 		wp_enqueue_style( 'mvs-frontend' );
 		wp_enqueue_style( 'mvs-bp-integration' );
+		wp_enqueue_script( 'mvs-bp-actions' );
+		wp_localize_script(
+			'mvs-bp-actions',
+			'mvsBpActions',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
+		echo '<div class="mvs-bp-screen">';
 
 		$group = groups_get_current_group();
 		if ( ! $group ) {
@@ -437,6 +462,8 @@ class GroupTabIntegration {
 		}
 
 		wp_reset_postdata();
+
+		echo '</div>'; // close mvs-bp-screen.
 	}
 
 	/**
@@ -446,9 +473,21 @@ class GroupTabIntegration {
 	public function group_single_album_content(): void {
 		wp_enqueue_style( 'mvs-frontend' );
 		wp_enqueue_style( 'mvs-bp-integration' );
+		wp_enqueue_script( 'mvs-bp-actions' );
+		wp_localize_script(
+			'mvs-bp-actions',
+			'mvsBpActions',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
+		echo '<div class="mvs-bp-screen">';
 
 		$group = groups_get_current_group();
 		if ( ! $group ) {
+			echo '</div>';
 			return;
 		}
 
@@ -457,6 +496,7 @@ class GroupTabIntegration {
 
 		if ( ! $album ) {
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
+			echo '</div>';
 			return;
 		}
 
@@ -464,6 +504,7 @@ class GroupTabIntegration {
 		$album_group_id = (int) MediaRepository::get( $album->ID, 'group_id' );
 		if ( $album_group_id !== (int) $group->id ) {
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found in this group.', 'wpmediaverse' ) . '</p></div>';
+			echo '</div>';
 			return;
 		}
 
@@ -661,5 +702,7 @@ class GroupTabIntegration {
 			}
 			echo '</div>';
 		}
+
+		echo '</div>'; // close mvs-bp-screen.
 	}
 }

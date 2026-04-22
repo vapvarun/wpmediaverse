@@ -888,6 +888,20 @@ class Plugin {
 			array( 'mvs-frontend' ),
 			MVS_VERSION
 		);
+
+		// BP-integration script — wires up per-item delete/edit actions on
+		// owner-visible grid cards. Enqueued with the stylesheet on BP
+		// screens; config is injected inline so no extra request is needed.
+		wp_register_script(
+			'mvs-bp-actions',
+			MVS_PLUGIN_URL . 'assets/js/frontend/bp-actions.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
 	}
 
 	/**
