@@ -4243,41 +4243,80 @@ a.mvs-dashboard-card-title:hover {
     line-height: 18px;
 }
 
-/* Activity form: media preview grid */
+/* Activity form: media preview grid
+ *
+ * The grid is driven by a count-scoped class (mvs-preview-grid-1 through
+ * mvs-preview-grid-6) emitted by bp-activity-media.js. Using CSS Grid with
+ * fractional columns keeps the layout consistent across themes (Reign,
+ * BuddyX Pro, etc.) without depending on theme rules or fixed pixel widths. */
 .mvs-activity-media-preview {
-    display: flex;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 8px;
     margin-top: 12px;
     padding: 10px;
     background: var(--mvs-surface-2);
     border: 1px solid var(--mvs-border);
     border-radius: 8px;
-    overflow-x: auto;
     max-width: 100%;
+    box-sizing: border-box;
 }
 
-/* Single image: show larger preview */
+/* Single image: show a larger hero preview. */
+.mvs-activity-media-preview.mvs-preview-grid-1 {
+    grid-template-columns: minmax(200px, 320px);
+}
 .mvs-activity-media-preview.mvs-preview-grid-1 .mvs-preview-item {
-    width: 200px;
-    height: 150px;
+    aspect-ratio: 4 / 3;
+    height: auto;
+    min-height: 160px;
 }
 
-.mvs-activity-media-preview.mvs-preview-grid-1 .mvs-preview-item img {
-    width: 200px;
-    height: 150px;
+/* 2 items: two equal columns. */
+.mvs-activity-media-preview.mvs-preview-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
 }
 
-/* Preview item: fixed square cell */
+/* 3 items: three equal columns. */
+.mvs-activity-media-preview.mvs-preview-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* 4 items: 2x2 grid. */
+.mvs-activity-media-preview.mvs-preview-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* 5 items: 3x2 grid (one cell will be blank, which reads cleaner than a row of 5). */
+.mvs-activity-media-preview.mvs-preview-grid-5 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* 6+ items: 3 columns. */
+.mvs-activity-media-preview.mvs-preview-grid-6 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* Narrow containers (BP sidebars, mobile): collapse to 2 columns. */
+@media (max-width: 640px) {
+    .mvs-activity-media-preview.mvs-preview-grid-3,
+    .mvs-activity-media-preview.mvs-preview-grid-5,
+    .mvs-activity-media-preview.mvs-preview-grid-6 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Preview item: fluid square cell that fills its grid track, capped so
+ * large columns (wide containers) don't blow the preview up beyond ~200px. */
 .mvs-preview-item {
     position: relative;
-    width: 100px;
-    height: 100px;
-    min-width: 100px;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 200px;
     border-radius: 6px;
     overflow: hidden;
     background: var(--mvs-border-light);
-    flex-shrink: 0;
+    justify-self: start;
 }
 
 .mvs-preview-item img {

@@ -385,6 +385,11 @@
 				return;
 			}
 
+			// Reset the closure state too — without this, the next upload
+			// appends to a stale attachedMedia and resubmits previous IDs.
+			attachedMedia = [];
+			isSubmitting = false;
+
 			var hiddenInput = document.getElementById( 'mvs-activity-media-ids' );
 			var preview = document.getElementById( 'mvs-activity-media-preview' );
 			if ( hiddenInput ) {

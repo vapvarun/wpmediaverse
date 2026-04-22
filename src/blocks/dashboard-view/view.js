@@ -800,6 +800,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const id = parseInt( event.target.closest( '[data-picker-id]' )?.dataset.pickerId, 10 );
 			if ( ! id ) return;
 			state.albumModal.coverId = state.albumModal.coverId === id ? 0 : id;
+			// The cover must be one of the album's items — auto-select it so the
+			// save pipeline adds it before the /cover PUT (which would otherwise 400).
+			if ( state.albumModal.coverId && ! state.albumModal.selectedIds.includes( id ) ) {
+				state.albumModal.selectedIds = [ ...state.albumModal.selectedIds, id ];
+			}
 		},
 
 		async saveAlbum() {

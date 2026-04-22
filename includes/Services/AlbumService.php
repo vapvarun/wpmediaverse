@@ -259,6 +259,24 @@ class AlbumService {
 	}
 
 	/**
+	 * Get the pinned cover media ID, or 0 if none/invalid.
+	 *
+	 * The REST layer needs this so the edit modal can highlight the current
+	 * cover thumbnail on open. Returning only cover_url (which falls back to
+	 * first-image) hides the distinction between pinned and auto-selected.
+	 *
+	 * @param int $album_id Album post ID.
+	 * @return int Media ID of the pinned cover, or 0 when no valid pin exists.
+	 */
+	public function get_cover_media_id( int $album_id ): int {
+		$pinned_id = (int) get_post_meta( $album_id, self::COVER_META_KEY, true );
+		if ( $pinned_id && $this->is_item_in_album( $album_id, $pinned_id ) ) {
+			return $pinned_id;
+		}
+		return 0;
+	}
+
+	/**
 	 * Resolve a single media ID to its thumbnail URL, with an image-file fallback.
 	 *
 	 * @param int    $media_id Media ID.
