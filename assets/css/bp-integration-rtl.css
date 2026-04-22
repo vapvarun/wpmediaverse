@@ -250,7 +250,7 @@
 .mvs-bp-group-media .mvs-grid-item {
     display: flex;
     flex-direction: column;
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
     background: var(--mvs-bg);
     border: 1px solid var(--mvs-border);
@@ -399,7 +399,7 @@
     color: var(--mvs-text-secondary);
     background: var(--mvs-surface-2);
     border: 1px dashed var(--mvs-border);
-    border-radius: 12px;
+    border-radius: 8px;
 }
 
 /* =============================================================================
