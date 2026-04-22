@@ -141,6 +141,7 @@ class ProfileTabIntegration {
 	public function profile_media_content(): void {
 		// Ensure frontend CSS is loaded.
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_style( 'mvs-bp-integration' );
 
 		$user_id  = bp_displayed_user_id();
 		$is_own   = is_user_logged_in() && get_current_user_id() === $user_id;
@@ -361,6 +362,7 @@ class ProfileTabIntegration {
 	public function profile_albums_content(): void {
 		// Ensure frontend CSS is loaded.
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_style( 'mvs-bp-integration' );
 
 		$user_id  = bp_displayed_user_id();
 		$is_own   = is_user_logged_in() && get_current_user_id() === $user_id;
@@ -469,6 +471,7 @@ class ProfileTabIntegration {
 	 */
 	public function profile_single_album_content(): void {
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_style( 'mvs-bp-integration' );
 
 		$album_slug = bp_action_variable( 0 );
 		$user_id    = bp_displayed_user_id();

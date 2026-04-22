@@ -107,6 +107,7 @@ class GroupTabIntegration {
 	 */
 	public function group_media_content(): void {
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_style( 'mvs-bp-integration' );
 
 		$group = groups_get_current_group();
 		if ( ! $group ) {
@@ -327,6 +328,7 @@ class GroupTabIntegration {
 	 */
 	public function group_albums_content(): void {
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_style( 'mvs-bp-integration' );
 
 		$group = groups_get_current_group();
 		if ( ! $group ) {
@@ -443,6 +445,7 @@ class GroupTabIntegration {
 	 */
 	public function group_single_album_content(): void {
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_style( 'mvs-bp-integration' );
 
 		$group = groups_get_current_group();
 		if ( ! $group ) {

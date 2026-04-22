@@ -1,0 +1,437 @@
+/**
+ * BuddyPress integration — dedicated stylesheet for the MediaVerse surfaces
+ * we inject into BP profile and group screens.
+ *
+ * Loaded only by ProfileTabIntegration::enqueue_assets() and
+ * GroupTabIntegration::enqueue_assets(), so it doesn't add weight to
+ * non-BP pages. Rules here have strict precedence over frontend.css and
+ * any theme stylesheet because this sheet enqueues with
+ * `mvs-frontend` + `mvs-pro-frontend` as dependencies — so WordPress
+ * loads it after both, letting our BP-scoped rules win the cascade.
+ *
+ * Scoping rule: every selector in this file starts with an `.mvs-bp-*`
+ * class or targets a shared component *inside* one. Theme CSS cannot
+ * reach in — and our own site-wide rules won't override BP layout either.
+ */
+
+/* =============================================================================
+ * 1. BP screen envelope — defensive baseline
+ *
+ * Every MediaVerse BP screen (profile media, profile albums, group media,
+ * group albums) is wrapped in one of these classes. The reset neutralizes
+ * inherited list/nav styling that some BP-compatible themes apply at the
+ * #buddypress level (borders on <ul>, padding on <nav>, etc).
+ * ============================================================================= */
+.mvs-bp-screen,
+.mvs-bp-profile-media,
+.mvs-bp-group-media {
+    box-sizing: border-box;
+}
+
+.mvs-bp-screen *,
+.mvs-bp-profile-media *,
+.mvs-bp-group-media * {
+    box-sizing: border-box;
+}
+
+/* =============================================================================
+ * 2. Sub-tab row (Media / Albums)
+ *
+ * Used on both profile and group screens. Rendered as a <nav> containing
+ * anchor tags — we explicitly reset margin / padding / list bullets so a
+ * theme that styles `<nav>` or `<nav> > *` can't shift the baseline.
+ * ============================================================================= */
+.mvs-bp-sub-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 4px;
+    margin: 0 0 24px;
+    padding: 0;
+    list-style: none;
+    border-bottom: 2px solid var(--mvs-border);
+}
+
+.mvs-bp-sub-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    margin: 0 0 -2px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--mvs-text-secondary);
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.mvs-bp-sub-tab:hover,
+.mvs-bp-sub-tab:focus,
+.mvs-bp-sub-tab:visited {
+    color: var(--mvs-text);
+    text-decoration: none;
+    background: transparent;
+}
+
+.mvs-bp-sub-tab.active,
+.mvs-bp-sub-tab[aria-current="page"] {
+    color: var(--mvs-text);
+    border-bottom-color: var(--mvs-primary);
+}
+
+/* =============================================================================
+ * 3. Action / toolbar row (Upload Media, Create Album, etc.)
+ * ============================================================================= */
+.mvs-bp-profile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 24px;
+    padding: 0;
+}
+
+.mvs-bp-profile-actions > .mvs-btn,
+.mvs-bp-profile-actions > button {
+    margin: 0;
+}
+
+/* =============================================================================
+ * 4. Upload surface (drop zone + hidden file input)
+ * ============================================================================= */
+.mvs-bp-upload-wrap {
+    margin: 0 0 24px;
+    padding: 0;
+}
+
+.mvs-bp-dropzone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border: 2px dashed var(--mvs-border);
+    border-radius: 8px;
+    background: var(--mvs-surface-2);
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.mvs-bp-dropzone.is-dragover {
+    border-color: var(--mvs-primary);
+    background: color-mix(in srgb, var(--mvs-primary) 5%, var(--mvs-surface-2));
+}
+
+.mvs-bp-dropzone-text {
+    margin: 0;
+    color: var(--mvs-text-secondary);
+    font-size: 14px;
+}
+
+.mvs-bp-upload-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mvs-bp-upload-status {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--mvs-text-secondary);
+}
+
+/* =============================================================================
+ * 5. Inline album create form (toggled by "Create Album" button)
+ * ============================================================================= */
+.mvs-bp-album-form {
+    margin: 16px 0 24px;
+    padding: 20px;
+    background: var(--mvs-surface-2);
+    border: 1px solid var(--mvs-border);
+    border-radius: 8px;
+}
+
+.mvs-bp-album-form-inner {
+    display: grid;
+    gap: 12px;
+}
+
+.mvs-bp-album-form-inner label {
+    display: block;
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mvs-text);
+}
+
+.mvs-bp-album-form-inner input[type="text"],
+.mvs-bp-album-form-inner textarea {
+    width: 100%;
+    margin: 0 0 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--mvs-text);
+    background: var(--mvs-bg);
+    border: 1px solid var(--mvs-border);
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.mvs-bp-album-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 0;
+}
+
+.mvs-bp-album-msg {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--mvs-text-secondary);
+    min-height: 1em;
+}
+
+.mvs-bp-album-msg.mvs-bp-album-msg-error {
+    color: var(--mvs-danger);
+}
+
+/* =============================================================================
+ * 6. Media / album grids — BP context only
+ *
+ * The shared `.mvs-media-grid` + `.mvs-feed` rules in frontend.css set a
+ * 6px gap that reads as zero at typical avatar widths on BP profile
+ * layouts. Inside a BP screen we always want a generous, consistent gap
+ * so the dashboard-style grid doesn't look mashed together.
+ *
+ * Targeting via adjacent/sibling selectors (no need to change the
+ * underlying templates): the grid always lives after the tab bar or
+ * action row on BP screens.
+ * ============================================================================= */
+.mvs-bp-sub-tabs ~ .mvs-media-grid,
+.mvs-bp-sub-tabs ~ * .mvs-media-grid,
+.mvs-bp-profile-actions ~ .mvs-media-grid,
+.mvs-bp-profile-actions ~ * .mvs-media-grid,
+.mvs-bp-upload-wrap ~ .mvs-media-grid,
+.mvs-bp-upload-wrap ~ * .mvs-media-grid,
+.mvs-bp-screen .mvs-media-grid,
+.mvs-bp-profile-media .mvs-media-grid,
+.mvs-bp-group-media .mvs-media-grid {
+    gap: 16px;
+    margin-top: 16px;
+}
+
+/* Premium card styling for each grid item on profile/group screens.
+ *
+ * Every media and album tile in a BP context is rendered as a self-contained
+ * card: rounded, lifted, with a clear boundary between the thumbnail and the
+ * author/metadata footer. This is the surface a visitor lingers on — the
+ * visuals need to feel finished regardless of which theme is active.
+ *
+ * Each tile is a flex column: [media thumbnail] then [grid-item-info].
+ * The overlay layer (stats on hover) sits above the thumbnail.
+ */
+.mvs-bp-sub-tabs ~ .mvs-media-grid .mvs-grid-item,
+.mvs-bp-sub-tabs ~ * .mvs-media-grid .mvs-grid-item,
+.mvs-bp-profile-actions ~ .mvs-media-grid .mvs-grid-item,
+.mvs-bp-profile-actions ~ * .mvs-media-grid .mvs-grid-item,
+.mvs-bp-upload-wrap ~ .mvs-media-grid .mvs-grid-item,
+.mvs-bp-upload-wrap ~ * .mvs-media-grid .mvs-grid-item,
+.mvs-bp-screen .mvs-grid-item,
+.mvs-bp-profile-media .mvs-grid-item,
+.mvs-bp-group-media .mvs-grid-item {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--mvs-bg);
+    border: 1px solid var(--mvs-border);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    aspect-ratio: auto;
+}
+
+/* Hover lift — signals interactivity without changing layout. */
+.mvs-bp-sub-tabs ~ .mvs-media-grid .mvs-grid-item:hover,
+.mvs-bp-sub-tabs ~ * .mvs-media-grid .mvs-grid-item:hover,
+.mvs-bp-profile-actions ~ .mvs-media-grid .mvs-grid-item:hover,
+.mvs-bp-profile-actions ~ * .mvs-media-grid .mvs-grid-item:hover,
+.mvs-bp-upload-wrap ~ .mvs-media-grid .mvs-grid-item:hover,
+.mvs-bp-upload-wrap ~ * .mvs-media-grid .mvs-grid-item:hover,
+.mvs-bp-screen .mvs-grid-item:hover,
+.mvs-bp-profile-media .mvs-grid-item:hover,
+.mvs-bp-group-media .mvs-grid-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: var(--mvs-border-strong, var(--mvs-border));
+}
+
+/* Thumbnail area — holds the <a><img></a> and any overlay. Always a
+ * consistent 4:3 so the grid reads cleanly whether the underlying media
+ * is portrait, landscape, or square. */
+.mvs-bp-sub-tabs ~ .mvs-media-grid .mvs-grid-item .mvs-grid-item-link,
+.mvs-bp-sub-tabs ~ * .mvs-media-grid .mvs-grid-item .mvs-grid-item-link,
+.mvs-bp-profile-actions ~ .mvs-media-grid .mvs-grid-item .mvs-grid-item-link,
+.mvs-bp-profile-actions ~ * .mvs-media-grid .mvs-grid-item .mvs-grid-item-link,
+.mvs-bp-upload-wrap ~ .mvs-media-grid .mvs-grid-item .mvs-grid-item-link,
+.mvs-bp-upload-wrap ~ * .mvs-media-grid .mvs-grid-item .mvs-grid-item-link,
+.mvs-bp-screen .mvs-grid-item .mvs-grid-item-link,
+.mvs-bp-profile-media .mvs-grid-item .mvs-grid-item-link,
+.mvs-bp-group-media .mvs-grid-item .mvs-grid-item-link {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--mvs-border-light, var(--mvs-surface-2));
+}
+
+.mvs-bp-sub-tabs ~ .mvs-media-grid .mvs-grid-item .mvs-grid-item-link img,
+.mvs-bp-sub-tabs ~ * .mvs-media-grid .mvs-grid-item .mvs-grid-item-link img,
+.mvs-bp-profile-actions ~ .mvs-media-grid .mvs-grid-item .mvs-grid-item-link img,
+.mvs-bp-profile-actions ~ * .mvs-media-grid .mvs-grid-item .mvs-grid-item-link img,
+.mvs-bp-upload-wrap ~ .mvs-media-grid .mvs-grid-item .mvs-grid-item-link img,
+.mvs-bp-upload-wrap ~ * .mvs-media-grid .mvs-grid-item .mvs-grid-item-link img,
+.mvs-bp-screen .mvs-grid-item .mvs-grid-item-link img,
+.mvs-bp-profile-media .mvs-grid-item .mvs-grid-item-link img,
+.mvs-bp-group-media .mvs-grid-item .mvs-grid-item-link img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+/* Subtle zoom on hover — feels premium, costs nothing. */
+.mvs-bp-sub-tabs ~ .mvs-media-grid .mvs-grid-item:hover .mvs-grid-item-link img,
+.mvs-bp-sub-tabs ~ * .mvs-media-grid .mvs-grid-item:hover .mvs-grid-item-link img,
+.mvs-bp-profile-actions ~ .mvs-media-grid .mvs-grid-item:hover .mvs-grid-item-link img,
+.mvs-bp-profile-actions ~ * .mvs-media-grid .mvs-grid-item:hover .mvs-grid-item-link img,
+.mvs-bp-upload-wrap ~ .mvs-media-grid .mvs-grid-item:hover .mvs-grid-item-link img,
+.mvs-bp-upload-wrap ~ * .mvs-media-grid .mvs-grid-item:hover .mvs-grid-item-link img,
+.mvs-bp-screen .mvs-grid-item:hover .mvs-grid-item-link img,
+.mvs-bp-profile-media .mvs-grid-item:hover .mvs-grid-item-link img,
+.mvs-bp-group-media .mvs-grid-item:hover .mvs-grid-item-link img {
+    transform: scale(1.03);
+}
+
+/* Footer — author avatar + name + posted time. Separated from the
+ * thumbnail by the card background; visually anchors the card bottom. */
+.mvs-bp-sub-tabs ~ .mvs-media-grid .mvs-grid-item .mvs-grid-item-info,
+.mvs-bp-sub-tabs ~ * .mvs-media-grid .mvs-grid-item .mvs-grid-item-info,
+.mvs-bp-profile-actions ~ .mvs-media-grid .mvs-grid-item .mvs-grid-item-info,
+.mvs-bp-profile-actions ~ * .mvs-media-grid .mvs-grid-item .mvs-grid-item-info,
+.mvs-bp-upload-wrap ~ .mvs-media-grid .mvs-grid-item .mvs-grid-item-info,
+.mvs-bp-upload-wrap ~ * .mvs-media-grid .mvs-grid-item .mvs-grid-item-info,
+.mvs-bp-screen .mvs-grid-item .mvs-grid-item-info,
+.mvs-bp-profile-media .mvs-grid-item .mvs-grid-item-info,
+.mvs-bp-group-media .mvs-grid-item .mvs-grid-item-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--mvs-text);
+    background: var(--mvs-bg);
+}
+
+.mvs-bp-sub-tabs ~ .mvs-media-grid .mvs-grid-avatar,
+.mvs-bp-sub-tabs ~ * .mvs-media-grid .mvs-grid-avatar,
+.mvs-bp-profile-actions ~ .mvs-media-grid .mvs-grid-avatar,
+.mvs-bp-profile-actions ~ * .mvs-media-grid .mvs-grid-avatar,
+.mvs-bp-upload-wrap ~ .mvs-media-grid .mvs-grid-avatar,
+.mvs-bp-upload-wrap ~ * .mvs-media-grid .mvs-grid-avatar,
+.mvs-bp-screen .mvs-grid-avatar,
+.mvs-bp-profile-media .mvs-grid-avatar,
+.mvs-bp-group-media .mvs-grid-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.mvs-bp-sub-tabs ~ .mvs-media-grid .mvs-grid-item-author,
+.mvs-bp-sub-tabs ~ * .mvs-media-grid .mvs-grid-item-author,
+.mvs-bp-profile-actions ~ .mvs-media-grid .mvs-grid-item-author,
+.mvs-bp-profile-actions ~ * .mvs-media-grid .mvs-grid-item-author,
+.mvs-bp-upload-wrap ~ .mvs-media-grid .mvs-grid-item-author,
+.mvs-bp-upload-wrap ~ * .mvs-media-grid .mvs-grid-item-author,
+.mvs-bp-screen .mvs-grid-item-author,
+.mvs-bp-profile-media .mvs-grid-item-author,
+.mvs-bp-group-media .mvs-grid-item-author {
+    font-weight: 500;
+    color: var(--mvs-text);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.mvs-bp-sub-tabs ~ .mvs-media-grid .mvs-grid-item-author:hover,
+.mvs-bp-sub-tabs ~ * .mvs-media-grid .mvs-grid-item-author:hover,
+.mvs-bp-screen .mvs-grid-item-author:hover,
+.mvs-bp-profile-media .mvs-grid-item-author:hover,
+.mvs-bp-group-media .mvs-grid-item-author:hover {
+    color: var(--mvs-primary);
+    text-decoration: none;
+}
+
+/* Empty state text ("No group media yet", etc.) */
+.mvs-bp-empty-state,
+.mvs-bp-screen .mvs-empty,
+.mvs-bp-profile-media .mvs-empty,
+.mvs-bp-group-media .mvs-empty {
+    margin: 32px 0;
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--mvs-text-secondary);
+    background: var(--mvs-surface-2);
+    border: 1px dashed var(--mvs-border);
+    border-radius: 12px;
+}
+
+/* =============================================================================
+ * 7. Narrow-viewport adjustments (BP sidebars, mobile)
+ * ============================================================================= */
+@media (max-width: 640px) {
+    .mvs-bp-sub-tabs {
+        gap: 0;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    .mvs-bp-sub-tab {
+        padding: 10px 16px;
+        white-space: nowrap;
+    }
+
+    .mvs-bp-profile-actions {
+        gap: 8px;
+    }
+
+    .mvs-bp-dropzone {
+        padding: 16px;
+    }
+
+    .mvs-bp-sub-tabs ~ .mvs-media-grid,
+    .mvs-bp-sub-tabs ~ * .mvs-media-grid,
+    .mvs-bp-profile-actions ~ .mvs-media-grid,
+    .mvs-bp-profile-actions ~ * .mvs-media-grid,
+    .mvs-bp-screen .mvs-media-grid,
+    .mvs-bp-profile-media .mvs-media-grid,
+    .mvs-bp-group-media .mvs-media-grid {
+        gap: 12px;
+    }
+}

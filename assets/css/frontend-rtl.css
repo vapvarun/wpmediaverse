@@ -1695,39 +1695,12 @@ body.dark-mode .mvs-skeleton::after {
     margin-bottom: 20px;
 }
 
-.mvs-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 20px;
-    background: var(--mvs-primary);
-    /* --mvs-on-primary stays #fff across light/dark themes; never use
-       --mvs-bg or --mvs-surface here since those flip with the theme. */
-    color: var(--mvs-on-primary, #ffffff);
-    border: none;
-    border-radius: 6px;
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: background 0.2s, filter 0.15s;
-}
-
-.mvs-btn:hover,
-.mvs-btn:focus,
-.mvs-btn:visited {
-    background: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #ffffff);
-}
-
-.mvs-btn--secondary {
-    background: var(--mvs-surface-2);
-    color: var(--mvs-text);
-    border: none;
-}
-
-.mvs-btn--secondary:hover {
-    background: var(--mvs-border);
-    color: var(--mvs-text);
-}
+/* .mvs-btn canonical definition lives in the "Shared button styles" block
+ * further down (around line 4727). The legacy block that was here — with
+ * different padding (10px 20px vs 0.625rem 1.25rem) — has been removed so
+ * button dimensions are deterministic and don't drift based on stylesheet
+ * load order. Danger + small modifiers remain here as they're only defined
+ * in this place. */
 
 .mvs-btn--danger {
     background: var(--mvs-danger);

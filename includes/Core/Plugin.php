@@ -875,6 +875,19 @@ class Plugin {
 				MVS_VERSION
 			);
 		}
+
+		// BP-integration stylesheet is always registered (not enqueued) and
+		// loaded by ProfileTabIntegration / GroupTabIntegration on their own
+		// screens. Depending on `mvs-frontend` means it loads after the
+		// shared tokens/components, so BP-scoped rules win the cascade and
+		// our sub-tab/dropzone/grid-gap spacing is never defeated by a
+		// theme stylesheet that happened to register later.
+		wp_register_style(
+			'mvs-bp-integration',
+			MVS_PLUGIN_URL . 'assets/css/bp-integration.css',
+			array( 'mvs-frontend' ),
+			MVS_VERSION
+		);
 	}
 
 	/**
