@@ -2,9 +2,9 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: WPMediaVerse 1.1.2\n"
+"Project-Id-Version: WPMediaVerse 1.1.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-04-17 09:13:22+00:00\n"
+"POT-Creation-Date: 2026-04-22 13:18:19+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -210,20 +210,17 @@ msgstr ""
 #: build/blocks/media-stats/render.php:124
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:80
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:124
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:408
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:401
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:80
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:124
-#: includes/Admin/StatsPage.php:408 src/blocks/media-stats/render.php:80
+#: includes/Admin/StatsPage.php:401 src/blocks/media-stats/render.php:80
 #: src/blocks/media-stats/render.php:124
 msgid "Views"
 msgstr ""
 
 #: build/blocks/media-stats/render.php:87
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:87
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:382
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:410
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:87
-#: includes/Admin/StatsPage.php:382 includes/Admin/StatsPage.php:410
 #: src/blocks/media-stats/render.php:87
 msgid "Downloads"
 msgstr ""
@@ -232,12 +229,12 @@ msgstr ""
 #: build/blocks/media-stats/render.php:125
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:94
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:125
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:386
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:409
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:379
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:402
 #: dist/wpmediaverse/includes/Services/GDPRService.php:172
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:94
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:125
-#: includes/Admin/StatsPage.php:386 includes/Admin/StatsPage.php:409
+#: includes/Admin/StatsPage.php:379 includes/Admin/StatsPage.php:402
 #: includes/Services/GDPRService.php:172 src/blocks/media-stats/render.php:94
 #: src/blocks/media-stats/render.php:125
 msgid "Reactions"
@@ -256,7 +253,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:186
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:342
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:401
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:407
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:400
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:659
 #: dist/wpmediaverse/includes/Services/GDPRService.php:109
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:123
@@ -267,7 +264,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:741
 #: includes/Admin/MediaListPage.php:156 includes/Admin/MediaListPage.php:186
 #: includes/Admin/ModerationQueue.php:342 includes/Admin/OverviewPage.php:401
-#: includes/Admin/StatsPage.php:407 includes/Admin/TagManagementPage.php:659
+#: includes/Admin/StatsPage.php:400 includes/Admin/TagManagementPage.php:659
 #: includes/Services/GDPRService.php:109 src/blocks/media-stats/render.php:123
 #: templates/album.php:166 templates/media-single.php:403
 #: templates/partials/dashboard-content.php:562
@@ -604,14 +601,14 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:28
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:156
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:102
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:372
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:381
 #: dist/wpmediaverse/includes/Admin/SetupWizard.php:118
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:159
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:158
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:42
 #: includes/Admin/LogViewerPage.php:80 includes/Admin/MediaListPage.php:28
 #: includes/Admin/ModerationQueue.php:156 includes/Admin/OverviewPage.php:102
-#: includes/Admin/Settings/SettingsPage.php:372
-#: includes/Admin/SetupWizard.php:118 includes/Admin/StatsPage.php:159
+#: includes/Admin/Settings/SettingsPage.php:381
+#: includes/Admin/SetupWizard.php:118 includes/Admin/StatsPage.php:158
 #: includes/Admin/TagManagementPage.php:42
 msgid "You do not have permission to access this page."
 msgstr ""
@@ -1048,20 +1045,20 @@ msgid "Your media sharing platform at a glance."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:127
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:370
-#: includes/Admin/OverviewPage.php:127 includes/Admin/StatsPage.php:370
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:367
+#: includes/Admin/OverviewPage.php:127 includes/Admin/StatsPage.php:367
 msgid "Total Media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:131
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:374
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:371
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:100
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:75
 #: dist/wpmediaverse/includes/PostTypes/Album.php:22
 #: dist/wpmediaverse/includes/PostTypes/Album.php:32
 #: dist/wpmediaverse/includes/PostTypes/Album.php:33
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:299
-#: includes/Admin/OverviewPage.php:131 includes/Admin/StatsPage.php:374
+#: includes/Admin/OverviewPage.php:131 includes/Admin/StatsPage.php:371
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:100
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:75
 #: includes/PostTypes/Album.php:22 includes/PostTypes/Album.php:32
@@ -1070,14 +1067,14 @@ msgid "Albums"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:142
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:378
-#: includes/Admin/OverviewPage.php:142 includes/Admin/StatsPage.php:378
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:375
+#: includes/Admin/OverviewPage.php:142 includes/Admin/StatsPage.php:375
 msgid "Total Views"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:146
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:390
-#: includes/Admin/OverviewPage.php:146 includes/Admin/StatsPage.php:390
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:383
+#: includes/Admin/OverviewPage.php:146 includes/Admin/StatsPage.php:383
 msgid "Storage Used"
 msgstr ""
 
@@ -1087,9 +1084,9 @@ msgid "Quick Links"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:168
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:194
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:203
 #: includes/Admin/OverviewPage.php:168
-#: includes/Admin/Settings/SettingsPage.php:194
+#: includes/Admin/Settings/SettingsPage.php:203
 msgid "Settings"
 msgstr ""
 
@@ -1453,18 +1450,18 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/FieldRenderer.php:355
 #: dist/wpmediaverse/includes/Admin/Settings/FieldRenderer.php:368
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:428
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:457
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:533
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:571
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:671
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:437
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:466
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:542
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:580
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:680
 #: includes/Admin/Settings/FieldRenderer.php:355
 #: includes/Admin/Settings/FieldRenderer.php:368
-#: includes/Admin/Settings/SettingsPage.php:428
-#: includes/Admin/Settings/SettingsPage.php:457
-#: includes/Admin/Settings/SettingsPage.php:533
-#: includes/Admin/Settings/SettingsPage.php:571
-#: includes/Admin/Settings/SettingsPage.php:671
+#: includes/Admin/Settings/SettingsPage.php:437
+#: includes/Admin/Settings/SettingsPage.php:466
+#: includes/Admin/Settings/SettingsPage.php:542
+#: includes/Admin/Settings/SettingsPage.php:580
+#: includes/Admin/Settings/SettingsPage.php:680
 msgid "Pro"
 msgstr ""
 
@@ -1574,117 +1571,117 @@ msgstr ""
 msgid "You do not have permission to change these settings."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:154
-#: includes/Admin/Settings/SettingsPage.php:154
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:163
+#: includes/Admin/Settings/SettingsPage.php:163
 #. translators: %s: new storage driver name
 msgid "Storage driver changed to %s. New uploads will use this driver."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:169
-#: includes/Admin/Settings/SettingsPage.php:169
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:178
+#: includes/Admin/Settings/SettingsPage.php:178
 #. translators: %d: number of roles whose permissions were updated.
 msgid "Permissions updated for %d role."
 msgid_plural "Permissions updated for %d roles."
 msgstr[0] ""
 msgstr[1] ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:182
-#: includes/Admin/Settings/SettingsPage.php:182
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:191
+#: includes/Admin/Settings/SettingsPage.php:191
 msgid "Permissions saved. No changes were needed."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:193
-#: includes/Admin/Settings/SettingsPage.php:193
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:202
+#: includes/Admin/Settings/SettingsPage.php:202
 msgid "WPMediaVerse Settings"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:226
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:332
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:235
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:341
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:61
-#: includes/Admin/Settings/SettingsPage.php:226
-#: includes/Admin/Settings/SettingsPage.php:332
+#: includes/Admin/Settings/SettingsPage.php:235
+#: includes/Admin/Settings/SettingsPage.php:341
 #: includes/Admin/Settings/SettingsRegistrar.php:61
 msgid "General"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:228
-#: includes/Admin/Settings/SettingsPage.php:228
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:237
+#: includes/Admin/Settings/SettingsPage.php:237
 msgid "Upload limits, file types, privacy defaults, and page assignments."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:237
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:246
 #: dist/wpmediaverse/includes/Admin/SetupWizard.php:157
-#: includes/Admin/Settings/SettingsPage.php:237
+#: includes/Admin/Settings/SettingsPage.php:246
 #: includes/Admin/SetupWizard.php:157
 msgid "Display"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:239
-#: includes/Admin/Settings/SettingsPage.php:239
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:248
+#: includes/Admin/Settings/SettingsPage.php:248
 msgid "Grid layout, columns, thumbnails, and feed preferences."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:248
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:334
-#: includes/Admin/Settings/SettingsPage.php:248
-#: includes/Admin/Settings/SettingsPage.php:334
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:257
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:343
+#: includes/Admin/Settings/SettingsPage.php:257
+#: includes/Admin/Settings/SettingsPage.php:343
 msgid "Social"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:250
-#: includes/Admin/Settings/SettingsPage.php:250
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:259
+#: includes/Admin/Settings/SettingsPage.php:259
 msgid "Direct messaging, privacy, and spam prevention."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:259
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:335
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:268
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:344
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:205
-#: includes/Admin/Settings/SettingsPage.php:259
-#: includes/Admin/Settings/SettingsPage.php:335
+#: includes/Admin/Settings/SettingsPage.php:268
+#: includes/Admin/Settings/SettingsPage.php:344
 #: includes/Admin/Settings/SettingsRegistrar.php:205
 msgid "Storage"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:261
-#: includes/Admin/Settings/SettingsPage.php:261
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:270
+#: includes/Admin/Settings/SettingsPage.php:270
 msgid "Choose where media files are stored."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:270
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:336
-#: includes/Admin/Settings/SettingsPage.php:270
-#: includes/Admin/Settings/SettingsPage.php:336
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:279
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:345
+#: includes/Admin/Settings/SettingsPage.php:279
+#: includes/Admin/Settings/SettingsPage.php:345
 msgid "AI & Moderation"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:272
-#: includes/Admin/Settings/SettingsPage.php:272
-msgid "AI providers, auto-analysis, tagging, and content moderation."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:281
 #: includes/Admin/Settings/SettingsPage.php:281
+msgid "AI providers, auto-analysis, tagging, and content moderation."
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:290
+#: includes/Admin/Settings/SettingsPage.php:290
 msgid "Permissions"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:283
-#: includes/Admin/Settings/SettingsPage.php:283
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:292
+#: includes/Admin/Settings/SettingsPage.php:292
 msgid "Role-based access control for media features."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:293
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:302
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:653
-#: includes/Admin/Settings/SettingsPage.php:293
+#: includes/Admin/Settings/SettingsPage.php:302
 #: includes/Admin/Settings/SettingsRegistrar.php:653
 msgid "Webhooks"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:295
-#: includes/Admin/Settings/SettingsPage.php:295
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:304
+#: includes/Admin/Settings/SettingsPage.php:304
 msgid "Send event notifications to external services."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:333
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:342
 #: dist/wpmediaverse/includes/Core/TemplateLoader.php:241
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:54
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:97
@@ -1693,7 +1690,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:109
 #: dist/wpmediaverse/templates/explore.php:147
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:294
-#: includes/Admin/Settings/SettingsPage.php:333
+#: includes/Admin/Settings/SettingsPage.php:342
 #: includes/Core/TemplateLoader.php:241
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:54
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:97
@@ -1705,121 +1702,121 @@ msgstr ""
 msgid "Media"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:337
-#: includes/Admin/Settings/SettingsPage.php:337
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:346
+#: includes/Admin/Settings/SettingsPage.php:346
 msgid "Advanced"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:338
-#: includes/Admin/Settings/SettingsPage.php:338
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:347
+#: includes/Admin/Settings/SettingsPage.php:347
 msgid "License"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:398
-#: includes/Admin/Settings/SettingsPage.php:398
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:407
+#: includes/Admin/Settings/SettingsPage.php:407
 msgid "Media platform settings and configuration"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:404
-#: includes/Admin/Settings/SettingsPage.php:404
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:413
+#: includes/Admin/Settings/SettingsPage.php:413
 msgid "Run Setup Wizard"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:416
-#: includes/Admin/Settings/SettingsPage.php:416
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:425
+#: includes/Admin/Settings/SettingsPage.php:425
 msgid "SETTINGS"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:483
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:492
 #: dist/wpmediaverse/includes/Shortcodes/Shortcodes.php:546
 #: dist/wpmediaverse/templates/profile-edit.php:156
-#: includes/Admin/Settings/SettingsPage.php:483
+#: includes/Admin/Settings/SettingsPage.php:492
 #: includes/Shortcodes/Shortcodes.php:546 templates/profile-edit.php:156
 msgid "Save Changes"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:485
-#: includes/Admin/Settings/SettingsPage.php:485
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:494
+#: includes/Admin/Settings/SettingsPage.php:494
 msgid "Settings saved."
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:670
-#: includes/Admin/Settings/SettingsPage.php:670
-msgid "Unlock More with WPMediaVerse Pro"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:679
 #: includes/Admin/Settings/SettingsPage.php:679
+msgid "Unlock More with WPMediaVerse Pro"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:688
+#: includes/Admin/Settings/SettingsPage.php:688
 msgid "Upgrade to Pro"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:694
-#: includes/Admin/Settings/SettingsPage.php:694
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:703
+#: includes/Admin/Settings/SettingsPage.php:703
 msgid "Amazon S3 cloud storage for unlimited scalability"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:695
-#: includes/Admin/Settings/SettingsPage.php:695
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:704
+#: includes/Admin/Settings/SettingsPage.php:704
 msgid "BunnyCDN integration for global content delivery"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:696
-#: includes/Admin/Settings/SettingsPage.php:696
-msgid "Image watermarking with custom position and opacity"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:697
-#: includes/Admin/Settings/SettingsPage.php:697
-msgid "Advanced privacy controls per media item"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:700
-#: includes/Admin/Settings/SettingsPage.php:700
-msgid "Custom player skins and branding"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:701
-#: includes/Admin/Settings/SettingsPage.php:701
-msgid "Video chapters and resume playback"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:702
-#: includes/Admin/Settings/SettingsPage.php:702
-msgid "Auto-generated video captions (Whisper AI)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:705
 #: includes/Admin/Settings/SettingsPage.php:705
-msgid "Google Vision AI provider"
+msgid "Image watermarking with custom position and opacity"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:706
 #: includes/Admin/Settings/SettingsPage.php:706
-msgid "AWS Rekognition AI provider"
+msgid "Advanced privacy controls per media item"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:707
-#: includes/Admin/Settings/SettingsPage.php:707
-msgid "AI provider fallback chains and comparison mode"
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:709
+#: includes/Admin/Settings/SettingsPage.php:709
+msgid "Custom player skins and branding"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:708
-#: includes/Admin/Settings/SettingsPage.php:708
-msgid "Per-category moderation thresholds"
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:710
+#: includes/Admin/Settings/SettingsPage.php:710
+msgid "Video chapters and resume playback"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:711
 #: includes/Admin/Settings/SettingsPage.php:711
+msgid "Auto-generated video captions (Whisper AI)"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:714
+#: includes/Admin/Settings/SettingsPage.php:714
+msgid "Google Vision AI provider"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:715
+#: includes/Admin/Settings/SettingsPage.php:715
+msgid "AWS Rekognition AI provider"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:716
+#: includes/Admin/Settings/SettingsPage.php:716
+msgid "AI provider fallback chains and comparison mode"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:717
+#: includes/Admin/Settings/SettingsPage.php:717
+msgid "Per-category moderation thresholds"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:720
+#: includes/Admin/Settings/SettingsPage.php:720
 msgid "Multiple webhook endpoints"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:712
-#: includes/Admin/Settings/SettingsPage.php:712
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:721
+#: includes/Admin/Settings/SettingsPage.php:721
 msgid "Webhook delivery logs and retry management"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:713
-#: includes/Admin/Settings/SettingsPage.php:713
+#: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:722
+#: includes/Admin/Settings/SettingsPage.php:722
 msgid "Custom webhook event filters"
 msgstr ""
 
@@ -2430,98 +2427,98 @@ msgid "Go to Overview"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/StatsPage.php:46
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:191
-#: includes/Admin/StatsPage.php:46 includes/Admin/StatsPage.php:191
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:190
+#: includes/Admin/StatsPage.php:46 includes/Admin/StatsPage.php:190
 msgid "Media Stats"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:165
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:164
 #: dist/wpmediaverse/includes/Core/Plugin.php:624
 #: dist/wpmediaverse/includes/Core/Plugin.php:625
-#: includes/Admin/StatsPage.php:165 includes/Core/Plugin.php:624
+#: includes/Admin/StatsPage.php:164 includes/Core/Plugin.php:624
 #: includes/Core/Plugin.php:625
 msgid "Overview"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:194
-#: includes/Admin/StatsPage.php:194
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:193
+#: includes/Admin/StatsPage.php:193
 msgid "Track views, downloads, reactions, and AI usage across your media library."
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:338
+#: includes/Admin/StatsPage.php:338
+msgid "Today"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:339
+#: includes/Admin/StatsPage.php:339
+msgid "This Week"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:340
+#: includes/Admin/StatsPage.php:340
+msgid "This Month"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/StatsPage.php:341
 #: includes/Admin/StatsPage.php:341
-msgid "Today"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:342
-#: includes/Admin/StatsPage.php:342
-msgid "This Week"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:343
-#: includes/Admin/StatsPage.php:343
-msgid "This Month"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:344
-#: includes/Admin/StatsPage.php:344
 msgid "All Time"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:361
-#: includes/Admin/StatsPage.php:361
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:358
+#: includes/Admin/StatsPage.php:358
 msgid "Export CSV"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:400
-#: includes/Admin/StatsPage.php:400
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:393
+#: includes/Admin/StatsPage.php:393
 msgid "Top Media by Views"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:438
-#: includes/Admin/StatsPage.php:438
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:429
+#: includes/Admin/StatsPage.php:429
 msgid "No Stats Yet"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:430
+#: includes/Admin/StatsPage.php:430
+msgid "Views will appear once users start browsing media."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/StatsPage.php:439
 #: includes/Admin/StatsPage.php:439
-msgid "Views will appear once users start browsing media."
+msgid "AI Usage (This Month)"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:444
+#: includes/Admin/StatsPage.php:444
+msgid "API Calls"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/StatsPage.php:448
 #: includes/Admin/StatsPage.php:448
-msgid "AI Usage (This Month)"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:453
-#: includes/Admin/StatsPage.php:453
-msgid "API Calls"
-msgstr ""
-
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:457
-#: includes/Admin/StatsPage.php:457
 msgid "Successful"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:461
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:452
 #: dist/wpmediaverse/vendor/woocommerce/action-scheduler/classes/abstracts/ActionScheduler_Store.php:458
-#: includes/Admin/StatsPage.php:461
+#: includes/Admin/StatsPage.php:452
 #: vendor/woocommerce/action-scheduler/classes/abstracts/ActionScheduler_Store.php:458
 msgid "Failed"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:467
-#: includes/Admin/StatsPage.php:467
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:458
+#: includes/Admin/StatsPage.php:458
 msgid "Cost"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:472
-#: includes/Admin/StatsPage.php:472
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:463
+#: includes/Admin/StatsPage.php:463
 msgid "Budget"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Admin/StatsPage.php:489
-#: includes/Admin/StatsPage.php:489
+#: dist/wpmediaverse/includes/Admin/StatsPage.php:480
+#: includes/Admin/StatsPage.php:480
 msgid "AI Settings"
 msgstr ""
 
@@ -3211,17 +3208,19 @@ msgstr ""
 #: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:270
 #: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:354
 #: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:411
-#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:542
-#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:567
+#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:543
+#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:568
 #: dist/wpmediaverse/includes/REST/Controller/BulkController.php:175
+#: dist/wpmediaverse/includes/Services/AlbumService.php:189
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:456
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:478
 #: includes/REST/Controller/AlbumController.php:270
 #: includes/REST/Controller/AlbumController.php:354
 #: includes/REST/Controller/AlbumController.php:411
-#: includes/REST/Controller/AlbumController.php:542
-#: includes/REST/Controller/AlbumController.php:567
+#: includes/REST/Controller/AlbumController.php:543
+#: includes/REST/Controller/AlbumController.php:568
 #: includes/REST/Controller/BulkController.php:175
+#: includes/Services/AlbumService.php:189
 msgid "Album not found."
 msgstr ""
 
@@ -3546,14 +3545,14 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/REST/Controller/AccessController.php:384
 #: dist/wpmediaverse/includes/REST/Controller/AccessController.php:409
-#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:535
-#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:560
+#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:536
+#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:561
 #: dist/wpmediaverse/includes/REST/Controller/FavoriteController.php:241
 #: dist/wpmediaverse/includes/REST/Controller/ProfileController.php:117
 #: includes/REST/Controller/AccessController.php:384
 #: includes/REST/Controller/AccessController.php:409
-#: includes/REST/Controller/AlbumController.php:535
-#: includes/REST/Controller/AlbumController.php:560
+#: includes/REST/Controller/AlbumController.php:536
+#: includes/REST/Controller/AlbumController.php:561
 #: includes/REST/Controller/FavoriteController.php:241
 #: includes/REST/Controller/ProfileController.php:117
 msgid "You must be logged in."
@@ -3594,23 +3593,18 @@ msgstr ""
 msgid "Item not found in album."
 msgstr ""
 
-#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:503
-#: includes/REST/Controller/AlbumController.php:503
-msgid "Could not set cover image."
-msgstr ""
-
-#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:522
-#: includes/REST/Controller/AlbumController.php:522
+#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:523
+#: includes/REST/Controller/AlbumController.php:523
 msgid "You do not have permission to create albums."
 msgstr ""
 
-#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:549
-#: includes/REST/Controller/AlbumController.php:549
+#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:550
+#: includes/REST/Controller/AlbumController.php:550
 msgid "You do not have permission to edit this album."
 msgstr ""
 
-#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:574
-#: includes/REST/Controller/AlbumController.php:574
+#: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:575
+#: includes/REST/Controller/AlbumController.php:575
 msgid "You do not have permission to delete this album."
 msgstr ""
 
@@ -3948,6 +3942,16 @@ msgstr ""
 #: dist/wpmediaverse/includes/Services/AIService.php:159
 #: includes/Services/AIService.php:159
 msgid "AI moderation returned an invalid response."
+msgstr ""
+
+#: dist/wpmediaverse/includes/Services/AlbumService.php:202
+#: includes/Services/AlbumService.php:202
+msgid "Cover image must be a media item in this album."
+msgstr ""
+
+#: dist/wpmediaverse/includes/Services/AlbumService.php:212
+#: includes/Services/AlbumService.php:212
+msgid "Cover image must be an image (not video or audio)."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Services/GDPRService.php:34
