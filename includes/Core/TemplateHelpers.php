@@ -457,8 +457,9 @@ class TemplateHelpers {
 				self::get_display_name( $author_id ),
 				array(
 					'span' => array(
-						'class' => true,
-						'title' => true,
+						'class'      => true,
+						'title'      => true,
+						'aria-label' => true,
 					),
 				)
 			) . '</span>';

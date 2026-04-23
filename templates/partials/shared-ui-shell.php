@@ -45,7 +45,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 		)
 	);
 	?>
-	data-wp-on--keydown="actions.handleLightboxKeydown"
+	data-wp-on-document--keydown="actions.handleLightboxKeydown"
 >
 	<!-- Floating Action Button (MVS pages only) -->
 	<?php if ( $mvs_show_fab ) : ?>

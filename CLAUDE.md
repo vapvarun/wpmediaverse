@@ -130,6 +130,7 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 8. **Error handling: `WP_Error` or `LoggerService`.** No silent `return false` — log failures.
 9. **i18n: all user-facing strings wrapped.** Use `__()`, `esc_html__()`, `esc_attr__()` with text domain `wpmediaverse`.
 10. **Pro boundary: never import Free classes directly.** Pro hooks into `mvs_loaded` and uses `ServiceContainer` — no `use WPMediaVerse\...` in Pro code.
+11. **No silent render fallthrough.** Every `return;` inside a render path (block `render.php`, shortcode callback, template, admin list, widget) must be paired with a visible empty state. Use `TemplateHelpers::render_block_empty_state()` / `render_admin_empty_state()`. Bare returns are only acceptable in hook callbacks, cron handlers, and REST permission checks. Full rule: `qa/RENDER-STATE-RULES.md`.
 
 ---
 
@@ -197,10 +198,23 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 
 ---
 
+## QA
+
+All lives in `qa/`. Content is inventory-style (what must be true), not process.
+
+- `qa/WHAT-TO-CHECK.md` — flat list: surfaces, actions, settings, data stores, contracts.
+- `qa/RENDER-STATE-RULES.md` — every render surface must emit a populated or empty state; no bare `return;` in render paths.
+- `qa/MANUAL-UX-QA.md` — procedural walkthrough.
+- Pro has its mirror at `../wpmediaverse-pro/qa/`.
+
+At release: can the plugin demonstrate the things in `WHAT-TO-CHECK.md`? Yes → ship. No → fix what's broken.
+
+---
+
 ## Recent Changes
 
 _Updated after each commit._
 
 | Date | Commit | Summary |
 |------|--------|---------|
-| | | |
+| 2026-04-23 | — | Added `qa/` canonical QA home (`WHAT-TO-CHECK.md`, `RENDER-STATE-RULES.md`, `MANUAL-UX-QA.md`, `runs/`); Coding Rule #11 "no silent render fallthrough"; fixed F3/F4/F5/F6/P6 findings |
