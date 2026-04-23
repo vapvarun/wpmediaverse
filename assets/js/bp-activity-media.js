@@ -403,7 +403,11 @@
 		} );
 	}
 
-	// After BP posts an activity update, reset our media field.
+	// After BP posts an activity update, reset our media field —
+	// BUT only when BP reports an actual success. BP Nouveau returns HTTP 200
+	// for validation failures too (e.g. "Please enter some content") with
+	// { success: false, data: ... }. Clearing on those would drop the user's
+	// uploaded media and force a re-upload.
 	if ( typeof jQuery !== 'undefined' ) {
 		jQuery( document ).ajaxSuccess( function( event, xhr, settings ) {
 			if ( ! settings.data || typeof settings.data !== 'string' ) {
@@ -413,8 +417,22 @@
 				return;
 			}
 
-			// Reset the closure state too — without this, the next upload
-			// appends to a stale attachedMedia and resubmits previous IDs.
+			// Distinguish successful post from validation failure.
+			var body = xhr.responseJSON;
+			if ( ! body && xhr.responseText ) {
+				try { body = JSON.parse( xhr.responseText ); } catch ( e ) { body = null; }
+			}
+			// BP's wp_send_json_success / wp_send_json_error wrap in {success:bool}.
+			// Legacy responses may be bare HTML strings — treat as success (no envelope).
+			if ( body && body.success === false ) {
+				// Validation failed — keep the attached media so the user can
+				// fix the error and resubmit. Also re-arm the submit flag so
+				// the next submit proceeds normally.
+				isSubmitting = false;
+				return;
+			}
+
+			// Real success — reset closure state so the next upload starts fresh.
 			attachedMedia = [];
 			isSubmitting = false;
 
