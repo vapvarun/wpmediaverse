@@ -138,14 +138,14 @@ class GroupTabIntegration {
 			?>
 			<div class="mvs-bp-profile-actions">
 				<button type="button" id="mvs-bp-upload-btn" class="mvs-btn">
-					<span class="dashicons dashicons-cloud-upload"></span> <?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
+					<i data-lucide="upload-cloud" aria-hidden="true"></i> <?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
 				</button>
 			</div>
 
 			<div class="mvs-bp-upload-wrap" id="mvs-bp-upload-wrap" style="display:none;">
 				<input type="file" multiple accept="image/*,video/*,audio/*" class="mvs-bp-file-input" id="mvs-bp-file-input" style="display:none" />
 				<div class="mvs-bp-dropzone" id="mvs-bp-dropzone">
-					<span class="dashicons dashicons-cloud-upload"></span>
+					<i data-lucide="upload-cloud" aria-hidden="true"></i>
 					<span class="mvs-bp-dropzone-text"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
 				</div>
 				<div id="mvs-bp-upload-preview" class="mvs-bp-upload-preview"></div>
@@ -285,7 +285,7 @@ class GroupTabIntegration {
 		);
 
 		if ( ! $total_count ) {
-			echo '<div class="mvs-empty-state"><span class="dashicons dashicons-format-gallery"></span>';
+			echo '<div class="mvs-empty-state"><i data-lucide="images" aria-hidden="true"></i>';
 			echo '<p>' . esc_html__( 'No group media yet. Members can share media with the group!', 'wpmediaverse' ) . '</p></div>';
 			return;
 		}
@@ -368,7 +368,7 @@ class GroupTabIntegration {
 		if ( $is_member ) {
 			echo '<div class="mvs-bp-profile-actions">';
 			echo '<button type="button" id="mvs-bp-create-album-btn" class="mvs-btn">';
-			echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Create Album', 'wpmediaverse' );
+			echo '<i data-lucide="plus" aria-hidden="true"></i> ' . esc_html__( 'Create Album', 'wpmediaverse' );
 			echo '</button>';
 			echo '</div>';
 
@@ -411,7 +411,7 @@ class GroupTabIntegration {
 
 		if ( ! $query->have_posts() ) {
 			echo '<div class="mvs-empty-state">';
-			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			echo '<i data-lucide="images" aria-hidden="true"></i>';
 			echo '<p>' . esc_html__( 'No group albums yet.', 'wpmediaverse' ) . '</p>';
 			echo '</div>';
 			return;
@@ -551,14 +551,14 @@ class GroupTabIntegration {
 
 			echo '<div class="mvs-bp-profile-actions">';
 			echo '<button type="button" id="mvs-album-upload-btn" class="mvs-btn">';
-			echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Add Media', 'wpmediaverse' );
+			echo '<i data-lucide="plus" aria-hidden="true"></i> ' . esc_html__( 'Add Media', 'wpmediaverse' );
 			echo '</button>';
 			echo '</div>';
 
 			echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;">';
 			echo '<input type="file" multiple accept="image/*,video/*,audio/*" id="mvs-album-file-input" style="display:none" />';
 			echo '<div class="mvs-bp-dropzone" id="mvs-album-dropzone">';
-			echo '<span class="dashicons dashicons-cloud-upload"></span>';
+			echo '<i data-lucide="upload-cloud" aria-hidden="true"></i>';
 			echo '<span class="mvs-bp-dropzone-text">' . esc_html__( 'Drop files here or click to upload into this album', 'wpmediaverse' ) . '</span>';
 			echo '</div>';
 			echo '<div id="mvs-album-upload-preview" class="mvs-bp-upload-preview"></div>';
@@ -694,7 +694,7 @@ class GroupTabIntegration {
 			echo '</div>';
 		} else {
 			echo '<div class="mvs-empty-state">';
-			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			echo '<i data-lucide="images" aria-hidden="true"></i>';
 			if ( $is_member ) {
 				echo '<p>' . esc_html__( 'This album is empty. Add some media!', 'wpmediaverse' ) . '</p>';
 			} else {

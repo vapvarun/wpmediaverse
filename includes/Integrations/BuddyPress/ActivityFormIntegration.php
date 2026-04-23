@@ -48,7 +48,7 @@ class ActivityFormIntegration {
 		<div id="mvs-activity-media-btn-wrap" class="mvs-activity-media-btn-wrap">
 			<input type="file" id="mvs-activity-media-file" accept="image/*,video/*,audio/*" multiple style="display:none" />
 			<button type="button" id="mvs-activity-media-btn" class="mvs-activity-media-btn" title="<?php esc_attr_e( 'Attach media', 'wpmediaverse' ); ?>">
-				<span class="dashicons dashicons-admin-media"></span>
+				<i data-lucide="image-plus" aria-hidden="true"></i>
 			</button>
 			<div id="mvs-activity-media-preview" class="mvs-activity-media-preview" style="display:none"></div>
 			<input type="hidden" id="mvs-activity-media-ids" name="mvs_activity_media_ids" value="" />

@@ -167,14 +167,14 @@ class ProfileTabIntegration {
 			?>
 			<div class="mvs-bp-profile-actions">
 				<button type="button" id="mvs-bp-upload-btn" class="mvs-btn">
-					<span class="dashicons dashicons-cloud-upload"></span> <?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
+					<i data-lucide="upload-cloud" aria-hidden="true"></i> <?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
 				</button>
 			</div>
 
 			<div class="mvs-bp-upload-wrap" id="mvs-bp-upload-wrap" style="display:none;">
 				<input type="file" multiple accept="image/*,video/*,audio/*" class="mvs-bp-file-input" id="mvs-bp-file-input" style="display:none" />
 				<div class="mvs-bp-dropzone" id="mvs-bp-dropzone">
-					<span class="dashicons dashicons-cloud-upload"></span>
+					<i data-lucide="upload-cloud" aria-hidden="true"></i>
 					<span class="mvs-bp-dropzone-text"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
 				</div>
 				<div id="mvs-bp-upload-preview" class="mvs-bp-upload-preview"></div>
@@ -311,7 +311,7 @@ class ProfileTabIntegration {
 
 		if ( ! $total_count ) {
 			echo '<div class="mvs-empty-state">';
-			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			echo '<i data-lucide="images" aria-hidden="true"></i>';
 			if ( $is_own ) {
 				echo '<p>' . esc_html__( 'You haven\'t uploaded any media yet. Get started!', 'wpmediaverse' ) . '</p>';
 			} else {
@@ -397,7 +397,7 @@ class ProfileTabIntegration {
 		if ( $is_own ) {
 			echo '<div class="mvs-bp-profile-actions">';
 			echo '<button type="button" id="mvs-bp-create-album-btn" class="mvs-btn">';
-			echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Create Album', 'wpmediaverse' );
+			echo '<i data-lucide="plus" aria-hidden="true"></i> ' . esc_html__( 'Create Album', 'wpmediaverse' );
 			echo '</button>';
 			echo '</div>';
 
@@ -431,7 +431,7 @@ class ProfileTabIntegration {
 
 		if ( ! $query->have_posts() ) {
 			echo '<div class="mvs-empty-state">';
-			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			echo '<i data-lucide="images" aria-hidden="true"></i>';
 			if ( $is_own ) {
 				echo '<p>' . esc_html__( 'You haven\'t created any albums yet.', 'wpmediaverse' ) . '</p>';
 			} else {
@@ -460,10 +460,10 @@ class ProfileTabIntegration {
 			if ( $is_own ) {
 				echo '<div class="mvs-grid-item-actions">';
 				echo '<button type="button" class="mvs-grid-item-action mvs-bp-album-edit" data-album-id="' . esc_attr( (string) $album_id ) . '" data-album-title="' . esc_attr( get_the_title() ) . '" aria-label="' . esc_attr__( 'Edit album', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Edit album', 'wpmediaverse' ) . '">';
-				echo '<span class="dashicons dashicons-edit" aria-hidden="true"></span>';
+				echo '<i data-lucide="pencil" aria-hidden="true"></i>';
 				echo '</button>';
 				echo '<button type="button" class="mvs-grid-item-action mvs-grid-item-action--danger mvs-bp-album-delete" data-album-id="' . esc_attr( (string) $album_id ) . '" aria-label="' . esc_attr__( 'Delete album', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Delete album', 'wpmediaverse' ) . '">';
-				echo '<span class="dashicons dashicons-trash" aria-hidden="true"></span>';
+				echo '<i data-lucide="trash-2" aria-hidden="true"></i>';
 				echo '</button>';
 				echo '</div>';
 			}
@@ -576,14 +576,14 @@ class ProfileTabIntegration {
 
 			echo '<div class="mvs-bp-profile-actions">';
 			echo '<button type="button" id="mvs-album-upload-btn" class="mvs-btn">';
-			echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Add Media', 'wpmediaverse' );
+			echo '<i data-lucide="plus" aria-hidden="true"></i> ' . esc_html__( 'Add Media', 'wpmediaverse' );
 			echo '</button>';
 			echo '</div>';
 
 			echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;">';
 			echo '<input type="file" multiple accept="image/*,video/*,audio/*" id="mvs-album-file-input" style="display:none" />';
 			echo '<div class="mvs-bp-dropzone" id="mvs-album-dropzone">';
-			echo '<span class="dashicons dashicons-cloud-upload"></span>';
+			echo '<i data-lucide="upload-cloud" aria-hidden="true"></i>';
 			echo '<span class="mvs-bp-dropzone-text">' . esc_html__( 'Drop files here or click to upload into this album', 'wpmediaverse' ) . '</span>';
 			echo '</div>';
 			echo '<div id="mvs-album-upload-preview" class="mvs-bp-upload-preview"></div>';
@@ -718,7 +718,7 @@ class ProfileTabIntegration {
 			echo '</div>';
 		} else {
 			echo '<div class="mvs-empty-state">';
-			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			echo '<i data-lucide="images" aria-hidden="true"></i>';
 			if ( $is_own ) {
 				echo '<p>' . esc_html__( 'This album is empty. Add some media!', 'wpmediaverse' ) . '</p>';
 			} else {

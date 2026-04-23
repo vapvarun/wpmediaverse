@@ -889,13 +889,39 @@ class Plugin {
 			MVS_VERSION
 		);
 
+		// Lucide icon loader — we use <i data-lucide="…"> across every
+		// template/admin surface (per the UX guideline: Lucide everywhere,
+		// never Dashicons). Registered globally so any handle that emits
+		// Lucide placeholders can depend on it and guarantee load order.
+		// The shared-ui shell enqueues it again on footer for its own
+		// markup; the `wp_script_is('registered')` branch there keeps
+		// that compatible.
+		if ( ! wp_script_is( 'mvs-lucide', 'registered' ) ) {
+			wp_register_script(
+				'mvs-lucide',
+				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
+				array(),
+				MVS_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+			wp_add_inline_script(
+				'mvs-lucide',
+				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
+			);
+		}
+
 		// BP-integration script — wires up per-item delete/edit actions on
-		// owner-visible grid cards. Enqueued with the stylesheet on BP
-		// screens; config is injected inline so no extra request is needed.
+		// owner-visible grid cards. Declares `mvs-lucide` as a dep so the
+		// `<i data-lucide="trash-2">` icons we emit on action buttons are
+		// guaranteed to render even if the shared-ui shell didn't enqueue
+		// it. Config is injected inline so no extra request is needed.
 		wp_register_script(
 			'mvs-bp-actions',
 			MVS_PLUGIN_URL . 'assets/js/frontend/bp-actions.js',
-			array(),
+			array( 'mvs-lucide' ),
 			MVS_VERSION,
 			array(
 				'in_footer' => true,

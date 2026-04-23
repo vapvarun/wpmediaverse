@@ -271,7 +271,7 @@ class TemplateHelpers {
 		if ( $can_edit ) {
 			echo '<div class="mvs-grid-item-actions">';
 			echo '<button type="button" class="mvs-grid-item-action mvs-grid-item-action--danger mvs-media-delete-btn" data-media-id="' . esc_attr( (string) $media_id ) . '" aria-label="' . esc_attr__( 'Delete media', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Delete media', 'wpmediaverse' ) . '">';
-			echo '<span class="dashicons dashicons-trash" aria-hidden="true"></span>';
+			echo '<i data-lucide="trash-2" aria-hidden="true"></i>';
 			echo '</button>';
 			echo '</div>';
 		}

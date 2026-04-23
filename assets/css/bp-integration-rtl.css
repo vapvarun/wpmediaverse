@@ -336,11 +336,12 @@
     color: #ffffff;
 }
 
-#buddypress .mvs-bp-screen .mvs-grid-item-action .dashicons {
+/* Lucide outputs <svg> once createIcons() rehydrates [data-lucide]. */
+#buddypress .mvs-bp-screen .mvs-grid-item-action svg,
+#buddypress .mvs-bp-screen .mvs-grid-item-action [data-lucide] {
     width: 16px;
     height: 16px;
-    font-size: 16px;
-    line-height: 16px;
+    stroke-width: 2;
 }
 
 /* =============================================================================

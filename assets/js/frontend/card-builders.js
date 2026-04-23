@@ -241,7 +241,7 @@
 				'aria-label': 'Delete media',
 				title: 'Delete media',
 			} );
-			var delIcon = el( 'span', 'dashicons dashicons-trash' );
+			var delIcon = el( 'i', '', { 'data-lucide': 'trash-2' } );
 			delIcon.setAttribute( 'aria-hidden', 'true' );
 			delBtn.appendChild( delIcon );
 			actions.appendChild( delBtn );

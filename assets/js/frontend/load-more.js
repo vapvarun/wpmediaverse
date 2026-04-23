@@ -145,6 +145,11 @@
 					} );
 				}
 
+				// Re-render any Lucide placeholders added by builder (i[data-lucide]).
+				if ( window.lucide && typeof window.lucide.createIcons === 'function' ) {
+					window.lucide.createIcons();
+				}
+
 				rebuildRegistry();
 
 				if ( items.length < config.perPage ) {
