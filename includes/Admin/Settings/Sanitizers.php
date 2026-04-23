@@ -82,6 +82,18 @@ class Sanitizers {
 	}
 
 	/**
+	 * Sanitize the lightbox image source choice — must be one of the allowed keys.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	public static function sanitize_lightbox_image_source( $value ): string {
+		$allowed = array( 'original', 'large', 'medium', 'auto' );
+		$value   = is_string( $value ) ? $value : '';
+		return in_array( $value, $allowed, true ) ? $value : 'original';
+	}
+
+	/**
 	 * Sanitize webhook settings.
 	 *
 	 * @param mixed $input Raw input.

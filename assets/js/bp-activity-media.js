@@ -65,10 +65,35 @@
 			wrap.className = 'mvs-preview-item';
 
 			var thumb;
+			// Lucide-style inline SVGs (no Unicode play/music chars so WP can't
+			// replace them with emoji images + they match the plugin's design).
+			var SVG_NS = 'http://www.w3.org/2000/svg';
+			function buildLucideIcon( paths, rootAttrs ) {
+				var s = document.createElementNS( SVG_NS, 'svg' );
+				s.setAttribute( 'width', '32' );
+				s.setAttribute( 'height', '32' );
+				s.setAttribute( 'viewBox', '0 0 24 24' );
+				s.setAttribute( 'aria-hidden', 'true' );
+				Object.keys( rootAttrs || {} ).forEach( function( k ) { s.setAttribute( k, rootAttrs[ k ] ); } );
+				paths.forEach( function( p ) {
+					var el = document.createElementNS( SVG_NS, p.tag );
+					Object.keys( p.attrs ).forEach( function( k ) { el.setAttribute( k, p.attrs[ k ] ); } );
+					s.appendChild( el );
+				} );
+				return s;
+			}
+
 			if ( 'audio' === item.mediaType ) {
 				thumb = document.createElement( 'div' );
 				thumb.className = 'mvs-activity-media-thumb mvs-preview-audio';
-				thumb.innerHTML = '<span style="font-size:2em;">♫</span>';
+				thumb.appendChild( buildLucideIcon(
+					[
+						{ tag: 'path', attrs: { d: 'M9 18V5l12-2v13' } },
+						{ tag: 'circle', attrs: { cx: '6', cy: '18', r: '3' } },
+						{ tag: 'circle', attrs: { cx: '18', cy: '16', r: '3' } },
+					],
+					{ fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
+				) );
 			} else if ( 'video' === item.mediaType && item.thumbUrl ) {
 				thumb = document.createElement( 'img' );
 				thumb.src = item.thumbUrl;
@@ -77,7 +102,10 @@
 			} else if ( 'video' === item.mediaType ) {
 				thumb = document.createElement( 'div' );
 				thumb.className = 'mvs-activity-media-thumb mvs-preview-video';
-				thumb.innerHTML = '<span style="font-size:2em;">▶</span>';
+				thumb.appendChild( buildLucideIcon(
+					[ { tag: 'path', attrs: { d: 'M6 4l15 8-15 8V4z' } } ],
+					{ fill: 'currentColor', stroke: 'none' }
+				) );
 			} else {
 				thumb = document.createElement( 'img' );
 				thumb.src = item.thumbUrl;

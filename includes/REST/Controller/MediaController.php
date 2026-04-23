@@ -1081,6 +1081,9 @@ class MediaController extends WP_REST_Controller {
 		// Build thumbnail URL from custom meta.
 		$thumbnail_url = TemplateHelpers::get_thumb_url( $media_id, 'large' );
 
+		// Lightbox URL respects the admin-chosen image source.
+		$lightbox_url = TemplateHelpers::get_lightbox_url( $media_id, (string) $all['file_url'] );
+
 		$media_type_value = ! empty( $all['media_type'] ) ? $all['media_type'] : '';
 		$privacy_value    = ! empty( $all['privacy'] ) ? $all['privacy'] : 'public';
 		$moderation_value = ! empty( $all['moderation_status'] ) ? $all['moderation_status'] : 'approved';
@@ -1106,6 +1109,7 @@ class MediaController extends WP_REST_Controller {
 			'tags'              => self::parse_meta_list( $all['tags'] ?? '' ),
 			'categories'        => self::parse_meta_list( $all['category'] ?? '' ),
 			'thumbnail_url'     => $thumbnail_url,
+			'lightbox_url'      => $lightbox_url,
 			'can_edit'          => $can_edit,
 		);
 

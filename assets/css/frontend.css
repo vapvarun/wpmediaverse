@@ -911,16 +911,23 @@ body.dark-mode .mvs-skeleton::after {
     height: 100%;
 }
 
-.mvs-grid-item img {
+.mvs-grid-item img,
+.mvs-grid-item .mvs-grid-video-preview {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 0.3s;
+    background: #0f1014;
 }
 
-.mvs-grid-item:hover img {
+.mvs-grid-item:hover img,
+.mvs-grid-item:hover .mvs-grid-video-preview {
     transform: scale(1.05);
+}
+
+.mvs-grid-item .mvs-grid-video-preview {
+    pointer-events: none;
 }
 
 .mvs-grid--original .mvs-grid-item {
@@ -1745,6 +1752,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-dashboard-card-thumb {
+    position: relative;
     display: block;
     aspect-ratio: 1;
     background: var(--mvs-surface-2);
@@ -1753,10 +1761,17 @@ body.dark-mode .mvs-skeleton::after {
     color: inherit;
 }
 
-.mvs-dashboard-card-thumb img {
+.mvs-dashboard-card-thumb img:not([hidden]),
+.mvs-dashboard-card-thumb video:not([hidden]) {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
+}
+
+.mvs-dashboard-card-thumb img[hidden],
+.mvs-dashboard-card-thumb video[hidden] {
+    display: none !important;
 }
 
 .mvs-dashboard-card-body {
@@ -3262,49 +3277,83 @@ a.mvs-dashboard-card-title:hover {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     background: rgba(0, 0, 0, 0.55);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    color: var(--mvs-bg);
+    color: #fff;
     z-index: 2;
     pointer-events: none;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.mvs-grid-play-icon svg {
+    width: 22px;
+    height: 22px;
+    /* Optical centering — the play triangle isn't centered in its bounding box. */
+    margin-left: 2px;
 }
 
 .mvs-grid-item a:hover .mvs-grid-play-icon {
     background: rgba(0, 0, 0, 0.8);
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* Unified placeholder frame — audio + video + generic all share aspect ratio
+   and centering so grids never collapse based on media type. Specific
+   gradients layered via the --video / --audio / --generic modifiers. */
+.mvs-grid-item-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1;
+    position: relative;
+    color: rgba(255, 255, 255, 0.9);
+    background: linear-gradient(135deg, #1a2332, #0a0a0a);
+}
+
+.mvs-grid-item-placeholder svg {
+    width: 34%;
+    height: 34%;
+    max-width: 72px;
+    max-height: 72px;
+    opacity: 0.9;
 }
 
 .mvs-grid-item-placeholder--video {
     background: linear-gradient(135deg, #0d2137, #0a0a0a);
     aspect-ratio: 16 / 9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
 }
 
 .mvs-grid-item-placeholder--audio {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: var(--mvs-surface);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 1;
-    font-size: 48px;
+    color: #fff;
 }
 
-.mvs-grid-audio-icon {
-    font-size: 56px;
-    color: var(--mvs-surface);
-    line-height: 1;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+.mvs-grid-item-placeholder--generic {
+    background: linear-gradient(135deg, #2b3544, #1a1f2b);
+}
+
+.mvs-grid-audio-icon,
+.mvs-grid-generic-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    line-height: 0;
+}
+
+.mvs-grid-audio-icon svg,
+.mvs-grid-generic-icon svg {
+    width: 34%;
+    height: 34%;
+    max-width: 72px;
+    max-height: 72px;
 }
 
 /* ==========================================================================

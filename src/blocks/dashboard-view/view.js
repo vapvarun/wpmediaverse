@@ -150,47 +150,94 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get showTournamentsEmpty() { return state.tournaments.items.length === 0 && ! state.tournaments.loading; },
 		get hasActiveChallenge() { return state.challenges.activeChallenge !== null; },
 		get hasOpenTournament() { return state.tournaments.openTournament !== null; },
+		// Canonical media thumbnail state — mirrors PHP TemplateHelpers::media_thumbnail()
+		// priority: thumb > video preview > dark placeholder > audio placeholder.
+		// Three parallel triplets (media, fav, picker) because dashboard has
+		// three independent list contexts; keep the shape consistent so the
+		// template bindings stay symmetrical.
 		get mediaThumbUrl() {
-			const ctx = getContext();
-			const item = ctx.item;
+			const item = getContext().item;
 			if ( ! item ) return '';
 			if ( item.thumbnail_url ) return item.thumbnail_url;
 			if ( item.media_type === 'image' ) return item.file_url;
 			return '';
 		},
+		get mediaVideoPreviewUrl() {
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return '';
+			if ( state.mediaThumbUrl ) return '';
+			return item.file_url ? item.file_url + '#t=0.1' : '';
+		},
+		get showMediaVideoPreview() {
+			return !! state.mediaVideoPreviewUrl;
+		},
 		get showMediaVideoPlaceholder() {
-			return ! state.mediaThumbUrl && getContext().item?.media_type === 'video';
+			return ! state.mediaThumbUrl && ! state.showMediaVideoPreview && getContext().item?.media_type === 'video';
 		},
 		get showMediaAudioPlaceholder() {
 			return ! state.mediaThumbUrl && getContext().item?.media_type === 'audio';
 		},
+		get showMediaPlayIcon() {
+			// Overlay the play icon when we are rendering a video thumb or a
+			// native preview (matches PHP media_thumbnail() behavior). The
+			// dark-placeholder branch carries its own icon markup.
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return false;
+			return !! state.mediaThumbUrl || state.showMediaVideoPreview;
+		},
 		get favThumbUrl() {
-			const ctx = getContext();
-			const item = ctx.item;
+			const item = getContext().item;
 			if ( ! item ) return '';
 			if ( item.thumbnail_url ) return item.thumbnail_url;
 			if ( item.media_type === 'image' ) return item.file_url;
 			return '';
 		},
+		get favVideoPreviewUrl() {
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return '';
+			if ( state.favThumbUrl ) return '';
+			return item.file_url ? item.file_url + '#t=0.1' : '';
+		},
+		get showFavVideoPreview() {
+			return !! state.favVideoPreviewUrl;
+		},
 		get showFavVideoPlaceholder() {
-			return ! state.favThumbUrl && getContext().item?.media_type === 'video';
+			return ! state.favThumbUrl && ! state.showFavVideoPreview && getContext().item?.media_type === 'video';
 		},
 		get showFavAudioPlaceholder() {
 			return ! state.favThumbUrl && getContext().item?.media_type === 'audio';
 		},
+		get showFavPlayIcon() {
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return false;
+			return !! state.favThumbUrl || state.showFavVideoPreview;
+		},
 		get pickerThumbUrl() {
-			const ctx = getContext();
-			const item = ctx.item;
+			const item = getContext().item;
 			if ( ! item ) return '';
 			if ( item.thumbnail_url ) return item.thumbnail_url;
 			if ( item.media_type === 'image' ) return item.file_url;
 			return '';
 		},
+		get pickerVideoPreviewUrl() {
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return '';
+			if ( state.pickerThumbUrl ) return '';
+			return item.file_url ? item.file_url + '#t=0.1' : '';
+		},
+		get showPickerVideoPreview() {
+			return !! state.pickerVideoPreviewUrl;
+		},
 		get showPickerVideoPlaceholder() {
-			return ! state.pickerThumbUrl && getContext().item?.media_type === 'video';
+			return ! state.pickerThumbUrl && ! state.showPickerVideoPreview && getContext().item?.media_type === 'video';
 		},
 		get showPickerAudioPlaceholder() {
 			return ! state.pickerThumbUrl && getContext().item?.media_type === 'audio';
+		},
+		get showPickerPlayIcon() {
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return false;
+			return !! state.pickerThumbUrl || state.showPickerVideoPreview;
 		},
 		get hasAlbumCover() {
 			return !! getContext().item?.cover_url;

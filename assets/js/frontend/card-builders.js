@@ -90,6 +90,129 @@
 		return ( typeof n === 'number' ) ? n.toLocaleString() : '0';
 	}
 
+	/* ── Canonical media thumbnail builder ─────────────────────────────
+	 * Mirror of PHP TemplateHelpers::media_thumbnail(). Every JS-rendered
+	 * grid card MUST use this helper so video-preview / poster / placeholder
+	 * branching stays identical across Explore, BP load-more, and any future
+	 * layout. Returns one or more DOM nodes to append to the link wrapper.
+	 *
+	 * @param {Object} item      REST API media object.
+	 * @param {Object} [opts]    { alt, showPlay }
+	 * @return {Array<HTMLElement>} Nodes in order.
+	 * ──────────────────────────────────────────────────────────────── */
+
+	/* Inline Lucide SVG builders — match PHP TemplateHelpers::icon_* output
+	 * so server-rendered and JS-rendered cards produce identical markup. */
+
+	function lucideIconSvg( size, children, rootAttrs ) {
+		var ns = 'http://www.w3.org/2000/svg';
+		var s = document.createElementNS( ns, 'svg' );
+		s.setAttribute( 'xmlns', ns );
+		s.setAttribute( 'width', size );
+		s.setAttribute( 'height', size );
+		s.setAttribute( 'viewBox', '0 0 24 24' );
+		s.setAttribute( 'focusable', 'false' );
+		s.setAttribute( 'aria-hidden', 'true' );
+		if ( rootAttrs ) {
+			Object.keys( rootAttrs ).forEach( function ( k ) { s.setAttribute( k, rootAttrs[ k ] ); } );
+		}
+		children.forEach( function ( child ) {
+			var c = document.createElementNS( ns, child.tag );
+			Object.keys( child.attrs ).forEach( function ( k ) { c.setAttribute( k, child.attrs[ k ] ); } );
+			s.appendChild( c );
+		} );
+		return s;
+	}
+
+	function iconPlay() {
+		var span = el( 'span', 'mvs-grid-play-icon' );
+		span.setAttribute( 'aria-hidden', 'true' );
+		span.appendChild( lucideIconSvg( 24, [
+			{ tag: 'path', attrs: { d: 'M6 4l15 8-15 8V4z' } },
+		], { fill: 'currentColor', stroke: 'none' } ) );
+		return span;
+	}
+
+	function iconMusic() {
+		var span = el( 'span', 'mvs-grid-audio-icon' );
+		span.setAttribute( 'aria-hidden', 'true' );
+		span.appendChild( lucideIconSvg( 28, [
+			{ tag: 'path', attrs: { d: 'M9 18V5l12-2v13' } },
+			{ tag: 'circle', attrs: { cx: '6', cy: '18', r: '3' } },
+			{ tag: 'circle', attrs: { cx: '18', cy: '16', r: '3' } },
+		], { fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' } ) );
+		return span;
+	}
+
+	function iconImage() {
+		var span = el( 'span', 'mvs-grid-generic-icon' );
+		span.setAttribute( 'aria-hidden', 'true' );
+		span.appendChild( lucideIconSvg( 28, [
+			{ tag: 'rect', attrs: { x: '3', y: '3', width: '18', height: '18', rx: '2', ry: '2' } },
+			{ tag: 'circle', attrs: { cx: '8.5', cy: '8.5', r: '1.5' } },
+			{ tag: 'polyline', attrs: { points: '21 15 16 10 5 21' } },
+		], { fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' } ) );
+		return span;
+	}
+
+	function buildMediaThumbnail( item, opts ) {
+		opts = opts || {};
+		var alt       = opts.alt || item.title || '';
+		var showPlay  = opts.showPlay !== false;
+		var mediaType = item.media_type || '';
+		var thumbUrl  = item.thumbnail_url || '';
+		var fileUrl   = item.file_url || '';
+		var nodes     = [];
+
+		if ( thumbUrl ) {
+			nodes.push( el( 'img', 'mvs-media-thumb', {
+				src: thumbUrl,
+				alt: alt,
+				loading: 'lazy',
+			} ) );
+			if ( 'video' === mediaType && showPlay ) {
+				nodes.push( iconPlay() );
+			}
+			return nodes;
+		}
+
+		if ( 'video' === mediaType && fileUrl ) {
+			nodes.push( el( 'video', 'mvs-grid-video-preview', {
+				src: fileUrl + '#t=0.1',
+				preload: 'metadata',
+				muted: 'muted',
+				playsinline: 'playsinline',
+				disablepictureinpicture: 'disablepictureinpicture',
+				'aria-hidden': 'true',
+			} ) );
+			if ( showPlay ) {
+				nodes.push( iconPlay() );
+			}
+			return nodes;
+		}
+
+		if ( 'audio' === mediaType ) {
+			var audioCard = el( 'div', 'mvs-grid-item-placeholder mvs-grid-item-placeholder--audio' );
+			audioCard.appendChild( iconMusic() );
+			nodes.push( audioCard );
+			return nodes;
+		}
+
+		if ( 'video' === mediaType ) {
+			var vp = el( 'div', 'mvs-grid-item-placeholder mvs-grid-item-placeholder--video' );
+			if ( showPlay ) {
+				vp.appendChild( iconPlay() );
+			}
+			nodes.push( vp );
+			return nodes;
+		}
+
+		var generic = el( 'div', 'mvs-grid-item-placeholder mvs-grid-item-placeholder--generic' );
+		generic.appendChild( iconImage() );
+		nodes.push( generic );
+		return nodes;
+	}
+
 	/* ── Heart SVG (filled, 12x12) for Pinterest stats ───────────────── */
 
 	function heartSvg12() {
@@ -212,7 +335,7 @@
 	 * @param {Object} item  REST API media object.
 	 * @return {HTMLElement}
 	 */
-	function grid( item ) {
+	function grid( item, container ) {
 		var mediaId   = getId( item );
 		var title     = item.title || '';
 		var thumbUrl  = item.thumbnail_url || '';
@@ -229,11 +352,14 @@
 			'data-media-type': mediaType,
 		} );
 
-		// Owner-only per-item actions (delete). The container only renders
-		// when the REST response marks `can_edit` true — the server is the
-		// source of truth, the UI just surfaces what the user is allowed to
-		// do. CSS hides the actions by default and fades them in on hover.
-		if ( item.can_edit ) {
+		// Owner-only per-item actions (delete). Gated by TWO conditions:
+		//   1. Server says the viewer can edit this item (`can_edit`).
+		//   2. The grid container opts in via `data-show-actions="1"`. Only
+		//      BuddyPress profile and group tab grids set this — Explore,
+		//      Albums, and Collections never do. The PHP render_grid_item()
+		//      helper uses the matching `show_actions` option.
+		var showActions = !! ( container && container.getAttribute && '1' === container.getAttribute( 'data-show-actions' ) );
+		if ( item.can_edit && showActions ) {
 			var actions = el( 'div', 'mvs-grid-item-actions' );
 			var delBtn = el( 'button', 'mvs-grid-item-action mvs-grid-item-action--danger mvs-media-delete-btn', {
 				type: 'button',
@@ -251,15 +377,11 @@
 		// Link wrapping image + overlay.
 		var anchor = el( 'a', 'mvs-grid-item-link', { href: link } );
 
-		// Thumbnail image.
-		if ( thumbUrl ) {
-			var img = el( 'img', '', {
-				src: thumbUrl,
-				alt: title,
-				loading: 'lazy',
-			} );
-			anchor.appendChild( img );
-		}
+		// Thumbnail — delegated to buildMediaThumbnail so every JS surface
+		// renders identical markup (img / <video> preview / placeholder).
+		buildMediaThumbnail( item, { alt: title } ).forEach( function ( node ) {
+			anchor.appendChild( node );
+		} );
 
 		// Gallery badge.
 		if ( isGallery && groupCnt > 1 ) {
@@ -860,6 +982,10 @@
 		flickr: flickr,
 		dribbble: dribbble,
 		instagram: instagram,
+		// Canonical thumbnail builder — available to Pro layout builders and
+		// any future integration that needs to render a media thumb consistent
+		// with the server-side TemplateHelpers::media_thumbnail() output.
+		buildThumbnail: buildMediaThumbnail,
 	};
 
 } )();

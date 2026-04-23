@@ -138,7 +138,7 @@
 
 				if ( builder ) {
 					items.forEach( function ( item ) {
-						var node = builder( item );
+						var node = builder( item, gridContainer );
 						if ( node ) {
 							gridContainer.appendChild( node );
 						}

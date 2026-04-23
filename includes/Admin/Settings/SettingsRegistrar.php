@@ -383,6 +383,34 @@ class SettingsRegistrar {
 				'description' => __( 'Controls image quality on grids and feeds. Larger sizes look sharper on retina displays but load slower.', 'wpmediaverse' ),
 			)
 		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_display',
+			'mvs_lightbox_image_source',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_lightbox_image_source' ),
+				'default'           => 'original',
+			)
+		);
+		add_settings_field(
+			'mvs_lightbox_image_source',
+			__( 'Lightbox Image Size', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_select_field' ),
+			SettingsPage::PAGE_SLUG . '-display',
+			'mvs_display',
+			array(
+				'option'      => 'mvs_lightbox_image_source',
+				'choices'     => array(
+					'original' => __( 'Original (highest quality, best for full-size viewing)', 'wpmediaverse' ),
+					'large'    => __( 'Large (1024px, faster to load)', 'wpmediaverse' ),
+					'medium'   => __( 'Medium (300px, fastest — small gallery)', 'wpmediaverse' ),
+					'auto'     => __( 'Auto (original on desktop, large on mobile)', 'wpmediaverse' ),
+				),
+				'description' => __( 'Which image size opens in the lightbox. Users can always tap "View Original" to open the full file in a new tab.', 'wpmediaverse' ),
+			)
+		);
+
 	}
 
 	// -------------------------------------------------------------------------
@@ -795,6 +823,7 @@ class SettingsRegistrar {
 		$pages = array(
 			'mvs_page_dashboard' => __( 'Dashboard Page', 'wpmediaverse' ),
 			'mvs_page_explore'   => __( 'Explore Page', 'wpmediaverse' ),
+			'mvs_page_upload'    => __( 'Upload Page', 'wpmediaverse' ),
 		);
 
 		foreach ( $pages as $option => $label ) {

@@ -334,12 +334,15 @@ class ProfileTabIntegration {
 		// Collect IDs for batch stats query.
 		$stats_map = TemplateHelpers::bulk_get_stats( $media_ids );
 
-		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container>';
+		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container data-show-actions="1">';
 		foreach ( $media_ids as $mid ) {
 			TemplateHelpers::render_grid_item(
 				$mid,
 				$stats_map[ $mid ] ?? array(),
-				array( 'show_author' => true )
+				array(
+					'show_author'  => true,
+					'show_actions' => true,
+				)
 			);
 		}
 		echo '</div>';
@@ -704,7 +707,7 @@ class ProfileTabIntegration {
 
 		// Album items grid.
 		if ( ! empty( $items ) ) {
-			echo '<div class="mvs-media-grid mvs-cols-3">';
+			echo '<div class="mvs-media-grid mvs-cols-3" data-show-actions="1">';
 			foreach ( $items as $media_id ) {
 				TemplateHelpers::render_grid_item(
 					(int) $media_id,
@@ -712,6 +715,7 @@ class ProfileTabIntegration {
 					array(
 						'show_author'  => false,
 						'show_overlay' => false,
+						'show_actions' => true,
 					)
 				);
 			}

@@ -139,7 +139,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
 				return '';
 			}
-			return d.thumbnail_url || d.file_url || '';
+			// Prefer the admin-chosen lightbox_url (honors `mvs_lightbox_image_source`);
+			// fallback to file_url (original) over thumbnail so upgrades from 1.1.2 still
+			// open full-size images instead of the low-res grid thumbnail.
+			return d.lightbox_url || d.file_url || d.thumbnail_url || '';
 		},
 		get lightboxIsVideo() {
 			return state.lightboxMediaData?.media_type === 'video';

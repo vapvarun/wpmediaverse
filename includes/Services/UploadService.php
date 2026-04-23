@@ -533,8 +533,10 @@ class UploadService {
 					}
 				}
 
-				// Generate thumbnails via image editor.
-				$this->generate_thumbnails( $media_id, $file_path, $mime );
+				// Extract + save the embedded poster frame (phone-shot MP4s/MOVs
+				// usually embed one). Falls back silently when the video has no
+				// cover atom — MediaDisplayHelper renders the play-icon placeholder.
+				$this->generate_video_poster_thumbnails( $media_id, $file_path, $video_meta );
 				break;
 
 			case 'audio':
@@ -600,9 +602,24 @@ class UploadService {
 	 * @param string $file_path Absolute path to the uploaded file.
 	 * @param string $mime      MIME type.
 	 */
-	private function generate_thumbnails( int $media_id, string $file_path, string $mime ): void {
+	public function generate_thumbnails( int $media_id, string $file_path, string $mime ): bool {
+		// Videos/audio never produce image thumbnails here. MediaDisplayHelper
+		// renders a dark play-icon placeholder for videos, and audio renders
+		// as a card — no fallback meta to write.
 		if ( ! str_starts_with( $mime, 'image/' ) ) {
-			return;
+			return false;
+		}
+
+		if ( ! file_exists( $file_path ) ) {
+			LoggerService::warning(
+				'upload',
+				sprintf( 'Thumbnail source missing for media #%d', $media_id ),
+				array(
+					'media_id'  => $media_id,
+					'file_path' => $file_path,
+				)
+			);
+			return $this->ensure_fallback_thumbs( $media_id );
 		}
 
 		if ( ! function_exists( 'wp_get_image_editor' ) ) {
@@ -614,26 +631,18 @@ class UploadService {
 
 		$editor = wp_get_image_editor( $file_path );
 		if ( is_wp_error( $editor ) ) {
-			return;
+			LoggerService::warning(
+				'upload',
+				sprintf( 'Image editor unavailable for media #%d — using file_url fallback', $media_id ),
+				array(
+					'media_id' => $media_id,
+					'error'    => $editor->get_error_message(),
+				)
+			);
+			return $this->ensure_fallback_thumbs( $media_id );
 		}
 
-		$sizes = array(
-			'large'  => array(
-				'width'  => 1024,
-				'height' => 1024,
-				'crop'   => false,
-			),
-			'medium' => array(
-				'width'  => 300,
-				'height' => 300,
-				'crop'   => false,
-			),
-			'thumb'  => array(
-				'width'  => 150,
-				'height' => 150,
-				'crop'   => true,
-			),
-		);
+		$sizes = self::get_thumbnail_sizes();
 
 		/**
 		 * Fires before thumbnail generation begins.
@@ -648,7 +657,12 @@ class UploadService {
 
 		$generated = $editor->multi_resize( $sizes );
 		if ( empty( $generated ) ) {
-			return;
+			LoggerService::warning(
+				'upload',
+				sprintf( 'multi_resize returned empty for media #%d — using file_url fallback', $media_id ),
+				array( 'media_id' => $media_id )
+			);
+			return $this->ensure_fallback_thumbs( $media_id );
 		}
 
 		$upload_dir = wp_upload_dir();
@@ -669,6 +683,174 @@ class UploadService {
 		 * @param string $file_path Absolute path to the source image.
 		 */
 		do_action( 'mvs_after_thumbnail_generation', $media_id, $generated, $file_path );
+
+		return true;
+	}
+
+	/**
+	 * Thumbnail size specification — single source of truth for Free + Pro.
+	 *
+	 * Filterable via `mvs_thumbnail_sizes` so themes/add-ons can tune the sizes
+	 * without patching core. Keys become the meta suffix (`thumb_large` etc.);
+	 * values are `width`, `height`, `crop` as consumed by WP_Image_Editor::multi_resize().
+	 *
+	 * @since 1.1.3
+	 *
+	 * @return array<string,array{width:int,height:int,crop:bool}>
+	 */
+	public static function get_thumbnail_sizes(): array {
+		$sizes = array(
+			'large'  => array(
+				'width'  => 1024,
+				'height' => 1024,
+				'crop'   => false,
+			),
+			'medium' => array(
+				'width'  => 300,
+				'height' => 300,
+				'crop'   => false,
+			),
+			'thumb'  => array(
+				'width'  => 150,
+				'height' => 150,
+				'crop'   => true,
+			),
+		);
+
+		/**
+		 * Filters the thumbnail sizes generated during upload and import.
+		 *
+		 * @since 1.1.3
+		 *
+		 * @param array<string,array{width:int,height:int,crop:bool}> $sizes Size spec.
+		 */
+		return (array) apply_filters( 'mvs_thumbnail_sizes', $sizes );
+	}
+
+	/**
+	 * Guarantee at least one thumbnail meta row exists for a media item.
+	 *
+	 * Called when `multi_resize()` fails, when GD/Imagick are unavailable, or
+	 * when the source file is missing. Persists `file_url` as `thumb_large` so
+	 * grids, BuddyPress activity, and the lightbox always resolve to a usable
+	 * URL. Image mime only — video/audio URLs must never be written here.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool True if a fallback was written, false otherwise.
+	 */
+	private function ensure_fallback_thumbs( int $media_id ): bool {
+		$media_type = (string) MediaRepository::get( $media_id, 'media_type' );
+		if ( 'image' !== $media_type ) {
+			return false;
+		}
+
+		if ( MediaRepository::get( $media_id, 'thumb_large' ) ) {
+			return false;
+		}
+
+		$file_url = (string) MediaRepository::get( $media_id, 'file_url' );
+		if ( '' === $file_url ) {
+			return false;
+		}
+
+		MediaRepository::set( $media_id, 'thumb_large', $file_url );
+		return true;
+	}
+
+	/**
+	 * Extract a video's embedded poster frame and run the thumbnail pipeline.
+	 *
+	 * Shared by the Free upload path and Pro importers so Free uploads and Pro
+	 * migrations/CLI imports behave identically. Uses WP core's getID3-powered
+	 * `wp_read_video_metadata()` — no ffmpeg, no shell. Videos without an
+	 * embedded cover (screen recordings, some webm) fall through to the
+	 * play-icon placeholder in MediaDisplayHelper.
+	 *
+	 * @since 1.1.3
+	 *
+	 * @param int        $media_id    Media ID.
+	 * @param string     $file_path   Absolute path to the video file.
+	 * @param array|null $video_meta  Optional pre-fetched wp_read_video_metadata() result.
+	 * @return bool True when real thumbnails were generated, false otherwise.
+	 */
+	public function generate_video_poster_thumbnails( int $media_id, string $file_path, ?array $video_meta = null ): bool {
+		if ( ! file_exists( $file_path ) ) {
+			return false;
+		}
+
+		if ( null === $video_meta ) {
+			if ( ! function_exists( 'wp_read_video_metadata' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/media.php';
+			}
+			$video_meta = wp_read_video_metadata( $file_path );
+			if ( ! is_array( $video_meta ) ) {
+				return false;
+			}
+		}
+
+		if ( empty( $video_meta['image']['data'] ) ) {
+			return false;
+		}
+
+		$poster_path = $this->save_video_poster( $media_id, $video_meta['image'] );
+		if ( ! $poster_path || ! file_exists( $poster_path ) ) {
+			return false;
+		}
+
+		return $this->generate_thumbnails(
+			$media_id,
+			$poster_path,
+			(string) ( $video_meta['image']['mime'] ?? 'image/jpeg' )
+		);
+	}
+
+	/**
+	 * Persist a video's embedded poster frame bytes to disk.
+	 *
+	 * Writes to `uploads/wpmediaverse/posters/<media_id>.<ext>` using WP's
+	 * filesystem helpers. Returns the absolute path for the caller to feed
+	 * back into `generate_thumbnails()`.
+	 *
+	 * @param int   $media_id Media ID.
+	 * @param array $image    The `image` array from wp_read_video_metadata().
+	 * @return string|null Absolute file path on success, null on failure.
+	 */
+	private function save_video_poster( int $media_id, array $image ): ?string {
+		if ( empty( $image['data'] ) || ! is_string( $image['data'] ) ) {
+			return null;
+		}
+
+		$mime = isset( $image['mime'] ) ? (string) $image['mime'] : 'image/jpeg';
+		$ext  = 'image/png' === $mime ? 'png' : ( 'image/webp' === $mime ? 'webp' : 'jpg' );
+
+		$upload_dir = wp_upload_dir();
+		if ( ! empty( $upload_dir['error'] ) ) {
+			return null;
+		}
+
+		$dir = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/posters';
+		if ( ! wp_mkdir_p( $dir ) ) {
+			LoggerService::warning(
+				'upload',
+				sprintf( 'Could not create posters directory for media #%d', $media_id ),
+				array( 'media_id' => $media_id, 'dir' => $dir )
+			);
+			return null;
+		}
+
+		$path  = trailingslashit( $dir ) . $media_id . '.' . $ext;
+		$bytes = file_put_contents( $path, $image['data'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+
+		if ( false === $bytes || 0 === $bytes ) {
+			LoggerService::warning(
+				'upload',
+				sprintf( 'Failed to write video poster for media #%d', $media_id ),
+				array( 'media_id' => $media_id )
+			);
+			return null;
+		}
+
+		return $path;
 	}
 
 	/**

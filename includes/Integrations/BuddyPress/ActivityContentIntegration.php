@@ -243,6 +243,29 @@ class ActivityContentIntegration {
 			}
 		}
 
+		// --- 5. Recover activities whose saved content lost its media markup ---
+		// Activities posted via the BP composer on 1.1.2 baked thumbnail HTML
+		// into `content` at post time. If thumb_* meta was missing then, the
+		// saved markup has empty `<img src="">`. When that happens the markup
+		// check at the top of this method will NOT match, so we rebuild the
+		// grid from the `_mvs_media_ids` activity meta on the fly.
+		$saved_ids = bp_activity_get_meta( (int) $activity->id, '_mvs_media_ids', true );
+		if ( $saved_ids ) {
+			$ids       = array_filter( array_map( 'absint', explode( ',', (string) $saved_ids ) ) );
+			$grid_html = '';
+			foreach ( $ids as $mid ) {
+				if ( ! MediaRepository::exists( $mid ) ) {
+					continue;
+				}
+				$grid_html .= MediaDisplayHelper::get_media_thumbnail_html( $mid, 'large' );
+			}
+			if ( $grid_html ) {
+				$count      = count( $ids );
+				$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( $count, 6 );
+				return $content . '<div class="' . esc_attr( $grid_class ) . '">' . $grid_html . '</div>';
+			}
+		}
+
 		return $content;
 	}
 
@@ -403,7 +426,7 @@ class ActivityContentIntegration {
 
 				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . $data_src . ' style="border-radius:12px;">'
 							. '<a href="' . esc_url( $link ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;"' . $lightbox_attrs . '>'
-							. '<span style="font-size:1.5em;flex-shrink:0;">&#9835;</span>'
+							. '<span style="flex-shrink:0;display:inline-flex;">' . TemplateHelpers::icon_music_svg() . '</span>'
 							. '<span style="min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>'
 							. '</a></div>';
 
@@ -545,8 +568,10 @@ class ActivityContentIntegration {
 		$mvs_id = $this->find_media_by_meta_key( 'mpp_id', (string) $mpp_media_id );
 
 		if ( ! $mvs_id ) {
-			// Try finding by attachment ID directly.
-			$mvs_id = $this->find_media_by_meta_key( 'attachment_id', (string) $mpp_media_id );
+			// Try finding by the WP attachment ID — Pro importers store the
+			// source post's attachment ID as `wp_attachment_id` meta on the
+			// imported MVS record (see MigrationPage::import_mediapress).
+			$mvs_id = $this->find_media_by_meta_key( 'wp_attachment_id', (string) $mpp_media_id );
 		}
 
 		if ( ! $mvs_id ) {
