@@ -186,7 +186,7 @@ class OverviewPage {
 								<div class="mvs-demo-import mvs-section-divider">
 									<h4 class="mvs-demo-title"><?php esc_html_e( 'Quick Start with Demo Content', 'wpmediaverse' ); ?></h4>
 									<p class="mvs-demo-desc">
-										<?php esc_html_e( 'Import 12 sample media items to see how everything works — albums, reactions, and your explore page will come alive.', 'wpmediaverse' ); ?>
+										<?php esc_html_e( 'Import 12 sample media items to see how everything works. Albums, reactions, and your explore page will come alive.', 'wpmediaverse' ); ?>
 									</p>
 									<button type="button" class="mvs-btn mvs-btn--primary" id="mvs-import-demo-btn"
 										data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_import_demo' ) ); ?>">
@@ -218,7 +218,7 @@ class OverviewPage {
 										try {
 											data = JSON.parse(xhr.responseText);
 										} catch (err) {
-											status.textContent = '<?php echo esc_js( __( 'Import failed — server returned an invalid response. Check wp-content/debug.log.', 'wpmediaverse' ) ); ?>';
+											status.textContent = '<?php echo esc_js( __( 'Import failed. The server returned an invalid response. Please check wp-content/debug.log.', 'wpmediaverse' ) ); ?>';
 											status.className = 'mvs-status-inline mvs-btn-text-danger';
 											btn.disabled = false;
 											btn.textContent = '<?php echo esc_js( __( 'Import Demo Data', 'wpmediaverse' ) ); ?>';
@@ -279,7 +279,7 @@ class OverviewPage {
 											try {
 												data = JSON.parse(xhr.responseText);
 											} catch (err) {
-												status.textContent = '<?php echo esc_js( __( 'Cleanup failed — server returned an invalid response. Check wp-content/debug.log.', 'wpmediaverse' ) ); ?>';
+												status.textContent = '<?php echo esc_js( __( 'Cleanup failed. The server returned an invalid response. Please check wp-content/debug.log.', 'wpmediaverse' ) ); ?>';
 												status.className = 'mvs-status-inline mvs-btn-text-danger';
 												btn.disabled = false;
 												btn.textContent = '<?php echo esc_js( __( 'Delete Demo Data', 'wpmediaverse' ) ); ?>';

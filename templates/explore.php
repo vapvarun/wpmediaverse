@@ -23,7 +23,7 @@ $mvs_archive_url = home_url( '/media/' );
 	<div class="mvs-logged-out-banner" id="mvs-logged-out-banner">
 		<div class="mvs-logged-out-banner__content">
 			<strong><?php esc_html_e( 'Join the community', 'wpmediaverse' ); ?></strong>
-			<span><?php esc_html_e( '— upload, share, and discover media', 'wpmediaverse' ); ?></span>
+			<span><?php esc_html_e( 'Upload, share, and discover media', 'wpmediaverse' ); ?></span>
 		</div>
 		<div class="mvs-logged-out-banner__actions">
 			<a href="<?php echo esc_url( wp_login_url( $mvs_archive_url ) ); ?>" class="mvs-btn mvs-btn--primary mvs-btn--small">

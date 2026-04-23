@@ -376,9 +376,9 @@ class SettingsRegistrar {
 			array(
 				'option'      => 'mvs_thumbnail_size',
 				'choices'     => array(
-					'medium' => __( 'Medium (300px — faster loading)', 'wpmediaverse' ),
-					'large'  => __( 'Large (1024px — retina crisp)', 'wpmediaverse' ),
-					'full'   => __( 'Full (original — highest quality)', 'wpmediaverse' ),
+					'medium' => __( 'Medium (300px, faster loading)', 'wpmediaverse' ),
+					'large'  => __( 'Large (1024px, retina crisp)', 'wpmediaverse' ),
+					'full'   => __( 'Full (original, highest quality)', 'wpmediaverse' ),
 				),
 				'description' => __( 'Controls image quality on grids and feeds. Larger sizes look sharper on retina displays but load slower.', 'wpmediaverse' ),
 			)

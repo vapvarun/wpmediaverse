@@ -66,7 +66,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						) ) }
 					</div>
 					<p style={ { textAlign: 'center', fontSize: '12px', color: '#999', marginTop: '8px' } }>
-						{ __( 'Explore Feed — loads dynamically with filtering on the frontend.', 'wpmediaverse' ) }
+						{ __( 'Explore Feed. Loads dynamically with filtering on the frontend.', 'wpmediaverse' ) }
 					</p>
 				</div>
 			</div>

@@ -292,7 +292,7 @@ class TemplateLoader {
 			'document_title_parts',
 			function ( $title ) use ( $user ) {
 				/* translators: %s: user display name */
-				$title['title'] = sprintf( __( '%s — Media', 'wpmediaverse' ), $user->display_name );
+				$title['title'] = sprintf( __( '%s: Media', 'wpmediaverse' ), $user->display_name );
 				return $title;
 			}
 		);

@@ -676,7 +676,7 @@ class SettingsPage {
 		?>
 		<div class="mvs-pro-section">
 			<h3>
-				<?php esc_html_e( 'Unlock More with WPMediaVerse Pro', 'wpmediaverse' ); ?>
+				<?php esc_html_e( 'Get more with WPMediaVerse Pro', 'wpmediaverse' ); ?>
 				<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 			</h3>
 			<ul>

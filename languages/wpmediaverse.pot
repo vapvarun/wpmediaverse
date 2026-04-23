@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.1.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-04-22 13:18:19+00:00\n"
+"POT-Creation-Date: 2026-04-23 05:15:02+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -41,12 +41,12 @@ msgstr ""
 
 #: build/blocks/album-viewer/render.php:105
 #: dist/wpmediaverse/build/blocks/album-viewer/render.php:105
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:657
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:671
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:701
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:725
 #: dist/wpmediaverse/src/blocks/album-viewer/render.php:105
 #: dist/wpmediaverse/templates/album.php:451
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:657
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:671
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:701
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:725
 #: src/blocks/album-viewer/render.php:105 templates/album.php:451
 msgid "This album is empty."
 msgstr ""
@@ -109,14 +109,14 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:119
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:119
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:317
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:350
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:330
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:362
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:119
 #: dist/wpmediaverse/templates/explore.php:462
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:406
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:486
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:317
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:350
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:330
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:362
 #: src/blocks/explore-feed/render.php:119 templates/explore.php:462
 #: templates/partials/dashboard-content.php:406
 #: templates/partials/dashboard-content.php:486
@@ -350,13 +350,13 @@ msgstr ""
 
 #: build/blocks/media-upload/render.php:83
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:83
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:352
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:383
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:379
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:409
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:83
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:348
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:185
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:352
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:383
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:379
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:409
 #: src/blocks/media-upload/render.php:83
 #: templates/partials/dashboard-content.php:348
 #: templates/partials/shared-ui-shell.php:185
@@ -1104,7 +1104,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:189
 #: includes/Admin/OverviewPage.php:189
 msgid ""
-"Import 12 sample media items to see how everything works — albums, "
+"Import 12 sample media items to see how everything works. Albums, "
 "reactions, and your explore page will come alive."
 msgstr ""
 
@@ -1124,7 +1124,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:221
 #: includes/Admin/OverviewPage.php:221
 msgid ""
-"Import failed — server returned an invalid response. Check "
+"Import failed. The server returned an invalid response. Please check "
 "wp-content/debug.log."
 msgstr ""
 
@@ -1156,7 +1156,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:282
 #: includes/Admin/OverviewPage.php:282
 msgid ""
-"Cleanup failed — server returned an invalid response. Check "
+"Cleanup failed. The server returned an invalid response. Please check "
 "wp-content/debug.log."
 msgstr ""
 
@@ -1336,11 +1336,11 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:591
 #: dist/wpmediaverse/includes/Admin/SetupWizard.php:254
 #: dist/wpmediaverse/includes/Core/Activator.php:60
-#: dist/wpmediaverse/includes/Core/Plugin.php:979
+#: dist/wpmediaverse/includes/Core/Plugin.php:1006
 #: dist/wpmediaverse/includes/Services/HealthCheckService.php:172
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:258
 #: includes/Admin/OverviewPage.php:591 includes/Admin/SetupWizard.php:254
-#: includes/Core/Activator.php:60 includes/Core/Plugin.php:979
+#: includes/Core/Activator.php:60 includes/Core/Plugin.php:1006
 #: includes/Services/HealthCheckService.php:172
 #: templates/partials/dashboard-content.php:258
 msgid "My Media"
@@ -1410,7 +1410,7 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/FieldRenderer.php:270
 #: includes/Admin/Settings/FieldRenderer.php:270
-msgid "— Select —"
+msgid "Select a page"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/FieldRenderer.php:280
@@ -1742,7 +1742,7 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:679
 #: includes/Admin/Settings/SettingsPage.php:679
-msgid "Unlock More with WPMediaVerse Pro"
+msgid "Get more with WPMediaVerse Pro"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:688
@@ -2030,17 +2030,17 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:379
 #: includes/Admin/Settings/SettingsRegistrar.php:379
-msgid "Medium (300px — faster loading)"
+msgid "Medium (300px, faster loading)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:380
 #: includes/Admin/Settings/SettingsRegistrar.php:380
-msgid "Large (1024px — retina crisp)"
+msgid "Large (1024px, retina crisp)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:381
 #: includes/Admin/Settings/SettingsRegistrar.php:381
-msgid "Full (original — highest quality)"
+msgid "Full (original, highest quality)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:383
@@ -2377,7 +2377,7 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SetupWizard.php:280
 #: includes/Admin/SetupWizard.php:280
-msgid "Not created — please reactivate the plugin."
+msgid "Not created. Please reactivate the plugin."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/SetupWizard.php:295
@@ -2767,11 +2767,11 @@ msgid "Media management, social, and content abilities."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Core/Abilities.php:66
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:128
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:158
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:141
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:170
 #: dist/wpmediaverse/templates/explore.php:480 includes/Core/Abilities.php:66
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:128
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:158
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:141
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:170
 #: templates/explore.php:480
 msgid "Upload Media"
 msgstr ""
@@ -2944,46 +2944,51 @@ msgstr ""
 msgid "View public user profiles with stats, media, and follow counts."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:362
-#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:376
+#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:273
+#: includes/Core/TemplateHelpers.php:273
+msgid "Delete media"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:378
+#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:392
 #: dist/wpmediaverse/templates/explore.php:76
-#: includes/Core/TemplateHelpers.php:362 includes/Core/TemplateHelpers.php:376
+#: includes/Core/TemplateHelpers.php:378 includes/Core/TemplateHelpers.php:392
 #: templates/explore.php:76
 msgid "Explore"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:371
-#: includes/Core/TemplateHelpers.php:371
+#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:387
+#: includes/Core/TemplateHelpers.php:387
 msgid "Profile"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:386
-#: includes/Core/TemplateHelpers.php:386
+#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:402
+#: includes/Core/TemplateHelpers.php:402
 msgid "My profile"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:394
-#: includes/Core/TemplateHelpers.php:394
+#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:410
+#: includes/Core/TemplateHelpers.php:410
 msgid "Challenges"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:401
-#: includes/Core/TemplateHelpers.php:401
+#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:417
+#: includes/Core/TemplateHelpers.php:417
 msgid "Battles"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:408
-#: includes/Core/TemplateHelpers.php:408
+#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:424
+#: includes/Core/TemplateHelpers.php:424
 msgid "Tournaments"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:439
-#: includes/Core/TemplateHelpers.php:439
+#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:455
+#: includes/Core/TemplateHelpers.php:455
 msgid "Back"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:443
-#: includes/Core/TemplateHelpers.php:443
+#: dist/wpmediaverse/includes/Core/TemplateHelpers.php:459
+#: includes/Core/TemplateHelpers.php:459
 #. translators: %s: parent page label
 msgid "Back to %s"
 msgstr ""
@@ -2991,7 +2996,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Core/TemplateLoader.php:295
 #: includes/Core/TemplateLoader.php:295
 #. translators: %s: user display name
-msgid "%s — Media"
+msgid "%s: Media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivityContentIntegration.php:158
@@ -3009,103 +3014,103 @@ msgstr ""
 msgid "Privacy level for attached media"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:70
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:72
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:70
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:72
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:71
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:73
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:71
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:73
 msgid "Media Uploads"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:81
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:83
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:81
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:83
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:82
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:84
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:82
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:84
 msgid "Group Media Uploads"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:91
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:93
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:92
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:94
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/NotificationIntegration.php:159
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:91
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:93
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:92
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:94
 #: includes/Integrations/BuddyPress/NotificationIntegration.php:159
 msgid "Media Comments"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:119
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:119
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:120
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:120
 #. translators: %s: linked user name.
 msgid "%s uploaded new media"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:120
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:120
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:121
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:121
 msgid "A member uploaded new media"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:134
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:134
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:135
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:135
 #. translators: %s: group link
 msgid " in the group %s"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:148
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:148
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:149
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:149
 #. translators: 1: user link, 2: media type, 3: album link
 msgid "%1$s uploaded a new %2$s to album %3$s"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:159
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:253
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:159
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:253
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:160
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:254
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:160
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:254
 #. translators: 1: user link, 2: media type (photo, video, audio file)
 #. translators: 1: user link, 2: media type
 msgid "%1$s uploaded a new %2$s"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:178
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:178
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:179
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:179
 #. translators: %s: linked user name.
 msgid "%s commented on a media item"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:179
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:179
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:180
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:180
 msgid "A member commented on a media item"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:181
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:182
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/MediaDisplayHelper.php:44
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:181
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:182
 #: includes/Integrations/BuddyPress/MediaDisplayHelper.php:44
 msgid "Untitled"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:184
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:185
 #: dist/wpmediaverse/includes/Social/NotificationService.php:451
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:184
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:185
 #: includes/Social/NotificationService.php:451
 #. translators: 1: user link, 2: media link
 #. translators: 1: user name, 2: media title
 msgid "%1$s commented on %2$s"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:136
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:166
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:149
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:178
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:336
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:136
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:166
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:149
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:178
 #: templates/partials/dashboard-content.php:336
 msgid "Drop files here or click to upload"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:141
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:357
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:523
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:171
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:387
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:538
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:154
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:384
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:567
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:183
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:413
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:592
 #: dist/wpmediaverse/templates/album.php:194
 #: dist/wpmediaverse/templates/album.php:219
 #: dist/wpmediaverse/templates/album.php:503
@@ -3119,12 +3124,12 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:827
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:208
 #: dist/wpmediaverse/vendor/woocommerce/action-scheduler/classes/ActionScheduler_ListTable.php:133
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:141
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:357
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:523
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:171
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:387
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:538
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:154
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:384
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:567
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:183
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:413
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:592
 #: templates/album.php:194 templates/album.php:219 templates/album.php:503
 #: templates/media-single.php:458 templates/media-single.php:505
 #: templates/media-single.php:555 templates/partials/dashboard-content.php:229
@@ -3137,74 +3142,74 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:276
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:276
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:289
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:289
 msgid "No group media yet. Members can share media with the group!"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:321
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:354
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:334
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:366
 #: dist/wpmediaverse/templates/explore.php:467
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:321
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:354
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:334
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:366
 #: templates/explore.php:467
 msgid "You're all caught up!"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:344
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:374
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:371
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:400
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:414
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:734
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:344
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:374
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:371
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:400
 #: templates/partials/dashboard-content.php:414
 #: templates/partials/dashboard-content.php:734
 msgid "Create Album"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:350
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:381
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:377
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:407
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:127
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:350
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:381
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:377
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:407
 #: templates/partials/shared-ui-shell.php:127
 msgid "Album Name"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:351
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:382
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:378
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:408
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:129
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:351
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:382
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:378
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:408
 #: templates/partials/shared-ui-shell.php:129
 msgid "Enter album name..."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:353
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:384
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:353
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:384
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:380
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:410
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:380
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:410
 msgid "Album description..."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:356
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:386
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:383
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:412
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:644
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:802
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:356
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:386
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:383
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:412
 #: templates/partials/dashboard-content.php:644
 #: templates/partials/dashboard-content.php:802
 msgid "Create"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:388
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:388
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:415
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:415
 msgid "No group albums yet."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:456
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:478
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:498
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:531
 #: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:270
 #: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:354
 #: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:411
@@ -3212,8 +3217,8 @@ msgstr ""
 #: dist/wpmediaverse/includes/REST/Controller/AlbumController.php:568
 #: dist/wpmediaverse/includes/REST/Controller/BulkController.php:175
 #: dist/wpmediaverse/includes/Services/AlbumService.php:189
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:456
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:478
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:498
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:531
 #: includes/REST/Controller/AlbumController.php:270
 #: includes/REST/Controller/AlbumController.php:354
 #: includes/REST/Controller/AlbumController.php:411
@@ -3224,24 +3229,24 @@ msgstr ""
 msgid "Album not found."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:463
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:463
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:506
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:506
 msgid "Album not found in this group."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:474
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:488
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:474
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:488
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:518
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:542
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:518
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:542
 msgid "Back to Albums"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:497
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:512
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:541
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:566
 #: dist/wpmediaverse/templates/album.php:88
 #: dist/wpmediaverse/templates/collection.php:97
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:497
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:512
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:541
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:566
 #: templates/album.php:88 templates/collection.php:97
 #. translators: %d: number of items
 msgid "%d item"
@@ -3249,28 +3254,28 @@ msgid_plural "%d items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:510
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:525
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:554
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:579
 #: dist/wpmediaverse/templates/album.php:205
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:510
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:525
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:554
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:579
 #: templates/album.php:205
 msgid "Add Media"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:518
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:533
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:562
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:587
 #: dist/wpmediaverse/templates/album.php:214
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:518
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:533
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:562
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:587
 #: templates/album.php:214
 msgid "Drop files here or click to upload into this album"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:655
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:669
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:655
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:669
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:699
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:723
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:699
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:723
 msgid "This album is empty. Add some media!"
 msgstr ""
 
@@ -3345,24 +3350,40 @@ msgstr ""
 msgid "%s mentioned you"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:304
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:304
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:316
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:316
 msgid "You haven't uploaded any media yet. Get started!"
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:306
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:306
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:318
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:318
 msgid "This user hasn't uploaded any media yet."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:410
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:410
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:436
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:436
 msgid "You haven't created any albums yet."
 msgstr ""
 
-#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:412
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:412
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:438
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:438
 msgid "This user hasn't created any albums yet."
+msgstr ""
+
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:462
+#: dist/wpmediaverse/templates/album.php:151
+#: dist/wpmediaverse/templates/album.php:152
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:462
+#: templates/album.php:151 templates/album.php:152
+msgid "Edit album"
+msgstr ""
+
+#: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:465
+#: dist/wpmediaverse/templates/album.php:158
+#: dist/wpmediaverse/templates/album.php:159
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:465
+#: templates/album.php:158 templates/album.php:159
+msgid "Delete album"
 msgstr ""
 
 #: dist/wpmediaverse/includes/PostTypes/Album.php:23
@@ -4452,18 +4473,6 @@ msgstr ""
 msgid "Choose from the most used tags"
 msgstr ""
 
-#: dist/wpmediaverse/templates/album.php:151
-#: dist/wpmediaverse/templates/album.php:152 templates/album.php:151
-#: templates/album.php:152
-msgid "Edit album"
-msgstr ""
-
-#: dist/wpmediaverse/templates/album.php:158
-#: dist/wpmediaverse/templates/album.php:159 templates/album.php:158
-#: templates/album.php:159
-msgid "Delete album"
-msgstr ""
-
 #: dist/wpmediaverse/templates/album.php:161 templates/album.php:161
 msgid "Delete Album"
 msgstr ""
@@ -4504,7 +4513,7 @@ msgid "Join the community"
 msgstr ""
 
 #: dist/wpmediaverse/templates/explore.php:26 templates/explore.php:26
-msgid "— upload, share, and discover media"
+msgid "Upload, share, and discover media"
 msgstr ""
 
 #: dist/wpmediaverse/templates/explore.php:30 templates/explore.php:30
@@ -4695,7 +4704,7 @@ msgstr ""
 
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:244
 #: templates/partials/dashboard-content.php:244
-msgid "Complete your profile — add an avatar and bio to help others find you."
+msgid "Complete your profile. Add an avatar and bio to help others find you."
 msgstr ""
 
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:270
