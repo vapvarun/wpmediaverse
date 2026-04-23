@@ -4713,6 +4713,29 @@ a.mvs-dashboard-card-title:hover {
     line-height: 1.4;
 }
 
+/* Icon sizing inside any .mvs-btn. Lucide's default <svg> is 24x24; at
+ * that size it towers over 14px label text. Cap to 16px and inherit
+ * the button color so the icon pairs properly with the label. The
+ * `[data-lucide]` selector covers the brief moment before
+ * lucide.createIcons() swaps the <i> placeholder for <svg>. */
+.mvs-btn svg,
+.mvs-btn [data-lucide] {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    flex-shrink: 0;
+    color: inherit;
+}
+
+/* Small-variant buttons use smaller labels, so scale the icon down too. */
+.mvs-btn.mvs-btn--small svg,
+.mvs-btn.mvs-btn--sm svg,
+.mvs-btn.mvs-btn--small [data-lucide],
+.mvs-btn.mvs-btn--sm [data-lucide] {
+    width: 14px;
+    height: 14px;
+}
+
 .mvs-btn--primary {
     background: var(--mvs-primary);
     /* Always readable on the brand primary background — never use a theme

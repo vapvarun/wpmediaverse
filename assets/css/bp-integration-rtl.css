@@ -75,6 +75,18 @@
     border-bottom-color: var(--mvs-primary);
 }
 
+/* Icon inside a sub-tab link — 16px to match the 14px label x-height,
+ * gap controlled by flex (inherits 6px from parent flow when present
+ * via the inline flex below). */
+#buddypress .mvs-bp-screen .mvs-bp-sub-tab svg,
+#buddypress .mvs-bp-screen .mvs-bp-sub-tab [data-lucide] {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
 /* =============================================================================
  *  Action / toolbar row (Upload Media, Create Album, …)
  * ============================================================================= */
@@ -122,6 +134,17 @@
     margin: 0;
     color: var(--mvs-text-secondary);
     font-size: 14px;
+}
+
+/* Cloud-upload icon anchors the dropzone, so scale it up from the
+ * 16px body-button default. */
+#buddypress .mvs-bp-screen .mvs-bp-dropzone svg,
+#buddypress .mvs-bp-screen .mvs-bp-dropzone [data-lucide] {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.75;
+    color: var(--mvs-text-secondary);
+    flex-shrink: 0;
 }
 
 #buddypress .mvs-bp-screen .mvs-bp-upload-preview {
