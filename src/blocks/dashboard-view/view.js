@@ -837,6 +837,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ! id ) return;
 			if ( state.albumModal.selectedIds.includes( id ) ) {
 				state.albumModal.selectedIds = state.albumModal.selectedIds.filter( ( sid ) => sid !== id );
+				// Deselecting the current cover — clear it, otherwise save
+				// would PUT /cover for a media that's no longer in the album
+				// and the backend returns 400 mvs_cover_not_in_album.
+				if ( state.albumModal.coverId === id ) {
+					state.albumModal.coverId = 0;
+				}
 			} else {
 				state.albumModal.selectedIds = [ ...state.albumModal.selectedIds, id ];
 			}
@@ -857,6 +863,17 @@ const { state, actions } = store( 'mvs/dashboard', {
 		async saveAlbum() {
 			const ctx = getContext();
 			state.albumModal.saving = true;
+
+			// Invariant: the cover media MUST be one of the album's items,
+			// or AlbumService::set_cover() returns 400 mvs_cover_not_in_album.
+			// Enforce at the save boundary so no UI path (Set Cover then
+			// deselect, for example) can desynchronise coverId and selectedIds.
+			if (
+				state.albumModal.coverId &&
+				! state.albumModal.selectedIds.includes( state.albumModal.coverId )
+			) {
+				state.albumModal.selectedIds = [ ...state.albumModal.selectedIds, state.albumModal.coverId ];
+			}
 
 			const payload = {
 				title: state.albumModal.title,
