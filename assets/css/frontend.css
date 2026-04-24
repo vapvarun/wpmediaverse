@@ -2580,103 +2580,21 @@ a.mvs-dashboard-card-title:hover {
     }
 }
 
-/* ── 25. Activity Media Lightbox ── */
+/* ── 25. Activity Media Lightbox ── (moved to frontend.css Lightbox
+ *         social sidebar section; see bottom of file).
+ *
+ * Sections 26–28 (Inline Album Creation / Inline Upload / Single Album
+ * View) moved to bp-integration.css for the BP-only rules
+ * (.mvs-bp-album-form, .mvs-bp-album-msg, .mvs-bp-back-link,
+ * .mvs-btn-primary, .mvs-btn-secondary).
+ *
+ * The .mvs-bp-upload-* classes remain here, unscoped, because
+ * templates/album.php (non-BP single-album view) reuses the same
+ * markup for its "Add Media" inline upload panel. Renaming to
+ * .mvs-inline-upload-* would be cleaner but is deferred to avoid
+ * touching PHP/JS in this CSS-only migration.
+ */
 
-/* Left: Image panel — takes remaining space */
-/* Prev / Next navigation arrows */
-/* Right: Social panel — Facebook/X style wide sidebar */
-/* Reactions bar */
-/* Action buttons */
-/* Comments section — fills remaining space */
-/* Comment form — pinned to bottom */
-/* Responsive: stack on mobile */
-@media (max-width: 900px) {}
-
-/* ── 26. BP Profile — Inline Album Creation ── */
-.mvs-bp-album-form {
-    margin: 16px 0;
-    padding: 20px;
-    background: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
-    border-radius: 8px;
-}
-
-.mvs-bp-album-form-inner label {
-    display: block;
-    font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 4px;
-    color: var(--mvs-text);
-}
-
-.mvs-bp-album-form-inner input[type="text"],
-.mvs-bp-album-form-inner textarea {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid var(--mvs-border-light);
-    border-radius: 6px;
-    font-size: 14px;
-    margin-bottom: 12px;
-    box-sizing: border-box;
-}
-
-.mvs-bp-album-form-inner input[type="text"]:focus,
-.mvs-bp-album-form-inner textarea:focus {
-    border-color: var(--mvs-primary);
-    outline: none;
-    box-shadow: 0 0 0 1px var(--mvs-primary);
-}
-
-.mvs-bp-album-form-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.mvs-btn-primary {
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
-    border: none;
-    padding: 8px 20px;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-.mvs-btn-primary:hover {
-    background: var(--mvs-primary-hover);
-}
-
-.mvs-btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.mvs-btn-secondary {
-    background: var(--mvs-surface-2);
-    color: var(--mvs-text-secondary);
-    border: 1px solid var(--mvs-border-light);
-    padding: 8px 20px;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.mvs-btn-secondary:hover {
-    background: var(--mvs-border);
-}
-
-.mvs-bp-album-msg {
-    margin-top: 8px;
-    font-size: 13px;
-}
-
-.mvs-bp-album-msg-error {
-    color: var(--mvs-danger);
-}
-
-/* ── 27. BP Profile — Inline Upload ── */
 .mvs-bp-upload-wrap {
     margin: 16px 0;
     padding: 20px;
@@ -2707,9 +2625,9 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-bp-upload-thumb-name {
     display: block;
+    margin-top: 4px;
     font-size: 11px;
     color: var(--mvs-text-secondary);
-    margin-top: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2733,21 +2651,7 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-success);
 }
 
-/* ── 28. BP Profile — Single Album View ── */
-.mvs-bp-back-link {
-    margin-bottom: 16px;
-}
-
-.mvs-bp-back-link a {
-    color: var(--mvs-primary);
-    text-decoration: none;
-    font-size: 14px;
-}
-
-.mvs-bp-back-link a:hover {
-    text-decoration: underline;
-}
-
+/* Used only by templates/album.php (single-album view, Add Media panel). */
 .mvs-album-upload-section {
     margin: 16px 0;
 }

@@ -217,6 +217,73 @@
     color: var(--mvs-danger);
 }
 
+/* Pre-.mvs-bp-screen album form (legacy inline variant emitted before
+ * the wrapper was introduced — still referenced by some code paths).
+ * Same visual as above but without the wrapper scope. */
+#buddypress .mvs-bp-album-msg {
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+#buddypress .mvs-bp-album-msg.mvs-bp-album-msg-error {
+    color: var(--mvs-danger);
+}
+
+/* Back link inside the single-album sub-view on profile/group media tabs. */
+#buddypress .mvs-bp-back-link {
+    margin-bottom: 16px;
+}
+
+#buddypress .mvs-bp-back-link a {
+    color: var(--mvs-primary);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+#buddypress .mvs-bp-back-link a:hover {
+    text-decoration: underline;
+}
+
+/* Primary / secondary button variants used by BP album create form,
+ * BP upload form, and the single-album "Add Media" inline upload.
+ * Emitted only from ProfileTabIntegration, GroupTabIntegration, and
+ * templates/album.php. The album template isn't under #buddypress so
+ * it keeps its own (non-scoped) copy in frontend.css; this copy wins
+ * on BP surfaces where theme <button> rules would otherwise override. */
+#buddypress .mvs-btn-primary {
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--mvs-primary);
+    color: var(--mvs-bg);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#buddypress .mvs-btn-primary:hover {
+    background: var(--mvs-primary-hover);
+}
+
+#buddypress .mvs-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#buddypress .mvs-btn-secondary {
+    padding: 8px 20px;
+    font-size: 14px;
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text-secondary);
+    border: 1px solid var(--mvs-border-light);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#buddypress .mvs-btn-secondary:hover {
+    background: var(--mvs-border);
+}
+
 /* =============================================================================
  *  Media / album grids — force our 16px gap even when .mvs-feed declares 6px
  * ============================================================================= */
