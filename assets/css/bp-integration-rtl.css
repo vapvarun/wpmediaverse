@@ -382,6 +382,228 @@
 }
 
 /* =============================================================================
+ *  Activity stream — media images (single + multi-image grid)
+ *
+ *  Our BP activity integration renders uploaded media in two shapes:
+ *
+ *    1. Single: an <a href="/media/{slug}/"> wrapping an <img>, placed by
+ *       ActivityContentIntegration into .activity-content.
+ *    2. Grid: a <div class="mvs-activity-media-grid mvs-activity-grid-N">
+ *       containing 2-6 .mvs-activity-media tiles, built client-side by
+ *       bp-activity-media.js for activities that attached multiple images.
+ *
+ *  Rules are anchored on the /media/ permalink pattern rather than a
+ *  generic img:not(.avatar):not(.emoji) catch-all — the catch-all
+ *  pattern previously used here was too broad and blew up theme-injected
+ *  classless images (Reign's .bp-group-preview-cover on join-group
+ *  activities, etc.). Only images that link to our media permalinks get
+ *  constrained.
+ * ============================================================================= */
+
+/* Single image (not in a grid). Contain-fit so portraits don't get
+ * cropped; 500px cap keeps the stream compact. */
+#buddypress .activity-content a[href*="/media/"] img:not(.emoji):not(.avatar),
+.activity-list .activity-content a[href*="/media/"] img:not(.emoji):not(.avatar) {
+    max-width: 100%;
+    max-height: 500px;
+    width: auto;
+    height: auto;
+    display: block;
+    margin: 8px 0;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+/* Legacy single-image wrapper (.mvs-activity-media without a grid
+ * parent). Mirrors the grid tile metrics so a single-upload activity
+ * looks the same as one tile of a multi-upload grid. */
+#buddypress .activity-content .mvs-activity-media,
+.activity-list .activity-content .mvs-activity-media {
+    position: relative;
+    overflow: hidden;
+    margin-top: 10px;
+    max-height: 600px;
+    border-radius: 12px;
+}
+
+#buddypress .activity-content .mvs-activity-media a,
+.activity-list .activity-content .mvs-activity-media a {
+    display: block;
+    height: 100%;
+}
+
+#buddypress .activity-content .mvs-activity-media img,
+.activity-list .activity-content .mvs-activity-media img {
+    width: 100%;
+    height: 100%;
+    max-height: 600px;
+    display: block;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+/* =============================================================================
+ *  Activity stream — multi-image grid (Facebook/Instagram layout)
+ *
+ *  Driven by a count-scoped class (mvs-activity-grid-1 … mvs-activity-grid-6)
+ *  emitted by bp-activity-media.js. Each tile is a .mvs-activity-media
+ *  inside .mvs-activity-media-grid, with a +N-more overlay on the last
+ *  cell when the attachment count exceeds 6.
+ * ============================================================================= */
+
+#buddypress .mvs-activity-media-grid,
+.activity-list .mvs-activity-media-grid {
+    display: grid;
+    gap: 3px;
+    margin-top: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#buddypress .mvs-activity-media-grid .mvs-activity-media,
+.activity-list .mvs-activity-media-grid .mvs-activity-media {
+    position: relative;
+    margin-top: 0;
+    overflow: hidden;
+    background: var(--mvs-surface-2);
+}
+
+#buddypress .mvs-activity-media-grid .mvs-activity-media a,
+.activity-list .mvs-activity-media-grid .mvs-activity-media a {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Tile images fill the grid cell with a cover-crop, overriding the
+ * single-image contain-fit rule above. */
+#buddypress .mvs-activity-media-grid .mvs-activity-media img,
+.activity-list .mvs-activity-media-grid .mvs-activity-media img,
+#buddypress .mvs-activity-media-grid .mvs-activity-media a[href*="/media/"] img:not(.emoji):not(.avatar) {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    display: block;
+    object-fit: cover;
+    border-radius: 0;
+    margin: 0;
+}
+
+/* +N more overlay on the last cell. */
+#buddypress .mvs-activity-media-more,
+.activity-list .mvs-activity-media-more {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    color: var(--mvs-bg);
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    cursor: pointer;
+}
+
+/* Grid layouts per attachment count. */
+
+/* 1 image: single tile with the same 600px cap as the non-grid wrapper. */
+#buddypress .mvs-activity-grid-1 .mvs-activity-media,
+.activity-list .mvs-activity-grid-1 .mvs-activity-media {
+    background: transparent;
+    max-height: 600px;
+}
+
+#buddypress .mvs-activity-grid-1 .mvs-activity-media img,
+.activity-list .mvs-activity-grid-1 .mvs-activity-media img {
+    width: 100%;
+    max-height: 600px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+/* 2 images: side by side. */
+#buddypress .mvs-activity-grid-2,
+.activity-list .mvs-activity-grid-2 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 280px;
+}
+
+/* 3 images: 1 big left + 2 stacked right. */
+#buddypress .mvs-activity-grid-3,
+.activity-list .mvs-activity-grid-3 {
+    grid-template-columns: 3fr 2fr;
+    grid-template-rows: 175px 175px;
+}
+
+#buddypress .mvs-activity-grid-3 .mvs-activity-media:first-child,
+.activity-list .mvs-activity-grid-3 .mvs-activity-media:first-child {
+    grid-row: 1 / 3;
+}
+
+/* 4 images: 1 big top + 3 bottom. */
+#buddypress .mvs-activity-grid-4,
+.activity-list .mvs-activity-grid-4 {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 280px 160px;
+}
+
+#buddypress .mvs-activity-grid-4 .mvs-activity-media:first-child,
+.activity-list .mvs-activity-grid-4 .mvs-activity-media:first-child {
+    grid-column: 1 / 4;
+}
+
+/* 5 images: 2 big top + 3 smaller bottom. */
+#buddypress .mvs-activity-grid-5,
+.activity-list .mvs-activity-grid-5 {
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: 220px 160px;
+}
+
+#buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(1),
+.activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(1) {
+    grid-column: 1 / 4;
+}
+#buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(2),
+.activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(2) {
+    grid-column: 4 / 7;
+}
+#buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(3),
+.activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(3) {
+    grid-column: 1 / 3;
+}
+#buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(4),
+.activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(4) {
+    grid-column: 3 / 5;
+}
+#buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(5),
+.activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(5) {
+    grid-column: 5 / 7;
+}
+
+/* 6+ images: 3x2 with +N overlay on the 6th. */
+#buddypress .mvs-activity-grid-6,
+.activity-list .mvs-activity-grid-6 {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 190px 190px;
+}
+
+/* Safety: if more than 6 tiles slip through, hide the extras. */
+#buddypress .mvs-activity-media-grid > .mvs-activity-media:nth-child(n+7),
+.activity-list .mvs-activity-media-grid > .mvs-activity-media:nth-child(n+7) {
+    display: none;
+}
+
+#buddypress .mvs-activity-comment-text,
+.activity-list .mvs-activity-comment-text {
+    margin-top: 8px;
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: var(--mvs-text);
+}
+
+
+/* =============================================================================
  *  Activity form — attach-media button, preview grid, privacy select
  *
  *  Emitted by ActivityFormIntegration::activity_post_media_button() on
@@ -677,5 +899,30 @@
     #buddypress .mvs-activity-media-preview.mvs-preview-grid-5,
     #buddypress .mvs-activity-media-preview.mvs-preview-grid-6 {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Activity stream multi-image grids (3/4/5/6 layouts) collapse to
+     * a 2-up layout on narrow viewports so individual tiles stay
+     * readable. */
+    #buddypress .mvs-activity-grid-3,
+    .activity-list .mvs-activity-grid-3,
+    #buddypress .mvs-activity-grid-4,
+    .activity-list .mvs-activity-grid-4,
+    #buddypress .mvs-activity-grid-5,
+    .activity-list .mvs-activity-grid-5,
+    #buddypress .mvs-activity-grid-6,
+    .activity-list .mvs-activity-grid-6 {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 140px 140px 140px;
+    }
+
+    #buddypress .mvs-activity-grid-3 .mvs-activity-media:first-child,
+    .activity-list .mvs-activity-grid-3 .mvs-activity-media:first-child,
+    #buddypress .mvs-activity-grid-4 .mvs-activity-media:first-child,
+    .activity-list .mvs-activity-grid-4 .mvs-activity-media:first-child,
+    #buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(-n+5),
+    .activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(-n+5) {
+        grid-column: auto;
+        grid-row: auto;
     }
 }
