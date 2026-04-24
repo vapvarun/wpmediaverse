@@ -1690,11 +1690,36 @@ body.dark-mode .mvs-skeleton::after {
     font-size: 0.8em;
 }
 
-/* Dashboard Grid */
+/* Dashboard Grid — default responsive auto-fill when no column-count class
+   is applied; when the template emits `.mvs-cols-N` alongside it (as driven
+   by the mvs_grid_columns setting), the compound-selector overrides below
+   win by source order and honour the chosen column count. */
 .mvs-dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
+}
+
+.mvs-dashboard-grid.mvs-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.mvs-dashboard-grid.mvs-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.mvs-dashboard-grid.mvs-cols-4 { grid-template-columns: repeat(4, 1fr); }
+.mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+/* Narrow-viewport collapse mirrors the .mvs-media-grid behaviour so the
+   user never ends up with a 5-col grid squished on mobile. */
+@media (max-width: 1024px) {
+    .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 768px) {
+    .mvs-dashboard-grid.mvs-cols-3,
+    .mvs-dashboard-grid.mvs-cols-4,
+    .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+    .mvs-dashboard-grid.mvs-cols-2,
+    .mvs-dashboard-grid.mvs-cols-3,
+    .mvs-dashboard-grid.mvs-cols-4,
+    .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: 1fr; }
 }
 
 .mvs-dashboard-card {
