@@ -73,8 +73,17 @@ class ActivityFormIntegration {
 	 * Enqueue JS/CSS for the activity media attachment button.
 	 */
 	public function enqueue_activity_media_scripts(): void {
-		// Always enqueue frontend CSS and lightbox on BP pages for all visitors.
+		// Activity surfaces need both stylesheets:
+		//   mvs-frontend       — design tokens, media grid, lightbox (shared).
+		//   mvs-bp-integration — all BP-scoped rules (`#buddypress X`),
+		//                         including activity form controls, activity
+		//                         stream image sizing, and theme-compat
+		//                         overrides for Reign/BuddyBoss. Matches the
+		//                         enqueue pattern already used by
+		//                         ProfileTabIntegration and GroupTabIntegration
+		//                         — every BP surface we touch loads both.
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_style( 'mvs-bp-integration' );
 
 		// Lightbox handled by shared-ui Interactivity API module — no legacy JS needed.
 
