@@ -134,7 +134,7 @@ class SettingsPage {
 	 */
 	public function handle_settings_notices(): void {
 		$screen = get_current_screen();
-		if ( ! $screen || false === strpos( $screen->id, 'mvs-settings' ) ) {
+		if ( ! $screen || false === strpos( $screen->id ?? '', 'mvs-settings' ) ) {
 			return;
 		}
 

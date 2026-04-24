@@ -296,6 +296,13 @@ $mvs_archive_url = home_url( '/media/' );
 				$mvs_has_reported = $mvs_reports_svc->has_reported( $mvs_current_user_id, 'media', $mvs_media_id );
 			}
 		}
+		$mvs_is_favorited = false;
+		if ( $mvs_current_user_id > 0 ) {
+			$mvs_favorites_svc = \WPMediaVerse\Core\Plugin::container()->get( 'favorites' );
+			if ( $mvs_favorites_svc ) {
+				$mvs_is_favorited = $mvs_favorites_svc->is_favorited( $mvs_media_id, $mvs_current_user_id );
+			}
+		}
 
 		$mvs_social_ctx = array(
 			'mediaId'            => $mvs_media_id,
@@ -314,7 +321,7 @@ $mvs_archive_url = home_url( '/media/' );
 			'initialTags'        => $mvs_tag_names,
 			'reactions'          => array(),
 			'userReaction'       => '',
-			'isFavorite'         => false,
+			'isFavorite'         => $mvs_is_favorited,
 			'reported'           => $mvs_has_reported,
 			'comments'           => array(),
 			'commentText'        => '',

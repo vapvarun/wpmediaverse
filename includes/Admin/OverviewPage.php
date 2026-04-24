@@ -44,11 +44,12 @@ class OverviewPage {
 		}
 
 		// Enqueue on any WPMediaVerse admin page.
-		$is_mvs_page = (
+		$mvs_screen_id = $screen->id ?? '';
+		$is_mvs_page   = (
 			'mvs_album' === $screen->post_type ||
 			'mvs_collection' === $screen->post_type ||
-			false !== strpos( $screen->id, 'wpmediaverse' ) ||
-			false !== strpos( $screen->id, 'mvs-' )
+			false !== strpos( $mvs_screen_id, 'wpmediaverse' ) ||
+			false !== strpos( $mvs_screen_id, 'mvs-' )
 		);
 
 		if ( $is_mvs_page ) {
