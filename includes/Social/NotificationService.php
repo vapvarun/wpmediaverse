@@ -35,9 +35,19 @@ class NotificationService {
 	/**
 	 * Register hooks for auto-creating notifications.
 	 *
+	 * Guarded with a static flag so accidental double-instantiation (via the
+	 * service container or a stray `new NotificationService()`) cannot register
+	 * the same callbacks twice — which would produce duplicate rows.
+	 *
 	 * @since 1.1.0
 	 */
 	public function init(): void {
+		static $registered = false;
+		if ( $registered ) {
+			return;
+		}
+		$registered = true;
+
 		add_action( 'mvs_user_followed', array( $this, 'on_follow' ), 10, 2 );
 		add_action( 'mvs_reaction_added', array( $this, 'on_reaction' ), 10, 3 );
 		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 3 );
