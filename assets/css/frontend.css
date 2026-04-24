@@ -5132,6 +5132,147 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text-secondary);
 }
 
+/* -----------------------------------------------------------------------
+   Plugin-branded 404 (mvs-empty-state-frontend--404)
+   Uses the same design language as the auth gate — centered card with a
+   gradient accent, circular icon halo, and popular-tag row below the
+   primary CTA.
+   ----------------------------------------------------------------------- */
+.mvs-archive--404 {
+    display: flex;
+    justify-content: center;
+    padding: clamp(32px, 8vw, 96px) 16px;
+}
+
+.mvs-empty-state-frontend--404 {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    margin: 0;
+    padding: clamp(32px, 5vw, 56px) clamp(24px, 4vw, 48px);
+    background: var(--mvs-surface, #fff);
+    border-radius: var(--mvs-radius-lg, 16px);
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.04),
+        0 18px 48px -12px rgba(15, 23, 42, 0.18);
+    overflow: hidden;
+}
+
+.mvs-empty-state-frontend--404::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg,
+        var(--mvs-primary, #0073aa) 0%,
+        #6a5acd 50%,
+        #ff6aa6 100%);
+}
+
+.mvs-empty-state-frontend__glyph {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 88px;
+    height: 88px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    color: var(--mvs-primary, #0073aa);
+    z-index: 1;
+}
+
+.mvs-empty-state-frontend__glyph svg {
+    width: 44px;
+    height: 44px;
+    stroke-width: 1.75;
+}
+
+.mvs-empty-state-frontend__title {
+    margin: 0 0 12px;
+    font-family: var(--mvs-font-heading, inherit);
+    font-size: clamp(22px, 2.6vw, 28px);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--mvs-text, #1e1e1e);
+}
+
+.mvs-empty-state-frontend__lede {
+    margin: 0 auto 28px;
+    max-width: 420px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--mvs-text-secondary, #646970);
+}
+
+.mvs-empty-state-frontend--404 .mvs-empty-state-actions {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.mvs-empty-state-frontend--404 .mvs-btn--primary {
+    min-width: 200px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.mvs-empty-state-frontend__tags-label {
+    margin: 12px 0 10px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mvs-text-muted, #a7aaad);
+}
+
+.mvs-empty-state-frontend--404 .mvs-empty-state-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.mvs-empty-state-frontend--404 .mvs-tag-cloud-item {
+    padding: 6px 14px;
+    border-radius: var(--mvs-radius-pill, 100px);
+    background: var(--mvs-surface-2, #f6f7f7);
+    color: var(--mvs-text, #1e1e1e);
+    font-size: 13px;
+    text-decoration: none;
+    transition: background 150ms ease, color 150ms ease;
+}
+
+.mvs-empty-state-frontend--404 .mvs-tag-cloud-item:hover,
+.mvs-empty-state-frontend--404 .mvs-tag-cloud-item:focus-visible {
+    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    color: var(--mvs-primary, #0073aa);
+}
+
+@media (max-width: 640px) {
+    .mvs-archive--404 {
+        padding: 24px 12px 48px;
+    }
+    .mvs-empty-state-frontend--404 {
+        padding: 28px 20px 32px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -8px rgba(15, 23, 42, 0.15);
+    }
+    .mvs-empty-state-frontend__glyph {
+        width: 72px;
+        height: 72px;
+        margin-bottom: 16px;
+    }
+    .mvs-empty-state-frontend__glyph svg {
+        width: 40px;
+        height: 40px;
+    }
+    .mvs-empty-state-frontend--404 .mvs-btn--primary {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
 /* ==========================================================================
    34b. Profile Completion Prompt
    ========================================================================== */

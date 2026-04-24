@@ -496,6 +496,35 @@ class TemplateLoader {
 		$GLOBALS['mvs_404_context']    = $context;
 		$GLOBALS['mvs_404_identifier'] = $identifier;
 
+		// Ensure the 404 template renders with the plugin's design system.
+		// `template_redirect` fires before `wp_enqueue_scripts`, so enqueuing
+		// here lands in the normal dependency resolution window.
+		if ( wp_style_is( 'mvs-frontend', 'registered' ) ) {
+			wp_enqueue_style( 'mvs-frontend' );
+		}
+
+		// Lucide may not be registered yet (registration happens on
+		// `wp_enqueue_scripts` which hasn't fired at template_redirect@5).
+		// Register-if-absent so the `<i data-lucide="search-x">` glyph in the
+		// 404 template hydrates into an SVG.
+		if ( ! wp_script_is( 'mvs-lucide', 'registered' ) ) {
+			wp_register_script(
+				'mvs-lucide',
+				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
+				array(),
+				MVS_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+			wp_add_inline_script(
+				'mvs-lucide',
+				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
+			);
+		}
+		wp_enqueue_script( 'mvs-lucide' );
+
 		$template = self::locate( '404.php' );
 		if ( $template ) {
 			include $template;
