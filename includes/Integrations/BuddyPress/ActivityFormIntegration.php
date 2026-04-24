@@ -53,7 +53,12 @@ class ActivityFormIntegration {
 				class="mvs-activity-media-btn"
 				aria-label="<?php esc_attr_e( 'Attach media', 'wpmediaverse' ); ?>"
 			>
-				<i data-lucide="image-plus" aria-hidden="true"></i>
+				<?php
+				// Server-rendered SVG (no JS/Lucide dependency) so the icon is
+				// visible even when BP Nouveau's Backbone re-render races the
+				// Lucide MutationObserver. Card #8.
+				echo \WPMediaVerse\Core\TemplateHelpers::icon_image_plus_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				?>
 				<span class="mvs-activity-media-btn__label"><?php esc_html_e( 'Attach media', 'wpmediaverse' ); ?></span>
 			</button>
 			<div id="mvs-activity-media-preview" class="mvs-activity-media-preview" style="display:none"></div>

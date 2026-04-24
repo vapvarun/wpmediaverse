@@ -962,12 +962,16 @@
  *  or fixed pixel widths.
  * ============================================================================= */
 
+/* Composer preview — compact horizontal strip, Facebook/Instagram style.
+ * Uploading 5–6 files must NOT eat the viewport. Each thumb is a fixed
+ * 64px square; many files wrap into a small second row. Click the × to
+ * remove. Card #9. */
 #buddypress .mvs-activity-media-preview {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 8px;
-    margin-top: 12px;
-    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 8px;
     background: var(--mvs-surface-2);
     border: 1px solid var(--mvs-border);
     border-radius: 8px;
@@ -975,33 +979,16 @@
     box-sizing: border-box;
 }
 
-/* Single upload: compact 150px thumbnail — consistent with multi-image tiles. */
-#buddypress .mvs-activity-media-preview.mvs-preview-grid-1 {
-    grid-template-columns: minmax(120px, 150px);
-}
-#buddypress .mvs-activity-media-preview.mvs-preview-grid-1 .mvs-preview-item {
-    aspect-ratio: 1 / 1;
-    max-height: 150px;
-}
-
-/* N-up grids. 5 uses 3x2 because a 5-col row looks cramped at composer width. */
-#buddypress .mvs-activity-media-preview.mvs-preview-grid-2 { grid-template-columns: repeat(2, 1fr); }
-#buddypress .mvs-activity-media-preview.mvs-preview-grid-3 { grid-template-columns: repeat(3, 1fr); }
-#buddypress .mvs-activity-media-preview.mvs-preview-grid-4 { grid-template-columns: repeat(2, 1fr); }
-#buddypress .mvs-activity-media-preview.mvs-preview-grid-5 { grid-template-columns: repeat(3, 1fr); }
-#buddypress .mvs-activity-media-preview.mvs-preview-grid-6 { grid-template-columns: repeat(3, 1fr); }
-
-/* Preview item — fluid square cell that fills its grid track, capped so
- * wide containers don't blow tiles up beyond ~200px. */
+/* Preview item — fixed 64px square regardless of file count so the preview
+ * strip stays predictable; no grid-N-up variants needed. */
 #buddypress .mvs-preview-item {
     position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    max-height: 200px;
+    width: 64px;
+    height: 64px;
     border-radius: 6px;
     overflow: hidden;
     background: var(--mvs-border-light);
-    justify-self: start;
+    flex-shrink: 0;
 }
 
 #buddypress .mvs-preview-item img {
@@ -1145,13 +1132,6 @@
     #buddypress .mvs-bp-screen .mvs-grid-item-actions {
         opacity: 1;
         pointer-events: auto;
-    }
-
-    /* Preview grids 3/5/6 collapse to 2 columns so tiles don't get too small. */
-    #buddypress .mvs-activity-media-preview.mvs-preview-grid-3,
-    #buddypress .mvs-activity-media-preview.mvs-preview-grid-5,
-    #buddypress .mvs-activity-media-preview.mvs-preview-grid-6 {
-        grid-template-columns: repeat(2, 1fr);
     }
 
     /* Activity stream multi-image grids (3/4/5/6 layouts) collapse to
