@@ -2487,78 +2487,19 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text-muted);
 }
 
-/* ==========================================================================
-   16. BuddyPress Profile Media Tab
-   ========================================================================== */
-
-.mvs-bp-profile-actions {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
-
-.mvs-bp-profile-actions .mvs-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.mvs-bp-profile-actions .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    line-height: 1;
-}
-
-/* BP inline upload dropzone */
-.mvs-bp-upload-wrap {
-    margin-bottom: 20px;
-}
-
-.mvs-bp-dropzone {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 16px 20px;
-    border: 2px dashed var(--mvs-border-light);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    background: var(--mvs-surface-2);
-}
-
-.mvs-bp-dropzone:hover,
-.mvs-bp-dropzone--active {
-    border-color: var(--mvs-primary);
-    background: var(--mvs-info-bg);
-}
-
-.mvs-bp-dropzone .dashicons {
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-    color: var(--mvs-primary);
-}
-
-.mvs-bp-dropzone-text {
-    font-size: 0.9em;
-    color: var(--mvs-text-secondary);
-}
-
-.mvs-bp-upload-status {
-    padding: 10px 16px;
-    margin-top: 8px;
-    border-radius: 6px;
-    background: var(--mvs-info-bg);
-    color: var(--mvs-primary);
-    font-size: 0.9em;
-}
-
-.mvs-bp-upload-status--success {
-    background: var(--mvs-success-bg);
-    color: var(--mvs-success);
-}
+/* Section 16 "BuddyPress Profile Media Tab" — removed. Rules were
+ * unscoped duplicates of scoped versions already in bp-integration.css:
+ *   .mvs-bp-profile-actions     → bp-integration.css section 'Action /
+ *                                  toolbar row'
+ *   .mvs-bp-dropzone +           → bp-integration.css section 'Upload
+ *     .mvs-bp-dropzone-text        surface'
+ *   .mvs-bp-upload-status +      → bp-integration.css section 'Upload
+ *     --success                    surface'
+ *   .mvs-bp-upload-wrap          → see dedicated rules below (this file
+ *                                  keeps its copy because
+ *                                  templates/album.php reuses the class
+ *                                  in a non-BP context).
+ */
 
 /* Section 24 "BuddyPress Activity Media" — all rules moved to
  * bp-integration.css (see "Activity stream — media images" and
@@ -2656,176 +2597,18 @@ a.mvs-dashboard-card-title:hover {
     margin: 16px 0;
 }
 
-/* ==========================================================================
-   26. Group Media Sub-Tabs
-   ========================================================================== */
-
-.mvs-bp-sub-tabs {
-    display: flex;
-    border-bottom: 2px solid var(--mvs-border);
-    margin-bottom: 20px;
-    gap: 0;
-}
-
-.mvs-bp-sub-tab {
-    padding: 10px 20px;
-    text-decoration: none;
-    color: var(--mvs-text-secondary);
-    border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-    font-weight: 500;
-    font-size: 14px;
-    transition: color 0.2s, border-color 0.2s;
-}
-
-.mvs-bp-sub-tab:hover {
-    color: var(--mvs-text);
-    text-decoration: none;
-}
-
-.mvs-bp-sub-tab.active {
-    color: var(--mvs-text);
-    border-bottom-color: var(--mvs-primary);
-}
-
-/* ==========================================================================
-   27. Activity Media Thumbnails (Video/Audio)
-   ========================================================================== */
-
-.mvs-activity-media--video {
-    position: relative;
-}
-
-.mvs-activity-media--video a {
-    position: relative;
-    display: block;
-}
-
-.mvs-activity-play-icon {
-    position: absolute;
-    top: 50%;
-    right: 50%;
-    transform: translate(50%, -50%);
-    width: 56px;
-    height: 56px;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: var(--mvs-bg);
-    z-index: 2;
-    transition: background 0.2s;
-    pointer-events: none;
-}
-
-.mvs-activity-play-icon::before {
-    content: '\25B6';
-    font-style: normal;
-}
-
-/* Full-coverage link for video thumbnail cards */
-.mvs-activity-vid-link {
-    width: 100%;
-    height: 100%;
-    position: relative;
-}
-
-.mvs-activity-media--video a:hover .mvs-activity-play-icon {
-    background: rgba(0, 0, 0, 0.8);
-}
-
-.mvs-activity-media--placeholder,
-.mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--placeholder {
-    background: linear-gradient(-135deg, #0d2137, #0a0a0a);
-    border-radius: 8px;
-    aspect-ratio: 16 / 9;
-}
-
-.mvs-activity-media--audio,
-.mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--audio {
-    background: linear-gradient(-135deg, #4a1272, #1a0a2e);
-}
-
-.mvs-activity-media--placeholder a,
-.mvs-activity-media--placeholder .mvs-activity-vid-link,
-.mvs-activity-media-grid .mvs-activity-media--placeholder a,
-.mvs-activity-media-grid .mvs-activity-media--placeholder .mvs-activity-vid-link {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    text-decoration: none;
-    color: var(--mvs-border-light);
-    padding: 32px;
-    width: 100%;
-    height: 100%;
-    box-sizing: border-box;
-}
-
-.mvs-activity-media--placeholder .mvs-activity-play-icon {
-    position: static;
-    transform: none;
-}
-
-.mvs-activity-media-label {
-    font-size: 0.9em;
-    max-width: 200px;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.mvs-activity-media--audio {
-    background: linear-gradient(-135deg, #4a1272, #1a0a2e);
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.mvs-activity-media--audio a {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 16px 20px;
-    text-decoration: none;
-    color: var(--mvs-surface);
-}
-
-.mvs-activity-audio-icon {
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    color: var(--mvs-surface);
-    flex-shrink: 0;
-}
-
-.mvs-activity-audio-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-}
-
-.mvs-activity-audio-title {
-    font-weight: 600;
-    font-size: 0.95em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.mvs-activity-audio-meta {
-    font-size: 0.82em;
-    color: var(--mvs-text-muted);
-}
+/* Section 26 "Group Media Sub-Tabs" — removed. Unscoped duplicates of
+ * scoped versions already in bp-integration.css section 'Sub-tab row
+ * (Media / Albums)':
+ *   .mvs-bp-sub-tabs, .mvs-bp-sub-tab, .mvs-bp-sub-tab:hover,
+ *   .mvs-bp-sub-tab.active
+ *
+ * Section 27 "Activity Media Thumbnails (Video/Audio)" — moved to
+ * bp-integration.css section 'Activity stream — video thumbnails,
+ * placeholders, audio cards', scoped under #buddypress. All
+ * .mvs-activity-media--video / --audio / --placeholder rules plus the
+ * play icon, vid-link, audio icon/info/title/meta supporting classes.
+ */
 
 /* ==========================================================================
    28. Enhanced Single Media Player
