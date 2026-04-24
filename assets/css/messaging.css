@@ -1159,6 +1159,16 @@ body.dark-mode {
 	font-size: 15px;
 }
 
+/* Respect the HTML [hidden] attribute (set by data-wp-bind--hidden on both
+   .mvs-messages-main and .mvs-messages-main--empty). Without this, the
+   display:flex rules above override the UA stylesheet's [hidden]{display:none}
+   and both panes render simultaneously — the empty-state "Select a
+   conversation" was visible alongside an active conversation. */
+.mvs-messages-page .mvs-messages-main[hidden],
+.mvs-messages-page .mvs-messages-main--empty[hidden] {
+	display: none;
+}
+
 /* ----------------------------------------------------------------
    Responsive
    ---------------------------------------------------------------- */

@@ -690,10 +690,11 @@
 #buddypress .mvs-activity-media-grid,
 .activity-list .mvs-activity-media-grid {
     display: grid;
-    gap: 3px;
+    /* 8px gap (was 3px) gives tiles breathing room instead of touching edges.
+       Outer border-radius + overflow intentionally dropped so each tile is
+       self-contained and the gap can show through. */
+    gap: 8px;
     margin-top: 10px;
-    border-radius: 10px;
-    overflow: hidden;
 }
 
 #buddypress .mvs-activity-media-grid .mvs-activity-media,
@@ -702,6 +703,8 @@
     margin-top: 0;
     overflow: hidden;
     background: var(--mvs-surface-2);
+    /* Subtle rounded corners per-tile (mirrors the single-image rule at 662). */
+    border-radius: 8px;
 }
 
 #buddypress .mvs-activity-media-grid .mvs-activity-media a,
@@ -712,7 +715,9 @@
 }
 
 /* Tile images fill the grid cell with a cover-crop, overriding the
- * single-image contain-fit rule above. */
+ * single-image contain-fit rule above. border-radius lives on the tile
+ * wrapper (overflow:hidden); images themselves stay square-edged so the
+ * crop happens cleanly. */
 #buddypress .mvs-activity-media-grid .mvs-activity-media img,
 .activity-list .mvs-activity-media-grid .mvs-activity-media img,
 #buddypress .mvs-activity-media-grid .mvs-activity-media a[href*="/media/"] img:not(.emoji):not(.avatar) {
@@ -723,6 +728,18 @@
     object-fit: cover;
     border-radius: 0;
     margin: 0;
+}
+
+/* Mobile: tighter gap so two-column grids don't eat too much width at 390px. */
+@media (max-width: 640px) {
+    #buddypress .mvs-activity-media-grid,
+    .activity-list .mvs-activity-media-grid {
+        gap: 4px;
+    }
+    #buddypress .mvs-activity-media-grid .mvs-activity-media,
+    .activity-list .mvs-activity-media-grid .mvs-activity-media {
+        border-radius: 6px;
+    }
 }
 
 /* +N more overlay on the last cell. */
