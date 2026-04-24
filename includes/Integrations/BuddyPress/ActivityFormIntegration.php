@@ -82,10 +82,33 @@ class ActivityFormIntegration {
 			return;
 		}
 
+		// The activity composer's attach-media button uses
+		// `<i data-lucide="image-plus">`; Lucide JS must load on BP pages or
+		// the icon never hydrates and the button renders as an empty box.
+		// Register-if-absent because `mvs_loaded` may not have fired the
+		// central Lucide registration yet on some BP-only surfaces.
+		if ( ! wp_script_is( 'mvs-lucide', 'registered' ) ) {
+			wp_register_script(
+				'mvs-lucide',
+				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
+				array(),
+				MVS_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+			wp_add_inline_script(
+				'mvs-lucide',
+				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
+			);
+		}
+		wp_enqueue_script( 'mvs-lucide' );
+
 		wp_enqueue_script(
 			'mvs-bp-activity-media',
 			MVS_PLUGIN_URL . 'assets/js/bp-activity-media.js',
-			array( 'jquery' ),
+			array( 'jquery', 'mvs-lucide' ),
 			filemtime( $js_path ),
 			array(
 				'in_footer' => true,
