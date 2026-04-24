@@ -1335,6 +1335,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-social-bar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     flex-wrap: wrap;
     gap: 8px 12px;
     padding: 12px 24px;
@@ -1365,6 +1366,13 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-social-bar button:hover {
     border-color: var(--mvs-primary);
     color: var(--mvs-primary);
+}
+
+.mvs-social-bar__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 .mvs-social-bar button.active {
@@ -1432,57 +1440,10 @@ body.dark-mode .mvs-skeleton::after {
     color: var(--mvs-bg);
 }
 
-/* §-sticky-action-bar — Mobile only.
-   On phones, pin the social action row to the bottom of the viewport so the
-   primary actions (Favorite, Share, Edit, Delete) are always thumb-reachable
-   without scrolling. Like the iOS Photos / Instagram bottom bar.
-
-   The page wrapper already reserves --mvs-fab-safe via §0c, so we sit just
-   above the FAB column. Backdrop-blur fades the content scrolling beneath. */
 @media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
-    .mvs-single-media .mvs-social-actions {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: var(--mvs-z-sticky);
-        background: color-mix(in srgb, var(--mvs-bg) 92%, transparent);
-        -webkit-backdrop-filter: saturate(180%) blur(12px);
-        backdrop-filter: saturate(180%) blur(12px);
-        border-top: 1px solid var(--mvs-border-light);
-        padding: var(--mvs-space-2) var(--mvs-space-3);
-        padding-bottom: calc(var(--mvs-space-2) + env(safe-area-inset-bottom, 0px));
-        gap: var(--mvs-space-2);
-        justify-content: space-between;
-        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
-    }
-
-    /* Reserve viewport space so the article isn't hidden by the bar.
-       The page wrapper's --mvs-fab-safe stacks BELOW the action bar so the
-       FAB still avoids the action bar too. */
-    .mvs-single-media {
-        padding-bottom: calc(72px + var(--mvs-fab-safe) + env(safe-area-inset-bottom, 0px));
-    }
-
     /* Hide the view count on mobile to reclaim space — it's a passive metric. */
     .mvs-single-media .mvs-social-actions .mvs-view-count {
         display: none;
-    }
-
-    /* Tighten action subgroups to share the bar width. */
-    .mvs-single-media .mvs-social-actions-left,
-    .mvs-single-media .mvs-social-actions-right {
-        gap: var(--mvs-space-2);
-    }
-}
-
-/* When the FAB sits above the sticky action bar on mobile, push it up by
-   the bar height so the two don't overlap. */
-@media (max-width: 767px) {
-    .mvs-single-media + .mvs-fab,
-    .mvs-single-media ~ .mvs-fab,
-    body.mvs-page--single-media .mvs-fab {
-        bottom: calc(var(--mvs-fab-offset) + 72px + env(safe-area-inset-bottom, 0px));
     }
 }
 
