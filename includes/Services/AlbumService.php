@@ -195,16 +195,16 @@ class AlbumService {
 			return true;
 		}
 
-		// The cover must belong to the album — prevents picking arbitrary media.
-		if ( ! $this->is_item_in_album( $album_id, $media_id ) ) {
+		// Reject cover requests for media that doesn't exist at all.
+		if ( ! MediaRepository::exists( $media_id ) ) {
 			return new \WP_Error(
-				'mvs_cover_not_in_album',
-				__( 'Cover image must be a media item in this album.', 'wpmediaverse' ),
-				array( 'status' => 400 )
+				'mvs_media_not_found',
+				__( 'Media item not found.', 'wpmediaverse' ),
+				array( 'status' => 404 )
 			);
 		}
 
-		// Only image-type media makes sense as a cover.
+		// Only image-type media makes sense as a cover. Validate before any mutation.
 		$file_type = MediaRepository::get( $media_id, 'file_type' );
 		if ( ! is_string( $file_type ) || 0 !== strpos( $file_type, 'image/' ) ) {
 			return new \WP_Error(
@@ -212,6 +212,20 @@ class AlbumService {
 				__( 'Cover image must be an image (not video or audio).', 'wpmediaverse' ),
 				array( 'status' => 400 )
 			);
+		}
+
+		// If the media is not yet in this album, add it atomically. This removes
+		// the client-side ordering dance (add_items before /cover) that caused
+		// FAB and dashboard edit flows to 400 when choosing a new cover.
+		if ( ! $this->is_item_in_album( $album_id, $media_id ) ) {
+			$this->add_items( $album_id, array( $media_id ) );
+			if ( ! $this->is_item_in_album( $album_id, $media_id ) ) {
+				return new \WP_Error(
+					'mvs_cover_add_failed',
+					__( 'Could not add the selected media to this album (the album type may not accept it).', 'wpmediaverse' ),
+					array( 'status' => 409 )
+				);
+			}
 		}
 
 		update_post_meta( $album_id, self::COVER_META_KEY, $media_id );
