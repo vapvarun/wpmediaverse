@@ -1302,6 +1302,12 @@ class Plugin {
 
 	/**
 	 * Render the chat panel in wp_footer for logged-in users.
+	 *
+	 * The slide-out chat panel is the compact DM UI that appears on every
+	 * plugin page via wp_footer. On the dedicated `/messages/` page the full
+	 * messages template is already rendering, so mounting the slide-out would
+	 * double-initialise the `mvs/messaging` Interactivity API store and put
+	 * two DM UIs on the same screen. Skip in that case.
 	 */
 	public static function render_chat_panel(): void {
 		if ( ! is_user_logged_in() ) {
@@ -1310,6 +1316,12 @@ class Plugin {
 
 		// Suppress when BuddyNext handles DM UI.
 		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			return;
+		}
+
+		// Suppress on the dedicated `/messages/` full-page template — it
+		// already renders its own chat UI; a second mount would dual-render.
+		if ( (int) get_query_var( 'mvs_messages_page' ) ) {
 			return;
 		}
 

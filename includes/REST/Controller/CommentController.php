@@ -282,13 +282,28 @@ class CommentController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_mismatch', __( 'Comment does not belong to this media item.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
-		// 15-minute edit window.
-		$edit_window = (int) apply_filters( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS );
+		// Edit window — option-driven with filter override. Option is declared in
+		// SettingsRegistrar::register_undocumented_settings(); filter kept for
+		// back-compat and programmatic override per-site.
+		$edit_window = (int) apply_filters(
+			'mvs_comment_edit_window',
+			(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
+		);
 		$comment_age = time() - strtotime( $comment->comment_date_gmt );
 		if ( $comment_age > $edit_window ) {
+			$window_minutes = max( 1, (int) round( $edit_window / MINUTE_IN_SECONDS ) );
 			return new WP_Error(
 				'mvs_edit_expired',
-				__( 'Comments can only be edited within 15 minutes of posting.', 'wpmediaverse' ),
+				sprintf(
+					/* translators: %d: number of minutes in the edit window. */
+					_n(
+						'Comments can only be edited within %d minute of posting.',
+						'Comments can only be edited within %d minutes of posting.',
+						$window_minutes,
+						'wpmediaverse'
+					),
+					$window_minutes
+				),
 				array( 'status' => 403 )
 			);
 		}

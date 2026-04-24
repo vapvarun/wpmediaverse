@@ -293,24 +293,36 @@ $mvs_archive_url = home_url( '/media/' );
 	}
 
 	// Tag filter.
-	$mvs_tag_join = '';
+	$mvs_tag_join           = '';
+	$mvs_invalid_filter_tag = '';
 	if ( ! empty( $mvs_filter_tag ) ) {
 		$tag_term_obj = get_term_by( 'slug', $mvs_filter_tag, 'mvs_tag' );
 		if ( $tag_term_obj ) {
 			$mvs_tag_join = " INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = m.media_id";
 			$where       .= ' AND tr.term_taxonomy_id = %d';
 			$params[]     = $tag_term_obj->term_taxonomy_id;
+		} else {
+			// Tag slug provided but the term doesn't exist. Force zero results
+			// so the empty-state branch fires with a "Tag not found" message +
+			// Browse-all CTA, instead of silently returning the unfiltered feed.
+			$where                 .= ' AND 1 = 0';
+			$mvs_invalid_filter_tag = $mvs_filter_tag;
 		}
 	}
 
 	// Category filter.
-	$mvs_cat_join = '';
+	$mvs_cat_join           = '';
+	$mvs_invalid_filter_cat = '';
 	if ( ! empty( $mvs_filter_cat ) ) {
 		$cat_term_obj = get_term_by( 'slug', $mvs_filter_cat, 'mvs_category' );
 		if ( $cat_term_obj ) {
 			$mvs_cat_join = " INNER JOIN {$wpdb->term_relationships} trc ON trc.object_id = m.media_id";
 			$where       .= ' AND trc.term_taxonomy_id = %d';
 			$params[]     = $cat_term_obj->term_taxonomy_id;
+		} else {
+			// Same pattern as the tag-not-found case above.
+			$where                 .= ' AND 1 = 0';
+			$mvs_invalid_filter_cat = $mvs_filter_cat;
 		}
 	}
 
@@ -468,7 +480,60 @@ $mvs_archive_url = home_url( '/media/' );
 			</p>
 		<?php endif; ?>
 	<?php else : ?>
-		<?php if ( $mvs_search ) : ?>
+		<?php if ( ! empty( $mvs_invalid_filter_tag ) || ! empty( $mvs_invalid_filter_cat ) ) : ?>
+			<?php
+			$mvs_invalid_term = ! empty( $mvs_invalid_filter_tag ) ? $mvs_invalid_filter_tag : $mvs_invalid_filter_cat;
+			$mvs_invalid_kind = ! empty( $mvs_invalid_filter_tag ) ? 'tag' : 'category';
+			?>
+			<div class="mvs-empty-state-frontend">
+				<span class="mvs-empty-state-icon">&#x1F50D;</span>
+				<h3>
+					<?php
+					if ( 'tag' === $mvs_invalid_kind ) {
+						printf(
+							/* translators: %s: tag slug that could not be found. */
+							esc_html__( 'Tag "%s" not found', 'wpmediaverse' ),
+							esc_html( $mvs_invalid_term )
+						);
+					} else {
+						printf(
+							/* translators: %s: category slug that could not be found. */
+							esc_html__( 'Category "%s" not found', 'wpmediaverse' ),
+							esc_html( $mvs_invalid_term )
+						);
+					}
+					?>
+				</h3>
+				<p><?php esc_html_e( 'Browse all media, or pick a popular tag below.', 'wpmediaverse' ); ?></p>
+				<div class="mvs-empty-state-actions">
+					<a href="<?php echo esc_url( $mvs_archive_url ); ?>" class="mvs-btn mvs-btn--primary">
+						<?php esc_html_e( 'Browse all media', 'wpmediaverse' ); ?>
+					</a>
+				</div>
+				<?php
+				$mvs_popular_tags = get_terms(
+					array(
+						'taxonomy'   => 'mvs_tag',
+						'hide_empty' => true,
+						'number'     => 5,
+						'orderby'    => 'count',
+						'order'      => 'DESC',
+					)
+				);
+				if ( ! is_wp_error( $mvs_popular_tags ) && ! empty( $mvs_popular_tags ) ) :
+					?>
+					<div class="mvs-tag-cloud mvs-empty-state-tags">
+						<?php foreach ( $mvs_popular_tags as $mvs_popular_tag ) : ?>
+							<a href="<?php echo esc_url( add_query_arg( 'mvs_tag', $mvs_popular_tag->slug, $mvs_archive_url ) ); ?>" class="mvs-tag-cloud-item">
+								<?php echo esc_html( $mvs_popular_tag->name ); ?>
+							</a>
+						<?php endforeach; ?>
+					</div>
+					<?php
+				endif;
+				?>
+			</div>
+		<?php elseif ( $mvs_search ) : ?>
 			<div class="mvs-empty-state-frontend">
 				<span class="mvs-empty-state-icon">&#x1F50D;</span>
 				<h3>

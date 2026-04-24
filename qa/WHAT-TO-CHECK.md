@@ -17,8 +17,8 @@ When you add a feature, add a line here. When the AI finishes a pass, it should 
 | `/media/@{user}/` profile | header + grid + follower counts | "@user hasn't uploaded yet" |
 | `/media/@{user}/page/2/` | same, paginated | — |
 | `/media/edit-profile/` | form (logged in) | redirect / gate (logged out) |
-| `/media/album/{id}/` | album cover + items | private → lock; public empty → "no items in album" |
-| `/media/collection/{id}/` | collection items | smart rules evaluate to zero → "no items match rules" |
+| `/album/{slug}/` | album cover + items | private → lock; public empty → "no items in album" |
+| `/collection/{slug}/` | collection items | smart rules evaluate to zero → "no items match rules" |
 | `/my-media/` dashboard | 4 tabs + quota | each tab has its own distinct empty state |
 | `/my-media/` anon | — | premium auth gate (lucide icons, primary CTA, redirect_to) |
 | `/compete/` hub | 3 cards with counts | anon sees "log in to participate" |
@@ -156,7 +156,7 @@ When any of these diverge, UI silently breaks (the envelope-drift class):
 
 ## 6. Plugin-owned URLs + surfaces recap
 
-**Free frontend:** `/media/`, `/media/{slug}/`, `/media/@{user}/`, `/media/edit-profile/`, `/media/album/{id}/`, `/media/collection/{id}/`, `/my-media/`, `/messages/`, BP `/members/{user}/media/`, BP `/groups/{slug}/media/`.
+**Free frontend:** `/media/`, `/media/{slug}/`, `/media/@{user}/`, `/media/edit-profile/`, `/album/{slug}/`, `/collection/{slug}/`, `/my-media/`, `/messages/`, BP `/members/{user}/media/`, BP `/groups/{slug}/media/`.
 
 **Pro frontend:** `/compete/`, `/media/battles/`, `/media/challenges/`, `/media/tournaments/`, and `/media/` under each of 4 layout modes (instagram / flickr / pinterest / dribbble) in addition to the default grid.
 

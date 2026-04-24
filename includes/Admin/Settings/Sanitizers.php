@@ -124,4 +124,59 @@ class Sanitizers {
 
 		return $sanitized;
 	}
+
+	/**
+	 * Sanitize grid columns: integer 1-6, default 3.
+	 *
+	 * @param mixed $value Raw input.
+	 * @return int Sanitized columns.
+	 */
+	public static function sanitize_grid_columns( $value ): int {
+		$value = absint( $value );
+		if ( $value < 1 || $value > 6 ) {
+			return 3;
+		}
+		return $value;
+	}
+
+	/**
+	 * Sanitize thumbnail style: `square` or `original`.
+	 *
+	 * @param mixed $value Raw input.
+	 * @return string Sanitized style.
+	 */
+	public static function sanitize_thumbnail_style( $value ): string {
+		$allowed = array( 'square', 'original' );
+		$value   = is_string( $value ) ? $value : '';
+		return in_array( $value, $allowed, true ) ? $value : 'square';
+	}
+
+	/**
+	 * Sanitize DM access level: `all`, `followers`, or `none`.
+	 *
+	 * @param mixed $value Raw input.
+	 * @return string Sanitized access level.
+	 */
+	public static function sanitize_dm_access( $value ): string {
+		$allowed = array( 'all', 'followers', 'none' );
+		$value   = is_string( $value ) ? $value : '';
+		return in_array( $value, $allowed, true ) ? $value : 'all';
+	}
+
+	/**
+	 * Sanitize comment edit window in seconds. Clamp to [60, 24h].
+	 *
+	 * @param mixed $value Raw input (seconds).
+	 * @return int Sanitized window in seconds.
+	 */
+	public static function sanitize_comment_edit_window( $value ): int {
+		$value = absint( $value );
+		if ( $value < MINUTE_IN_SECONDS ) {
+			return 15 * MINUTE_IN_SECONDS;
+		}
+		if ( $value > DAY_IN_SECONDS ) {
+			return DAY_IN_SECONDS;
+		}
+		return $value;
+	}
 }

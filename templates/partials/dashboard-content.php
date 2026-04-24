@@ -235,8 +235,17 @@ wp_enqueue_style( 'mvs-frontend' );
 	</div>
 
 	<?php
-	// Profile completion prompt (if no custom avatar or empty bio).
-	$mvs_profile_incomplete = ! $mvs_has_custom || empty( $mvs_current_user->description );
+	// Profile completion prompt (if no avatar or empty bio).
+	//
+	// "Has avatar" means either a plugin-uploaded custom avatar OR a Gravatar
+	// keyed off the user's email. `get_avatar_data()` returns `found_avatar`
+	// true only when Gravatar returned an actual image (not the mystery-man
+	// placeholder), so the banner correctly stays hidden for users whose
+	// Gravatar is set.
+	$mvs_avatar_data        = get_avatar_data( $mvs_current_user->ID );
+	$mvs_has_gravatar       = ! empty( $mvs_avatar_data['found_avatar'] );
+	$mvs_has_any_avatar     = $mvs_has_custom || $mvs_has_gravatar;
+	$mvs_profile_incomplete = ! $mvs_has_any_avatar || empty( $mvs_current_user->description );
 	if ( $mvs_profile_incomplete ) : ?>
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
 		<span class="mvs-profile-prompt-icon">&#x1F464;</span>

@@ -22,8 +22,8 @@ Frontend (routed by WPMediaVerse — `templates/` + rewrite rules):
 | `/media/@{username}/` | `templates/user-profile.php` (Pro) / profile partial | User profile page |
 | `/media/@{username}/page/2/` | profile + pagination | Paginated profile |
 | `/media/edit-profile/` | `templates/profile-edit.php` | Own profile edit |
-| `/media/album/{id}/` | `templates/album.php` | Single album |
-| `/media/collection/{id}/` | `templates/collection.php` | Single collection |
+| `/album/{slug}/` | `templates/album.php` | Single album |
+| `/collection/{slug}/` | `templates/collection.php` | Single collection |
 | `/my-media/` | `templates/partials/dashboard-content.php` | User dashboard (4 tabs) |
 | `/compete/` | `templates/compete-hub.php` (Pro) | Compete hub (query var `mvs_compete_page=1`) |
 | `/media/battles/` | `templates/battles.php` (Pro) | Battles list |
@@ -207,7 +207,7 @@ Any 1 or 2 = Major finding by default.
 
 ---
 
-## 9. Journey 7 — Albums (`/media/album/{id}/`) & Collections (`/media/collection/{id}/`)
+## 9. Journey 7 — Albums (`/album/{slug}/`) & Collections (`/collection/{slug}/`)
 
 - [ ] **7.1** Open a public album. **Pass:** Cover image + title + author + description; grid of items; item click opens lightbox (stays within album context: prev/next cycles within album only).
 - [ ] **7.2** Album privacy respected. **Pass:** Private album as non-owner = lock message, not a 404.
