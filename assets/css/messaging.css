@@ -473,6 +473,17 @@ body.dark-mode {
 	overscroll-behavior: contain;
 }
 
+/* Anchor messages to the bottom of the scroll container so a single message
+   (or a short history) sits right above the composer instead of at the top
+   with a huge dead zone below it. The ::before spacer flexes to fill the
+   empty space above messages; when content overflows, min-height:0 lets it
+   collapse so scroll still reaches the oldest message. */
+.mvs-chat-messages::before {
+	content: '';
+	flex: 1;
+	min-height: 0;
+}
+
 .mvs-chat-messages__date-divider {
 	text-align: center;
 	padding: 8px 0;
@@ -1127,7 +1138,14 @@ body.dark-mode {
    ---------------------------------------------------------------- */
 .mvs-messages-page {
 	display: flex;
-	height: calc(100vh - 32px);
+	/* Theme headers sit above the chat page — subtract a sensible offset so the
+	   page fits the visible viewport without forcing a page-level scroll. Cap
+	   max-height so on ultra-tall screens the chat pane doesn't stretch past
+	   a comfortable reading/chat length. Mobile override at :1191 restores
+	   full-viewport. */
+	height: calc(100vh - 220px);
+	min-height: 480px;
+	max-height: 820px;
 	background: var(--mvs-chat-bg);
 	max-width: 1200px;
 	margin: 0 auto;
@@ -1189,7 +1207,13 @@ body.dark-mode {
 	}
 
 	.mvs-messages-page {
-		height: 100vh;
+		/* Mobile: fit within visible viewport minus approximate theme header
+		   so the composer sits above the fold without forcing a page-scroll
+		   past blank space. 220px covers typical theme header (nav + search
+		   bar + spacing). 100dvh adjusts to mobile browser chrome. */
+		height: calc(100dvh - 220px);
+		min-height: 420px;
+		max-height: none;
 		border: none;
 		border-radius: 0;
 	}
@@ -1209,6 +1233,27 @@ body.dark-mode {
 	.mvs-messages-page[data-active-conv] .mvs-messages-main {
 		display: flex;
 	}
+
+	/* The rule above targets every .mvs-messages-main — including the empty
+	   pane (which also has that class). Without this override the empty pane
+	   flex-splits the viewport with the active pane on mobile, leaving the
+	   active chat at half width. Keep empty pane hidden whenever a
+	   conversation is active. */
+	.mvs-messages-page[data-active-conv] .mvs-messages-main--empty {
+		display: none;
+	}
+}
+
+/* Sticky conversation header so the user always sees who they're chatting
+   with and the back-to-list arrow remains reachable at any scroll position.
+   Applies on all viewports but most valuable on mobile where the theme's
+   nav bar may sit above the chat pane. */
+.mvs-messages-main > .mvs-chat-header {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	background: var(--mvs-chat-surface);
+	border-bottom: 1px solid var(--mvs-chat-border);
 }
 
 /* ----------------------------------------------------------------
