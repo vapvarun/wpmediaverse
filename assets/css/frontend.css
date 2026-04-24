@@ -4284,14 +4284,13 @@ a.mvs-dashboard-card-title:hover {
     box-sizing: border-box;
 }
 
-/* Single image: show a larger hero preview. */
+/* Single image: compact thumbnail tile — consistent with multi-image. */
 .mvs-activity-media-preview.mvs-preview-grid-1 {
-    grid-template-columns: minmax(200px, 320px);
+    grid-template-columns: minmax(120px, 150px);
 }
 .mvs-activity-media-preview.mvs-preview-grid-1 .mvs-preview-item {
-    aspect-ratio: 4 / 3;
-    height: auto;
-    min-height: 160px;
+    aspect-ratio: 1 / 1;
+    max-height: 150px;
 }
 
 /* 2 items: two equal columns. */
