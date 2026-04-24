@@ -120,18 +120,25 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 
 ## Coding Rules
 
-1. **Max file size: 500 lines.** Files above this are tech debt (see Known Debt below).
-2. **Max method size: 50 lines.** Extract helpers or delegate to services.
+This is the index. Every rule below links to its full spec in `qa/`. Add new rules here first (1-2 sentence canonical version), then write the detailed spec.
+
+1. **Max file size: 500 lines.** Files above this are tech debt (see Known Debt below). Spec: `qa/PHP-ORGANIZATION-RULES.md` §1.
+2. **Max method size: 50 lines.** Extract helpers or delegate to services. Spec: `qa/PHP-ORGANIZATION-RULES.md` §1.
 3. **Database queries: always `$wpdb->prepare()`.** No raw interpolation.
-4. **Admin HTML: template files only.** Never inline `echo` in PHP classes; use `templates/admin/`.
-5. **Hook names: `mvs_` prefix, snake_case.** Example: `mvs_media_uploaded`, `mvs_ai_providers`.
+4. **Admin HTML: template files only.** Never inline `echo` of HTML or `<script>` in PHP classes; use `templates/admin/`. Spec: `qa/PHP-ORGANIZATION-RULES.md` §2–§3.
+5. **Hook names: `mvs_` prefix, snake_case.** Example: `mvs_media_uploaded`, `mvs_ai_providers`. Spec: `qa/NAMING-RULES.md` §5.
 6. **REST: extend `WP_REST_Controller`.** Every endpoint must define `get_item_schema()` and `get_item_permissions_check()` / `permission_callback`.
 7. **Security: nonce + capability on every write.** Use `wp_verify_nonce()` for admin forms, `permission_callback` for REST.
-8. **Error handling: `WP_Error` or `LoggerService`.** No silent `return false` — log failures.
-9. **i18n: all user-facing strings wrapped.** Use `__()`, `esc_html__()`, `esc_attr__()` with text domain `wpmediaverse`.
-10. **Pro boundary: never import Free classes directly.** Pro hooks into `mvs_loaded` and uses `ServiceContainer` — no `use WPMediaVerse\...` in Pro code.
-11. **No silent render fallthrough.** Every `return;` inside a render path (block `render.php`, shortcode callback, template, admin list, widget) must be paired with a visible empty state. Use `TemplateHelpers::render_block_empty_state()` / `render_admin_empty_state()`. Bare returns are only acceptable in hook callbacks, cron handlers, and REST permission checks. Full rule: `qa/RENDER-STATE-RULES.md`.
-12. **CSS file ownership.** `assets/css/bp-integration.css` owns **all** BuddyPress-specific CSS, scoped under `#buddypress` (and `.activity-list` for AJAX-injected activity items that render outside the wrapper). `assets/css/frontend.css` is for generic plugin frontend only: design tokens, templates, shortcodes, blocks, dashboard, single-media, lightbox. When adding a rule that targets BP surfaces (activity composer, activity stream, `/members/*`, `/groups/*`), put it in `bp-integration.css` — never in `frontend.css`. Every BP-touching integration (`ActivityFormIntegration`, `ProfileTabIntegration`, `GroupTabIntegration`) must enqueue both `mvs-frontend` and `mvs-bp-integration`. Rationale: keeps theme-compat and specificity concerns in one file, prevents unscoped rules from leaking into non-BP surfaces (e.g., our old broad `#buddypress .activity-content img` rule blew up Reign's `.bp-group-preview-cover` until we narrowed it). Locked in `qa/WHAT-TO-CHECK.md` regression row "BP CSS file ownership".
+8. **Error handling: `WP_Error` or `LoggerService`.** No silent `return false` — log failures. Spec: `qa/PHP-ORGANIZATION-RULES.md` §5.
+9. **i18n: all user-facing strings wrapped.** Use `__()`, `esc_html__()`, `esc_attr__()` with text domain `wpmediaverse`. Spec: `qa/NAMING-RULES.md` §10.
+10. **Pro boundary: never import Free classes directly.** Pro hooks into `mvs_loaded` and uses `ServiceContainer` — no `use WPMediaVerse\...` in Pro code. Spec: `qa/PHP-ORGANIZATION-RULES.md` §9.
+11. **No silent render fallthrough.** Every `return;` inside a render path (block `render.php`, shortcode callback, template, admin list, widget) must be paired with a visible empty state. Use `TemplateHelpers::render_block_empty_state()` / `render_admin_empty_state()`. Bare returns are only acceptable in hook callbacks, cron handlers, and REST permission checks. Spec: `qa/RENDER-STATE-RULES.md`.
+12. **CSS file ownership.** BP rules live in `bp-integration.css` (scoped under `#buddypress`). `frontend.css` is for generic plugin frontend only. Admin rules in `admin.css`. Messaging in `messaging.css`. Block-specific in `src/blocks/*/style.css`. Every BP-touching integration enqueues both `mvs-frontend` and `mvs-bp-integration`. No duplicate class-vs-ID rules. No `!important` without a one-line comment explaining what theme rule it fights. No dead selectors (every `.mvs-*` / `#mvs-*` must have an emitter). Spec: `qa/CSS-ORGANIZATION-RULES.md`. Locked in `qa/WHAT-TO-CHECK.md` regression row "BP CSS file ownership".
+13. **Names don't lie.** Class names, hook names, CSS classes must match actual usage. A `.mvs-bp-X` class used outside BP is a bug; either rename or narrow usage. Spec: `qa/NAMING-RULES.md`.
+14. **Sibling classes with ≥50% duplicate method bodies share a base class.** At n=2 duplication is tolerable; at n=3 it must be extracted. Spec: `qa/PHP-ORGANIZATION-RULES.md` §6.
+15. **Debt tax.** No PR adds lines to files in the Known Debt table below. Every edit to a debt file must reduce its line count or extract code out, unless the PR body justifies the addition. Spec: `qa/PROCESS-RULES.md` §3.
+
+**Process meta:** how rules are added, checked, and retired — `qa/PROCESS-RULES.md`.
 
 ---
 
@@ -140,13 +147,18 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 | File | Lines | Status |
 |------|------:|--------|
 | `includes/Integrations/BuddyPress/` | DONE | Split into 7 classes (was 2,811-line god class) |
-| `includes/Admin/Settings/` | DONE | Split into 5 classes (was 2,401-line god class) |
+| `includes/Admin/Settings/` | DONE | Split into 5 classes (was 2,401-line god class) — except `SettingsRegistrar.php`, see below |
 | `includes/Messaging/MessagingService.php` | 1,606 | God class — extract conversation/message sub-services |
 | `includes/Core/Plugin.php` | 1,208 | Bootstrap monolith — acceptable but avoid adding logic |
 | `includes/REST/Controller/MediaController.php` | 1,105 | Largest controller — extract bulk/filter helpers |
+| `includes/Admin/Settings/SettingsRegistrar.php` | 928 | Added 2026-04-24 after audit. Consolidates 7 settings groups into one class — extract per-group registrars. |
+| `includes/Services/UploadService.php` | 911 | Added 2026-04-24. Mixes validation, type detection, storage routing, progress tracking. Extract ValidatorService + ProgressTrackerService. |
+| `includes/Repository/MediaRepository.php` | 820 | Added 2026-04-24. Single data-access layer for 8+ query patterns. Extract MediaQueryBuilder + MediaStatsRepository. |
 | `includes/Messaging/MessagingController.php` | 803 | Large controller — extract route handlers |
+| `includes/Integrations/BuddyPress/ProfileTabIntegration.php` | 736 | Added 2026-04-24. 80% duplicate with GroupTabIntegration — extract BaseBPTabIntegration. |
+| `includes/Integrations/BuddyPress/GroupTabIntegration.php` | 712 | Added 2026-04-24. 80% duplicate with ProfileTabIntegration — extract BaseBPTabIntegration. |
 
-**Rule:** Do not add lines to these files. If you must change them, extract code out first.
+**Debt tax (Coding Rule #15):** No PR adds lines to any file above. Every edit to a debt file must reduce its line count or extract code out. If the change truly can't reduce the file, the PR body must explicitly justify the addition — that justification is what future reviewers use to decide whether the file should escape the debt list.
 
 ---
 
