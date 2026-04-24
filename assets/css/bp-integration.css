@@ -382,6 +382,264 @@
 }
 
 /* =============================================================================
+ *  Activity form — attach-media button, preview grid, privacy select
+ *
+ *  Emitted by ActivityFormIntegration::activity_post_media_button() on
+ *  every BP activity composer (profile, group, site-wide). The composer
+ *  markup is:
+ *
+ *    <div class="mvs-activity-media-btn-wrap">
+ *      <input type="file" hidden>
+ *      <button id="mvs-activity-media-btn" class="mvs-activity-media-btn">…</button>
+ *      <div   id="mvs-activity-media-preview" class="mvs-activity-media-preview"></div>
+ *      <input type="hidden">
+ *      <select id="mvs-activity-privacy" class="mvs-activity-privacy">…</select>
+ *    </div>
+ *
+ *  At runtime bp-activity-media.js moves the preview out of the wrap (above
+ *  #whats-new-options) so the wrap lays out only the button + select on a
+ *  single row — flex handles that.
+ *
+ *  ID-level specificity (#buddypress + ID) deliberately beats theme rules
+ *  that target raw `<button>` / `<select>` inside #whats-new-form (Reign,
+ *  BuddyX, BuddyBoss, Kadence) without needing !important.
+ * ============================================================================= */
+
+#buddypress .mvs-activity-media-btn-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 0;
+    clear: both;
+}
+
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn,
+#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    /* height:auto forces our min-height to drive layout. Reign sets
+     * `select { height: 42px }` in main.min.css and the composer-scoped
+     * .buddypress-wrap rule, which otherwise beats min-height. */
+    height: auto;
+    min-height: 36px;
+    margin: 0;
+    padding: 6px 14px;
+    border: 1px solid var(--mvs-border);
+    border-radius: 4px;
+    background-color: var(--mvs-bg);
+    color: var(--mvs-text);
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+    box-shadow: none;
+    vertical-align: middle;
+    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn {
+    gap: 6px;
+}
+
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn:hover,
+#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy:hover,
+#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy:focus {
+    background-color: var(--mvs-surface-2);
+    color: var(--mvs-text);
+    border-color: var(--mvs-text-muted);
+    outline: none;
+}
+
+/* Dashicons fallback (pre-Lucide-hydration). */
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+}
+
+/* Lucide SVG (primary icon — <i data-lucide> is swapped for <svg> on
+ * hydration). Pinned to 18px so the hydrated SVG matches other plugin
+ * icon buttons (.mvs-btn svg, .mvs-fab svg). */
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.75;
+    flex-shrink: 0;
+}
+
+/* Visible text label — prevents BP/theme line-height rules from wrapping
+ * it onto a second row. */
+#buddypress .mvs-activity-media-btn__label {
+    white-space: nowrap;
+    line-height: 1;
+}
+
+/* Custom chevron for the privacy <select>. Native UA arrows vary and
+ * theme overrides often hide them; appearance:none + inline SVG gives a
+ * consistent look regardless of theme. */
+#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy {
+    padding-right: 32px;
+    max-width: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px 12px;
+}
+
+
+/* =============================================================================
+ *  Activity form — preview grid for attached media before posting
+ *
+ *  Driven by a count-scoped class (mvs-preview-grid-1 … mvs-preview-grid-6)
+ *  emitted by bp-activity-media.js. CSS Grid with fractional columns keeps
+ *  the layout consistent across themes without depending on theme rules
+ *  or fixed pixel widths.
+ * ============================================================================= */
+
+#buddypress .mvs-activity-media-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px;
+    background: var(--mvs-surface-2);
+    border: 1px solid var(--mvs-border);
+    border-radius: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Single upload: compact 150px thumbnail — consistent with multi-image tiles. */
+#buddypress .mvs-activity-media-preview.mvs-preview-grid-1 {
+    grid-template-columns: minmax(120px, 150px);
+}
+#buddypress .mvs-activity-media-preview.mvs-preview-grid-1 .mvs-preview-item {
+    aspect-ratio: 1 / 1;
+    max-height: 150px;
+}
+
+/* N-up grids. 5 uses 3x2 because a 5-col row looks cramped at composer width. */
+#buddypress .mvs-activity-media-preview.mvs-preview-grid-2 { grid-template-columns: repeat(2, 1fr); }
+#buddypress .mvs-activity-media-preview.mvs-preview-grid-3 { grid-template-columns: repeat(3, 1fr); }
+#buddypress .mvs-activity-media-preview.mvs-preview-grid-4 { grid-template-columns: repeat(2, 1fr); }
+#buddypress .mvs-activity-media-preview.mvs-preview-grid-5 { grid-template-columns: repeat(3, 1fr); }
+#buddypress .mvs-activity-media-preview.mvs-preview-grid-6 { grid-template-columns: repeat(3, 1fr); }
+
+/* Preview item — fluid square cell that fills its grid track, capped so
+ * wide containers don't blow tiles up beyond ~200px. */
+#buddypress .mvs-preview-item {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 200px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--mvs-border-light);
+    justify-self: start;
+}
+
+#buddypress .mvs-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* All thumb types (image / video-placeholder / audio-placeholder) fill
+ * their preview cell identically. */
+#buddypress .mvs-preview-item .mvs-activity-media-thumb {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+}
+
+#buddypress .mvs-preview-audio,
+#buddypress .mvs-preview-video {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mvs-bg);
+    border-radius: 8px;
+    width: 100%;
+    height: 100%;
+}
+
+#buddypress .mvs-preview-audio {
+    background: linear-gradient(135deg, #6c3483, #1a1a2e);
+}
+
+#buddypress .mvs-preview-video {
+    background: linear-gradient(135deg, #1a5276, #1a1a2e);
+}
+
+/* Remove (×) button overlaid on each preview tile. */
+#buddypress .mvs-activity-media-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.65);
+    color: var(--mvs-bg);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 22px;
+    text-align: center;
+    padding: 0;
+    backdrop-filter: blur(4px);
+    transition: background 0.15s;
+}
+
+#buddypress .mvs-activity-media-remove:hover {
+    background: var(--mvs-danger);
+}
+
+
+/* =============================================================================
+ *  Activity form — upload progress / error states
+ * ============================================================================= */
+
+#buddypress .mvs-activity-media-uploading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mvs-primary);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 0;
+}
+
+#buddypress .mvs-activity-media-uploading::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--mvs-primary);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: mvs-spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+#buddypress .mvs-activity-media-error {
+    color: var(--mvs-danger);
+    font-size: 13px;
+}
+/* The mvs-spin @keyframes is defined in frontend.css (shared with other
+ * plugin spinners); @keyframes names are global, so referencing it here
+ * works without redeclaring. */
+
+
+/* =============================================================================
  *  Narrow-viewport adjustments (BP sidebars, mobile)
  * ============================================================================= */
 @media (max-width: 640px) {
@@ -412,5 +670,12 @@
     #buddypress .mvs-bp-screen .mvs-grid-item-actions {
         opacity: 1;
         pointer-events: auto;
+    }
+
+    /* Preview grids 3/5/6 collapse to 2 columns so tiles don't get too small. */
+    #buddypress .mvs-activity-media-preview.mvs-preview-grid-3,
+    #buddypress .mvs-activity-media-preview.mvs-preview-grid-5,
+    #buddypress .mvs-activity-media-preview.mvs-preview-grid-6 {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
