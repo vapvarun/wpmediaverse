@@ -52,6 +52,7 @@ Render rule (standing): every row above must produce visible output in both popu
 | Activity composer preview (2-6 images) | CSS Grid with per-count column templates (`mvs-preview-grid-2` → 2col, `-3` → 3col, `-4` → 2x2, `-5/6` → 3col). Collapses to 2col at ≤640px. | — |
 | Streak badge in display name | Must carry both `title` AND `aria-label` with identical copy. `wp_kses` allowlists for `span` in display-name render paths must include `aria-label`. | F3 (5 surfaces, fixed 2026-04-23). |
 | Plugin-mapped URL render paths | Must emit `mvs-frontend` CSS + `mvs-lucide` JS on every page that uses plugin markup. Integrations that enqueue their own scripts MUST register-if-absent + enqueue `mvs-lucide` when any `data-lucide` attribute is in their output. | Missed on 404 (fixed `c5231b9`) and BP activity composer (fixed `e466cf9`). Architectural fix pending — central `Plugin::ensure_frontend_assets()` helper so integrations don't re-solve the same puzzle. |
+| Activity composer attach-media button | Proper button with visible `.mvs-activity-media-btn__label` text "Attach media", Lucide `image-plus` icon pinned to 18px via `.mvs-activity-media-btn svg` rule, `aria-label` on the button. Icon-only bare-box states are a bug — see note in `ActivityFormIntegration::activity_post_media_button()`. | Rendered as icon-only bare box (no label + no SVG size rule) until `<sha-tbd>`. Customer screenshot flagged the empty outlined box twice. |
 
 ---
 

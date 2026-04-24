@@ -2811,6 +2811,25 @@ a.mvs-dashboard-card-title:hover {
     height: 16px;
 }
 
+/* Lucide SVG sizing inside the attach-media button. Without this rule the
+ * <i data-lucide="image-plus"> → <svg> hydrates at Lucide's default 24x24,
+ * which looks oversized next to the 13px text label. Pinned to 18px to
+ * match other plugin icon buttons (see .mvs-btn svg, .mvs-fab svg). */
+.mvs-activity-media-btn svg,
+#mvs-activity-media-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.75;
+    flex-shrink: 0;
+}
+
+/* Keep the visible text label flush with the icon and prevent BP/theme
+ * line-height rules from wrapping it onto a second row. */
+.mvs-activity-media-btn__label {
+    white-space: nowrap;
+    line-height: 1;
+}
+
 /* Preview grid in activity form — see section 29 for primary styles */
 .mvs-activity-media-thumb {
     width: 110px;
