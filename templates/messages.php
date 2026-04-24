@@ -19,9 +19,14 @@ do_action( 'mvs_before_content' );
 	data-wp-init="callbacks.onInit"
 	data-wp-bind--data-active-conv="state.activeConversationId"
 >
-	<!-- Sidebar: Conversation List -->
+	<!-- Sidebar: Conversation List OR New Conversation picker -->
 	<div class="mvs-messages-sidebar">
-		<?php require __DIR__ . '/partials/chat-list.php'; ?>
+		<div data-wp-bind--hidden="state.isViewNew">
+			<?php require __DIR__ . '/partials/chat-list.php'; ?>
+		</div>
+		<div data-wp-bind--hidden="!state.isViewNew">
+			<?php require __DIR__ . '/partials/chat-new.php'; ?>
+		</div>
 	</div>
 
 	<!-- Main: Active Conversation -->
