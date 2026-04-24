@@ -316,10 +316,16 @@ class AlbumController extends WP_REST_Controller {
 		MediaRepository::set( $album_id, 'album_type', $album_type );
 
 		// Set group association if group_id is provided and user is a member.
+		// Writes to both the custom mvs_media_meta table (keyed "group_id") AND
+		// WP post meta (keyed "_mvs_group_id"), because GroupTabIntegration's
+		// album listing uses WP_Query meta_query against the latter. Without
+		// the post meta write, freshly-created group albums never appeared in
+		// the group's Albums tab.
 		$group_id = absint( $request->get_param( 'group_id' ) );
 		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
 			MediaRepository::set( $album_id, 'privacy', 'group' );
 			MediaRepository::set( $album_id, 'group_id', $group_id );
+			update_post_meta( $album_id, '_mvs_group_id', $group_id );
 		}
 
 		// Apply categories if provided — mvs_category is registered on mvs_album so this writes

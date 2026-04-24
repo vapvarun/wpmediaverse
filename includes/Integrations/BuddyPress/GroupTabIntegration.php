@@ -431,8 +431,8 @@ class GroupTabIntegration {
 			$cover_url  = $album_svc->get_cover_url( $album_id );
 			$item_count = $album_svc->get_item_count( $album_id );
 
-			$album_post = get_post( $album_id );
-			$album_link = trailingslashit( $group_url . 'media/albums/' . $album_post->post_name );
+			// Use canonical CPT permalink; BP-contextual URL routing is unreliable.
+			$album_link = get_permalink( $album_id );
 
 			echo '<div class="mvs-grid-item mvs-grid-item--album">';
 			echo '<a href="' . esc_url( $album_link ) . '" class="mvs-grid-item-link">';

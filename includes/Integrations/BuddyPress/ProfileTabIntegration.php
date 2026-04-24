@@ -453,9 +453,10 @@ class ProfileTabIntegration {
 			$cover_url  = $album_svc->get_cover_url( $album_id );
 			$item_count = $album_svc->get_item_count( $album_id );
 
-			// Link to single album within BP profile context.
-			$album_post = get_post( $album_id );
-			$album_link = trailingslashit( bp_displayed_user_domain() . 'media/albums/' . $album_post->post_name );
+			// Authoritative album URL is the mvs_album CPT permalink (/album/{slug}/).
+			// BP-contextual /members/{user}/media/albums/{slug}/ routing is unreliable
+			// and caused the "cannot click album" bug — use the canonical URL instead.
+			$album_link = get_permalink( $album_id );
 
 			echo '<div class="mvs-grid-item mvs-grid-item--album" data-album-id="' . esc_attr( (string) $album_id ) . '">';
 
