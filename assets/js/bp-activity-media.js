@@ -57,7 +57,7 @@
 		}
 
 		ensurePreviewPosition( preview );
-		preview.style.display = 'flex';
+		preview.style.display = '';
 		preview.className = 'mvs-activity-media-preview mvs-preview-grid-' + Math.min( attachedMedia.length, 6 );
 
 		attachedMedia.forEach( function( item, idx ) {
