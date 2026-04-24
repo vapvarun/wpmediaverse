@@ -3484,59 +3484,35 @@ a.mvs-dashboard-card-title:hover {
     }
 }
 
-/* ==========================================================================
-   27. Theme Compatibility — Reign / BuddyBoss / Generic
-   ========================================================================== */
-
-/* Reign theme: upload button alignment in BP activity and profile */
-.theme-flavor .mvs-bp-upload-btn,
-.theme-flavor .mvs-upload-dropzone,
-.theme-flavor .mvs-upload-block {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-}
-
-.theme-flavor #mvs-activity-media-btn,
-.theme-flavor .mvs-bp-upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin: 8px 0;
-    vertical-align: middle;
-}
-
-/* Reign BP activity form: align the photo/video button with text area */
-@media screen and (min-width: 46.8em) {
-    .wb-reign-theme #whats-new-form #mvs-activity-media-btn {
-        margin-right: 65px;
-    }
-}
-
-/* Reign BP profile/group media grids */
-.theme-flavor
-
-/* BuddyBoss theme compatibility */
-.buddyboss-theme .mvs-upload-dropzone,
-.buddyboss-theme .mvs-upload-block {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.buddyboss-theme #mvs-activity-media-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* Generic: ensure upload button never overflows on narrow containers */
-.mvs-bp-upload-btn,
-#mvs-activity-media-btn {
-    max-width: 100%;
-    box-sizing: border-box;
-}
+/* Section 27 "Theme Compatibility — Reign / BuddyBoss / Generic"
+ * removed. Audit summary:
+ *
+ *  - .theme-flavor scoped rules — dead: no PHP/JS/template in the plugin
+ *    emits .theme-flavor, and no theme adds it to <body>. Every rule was
+ *    a no-op.
+ *  - .mvs-bp-upload-btn scoped rules — dead: the upload button is
+ *    emitted with id="mvs-bp-upload-btn" and class="mvs-btn", never with
+ *    class="mvs-bp-upload-btn". Rules were also no-ops.
+ *  - .buddyboss-theme .mvs-upload-dropzone / .mvs-upload-block —
+ *    .mvs-upload-* only appears inside the media-upload Gutenberg block,
+ *    which doesn't render inside BP surfaces; the rule never matched.
+ *    Additionally, a dangling `.theme-flavor` selector with no rule body
+ *    on the line above was silently hijacking this selector list, so the
+ *    rules were doubly broken.
+ *  - .buddyboss-theme #mvs-activity-media-btn — redundant with the
+ *    consolidated #mvs-activity-media-btn rule now in bp-integration.css
+ *    (same display/align/gap values).
+ *  - .wb-reign-theme #whats-new-form #mvs-activity-media-btn margin-left
+ *    — the only live theme-compat rule. Moved to bp-integration.css
+ *    (Theme compatibility section) with the selector updated to scope
+ *    on .mvs-activity-media-btn-wrap since that's now the flex row
+ *    anchor (button no longer lays out on its own).
+ *  - .mvs-bp-upload-btn, #mvs-activity-media-btn { max-width: 100% } —
+ *    the button now lives inside .mvs-activity-media-btn-wrap which
+ *    already has width: 100%; box-sizing: border-box on all button
+ *    children via box-sizing: border-box inheritance from the baseline
+ *    reset in bp-integration.css. No longer needed.
+ */
 
 /* ==========================================================================
    26. Album Placeholder

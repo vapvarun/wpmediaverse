@@ -828,6 +828,23 @@
 
 
 /* =============================================================================
+ *  Theme compatibility — Reign
+ *
+ *  Reign's BP Nouveau layout renders the activity composer with an
+ *  avatar column (~50px + 15px gutter = 65px). On viewports wide
+ *  enough for the side-by-side layout (Reign's 46.8em breakpoint),
+ *  nudge our attach-media wrap to start at the textarea's x-offset
+ *  rather than at the avatar's. Below the breakpoint the avatar column
+ *  collapses and no indent is needed.
+ * ============================================================================= */
+@media screen and (min-width: 46.8em) {
+    body.wb-reign-theme #buddypress #whats-new-form .mvs-activity-media-btn-wrap {
+        margin-left: 65px;
+    }
+}
+
+
+/* =============================================================================
  *  Activity form — upload progress / error states
  * ============================================================================= */
 
