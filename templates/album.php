@@ -431,11 +431,21 @@ $mvs_archive_url = home_url( '/media/' );
 				})();
 				</script>
 			<?php elseif ( ! empty( $items ) ) : ?>
-				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
+				<?php
+				$mvs_grid_cols     = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) );
+				$mvs_album_svc     = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
+				$mvs_current_cover = $mvs_album_svc ? (int) $mvs_album_svc->get_cover_media_id( get_the_ID() ) : 0;
+				?>
 				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 					<?php
 					foreach ( $items as $item_row ) :
 						$media_id = (int) $item_row['media_id'];
+						$is_image = isset( $item_row['media_type'] ) && 'image' === $item_row['media_type'];
+						$is_cover = $media_id === $mvs_current_cover;
+						$show_cov = $mvs_is_album_owner && $is_image;
+						if ( $show_cov ) {
+							echo '<div class="mvs-album-item-wrap" data-media-id="' . esc_attr( (string) $media_id ) . '">';
+						}
 						\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
 							$media_id,
 							array(),
@@ -444,9 +454,62 @@ $mvs_archive_url = home_url( '/media/' );
 								'show_overlay' => false,
 							)
 						);
+						if ( $show_cov ) {
+							if ( $is_cover ) {
+								?>
+								<span class="mvs-album-cover-badge"><?php esc_html_e( 'Cover', 'wpmediaverse' ); ?></span>
+								<?php
+							} else {
+								?>
+								<button type="button" class="mvs-album-set-cover" data-media-id="<?php echo esc_attr( (string) $media_id ); ?>">
+									<span class="dashicons dashicons-star-filled" aria-hidden="true"></span>
+									<span class="mvs-album-set-cover__label"><?php esc_html_e( 'Set as cover', 'wpmediaverse' ); ?></span>
+								</button>
+								<?php
+							}
+							echo '</div>';
+						}
 					endforeach;
 					?>
 				</div>
+				<?php if ( $mvs_is_album_owner ) : ?>
+				<script>
+				(function(){
+					var albumId = <?php echo (int) get_the_ID(); ?>;
+					var restUrl = '<?php echo esc_js( esc_url_raw( rest_url( 'mvs/v1/' ) ) ); ?>';
+					var nonce   = '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>';
+					var savingLabel = '<?php echo esc_js( __( 'Saving…', 'wpmediaverse' ) ); ?>';
+					var defaultLabel = '<?php echo esc_js( __( 'Set as cover', 'wpmediaverse' ) ); ?>';
+					var errorText = '<?php echo esc_js( __( 'Could not set cover', 'wpmediaverse' ) ); ?>';
+					document.querySelectorAll('.mvs-album-set-cover').forEach(function (btn) {
+						var labelEl = btn.querySelector('.mvs-album-set-cover__label');
+						btn.addEventListener('click', function (ev) {
+							ev.preventDefault();
+							ev.stopPropagation();
+							var mediaId = btn.getAttribute('data-media-id');
+							if (!mediaId) return;
+							btn.disabled = true;
+							if (labelEl) { labelEl.textContent = savingLabel; }
+							fetch(restUrl + 'albums/' + albumId + '/cover', {
+								method: 'PUT',
+								headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
+								credentials: 'same-origin',
+								body: JSON.stringify({ media_id: parseInt(mediaId, 10) })
+							}).then(function (r) {
+								if (!r.ok) { return r.json().then(function (d) { throw new Error(d && d.message || 'Failed'); }); }
+								return r.json();
+							}).then(function () {
+								window.location.reload();
+							}).catch(function (err) {
+								btn.disabled = false;
+								if (labelEl) { labelEl.textContent = defaultLabel; }
+								alert((err && err.message) || errorText);
+							});
+						});
+					});
+				})();
+				</script>
+				<?php endif; ?>
 			<?php else : ?>
 				<p class="mvs-no-media"><?php esc_html_e( 'This album is empty.', 'wpmediaverse' ); ?></p>
 			<?php endif; ?>

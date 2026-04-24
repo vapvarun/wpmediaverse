@@ -5579,3 +5579,92 @@ a.mvs-dashboard-card-title:hover {
 @media (max-width: 640px) {
     .mvs-modal-album-cover-hint { font-size: 12px; padding: 6px 10px; }
 }
+
+/* ============================================================================
+   Single album page — cover selection overlay (owner only).
+   Renders a "Set as cover" button on each image tile and a "Cover" badge on
+   the current cover. Pairs with templates/album.php inline JS that PUTs to
+   /albums/{id}/cover. set_cover() is atomic (adds the media to the album in
+   the same request if not already there), so no client-side ordering needed.
+   ============================================================================ */
+.mvs-album-item-wrap {
+    position: relative;
+    display: block;
+}
+
+.mvs-album-cover-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--mvs-surface, #fff);
+    background: var(--mvs-primary, #2271b1);
+    border-radius: 999px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+}
+
+.mvs-album-set-cover {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--mvs-surface, #fff);
+    background: rgba(17, 17, 17, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.mvs-album-item-wrap:hover .mvs-album-set-cover,
+.mvs-album-set-cover:focus-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.mvs-album-set-cover:hover,
+.mvs-album-set-cover:focus-visible {
+    background: var(--mvs-primary, #2271b1);
+    border-color: var(--mvs-primary, #2271b1);
+    outline: none;
+}
+
+.mvs-album-set-cover[disabled] {
+    opacity: 0.7;
+    cursor: progress;
+}
+
+.mvs-album-set-cover .dashicons {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    line-height: 1;
+}
+
+@media (max-width: 640px) {
+    .mvs-album-set-cover {
+        /* Mobile: always visible (no hover). */
+        opacity: 1;
+        transform: none;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+    .mvs-album-cover-badge {
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+}
