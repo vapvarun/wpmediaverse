@@ -88,27 +88,11 @@ class ActivityFormIntegration {
 			return;
 		}
 
-		// The activity composer's attach-media button uses
-		// `<i data-lucide="image-plus">`; Lucide JS must load on BP pages or
-		// the icon never hydrates and the button renders as an empty box.
-		// Register-if-absent because `mvs_loaded` may not have fired the
-		// central Lucide registration yet on some BP-only surfaces.
-		if ( ! wp_script_is( 'mvs-lucide', 'registered' ) ) {
-			wp_register_script(
-				'mvs-lucide',
-				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
-				array(),
-				MVS_VERSION,
-				array(
-					'in_footer' => true,
-					'strategy'  => 'defer',
-				)
-			);
-			wp_add_inline_script(
-				'mvs-lucide',
-				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
-			);
-		}
+		// Lucide is registered globally via Plugin::register_lucide_script()
+		// on `wp_enqueue_scripts@1`. No defensive re-registration here —
+		// just enqueue so the attach-media button's `<i data-lucide>` icon
+		// hydrates. (The hydration inline installs a MutationObserver so
+		// BP Backbone's composer re-render also gets picked up.)
 		wp_enqueue_script( 'mvs-lucide' );
 
 		wp_enqueue_script(

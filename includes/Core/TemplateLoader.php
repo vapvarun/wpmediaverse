@@ -503,25 +503,14 @@ class TemplateLoader {
 			wp_enqueue_style( 'mvs-frontend' );
 		}
 
-		// Lucide may not be registered yet (registration happens on
-		// `wp_enqueue_scripts` which hasn't fired at template_redirect@5).
-		// Register-if-absent so the `<i data-lucide="search-x">` glyph in the
-		// 404 template hydrates into an SVG.
+		// Lucide is registered via Plugin::register_lucide_script() on
+		// `wp_enqueue_scripts@1`, which runs before `wp_head`. Even though
+		// `template_redirect@5` is before wp_enqueue_scripts fires in the
+		// request lifecycle, the 404 template calls `get_header()` which
+		// triggers the asset-enqueue chain — so the script is registered by
+		// the time any output happens. Just enqueue.
 		if ( ! wp_script_is( 'mvs-lucide', 'registered' ) ) {
-			wp_register_script(
-				'mvs-lucide',
-				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
-				array(),
-				MVS_VERSION,
-				array(
-					'in_footer' => true,
-					'strategy'  => 'defer',
-				)
-			);
-			wp_add_inline_script(
-				'mvs-lucide',
-				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
-			);
+			\WPMediaVerse\Core\Plugin::register_lucide_script();
 		}
 		wp_enqueue_script( 'mvs-lucide' );
 
