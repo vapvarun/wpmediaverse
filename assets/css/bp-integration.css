@@ -885,7 +885,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
-    width: 100%;
     padding: 0;
     clear: both;
 }
@@ -927,6 +926,11 @@
     color: var(--mvs-text);
     border-color: var(--mvs-text-muted);
     outline: none;
+}
+
+.site-wrapper #buddypress .mvs-activity-media-grid,
+.site-wrapper .activity-list .mvs-activity-media-grid {
+    padding: 0 1em 1em;;
 }
 
 /* Dashicons fallback (pre-Lucide-hydration). */
@@ -987,7 +991,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-top: 10px;
+    margin: 10px 0;
     padding: 8px;
     background: var(--mvs-surface-2);
     border: 1px solid var(--mvs-border);

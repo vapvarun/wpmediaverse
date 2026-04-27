@@ -1335,6 +1335,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-social-bar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     flex-wrap: wrap;
     gap: 8px 12px;
     padding: 12px 24px;
@@ -1365,6 +1366,13 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-social-bar button:hover {
     border-color: var(--mvs-primary);
     color: var(--mvs-primary);
+}
+
+.mvs-social-bar__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 .mvs-social-bar button.active {
@@ -1432,57 +1440,10 @@ body.dark-mode .mvs-skeleton::after {
     color: var(--mvs-bg);
 }
 
-/* §-sticky-action-bar — Mobile only.
-   On phones, pin the social action row to the bottom of the viewport so the
-   primary actions (Favorite, Share, Edit, Delete) are always thumb-reachable
-   without scrolling. Like the iOS Photos / Instagram bottom bar.
-
-   The page wrapper already reserves --mvs-fab-safe via §0c, so we sit just
-   above the FAB column. Backdrop-blur fades the content scrolling beneath. */
 @media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
-    .mvs-single-media .mvs-social-actions {
-        position: fixed;
-        right: 0;
-        left: 0;
-        bottom: 0;
-        z-index: var(--mvs-z-sticky);
-        background: color-mix(in srgb, var(--mvs-bg) 92%, transparent);
-        -webkit-backdrop-filter: saturate(180%) blur(12px);
-        backdrop-filter: saturate(180%) blur(12px);
-        border-top: 1px solid var(--mvs-border-light);
-        padding: var(--mvs-space-2) var(--mvs-space-3);
-        padding-bottom: calc(var(--mvs-space-2) + env(safe-area-inset-bottom, 0px));
-        gap: var(--mvs-space-2);
-        justify-content: space-between;
-        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
-    }
-
-    /* Reserve viewport space so the article isn't hidden by the bar.
-       The page wrapper's --mvs-fab-safe stacks BELOW the action bar so the
-       FAB still avoids the action bar too. */
-    .mvs-single-media {
-        padding-bottom: calc(72px + var(--mvs-fab-safe) + env(safe-area-inset-bottom, 0px));
-    }
-
     /* Hide the view count on mobile to reclaim space — it's a passive metric. */
     .mvs-single-media .mvs-social-actions .mvs-view-count {
         display: none;
-    }
-
-    /* Tighten action subgroups to share the bar width. */
-    .mvs-single-media .mvs-social-actions-left,
-    .mvs-single-media .mvs-social-actions-right {
-        gap: var(--mvs-space-2);
-    }
-}
-
-/* When the FAB sits above the sticky action bar on mobile, push it up by
-   the bar height so the two don't overlap. */
-@media (max-width: 767px) {
-    .mvs-single-media + .mvs-fab,
-    .mvs-single-media ~ .mvs-fab,
-    body.mvs-page--single-media .mvs-fab {
-        bottom: calc(var(--mvs-fab-offset) + 72px + env(safe-area-inset-bottom, 0px));
     }
 }
 
@@ -1729,11 +1690,36 @@ body.dark-mode .mvs-skeleton::after {
     font-size: 0.8em;
 }
 
-/* Dashboard Grid */
+/* Dashboard Grid — default responsive auto-fill when no column-count class
+   is applied; when the template emits `.mvs-cols-N` alongside it (as driven
+   by the mvs_grid_columns setting), the compound-selector overrides below
+   win by source order and honour the chosen column count. */
 .mvs-dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
+}
+
+.mvs-dashboard-grid.mvs-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.mvs-dashboard-grid.mvs-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.mvs-dashboard-grid.mvs-cols-4 { grid-template-columns: repeat(4, 1fr); }
+.mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+/* Narrow-viewport collapse mirrors the .mvs-media-grid behaviour so the
+   user never ends up with a 5-col grid squished on mobile. */
+@media (max-width: 1024px) {
+    .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 768px) {
+    .mvs-dashboard-grid.mvs-cols-3,
+    .mvs-dashboard-grid.mvs-cols-4,
+    .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+    .mvs-dashboard-grid.mvs-cols-2,
+    .mvs-dashboard-grid.mvs-cols-3,
+    .mvs-dashboard-grid.mvs-cols-4,
+    .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: 1fr; }
 }
 
 .mvs-dashboard-card {
@@ -4049,6 +4035,21 @@ a.mvs-dashboard-card-title:hover {
     border-color: var(--button-border-hover-color, var(--mvs-border));
 }
 
+/* Secondary button icons keep a neutral, theme-agnostic color — some themes
+   expose --button-text-color in red/accent, which leaked into lucide SVG fill
+   (e.g. Report flag rendered red). Matches the lightbox action convention. */
+.mvs-btn.mvs-btn--secondary svg,
+.mvs-btn.mvs-btn--secondary [data-lucide] {
+    color: var(--mvs-text-secondary);
+}
+
+.mvs-btn.mvs-btn--secondary:hover svg,
+.mvs-btn.mvs-btn--secondary:focus svg,
+.mvs-btn.mvs-btn--secondary:hover [data-lucide],
+.mvs-btn.mvs-btn--secondary:focus [data-lucide] {
+    color: var(--mvs-text);
+}
+
 .mvs-btn--text {
     background: none;
     border: none;
@@ -5554,5 +5555,116 @@ a.mvs-dashboard-card-title:hover {
         box-shadow:
             0 1px 2px rgba(0, 0, 0, 0.2),
             0 18px 48px -12px rgba(0, 0, 0, 0.55);
+    }
+}
+
+/* Album cover hint inside FAB upload modal (album mode, files selected). */
+.mvs-modal-album-cover-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    background: var(--mvs-surface-2, #f5f5f5);
+    border-right: 3px solid var(--mvs-primary, #2271b1);
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--mvs-text-secondary, #555);
+}
+.mvs-modal-album-cover-hint[hidden] { display: none; }
+.mvs-modal-album-cover-hint svg {
+    flex-shrink: 0;
+    color: var(--mvs-primary, #2271b1);
+}
+@media (max-width: 640px) {
+    .mvs-modal-album-cover-hint { font-size: 12px; padding: 6px 10px; }
+}
+
+/* ============================================================================
+   Single album page — cover selection overlay (owner only).
+   Renders a "Set as cover" button on each image tile and a "Cover" badge on
+   the current cover. Pairs with templates/album.php inline JS that PUTs to
+   /albums/{id}/cover. set_cover() is atomic (adds the media to the album in
+   the same request if not already there), so no client-side ordering needed.
+   ============================================================================ */
+.mvs-album-item-wrap {
+    position: relative;
+    display: block;
+}
+
+.mvs-album-cover-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--mvs-surface, #fff);
+    background: var(--mvs-primary, #2271b1);
+    border-radius: 999px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+}
+
+.mvs-album-set-cover {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--mvs-surface, #fff);
+    background: rgba(17, 17, 17, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.mvs-album-item-wrap:hover .mvs-album-set-cover,
+.mvs-album-set-cover:focus-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.mvs-album-set-cover:hover,
+.mvs-album-set-cover:focus-visible {
+    background: var(--mvs-primary, #2271b1);
+    border-color: var(--mvs-primary, #2271b1);
+    outline: none;
+}
+
+.mvs-album-set-cover[disabled] {
+    opacity: 0.7;
+    cursor: progress;
+}
+
+.mvs-album-set-cover .dashicons {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    line-height: 1;
+}
+
+@media (max-width: 640px) {
+    .mvs-album-set-cover {
+        /* Mobile: always visible (no hover). */
+        opacity: 1;
+        transform: none;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+    .mvs-album-cover-badge {
+        padding: 3px 8px;
+        font-size: 10px;
     }
 }
