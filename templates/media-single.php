@@ -405,7 +405,7 @@ $mvs_archive_url = home_url( '/media/' );
 							<span class="mvs-btn__label"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php elseif ( is_user_logged_in() ) : ?>
-						<button class="mvs-btn mvs-btn--small mvs-btn--secondary mvs-btn--icon-collapse" type="button"
+						<button class="mvs-btn mvs-btn--small mvs-btn--icon-collapse" type="button"
 							data-wp-on--click="actions.reportMedia"
 							data-wp-bind--hidden="context.reported"
 							data-mvs-tooltip="<?php esc_attr_e( 'Report', 'wpmediaverse' ); ?>"
