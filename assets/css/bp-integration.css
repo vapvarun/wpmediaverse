@@ -642,11 +642,11 @@
 .activity-list .activity-content a[href*="/media/"] img:not(.emoji):not(.avatar) {
     max-width: 100%;
     max-height: 500px;
-    width: auto;
-    height: auto;
+    /* width: auto;
+    height: auto; */
     display: block;
     margin: 8px 0;
-    object-fit: contain;
+    /* object-fit: contain; */
     border-radius: 12px;
 }
 
