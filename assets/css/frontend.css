@@ -1364,7 +1364,8 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-social-bar button:hover {
-    border-color: var(--mvs-primary);
+    background: none;
+    border: 1px solid var(--mvs-primary);
     color: var(--mvs-primary);
 }
 
@@ -1472,6 +1473,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-comment-form textarea {
     flex: 1;
     padding: 10px 12px;
+    background-color: var(--mvs-bg);
     border: 1px solid var(--mvs-border);
     border-radius: 8px;
     resize: none;
@@ -1961,6 +1963,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-field select {
     width: 100%;
     padding: 8px 12px;
+    background-color: var(--mvs-bg);
     border: 1px solid var(--mvs-border);
     border-radius: 6px;
     font-size: 0.9em;

@@ -390,7 +390,7 @@ $mvs_archive_url = home_url( '/media/' );
 						<span class="mvs-btn__label" data-wp-text="context.shareLabel"><?php esc_html_e( 'Share', 'wpmediaverse' ); ?></span>
 					</button>
 					<?php if ( $mvs_is_owner ) : ?>
-						<button class="mvs-btn mvs-btn--small mvs-btn--secondary mvs-btn--icon-collapse" type="button"
+						<button class="mvs-btn mvs-btn--small mvs-btn--icon-collapse" type="button"
 							data-wp-on--click="actions.toggleEdit"
 							data-mvs-tooltip="<?php esc_attr_e( 'Edit', 'wpmediaverse' ); ?>"
 							aria-label="<?php esc_attr_e( 'Edit this media', 'wpmediaverse' ); ?>">
@@ -469,7 +469,7 @@ $mvs_archive_url = home_url( '/media/' );
 					</div>
 				</div>
 				<div class="mvs-inline-edit-actions">
-					<button class="mvs-btn" type="button"
+					<button class="mvs-btn mvs-btn--secondary" type="button"
 						data-wp-on--click="actions.saveEdit"
 						data-wp-bind--disabled="context.saving">
 						<span data-wp-bind--hidden="context.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>

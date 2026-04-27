@@ -608,7 +608,7 @@ body.dark-mode {
 
 .mvs-chat-msg--sent .mvs-chat-msg__meta {
 	justify-content: flex-end;
-	color: rgba(255, 255, 255, 0.7);
+	color: var(--mvs-chat-text-secondary);
 }
 
 .mvs-chat-msg__check {

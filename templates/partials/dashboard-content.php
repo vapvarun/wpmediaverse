@@ -423,7 +423,7 @@ wp_enqueue_style( 'mvs-frontend' );
 	<!-- My Albums Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isAlbumsTab">
 		<div class="mvs-dashboard-actions">
-			<button class="mvs-btn" type="button"
+			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.openCreateAlbum">+ <?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></button>
 		</div>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
@@ -507,7 +507,7 @@ wp_enqueue_style( 'mvs-frontend' );
 	<!-- My Collections Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isCollectionsTab">
 		<div class="mvs-dashboard-actions">
-			<button class="mvs-btn" type="button"
+			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.openCreateCollection">+ <?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></button>
 		</div>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
