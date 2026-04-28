@@ -338,10 +338,12 @@ class TemplateHelpers {
 	 * @param string $alt      Alt text.
 	 */
 	public static function render_grid_thumbnail( int $media_id, string $size = 'large', string $alt = '' ): void {
-		echo self::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns markup with all attribute values already escaped (size validated against whitelist, alt pre-escaped here).
+		$valid_sizes = array_merge( get_intermediate_image_sizes(), array( 'full' ) );
+		$safe_size   = in_array( $size, $valid_sizes, true ) ? $size : 'large';
+		echo self::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns markup with all attribute values already escaped (size whitelisted above, alt pre-escaped here).
 			$media_id,
 			array(
-				'size' => $size,
+				'size' => $safe_size,
 				'alt'  => esc_attr( $alt ),
 			)
 		);
