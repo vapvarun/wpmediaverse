@@ -67,9 +67,8 @@ $mvs_show_fab = $mvs_is_logged_in && (
 			<div class="mvs-modal-header">
 				<h3 class="mvs-modal-title" data-wp-text="state.uploadModalHeading"></h3>
 				<button class="mvs-modal-close" data-wp-on--click="actions.closeUploadModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
-						<line x1="18" y1="6" x2="6" y2="18"></line>
-						<line x1="6" y1="6" x2="18" y2="18"></line>
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
 					</svg>
 				</button>
 			</div>
@@ -220,9 +219,8 @@ $mvs_show_fab = $mvs_is_logged_in && (
 		<div class="mvs-lightbox" data-wp-on--click="actions.handleModalClick">
 			<!-- Close button -->
 			<button class="mvs-lightbox-close" data-wp-on--click="actions.closeLightbox" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">
-					<line x1="18" y1="6" x2="6" y2="18"></line>
-					<line x1="6" y1="6" x2="18" y2="18"></line>
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
 				</svg>
 			</button>
 
@@ -238,7 +236,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 					data-wp-bind--hidden="!state.lightboxIsGroup"
 					data-wp-on--click="actions.lightboxPrev"
 					aria-label="<?php esc_attr_e( 'Previous', 'wpmediaverse' ); ?>">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
 				</button>
 
 				<img data-wp-bind--src="state.lightboxImageUrl" alt="" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
@@ -250,7 +248,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 					data-wp-bind--hidden="!state.lightboxIsGroup"
 					data-wp-on--click="actions.lightboxNext"
 					aria-label="<?php esc_attr_e( 'Next', 'wpmediaverse' ); ?>">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
 				</button>
 
 				<!-- Position indicator (e.g. "2 / 4") -->
@@ -395,6 +393,10 @@ $mvs_show_fab = $mvs_is_logged_in && (
 		data-wp-class--mvs-toast--success="state.isToastSuccess"
 		data-wp-class--mvs-toast--error="state.isToastError">
 		<span data-wp-text="state.toastMessage"></span>
-		<button class="mvs-toast-close" data-wp-on--click="actions.hideToast">&times;</button>
+		<button class="mvs-toast-close" data-wp-on--click="actions.hideToast" aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+			</svg>
+		</button>
 	</div>
 </div>

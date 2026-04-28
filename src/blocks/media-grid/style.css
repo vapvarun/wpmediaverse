@@ -44,39 +44,6 @@
 	opacity: 1;
 }
 
-.mvs-lightbox-overlay {
-	position: fixed;
-	inset: 0;
-	z-index: 100000;
-	background: rgba(0, 0, 0, 0.9);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.mvs-lightbox-content {
-	max-width: 90vw;
-	max-height: 90vh;
-}
-
-.mvs-lightbox-content img {
-	max-width: 100%;
-	max-height: 90vh;
-	object-fit: contain;
-}
-
-.mvs-lightbox-close {
-	position: absolute;
-	top: 20px;
-	right: 20px;
-	color: var(--mvs-surface);
-	font-size: 32px;
-	cursor: pointer;
-	background: none;
-	border: none;
-	line-height: 1;
-}
-
 .mvs-grid-pagination {
 	display: flex;
 	justify-content: center;

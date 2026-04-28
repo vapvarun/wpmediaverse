@@ -4,7 +4,7 @@
 
 | Key | Value |
 |-----|-------|
-| Version | 1.1.2 |
+| Version | 1.1.3 |
 | PHP | >= 7.4 (header), target 8.1+ |
 | WordPress | >= 6.5 |
 | Namespace | `WPMediaVerse\` |
@@ -203,4 +203,6 @@ _Updated after each commit._
 
 | Date | Commit | Summary |
 |------|--------|---------|
-| | | |
+| 2026-04-29 | e7deb82 | Lightbox: full-viewport Facebook-style layout; full-res images; close button fix; Lucide icons everywhere |
+| 2026-04-21 | 080fd94 | 1.1.2: grid cols=5, stats filters, tag cloud count, lightbox favorite/share fixes |
+| 2026-04-10 | 632e955 | 1.1.1: signed URL fixes, anonymous access, DM notifications, messaging page fixes |

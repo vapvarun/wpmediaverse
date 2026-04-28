@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,17 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** — AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.1.3 =
+* Fix: Lightbox now opens full-viewport in Facebook-style layout — image fills the left panel, social sidebar on the right
+* Fix: Lightbox always loads the full-resolution original image instead of the medium thumbnail
+* Fix: Lightbox close button (X) is now visible and correctly positioned over the image panel
+* Fix: Thumbnails no longer return 403 errors for logged-in users with "loggedin" privacy
+* Fix: Album cover thumbnails now go through the signed URL service for consistent access control
+* Fix: Lightbox Favorite label no longer shows a duplicate emoji (Lucide icon renders it; emoji was redundant)
+* Enhancement: All media file and thumbnail URLs are routed through the signed URL service for uniform access control
+* Enhancement: All close, dismiss, and navigation icons in the lightbox, upload modal, and toast notifications replaced with proper Lucide icons (rounded caps, correct paths)
+* Enhancement: Lightbox CSS consolidated into frontend.css as a single source of truth — no more rules scattered across three files
 
 = 1.1.2 =
 * Fix: Setting Grid Columns to 5 now actually renders 5 columns on the Explore page, single-album view, collections, and dashboard grids (was collapsing to a single column because the 5-column CSS rule was missing)
@@ -232,6 +243,9 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 1.1.3 =
+Fixes lightbox full-resolution images and full-viewport layout. Upgrade recommended for all users.
 
 = 1.0.0 =
 Initial release.
