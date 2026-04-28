@@ -911,16 +911,23 @@ body.dark-mode .mvs-skeleton::after {
     height: 100%;
 }
 
-.mvs-grid-item img {
+.mvs-grid-item img,
+.mvs-grid-item .mvs-grid-video-preview {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 0.3s;
+    background: #0f1014;
 }
 
-.mvs-grid-item:hover img {
+.mvs-grid-item:hover img,
+.mvs-grid-item:hover .mvs-grid-video-preview {
     transform: scale(1.05);
+}
+
+.mvs-grid-item .mvs-grid-video-preview {
+    pointer-events: none;
 }
 
 .mvs-grid--original .mvs-grid-item {
@@ -1328,6 +1335,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-social-bar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     flex-wrap: wrap;
     gap: 8px 12px;
     padding: 12px 24px;
@@ -1356,8 +1364,16 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-social-bar button:hover {
-    border-color: var(--mvs-primary);
+    background: none;
+    border: 1px solid var(--mvs-primary);
     color: var(--mvs-primary);
+}
+
+.mvs-social-bar__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 .mvs-social-bar button.active {
@@ -1425,57 +1441,10 @@ body.dark-mode .mvs-skeleton::after {
     color: var(--mvs-bg);
 }
 
-/* §-sticky-action-bar — Mobile only.
-   On phones, pin the social action row to the bottom of the viewport so the
-   primary actions (Favorite, Share, Edit, Delete) are always thumb-reachable
-   without scrolling. Like the iOS Photos / Instagram bottom bar.
-
-   The page wrapper already reserves --mvs-fab-safe via §0c, so we sit just
-   above the FAB column. Backdrop-blur fades the content scrolling beneath. */
 @media (max-width: 767px) /* var(--mvs-bp-tablet) */ {
-    .mvs-single-media .mvs-social-actions {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: var(--mvs-z-sticky);
-        background: color-mix(in srgb, var(--mvs-bg) 92%, transparent);
-        -webkit-backdrop-filter: saturate(180%) blur(12px);
-        backdrop-filter: saturate(180%) blur(12px);
-        border-top: 1px solid var(--mvs-border-light);
-        padding: var(--mvs-space-2) var(--mvs-space-3);
-        padding-bottom: calc(var(--mvs-space-2) + env(safe-area-inset-bottom, 0px));
-        gap: var(--mvs-space-2);
-        justify-content: space-between;
-        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
-    }
-
-    /* Reserve viewport space so the article isn't hidden by the bar.
-       The page wrapper's --mvs-fab-safe stacks BELOW the action bar so the
-       FAB still avoids the action bar too. */
-    .mvs-single-media {
-        padding-bottom: calc(72px + var(--mvs-fab-safe) + env(safe-area-inset-bottom, 0px));
-    }
-
     /* Hide the view count on mobile to reclaim space — it's a passive metric. */
     .mvs-single-media .mvs-social-actions .mvs-view-count {
         display: none;
-    }
-
-    /* Tighten action subgroups to share the bar width. */
-    .mvs-single-media .mvs-social-actions-left,
-    .mvs-single-media .mvs-social-actions-right {
-        gap: var(--mvs-space-2);
-    }
-}
-
-/* When the FAB sits above the sticky action bar on mobile, push it up by
-   the bar height so the two don't overlap. */
-@media (max-width: 767px) {
-    .mvs-single-media + .mvs-fab,
-    .mvs-single-media ~ .mvs-fab,
-    body.mvs-page--single-media .mvs-fab {
-        bottom: calc(var(--mvs-fab-offset) + 72px + env(safe-area-inset-bottom, 0px));
     }
 }
 
@@ -1504,6 +1473,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-comment-form textarea {
     flex: 1;
     padding: 10px 12px;
+    background-color: var(--mvs-bg);
     border: 1px solid var(--mvs-border);
     border-radius: 8px;
     resize: none;
@@ -1695,39 +1665,12 @@ body.dark-mode .mvs-skeleton::after {
     margin-bottom: 20px;
 }
 
-.mvs-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 20px;
-    background: var(--mvs-primary);
-    /* --mvs-on-primary stays #fff across light/dark themes; never use
-       --mvs-bg or --mvs-surface here since those flip with the theme. */
-    color: var(--mvs-on-primary, #ffffff);
-    border: none;
-    border-radius: 6px;
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: background 0.2s, filter 0.15s;
-}
-
-.mvs-btn:hover,
-.mvs-btn:focus,
-.mvs-btn:visited {
-    background: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #ffffff);
-}
-
-.mvs-btn--secondary {
-    background: var(--mvs-surface-2);
-    color: var(--mvs-text);
-    border: none;
-}
-
-.mvs-btn--secondary:hover {
-    background: var(--mvs-border);
-    color: var(--mvs-text);
-}
+/* .mvs-btn canonical definition lives in the "Shared button styles" block
+ * further down (around line 4727). The legacy block that was here — with
+ * different padding (10px 20px vs 0.625rem 1.25rem) — has been removed so
+ * button dimensions are deterministic and don't drift based on stylesheet
+ * load order. Danger + small modifiers remain here as they're only defined
+ * in this place. */
 
 .mvs-btn--danger {
     background: var(--mvs-danger);
@@ -1749,11 +1692,36 @@ body.dark-mode .mvs-skeleton::after {
     font-size: 0.8em;
 }
 
-/* Dashboard Grid */
+/* Dashboard Grid — default responsive auto-fill when no column-count class
+   is applied; when the template emits `.mvs-cols-N` alongside it (as driven
+   by the mvs_grid_columns setting), the compound-selector overrides below
+   win by source order and honour the chosen column count. */
 .mvs-dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
+}
+
+.mvs-dashboard-grid.mvs-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.mvs-dashboard-grid.mvs-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.mvs-dashboard-grid.mvs-cols-4 { grid-template-columns: repeat(4, 1fr); }
+.mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+/* Narrow-viewport collapse mirrors the .mvs-media-grid behaviour so the
+   user never ends up with a 5-col grid squished on mobile. */
+@media (max-width: 1024px) {
+    .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 768px) {
+    .mvs-dashboard-grid.mvs-cols-3,
+    .mvs-dashboard-grid.mvs-cols-4,
+    .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+    .mvs-dashboard-grid.mvs-cols-2,
+    .mvs-dashboard-grid.mvs-cols-3,
+    .mvs-dashboard-grid.mvs-cols-4,
+    .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: 1fr; }
 }
 
 .mvs-dashboard-card {
@@ -1772,6 +1740,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-dashboard-card-thumb {
+    position: relative;
     display: block;
     aspect-ratio: 1;
     background: var(--mvs-surface-2);
@@ -1780,10 +1749,17 @@ body.dark-mode .mvs-skeleton::after {
     color: inherit;
 }
 
-.mvs-dashboard-card-thumb img {
+.mvs-dashboard-card-thumb img:not([hidden]),
+.mvs-dashboard-card-thumb video:not([hidden]) {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
+}
+
+.mvs-dashboard-card-thumb img[hidden],
+.mvs-dashboard-card-thumb video[hidden] {
+    display: none !important;
 }
 
 .mvs-dashboard-card-body {
@@ -1987,6 +1963,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-field select {
     width: 100%;
     padding: 8px 12px;
+    background-color: var(--mvs-bg);
     border: 1px solid var(--mvs-border);
     border-radius: 6px;
     font-size: 0.9em;
@@ -2499,435 +2476,55 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text-muted);
 }
 
-/* ==========================================================================
-   16. BuddyPress Profile Media Tab
-   ========================================================================== */
+/* Section 16 "BuddyPress Profile Media Tab" — removed. Rules were
+ * unscoped duplicates of scoped versions already in bp-integration.css:
+ *   .mvs-bp-profile-actions     → bp-integration.css section 'Action /
+ *                                  toolbar row'
+ *   .mvs-bp-dropzone +           → bp-integration.css section 'Upload
+ *     .mvs-bp-dropzone-text        surface'
+ *   .mvs-bp-upload-status +      → bp-integration.css section 'Upload
+ *     --success                    surface'
+ *   .mvs-bp-upload-wrap          → see dedicated rules below (this file
+ *                                  keeps its copy because
+ *                                  templates/album.php reuses the class
+ *                                  in a non-BP context).
+ */
 
-.mvs-bp-profile-actions {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
+/* Section 24 "BuddyPress Activity Media" — all rules moved to
+ * bp-integration.css (see "Activity stream — media images" and
+ * "Activity stream — multi-image grid" sections). The broad
+ * `img:not(.avatar):not(.emoji)` catch-all was also narrowed to match
+ * only /media/ permalinks during the move, so theme-injected classless
+ * images (Reign's .bp-group-preview-cover, etc.) no longer get
+ * constrained by our rules. Section header retained as placeholder for
+ * the pending sequential renumbering in a later commit. */
 
-.mvs-bp-profile-actions .mvs-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.mvs-bp-profile-actions .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    line-height: 1;
-}
-
-/* BP inline upload dropzone */
-.mvs-bp-upload-wrap {
-    margin-bottom: 20px;
-}
-
-.mvs-bp-dropzone {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 16px 20px;
-    border: 2px dashed var(--mvs-border-light);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    background: var(--mvs-surface-2);
-}
-
-.mvs-bp-dropzone:hover,
-.mvs-bp-dropzone--active {
-    border-color: var(--mvs-primary);
-    background: var(--mvs-info-bg);
-}
-
-.mvs-bp-dropzone .dashicons {
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-    color: var(--mvs-primary);
-}
-
-.mvs-bp-dropzone-text {
-    font-size: 0.9em;
-    color: var(--mvs-text-secondary);
-}
-
-.mvs-bp-upload-status {
-    padding: 10px 16px;
-    margin-top: 8px;
-    border-radius: 6px;
-    background: var(--mvs-info-bg);
-    color: var(--mvs-primary);
-    font-size: 0.9em;
-}
-
-.mvs-bp-upload-status--success {
-    background: var(--mvs-success-bg);
-    color: var(--mvs-success);
-}
-
-/* ==========================================================================
-   24. BuddyPress Activity Media
-   ========================================================================== */
-
-/* Thumbnail in activity stream items — single image */
-/* Constrain ALL images in BP activity content — covers both MVS-wrapped
-   and raw images uploaded via the activity form. */
-#buddypress .activity-content img:not(.avatar):not(.emoji),
-.activity-list .activity-content img:not(.avatar):not(.emoji) {
-    max-width: 100%;
-    max-height: 600px;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    border-radius: 12px;
-    display: block;
-    margin: 8px 0;
-}
-
-.mvs-activity-media {
-    position: relative;
-    overflow: hidden;
-    margin-top: 10px;
-    max-height: 600px;
-    border-radius: 12px;
-}
-
-.mvs-activity-media a {
-    display: block;
-    height: 100%;
-}
-
-.mvs-activity-media img {
-    width: 100%;
-    height: 100%;
-    max-height: 600px;
-    object-fit: cover;
-    display: block;
-    border-radius: 12px;
-}
-
-/* Multi-image grid in activity stream (Facebook-style) */
-/* ── Facebook/Instagram-style multi-image grid ── */
-.mvs-activity-media-grid {
-    display: grid;
-    gap: 3px;
-    margin-top: 10px;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.mvs-activity-media-grid .mvs-activity-media {
-    margin-top: 0;
-    overflow: hidden;
-    position: relative;
-    background: var(--mvs-surface-2);
-}
-
-.mvs-activity-media-grid .mvs-activity-media a {
-    display: block;
-    width: 100%;
-    height: 100%;
-}
-
-.mvs-activity-media-grid .mvs-activity-media img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 0;
-    display: block;
-}
-
-/* "+N more" overlay on last cell */
-.mvs-activity-media-more {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    color: var(--mvs-bg);
-    font-size: 32px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    letter-spacing: -0.5px;
-}
-
-/* ── Grid layouts ── */
-
-/* 2 images: side by side */
-/* Single item: same 600px cap, cover-crop tall images */
-.mvs-activity-grid-1 .mvs-activity-media {
-    background: transparent;
-    max-height: 600px;
-}
-
-.mvs-activity-grid-1 .mvs-activity-media img {
-    width: 100%;
-    max-height: 600px;
-    object-fit: cover;
-    border-radius: 10px;
-}
-
-.mvs-activity-grid-2 {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 280px;
-}
-
-/* 3 images: 1 big left + 2 stacked right */
-.mvs-activity-grid-3 {
-    grid-template-columns: 3fr 2fr;
-    grid-template-rows: 175px 175px;
-}
-
-.mvs-activity-grid-3 .mvs-activity-media:first-child {
-    grid-row: 1 / 3;
-}
-
-/* 4 images: 1 big top + 3 bottom */
-.mvs-activity-grid-4 {
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 280px 160px;
-}
-
-.mvs-activity-grid-4 .mvs-activity-media:first-child {
-    grid-column: 1 / 4;
-}
-
-/* Activity stream media images — single image (not in grid) */
-.activity-content a[href*="/media/"] img:not(.emoji):not(.avatar) {
-    max-width: 100%;
-    max-height: 500px;
-    width: auto;
-    height: auto;
-    border-radius: 12px;
-    display: block;
-    object-fit: contain;
-    margin: 8px 0;
-}
-
-/* Override: grid images use cover fill */
-.mvs-activity-media-grid .mvs-activity-media a[href*="/media/"] img:not(.emoji):not(.avatar) {
-    width: 100%;
-    height: 100%;
-    max-height: none;
-    object-fit: cover;
-    border-radius: 0;
-    margin: 0;
-}
-
-.mvs-activity-comment-text {
-    margin-top: 8px;
-    font-size: 0.95em;
-    color: var(--mvs-text);
-    line-height: 1.5;
-}
-
-/* Activity form media attachment button */
-.mvs-activity-media-btn-wrap {
-    display: block;
-    padding: 0;
-    width: 100%;
-    clear: both;
-}
-
-.mvs-activity-media-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    background: var(--mvs-surface-2);
-    border: 1px solid var(--mvs-border);
-    border-radius: 20px;
-    cursor: pointer;
-    color: var(--mvs-text-secondary);
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.2s;
-}
-
-.mvs-activity-media-btn:hover {
-    border-color: var(--mvs-primary);
-    color: var(--mvs-primary);
-    background: var(--mvs-info-bg);
-}
-
-.mvs-activity-media-btn .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-}
-
-/* Preview grid in activity form — see section 29 for primary styles */
-.mvs-activity-media-thumb {
-    width: 110px;
-    height: 110px;
-    border-radius: 8px;
-    display: block;
-    object-fit: cover;
-}
-
-.mvs-preview-audio,
-.mvs-preview-video {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--mvs-bg);
-    border-radius: 8px;
-    width: 100%;
-    height: 100%;
-}
-
-.mvs-preview-audio {
-    background: linear-gradient(135deg, #6c3483, #1a1a2e);
-}
-
-.mvs-preview-video {
-    background: linear-gradient(135deg, #1a5276, #1a1a2e);
-}
-
-/* Make all thumb types fill the preview cell */
-.mvs-preview-item .mvs-activity-media-thumb {
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-}
-
-.mvs-activity-media-uploading {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--mvs-primary);
-    font-size: 13px;
-    font-weight: 600;
-    padding: 8px 0;
-}
-
-.mvs-activity-media-uploading::before {
-    content: "";
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--mvs-primary);
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: mvs-spin 0.8s linear infinite;
-    display: inline-block;
-}
-
+/* Activity form controls (attach-media button, preview grid, privacy
+ * select, upload state) moved to bp-integration.css. See that file's
+ * "Activity form — attach-media button, preview grid, privacy select"
+ * section. Only the shared @keyframes stays here since it's referenced
+ * by multiple non-BP spinners too. */
 @keyframes mvs-spin {
     to {
         transform: rotate(360deg);
     }
 }
 
-.mvs-activity-media-error {
-    color: var(--mvs-danger);
-    font-size: 13px;
-}
+/* ── 25. Activity Media Lightbox ── (moved to frontend.css Lightbox
+ *         social sidebar section; see bottom of file).
+ *
+ * Sections 26–28 (Inline Album Creation / Inline Upload / Single Album
+ * View) moved to bp-integration.css for the BP-only rules
+ * (.mvs-bp-album-form, .mvs-bp-album-msg, .mvs-bp-back-link,
+ * .mvs-btn-primary, .mvs-btn-secondary).
+ *
+ * The .mvs-bp-upload-* classes remain here, unscoped, because
+ * templates/album.php (non-BP single-album view) reuses the same
+ * markup for its "Add Media" inline upload panel. Renaming to
+ * .mvs-inline-upload-* would be cleaner but is deferred to avoid
+ * touching PHP/JS in this CSS-only migration.
+ */
 
-/* ── 25. Activity Media Lightbox ── */
-
-/* Left: Image panel — takes remaining space */
-/* Prev / Next navigation arrows */
-/* Right: Social panel — Facebook/X style wide sidebar */
-/* Reactions bar */
-/* Action buttons */
-/* Comments section — fills remaining space */
-/* Comment form — pinned to bottom */
-/* Responsive: stack on mobile */
-@media (max-width: 900px) {}
-
-/* ── 26. BP Profile — Inline Album Creation ── */
-.mvs-bp-album-form {
-    margin: 16px 0;
-    padding: 20px;
-    background: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
-    border-radius: 8px;
-}
-
-.mvs-bp-album-form-inner label {
-    display: block;
-    font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 4px;
-    color: var(--mvs-text);
-}
-
-.mvs-bp-album-form-inner input[type="text"],
-.mvs-bp-album-form-inner textarea {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid var(--mvs-border-light);
-    border-radius: 6px;
-    font-size: 14px;
-    margin-bottom: 12px;
-    box-sizing: border-box;
-}
-
-.mvs-bp-album-form-inner input[type="text"]:focus,
-.mvs-bp-album-form-inner textarea:focus {
-    border-color: var(--mvs-primary);
-    outline: none;
-    box-shadow: 0 0 0 1px var(--mvs-primary);
-}
-
-.mvs-bp-album-form-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.mvs-btn-primary {
-    background: var(--mvs-primary);
-    color: var(--mvs-bg);
-    border: none;
-    padding: 8px 20px;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-.mvs-btn-primary:hover {
-    background: var(--mvs-primary-hover);
-}
-
-.mvs-btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.mvs-btn-secondary {
-    background: var(--mvs-surface-2);
-    color: var(--mvs-text-secondary);
-    border: 1px solid var(--mvs-border-light);
-    padding: 8px 20px;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.mvs-btn-secondary:hover {
-    background: var(--mvs-border);
-}
-
-.mvs-bp-album-msg {
-    margin-top: 8px;
-    font-size: 13px;
-}
-
-.mvs-bp-album-msg-error {
-    color: var(--mvs-danger);
-}
-
-/* ── 27. BP Profile — Inline Upload ── */
 .mvs-bp-upload-wrap {
     margin: 16px 0;
     padding: 20px;
@@ -2958,9 +2555,9 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-bp-upload-thumb-name {
     display: block;
+    margin-top: 4px;
     font-size: 11px;
     color: var(--mvs-text-secondary);
-    margin-top: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2984,195 +2581,23 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-success);
 }
 
-/* ── 28. BP Profile — Single Album View ── */
-.mvs-bp-back-link {
-    margin-bottom: 16px;
-}
-
-.mvs-bp-back-link a {
-    color: var(--mvs-primary);
-    text-decoration: none;
-    font-size: 14px;
-}
-
-.mvs-bp-back-link a:hover {
-    text-decoration: underline;
-}
-
+/* Used only by templates/album.php (single-album view, Add Media panel). */
 .mvs-album-upload-section {
     margin: 16px 0;
 }
 
-/* ==========================================================================
-   26. Group Media Sub-Tabs
-   ========================================================================== */
-
-.mvs-bp-sub-tabs {
-    display: flex;
-    border-bottom: 2px solid var(--mvs-border);
-    margin-bottom: 20px;
-    gap: 0;
-}
-
-.mvs-bp-sub-tab {
-    padding: 10px 20px;
-    text-decoration: none;
-    color: var(--mvs-text-secondary);
-    border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-    font-weight: 500;
-    font-size: 14px;
-    transition: color 0.2s, border-color 0.2s;
-}
-
-.mvs-bp-sub-tab:hover {
-    color: var(--mvs-text);
-    text-decoration: none;
-}
-
-.mvs-bp-sub-tab.active {
-    color: var(--mvs-text);
-    border-bottom-color: var(--mvs-primary);
-}
-
-/* ==========================================================================
-   27. Activity Media Thumbnails (Video/Audio)
-   ========================================================================== */
-
-.mvs-activity-media--video {
-    position: relative;
-}
-
-.mvs-activity-media--video a {
-    position: relative;
-    display: block;
-}
-
-.mvs-activity-play-icon {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 56px;
-    height: 56px;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: var(--mvs-bg);
-    z-index: 2;
-    transition: background 0.2s;
-    pointer-events: none;
-}
-
-.mvs-activity-play-icon::before {
-    content: '\25B6';
-    font-style: normal;
-}
-
-/* Full-coverage link for video thumbnail cards */
-.mvs-activity-vid-link {
-    width: 100%;
-    height: 100%;
-    position: relative;
-}
-
-.mvs-activity-media--video a:hover .mvs-activity-play-icon {
-    background: rgba(0, 0, 0, 0.8);
-}
-
-.mvs-activity-media--placeholder,
-.mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--placeholder {
-    background: linear-gradient(135deg, #0d2137, #0a0a0a);
-    border-radius: 8px;
-    aspect-ratio: 16 / 9;
-}
-
-.mvs-activity-media--audio,
-.mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--audio {
-    background: linear-gradient(135deg, #4a1272, #1a0a2e);
-}
-
-.mvs-activity-media--placeholder a,
-.mvs-activity-media--placeholder .mvs-activity-vid-link,
-.mvs-activity-media-grid .mvs-activity-media--placeholder a,
-.mvs-activity-media-grid .mvs-activity-media--placeholder .mvs-activity-vid-link {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    text-decoration: none;
-    color: var(--mvs-border-light);
-    padding: 32px;
-    width: 100%;
-    height: 100%;
-    box-sizing: border-box;
-}
-
-.mvs-activity-media--placeholder .mvs-activity-play-icon {
-    position: static;
-    transform: none;
-}
-
-.mvs-activity-media-label {
-    font-size: 0.9em;
-    max-width: 200px;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.mvs-activity-media--audio {
-    background: linear-gradient(135deg, #4a1272, #1a0a2e);
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.mvs-activity-media--audio a {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 16px 20px;
-    text-decoration: none;
-    color: var(--mvs-surface);
-}
-
-.mvs-activity-audio-icon {
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    color: var(--mvs-surface);
-    flex-shrink: 0;
-}
-
-.mvs-activity-audio-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-}
-
-.mvs-activity-audio-title {
-    font-weight: 600;
-    font-size: 0.95em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.mvs-activity-audio-meta {
-    font-size: 0.82em;
-    color: var(--mvs-text-muted);
-}
+/* Section 26 "Group Media Sub-Tabs" — removed. Unscoped duplicates of
+ * scoped versions already in bp-integration.css section 'Sub-tab row
+ * (Media / Albums)':
+ *   .mvs-bp-sub-tabs, .mvs-bp-sub-tab, .mvs-bp-sub-tab:hover,
+ *   .mvs-bp-sub-tab.active
+ *
+ * Section 27 "Activity Media Thumbnails (Video/Audio)" — moved to
+ * bp-integration.css section 'Activity stream — video thumbnails,
+ * placeholders, audio cards', scoped under #buddypress. All
+ * .mvs-activity-media--video / --audio / --placeholder rules plus the
+ * play icon, vid-link, audio icon/info/title/meta supporting classes.
+ */
 
 /* ==========================================================================
    28. Enhanced Single Media Player
@@ -3230,49 +2655,83 @@ a.mvs-dashboard-card-title:hover {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     background: rgba(0, 0, 0, 0.55);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    color: var(--mvs-bg);
+    color: #fff;
     z-index: 2;
     pointer-events: none;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.mvs-grid-play-icon svg {
+    width: 22px;
+    height: 22px;
+    /* Optical centering — the play triangle isn't centered in its bounding box. */
+    margin-left: 2px;
 }
 
 .mvs-grid-item a:hover .mvs-grid-play-icon {
     background: rgba(0, 0, 0, 0.8);
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* Unified placeholder frame — audio + video + generic all share aspect ratio
+   and centering so grids never collapse based on media type. Specific
+   gradients layered via the --video / --audio / --generic modifiers. */
+.mvs-grid-item-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1;
+    position: relative;
+    color: rgba(255, 255, 255, 0.9);
+    background: linear-gradient(135deg, #1a2332, #0a0a0a);
+}
+
+.mvs-grid-item-placeholder svg {
+    width: 34%;
+    height: 34%;
+    max-width: 72px;
+    max-height: 72px;
+    opacity: 0.9;
 }
 
 .mvs-grid-item-placeholder--video {
     background: linear-gradient(135deg, #0d2137, #0a0a0a);
     aspect-ratio: 16 / 9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
 }
 
 .mvs-grid-item-placeholder--audio {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: var(--mvs-surface);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 1;
-    font-size: 48px;
+    color: #fff;
 }
 
-.mvs-grid-audio-icon {
-    font-size: 56px;
-    color: var(--mvs-surface);
-    line-height: 1;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+.mvs-grid-item-placeholder--generic {
+    background: linear-gradient(135deg, #2b3544, #1a1f2b);
+}
+
+.mvs-grid-audio-icon,
+.mvs-grid-generic-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    line-height: 0;
+}
+
+.mvs-grid-audio-icon svg,
+.mvs-grid-generic-icon svg {
+    width: 34%;
+    height: 34%;
+    max-width: 72px;
+    max-height: 72px;
 }
 
 /* ==========================================================================
@@ -3701,59 +3160,35 @@ a.mvs-dashboard-card-title:hover {
     }
 }
 
-/* ==========================================================================
-   27. Theme Compatibility — Reign / BuddyBoss / Generic
-   ========================================================================== */
-
-/* Reign theme: upload button alignment in BP activity and profile */
-.theme-flavor .mvs-bp-upload-btn,
-.theme-flavor .mvs-upload-dropzone,
-.theme-flavor .mvs-upload-block {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-}
-
-.theme-flavor #mvs-activity-media-btn,
-.theme-flavor .mvs-bp-upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin: 8px 0;
-    vertical-align: middle;
-}
-
-/* Reign BP activity form: align the photo/video button with text area */
-@media screen and (min-width: 46.8em) {
-    .wb-reign-theme #whats-new-form #mvs-activity-media-btn {
-        margin-left: 65px;
-    }
-}
-
-/* Reign BP profile/group media grids */
-.theme-flavor
-
-/* BuddyBoss theme compatibility */
-.buddyboss-theme .mvs-upload-dropzone,
-.buddyboss-theme .mvs-upload-block {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.buddyboss-theme #mvs-activity-media-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* Generic: ensure upload button never overflows on narrow containers */
-.mvs-bp-upload-btn,
-#mvs-activity-media-btn {
-    max-width: 100%;
-    box-sizing: border-box;
-}
+/* Section 27 "Theme Compatibility — Reign / BuddyBoss / Generic"
+ * removed. Audit summary:
+ *
+ *  - .theme-flavor scoped rules — dead: no PHP/JS/template in the plugin
+ *    emits .theme-flavor, and no theme adds it to <body>. Every rule was
+ *    a no-op.
+ *  - .mvs-bp-upload-btn scoped rules — dead: the upload button is
+ *    emitted with id="mvs-bp-upload-btn" and class="mvs-btn", never with
+ *    class="mvs-bp-upload-btn". Rules were also no-ops.
+ *  - .buddyboss-theme .mvs-upload-dropzone / .mvs-upload-block —
+ *    .mvs-upload-* only appears inside the media-upload Gutenberg block,
+ *    which doesn't render inside BP surfaces; the rule never matched.
+ *    Additionally, a dangling `.theme-flavor` selector with no rule body
+ *    on the line above was silently hijacking this selector list, so the
+ *    rules were doubly broken.
+ *  - .buddyboss-theme #mvs-activity-media-btn — redundant with the
+ *    consolidated #mvs-activity-media-btn rule now in bp-integration.css
+ *    (same display/align/gap values).
+ *  - .wb-reign-theme #whats-new-form #mvs-activity-media-btn margin-left
+ *    — the only live theme-compat rule. Moved to bp-integration.css
+ *    (Theme compatibility section) with the selector updated to scope
+ *    on .mvs-activity-media-btn-wrap since that's now the flex row
+ *    anchor (button no longer lays out on its own).
+ *  - .mvs-bp-upload-btn, #mvs-activity-media-btn { max-width: 100% } —
+ *    the button now lives inside .mvs-activity-media-btn-wrap which
+ *    already has width: 100%; box-sizing: border-box on all button
+ *    children via box-sizing: border-box inheritance from the baseline
+ *    reset in bp-integration.css. No longer needed.
+ */
 
 /* ==========================================================================
    26. Album Placeholder
@@ -4150,108 +3585,9 @@ a.mvs-dashboard-card-title:hover {
     font-size: 13px;
 }
 
-/* ==========================================================================
-   29. BP Activity Media Button Alignment
-   ========================================================================== */
-
-#mvs-activity-media-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border: 1px solid var(--mvs-border);
-    border-radius: 4px;
-    background: var(--mvs-bg);
-    color: var(--mvs-text);
-    cursor: pointer;
-    font-size: 13px;
-    line-height: 1.4;
-    vertical-align: middle;
-    margin: 4px 0;
-    transition: all 0.15s;
-}
-
-#mvs-activity-media-btn:hover {
-    background: var(--mvs-surface-2);
-    color: var(--mvs-text);
-    border-color: var(--mvs-text-muted);
-}
-
-#mvs-activity-media-btn .dashicons {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    line-height: 18px;
-}
-
-/* Activity form: media preview grid */
-.mvs-activity-media-preview {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 8px;
-    margin-top: 12px;
-    padding: 10px;
-    background: var(--mvs-surface-2);
-    border: 1px solid var(--mvs-border);
-    border-radius: 8px;
-    overflow-x: auto;
-    max-width: 100%;
-}
-
-/* Single image: show larger preview */
-.mvs-activity-media-preview.mvs-preview-grid-1 .mvs-preview-item {
-    width: 200px;
-    height: 150px;
-}
-
-.mvs-activity-media-preview.mvs-preview-grid-1 .mvs-preview-item img {
-    width: 200px;
-    height: 150px;
-}
-
-/* Preview item: fixed square cell */
-.mvs-preview-item {
-    position: relative;
-    width: 100px;
-    height: 100px;
-    min-width: 100px;
-    border-radius: 6px;
-    overflow: hidden;
-    background: var(--mvs-border-light);
-    flex-shrink: 0;
-}
-
-.mvs-preview-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-#buddypress .mvs-activity-media-remove,
-.mvs-activity-media-remove {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.65);
-    color: var(--mvs-bg);
-    border: none;
-    cursor: pointer;
-    font-size: 13px;
-    line-height: 22px;
-    text-align: center;
-    padding: 0;
-    backdrop-filter: blur(4px);
-    transition: background 0.15s;
-}
-
-#buddypress .mvs-activity-media-remove:hover,
-.mvs-activity-media-remove:hover {
-    background: var(--mvs-danger);
-}
+/* Section 29 "BP Activity Media Button Alignment" — all rules moved to
+ * bp-integration.css. Section header retained as a placeholder so
+ * renumbering in a later commit stays mechanical. */
 
 /* ==========================================================================
    30. Single Media Page Fixes
@@ -4642,6 +3978,29 @@ a.mvs-dashboard-card-title:hover {
     line-height: 1.4;
 }
 
+/* Icon sizing inside any .mvs-btn. Lucide's default <svg> is 24x24; at
+ * that size it towers over 14px label text. Cap to 16px and inherit
+ * the button color so the icon pairs properly with the label. The
+ * `[data-lucide]` selector covers the brief moment before
+ * lucide.createIcons() swaps the <i> placeholder for <svg>. */
+.mvs-btn svg,
+.mvs-btn [data-lucide] {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    flex-shrink: 0;
+    color: inherit;
+}
+
+/* Small-variant buttons use smaller labels, so scale the icon down too. */
+.mvs-btn.mvs-btn--small svg,
+.mvs-btn.mvs-btn--sm svg,
+.mvs-btn.mvs-btn--small [data-lucide],
+.mvs-btn.mvs-btn--sm [data-lucide] {
+    width: 14px;
+    height: 14px;
+}
+
 .mvs-btn--primary {
     background: var(--mvs-primary);
     /* Always readable on the brand primary background — never use a theme
@@ -4677,6 +4036,21 @@ a.mvs-dashboard-card-title:hover {
     background: var(--button-background-hover-color, var(--mvs-border));
     color: var(--button-text-hover-color, var(--mvs-text));
     border-color: var(--button-border-hover-color, var(--mvs-border));
+}
+
+/* Secondary button icons keep a neutral, theme-agnostic color — some themes
+   expose --button-text-color in red/accent, which leaked into lucide SVG fill
+   (e.g. Report flag rendered red). Matches the lightbox action convention. */
+.mvs-btn.mvs-btn--secondary svg,
+.mvs-btn.mvs-btn--secondary [data-lucide] {
+    color: var(--mvs-text-secondary);
+}
+
+.mvs-btn.mvs-btn--secondary:hover svg,
+.mvs-btn.mvs-btn--secondary:focus svg,
+.mvs-btn.mvs-btn--secondary:hover [data-lucide],
+.mvs-btn.mvs-btn--secondary:focus [data-lucide] {
+    color: var(--mvs-text);
 }
 
 .mvs-btn--text {
@@ -4987,6 +4361,147 @@ a.mvs-dashboard-card-title:hover {
     margin: 0 0 16px;
     font-size: 0.9375rem;
     color: var(--mvs-text-secondary);
+}
+
+/* -----------------------------------------------------------------------
+   Plugin-branded 404 (mvs-empty-state-frontend--404)
+   Uses the same design language as the auth gate — centered card with a
+   gradient accent, circular icon halo, and popular-tag row below the
+   primary CTA.
+   ----------------------------------------------------------------------- */
+.mvs-archive--404 {
+    display: flex;
+    justify-content: center;
+    padding: clamp(32px, 8vw, 96px) 16px;
+}
+
+.mvs-empty-state-frontend--404 {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    margin: 0;
+    padding: clamp(32px, 5vw, 56px) clamp(24px, 4vw, 48px);
+    background: var(--mvs-surface, #fff);
+    border-radius: var(--mvs-radius-lg, 16px);
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.04),
+        0 18px 48px -12px rgba(15, 23, 42, 0.18);
+    overflow: hidden;
+}
+
+.mvs-empty-state-frontend--404::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg,
+        var(--mvs-primary, #0073aa) 0%,
+        #6a5acd 50%,
+        #ff6aa6 100%);
+}
+
+.mvs-empty-state-frontend__glyph {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 88px;
+    height: 88px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    color: var(--mvs-primary, #0073aa);
+    z-index: 1;
+}
+
+.mvs-empty-state-frontend__glyph svg {
+    width: 44px;
+    height: 44px;
+    stroke-width: 1.75;
+}
+
+.mvs-empty-state-frontend__title {
+    margin: 0 0 12px;
+    font-family: var(--mvs-font-heading, inherit);
+    font-size: clamp(22px, 2.6vw, 28px);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--mvs-text, #1e1e1e);
+}
+
+.mvs-empty-state-frontend__lede {
+    margin: 0 auto 28px;
+    max-width: 420px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--mvs-text-secondary, #646970);
+}
+
+.mvs-empty-state-frontend--404 .mvs-empty-state-actions {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.mvs-empty-state-frontend--404 .mvs-btn--primary {
+    min-width: 200px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.mvs-empty-state-frontend__tags-label {
+    margin: 12px 0 10px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mvs-text-muted, #a7aaad);
+}
+
+.mvs-empty-state-frontend--404 .mvs-empty-state-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.mvs-empty-state-frontend--404 .mvs-tag-cloud-item {
+    padding: 6px 14px;
+    border-radius: var(--mvs-radius-pill, 100px);
+    background: var(--mvs-surface-2, #f6f7f7);
+    color: var(--mvs-text, #1e1e1e);
+    font-size: 13px;
+    text-decoration: none;
+    transition: background 150ms ease, color 150ms ease;
+}
+
+.mvs-empty-state-frontend--404 .mvs-tag-cloud-item:hover,
+.mvs-empty-state-frontend--404 .mvs-tag-cloud-item:focus-visible {
+    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    color: var(--mvs-primary, #0073aa);
+}
+
+@media (max-width: 640px) {
+    .mvs-archive--404 {
+        padding: 24px 12px 48px;
+    }
+    .mvs-empty-state-frontend--404 {
+        padding: 28px 20px 32px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -8px rgba(15, 23, 42, 0.15);
+    }
+    .mvs-empty-state-frontend__glyph {
+        width: 72px;
+        height: 72px;
+        margin-bottom: 16px;
+    }
+    .mvs-empty-state-frontend__glyph svg {
+        width: 40px;
+        height: 40px;
+    }
+    .mvs-empty-state-frontend--404 .mvs-btn--primary {
+        width: 100%;
+        min-width: 0;
+    }
 }
 
 /* ==========================================================================
@@ -5374,8 +4889,8 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox {
     display: flex;
-    max-width: 95vw;
-    max-height: 92vh;
+    width: min(1200px, 95vw);
+    height: min(800px, 92vh);
     background: var(--mvs-surface);
     border-radius: 6px;
     overflow: hidden;
@@ -5410,8 +4925,9 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-loading {
-    width: 600px;
-    height: 500px;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -5420,17 +4936,17 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-media {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--mvs-overlay);
     position: relative;
-    max-height: 92vh;
 }
 
 .mvs-lightbox-media img {
     max-width: 100%;
-    max-height: 92vh;
+    max-height: 100%;
     object-fit: contain;
     display: block;
 }
@@ -5442,24 +4958,20 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-video {
-    max-width: 100%;
-    max-height: 80vh;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     display: block;
-    margin: 0 auto;
-    border-radius: 8px;
+    border-radius: 0;
+    background: #000;
 }
 
 .mvs-lightbox-audio {
-    width: 400px;
-    max-width: 90vw;
+    width: min(400px, 80%);
     display: block;
     border-radius: 12px;
     padding: 8px;
     filter: invert(1);
-}
-
-.mvs-lightbox-media:has(audio:not([hidden])) {
-    min-width: 420px;
 }
 
 .mvs-lightbox-nav {
@@ -5808,18 +5320,22 @@ a.mvs-dashboard-card-title:hover {
 @media (max-width: 768px) {
     .mvs-lightbox {
         flex-direction: column;
-        max-height: 95vh;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        border-radius: 0;
     }
 
     .mvs-lightbox-sidebar {
         width: 100%;
-        max-height: 45vh;
+        flex: 0 0 45%;
         border-left: none;
         border-top: 1px solid var(--mvs-border-light);
     }
 
     .mvs-lightbox-media {
-        max-height: 50vh;
+        flex: 1;
+        min-height: 0;
     }
 }
 /* Replace-file row inside edit modal */
@@ -5841,4 +5357,317 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text-secondary);
     font-size: 12px;
     margin-left: 8px;
+}
+
+/* -----------------------------------------------------------------------
+   Auth gate — premium empty-state shown on plugin pages that require login
+   (e.g. /my-media/ dashboard shortcode while logged out).
+   ----------------------------------------------------------------------- */
+.mvs-auth-gate {
+    display: flex;
+    justify-content: center;
+    padding: clamp(32px, 8vw, 96px) 16px;
+}
+
+.mvs-auth-gate__card {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    padding: clamp(32px, 5vw, 56px) clamp(24px, 4vw, 48px);
+    background: var(--mvs-surface, #fff);
+    border-radius: var(--mvs-radius-lg, 16px);
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.04),
+        0 18px 48px -12px rgba(15, 23, 42, 0.18);
+    text-align: center;
+    overflow: hidden;
+    color: var(--mvs-primary);
+}
+
+.mvs-auth-gate__card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: linear-gradient(90deg,
+        var(--mvs-primary, #0073aa) 0%,
+        #6a5acd 50%,
+        #ff6aa6 100%);
+}
+
+.mvs-auth-gate__card::after {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    right: -120px;
+    top: -140px;
+    background: radial-gradient(circle,
+        rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08) 0%,
+        transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.mvs-auth-gate__glyph {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 88px;
+    height: 88px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    color: var(--mvs-primary, #0073aa);
+    z-index: 1;
+}
+
+.mvs-auth-gate__glyph svg {
+    width: 44px;
+    height: 44px;
+    stroke-width: 1.75;
+}
+
+.mvs-auth-gate__title {
+    position: relative;
+    margin: 0 0 12px;
+    font-family: var(--mvs-font-heading, inherit);
+    font-size: clamp(22px, 2.6vw, 28px);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--mvs-text, #1e1e1e);
+    z-index: 1;
+}
+
+.mvs-auth-gate__lede {
+    position: relative;
+    margin: 0 auto 28px;
+    max-width: 420px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--mvs-text-secondary, #646970);
+    z-index: 1;
+}
+
+.mvs-auth-gate__benefits {
+    position: relative;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 32px;
+    text-align: left;
+    display: grid;
+    gap: 12px;
+    z-index: 1;
+}
+
+.mvs-auth-gate__benefits li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--mvs-surface-2, #f6f7f7);
+    border-radius: var(--mvs-radius-md, 10px);
+    font-size: 14px;
+    color: var(--mvs-text, #1e1e1e);
+    line-height: 1.4;
+}
+
+.mvs-auth-gate__benefit-icon {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--mvs-surface, #fff);
+    border-radius: 50%;
+    color: var(--mvs-primary, #0073aa);
+    line-height: 1;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.mvs-auth-gate__benefit-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+}
+
+.mvs-auth-gate__actions {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    z-index: 1;
+}
+
+.mvs-auth-gate__primary {
+    min-width: 240px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.mvs-auth-gate__secondary {
+    font-size: 14px;
+    color: var(--mvs-text-secondary, #646970);
+    text-decoration: none;
+    transition: color 150ms ease;
+}
+
+.mvs-auth-gate__secondary:hover,
+.mvs-auth-gate__secondary:focus-visible {
+    color: var(--mvs-primary, #0073aa);
+}
+
+.mvs-auth-gate__secondary strong {
+    color: var(--mvs-primary, #0073aa);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+    .mvs-auth-gate {
+        padding: 24px 12px 48px;
+    }
+    .mvs-auth-gate__card {
+        padding: 28px 20px 32px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -8px rgba(15, 23, 42, 0.15);
+    }
+    .mvs-auth-gate__glyph {
+        width: 72px;
+        height: 72px;
+        margin-bottom: 16px;
+    }
+    .mvs-auth-gate__glyph svg {
+        width: 44px;
+        height: 44px;
+    }
+    .mvs-auth-gate__primary {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .mvs-auth-gate__card {
+        background: var(--mvs-surface, #1e1e1e);
+        box-shadow:
+            0 1px 2px rgba(0, 0, 0, 0.2),
+            0 18px 48px -12px rgba(0, 0, 0, 0.55);
+    }
+}
+
+/* Album cover hint inside FAB upload modal (album mode, files selected). */
+.mvs-modal-album-cover-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    background: var(--mvs-surface-2, #f5f5f5);
+    border-left: 3px solid var(--mvs-primary, #2271b1);
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--mvs-text-secondary, #555);
+}
+.mvs-modal-album-cover-hint[hidden] { display: none; }
+.mvs-modal-album-cover-hint svg {
+    flex-shrink: 0;
+    color: var(--mvs-primary, #2271b1);
+}
+@media (max-width: 640px) {
+    .mvs-modal-album-cover-hint { font-size: 12px; padding: 6px 10px; }
+}
+
+/* ============================================================================
+   Single album page — cover selection overlay (owner only).
+   Renders a "Set as cover" button on each image tile and a "Cover" badge on
+   the current cover. Pairs with templates/album.php inline JS that PUTs to
+   /albums/{id}/cover. set_cover() is atomic (adds the media to the album in
+   the same request if not already there), so no client-side ordering needed.
+   ============================================================================ */
+.mvs-album-item-wrap {
+    position: relative;
+    display: block;
+}
+
+.mvs-album-cover-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--mvs-surface, #fff);
+    background: var(--mvs-primary, #2271b1);
+    border-radius: 999px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+}
+
+.mvs-album-set-cover {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--mvs-surface, #fff);
+    background: rgba(17, 17, 17, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.mvs-album-item-wrap:hover .mvs-album-set-cover,
+.mvs-album-set-cover:focus-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.mvs-album-set-cover:hover,
+.mvs-album-set-cover:focus-visible {
+    background: var(--mvs-primary, #2271b1);
+    border-color: var(--mvs-primary, #2271b1);
+    outline: none;
+}
+
+.mvs-album-set-cover[disabled] {
+    opacity: 0.7;
+    cursor: progress;
+}
+
+.mvs-album-set-cover .dashicons {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    line-height: 1;
+}
+
+@media (max-width: 640px) {
+    .mvs-album-set-cover {
+        /* Mobile: always visible (no hover). */
+        opacity: 1;
+        transform: none;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+    .mvs-album-cover-badge {
+        padding: 3px 8px;
+        font-size: 10px;
+    }
 }

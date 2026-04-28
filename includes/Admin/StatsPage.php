@@ -74,7 +74,7 @@ class StatsPage {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$top_media = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT s.media_id, s.views, s.reactions, s.downloads, s.comments, s.shares, m.title AS post_title
+				"SELECT s.media_id, s.views, s.reactions, s.comments, s.shares, m.title AS post_title
 				FROM {$stats_table} s
 				INNER JOIN {$index_table} m ON m.media_id = s.media_id
 				WHERE m.status = %s
@@ -90,7 +90,7 @@ class StatsPage {
 		header( 'Content-Disposition: attachment; filename=wpmediaverse-stats-' . gmdate( 'Y-m-d' ) . '.csv' );
 
 		$output = fopen( 'php://output', 'w' );
-		fputcsv( $output, array( 'ID', 'Title', 'Views', 'Reactions', 'Downloads', 'Comments', 'Shares' ) );
+		fputcsv( $output, array( 'ID', 'Title', 'Views', 'Reactions', 'Comments', 'Shares' ) );
 
 		foreach ( $top_media as $item ) {
 			fputcsv(
@@ -100,7 +100,6 @@ class StatsPage {
 					$item['post_title'],
 					$item['views'],
 					$item['reactions'],
-					$item['downloads'],
 					$item['comments'],
 					$item['shares'],
 				)
@@ -272,7 +271,6 @@ class StatsPage {
 			$totals = $wpdb->get_row(
 				"SELECT
 					COALESCE(SUM(s.views), 0) AS total_views,
-					COALESCE(SUM(s.downloads), 0) AS total_downloads,
 					COALESCE(SUM(s.reactions), 0) AS total_reactions,
 					COALESCE(SUM(s.comments), 0) AS total_comments,
 					COALESCE(SUM(s.shares), 0) AS total_shares
@@ -286,7 +284,6 @@ class StatsPage {
 				$wpdb->prepare(
 					"SELECT
 						COALESCE(SUM(views), 0) AS total_views,
-						COALESCE(SUM(downloads), 0) AS total_downloads,
 						COALESCE(SUM(reactions), 0) AS total_reactions,
 						COALESCE(SUM(comments), 0) AS total_comments,
 						COALESCE(SUM(shares), 0) AS total_shares
@@ -299,7 +296,7 @@ class StatsPage {
 
 		if ( $date_filter ) {
 			$top_media = $wpdb->get_results(
-				"SELECT s.media_id, s.views, s.reactions, s.downloads, m.title AS post_title
+				"SELECT s.media_id, s.views, s.reactions, m.title AS post_title
 				FROM {$stats_table} s
 				INNER JOIN {$index_table} m ON m.media_id = s.media_id
 				WHERE m.status = 'publish' {$date_filter}
@@ -310,7 +307,7 @@ class StatsPage {
 		} else {
 			$top_media = $wpdb->get_results(
 				$wpdb->prepare(
-					"SELECT s.media_id, s.views, s.reactions, s.downloads, m.title AS post_title
+					"SELECT s.media_id, s.views, s.reactions, m.title AS post_title
 					FROM {$stats_table} s
 					INNER JOIN {$index_table} m ON m.media_id = s.media_id
 					WHERE m.status = %s
@@ -378,10 +375,6 @@ class StatsPage {
 				<span class="mvs-stat-label"><?php esc_html_e( 'Total Views', 'wpmediaverse' ); ?></span>
 			</div>
 			<div class="mvs-stat-card mvs-stat-card--accent">
-				<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( (int) $totals['total_downloads'] ) ); ?></span>
-				<span class="mvs-stat-label"><?php esc_html_e( 'Downloads', 'wpmediaverse' ); ?></span>
-			</div>
-			<div class="mvs-stat-card mvs-stat-card--accent">
 				<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( (int) $totals['total_reactions'] ) ); ?></span>
 				<span class="mvs-stat-label"><?php esc_html_e( 'Reactions', 'wpmediaverse' ); ?></span>
 			</div>
@@ -407,7 +400,6 @@ class StatsPage {
 									<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
 									<th><?php esc_html_e( 'Views', 'wpmediaverse' ); ?></th>
 									<th><?php esc_html_e( 'Reactions', 'wpmediaverse' ); ?></th>
-									<th><?php esc_html_e( 'Downloads', 'wpmediaverse' ); ?></th>
 								</tr>
 							</thead>
 							<tbody>
@@ -427,7 +419,6 @@ class StatsPage {
 										</td>
 										<td><?php echo esc_html( number_format_i18n( (int) $item['views'] ) ); ?></td>
 										<td><?php echo esc_html( number_format_i18n( (int) $item['reactions'] ) ); ?></td>
-										<td><?php echo esc_html( number_format_i18n( (int) $item['downloads'] ) ); ?></td>
 									</tr>
 								<?php endforeach; ?>
 							</tbody>

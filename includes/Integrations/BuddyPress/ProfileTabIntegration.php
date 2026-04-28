@@ -141,6 +141,18 @@ class ProfileTabIntegration {
 	public function profile_media_content(): void {
 		// Ensure frontend CSS is loaded.
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_style( 'mvs-bp-integration' );
+		wp_enqueue_script( 'mvs-bp-actions' );
+		wp_localize_script(
+			'mvs-bp-actions',
+			'mvsBpActions',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
+		echo '<div class="mvs-bp-screen">';
 
 		$user_id  = bp_displayed_user_id();
 		$is_own   = is_user_logged_in() && get_current_user_id() === $user_id;
@@ -155,14 +167,14 @@ class ProfileTabIntegration {
 			?>
 			<div class="mvs-bp-profile-actions">
 				<button type="button" id="mvs-bp-upload-btn" class="mvs-btn">
-					<span class="dashicons dashicons-cloud-upload"></span> <?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
+					<i data-lucide="upload-cloud" aria-hidden="true"></i> <?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
 				</button>
 			</div>
 
 			<div class="mvs-bp-upload-wrap" id="mvs-bp-upload-wrap" style="display:none;">
 				<input type="file" multiple accept="image/*,video/*,audio/*" class="mvs-bp-file-input" id="mvs-bp-file-input" style="display:none" />
 				<div class="mvs-bp-dropzone" id="mvs-bp-dropzone">
-					<span class="dashicons dashicons-cloud-upload"></span>
+					<i data-lucide="upload-cloud" aria-hidden="true"></i>
 					<span class="mvs-bp-dropzone-text"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
 				</div>
 				<div id="mvs-bp-upload-preview" class="mvs-bp-upload-preview"></div>
@@ -299,7 +311,7 @@ class ProfileTabIntegration {
 
 		if ( ! $total_count ) {
 			echo '<div class="mvs-empty-state">';
-			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			echo '<i data-lucide="images" aria-hidden="true"></i>';
 			if ( $is_own ) {
 				echo '<p>' . esc_html__( 'You haven\'t uploaded any media yet. Get started!', 'wpmediaverse' ) . '</p>';
 			} else {
@@ -322,12 +334,15 @@ class ProfileTabIntegration {
 		// Collect IDs for batch stats query.
 		$stats_map = TemplateHelpers::bulk_get_stats( $media_ids );
 
-		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container>';
+		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container data-show-actions="1">';
 		foreach ( $media_ids as $mid ) {
 			TemplateHelpers::render_grid_item(
 				$mid,
 				$stats_map[ $mid ] ?? array(),
-				array( 'show_author' => true )
+				array(
+					'show_author'  => true,
+					'show_actions' => true,
+				)
 			);
 		}
 		echo '</div>';
@@ -353,6 +368,8 @@ class ProfileTabIntegration {
 			echo '</div>';
 			echo '<p class="mvs-load-more-end" hidden>' . esc_html__( "You're all caught up!", 'wpmediaverse' ) . '</p>';
 		}
+
+		echo '</div>'; // close mvs-bp-screen.
 	}
 
 	/**
@@ -361,6 +378,18 @@ class ProfileTabIntegration {
 	public function profile_albums_content(): void {
 		// Ensure frontend CSS is loaded.
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_style( 'mvs-bp-integration' );
+		wp_enqueue_script( 'mvs-bp-actions' );
+		wp_localize_script(
+			'mvs-bp-actions',
+			'mvsBpActions',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
+		echo '<div class="mvs-bp-screen">';
 
 		$user_id  = bp_displayed_user_id();
 		$is_own   = is_user_logged_in() && get_current_user_id() === $user_id;
@@ -371,7 +400,7 @@ class ProfileTabIntegration {
 		if ( $is_own ) {
 			echo '<div class="mvs-bp-profile-actions">';
 			echo '<button type="button" id="mvs-bp-create-album-btn" class="mvs-btn">';
-			echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Create Album', 'wpmediaverse' );
+			echo '<i data-lucide="plus" aria-hidden="true"></i> ' . esc_html__( 'Create Album', 'wpmediaverse' );
 			echo '</button>';
 			echo '</div>';
 
@@ -405,7 +434,7 @@ class ProfileTabIntegration {
 
 		if ( ! $query->have_posts() ) {
 			echo '<div class="mvs-empty-state">';
-			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			echo '<i data-lucide="images" aria-hidden="true"></i>';
 			if ( $is_own ) {
 				echo '<p>' . esc_html__( 'You haven\'t created any albums yet.', 'wpmediaverse' ) . '</p>';
 			} else {
@@ -424,11 +453,25 @@ class ProfileTabIntegration {
 			$cover_url  = $album_svc->get_cover_url( $album_id );
 			$item_count = $album_svc->get_item_count( $album_id );
 
-			// Link to single album within BP profile context.
-			$album_post = get_post( $album_id );
-			$album_link = trailingslashit( bp_displayed_user_domain() . 'media/albums/' . $album_post->post_name );
+			// Authoritative album URL is the mvs_album CPT permalink (/album/{slug}/).
+			// BP-contextual /members/{user}/media/albums/{slug}/ routing is unreliable
+			// and caused the "cannot click album" bug — use the canonical URL instead.
+			$album_link = get_permalink( $album_id );
 
-			echo '<div class="mvs-grid-item mvs-grid-item--album">';
+			echo '<div class="mvs-grid-item mvs-grid-item--album" data-album-id="' . esc_attr( (string) $album_id ) . '">';
+
+			// Owner-only actions (edit, delete) overlaid on the thumbnail.
+			if ( $is_own ) {
+				echo '<div class="mvs-grid-item-actions">';
+				echo '<button type="button" class="mvs-grid-item-action mvs-bp-album-edit" data-album-id="' . esc_attr( (string) $album_id ) . '" data-album-title="' . esc_attr( get_the_title() ) . '" aria-label="' . esc_attr__( 'Edit album', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Edit album', 'wpmediaverse' ) . '">';
+				echo '<i data-lucide="pencil" aria-hidden="true"></i>';
+				echo '</button>';
+				echo '<button type="button" class="mvs-grid-item-action mvs-grid-item-action--danger mvs-bp-album-delete" data-album-id="' . esc_attr( (string) $album_id ) . '" aria-label="' . esc_attr__( 'Delete album', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Delete album', 'wpmediaverse' ) . '">';
+				echo '<i data-lucide="trash-2" aria-hidden="true"></i>';
+				echo '</button>';
+				echo '</div>';
+			}
+
 			echo '<a href="' . esc_url( $album_link ) . '" class="mvs-grid-item-link">';
 			if ( $cover_url ) {
 				echo '<img src="' . esc_url( $cover_url ) . '" alt="' . esc_attr( get_the_title() ) . '" loading="lazy" />';
@@ -460,6 +503,8 @@ class ProfileTabIntegration {
 		}
 
 		wp_reset_postdata();
+
+		echo '</div>'; // close mvs-bp-screen.
 	}
 
 	/**
@@ -469,6 +514,18 @@ class ProfileTabIntegration {
 	 */
 	public function profile_single_album_content(): void {
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_style( 'mvs-bp-integration' );
+		wp_enqueue_script( 'mvs-bp-actions' );
+		wp_localize_script(
+			'mvs-bp-actions',
+			'mvsBpActions',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
+		echo '<div class="mvs-bp-screen">';
 
 		$album_slug = bp_action_variable( 0 );
 		$user_id    = bp_displayed_user_id();
@@ -476,6 +533,7 @@ class ProfileTabIntegration {
 		$album = get_page_by_path( $album_slug, OBJECT, 'mvs_album' );
 		if ( ! $album || (int) $album->post_author !== $user_id ) {
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
+			echo '</div>'; // close mvs-bp-screen.
 			return;
 		}
 
@@ -522,14 +580,14 @@ class ProfileTabIntegration {
 
 			echo '<div class="mvs-bp-profile-actions">';
 			echo '<button type="button" id="mvs-album-upload-btn" class="mvs-btn">';
-			echo '<span class="dashicons dashicons-plus-alt"></span> ' . esc_html__( 'Add Media', 'wpmediaverse' );
+			echo '<i data-lucide="plus" aria-hidden="true"></i> ' . esc_html__( 'Add Media', 'wpmediaverse' );
 			echo '</button>';
 			echo '</div>';
 
 			echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;">';
 			echo '<input type="file" multiple accept="image/*,video/*,audio/*" id="mvs-album-file-input" style="display:none" />';
 			echo '<div class="mvs-bp-dropzone" id="mvs-album-dropzone">';
-			echo '<span class="dashicons dashicons-cloud-upload"></span>';
+			echo '<i data-lucide="upload-cloud" aria-hidden="true"></i>';
 			echo '<span class="mvs-bp-dropzone-text">' . esc_html__( 'Drop files here or click to upload into this album', 'wpmediaverse' ) . '</span>';
 			echo '</div>';
 			echo '<div id="mvs-album-upload-preview" class="mvs-bp-upload-preview"></div>';
@@ -650,7 +708,7 @@ class ProfileTabIntegration {
 
 		// Album items grid.
 		if ( ! empty( $items ) ) {
-			echo '<div class="mvs-media-grid mvs-cols-3">';
+			echo '<div class="mvs-media-grid mvs-cols-3" data-show-actions="1">';
 			foreach ( $items as $media_id ) {
 				TemplateHelpers::render_grid_item(
 					(int) $media_id,
@@ -658,13 +716,14 @@ class ProfileTabIntegration {
 					array(
 						'show_author'  => false,
 						'show_overlay' => false,
+						'show_actions' => true,
 					)
 				);
 			}
 			echo '</div>';
 		} else {
 			echo '<div class="mvs-empty-state">';
-			echo '<span class="dashicons dashicons-format-gallery"></span>';
+			echo '<i data-lucide="images" aria-hidden="true"></i>';
 			if ( $is_own ) {
 				echo '<p>' . esc_html__( 'This album is empty. Add some media!', 'wpmediaverse' ) . '</p>';
 			} else {
@@ -672,5 +731,7 @@ class ProfileTabIntegration {
 			}
 			echo '</div>';
 		}
+
+		echo '</div>'; // close mvs-bp-screen.
 	}
 }

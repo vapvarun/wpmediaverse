@@ -216,18 +216,14 @@ class TemplateLoader {
 		}
 
 		if ( ! $media ) {
-			global $wp_query;
-			$wp_query->set_404();
-			status_header( 404 );
+			self::render_branded_404( 'media', $slug );
 			return;
 		}
 
 		// Check privacy.
 		$can_view = $this->can_view_media( $media );
 		if ( ! $can_view ) {
-			global $wp_query;
-			$wp_query->set_404();
-			status_header( 404 );
+			self::render_branded_404( 'media', $slug );
 			return;
 		}
 
@@ -279,9 +275,7 @@ class TemplateLoader {
 	private function serve_user_profile( string $username ): void {
 		$user = get_user_by( 'login', sanitize_user( $username ) );
 		if ( ! $user ) {
-			global $wp_query;
-			$wp_query->set_404();
-			status_header( 404 );
+			self::render_branded_404( 'profile', $username );
 			return;
 		}
 
@@ -292,7 +286,7 @@ class TemplateLoader {
 			'document_title_parts',
 			function ( $title ) use ( $user ) {
 				/* translators: %s: user display name */
-				$title['title'] = sprintf( __( '%s — Media', 'wpmediaverse' ), $user->display_name );
+				$title['title'] = sprintf( __( '%s: Media', 'wpmediaverse' ), $user->display_name );
 				return $title;
 			}
 		);
@@ -481,6 +475,53 @@ class TemplateLoader {
 	 * @param string $template_path Optional subdirectory within the theme override folder.
 	 * @return string Full path to template or empty string if not found.
 	 */
+	/**
+	 * Render the plugin-branded 404 for a plugin-owned URL and exit.
+	 *
+	 * Replaces the `set_404() + status_header(404) + return` pattern used
+	 * throughout this loader. Loading the plugin template keeps the user
+	 * inside the MediaVerse experience and offers a Browse-all CTA, instead
+	 * of bouncing to the theme's generic 404.php.
+	 *
+	 * @param string $context    One of 'media' | 'profile' | 'album' | 'collection'.
+	 * @param string $identifier Optional slug/username the user requested.
+	 */
+	public static function render_branded_404( string $context = 'media', string $identifier = '' ): void {
+		global $wp_query;
+
+		$wp_query->set_404();
+		status_header( 404 );
+		nocache_headers();
+
+		$GLOBALS['mvs_404_context']    = $context;
+		$GLOBALS['mvs_404_identifier'] = $identifier;
+
+		// Ensure the 404 template renders with the plugin's design system.
+		// `template_redirect` fires before `wp_enqueue_scripts`, so enqueuing
+		// here lands in the normal dependency resolution window.
+		if ( wp_style_is( 'mvs-frontend', 'registered' ) ) {
+			wp_enqueue_style( 'mvs-frontend' );
+		}
+
+		// Lucide is registered via Plugin::register_lucide_script() on
+		// `wp_enqueue_scripts@1`, which runs before `wp_head`. Even though
+		// `template_redirect@5` is before wp_enqueue_scripts fires in the
+		// request lifecycle, the 404 template calls `get_header()` which
+		// triggers the asset-enqueue chain — so the script is registered by
+		// the time any output happens. Just enqueue.
+		if ( ! wp_script_is( 'mvs-lucide', 'registered' ) ) {
+			\WPMediaVerse\Core\Plugin::register_lucide_script();
+		}
+		wp_enqueue_script( 'mvs-lucide' );
+
+		$template = self::locate( '404.php' );
+		if ( $template ) {
+			include $template;
+			exit;
+		}
+		// No plugin template — let WP fall through to the theme's 404.
+	}
+
 	public static function locate( string $template_name, string $template_path = '' ): string {
 		$theme_path = self::THEME_DIR . '/';
 		if ( $template_path ) {

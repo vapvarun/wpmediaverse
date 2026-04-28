@@ -265,12 +265,20 @@ module.exports = function( grunt ) {
 		grunt.log.ok( 'Patched ' + patched + ' view.asset.php file(s) for script module compat.' );
 	} );
 
-	// Run npm run build for Gutenberg blocks
-	grunt.registerTask( 'blocks', 'Build Gutenberg blocks via webpack.', function() {
+	// Build Gutenberg blocks.
+	//
+	// Delegates to the `build` script in package.json so the script-module flags
+	// (--experimental-modules, --webpack-src-dir, --output-path) stay in ONE place.
+	// Invoking `npx wp-scripts build` directly here would lose those flags and
+	// produce IIFE output that breaks viewScriptModule blocks at runtime with:
+	//   Cannot read properties of undefined (reading 'store')
+	// (Symptom: window.wp.interactivity is undefined because script modules
+	//  don't share the wp.* globals that a regular wp-scripts IIFE expects.)
+	grunt.registerTask( 'blocks', 'Build Gutenberg blocks via npm run build.', function() {
 		var done = this.async();
 		var execFile = require( 'child_process' ).execFile;
 		grunt.log.writeln( 'Building blocks (npm run build)...' );
-		execFile( 'npx', [ 'wp-scripts', 'build' ], function( err, stdout, stderr ) {
+		execFile( 'npm', [ 'run', 'build' ], function( err, stdout, stderr ) {
 			if ( err ) {
 				grunt.log.error( stderr || stdout );
 				done( false );

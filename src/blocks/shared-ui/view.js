@@ -76,6 +76,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalAlbumTitle: '',
 		uploadModalAlbumDescription: '',
 		uploadModalMediaGroup: null,
+		get hideUploadMetaFields() {
+			return state.uploadModalUploading || state.uploadModalMode === 'album';
+		},
+		get hideAlbumCoverHint() {
+			return state.uploadModalMode !== 'album' || state.uploadModalUploading || ! state.hasFiles;
+		},
 
 		get uploadModalHeading() {
 			const titles = { photo: 'Upload Photo', gallery: 'Create Gallery Post', album: 'Create Album', video: 'Upload Video', audio: 'Upload Audio' };
@@ -139,7 +145,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
 				return '';
 			}
-			return d.thumbnail_url || d.file_url || '';
+			// Prefer the admin-chosen lightbox_url (honors `mvs_lightbox_image_source`);
+			// fallback to file_url (original) over thumbnail so upgrades from 1.1.2 still
+			// open full-size images instead of the low-res grid thumbnail.
+			return d.lightbox_url || d.file_url || d.thumbnail_url || '';
 		},
 		get lightboxIsVideo() {
 			return state.lightboxMediaData?.media_type === 'video';
@@ -532,13 +541,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				mediaGroup = 'grp_' + Date.now() + '_' + Math.random().toString( 36 ).slice( 2, 8 );
 			}
 
+			// Album mode doesn't carry per-file title/description/tags — the album
+			// owns those. Privacy still applies per-item so it's always sent.
+			const isAlbum = state.uploadModalMode === 'album';
+
 			// Upload files sequentially.
 			for ( let i = 0; i < files.length; i++ ) {
 				const fd = new FormData();
 				fd.append( 'file', files[ i ] );
-				if ( state.uploadModalTitle ) fd.append( 'title', state.uploadModalTitle );
-				if ( state.uploadModalDescription ) fd.append( 'description', state.uploadModalDescription );
-				if ( state.uploadModalTags ) fd.append( 'tags', state.uploadModalTags );
+				if ( ! isAlbum && state.uploadModalTitle ) fd.append( 'title', state.uploadModalTitle );
+				if ( ! isAlbum && state.uploadModalDescription ) fd.append( 'description', state.uploadModalDescription );
+				if ( ! isAlbum && state.uploadModalTags ) fd.append( 'tags', state.uploadModalTags );
 				if ( state.uploadModalPrivacy ) fd.append( 'privacy', state.uploadModalPrivacy );
 				if ( mediaGroup ) {
 					fd.append( 'media_group', mediaGroup );
@@ -583,7 +596,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.uploadModalDone = i + 1;
 			}
 
-			// Link uploaded media to album if in album mode.
+			// Link uploaded media to album, then set the first image as the cover.
+			// set_cover() is atomic (AlbumService::set_cover auto-adds media to the
+			// album if not already present), but we've already linked items above,
+			// so this is a single PUT. Non-fatal if cover setting fails.
 			if ( state._pendingAlbumId && uploadedMediaIds.length ) {
 				try {
 					await fetch( restUrl + 'albums/' + state._pendingAlbumId + '/items', {
@@ -593,6 +609,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						body: JSON.stringify( { media_ids: uploadedMediaIds } ),
 					} );
 				} catch { /* linking failed — media still uploaded */ }
+				const firstImageId = uploadedMediaIds.find( ( id, idx ) => {
+					const f = files[ idx ];
+					return f && f.type && f.type.startsWith( 'image/' );
+				} );
+				if ( firstImageId ) {
+					try {
+						await fetch( restUrl + 'albums/' + state._pendingAlbumId + '/cover', {
+							method: 'PUT',
+							headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
+							credentials: 'same-origin',
+							body: JSON.stringify( { media_id: firstImageId } ),
+						} );
+					} catch { /* cover failed — user can set it later from album edit */ }
+				}
 				state._pendingAlbumId = null;
 			}
 

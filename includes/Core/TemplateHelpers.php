@@ -73,6 +73,45 @@ class TemplateHelpers {
 	}
 
 	/**
+	 * Resolve the lightbox image URL, honoring the admin `mvs_lightbox_image_source` setting.
+	 *
+	 * Returns the original file URL, a specific thumbnail size, or an auto-chosen URL
+	 * depending on the setting. Falls back to file_url when the requested size is missing
+	 * so the lightbox never shows a smaller-than-expected image.
+	 *
+	 * @param int    $media_id      Media ID.
+	 * @param string $file_url      Original file URL (may be empty).
+	 * @return string Lightbox image URL (empty string for video/audio).
+	 */
+	public static function get_lightbox_url( int $media_id, string $file_url = '' ): string {
+		$media_type = self::get_media_type( $media_id );
+		if ( 'image' !== $media_type ) {
+			return '';
+		}
+
+		if ( '' === $file_url ) {
+			$file_url = (string) MediaRepository::get( $media_id, 'file_url' );
+		}
+
+		$source = (string) get_option( 'mvs_lightbox_image_source', 'original' );
+
+		if ( 'auto' === $source ) {
+			$source = wp_is_mobile() ? 'large' : 'original';
+		}
+
+		if ( 'original' === $source && $file_url ) {
+			return set_url_scheme( $file_url );
+		}
+
+		$size_url = self::get_thumb_url( $media_id, $source );
+		if ( $size_url ) {
+			return $size_url;
+		}
+
+		return $file_url ? set_url_scheme( $file_url ) : '';
+	}
+
+	/**
 	 * Get the media type (image, video, audio, document) for a media item.
 	 *
 	 * @param int $media_id Media ID (mvs_media_index.media_id).
@@ -148,39 +187,166 @@ class TemplateHelpers {
 	}
 
 	/**
-	 * Render a grid item's thumbnail or type-appropriate placeholder.
+	 * Canonical media-thumbnail renderer — single source of truth for every
+	 * MVS surface (Explore grid, BP activity, album/collection, Pro premium
+	 * layouts, single-media page, block templates).
 	 *
-	 * @param int    $media_id Media ID (mvs_media_index.media_id).
-	 * @param string $size     WordPress image size.
-	 * @param string $alt      Alt text for the image.
+	 * Always returns **inner** markup the caller wraps in its own `<a>`/link.
+	 * Output is one of:
+	 *   - `<img>` for media with a thumbnail
+	 *   - `<video preload="metadata">` for videos without a thumbnail (the
+	 *     browser paints the first frame — matches the single-media view)
+	 *   - an audio card for audio
+	 *   - a generic dashicon placeholder as last resort
+	 *
+	 * Use this instead of building ad-hoc `<img>` tags in templates so every
+	 * surface handles poster-less videos the same way.
+	 *
+	 * @since 1.1.3
+	 *
+	 * @param int   $media_id Media ID (mvs_media_index.media_id).
+	 * @param array $args     Options:
+	 *                        - 'size'         string WP image size slug (default 'large'). Validated against
+	 *                                                the registered image-size whitelist; invalid values fall
+	 *                                                back to 'large'.
+	 *                        - 'alt'          string Pre-escaped alt-attribute value. Caller MUST escape with
+	 *                                                esc_attr() before passing — the helper does not re-escape.
+	 *                                                When empty, the media's title is fetched and escaped here.
+	 *                        - 'classes'      string Extra classes for the <img>/<video>.
+	 *                        - 'show_play'    bool   Append play-icon overlay for videos (default true).
+	 *                        - 'lazy'         bool   Add loading="lazy" on <img> (default true).
+	 * @return string Inner HTML ready for echo.
 	 */
-	public static function render_grid_thumbnail( int $media_id, string $size = 'large', string $alt = '' ): void {
-		$thumb_url  = self::get_thumb_url( $media_id, $size );
-		$media_type = self::get_media_type( $media_id );
+	public static function media_thumbnail( int $media_id, array $args = array() ): string {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'size'      => 'large',
+				'alt'       => '',
+				'classes'   => '',
+				'show_play' => true,
+				'lazy'      => true,
+			)
+		);
 
-		if ( ! $alt ) {
-			$title = MediaRepository::get( $media_id, 'title' );
-			$alt   = $title ? $title : '';
+		$valid_sizes = array_merge( get_intermediate_image_sizes(), array( 'full' ) );
+		$size        = in_array( (string) $args['size'], $valid_sizes, true ) ? (string) $args['size'] : 'large';
+
+		$media_type = self::get_media_type( $media_id );
+		$thumb_url  = self::get_thumb_url( $media_id, $size );
+		$alt        = (string) $args['alt'];
+		if ( '' === $alt ) {
+			$alt = esc_attr( (string) MediaRepository::get( $media_id, 'title' ) );
 		}
+
+		$extra_class = trim( (string) $args['classes'] );
+		$loading     = $args['lazy'] ? ' loading="lazy"' : '';
+		$play_icon   = $args['show_play'] ? self::icon_play() : '';
 
 		if ( $thumb_url ) {
-			echo '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $alt ) . '" loading="lazy" />';
+			$img_class = trim( 'mvs-media-thumb ' . $extra_class );
+			$markup    = '<img class="' . esc_attr( $img_class ) . '" src="' . esc_url( $thumb_url ) . '" alt="' . $alt . '"' . $loading . ' />';
 			if ( 'video' === $media_type ) {
-				echo '<span class="mvs-grid-play-icon">&#9654;</span>';
+				$markup .= $play_icon;
 			}
-		} elseif ( 'video' === $media_type ) {
-			echo '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">';
-			echo '<span class="mvs-grid-play-icon">&#9654;</span>';
-			echo '</div>';
-		} elseif ( 'audio' === $media_type ) {
-			echo '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio">';
-			echo '<span class="mvs-grid-audio-icon">&#9835;</span>';
-			echo '</div>';
-		} else {
-			echo '<div class="mvs-grid-item-placeholder">';
-			echo '<span class="dashicons dashicons-media-default"></span>';
-			echo '</div>';
+			return $markup;
 		}
+
+		if ( 'video' === $media_type ) {
+			$file_url = (string) MediaRepository::get( $media_id, 'file_url' );
+			if ( $file_url ) {
+				$vid_class = trim( 'mvs-grid-video-preview ' . $extra_class );
+				return '<video class="' . esc_attr( $vid_class ) . '" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true" src="' . esc_url( $file_url ) . '#t=0.1"></video>' . $play_icon;
+			}
+			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">' . $play_icon . '</div>';
+		}
+
+		if ( 'audio' === $media_type ) {
+			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio">' . self::icon_music() . '</div>';
+		}
+
+		return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--generic">' . self::icon_image() . '</div>';
+	}
+
+	/**
+	 * Lucide-style "play" SVG — inner SVG markup only (no wrapping span).
+	 *
+	 * Callers that already own a `<span class="mvs-grid-play-icon">` (the
+	 * dashboard Interactivity template uses one for `data-wp-bind--hidden`)
+	 * should use `icon_play_svg()` and wrap it themselves. Callers that just
+	 * need a complete play icon (the thumbnail helper below) use `icon_play()`.
+	 */
+	public static function icon_play_svg(): string {
+		// Path is a triangle with vertices (8,5), (20,12), (8,19) — centroid
+		// is exactly (12,12), the center of the 24x24 viewBox. This keeps the
+		// play icon visually centered in its circular background without
+		// needing CSS margin hacks.
+		return '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" focusable="false" aria-hidden="true"><path d="M8 5l12 7-12 7z"/></svg>';
+	}
+
+	/**
+	 * Lucide-style "music" SVG — inner SVG markup only (no wrapping span).
+	 */
+	public static function icon_music_svg(): string {
+		return '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+	}
+
+	/**
+	 * Lucide-style "image" SVG — inner SVG markup only (no wrapping span).
+	 */
+	public static function icon_image_svg(): string {
+		return '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+	}
+
+	/**
+	 * Lucide-style "image-plus" SVG — rendered inline so the icon never
+	 * depends on Lucide JS hydration. Used on the BP activity attach-media
+	 * button which is sometimes wiped by BP Nouveau's Backbone re-render
+	 * before the MutationObserver re-hydrates (card #8).
+	 */
+	public static function icon_image_plus_svg(): string {
+		return '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><line x1="16" x2="22" y1="5" y2="5"/><line x1="19" x2="19" y1="2" y2="8"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+	}
+
+	/**
+	 * Full play icon with the standard wrapper span.
+	 */
+	private static function icon_play(): string {
+		return '<span class="mvs-grid-play-icon" aria-hidden="true">' . self::icon_play_svg() . '</span>';
+	}
+
+	/**
+	 * Full music icon with the standard wrapper span.
+	 */
+	private static function icon_music(): string {
+		return '<span class="mvs-grid-audio-icon" aria-hidden="true">' . self::icon_music_svg() . '</span>';
+	}
+
+	/**
+	 * Full generic-image icon with the standard wrapper span.
+	 */
+	private static function icon_image(): string {
+		return '<span class="mvs-grid-generic-icon" aria-hidden="true">' . self::icon_image_svg() . '</span>';
+	}
+
+	/**
+	 * Thin wrapper around media_thumbnail() kept for backward compatibility
+	 * with callers that used to pass positional args.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $size     WP image size.
+	 * @param string $alt      Alt text.
+	 */
+	public static function render_grid_thumbnail( int $media_id, string $size = 'large', string $alt = '' ): void {
+		$valid_sizes = array_merge( get_intermediate_image_sizes(), array( 'full' ) );
+		$safe_size   = in_array( $size, $valid_sizes, true ) ? $size : 'large';
+		echo self::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns markup with all attribute values already escaped (size whitelisted + esc_attr'd, alt pre-escaped here).
+			$media_id,
+			array(
+				'size' => esc_attr( $safe_size ),
+				'alt'  => esc_attr( $alt ),
+			)
+		);
 	}
 
 	/**
@@ -199,6 +365,7 @@ class TemplateHelpers {
 	public static function render_grid_item( int $media_id, array $stats = array(), array $options = array() ): void {
 		$show_author  = $options['show_author'] ?? true;
 		$show_overlay = $options['show_overlay'] ?? true;
+		$show_actions = $options['show_actions'] ?? false;
 		$data_attrs   = $options['data_attrs'] ?? array();
 		$size         = $options['size'] ?? get_option( 'mvs_thumbnail_size', 'large' );
 
@@ -260,6 +427,25 @@ class TemplateHelpers {
 			. ' data-wp-interactive="mvs/shared-ui" '
 			. $lightbox_ctx // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			. '>';
+
+		// Owner actions (delete) — rendered only when the caller explicitly
+		// opts in via `show_actions`. Delete belongs on the user's own
+		// BuddyPress "My Media" tab and group media tabs, not on public grids
+		// like Explore, Albums, or Collections. Styling is scoped to
+		// `#buddypress .mvs-bp-screen` so the button has no default styling
+		// outside BP — rendering it on public grids would surface a bare
+		// browser-default button. Additionally the viewer must own the media
+		// or hold `manage_options`.
+		$viewer_id = get_current_user_id();
+		$can_edit  = $viewer_id > 0 && ( $viewer_id === $author_id || user_can( $viewer_id, 'manage_options' ) );
+		if ( $show_actions && $can_edit ) {
+			echo '<div class="mvs-grid-item-actions">';
+			echo '<button type="button" class="mvs-grid-item-action mvs-grid-item-action--danger mvs-media-delete-btn" data-media-id="' . esc_attr( (string) $media_id ) . '" aria-label="' . esc_attr__( 'Delete media', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Delete media', 'wpmediaverse' ) . '">';
+			echo '<i data-lucide="trash-2" aria-hidden="true"></i>';
+			echo '</button>';
+			echo '</div>';
+		}
+
 		echo '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';
 
 		self::render_grid_thumbnail( $media_id, $size, $media_title );
@@ -290,8 +476,9 @@ class TemplateHelpers {
 				self::get_display_name( $author_id ),
 				array(
 					'span' => array(
-						'class' => true,
-						'title' => true,
+						'class'      => true,
+						'title'      => true,
+						'aria-label' => true,
 					),
 				)
 			) . '</span>';

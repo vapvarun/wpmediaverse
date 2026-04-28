@@ -57,7 +57,7 @@
 		}
 
 		ensurePreviewPosition( preview );
-		preview.style.display = 'flex';
+		preview.style.display = '';
 		preview.className = 'mvs-activity-media-preview mvs-preview-grid-' + Math.min( attachedMedia.length, 6 );
 
 		attachedMedia.forEach( function( item, idx ) {
@@ -65,10 +65,35 @@
 			wrap.className = 'mvs-preview-item';
 
 			var thumb;
+			// Lucide-style inline SVGs (no Unicode play/music chars so WP can't
+			// replace them with emoji images + they match the plugin's design).
+			var SVG_NS = 'http://www.w3.org/2000/svg';
+			function buildLucideIcon( paths, rootAttrs ) {
+				var s = document.createElementNS( SVG_NS, 'svg' );
+				s.setAttribute( 'width', '32' );
+				s.setAttribute( 'height', '32' );
+				s.setAttribute( 'viewBox', '0 0 24 24' );
+				s.setAttribute( 'aria-hidden', 'true' );
+				Object.keys( rootAttrs || {} ).forEach( function( k ) { s.setAttribute( k, rootAttrs[ k ] ); } );
+				paths.forEach( function( p ) {
+					var el = document.createElementNS( SVG_NS, p.tag );
+					Object.keys( p.attrs ).forEach( function( k ) { el.setAttribute( k, p.attrs[ k ] ); } );
+					s.appendChild( el );
+				} );
+				return s;
+			}
+
 			if ( 'audio' === item.mediaType ) {
 				thumb = document.createElement( 'div' );
 				thumb.className = 'mvs-activity-media-thumb mvs-preview-audio';
-				thumb.innerHTML = '<span style="font-size:2em;">♫</span>';
+				thumb.appendChild( buildLucideIcon(
+					[
+						{ tag: 'path', attrs: { d: 'M9 18V5l12-2v13' } },
+						{ tag: 'circle', attrs: { cx: '6', cy: '18', r: '3' } },
+						{ tag: 'circle', attrs: { cx: '18', cy: '16', r: '3' } },
+					],
+					{ fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
+				) );
 			} else if ( 'video' === item.mediaType && item.thumbUrl ) {
 				thumb = document.createElement( 'img' );
 				thumb.src = item.thumbUrl;
@@ -77,7 +102,10 @@
 			} else if ( 'video' === item.mediaType ) {
 				thumb = document.createElement( 'div' );
 				thumb.className = 'mvs-activity-media-thumb mvs-preview-video';
-				thumb.innerHTML = '<span style="font-size:2em;">▶</span>';
+				thumb.appendChild( buildLucideIcon(
+					[ { tag: 'path', attrs: { d: 'M6 4l15 8-15 8V4z' } } ],
+					{ fill: 'currentColor', stroke: 'none' }
+				) );
 			} else {
 				thumb = document.createElement( 'img' );
 				thumb.src = item.thumbUrl;
@@ -375,7 +403,11 @@
 		} );
 	}
 
-	// After BP posts an activity update, reset our media field.
+	// After BP posts an activity update, reset our media field —
+	// BUT only when BP reports an actual success. BP Nouveau returns HTTP 200
+	// for validation failures too (e.g. "Please enter some content") with
+	// { success: false, data: ... }. Clearing on those would drop the user's
+	// uploaded media and force a re-upload.
 	if ( typeof jQuery !== 'undefined' ) {
 		jQuery( document ).ajaxSuccess( function( event, xhr, settings ) {
 			if ( ! settings.data || typeof settings.data !== 'string' ) {
@@ -384,6 +416,25 @@
 			if ( settings.data.indexOf( 'action=post_update' ) === -1 ) {
 				return;
 			}
+
+			// Distinguish successful post from validation failure.
+			var body = xhr.responseJSON;
+			if ( ! body && xhr.responseText ) {
+				try { body = JSON.parse( xhr.responseText ); } catch ( e ) { body = null; }
+			}
+			// BP's wp_send_json_success / wp_send_json_error wrap in {success:bool}.
+			// Legacy responses may be bare HTML strings — treat as success (no envelope).
+			if ( body && body.success === false ) {
+				// Validation failed — keep the attached media so the user can
+				// fix the error and resubmit. Also re-arm the submit flag so
+				// the next submit proceeds normally.
+				isSubmitting = false;
+				return;
+			}
+
+			// Real success — reset closure state so the next upload starts fresh.
+			attachedMedia = [];
+			isSubmitting = false;
 
 			var hiddenInput = document.getElementById( 'mvs-activity-media-ids' );
 			var preview = document.getElementById( 'mvs-activity-media-preview' );

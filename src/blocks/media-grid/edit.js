@@ -90,7 +90,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					) ) }
 				</div>
 				<p style={ { textAlign: 'center', fontSize: '12px', color: '#999', marginTop: '8px' } }>
-					{ __( 'Media Grid — items load dynamically on the frontend.', 'wpmediaverse' ) }
+					{ __( 'Media Grid. Items load dynamically on the frontend.', 'wpmediaverse' ) }
 				</p>
 			</div>
 		</>

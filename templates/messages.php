@@ -19,9 +19,14 @@ do_action( 'mvs_before_content' );
 	data-wp-init="callbacks.onInit"
 	data-wp-bind--data-active-conv="state.activeConversationId"
 >
-	<!-- Sidebar: Conversation List -->
+	<!-- Sidebar: Conversation List OR New Conversation picker -->
 	<div class="mvs-messages-sidebar">
-		<?php require __DIR__ . '/partials/chat-list.php'; ?>
+		<div data-wp-bind--hidden="state.isViewNew">
+			<?php require __DIR__ . '/partials/chat-list.php'; ?>
+		</div>
+		<div data-wp-bind--hidden="!state.isViewNew">
+			<?php require __DIR__ . '/partials/chat-new.php'; ?>
+		</div>
 	</div>
 
 	<!-- Main: Active Conversation -->
@@ -39,6 +44,28 @@ do_action( 'mvs_before_content' );
 		</div>
 	</div>
 </div>
+
+<script>
+/* Auto-scroll the document so the chat section lands at the top of the
+   viewport on page load — the user should never have to scroll past the
+   themed site header to start chatting. Runs once, doesn't fight user
+   scroll afterwards. */
+( function () {
+	function scrollChatIntoView() {
+		var page = document.querySelector( '.mvs-messages-page' );
+		if ( ! page ) return;
+		var rect = page.getBoundingClientRect();
+		if ( rect.top > 4 ) {
+			window.scrollTo( 0, window.scrollY + rect.top - 4 );
+		}
+	}
+	if ( document.readyState === 'loading' ) {
+		document.addEventListener( 'DOMContentLoaded', scrollChatIntoView );
+	} else {
+		scrollChatIntoView();
+	}
+} )();
+</script>
 
 <?php
 do_action( 'mvs_after_content' );

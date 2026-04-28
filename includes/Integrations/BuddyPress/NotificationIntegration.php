@@ -14,12 +14,23 @@ use WPMediaVerse\Repository\MediaRepository;
 /**
  * Handles BuddyPress notifications for WPMediaVerse events.
  *
- * - Sends BP notifications for reactions, comments, and @mentions.
- * - Registers the wpmediaverse notification component.
- * - Registers notification dropdown filters for BP Nouveau.
- * - Formats notification content and links.
+ * Subscribes to the single `mvs_notification_created` signal emitted by
+ * NotificationService::create() and mirrors applicable types into BP's
+ * notification system. Does NOT listen on raw plugin hooks (mvs_reaction_added
+ * etc.) — that pattern produced duplicate notifications when both this class
+ * and NotificationService ran for the same event.
  */
 class NotificationIntegration {
+
+	/**
+	 * Map of NotificationService types to BP component_action values.
+	 * Types not in this map are in-app only (e.g. new_message, new_follower).
+	 */
+	private const TYPE_TO_BP_ACTION = array(
+		'media_reaction' => 'mvs_new_reaction',
+		'media_comment'  => 'mvs_new_comment',
+		'media_mention'  => 'mvs_new_mention',
+	);
 
 	/**
 	 * Register all notification hooks.
@@ -29,101 +40,49 @@ class NotificationIntegration {
 			return;
 		}
 
-		add_action( 'mvs_reaction_added', array( $this, 'notify_reaction' ), 10, 3 );
-		add_action( 'mvs_comment_created', array( $this, 'notify_comment' ), 10, 3 );
-		add_action( 'mvs_mentions_created', array( $this, 'notify_mentions' ), 10, 2 );
+		add_action( 'mvs_notification_created', array( $this, 'on_notification_created' ), 10, 5 );
 		add_filter( 'bp_notifications_get_registered_components', array( $this, 'register_notification_component' ) );
 		add_filter( 'bp_notifications_get_notifications_for_user', array( $this, 'format_notifications' ), 10, 8 );
 		add_action( 'bp_nouveau_notifications_init_filters', array( $this, 'register_notification_filters' ) );
 	}
 
 	/**
-	 * Send a BP notification when someone reacts to media.
+	 * Mirror a newly created in-app notification into BP notifications.
 	 *
-	 * @param int    $media_id      Media post ID.
-	 * @param int    $user_id       User who reacted.
-	 * @param string $reaction_type Reaction type.
+	 * Emitted by NotificationService::create() after the mvs_notifications row
+	 * is inserted. One subscriber per event eliminates the duplicate-hook
+	 * registration bug.
+	 *
+	 * @param int    $notification_id Row ID from mvs_notifications (unused here).
+	 * @param int    $user_id         Recipient user ID.
+	 * @param string $type            Notification type (e.g. media_reaction).
+	 * @param int    $actor_id        User who triggered the event.
+	 * @param int    $media_id        Related media ID (0 if none).
 	 */
-	public function notify_reaction( int $media_id, int $user_id, string $reaction_type ): void {
-		if ( defined( 'MVS_RUNNING_TESTS' ) || ! function_exists( 'bp_notifications_add_notification' ) || ! bp_is_active( 'notifications' ) ) {
+	public function on_notification_created( int $notification_id, int $user_id, string $type, int $actor_id, int $media_id ): void {
+		unset( $notification_id );
+
+		if ( defined( 'MVS_RUNNING_TESTS' ) || ! function_exists( 'bp_notifications_add_notification' ) ) {
 			return;
 		}
 
-		$owner_id = MediaRepository::get_author( $media_id );
-		if ( ! $owner_id || $owner_id === $user_id ) {
+		if ( ! isset( self::TYPE_TO_BP_ACTION[ $type ] ) ) {
+			return;
+		}
+
+		if ( $user_id <= 0 || $actor_id <= 0 || $media_id <= 0 || $user_id === $actor_id ) {
 			return;
 		}
 
 		bp_notifications_add_notification(
 			array(
-				'user_id'           => $owner_id,
+				'user_id'           => $user_id,
 				'item_id'           => $media_id,
-				'secondary_item_id' => $user_id,
+				'secondary_item_id' => $actor_id,
 				'component_name'    => 'wpmediaverse',
-				'component_action'  => 'mvs_new_reaction',
+				'component_action'  => self::TYPE_TO_BP_ACTION[ $type ],
 			)
 		);
-	}
-
-	/**
-	 * Send a BP notification when someone comments on media.
-	 *
-	 * Hook signature: mvs_comment_created( $media_id, $user_id, $comment_id, $content ).
-	 *
-	 * @param int $media_id   Media post ID.
-	 * @param int $user_id    Commenter user ID.
-	 * @param int $comment_id Comment ID.
-	 */
-	public function notify_comment( int $media_id, int $user_id, int $comment_id ): void {
-		if ( defined( 'MVS_RUNNING_TESTS' ) || ! function_exists( 'bp_notifications_add_notification' ) || ! bp_is_active( 'notifications' ) ) {
-			return;
-		}
-
-		$comment  = get_comment( $comment_id );
-		$owner_id = MediaRepository::get_author( $media_id );
-		if ( ! $comment || ! $owner_id || $owner_id === (int) $comment->user_id ) {
-			return;
-		}
-
-		bp_notifications_add_notification(
-			array(
-				'user_id'           => $owner_id,
-				'item_id'           => $media_id,
-				'secondary_item_id' => (int) $comment->user_id,
-				'component_name'    => 'wpmediaverse',
-				'component_action'  => 'mvs_new_comment',
-			)
-		);
-	}
-
-	/**
-	 * Send BP notifications for @mentions.
-	 *
-	 * @param int   $media_id      Media post ID.
-	 * @param array $mentioned_ids Array of mentioned user IDs.
-	 */
-	public function notify_mentions( int $media_id, array $mentioned_ids ): void {
-		if ( defined( 'MVS_RUNNING_TESTS' ) || ! function_exists( 'bp_notifications_add_notification' ) || ! bp_is_active( 'notifications' ) ) {
-			return;
-		}
-
-		$actor_id = MediaRepository::get_author( $media_id );
-
-		foreach ( $mentioned_ids as $mentioned_id ) {
-			if ( (int) $mentioned_id === $actor_id ) {
-				continue;
-			}
-
-			bp_notifications_add_notification(
-				array(
-					'user_id'           => (int) $mentioned_id,
-					'item_id'           => $media_id,
-					'secondary_item_id' => $actor_id,
-					'component_name'    => 'wpmediaverse',
-					'component_action'  => 'mvs_new_mention',
-				)
-			);
-		}
 	}
 
 	/**

@@ -45,7 +45,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 		)
 	);
 	?>
-	data-wp-on--keydown="actions.handleLightboxKeydown"
+	data-wp-on-document--keydown="actions.handleLightboxKeydown"
 >
 	<!-- Floating Action Button (MVS pages only) -->
 	<?php if ( $mvs_show_fab ) : ?>
@@ -174,8 +174,8 @@ $mvs_show_fab = $mvs_is_logged_in && (
 					<p class="mvs-modal-progress-text" data-wp-text="state.uploadProgressText"></p>
 				</div>
 
-				<!-- Metadata fields -->
-				<div class="mvs-modal-fields" data-wp-bind--hidden="state.uploadModalUploading">
+				<!-- Per-file metadata (photo/gallery/video/audio modes only; album has its own fields above) -->
+				<div class="mvs-modal-fields" data-wp-bind--hidden="state.hideUploadMetaFields">
 					<div class="mvs-modal-field">
 						<input type="text" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
 							data-wp-on--input="actions.updateUploadTitle"
@@ -199,6 +199,15 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						</select>
 						<?php endif; ?>
 					</div>
+				</div>
+
+				<!-- Album cover hint (album mode only, when files are selected) -->
+				<div class="mvs-modal-album-cover-hint"
+					data-wp-bind--hidden="state.hideAlbumCoverHint">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+						<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+					</svg>
+					<span><?php esc_html_e( 'The first image you upload will be the album cover. You can change it later from the album settings.', 'wpmediaverse' ); ?></span>
 				</div>
 			</div>
 

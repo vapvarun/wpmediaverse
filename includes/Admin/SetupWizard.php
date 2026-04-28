@@ -277,7 +277,7 @@ class SetupWizard {
 							<?php if ( $exists ) : ?>
 								<code>/<?php echo esc_html( $slug ); ?>/</code>
 							<?php else : ?>
-								<span class="mvs-text-danger"><?php esc_html_e( 'Not created — please reactivate the plugin.', 'wpmediaverse' ); ?></span>
+								<span class="mvs-text-danger"><?php esc_html_e( 'Not created. Please reactivate the plugin.', 'wpmediaverse' ); ?></span>
 							<?php endif; ?>
 						</div>
 						<?php if ( $exists ) : ?>

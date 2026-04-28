@@ -45,6 +45,18 @@ if ( ! $is_video && ! $is_audio ) {
 $wrapper  = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-player-block' ) ) : 'class="mvs-media-player-block"';
 $rest_url = esc_url( rest_url( 'mvs/v1/media/' . $media_id . '/view' ) );
 $nonce    = wp_create_nonce( 'wp_rest' );
+
+// Pro analytics — wire the player to POST play/pause/seek/complete events to
+// the Pro events endpoint when the Pro plugin is active. Falls back silently
+// (client action short-circuits on empty analyticsUrl) when Pro isn't
+// installed. Card 9822587682.
+$mvs_pro_active   = defined( 'MVS_PRO_VERSION' );
+$mvs_analytics_url = $mvs_pro_active
+	? esc_url_raw( rest_url( 'mvs-pro/v1/media/' . $media_id . '/events' ) )
+	: '';
+$mvs_session_id   = $mvs_pro_active
+	? substr( wp_generate_uuid4(), 0, 32 )
+	: '';
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/media-player"
@@ -52,10 +64,12 @@ $nonce    = wp_create_nonce( 'wp_rest' );
 	<?php
 	echo wp_json_encode(
 		array(
-			'mediaId' => $media_id,
-			'restUrl' => $rest_url,
-			'nonce'   => $nonce,
-			'playing' => false,
+			'mediaId'      => $media_id,
+			'restUrl'      => $rest_url,
+			'nonce'        => $nonce,
+			'playing'      => false,
+			'analyticsUrl' => $mvs_analytics_url,
+			'sessionId'    => $mvs_session_id,
 		)
 	);
 	?>
@@ -70,6 +84,8 @@ $nonce    = wp_create_nonce( 'wp_rest' );
 			preload="metadata"
 			data-wp-on--play="actions.onPlay"
 			data-wp-on--pause="actions.onPause"
+			data-wp-on--seeked="actions.onSeek"
+			data-wp-on--ended="actions.onComplete"
 		>
 			<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
 		</video>
@@ -83,6 +99,8 @@ $nonce    = wp_create_nonce( 'wp_rest' );
 				preload="metadata"
 				data-wp-on--play="actions.onPlay"
 				data-wp-on--pause="actions.onPause"
+				data-wp-on--seeked="actions.onSeek"
+				data-wp-on--ended="actions.onComplete"
 			>
 				<source src="<?php echo esc_url( $file_url ); ?>" type="<?php echo esc_attr( $file_type ); ?>" />
 			</audio>
