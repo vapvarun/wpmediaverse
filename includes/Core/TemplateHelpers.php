@@ -334,8 +334,8 @@ class TemplateHelpers {
 		echo self::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes internally.
 			$media_id,
 			array(
-				'size' => $size,
-				'alt'  => $alt,
+				'size' => sanitize_key( $size ),
+				'alt'  => sanitize_text_field( $alt ),
 			)
 		);
 	}

@@ -73,7 +73,7 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 						<?php
 						echo \WPMediaVerse\Core\TemplateHelpers::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes internally.
 							$media_id,
-							array( 'alt' => $item_title )
+							array( 'alt' => sanitize_text_field( $item_title ) )
 						);
 						?>
 					</a>
