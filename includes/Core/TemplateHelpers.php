@@ -340,10 +340,10 @@ class TemplateHelpers {
 	public static function render_grid_thumbnail( int $media_id, string $size = 'large', string $alt = '' ): void {
 		$valid_sizes = array_merge( get_intermediate_image_sizes(), array( 'full' ) );
 		$safe_size   = in_array( $size, $valid_sizes, true ) ? $size : 'large';
-		echo self::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns markup with all attribute values already escaped (size whitelisted above, alt pre-escaped here).
+		echo self::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns markup with all attribute values already escaped (size whitelisted + esc_attr'd, alt pre-escaped here).
 			$media_id,
 			array(
-				'size' => $safe_size,
+				'size' => esc_attr( $safe_size ),
 				'alt'  => esc_attr( $alt ),
 			)
 		);
