@@ -266,13 +266,10 @@ class MediaListPage {
 			<td class="mvs-col-id"><?php echo absint( $media_id ); ?></td>
 			<td class="mvs-col-thumb">
 				<?php
-				$thumb_url = '';
-				if ( 'image' === $type && $file_url ) {
-					$thumb_url = $file_url;
-				}
-				if ( ! $thumb_url ) {
-					$thumb_url = TemplateHelpers::get_thumb_url( $media_id, 'thumbnail' );
-				}
+				$ml_su     = Plugin::container()->get( 'signed_urls' );
+				$thumb_url = $ml_su
+					? $ml_su->generate_thumbnail( $media_id, get_current_user_id(), 'thumbnail', 0, true )
+					: TemplateHelpers::get_thumb_url( $media_id, 'thumbnail' );
 				?>
 				<?php if ( $thumb_url ) : ?>
 					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="" class="mvs-thumb" loading="lazy" />

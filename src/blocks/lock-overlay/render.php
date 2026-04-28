@@ -34,9 +34,13 @@ $container   = \WPMediaVerse\Core\Plugin::container();
 $privacy     = $container->get( 'privacy' );
 $has_access  = $privacy->can_view( $media_id, $user_id );
 
-$file_url  = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_url' );
-$file_type = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_type' );
-$is_image  = $file_url && 0 === strpos( $file_type, 'image/' );
+$file_type   = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_type' );
+$lo_signed   = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+// Full signed URL only for users with access; generate() already checks can_view().
+$file_url    = $lo_signed ? $lo_signed->generate( $media_id, $user_id ) : '';
+// Blurred preview thumbnail shown to locked users as a teaser (privacy check skipped — intentional).
+$preview_url = $lo_signed ? $lo_signed->generate_thumbnail( $media_id, $user_id, 'large', 0, true ) : '';
+$is_image    = 0 === strpos( (string) $file_type, 'image/' );
 $wrapper   = get_block_wrapper_attributes( array( 'class' => 'mvs-lock-overlay-block' ) );
 
 // Determine active rule types for display.
@@ -82,8 +86,8 @@ $permalink = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_id 
 	<?php else : ?>
 		<div class="mvs-lock-overlay-content mvs-lock-overlay-locked" style="--mvs-blur: <?php echo absint( $blur_amount ); ?>px; --mvs-overlay-opacity: <?php echo absint( $overlay_opacity ) / 100; ?>">
 			<div class="mvs-lock-overlay-preview">
-				<?php if ( $is_image ) : ?>
-					<img src="<?php echo esc_url( $file_url ); ?>" alt="" loading="lazy" aria-hidden="true" />
+				<?php if ( $is_image && $preview_url ) : ?>
+					<img src="<?php echo esc_url( $preview_url ); ?>" alt="" loading="lazy" aria-hidden="true" />
 				<?php else : ?>
 					<div class="mvs-lock-overlay-placeholder">
 						<span class="dashicons dashicons-lock"></span>

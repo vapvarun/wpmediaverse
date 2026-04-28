@@ -1525,9 +1525,9 @@ class MessagingService {
 			'type'      => MediaRepository::get( $media_id, 'media_type' ) ?: 'image',
 		);
 
-		$file_url = MediaRepository::get( $media_id, 'file_url' );
-		if ( $file_url ) {
-			$data['thumbnail'] = set_url_scheme( $file_url );
+		$msg_su = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		if ( $msg_su ) {
+			$data['thumbnail'] = $msg_su->generate_thumbnail( $media_id, get_current_user_id() ) ?: '';
 		}
 
 		return $data;

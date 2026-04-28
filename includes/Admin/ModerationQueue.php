@@ -424,8 +424,11 @@ class ModerationQueue {
 			return;
 		}
 
-		$file_url   = $data['file_url'] ?? '';
 		$file_type  = $data['file_type'] ?? '';
+		$mq_su      = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		$file_url   = $mq_su
+			? $mq_su->generate_thumbnail( $media_id, get_current_user_id(), 'large', 0, true )
+			: '';
 		$title      = $data['title'] ?? '';
 		$created_at = $data['created_at'] ?? '';
 		$author_id  = (int) ( $data['post_author'] ?? 0 );

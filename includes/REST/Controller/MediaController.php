@@ -1074,8 +1074,8 @@ class MediaController extends WP_REST_Controller {
 		if ( ! empty( $all['file_url'] ) ) {
 			$signed_urls = Plugin::container()->get( 'signed_urls' );
 			$viewer_id   = get_current_user_id();
-			$signed      = $signed_urls ? $signed_urls->generate( $media_id, $viewer_id ) : false;
-			$file_url    = $signed ? $signed : set_url_scheme( $all['file_url'] );
+			$signed   = $signed_urls ? $signed_urls->generate( $media_id, $viewer_id ) : false;
+			$file_url = $signed ?: '';
 		}
 
 		// Thumbnail also routed through the signed URL serve endpoint.

@@ -213,13 +213,16 @@ class FavoriteController extends WP_REST_Controller {
 			if ( ! MediaRepository::exists( $media_id ) ) {
 				continue;
 			}
-			$enriched[] = array(
-				'media_id'   => $media_id,
-				'title'      => MediaRepository::get( $media_id, 'title' ),
-				'link'       => MediaRepository::get_permalink( $media_id ),
-				'file_url'   => set_url_scheme( MediaRepository::get( $media_id, 'file_url' ) ),
-				'media_type' => MediaRepository::get( $media_id, 'media_type' ),
-				'created_at' => $item['created_at'],
+			$fav_su        = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+			$fav_viewer_id = get_current_user_id();
+			$enriched[]    = array(
+				'media_id'      => $media_id,
+				'title'         => MediaRepository::get( $media_id, 'title' ),
+				'link'          => MediaRepository::get_permalink( $media_id ),
+				'thumbnail_url' => $fav_su ? $fav_su->generate_thumbnail( $media_id, $fav_viewer_id ) : '',
+				'file_url'      => $fav_su ? $fav_su->generate( $media_id, $fav_viewer_id ) : '',
+				'media_type'    => MediaRepository::get( $media_id, 'media_type' ),
+				'created_at'    => $item['created_at'],
 			);
 		}
 

@@ -383,14 +383,17 @@ class Shortcodes {
 				continue;
 			}
 			$title      = MediaRepository::get( $media_id, 'title' );
-			$file_url   = MediaRepository::get( $media_id, 'file_url' );
 			$media_type = MediaRepository::get( $media_id, 'media_type' ) ?: 'image';
 			$permalink  = MediaRepository::get_permalink( $media_id );
+			$sc_su      = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+			$thumb_url  = $sc_su
+				? $sc_su->generate_thumbnail( $media_id, get_current_user_id(), 'large' )
+				: \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $media_id, 'large' );
 
 			$output .= '<div class="mvs-grid-item">';
 			$output .= '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';
-			if ( $file_url && 'image' === $media_type ) {
-				$output .= '<img src="' . esc_url( $file_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" />';
+			if ( $thumb_url ) {
+				$output .= '<img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $title ) . '" loading="lazy" />';
 			} else {
 				$output .= '<div class="mvs-grid-placeholder mvs-grid-placeholder--' . esc_attr( $media_type ) . '">'
 					. esc_html( strtoupper( $media_type ) ) . '</div>';

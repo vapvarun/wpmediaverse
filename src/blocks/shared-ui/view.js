@@ -139,7 +139,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
 				return '';
 			}
-			return d.thumbnail_url || d.file_url || '';
+			// Use full signed file_url for lightbox (full resolution), fall back to thumbnail.
+			return d.file_url || d.thumbnail_url || '';
 		},
 		get lightboxIsVideo() {
 			return state.lightboxMediaData?.media_type === 'video';

@@ -135,18 +135,22 @@ class ActivityContentIntegration {
 		}
 
 		$media_id   = (int) $matches[1];
-		$file_url   = MediaRepository::get( $media_id, 'file_url' );
 		$media_type = MediaRepository::get( $media_id, 'media_type' );
 
-		if ( 'video' !== $media_type || ! $file_url ) {
+		if ( 'video' !== $media_type ) {
 			return $content;
 		}
 
-		$file_url  = set_url_scheme( $file_url );
-		$permalink = MediaRepository::get_permalink( $media_id );
-		$poster    = '';
+		$aci_su   = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		$file_url = $aci_su ? $aci_su->generate( $media_id, get_current_user_id() ) : '';
 
-		$poster_url = TemplateHelpers::get_thumb_url( $media_id, 'large' );
+		if ( ! $file_url ) {
+			return $content;
+		}
+
+		$permalink  = MediaRepository::get_permalink( $media_id );
+		$poster     = '';
+		$poster_url = $aci_su ? $aci_su->generate_thumbnail( $media_id, get_current_user_id(), 'large' ) : '';
 		if ( $poster_url ) {
 			$poster = ' poster="' . esc_url( $poster_url ) . '"';
 		}

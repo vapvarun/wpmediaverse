@@ -503,10 +503,16 @@ class AlbumController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_cover_failed', __( 'Could not set cover image.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
+		$cover_media_id = $this->albums->get_cover_media_id( $album_id );
+		$signed_urls    = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		$cover_url      = $cover_media_id && $signed_urls
+			? $signed_urls->generate_thumbnail( $cover_media_id, get_current_user_id(), 'large', 0, true )
+			: $this->albums->get_cover_url( $album_id );
+
 		return rest_ensure_response(
 			array(
 				'album_id'  => $album_id,
-				'cover_url' => $this->albums->get_cover_url( $album_id ),
+				'cover_url' => $cover_url,
 			)
 		);
 	}
@@ -598,6 +604,12 @@ class AlbumController extends WP_REST_Controller {
 			}
 		}
 
+		$cover_mid  = $this->albums->get_cover_media_id( $album_id );
+		$album_su   = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		$cover_url  = $cover_mid && $album_su
+			? $album_su->generate_thumbnail( $cover_mid, get_current_user_id(), 'large', 0, true )
+			: $this->albums->get_cover_url( $album_id );
+
 		$data = array(
 			'id'          => $album_id,
 			'title'       => $post->post_title,
@@ -608,7 +620,7 @@ class AlbumController extends WP_REST_Controller {
 			'privacy'     => $privacy_value ? $privacy_value : 'public',
 			'album_type'  => $album_type ? $album_type : 'default',
 			'media_count' => $this->albums->get_item_count( $album_id ),
-			'cover_url'   => $this->albums->get_cover_url( $album_id ),
+			'cover_url'   => $cover_url,
 			'categories'  => $categories,
 		);
 

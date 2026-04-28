@@ -342,7 +342,9 @@ $mvs_archive_url = home_url( '/media/' );
 				<?php
 				// Playlist mode: sequential audio tracklist.
 				// Items are already full index rows from the joined query above.
-				$tracks = array();
+				$tracks  = array();
+				$alb_su  = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+				$alb_uid = get_current_user_id();
 				foreach ( $items as $track_idx => $item_row ) {
 					$track_media_id = (int) $item_row['media_id'];
 					$track_art      = \WPMediaVerse\Repository\MediaRepository::get( $track_media_id, 'artist' );
@@ -355,7 +357,7 @@ $mvs_archive_url = home_url( '/media/' );
 						'id'       => $track_media_id,
 						'title'    => $item_row['title'] ?? '',
 						'artist'   => $track_art ? $track_art : '',
-						'url'      => ! empty( $item_row['file_url'] ) ? set_url_scheme( $item_row['file_url'] ) : '',
+						'url'      => $alb_su ? $alb_su->generate( $track_media_id, $alb_uid ) : '',
 						'type'     => $item_row['file_type'] ?? '',
 						'duration' => $dur_label,
 						'link'     => \WPMediaVerse\Repository\MediaRepository::get_permalink( $track_media_id ),

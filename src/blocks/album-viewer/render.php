@@ -62,15 +62,14 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 			<?php foreach ( $items as $item_row ) : ?>
 				<?php
 				$media_id   = (int) $item_row['media_id'];
-				$file_url   = $item_row['file_url'] ?? '';
 				$file_type  = $item_row['file_type'] ?? '';
 				$media_type = $item_row['media_type'] ?? '';
 				$item_title = $item_row['title'] ?? '';
 				$permalink  = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_id );
-				$thumb_url = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $media_id, 'large' );
-				if ( ! $thumb_url && 'image' === $media_type && $file_url ) {
-					$thumb_url = set_url_scheme( $file_url );
-				}
+				$av_su      = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+				$thumb_url  = $av_su
+					? $av_su->generate_thumbnail( $media_id, get_current_user_id(), 'large' )
+					: \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $media_id, 'large' );
 				?>
 				<div class="mvs-grid-item">
 					<a href="<?php echo esc_url( $permalink ); ?>">

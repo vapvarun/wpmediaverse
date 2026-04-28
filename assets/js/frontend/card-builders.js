@@ -705,7 +705,7 @@
 		var mediaId  = getId( item );
 		var title    = item.title || '';
 		var desc     = item.description || '';
-		var thumbUrl = item.thumbnail_url || item.file_url || '';
+		var thumbUrl = item.thumbnail_url || '';
 		var link     = item.link || '#';
 		var stats    = item.stats || {};
 		var author   = item.author_data || {};
