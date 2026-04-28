@@ -184,6 +184,16 @@ class AlbumService {
 	}
 
 	/**
+	 * Get the media ID of the cover image for an album.
+	 *
+	 * @param int $album_id Album post ID.
+	 * @return int|null Media ID or null.
+	 */
+	public function get_cover_media_id( int $album_id ): ?int {
+		return $this->get_first_image_item( $album_id );
+	}
+
+	/**
 	 * Get the cover image URL for an album.
 	 *
 	 * @param int    $album_id Album post ID.
