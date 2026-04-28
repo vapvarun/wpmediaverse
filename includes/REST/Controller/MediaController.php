@@ -1078,8 +1078,9 @@ class MediaController extends WP_REST_Controller {
 			$file_url    = $signed ? $signed : set_url_scheme( $all['file_url'] );
 		}
 
-		// Build thumbnail URL from custom meta.
-		$thumbnail_url = TemplateHelpers::get_thumb_url( $media_id, 'large' );
+		// Thumbnail also routed through the signed URL serve endpoint.
+		$thumb_signed  = $signed_urls ? $signed_urls->generate_thumbnail( $media_id, $viewer_id ) : false;
+		$thumbnail_url = $thumb_signed ?: TemplateHelpers::get_thumb_url( $media_id, 'large' );
 
 		$media_type_value = ! empty( $all['media_type'] ) ? $all['media_type'] : '';
 		$privacy_value    = ! empty( $all['privacy'] ) ? $all['privacy'] : 'public';

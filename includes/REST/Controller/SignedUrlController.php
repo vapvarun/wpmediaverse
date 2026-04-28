@@ -188,6 +188,11 @@ class SignedUrlController extends WP_REST_Controller {
 			$params[ SignedUrlService::PARAM_DOWNLOAD ] = 1;
 		}
 
+		$size = $request->get_param( SignedUrlService::PARAM_SIZE );
+		if ( $size ) {
+			$params[ SignedUrlService::PARAM_SIZE ] = sanitize_text_field( $size );
+		}
+
 		// This method exits after sending the file.
 		$this->signed_urls->serve( $params );
 	}

@@ -33,6 +33,7 @@ class SignedUrlService {
 	const PARAM_SIGNATURE = 'mvs_sig';
 	const PARAM_USER      = 'mvs_uid';
 	const PARAM_DOWNLOAD  = 'mvs_dl';
+	const PARAM_SIZE      = 'mvs_size';
 
 	/**
 	 * Access rules service.
@@ -97,6 +98,34 @@ class SignedUrlService {
 	}
 
 	/**
+	 * Generate a signed URL for a media thumbnail.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param int    $user_id  User ID requesting the URL.
+	 * @param string $size     Thumbnail size: large, medium, thumbnail.
+	 * @param int    $ttl      Time to live in seconds.
+	 * @return string|false Signed URL or false if not authorized.
+	 */
+	public function generate_thumbnail( int $media_id, int $user_id, string $size = 'large', int $ttl = 0 ) {
+		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
+			return false;
+		}
+
+		$expires = time() + ( $ttl ?: $this->get_ttl() );
+
+		$params = array(
+			self::PARAM_MEDIA_ID => $media_id,
+			self::PARAM_USER     => $user_id,
+			self::PARAM_EXPIRES  => $expires,
+			self::PARAM_SIZE     => $size,
+		);
+
+		$params[ self::PARAM_SIGNATURE ] = $this->sign( $params );
+
+		return add_query_arg( $params, $this->get_serve_endpoint() );
+	}
+
+	/**
 	 * Validate a signed URL's parameters.
 	 *
 	 * @param array $params URL query parameters.
@@ -133,6 +162,10 @@ class SignedUrlService {
 			$verify_params[ self::PARAM_DOWNLOAD ] = 1;
 		}
 
+		if ( ! empty( $params[ self::PARAM_SIZE ] ) ) {
+			$verify_params[ self::PARAM_SIZE ] = sanitize_text_field( $params[ self::PARAM_SIZE ] );
+		}
+
 		$expected_sig = $this->sign( $verify_params );
 
 		if ( ! hash_equals( $expected_sig, $signature ) ) {
@@ -155,6 +188,13 @@ class SignedUrlService {
 			header( 'Content-Type: text/plain' );
 			echo esc_html( 'Invalid or expired signed URL.' );
 			exit;
+		}
+
+		// Dispatch thumbnail requests to a dedicated handler.
+		$size = ! empty( $params[ self::PARAM_SIZE ] ) ? sanitize_text_field( $params[ self::PARAM_SIZE ] ) : '';
+		if ( $size ) {
+			$this->serve_thumbnail( $media_id, $size );
+			return;
 		}
 
 		$file_path_raw = MediaRepository::get( $media_id, 'file_path' );
@@ -235,6 +275,59 @@ class SignedUrlService {
 		}
 
 		// Support range requests for streaming.
+		$this->handle_range_request( $full_path );
+	}
+
+	/**
+	 * Serve a thumbnail file for a validated signed request.
+	 *
+	 * @param int    $media_id Validated media ID.
+	 * @param string $size     Requested size (large|medium|thumbnail).
+	 */
+	private function serve_thumbnail( int $media_id, string $size ): void {
+		$size_map  = array( 'large' => 'thumb_large', 'medium' => 'thumb_medium', 'thumbnail' => 'thumb_thumb' );
+		$meta_key  = $size_map[ $size ] ?? 'thumb_large';
+		$thumb_url = MediaRepository::get( $media_id, $meta_key )
+			?: MediaRepository::get( $media_id, 'thumb_large' );
+
+		if ( ! $thumb_url ) {
+			status_header( 404 );
+			header( 'Content-Type: text/plain' );
+			echo esc_html( 'Thumbnail not found.' );
+			exit;
+		}
+
+		$upload_dir     = wp_upload_dir();
+		$base_url       = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
+		$thumb_url_http = set_url_scheme( $thumb_url, 'http' );
+
+		if ( 0 !== strpos( $thumb_url_http, $base_url ) ) {
+			status_header( 403 );
+			header( 'Content-Type: text/plain' );
+			echo esc_html( 'Access denied.' );
+			exit;
+		}
+
+		$full_path = trailingslashit( $upload_dir['basedir'] ) . substr( $thumb_url_http, strlen( $base_url ) );
+		$real_path = realpath( $full_path );
+		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
+
+		if ( false === $real_path || false === $real_base || 0 !== strpos( $real_path, $real_base . DIRECTORY_SEPARATOR ) ) {
+			status_header( 403 );
+			header( 'Content-Type: text/plain' );
+			echo esc_html( 'Access denied.' );
+			exit;
+		}
+
+		$ext       = strtolower( pathinfo( $full_path, PATHINFO_EXTENSION ) );
+		$mime_map  = array( 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'gif' => 'image/gif', 'webp' => 'image/webp' );
+		$mime_type = $mime_map[ $ext ] ?? 'image/jpeg';
+		$filename  = sanitize_file_name( basename( $full_path ) );
+
+		nocache_headers();
+		header( 'Content-Type: ' . $mime_type );
+		header( 'Content-Length: ' . filesize( $full_path ) );
+		header( 'Content-Disposition: inline; filename="' . $filename . '"' );
 		$this->handle_range_request( $full_path );
 	}
 
