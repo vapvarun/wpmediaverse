@@ -206,8 +206,12 @@ class TemplateHelpers {
 	 *
 	 * @param int   $media_id Media ID (mvs_media_index.media_id).
 	 * @param array $args     Options:
-	 *                        - 'size'         string WP image size (default 'large').
-	 *                        - 'alt'          string Override alt text.
+	 *                        - 'size'         string WP image size slug (default 'large'). Validated against
+	 *                                                the registered image-size whitelist; invalid values fall
+	 *                                                back to 'large'.
+	 *                        - 'alt'          string Pre-escaped alt-attribute value. Caller MUST escape with
+	 *                                                esc_attr() before passing — the helper does not re-escape.
+	 *                                                When empty, the media's title is fetched and escaped here.
 	 *                        - 'classes'      string Extra classes for the <img>/<video>.
 	 *                        - 'show_play'    bool   Append play-icon overlay for videos (default true).
 	 *                        - 'lazy'         bool   Add loading="lazy" on <img> (default true).
@@ -225,11 +229,14 @@ class TemplateHelpers {
 			)
 		);
 
+		$valid_sizes = array_merge( get_intermediate_image_sizes(), array( 'full' ) );
+		$size        = in_array( (string) $args['size'], $valid_sizes, true ) ? (string) $args['size'] : 'large';
+
 		$media_type = self::get_media_type( $media_id );
-		$thumb_url  = self::get_thumb_url( $media_id, (string) $args['size'] );
+		$thumb_url  = self::get_thumb_url( $media_id, $size );
 		$alt        = (string) $args['alt'];
 		if ( '' === $alt ) {
-			$alt = (string) MediaRepository::get( $media_id, 'title' );
+			$alt = esc_attr( (string) MediaRepository::get( $media_id, 'title' ) );
 		}
 
 		$extra_class = trim( (string) $args['classes'] );
@@ -238,7 +245,7 @@ class TemplateHelpers {
 
 		if ( $thumb_url ) {
 			$img_class = trim( 'mvs-media-thumb ' . $extra_class );
-			$markup    = '<img class="' . esc_attr( $img_class ) . '" src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( $alt ) . '"' . $loading . ' />';
+			$markup    = '<img class="' . esc_attr( $img_class ) . '" src="' . esc_url( $thumb_url ) . '" alt="' . $alt . '"' . $loading . ' />';
 			if ( 'video' === $media_type ) {
 				$markup .= $play_icon;
 			}
@@ -331,11 +338,11 @@ class TemplateHelpers {
 	 * @param string $alt      Alt text.
 	 */
 	public static function render_grid_thumbnail( int $media_id, string $size = 'large', string $alt = '' ): void {
-		echo self::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes internally.
+		echo self::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns markup with all attribute values already escaped (size validated against whitelist, alt pre-escaped here).
 			$media_id,
 			array(
-				'size' => sanitize_key( $size ),
-				'alt'  => sanitize_text_field( $alt ),
+				'size' => $size,
+				'alt'  => esc_attr( $alt ),
 			)
 		);
 	}

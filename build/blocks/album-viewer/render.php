@@ -71,9 +71,9 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 				<div class="mvs-grid-item">
 					<a href="<?php echo esc_url( $permalink ); ?>">
 						<?php
-						echo \WPMediaVerse\Core\TemplateHelpers::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes internally.
+						echo \WPMediaVerse\Core\TemplateHelpers::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- alt pre-escaped here; helper validates size and emits already-escaped markup.
 							$media_id,
-							array( 'alt' => sanitize_text_field( $item_title ) )
+							array( 'alt' => esc_attr( $item_title ) )
 						);
 						?>
 					</a>

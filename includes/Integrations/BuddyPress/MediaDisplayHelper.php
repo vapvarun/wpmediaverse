@@ -66,7 +66,7 @@ class MediaDisplayHelper {
 			$media_id,
 			array(
 				'size'      => $size,
-				'alt'       => $title,
+				'alt'       => esc_attr( $title ),
 				'show_play' => true,
 			)
 		);
