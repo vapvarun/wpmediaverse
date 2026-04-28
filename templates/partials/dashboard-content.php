@@ -235,13 +235,22 @@ wp_enqueue_style( 'mvs-frontend' );
 	</div>
 
 	<?php
-	// Profile completion prompt (if no custom avatar or empty bio).
-	$mvs_profile_incomplete = ! $mvs_has_custom || empty( $mvs_current_user->description );
+	// Profile completion prompt (if no avatar or empty bio).
+	//
+	// "Has avatar" means either a plugin-uploaded custom avatar OR a Gravatar
+	// keyed off the user's email. `get_avatar_data()` returns `found_avatar`
+	// true only when Gravatar returned an actual image (not the mystery-man
+	// placeholder), so the banner correctly stays hidden for users whose
+	// Gravatar is set.
+	$mvs_avatar_data        = get_avatar_data( $mvs_current_user->ID );
+	$mvs_has_gravatar       = ! empty( $mvs_avatar_data['found_avatar'] );
+	$mvs_has_any_avatar     = $mvs_has_custom || $mvs_has_gravatar;
+	$mvs_profile_incomplete = ! $mvs_has_any_avatar || empty( $mvs_current_user->description );
 	if ( $mvs_profile_incomplete ) : ?>
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
 		<span class="mvs-profile-prompt-icon">&#x1F464;</span>
 		<span class="mvs-profile-prompt-text">
-			<?php esc_html_e( 'Complete your profile — add an avatar and bio to help others find you.', 'wpmediaverse' ); ?>
+			<?php esc_html_e( 'Complete your profile. Add an avatar and bio to help others find you.', 'wpmediaverse' ); ?>
 			<button class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-dashboard-profile-edit-btn"
 				type="button"
 				data-wp-on--click="actions.toggleProfileEdit">
@@ -371,13 +380,17 @@ wp_enqueue_style( 'mvs-frontend' );
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
 						data-wp-on--click="actions.openMediaLightbox">
 						<img data-wp-bind--hidden="!state.mediaThumbUrl" data-wp-bind--src="state.mediaThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
+						<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
+							data-wp-bind--hidden="!state.showMediaVideoPreview"
+							data-wp-bind--src="state.mediaVideoPreviewUrl"></video>
+						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showMediaPlayIcon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 							data-wp-bind--hidden="!state.showMediaVideoPlaceholder">
-							<span class="mvs-grid-play-icon">&#9654;</span>
+							<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio"
 							data-wp-bind--hidden="!state.showMediaAudioPlaceholder">
-							<span class="mvs-grid-audio-icon">&#9835;</span>
+							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 					</a>
 					<div class="mvs-dashboard-card-body">
@@ -410,7 +423,7 @@ wp_enqueue_style( 'mvs-frontend' );
 	<!-- My Albums Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isAlbumsTab">
 		<div class="mvs-dashboard-actions">
-			<button class="mvs-btn" type="button"
+			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.openCreateAlbum">+ <?php esc_html_e( 'Create Album', 'wpmediaverse' ); ?></button>
 		</div>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
@@ -451,13 +464,17 @@ wp_enqueue_style( 'mvs-frontend' );
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
 						data-wp-on--click="actions.openFavLightbox">
 						<img data-wp-bind--hidden="!state.favThumbUrl" data-wp-bind--src="state.favThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
+						<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
+							data-wp-bind--hidden="!state.showFavVideoPreview"
+							data-wp-bind--src="state.favVideoPreviewUrl"></video>
+						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showFavPlayIcon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 							data-wp-bind--hidden="!state.showFavVideoPlaceholder">
-							<span class="mvs-grid-play-icon">&#9654;</span>
+							<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio"
 							data-wp-bind--hidden="!state.showFavAudioPlaceholder">
-							<span class="mvs-grid-audio-icon">&#9835;</span>
+							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 					</a>
 					<div class="mvs-dashboard-card-body">
@@ -490,7 +507,7 @@ wp_enqueue_style( 'mvs-frontend' );
 	<!-- My Collections Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isCollectionsTab">
 		<div class="mvs-dashboard-actions">
-			<button class="mvs-btn" type="button"
+			<button class="mvs-btn mvs-btn--secondary" type="button"
 				data-wp-on--click="actions.openCreateCollection">+ <?php esc_html_e( 'Create Collection', 'wpmediaverse' ); ?></button>
 		</div>
 		<div class="mvs-dashboard-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
@@ -771,13 +788,17 @@ wp_enqueue_style( 'mvs-frontend' );
 								data-wp-class--mvs-media-picker-cover="state.isPickerCover"
 								data-wp-on--click="actions.togglePickerItem">
 								<img data-wp-bind--hidden="!state.pickerThumbUrl" data-wp-bind--src="state.pickerThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
+								<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
+									data-wp-bind--hidden="!state.showPickerVideoPreview"
+									data-wp-bind--src="state.pickerVideoPreviewUrl"></video>
+								<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showPickerPlayIcon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 								<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 									data-wp-bind--hidden="!state.showPickerVideoPlaceholder">
-									<span class="mvs-grid-play-icon">&#9654;</span>
+									<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 								</div>
 								<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio"
 									data-wp-bind--hidden="!state.showPickerAudioPlaceholder">
-									<span class="mvs-grid-audio-icon">&#9835;</span>
+									<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 								</div>
 								<span class="mvs-media-picker-check">&#x2713;</span>
 								<button class="mvs-media-picker-cover-btn" type="button"

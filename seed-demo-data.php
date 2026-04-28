@@ -657,53 +657,57 @@ $collections_config = array(
  * @param string $title       Image title.
  * @return array|false Array with file_url, file_path, mime, file_size, thumbs, or false on failure.
  */
-function mvs_seed_import_local_image( $source_path, $title ) {
-	$upload_dir = wp_upload_dir();
-	$dest_dir   = $upload_dir['basedir'] . '/wpmediaverse/' . gmdate( 'Y/m' );
-	wp_mkdir_p( $dest_dir );
-
-	$filename  = wp_unique_filename( $dest_dir, basename( $source_path ) );
-	$dest_path = $dest_dir . '/' . $filename;
-
-	if ( ! copy( $source_path, $dest_path ) ) {
+function mvs_seed_import_local_image( $source_path, $title, int $author_id, array $args = array() ) {
+	// Route demo uploads through the canonical UploadService::handle() so
+	// the seeder exercises the SAME pipeline a real user upload does:
+	// - thumb_large/medium/thumb meta written (or file_url fallback on failure)
+	// - video embedded-poster extraction via getID3
+	// - mvs_media_uploaded action fires (BP activity sync, AI queue, etc.)
+	// - LoggerService entries on failure
+	// Direct MediaRepository::insert in a seeder would skip every one of those.
+	$upload = \WPMediaVerse\Core\Plugin::container()->get( 'upload' );
+	if ( ! $upload ) {
 		return false;
 	}
 
-	$rel_dir  = 'wpmediaverse/' . gmdate( 'Y/m' );
-	$file_url = $upload_dir['baseurl'] . '/' . $rel_dir . '/' . $filename;
-	$filetype = wp_check_filetype( $dest_path );
-	$mime     = $filetype['type'] ?: 'image/jpeg';
-
-	// Generate thumbnails.
-	$thumbs = array();
-	if ( str_starts_with( $mime, 'image/' ) ) {
-		if ( ! function_exists( 'wp_get_image_editor' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/image.php';
-		}
-		$editor = wp_get_image_editor( $dest_path );
-		if ( ! is_wp_error( $editor ) ) {
-			$sizes = array(
-				'large'  => array( 'width' => 1024, 'height' => 1024, 'crop' => false ),
-				'medium' => array( 'width' => 300,  'height' => 300,  'crop' => false ),
-				'thumb'  => array( 'width' => 150,  'height' => 150,  'crop' => true ),
-			);
-			$generated = $editor->multi_resize( $sizes );
-			$base_url  = $upload_dir['baseurl'] . '/' . $rel_dir;
-			foreach ( $generated as $size_name => $data ) {
-				$thumbs[ 'thumb_' . $size_name ] = $base_url . '/' . $data['file'];
-			}
-			$img_size = $editor->get_size();
-			$thumbs['width']  = $img_size['width'] ?? null;
-			$thumbs['height'] = $img_size['height'] ?? null;
-		}
+	// Copy source to a temp path so UploadService can move it into uploads/wpmediaverse/.
+	$tmp = wp_tempnam( 'mvs-seed-' . basename( $source_path ) );
+	if ( ! $tmp || ! copy( $source_path, $tmp ) ) {
+		return false;
 	}
 
+	$filetype = wp_check_filetype( $source_path );
+	$mime     = $filetype['type'] ?: 'image/jpeg';
+
+	$file = array(
+		'name'     => sanitize_file_name( basename( $source_path ) ),
+		'type'     => $mime,
+		'tmp_name' => $tmp,
+		'size'     => filesize( $tmp ),
+		'error'    => 0,
+	);
+
+	$handle_args = array_merge(
+		array(
+			'privacy'           => 'public',
+			'title'             => $title,
+			'moderation_status' => 'approved',
+		),
+		$args
+	);
+
+	$media_id = $upload->handle( $file, $author_id, $handle_args );
+
+	if ( is_wp_error( $media_id ) || ! $media_id ) {
+		return false;
+	}
+
+	$row = \WPMediaVerse\Repository\MediaRepository::get_all( (int) $media_id );
 	return array(
-		'file_url'  => $file_url,
-		'file_path' => $dest_path,
-		'mime'      => $mime,
-		'file_size' => filesize( $dest_path ),
-		'thumbs'    => $thumbs,
+		'media_id'  => (int) $media_id,
+		'file_url'  => $row['file_url'] ?? '',
+		'file_path' => $row['file_path'] ?? '',
+		'mime'      => $row['file_type'] ?? $mime,
 	);
 }
 
@@ -828,49 +832,28 @@ foreach ( $images as $idx => $img ) {
 
 	mvs_seed_log( "[{$num}/" . count( $images ) . "] Importing: {$img['title']}..." );
 
-	$imported = mvs_seed_import_local_image( $source_path, $img['title'] );
-
-	if ( ! $imported ) {
-		mvs_seed_log( '  Failed to import image.', 'warning' );
-		continue;
-	}
-
 	// Resolve author.
 	$post_author = $fallback_user_id;
 	if ( ! empty( $img['user'] ) && isset( $demo_user_ids[ $img['user'] ] ) ) {
 		$post_author = $demo_user_ids[ $img['user'] ];
 	}
 
-	// Insert into mvs_media_index (returns auto-generated media_id).
-	$media_id = \WPMediaVerse\Repository\MediaRepository::insert(
+	$imported = mvs_seed_import_local_image(
+		$source_path,
+		$img['title'],
+		$post_author,
 		array(
-			'title'             => $img['title'],
-			'description'       => $img['description'],
-			'post_author'       => $post_author,
-			'status'            => 'publish',
-			'media_type'        => $img['type'],
-			'privacy'           => $img['privacy'],
-			'moderation_status' => 'approved',
-			'file_url'          => $imported['file_url'],
-			'file_path'         => $imported['file_path'],
-			'file_type'         => $imported['mime'],
-			'file_size'         => $imported['file_size'],
-			'width'             => $imported['thumbs']['width'] ?? null,
-			'height'            => $imported['thumbs']['height'] ?? null,
+			'description' => $img['description'],
+			'privacy'     => $img['privacy'],
 		)
 	);
 
-	if ( ! $media_id ) {
-		mvs_seed_log( '  Failed to insert media into index table.', 'warning' );
+	if ( ! $imported || empty( $imported['media_id'] ) ) {
+		mvs_seed_log( '  Failed to import image via UploadService.', 'warning' );
 		continue;
 	}
 
-	// Store thumbnails.
-	foreach ( $imported['thumbs'] as $key => $value ) {
-		if ( str_starts_with( $key, 'thumb_' ) ) {
-			\WPMediaVerse\Repository\MediaRepository::set( $media_id, $key, $value );
-		}
-	}
+	$media_id = (int) $imported['media_id'];
 
 	// Store tags as meta AND assign to mvs_tag taxonomy (for tag cloud + filtering).
 	if ( ! empty( $img['tags'] ) ) {

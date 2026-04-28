@@ -36,6 +36,85 @@ class SettingsRegistrar {
 		$this->register_webhook_settings();
 		$this->register_messaging_settings();
 		$this->register_pages_settings();
+		$this->register_undocumented_settings();
+	}
+
+	/**
+	 * Declare settings that are referenced by `get_option()` callers and
+	 * documented in `qa/WHAT-TO-CHECK.md` but previously lacked a matching
+	 * `register_setting()` entry.
+	 *
+	 * Without `register_setting()` WP's Settings API cannot sanitize or REST-
+	 * expose these keys, and a `get_option()` call returns `false` (not the
+	 * documented default) until the option is manually written somewhere.
+	 *
+	 * This method declares the keys; field UI is intentionally not added here
+	 * — each setting needs a home in an existing or new settings tab. Declaring
+	 * the keys first is the minimum that makes `get_option()` predictable and
+	 * `update_option()` go through the proper sanitizer.
+	 *
+	 * See qa/runs/FINDINGS-HISTORY.md (E3, F13) for background.
+	 */
+	private function register_undocumented_settings(): void {
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_display',
+			'mvs_grid_columns',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_grid_columns' ),
+				'default'           => 3,
+			)
+		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_display',
+			'mvs_thumbnail_style',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_style' ),
+				'default'           => 'square',
+			)
+		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_messaging',
+			'mvs_dm_access',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_dm_access' ),
+				'default'           => 'all',
+			)
+		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_messaging',
+			'mvs_dm_min_age',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 0,
+			)
+		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_messaging',
+			'mvs_show_online_status',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_general',
+			'mvs_comment_edit_window',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_comment_edit_window' ),
+				'default'           => 15 * MINUTE_IN_SECONDS,
+			)
+		);
 	}
 
 	/**
@@ -376,13 +455,41 @@ class SettingsRegistrar {
 			array(
 				'option'      => 'mvs_thumbnail_size',
 				'choices'     => array(
-					'medium' => __( 'Medium (300px — faster loading)', 'wpmediaverse' ),
-					'large'  => __( 'Large (1024px — retina crisp)', 'wpmediaverse' ),
-					'full'   => __( 'Full (original — highest quality)', 'wpmediaverse' ),
+					'medium' => __( 'Medium (300px, faster loading)', 'wpmediaverse' ),
+					'large'  => __( 'Large (1024px, retina crisp)', 'wpmediaverse' ),
+					'full'   => __( 'Full (original, highest quality)', 'wpmediaverse' ),
 				),
 				'description' => __( 'Controls image quality on grids and feeds. Larger sizes look sharper on retina displays but load slower.', 'wpmediaverse' ),
 			)
 		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_display',
+			'mvs_lightbox_image_source',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_lightbox_image_source' ),
+				'default'           => 'original',
+			)
+		);
+		add_settings_field(
+			'mvs_lightbox_image_source',
+			__( 'Lightbox Image Size', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_select_field' ),
+			SettingsPage::PAGE_SLUG . '-display',
+			'mvs_display',
+			array(
+				'option'      => 'mvs_lightbox_image_source',
+				'choices'     => array(
+					'original' => __( 'Original (highest quality, best for full-size viewing)', 'wpmediaverse' ),
+					'large'    => __( 'Large (1024px, faster to load)', 'wpmediaverse' ),
+					'medium'   => __( 'Medium (300px, fastest — small gallery)', 'wpmediaverse' ),
+					'auto'     => __( 'Auto (original on desktop, large on mobile)', 'wpmediaverse' ),
+				),
+				'description' => __( 'Which image size opens in the lightbox. Users can always tap "View Original" to open the full file in a new tab.', 'wpmediaverse' ),
+			)
+		);
+
 	}
 
 	// -------------------------------------------------------------------------
@@ -795,6 +902,7 @@ class SettingsRegistrar {
 		$pages = array(
 			'mvs_page_dashboard' => __( 'Dashboard Page', 'wpmediaverse' ),
 			'mvs_page_explore'   => __( 'Explore Page', 'wpmediaverse' ),
+			'mvs_page_upload'    => __( 'Upload Page', 'wpmediaverse' ),
 		);
 
 		foreach ( $pages as $option => $label ) {

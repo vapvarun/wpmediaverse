@@ -111,15 +111,30 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 == Changelog ==
 
 = 1.1.3 =
-* Fix: Lightbox now opens full-viewport in Facebook-style layout — image fills the left panel, social sidebar on the right
-* Fix: Lightbox always loads the full-resolution original image instead of the medium thumbnail
-* Fix: Lightbox close button (X) is now visible and correctly positioned over the image panel
-* Fix: Thumbnails no longer return 403 errors for logged-in users with "loggedin" privacy
-* Fix: Album cover thumbnails now go through the signed URL service for consistent access control
-* Fix: Lightbox Favorite label no longer shows a duplicate emoji (Lucide icon renders it; emoji was redundant)
-* Enhancement: All media file and thumbnail URLs are routed through the signed URL service for uniform access control
-* Enhancement: All close, dismiss, and navigation icons in the lightbox, upload modal, and toast notifications replaced with proper Lucide icons (rounded caps, correct paths)
-* Enhancement: Lightbox CSS consolidated into frontend.css as a single source of truth — no more rules scattered across three files
+* Fix: Lightbox now opens the original full-size image instead of the low-res grid thumbnail. New Display setting "Lightbox Image Size" lets admins pick Original / Large / Medium / Auto (defaults to Original)
+* Fix: Lightbox opens full-viewport in Facebook-style layout — image fills the left panel, social sidebar on the right; close button (X) correctly positioned and visible over the image panel
+* Feature: Video uploads now get a real poster thumbnail extracted from the file's embedded cover atom via WP core's getID3 — no ffmpeg required. Works for phone-shot MP4/MOV; screen recordings without an embedded cover fall through to a native `<video preload="metadata">` preview in the grid so the browser paints the first frame — matching what the single media view already does
+* Refactor: Media thumbnail rendering consolidated into a single source of truth. New `TemplateHelpers::media_thumbnail()` (PHP) and `mvsCardBuilders.buildThumbnail()` (JS) helpers used by Explore, BP activity, album/collection viewer, My Media dashboard, BP profile and group tabs, Pro Pinterest/Dribbble/Flickr/Instagram layouts. One branching logic for image / video-with-poster / native video preview / audio card / generic placeholder — every surface now handles each media type identically
+* Enhancement: All close, dismiss, and navigation icons in the lightbox, upload modal, and toast notifications replaced with proper Lucide icons (rounded caps, correct paths). Lightbox CSS consolidated into frontend.css as a single source of truth
+* Fix: Hardcoded emoji characters (play triangle, music note) replaced with inline Lucide SVGs across grids, dashboard, BP activity audio cards, and BP upload preview. WordPress was auto-converting the Unicode chars to emoji images, which looked different across browsers and didn't match the plugin's Lucide-based design
+* Fix: Video, audio, and generic placeholders now share a unified frame (aspect-ratio + gradient background) so grids never collapse based on media type — any mix of image/video/audio uploads renders with consistent cell sizing
+* Fix: BuddyPress activity stream thumbnails render reliably — defensive `file_url` fallback in `MediaDisplayHelper` when custom `thumb_*` meta is missing, and a path-5 recovery in `ActivityContentIntegration` that rebuilds the grid from `_mvs_media_ids` meta when an activity's saved content lost its markup
+* Fix: Delete action no longer leaks onto public grids. The per-item trash icon now only renders on BuddyPress profile and group media tabs (where `show_actions` is explicitly opted in); Explore, Albums, and Collections never show it
+* Fix: Settings sidebar brand icon is now clearly visible — the eyebrow-text rule was cascading gray onto the logo SVG, making it blend into the red gradient
+* Fix: Dead meta-key reads cleaned up. `ActivityContentIntegration` and Pro's `TranscriptionService` were looking up `attachment_id` meta (dropped in migration v8) — both now use `wp_attachment_id` which importers actually write
+* Feature: Thumbnail pipeline centralized in `UploadService::generate_thumbnails()` (now public). Pro CLI importers and MigrationPage delegate here via `Plugin::free_service('upload')`, so Free uploads and Pro imports share identical fallback, sizing, and logging. New `mvs_thumbnail_sizes` filter lets themes/add-ons tune sizes without patching
+* Fix: Every upload path now guarantees all three thumbnail sizes (`thumb_large`, `thumb_medium`, `thumb_thumb`). WP's `multi_resize()` skips sizes that would upscale the source, so small images (under 1024px) used to leave `thumb_large` empty — now the pipeline backfills any missing size with `file_url` (the original IS the largest version)
+* Fix: Demo data importer (`seed-demo-data.php` / Overview admin button) now routes through `UploadService::handle()` instead of inserting rows directly, so demo content exercises the full real-upload pipeline — including thumbnail generation, video poster extraction, `mvs_media_uploaded` hook, and LoggerService
+* Fix: Silent failures in the thumbnail pipeline are now logged to `mvs_error_log` via `LoggerService` — missing source file, GD/Imagick unavailable, and `multi_resize()` returning empty each write a warning with the media ID for diagnostics
+* Fix: Missing "Upload Page" setting added to Settings → General → Pages. The option was read in 3 places but had no admin UI, so custom [mvs_upload] shortcode pages could not be assigned
+* Fix: Album cover selection now persists — picking a cover from the album edit page writes to the post meta instead of silently no-op'ing, and the album preview shows the chosen image
+* Fix: Albums without an explicitly pinned cover fall back to the first image in the album so they never render with a broken/placeholder cover
+* Fix: Lightbox "Favorite" label no longer ships with a duplicated heart emoji prefix — the Lucide icon renders alone as intended
+* Fix: 5 free bug cards carried over from 1.1.2 — grid columns=5 rendering, stats page filter date ranges, tag cloud count accuracy, lightbox Favorite visibility for signed-in users, lightbox Share double-icon
+* Fix: Thumbnails no longer return 403 errors for logged-in users; album cover thumbnails go through signed URL service for consistent access control
+* Build: shared-ui Gutenberg blocks (view.js) now build as true ES modules via `npm run build` so the Interactivity API hydrates correctly — fixes `window.wp.interactivity is undefined` on block-rendered pages
+* Security: `uninstall.php` now has an `ABSPATH` guard alongside the existing `WP_UNINSTALL_PLUGIN` check
+* Docs: Service method docblocks (@param / @return) restored across Album, Moderation, and Tag services
 
 = 1.1.2 =
 * Fix: Setting Grid Columns to 5 now actually renders 5 columns on the Explore page, single-album view, collections, and dashboard grids (was collapsing to a single column because the 5-column CSS rule was missing)

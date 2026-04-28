@@ -59,28 +59,37 @@ class SettingsPage {
 	 * Keeps: Overview, All Media, Albums, Collections, Moderation, Stats, Settings.
 	 */
 	public function cleanup_admin_menu(): void {
-		$parent = \WPMediaVerse\Core\Plugin::ADMIN_SLUG;
-
-		// Hide tool/config pages from menu via CSS instead of remove_submenu_page().
-		// This preserves page titles and menu highlighting while keeping the menu clean.
-		// Pages are accessible via Settings sidebar links.
-		$hide_slugs = array(
-			'mvs-challenges',
-			'mvs-tournaments',
-			'mvs-battles',
-			'mvs-reports',
-			'mvs-analytics',
-		);
+		// No-op in 1.1.3.
+		//
+		// Pro-side hiding was previously done from here via CSS targeting
+		// Pro slugs by name — a Free-knows-Pro boundary violation. Pro now
+		// registers Reports/Analytics with parent=null (WP-standard for
+		// hidden-but-URL-accessible pages) and orders Competitions children
+		// next to the hub via Core/Plugin::reorder_submenu at admin_menu:999.
+		//
+		// Kept as a hook surface: plugins can still use the
+		// `mvs_hide_submenu_slugs` filter to hide their own Free-side slugs
+		// without re-implementing the prune logic.
+		$hide_slugs = (array) apply_filters( 'mvs_hide_submenu_slugs', array() );
+		if ( empty( $hide_slugs ) ) {
+			return;
+		}
 
 		add_action(
-			'admin_head',
-			function () use ( $hide_slugs, $parent ) {
-				echo '<style>';
-				foreach ( $hide_slugs as $slug ) {
-					echo '.toplevel_page_' . esc_attr( $parent ) . ' .wp-submenu a[href$="page=' . esc_attr( $slug ) . '"]{display:none!important}';
+			'admin_menu',
+			static function () use ( $hide_slugs ): void {
+				global $submenu;
+				$parent = \WPMediaVerse\Core\Plugin::ADMIN_SLUG;
+				if ( empty( $submenu[ $parent ] ) || ! is_array( $submenu[ $parent ] ) ) {
+					return;
 				}
-				echo '</style>';
-			}
+				foreach ( $submenu[ $parent ] as $key => $item ) {
+					if ( isset( $item[2] ) && in_array( $item[2], $hide_slugs, true ) ) {
+						unset( $submenu[ $parent ][ $key ] );
+					}
+				}
+			},
+			999
 		);
 	}
 
@@ -125,7 +134,7 @@ class SettingsPage {
 	 */
 	public function handle_settings_notices(): void {
 		$screen = get_current_screen();
-		if ( ! $screen || false === strpos( $screen->id, 'mvs-settings' ) ) {
+		if ( ! $screen || false === strpos( $screen->id ?? '', 'mvs-settings' ) ) {
 			return;
 		}
 
@@ -667,7 +676,7 @@ class SettingsPage {
 		?>
 		<div class="mvs-pro-section">
 			<h3>
-				<?php esc_html_e( 'Unlock More with WPMediaVerse Pro', 'wpmediaverse' ); ?>
+				<?php esc_html_e( 'Get more with WPMediaVerse Pro', 'wpmediaverse' ); ?>
 				<span class="mvs-pro-badge"><?php esc_html_e( 'Pro', 'wpmediaverse' ); ?></span>
 			</h3>
 			<ul>

@@ -138,11 +138,16 @@
 
 				if ( builder ) {
 					items.forEach( function ( item ) {
-						var node = builder( item );
+						var node = builder( item, gridContainer );
 						if ( node ) {
 							gridContainer.appendChild( node );
 						}
 					} );
+				}
+
+				// Re-render any Lucide placeholders added by builder (i[data-lucide]).
+				if ( window.lucide && typeof window.lucide.createIcons === 'function' ) {
+					window.lucide.createIcons();
 				}
 
 				rebuildRegistry();

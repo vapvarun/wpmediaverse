@@ -316,10 +316,16 @@ class AlbumController extends WP_REST_Controller {
 		MediaRepository::set( $album_id, 'album_type', $album_type );
 
 		// Set group association if group_id is provided and user is a member.
+		// Writes to both the custom mvs_media_meta table (keyed "group_id") AND
+		// WP post meta (keyed "_mvs_group_id"), because GroupTabIntegration's
+		// album listing uses WP_Query meta_query against the latter. Without
+		// the post meta write, freshly-created group albums never appeared in
+		// the group's Albums tab.
 		$group_id = absint( $request->get_param( 'group_id' ) );
 		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
 			MediaRepository::set( $album_id, 'privacy', 'group' );
 			MediaRepository::set( $album_id, 'group_id', $group_id );
+			update_post_meta( $album_id, '_mvs_group_id', $group_id );
 		}
 
 		// Apply categories if provided — mvs_category is registered on mvs_album so this writes
@@ -494,25 +500,20 @@ class AlbumController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function set_cover( $request ) {
-		$album_id = $request->get_param( 'id' );
-		$media_id = $request->get_param( 'media_id' );
+		$album_id = (int) $request->get_param( 'id' );
+		$media_id = (int) $request->get_param( 'media_id' );
 
 		$result = $this->albums->set_cover( $album_id, $media_id );
 
-		if ( ! $result ) {
-			return new WP_Error( 'mvs_cover_failed', __( 'Could not set cover image.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		if ( is_wp_error( $result ) ) {
+			return $result;
 		}
-
-		$cover_media_id = $this->albums->get_cover_media_id( $album_id );
-		$signed_urls    = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-		$cover_url      = $cover_media_id && $signed_urls
-			? $signed_urls->generate_thumbnail( $cover_media_id, get_current_user_id(), 'large', 0, true )
-			: $this->albums->get_cover_url( $album_id );
 
 		return rest_ensure_response(
 			array(
 				'album_id'  => $album_id,
-				'cover_url' => $cover_url,
+				'media_id'  => $media_id,
+				'cover_url' => $this->albums->get_cover_url( $album_id ),
 			)
 		);
 	}
@@ -604,12 +605,6 @@ class AlbumController extends WP_REST_Controller {
 			}
 		}
 
-		$cover_mid  = $this->albums->get_cover_media_id( $album_id );
-		$album_su   = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-		$cover_url  = $cover_mid && $album_su
-			? $album_su->generate_thumbnail( $cover_mid, get_current_user_id(), 'large', 0, true )
-			: $this->albums->get_cover_url( $album_id );
-
 		$data = array(
 			'id'          => $album_id,
 			'title'       => $post->post_title,
@@ -619,9 +614,10 @@ class AlbumController extends WP_REST_Controller {
 			'link'        => get_permalink( $album_id ),
 			'privacy'     => $privacy_value ? $privacy_value : 'public',
 			'album_type'  => $album_type ? $album_type : 'default',
-			'media_count' => $this->albums->get_item_count( $album_id ),
-			'cover_url'   => $cover_url,
-			'categories'  => $categories,
+			'media_count'     => $this->albums->get_item_count( $album_id ),
+			'cover_url'       => $this->albums->get_cover_url( $album_id ),
+			'cover_media_id'  => $this->albums->get_cover_media_id( $album_id ),
+			'categories'      => $categories,
 		);
 
 		if ( $include_items ) {

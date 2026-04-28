@@ -267,7 +267,7 @@ class FieldRenderer {
 			array(
 				'name'              => $args['option'],
 				'selected'          => $selected,
-				'show_option_none'  => __( '— Select —', 'wpmediaverse' ),
+				'show_option_none'  => __( 'Select a page', 'wpmediaverse' ),
 				'option_none_value' => 0,
 			)
 		);

@@ -163,12 +163,28 @@ class MediaListPage {
 							</thead>
 							<tbody>
 								<?php if ( empty( $items ) ) : ?>
+									<?php
+									$has_active_filters = ! empty( $search ) || ! empty( $type_filter ) || ! empty( $privacy_filter );
+									$base_url           = admin_url( 'admin.php?page=mvs-media' );
+									?>
 									<tr>
 										<td colspan="8">
 											<div class="mvs-empty-state-admin">
 												<i data-lucide="images"></i>
-												<h3><?php esc_html_e( 'No Media Found', 'wpmediaverse' ); ?></h3>
-												<p><?php esc_html_e( 'No media items found.', 'wpmediaverse' ); ?></p>
+												<?php if ( $has_active_filters ) : ?>
+													<h3><?php esc_html_e( 'No media matches your filters', 'wpmediaverse' ); ?></h3>
+													<p>
+														<?php esc_html_e( 'Try a different search term or a different type / privacy filter.', 'wpmediaverse' ); ?>
+													</p>
+													<p>
+														<a class="button" href="<?php echo esc_url( $base_url ); ?>">
+															<?php esc_html_e( 'Clear filters', 'wpmediaverse' ); ?>
+														</a>
+													</p>
+												<?php else : ?>
+													<h3><?php esc_html_e( 'No media yet', 'wpmediaverse' ); ?></h3>
+													<p><?php esc_html_e( 'Once users upload media it will appear here.', 'wpmediaverse' ); ?></p>
+												<?php endif; ?>
 											</div>
 										</td>
 									</tr>

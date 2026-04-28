@@ -1,0 +1,1182 @@
+/**
+ * BuddyPress integration — dedicated stylesheet for the MediaVerse
+ * surfaces we inject into BP profile and group screens.
+ *
+ * Loaded only by ProfileTabIntegration::enqueue_assets() and
+ * GroupTabIntegration::enqueue_assets(). The 6 display methods each
+ * echo a `<div class="mvs-bp-screen">` wrapper around their output so
+ * every rule in this file can scope under a single, known parent.
+ *
+ * Specificity strategy
+ * --------------------
+ * BuddyPress core + several BP themes ship the rule
+ *
+ *   body #buddypress div, body #buddypress li, … { border-radius: 2px; }
+ *
+ * with specificity (0,1,2) — 1 ID + 2 element types. An ID in the
+ * selector beats any pure-class rule from our side, so our BP rules
+ * MUST also include `#buddypress` in the selector to compete on the ID
+ * column. Wrapping with `#buddypress .mvs-bp-screen X` lifts us to
+ * (1, 2, 0+), cleanly winning without `!important`.
+ */
+
+/* =============================================================================
+ *  Baseline — reset inherited radius + background-clip on every element we
+ *  own, then let later rules opt-in to rounded corners where they want.
+ * ============================================================================= */
+#buddypress .mvs-bp-screen,
+#buddypress .mvs-bp-screen * {
+    box-sizing: border-box;
+    background-clip: border-box;
+    border-radius: 0;
+}
+
+/* =============================================================================
+ *  Sub-tab row (Media / Albums)
+ * ============================================================================= */
+#buddypress .mvs-bp-screen .mvs-bp-sub-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 4px;
+    margin: 0 0 24px;
+    padding: 0;
+    list-style: none;
+    border-bottom: 2px solid var(--mvs-border);
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-sub-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    margin: 0 0 -2px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--mvs-text-secondary);
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-sub-tab:hover,
+#buddypress .mvs-bp-screen .mvs-bp-sub-tab:focus,
+#buddypress .mvs-bp-screen .mvs-bp-sub-tab:visited {
+    color: var(--mvs-text);
+    text-decoration: none;
+    background: transparent;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-sub-tab.active,
+#buddypress .mvs-bp-screen .mvs-bp-sub-tab[aria-current="page"] {
+    color: var(--mvs-text);
+    border-bottom-color: var(--mvs-primary);
+}
+
+/* Icon inside a sub-tab link — 16px to match the 14px label x-height,
+ * gap controlled by flex (inherits 6px from parent flow when present
+ * via the inline flex below). */
+#buddypress .mvs-bp-screen .mvs-bp-sub-tab svg,
+#buddypress .mvs-bp-screen .mvs-bp-sub-tab [data-lucide] {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
+/* =============================================================================
+ *  Action / toolbar row (Upload Media, Create Album, …)
+ * ============================================================================= */
+#buddypress .mvs-bp-screen .mvs-bp-profile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 24px;
+    padding: 0;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-profile-actions > .mvs-btn,
+#buddypress .mvs-bp-screen .mvs-bp-profile-actions > button {
+    margin: 0;
+}
+
+/* =============================================================================
+ *  Upload surface (drop zone + hidden file input)
+ * ============================================================================= */
+#buddypress .mvs-bp-screen .mvs-bp-upload-wrap {
+    margin: 0 0 24px;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-dropzone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border: 2px dashed var(--mvs-border);
+    border-radius: 8px;
+    background: var(--mvs-surface-2);
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-dropzone.is-dragover {
+    border-color: var(--mvs-primary);
+    background: color-mix(in srgb, var(--mvs-primary) 5%, var(--mvs-surface-2));
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-dropzone-text {
+    margin: 0;
+    color: var(--mvs-text-secondary);
+    font-size: 14px;
+}
+
+/* Cloud-upload icon anchors the dropzone, so scale it up from the
+ * 16px body-button default. */
+#buddypress .mvs-bp-screen .mvs-bp-dropzone svg,
+#buddypress .mvs-bp-screen .mvs-bp-dropzone [data-lucide] {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.75;
+    color: var(--mvs-text-secondary);
+    flex-shrink: 0;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-upload-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-upload-status {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--mvs-text-secondary);
+}
+
+/* =============================================================================
+ *  Inline album create form
+ * ============================================================================= */
+#buddypress .mvs-bp-screen .mvs-bp-album-form {
+    margin: 16px 0 24px;
+    padding: 20px;
+    background: var(--mvs-surface-2);
+    border: 1px solid var(--mvs-border);
+    border-radius: 8px;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-album-form-inner {
+    display: grid;
+    gap: 12px;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-album-form-inner label {
+    display: block;
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mvs-text);
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-album-form-inner input[type="text"],
+#buddypress .mvs-bp-screen .mvs-bp-album-form-inner textarea {
+    width: 100%;
+    margin: 0 0 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--mvs-text);
+    background: var(--mvs-bg);
+    border: 1px solid var(--mvs-border);
+    border-radius: 6px;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-album-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 0;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-album-msg {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--mvs-text-secondary);
+    min-height: 1em;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-album-msg.mvs-bp-album-msg-error {
+    color: var(--mvs-danger);
+}
+
+/* Pre-.mvs-bp-screen album form (legacy inline variant emitted before
+ * the wrapper was introduced — still referenced by some code paths).
+ * Same visual as above but without the wrapper scope. */
+#buddypress .mvs-bp-album-msg {
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+#buddypress .mvs-bp-album-msg.mvs-bp-album-msg-error {
+    color: var(--mvs-danger);
+}
+
+/* Back link inside the single-album sub-view on profile/group media tabs. */
+#buddypress .mvs-bp-back-link {
+    margin-bottom: 16px;
+}
+
+#buddypress .mvs-bp-back-link a {
+    color: var(--mvs-primary);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+#buddypress .mvs-bp-back-link a:hover {
+    text-decoration: underline;
+}
+
+/* Primary / secondary button variants used by BP album create form,
+ * BP upload form, and the single-album "Add Media" inline upload.
+ * Emitted only from ProfileTabIntegration, GroupTabIntegration, and
+ * templates/album.php. The album template isn't under #buddypress so
+ * it keeps its own (non-scoped) copy in frontend.css; this copy wins
+ * on BP surfaces where theme <button> rules would otherwise override. */
+#buddypress .mvs-btn-primary {
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--mvs-primary);
+    color: var(--mvs-bg);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#buddypress .mvs-btn-primary:hover {
+    background: var(--mvs-primary-hover);
+}
+
+#buddypress .mvs-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#buddypress .mvs-btn-secondary {
+    padding: 8px 20px;
+    font-size: 14px;
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text-secondary);
+    border: 1px solid var(--mvs-border-light);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#buddypress .mvs-btn-secondary:hover {
+    background: var(--mvs-border);
+}
+
+/* =============================================================================
+ *  Media / album grids — force our 16px gap even when .mvs-feed declares 6px
+ * ============================================================================= */
+#buddypress .mvs-bp-screen .mvs-media-grid {
+    gap: 16px;
+    margin-top: 16px;
+}
+
+/* =============================================================================
+ *  Premium grid card
+ *
+ *  Each tile is a self-contained card: bordered, lifted, with a clear
+ *  boundary between the thumbnail and the author footer.
+ * ============================================================================= */
+#buddypress .mvs-bp-screen .mvs-grid-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--mvs-bg);
+    border: 1px solid var(--mvs-border);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    aspect-ratio: auto;
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: var(--mvs-border-strong, var(--mvs-border));
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item .mvs-grid-item-link {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--mvs-border-light, var(--mvs-surface-2));
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item .mvs-grid-item-link img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item:hover .mvs-grid-item-link img {
+    transform: scale(1.03);
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item .mvs-grid-item-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--mvs-text);
+    background: var(--mvs-bg);
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item-author {
+    font-weight: 500;
+    color: var(--mvs-text);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item-author:hover {
+    color: var(--mvs-primary);
+    text-decoration: none;
+}
+
+/* =============================================================================
+ *  Per-item action buttons (delete, edit) — shown on the owner's own
+ *  media + albums. Positioned on the thumbnail corner, revealed on
+ *  hover to keep the card surface clean at rest.
+ * ============================================================================= */
+#buddypress .mvs-bp-screen .mvs-grid-item-actions {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 2;
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item:hover .mvs-grid-item-actions,
+#buddypress .mvs-bp-screen .mvs-grid-item:focus-within .mvs-grid-item-actions {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #ffffff;
+    cursor: pointer;
+    line-height: 1;
+    backdrop-filter: blur(4px);
+    transition: background 0.15s ease;
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item-action:hover,
+#buddypress .mvs-bp-screen .mvs-grid-item-action:focus {
+    background: var(--mvs-primary);
+    color: #ffffff;
+    outline: none;
+}
+
+#buddypress .mvs-bp-screen .mvs-grid-item-action--danger:hover,
+#buddypress .mvs-bp-screen .mvs-grid-item-action--danger:focus {
+    background: var(--mvs-danger);
+    color: #ffffff;
+}
+
+/* Lucide outputs <svg> once createIcons() rehydrates [data-lucide]. */
+#buddypress .mvs-bp-screen .mvs-grid-item-action svg,
+#buddypress .mvs-bp-screen .mvs-grid-item-action [data-lucide] {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+}
+
+/* =============================================================================
+ *  Empty state
+ * ============================================================================= */
+#buddypress .mvs-bp-screen .mvs-empty-state,
+#buddypress .mvs-bp-screen .mvs-empty {
+    margin: 32px 0;
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--mvs-text-secondary);
+    background: var(--mvs-surface-2);
+    border: 1px dashed var(--mvs-border);
+    border-radius: 12px;
+}
+
+/* =============================================================================
+ *  Activity stream — video thumbnails, placeholders, audio cards
+ *
+ *  Emitted by ActivityContentIntegration when it detects attached video
+ *  or audio media on an activity item. Each media type renders as a
+ *  .mvs-activity-media with a type modifier class (--video, --audio,
+ *  --placeholder). The grid layout from the "multi-image grid" section
+ *  above still applies; these rules add the type-specific visuals.
+ * ============================================================================= */
+
+#buddypress .mvs-activity-media--video,
+.activity-list .mvs-activity-media--video {
+    position: relative;
+}
+
+#buddypress .mvs-activity-media--video a,
+.activity-list .mvs-activity-media--video a {
+    display: block;
+    position: relative;
+}
+
+/* Full-coverage hit-target inside a video placeholder cell. */
+#buddypress .mvs-activity-vid-link,
+.activity-list .mvs-activity-vid-link {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Play icon — centered over the thumbnail by default, switched to
+ * inline layout inside placeholder variants (no thumbnail to overlay). */
+#buddypress .mvs-activity-play-icon,
+.activity-list .mvs-activity-play-icon {
+    position: absolute;
+    top: 50%;
+    right: 50%;
+    transform: translate(50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    font-size: 24px;
+    color: var(--mvs-bg);
+    z-index: 2;
+    pointer-events: none;
+    transition: background 0.2s;
+}
+
+#buddypress .mvs-activity-play-icon::before,
+.activity-list .mvs-activity-play-icon::before {
+    content: '\25B6';
+    font-style: normal;
+}
+
+#buddypress .mvs-activity-media--video a:hover .mvs-activity-play-icon,
+.activity-list .mvs-activity-media--video a:hover .mvs-activity-play-icon {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* Placeholder tile — when the video has no thumbnail yet. 16:9 card
+ * with a dark gradient. */
+#buddypress .mvs-activity-media--placeholder,
+.activity-list .mvs-activity-media--placeholder,
+#buddypress .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--placeholder,
+.activity-list .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--placeholder {
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(-135deg, #0d2137, #0a0a0a);
+    border-radius: 8px;
+}
+
+#buddypress .mvs-activity-media--placeholder a,
+.activity-list .mvs-activity-media--placeholder a,
+#buddypress .mvs-activity-media--placeholder .mvs-activity-vid-link,
+.activity-list .mvs-activity-media--placeholder .mvs-activity-vid-link,
+#buddypress .mvs-activity-media-grid .mvs-activity-media--placeholder a,
+.activity-list .mvs-activity-media-grid .mvs-activity-media--placeholder a,
+#buddypress .mvs-activity-media-grid .mvs-activity-media--placeholder .mvs-activity-vid-link,
+.activity-list .mvs-activity-media-grid .mvs-activity-media--placeholder .mvs-activity-vid-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    text-decoration: none;
+    color: var(--mvs-border-light);
+}
+
+#buddypress .mvs-activity-media--placeholder .mvs-activity-play-icon,
+.activity-list .mvs-activity-media--placeholder .mvs-activity-play-icon {
+    position: static;
+    transform: none;
+}
+
+#buddypress .mvs-activity-media-label,
+.activity-list .mvs-activity-media-label {
+    max-width: 200px;
+    font-size: 0.9em;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Audio card — inline icon + title + meta row. Has its own gradient so
+ * it visually distinguishes from video placeholders. */
+#buddypress .mvs-activity-media--audio,
+.activity-list .mvs-activity-media--audio,
+#buddypress .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--audio,
+.activity-list .mvs-activity-media-grid .mvs-activity-media.mvs-activity-media--audio {
+    background: linear-gradient(-135deg, #4a1272, #1a0a2e);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#buddypress .mvs-activity-media--audio a,
+.activity-list .mvs-activity-media--audio a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    color: var(--mvs-surface);
+    text-decoration: none;
+}
+
+#buddypress .mvs-activity-audio-icon,
+.activity-list .mvs-activity-audio-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    font-size: 22px;
+    color: var(--mvs-surface);
+}
+
+#buddypress .mvs-activity-audio-info,
+.activity-list .mvs-activity-audio-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+#buddypress .mvs-activity-audio-title,
+.activity-list .mvs-activity-audio-title {
+    font-weight: 600;
+    font-size: 0.95em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#buddypress .mvs-activity-audio-meta,
+.activity-list .mvs-activity-audio-meta {
+    font-size: 0.82em;
+    color: var(--mvs-text-muted);
+}
+
+
+/* =============================================================================
+ *  Activity stream — media images (single + multi-image grid)
+ *
+ *  Our BP activity integration renders uploaded media in two shapes:
+ *
+ *    1. Single: an <a href="/media/{slug}/"> wrapping an <img>, placed by
+ *       ActivityContentIntegration into .activity-content.
+ *    2. Grid: a <div class="mvs-activity-media-grid mvs-activity-grid-N">
+ *       containing 2-6 .mvs-activity-media tiles, built client-side by
+ *       bp-activity-media.js for activities that attached multiple images.
+ *
+ *  Rules are anchored on the /media/ permalink pattern rather than a
+ *  generic img:not(.avatar):not(.emoji) catch-all — the catch-all
+ *  pattern previously used here was too broad and blew up theme-injected
+ *  classless images (Reign's .bp-group-preview-cover on join-group
+ *  activities, etc.). Only images that link to our media permalinks get
+ *  constrained.
+ * ============================================================================= */
+
+/* Single image (not in a grid). Contain-fit so portraits don't get
+ * cropped; 500px cap keeps the stream compact. */
+#buddypress .activity-content a[href*="/media/"] img:not(.emoji):not(.avatar),
+.activity-list .activity-content a[href*="/media/"] img:not(.emoji):not(.avatar) {
+    max-width: 100%;
+    max-height: 500px;
+    /* width: auto;
+    height: auto; */
+    display: block;
+    margin: 8px 0;
+    /* object-fit: contain; */
+    border-radius: 12px;
+}
+
+/* Legacy single-image wrapper (.mvs-activity-media without a grid
+ * parent). Mirrors the grid tile metrics so a single-upload activity
+ * looks the same as one tile of a multi-upload grid. */
+#buddypress .activity-content .mvs-activity-media,
+.activity-list .activity-content .mvs-activity-media {
+    position: relative;
+    overflow: hidden;
+    margin-top: 10px;
+    max-height: 600px;
+    border-radius: 12px;
+}
+
+#buddypress .activity-content .mvs-activity-media a,
+.activity-list .activity-content .mvs-activity-media a {
+    display: block;
+    height: 100%;
+}
+
+#buddypress .activity-content .mvs-activity-media img,
+.activity-list .activity-content .mvs-activity-media img {
+    width: 100%;
+    height: 100%;
+    max-height: 600px;
+    display: block;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+/* =============================================================================
+ *  Activity stream — multi-image grid (Facebook/Instagram layout)
+ *
+ *  Driven by a count-scoped class (mvs-activity-grid-1 … mvs-activity-grid-6)
+ *  emitted by bp-activity-media.js. Each tile is a .mvs-activity-media
+ *  inside .mvs-activity-media-grid, with a +N-more overlay on the last
+ *  cell when the attachment count exceeds 6.
+ * ============================================================================= */
+
+#buddypress .mvs-activity-media-grid,
+.activity-list .mvs-activity-media-grid {
+    display: grid;
+    /* 8px gap (was 3px) gives tiles breathing room instead of touching edges.
+       Outer border-radius + overflow intentionally dropped so each tile is
+       self-contained and the gap can show through. */
+    gap: 8px;
+    margin-top: 10px;
+}
+
+#buddypress .mvs-activity-media-grid .mvs-activity-media,
+.activity-list .mvs-activity-media-grid .mvs-activity-media {
+    position: relative;
+    margin-top: 0;
+    overflow: hidden;
+    background: var(--mvs-surface-2);
+    /* Subtle rounded corners per-tile (mirrors the single-image rule at 662). */
+    border-radius: 8px;
+}
+
+#buddypress .mvs-activity-media-grid .mvs-activity-media a,
+.activity-list .mvs-activity-media-grid .mvs-activity-media a {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Tile images fill the grid cell with a cover-crop, overriding the
+ * single-image contain-fit rule above. border-radius lives on the tile
+ * wrapper (overflow:hidden); images themselves stay square-edged so the
+ * crop happens cleanly. */
+#buddypress .mvs-activity-media-grid .mvs-activity-media img,
+.activity-list .mvs-activity-media-grid .mvs-activity-media img,
+#buddypress .mvs-activity-media-grid .mvs-activity-media a[href*="/media/"] img:not(.emoji):not(.avatar) {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    display: block;
+    object-fit: cover;
+    border-radius: 0;
+    margin: 0;
+}
+
+/* Mobile: tighter gap so two-column grids don't eat too much width at 390px. */
+@media (max-width: 640px) {
+    #buddypress .mvs-activity-media-grid,
+    .activity-list .mvs-activity-media-grid {
+        gap: 4px;
+    }
+    #buddypress .mvs-activity-media-grid .mvs-activity-media,
+    .activity-list .mvs-activity-media-grid .mvs-activity-media {
+        border-radius: 6px;
+    }
+}
+
+/* +N more overlay on the last cell. */
+#buddypress .mvs-activity-media-more,
+.activity-list .mvs-activity-media-more {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    color: var(--mvs-bg);
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    cursor: pointer;
+}
+
+/* Grid layouts per attachment count. */
+
+/* 1 image: single tile with the same 600px cap as the non-grid wrapper. */
+#buddypress .mvs-activity-grid-1 .mvs-activity-media,
+.activity-list .mvs-activity-grid-1 .mvs-activity-media {
+    background: transparent;
+    max-height: 600px;
+}
+
+#buddypress .mvs-activity-grid-1 .mvs-activity-media img,
+.activity-list .mvs-activity-grid-1 .mvs-activity-media img {
+    width: 100%;
+    max-height: 600px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+/* 2 images: side by side. */
+#buddypress .mvs-activity-grid-2,
+.activity-list .mvs-activity-grid-2 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 280px;
+}
+
+/* 3 images: 1 big left + 2 stacked right. */
+#buddypress .mvs-activity-grid-3,
+.activity-list .mvs-activity-grid-3 {
+    grid-template-columns: 3fr 2fr;
+    grid-template-rows: 175px 175px;
+}
+
+#buddypress .mvs-activity-grid-3 .mvs-activity-media:first-child,
+.activity-list .mvs-activity-grid-3 .mvs-activity-media:first-child {
+    grid-row: 1 / 3;
+}
+
+/* 4 images: 1 big top + 3 bottom. */
+#buddypress .mvs-activity-grid-4,
+.activity-list .mvs-activity-grid-4 {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 280px 160px;
+}
+
+#buddypress .mvs-activity-grid-4 .mvs-activity-media:first-child,
+.activity-list .mvs-activity-grid-4 .mvs-activity-media:first-child {
+    grid-column: 1 / 4;
+}
+
+/* 5 images: 2 big top + 3 smaller bottom. */
+#buddypress .mvs-activity-grid-5,
+.activity-list .mvs-activity-grid-5 {
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: 220px 160px;
+}
+
+#buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(1),
+.activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(1) {
+    grid-column: 1 / 4;
+}
+#buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(2),
+.activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(2) {
+    grid-column: 4 / 7;
+}
+#buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(3),
+.activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(3) {
+    grid-column: 1 / 3;
+}
+#buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(4),
+.activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(4) {
+    grid-column: 3 / 5;
+}
+#buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(5),
+.activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(5) {
+    grid-column: 5 / 7;
+}
+
+/* 6+ images: 3x2 with +N overlay on the 6th. */
+#buddypress .mvs-activity-grid-6,
+.activity-list .mvs-activity-grid-6 {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 190px 190px;
+}
+
+/* Safety: if more than 6 tiles slip through, hide the extras. */
+#buddypress .mvs-activity-media-grid > .mvs-activity-media:nth-child(n+7),
+.activity-list .mvs-activity-media-grid > .mvs-activity-media:nth-child(n+7) {
+    display: none;
+}
+
+#buddypress .mvs-activity-comment-text,
+.activity-list .mvs-activity-comment-text {
+    margin-top: 8px;
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: var(--mvs-text);
+}
+
+
+/* =============================================================================
+ *  Activity form — attach-media button, preview grid, privacy select
+ *
+ *  Emitted by ActivityFormIntegration::activity_post_media_button() on
+ *  every BP activity composer (profile, group, site-wide). The composer
+ *  markup is:
+ *
+ *    <div class="mvs-activity-media-btn-wrap">
+ *      <input type="file" hidden>
+ *      <button id="mvs-activity-media-btn" class="mvs-activity-media-btn">…</button>
+ *      <div   id="mvs-activity-media-preview" class="mvs-activity-media-preview"></div>
+ *      <input type="hidden">
+ *      <select id="mvs-activity-privacy" class="mvs-activity-privacy">…</select>
+ *    </div>
+ *
+ *  At runtime bp-activity-media.js moves the preview out of the wrap (above
+ *  #whats-new-options) so the wrap lays out only the button + select on a
+ *  single row — flex handles that.
+ *
+ *  ID-level specificity (#buddypress + ID) deliberately beats theme rules
+ *  that target raw `<button>` / `<select>` inside #whats-new-form (Reign,
+ *  BuddyX, BuddyBoss, Kadence) without needing !important.
+ * ============================================================================= */
+
+#buddypress .mvs-activity-media-btn-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    clear: both;
+}
+
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn,
+#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    /* height:auto forces our min-height to drive layout. Reign sets
+     * `select { height: 42px }` in main.min.css and the composer-scoped
+     * .buddypress-wrap rule, which otherwise beats min-height. */
+    height: auto;
+    min-height: 36px;
+    margin: 0;
+    padding: 6px 14px;
+    border: 1px solid var(--mvs-border);
+    border-radius: 4px;
+    background-color: var(--mvs-bg);
+    color: var(--mvs-text);
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+    box-shadow: none;
+    vertical-align: middle;
+    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn {
+    gap: 6px;
+}
+
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn:hover,
+#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy:hover,
+#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy:focus {
+    background-color: var(--mvs-surface-2);
+    color: var(--mvs-text);
+    border-color: var(--mvs-text-muted);
+    outline: none;
+}
+
+.site-wrapper #buddypress .mvs-activity-media-grid,
+.site-wrapper .activity-list .mvs-activity-media-grid {
+    padding: 0 1em 1em;;
+}
+
+/* Dashicons fallback (pre-Lucide-hydration). */
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+}
+
+/* Lucide SVG (primary icon — <i data-lucide> is swapped for <svg> on
+ * hydration). Pinned to 18px so the hydrated SVG matches other plugin
+ * icon buttons (.mvs-btn svg, .mvs-fab svg). */
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.75;
+    flex-shrink: 0;
+}
+
+/* Visible text label — prevents BP/theme line-height rules from wrapping
+ * it onto a second row. */
+#buddypress .mvs-activity-media-btn__label {
+    white-space: nowrap;
+    line-height: 1;
+}
+
+/* Custom chevron for the privacy <select>. Native UA arrows vary and
+ * theme overrides often hide them; appearance:none + inline SVG gives a
+ * consistent look regardless of theme. */
+#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy {
+    padding-left: 32px;
+    max-width: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 10px center;
+    background-size: 12px 12px;
+}
+
+
+/* =============================================================================
+ *  Activity form — preview grid for attached media before posting
+ *
+ *  Driven by a count-scoped class (mvs-preview-grid-1 … mvs-preview-grid-6)
+ *  emitted by bp-activity-media.js. CSS Grid with fractional columns keeps
+ *  the layout consistent across themes without depending on theme rules
+ *  or fixed pixel widths.
+ * ============================================================================= */
+
+/* Composer preview — compact horizontal strip, Facebook/Instagram style.
+ * Uploading 5–6 files must NOT eat the viewport. Each thumb is a fixed
+ * 64px square; many files wrap into a small second row. Click the × to
+ * remove. Card #9. */
+#buddypress .mvs-activity-media-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0;
+    padding: 8px;
+    background: var(--mvs-surface-2);
+    border: 1px solid var(--mvs-border);
+    border-radius: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Preview item — fixed 64px square regardless of file count so the preview
+ * strip stays predictable; no grid-N-up variants needed. */
+#buddypress .mvs-preview-item {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--mvs-border-light);
+    flex-shrink: 0;
+}
+
+#buddypress .mvs-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* All thumb types (image / video-placeholder / audio-placeholder) fill
+ * their preview cell identically. */
+#buddypress .mvs-preview-item .mvs-activity-media-thumb {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+}
+
+#buddypress .mvs-preview-audio,
+#buddypress .mvs-preview-video {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mvs-bg);
+    border-radius: 8px;
+    width: 100%;
+    height: 100%;
+}
+
+#buddypress .mvs-preview-audio {
+    background: linear-gradient(-135deg, #6c3483, #1a1a2e);
+}
+
+#buddypress .mvs-preview-video {
+    background: linear-gradient(-135deg, #1a5276, #1a1a2e);
+}
+
+/* Remove (×) button overlaid on each preview tile. */
+#buddypress .mvs-activity-media-remove {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.65);
+    color: var(--mvs-bg);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 22px;
+    text-align: center;
+    padding: 0;
+    backdrop-filter: blur(4px);
+    transition: background 0.15s;
+}
+
+#buddypress .mvs-activity-media-remove:hover {
+    background: var(--mvs-danger);
+}
+
+
+/* =============================================================================
+ *  Theme compatibility — Reign
+ *
+ *  Reign's BP Nouveau layout renders the activity composer with an
+ *  avatar column (~50px + 15px gutter = 65px). On viewports wide
+ *  enough for the side-by-side layout (Reign's 46.8em breakpoint),
+ *  nudge our attach-media wrap to start at the textarea's x-offset
+ *  rather than at the avatar's. Below the breakpoint the avatar column
+ *  collapses and no indent is needed.
+ * ============================================================================= */
+@media screen and (min-width: 46.8em) {
+    body.wb-reign-theme #buddypress #whats-new-form .mvs-activity-media-btn-wrap {
+        margin-right: 65px;
+    }
+}
+
+
+/* =============================================================================
+ *  Activity form — upload progress / error states
+ * ============================================================================= */
+
+#buddypress .mvs-activity-media-uploading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mvs-primary);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 0;
+}
+
+#buddypress .mvs-activity-media-uploading::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--mvs-primary);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: mvs-spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+#buddypress .mvs-activity-media-error {
+    color: var(--mvs-danger);
+    font-size: 13px;
+}
+/* The mvs-spin @keyframes is defined in frontend.css (shared with other
+ * plugin spinners); @keyframes names are global, so referencing it here
+ * works without redeclaring. */
+
+
+/* =============================================================================
+ *  Narrow-viewport adjustments (BP sidebars, mobile)
+ * ============================================================================= */
+@media (max-width: 640px) {
+    #buddypress .mvs-bp-screen .mvs-bp-sub-tabs {
+        gap: 0;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    #buddypress .mvs-bp-screen .mvs-bp-sub-tab {
+        padding: 10px 16px;
+        white-space: nowrap;
+    }
+
+    #buddypress .mvs-bp-screen .mvs-bp-profile-actions {
+        gap: 8px;
+    }
+
+    #buddypress .mvs-bp-screen .mvs-bp-dropzone {
+        padding: 16px;
+    }
+
+    #buddypress .mvs-bp-screen .mvs-media-grid {
+        gap: 12px;
+    }
+
+    /* On touch devices where :hover is unreliable, always show actions. */
+    #buddypress .mvs-bp-screen .mvs-grid-item-actions {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Activity stream multi-image grids (3/4/5/6 layouts) collapse to
+     * a 2-up layout on narrow viewports so individual tiles stay
+     * readable. */
+    #buddypress .mvs-activity-grid-3,
+    .activity-list .mvs-activity-grid-3,
+    #buddypress .mvs-activity-grid-4,
+    .activity-list .mvs-activity-grid-4,
+    #buddypress .mvs-activity-grid-5,
+    .activity-list .mvs-activity-grid-5,
+    #buddypress .mvs-activity-grid-6,
+    .activity-list .mvs-activity-grid-6 {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 140px 140px 140px;
+    }
+
+    #buddypress .mvs-activity-grid-3 .mvs-activity-media:first-child,
+    .activity-list .mvs-activity-grid-3 .mvs-activity-media:first-child,
+    #buddypress .mvs-activity-grid-4 .mvs-activity-media:first-child,
+    .activity-list .mvs-activity-grid-4 .mvs-activity-media:first-child,
+    #buddypress .mvs-activity-grid-5 .mvs-activity-media:nth-child(-n+5),
+    .activity-list .mvs-activity-grid-5 .mvs-activity-media:nth-child(-n+5) {
+        grid-column: auto;
+        grid-row: auto;
+    }
+}

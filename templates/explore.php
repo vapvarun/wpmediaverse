@@ -23,7 +23,7 @@ $mvs_archive_url = home_url( '/media/' );
 	<div class="mvs-logged-out-banner" id="mvs-logged-out-banner">
 		<div class="mvs-logged-out-banner__content">
 			<strong><?php esc_html_e( 'Join the community', 'wpmediaverse' ); ?></strong>
-			<span><?php esc_html_e( '— upload, share, and discover media', 'wpmediaverse' ); ?></span>
+			<span><?php esc_html_e( 'Upload, share, and discover media', 'wpmediaverse' ); ?></span>
 		</div>
 		<div class="mvs-logged-out-banner__actions">
 			<a href="<?php echo esc_url( wp_login_url( $mvs_archive_url ) ); ?>" class="mvs-btn mvs-btn--primary mvs-btn--small">
@@ -293,24 +293,36 @@ $mvs_archive_url = home_url( '/media/' );
 	}
 
 	// Tag filter.
-	$mvs_tag_join = '';
+	$mvs_tag_join           = '';
+	$mvs_invalid_filter_tag = '';
 	if ( ! empty( $mvs_filter_tag ) ) {
 		$tag_term_obj = get_term_by( 'slug', $mvs_filter_tag, 'mvs_tag' );
 		if ( $tag_term_obj ) {
 			$mvs_tag_join = " INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = m.media_id";
 			$where       .= ' AND tr.term_taxonomy_id = %d';
 			$params[]     = $tag_term_obj->term_taxonomy_id;
+		} else {
+			// Tag slug provided but the term doesn't exist. Force zero results
+			// so the empty-state branch fires with a "Tag not found" message +
+			// Browse-all CTA, instead of silently returning the unfiltered feed.
+			$where                 .= ' AND 1 = 0';
+			$mvs_invalid_filter_tag = $mvs_filter_tag;
 		}
 	}
 
 	// Category filter.
-	$mvs_cat_join = '';
+	$mvs_cat_join           = '';
+	$mvs_invalid_filter_cat = '';
 	if ( ! empty( $mvs_filter_cat ) ) {
 		$cat_term_obj = get_term_by( 'slug', $mvs_filter_cat, 'mvs_category' );
 		if ( $cat_term_obj ) {
 			$mvs_cat_join = " INNER JOIN {$wpdb->term_relationships} trc ON trc.object_id = m.media_id";
 			$where       .= ' AND trc.term_taxonomy_id = %d';
 			$params[]     = $cat_term_obj->term_taxonomy_id;
+		} else {
+			// Same pattern as the tag-not-found case above.
+			$where                 .= ' AND 1 = 0';
+			$mvs_invalid_filter_cat = $mvs_filter_cat;
 		}
 	}
 
@@ -473,19 +485,116 @@ $mvs_archive_url = home_url( '/media/' );
 			</p>
 		<?php endif; ?>
 	<?php else : ?>
-		<div class="mvs-empty-state-frontend">
-			<span class="mvs-empty-state-icon">&#x1F4F7;</span>
-			<h3><?php esc_html_e( 'No media has been shared yet', 'wpmediaverse' ); ?></h3>
-			<p><?php esc_html_e( 'Be the first to share something with the community!', 'wpmediaverse' ); ?></p>
+		<?php if ( ! empty( $mvs_invalid_filter_tag ) || ! empty( $mvs_invalid_filter_cat ) ) : ?>
 			<?php
-			$mvs_upload_page_id = (int) get_option( 'mvs_page_upload', 0 );
-			if ( is_user_logged_in() && $mvs_upload_page_id ) :
+			$mvs_invalid_term = ! empty( $mvs_invalid_filter_tag ) ? $mvs_invalid_filter_tag : $mvs_invalid_filter_cat;
+			$mvs_invalid_kind = ! empty( $mvs_invalid_filter_tag ) ? 'tag' : 'category';
+			?>
+			<div class="mvs-empty-state-frontend">
+				<span class="mvs-empty-state-icon">&#x1F50D;</span>
+				<h3>
+					<?php
+					if ( 'tag' === $mvs_invalid_kind ) {
+						printf(
+							/* translators: %s: tag slug that could not be found. */
+							esc_html__( 'Tag "%s" not found', 'wpmediaverse' ),
+							esc_html( $mvs_invalid_term )
+						);
+					} else {
+						printf(
+							/* translators: %s: category slug that could not be found. */
+							esc_html__( 'Category "%s" not found', 'wpmediaverse' ),
+							esc_html( $mvs_invalid_term )
+						);
+					}
+					?>
+				</h3>
+				<p><?php esc_html_e( 'Browse all media, or pick a popular tag below.', 'wpmediaverse' ); ?></p>
+				<div class="mvs-empty-state-actions">
+					<a href="<?php echo esc_url( $mvs_archive_url ); ?>" class="mvs-btn mvs-btn--primary">
+						<?php esc_html_e( 'Browse all media', 'wpmediaverse' ); ?>
+					</a>
+				</div>
+				<?php
+				$mvs_popular_tags = get_terms(
+					array(
+						'taxonomy'   => 'mvs_tag',
+						'hide_empty' => true,
+						'number'     => 5,
+						'orderby'    => 'count',
+						'order'      => 'DESC',
+					)
+				);
+				if ( ! is_wp_error( $mvs_popular_tags ) && ! empty( $mvs_popular_tags ) ) :
+					?>
+					<div class="mvs-tag-cloud mvs-empty-state-tags">
+						<?php foreach ( $mvs_popular_tags as $mvs_popular_tag ) : ?>
+							<a href="<?php echo esc_url( add_query_arg( 'mvs_tag', $mvs_popular_tag->slug, $mvs_archive_url ) ); ?>" class="mvs-tag-cloud-item">
+								<?php echo esc_html( $mvs_popular_tag->name ); ?>
+							</a>
+						<?php endforeach; ?>
+					</div>
+					<?php
+				endif;
 				?>
-				<a href="<?php echo esc_url( get_permalink( $mvs_upload_page_id ) ); ?>" class="mvs-btn mvs-btn--primary">
-					<?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
-				</a>
-			<?php endif; ?>
-		</div>
+			</div>
+		<?php elseif ( $mvs_search ) : ?>
+			<div class="mvs-empty-state-frontend">
+				<span class="mvs-empty-state-icon">&#x1F50D;</span>
+				<h3>
+					<?php
+					printf(
+						/* translators: %s: search term entered by the user. */
+						esc_html__( 'No results for "%s"', 'wpmediaverse' ),
+						esc_html( $mvs_search )
+					);
+					?>
+				</h3>
+				<p><?php esc_html_e( 'Try a different keyword or browse by popular tag:', 'wpmediaverse' ); ?></p>
+				<div class="mvs-empty-state-actions">
+					<a href="<?php echo esc_url( $mvs_archive_url ); ?>" class="mvs-btn mvs-btn--primary">
+						<?php esc_html_e( 'Browse all media', 'wpmediaverse' ); ?>
+					</a>
+				</div>
+				<?php
+				// Popular tags from Taxonomies\MediaTag — top 5 by count.
+				$mvs_popular_tags = get_terms(
+					array(
+						'taxonomy'   => 'mvs_tag',
+						'hide_empty' => true,
+						'number'     => 5,
+						'orderby'    => 'count',
+						'order'      => 'DESC',
+					)
+				);
+				if ( ! is_wp_error( $mvs_popular_tags ) && ! empty( $mvs_popular_tags ) ) :
+					?>
+					<div class="mvs-tag-cloud mvs-empty-state-tags">
+						<?php foreach ( $mvs_popular_tags as $mvs_popular_tag ) : ?>
+							<a href="<?php echo esc_url( add_query_arg( 'mvs_tag', $mvs_popular_tag->slug, $mvs_archive_url ) ); ?>" class="mvs-tag-cloud-item">
+								<?php echo esc_html( $mvs_popular_tag->name ); ?>
+							</a>
+						<?php endforeach; ?>
+					</div>
+					<?php
+				endif;
+				?>
+			</div>
+		<?php else : ?>
+			<div class="mvs-empty-state-frontend">
+				<span class="mvs-empty-state-icon">&#x1F4F7;</span>
+				<h3><?php esc_html_e( 'No media has been shared yet', 'wpmediaverse' ); ?></h3>
+				<p><?php esc_html_e( 'Be the first to share something with the community!', 'wpmediaverse' ); ?></p>
+				<?php
+				$mvs_upload_page_id = (int) get_option( 'mvs_page_upload', 0 );
+				if ( is_user_logged_in() && $mvs_upload_page_id ) :
+					?>
+					<a href="<?php echo esc_url( get_permalink( $mvs_upload_page_id ) ); ?>" class="mvs-btn mvs-btn--primary">
+						<?php esc_html_e( 'Upload Media', 'wpmediaverse' ); ?>
+					</a>
+				<?php endif; ?>
+			</div>
+		<?php endif; ?>
 	<?php endif; ?>
 
 	<?php

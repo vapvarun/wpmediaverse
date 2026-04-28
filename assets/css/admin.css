@@ -1290,7 +1290,7 @@ a.mvs-stat-card:focus {
 	line-height: 1.2;
 }
 
-.mvs-settings-sidebar__brand span {
+.mvs-settings-sidebar__brand span:not(.mvs-settings-sidebar__logo) {
 	font-size: 10px;
 	font-weight: 600;
 	text-transform: uppercase;

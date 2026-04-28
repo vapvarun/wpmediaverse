@@ -67,33 +67,15 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 				$media_type = $item_row['media_type'] ?? '';
 				$item_title = $item_row['title'] ?? '';
 				$permalink  = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_id );
-				$thumb_url = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $media_id, 'large' );
-				if ( ! $thumb_url && 'image' === $media_type && $file_url ) {
-					$thumb_url = set_url_scheme( $file_url );
-				}
 				?>
 				<div class="mvs-grid-item">
 					<a href="<?php echo esc_url( $permalink ); ?>">
-						<?php if ( $thumb_url ) : ?>
-							<img src="<?php echo esc_url( $thumb_url ); ?>"
-								alt="<?php echo esc_attr( $item_title ); ?>"
-								loading="lazy" />
-							<?php if ( 'video' === $media_type ) : ?>
-								<span class="mvs-grid-play-icon">&#9654;</span>
-							<?php endif; ?>
-						<?php elseif ( 'video' === $media_type ) : ?>
-							<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">
-								<span class="mvs-grid-play-icon">&#9654;</span>
-							</div>
-						<?php elseif ( 'audio' === $media_type ) : ?>
-							<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio">
-								<span class="mvs-grid-audio-icon">&#9835;</span>
-							</div>
-						<?php else : ?>
-							<div class="mvs-grid-item-placeholder">
-								<span class="dashicons dashicons-media-default"></span>
-							</div>
-						<?php endif; ?>
+						<?php
+						echo \WPMediaVerse\Core\TemplateHelpers::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- alt pre-escaped here; helper validates size and emits already-escaped markup.
+							$media_id,
+							array( 'alt' => esc_attr( $item_title ) )
+						);
+						?>
 					</a>
 					<div class="mvs-grid-item-overlay">
 						<span><?php echo esc_html( $item_title ); ?></span>

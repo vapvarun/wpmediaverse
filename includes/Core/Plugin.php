@@ -189,6 +189,13 @@ class Plugin {
 		// Note: ensure_media_rows hooks removed — media is now in custom tables, not CPT.
 
 		// Enqueue frontend styles.
+		// Register the Lucide icon runtime once, on both frontend and admin,
+		// at earliest priority. Every integration just calls
+		// `wp_enqueue_script( 'mvs-lucide' )` from here on — no integration
+		// needs to re-register the script or re-add the hydration inline.
+		add_action( 'wp_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
+		add_action( 'admin_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
+
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
 
 		// Fix nav menu items when BuddyPress is not active.
@@ -875,6 +882,39 @@ class Plugin {
 				MVS_VERSION
 			);
 		}
+
+		// BP-integration stylesheet is always registered (not enqueued) and
+		// loaded by ProfileTabIntegration / GroupTabIntegration on their own
+		// screens. Depending on `mvs-frontend` means it loads after the
+		// shared tokens/components, so BP-scoped rules win the cascade and
+		// our sub-tab/dropzone/grid-gap spacing is never defeated by a
+		// theme stylesheet that happened to register later.
+		wp_register_style(
+			'mvs-bp-integration',
+			MVS_PLUGIN_URL . 'assets/css/bp-integration.css',
+			array( 'mvs-frontend' ),
+			MVS_VERSION
+		);
+
+		// Lucide is registered globally via the `wp_enqueue_scripts@1` hook
+		// set up in Plugin::init(). No per-integration re-registration
+		// needed anywhere else in the codebase.
+
+		// BP-integration script — wires up per-item delete/edit actions on
+		// owner-visible grid cards. Declares `mvs-lucide` as a dep so the
+		// `<i data-lucide="trash-2">` icons we emit on action buttons are
+		// guaranteed to render even if the shared-ui shell didn't enqueue
+		// it. Config is injected inline so no extra request is needed.
+		wp_register_script(
+			'mvs-bp-actions',
+			MVS_PLUGIN_URL . 'assets/js/frontend/bp-actions.js',
+			array( 'mvs-lucide' ),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
 	}
 
 	/**
@@ -1156,6 +1196,94 @@ class Plugin {
 	}
 
 	/**
+	 * Register the `mvs-lucide` script + hydration inline once per request.
+	 *
+	 * Central helper so every integration that emits `<i data-lucide="…">`
+	 * can call `Plugin::register_lucide_script()` + `wp_enqueue_script(
+	 * 'mvs-lucide' )` without re-implementing the registration and without
+	 * diverging on the hydration logic.
+	 *
+	 * The inline hydration does two things that a single `createIcons()`
+	 * on `DOMContentLoaded` cannot do:
+	 *
+	 *   1. Hydrates on DCL (covers the static initial render).
+	 *   2. Installs a MutationObserver that calls `createIcons()` again
+	 *      whenever a fresh `<i data-lucide>` enters the DOM. This is the
+	 *      fix for BP Nouveau's Backbone-driven composer re-render, the
+	 *      WP Interactivity API dynamic inserts, and any future dynamic
+	 *      surface that injects Lucide placeholders after initial load.
+	 *
+	 * Prior pattern: every integration duplicated a `wp_register_script(
+	 * 'mvs-lucide', ... ) + wp_add_inline_script( ... )` block. Four such
+	 * blocks existed and any one forgetting or diverging produced the
+	 * "icon renders as an empty box" class of bug we kept re-fixing.
+	 */
+	public static function register_lucide_script(): void {
+		if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
+			return;
+		}
+
+		wp_register_script(
+			'mvs-lucide',
+			MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+
+		$inline = <<<'JS'
+(function () {
+	function run() {
+		if ( window.lucide && typeof window.lucide.createIcons === 'function' ) {
+			window.lucide.createIcons();
+		}
+	}
+	if ( document.readyState === 'loading' ) {
+		document.addEventListener( 'DOMContentLoaded', run );
+	} else {
+		run();
+	}
+	if ( ! window.MutationObserver ) { return; }
+	var scheduled = false;
+	var observer = new MutationObserver( function ( mutations ) {
+		if ( scheduled ) { return; }
+		for ( var i = 0; i < mutations.length; i++ ) {
+			var added = mutations[ i ].addedNodes;
+			for ( var j = 0; j < added.length; j++ ) {
+				var n = added[ j ];
+				if ( n.nodeType !== 1 ) { continue; }
+				var hasLucide =
+					( n.matches && n.matches( 'i[data-lucide]' ) ) ||
+					( n.querySelector && n.querySelector( 'i[data-lucide]' ) );
+				if ( hasLucide ) {
+					scheduled = true;
+					( window.requestAnimationFrame || window.setTimeout )( function () {
+						scheduled = false;
+						run();
+					} );
+					return;
+				}
+			}
+		}
+	} );
+	function attach() {
+		if ( document.body ) {
+			observer.observe( document.body, { childList: true, subtree: true } );
+		} else {
+			setTimeout( attach, 50 );
+		}
+	}
+	attach();
+} )();
+JS;
+
+		wp_add_inline_script( 'mvs-lucide', $inline );
+	}
+
+	/**
 	 * Enqueue shared UI shell assets (FAB, upload modal, lightbox).
 	 */
 	public static function enqueue_shared_ui_assets(): void {
@@ -1169,6 +1297,9 @@ class Plugin {
 			array(),
 			MVS_VERSION
 		);
+
+		// Lucide is already registered on `wp_enqueue_scripts@1` globally.
+		wp_enqueue_script( 'mvs-lucide' );
 
 		$mvs_shared_ui_asset = file_exists( MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php' )
 			? require MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php'
@@ -1225,6 +1356,12 @@ class Plugin {
 
 	/**
 	 * Render the chat panel in wp_footer for logged-in users.
+	 *
+	 * The slide-out chat panel is the compact DM UI that appears on every
+	 * plugin page via wp_footer. On the dedicated `/messages/` page the full
+	 * messages template is already rendering, so mounting the slide-out would
+	 * double-initialise the `mvs/messaging` Interactivity API store and put
+	 * two DM UIs on the same screen. Skip in that case.
 	 */
 	public static function render_chat_panel(): void {
 		if ( ! is_user_logged_in() ) {
@@ -1233,6 +1370,12 @@ class Plugin {
 
 		// Suppress when BuddyNext handles DM UI.
 		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			return;
+		}
+
+		// Suppress on the dedicated `/messages/` full-page template — it
+		// already renders its own chat UI; a second mount would dual-render.
+		if ( (int) get_query_var( 'mvs_messages_page' ) ) {
 			return;
 		}
 

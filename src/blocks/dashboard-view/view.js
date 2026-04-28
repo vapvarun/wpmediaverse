@@ -150,47 +150,94 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get showTournamentsEmpty() { return state.tournaments.items.length === 0 && ! state.tournaments.loading; },
 		get hasActiveChallenge() { return state.challenges.activeChallenge !== null; },
 		get hasOpenTournament() { return state.tournaments.openTournament !== null; },
+		// Canonical media thumbnail state — mirrors PHP TemplateHelpers::media_thumbnail()
+		// priority: thumb > video preview > dark placeholder > audio placeholder.
+		// Three parallel triplets (media, fav, picker) because dashboard has
+		// three independent list contexts; keep the shape consistent so the
+		// template bindings stay symmetrical.
 		get mediaThumbUrl() {
-			const ctx = getContext();
-			const item = ctx.item;
+			const item = getContext().item;
 			if ( ! item ) return '';
 			if ( item.thumbnail_url ) return item.thumbnail_url;
 			if ( item.media_type === 'image' ) return item.file_url;
 			return '';
 		},
+		get mediaVideoPreviewUrl() {
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return '';
+			if ( state.mediaThumbUrl ) return '';
+			return item.file_url ? item.file_url + '#t=0.1' : '';
+		},
+		get showMediaVideoPreview() {
+			return !! state.mediaVideoPreviewUrl;
+		},
 		get showMediaVideoPlaceholder() {
-			return ! state.mediaThumbUrl && getContext().item?.media_type === 'video';
+			return ! state.mediaThumbUrl && ! state.showMediaVideoPreview && getContext().item?.media_type === 'video';
 		},
 		get showMediaAudioPlaceholder() {
 			return ! state.mediaThumbUrl && getContext().item?.media_type === 'audio';
 		},
+		get showMediaPlayIcon() {
+			// Overlay the play icon when we are rendering a video thumb or a
+			// native preview (matches PHP media_thumbnail() behavior). The
+			// dark-placeholder branch carries its own icon markup.
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return false;
+			return !! state.mediaThumbUrl || state.showMediaVideoPreview;
+		},
 		get favThumbUrl() {
-			const ctx = getContext();
-			const item = ctx.item;
+			const item = getContext().item;
 			if ( ! item ) return '';
 			if ( item.thumbnail_url ) return item.thumbnail_url;
 			if ( item.media_type === 'image' ) return item.file_url;
 			return '';
 		},
+		get favVideoPreviewUrl() {
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return '';
+			if ( state.favThumbUrl ) return '';
+			return item.file_url ? item.file_url + '#t=0.1' : '';
+		},
+		get showFavVideoPreview() {
+			return !! state.favVideoPreviewUrl;
+		},
 		get showFavVideoPlaceholder() {
-			return ! state.favThumbUrl && getContext().item?.media_type === 'video';
+			return ! state.favThumbUrl && ! state.showFavVideoPreview && getContext().item?.media_type === 'video';
 		},
 		get showFavAudioPlaceholder() {
 			return ! state.favThumbUrl && getContext().item?.media_type === 'audio';
 		},
+		get showFavPlayIcon() {
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return false;
+			return !! state.favThumbUrl || state.showFavVideoPreview;
+		},
 		get pickerThumbUrl() {
-			const ctx = getContext();
-			const item = ctx.item;
+			const item = getContext().item;
 			if ( ! item ) return '';
 			if ( item.thumbnail_url ) return item.thumbnail_url;
 			if ( item.media_type === 'image' ) return item.file_url;
 			return '';
 		},
+		get pickerVideoPreviewUrl() {
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return '';
+			if ( state.pickerThumbUrl ) return '';
+			return item.file_url ? item.file_url + '#t=0.1' : '';
+		},
+		get showPickerVideoPreview() {
+			return !! state.pickerVideoPreviewUrl;
+		},
 		get showPickerVideoPlaceholder() {
-			return ! state.pickerThumbUrl && getContext().item?.media_type === 'video';
+			return ! state.pickerThumbUrl && ! state.showPickerVideoPreview && getContext().item?.media_type === 'video';
 		},
 		get showPickerAudioPlaceholder() {
 			return ! state.pickerThumbUrl && getContext().item?.media_type === 'audio';
+		},
+		get showPickerPlayIcon() {
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return false;
+			return !! state.pickerThumbUrl || state.showPickerVideoPreview;
 		},
 		get hasAlbumCover() {
 			return !! getContext().item?.cover_url;
@@ -790,6 +837,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ! id ) return;
 			if ( state.albumModal.selectedIds.includes( id ) ) {
 				state.albumModal.selectedIds = state.albumModal.selectedIds.filter( ( sid ) => sid !== id );
+				// Deselecting the current cover — clear it, otherwise save
+				// would PUT /cover for a media that's no longer in the album
+				// and the backend returns 400 mvs_cover_not_in_album.
+				if ( state.albumModal.coverId === id ) {
+					state.albumModal.coverId = 0;
+				}
 			} else {
 				state.albumModal.selectedIds = [ ...state.albumModal.selectedIds, id ];
 			}
@@ -800,11 +853,27 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const id = parseInt( event.target.closest( '[data-picker-id]' )?.dataset.pickerId, 10 );
 			if ( ! id ) return;
 			state.albumModal.coverId = state.albumModal.coverId === id ? 0 : id;
+			// The cover must be one of the album's items — auto-select it so the
+			// save pipeline adds it before the /cover PUT (which would otherwise 400).
+			if ( state.albumModal.coverId && ! state.albumModal.selectedIds.includes( id ) ) {
+				state.albumModal.selectedIds = [ ...state.albumModal.selectedIds, id ];
+			}
 		},
 
 		async saveAlbum() {
 			const ctx = getContext();
 			state.albumModal.saving = true;
+
+			// Invariant: the cover media MUST be one of the album's items,
+			// or AlbumService::set_cover() returns 400 mvs_cover_not_in_album.
+			// Enforce at the save boundary so no UI path (Set Cover then
+			// deselect, for example) can desynchronise coverId and selectedIds.
+			if (
+				state.albumModal.coverId &&
+				! state.albumModal.selectedIds.includes( state.albumModal.coverId )
+			) {
+				state.albumModal.selectedIds = [ ...state.albumModal.selectedIds, state.albumModal.coverId ];
+			}
 
 			const payload = {
 				title: state.albumModal.title,

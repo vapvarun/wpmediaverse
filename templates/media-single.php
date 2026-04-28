@@ -284,12 +284,32 @@ $mvs_archive_url = home_url( '/media/' );
 			}
 		}
 
+		// Hydrate per-viewer interactivity state from the server so the initial
+		// render reflects reality — prevents "Report" / "Favorite" buttons from
+		// appearing clickable when the current user has already acted on this
+		// media. See Coding Rule #11 / card #7.
+		$mvs_current_user_id = get_current_user_id();
+		$mvs_has_reported    = false;
+		if ( $mvs_current_user_id > 0 && ! $mvs_is_owner ) {
+			$mvs_reports_svc = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
+			if ( $mvs_reports_svc ) {
+				$mvs_has_reported = $mvs_reports_svc->has_reported( $mvs_current_user_id, 'media', $mvs_media_id );
+			}
+		}
+		$mvs_is_favorited = false;
+		if ( $mvs_current_user_id > 0 ) {
+			$mvs_favorites_svc = \WPMediaVerse\Core\Plugin::container()->get( 'favorites' );
+			if ( $mvs_favorites_svc ) {
+				$mvs_is_favorited = $mvs_favorites_svc->is_favorited( $mvs_media_id, $mvs_current_user_id );
+			}
+		}
+
 		$mvs_social_ctx = array(
 			'mediaId'            => $mvs_media_id,
 			'restUrl'            => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 			'nonce'              => wp_create_nonce( 'wp_rest' ),
 			'isLoggedIn'         => is_user_logged_in(),
-			'currentUserId'      => get_current_user_id(),
+			'currentUserId'      => $mvs_current_user_id,
 			'isOwner'            => $mvs_is_owner,
 			'authorId'           => $mvs_author_id,
 			'isFollowing'        => false,
@@ -301,7 +321,8 @@ $mvs_archive_url = home_url( '/media/' );
 			'initialTags'        => $mvs_tag_names,
 			'reactions'          => array(),
 			'userReaction'       => '',
-			'isFavorite'         => false,
+			'isFavorite'         => $mvs_is_favorited,
+			'reported'           => $mvs_has_reported,
 			'comments'           => array(),
 			'commentText'        => '',
 			'viewCount'          => '',
@@ -314,7 +335,10 @@ $mvs_archive_url = home_url( '/media/' );
 			'tagResults'         => array(),
 			'tagDropdownVisible' => false,
 			'saving'             => false,
-			'shareLabel'         => "\xF0\x9F\x94\x97 Share",
+			// Plain text — the adjacent <i data-lucide="share-2"> supplies the icon.
+			// Previously this had a leading 🔗 emoji which rendered alongside the
+			// lucide SVG as a double-icon (card #6).
+			'shareLabel'         => __( 'Share', 'wpmediaverse' ),
 		);
 		?>
 
@@ -323,7 +347,9 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php echo wp_interactivity_data_wp_context( $mvs_social_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			data-wp-init="callbacks.init">
 
-			<!-- Social Interactions Bar -->
+			<!-- Single Social Bar — reactions, Favorite, Share, and owner/mod actions live in one row. -->
+			<!-- Previously split across .mvs-social-bar + sticky .mvs-social-actions; the sticky -->
+			<!-- bar overlapped the chat FAB on mobile and wasted vertical space. -->
 			<div class="mvs-social-bar">
 				<div class="mvs-reactions<?php echo ! is_user_logged_in() ? ' mvs-reactions--readonly' : ''; ?>">
 					<template data-wp-each="context.reactions">
@@ -337,9 +363,7 @@ $mvs_archive_url = home_url( '/media/' );
 						</button>
 					</template>
 				</div>
-			</div>
-			<div class="mvs-social-actions">
-				<div class="mvs-social-actions-left">
+				<div class="mvs-social-bar__actions">
 					<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
 						<button class="mvs-favorite-btn mvs-btn--icon-collapse" type="button"
 							data-wp-class--active="context.isFavorite"
@@ -365,11 +389,8 @@ $mvs_archive_url = home_url( '/media/' );
 						<i data-lucide="share-2" aria-hidden="true"></i>
 						<span class="mvs-btn__label" data-wp-text="context.shareLabel"><?php esc_html_e( 'Share', 'wpmediaverse' ); ?></span>
 					</button>
-				</div>
-				<span class="mvs-view-count" data-wp-text="context.viewCount"></span>
-				<div class="mvs-social-actions-right">
 					<?php if ( $mvs_is_owner ) : ?>
-						<button class="mvs-btn mvs-btn--small mvs-btn--secondary mvs-btn--icon-collapse" type="button"
+						<button class="mvs-btn mvs-btn--small mvs-btn--icon-collapse" type="button"
 							data-wp-on--click="actions.toggleEdit"
 							data-mvs-tooltip="<?php esc_attr_e( 'Edit', 'wpmediaverse' ); ?>"
 							aria-label="<?php esc_attr_e( 'Edit this media', 'wpmediaverse' ); ?>">
@@ -384,7 +405,7 @@ $mvs_archive_url = home_url( '/media/' );
 							<span class="mvs-btn__label"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php elseif ( is_user_logged_in() ) : ?>
-						<button class="mvs-btn mvs-btn--small mvs-btn--text mvs-btn--icon-collapse" type="button"
+						<button class="mvs-btn mvs-btn--small mvs-btn--icon-collapse" type="button"
 							data-wp-on--click="actions.reportMedia"
 							data-wp-bind--hidden="context.reported"
 							data-mvs-tooltip="<?php esc_attr_e( 'Report', 'wpmediaverse' ); ?>"
@@ -393,6 +414,7 @@ $mvs_archive_url = home_url( '/media/' );
 							<span class="mvs-btn__label"><?php esc_html_e( 'Report', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php endif; ?>
+					<span class="mvs-view-count" data-wp-text="context.viewCount"></span>
 				</div>
 			</div>
 
@@ -447,7 +469,7 @@ $mvs_archive_url = home_url( '/media/' );
 					</div>
 				</div>
 				<div class="mvs-inline-edit-actions">
-					<button class="mvs-btn" type="button"
+					<button class="mvs-btn mvs-btn--secondary" type="button"
 						data-wp-on--click="actions.saveEdit"
 						data-wp-bind--disabled="context.saving">
 						<span data-wp-bind--hidden="context.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>

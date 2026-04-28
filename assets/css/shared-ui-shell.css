@@ -286,6 +286,10 @@
 	box-sizing: border-box;
 }
 
+.mvs-modal-field textarea {
+	resize: vertical;
+}
+
 .mvs-modal-field input:focus,
 .mvs-modal-field textarea:focus,
 .mvs-modal-field select:focus {

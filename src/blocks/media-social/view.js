@@ -139,7 +139,7 @@ store( 'mvs/media-social', {
 		tagResults: [],
 		tagDropdownVisible: false,
 		saving: false,
-		shareLabel: '\u{1F517} Share',
+		shareLabel: 'Share',
 		get hideCommentActions() {
 			const item = getContext().item;
 			return ! item?.canEdit || item?.editing;
