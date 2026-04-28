@@ -99,6 +99,7 @@ class PrivacyService {
 				return true;
 
 			case 'members':
+			case 'loggedin':
 				return $user_id > 0;
 
 			case 'friends':

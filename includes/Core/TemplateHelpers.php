@@ -155,8 +155,11 @@ class TemplateHelpers {
 	 * @param string $alt      Alt text for the image.
 	 */
 	public static function render_grid_thumbnail( int $media_id, string $size = 'large', string $alt = '' ): void {
-		$thumb_url  = self::get_thumb_url( $media_id, $size );
-		$media_type = self::get_media_type( $media_id );
+		$signed_urls = Plugin::container()->get( 'signed_urls' );
+		// Grid query already enforced privacy; skip the redundant can_view() check.
+		$thumb_url   = ( $signed_urls ? $signed_urls->generate_thumbnail( $media_id, get_current_user_id(), $size, 0, true ) : false )
+			?: self::get_thumb_url( $media_id, $size );
+		$media_type  = self::get_media_type( $media_id );
 
 		if ( ! $alt ) {
 			$title = MediaRepository::get( $media_id, 'title' );

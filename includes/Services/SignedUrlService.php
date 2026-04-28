@@ -100,14 +100,15 @@ class SignedUrlService {
 	/**
 	 * Generate a signed URL for a media thumbnail.
 	 *
-	 * @param int    $media_id Media ID.
-	 * @param int    $user_id  User ID requesting the URL.
-	 * @param string $size     Thumbnail size: large, medium, thumbnail.
-	 * @param int    $ttl      Time to live in seconds.
+	 * @param int    $media_id           Media ID.
+	 * @param int    $user_id            User ID requesting the URL.
+	 * @param string $size               Thumbnail size: large, medium, thumbnail.
+	 * @param int    $ttl                Time to live in seconds.
+	 * @param bool   $skip_privacy_check Skip the privacy check (caller already verified access).
 	 * @return string|false Signed URL or false if not authorized.
 	 */
-	public function generate_thumbnail( int $media_id, int $user_id, string $size = 'large', int $ttl = 0 ) {
-		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
+	public function generate_thumbnail( int $media_id, int $user_id, string $size = 'large', int $ttl = 0, bool $skip_privacy_check = false ) {
+		if ( ! $skip_privacy_check && ! $this->privacy->can_view( $media_id, $user_id ) ) {
 			return false;
 		}
 
@@ -288,7 +289,9 @@ class SignedUrlService {
 		$size_map  = array( 'large' => 'thumb_large', 'medium' => 'thumb_medium', 'thumbnail' => 'thumb_thumb' );
 		$meta_key  = $size_map[ $size ] ?? 'thumb_large';
 		$thumb_url = MediaRepository::get( $media_id, $meta_key )
-			?: MediaRepository::get( $media_id, 'thumb_large' );
+			?: MediaRepository::get( $media_id, 'thumb_medium' )
+			?: MediaRepository::get( $media_id, 'thumb_thumb' )
+			?: MediaRepository::get( $media_id, 'file_url' );
 
 		if ( ! $thumb_url ) {
 			status_header( 404 );
