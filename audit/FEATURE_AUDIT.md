@@ -8,7 +8,7 @@ This document is the canonical inventory of every user-facing surface the plugin
 
 - [`CODE_FLOWS.md`](CODE_FLOWS.md) — request lifecycle for the major features.
 - [`ROLE_MATRIX.md`](ROLE_MATRIX.md) — capability vs. feature grid.
-- [`../ARCHITECTURE.md`](../ARCHITECTURE.md) — module-level architecture (separate, hand-curated).
+- [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) — module-level architecture (separate, hand-curated).
 
 ---
 

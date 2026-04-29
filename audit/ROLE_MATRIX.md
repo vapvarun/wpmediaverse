@@ -99,7 +99,7 @@ All admin pages require `manage_options` or `manage_mvs_settings` (admin only) �
 
 ---
 
-## 6. Pro features (when active — see `../../wpmediaverse-pro/docs/audit/ROLE_MATRIX.md`)
+## 6. Pro features (when active — see `../../wpmediaverse-pro/audit/ROLE_MATRIX.md`)
 
 Pro inherits Free's capability model. Pro's competition + advanced features add their own permission checks:
 

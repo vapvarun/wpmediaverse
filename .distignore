@@ -26,3 +26,4 @@
 !readme.txt
 .phpunit.result.cache
 .phpunit.cache
+/audit

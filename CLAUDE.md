@@ -1,6 +1,6 @@
 # WPMediaVerse — AI Quick Reference
 
-> **Read this first.** Before grepping or scanning the codebase, load **`docs/audit/manifest.json`** — it's the canonical machine-readable inventory of every REST route, AJAX handler, hook, table, capability, service, block, shortcode, BP integration, cron job, CSS/JS module, and security boundary in this plugin. Use the manifest to answer "where is X?" / "what hooks fire on Y?" without re-scanning. Update it via `/wp-plugin-onboard --refresh` when the surface changes (new endpoint, new hook, new table). Companion docs: [`docs/audit/FEATURE_AUDIT.md`](docs/audit/FEATURE_AUDIT.md), [`docs/audit/CODE_FLOWS.md`](docs/audit/CODE_FLOWS.md).
+> **Read this first.** Before grepping or scanning the codebase, load **`audit/manifest.json`** — it's the canonical machine-readable inventory of every REST route, AJAX handler, hook, table, capability, service, block, shortcode, BP integration, cron job, CSS/JS module, and security boundary in this plugin. Use the manifest to answer "where is X?" / "what hooks fire on Y?" without re-scanning. Update it via `/wp-plugin-onboard --refresh` when the surface changes (new endpoint, new hook, new table). Companion docs: [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md).
 
 ## Quick Facts
 
@@ -234,7 +234,7 @@ _Updated after each commit._
 |------|--------|---------|
 | 2026-04-29 | `ab21046` | Sign every upload-URL emission path: BP activity rebuild signs through MediaUrl; AIService analyze/auto_tag/moderate use signed URLs (no raw fallback); MediaDisplayHelper href fallback signed; TemplateHelpers defensive fallback returns ''; bin/ci-local.sh honors `// CI: storage-internal` markers; new `Services/MediaUrl.php` static helper as single signing entry point |
 | 2026-04-29 | `c32e060` | 1.2.0 milestone planning docs forked off into `1.1.4` branch; new `1.2.0` rebased fresh from main |
-| 2026-04-29 | (skill run) | `/wp-plugin-onboard` regenerated `docs/audit/manifest.json` + `FEATURE_AUDIT.md` + `CODE_FLOWS.md` |
+| 2026-04-29 | (skill run) | `/wp-plugin-onboard` regenerated `audit/manifest.json` + `FEATURE_AUDIT.md` + `CODE_FLOWS.md` |
 | 2026-04-29 | e7deb82 | Lightbox: full-viewport Facebook-style layout; full-res images; close button fix; Lucide icons everywhere |
 | 2026-04-24 | `8f63b3b` → `df15593` | Architectural split of BP CSS into `bp-integration.css`; CSS file ownership rule #12; QA regression rows locked |
 | 2026-04-23 | — | Added `qa/` canonical QA home; Coding Rule #11 "no silent render fallthrough" |
