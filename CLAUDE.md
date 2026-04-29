@@ -1,5 +1,7 @@
 # WPMediaVerse — AI Quick Reference
 
+> **Read this first.** Before grepping or scanning the codebase, load **`docs/audit/manifest.json`** — it's the canonical machine-readable inventory of every REST route, AJAX handler, hook, table, capability, service, block, shortcode, BP integration, cron job, CSS/JS module, and security boundary in this plugin. Use the manifest to answer "where is X?" / "what hooks fire on Y?" without re-scanning. Update it via `/wp-plugin-onboard --refresh` when the surface changes (new endpoint, new hook, new table). Companion docs: [`docs/audit/FEATURE_AUDIT.md`](docs/audit/FEATURE_AUDIT.md), [`docs/audit/CODE_FLOWS.md`](docs/audit/CODE_FLOWS.md).
+
 ## Quick Facts
 
 | Key | Value |
@@ -28,7 +30,7 @@
 | `Admin\Settings\` | Settings page (5 focused classes) | `SettingsPage`, `SettingsRegistrar`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
 | `REST\Controller\` | REST API endpoints (18 controllers) | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `AccessController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController` |
 | `REST\` | Rate limiting middleware | `RateLimiter` |
-| `Services\` | Business logic, storage, AI, caching | `UploadService`, `StorageService`, `PrivacyService`, `AlbumService`, `CollectionService`, `StoryService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AccessRulesService`, `SignedUrlService`, `WatermarkService`, `CacheService`, `LoggerService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `LocalDriver` |
+| `Services\` | Business logic, storage, AI, caching, URL signing | `UploadService`, `StorageService`, `PrivacyService`, `AlbumService`, `CollectionService`, `StoryService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AccessRulesService`, `SignedUrlService`, `WatermarkService`, `CacheService`, `LoggerService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `LocalDriver`, `MediaUrl` |
 | `Social\` | Social interactions (reactions, comments, follows) | `ReactionService`, `CommentService`, `FavoriteService`, `MentionService`, `ShareService`, `FollowService`, `NotificationService`, `ReportService`, `ActivityService` |
 | `Integrations\` | Third-party platform bridges | `WebhookService` |
 | `Integrations\BuddyPress\` | BuddyPress integration (7 focused classes) | `BuddyPressManager`, `ActivitySyncIntegration`, `ActivityContentIntegration`, `ProfileTabIntegration`, `GroupTabIntegration`, `NotificationIntegration`, `ActivityFormIntegration`, `MediaDisplayHelper` |
@@ -84,7 +86,7 @@ Registered in `includes/Core/Plugin.php` via `register_services()` and `init_mes
 | `messaging` | `MessagingService` | 992 |
 | `media_repository` | `MediaRepository` | 496 |
 
-**34 services total.**
+**34 services total.** Plus a non-container static helper: `Services\MediaUrl` (single signing entry point for non-REST callers — added 1.1.3 patch).
 
 ---
 
@@ -230,6 +232,9 @@ _Updated after each commit._
 
 | Date | Commit | Summary |
 |------|--------|---------|
+| 2026-04-29 | `ab21046` | Sign every upload-URL emission path: BP activity rebuild signs through MediaUrl; AIService analyze/auto_tag/moderate use signed URLs (no raw fallback); MediaDisplayHelper href fallback signed; TemplateHelpers defensive fallback returns ''; bin/ci-local.sh honors `// CI: storage-internal` markers; new `Services/MediaUrl.php` static helper as single signing entry point |
+| 2026-04-29 | `c32e060` | 1.2.0 milestone planning docs forked off into `1.1.4` branch; new `1.2.0` rebased fresh from main |
+| 2026-04-29 | (skill run) | `/wp-plugin-onboard` regenerated `docs/audit/manifest.json` + `FEATURE_AUDIT.md` + `CODE_FLOWS.md` |
 | 2026-04-29 | e7deb82 | Lightbox: full-viewport Facebook-style layout; full-res images; close button fix; Lucide icons everywhere |
 | 2026-04-24 | `8f63b3b` → `df15593` | Architectural split of BP CSS into `bp-integration.css`; CSS file ownership rule #12; QA regression rows locked |
 | 2026-04-23 | — | Added `qa/` canonical QA home; Coding Rule #11 "no silent render fallthrough" |
