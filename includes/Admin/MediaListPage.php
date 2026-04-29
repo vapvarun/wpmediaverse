@@ -12,6 +12,7 @@ namespace WPMediaVerse\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
 

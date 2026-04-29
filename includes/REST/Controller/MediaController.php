@@ -1069,11 +1069,14 @@ class MediaController extends WP_REST_Controller {
 			return null;
 		}
 
+		// Resolve signed-URL service + viewer once; both file_url and thumbnail
+		// route through it for .htaccess-protected uploads.
+		$signed_urls = Plugin::container()->get( 'signed_urls' );
+		$viewer_id   = get_current_user_id();
+
 		// Use signed URL to bypass .htaccess protection on uploads directory.
 		$file_url = '';
 		if ( ! empty( $all['file_url'] ) ) {
-			$signed_urls = Plugin::container()->get( 'signed_urls' );
-			$viewer_id   = get_current_user_id();
 			$signed   = $signed_urls ? $signed_urls->generate( $media_id, $viewer_id ) : false;
 			$file_url = $signed ?: '';
 		}
