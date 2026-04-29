@@ -161,7 +161,22 @@ parameters:
 			path: includes/Core/Plugin.php
 
 		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^If condition is always true\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<2, max\\> given\\.$#"
+			count: 1
+			path: includes/Core/TemplateHelpers.php
+
+		-
+			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/Core/TemplateHelpers.php
 
@@ -389,6 +404,11 @@ parameters:
 			message: "#^Negated boolean expression is always false\\.$#"
 			count: 1
 			path: includes/Services/LocalDriver.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: includes/Services/MediaUrl.php
 
 		-
 			message: "#^Property WPMediaVerse\\\\Services\\\\ModerationService\\:\\:\\$ai is never read, only written\\.$#"

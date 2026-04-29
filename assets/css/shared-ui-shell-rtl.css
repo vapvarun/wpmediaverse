@@ -374,183 +374,23 @@
 	background: var(--mvs-border);
 }
 
-/* ─── Lightbox ─── */
-.mvs-lightbox-overlay {
-	position: fixed;
-	inset: 0;
-	background: rgba(0, 0, 0, 0.9);
-	z-index: 99999;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	animation: mvs-fade-in 0.2s ease;
-}
-
+/* ─── Lightbox visibility toggles (layout in frontend.css) ─── */
 .mvs-lightbox-overlay[hidden] {
 	display: none !important;
 }
 
-.mvs-lightbox {
-	display: flex;
-	max-width: 95vw;
-	max-height: 95vh;
-	background: var(--mvs-surface);
-	border-radius: 8px;
-	overflow: hidden;
-	animation: mvs-slide-up 0.3s ease;
-}
-
-.mvs-lightbox-close {
-	position: fixed;
-	top: 16px;
-	left: 16px;
-	background: rgba(255, 255, 255, 0.15);
-	border: none;
-	color: var(--mvs-surface);
-	cursor: pointer;
-	padding: 8px;
-	border-radius: 50%;
-	z-index: 10;
-	transition: background 0.15s;
-}
-
-.mvs-lightbox-close:hover {
-	background: rgba(255, 255, 255, 0.3);
-}
-
-.mvs-lightbox-loading {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 300px;
-	min-height: 300px;
-}
-
-.mvs-lightbox-loading[hidden] {
+.mvs-lightbox-loading[hidden],
+.mvs-lightbox-media[hidden],
+.mvs-lightbox-sidebar[hidden],
+.mvs-lightbox-nav[hidden],
+.mvs-lightbox-position[hidden] {
 	display: none !important;
-}
-
-.mvs-lightbox-media {
-	position: relative;
-	flex-shrink: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	max-width: 65vw;
-	max-height: 95vh;
-	background: #000;
-}
-
-.mvs-lightbox-media[hidden] {
-	display: none !important;
-}
-
-.mvs-lightbox-media img {
-	max-width: 100%;
-	max-height: 95vh;
-	object-fit: contain;
 }
 
 .mvs-lightbox-media img[hidden],
 .mvs-lightbox-media video[hidden],
 .mvs-lightbox-media audio[hidden] {
 	display: none !important;
-}
-
-.mvs-lightbox-video {
-	max-width: 100%;
-	max-height: 80vh;
-	display: block;
-	margin: 0 auto;
-	border-radius: 8px;
-}
-
-.mvs-lightbox-audio {
-	width: 100%;
-	max-width: 500px;
-	margin: 0 auto;
-	display: block;
-}
-
-/* Lightbox gallery navigation arrows */
-.mvs-lightbox-nav {
-	position: absolute;
-	top: 50%;
-	transform: translateY(-50%);
-	background: rgba(0, 0, 0, 0.5);
-	border: none;
-	color: var(--mvs-surface);
-	cursor: pointer;
-	padding: 12px 8px;
-	border-radius: 4px;
-	z-index: 5;
-	transition: background 0.15s;
-}
-
-.mvs-lightbox-nav:hover {
-	background: rgba(0, 0, 0, 0.8);
-}
-
-.mvs-lightbox-nav[hidden] {
-	display: none !important;
-}
-
-.mvs-lightbox-nav--prev {
-	right: 8px;
-}
-
-.mvs-lightbox-nav--next {
-	left: 8px;
-}
-
-.mvs-lightbox-nav svg {
-	pointer-events: none;
-}
-
-/* Lightbox position indicator */
-.mvs-lightbox-position {
-	position: absolute;
-	bottom: 12px;
-	right: 50%;
-	transform: translateX(50%);
-	background: rgba(0, 0, 0, 0.6);
-	color: var(--mvs-surface);
-	padding: 4px 12px;
-	border-radius: 12px;
-	font-size: 13px;
-	font-weight: 500;
-	z-index: 5;
-}
-
-.mvs-lightbox-position[hidden] {
-	display: none !important;
-}
-
-.mvs-lightbox-sidebar {
-	width: 340px;
-	padding: 20px;
-	overflow-y: auto;
-	border-right: 1px solid var(--mvs-border-light);
-}
-
-.mvs-lightbox-sidebar[hidden] {
-	display: none !important;
-}
-
-.mvs-lightbox-author {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	margin-bottom: 16px;
-}
-
-.mvs-lightbox-author-avatar {
-	border-radius: 50%;
-}
-
-.mvs-lightbox-title {
-	font-size: 16px;
-	margin: 0 0 16px;
 }
 
 /* ─── Spinner ─── */
@@ -598,9 +438,12 @@
 	border: none;
 	color: inherit;
 	cursor: pointer;
-	font-size: 18px;
 	padding: 0;
 	opacity: 0.7;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
 }
 
 .mvs-toast-close:hover {
@@ -648,24 +491,6 @@
 
 	.mvs-modal-field-row {
 		flex-direction: column;
-	}
-
-	.mvs-lightbox {
-		flex-direction: column;
-		max-width: 100vw;
-		max-height: 100vh;
-		border-radius: 0;
-	}
-
-	.mvs-lightbox-media {
-		max-width: 100vw;
-		max-height: 60vh;
-	}
-
-	.mvs-lightbox-sidebar {
-		width: 100%;
-		border-right: none;
-		border-top: 1px solid var(--mvs-border-light);
 	}
 
 	.mvs-fab-container {

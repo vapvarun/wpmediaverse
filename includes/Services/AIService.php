@@ -73,9 +73,12 @@ class AIService {
 			return new WP_Error( 'mvs_ai_budget_exceeded', __( 'Monthly AI budget has been exceeded.', 'wpmediaverse' ) );
 		}
 
-		$image_url = MediaRepository::get( $media_id, 'file_url' );
+		// External providers fetch the image over HTTP — must be a signed URL
+		// that bypasses the .htaccess deny-all on /wp-content/uploads/wpmediaverse/.
+		// A raw URL would 403 against the gate, so we don't fall back to one.
+		$image_url = MediaUrl::for_file( $media_id );
 		if ( ! $image_url ) {
-			return new WP_Error( 'mvs_no_image', __( 'Media item has no file URL.', 'wpmediaverse' ) );
+			return new WP_Error( 'mvs_no_image', __( 'Media item has no signed file URL.', 'wpmediaverse' ) );
 		}
 
 		MediaRepository::set( $media_id, 'ai_status', 'processing' );
@@ -112,7 +115,12 @@ class AIService {
 			return new WP_Error( 'mvs_ai_budget_exceeded', __( 'Monthly AI budget has been exceeded.', 'wpmediaverse' ) );
 		}
 
-		$image_url   = MediaRepository::get( $media_id, 'file_url' );
+		// External providers (OpenAI Vision etc.) fetch the image over HTTP — must be a signed URL
+		// that bypasses the .htaccess deny-all on /wp-content/uploads/wpmediaverse/.
+		$image_url   = MediaUrl::for_file( $media_id );
+		if ( ! $image_url ) {
+			return new WP_Error( 'mvs_no_image', __( 'Media item has no signed file URL.', 'wpmediaverse' ) );
+		}
 		$description = MediaRepository::get( $media_id, 'ai_description' );
 
 		$tags = $provider->generate_tags( $image_url, $description ? $description : '' );
@@ -147,7 +155,11 @@ class AIService {
 			return new WP_Error( 'mvs_no_ai_provider', __( 'No AI provider is configured.', 'wpmediaverse' ) );
 		}
 
-		$image_url = MediaRepository::get( $media_id, 'file_url' );
+		// External providers fetch the image over HTTP — must be a signed URL.
+		$image_url = MediaUrl::for_file( $media_id );
+		if ( ! $image_url ) {
+			return new WP_Error( 'mvs_no_image', __( 'Media item has no signed file URL.', 'wpmediaverse' ) );
+		}
 
 		$result = $provider->moderate_content( $image_url );
 

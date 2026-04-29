@@ -125,9 +125,44 @@ else
 	warn "vendor/bin/phpstan not found"
 fi
 
-# ─── 4. Specific gotchas catch (duplicate methods, etc.) ─────────────────────
+# ─── 4. Specific gotchas catch (duplicate methods, raw URL leaks, etc.) ──────
 
 section "4. Code-smell sniffs"
+
+# Raw uploads URL leak guard.
+# .htaccess in wp-content/uploads/wpmediaverse/ blocks direct access. Every
+# media URL must flow through SignedUrlService (or MediaUrl). Specific
+# leak patterns:
+#   1. Direct MediaRepository::get(..., 'file_url') / 'thumb_*' fed to esc_url or REST emission
+#   2. Stored varchar URL columns (cover_image_url) emitted raw via $row->...
+#   3. Literal wp-content/uploads/wpmediaverse path-string concat
+URL_LEAKS=$(
+	grep -rnE \
+		"esc_url\s*\(\s*MediaRepository::get\(\s*[^,]+,\s*'(file_url|thumb_large|thumb_medium|thumb_thumb)'|esc_url\s*\(\s*set_url_scheme\s*\(\s*MediaRepository::get\(\s*[^,]+,\s*'(file_url|thumb_)|'file_url'\s*=>\s*MediaRepository::get|'cover_image_url'\s*=>\s*\\\$row->cover_image_url|'thumbnail_url'\s*=>\s*MediaRepository::get|'(file_url|thumbnail_url|cover_url|cover_image_url)'\s*=>\s*\\\$row->|MediaRepository::get\(\s*[^,]+,\s*'file_url'\s*\)\s*[;\)]" \
+		--include="*.php" \
+		--exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=tests --exclude-dir=docs \
+		includes/ templates/ src/ 2>/dev/null \
+	| grep -vE "MediaUrl|SignedUrlService|^[^:]+:[0-9]+:\s*\*|^[^:]+:[0-9]+:\s*//|id_from_url|file_url\s*=\s*%s|CI:\s*storage-internal" \
+	|| true
+)
+# Also flag literal wp-content/uploads path concat in PHP (not test fixtures).
+URL_PATH_CONCAT=$(
+	grep -rnE \
+		"['\"]\s*/?wp-content/uploads/wpmediaverse/['\"]" \
+		--include="*.php" \
+		--exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=tests --exclude-dir=docs \
+		includes/ templates/ src/ 2>/dev/null \
+	| grep -vE "MediaUrl|SignedUrlService|^[^:]+:[0-9]+:\s*\*|^[^:]+:[0-9]+:\s*//|trailingslashit|CI:\s*storage-internal" \
+	|| true
+)
+
+if [ -n "$URL_LEAKS" ] || [ -n "$URL_PATH_CONCAT" ]; then
+	fail "Raw upload-URL emissions detected — must route through MediaUrl / SignedUrlService:"
+	[ -n "$URL_LEAKS" ] && echo "$URL_LEAKS" | head -10 | sed 's/^/    /'
+	[ -n "$URL_PATH_CONCAT" ] && echo "$URL_PATH_CONCAT" | head -5 | sed 's/^/    /'
+else
+	pass "No raw upload-URL leaks"
+fi
 
 # Duplicate method declarations (the gotcha that bit us 2026-04-29)
 DUPES=$(grep -rEn "^\s*(public|private|protected)\s+(static\s+)?function\s+\w+" \

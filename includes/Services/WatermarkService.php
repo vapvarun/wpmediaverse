@@ -143,9 +143,10 @@ class WatermarkService {
 			return $cached_url;
 		}
 
-		// Delegate watermark generation to Pro.
+		// Delegate watermark generation to Pro. Pro's Watermarker uses $file_path
+		// (filesystem) for image processing; the URL is informational only.
 		$file_path = MediaRepository::get( $media_id, 'file_path' );
-		$file_url  = MediaRepository::get( $media_id, 'file_url' );
+		$file_url  = MediaRepository::get( $media_id, 'file_url' ); // CI: storage-internal (filter arg, not emitted).
 		$config    = $this->get_config();
 
 		/**

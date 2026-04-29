@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
+use WPMediaVerse\Services\MediaUrl;
 
 /**
  * Static helpers for rendering media thumbnails and type labels inside
@@ -36,8 +37,11 @@ class MediaDisplayHelper {
 			return '';
 		}
 
+		// `$file_url` is used purely as a fallback for the link `href` when
+		// the media has no permalink (e.g. cleanup state). Must be signed —
+		// raw `/wp-content/uploads/wpmediaverse/` URLs hit the .htaccess gate.
 		$permalink = MediaRepository::get_permalink( $media_id );
-		$file_url  = (string) MediaRepository::get( $media_id, 'file_url' );
+		$file_url  = MediaUrl::for_file( $media_id );
 		$title     = MediaRepository::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 		$href      = $permalink ?: $file_url;
 		$data_mid  = ' data-mvs-media-id="' . esc_attr( $media_id ) . '"';

@@ -678,7 +678,7 @@ class UploadService {
 		// leaves thumb_large meta empty, forcing every consumer to walk the
 		// fallback chain. Backfill any missing size with the original file
 		// URL — it IS the largest available version of the image.
-		$file_url = MediaRepository::get( $media_id, 'file_url' );
+		$file_url = MediaRepository::get( $media_id, 'file_url' ); // CI: storage-internal (written into thumb_* meta).
 		if ( $file_url ) {
 			foreach ( array_keys( $sizes ) as $size_name ) {
 				if ( ! isset( $generated[ $size_name ] ) ) {
@@ -762,7 +762,7 @@ class UploadService {
 			return false;
 		}
 
-		$file_url = (string) MediaRepository::get( $media_id, 'file_url' );
+		$file_url = (string) MediaRepository::get( $media_id, 'file_url' ); // CI: storage-internal (written into thumb_large meta).
 		if ( '' === $file_url ) {
 			return false;
 		}

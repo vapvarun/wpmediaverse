@@ -84,10 +84,12 @@ class Plugin {
 	 * Initialize the plugin.
 	 */
 	public static function init(): void {
-		// Load textdomain — still needed for plugin-bundled translations;
-		// WordPress auto-loads from wp-content/languages/plugins/ since 4.6.
-		// phpcs:ignore WordPress.WP.I18n.LowLevelTranslationFunction -- Required for bundled .mo files in languages/.
-		load_plugin_textdomain( 'wpmediaverse', false, 'wpmediaverse/languages' );
+		// WordPress 4.6+ auto-loads plugin textdomains from the standard
+		// language directories (wp-content/languages/plugins/{slug}-{locale}.mo
+		// and {plugin}/languages/{slug}-{locale}.mo). Calling
+		// load_plugin_textdomain() here on `plugins_loaded` triggers the
+		// `_load_textdomain_just_in_time was called incorrectly` notice on
+		// WP 6.7+ which now requires textdomain loading on `init` or later.
 
 		// Ensure capabilities are registered. The activation hook can fail
 		// on some hosts (fatal error, WP-CLI without --activate, etc.).
@@ -740,23 +742,36 @@ class Plugin {
 	 */
 	public static function maybe_sign_file_url( array $data, int $media_id ): array {
 		$signed_urls = self::$container->get( 'signed_urls' );
-
-		if ( ! $signed_urls->requires_signed_url( $media_id ) ) {
+		if ( ! $signed_urls ) {
 			return $data;
 		}
 
 		$user_id = get_current_user_id();
 
-		// For gated media, replace direct URL with signed URL or remove it.
-		$url = $signed_urls->generate( $media_id, $user_id );
+		// ALWAYS sign — public-tier media has no access rules but the
+		// .htaccess in wp-content/uploads/wpmediaverse/ blocks every direct
+		// URL regardless. The serve endpoint short-circuits the permission
+		// check when the media has no access rules, so the cost of signing
+		// public URLs is zero. This is the architectural Option A fix —
+		// single source of URL signing at the response-builder layer,
+		// instead of patching every emission site.
+		$signed_file_url = $signed_urls->generate( $media_id, $user_id );
 
-		if ( $url ) {
-			$data['file_url'] = $url;
-			$data['gated']    = true;
+		// `gated` flag stays bound to access-rules state, not to whether
+		// we signed the URL.
+		if ( $signed_urls->requires_signed_url( $media_id ) ) {
+			$data['gated'] = true;
+			// Gated media + no permission = strip the URL entirely so the
+			// frontend renders the lock-overlay state instead of a broken img.
+			$data['file_url'] = $signed_file_url ?: '';
 		} else {
-			// User doesn't have access — strip the file URL.
-			$data['file_url'] = '';
-			$data['gated']    = true;
+			// Public media — always sign so the URL flows through the gated
+			// uploads serve endpoint. Falls back to existing data['file_url']
+			// only if signing failed (defensive — should never happen since
+			// the service is always present and public media has no privacy
+			// veto).
+			$data['file_url'] = $signed_file_url ?: ( $data['file_url'] ?? '' );
+			$data['gated']    = false;
 		}
 
 		return $data;

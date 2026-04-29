@@ -104,6 +104,8 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 			foreach ( $media_items as $item ) :
 				$item_id             = (int) $item['media_id'];
 				$mvs_grid_media_type = \WPMediaVerse\Core\TemplateHelpers::get_media_type( $item_id );
+				$mvs_grid_signed     = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+				$mvs_grid_file_url   = $mvs_grid_signed ? $mvs_grid_signed->generate( $item_id, get_current_user_id() ) : '';
 				$mvs_grid_group      = \WPMediaVerse\Repository\MediaRepository::get( $item_id, 'media_group' );
 				$mvs_grid_group_cnt  = 0;
 				if ( $mvs_grid_group ) {
@@ -122,7 +124,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					'title'         => $item_title,
 					'description'   => $item['description'] ?? '',
 					'media_type'    => $mvs_grid_media_type,
-					'file_url'      => $item['file_url'] ?? '',
+					'file_url'      => $mvs_grid_file_url ?: ( $item['file_url'] ?? '' ),
 					'file_type'     => $item['file_type'] ?? '',
 					'thumbnail_url' => $mvs_grid_thumb_url,
 					'link'          => $item_permalink,

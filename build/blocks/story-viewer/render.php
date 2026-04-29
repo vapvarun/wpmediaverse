@@ -76,7 +76,9 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'mvs-story-viewer-blo
 			$user       = get_userdata( $author_id );
 			$avatar_url = get_avatar_url( $author_id, array( 'size' => $avatar_size * 2 ) );
 			$first      = $author_stories[0];
-			$file_url   = ! empty( $first['file_url'] ) ? set_url_scheme( $first['file_url'] ) : '';
+			$sv_mid     = (int) ( $first['media_id'] ?? 0 );
+			$sv_su      = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+			$file_url   = $sv_mid && $sv_su ? $sv_su->generate( $sv_mid, get_current_user_id() ) : '';
 			?>
 			<div class="mvs-story-avatar"
 				style="text-align:center;flex-shrink:0;cursor:pointer;"

@@ -32,43 +32,28 @@ class TemplateHelpers {
 	 * @return string Thumbnail URL or empty string.
 	 */
 	public static function get_thumb_url( int $media_id, string $size = 'large' ): string {
-		$media_type = self::get_media_type( $media_id );
-
-		// Map WP size names to our meta keys.
-		$size_map = array(
-			'large'     => 'thumb_large',
-			'medium'    => 'thumb_medium',
-			'thumbnail' => 'thumb_thumb',
-		);
-
-		$meta_key = $size_map[ $size ] ?? 'thumb_large';
-
-		// Try our custom thumbnail first.
-		$thumb = MediaRepository::get( $media_id, $meta_key );
-		if ( $thumb ) {
-			return set_url_scheme( $thumb );
-		}
-
-		// Fallback: try larger sizes, then file_url for images.
-		if ( 'thumb_thumb' === $meta_key ) {
-			$thumb = MediaRepository::get( $media_id, 'thumb_medium' );
-			if ( $thumb ) {
-				return set_url_scheme( $thumb );
-			}
-		}
-		if ( 'thumb_thumb' === $meta_key || 'thumb_medium' === $meta_key ) {
-			$thumb = MediaRepository::get( $media_id, 'thumb_large' );
-			if ( $thumb ) {
-				return set_url_scheme( $thumb );
+		// Route through SignedUrlService — direct uploads URLs are blocked by
+		// the .htaccess in wp-content/uploads/wpmediaverse/. The signed-URL
+		// serve endpoint handles size fallback (large → medium → thumbnail →
+		// file_url) and respects per-media privacy. Callers don't need to
+		// know about signing — every consumer of this helper gets a URL that
+		// loads correctly through the gated endpoint.
+		$signed_urls = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		if ( $signed_urls ) {
+			// $skip_privacy_check = true: the grid query already enforced
+			// privacy, and rendering a thumbnail through the gated endpoint
+			// re-applies access control on the serve side anyway.
+			$signed = $signed_urls->generate_thumbnail( $media_id, get_current_user_id(), $size, 0, true );
+			if ( $signed ) {
+				return $signed;
 			}
 		}
 
-		// For images, raw file_url works as final fallback.
-		$file_url = MediaRepository::get( $media_id, 'file_url' );
-		if ( 'image' === $media_type && $file_url ) {
-			return set_url_scheme( $file_url );
-		}
-
+		// Defensive fallback — only reached if the SignedUrlService container
+		// isn't ready (very early in bootstrap, e.g. during plugin activation).
+		// Emitting a raw `/wp-content/uploads/wpmediaverse/` URL here would 403
+		// against the .htaccess gate, so we return an empty string and let the
+		// caller render an empty state instead of a broken image.
 		return '';
 	}
 
@@ -89,26 +74,31 @@ class TemplateHelpers {
 			return '';
 		}
 
-		if ( '' === $file_url ) {
-			$file_url = (string) MediaRepository::get( $media_id, 'file_url' );
-		}
-
+		// Every return path routes through MediaUrl so the .htaccess deny-all
+		// in /wp-content/uploads/wpmediaverse/ doesn't 403 the lightbox image.
+		// $file_url parameter is ignored — the helper resolves the right URL
+		// from $media_id alone, signed.
 		$source = (string) get_option( 'mvs_lightbox_image_source', 'original' );
-
 		if ( 'auto' === $source ) {
 			$source = wp_is_mobile() ? 'large' : 'original';
 		}
 
-		if ( 'original' === $source && $file_url ) {
-			return set_url_scheme( $file_url );
+		// Original = full file (signed via MediaUrl::for_file).
+		// Otherwise = sized thumbnail (signed via MediaUrl::for_thumbnail).
+		if ( 'original' === $source ) {
+			$signed = \WPMediaVerse\Services\MediaUrl::for_file( $media_id );
+			if ( $signed ) {
+				return $signed;
+			}
 		}
 
+		// Sized lightbox: try the requested size, fall back to large, fall
+		// back to full file.
 		$size_url = self::get_thumb_url( $media_id, $source );
 		if ( $size_url ) {
 			return $size_url;
 		}
-
-		return $file_url ? set_url_scheme( $file_url ) : '';
+		return \WPMediaVerse\Services\MediaUrl::for_file( $media_id );
 	}
 
 	/**
@@ -253,7 +243,10 @@ class TemplateHelpers {
 		}
 
 		if ( 'video' === $media_type ) {
-			$file_url = (string) MediaRepository::get( $media_id, 'file_url' );
+			// Route through SignedUrlService — direct file_url paths are blocked
+			// by the .htaccess in wp-content/uploads/wpmediaverse/.
+			$th_signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+			$file_url  = $th_signed ? $th_signed->generate( $media_id, get_current_user_id() ) : '';
 			if ( $file_url ) {
 				$vid_class = trim( 'mvs-grid-video-preview ' . $extra_class );
 				return '<video class="' . esc_attr( $vid_class ) . '" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true" src="' . esc_url( $file_url ) . '#t=0.1"></video>' . $play_icon;

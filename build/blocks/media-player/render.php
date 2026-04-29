@@ -27,9 +27,11 @@ if ( ! \WPMediaVerse\Repository\MediaRepository::exists( $media_id ) ) {
 	return;
 }
 
-$file_url   = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_url' );
 $file_type  = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_type' );
 $media_title = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'title' );
+
+$mp_signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+$file_url  = $mp_signed ? $mp_signed->generate( $media_id, get_current_user_id() ) : '';
 
 if ( ! $file_url ) {
 	return;

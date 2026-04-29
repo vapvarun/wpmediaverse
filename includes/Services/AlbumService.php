@@ -320,10 +320,15 @@ class AlbumService {
 			return $thumb;
 		}
 
-		$file_url  = MediaRepository::get( $media_id, 'file_url' );
+		// Fallback for image-type media: route through MediaUrl so the file
+		// URL passes the .htaccess gate. Previously returned a raw
+		// /wp-content/uploads/wpmediaverse/... URL that 403s.
 		$file_type = MediaRepository::get( $media_id, 'file_type' );
-		if ( $file_url && is_string( $file_type ) && 0 === strpos( $file_type, 'image/' ) ) {
-			return set_url_scheme( $file_url );
+		if ( is_string( $file_type ) && 0 === strpos( $file_type, 'image/' ) ) {
+			$signed = \WPMediaVerse\Services\MediaUrl::for_file( $media_id );
+			if ( $signed ) {
+				return $signed;
+			}
 		}
 
 		return null;

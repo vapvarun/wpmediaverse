@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
+use WPMediaVerse\Services\MediaUrl;
 
 /**
  * Transforms legacy activity content and renders media thumbnails inside
@@ -388,8 +389,18 @@ class ActivityContentIntegration {
 				if ( preg_match( '/title="([^"]+)"/', $item_html, $tm ) ) {
 					$title = esc_html( $tm[1] );
 				}
+				$mvs_id = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
+				if ( $mvs_id ) {
+					$signed_video = MediaUrl::for_file( $mvs_id );
+					if ( $signed_video ) {
+						$src = $signed_video;
+					} else {
+						$src = MediaUrl::resolve( $src, $mvs_id );
+					}
+				} elseif ( $src ) {
+					$src = MediaUrl::resolve( $src );
+				}
 				$link     = $src ?: $href;
-				$mvs_id   = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
 				$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
 				$data_src = $link ? ' data-mvs-src="' . esc_attr( $link ) . '"' : '';
 
@@ -416,8 +427,18 @@ class ActivityContentIntegration {
 				if ( preg_match( '/title="([^"]+)"/', $item_html, $tm ) ) {
 					$title = esc_html( $tm[1] );
 				}
+				$mvs_id = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
+				if ( $mvs_id ) {
+					$signed_audio = MediaUrl::for_file( $mvs_id );
+					if ( $signed_audio ) {
+						$src = $signed_audio;
+					} else {
+						$src = MediaUrl::resolve( $src, $mvs_id );
+					}
+				} elseif ( $src ) {
+					$src = MediaUrl::resolve( $src );
+				}
 				$link     = $src ?: $href;
-				$mvs_id   = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
 				$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
 				$data_src = $src ? ' data-mvs-src="' . esc_attr( $src ) . '"' : '';
 
@@ -452,10 +473,23 @@ class ActivityContentIntegration {
 					$full_src = preg_replace( '/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $src );
 					$link     = $mvs_id ? MediaRepository::get_permalink( $mvs_id ) : ( $full_src ?: $src );
 
+					// Route URLs through SignedUrlService when they reference protected MVS uploads.
+					$img_src = $full_src ?: $src;
+					if ( $mvs_id ) {
+						$signed_full = MediaUrl::for_file( $mvs_id );
+						if ( $signed_full ) {
+							$img_src = $signed_full;
+						} else {
+							$img_src = MediaUrl::resolve( $img_src, $mvs_id );
+						}
+					} else {
+						$img_src = MediaUrl::resolve( $img_src );
+					}
+
 					// Output same format as regular MVS media upload activity.
 					$media_html .= '<div class="mvs-activity-media mvs-activity-media--image"' . $data_mid . '>'
 								. '<a href="' . esc_url( $link ) . '">'
-								. '<img src="' . ( $full_src ?: $src ) . '" alt="' . $alt . '" loading="lazy" />'
+								. '<img src="' . esc_url( $img_src ) . '" alt="' . $alt . '" loading="lazy" />'
 								. '</a></div>';
 				}
 			}
