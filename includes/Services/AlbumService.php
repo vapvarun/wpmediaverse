@@ -242,12 +242,16 @@ class AlbumService {
 	}
 
 	/**
-	 * Get the media ID of the cover image for an album.
+	 * Get the resolved cover media ID for an album (pinned, falling back to first image).
+	 *
+	 * Use this when the caller wants the cover URL regardless of whether it
+	 * was explicitly pinned (e.g. signed-URL routing for any album cover). For
+	 * the explicit pinned-only value, use get_cover_media_id() instead.
 	 *
 	 * @param int $album_id Album post ID.
 	 * @return int|null Media ID or null.
 	 */
-	public function get_cover_media_id( int $album_id ): ?int {
+	public function get_resolved_cover_media_id( int $album_id ): ?int {
 		return $this->get_first_image_item( $album_id );
 	}
 
@@ -285,15 +289,17 @@ class AlbumService {
 	/**
 	 * Get the pinned cover media ID, or 0 if none/invalid.
 	 *
+	 * Returns the explicit pin only — never falls back to the first item.
 	 * Use this when callers need to distinguish between an explicitly pinned
 	 * cover and an auto-selected one (e.g. the edit modal highlighting the
-	 * current cover thumbnail). For the resolved cover (pinned or first item),
-	 * use get_cover_media_id() instead.
+	 * current cover thumbnail, the REST `cover_media_id` field consumed by
+	 * the dashboard block). For the resolved cover (pinned or first item),
+	 * use get_resolved_cover_media_id() instead.
 	 *
 	 * @param int $album_id Album post ID.
 	 * @return int Media ID of the pinned cover, or 0 when no valid pin exists.
 	 */
-	public function get_pinned_cover_media_id( int $album_id ): int {
+	public function get_cover_media_id( int $album_id ): int {
 		$pinned_id = (int) get_post_meta( $album_id, self::COVER_META_KEY, true );
 		if ( $pinned_id && $this->is_item_in_album( $album_id, $pinned_id ) ) {
 			return $pinned_id;

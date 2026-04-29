@@ -412,7 +412,7 @@ $mvs_archive_url = home_url( '/media/' );
 				$album_svc      = $container_obj->get( 'albums' );
 				$signed_urls    = $container_obj->get( 'signed_urls' );
 				$item_count     = $album_svc->get_item_count( $album_post->ID );
-				$cover_media_id = $album_svc->get_cover_media_id( $album_post->ID );
+				$cover_media_id = $album_svc->get_resolved_cover_media_id( $album_post->ID );
 				// Route album cover through signed URL serve endpoint (bypasses .htaccess protection).
 				$cover_url = $cover_media_id && $signed_urls
 					? $signed_urls->generate_thumbnail( $cover_media_id, get_current_user_id(), 'large', 0, true )

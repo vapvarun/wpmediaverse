@@ -436,7 +436,7 @@ $mvs_archive_url = home_url( '/media/' );
 				<?php
 				$mvs_grid_cols     = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) );
 				$mvs_album_svc     = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
-				$mvs_current_cover = $mvs_album_svc ? $mvs_album_svc->get_pinned_cover_media_id( get_the_ID() ) : 0;
+				$mvs_current_cover = $mvs_album_svc ? $mvs_album_svc->get_cover_media_id( get_the_ID() ) : 0;
 				?>
 				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?>">
 					<?php
