@@ -1,0 +1,20 @@
+{
+  "computed_at": "2026-05-01T00:50:00Z",
+  "input_globs": ["includes/**/*.php", "../wpmediaverse-pro/includes/**/*.php"],
+  "free_hooks_consumed_by_pro": [
+    {"hook": "mvs_media_uploaded", "plugin": "wpmediaverse-pro", "where": "includes/Connectors/ConnectorManager.php:60", "kind": "add_action_listener"}
+    ,
+    {"hook": "mvs_media_deleted", "plugin": "wpmediaverse-pro", "where": "includes/Quota/QuotaService.php:43", "kind": "add_action_listener"}
+    ,
+    {"hook": "mvs_media_response", "plugin": "wpmediaverse-pro", "where": "includes/Captions/TranscriptionService.php:74", "kind": "add_filter_listener"}
+    ,
+    {"hook": "mvs_storage_driver", "plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:211", "kind": "add_filter_listener"}
+    ,
+    {"hook": "mvs_ai_providers", "plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:217", "kind": "add_action_listener"}
+    ,
+    {"hook": "mvs_generate_watermark", "plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:214", "kind": "add_filter_listener"}
+    ,
+    {"hook": "mvs_message_sent", "plugin": "wpmediaverse-pro", "where": "includes/Messaging/NotificationListener.php:33", "kind": "add_action_listener"}
+  ],
+  "pro_filters_hooked_status": []
+}

@@ -1,0 +1,494 @@
+{
+  "rest": {
+    "namespace": "mvs/v1",
+    "controllers_dir": "includes/REST/Controller/",
+    "rate_limiter": "includes/REST/RateLimiter.php",
+    "endpoints": [
+      {
+        "route": "/media",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "MediaController",
+        "permission": "public read; create_item_permissions_check write",
+        "purpose": "List/create media"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)",
+        "methods": [
+          "GET",
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "MediaController",
+        "permission": "per-method permission_check",
+        "purpose": "Single media CRUD"
+      },
+      {
+        "route": "/media/bulk",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BulkController",
+        "permission": "bulk_permissions_check",
+        "purpose": "Bulk delete/move/privacy"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/signed-url",
+        "methods": [
+          "GET"
+        ],
+        "handler": "SignedUrlController",
+        "permission": "get_signed_url_permissions_check",
+        "purpose": "Generate signed URL"
+      },
+      {
+        "route": "/serve",
+        "methods": [
+          "GET"
+        ],
+        "handler": "SignedUrlController::serve_file",
+        "permission": "token-validated public",
+        "purpose": "Stream file via signed URL"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/report",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ReportController::report_media",
+        "permission": "logged-in",
+        "purpose": "Flag media"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/reactions",
+        "methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
+        "handler": "ReactionController",
+        "permission": "public read; logged-in write",
+        "purpose": "Emoji reactions"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/comments",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "CommentController",
+        "permission": "public read; logged-in write",
+        "purpose": "Comments"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/comments/(?P<comment_id>\\d+)",
+        "methods": [
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "CommentController",
+        "permission": "author or moderator",
+        "purpose": "Edit/delete comment"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/favorite",
+        "methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
+        "handler": "FavoriteController",
+        "permission": "logged-in",
+        "purpose": "Favorite toggle"
+      },
+      {
+        "route": "/me/favorites",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FavoriteController",
+        "permission": "logged-in",
+        "purpose": "List my favorites"
+      },
+      {
+        "route": "/albums",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "AlbumController",
+        "permission": "public read; logged-in create",
+        "purpose": "Albums list/create"
+      },
+      {
+        "route": "/albums/(?P<id>\\d+)",
+        "methods": [
+          "GET",
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "AlbumController",
+        "permission": "owner write",
+        "purpose": "Album CRUD"
+      },
+      {
+        "route": "/albums/(?P<id>\\d+)/items",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AlbumController::add_items",
+        "permission": "owner",
+        "purpose": "Add media to album"
+      },
+      {
+        "route": "/collections",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "CollectionController",
+        "permission": "logged-in",
+        "purpose": "Collections list/create"
+      },
+      {
+        "route": "/collections/(?P<id>\\d+)",
+        "methods": [
+          "GET",
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "CollectionController",
+        "permission": "owner",
+        "purpose": "Collection CRUD"
+      },
+      {
+        "route": "/tags",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "TagController",
+        "permission": "public read; logged-in create",
+        "purpose": "Tag list/create"
+      },
+      {
+        "route": "/tags/cloud",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TagController::get_cloud",
+        "permission": "public",
+        "purpose": "Tag cloud"
+      },
+      {
+        "route": "/tags/(?P<id>\\d+)",
+        "methods": [
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "TagController",
+        "permission": "admin",
+        "purpose": "Rename/delete tag"
+      },
+      {
+        "route": "/tags/merge",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TagController::merge_tags",
+        "permission": "admin",
+        "purpose": "Merge tags"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::get_profile",
+        "permission": "public",
+        "purpose": "Public profile"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/media",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::get_user_media",
+        "permission": "public (privacy-filtered)",
+        "purpose": "User's media"
+      },
+      {
+        "route": "/users/search",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::search_users",
+        "permission": "public",
+        "purpose": "Search users"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/follow",
+        "methods": [
+          "POST",
+          "DELETE"
+        ],
+        "handler": "FollowController",
+        "permission": "logged-in",
+        "purpose": "Follow toggle"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/followers",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FollowController::get_followers",
+        "permission": "public",
+        "purpose": "Followers list"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/following",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FollowController::get_following",
+        "permission": "public",
+        "purpose": "Following list"
+      },
+      {
+        "route": "/me/profile",
+        "methods": [
+          "GET",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "ProfileController",
+        "permission": "logged-in",
+        "purpose": "My profile"
+      },
+      {
+        "route": "/me/avatar",
+        "methods": [
+          "POST",
+          "DELETE"
+        ],
+        "handler": "ProfileController",
+        "permission": "logged-in",
+        "purpose": "Avatar upload/delete"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/report",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ReportController::report_user",
+        "permission": "logged-in",
+        "purpose": "Report user"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/block",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ReportController::block_user",
+        "permission": "logged-in",
+        "purpose": "Block user"
+      },
+      {
+        "route": "/me/blocked",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ReportController::get_blocked",
+        "permission": "logged-in",
+        "purpose": "My blocked users"
+      },
+      {
+        "route": "/feed",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ActivityController::get_feed",
+        "permission": "public (privacy-filtered)",
+        "purpose": "Activity feed"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/activity",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ActivityController::get_user_activity",
+        "permission": "public",
+        "purpose": "User activity"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/stats",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StatsController::get_media_stats",
+        "permission": "public",
+        "purpose": "Media stats"
+      },
+      {
+        "route": "/me/stats",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StatsController::get_my_stats",
+        "permission": "logged-in",
+        "purpose": "My upload stats"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/rules",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "AccessController",
+        "permission": "manage_permissions_check",
+        "purpose": "Access rules"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/rules/(?P<rule_id>\\d+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "AccessController::delete_rule",
+        "permission": "manage_permissions_check",
+        "purpose": "Delete access rule"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/grant",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AccessController::grant_access",
+        "permission": "manage_permissions_check",
+        "purpose": "Grant user access"
+      },
+      {
+        "route": "/moderation",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ModerationController::get_queue",
+        "permission": "moderate_permissions_check",
+        "purpose": "Moderation queue"
+      },
+      {
+        "route": "/moderation/counts",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ModerationController::get_counts",
+        "permission": "moderator",
+        "purpose": "Pending counts"
+      },
+      {
+        "route": "/moderation/(?P<id>\\d+)/approve",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ModerationController::approve_item",
+        "permission": "moderator",
+        "purpose": "Approve"
+      },
+      {
+        "route": "/moderation/(?P<id>\\d+)/reject",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ModerationController::reject_item",
+        "permission": "moderator",
+        "purpose": "Reject"
+      },
+      {
+        "route": "/me/notifications",
+        "methods": [
+          "GET"
+        ],
+        "handler": "NotificationController::get_notifications",
+        "permission": "logged-in",
+        "purpose": "My notifications"
+      },
+      {
+        "route": "/me/notifications/read",
+        "methods": [
+          "POST"
+        ],
+        "handler": "NotificationController::mark_read",
+        "permission": "logged-in",
+        "purpose": "Mark read"
+      },
+      {
+        "route": "/me/notifications/count",
+        "methods": [
+          "GET"
+        ],
+        "handler": "NotificationController::get_unread_count",
+        "permission": "logged-in",
+        "purpose": "Unread count"
+      },
+      {
+        "route": "/me/conversations",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::list_conversations",
+        "permission": "logged-in",
+        "purpose": "DM conversations"
+      },
+      {
+        "route": "/conversations",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::create_conversation",
+        "permission": "logged-in",
+        "purpose": "Start DM"
+      },
+      {
+        "route": "/conversations/(?P<id>\\d+)",
+        "methods": [
+          "GET",
+          "PATCH",
+          "DELETE"
+        ],
+        "handler": "MessagingController",
+        "permission": "participant",
+        "purpose": "DM CRUD"
+      },
+      {
+        "route": "/conversations/(?P<id>\\d+)/messages",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "MessagingController",
+        "permission": "participant",
+        "purpose": "List/send messages"
+      },
+      {
+        "route": "/conversations/(?P<id>\\d+)/messages/(?P<msg_id>\\d+)",
+        "methods": [
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "MessagingController",
+        "permission": "sender",
+        "purpose": "Edit/delete message"
+      },
+      {
+        "route": "/conversations/(?P<id>\\d+)/messages/(?P<msg_id>\\d+)/reactions",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::add_reaction",
+        "permission": "participant",
+        "purpose": "React to DM"
+      }
+    ]
+  }
+}

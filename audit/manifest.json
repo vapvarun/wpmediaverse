@@ -1,5 +1,5 @@
 {
-  "$schema": "https://wpmediaverse.com/schemas/wp-plugin-manifest-v1.json",
+  "$schema": "https://wpmediaverse.com/schemas/wp-plugin-manifest-v2.json",
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
@@ -17,267 +17,1572 @@
     "controllers_dir": "includes/REST/Controller/",
     "rate_limiter": "includes/REST/RateLimiter.php",
     "endpoints": [
-      { "route": "/media", "methods": ["GET", "POST"], "handler": "MediaController", "permission": "public read; create_item_permissions_check write", "purpose": "List/create media" },
-      { "route": "/media/(?P<id>\\d+)", "methods": ["GET", "PUT", "DELETE"], "handler": "MediaController", "permission": "per-method permission_check", "purpose": "Single media CRUD" },
-      { "route": "/media/bulk", "methods": ["POST"], "handler": "BulkController", "permission": "bulk_permissions_check", "purpose": "Bulk delete/move/privacy" },
-      { "route": "/media/(?P<id>\\d+)/signed-url", "methods": ["GET"], "handler": "SignedUrlController", "permission": "get_signed_url_permissions_check", "purpose": "Generate signed URL" },
-      { "route": "/serve", "methods": ["GET"], "handler": "SignedUrlController::serve_file", "permission": "token-validated public", "purpose": "Stream file via signed URL" },
-      { "route": "/media/(?P<id>\\d+)/report", "methods": ["POST"], "handler": "ReportController::report_media", "permission": "logged-in", "purpose": "Flag media" },
-      { "route": "/media/(?P<id>\\d+)/reactions", "methods": ["GET", "POST", "DELETE"], "handler": "ReactionController", "permission": "public read; logged-in write", "purpose": "Emoji reactions" },
-      { "route": "/media/(?P<id>\\d+)/comments", "methods": ["GET", "POST"], "handler": "CommentController", "permission": "public read; logged-in write", "purpose": "Comments" },
-      { "route": "/media/(?P<id>\\d+)/comments/(?P<comment_id>\\d+)", "methods": ["PUT", "DELETE"], "handler": "CommentController", "permission": "author or moderator", "purpose": "Edit/delete comment" },
-      { "route": "/media/(?P<id>\\d+)/favorite", "methods": ["GET", "POST", "DELETE"], "handler": "FavoriteController", "permission": "logged-in", "purpose": "Favorite toggle" },
-      { "route": "/me/favorites", "methods": ["GET"], "handler": "FavoriteController", "permission": "logged-in", "purpose": "List my favorites" },
-      { "route": "/albums", "methods": ["GET", "POST"], "handler": "AlbumController", "permission": "public read; logged-in create", "purpose": "Albums list/create" },
-      { "route": "/albums/(?P<id>\\d+)", "methods": ["GET", "PUT", "DELETE"], "handler": "AlbumController", "permission": "owner write", "purpose": "Album CRUD" },
-      { "route": "/albums/(?P<id>\\d+)/items", "methods": ["POST"], "handler": "AlbumController::add_items", "permission": "owner", "purpose": "Add media to album" },
-      { "route": "/collections", "methods": ["GET", "POST"], "handler": "CollectionController", "permission": "logged-in", "purpose": "Collections list/create" },
-      { "route": "/collections/(?P<id>\\d+)", "methods": ["GET", "PUT", "DELETE"], "handler": "CollectionController", "permission": "owner", "purpose": "Collection CRUD" },
-      { "route": "/tags", "methods": ["GET", "POST"], "handler": "TagController", "permission": "public read; logged-in create", "purpose": "Tag list/create" },
-      { "route": "/tags/cloud", "methods": ["GET"], "handler": "TagController::get_cloud", "permission": "public", "purpose": "Tag cloud" },
-      { "route": "/tags/(?P<id>\\d+)", "methods": ["PUT", "DELETE"], "handler": "TagController", "permission": "admin", "purpose": "Rename/delete tag" },
-      { "route": "/tags/merge", "methods": ["POST"], "handler": "TagController::merge_tags", "permission": "admin", "purpose": "Merge tags" },
-      { "route": "/users/(?P<id>\\d+)", "methods": ["GET"], "handler": "UserController::get_profile", "permission": "public", "purpose": "Public profile" },
-      { "route": "/users/(?P<id>\\d+)/media", "methods": ["GET"], "handler": "UserController::get_user_media", "permission": "public (privacy-filtered)", "purpose": "User's media" },
-      { "route": "/users/search", "methods": ["GET"], "handler": "UserController::search_users", "permission": "public", "purpose": "Search users" },
-      { "route": "/users/(?P<id>\\d+)/follow", "methods": ["POST", "DELETE"], "handler": "FollowController", "permission": "logged-in", "purpose": "Follow toggle" },
-      { "route": "/users/(?P<id>\\d+)/followers", "methods": ["GET"], "handler": "FollowController::get_followers", "permission": "public", "purpose": "Followers list" },
-      { "route": "/users/(?P<id>\\d+)/following", "methods": ["GET"], "handler": "FollowController::get_following", "permission": "public", "purpose": "Following list" },
-      { "route": "/me/profile", "methods": ["GET", "PUT", "PATCH"], "handler": "ProfileController", "permission": "logged-in", "purpose": "My profile" },
-      { "route": "/me/avatar", "methods": ["POST", "DELETE"], "handler": "ProfileController", "permission": "logged-in", "purpose": "Avatar upload/delete" },
-      { "route": "/users/(?P<id>\\d+)/report", "methods": ["POST"], "handler": "ReportController::report_user", "permission": "logged-in", "purpose": "Report user" },
-      { "route": "/users/(?P<id>\\d+)/block", "methods": ["POST"], "handler": "ReportController::block_user", "permission": "logged-in", "purpose": "Block user" },
-      { "route": "/me/blocked", "methods": ["GET"], "handler": "ReportController::get_blocked", "permission": "logged-in", "purpose": "My blocked users" },
-      { "route": "/feed", "methods": ["GET"], "handler": "ActivityController::get_feed", "permission": "public (privacy-filtered)", "purpose": "Activity feed" },
-      { "route": "/users/(?P<id>\\d+)/activity", "methods": ["GET"], "handler": "ActivityController::get_user_activity", "permission": "public", "purpose": "User activity" },
-      { "route": "/media/(?P<id>\\d+)/stats", "methods": ["GET"], "handler": "StatsController::get_media_stats", "permission": "public", "purpose": "Media stats" },
-      { "route": "/me/stats", "methods": ["GET"], "handler": "StatsController::get_my_stats", "permission": "logged-in", "purpose": "My upload stats" },
-      { "route": "/media/(?P<id>\\d+)/rules", "methods": ["GET", "POST"], "handler": "AccessController", "permission": "manage_permissions_check", "purpose": "Access rules" },
-      { "route": "/media/(?P<id>\\d+)/rules/(?P<rule_id>\\d+)", "methods": ["DELETE"], "handler": "AccessController::delete_rule", "permission": "manage_permissions_check", "purpose": "Delete access rule" },
-      { "route": "/media/(?P<id>\\d+)/grant", "methods": ["POST"], "handler": "AccessController::grant_access", "permission": "manage_permissions_check", "purpose": "Grant user access" },
-      { "route": "/moderation", "methods": ["GET"], "handler": "ModerationController::get_queue", "permission": "moderate_permissions_check", "purpose": "Moderation queue" },
-      { "route": "/moderation/counts", "methods": ["GET"], "handler": "ModerationController::get_counts", "permission": "moderator", "purpose": "Pending counts" },
-      { "route": "/moderation/(?P<id>\\d+)/approve", "methods": ["POST"], "handler": "ModerationController::approve_item", "permission": "moderator", "purpose": "Approve" },
-      { "route": "/moderation/(?P<id>\\d+)/reject", "methods": ["POST"], "handler": "ModerationController::reject_item", "permission": "moderator", "purpose": "Reject" },
-      { "route": "/me/notifications", "methods": ["GET"], "handler": "NotificationController::get_notifications", "permission": "logged-in", "purpose": "My notifications" },
-      { "route": "/me/notifications/read", "methods": ["POST"], "handler": "NotificationController::mark_read", "permission": "logged-in", "purpose": "Mark read" },
-      { "route": "/me/notifications/count", "methods": ["GET"], "handler": "NotificationController::get_unread_count", "permission": "logged-in", "purpose": "Unread count" },
-      { "route": "/me/conversations", "methods": ["GET"], "handler": "MessagingController::list_conversations", "permission": "logged-in", "purpose": "DM conversations" },
-      { "route": "/conversations", "methods": ["POST"], "handler": "MessagingController::create_conversation", "permission": "logged-in", "purpose": "Start DM" },
-      { "route": "/conversations/(?P<id>\\d+)", "methods": ["GET", "PATCH", "DELETE"], "handler": "MessagingController", "permission": "participant", "purpose": "DM CRUD" },
-      { "route": "/conversations/(?P<id>\\d+)/messages", "methods": ["GET", "POST"], "handler": "MessagingController", "permission": "participant", "purpose": "List/send messages" },
-      { "route": "/conversations/(?P<id>\\d+)/messages/(?P<msg_id>\\d+)", "methods": ["PUT", "DELETE"], "handler": "MessagingController", "permission": "sender", "purpose": "Edit/delete message" },
-      { "route": "/conversations/(?P<id>\\d+)/messages/(?P<msg_id>\\d+)/reactions", "methods": ["POST"], "handler": "MessagingController::add_reaction", "permission": "participant", "purpose": "React to DM" }
+      {
+        "route": "/media",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "MediaController",
+        "permission": "public read; create_item_permissions_check write",
+        "purpose": "List/create media"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)",
+        "methods": [
+          "GET",
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "MediaController",
+        "permission": "per-method permission_check",
+        "purpose": "Single media CRUD"
+      },
+      {
+        "route": "/media/bulk",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BulkController",
+        "permission": "bulk_permissions_check",
+        "purpose": "Bulk delete/move/privacy"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/signed-url",
+        "methods": [
+          "GET"
+        ],
+        "handler": "SignedUrlController",
+        "permission": "get_signed_url_permissions_check",
+        "purpose": "Generate signed URL"
+      },
+      {
+        "route": "/serve",
+        "methods": [
+          "GET"
+        ],
+        "handler": "SignedUrlController::serve_file",
+        "permission": "token-validated public",
+        "purpose": "Stream file via signed URL"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/report",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ReportController::report_media",
+        "permission": "logged-in",
+        "purpose": "Flag media"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/reactions",
+        "methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
+        "handler": "ReactionController",
+        "permission": "public read; logged-in write",
+        "purpose": "Emoji reactions"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/comments",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "CommentController",
+        "permission": "public read; logged-in write",
+        "purpose": "Comments"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/comments/(?P<comment_id>\\d+)",
+        "methods": [
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "CommentController",
+        "permission": "author or moderator",
+        "purpose": "Edit/delete comment"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/favorite",
+        "methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
+        "handler": "FavoriteController",
+        "permission": "logged-in",
+        "purpose": "Favorite toggle"
+      },
+      {
+        "route": "/me/favorites",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FavoriteController",
+        "permission": "logged-in",
+        "purpose": "List my favorites"
+      },
+      {
+        "route": "/albums",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "AlbumController",
+        "permission": "public read; logged-in create",
+        "purpose": "Albums list/create"
+      },
+      {
+        "route": "/albums/(?P<id>\\d+)",
+        "methods": [
+          "GET",
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "AlbumController",
+        "permission": "owner write",
+        "purpose": "Album CRUD"
+      },
+      {
+        "route": "/albums/(?P<id>\\d+)/items",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AlbumController::add_items",
+        "permission": "owner",
+        "purpose": "Add media to album"
+      },
+      {
+        "route": "/collections",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "CollectionController",
+        "permission": "logged-in",
+        "purpose": "Collections list/create"
+      },
+      {
+        "route": "/collections/(?P<id>\\d+)",
+        "methods": [
+          "GET",
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "CollectionController",
+        "permission": "owner",
+        "purpose": "Collection CRUD"
+      },
+      {
+        "route": "/tags",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "TagController",
+        "permission": "public read; logged-in create",
+        "purpose": "Tag list/create"
+      },
+      {
+        "route": "/tags/cloud",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TagController::get_cloud",
+        "permission": "public",
+        "purpose": "Tag cloud"
+      },
+      {
+        "route": "/tags/(?P<id>\\d+)",
+        "methods": [
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "TagController",
+        "permission": "admin",
+        "purpose": "Rename/delete tag"
+      },
+      {
+        "route": "/tags/merge",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TagController::merge_tags",
+        "permission": "admin",
+        "purpose": "Merge tags"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::get_profile",
+        "permission": "public",
+        "purpose": "Public profile"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/media",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::get_user_media",
+        "permission": "public (privacy-filtered)",
+        "purpose": "User's media"
+      },
+      {
+        "route": "/users/search",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::search_users",
+        "permission": "public",
+        "purpose": "Search users"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/follow",
+        "methods": [
+          "POST",
+          "DELETE"
+        ],
+        "handler": "FollowController",
+        "permission": "logged-in",
+        "purpose": "Follow toggle"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/followers",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FollowController::get_followers",
+        "permission": "public",
+        "purpose": "Followers list"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/following",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FollowController::get_following",
+        "permission": "public",
+        "purpose": "Following list"
+      },
+      {
+        "route": "/me/profile",
+        "methods": [
+          "GET",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "ProfileController",
+        "permission": "logged-in",
+        "purpose": "My profile"
+      },
+      {
+        "route": "/me/avatar",
+        "methods": [
+          "POST",
+          "DELETE"
+        ],
+        "handler": "ProfileController",
+        "permission": "logged-in",
+        "purpose": "Avatar upload/delete"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/report",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ReportController::report_user",
+        "permission": "logged-in",
+        "purpose": "Report user"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/block",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ReportController::block_user",
+        "permission": "logged-in",
+        "purpose": "Block user"
+      },
+      {
+        "route": "/me/blocked",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ReportController::get_blocked",
+        "permission": "logged-in",
+        "purpose": "My blocked users"
+      },
+      {
+        "route": "/feed",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ActivityController::get_feed",
+        "permission": "public (privacy-filtered)",
+        "purpose": "Activity feed"
+      },
+      {
+        "route": "/users/(?P<id>\\d+)/activity",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ActivityController::get_user_activity",
+        "permission": "public",
+        "purpose": "User activity"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/stats",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StatsController::get_media_stats",
+        "permission": "public",
+        "purpose": "Media stats"
+      },
+      {
+        "route": "/me/stats",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StatsController::get_my_stats",
+        "permission": "logged-in",
+        "purpose": "My upload stats"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/rules",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "AccessController",
+        "permission": "manage_permissions_check",
+        "purpose": "Access rules"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/rules/(?P<rule_id>\\d+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "AccessController::delete_rule",
+        "permission": "manage_permissions_check",
+        "purpose": "Delete access rule"
+      },
+      {
+        "route": "/media/(?P<id>\\d+)/grant",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AccessController::grant_access",
+        "permission": "manage_permissions_check",
+        "purpose": "Grant user access"
+      },
+      {
+        "route": "/moderation",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ModerationController::get_queue",
+        "permission": "moderate_permissions_check",
+        "purpose": "Moderation queue"
+      },
+      {
+        "route": "/moderation/counts",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ModerationController::get_counts",
+        "permission": "moderator",
+        "purpose": "Pending counts"
+      },
+      {
+        "route": "/moderation/(?P<id>\\d+)/approve",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ModerationController::approve_item",
+        "permission": "moderator",
+        "purpose": "Approve"
+      },
+      {
+        "route": "/moderation/(?P<id>\\d+)/reject",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ModerationController::reject_item",
+        "permission": "moderator",
+        "purpose": "Reject"
+      },
+      {
+        "route": "/me/notifications",
+        "methods": [
+          "GET"
+        ],
+        "handler": "NotificationController::get_notifications",
+        "permission": "logged-in",
+        "purpose": "My notifications"
+      },
+      {
+        "route": "/me/notifications/read",
+        "methods": [
+          "POST"
+        ],
+        "handler": "NotificationController::mark_read",
+        "permission": "logged-in",
+        "purpose": "Mark read"
+      },
+      {
+        "route": "/me/notifications/count",
+        "methods": [
+          "GET"
+        ],
+        "handler": "NotificationController::get_unread_count",
+        "permission": "logged-in",
+        "purpose": "Unread count"
+      },
+      {
+        "route": "/me/conversations",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::list_conversations",
+        "permission": "logged-in",
+        "purpose": "DM conversations"
+      },
+      {
+        "route": "/conversations",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::create_conversation",
+        "permission": "logged-in",
+        "purpose": "Start DM"
+      },
+      {
+        "route": "/conversations/(?P<id>\\d+)",
+        "methods": [
+          "GET",
+          "PATCH",
+          "DELETE"
+        ],
+        "handler": "MessagingController",
+        "permission": "participant",
+        "purpose": "DM CRUD"
+      },
+      {
+        "route": "/conversations/(?P<id>\\d+)/messages",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "MessagingController",
+        "permission": "participant",
+        "purpose": "List/send messages"
+      },
+      {
+        "route": "/conversations/(?P<id>\\d+)/messages/(?P<msg_id>\\d+)",
+        "methods": [
+          "PUT",
+          "DELETE"
+        ],
+        "handler": "MessagingController",
+        "permission": "sender",
+        "purpose": "Edit/delete message"
+      },
+      {
+        "route": "/conversations/(?P<id>\\d+)/messages/(?P<msg_id>\\d+)/reactions",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::add_reaction",
+        "permission": "participant",
+        "purpose": "React to DM"
+      }
     ]
   },
   "ajax": [
-    { "action": "mvs_import_demo_data", "handler": "Admin/OverviewPage.php::ajax_import_demo_data", "line": 711, "nonce": "mvs_import_demo", "capability": "manage_options OR manage_mvs_settings", "purpose": "Seed 12 demo media items" },
-    { "action": "mvs_cleanup_demo_data", "handler": "Admin/OverviewPage.php::handle_cleanup_demo", "line": 738, "nonce": "mvs_cleanup_demo", "capability": "manage_options OR manage_mvs_settings", "purpose": "Delete demo media + reset" },
-    { "action": "mvs_dismiss_welcome", "handler": "Admin/OverviewPage.php::ajax_dismiss_welcome", "line": 625, "nonce": "mvs_dismiss_welcome", "capability": "logged-in", "purpose": "Hide welcome banner" }
+    {
+      "action": "mvs_import_demo_data",
+      "handler": "Admin/OverviewPage.php::ajax_import_demo_data",
+      "line": 711,
+      "nonce": "mvs_import_demo",
+      "capability": "manage_options OR manage_mvs_settings",
+      "purpose": "Seed 12 demo media items"
+    },
+    {
+      "action": "mvs_cleanup_demo_data",
+      "handler": "Admin/OverviewPage.php::handle_cleanup_demo",
+      "line": 738,
+      "nonce": "mvs_cleanup_demo",
+      "capability": "manage_options OR manage_mvs_settings",
+      "purpose": "Delete demo media + reset"
+    },
+    {
+      "action": "mvs_dismiss_welcome",
+      "handler": "Admin/OverviewPage.php::ajax_dismiss_welcome",
+      "line": 625,
+      "nonce": "mvs_dismiss_welcome",
+      "capability": "logged-in",
+      "purpose": "Hide welcome banner"
+    }
   ],
   "admin_pages": [
-    { "title": "WPMediaVerse", "slug": "wpmediaverse", "parent": null, "capability": "manage_options", "source": "Core/Plugin.php:620", "renders": "Admin/OverviewPage.php" },
-    { "title": "All Media", "slug": "wpmediaverse-media", "parent": "wpmediaverse", "capability": "manage_options", "source": "Admin/MediaListPage.php" },
-    { "title": "Settings", "slug": "wpmediaverse-settings", "parent": "wpmediaverse", "capability": "manage_options", "source": "Admin/Settings/SettingsPage.php" },
-    { "title": "Stats", "slug": "wpmediaverse-stats", "parent": "wpmediaverse", "capability": "manage_options", "source": "Admin/StatsPage.php" },
-    { "title": "Moderation", "slug": "wpmediaverse-moderation", "parent": "wpmediaverse", "capability": "moderate_mvs_media", "source": "Admin/ModerationQueue.php" },
-    { "title": "Logs", "slug": "wpmediaverse-logs", "parent": "wpmediaverse", "capability": "manage_options", "source": "Admin/LogViewerPage.php" },
-    { "title": "Setup Wizard", "slug": "wpmediaverse-setup", "parent": "wpmediaverse", "capability": "manage_options", "source": "Admin/SetupWizard.php" }
+    {
+      "title": "WPMediaVerse",
+      "slug": "wpmediaverse",
+      "parent": null,
+      "capability": "manage_options",
+      "source": "Core/Plugin.php:620",
+      "renders": "Admin/OverviewPage.php"
+    },
+    {
+      "title": "All Media",
+      "slug": "wpmediaverse-media",
+      "parent": "wpmediaverse",
+      "capability": "manage_options",
+      "source": "Admin/MediaListPage.php"
+    },
+    {
+      "title": "Settings",
+      "slug": "wpmediaverse-settings",
+      "parent": "wpmediaverse",
+      "capability": "manage_options",
+      "source": "Admin/Settings/SettingsPage.php"
+    },
+    {
+      "title": "Stats",
+      "slug": "wpmediaverse-stats",
+      "parent": "wpmediaverse",
+      "capability": "manage_options",
+      "source": "Admin/StatsPage.php"
+    },
+    {
+      "title": "Moderation",
+      "slug": "wpmediaverse-moderation",
+      "parent": "wpmediaverse",
+      "capability": "moderate_mvs_media",
+      "source": "Admin/ModerationQueue.php"
+    },
+    {
+      "title": "Logs",
+      "slug": "wpmediaverse-logs",
+      "parent": "wpmediaverse",
+      "capability": "manage_options",
+      "source": "Admin/LogViewerPage.php"
+    },
+    {
+      "title": "Setup Wizard",
+      "slug": "wpmediaverse-setup",
+      "parent": "wpmediaverse",
+      "capability": "manage_options",
+      "source": "Admin/SetupWizard.php"
+    }
   ],
   "settings": [
-    { "key": "mvs_max_upload_size", "group": "general", "type": "int", "default": 50, "controls": "Max upload size (MB)" },
-    { "key": "mvs_allowed_file_types", "group": "general", "type": "csv", "controls": "Allowed file extensions" },
-    { "key": "mvs_default_privacy", "group": "general", "type": "enum", "controls": "Default upload privacy" },
-    { "key": "mvs_allow_user_privacy", "group": "general", "type": "bool", "controls": "Per-user privacy override" },
-    { "key": "mvs_duplicate_action", "group": "general", "type": "enum", "controls": "Dedupe behavior" },
-    { "key": "mvs_strip_exif", "group": "general", "type": "bool", "controls": "Strip EXIF on upload" },
-    { "key": "mvs_signed_url_ttl", "group": "general", "type": "int", "controls": "Signed URL TTL (seconds)" },
-    { "key": "mvs_grid_columns", "group": "display", "type": "int", "controls": "Grid columns" },
-    { "key": "mvs_items_per_page", "group": "display", "type": "int", "controls": "Page size" },
-    { "key": "mvs_thumbnail_style", "group": "display", "type": "enum", "controls": "Card style" },
-    { "key": "mvs_thumbnail_size", "group": "display", "type": "enum", "controls": "Generated size" },
-    { "key": "mvs_lightbox_image_source", "group": "display", "type": "enum", "controls": "Lightbox source size" },
-    { "key": "mvs_ai_provider", "group": "ai", "type": "enum", "controls": "Active AI provider" },
-    { "key": "mvs_openai_api_key", "group": "ai", "type": "secret", "controls": "OpenAI key" },
-    { "key": "mvs_openai_model", "group": "ai", "type": "enum", "controls": "OpenAI model" },
-    { "key": "mvs_ai_auto_analyze", "group": "ai", "type": "bool", "controls": "Auto-analyze on upload" },
-    { "key": "mvs_ai_auto_apply_tags", "group": "ai", "type": "bool", "controls": "Apply AI tags" },
-    { "key": "mvs_ai_auto_moderate", "group": "ai", "type": "bool", "controls": "AI moderation on upload" },
-    { "key": "mvs_ai_monthly_budget", "group": "ai", "type": "float", "controls": "Monthly $ cap" },
-    { "key": "mvs_ai_cost_per_call", "group": "ai", "type": "float", "controls": "Per-call cost estimate" },
-    { "key": "mvs_moderation_auto_action", "group": "moderation", "type": "enum", "controls": "Auto action for flagged content" },
-    { "key": "mvs_report_auto_hide_threshold", "group": "moderation", "type": "int", "controls": "Reports → auto-hide threshold" },
-    { "key": "mvs_dm_access", "group": "messaging", "type": "enum", "controls": "DM access level" },
-    { "key": "mvs_dm_min_age", "group": "messaging", "type": "int", "controls": "Minimum account age (days)" },
-    { "key": "mvs_show_online_status", "group": "messaging", "type": "bool", "controls": "Online presence" },
-    { "key": "mvs_page_dashboard", "group": "pages", "type": "page_id", "controls": "Dashboard page" },
-    { "key": "mvs_page_explore", "group": "pages", "type": "page_id", "controls": "Explore page" },
-    { "key": "mvs_page_upload", "group": "pages", "type": "page_id", "controls": "Upload page" },
-    { "key": "mvs_webhooks", "group": "webhook", "type": "array", "controls": "Outbound webhooks" }
+    {
+      "key": "mvs_max_upload_size",
+      "group": "general",
+      "type": "int",
+      "default": 50,
+      "controls": "Max upload size (MB)"
+    },
+    {
+      "key": "mvs_allowed_file_types",
+      "group": "general",
+      "type": "csv",
+      "controls": "Allowed file extensions"
+    },
+    {
+      "key": "mvs_default_privacy",
+      "group": "general",
+      "type": "enum",
+      "controls": "Default upload privacy"
+    },
+    {
+      "key": "mvs_allow_user_privacy",
+      "group": "general",
+      "type": "bool",
+      "controls": "Per-user privacy override"
+    },
+    {
+      "key": "mvs_duplicate_action",
+      "group": "general",
+      "type": "enum",
+      "controls": "Dedupe behavior"
+    },
+    {
+      "key": "mvs_strip_exif",
+      "group": "general",
+      "type": "bool",
+      "controls": "Strip EXIF on upload"
+    },
+    {
+      "key": "mvs_signed_url_ttl",
+      "group": "general",
+      "type": "int",
+      "controls": "Signed URL TTL (seconds)"
+    },
+    {
+      "key": "mvs_grid_columns",
+      "group": "display",
+      "type": "int",
+      "controls": "Grid columns"
+    },
+    {
+      "key": "mvs_items_per_page",
+      "group": "display",
+      "type": "int",
+      "controls": "Page size"
+    },
+    {
+      "key": "mvs_thumbnail_style",
+      "group": "display",
+      "type": "enum",
+      "controls": "Card style"
+    },
+    {
+      "key": "mvs_thumbnail_size",
+      "group": "display",
+      "type": "enum",
+      "controls": "Generated size"
+    },
+    {
+      "key": "mvs_lightbox_image_source",
+      "group": "display",
+      "type": "enum",
+      "controls": "Lightbox source size"
+    },
+    {
+      "key": "mvs_ai_provider",
+      "group": "ai",
+      "type": "enum",
+      "controls": "Active AI provider"
+    },
+    {
+      "key": "mvs_openai_api_key",
+      "group": "ai",
+      "type": "secret",
+      "controls": "OpenAI key"
+    },
+    {
+      "key": "mvs_openai_model",
+      "group": "ai",
+      "type": "enum",
+      "controls": "OpenAI model"
+    },
+    {
+      "key": "mvs_ai_auto_analyze",
+      "group": "ai",
+      "type": "bool",
+      "controls": "Auto-analyze on upload"
+    },
+    {
+      "key": "mvs_ai_auto_apply_tags",
+      "group": "ai",
+      "type": "bool",
+      "controls": "Apply AI tags"
+    },
+    {
+      "key": "mvs_ai_auto_moderate",
+      "group": "ai",
+      "type": "bool",
+      "controls": "AI moderation on upload"
+    },
+    {
+      "key": "mvs_ai_monthly_budget",
+      "group": "ai",
+      "type": "float",
+      "controls": "Monthly $ cap"
+    },
+    {
+      "key": "mvs_ai_cost_per_call",
+      "group": "ai",
+      "type": "float",
+      "controls": "Per-call cost estimate"
+    },
+    {
+      "key": "mvs_moderation_auto_action",
+      "group": "moderation",
+      "type": "enum",
+      "controls": "Auto action for flagged content"
+    },
+    {
+      "key": "mvs_report_auto_hide_threshold",
+      "group": "moderation",
+      "type": "int",
+      "controls": "Reports \u2192 auto-hide threshold"
+    },
+    {
+      "key": "mvs_dm_access",
+      "group": "messaging",
+      "type": "enum",
+      "controls": "DM access level"
+    },
+    {
+      "key": "mvs_dm_min_age",
+      "group": "messaging",
+      "type": "int",
+      "controls": "Minimum account age (days)"
+    },
+    {
+      "key": "mvs_show_online_status",
+      "group": "messaging",
+      "type": "bool",
+      "controls": "Online presence"
+    },
+    {
+      "key": "mvs_page_dashboard",
+      "group": "pages",
+      "type": "page_id",
+      "controls": "Dashboard page"
+    },
+    {
+      "key": "mvs_page_explore",
+      "group": "pages",
+      "type": "page_id",
+      "controls": "Explore page"
+    },
+    {
+      "key": "mvs_page_upload",
+      "group": "pages",
+      "type": "page_id",
+      "controls": "Upload page"
+    },
+    {
+      "key": "mvs_webhooks",
+      "group": "webhook",
+      "type": "array",
+      "controls": "Outbound webhooks"
+    },
+    {
+      "key": "mvs_storage_driver",
+      "group": "general",
+      "type": "enum",
+      "default": "local",
+      "controls": "Active storage driver (local/S3/BunnyCDN \u2014 Pro-extensible via mvs_storage_driver filter)"
+    },
+    {
+      "key": "mvs_comment_edit_window",
+      "group": "general",
+      "type": "int",
+      "default": 900,
+      "controls": "Comment edit window (seconds). 0 disables editing."
+    }
   ],
   "shortcodes": [
-    { "tag": "mvs_gallery", "handler": "Shortcodes/Shortcodes.php::render_gallery", "attrs": ["type", "category", "tag", "orderby", "per_page"] },
-    { "tag": "mvs_upload", "handler": "Shortcodes/Shortcodes.php::render_upload", "attrs": ["max_files", "show_privacy"] },
-    { "tag": "mvs_album", "handler": "Shortcodes/Shortcodes.php::render_album", "attrs": ["id", "columns", "show_title"] },
-    { "tag": "mvs_player", "handler": "Shortcodes/Shortcodes.php::render_player", "attrs": ["id", "autoplay", "loop", "download"] },
-    { "tag": "mvs_stats", "handler": "Shortcodes/Shortcodes.php::render_stats", "attrs": ["views", "downloads", "top_count"] },
-    { "tag": "mvs_dashboard", "handler": "Shortcodes/Shortcodes.php::render_dashboard", "attrs": [] },
-    { "tag": "mvs_collection", "handler": "Shortcodes/Shortcodes.php::render_collection", "attrs": ["id", "columns", "per_page"] },
-    { "tag": "mvs_profile_edit", "handler": "Shortcodes/Shortcodes.php::render_profile_edit", "attrs": [] }
+    {
+      "tag": "mvs_gallery",
+      "handler": "Shortcodes/Shortcodes.php::render_gallery",
+      "attrs": [
+        "type",
+        "category",
+        "tag",
+        "orderby",
+        "per_page"
+      ]
+    },
+    {
+      "tag": "mvs_upload",
+      "handler": "Shortcodes/Shortcodes.php::render_upload",
+      "attrs": [
+        "max_files",
+        "show_privacy"
+      ]
+    },
+    {
+      "tag": "mvs_album",
+      "handler": "Shortcodes/Shortcodes.php::render_album",
+      "attrs": [
+        "id",
+        "columns",
+        "show_title"
+      ]
+    },
+    {
+      "tag": "mvs_player",
+      "handler": "Shortcodes/Shortcodes.php::render_player",
+      "attrs": [
+        "id",
+        "autoplay",
+        "loop",
+        "download"
+      ]
+    },
+    {
+      "tag": "mvs_stats",
+      "handler": "Shortcodes/Shortcodes.php::render_stats",
+      "attrs": [
+        "views",
+        "downloads",
+        "top_count"
+      ]
+    },
+    {
+      "tag": "mvs_dashboard",
+      "handler": "Shortcodes/Shortcodes.php::render_dashboard",
+      "attrs": []
+    },
+    {
+      "tag": "mvs_collection",
+      "handler": "Shortcodes/Shortcodes.php::render_collection",
+      "attrs": [
+        "id",
+        "columns",
+        "per_page"
+      ]
+    },
+    {
+      "tag": "mvs_profile_edit",
+      "handler": "Shortcodes/Shortcodes.php::render_profile_edit",
+      "attrs": []
+    }
   ],
   "blocks": [
-    { "name": "wpmediaverse/media-grid", "render": "src/blocks/media-grid/render.php", "interactivity": true },
-    { "name": "wpmediaverse/media-player", "render": "src/blocks/media-player/render.php", "interactivity": true },
-    { "name": "wpmediaverse/media-upload", "render": "src/blocks/media-upload/render.php", "interactivity": true },
-    { "name": "wpmediaverse/media-stats", "render": "src/blocks/media-stats/render.php", "interactivity": false },
-    { "name": "wpmediaverse/media-social", "render": "src/blocks/media-social/render.php", "interactivity": true },
-    { "name": "wpmediaverse/album-viewer", "render": "src/blocks/album-viewer/render.php", "interactivity": true },
-    { "name": "wpmediaverse/explore-feed", "render": "src/blocks/explore-feed/render.php", "interactivity": true },
-    { "name": "wpmediaverse/explore-view", "render": "src/blocks/explore-view/render.php", "interactivity": true },
-    { "name": "wpmediaverse/dashboard-view", "render": "src/blocks/dashboard-view/render.php", "interactivity": true },
-    { "name": "wpmediaverse/story-viewer", "render": "src/blocks/story-viewer/render.php", "interactivity": true },
-    { "name": "wpmediaverse/lock-overlay", "render": "src/blocks/lock-overlay/render.php", "interactivity": false },
-    { "name": "wpmediaverse/shared-ui", "render": "src/blocks/shared-ui/render.php", "interactivity": true }
+    {
+      "name": "wpmediaverse/media-grid",
+      "render": "src/blocks/media-grid/render.php",
+      "interactivity": true
+    },
+    {
+      "name": "wpmediaverse/media-player",
+      "render": "src/blocks/media-player/render.php",
+      "interactivity": true
+    },
+    {
+      "name": "wpmediaverse/media-upload",
+      "render": "src/blocks/media-upload/render.php",
+      "interactivity": true
+    },
+    {
+      "name": "wpmediaverse/media-stats",
+      "render": "src/blocks/media-stats/render.php",
+      "interactivity": false
+    },
+    {
+      "name": "wpmediaverse/media-social",
+      "render": "src/blocks/media-social/render.php",
+      "interactivity": true
+    },
+    {
+      "name": "wpmediaverse/album-viewer",
+      "render": "src/blocks/album-viewer/render.php",
+      "interactivity": true
+    },
+    {
+      "name": "wpmediaverse/explore-feed",
+      "render": "src/blocks/explore-feed/render.php",
+      "interactivity": true
+    },
+    {
+      "name": "wpmediaverse/explore-view",
+      "render": "src/blocks/explore-view/render.php",
+      "interactivity": true
+    },
+    {
+      "name": "wpmediaverse/dashboard-view",
+      "render": "src/blocks/dashboard-view/render.php",
+      "interactivity": true
+    },
+    {
+      "name": "wpmediaverse/story-viewer",
+      "render": "src/blocks/story-viewer/render.php",
+      "interactivity": true
+    },
+    {
+      "name": "wpmediaverse/lock-overlay",
+      "render": "src/blocks/lock-overlay/render.php",
+      "interactivity": false
+    },
+    {
+      "name": "wpmediaverse/shared-ui",
+      "render": "src/blocks/shared-ui/render.php",
+      "interactivity": true
+    }
   ],
   "post_types": [
-    { "slug": "mvs_album", "source": "PostTypes/Album.php" },
-    { "slug": "mvs_collection", "source": "PostTypes/Collection.php" }
+    {
+      "slug": "mvs_album",
+      "source": "PostTypes/Album.php"
+    },
+    {
+      "slug": "mvs_collection",
+      "source": "PostTypes/Collection.php"
+    }
   ],
   "taxonomies": [
-    { "slug": "mvs_tag", "source": "Taxonomies/MediaTag.php" },
-    { "slug": "mvs_category", "source": "Taxonomies/MediaCategory.php" }
+    {
+      "slug": "mvs_tag",
+      "source": "Taxonomies/MediaTag.php"
+    },
+    {
+      "slug": "mvs_category",
+      "source": "Taxonomies/MediaCategory.php"
+    }
   ],
   "tables": [
-    { "name": "mvs_media_index", "purpose": "Authoritative media record (CPT-free)" },
-    { "name": "mvs_media_meta", "purpose": "Sparse key/value media metadata" },
-    { "name": "mvs_media_views", "purpose": "Per-user view tracking" },
-    { "name": "mvs_media_stats", "purpose": "Aggregated stats" },
-    { "name": "mvs_reactions", "purpose": "Emoji reactions" },
-    { "name": "mvs_favorites", "purpose": "Bookmarks" },
-    { "name": "mvs_follows", "purpose": "Follow graph" },
-    { "name": "mvs_mentions", "purpose": "@-mentions" },
-    { "name": "mvs_activity", "purpose": "Activity feed entries" },
-    { "name": "mvs_notifications", "purpose": "In-app notifications" },
-    { "name": "mvs_reports", "purpose": "Abuse reports" },
-    { "name": "mvs_blocks", "purpose": "User blocklist" },
-    { "name": "mvs_access_rules", "purpose": "Per-media access rules" },
-    { "name": "mvs_access_grants", "purpose": "Granted tokens" },
-    { "name": "mvs_album_items", "purpose": "Album↔media join" },
-    { "name": "mvs_error_log", "purpose": "Internal log table" },
-    { "name": "mvs_conversations", "purpose": "DM threads" },
-    { "name": "mvs_conversation_participants", "purpose": "DM membership" },
-    { "name": "mvs_messages", "purpose": "DM messages" },
-    { "name": "mvs_message_reactions", "purpose": "DM message reactions" },
-    { "name": "mvs_transactions", "purpose": "Credit/payment ledger (Pro consumes)" }
+    {
+      "name": "mvs_media_index",
+      "purpose": "Authoritative media record (CPT-free)"
+    },
+    {
+      "name": "mvs_media_meta",
+      "purpose": "Sparse key/value media metadata"
+    },
+    {
+      "name": "mvs_media_views",
+      "purpose": "Per-user view tracking"
+    },
+    {
+      "name": "mvs_media_stats",
+      "purpose": "Aggregated stats"
+    },
+    {
+      "name": "mvs_reactions",
+      "purpose": "Emoji reactions"
+    },
+    {
+      "name": "mvs_favorites",
+      "purpose": "Bookmarks"
+    },
+    {
+      "name": "mvs_follows",
+      "purpose": "Follow graph"
+    },
+    {
+      "name": "mvs_mentions",
+      "purpose": "@-mentions"
+    },
+    {
+      "name": "mvs_activity",
+      "purpose": "Activity feed entries"
+    },
+    {
+      "name": "mvs_notifications",
+      "purpose": "In-app notifications"
+    },
+    {
+      "name": "mvs_reports",
+      "purpose": "Abuse reports"
+    },
+    {
+      "name": "mvs_blocks",
+      "purpose": "User blocklist"
+    },
+    {
+      "name": "mvs_access_rules",
+      "purpose": "Per-media access rules"
+    },
+    {
+      "name": "mvs_access_grants",
+      "purpose": "Granted tokens"
+    },
+    {
+      "name": "mvs_album_items",
+      "purpose": "Album\u2194media join"
+    },
+    {
+      "name": "mvs_error_log",
+      "purpose": "Internal log table"
+    },
+    {
+      "name": "mvs_conversations",
+      "purpose": "DM threads"
+    },
+    {
+      "name": "mvs_conversation_participants",
+      "purpose": "DM membership"
+    },
+    {
+      "name": "mvs_messages",
+      "purpose": "DM messages"
+    },
+    {
+      "name": "mvs_message_reactions",
+      "purpose": "DM message reactions"
+    },
+    {
+      "name": "mvs_transactions",
+      "purpose": "Credit/payment ledger (Pro consumes)"
+    }
   ],
   "capabilities": [
-    { "cap": "upload_mvs_media", "default_roles": ["administrator", "editor", "author", "contributor", "subscriber"] },
-    { "cap": "edit_mvs_media", "default_roles": ["administrator", "editor", "author", "contributor", "subscriber"] },
-    { "cap": "edit_others_mvs_media", "default_roles": ["administrator", "editor"] },
-    { "cap": "delete_mvs_media", "default_roles": ["administrator", "editor", "author", "contributor", "subscriber"] },
-    { "cap": "delete_others_mvs_media", "default_roles": ["administrator", "editor"] },
-    { "cap": "publish_mvs_media", "default_roles": ["administrator", "editor", "author", "subscriber"] },
-    { "cap": "read_mvs_media", "default_roles": ["administrator", "editor", "author", "contributor", "subscriber"] },
-    { "cap": "moderate_mvs_media", "default_roles": ["administrator", "editor"] },
-    { "cap": "manage_mvs_settings", "default_roles": ["administrator"] },
-    { "cap": "manage_mvs_access", "default_roles": ["administrator", "editor"] }
+    {
+      "cap": "upload_mvs_media",
+      "default_roles": [
+        "administrator",
+        "editor",
+        "author",
+        "contributor",
+        "subscriber"
+      ]
+    },
+    {
+      "cap": "edit_mvs_media",
+      "default_roles": [
+        "administrator",
+        "editor",
+        "author",
+        "contributor",
+        "subscriber"
+      ]
+    },
+    {
+      "cap": "edit_others_mvs_media",
+      "default_roles": [
+        "administrator",
+        "editor"
+      ]
+    },
+    {
+      "cap": "delete_mvs_media",
+      "default_roles": [
+        "administrator",
+        "editor",
+        "author",
+        "contributor",
+        "subscriber"
+      ]
+    },
+    {
+      "cap": "delete_others_mvs_media",
+      "default_roles": [
+        "administrator",
+        "editor"
+      ]
+    },
+    {
+      "cap": "publish_mvs_media",
+      "default_roles": [
+        "administrator",
+        "editor",
+        "author",
+        "subscriber"
+      ]
+    },
+    {
+      "cap": "read_mvs_media",
+      "default_roles": [
+        "administrator",
+        "editor",
+        "author",
+        "contributor",
+        "subscriber"
+      ]
+    },
+    {
+      "cap": "moderate_mvs_media",
+      "default_roles": [
+        "administrator",
+        "editor"
+      ]
+    },
+    {
+      "cap": "manage_mvs_settings",
+      "default_roles": [
+        "administrator"
+      ]
+    },
+    {
+      "cap": "manage_mvs_access",
+      "default_roles": [
+        "administrator",
+        "editor"
+      ]
+    }
   ],
   "services": [
-    { "key": "storage", "class": "Services/StorageService.php" },
-    { "key": "upload", "class": "Services/UploadService.php" },
-    { "key": "privacy", "class": "Services/PrivacyService.php" },
-    { "key": "albums", "class": "Services/AlbumService.php" },
-    { "key": "collections", "class": "Services/CollectionService.php" },
-    { "key": "stories", "class": "Services/StoryService.php" },
-    { "key": "ai", "class": "Services/AIService.php" },
-    { "key": "moderation", "class": "Services/ModerationService.php" },
-    { "key": "stats", "class": "Services/StatsService.php" },
-    { "key": "access_rules", "class": "Services/AccessRulesService.php" },
-    { "key": "signed_urls", "class": "Services/SignedUrlService.php" },
-    { "key": "watermark", "class": "Services/WatermarkService.php" },
-    { "key": "cache", "class": "Services/CacheService.php" },
-    { "key": "media_url_helper", "class": "Services/MediaUrl.php", "added": "1.1.3", "purpose": "Single signing entry point for non-REST callers" },
-    { "key": "reactions", "class": "Social/ReactionService.php" },
-    { "key": "comments", "class": "Social/CommentService.php" },
-    { "key": "favorites", "class": "Social/FavoriteService.php" },
-    { "key": "mentions", "class": "Social/MentionService.php" },
-    { "key": "shares", "class": "Social/ShareService.php" },
-    { "key": "follows", "class": "Social/FollowService.php" },
-    { "key": "notifications", "class": "Social/NotificationService.php" },
-    { "key": "reports", "class": "Social/ReportService.php" },
-    { "key": "activity", "class": "Social/ActivityService.php" },
-    { "key": "messaging", "class": "Messaging/MessagingService.php" },
-    { "key": "media_repository", "class": "Repository/MediaRepository.php" },
-    { "key": "integration.buddypress", "class": "Integrations/BuddyPress/BuddyPressManager.php" },
-    { "key": "integration.webhooks", "class": "Integrations/WebhookService.php" },
-    { "key": "profile", "class": "Services/ProfileService.php" }
+    {
+      "key": "storage",
+      "class": "Services/StorageService.php"
+    },
+    {
+      "key": "upload",
+      "class": "Services/UploadService.php"
+    },
+    {
+      "key": "privacy",
+      "class": "Services/PrivacyService.php"
+    },
+    {
+      "key": "albums",
+      "class": "Services/AlbumService.php"
+    },
+    {
+      "key": "collections",
+      "class": "Services/CollectionService.php"
+    },
+    {
+      "key": "stories",
+      "class": "Services/StoryService.php"
+    },
+    {
+      "key": "ai",
+      "class": "Services/AIService.php"
+    },
+    {
+      "key": "moderation",
+      "class": "Services/ModerationService.php"
+    },
+    {
+      "key": "stats",
+      "class": "Services/StatsService.php"
+    },
+    {
+      "key": "access_rules",
+      "class": "Services/AccessRulesService.php"
+    },
+    {
+      "key": "signed_urls",
+      "class": "Services/SignedUrlService.php"
+    },
+    {
+      "key": "watermark",
+      "class": "Services/WatermarkService.php"
+    },
+    {
+      "key": "cache",
+      "class": "Services/CacheService.php"
+    },
+    {
+      "key": "media_url_helper",
+      "class": "Services/MediaUrl.php",
+      "added": "1.1.3",
+      "purpose": "Single signing entry point for non-REST callers"
+    },
+    {
+      "key": "reactions",
+      "class": "Social/ReactionService.php"
+    },
+    {
+      "key": "comments",
+      "class": "Social/CommentService.php"
+    },
+    {
+      "key": "favorites",
+      "class": "Social/FavoriteService.php"
+    },
+    {
+      "key": "mentions",
+      "class": "Social/MentionService.php"
+    },
+    {
+      "key": "shares",
+      "class": "Social/ShareService.php"
+    },
+    {
+      "key": "follows",
+      "class": "Social/FollowService.php"
+    },
+    {
+      "key": "notifications",
+      "class": "Social/NotificationService.php"
+    },
+    {
+      "key": "reports",
+      "class": "Social/ReportService.php"
+    },
+    {
+      "key": "activity",
+      "class": "Social/ActivityService.php"
+    },
+    {
+      "key": "messaging",
+      "class": "Messaging/MessagingService.php"
+    },
+    {
+      "key": "media_repository",
+      "class": "Repository/MediaRepository.php"
+    },
+    {
+      "key": "integration.buddypress",
+      "class": "Integrations/BuddyPress/BuddyPressManager.php"
+    },
+    {
+      "key": "integration.webhooks",
+      "class": "Integrations/WebhookService.php"
+    },
+    {
+      "key": "profile",
+      "class": "Services/ProfileService.php"
+    }
   ],
   "hooks_fired": [
-    { "name": "mvs_loaded", "type": "action", "args": "ServiceContainer", "where": "Core/Plugin.php::init", "purpose": "Pro extension entry point" },
-    { "name": "mvs_media_uploaded", "type": "action", "args": "$media_id, $file_path, $user_id", "where": "Services/UploadService.php" },
-    { "name": "mvs_media_deleted", "type": "action", "args": "$media_id, $user_id", "where": "Services/UploadService.php" },
-    { "name": "mvs_media_response", "type": "filter", "args": "$data, $media_id", "where": "REST controllers", "consumed_by": "Core/Plugin.php::maybe_sign_file_url (always-sign)" },
-    { "name": "mvs_storage_driver", "type": "filter", "args": "$driver_class", "where": "Services/StorageService.php", "consumed_by": "Pro: S3/BunnyCDN" },
-    { "name": "mvs_ai_providers", "type": "action", "args": "$ai_service", "where": "Services/AIService.php", "consumed_by": "Pro: GoogleVision/Rekognition" },
-    { "name": "mvs_thumbnail_sizes", "type": "filter", "args": "$sizes", "where": "Services/UploadService.php" },
-    { "name": "mvs_after_thumbnail_generation", "type": "action", "args": "$media_id, $generated, $file_path", "where": "Services/UploadService.php" },
-    { "name": "mvs_generate_watermark", "type": "filter", "args": "$preview_url, $media_id, $file_path, $file_url, $config", "where": "Services/WatermarkService.php", "consumed_by": "Pro: Watermarker" },
-    { "name": "mvs_watermark_invalidated", "type": "action", "args": "$media_id", "where": "Services/WatermarkService.php" },
-    { "name": "mvs_capability_check", "type": "filter", "args": "$allowed, $cap, $user_id", "where": "Capabilities/MediaCapabilities.php" },
-    { "name": "mvs_media_privacy_check", "type": "filter", "args": "$allowed, $media_id, $user_id", "where": "Repository/MediaRepository.php" },
-    { "name": "mvs_album_query_args", "type": "filter", "args": "$args, $user_id", "where": "Repository/AlbumRepository.php" },
-    { "name": "mvs_activity_content_transform", "type": "filter", "args": "$html, $activity_id", "where": "Integrations/BuddyPress/ActivityContentIntegration.php" },
-    { "name": "mvs_profile_tab_label", "type": "filter", "args": "$label", "where": "Integrations/BuddyPress/ProfileTabIntegration.php" },
-    { "name": "mvs_group_tab_label", "type": "filter", "args": "$label", "where": "Integrations/BuddyPress/GroupTabIntegration.php" },
-    { "name": "mvs_stats_tabs", "type": "filter", "args": "$tabs", "where": "Admin/StatsPage.php", "consumed_by": "Pro: Video Analytics tab" },
-    { "name": "mvs_moderation_tabs", "type": "filter", "args": "$tabs", "where": "Admin/ModerationQueue.php", "consumed_by": "Pro: User Reports tab" },
-    { "name": "mvs_signed_url_lifetime", "type": "filter", "args": "$seconds, $media_id, $user_id", "where": "Services/SignedUrlService.php" },
-    { "name": "mvs_serve_file_headers", "type": "filter", "args": "$headers, $media_id", "where": "REST/Controller/SignedUrlController.php" },
-    { "name": "mvs_notification_created", "type": "action", "args": "$notification_id, $user_id, $type, $actor_id, $media_id", "where": "Social/NotificationService.php" },
-    { "name": "mvs_message_sent", "type": "action", "args": "$message_id, $conversation_id, $sender_id", "where": "Messaging/MessagingService.php" }
+    {
+      "name": "mvs_loaded",
+      "type": "action",
+      "args": "ServiceContainer",
+      "where": "Core/Plugin.php::init",
+      "purpose": "Pro extension entry point",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_uploaded",
+      "type": "action",
+      "args": "$media_id, $file_path, $user_id",
+      "where": "Services/UploadService.php",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Connectors/ConnectorManager.php:60",
+          "kind": "add_action_listener"
+        }
+      ]
+    },
+    {
+      "name": "mvs_media_deleted",
+      "type": "action",
+      "args": "$media_id, $user_id",
+      "where": "Services/UploadService.php",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Quota/QuotaService.php:43",
+          "kind": "add_action_listener"
+        }
+      ]
+    },
+    {
+      "name": "mvs_media_response",
+      "type": "filter",
+      "args": "$data, $media_id",
+      "where": "REST controllers",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Captions/TranscriptionService.php:74",
+          "kind": "add_filter_listener"
+        }
+      ]
+    },
+    {
+      "name": "mvs_storage_driver",
+      "type": "filter",
+      "args": "$driver_class",
+      "where": "Services/StorageService.php",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:211",
+          "kind": "add_filter_listener"
+        }
+      ]
+    },
+    {
+      "name": "mvs_ai_providers",
+      "type": "action",
+      "args": "$ai_service",
+      "where": "Services/AIService.php",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:217",
+          "kind": "add_action_listener"
+        }
+      ]
+    },
+    {
+      "name": "mvs_thumbnail_sizes",
+      "type": "filter",
+      "args": "$sizes",
+      "where": "Services/UploadService.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_after_thumbnail_generation",
+      "type": "action",
+      "args": "$media_id, $generated, $file_path",
+      "where": "Services/UploadService.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_generate_watermark",
+      "type": "filter",
+      "args": "$preview_url, $media_id, $file_path, $file_url, $config",
+      "where": "Services/WatermarkService.php",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:214",
+          "kind": "add_filter_listener"
+        }
+      ]
+    },
+    {
+      "name": "mvs_watermark_invalidated",
+      "type": "action",
+      "args": "$media_id",
+      "where": "Services/WatermarkService.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_capability_check",
+      "type": "filter",
+      "args": "$allowed, $cap, $user_id",
+      "where": "Capabilities/MediaCapabilities.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_privacy_check",
+      "type": "filter",
+      "args": "$allowed, $media_id, $user_id",
+      "where": "Repository/MediaRepository.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_album_query_args",
+      "type": "filter",
+      "args": "$args, $user_id",
+      "where": "Repository/AlbumRepository.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_activity_content_transform",
+      "type": "filter",
+      "args": "$html, $activity_id",
+      "where": "Integrations/BuddyPress/ActivityContentIntegration.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_profile_tab_label",
+      "type": "filter",
+      "args": "$label",
+      "where": "Integrations/BuddyPress/ProfileTabIntegration.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_group_tab_label",
+      "type": "filter",
+      "args": "$label",
+      "where": "Integrations/BuddyPress/GroupTabIntegration.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_stats_tabs",
+      "type": "filter",
+      "args": "$tabs",
+      "where": "Admin/StatsPage.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_moderation_tabs",
+      "type": "filter",
+      "args": "$tabs",
+      "where": "Admin/ModerationQueue.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_signed_url_lifetime",
+      "type": "filter",
+      "args": "$seconds, $media_id, $user_id",
+      "where": "Services/SignedUrlService.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_serve_file_headers",
+      "type": "filter",
+      "args": "$headers, $media_id",
+      "where": "REST/Controller/SignedUrlController.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_notification_created",
+      "type": "action",
+      "args": "$notification_id, $user_id, $type, $actor_id, $media_id",
+      "where": "Social/NotificationService.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_message_sent",
+      "type": "action",
+      "args": "$message_id, $conversation_id, $sender_id",
+      "where": "Messaging/MessagingService.php",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Messaging/NotificationListener.php:33",
+          "kind": "add_action_listener"
+        }
+      ]
+    }
   ],
   "buddypress_integration": {
     "enabled_when": "BuddyPress is active",
     "manager": "Integrations/BuddyPress/BuddyPressManager.php",
     "sub_classes": [
-      { "class": "ActivitySyncIntegration", "hooks": ["bp_activity_after_save"], "purpose": "Mirror media uploads to BP activity" },
-      { "class": "ActivityContentIntegration", "hooks": ["bp_get_activity_content_body (priority 0)", "bp_activity_entry_content", "bp_activity_allowed_tags"], "purpose": "Transform legacy rtMedia/MediaPress/BuddyBoss markup; sign every URL through MediaUrl (1.1.3 fix)" },
-      { "class": "ProfileTabIntegration", "hooks": ["bp_setup_nav", "bp_template_redirect"], "purpose": "Add Media tab to profiles" },
-      { "class": "GroupTabIntegration", "hooks": ["bp_setup_nav"], "purpose": "Add Media tab to groups (group-scoped via group_id meta)" },
-      { "class": "NotificationIntegration", "hooks": ["bp_notifications_get_registered_components", "bp_notifications_get_notifications_for_user", "mvs_notification_created"], "purpose": "Mirror MVS notifications into BP component" },
-      { "class": "ActivityFormIntegration", "hooks": ["bp_activity_post_form_options"], "purpose": "Add upload widget to BP post form" },
-      { "class": "MediaDisplayHelper", "hooks": [], "purpose": "Shared thumbnail/href rendering; signs href fallback via MediaUrl::for_file (1.1.3 fix)" }
+      {
+        "class": "ActivitySyncIntegration",
+        "hooks": [
+          "bp_activity_after_save"
+        ],
+        "purpose": "Mirror media uploads to BP activity"
+      },
+      {
+        "class": "ActivityContentIntegration",
+        "hooks": [
+          "bp_get_activity_content_body (priority 0)",
+          "bp_activity_entry_content",
+          "bp_activity_allowed_tags"
+        ],
+        "purpose": "Transform legacy rtMedia/MediaPress/BuddyBoss markup; sign every URL through MediaUrl (1.1.3 fix)"
+      },
+      {
+        "class": "ProfileTabIntegration",
+        "hooks": [
+          "bp_setup_nav",
+          "bp_template_redirect"
+        ],
+        "purpose": "Add Media tab to profiles"
+      },
+      {
+        "class": "GroupTabIntegration",
+        "hooks": [
+          "bp_setup_nav"
+        ],
+        "purpose": "Add Media tab to groups (group-scoped via group_id meta)"
+      },
+      {
+        "class": "NotificationIntegration",
+        "hooks": [
+          "bp_notifications_get_registered_components",
+          "bp_notifications_get_notifications_for_user",
+          "mvs_notification_created"
+        ],
+        "purpose": "Mirror MVS notifications into BP component"
+      },
+      {
+        "class": "ActivityFormIntegration",
+        "hooks": [
+          "bp_activity_post_form_options"
+        ],
+        "purpose": "Add upload widget to BP post form"
+      },
+      {
+        "class": "MediaDisplayHelper",
+        "hooks": [],
+        "purpose": "Shared thumbnail/href rendering; signs href fallback via MediaUrl::for_file (1.1.3 fix)"
+      }
     ]
   },
   "frontend_assets": {
     "js": [
-      { "file": "assets/js/frontend/bp-actions.js", "purpose": "BP-context like/comment", "calls": ["REST /reactions", "REST /comments"] },
-      { "file": "assets/js/frontend/load-more.js", "purpose": "Pagination/infinite scroll", "calls": ["REST /media"] },
-      { "file": "assets/js/frontend/card-builders.js", "purpose": "Card render helpers", "calls": [] },
-      { "file": "assets/js/messaging.js", "purpose": "DM UI", "calls": ["REST /conversations", "REST /messages"] },
-      { "file": "assets/js/profile-edit.js", "purpose": "Profile editor", "calls": ["REST /me/profile", "REST /me/avatar"] },
-      { "file": "assets/js/bp-activity-media.js", "purpose": "Legacy activity hydration", "calls": ["REST /media"] },
-      { "file": "assets/js/admin/icons.js", "purpose": "Lucide icons", "calls": [] },
-      { "file": "assets/js/admin/toast.js", "purpose": "Admin notifications", "calls": [] },
-      { "file": "assets/js/settings-nav.js", "purpose": "Settings sidebar", "calls": [] }
+      {
+        "file": "assets/js/frontend/bp-actions.js",
+        "purpose": "BP-context like/comment",
+        "calls": [
+          "REST /reactions",
+          "REST /comments"
+        ]
+      },
+      {
+        "file": "assets/js/frontend/load-more.js",
+        "purpose": "Pagination/infinite scroll",
+        "calls": [
+          "REST /media"
+        ]
+      },
+      {
+        "file": "assets/js/frontend/card-builders.js",
+        "purpose": "Card render helpers",
+        "calls": []
+      },
+      {
+        "file": "assets/js/messaging.js",
+        "purpose": "DM UI",
+        "calls": [
+          "REST /conversations",
+          "REST /messages"
+        ]
+      },
+      {
+        "file": "assets/js/profile-edit.js",
+        "purpose": "Profile editor",
+        "calls": [
+          "REST /me/profile",
+          "REST /me/avatar"
+        ]
+      },
+      {
+        "file": "assets/js/bp-activity-media.js",
+        "purpose": "Legacy activity hydration",
+        "calls": [
+          "REST /media"
+        ]
+      },
+      {
+        "file": "assets/js/admin/icons.js",
+        "purpose": "Lucide icons",
+        "calls": []
+      },
+      {
+        "file": "assets/js/admin/toast.js",
+        "purpose": "Admin notifications",
+        "calls": []
+      },
+      {
+        "file": "assets/js/settings-nav.js",
+        "purpose": "Settings sidebar",
+        "calls": []
+      }
     ],
     "css": [
-      { "file": "assets/css/frontend.css", "scope": "frontend", "prefix": ".mvs-" },
-      { "file": "assets/css/admin.css", "scope": "admin", "prefix": ".mvs-admin-" },
-      { "file": "assets/css/bp-integration.css", "scope": "BP only", "prefix": "#buddypress .mvs-" },
-      { "file": "assets/css/messaging.css", "scope": "DM UI", "prefix": ".mvs-messaging-" },
-      { "file": "assets/css/shared-ui-shell.css", "scope": "layout primitives", "prefix": ".mvs-shell-" }
+      {
+        "file": "assets/css/frontend.css",
+        "scope": "frontend",
+        "prefix": ".mvs-"
+      },
+      {
+        "file": "assets/css/admin.css",
+        "scope": "admin",
+        "prefix": ".mvs-admin-"
+      },
+      {
+        "file": "assets/css/bp-integration.css",
+        "scope": "BP only",
+        "prefix": "#buddypress .mvs-"
+      },
+      {
+        "file": "assets/css/messaging.css",
+        "scope": "DM UI",
+        "prefix": ".mvs-messaging-"
+      },
+      {
+        "file": "assets/css/shared-ui-shell.css",
+        "scope": "layout primitives",
+        "prefix": ".mvs-shell-"
+      }
     ]
   },
   "cron": [
-    { "hook": "mvs_prune_logs", "interval": "daily", "handler": "Services/LoggerService::prune", "purpose": "Drop log rows > 30 days" },
-    { "hook": "mvs_story_cleanup", "interval": "hourly", "handler": "Services/StoryService::cleanup", "purpose": "Expire 24h stories" }
+    {
+      "hook": "mvs_prune_logs",
+      "interval": "daily",
+      "handler": "Services/LoggerService::prune",
+      "purpose": "Drop log rows > 30 days"
+    },
+    {
+      "hook": "mvs_story_cleanup",
+      "interval": "hourly",
+      "handler": "Services/StoryService::cleanup",
+      "purpose": "Expire 24h stories"
+    }
   ],
   "wp_cli": [
-    { "command": "wp mvs", "class": "CLI/Commands.php", "purpose": "Router for sub-commands (regenerate-thumbnails, recount-stats, export-user-data)" }
+    {
+      "command": "wp mvs",
+      "class": "CLI/Commands.php",
+      "purpose": "Router for sub-commands (regenerate-thumbnails, recount-stats, export-user-data)"
+    }
   ],
   "storage_drivers": [
-    { "name": "local", "class": "Services/LocalDriver.php", "url_behavior": "wp-content/uploads/wpmediaverse/<rel>; .htaccess deny-all so reads must flow through SignedUrlService" }
+    {
+      "name": "local",
+      "class": "Services/LocalDriver.php",
+      "url_behavior": "wp-content/uploads/wpmediaverse/<rel>; .htaccess deny-all so reads must flow through SignedUrlService"
+    }
   ],
   "security": {
     "uploads_gate": ".htaccess deny-all on /wp-content/uploads/wpmediaverse/",
@@ -294,7 +1599,7 @@
   "ci_guards": {
     "script": "bin/ci-local.sh",
     "url_emission_regex": "esc_url(MediaRepository::get(.., 'file_url'|thumb_*)) | 'cover_image_url'=>$row->.. | bare MediaRepository::get(.., 'file_url')",
-    "storage_internal_marker": "// CI: storage-internal — use this trailing comment to mark internal-only file_url reads (DB writes, filesystem path derivation, filter args) so the CI guard skips them",
+    "storage_internal_marker": "// CI: storage-internal \u2014 use this trailing comment to mark internal-only file_url reads (DB writes, filesystem path derivation, filter args) so the CI guard skips them",
     "duplicate_method_check": true,
     "phpstan_level": 5
   },
@@ -309,12 +1614,14 @@
     "Errors: WP_Error or LoggerService (no silent return false)",
     "i18n: __() / esc_html__() / esc_attr__() with text domain wpmediaverse",
     "Pro boundary: never import Free classes directly (exception: MediaRepository, tech debt)",
-    "No silent render fallthrough — every return; in render path needs visible empty state",
+    "No silent render fallthrough \u2014 every return; in render path needs visible empty state",
     "CSS file ownership: BP rules in bp-integration.css scoped under #buddypress",
     "Names don't lie: class/hook/CSS names match actual usage",
-    "Sibling classes with ≥50% duplicate methods share a base at n=3"
+    "Sibling classes with \u226550% duplicate methods share a base at n=3"
   ],
-  "test_dirs": ["tests/unit/"],
+  "test_dirs": [
+    "tests/unit/"
+  ],
   "build_commands": {
     "dev": "npx grunt build",
     "release": "npx grunt dist",
@@ -324,9 +1631,87 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-04-29",
-    "from": "wp-plugin-onboard skill",
+    "at": "2026-04-30T19:16:10Z",
+    "from": "wp-plugin-onboard skill (refresh 2026-05-01)",
     "branch": "1.2.0",
-    "schema_version": "v1"
+    "schema_version": "v2.2",
+    "scan_scope": "distignore",
+    "scan_path": ".",
+    "php_file_count": 160
+  },
+  "category_sources": {
+    "rest": [
+      "includes/REST/**/*.php"
+    ],
+    "ajax": [
+      "includes/Admin/**/*.php"
+    ],
+    "admin_pages": [
+      "includes/Admin/**/*.php"
+    ],
+    "settings": [
+      "includes/Admin/Settings/**/*.php"
+    ],
+    "shortcodes": [
+      "includes/Shortcodes/**/*.php"
+    ],
+    "blocks": [
+      "src/blocks/**/*.{php,json}",
+      "build/blocks/**/*.{php,json}"
+    ],
+    "post_types": [
+      "includes/PostTypes/**/*.php"
+    ],
+    "taxonomies": [
+      "includes/Taxonomies/**/*.php"
+    ],
+    "tables": [
+      "includes/Core/Migrator.php"
+    ],
+    "capabilities": [
+      "includes/Capabilities/**/*.php",
+      "includes/**/*.php"
+    ],
+    "services": [
+      "includes/Core/Plugin.php",
+      "includes/Services/**/*.php"
+    ],
+    "hooks_fired": [
+      "includes/**/*.php",
+      "templates/**/*.php"
+    ],
+    "buddypress_integration": [
+      "includes/Integrations/BuddyPress/**/*.php"
+    ],
+    "frontend_assets": [
+      "assets/**/*.{js,css}",
+      "build/**/*.{js,css}"
+    ],
+    "cron": [
+      "includes/**/*.php"
+    ],
+    "wp_cli": [
+      "includes/CLI/**/*.php"
+    ],
+    "security": [
+      "includes/Services/SignedUrlService.php",
+      "includes/Services/MediaUrl.php",
+      "includes/REST/RateLimiter.php"
+    ]
+  },
+  "static_analysis": {
+    "dead_listeners": [],
+    "cap_context_mismatches": [],
+    "extensibility_gaps": [],
+    "js_only_activation": [],
+    "rest_hang_risks": [],
+    "visual_required_no_enforcement": [],
+    "grid_track_overflow_risks": [],
+    "hook_signature_drift": [],
+    "adapter_undefined_calls": [],
+    "registry_bypasses": [],
+    "suppressed_baseline_inventory": {},
+    "registry_strategy": [],
+    "notes": "Phase 2.5.11\u20132.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits \u2014 WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-01 captures the live findings (7 plugin-dev-rules failures, 6 REST/JS contract proximity-window false positives, 3 wiring false positives). See audit/wppqa-baseline-2026-05-01/SUMMARY.md."
   }
 }

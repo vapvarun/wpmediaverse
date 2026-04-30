@@ -37,3 +37,5 @@ wpcs-report.md
 /build/media-upload/
 /build/shared-ui/
 /build/story-viewer/
+.claude-tmp/
+audit/journey-runs/

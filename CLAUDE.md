@@ -1,6 +1,6 @@
 # WPMediaVerse — AI Quick Reference
 
-> **Read this first.** Before grepping or scanning the codebase, load **`audit/manifest.json`** — it's the canonical machine-readable inventory of every REST route, AJAX handler, hook, table, capability, service, block, shortcode, BP integration, cron job, CSS/JS module, and security boundary in this plugin. Use the manifest to answer "where is X?" / "what hooks fire on Y?" without re-scanning. Update it via `/wp-plugin-onboard --refresh` when the surface changes (new endpoint, new hook, new table). Companion docs: [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md).
+> **READ FIRST:** [`audit/manifest.summary.json`](audit/manifest.summary.json) is a ≤2 KB index — load it first. The full inventory in [`audit/manifest.json`](audit/manifest.json) (v2.2 schema) covers **51 REST endpoints, 3 plugin AJAX actions, 7 admin pages, 31 settings, 22 hooks fired (7 with Pro consumers), 21 tables, 12 blocks, 34 services**. Detail files: [`manifest.rest.json`](audit/manifest.rest.json), [`manifest.hooks.json`](audit/manifest.hooks.json), [`manifest.tables.json`](audit/manifest.tables.json). Cross-plugin coupling: [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Bug-finder baseline: [`audit/wppqa-baseline-2026-05-01/SUMMARY.md`](audit/wppqa-baseline-2026-05-01/SUMMARY.md). Reports: [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/graph.html`](audit/graph.html). Refresh: `/wp-plugin-onboard --refresh`.
 
 ## Quick Facts
 
@@ -232,6 +232,8 @@ _Updated after each commit._
 
 | Date | Commit | Summary |
 |------|--------|---------|
+| 2026-05-01 | `d986525` | Fix: DM-access dropdown silently rewriting Nobody/Mutual to Everyone — duplicate `register_setting()` overwrote enum sanitizer with bool sanitizer. Modified Sanitizers.php + SettingsRegistrar.php. Regression journey: `audit/journeys/customer/05-dm-access-setting-persists.md`. |
+| 2026-05-01 | (skill run) | `/wp-plugin-onboard --refresh` regenerated manifest to v2.2 (added `mvs_storage_driver` + `mvs_comment_edit_window` settings, populated `consumed_by[]` on 7 Free hooks); dropped local-CI scaffold + 5 critical journeys; wppqa baseline saved (no new findings vs 2026-04-29). |
 | 2026-04-29 | `ab21046` | Sign every upload-URL emission path: BP activity rebuild signs through MediaUrl; AIService analyze/auto_tag/moderate use signed URLs (no raw fallback); MediaDisplayHelper href fallback signed; TemplateHelpers defensive fallback returns ''; bin/ci-local.sh honors `// CI: storage-internal` markers; new `Services/MediaUrl.php` static helper as single signing entry point |
 | 2026-04-29 | `c32e060` | 1.2.0 milestone planning docs forked off into `1.1.4` branch; new `1.2.0` rebased fresh from main |
 | 2026-04-29 | (skill run) | `/wp-plugin-onboard` regenerated `audit/manifest.json` + `FEATURE_AUDIT.md` + `CODE_FLOWS.md` |
@@ -240,3 +242,36 @@ _Updated after each commit._
 | 2026-04-23 | — | Added `qa/` canonical QA home; Coding Rule #11 "no silent render fallthrough" |
 | 2026-04-21 | 080fd94 | 1.1.2: grid cols=5, stats filters, tag cloud count, lightbox favorite/share fixes |
 | 2026-04-10 | 632e955 | 1.1.1: signed URL fixes, anonymous access, DM notifications, messaging page fixes |
+
+---
+
+## Local CI pipeline (REQUIRED before push)
+
+This plugin has a self-contained local-CI gate. No external service runs the gate — every contributor runs it on their own machine, and the pre-push git hook runs it automatically before every `git push`.
+
+```bash
+composer install-hooks    # one-time per clone — activates bin/git-hooks/pre-push
+composer ci               # full pipeline (~30s + browser journeys)
+composer ci:no-journeys   # everything except browser-dependent journeys (~25s)
+composer ci:quick         # PHP lint + coding-rules only (~10s, for tight loops)
+composer arch-checks      # Free/Pro contract invariants (Pro plugin only)
+composer journeys:dry-run # list configured journeys without executing
+```
+
+What the gate runs (in order, see `bin/local-ci.sh`):
+
+| Stage | Tool | Catches |
+|---|---|---|
+| 1.1 PHP lint | `php -l` on every changed source | syntax errors |
+| 1.2 WPCS | `composer phpcs` | WordPress coding standards |
+| 1.3 PHPStan | `composer phpstan` | static type errors |
+| 2.1 Coding rules | `bin/coding-rules-check.sh` | plugin-specific rules |
+| 2.2 (Pro only) | `bin/architecture-checks.sh` | Free/Pro contract invariants |
+| 3.1 Manifest | `jq` on `audit/manifest.json` | manifest validity + freshness |
+| 4.1 Journeys | `bin/run-journeys.sh` | customer flows end-to-end |
+
+**Bypass for emergencies only**: `SKIP_LOCAL_CI=1 git push`.
+
+## Customer journeys
+
+Bug fixes that survive a refactor are journey-covered. See `audit/journeys/README.md` for the schema and the executor contract. When a new bug is fixed, add or update the journey that would have caught it. The journey IS the regression test.

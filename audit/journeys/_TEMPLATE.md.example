@@ -1,0 +1,53 @@
+---
+journey: <slug-with-dashes>
+plugin: wpmediaverse
+priority: critical | high | normal | nice-to-have
+roles: [<role>, ...]
+covers: [<bug-or-feature-tag>]
+prerequisites:
+  - "Site reachable at $SITE_URL"
+  - "<other setup needed>"
+estimated_runtime_minutes: 5
+---
+
+# <Journey title>
+
+<One-paragraph why-this-journey-exists. What customer-visible behavior breaks if the underlying code regresses?>
+
+## Setup
+
+- Site: `$SITE_URL`
+- Test user: `<username>` (autologin via `?autologin=<username>` if dev-auto-login mu-plugin is installed)
+- Fixtures needed: <list>
+- DB clean (if needed):
+  ```sql
+  DELETE FROM wp_<table> WHERE ...;
+  ```
+
+## Steps
+
+### 1. <Action title>
+- **Action**: `playwright_navigate <url>` OR `curl <url>` OR `mysql_query "<sql>"`
+- **Expect**: <observable state — DOM element, HTTP status, JSON shape, DB row>
+- **Capture** (if a step needs to remember a value): `<VAR_NAME>` ← <how to extract>
+- **On fail**: <which file/line is most likely broken>
+
+### 2. <Next action>
+- **Action**: ...
+- **Expect**: ...
+
+### 3. ...
+
+## Pass criteria
+
+ALL of the following hold:
+1. <Assertion 1>
+2. <Assertion 2>
+3. <Assertion 3>
+
+## Fail diagnostics
+
+| Symptom | Likely cause | File to inspect |
+|---|---|---|
+| <Symptom A> | <Cause A> | `path/to/file.php:line` |
+| <Symptom B> | <Cause B> | `path/to/other.php:line` |
