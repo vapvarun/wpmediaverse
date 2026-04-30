@@ -77,36 +77,6 @@ class SettingsRegistrar {
 		);
 
 		register_setting(
-			SettingsPage::OPTION_GROUP . '_messaging',
-			'mvs_dm_access',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_dm_access' ),
-				'default'           => 'all',
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_messaging',
-			'mvs_dm_min_age',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
-				'default'           => 0,
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_messaging',
-			'mvs_show_online_status',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => true,
-			)
-		);
-
-		register_setting(
 			SettingsPage::OPTION_GROUP . '_general',
 			'mvs_comment_edit_window',
 			array(
@@ -803,7 +773,7 @@ class SettingsRegistrar {
 			'mvs_dm_access',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_dm_access' ),
 				'default'           => 'everyone',
 			)
 		);
@@ -853,7 +823,7 @@ class SettingsRegistrar {
 			'mvs_show_online_status',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_show_online_status' ),
 				'default'           => 'everyone',
 			)
 		);

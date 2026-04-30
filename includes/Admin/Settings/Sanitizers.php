@@ -152,15 +152,31 @@ class Sanitizers {
 	}
 
 	/**
-	 * Sanitize DM access level: `all`, `followers`, or `none`.
+	 * Sanitize DM access level. Whitelist must stay in lockstep with the
+	 * dropdown choices in SettingsRegistrar::register_messaging_settings()
+	 * AND the consumer switch in MessagingService::check_can_message().
 	 *
 	 * @param mixed $value Raw input.
 	 * @return string Sanitized access level.
 	 */
 	public static function sanitize_dm_access( $value ): string {
-		$allowed = array( 'all', 'followers', 'none' );
+		$allowed = array( 'everyone', 'followers', 'mutual', 'nobody' );
 		$value   = is_string( $value ) ? $value : '';
-		return in_array( $value, $allowed, true ) ? $value : 'all';
+		return in_array( $value, $allowed, true ) ? $value : 'everyone';
+	}
+
+	/**
+	 * Sanitize online-status visibility. Whitelist must stay in lockstep with
+	 * the dropdown choices in SettingsRegistrar::register_messaging_settings()
+	 * AND the consumer in Plugin::init_messaging() filter callback.
+	 *
+	 * @param mixed $value Raw input.
+	 * @return string Sanitized visibility level.
+	 */
+	public static function sanitize_show_online_status( $value ): string {
+		$allowed = array( 'everyone', 'followers', 'nobody' );
+		$value   = is_string( $value ) ? $value : '';
+		return in_array( $value, $allowed, true ) ? $value : 'everyone';
 	}
 
 	/**
