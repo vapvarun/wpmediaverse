@@ -39,3 +39,8 @@ wpcs-report.md
 /build/story-viewer/
 .claude-tmp/
 audit/journey-runs/
+
+# Playwright (Phase 0c E2E specs)
+playwright-report/
+test-results/
+.playwright-mcp/
