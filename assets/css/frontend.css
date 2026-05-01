@@ -5166,12 +5166,25 @@ a.mvs-dashboard-card-title:hover {
     min-height: 0;
 }
 
-/* Lightbox comment input — bigger than the per-tab comment form's 40px */
-/* min-height so it actually feels like a comment composer, not an input. */
+/* Lightbox comment input — bigger AND uses the sidebar's own color tokens
+   so it stays readable in any theme that flips dark mode independently of
+   our `--mvs-bg` / `--mvs-text` variables. The default rule one block above
+   uses `--mvs-bg` for the background which can resolve to white when the
+   active theme (e.g. BuddyX Pro dark) doesn't override that var, leaving
+   light theme-text rendered against a white box — visually unreadable. */
 .mvs-lightbox-sidebar .mvs-comment-form textarea,
 .mvs-lightbox-sidebar textarea[placeholder*="comment" i] {
     min-height: 72px;
     line-height: 1.4;
+    background-color: var(--mvs-surface);
+    color: var(--mvs-text, inherit);
+    border-color: var(--mvs-border-light, var(--mvs-border));
+}
+
+.mvs-lightbox-sidebar .mvs-comment-form textarea::placeholder,
+.mvs-lightbox-sidebar textarea[placeholder*="comment" i]::placeholder {
+    color: var(--mvs-text-secondary);
+    opacity: 0.85;
 }
 
 .mvs-lightbox-comments-heading {
