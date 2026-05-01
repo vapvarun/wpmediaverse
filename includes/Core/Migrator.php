@@ -689,4 +689,96 @@ class Migrator {
 	private function migrate_to_11(): void {
 		add_option( 'mvs_ai_monthly_budget', 10 );
 	}
+
+	/**
+	 * Backfill a BIGINT FK column from a varchar URL column.
+	 *
+	 * Generic schema-migration utility used by Pro's Phase 0b cover-image
+	 * migration and any future column that swaps URL-storage for an FK to
+	 * `mvs_media_index.id`. Reverse-resolves each existing URL via
+	 * `MediaRepository::find_by_url` and writes the resolved media_id into
+	 * the new column. Rows whose URL doesn't reverse-resolve (orphans,
+	 * external URLs, deleted media) get null in the new column — the caller
+	 * decides whether to fall back to an empty cover or fail loudly.
+	 *
+	 * Idempotent: only updates rows where the new column is still NULL.
+	 * Safe to re-run after a partial completion.
+	 *
+	 * Caller is responsible for ensuring `$id_col` exists on the table
+	 * (via dbDelta in the per-plugin Migrator) BEFORE calling this helper.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string $table_unprefixed Table name without the `$wpdb->prefix` (e.g. `'mvs_competitions'`).
+	 * @param string $url_col          Existing varchar URL column (e.g. `'cover_image_url'`).
+	 * @param string $id_col           New BIGINT FK column (e.g. `'cover_media_id'`).
+	 * @return array{rows_seen:int,rows_updated:int,rows_unresolved:int} Migration counters.
+	 */
+	public static function migrate_url_column_to_id( string $table_unprefixed, string $url_col, string $id_col ): array {
+		global $wpdb;
+
+		// Allowlist identifiers — interpolated into SQL because $wpdb->prepare
+		// has no placeholder for table/column names.
+		$valid_ident = '/^[A-Za-z_][A-Za-z0-9_]*$/';
+		if ( ! preg_match( $valid_ident, $table_unprefixed )
+			|| ! preg_match( $valid_ident, $url_col )
+			|| ! preg_match( $valid_ident, $id_col ) ) {
+			return array(
+				'rows_seen'       => 0,
+				'rows_updated'    => 0,
+				'rows_unresolved' => 0,
+			);
+		}
+
+		$table = $wpdb->prefix . $table_unprefixed;
+
+		// Discover the table's primary-key column so we can target updates
+		// without assuming `id`. Falls back to `id` when the lookup fails.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$pk_row = $wpdb->get_row(
+			"SHOW KEYS FROM `{$table}` WHERE Key_name = 'PRIMARY'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			ARRAY_A
+		);
+		$pk_col = $pk_row['Column_name'] ?? 'id';
+		if ( ! preg_match( $valid_ident, $pk_col ) ) {
+			$pk_col = 'id';
+		}
+
+		$rows_seen       = 0;
+		$rows_updated    = 0;
+		$rows_unresolved = 0;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results(
+			"SELECT `{$pk_col}` AS pk, `{$url_col}` AS url FROM `{$table}` WHERE `{$id_col}` IS NULL AND `{$url_col}` IS NOT NULL AND `{$url_col}` <> ''" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		foreach ( (array) $rows as $row ) {
+			++$rows_seen;
+			$media_id = \WPMediaVerse\Repository\MediaRepository::find_by_url( (string) $row->url );
+			if ( $media_id <= 0 ) {
+				++$rows_unresolved;
+				continue;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$updated = $wpdb->update(
+				$table,
+				array( $id_col => $media_id ),
+				array( $pk_col => $row->pk ),
+				array( '%d' ),
+				array( '%d' )
+			);
+
+			if ( false !== $updated ) {
+				++$rows_updated;
+			}
+		}
+
+		return array(
+			'rows_seen'       => $rows_seen,
+			'rows_updated'    => $rows_updated,
+			'rows_unresolved' => $rows_unresolved,
+		);
+	}
 }
