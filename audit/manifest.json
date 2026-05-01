@@ -1217,196 +1217,344 @@
       "args": "ServiceContainer",
       "where": "Core/Plugin.php::init",
       "purpose": "Pro extension entry point",
-      "consumed_by": []
+      "consumed_by": [],
+      "args_signature": [
+        "\\WPMediaVerse\\Core\\ServiceContainer $container"
+      ],
+      "args_count": 1
     },
     {
       "name": "mvs_media_uploaded",
       "type": "action",
       "args": "$media_id, $file_path, $user_id",
-      "where": "Services/UploadService.php",
+      "where": "includes/Services/UploadService.php:341",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
           "where": "includes/Connectors/ConnectorManager.php:60",
           "kind": "add_action_listener"
         }
-      ]
+      ],
+      "args_signature": [
+        "int $media_id",
+        "array $file_data"
+      ],
+      "args_count": 2
     },
     {
       "name": "mvs_media_deleted",
       "type": "action",
       "args": "$media_id, $user_id",
-      "where": "Services/UploadService.php",
+      "where": "includes/REST/Controller/BulkController.php:153",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
           "where": "includes/Quota/QuotaService.php:43",
           "kind": "add_action_listener"
         }
-      ]
+      ],
+      "args_signature": [
+        "int $media_id",
+        "int $author_id"
+      ],
+      "args_count": 2
     },
     {
       "name": "mvs_media_response",
       "type": "filter",
       "args": "$data, $media_id",
-      "where": "REST controllers",
+      "where": "includes/REST/Controller/MediaController.php:1188",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
           "where": "includes/Captions/TranscriptionService.php:74",
           "kind": "add_filter_listener"
         }
-      ]
+      ],
+      "args_signature": [
+        "array $data",
+        "int $media_id"
+      ],
+      "args_count": 2
     },
     {
       "name": "mvs_storage_driver",
       "type": "filter",
       "args": "$driver_class",
-      "where": "Services/StorageService.php",
+      "where": "includes/Services/StorageService.php:39",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
           "where": "includes/Core/Plugin.php:211",
           "kind": "add_filter_listener"
         }
-      ]
+      ],
+      "args_signature": [
+        "?\\WPMediaVerse\\Services\\StorageDriverInterface $driver",
+        "string $driver_name"
+      ],
+      "args_count": 2
     },
     {
       "name": "mvs_ai_providers",
       "type": "action",
       "args": "$ai_service",
-      "where": "Services/AIService.php",
+      "where": "includes/Core/Plugin.php:354",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
           "where": "includes/Core/Plugin.php:217",
           "kind": "add_action_listener"
         }
-      ]
+      ],
+      "args_signature": [
+        "\\WPMediaVerse\\Services\\AIService $service"
+      ],
+      "args_count": 1
     },
     {
       "name": "mvs_thumbnail_sizes",
       "type": "filter",
       "args": "$sizes",
-      "where": "Services/UploadService.php",
-      "consumed_by": []
+      "where": "includes/Services/UploadService.php:741",
+      "consumed_by": [],
+      "args_signature": [
+        "array $sizes"
+      ],
+      "args_count": 1
     },
     {
       "name": "mvs_after_thumbnail_generation",
       "type": "action",
       "args": "$media_id, $generated, $file_path",
-      "where": "Services/UploadService.php",
-      "consumed_by": []
+      "where": "includes/Services/UploadService.php:699",
+      "consumed_by": [],
+      "args_signature": [
+        "int $media_id",
+        "array $generated",
+        "string $file_path"
+      ],
+      "args_count": 3
     },
     {
       "name": "mvs_generate_watermark",
       "type": "filter",
       "args": "$preview_url, $media_id, $file_path, $file_url, $config",
-      "where": "Services/WatermarkService.php",
+      "where": "includes/Services/WatermarkService.php:164",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
           "where": "includes/Core/Plugin.php:214",
           "kind": "add_filter_listener"
         }
-      ]
+      ],
+      "args_signature": [
+        "string $preview_url",
+        "int $media_id",
+        "string $file_path",
+        "string $file_url",
+        "array $config"
+      ],
+      "args_count": 5
     },
     {
       "name": "mvs_watermark_invalidated",
       "type": "action",
       "args": "$media_id",
-      "where": "Services/WatermarkService.php",
-      "consumed_by": []
+      "where": "includes/Services/WatermarkService.php:193",
+      "consumed_by": [],
+      "args_signature": [
+        "int $media_id"
+      ],
+      "args_count": 1
     },
     {
       "name": "mvs_capability_check",
       "type": "filter",
       "args": "$allowed, $cap, $user_id",
       "where": "Capabilities/MediaCapabilities.php",
-      "consumed_by": []
+      "consumed_by": [],
+      "args_signature": [],
+      "args_count": 0,
+      "_status": "no_call_site_found"
     },
     {
       "name": "mvs_media_privacy_check",
       "type": "filter",
       "args": "$allowed, $media_id, $user_id",
       "where": "Repository/MediaRepository.php",
-      "consumed_by": []
+      "consumed_by": [],
+      "args_signature": [],
+      "args_count": 0,
+      "_status": "no_call_site_found"
     },
     {
       "name": "mvs_album_query_args",
       "type": "filter",
       "args": "$args, $user_id",
       "where": "Repository/AlbumRepository.php",
-      "consumed_by": []
+      "consumed_by": [],
+      "args_signature": [],
+      "args_count": 0,
+      "_status": "no_call_site_found"
     },
     {
       "name": "mvs_activity_content_transform",
       "type": "filter",
       "args": "$html, $activity_id",
       "where": "Integrations/BuddyPress/ActivityContentIntegration.php",
-      "consumed_by": []
+      "consumed_by": [],
+      "args_signature": [],
+      "args_count": 0,
+      "_status": "no_call_site_found"
     },
     {
       "name": "mvs_profile_tab_label",
       "type": "filter",
       "args": "$label",
       "where": "Integrations/BuddyPress/ProfileTabIntegration.php",
-      "consumed_by": []
+      "consumed_by": [],
+      "args_signature": [],
+      "args_count": 0,
+      "_status": "no_call_site_found"
     },
     {
       "name": "mvs_group_tab_label",
       "type": "filter",
       "args": "$label",
       "where": "Integrations/BuddyPress/GroupTabIntegration.php",
-      "consumed_by": []
+      "consumed_by": [],
+      "args_signature": [],
+      "args_count": 0,
+      "_status": "no_call_site_found"
     },
     {
       "name": "mvs_stats_tabs",
       "type": "filter",
       "args": "$tabs",
-      "where": "Admin/StatsPage.php",
-      "consumed_by": []
+      "where": "includes/Admin/StatsPage.php:176",
+      "consumed_by": [],
+      "args_signature": [
+        "array $tabs"
+      ],
+      "args_count": 1
     },
     {
       "name": "mvs_moderation_tabs",
       "type": "filter",
       "args": "$tabs",
-      "where": "Admin/ModerationQueue.php",
-      "consumed_by": []
+      "where": "includes/Admin/ModerationQueue.php:185",
+      "consumed_by": [],
+      "args_signature": [
+        "array $tabs"
+      ],
+      "args_count": 1
     },
     {
       "name": "mvs_signed_url_lifetime",
       "type": "filter",
       "args": "$seconds, $media_id, $user_id",
       "where": "Services/SignedUrlService.php",
-      "consumed_by": []
+      "consumed_by": [],
+      "args_signature": [],
+      "args_count": 0,
+      "_status": "no_call_site_found"
     },
     {
       "name": "mvs_serve_file_headers",
       "type": "filter",
       "args": "$headers, $media_id",
       "where": "REST/Controller/SignedUrlController.php",
-      "consumed_by": []
+      "consumed_by": [],
+      "args_signature": [],
+      "args_count": 0,
+      "_status": "no_call_site_found"
     },
     {
       "name": "mvs_notification_created",
       "type": "action",
       "args": "$notification_id, $user_id, $type, $actor_id, $media_id",
-      "where": "Social/NotificationService.php",
-      "consumed_by": []
+      "where": "includes/Social/NotificationService.php:153",
+      "consumed_by": [],
+      "args_signature": [
+        "int $message_id",
+        "int $user_id",
+        "string $type",
+        "int $actor_id",
+        "int $media_id"
+      ],
+      "args_count": 5
     },
     {
       "name": "mvs_message_sent",
       "type": "action",
       "args": "$message_id, $conversation_id, $sender_id",
-      "where": "Messaging/MessagingService.php",
+      "where": "includes/Messaging/MessagingService.php:833",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
           "where": "includes/Messaging/NotificationListener.php:33",
           "kind": "add_action_listener"
         }
-      ]
+      ],
+      "args_signature": [
+        "int $message_id",
+        "int $conversation_id",
+        "int $sender_id",
+        "int[] $recipient_ids"
+      ],
+      "args_count": 4
+    },
+    {
+      "name": "mvs_page_id_dashboard",
+      "type": "filter",
+      "args": "$page_id, $slot",
+      "args_signature": [
+        "int $page_id",
+        "string $slot"
+      ],
+      "args_count": 2,
+      "where": "includes/Core/SettingsHelper.php:66",
+      "purpose": "Override resolved page id for the dashboard slot (dynamic name: mvs_page_id_{slot})",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_page_id_explore",
+      "type": "filter",
+      "args": "$page_id, $slot",
+      "args_signature": [
+        "int $page_id",
+        "string $slot"
+      ],
+      "args_count": 2,
+      "where": "includes/Core/SettingsHelper.php:66",
+      "purpose": "Override resolved page id for the explore slot (dynamic name: mvs_page_id_{slot})",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_page_id_upload",
+      "type": "filter",
+      "args": "$page_id, $slot",
+      "args_signature": [
+        "int $page_id",
+        "string $slot"
+      ],
+      "args_count": 2,
+      "where": "includes/Core/SettingsHelper.php:66",
+      "purpose": "Override resolved page id for the upload slot (dynamic name: mvs_page_id_{slot})",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_thumbnail_size_resolved",
+      "type": "filter",
+      "args": "$size",
+      "args_signature": [
+        "string $size"
+      ],
+      "args_count": 1,
+      "where": "includes/Core/SettingsHelper.php:112",
+      "purpose": "Per-context override of resolved thumbnail size (validated against medium|large|full)",
+      "consumed_by": []
     }
   ],
   "buddypress_integration": {
@@ -1637,7 +1785,14 @@
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
-    "php_file_count": 160
+    "php_file_count": 160,
+    "args_signature_extraction": {
+      "at": "2026-04-30",
+      "tool": "wp-plugin-onboard SKILL.md Phase 2.5.2 extractor",
+      "populated": 14,
+      "phantom": 8,
+      "total": 22
+    }
   },
   "category_sources": {
     "rest": [
@@ -1712,6 +1867,16 @@
     "registry_bypasses": [],
     "suppressed_baseline_inventory": {},
     "registry_strategy": [],
-    "notes": "Phase 2.5.11\u20132.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits \u2014 WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-01 captures the live findings (7 plugin-dev-rules failures, 6 REST/JS contract proximity-window false positives, 3 wiring false positives). See audit/wppqa-baseline-2026-05-01/SUMMARY.md. Settings access for paired plugins (Pro/themes/integrations) flows through Core\\SettingsHelper static API; the canonical accessor today covers page-id slots (dashboard/explore/upload) and exposes filter mvs_page_id_{slot}. New cross-plugin readable settings should be added there before any consumer goes to get_option() directly."
+    "notes": "Phase 2.5.11\u20132.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits \u2014 WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-01 captures the live findings (7 plugin-dev-rules failures, 6 REST/JS contract proximity-window false positives, 3 wiring false positives). See audit/wppqa-baseline-2026-05-01/SUMMARY.md. Settings access for paired plugins (Pro/themes/integrations) flows through Core\\SettingsHelper static API; the canonical accessor today covers page-id slots (dashboard/explore/upload) and exposes filter mvs_page_id_{slot}. New cross-plugin readable settings should be added there before any consumer goes to get_option() directly.",
+    "hooks_fired_no_call_site": [
+      "mvs_capability_check",
+      "mvs_media_privacy_check",
+      "mvs_album_query_args",
+      "mvs_activity_content_transform",
+      "mvs_profile_tab_label",
+      "mvs_group_tab_label",
+      "mvs_signed_url_lifetime",
+      "mvs_serve_file_headers"
+    ]
   }
 }

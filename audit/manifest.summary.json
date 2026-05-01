@@ -24,9 +24,11 @@
     "tables": 21,
     "capabilities": 10,
     "services": 28,
-    "hooks_fired": 22,
+    "hooks_fired": 26,
     "cron": 2,
-    "wp_cli": 1
+    "wp_cli": 1,
+    "hooks_with_args_signature": 18,
+    "hooks_no_call_site": 8
   },
   "detail_files": {
     "rest": "manifest.rest.json",
@@ -36,7 +38,8 @@
   "static_analysis_summary": {
     "wppqa_baseline_dir": "wppqa-baseline-2026-05-01",
     "phase_2_5_11_14_skipped": true,
-    "phase_2_5_11_14_skip_reason": "ServiceContainer DI (no Adapter pattern)"
+    "phase_2_5_11_14_skip_reason": "ServiceContainer DI (no Adapter pattern)",
+    "args_signature_extraction": "14 of 22 original hooks_fired entries populated; 8 phantom (no call site in source \u2014 manifest drift); 4 new hooks added from Core/SettingsHelper. PRO arch-checks A11 reads args_signature[] for cross-plugin contract drift detection."
   },
   "generated": {
     "at": "2026-04-30T19:16:10Z",
