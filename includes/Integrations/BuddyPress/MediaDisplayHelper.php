@@ -40,8 +40,14 @@ class MediaDisplayHelper {
 		// `$file_url` is used purely as a fallback for the link `href` when
 		// the media has no permalink (e.g. cleanup state). Must be signed —
 		// raw `/wp-content/uploads/wpmediaverse/` URLs hit the .htaccess gate.
+		// We use `for_broadcast()` (1-year TTL, user_id=0) instead of
+		// `for_file()` (1-hour TTL, current user) because this thumbnail HTML
+		// gets baked into bp_activity.content and read by anyone scrolling
+		// the activity feed days later. Short-TTL URLs would 403 on every
+		// activity older than 1 hour. Privacy is enforced at sign time so
+		// non-public media silently returns '' and the link omits the href.
 		$permalink = MediaRepository::get_permalink( $media_id );
-		$file_url  = MediaUrl::for_file( $media_id );
+		$file_url  = MediaUrl::for_broadcast( $media_id );
 		$title     = MediaRepository::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 		$href      = $permalink ?: $file_url;
 		$data_mid  = ' data-mvs-media-id="' . esc_attr( $media_id ) . '"';
@@ -65,13 +71,18 @@ class MediaDisplayHelper {
 
 		// Images + videos: delegate to the canonical helper so BP activity, the
 		// Explore grid, and Pro layouts all share one branching logic (img /
-		// native <video> preview / placeholder).
+		// native <video> preview / placeholder). `ttl` + `user_id` force the
+		// inner <img src> through the same broadcast-TTL signing as $file_url
+		// above — otherwise the inner thumbnail would still 403 after 1h even
+		// though the outer link href stays valid for a year.
 		$inner = TemplateHelpers::media_thumbnail(
 			$media_id,
 			array(
 				'size'      => $size,
 				'alt'       => esc_attr( $title ),
 				'show_play' => true,
+				'ttl'       => YEAR_IN_SECONDS,
+				'user_id'   => 0,
 			)
 		);
 

@@ -182,9 +182,15 @@ class ActivityContentIntegration {
 	 * @return string Enhanced content.
 	 */
 	public function enhance_activity_media_content( string $content, $activity = null ): string {
-		// Already has MVS media markup — skip.
+		// Activity already has MVS media markup. Refresh the URLs in place
+		// before returning — saved markup may carry expired signed URLs
+		// (the `mvs_signed_url_ttl` default is 1h, but activity HTML lives
+		// in bp_activity.content for months). Without this, every activity
+		// older than 1h renders broken images. New activities (post-fix)
+		// store YEAR_IN_SECONDS URLs via MediaUrl::for_broadcast(); this
+		// pass keeps already-saved short-TTL URLs working for legacy data.
 		if ( strpos( $content, 'mvs-activity-media' ) !== false ) {
-			return $content;
+			return $this->refresh_broadcast_urls( $content );
 		}
 
 		// --- 1. rtMedia legacy transform ---
@@ -678,6 +684,80 @@ class ActivityContentIntegration {
 		}
 
 		return $content . $thumbnail;
+	}
+
+	/**
+	 * Re-sign URLs inside already-rendered `mvs-activity-media` markup.
+	 *
+	 * Every `<div class="mvs-activity-media..." data-mvs-media-id="N">` block
+	 * carries its media ID in markup. We use that ID to mint a fresh
+	 * broadcast-TTL signed URL for the inner `<img src>` (and `<source src>`
+	 * for video) and the outer `<a href>` when the href points into the
+	 * gated uploads directory. Activities that are months old keep working.
+	 *
+	 * Idempotent: re-running this on already-fresh URLs is a no-op.
+	 *
+	 * @param string $content Activity HTML.
+	 * @return string Refreshed HTML.
+	 */
+	private function refresh_broadcast_urls( string $content ): string {
+		// Match every mvs-activity-media block — non-greedy, captures the
+		// data-mvs-media-id and the full block body so we can rewrite URLs
+		// inside without disturbing surrounding markup.
+		return (string) preg_replace_callback(
+			'~(<div\s+class="mvs-activity-media[^"]*"[^>]*\bdata-mvs-media-id="(\d+)"[^>]*>)(.*?)(</div>)~is',
+			static function ( $m ) {
+				$open     = $m[1];
+				$media_id = (int) $m[2];
+				$body     = $m[3];
+				$close    = $m[4];
+
+				if ( $media_id <= 0 ) {
+					return $m[0];
+				}
+
+				$file_url  = MediaUrl::for_broadcast( $media_id );
+				$thumb_url = MediaUrl::for_broadcast_thumbnail( $media_id, 'large' );
+
+				// Refresh outer <a href="..."> when the href targets the gated
+				// uploads dir. Permalinks (which point to the public single
+				// view) are left alone — they don't 403.
+				if ( $file_url ) {
+					$body = preg_replace_callback(
+						'~(<a\s+[^>]*href=")([^"]*?/wp-content/uploads/wpmediaverse/[^"]*?|[^"]*?[?&]mvs_serve=1[^"]*?)(")~i',
+						static function ( $a ) use ( $file_url ) {
+							return $a[1] . esc_url( $file_url ) . $a[3];
+						},
+						$body
+					);
+				}
+
+				// Refresh inner <img src="...">.
+				if ( $thumb_url ) {
+					$body = preg_replace_callback(
+						'~(<img\s+[^>]*src=")([^"]+)(")~i',
+						static function ( $i ) use ( $thumb_url ) {
+							return $i[1] . esc_url( $thumb_url ) . $i[3];
+						},
+						$body
+					);
+				}
+
+				// Refresh inner <source src="..."> and <video src="...">.
+				if ( $file_url ) {
+					$body = preg_replace_callback(
+						'~(<(?:source|video|audio)\s+[^>]*src=")([^"]+)(")~i',
+						static function ( $s ) use ( $file_url ) {
+							return $s[1] . esc_url( $file_url ) . $s[3];
+						},
+						$body
+					);
+				}
+
+				return $open . $body . $close;
+			},
+			$content
+		);
 	}
 
 	/**

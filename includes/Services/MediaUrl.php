@@ -67,6 +67,52 @@ class MediaUrl {
 	}
 
 	/**
+	 * Long-lived signed URL for "broadcast" surfaces (BP activity feed,
+	 * notification emails, embeds) where the URL is baked into HTML that
+	 * is read days or months later.
+	 *
+	 * Bypasses the short `mvs_signed_url_ttl` (default 1h) which makes any
+	 * activity feed older than 1 hour render with broken images. Signed
+	 * with `user_id = 0` (anonymous viewer) so the URL works for everyone
+	 * who can see the activity — privacy is enforced at sign time
+	 * (`PrivacyService::can_view`) so private media silently returns ''
+	 * and the caller falls back to no image, which is correct: private
+	 * media should not be broadcast in a public feed.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Signed URL valid for ~1 year, or empty string when the
+	 *                media is non-public or signing service is unavailable.
+	 */
+	public static function for_broadcast( int $media_id ): string {
+		$signed = self::signed_urls();
+		if ( ! $signed || $media_id <= 0 ) {
+			return '';
+		}
+		$url = $signed->generate( $media_id, 0, YEAR_IN_SECONDS );
+		return $url ?: '';
+	}
+
+	/**
+	 * Long-lived signed thumbnail URL for "broadcast" surfaces.
+	 *
+	 * See `for_broadcast()` for rationale. Same TTL + user_id semantics.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $size     'large', 'medium', or 'thumbnail'.
+	 * @return string Signed URL valid for ~1 year, or empty string.
+	 */
+	public static function for_broadcast_thumbnail( int $media_id, string $size = 'large' ): string {
+		$signed = self::signed_urls();
+		if ( ! $signed || $media_id <= 0 ) {
+			return '';
+		}
+		// $skip_privacy_check = false — broadcast emission MUST verify privacy
+		// at sign time so private media never gets a broadcast URL.
+		$url = $signed->generate_thumbnail( $media_id, 0, $size, YEAR_IN_SECONDS, false );
+		return $url ?: '';
+	}
+
+	/**
 	 * Resolve a raw URL string. Pass-through if it isn't inside the gated
 	 * uploads directory (e.g. avatars, theme images, external CDN URLs).
 	 *

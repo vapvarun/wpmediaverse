@@ -29,9 +29,18 @@ class TemplateHelpers {
 	 *
 	 * @param int    $media_id Media ID (mvs_media_index.media_id).
 	 * @param string $size     WordPress image size.
+	 * @param int    $ttl      Optional TTL override in seconds. 0 = use the
+	 *                         `mvs_signed_url_ttl` option default (typically 1h).
+	 *                         Pass `YEAR_IN_SECONDS` for "broadcast" surfaces
+	 *                         (BP activity feed, notification emails) where the
+	 *                         URL is baked into HTML read days/months later.
+	 * @param int    $user_id  Optional user_id override. Default
+	 *                         `get_current_user_id()`. Pass `0` for broadcast
+	 *                         surfaces — privacy is still enforced at sign
+	 *                         time so private media silently returns ''.
 	 * @return string Thumbnail URL or empty string.
 	 */
-	public static function get_thumb_url( int $media_id, string $size = 'large' ): string {
+	public static function get_thumb_url( int $media_id, string $size = 'large', int $ttl = 0, ?int $user_id = null ): string {
 		// Route through SignedUrlService — direct uploads URLs are blocked by
 		// the .htaccess in wp-content/uploads/wpmediaverse/. The signed-URL
 		// serve endpoint handles size fallback (large → medium → thumbnail →
@@ -40,10 +49,13 @@ class TemplateHelpers {
 		// loads correctly through the gated endpoint.
 		$signed_urls = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 		if ( $signed_urls ) {
-			// $skip_privacy_check = true: the grid query already enforced
-			// privacy, and rendering a thumbnail through the gated endpoint
-			// re-applies access control on the serve side anyway.
-			$signed = $signed_urls->generate_thumbnail( $media_id, get_current_user_id(), $size, 0, true );
+			$resolved_user = ( null === $user_id ) ? get_current_user_id() : $user_id;
+			// $skip_privacy_check = true for the default per-request flow because
+			// the grid query already enforced privacy. For broadcast emission
+			// (user_id=0, ttl=YEAR_IN_SECONDS), the privacy check IS applied so
+			// private media never gets a long-lived broadcast URL.
+			$skip_privacy = ( 0 === $resolved_user && $ttl >= MONTH_IN_SECONDS ) ? false : true;
+			$signed       = $signed_urls->generate_thumbnail( $media_id, $resolved_user, $size, $ttl, $skip_privacy );
 			if ( $signed ) {
 				return $signed;
 			}
@@ -216,6 +228,8 @@ class TemplateHelpers {
 				'classes'   => '',
 				'show_play' => true,
 				'lazy'      => true,
+				'ttl'       => 0,    // 0 = use mvs_signed_url_ttl option default. Pass YEAR_IN_SECONDS for broadcast surfaces.
+				'user_id'   => null, // null = current user. Pass 0 for broadcast (anonymous-viewable) URLs.
 			)
 		);
 
@@ -223,7 +237,7 @@ class TemplateHelpers {
 		$size        = in_array( (string) $args['size'], $valid_sizes, true ) ? (string) $args['size'] : 'large';
 
 		$media_type = self::get_media_type( $media_id );
-		$thumb_url  = self::get_thumb_url( $media_id, $size );
+		$thumb_url  = self::get_thumb_url( $media_id, $size, (int) $args['ttl'], $args['user_id'] );
 		$alt        = (string) $args['alt'];
 		if ( '' === $alt ) {
 			$alt = esc_attr( (string) MediaRepository::get( $media_id, 'title' ) );
