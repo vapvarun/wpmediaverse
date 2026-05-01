@@ -48,6 +48,13 @@ class Activator {
 	 *
 	 * Pages are only created when the stored option is missing or points to a
 	 * non-existent page, so re-activation is safely idempotent.
+	 *
+	 * The three pages match the canonical slot map in
+	 * `Core\SettingsHelper::PAGE_SLOT_OPTIONS` (`dashboard` / `explore` /
+	 * `upload`). Site owners must NOT see blank/zero defaults that require
+	 * manual configuration before the plugin's main UI surfaces work — these
+	 * pages back the Explore feed, the per-user dashboard, and the front-end
+	 * upload form respectively.
 	 */
 	private static function create_pages(): void {
 		$pages = array(
@@ -60,6 +67,11 @@ class Activator {
 				'title'     => __( 'My Media', 'wpmediaverse' ),
 				'slug'      => 'my-media',
 				'shortcode' => '[mvs_dashboard]',
+			),
+			'mvs_page_upload'    => array(
+				'title'     => __( 'Upload Media', 'wpmediaverse' ),
+				'slug'      => 'upload-media',
+				'shortcode' => '[mvs_upload]',
 			),
 		);
 

@@ -255,6 +255,11 @@ class SetupWizard {
 				'icon'  => 'users',
 				'desc'  => __( 'Personal dashboard for users to manage their uploads.', 'wpmediaverse' ),
 			),
+			'mvs_page_upload'    => array(
+				'label' => __( 'Upload Media', 'wpmediaverse' ),
+				'icon'  => 'upload-cloud',
+				'desc'  => __( 'Frontend upload form linked from the Explore page header.', 'wpmediaverse' ),
+			),
 		);
 		?>
 		<div class="mvs-setup-step">
