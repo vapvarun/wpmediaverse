@@ -13,7 +13,6 @@ namespace WPMediaVerse\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\Plugin;
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Renders the All Media admin page with filtering, search, and bulk actions.
@@ -275,7 +274,7 @@ class MediaListPage {
 		$file_url = $item['file_url'] ?? '';
 		$author   = get_userdata( (int) $item['post_author'] );
 
-		$view_url = MediaRepository::get_permalink( $media_id );
+		$view_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
 		?>
 		<tr>
 			<th scope="row" class="check-column"><input type="checkbox" name="media_ids[]" value="<?php echo esc_attr( $media_id ); ?>" /></th>
@@ -440,7 +439,7 @@ class MediaListPage {
 			case 'delete':
 				check_admin_referer( 'mvs_delete_media_' . $media_id );
 				// Delete from custom tables.
-				MediaRepository::delete_all( $media_id );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
 				$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->delete( $wpdb->prefix . 'mvs_reactions', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->delete( $wpdb->prefix . 'mvs_favorites', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery

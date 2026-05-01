@@ -696,7 +696,7 @@ class Migrator {
 	 * Generic schema-migration utility used by Pro's Phase 0b cover-image
 	 * migration and any future column that swaps URL-storage for an FK to
 	 * `mvs_media_index.id`. Reverse-resolves each existing URL via
-	 * `MediaRepository::find_by_url` and writes the resolved media_id into
+	 * `\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->find_by_url` and writes the resolved media_id into
 	 * the new column. Rows whose URL doesn't reverse-resolve (orphans,
 	 * external URLs, deleted media) get null in the new column — the caller
 	 * decides whether to fall back to an empty cover or fail loudly.
@@ -755,7 +755,7 @@ class Migrator {
 
 		foreach ( (array) $rows as $row ) {
 			++$rows_seen;
-			$media_id = \WPMediaVerse\Repository\MediaRepository::find_by_url( (string) $row->url );
+			$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->find_by_url( (string) $row->url );
 			if ( $media_id <= 0 ) {
 				++$rows_unresolved;
 				continue;

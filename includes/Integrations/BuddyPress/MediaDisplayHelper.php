@@ -12,7 +12,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Static helpers for rendering media thumbnails and type labels inside
@@ -30,7 +29,7 @@ class MediaDisplayHelper {
 	 * @return string Escaped HTML ready for output.
 	 */
 	public static function get_media_thumbnail_html( int $media_id, string $size = 'medium' ): string {
-		$media_type = (string) MediaRepository::get( $media_id, 'media_type' );
+		$media_type = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' );
 		if ( ! in_array( $media_type, array( 'image', 'video', 'audio' ), true ) ) {
 			return '';
 		}
@@ -42,17 +41,17 @@ class MediaDisplayHelper {
 		// 403 on activities older than 1 hour. Privacy is enforced at sign
 		// time so non-public media silently returns '' and the link omits
 		// the href.
-		$permalink = MediaRepository::get_permalink( $media_id );
-		$file_url  = MediaRepository::get_broadcast_url( $media_id );
-		$title     = MediaRepository::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
+		$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
+		$file_url  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_url( $media_id );
+		$title     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 		$href      = $permalink ?: $file_url;
 		$data_mid  = ' data-mvs-media-id="' . esc_attr( $media_id ) . '"';
 
 		// Audio gets a compact card that isn't suitable for the canonical
 		// thumbnail helper (which targets square-ish grid cells). Keep it local.
 		if ( 'audio' === $media_type ) {
-			$artist   = MediaRepository::get( $media_id, 'artist' );
-			$duration = MediaRepository::get( $media_id, 'duration' );
+			$artist   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'artist' );
+			$duration = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'duration' );
 			$sub      = '';
 			if ( $artist ) {
 				$sub .= esc_html( $artist );

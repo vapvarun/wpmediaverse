@@ -15,8 +15,15 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Centralized media data access layer.
+ *
+ * Resolved via the service container under the `media_repository` key.
+ * Pro callers obtain the instance through `Plugin::free_service('media_repository')`.
+ * Phase 1c of the 1.2.0 refactor flipped this from static utilities to an
+ * instance-methods class implementing MediaRepositoryInterface so the
+ * implementation can evolve (caching, instrumentation, decorator wrappers)
+ * without touching call sites.
  */
-class MediaRepository {
+class MediaRepository implements MediaRepositoryInterface {
 
 	/**
 	 * Columns that live in mvs_media_index (core, queried frequently).
@@ -87,20 +94,20 @@ class MediaRepository {
 	 * @param string $key      Field name (without _mvs_ prefix).
 	 * @return mixed|null Value or null if not found. For URL fields: signed URL string or empty string.
 	 */
-	public static function get( int $media_id, string $key ) {
+	public function get( int $media_id, string $key ) {
 		if ( 'file_url' === $key ) {
-			return self::sign_file_url( $media_id );
+			return $this->sign_file_url( $media_id );
 		}
 
 		if ( isset( self::$thumb_size_map[ $key ] ) ) {
-			return self::sign_thumbnail_url( $media_id, self::$thumb_size_map[ $key ] );
+			return $this->sign_thumbnail_url( $media_id, self::$thumb_size_map[ $key ] );
 		}
 
 		if ( 'watermark_url' === $key ) {
-			return self::sign_watermark_url( $media_id );
+			return $this->sign_watermark_url( $media_id );
 		}
 
-		return self::get_raw( $media_id, $key );
+		return $this->get_raw( $media_id, $key );
 	}
 
 	/**
@@ -115,7 +122,7 @@ class MediaRepository {
 	 * @param string $key      Field name (without _mvs_ prefix).
 	 * @return mixed|null Raw value or null if not found.
 	 */
-	public static function get_raw( int $media_id, string $key ) {
+	public function get_raw( int $media_id, string $key ) {
 		global $wpdb;
 
 		if ( in_array( $key, self::$index_columns, true ) ) {
@@ -147,7 +154,7 @@ class MediaRepository {
 	 * @param string $url Raw URL.
 	 * @return int Media ID, or 0 when the URL doesn't match any indexed media.
 	 */
-	public static function find_by_url( string $url ): int {
+	public function find_by_url( string $url ): int {
 		if ( '' === $url ) {
 			return 0;
 		}
@@ -188,11 +195,11 @@ class MediaRepository {
 	 * @return string Signed URL valid for ~1 year, or empty string when the
 	 *                media is non-public or signing service is unavailable.
 	 */
-	public static function get_broadcast_url( int $media_id ): string {
+	public function get_broadcast_url( int $media_id ): string {
 		if ( $media_id <= 0 ) {
 			return '';
 		}
-		$signed = self::signed_urls_service();
+		$signed = $this->signed_urls_service();
 		if ( ! $signed ) {
 			return '';
 		}
@@ -211,11 +218,11 @@ class MediaRepository {
 	 *                         Or the SignedUrlService size: 'large' | 'medium' | 'thumbnail'.
 	 * @return string Signed URL valid for ~1 year, or empty string.
 	 */
-	public static function get_broadcast_thumbnail_url( int $media_id, string $size = 'thumb_large' ): string {
+	public function get_broadcast_thumbnail_url( int $media_id, string $size = 'thumb_large' ): string {
 		if ( $media_id <= 0 ) {
 			return '';
 		}
-		$signed = self::signed_urls_service();
+		$signed = $this->signed_urls_service();
 		if ( ! $signed ) {
 			return '';
 		}
@@ -247,11 +254,11 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return string|null Absolute filesystem path, or null when no valid file is reachable.
 	 */
-	public static function get_filesystem_path( int $media_id ): ?string {
+	public function get_filesystem_path( int $media_id ): ?string {
 		if ( $media_id <= 0 ) {
 			return null;
 		}
-		$rel = (string) self::get_raw( $media_id, 'file_path' );
+		$rel = (string) $this->get_raw( $media_id, 'file_path' );
 		if ( '' === $rel ) {
 			return null;
 		}
@@ -289,7 +296,7 @@ class MediaRepository {
 	 *
 	 * @return \WPMediaVerse\Services\SignedUrlService|null
 	 */
-	private static function signed_urls_service() {
+	private function signed_urls_service() {
 		if ( ! class_exists( '\\WPMediaVerse\\Core\\Plugin' ) ) {
 			return null;
 		}
@@ -310,11 +317,11 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return string Signed URL or empty string.
 	 */
-	private static function sign_file_url( int $media_id ): string {
+	private function sign_file_url( int $media_id ): string {
 		if ( $media_id <= 0 ) {
 			return '';
 		}
-		$signed = self::signed_urls_service();
+		$signed = $this->signed_urls_service();
 		if ( ! $signed ) {
 			return '';
 		}
@@ -334,16 +341,16 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return string Signed URL or empty string.
 	 */
-	private static function sign_watermark_url( int $media_id ): string {
+	private function sign_watermark_url( int $media_id ): string {
 		if ( $media_id <= 0 ) {
 			return '';
 		}
 		// Cache marker — Pro's Watermarker writes the raw URL into meta only
 		// after generating the preview file. No meta = no file to serve.
-		if ( ! self::get_raw( $media_id, 'watermark_url' ) ) {
+		if ( ! $this->get_raw( $media_id, 'watermark_url' ) ) {
 			return '';
 		}
-		$signed = self::signed_urls_service();
+		$signed = $this->signed_urls_service();
 		if ( ! $signed ) {
 			return '';
 		}
@@ -365,11 +372,11 @@ class MediaRepository {
 	 * @param string $size     SignedUrlService size: 'large' | 'medium' | 'thumbnail'.
 	 * @return string Signed URL or empty string.
 	 */
-	private static function sign_thumbnail_url( int $media_id, string $size ): string {
+	private function sign_thumbnail_url( int $media_id, string $size ): string {
 		if ( $media_id <= 0 ) {
 			return '';
 		}
-		$signed = self::signed_urls_service();
+		$signed = $this->signed_urls_service();
 		if ( ! $signed ) {
 			return '';
 		}
@@ -384,7 +391,7 @@ class MediaRepository {
 	 * @param string $key      Field name (without _mvs_ prefix).
 	 * @param mixed  $value    Value to store.
 	 */
-	public static function set( int $media_id, string $key, $value ): void {
+	public function set( int $media_id, string $key, $value ): void {
 		global $wpdb;
 
 		if ( in_array( $key, self::$index_columns, true ) ) {
@@ -440,7 +447,7 @@ class MediaRepository {
 	 * @param int   $media_id Media ID.
 	 * @param array $data     Key-value pairs.
 	 */
-	public static function set_many( int $media_id, array $data ): void {
+	public function set_many( int $media_id, array $data ): void {
 		global $wpdb;
 
 		$index_data = array();
@@ -483,7 +490,7 @@ class MediaRepository {
 
 		// Meta fields one by one (upsert).
 		foreach ( $meta_data as $key => $value ) {
-			self::set( $media_id, $key, $value );
+			$this->set( $media_id, $key, $value );
 		}
 	}
 
@@ -493,7 +500,7 @@ class MediaRepository {
 	 * @param int    $media_id Media ID.
 	 * @param string $key      Field name.
 	 */
-	public static function delete( int $media_id, string $key ): void {
+	public function delete( int $media_id, string $key ): void {
 		global $wpdb;
 
 		if ( in_array( $key, self::$index_columns, true ) ) {
@@ -521,7 +528,7 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return array All fields as key-value pairs.
 	 */
-	public static function get_all( int $media_id ): array {
+	public function get_all( int $media_id ): array {
 		global $wpdb;
 
 		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -554,7 +561,7 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return bool
 	 */
-	public static function exists( int $media_id ): bool {
+	public function exists( int $media_id ): bool {
 		global $wpdb;
 
 		return (bool) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -572,7 +579,7 @@ class MediaRepository {
 	 * @param string $status Post status to match.
 	 * @return array|null Row as associative array or null.
 	 */
-	public static function get_by_slug( string $slug, string $status = 'publish' ): ?array {
+	public function get_by_slug( string $slug, string $status = 'publish' ): ?array {
 		global $wpdb;
 
 		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -593,7 +600,7 @@ class MediaRepository {
 	 * @param array $media_ids Array of media IDs.
 	 * @return array Associative array keyed by media_id.
 	 */
-	public static function get_batch( array $media_ids ): array {
+	public function get_batch( array $media_ids ): array {
 		global $wpdb;
 
 		if ( empty( $media_ids ) ) {
@@ -626,7 +633,7 @@ class MediaRepository {
 	 * @param string $meta_value Meta value to match.
 	 * @return int|null Media ID or null if not found.
 	 */
-	public static function find_by_meta( string $meta_key, string $meta_value ): ?int {
+	public function find_by_meta( string $meta_key, string $meta_value ): ?int {
 		global $wpdb;
 
 		$id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -650,7 +657,7 @@ class MediaRepository {
 	 *
 	 * @return int
 	 */
-	public static function count_published(): int {
+	public function count_published(): int {
 		global $wpdb;
 
 		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -668,7 +675,7 @@ class MediaRepository {
 	 * @param string $status  Post status to match.
 	 * @return int
 	 */
-	public static function count_by_author( int $user_id, string $status = 'publish' ): int {
+	public function count_by_author( int $user_id, string $status = 'publish' ): int {
 		global $wpdb;
 
 		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -686,7 +693,7 @@ class MediaRepository {
 	 * @param string $status Moderation status.
 	 * @return int
 	 */
-	public static function count_by_moderation( string $status ): int {
+	public function count_by_moderation( string $status ): int {
 		global $wpdb;
 
 		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -702,7 +709,7 @@ class MediaRepository {
 	 *
 	 * @return array Associative array of status => count.
 	 */
-	public static function get_moderation_counts(): array {
+	public function get_moderation_counts(): array {
 		global $wpdb;
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -724,7 +731,7 @@ class MediaRepository {
 	 * @param string $group_id Group ID stored in meta.
 	 * @return int
 	 */
-	public static function count_by_group( string $group_id ): int {
+	public function count_by_group( string $group_id ): int {
 		global $wpdb;
 
 		$index_table = $wpdb->prefix . 'mvs_media_index';
@@ -751,7 +758,7 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return array|null Stats row or null.
 	 */
-	public static function get_stats( int $media_id ): ?array {
+	public function get_stats( int $media_id ): ?array {
 		global $wpdb;
 
 		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -771,7 +778,7 @@ class MediaRepository {
 	 * @param int $user_id User ID.
 	 * @return array Stats with total_media, total_views, total_downloads, total_reactions, total_comments, total_shares.
 	 */
-	public static function get_user_stats( int $user_id ): array {
+	public function get_user_stats( int $user_id ): array {
 		global $wpdb;
 
 		$index_table = $wpdb->prefix . 'mvs_media_index';
@@ -812,7 +819,7 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return bool True on success.
 	 */
-	public static function init_stats( int $media_id ): bool {
+	public function init_stats( int $media_id ): bool {
 		global $wpdb;
 
 		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -839,7 +846,7 @@ class MediaRepository {
 	 * @param string $column   Column name (views, downloads, reactions, comments, shares).
 	 * @return bool True on success.
 	 */
-	public static function increment_stat( int $media_id, string $column ): bool {
+	public function increment_stat( int $media_id, string $column ): bool {
 		global $wpdb;
 
 		$allowed = array( 'views', 'downloads', 'reactions', 'comments', 'shares' );
@@ -866,7 +873,7 @@ class MediaRepository {
 	 * @param int    $value    Value to set.
 	 * @return bool True on success.
 	 */
-	public static function set_stat( int $media_id, string $column, int $value ): bool {
+	public function set_stat( int $media_id, string $column, int $value ): bool {
 		global $wpdb;
 
 		$allowed = array( 'views', 'downloads', 'reactions', 'comments', 'shares' );
@@ -894,7 +901,7 @@ class MediaRepository {
 	 * @param string $ip_hash    Hashed IP address.
 	 * @param string $event_type Event type (default: 'view').
 	 */
-	public static function record_event( int $media_id, int $user_id, string $ip_hash, string $event_type = 'view' ): void {
+	public function record_event( int $media_id, int $user_id, string $ip_hash, string $event_type = 'view' ): void {
 		global $wpdb;
 
 		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -916,7 +923,7 @@ class MediaRepository {
 	 * @param int $days_old Number of days to retain (default: 90).
 	 * @return int Number of deleted rows.
 	 */
-	public static function prune_events( int $days_old = 90 ): int {
+	public function prune_events( int $days_old = 90 ): int {
 		global $wpdb;
 
 		$deleted = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -935,8 +942,8 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return int User ID or 0 if not found.
 	 */
-	public static function get_author( int $media_id ): int {
-		$author = self::get( $media_id, 'post_author' );
+	public function get_author( int $media_id ): int {
+		$author = $this->get( $media_id, 'post_author' );
 		return $author ? (int) $author : 0;
 	}
 
@@ -946,8 +953,8 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return string Full URL to the media single page.
 	 */
-	public static function get_permalink( int $media_id ): string {
-		$slug = self::get( $media_id, 'slug' );
+	public function get_permalink( int $media_id ): string {
+		$slug = $this->get( $media_id, 'slug' );
 		if ( $slug ) {
 			return home_url( '/media/' . $slug . '/' );
 		}
@@ -960,7 +967,7 @@ class MediaRepository {
 	 * @param array $data Column-value pairs for mvs_media_index.
 	 * @return int|false New media_id on success, false on failure.
 	 */
-	public static function insert( array $data ) {
+	public function insert( array $data ) {
 		global $wpdb;
 
 		$defaults = array(
@@ -974,7 +981,7 @@ class MediaRepository {
 
 		// Generate slug if not provided.
 		if ( empty( $data['slug'] ) && ! empty( $data['title'] ) ) {
-			$data['slug'] = self::generate_unique_slug( $data['title'] );
+			$data['slug'] = $this->generate_unique_slug( $data['title'] );
 		}
 
 		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -995,7 +1002,7 @@ class MediaRepository {
 	 * @param string $title Media title.
 	 * @return string Unique slug.
 	 */
-	public static function generate_unique_slug( string $title ): string {
+	public function generate_unique_slug( string $title ): string {
 		global $wpdb;
 
 		$slug = sanitize_title( $title );
@@ -1030,8 +1037,8 @@ class MediaRepository {
 	 *
 	 * @param int $media_id Media ID.
 	 */
-	public static function delete_all( int $media_id ): void {
-		self::delete_cascade( $media_id );
+	public function delete_all( int $media_id ): void {
+		$this->delete_cascade( $media_id );
 	}
 
 	/*
@@ -1045,7 +1052,7 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return bool True on success.
 	 */
-	public static function trash( int $media_id ): bool {
+	public function trash( int $media_id ): bool {
 		global $wpdb;
 
 		$result = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -1068,7 +1075,7 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return bool True on success.
 	 */
-	public static function restore( int $media_id ): bool {
+	public function restore( int $media_id ): bool {
 		global $wpdb;
 
 		$result = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -1093,7 +1100,7 @@ class MediaRepository {
 	 * @param int $media_id Media ID.
 	 * @return bool Always true.
 	 */
-	public static function delete_cascade( int $media_id ): bool {
+	public function delete_cascade( int $media_id ): bool {
 		global $wpdb;
 
 		$where  = array( 'media_id' => $media_id );

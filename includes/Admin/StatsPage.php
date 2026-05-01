@@ -10,7 +10,6 @@ namespace WPMediaVerse\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Services\AIService;
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Admin stats dashboard page.
@@ -405,7 +404,7 @@ class StatsPage {
 							<tbody>
 								<?php foreach ( $top_media as $item ) : ?>
 									<?php
-									$item_link = MediaRepository::get_permalink( (int) $item['media_id'] );
+									$item_link = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $item['media_id'] );
 									?>
 									<tr>
 										<td>

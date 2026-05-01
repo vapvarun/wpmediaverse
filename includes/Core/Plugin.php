@@ -167,7 +167,7 @@ class Plugin {
 		$access_rules = self::$container->get( 'access_rules' );
 		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );
 
-		// Signing now lives in MediaRepository::get($id, 'file_url') — the
+		// Signing now lives in \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get($id, 'file_url') — the
 		// previous `mvs_media_response` listener at priority 10 was retired
 		// in Phase 0a item 5. Other listeners (Pro chapters, privacy options,
 		// watermark preview, captions) still fire on the filter.
@@ -751,7 +751,7 @@ class Plugin {
 	}
 
 	// Note: maybe_sign_file_url() removed in Phase 0a item 5. Signing now
-	// lives in MediaRepository::get($id, 'file_url'/'thumb_*'/'watermark_url')
+	// lives in \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get($id, 'file_url'/'thumb_*'/'watermark_url')
 	// — every emission site automatically gets a signed URL.
 
 	// Note: ensure_media_rows methods removed — media is created directly in custom tables.

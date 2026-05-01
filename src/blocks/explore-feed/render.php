@@ -98,7 +98,7 @@ $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 			foreach ( $media_items as $item ) :
 				$item_id    = (int) $item['media_id'];
 				$item_title = $item['title'] ?? '';
-				$permalink  = \WPMediaVerse\Repository\MediaRepository::get_permalink( $item_id );
+				$permalink  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id );
 				?>
 				<div class="mvs-grid-item" data-media-type="<?php echo esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $item_id ) ); ?>">
 					<a href="<?php echo esc_url( $permalink ); ?>">

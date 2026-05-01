@@ -13,7 +13,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Transforms legacy activity content and renders media thumbnails inside
@@ -134,7 +133,7 @@ class ActivityContentIntegration {
 		}
 
 		$media_id   = (int) $matches[1];
-		$media_type = MediaRepository::get( $media_id, 'media_type' );
+		$media_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' );
 
 		if ( 'video' !== $media_type ) {
 			return $content;
@@ -147,7 +146,7 @@ class ActivityContentIntegration {
 			return $content;
 		}
 
-		$permalink  = MediaRepository::get_permalink( $media_id );
+		$permalink  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
 		$poster     = '';
 		$poster_url = $aci_su ? $aci_su->generate_thumbnail( $media_id, get_current_user_id(), 'large' ) : '';
 		if ( $poster_url ) {
@@ -156,7 +155,7 @@ class ActivityContentIntegration {
 
 		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'
 			. '<video controls preload="metadata"' . $poster . ' style="width:100%;max-height:400px;border-radius:8px;display:block;">'
-			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( MediaRepository::get( $media_id, 'file_type' ) ?: 'video/mp4' ) . '">'
+			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' ) ?: 'video/mp4' ) . '">'
 			. '</video>'
 			. '<a href="' . esc_url( $permalink ) . '" class="mvs-activity-media-link" style="display:block;text-align:center;margin-top:4px;font-size:13px;">' . esc_html__( 'View full media', 'wpmediaverse' ) . '</a>'
 			. '</div>';
@@ -185,7 +184,7 @@ class ActivityContentIntegration {
 		// (the `mvs_signed_url_ttl` default is 1h, but activity HTML lives
 		// in bp_activity.content for months). Without this, every activity
 		// older than 1h renders broken images. New activities (post-fix)
-		// store YEAR_IN_SECONDS URLs via MediaRepository::get_broadcast_url(); this
+		// store YEAR_IN_SECONDS URLs via \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_url(); this
 		// pass keeps already-saved short-TTL URLs working for legacy data.
 		if ( strpos( $content, 'mvs-activity-media' ) !== false ) {
 			return $this->refresh_broadcast_urls( $content );
@@ -244,7 +243,7 @@ class ActivityContentIntegration {
 			} elseif ( 'groups' === $activity->component && $activity->secondary_item_id > 0 ) {
 				$media_id = (int) $activity->secondary_item_id;
 			}
-			if ( $media_id && MediaRepository::exists( $media_id ) ) {
+			if ( $media_id && \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 				$thumbnail = MediaDisplayHelper::get_media_thumbnail_html( $media_id, 'large' );
 				if ( $thumbnail ) {
 					return $content . $thumbnail;
@@ -263,7 +262,7 @@ class ActivityContentIntegration {
 			$ids       = array_filter( array_map( 'absint', explode( ',', (string) $saved_ids ) ) );
 			$grid_html = '';
 			foreach ( $ids as $mid ) {
-				if ( ! MediaRepository::exists( $mid ) ) {
+				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $mid ) ) {
 					continue;
 				}
 				$grid_html .= MediaDisplayHelper::get_media_thumbnail_html( $mid, 'large' );
@@ -395,7 +394,7 @@ class ActivityContentIntegration {
 				}
 				$mvs_id = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
 				if ( $mvs_id ) {
-					$signed_video = (string) MediaRepository::get( $mvs_id, 'file_url' );
+					$signed_video = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_id, 'file_url' );
 					if ( '' !== $signed_video ) {
 						$src = $signed_video;
 					}
@@ -429,7 +428,7 @@ class ActivityContentIntegration {
 				}
 				$mvs_id = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
 				if ( $mvs_id ) {
-					$signed_audio = (string) MediaRepository::get( $mvs_id, 'file_url' );
+					$signed_audio = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_id, 'file_url' );
 					if ( '' !== $signed_audio ) {
 						$src = $signed_audio;
 					}
@@ -467,12 +466,12 @@ class ActivityContentIntegration {
 					$mvs_id   = $this->get_mvs_id_from_file_url( $src );
 					$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
 					$full_src = preg_replace( '/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $src );
-					$link     = $mvs_id ? MediaRepository::get_permalink( $mvs_id ) : ( $full_src ?: $src );
+					$link     = $mvs_id ? \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $mvs_id ) : ( $full_src ?: $src );
 
 					// Sign protected MVS URLs; pass through avatars / theme images / external URLs unchanged.
 					$img_src = $full_src ?: $src;
 					if ( $mvs_id ) {
-						$signed_full = (string) MediaRepository::get( $mvs_id, 'file_url' );
+						$signed_full = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_id, 'file_url' );
 						if ( '' !== $signed_full ) {
 							$img_src = $signed_full;
 						}
@@ -543,7 +542,7 @@ class ActivityContentIntegration {
 			$media_id = (int) $activity->secondary_item_id;
 		}
 
-		if ( ! $media_id || ! MediaRepository::exists( $media_id ) ) {
+		if ( ! $media_id || ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return;
 		}
 
@@ -660,7 +659,7 @@ class ActivityContentIntegration {
 			$media_id = (int) $activity->secondary_item_id;
 		}
 
-		if ( ! $media_id || ! MediaRepository::exists( $media_id ) ) {
+		if ( ! $media_id || ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return $content;
 		}
 
@@ -702,8 +701,8 @@ class ActivityContentIntegration {
 					return $m[0];
 				}
 
-				$file_url  = MediaRepository::get_broadcast_url( $media_id );
-				$thumb_url = MediaRepository::get_broadcast_thumbnail_url( $media_id, 'large' );
+				$file_url  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_url( $media_id );
+				$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_thumbnail_url( $media_id, 'large' );
 
 				// Refresh outer <a href="..."> when the href targets the gated
 				// uploads dir. Permalinks (which point to the public single

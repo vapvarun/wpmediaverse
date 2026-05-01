@@ -13,7 +13,6 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Registers WordPress hooks that cascade user deletion across MVS tables.
@@ -32,7 +31,7 @@ class UserDeletionService {
 	 * Clean up all MVS data owned by a deleted user.
 	 *
 	 * Runs in two phases:
-	 *   1. Cascade-delete every media item the user owned (via MediaRepository::delete_cascade,
+	 *   1. Cascade-delete every media item the user owned (via \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade,
 	 *      which reuses the centralised teardown for media-scoped rows).
 	 *   2. Purge rows that reference the user directly (reactions, favorites, follows, blocks,
 	 *      reports, access grants, mentions, conversation participation, messages).
@@ -47,7 +46,7 @@ class UserDeletionService {
 		global $wpdb;
 
 		// Phase 1 — cascade-delete every media item owned by the user. Each
-		// call reuses MediaRepository::delete_cascade(), which tears down
+		// call reuses \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade(), which tears down
 		// access rules/grants, reactions, favorites, stats, etc.
 		$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
@@ -56,7 +55,7 @@ class UserDeletionService {
 			)
 		);
 		foreach ( $media_ids as $media_id ) {
-			MediaRepository::delete_cascade( (int) $media_id );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( (int) $media_id );
 		}
 
 		// Phase 2 — purge per-user rows across all user-scoped tables.

@@ -46,11 +46,11 @@ $mvs_archive_url = home_url( '/media/' );
 		?>
 
 		<?php
-		$album_privacy = \WPMediaVerse\Repository\MediaRepository::get( get_the_ID(), 'privacy' );
+		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( get_the_ID(), 'privacy' );
 		if ( ! $album_privacy ) {
 			$album_privacy = 'public';
 		}
-		$album_type         = \WPMediaVerse\Repository\MediaRepository::get( get_the_ID(), 'album_type' );
+		$album_type         = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( get_the_ID(), 'album_type' );
 		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
 		?>
 
@@ -334,7 +334,7 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php endif; ?>
 
 			<?php
-			$album_type  = \WPMediaVerse\Repository\MediaRepository::get( get_the_ID(), 'album_type' );
+			$album_type  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( get_the_ID(), 'album_type' );
 			$is_playlist = 'playlist' === $album_type;
 			?>
 
@@ -347,7 +347,7 @@ $mvs_archive_url = home_url( '/media/' );
 				$alb_uid = get_current_user_id();
 				foreach ( $items as $track_idx => $item_row ) {
 					$track_media_id = (int) $item_row['media_id'];
-					$track_art      = \WPMediaVerse\Repository\MediaRepository::get( $track_media_id, 'artist' );
+					$track_art      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $track_media_id, 'artist' );
 					$dur_label      = '';
 					if ( ! empty( $item_row['duration'] ) ) {
 						$d         = (float) $item_row['duration'];
@@ -360,7 +360,7 @@ $mvs_archive_url = home_url( '/media/' );
 						'url'      => $alb_su ? $alb_su->generate( $track_media_id, $alb_uid ) : '',
 						'type'     => $item_row['file_type'] ?? '',
 						'duration' => $dur_label,
-						'link'     => \WPMediaVerse\Repository\MediaRepository::get_permalink( $track_media_id ),
+						'link'     => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $track_media_id ),
 					);
 				}
 				?>

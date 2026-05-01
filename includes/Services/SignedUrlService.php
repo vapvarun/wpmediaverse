@@ -11,7 +11,6 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Generates and validates signed URLs for protected media files.
@@ -199,8 +198,8 @@ class SignedUrlService {
 		}
 
 		// Resolve absolute filesystem path with traversal containment baked in.
-		$full_path = MediaRepository::get_filesystem_path( $media_id );
-		$file_type = MediaRepository::get_raw( $media_id, 'file_type' );
+		$full_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_filesystem_path( $media_id );
+		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_type' );
 
 		if ( null === $full_path ) {
 			status_header( 404 );
@@ -271,7 +270,7 @@ class SignedUrlService {
 		// Internal: signing service serves the underlying file from disk —
 		// must use the raw stored URL, not a signed-URL re-emission.
 		if ( 'watermark' === $size ) {
-			$thumb_url = MediaRepository::get_raw( $media_id, 'watermark_url' );
+			$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'watermark_url' );
 		} else {
 			$size_map  = array(
 				'large'     => 'thumb_large',
@@ -279,10 +278,10 @@ class SignedUrlService {
 				'thumbnail' => 'thumb_thumb',
 			);
 			$meta_key  = $size_map[ $size ] ?? 'thumb_large';
-			$thumb_url = MediaRepository::get_raw( $media_id, $meta_key )
-				?: MediaRepository::get_raw( $media_id, 'thumb_medium' )
-				?: MediaRepository::get_raw( $media_id, 'thumb_thumb' )
-				?: MediaRepository::get_raw( $media_id, 'file_url' );
+			$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, $meta_key )
+				?: \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_medium' )
+				?: \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_thumb' )
+				?: \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_url' );
 		}
 
 		if ( ! $thumb_url ) {

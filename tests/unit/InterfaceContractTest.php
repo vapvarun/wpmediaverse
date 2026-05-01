@@ -77,6 +77,27 @@ class InterfaceContractTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Phase 1c — `Plugin::container()->get('media_repository')` returns
+	 * an instance implementing the interface. This is the contract Pro
+	 * depends on after Phase 1d.
+	 */
+	public function test_media_repository_container_resolution_returns_interface_impl(): void {
+		if ( ! class_exists( '\\WPMediaVerse\\Core\\Plugin' ) ) {
+			$this->markTestSkipped( 'Plugin bootstrap not loaded.' );
+		}
+		$container = \WPMediaVerse\Core\Plugin::container();
+		$this->assertNotNull( $container );
+		$this->assertTrue( $container->has( 'media_repository' ) );
+
+		$instance = $container->get( 'media_repository' );
+		$this->assertInstanceOf(
+			'\\WPMediaVerse\\Repository\\MediaRepositoryInterface',
+			$instance,
+			'Container key "media_repository" must resolve to an interface implementation.'
+		);
+	}
+
+	/**
 	 * Phase 1b — `Plugin::container()->get('template_helpers')` returns
 	 * an instance implementing the interface. This is the contract Pro
 	 * depends on after Phase 1d.

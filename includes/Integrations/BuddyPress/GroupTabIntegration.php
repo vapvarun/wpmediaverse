@@ -13,7 +13,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Manages the Media tab on BuddyPress group pages.
@@ -503,7 +502,7 @@ class GroupTabIntegration {
 		}
 
 		// Verify album belongs to this group.
-		$album_group_id = (int) MediaRepository::get( $album->ID, 'group_id' );
+		$album_group_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album->ID, 'group_id' );
 		if ( $album_group_id !== (int) $group->id ) {
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found in this group.', 'wpmediaverse' ) . '</p></div>';
 			echo '</div>';

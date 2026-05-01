@@ -14,7 +14,6 @@ namespace WPMediaVerse\Core;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Instance helper methods for template rendering.
@@ -104,7 +103,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		// Original = signed full-file URL. Otherwise = signed sized thumbnail.
 		if ( 'original' === $source ) {
-			$signed = (string) MediaRepository::get( $media_id, 'file_url' );
+			$signed = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' );
 			if ( '' !== $signed ) {
 				return $signed;
 			}
@@ -116,7 +115,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		if ( $size_url ) {
 			return $size_url;
 		}
-		return (string) MediaRepository::get( $media_id, 'file_url' );
+		return (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' );
 	}
 
 	/**
@@ -126,13 +125,13 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string One of: image, video, audio, document.
 	 */
 	public function get_media_type( int $media_id ): string {
-		$media_type = MediaRepository::get( $media_id, 'media_type' );
+		$media_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' );
 		if ( $media_type ) {
 			return $media_type;
 		}
 
 		// Fallback: derive from MIME type.
-		$file_type = MediaRepository::get( $media_id, 'file_type' );
+		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 		if ( $file_type ) {
 			if ( strpos( $file_type, 'image/' ) === 0 ) {
 				return 'image';
@@ -246,7 +245,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$thumb_url  = $this->get_thumb_url( $media_id, $size, (int) $args['ttl'], $args['user_id'] );
 		$alt        = (string) $args['alt'];
 		if ( '' === $alt ) {
-			$alt = esc_attr( (string) MediaRepository::get( $media_id, 'title' ) );
+			$alt = esc_attr( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) );
 		}
 
 		$extra_class = trim( (string) $args['classes'] );
@@ -383,7 +382,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$size         = $options['size'] ?? get_option( 'mvs_thumbnail_size', 'large' );
 
 		// Read core fields from mvs_media_index.
-		$media_row = MediaRepository::get_all( $media_id );
+		$media_row = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );
 		if ( empty( $media_row ) || empty( $media_row['media_id'] ) ) {
 			return;
 		}
@@ -394,7 +393,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		$media_title = $media_row['title'] ?? '';
 		$author_id   = (int) ( $media_row['post_author'] ?? 0 );
-		$permalink   = MediaRepository::get_permalink( $media_id );
+		$permalink   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
 		$views       = isset( $stats['views'] ) ? (int) $stats['views'] : 0;
 		$reactions   = isset( $stats['reactions'] ) ? (int) $stats['reactions'] : 0;
 		$comments    = isset( $stats['comments'] ) ? (int) $stats['comments'] : 0;
@@ -408,12 +407,12 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		}
 
 		// Check if this is a gallery group cover.
-		$media_group = MediaRepository::get( $media_id, 'media_group' );
+		$media_group = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_group' );
 		$group_count = 0;
 		$is_gallery  = false;
 		if ( $media_group ) {
 			$is_gallery  = true;
-			$group_count = (int) MediaRepository::get( $media_id, 'group_count_cache' );
+			$group_count = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'group_count_cache' );
 			if ( ! $group_count ) {
 				global $wpdb;
 				$group_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

@@ -269,7 +269,7 @@ class CacheService {
 		$this->delete( "media_stats_{$media_id}" );
 
 		// Also invalidate the author's user stats.
-		$author_id = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
+		$author_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
 		if ( $author_id ) {
 			$this->delete( "user_stats_{$author_id}" );
 		}

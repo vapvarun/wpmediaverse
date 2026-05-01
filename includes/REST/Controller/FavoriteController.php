@@ -15,7 +15,6 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
-use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Social\FavoriteService;
 
 /**
@@ -139,7 +138,7 @@ class FavoriteController extends WP_REST_Controller {
 		$media_id = $request->get_param( 'media_id' );
 		$user_id  = get_current_user_id();
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -162,7 +161,7 @@ class FavoriteController extends WP_REST_Controller {
 
 		$media_id = $request->get_param( 'media_id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -210,16 +209,16 @@ class FavoriteController extends WP_REST_Controller {
 		$enriched = array();
 		foreach ( $result['items'] as $item ) {
 			$media_id = (int) $item['media_id'];
-			if ( ! MediaRepository::exists( $media_id ) ) {
+			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 				continue;
 			}
 			$enriched[] = array(
 				'media_id'      => $media_id,
-				'title'         => MediaRepository::get( $media_id, 'title' ),
-				'link'          => MediaRepository::get_permalink( $media_id ),
-				'thumbnail_url' => (string) MediaRepository::get( $media_id, 'thumb_large' ),
-				'file_url'      => (string) MediaRepository::get( $media_id, 'file_url' ),
-				'media_type'    => MediaRepository::get( $media_id, 'media_type' ),
+				'title'         => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ),
+				'link'          => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ),
+				'thumbnail_url' => (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'thumb_large' ),
+				'file_url'      => (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' ),
+				'media_type'    => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' ),
 				'created_at'    => $item['created_at'],
 			);
 		}

@@ -9,7 +9,6 @@ namespace WPMediaVerse\Tests\Unit;
 
 use WP_UnitTestCase;
 use WPMediaVerse\Social\ReactionService;
-use WPMediaVerse\Repository\MediaRepository;
 
 class ReactionServiceTest extends WP_UnitTestCase {
 
@@ -22,7 +21,7 @@ class ReactionServiceTest extends WP_UnitTestCase {
 
 		$this->service  = new ReactionService();
 		$this->user_id  = self::factory()->user->create( array( 'role' => 'author' ) );
-		$this->media_id = MediaRepository::insert(
+		$this->media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Test Photo',
 				'post_author' => $this->user_id,

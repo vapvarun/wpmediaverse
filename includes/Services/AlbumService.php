@@ -11,7 +11,6 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Manages album item membership, ordering, and metadata.
@@ -65,7 +64,7 @@ class AlbumService {
 	public function add_items( int $album_id, array $media_ids ): int {
 		global $wpdb;
 
-		$is_playlist = 'playlist' === MediaRepository::get( $album_id, 'album_type' );
+		$is_playlist = 'playlist' === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'album_type' );
 
 		$max_pos = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
@@ -78,13 +77,13 @@ class AlbumService {
 		foreach ( $media_ids as $media_id ) {
 			$media_id = (int) $media_id;
 
-			if ( ! MediaRepository::exists( $media_id ) ) {
+			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 				continue;
 			}
 
 			// Playlist albums only accept audio media.
 			if ( $is_playlist ) {
-				$file_type = MediaRepository::get( $media_id, 'file_type' );
+				$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 				if ( $file_type && 0 !== strpos( $file_type, 'audio/' ) ) {
 					continue;
 				}
@@ -110,7 +109,7 @@ class AlbumService {
 		// Store album association on each media item.
 		if ( $added > 0 ) {
 			foreach ( $media_ids as $mid ) {
-				MediaRepository::set( (int) $mid, 'album_id', $album_id );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( (int) $mid, 'album_id', $album_id );
 			}
 
 			/**
@@ -196,7 +195,7 @@ class AlbumService {
 		}
 
 		// Reject cover requests for media that doesn't exist at all.
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new \WP_Error(
 				'mvs_media_not_found',
 				__( 'Media item not found.', 'wpmediaverse' ),
@@ -205,7 +204,7 @@ class AlbumService {
 		}
 
 		// Only image-type media makes sense as a cover. Validate before any mutation.
-		$file_type = MediaRepository::get( $media_id, 'file_type' );
+		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 		if ( ! is_string( $file_type ) || 0 !== strpos( $file_type, 'image/' ) ) {
 			return new \WP_Error(
 				'mvs_cover_not_image',
@@ -322,9 +321,9 @@ class AlbumService {
 
 		// Fallback for image-type media: signed file URL passes the
 		// .htaccess gate. Previously returned a raw URL that 403s.
-		$file_type = MediaRepository::get( $media_id, 'file_type' );
+		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 		if ( is_string( $file_type ) && 0 === strpos( $file_type, 'image/' ) ) {
-			$signed = (string) MediaRepository::get( $media_id, 'file_url' );
+			$signed = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' );
 			if ( '' !== $signed ) {
 				return $signed;
 			}

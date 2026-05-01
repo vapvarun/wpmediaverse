@@ -11,7 +11,6 @@ defined( 'ABSPATH' ) || exit;
 
 use WP_CLI;
 use WP_CLI\Utils;
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Manage WPMediaVerse media, stats, and maintenance tasks.
@@ -354,7 +353,7 @@ class Commands {
 				$media_id = (int) $act->secondary_item_id;
 			}
 
-			if ( ! $media_id || ! MediaRepository::exists( $media_id ) ) {
+			if ( ! $media_id || ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 				++$skipped;
 				$progress->tick();
 				continue;
@@ -368,7 +367,7 @@ class Commands {
 					'buddyboss'  => 'bb_media_id',
 				);
 				$check_key = $meta_keys[ $source ] ?? '';
-				if ( $check_key && ! MediaRepository::get( (int) $media_id, $check_key ) ) {
+				if ( $check_key && ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( (int) $media_id, $check_key ) ) {
 					++$skipped;
 					$progress->tick();
 					continue;
@@ -480,7 +479,7 @@ class Commands {
 
 			// Check if thumbnail already exists. Raw read — presence check,
 			// not URL emission.
-			$existing_thumb = MediaRepository::get_raw( $media_id, 'thumb_large' );
+			$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
 			if ( $existing_thumb && ! $force ) {
 				++$skipped;
 				if ( $dry_run ) {
@@ -490,7 +489,7 @@ class Commands {
 			}
 
 			// Resolve absolute filesystem path with traversal containment.
-			$file_path = MediaRepository::get_filesystem_path( $media_id );
+			$file_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_filesystem_path( $media_id );
 			if ( null === $file_path ) {
 				++$skipped;
 				WP_CLI::warning( "No reachable file for media {$media_id}: {$title} — skipping." );
@@ -524,9 +523,9 @@ class Commands {
 
 			// Store thumb URLs in meta.
 			$full_thumb_url = $thumb_url . '/' . $thumb_name;
-			MediaRepository::set( $media_id, 'thumb_large', $full_thumb_url );
-			MediaRepository::set( $media_id, 'thumb_medium', $full_thumb_url );
-			MediaRepository::set( $media_id, 'thumb_thumb', $full_thumb_url );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_large', $full_thumb_url );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_medium', $full_thumb_url );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_thumb', $full_thumb_url );
 
 			++$generated;
 			WP_CLI::log( "Generated thumbnail for media {$media_id}: {$title}" );

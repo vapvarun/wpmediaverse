@@ -9,7 +9,6 @@ namespace WPMediaVerse\Tests\Unit;
 
 use WP_UnitTestCase;
 use WPMediaVerse\Social\FavoriteService;
-use WPMediaVerse\Repository\MediaRepository;
 
 class FavoriteServiceTest extends WP_UnitTestCase {
 
@@ -21,7 +20,7 @@ class FavoriteServiceTest extends WP_UnitTestCase {
 		parent::set_up();
 		$this->service  = new FavoriteService();
 		$this->user_id  = self::factory()->user->create( array( 'role' => 'author' ) );
-		$this->media_id = MediaRepository::insert(
+		$this->media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Test Photo',
 				'post_author' => $this->user_id,
@@ -73,7 +72,7 @@ class FavoriteServiceTest extends WP_UnitTestCase {
 	public function test_get_user_favorites(): void {
 		$media_ids = array();
 		for ( $i = 0; $i < 3; $i++ ) {
-			$mid = MediaRepository::insert(
+			$mid = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 				array(
 					'title'       => "Fav Photo {$i}",
 					'post_author' => $this->user_id,
@@ -100,7 +99,7 @@ class FavoriteServiceTest extends WP_UnitTestCase {
 	 */
 	public function test_get_user_favorites_pagination(): void {
 		for ( $i = 0; $i < 5; $i++ ) {
-			$mid = MediaRepository::insert(
+			$mid = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 				array(
 					'title'       => "Paged Photo {$i}",
 					'post_author' => $this->user_id,
@@ -143,7 +142,7 @@ class FavoriteServiceTest extends WP_UnitTestCase {
 	 * Toggle with a collection_id stores the collection association.
 	 */
 	public function test_toggle_with_collection(): void {
-		$collection_id = MediaRepository::insert(
+		$collection_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Test Collection',
 				'post_author' => $this->user_id,

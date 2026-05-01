@@ -11,7 +11,6 @@ namespace WPMediaVerse\Shortcodes;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Registers and renders all WPMediaVerse shortcodes.
@@ -437,16 +436,16 @@ class Shortcodes {
 		$output  = '<div class="mvs-media-grid mvs-collection-embed" style="--mvs-grid-cols: ' . $columns . '">';
 
 		foreach ( $media_ids as $media_id ) {
-			if ( ! MediaRepository::exists( $media_id ) ) {
+			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 				continue;
 			}
-			$status = MediaRepository::get( $media_id, 'status' );
+			$status = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'status' );
 			if ( 'publish' !== $status ) {
 				continue;
 			}
-			$title      = MediaRepository::get( $media_id, 'title' );
-			$media_type = MediaRepository::get( $media_id, 'media_type' ) ?: 'image';
-			$permalink  = MediaRepository::get_permalink( $media_id );
+			$title      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' );
+			$media_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' ) ?: 'image';
+			$permalink  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
 			$sc_su      = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 			$thumb_url  = $sc_su
 				? $sc_su->generate_thumbnail( $media_id, get_current_user_id(), 'large' )

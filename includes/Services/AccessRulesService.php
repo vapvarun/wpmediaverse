@@ -503,7 +503,7 @@ class AccessRulesService {
 		}
 		if ( ! $author_id ) {
 			// Try mvs_media_index for non-CPT media.
-			$author_id = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
+			$author_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
 		}
 		if ( $user_id && ( $author_id === $user_id || user_can( $user_id, 'moderate_mvs_media' ) ) ) {
 			return true;

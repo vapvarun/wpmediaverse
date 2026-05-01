@@ -26,7 +26,7 @@ function run_bulk_tests(): array {
 
 	$test_media_ids = array();
 	for ( $i = 0; $i < 3; $i++ ) {
-		$mid = \WPMediaVerse\Repository\MediaRepository::insert(
+		$mid = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Bulk Test Media ' . $i . ' ' . time(),
 				'post_author' => $admin_id,
@@ -174,7 +174,7 @@ function run_bulk_tests(): array {
 		wp_set_current_user( $admin_id );
 
 		// Verify admin's media still exists.
-		$still_exists = \WPMediaVerse\Repository\MediaRepository::exists( $test_media_ids[0] );
+		$still_exists = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $test_media_ids[0] );
 		assert_test( 'Admin media NOT deleted by non-owner', $still_exists, 'media_id:' . $test_media_ids[0] ) ? $p++ : $f++;
 	} else {
 		$f += 2;

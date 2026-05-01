@@ -129,8 +129,8 @@ do_action( 'mvs_before_content' );
 					<?php
 					foreach ( $items as $media_id ) :
 						$media_id     = (int) $media_id;
-						$media_title  = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'title' );
-						$media_status = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'status' );
+						$media_title  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' );
+						$media_status = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'status' );
 						if ( ! $media_title || 'publish' !== $media_status ) {
 							continue;
 						}

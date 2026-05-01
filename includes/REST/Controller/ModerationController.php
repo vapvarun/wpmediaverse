@@ -14,7 +14,6 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
-use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Services\ModerationService;
 use WPMediaVerse\Services\AIService;
 
@@ -224,7 +223,7 @@ class ModerationController extends WP_REST_Controller {
 	public function approve_item( WP_REST_Request $request ) {
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -242,7 +241,7 @@ class ModerationController extends WP_REST_Controller {
 	public function reject_item( WP_REST_Request $request ) {
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -261,7 +260,7 @@ class ModerationController extends WP_REST_Controller {
 	public function analyze_item( WP_REST_Request $request ) {
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -293,17 +292,17 @@ class ModerationController extends WP_REST_Controller {
 	private function prepare_item_from_meta( int $media_id ): array {
 		return array(
 			'id'                => $media_id,
-			'title'             => MediaRepository::get( $media_id, 'title' ),
-			'author'            => MediaRepository::get_author( $media_id ),
-			'date'              => MediaRepository::get( $media_id, 'created_at' ),
-			'status'            => MediaRepository::get( $media_id, 'status' ),
+			'title'             => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ),
+			'author'            => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ),
+			'date'              => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'created_at' ),
+			'status'            => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'status' ),
 			'moderation_status' => $this->moderation->get_status( $media_id ),
-			'file_url'          => (string) MediaRepository::get( $media_id, 'file_url' ),
-			'file_type'         => MediaRepository::get( $media_id, 'file_type' ),
-			'ai_description'    => MediaRepository::get( $media_id, 'ai_description' ),
-			'ai_tags'           => MediaRepository::get( $media_id, 'ai_tags' ),
-			'ai_moderation'     => MediaRepository::get( $media_id, 'ai_moderation' ),
-			'rejection_reason'  => MediaRepository::get( $media_id, 'rejection_reason' ),
+			'file_url'          => (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' ),
+			'file_type'         => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' ),
+			'ai_description'    => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'ai_description' ),
+			'ai_tags'           => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'ai_tags' ),
+			'ai_moderation'     => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'ai_moderation' ),
+			'rejection_reason'  => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'rejection_reason' ),
 			'moderation_log'    => $this->moderation->get_log( $media_id ),
 		);
 	}

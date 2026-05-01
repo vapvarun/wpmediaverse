@@ -9,8 +9,6 @@
 
 namespace WPMediaVerse\Social;
 
-use WPMediaVerse\Repository\MediaRepository;
-
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -63,7 +61,7 @@ class ShareService {
 	 * @return string
 	 */
 	public function generate_share_url( int $media_id ): string {
-		return MediaRepository::get_permalink( $media_id );
+		return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
 	}
 
 	/**

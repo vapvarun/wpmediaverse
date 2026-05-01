@@ -620,7 +620,7 @@ class TagManagementPage {
 		$media_items = array();
 		if ( ! empty( $media_ids ) ) {
 			foreach ( $media_ids as $media_id ) {
-				$media_data = \WPMediaVerse\Repository\MediaRepository::get_all( $media_id );
+				$media_data = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );
 				if ( $media_data ) {
 					$media_items[] = $media_data;
 				}
@@ -693,7 +693,7 @@ class TagManagementPage {
 						<?php foreach ( $media_items as $media ) : ?>
 							<?php
 							$media_id  = $media['media_id'] ?? 0;
-							$permalink = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_id );
+							$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
 							// Fallback to admin URL if permalink is not available.
 							if ( empty( $permalink ) ) {
 								$permalink = admin_url( 'admin.php?page=mvs-media&mvs_media_id=' . $media_id );

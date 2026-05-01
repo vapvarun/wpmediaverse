@@ -12,7 +12,6 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Watermark service — generates watermarked preview images for gated content.
@@ -124,7 +123,7 @@ class WatermarkService {
 		}
 
 		// Only watermark images.
-		$file_type = MediaRepository::get( $media_id, 'file_type' );
+		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 		if ( ! $file_type || 0 !== strpos( $file_type, 'image/' ) ) {
 			$this->preview_cache[ $media_id ] = '';
 			return '';
@@ -137,7 +136,7 @@ class WatermarkService {
 		}
 
 		// Check for cached watermarked file.
-		$cached_url = MediaRepository::get( $media_id, 'watermark_url' );
+		$cached_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'watermark_url' );
 		if ( $cached_url ) {
 			$this->preview_cache[ $media_id ] = $cached_url;
 			return $cached_url;
@@ -146,7 +145,7 @@ class WatermarkService {
 		// Short-circuit when the source file isn't reachable on local disk
 		// (e.g. cloud-stored media, deleted file). Pro's Watermarker fails
 		// gracefully on its own, but skipping here avoids the round trip.
-		if ( null === MediaRepository::get_filesystem_path( $media_id ) ) {
+		if ( null === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_filesystem_path( $media_id ) ) {
 			$this->preview_cache[ $media_id ] = '';
 			return '';
 		}
@@ -154,8 +153,8 @@ class WatermarkService {
 		// Pro's Watermarker filter contract: relative `file_path` (composed
 		// against {uploads}/wpmediaverse/ on the Pro side). Pass the raw
 		// stored value — the filter argument is never emitted to a browser.
-		$file_path = (string) MediaRepository::get_raw( $media_id, 'file_path' );
-		$file_url  = (string) MediaRepository::get_raw( $media_id, 'file_url' );
+		$file_path = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_path' );
+		$file_url  = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_url' );
 		$config    = $this->get_config();
 
 		/**
@@ -176,8 +175,8 @@ class WatermarkService {
 			// Persist the raw URL returned by Pro's Watermarker, then
 			// re-fetch via get() so the caller emits the signed variant
 			// (Phase 0a item 3 — watermark_url always-signed at the data layer).
-			MediaRepository::set( $media_id, 'watermark_url', $preview_url );
-			$preview_url = (string) MediaRepository::get( $media_id, 'watermark_url' );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'watermark_url', $preview_url );
+			$preview_url = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'watermark_url' );
 		}
 
 		$this->preview_cache[ $media_id ] = $preview_url;
@@ -193,7 +192,7 @@ class WatermarkService {
 	 * @param int $media_id Media post ID.
 	 */
 	public function invalidate( int $media_id ): void {
-		MediaRepository::delete( $media_id, 'watermark_url' );
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete( $media_id, 'watermark_url' );
 		unset( $this->preview_cache[ $media_id ] );
 
 		/**

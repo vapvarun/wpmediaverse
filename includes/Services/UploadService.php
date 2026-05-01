@@ -12,7 +12,6 @@ namespace WPMediaVerse\Services;
 defined( 'ABSPATH' ) || exit;
 
 use WP_Error;
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Handles file uploads, validation, and media post creation.
@@ -293,7 +292,7 @@ class UploadService {
 		do_action( 'mvs_before_media_insert' );
 
 		// Insert directly into mvs_media_index — the authoritative media record.
-		$media_id = MediaRepository::insert(
+		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'             => $title,
 				'description'       => $description,
@@ -323,7 +322,7 @@ class UploadService {
 
 		// Store EXIF data in meta table (sparse data).
 		if ( ! empty( $exif_raw ) ) {
-			MediaRepository::set( $media_id, 'exif_raw', $exif_raw );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'exif_raw', $exif_raw );
 		}
 
 		// Extract and store media metadata (duration, dimensions, etc.).
@@ -513,23 +512,23 @@ class UploadService {
 				if ( $video_meta ) {
 					if ( ! empty( $video_meta['length'] ) ) {
 						$metadata['duration'] = (float) $video_meta['length'];
-						MediaRepository::set( $media_id, 'duration', $metadata['duration'] );
+						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'duration', $metadata['duration'] );
 					}
 					if ( ! empty( $video_meta['width'] ) ) {
 						$metadata['width'] = (int) $video_meta['width'];
-						MediaRepository::set( $media_id, 'width', $metadata['width'] );
+						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'width', $metadata['width'] );
 					}
 					if ( ! empty( $video_meta['height'] ) ) {
 						$metadata['height'] = (int) $video_meta['height'];
-						MediaRepository::set( $media_id, 'height', $metadata['height'] );
+						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'height', $metadata['height'] );
 					}
 					if ( ! empty( $video_meta['bitrate'] ) ) {
 						$metadata['bitrate'] = (int) $video_meta['bitrate'];
-						MediaRepository::set( $media_id, 'bitrate', $metadata['bitrate'] );
+						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'bitrate', $metadata['bitrate'] );
 					}
 					if ( ! empty( $video_meta['codec'] ) ) {
 						$metadata['codec'] = sanitize_text_field( $video_meta['codec'] );
-						MediaRepository::set( $media_id, 'codec', $metadata['codec'] );
+						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'codec', $metadata['codec'] );
 					}
 				}
 
@@ -547,24 +546,24 @@ class UploadService {
 				if ( $audio_meta ) {
 					if ( ! empty( $audio_meta['length'] ) ) {
 						$metadata['duration'] = (float) $audio_meta['length'];
-						MediaRepository::set( $media_id, 'duration', $metadata['duration'] );
+						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'duration', $metadata['duration'] );
 					}
 					if ( ! empty( $audio_meta['bitrate'] ) ) {
 						$metadata['bitrate'] = (int) $audio_meta['bitrate'];
-						MediaRepository::set( $media_id, 'bitrate', $metadata['bitrate'] );
+						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'bitrate', $metadata['bitrate'] );
 					}
 					if ( ! empty( $audio_meta['codec'] ) ) {
 						$metadata['codec'] = sanitize_text_field( $audio_meta['codec'] );
-						MediaRepository::set( $media_id, 'codec', $metadata['codec'] );
+						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'codec', $metadata['codec'] );
 					}
 					// ID3 tags.
 					if ( ! empty( $audio_meta['artist'] ) ) {
 						$metadata['artist'] = sanitize_text_field( $audio_meta['artist'] );
-						MediaRepository::set( $media_id, 'artist', $metadata['artist'] );
+						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'artist', $metadata['artist'] );
 					}
 					if ( ! empty( $audio_meta['album'] ) ) {
 						$metadata['album_name'] = sanitize_text_field( $audio_meta['album'] );
-						MediaRepository::set( $media_id, 'album_name', $metadata['album_name'] );
+						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'album_name', $metadata['album_name'] );
 					}
 				}
 				break;
@@ -574,8 +573,8 @@ class UploadService {
 				if ( $size ) {
 					$metadata['width']  = (int) $size[0];
 					$metadata['height'] = (int) $size[1];
-					MediaRepository::set( $media_id, 'width', $metadata['width'] );
-					MediaRepository::set( $media_id, 'height', $metadata['height'] );
+					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'width', $metadata['width'] );
+					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'height', $metadata['height'] );
 				}
 
 				// Generate thumbnails via image editor.
@@ -670,7 +669,7 @@ class UploadService {
 		$base_url   = $upload_dir['baseurl'] . '/' . $rel_dir;
 
 		foreach ( $generated as $size_name => $data ) {
-			MediaRepository::set( $media_id, 'thumb_' . $size_name, $base_url . '/' . $data['file'] );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_' . $size_name, $base_url . '/' . $data['file'] );
 		}
 
 		// WP's multi_resize() skips sizes that would upscale the source. For
@@ -680,11 +679,11 @@ class UploadService {
 		// URL — it IS the largest available version of the image.
 		// Storage-internal: must be the raw stored URL — persisting a
 		// signed URL into the meta table would freeze the token.
-		$file_url = MediaRepository::get_raw( $media_id, 'file_url' );
+		$file_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_url' );
 		if ( $file_url ) {
 			foreach ( array_keys( $sizes ) as $size_name ) {
 				if ( ! isset( $generated[ $size_name ] ) ) {
-					MediaRepository::set( $media_id, 'thumb_' . $size_name, $file_url );
+					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_' . $size_name, $file_url );
 				}
 			}
 		}
@@ -755,13 +754,13 @@ class UploadService {
 	 * @return bool True if a fallback was written, false otherwise.
 	 */
 	private function ensure_fallback_thumbs( int $media_id ): bool {
-		$media_type = (string) MediaRepository::get( $media_id, 'media_type' );
+		$media_type = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' );
 		if ( 'image' !== $media_type ) {
 			return false;
 		}
 
 		// Presence check — raw read, not URL emission.
-		if ( MediaRepository::get_raw( $media_id, 'thumb_large' ) ) {
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' ) ) {
 			return false;
 		}
 
@@ -769,12 +768,12 @@ class UploadService {
 		// file_url so the read-side signs both consistently. Must be the
 		// raw value — storing a signed URL here would persist a token in
 		// the meta table and break re-signing on the next request.
-		$file_url = (string) MediaRepository::get_raw( $media_id, 'file_url' );
+		$file_url = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_url' );
 		if ( '' === $file_url ) {
 			return false;
 		}
 
-		MediaRepository::set( $media_id, 'thumb_large', $file_url );
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_large', $file_url );
 		return true;
 	}
 

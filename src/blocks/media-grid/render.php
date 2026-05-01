@@ -106,7 +106,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				$mvs_grid_media_type = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $item_id );
 				$mvs_grid_signed     = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 				$mvs_grid_file_url   = $mvs_grid_signed ? $mvs_grid_signed->generate( $item_id, get_current_user_id() ) : '';
-				$mvs_grid_group      = \WPMediaVerse\Repository\MediaRepository::get( $item_id, 'media_group' );
+				$mvs_grid_group      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $item_id, 'media_group' );
 				$mvs_grid_group_cnt  = 0;
 				if ( $mvs_grid_group ) {
 					$mvs_grid_group_cnt = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -116,7 +116,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				}
 				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group ? ' mvs-grid-item--gallery' : '' );
 				$item_title          = $item['title'] ?? '';
-				$item_permalink      = \WPMediaVerse\Repository\MediaRepository::get_permalink( $item_id );
+				$item_permalink      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id );
 				$mvs_grid_author_id  = ! empty( $item['post_author'] ) ? (int) $item['post_author'] : 0;
 				$mvs_grid_thumb_url  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $item_id, 'large' );
 				$mvs_grid_lightbox   = array(

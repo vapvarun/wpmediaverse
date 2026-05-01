@@ -9,7 +9,6 @@ namespace WPMediaVerse\Tests\Unit;
 
 use WP_UnitTestCase;
 use WPMediaVerse\Core\Migrator;
-use WPMediaVerse\Repository\MediaRepository;
 
 class MigratorUrlColumnTest extends WP_UnitTestCase {
 
@@ -48,7 +47,7 @@ class MigratorUrlColumnTest extends WP_UnitTestCase {
 		global $wpdb;
 
 		$raw_url  = 'https://example.com/wp-content/uploads/wpmediaverse/2026/05/cover-' . wp_generate_password( 8, false ) . '.jpg';
-		$media_id = MediaRepository::insert(
+		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Cover for migration',
 				'post_author' => $this->admin_id,
@@ -103,7 +102,7 @@ class MigratorUrlColumnTest extends WP_UnitTestCase {
 		global $wpdb;
 
 		$raw_url  = 'https://example.com/wp-content/uploads/wpmediaverse/2026/05/already-' . wp_generate_password( 8, false ) . '.jpg';
-		$media_id = MediaRepository::insert(
+		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Already migrated',
 				'post_author' => $this->admin_id,

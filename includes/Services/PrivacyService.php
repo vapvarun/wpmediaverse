@@ -11,7 +11,6 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Handles media visibility checks based on privacy levels.
@@ -55,10 +54,10 @@ class PrivacyService {
 	 */
 	private function check_access( int $media_id, int $user_id ): bool {
 		// Check custom tables first (media items live in mvs_media_index).
-		$is_media = MediaRepository::exists( $media_id );
+		$is_media = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id );
 
 		if ( $is_media ) {
-			$author_id = MediaRepository::get_author( $media_id );
+			$author_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 		} else {
 			// Albums and collections are still CPTs.
 			$post          = get_post( $media_id );
@@ -74,7 +73,7 @@ class PrivacyService {
 			return true;
 		}
 
-		$privacy = MediaRepository::get( $media_id, 'privacy' );
+		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
 		if ( ! $privacy ) {
 			$privacy = 'public';
 		}
@@ -157,7 +156,7 @@ class PrivacyService {
 			return false;
 		}
 
-		$group_id = (int) MediaRepository::get( $media_id, 'group_id' );
+		$group_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'group_id' );
 		if ( ! $group_id ) {
 			return false;
 		}
@@ -177,7 +176,7 @@ class PrivacyService {
 			return false;
 		}
 
-		$allowed_users = MediaRepository::get( $media_id, 'custom_access' );
+		$allowed_users = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'custom_access' );
 		if ( ! is_array( $allowed_users ) ) {
 			return false;
 		}

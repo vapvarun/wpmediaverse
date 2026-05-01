@@ -16,7 +16,6 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Services\AlbumService;
-use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Services\PrivacyService;
 
 /**
@@ -316,10 +315,10 @@ class AlbumController extends WP_REST_Controller {
 		}
 
 		$privacy = sanitize_text_field( $request->get_param( 'privacy' ) ?? 'public' );
-		MediaRepository::set( $album_id, 'privacy', $privacy );
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'privacy', $privacy );
 
 		$album_type = sanitize_text_field( $request->get_param( 'album_type' ) ?? 'default' );
-		MediaRepository::set( $album_id, 'album_type', $album_type );
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'album_type', $album_type );
 
 		// Set group association if group_id is provided and user is a member.
 		// Writes to both the custom mvs_media_meta table (keyed "group_id") AND
@@ -329,8 +328,8 @@ class AlbumController extends WP_REST_Controller {
 		// the group's Albums tab.
 		$group_id = absint( $request->get_param( 'group_id' ) );
 		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
-			MediaRepository::set( $album_id, 'privacy', 'group' );
-			MediaRepository::set( $album_id, 'group_id', $group_id );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'privacy', 'group' );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'group_id', $group_id );
 			update_post_meta( $album_id, '_mvs_group_id', $group_id );
 		}
 
@@ -387,7 +386,7 @@ class AlbumController extends WP_REST_Controller {
 
 		$privacy = $request->get_param( 'privacy' );
 		if ( $privacy ) {
-			MediaRepository::set( $album_id, 'privacy', sanitize_text_field( $privacy ) );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'privacy', sanitize_text_field( $privacy ) );
 		}
 
 		// Categories — distinguish "not sent" from "explicitly cleared" by checking the JSON body,
@@ -596,8 +595,8 @@ class AlbumController extends WP_REST_Controller {
 	 */
 	private function prepare_album_response( $post, bool $include_items = false ): array {
 		$album_id      = $post->ID;
-		$privacy_value = MediaRepository::get( $album_id, 'privacy' );
-		$album_type    = MediaRepository::get( $album_id, 'album_type' );
+		$privacy_value = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' );
+		$album_type    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'album_type' );
 
 		$category_terms = get_the_terms( $album_id, 'mvs_category' );
 		$categories     = array();
