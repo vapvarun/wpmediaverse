@@ -195,24 +195,14 @@ class OpenAIProvider implements AIProviderInterface {
 	/**
 	 * Get the OpenAI API key from settings.
 	 *
+	 * Delegates to {@see \WPMediaVerse\Core\SettingsHelper::get_openai_api_key()}
+	 * so the option name + filter + constant fallback chain stays single-
+	 * sourced (Pro's Whisper transcriber and Vision providers go through the
+	 * same helper).
+	 *
 	 * @return string
 	 */
 	private function get_api_key(): string {
-		$key = get_option( 'mvs_openai_api_key', '' );
-
-		/**
-		 * Filters the OpenAI API key.
-		 *
-		 * Allows defining the key via constant or environment variable.
-		 *
-		 * @param string $key API key from settings.
-		 */
-		$key = apply_filters( 'mvs_openai_api_key', $key );
-
-		if ( ! $key && defined( 'MVS_OPENAI_API_KEY' ) ) {
-			$key = MVS_OPENAI_API_KEY;
-		}
-
-		return $key;
+		return \WPMediaVerse\Core\SettingsHelper::get_openai_api_key();
 	}
 }

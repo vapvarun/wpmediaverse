@@ -76,4 +76,37 @@ class SettingsHelper {
 	public static function get_page_slots(): array {
 		return array_keys( self::PAGE_SLOT_OPTIONS );
 	}
+
+	/**
+	 * Resolve the OpenAI API key.
+	 *
+	 * Reads from the registered `mvs_openai_api_key` option, then runs the
+	 * `mvs_openai_api_key` filter (so site owners can override via constant /
+	 * env var), and finally falls back to the `MVS_OPENAI_API_KEY` constant
+	 * if defined. This is the same chain `Services\OpenAIProvider` uses
+	 * internally — Pro callers (Whisper transcription, Vision providers) MUST
+	 * resolve the key through this helper instead of `get_option()` directly,
+	 * so a future option rename or constant-name change stays single-sourced.
+	 *
+	 * @return string The configured API key, or '' when not set.
+	 */
+	public static function get_openai_api_key(): string {
+		$key = (string) get_option( 'mvs_openai_api_key', '' );
+
+		/**
+		 * Filter the OpenAI API key after it is loaded from options.
+		 *
+		 * Mirrors Services\OpenAIProvider::get_api_key() — kept here so cross-
+		 * plugin readers go through the same filter chain.
+		 *
+		 * @param string $key API key from options.
+		 */
+		$key = (string) apply_filters( 'mvs_openai_api_key', $key );
+
+		if ( '' === $key && defined( 'MVS_OPENAI_API_KEY' ) ) {
+			$key = (string) MVS_OPENAI_API_KEY;
+		}
+
+		return $key;
+	}
 }
