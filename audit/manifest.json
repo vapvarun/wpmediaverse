@@ -714,7 +714,7 @@
       "key": "mvs_report_auto_hide_threshold",
       "group": "moderation",
       "type": "int",
-      "controls": "Reports \u2192 auto-hide threshold"
+      "controls": "Reports → auto-hide threshold"
     },
     {
       "key": "mvs_dm_access",
@@ -763,7 +763,7 @@
       "group": "general",
       "type": "enum",
       "default": "local",
-      "controls": "Active storage driver (local/S3/BunnyCDN \u2014 Pro-extensible via mvs_storage_driver filter)"
+      "controls": "Active storage driver (local/S3/BunnyCDN — Pro-extensible via mvs_storage_driver filter)"
     },
     {
       "key": "mvs_comment_edit_window",
@@ -982,7 +982,7 @@
     },
     {
       "name": "mvs_album_items",
-      "purpose": "Album\u2194media join"
+      "purpose": "Album↔media join"
     },
     {
       "name": "mvs_error_log",
@@ -1369,66 +1369,6 @@
       "args_count": 1
     },
     {
-      "name": "mvs_capability_check",
-      "type": "filter",
-      "args": "$allowed, $cap, $user_id",
-      "where": "Capabilities/MediaCapabilities.php",
-      "consumed_by": [],
-      "args_signature": [],
-      "args_count": 0,
-      "_status": "no_call_site_found"
-    },
-    {
-      "name": "mvs_media_privacy_check",
-      "type": "filter",
-      "args": "$allowed, $media_id, $user_id",
-      "where": "Repository/MediaRepository.php",
-      "consumed_by": [],
-      "args_signature": [],
-      "args_count": 0,
-      "_status": "no_call_site_found"
-    },
-    {
-      "name": "mvs_album_query_args",
-      "type": "filter",
-      "args": "$args, $user_id",
-      "where": "Repository/AlbumRepository.php",
-      "consumed_by": [],
-      "args_signature": [],
-      "args_count": 0,
-      "_status": "no_call_site_found"
-    },
-    {
-      "name": "mvs_activity_content_transform",
-      "type": "filter",
-      "args": "$html, $activity_id",
-      "where": "Integrations/BuddyPress/ActivityContentIntegration.php",
-      "consumed_by": [],
-      "args_signature": [],
-      "args_count": 0,
-      "_status": "no_call_site_found"
-    },
-    {
-      "name": "mvs_profile_tab_label",
-      "type": "filter",
-      "args": "$label",
-      "where": "Integrations/BuddyPress/ProfileTabIntegration.php",
-      "consumed_by": [],
-      "args_signature": [],
-      "args_count": 0,
-      "_status": "no_call_site_found"
-    },
-    {
-      "name": "mvs_group_tab_label",
-      "type": "filter",
-      "args": "$label",
-      "where": "Integrations/BuddyPress/GroupTabIntegration.php",
-      "consumed_by": [],
-      "args_signature": [],
-      "args_count": 0,
-      "_status": "no_call_site_found"
-    },
-    {
       "name": "mvs_stats_tabs",
       "type": "filter",
       "args": "$tabs",
@@ -1449,26 +1389,6 @@
         "array $tabs"
       ],
       "args_count": 1
-    },
-    {
-      "name": "mvs_signed_url_lifetime",
-      "type": "filter",
-      "args": "$seconds, $media_id, $user_id",
-      "where": "Services/SignedUrlService.php",
-      "consumed_by": [],
-      "args_signature": [],
-      "args_count": 0,
-      "_status": "no_call_site_found"
-    },
-    {
-      "name": "mvs_serve_file_headers",
-      "type": "filter",
-      "args": "$headers, $media_id",
-      "where": "REST/Controller/SignedUrlController.php",
-      "consumed_by": [],
-      "args_signature": [],
-      "args_count": 0,
-      "_status": "no_call_site_found"
     },
     {
       "name": "mvs_notification_created",
@@ -1747,7 +1667,7 @@
   "ci_guards": {
     "script": "bin/ci-local.sh",
     "url_emission_regex": "esc_url(MediaRepository::get(.., 'file_url'|thumb_*)) | 'cover_image_url'=>$row->.. | bare MediaRepository::get(.., 'file_url')",
-    "storage_internal_marker": "// CI: storage-internal \u2014 use this trailing comment to mark internal-only file_url reads (DB writes, filesystem path derivation, filter args) so the CI guard skips them",
+    "storage_internal_marker": "// CI: storage-internal — use this trailing comment to mark internal-only file_url reads (DB writes, filesystem path derivation, filter args) so the CI guard skips them",
     "duplicate_method_check": true,
     "phpstan_level": 5
   },
@@ -1762,10 +1682,10 @@
     "Errors: WP_Error or LoggerService (no silent return false)",
     "i18n: __() / esc_html__() / esc_attr__() with text domain wpmediaverse",
     "Pro boundary: never import Free classes directly (exception: MediaRepository, tech debt)",
-    "No silent render fallthrough \u2014 every return; in render path needs visible empty state",
+    "No silent render fallthrough — every return; in render path needs visible empty state",
     "CSS file ownership: BP rules in bp-integration.css scoped under #buddypress",
     "Names don't lie: class/hook/CSS names match actual usage",
-    "Sibling classes with \u226550% duplicate methods share a base at n=3"
+    "Sibling classes with ≥50% duplicate methods share a base at n=3"
   ],
   "test_dirs": [
     "tests/unit/"
@@ -1867,16 +1787,6 @@
     "registry_bypasses": [],
     "suppressed_baseline_inventory": {},
     "registry_strategy": [],
-    "notes": "Phase 2.5.11\u20132.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits \u2014 WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-01 captures the live findings (7 plugin-dev-rules failures, 6 REST/JS contract proximity-window false positives, 3 wiring false positives). See audit/wppqa-baseline-2026-05-01/SUMMARY.md. Settings access for paired plugins (Pro/themes/integrations) flows through Core\\SettingsHelper static API; the canonical accessor today covers page-id slots (dashboard/explore/upload) and exposes filter mvs_page_id_{slot}. New cross-plugin readable settings should be added there before any consumer goes to get_option() directly.",
-    "hooks_fired_no_call_site": [
-      "mvs_capability_check",
-      "mvs_media_privacy_check",
-      "mvs_album_query_args",
-      "mvs_activity_content_transform",
-      "mvs_profile_tab_label",
-      "mvs_group_tab_label",
-      "mvs_signed_url_lifetime",
-      "mvs_serve_file_headers"
-    ]
+    "notes": "Phase 2.5.11–2.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits — WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-01 captures the live findings (7 plugin-dev-rules failures, 6 REST/JS contract proximity-window false positives, 3 wiring false positives). See audit/wppqa-baseline-2026-05-01/SUMMARY.md. Settings access for paired plugins (Pro/themes/integrations) flows through Core\\SettingsHelper static API; the canonical accessor today covers page-id slots (dashboard/explore/upload) and exposes filter mvs_page_id_{slot}. New cross-plugin readable settings should be added there before any consumer goes to get_option() directly."
   }
 }

@@ -1,25 +1,45 @@
 {
   "hooks_fired": [
     {
+      "name": "mvs_after_thumbnail_generation",
+      "type": "action",
+      "args": "$media_id, $generated, $file_path",
+      "where": "Services/UploadService.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_ai_providers",
+      "type": "action",
+      "args": "$ai_service",
+      "where": "Services/AIService.php",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:217",
+          "kind": "add_action_listener"
+        }
+      ]
+    },
+    {
+      "name": "mvs_generate_watermark",
+      "type": "filter",
+      "args": "$preview_url, $media_id, $file_path, $file_url, $config",
+      "where": "Services/WatermarkService.php",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:214",
+          "kind": "add_filter_listener"
+        }
+      ]
+    },
+    {
       "name": "mvs_loaded",
       "type": "action",
       "args": "ServiceContainer",
       "where": "Core/Plugin.php::init",
       "purpose": "Pro extension entry point",
       "consumed_by": []
-    },
-    {
-      "name": "mvs_media_uploaded",
-      "type": "action",
-      "args": "$media_id, $file_path, $user_id",
-      "where": "Services/UploadService.php",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Connectors/ConnectorManager.php:60",
-          "kind": "add_action_listener"
-        }
-      ]
     },
     {
       "name": "mvs_media_deleted",
@@ -48,141 +68,17 @@
       ]
     },
     {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args": "$driver_class",
-      "where": "Services/StorageService.php",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:211",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_ai_providers",
+      "name": "mvs_media_uploaded",
       "type": "action",
-      "args": "$ai_service",
-      "where": "Services/AIService.php",
+      "args": "$media_id, $file_path, $user_id",
+      "where": "Services/UploadService.php",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:217",
+          "where": "includes/Connectors/ConnectorManager.php:60",
           "kind": "add_action_listener"
         }
       ]
-    },
-    {
-      "name": "mvs_thumbnail_sizes",
-      "type": "filter",
-      "args": "$sizes",
-      "where": "Services/UploadService.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_after_thumbnail_generation",
-      "type": "action",
-      "args": "$media_id, $generated, $file_path",
-      "where": "Services/UploadService.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_generate_watermark",
-      "type": "filter",
-      "args": "$preview_url, $media_id, $file_path, $file_url, $config",
-      "where": "Services/WatermarkService.php",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:214",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_watermark_invalidated",
-      "type": "action",
-      "args": "$media_id",
-      "where": "Services/WatermarkService.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_capability_check",
-      "type": "filter",
-      "args": "$allowed, $cap, $user_id",
-      "where": "Capabilities/MediaCapabilities.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_privacy_check",
-      "type": "filter",
-      "args": "$allowed, $media_id, $user_id",
-      "where": "Repository/MediaRepository.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_album_query_args",
-      "type": "filter",
-      "args": "$args, $user_id",
-      "where": "Repository/AlbumRepository.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_activity_content_transform",
-      "type": "filter",
-      "args": "$html, $activity_id",
-      "where": "Integrations/BuddyPress/ActivityContentIntegration.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_profile_tab_label",
-      "type": "filter",
-      "args": "$label",
-      "where": "Integrations/BuddyPress/ProfileTabIntegration.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_group_tab_label",
-      "type": "filter",
-      "args": "$label",
-      "where": "Integrations/BuddyPress/GroupTabIntegration.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_stats_tabs",
-      "type": "filter",
-      "args": "$tabs",
-      "where": "Admin/StatsPage.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_moderation_tabs",
-      "type": "filter",
-      "args": "$tabs",
-      "where": "Admin/ModerationQueue.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_signed_url_lifetime",
-      "type": "filter",
-      "args": "$seconds, $media_id, $user_id",
-      "where": "Services/SignedUrlService.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_serve_file_headers",
-      "type": "filter",
-      "args": "$headers, $media_id",
-      "where": "REST/Controller/SignedUrlController.php",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_notification_created",
-      "type": "action",
-      "args": "$notification_id, $user_id, $type, $actor_id, $media_id",
-      "where": "Social/NotificationService.php",
-      "consumed_by": []
     },
     {
       "name": "mvs_message_sent",
@@ -196,6 +92,105 @@
           "kind": "add_action_listener"
         }
       ]
+    },
+    {
+      "name": "mvs_moderation_tabs",
+      "type": "filter",
+      "args": "$tabs",
+      "where": "Admin/ModerationQueue.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_notification_created",
+      "type": "action",
+      "args": "$notification_id, $user_id, $type, $actor_id, $media_id",
+      "where": "Social/NotificationService.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_page_id_dashboard",
+      "type": "filter",
+      "args": "$page_id, $slot",
+      "args_signature": [
+        "int $page_id",
+        "string $slot"
+      ],
+      "args_count": 2,
+      "where": "includes/Core/SettingsHelper.php:66",
+      "purpose": "Override resolved page id for the dashboard slot (dynamic name: mvs_page_id_{slot})",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_page_id_explore",
+      "type": "filter",
+      "args": "$page_id, $slot",
+      "args_signature": [
+        "int $page_id",
+        "string $slot"
+      ],
+      "args_count": 2,
+      "where": "includes/Core/SettingsHelper.php:66",
+      "purpose": "Override resolved page id for the explore slot (dynamic name: mvs_page_id_{slot})",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_page_id_upload",
+      "type": "filter",
+      "args": "$page_id, $slot",
+      "args_signature": [
+        "int $page_id",
+        "string $slot"
+      ],
+      "args_count": 2,
+      "where": "includes/Core/SettingsHelper.php:66",
+      "purpose": "Override resolved page id for the upload slot (dynamic name: mvs_page_id_{slot})",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_stats_tabs",
+      "type": "filter",
+      "args": "$tabs",
+      "where": "Admin/StatsPage.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_storage_driver",
+      "type": "filter",
+      "args": "$driver_class",
+      "where": "Services/StorageService.php",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:211",
+          "kind": "add_filter_listener"
+        }
+      ]
+    },
+    {
+      "name": "mvs_thumbnail_size_resolved",
+      "type": "filter",
+      "args": "$size",
+      "args_signature": [
+        "string $size"
+      ],
+      "args_count": 1,
+      "where": "includes/Core/SettingsHelper.php:112",
+      "purpose": "Per-context override of resolved thumbnail size (validated against medium|large|full)",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_thumbnail_sizes",
+      "type": "filter",
+      "args": "$sizes",
+      "where": "Services/UploadService.php",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_watermark_invalidated",
+      "type": "action",
+      "args": "$media_id",
+      "where": "Services/WatermarkService.php",
+      "consumed_by": []
     }
   ]
 }
