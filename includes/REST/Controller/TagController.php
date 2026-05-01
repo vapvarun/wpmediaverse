@@ -368,7 +368,7 @@ class TagController extends WP_REST_Controller {
 
 		return rest_ensure_response(
 			array(
-				'deleted' => true,
+				'deleted'  => true,
 				'previous' => $this->format_term( $term ),
 			)
 		);

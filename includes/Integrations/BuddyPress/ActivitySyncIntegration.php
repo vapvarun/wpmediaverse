@@ -336,7 +336,7 @@ class ActivitySyncIntegration {
 		}
 
 		// 2. Any other activities still pointing at this media via item_id or
-		//    secondary_item_id (covers legacy rows where the back-ref was lost).
+		// secondary_item_id (covers legacy rows where the back-ref was lost).
 		bp_activity_delete(
 			array(
 				'type'    => 'mvs_media_upload',
@@ -369,8 +369,8 @@ class ActivitySyncIntegration {
 			if ( $activity_id <= 0 ) {
 				continue;
 			}
-			$raw = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
-			$ids = array_filter( array_map( 'intval', explode( ',', (string) $raw ) ) );
+			$raw       = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
+			$ids       = array_filter( array_map( 'intval', explode( ',', (string) $raw ) ) );
 			$remaining = array_values( array_diff( $ids, array( $media_id ) ) );
 
 			if ( empty( $remaining ) ) {

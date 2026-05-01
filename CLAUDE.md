@@ -264,15 +264,22 @@ composer journeys:dry-run # list configured journeys without executing
 
 What the gate runs (in order, see `bin/local-ci.sh`):
 
-| Stage | Tool | Catches |
-|---|---|---|
-| 1.1 PHP lint | `php -l` on every changed source | syntax errors |
-| 1.2 WPCS | `composer phpcs` | WordPress coding standards |
-| 1.3 PHPStan | `composer phpstan` | static type errors |
-| 2.1 Coding rules | `bin/coding-rules-check.sh` | plugin-specific rules |
-| 2.2 (Pro only) | `bin/architecture-checks.sh` | Free/Pro contract invariants |
-| 3.1 Manifest | `jq` on `audit/manifest.json` | manifest validity + freshness |
-| 4.1 Journeys | `bin/run-journeys.sh` | customer flows end-to-end |
+| Stage | Tool | Catches | Status as of 2026-05-01 |
+|---|---|---|---|
+| 1.1 PHP lint | `php -l` on every changed source | syntax errors | ✅ exits 0 |
+| 1.2 WPCS | `composer phpcs` | WordPress coding standards (errors only; warnings via `composer phpcs:full`) | ✅ exits 0 — 0 errors / 41 warnings on baseline |
+| 1.3 PHPStan | `composer phpstan` | static type errors | ✅ exits 0 — `phpstan-baseline.neon` pins existing items |
+| 2.1 Coding rules | `bin/coding-rules-check.sh` | plugin-specific rules (Rule 1: no native cap checks, Rule 2: REST __return_true allowlist) | ⚠️ Rule 2 has 23 callsites awaiting Item-5 triage; allowlist will be populated as part of that work |
+| 2.2 (Pro only) | `bin/architecture-checks.sh` | Free/Pro contract invariants | (Pro only) |
+| 2.3 Settings contract | `composer test:contract` | register_setting whitelist alignment (catches the d986525 bug class) | ✅ exits 0 |
+| 3.1 Manifest | `jq` on `audit/manifest.json` | manifest validity + freshness | ✅ exits 0 |
+| 4.1 Journeys | `bin/run-journeys.sh` | customer flows end-to-end | (skipped in `:no-journeys` mode) |
+
+**Composer scripts (added 2026-05-01):**
+- `composer phpcs` — runs WPCS errors only (`--warning-severity=0`); exits 0 on baseline.
+- `composer phpcs:full` — runs WPCS with warnings shown (informational; still exits 0 if no errors).
+- `composer phpcs:fix` — runs phpcbf to auto-fix fixable violations.
+- `composer phpstan` — runs PHPStan with the existing baseline; exits 0.
 
 **Bypass for emergencies only**: `SKIP_LOCAL_CI=1 git push`.
 

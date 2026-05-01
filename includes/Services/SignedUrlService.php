@@ -286,7 +286,11 @@ class SignedUrlService {
 	 * @param string $size     Requested size (large|medium|thumbnail).
 	 */
 	private function serve_thumbnail( int $media_id, string $size ): void {
-		$size_map  = array( 'large' => 'thumb_large', 'medium' => 'thumb_medium', 'thumbnail' => 'thumb_thumb' );
+		$size_map  = array(
+			'large'     => 'thumb_large',
+			'medium'    => 'thumb_medium',
+			'thumbnail' => 'thumb_thumb',
+		);
 		$meta_key  = $size_map[ $size ] ?? 'thumb_large';
 		$thumb_url = MediaRepository::get( $media_id, $meta_key )
 			?: MediaRepository::get( $media_id, 'thumb_medium' )
@@ -323,7 +327,13 @@ class SignedUrlService {
 		}
 
 		$ext       = strtolower( pathinfo( $full_path, PATHINFO_EXTENSION ) );
-		$mime_map  = array( 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'gif' => 'image/gif', 'webp' => 'image/webp' );
+		$mime_map  = array(
+			'jpg'  => 'image/jpeg',
+			'jpeg' => 'image/jpeg',
+			'png'  => 'image/png',
+			'gif'  => 'image/gif',
+			'webp' => 'image/webp',
+		);
 		$mime_type = $mime_map[ $ext ] ?? 'image/jpeg';
 		$filename  = sanitize_file_name( basename( $full_path ) );
 

@@ -440,7 +440,6 @@ class SettingsRegistrar {
 				'description' => __( 'Which image size opens in the lightbox. Users can always tap "View Original" to open the full file in a new tab.', 'wpmediaverse' ),
 			)
 		);
-
 	}
 
 	// -------------------------------------------------------------------------

@@ -117,7 +117,7 @@ class AIService {
 
 		// External providers (OpenAI Vision etc.) fetch the image over HTTP — must be a signed URL
 		// that bypasses the .htaccess deny-all on /wp-content/uploads/wpmediaverse/.
-		$image_url   = MediaUrl::for_file( $media_id );
+		$image_url = MediaUrl::for_file( $media_id );
 		if ( ! $image_url ) {
 			return new WP_Error( 'mvs_no_image', __( 'Media item has no signed file URL.', 'wpmediaverse' ) );
 		}

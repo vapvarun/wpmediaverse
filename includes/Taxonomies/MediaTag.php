@@ -57,7 +57,7 @@ class MediaTag {
 	 * counts would otherwise stay at 0 and tags would never appear on the
 	 * Explore tag cloud (which filters hide_empty=true).
 	 *
-	 * @param array<int>  $terms    Term taxonomy IDs.
+	 * @param array<int>          $terms    Term taxonomy IDs.
 	 * @param \WP_Taxonomy|string $taxonomy Taxonomy object or slug.
 	 */
 	public static function update_term_count( array $terms, $taxonomy ): void {

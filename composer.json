@@ -43,6 +43,10 @@
         "journeys:dry-run": "bash bin/run-journeys.sh --dry-run",
         "coding-rules": "bash bin/coding-rules-check.sh",
         "arch-checks": "bash bin/architecture-checks.sh",
+        "phpcs": "vendor/bin/phpcs --standard=phpcs.xml -p --warning-severity=0",
+        "phpcs:fix": "vendor/bin/phpcbf --standard=phpcs.xml",
+        "phpcs:full": "vendor/bin/phpcs --standard=phpcs.xml -p",
+        "phpstan": "vendor/bin/phpstan analyze --no-progress --memory-limit=2G",
         "test:contract": "vendor/bin/phpunit --filter SettingsContractTest",
         "install-hooks": "git config core.hooksPath bin/git-hooks && echo 'Pre-push hook installed (bypass with SKIP_LOCAL_CI=1)'"
     }

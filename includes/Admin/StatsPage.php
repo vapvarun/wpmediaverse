@@ -241,7 +241,7 @@ class StatsPage {
 
 		// Overall counts (apply date filter so cards change across Today / Week / Month / All).
 		if ( $range_start ) {
-			$total_media = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$total_media  = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$range_start

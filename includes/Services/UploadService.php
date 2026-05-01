@@ -847,7 +847,10 @@ class UploadService {
 			LoggerService::warning(
 				'upload',
 				sprintf( 'Could not create posters directory for media #%d', $media_id ),
-				array( 'media_id' => $media_id, 'dir' => $dir )
+				array(
+					'media_id' => $media_id,
+					'dir'      => $dir,
+				)
 			);
 			return null;
 		}

@@ -33,19 +33,19 @@ class Sanitizers {
 	 * @var array<string, array<int, mixed>>
 	 */
 	private const WHITELISTS = array(
-		'mvs_default_privacy'         => array( 'public', 'members', 'private' ),
-		'mvs_duplicate_action'        => array( 'warn', 'skip', 'allow' ),
-		'mvs_storage_driver'          => array( 'local', 's3', 'bunnycdn' ),
-		'mvs_thumbnail_style'         => array( 'square', 'original' ),
-		'mvs_thumbnail_size'          => array( 'medium', 'large', 'full' ),
-		'mvs_lightbox_image_source'   => array( 'original', 'large', 'medium', 'auto' ),
-		'mvs_grid_columns'            => array( 2, 3, 4, 5 ),
-		'mvs_items_per_page'          => array( 12, 24, 48 ),
-		'mvs_ai_provider'             => array( 'openai', 'google', 'rekognition' ),
-		'mvs_openai_model'            => array( 'gpt-4o-mini', 'gpt-4o' ),
-		'mvs_moderation_auto_action'  => array( 'flag', 'hide', 'reject' ),
-		'mvs_dm_access'               => array( 'everyone', 'followers', 'mutual', 'nobody' ),
-		'mvs_show_online_status'      => array( 'everyone', 'followers', 'nobody' ),
+		'mvs_default_privacy'        => array( 'public', 'members', 'private' ),
+		'mvs_duplicate_action'       => array( 'warn', 'skip', 'allow' ),
+		'mvs_storage_driver'         => array( 'local', 's3', 'bunnycdn' ),
+		'mvs_thumbnail_style'        => array( 'square', 'original' ),
+		'mvs_thumbnail_size'         => array( 'medium', 'large', 'full' ),
+		'mvs_lightbox_image_source'  => array( 'original', 'large', 'medium', 'auto' ),
+		'mvs_grid_columns'           => array( 2, 3, 4, 5 ),
+		'mvs_items_per_page'         => array( 12, 24, 48 ),
+		'mvs_ai_provider'            => array( 'openai', 'google', 'rekognition' ),
+		'mvs_openai_model'           => array( 'gpt-4o-mini', 'gpt-4o' ),
+		'mvs_moderation_auto_action' => array( 'flag', 'hide', 'reject' ),
+		'mvs_dm_access'              => array( 'everyone', 'followers', 'mutual', 'nobody' ),
+		'mvs_show_online_status'     => array( 'everyone', 'followers', 'nobody' ),
 	);
 
 	/**
