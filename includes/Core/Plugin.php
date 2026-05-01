@@ -200,6 +200,13 @@ class Plugin {
 
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
 
+		// Auto-pair the mvs-confirm stylesheet whenever its script is enqueued.
+		// Runs late so any enqueue made by integrations (BP profile/group tabs,
+		// Pro dashboard panel) is reflected. Frontend + admin both covered so
+		// the helper is usable from any context.
+		add_action( 'wp_enqueue_scripts', array( self::class, 'auto_enqueue_confirm_style' ), 100 );
+		add_action( 'admin_enqueue_scripts', array( self::class, 'auto_enqueue_confirm_style' ), 100 );
+
 		// Fix nav menu items when BuddyPress is not active.
 		if ( ! function_exists( 'buddypress' ) ) {
 			add_filter( 'wp_nav_menu_objects', array( self::class, 'filter_nav_menu_objects' ), 10 );
@@ -915,15 +922,40 @@ class Plugin {
 		// set up in Plugin::init(). No per-integration re-registration
 		// needed anywhere else in the codebase.
 
+		// Frontend confirmation modal — exposes window.mvsConfirm() as a
+		// promise-based replacement for native window.confirm(). Loaded as a
+		// dep of any frontend script that needs styled confirmation
+		// (bp-actions, dashboard-connectors). Idempotent: if Pro admin's
+		// ConfirmDialog has already installed window.mvsConfirm, this is a
+		// no-op. See assets/js/frontend/mvs-confirm.js for API contract.
+		wp_register_script(
+			'mvs-confirm',
+			MVS_PLUGIN_URL . 'assets/js/frontend/mvs-confirm.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_register_style(
+			'mvs-confirm',
+			MVS_PLUGIN_URL . 'assets/css/mvs-confirm.css',
+			array(),
+			MVS_VERSION
+		);
+
 		// BP-integration script — wires up per-item delete/edit actions on
 		// owner-visible grid cards. Declares `mvs-lucide` as a dep so the
 		// `<i data-lucide="trash-2">` icons we emit on action buttons are
 		// guaranteed to render even if the shared-ui shell didn't enqueue
-		// it. Config is injected inline so no extra request is needed.
+		// it. Also depends on `mvs-confirm` because the destructive delete
+		// flows call window.mvsConfirm() instead of window.confirm().
+		// Config is injected inline so no extra request is needed.
 		wp_register_script(
 			'mvs-bp-actions',
 			MVS_PLUGIN_URL . 'assets/js/frontend/bp-actions.js',
-			array( 'mvs-lucide' ),
+			array( 'mvs-lucide', 'mvs-confirm' ),
 			MVS_VERSION,
 			array(
 				'in_footer' => true,
@@ -1233,6 +1265,20 @@ class Plugin {
 	 * blocks existed and any one forgetting or diverging produced the
 	 * "icon renders as an empty box" class of bug we kept re-fixing.
 	 */
+	/**
+	 * Late-priority callback that pairs the `mvs-confirm` stylesheet with its
+	 * script automatically. Any code path that calls
+	 * wp_enqueue_script('mvs-confirm') (directly or via a dep chain like
+	 * mvs-bp-actions → mvs-confirm) gets the matching stylesheet without
+	 * having to remember a second wp_enqueue_style call. Runs on both
+	 * frontend and admin so the helper styles correctly in every context.
+	 */
+	public static function auto_enqueue_confirm_style(): void {
+		if ( wp_script_is( 'mvs-confirm', 'enqueued' ) && wp_style_is( 'mvs-confirm', 'registered' ) && ! wp_style_is( 'mvs-confirm', 'enqueued' ) ) {
+			wp_enqueue_style( 'mvs-confirm' );
+		}
+	}
+
 	public static function register_lucide_script(): void {
 		if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
 			return;

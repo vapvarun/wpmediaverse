@@ -21,11 +21,25 @@
 		return;
 	}
 
+	/**
+	 * Confirmation prompt — uses the styled mvsConfirm modal when available
+	 * (mvs-confirm script is a declared dep so it should always be loaded);
+	 * falls back to window.confirm() so the destructive flow never silently
+	 * proceeds if the helper failed to load. Returns Promise<boolean>.
+	 *
+	 * @param {string} message
+	 * @return {Promise<boolean>}
+	 */
 	function confirmAction( message ) {
-		// Use window.confirm for now — a custom modal can replace this
-		// without any other change (a single choke point).
+		if ( typeof window.mvsConfirm === 'function' ) {
+			return window.mvsConfirm( message, {
+				confirmLabel: 'Delete',
+				cancelLabel:  'Cancel',
+				tone:         'destructive',
+			} );
+		}
 		// eslint-disable-next-line no-alert
-		return window.confirm( message );
+		return Promise.resolve( window.confirm( message ) );
 	}
 
 	function apiDelete( path ) {
@@ -77,16 +91,18 @@
 			event.stopPropagation();
 			var mediaId = mediaDel.dataset.mediaId;
 			if ( ! mediaId ) { return; }
-			if ( ! confirmAction( 'Delete this media? This cannot be undone.' ) ) { return; }
-			mediaDel.disabled = true;
-			apiDelete( 'media/' + mediaId ).then( function ( res ) {
-				if ( res.ok ) {
-					removeCard( mediaDel );
-					toast( 'Media deleted.', 'success' );
-				} else {
-					mediaDel.disabled = false;
-					toast( res.error, 'error' );
-				}
+			confirmAction( 'Delete this media? This cannot be undone.' ).then( function ( ok ) {
+				if ( ! ok ) { return; }
+				mediaDel.disabled = true;
+				apiDelete( 'media/' + mediaId ).then( function ( res ) {
+					if ( res.ok ) {
+						removeCard( mediaDel );
+						toast( 'Media deleted.', 'success' );
+					} else {
+						mediaDel.disabled = false;
+						toast( res.error, 'error' );
+					}
+				} );
 			} );
 			return;
 		}
@@ -98,16 +114,18 @@
 			event.stopPropagation();
 			var albumId = albumDel.dataset.albumId;
 			if ( ! albumId ) { return; }
-			if ( ! confirmAction( 'Delete this album? Media items inside it will remain in your library.' ) ) { return; }
-			albumDel.disabled = true;
-			apiDelete( 'albums/' + albumId ).then( function ( res ) {
-				if ( res.ok ) {
-					removeCard( albumDel );
-					toast( 'Album deleted.', 'success' );
-				} else {
-					albumDel.disabled = false;
-					toast( res.error, 'error' );
-				}
+			confirmAction( 'Delete this album? Media items inside it will remain in your library.' ).then( function ( ok ) {
+				if ( ! ok ) { return; }
+				albumDel.disabled = true;
+				apiDelete( 'albums/' + albumId ).then( function ( res ) {
+					if ( res.ok ) {
+						removeCard( albumDel );
+						toast( 'Album deleted.', 'success' );
+					} else {
+						albumDel.disabled = false;
+						toast( res.error, 'error' );
+					}
+				} );
 			} );
 			return;
 		}

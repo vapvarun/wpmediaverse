@@ -21,7 +21,7 @@ The dm_access bug itself is **NOT** in this baseline because it was a logic bug 
 
 ## Plugin-dev-rules — top 5 high findings (all pre-existing)
 
-1. `assets/js/frontend/bp-actions.js:28` — `confirm()` used (admin-ux-rulebook Rule 10 ban). Action: replace with modal.
+1. ~~`assets/js/frontend/bp-actions.js:28` — `confirm()` used (admin-ux-rulebook Rule 10 ban).~~ **Resolved 2026-05-01** — single `confirmAction()` choke point now awaits `window.mvsConfirm()` from new `assets/js/frontend/mvs-confirm.js` (declared as dep of `mvs-bp-actions`). Native `confirm()` retained inside the helper as last-resort fallback when `<dialog>` is unsupported. Regression journey: `audit/journeys/admin/07-destructive-action-uses-modal-not-confirm.md`.
 2. `includes/Admin/MediaListPage.php:432,437,442` — three nonce checks missing paired `current_user_can()` capability check. Real, but not reachable by unauthenticated users (admin-only screen). Action: add explicit cap check for defense-in-depth.
 3. `includes/Admin/ModerationQueue.php:79` — same nonce-no-cap pattern.
 4. `includes/Admin/OverviewPage.php:626` — same nonce-no-cap pattern (welcome banner dismiss).
@@ -65,7 +65,7 @@ The wiring heuristic counted these as posted "settings" because they appear in `
 
 ## Action items (none blocking; all pre-existing)
 
-- Replace `confirm()` / `alert()` calls with modal/toast (UI hygiene; track in CLAUDE.md debt section).
+- ~~Replace `confirm()` / `alert()` calls with modal/toast (UI hygiene; track in CLAUDE.md debt section).~~ **Done 2026-05-01** — Free's single `confirm()` in `bp-actions.js` migrated to `window.mvsConfirm`. New shared helper at `assets/js/frontend/mvs-confirm.js` + `assets/css/mvs-confirm.css`, auto-paired via `Plugin::auto_enqueue_confirm_style`. Regression journey: `audit/journeys/admin/07-destructive-action-uses-modal-not-confirm.md`.
 - Add explicit cap checks alongside existing nonce verifications in 6 admin handlers.
 - Verify the 6 messaging.js / dashboard-view.js REST contract findings against the actual route handlers (likely all 6 are 50-line-window proximity false positives).
 - Suppress the 3 wiring false positives by tightening the wiring heuristic to skip `submit`/`doaction*` names.
