@@ -213,6 +213,17 @@ class ActivitySyncIntegration {
 		if ( isset( $_GET['context'] ) && 'activity' === sanitize_key( wp_unslash( $_GET['context'] ) ) ) {
 			MediaRepository::set( $media_id, 'activity_upload', '1' );
 		}
+
+		// Album bulk-upload batch: when the JS dropzone uploads N files in one
+		// user action it sets `?album_upload=1` so each individual upload skips
+		// per-media activity creation. update_activity_with_album() emits ONE
+		// gallery activity for the batch when the album link call lands.
+		// Later additions to the album (same album, different user action) do
+		// NOT carry the album_upload flag and behave normally.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['album_upload'] ) && '1' === sanitize_key( wp_unslash( $_GET['album_upload'] ) ) ) {
+			MediaRepository::set( $media_id, 'activity_upload', '1' );
+		}
 	}
 
 	/**
@@ -441,6 +452,11 @@ class ActivitySyncIntegration {
 			return;
 		}
 
+		// Track media that came through the album bulk-upload batch path
+		// (flag_activity_upload set activity_upload=1 because of `?album_upload=1`).
+		// Those have no per-media activity by design; we owe them ONE gallery activity.
+		$bundled_ids = array();
+
 		foreach ( $media_ids as $media_id ) {
 			$media_id = (int) $media_id;
 			$activity = $this->find_media_upload_activity( $media_id );
@@ -455,6 +471,97 @@ class ActivitySyncIntegration {
 					array( '%s' ),
 					array( '%d' )
 				);
+				continue;
+			}
+
+			// No per-media activity AND media has activity_upload=1 → batched.
+			if ( MediaRepository::get( $media_id, 'activity_upload' ) ) {
+				$bundled_ids[] = $media_id;
+			}
+		}
+
+		if ( ! empty( $bundled_ids ) && function_exists( 'bp_activity_add' ) && bp_is_active( 'activity' ) ) {
+			$this->emit_album_gallery_activity( $album_id, $bundled_ids );
+		}
+	}
+
+	/**
+	 * Emit a single grouped "uploaded N photos to album X" activity for a
+	 * bulk-upload batch. Reuses the existing thumbnail-grid render path so
+	 * the activity feed shows the same media-grid markup as the recovery
+	 * path in `ActivityContentIntegration::enhance_activity_media_content`.
+	 *
+	 * @param int   $album_id  Album post ID.
+	 * @param int[] $media_ids Media post IDs in upload order (first = cover).
+	 */
+	private function emit_album_gallery_activity( int $album_id, array $media_ids ): void {
+		$album = get_post( $album_id );
+		if ( ! $album || 'mvs_album' !== $album->post_type ) {
+			return;
+		}
+
+		// Pull the user from the first media item (album.post_author can lag in
+		// fresh-install fixtures; the per-media author is the actual uploader).
+		$user_id = (int) MediaRepository::get_author( (int) $media_ids[0] );
+		if ( $user_id <= 0 ) {
+			$user_id = (int) $album->post_author;
+		}
+		if ( $user_id <= 0 ) {
+			return;
+		}
+
+		// Build thumbnail grid (cap at 6 — beyond that is visual noise).
+		$shown      = array_slice( $media_ids, 0, 6 );
+		$grid_html  = '';
+		foreach ( $shown as $mid ) {
+			$grid_html .= MediaDisplayHelper::get_media_thumbnail_html( (int) $mid, 'large' );
+		}
+		if ( '' === $grid_html ) {
+			return; // Couldn't render any thumbnails — abort rather than ship empty activity.
+		}
+		$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( count( $shown ), 6 );
+		$content    = '<div class="' . esc_attr( $grid_class ) . '">' . $grid_html . '</div>';
+
+		$album_link = '<a href="' . esc_url( get_permalink( $album_id ) ) . '">' . esc_html( $album->post_title ) . '</a>';
+		$user_link  = bp_core_get_userlink( $user_id );
+		$count      = count( $media_ids );
+		$action     = sprintf(
+			/* translators: 1: user link, 2: photo count, 3: album link */
+			_n(
+				'%1$s uploaded %2$d photo to album %3$s',
+				'%1$s uploaded %2$d photos to album %3$s',
+				$count,
+				'wpmediaverse'
+			),
+			$user_link,
+			$count,
+			$album_link
+		);
+
+		$activity_id = bp_activity_add(
+			array(
+				'user_id'           => $user_id,
+				'component'         => 'wpmediaverse',
+				'type'              => 'mvs_media_upload',
+				'action'            => $action,
+				'content'           => $content,
+				'item_id'           => $album_id,
+				'secondary_item_id' => 0,
+				'hide_sitewide'     => false,
+			)
+		);
+
+		if ( $activity_id && ! is_wp_error( $activity_id ) ) {
+			// Persist the media list so ActivityContent's recovery path can
+			// reconstruct the grid if `content` is ever lost (matches the
+			// existing _mvs_media_ids meta used by the BP composer flow).
+			bp_activity_update_meta( $activity_id, '_mvs_media_ids', implode( ',', array_map( 'absint', $media_ids ) ) );
+			bp_activity_update_meta( $activity_id, '_mvs_album_id', (int) $album_id );
+
+			// Tag every media in the bundle so future album-add calls can
+			// find this activity instead of emitting a second one.
+			foreach ( $media_ids as $mid ) {
+				MediaRepository::set( (int) $mid, 'bp_activity_id', (int) $activity_id );
 			}
 		}
 	}

@@ -567,8 +567,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					} catch { /* skip thumbnail */ }
 				}
 
+				// Album bulk-upload batch (≥2 files in one user action): tag the
+				// upload so flag_activity_upload sets the activity_upload skip
+				// flag. After the album link call below, the server emits ONE
+				// "uploaded N photos to album X" gallery activity instead of
+				// N "uploaded a new photo" per-file activities. Single-file
+				// album uploads keep the per-photo activity (no bundling needed).
+				const uploadUrl = restUrl + 'media' +
+					( isAlbum && files.length > 1 ? '?album_upload=1' : '' );
+
 				try {
-					const res = await fetch( restUrl + 'media', {
+					const res = await fetch( uploadUrl, {
 						method: 'POST',
 						headers: { 'X-WP-Nonce': nonce },
 						credentials: 'same-origin',
