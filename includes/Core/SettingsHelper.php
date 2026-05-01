@@ -78,6 +78,46 @@ class SettingsHelper {
 	}
 
 	/**
+	 * Allowed thumbnail-size values (registered in SettingsRegistrar).
+	 *
+	 * @var string[]
+	 */
+	private const ALLOWED_THUMBNAIL_SIZES = array( 'medium', 'large', 'full' );
+
+	/**
+	 * Resolve the configured thumbnail size used for grids/feeds.
+	 *
+	 * Returns the registered `mvs_thumbnail_size` option, validated against
+	 * the registered enum (medium/large/full) so a corrupted DB value never
+	 * propagates downstream. Filterable via `mvs_thumbnail_size_resolved`
+	 * for themes/Pro that need to switch quality on a per-context basis
+	 * (e.g. high-DPI feed, video poster strip).
+	 *
+	 * @return string One of 'medium', 'large', 'full'.
+	 */
+	public static function get_thumbnail_size(): string {
+		$size = (string) get_option( 'mvs_thumbnail_size', 'large' );
+		if ( ! in_array( $size, self::ALLOWED_THUMBNAIL_SIZES, true ) ) {
+			$size = 'large';
+		}
+
+		/**
+		 * Filter the resolved thumbnail size.
+		 *
+		 * Themes / Pro layouts may downgrade or upgrade the size based on
+		 * context. Filtered value is re-validated against the registered enum.
+		 *
+		 * @param string $size One of 'medium', 'large', 'full'.
+		 */
+		$size = (string) apply_filters( 'mvs_thumbnail_size_resolved', $size );
+		if ( ! in_array( $size, self::ALLOWED_THUMBNAIL_SIZES, true ) ) {
+			$size = 'large';
+		}
+
+		return $size;
+	}
+
+	/**
 	 * Resolve the OpenAI API key.
 	 *
 	 * Reads from the registered `mvs_openai_api_key` option, then runs the
