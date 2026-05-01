@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 10;
+	const CURRENT_VERSION = 11;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -666,5 +666,27 @@ class Migrator {
 			);
 		}
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * Migration v11 — seed `mvs_ai_monthly_budget` for installs that pre-date
+	 * the 1.2.0 default change.
+	 *
+	 * Prior to 1.2.0 the registered default for `mvs_ai_monthly_budget` was 0,
+	 * which the AI cost guard interprets as "unlimited". Any install that had
+	 * never explicitly saved the option was therefore reading 0 and would have
+	 * run uncapped OpenAI calls if AI features were enabled — a billing trap.
+	 *
+	 * From 1.2.0 the registrar default is 10 (USD/month). Activator handles the
+	 * fresh-install seed; this migration handles the existing-install case.
+	 *
+	 * `add_option()` only inserts when the row is missing, so admins who
+	 * deliberately saved `0` (or any other value) are NOT overwritten — only
+	 * the genuine "never touched" case gets the safer $10/month cap.
+	 *
+	 * @since 1.2.0
+	 */
+	private function migrate_to_11(): void {
+		add_option( 'mvs_ai_monthly_budget', 10 );
 	}
 }

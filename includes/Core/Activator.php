@@ -165,6 +165,14 @@ class Activator {
 			'mvs_duplicate_action'    => 'warn',
 			'mvs_strip_exif'          => true,
 			'mvs_storage_driver'      => 'local',
+			// AI cost guardrails.
+			// Conservative monthly cap so a fresh install can never silently
+			// run an unbounded OpenAI bill. Site owners who want unlimited
+			// spend can set this to 0 in the AI settings tab — that intent is
+			// then explicit and recorded in wp_options. add_option() below
+			// only inserts when the row is missing, so existing installs that
+			// already chose 0 (or any other value) are not overwritten.
+			'mvs_ai_monthly_budget'   => 10,
 			// Watermark (Pro controls the UI; free seeds defaults).
 			'mvs_watermark_enabled'   => false,
 			'mvs_watermark_type'      => 'text',

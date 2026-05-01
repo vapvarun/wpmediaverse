@@ -612,7 +612,14 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'number',
 				'sanitize_callback' => 'floatval',
-				'default'           => 0,
+				// Default of 10 (USD) is a conservative cap so a fresh install
+				// never silently runs against an unbounded OpenAI bill if the
+				// owner enables auto-analyze / auto-tag without first picking
+				// a budget. Set explicitly to 0 in the UI to opt back into
+				// unlimited spend. Existing installs that already have a
+				// stored value are untouched (Activator::set_defaults() and
+				// the v1 budget migration both use add_option).
+				'default'           => 10,
 			)
 		);
 		add_settings_field(
@@ -623,7 +630,7 @@ class SettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_ai_monthly_budget',
-				'description' => __( 'Set to 0 for unlimited. AI calls will stop when budget is exceeded.', 'wpmediaverse' ),
+				'description' => __( 'Hard cap on OpenAI spend per calendar month. AI calls stop when this cap is reached and resume next month. Set to 0 to disable the cap (unlimited spend) — recommended only after you have a billing alert configured on the OpenAI account itself.', 'wpmediaverse' ),
 			)
 		);
 
