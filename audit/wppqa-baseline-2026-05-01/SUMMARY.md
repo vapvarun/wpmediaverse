@@ -38,6 +38,21 @@ The dm_access bug itself is **NOT** in this baseline because it was a logic bug 
 
 **Classification**: 0 confirmed real → 5–6 likely false positive (proximity-window heuristic limitation per skill notes).
 
+### Triage (2026-04-30)
+
+All 6 findings investigated end-to-end against the actual REST controllers + JS call sites. Result: **6/6 FALSE POSITIVE** (50-line proximity-window heuristic limitation).
+
+| # | JS call site | Actual REST endpoint hit | Field read | Field emitted by controller? | Verdict |
+|---|---|---|---|---|---|
+| 1 | `messaging.js:1128` (`pollForUpdates`) | `apiFetch('/messages/poll?...')` (line 1125) | `data.server_time` | Yes — `MessagingController.php:654` returns `'server_time' => gmdate('c')` | **triaged_2026-04-30: false positive — emitted by /messages/poll which is 6 lines above the read; wppqa walked into the next function** |
+| 2 | `messaging.js:1133` | same `/messages/poll` response | `data.messages` | Yes — `MessagingController.php:651` returns `'messages' => $messages` | **triaged_2026-04-30: false positive — same /messages/poll response object** |
+| 3 | `messaging.js:1151` | same `/messages/poll` response | `data.typing` | Yes — `MessagingController.php:652` returns `'typing' => $typing` | **triaged_2026-04-30: false positive — same /messages/poll response object** |
+| 4 | `messaging.js:1170` (`refreshUnreadCount`) | `apiFetch('/me/messages/unread-count')` (line 1169) | `data.unread` | Yes — `MessagingController.php:669` returns `'unread' => …` | **triaged_2026-04-30: false positive — emitted by /me/messages/unread-count, the call sits one line above the read** |
+| 5 | `view.js:1217` | `apiFetch(... 'collections/' + id + '?per_page=1')` (line 1215) | `data.total` | Yes — `CollectionController.php:412` returns `$data['total'] = $resolved['total']` (paginated wrapper) | **triaged_2026-04-30: false positive — paginated total field in CollectionController, not a `/rules` endpoint** |
+| 6 | `view.js:1373` (`loadNotificationCount`) | `apiFetch(... 'me/notifications/count')` (line 1371) | `data.count` | Yes — `NotificationController.php:159` returns `array('count' => …)` | **triaged_2026-04-30: false positive — emitted by /me/notifications/count, two lines above the read; wppqa misattributed to nearby `/read` call** |
+
+**Real-bug count: 0. False positives: 6.** No source changes warranted; no journey added. The wppqa heuristic should be tightened to use a tighter (≤10 line) window AND scope to the same `apiFetch()` call's promise chain instead of file-line proximity. Out of scope for this triage — flagged for the wppqa MCP author.
+
 ## Wiring — 3 high findings (ALL false positives)
 
 1. `mvs_permissions_submit` — this is the form submit button name, not a setting key.
