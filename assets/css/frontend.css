@@ -4897,10 +4897,13 @@ a.mvs-dashboard-card-title:hover {
     height: 100%;
     max-width: 95vw;               /* explicit caps reinforce the inset padding */
     max-height: 95vh;
-    background: var(--mvs-surface);
-    border-radius: 12px;           /* polished corners visible against the dim backdrop */
+    /* Container background matches the inner surfaces so the rounded corners
+       never expose a lighter sliver when --mvs-surface resolves to white in
+       a theme that doesn't define a dark variant. The outer overlay scrim
+       handles the page-backdrop dimming. */
+    background: transparent;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.55);
     animation: mvs-slide-up 0.3s ease;
 }
 
@@ -5161,6 +5164,14 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     flex-direction: column;
     min-height: 0;
+}
+
+/* Lightbox comment input — bigger than the per-tab comment form's 40px */
+/* min-height so it actually feels like a comment composer, not an input. */
+.mvs-lightbox-sidebar .mvs-comment-form textarea,
+.mvs-lightbox-sidebar textarea[placeholder*="comment" i] {
+    min-height: 72px;
+    line-height: 1.4;
 }
 
 .mvs-lightbox-comments-heading {
