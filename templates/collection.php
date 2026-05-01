@@ -123,7 +123,7 @@ do_action( 'mvs_before_content' );
 
 			<!-- Media Grid -->
 			<?php if ( ! empty( $items ) ) : ?>
-				<?php $stats_map = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( array_map( 'intval', $items ) ); ?>
+				<?php $stats_map = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( array_map( 'intval', $items ) ); ?>
 				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
 				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed">
 					<?php
@@ -134,7 +134,7 @@ do_action( 'mvs_before_content' );
 						if ( ! $media_title || 'publish' !== $media_status ) {
 							continue;
 						}
-						\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+						\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 							$media_id,
 							$stats_map[ $media_id ] ?? array(),
 							array(

@@ -450,7 +450,7 @@ class Shortcodes {
 			$sc_su      = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 			$thumb_url  = $sc_su
 				? $sc_su->generate_thumbnail( $media_id, get_current_user_id(), 'large' )
-				: \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $media_id, 'large' );
+				: \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, 'large' );
 
 			$output .= '<div class="mvs-grid-item">';
 			$output .= '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';

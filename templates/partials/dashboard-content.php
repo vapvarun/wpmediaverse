@@ -383,14 +383,14 @@ wp_enqueue_style( 'mvs-frontend' );
 						<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 							data-wp-bind--hidden="!state.showMediaVideoPreview"
 							data-wp-bind--src="state.mediaVideoPreviewUrl"></video>
-						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showMediaPlayIcon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showMediaPlayIcon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 							data-wp-bind--hidden="!state.showMediaVideoPlaceholder">
-							<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio"
 							data-wp-bind--hidden="!state.showMediaAudioPlaceholder">
-							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 					</a>
 					<div class="mvs-dashboard-card-body">
@@ -467,14 +467,14 @@ wp_enqueue_style( 'mvs-frontend' );
 						<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 							data-wp-bind--hidden="!state.showFavVideoPreview"
 							data-wp-bind--src="state.favVideoPreviewUrl"></video>
-						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showFavPlayIcon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showFavPlayIcon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 							data-wp-bind--hidden="!state.showFavVideoPlaceholder">
-							<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio"
 							data-wp-bind--hidden="!state.showFavAudioPlaceholder">
-							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 					</a>
 					<div class="mvs-dashboard-card-body">
@@ -791,14 +791,14 @@ wp_enqueue_style( 'mvs-frontend' );
 								<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 									data-wp-bind--hidden="!state.showPickerVideoPreview"
 									data-wp-bind--src="state.pickerVideoPreviewUrl"></video>
-								<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showPickerPlayIcon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+								<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showPickerPlayIcon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 								<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 									data-wp-bind--hidden="!state.showPickerVideoPlaceholder">
-									<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+									<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 								</div>
 								<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio"
 									data-wp-bind--hidden="!state.showPickerAudioPlaceholder">
-									<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+									<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 								</div>
 								<span class="mvs-media-picker-check">&#x2713;</span>
 								<button class="mvs-media-picker-cover-btn" type="button"

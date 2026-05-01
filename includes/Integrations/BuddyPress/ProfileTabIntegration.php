@@ -13,7 +13,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
 
 /**
@@ -332,11 +331,11 @@ class ProfileTabIntegration {
 		$media_ids = array_map( 'intval', $media_ids );
 
 		// Collect IDs for batch stats query.
-		$stats_map = TemplateHelpers::bulk_get_stats( $media_ids );
+		$stats_map = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( $media_ids );
 
 		echo '<div class="mvs-media-grid mvs-cols-3 mvs-feed" data-mvs-grid-container data-show-actions="1">';
 		foreach ( $media_ids as $mid ) {
-			TemplateHelpers::render_grid_item(
+			\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 				$mid,
 				$stats_map[ $mid ] ?? array(),
 				array(
@@ -710,7 +709,7 @@ class ProfileTabIntegration {
 		if ( ! empty( $items ) ) {
 			echo '<div class="mvs-media-grid mvs-cols-3" data-show-actions="1">';
 			foreach ( $items as $media_id ) {
-				TemplateHelpers::render_grid_item(
+				\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 					(int) $media_id,
 					array(),
 					array(

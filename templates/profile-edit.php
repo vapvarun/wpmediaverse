@@ -77,7 +77,7 @@ wp_enqueue_script_module(
 	data-wp-interactive="mvs/profile-edit"
 	<?php echo wp_interactivity_data_wp_context( $mvs_profile_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 
-	<?php \WPMediaVerse\Core\TemplateHelpers::render_back_link( 'edit-profile', array( 'user_id' => $mvs_user_id ) ); ?>
+	<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_back_link( 'edit-profile', array( 'user_id' => $mvs_user_id ) ); ?>
 
 	<h2><?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?></h2>
 

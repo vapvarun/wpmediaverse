@@ -75,7 +75,7 @@ $artist     = \WPMediaVerse\Repository\MediaRepository::get( $mvs_media_id, 'art
 $album_name = \WPMediaVerse\Repository\MediaRepository::get( $mvs_media_id, 'album_name' );
 
 // Poster/thumbnail from media meta.
-$poster_url = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $mvs_media_id, 'large' );
+$poster_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $mvs_media_id, 'large' );
 
 // Format duration for display.
 $mvs_is_owner = is_user_logged_in() && $mvs_author_id === get_current_user_id();
@@ -108,7 +108,7 @@ $mvs_permalink = \WPMediaVerse\Repository\MediaRepository::get_permalink( $mvs_m
 $mvs_archive_url = home_url( '/media/' );
 ?>
 <div class="mvs-single-media mvs-page">
-	<?php \WPMediaVerse\Core\TemplateHelpers::render_back_link( 'single-media' ); ?>
+	<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_back_link( 'single-media' ); ?>
 	<article id="mvs-media-<?php echo absint( $mvs_media_id ); ?>" class="mvs-media-article">
 		<header class="mvs-media-header">
 			<div class="mvs-media-header-row">

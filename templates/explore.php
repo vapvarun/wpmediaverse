@@ -448,12 +448,12 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php
 			// Render media items from index table.
 			$media_ids_for_stats = array_column( $media_items, 'media_id' );
-			$stats_data          = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( array_map( 'intval', $media_ids_for_stats ) );
+			$stats_data          = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( array_map( 'intval', $media_ids_for_stats ) );
 
 			foreach ( $media_items as $item ) :
 				$item_id  = (int) $item['media_id'];
 				$my_stats = $stats_data[ $item_id ] ?? array();
-				\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+				\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 					$item_id,
 					$my_stats,
 					array( 'show_author' => true )

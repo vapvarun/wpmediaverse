@@ -15,7 +15,6 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\Core\Plugin;
-use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Services\PrivacyService;
@@ -1095,11 +1094,11 @@ class MediaController extends WP_REST_Controller {
 			: '';
 		$thumbnail_url = (string) MediaRepository::get( $media_id, 'thumb_large' );
 		if ( '' === $thumbnail_url ) {
-			$thumbnail_url = TemplateHelpers::get_thumb_url( $media_id, 'large' );
+			$thumbnail_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, 'large' );
 		}
 
 		// Lightbox URL respects the admin-chosen image source.
-		$lightbox_url = TemplateHelpers::get_lightbox_url( $media_id, (string) $all['file_url'] );
+		$lightbox_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_url( $media_id, (string) $all['file_url'] );
 
 		$media_type_value = ! empty( $all['media_type'] ) ? $all['media_type'] : '';
 		$privacy_value    = ! empty( $all['privacy'] ) ? $all['privacy'] : 'public';
@@ -1134,7 +1133,7 @@ class MediaController extends WP_REST_Controller {
 		$author_id             = $data['author'];
 		$author_name           = get_the_author_meta( 'display_name', $author_id );
 		$author_avatar         = get_avatar_url( $author_id, array( 'size' => 64 ) );
-		$author_url            = TemplateHelpers::get_user_profile_url( $author_id );
+		$author_url            = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $author_id );
 		$data['author_name']   = $author_name;
 		$data['author_avatar'] = $author_avatar;
 		$data['author_url']    = $author_url;

@@ -12,7 +12,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
 
 /**
@@ -72,7 +71,7 @@ class MediaDisplayHelper {
 		// inner <img src> through the same broadcast-TTL signing as $file_url
 		// above — otherwise the inner thumbnail would still 403 after 1h even
 		// though the outer link href stays valid for a year.
-		$inner = TemplateHelpers::media_thumbnail(
+		$inner = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->media_thumbnail(
 			$media_id,
 			array(
 				'size'      => $size,

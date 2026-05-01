@@ -315,7 +315,7 @@ class AlbumService {
 	 * @return string|null
 	 */
 	private function resolve_media_image_url( int $media_id, string $size ): ?string {
-		$thumb = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $media_id, $size );
+		$thumb = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, $size );
 		if ( $thumb ) {
 			return $thumb;
 		}

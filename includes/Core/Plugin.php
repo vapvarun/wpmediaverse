@@ -66,6 +66,7 @@ use WPMediaVerse\REST\Controller\ReportController;
 use WPMediaVerse\REST\Controller\ActivityController;
 use WPMediaVerse\REST\Controller\ProfileController;
 use WPMediaVerse\Services\ProfileService;
+use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
 
 /**
@@ -533,6 +534,13 @@ class Plugin {
 			'media_repository',
 			function () {
 				return new MediaRepository();
+			}
+		);
+
+		self::$container->register(
+			'template_helpers',
+			function () {
+				return new TemplateHelpers();
 			}
 		);
 	}

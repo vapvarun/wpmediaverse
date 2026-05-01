@@ -13,7 +13,6 @@ namespace WPMediaVerse\Social;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
 
 /**
@@ -242,7 +241,7 @@ class ActivityService {
 			$media_row = MediaRepository::get_all( (int) $row->media_id );
 			if ( ! empty( $media_row ) && ! empty( $media_row['media_id'] ) ) {
 				$mid       = (int) $media_row['media_id'];
-				$thumb_url = TemplateHelpers::get_thumb_url( $mid, 'thumbnail' );
+				$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $mid, 'thumbnail' );
 
 				$activity['media'] = array(
 					'title'     => $media_row['title'] ?? '',

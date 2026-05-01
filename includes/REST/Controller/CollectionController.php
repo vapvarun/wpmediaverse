@@ -15,7 +15,6 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
-use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Services\CollectionService;
 use WPMediaVerse\Repository\MediaRepository;
 
@@ -386,7 +385,7 @@ class CollectionController extends WP_REST_Controller {
 			$coll_su   = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 			$cover_url = $coll_su
 				? $coll_su->generate_thumbnail( $first_media_id, get_current_user_id(), 'large', 0, true )
-				: TemplateHelpers::get_thumb_url( $first_media_id, 'large' );
+				: \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $first_media_id, 'large' );
 		}
 
 		$data = array(

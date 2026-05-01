@@ -13,7 +13,6 @@ namespace WPMediaVerse\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\Plugin;
-use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
 
 /**
@@ -286,7 +285,7 @@ class MediaListPage {
 				$ml_su     = Plugin::container()->get( 'signed_urls' );
 				$thumb_url = $ml_su
 					? $ml_su->generate_thumbnail( $media_id, get_current_user_id(), 'thumbnail', 0, true )
-					: TemplateHelpers::get_thumb_url( $media_id, 'thumbnail' );
+					: \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, 'thumbnail' );
 				?>
 				<?php if ( $thumb_url ) : ?>
 					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="" class="mvs-thumb" loading="lazy" />

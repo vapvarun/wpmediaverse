@@ -77,6 +77,27 @@ class InterfaceContractTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Phase 1b — `Plugin::container()->get('template_helpers')` returns
+	 * an instance implementing the interface. This is the contract Pro
+	 * depends on after Phase 1d.
+	 */
+	public function test_template_helpers_container_resolution_returns_interface_impl(): void {
+		if ( ! class_exists( '\\WPMediaVerse\\Core\\Plugin' ) ) {
+			$this->markTestSkipped( 'Plugin bootstrap not loaded.' );
+		}
+		$container = \WPMediaVerse\Core\Plugin::container();
+		$this->assertNotNull( $container );
+		$this->assertTrue( $container->has( 'template_helpers' ) );
+
+		$instance = $container->get( 'template_helpers' );
+		$this->assertInstanceOf(
+			'\\WPMediaVerse\\Core\\TemplateHelpersInterface',
+			$instance,
+			'Container key "template_helpers" must resolve to an interface implementation.'
+		);
+	}
+
+	/**
 	 * TemplateHelpersInterface declares the public surface Pro depends on.
 	 */
 	public function test_template_helpers_interface_declares_critical_methods(): void {

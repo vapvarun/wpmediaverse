@@ -9,7 +9,6 @@ namespace WPMediaVerse\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
 
 /**
@@ -411,7 +410,7 @@ class OverviewPage {
 											$item_title    = $item['title'] ?? '';
 											$item_author   = (int) ( $item['post_author'] ?? 0 );
 											$item_date     = $item['created_at'] ?? '';
-											$thumb_url     = $item_media_id ? TemplateHelpers::get_thumb_url( $item_media_id, 'thumbnail' ) : '';
+											$thumb_url     = $item_media_id ? \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $item_media_id, 'thumbnail' ) : '';
 											$view_url      = $item_media_id ? MediaRepository::get_permalink( $item_media_id ) : '';
 											$link_url      = $view_url;
 											?>

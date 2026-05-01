@@ -55,7 +55,7 @@ $mvs_archive_url = home_url( '/media/' );
 		?>
 
 		<article id="mvs-album-<?php the_ID(); ?>" <?php post_class( 'mvs-album-article' ); ?>>
-			<?php \WPMediaVerse\Core\TemplateHelpers::render_back_link( 'album', array( 'author_id' => (int) get_the_author_meta( 'ID' ) ) ); ?>
+			<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_back_link( 'album', array( 'author_id' => (int) get_the_author_meta( 'ID' ) ) ); ?>
 
 			<!-- Info Card -->
 			<div class="mvs-collection-card-info">
@@ -448,7 +448,7 @@ $mvs_archive_url = home_url( '/media/' );
 						if ( $show_cov ) {
 							echo '<div class="mvs-album-item-wrap" data-media-id="' . esc_attr( (string) $media_id ) . '">';
 						}
-						\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+						\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 							$media_id,
 							array(),
 							array(

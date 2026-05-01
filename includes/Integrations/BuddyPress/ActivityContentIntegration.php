@@ -13,7 +13,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
 
 /**
@@ -448,7 +447,7 @@ class ActivityContentIntegration {
 
 				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . $data_src . ' style="border-radius:12px;">'
 							. '<a href="' . esc_url( $link ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;"' . $lightbox_attrs . '>'
-							. '<span style="flex-shrink:0;display:inline-flex;">' . TemplateHelpers::icon_music_svg() . '</span>'
+							. '<span style="flex-shrink:0;display:inline-flex;">' . \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg() . '</span>'
 							. '<span style="min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>'
 							. '</a></div>';
 
