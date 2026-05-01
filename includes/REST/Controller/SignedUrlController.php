@@ -176,7 +176,15 @@ class SignedUrlController extends WP_REST_Controller {
 	 * @param WP_REST_Request $request Request.
 	 */
 	public function serve_file( $request ) {
-		$rate_check = RateLimiter::check( 'serve_file', 60, 60 );
+		// Generous rate limit for community-site image grids. Any media-heavy
+		// page (Explore feed, album view, BP activity) easily renders 60-200
+		// image requests on first load — the previous 60/60s limit caused
+		// HTTP 429 on roughly half of them, which the browser shows as broken
+		// images. The signed URL signature is the actual access gate; this
+		// rate check is only defense-in-depth against per-user replay loops,
+		// so it can be much higher than write-endpoint limits without
+		// weakening security.
+		$rate_check = RateLimiter::check( 'serve_file', 1200, 60 );
 		if ( is_wp_error( $rate_check ) ) {
 			return $rate_check;
 		}
