@@ -4881,9 +4881,12 @@ a.mvs-dashboard-card-title:hover {
     position: fixed;
     inset: 0;
     z-index: 100000;
-    background: #000;
+    background: rgba(0, 0, 0, 0.92);
     display: flex;
-    align-items: stretch;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5vh 2.5vw;
+    box-sizing: border-box;
     animation: mvs-fade-in 0.2s ease;
 }
 
@@ -4892,9 +4895,12 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     width: 100%;
     height: 100%;
+    max-width: 95vw;
+    max-height: 95vh;
     background: var(--mvs-surface);
-    border-radius: 0;
+    border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.55);
     animation: mvs-slide-up 0.3s ease;
 }
 
@@ -5059,8 +5065,8 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-reaction {
-    background: none;
-    border: 1px solid var(--mvs-border);
+    background: transparent;
+    border: 1px solid transparent;
     border-radius: 20px;
     padding: 4px 10px;
     cursor: pointer;
@@ -5068,7 +5074,7 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     align-items: center;
     gap: 4px;
-    transition: all .15s;
+    transition: background .15s, border-color .15s;
 }
 
 .mvs-lightbox-reaction>span:empty {
@@ -5553,13 +5559,16 @@ a.mvs-dashboard-card-title:hover {
     }
 }
 
-@media (prefers-color-scheme: dark) {
-    .mvs-auth-gate__card {
-        background: var(--mvs-surface, #1e1e1e);
-        box-shadow:
-            0 1px 2px rgba(0, 0, 0, 0.2),
-            0 18px 48px -12px rgba(0, 0, 0, 0.55);
-    }
+/* Dark-mode auth-gate card. The earlier `prefers-color-scheme` media query
+   here was removed (per Jetonomy 2026-04-29 lesson — theme-class is the
+   single source of truth for dark mode). */
+[data-theme="dark"] .mvs-auth-gate__card,
+html.dark-mode .mvs-auth-gate__card,
+body.dark-mode .mvs-auth-gate__card {
+    background: var(--mvs-surface, #1e1e1e);
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.2),
+        0 18px 48px -12px rgba(0, 0, 0, 0.55);
 }
 
 /* Album cover hint inside FAB upload modal (album mode, files selected). */
