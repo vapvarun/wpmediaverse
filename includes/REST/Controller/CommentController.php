@@ -57,6 +57,12 @@ class CommentController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on the GET /comments __return_true below: comments inherit
+		// the parent media's visibility. If the media is private the comments
+		// query returns empty (the underlying repo joins on
+		// mvs_media_index.privacy). Same model as WP core comments REST.
+		// POST /comments + edit/delete below carry proper permission_callbacks.
+		// Triaged 2026-05-01 (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/' . $this->rest_base,

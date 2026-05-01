@@ -60,6 +60,11 @@ class StatsController extends WP_REST_Controller {
 	 */
 	public function register_routes(): void {
 		// GET /media/{id}/stats.
+		// PUBLIC_OK: aggregated counts only (views, reactions, comments) — no
+		// per-viewer data. Same surface as YouTube's "1.2M views" public
+		// counter. Private media's stats endpoint 404s because
+		// MediaRepository::exists short-circuits on privacy at line 103.
+		// /me/stats below requires is_user_logged_in. Triaged 2026-05-01 (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/media/(?P<media_id>[\d]+)/stats',

@@ -59,6 +59,24 @@ class MediaController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on the four __return_true callbacks in this controller
+		// (GET /media, POST /media/{id}/view, GET /media/{id}/access,
+		// GET /media/{id}/group):
+		// - GET /media — handler SQL at line 254-262 enforces
+		// `moderation_status='approved' AND (privacy='public' OR
+		// privacy='members' OR post_author=$current)`. Privacy gate
+		// in the query, not the callback.
+		// - POST /media/{id}/view — deliberate analytics ingest; counts
+		// anonymous views by intent. Rate-limited inside record_view().
+		// Hardening flagged for v1.3 (require session token); not a bug
+		// today.
+		// - GET /media/{id}/access — read-only access boolean. Returns
+		// {can_view: bool} only — non-disclosive in itself.
+		// - GET /media/{id}/group — gallery navigation; inherits the
+		// privacy filter via MediaRepository.
+		// Triaged 2026-05-01 (Item 5). All write routes
+		// (POST /media, PUT/DELETE /media/{id}, POST /media/{id}/replace)
+		// carry proper permission_callbacks.
 		// GET /media — list, POST /media — create.
 		register_rest_route(
 			$this->namespace,

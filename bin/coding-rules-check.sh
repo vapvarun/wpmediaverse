@@ -59,12 +59,25 @@ check_no_native_cap_check_for_plugin_abilities() {
 # Customize: list every controller file that legitimately ships
 # __return_true. Document the reason in audit/FEATURE_AUDIT.md §3.
 check_unauthenticated_rest_allowlist() {
+    # Allowlist populated 2026-05-01 (Item 5 triage). Every entry is
+    # documented with a one-line block-comment in the controller file
+    # explaining the verdict. Audit doc: action-audit-2026-05-01/SUMMARY.md
+    # row "23 routes use permission_callback => __return_true. These are
+    # public read endpoints" — re-validated end-to-end during deferred-item-5.
     local allowed_files=(
-        # Add your plugin's intentionally-public controllers here.
-        # Example:
-        # 'class-auth-controller.php'        # /auth/* (public registration/login)
-        # 'class-webhooks-controller.php'    # /webhooks/* (signature-verified)
-        # 'class-catalog-controller.php'     # public product/course catalog
+        # Public read endpoints (privacy enforced inside the query/repo layer)
+        'UserController.php'         # /users/{id}, /users/{id}/media, /users/search — public profile + privacy-filtered media + directory search
+        'AlbumController.php'        # GET /albums + GET /albums/{id} — privacy enforced at SQL/service layer
+        'MediaController.php'        # GET /media + /view + /access + /group — privacy filter in handler SQL line 254-262
+        'TagController.php'          # GET /tags + /tags/cloud — public taxonomy
+        'CommentController.php'      # GET /comments — inherits parent media privacy
+        'ActivityController.php'     # GET /feed + /users/{id}/activity — public-only at query layer
+        'StatsController.php'        # GET /media/{id}/stats — aggregated counts only
+        'ReactionController.php'     # GET /reactions — aggregated counts grouped by type
+        'FollowController.php'       # GET /users/{id}/followers + /following — public follow graph
+        # HMAC-signed credential / capability discovery
+        'SignedUrlController.php'    # GET /serve — HMAC signature on URL is the credential (S3 pre-signed pattern)
+        'Abilities.php'              # 4 discovery entries — readonly metadata, execute_callback=noop
     )
 
     if [ ${#allowed_files[@]} -eq 0 ]; then

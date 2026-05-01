@@ -89,6 +89,11 @@ class SignedUrlController extends WP_REST_Controller {
 		);
 
 		// GET /serve — serve a file via signed URL (no auth required, signature validates).
+		// PUBLIC_OK: this is the analogue of S3 pre-signed URLs — the HMAC
+		// signature on the URL itself is the credential. Validation happens
+		// inside serve_file() (signature + expiry + bound user_id all
+		// checked). The __return_true is intentional. Triaged 2026-05-01
+		// (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/serve',

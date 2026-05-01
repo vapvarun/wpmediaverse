@@ -32,6 +32,11 @@ class TagController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on both __return_true callbacks below (GET /tags and
+		// GET /tags/cloud): tags are public taxonomy terms — same surface
+		// as WP's /wp-json/wp/v2/tags. No PII. Discovery / SEO surface.
+		// POST /tags + POST /tags/merge below carry proper permission
+		// callbacks. Triaged 2026-05-01 (Item 5).
 		// GET /tags — search/autocomplete.
 		// POST /tags — create a new tag (any user who can upload media).
 		register_rest_route(

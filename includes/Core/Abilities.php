@@ -57,6 +57,15 @@ class Abilities {
 	/**
 	 * Get all ability definitions.
 	 *
+	 * PUBLIC_OK on the four __return_true permission_callback values below
+	 * (list-media, share-media, activity-feed, user-profiles): these are
+	 * declarative AI-ability discovery entries — they advertise WHAT an AI
+	 * agent CAN ask the plugin about, not the data itself. Each ability has
+	 * meta.annotations.readonly=true and an execute_callback that resolves to
+	 * `noop()` (no real work happens at the discovery endpoint). The actual
+	 * data routes (REST controllers) carry their own permission checks.
+	 * Triaged 2026-05-01 (Item 5).
+	 *
 	 * @return array<string, array>
 	 */
 	private static function get_ability_definitions(): array {

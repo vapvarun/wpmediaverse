@@ -57,6 +57,13 @@ class ReactionController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on the GET /reactions __return_true below: aggregated
+		// counts grouped by reaction type — not a per-user reaction list.
+		// The "did_I_react" data only emits when a logged-in viewer hits
+		// the route (handler reads get_current_user_id() and conditionally
+		// adds the field). Public counts mirror Twitter's "12 likes"
+		// indicator. POST/DELETE on the same route carry proper permission
+		// callbacks. Triaged 2026-05-01 (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/' . $this->rest_base,

@@ -67,6 +67,12 @@ class AlbumController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on both __return_true callbacks below (GET /albums and
+		// GET /albums/{id}): album reads enforce privacy at the SQL/service
+		// layer. Private albums 404 for non-owners (no info disclosure). The
+		// `__return_true` is correct because the gate lives in the query.
+		// Triaged 2026-05-01 (Item 5). All write routes (POST/PUT/DELETE,
+		// reorder, items add/remove) carry proper permission_callbacks.
 		register_rest_route(
 			$this->namespace,
 			'/' . $this->rest_base,

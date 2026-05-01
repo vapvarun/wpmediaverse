@@ -38,6 +38,9 @@ class UserController extends WP_REST_Controller {
 	 */
 	public function register_routes(): void {
 		// GET /users/{id} — public profile.
+		// PUBLIC_OK: returns only already-public WP user data (display name,
+		// bio, avatar, follower/following/public-media counts). Email and
+		// last-login are NOT in the response. Triaged 2026-05-01 (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/users/(?P<id>[\d]+)',
@@ -56,6 +59,10 @@ class UserController extends WP_REST_Controller {
 		);
 
 		// GET /users/{id}/media — user's public media.
+		// PUBLIC_OK: handler at line 170-176 enforces privacy at the SQL level
+		// (privacy IN ('public','members') for anon viewers; full set for the
+		// owner). The __return_true is correct because the gate is in the
+		// query, not the callback. Triaged 2026-05-01 (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/users/(?P<id>[\d]+)/media',
@@ -85,6 +92,9 @@ class UserController extends WP_REST_Controller {
 		);
 
 		// GET /users/search?q=term.
+		// PUBLIC_OK: returns only public profile fields (display name, avatar).
+		// Mirrors WP core's behavior for showing users in directory search.
+		// No emails, no IPs, no last-login. Triaged 2026-05-01 (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/users/search',
