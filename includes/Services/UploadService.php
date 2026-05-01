@@ -678,7 +678,9 @@ class UploadService {
 		// leaves thumb_large meta empty, forcing every consumer to walk the
 		// fallback chain. Backfill any missing size with the original file
 		// URL — it IS the largest available version of the image.
-		$file_url = MediaRepository::get( $media_id, 'file_url' ); // CI: storage-internal (written into thumb_* meta).
+		// Storage-internal: must be the raw stored URL — persisting a
+		// signed URL into the meta table would freeze the token.
+		$file_url = MediaRepository::get_raw( $media_id, 'file_url' );
 		if ( $file_url ) {
 			foreach ( array_keys( $sizes ) as $size_name ) {
 				if ( ! isset( $generated[ $size_name ] ) ) {
@@ -758,11 +760,16 @@ class UploadService {
 			return false;
 		}
 
-		if ( MediaRepository::get( $media_id, 'thumb_large' ) ) {
+		// Presence check — raw read, not URL emission.
+		if ( MediaRepository::get_raw( $media_id, 'thumb_large' ) ) {
 			return false;
 		}
 
-		$file_url = (string) MediaRepository::get( $media_id, 'file_url' ); // CI: storage-internal (written into thumb_large meta).
+		// Storage-internal: backfill thumb_large with the raw stored
+		// file_url so the read-side signs both consistently. Must be the
+		// raw value — storing a signed URL here would persist a token in
+		// the meta table and break re-signing on the next request.
+		$file_url = (string) MediaRepository::get_raw( $media_id, 'file_url' );
 		if ( '' === $file_url ) {
 			return false;
 		}

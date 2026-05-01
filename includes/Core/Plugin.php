@@ -166,8 +166,10 @@ class Plugin {
 		$access_rules = self::$container->get( 'access_rules' );
 		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );
 
-		// Signed URL filter — replaces file_url in REST responses for gated media.
-		add_filter( 'mvs_media_response', array( self::class, 'maybe_sign_file_url' ), 10, 2 );
+		// Signing now lives in MediaRepository::get($id, 'file_url') — the
+		// previous `mvs_media_response` listener at priority 10 was retired
+		// in Phase 0a item 5. Other listeners (Pro chapters, privacy options,
+		// watermark preview, captions) still fire on the filter.
 
 		// Initialize watermark service (adds preview_url filter at priority 30).
 		self::$container->get( 'watermark' );
@@ -740,49 +742,9 @@ class Plugin {
 		$webhooks->send( $url, $body, $headers, $attempt );
 	}
 
-	/**
-	 * Replace file_url with signed URL for gated media in REST responses.
-	 *
-	 * @param array $data     Response data.
-	 * @param int   $media_id Media post ID.
-	 * @return array Modified response data.
-	 */
-	public static function maybe_sign_file_url( array $data, int $media_id ): array {
-		$signed_urls = self::$container->get( 'signed_urls' );
-		if ( ! $signed_urls ) {
-			return $data;
-		}
-
-		$user_id = get_current_user_id();
-
-		// ALWAYS sign — public-tier media has no access rules but the
-		// .htaccess in wp-content/uploads/wpmediaverse/ blocks every direct
-		// URL regardless. The serve endpoint short-circuits the permission
-		// check when the media has no access rules, so the cost of signing
-		// public URLs is zero. This is the architectural Option A fix —
-		// single source of URL signing at the response-builder layer,
-		// instead of patching every emission site.
-		$signed_file_url = $signed_urls->generate( $media_id, $user_id );
-
-		// `gated` flag stays bound to access-rules state, not to whether
-		// we signed the URL.
-		if ( $signed_urls->requires_signed_url( $media_id ) ) {
-			$data['gated'] = true;
-			// Gated media + no permission = strip the URL entirely so the
-			// frontend renders the lock-overlay state instead of a broken img.
-			$data['file_url'] = $signed_file_url ?: '';
-		} else {
-			// Public media — always sign so the URL flows through the gated
-			// uploads serve endpoint. Falls back to existing data['file_url']
-			// only if signing failed (defensive — should never happen since
-			// the service is always present and public media has no privacy
-			// veto).
-			$data['file_url'] = $signed_file_url ?: ( $data['file_url'] ?? '' );
-			$data['gated']    = false;
-		}
-
-		return $data;
-	}
+	// Note: maybe_sign_file_url() removed in Phase 0a item 5. Signing now
+	// lives in MediaRepository::get($id, 'file_url'/'thumb_*'/'watermark_url')
+	// — every emission site automatically gets a signed URL.
 
 	// Note: ensure_media_rows methods removed — media is created directly in custom tables.
 

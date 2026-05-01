@@ -95,11 +95,10 @@ class TemplateHelpers {
 			$source = wp_is_mobile() ? 'large' : 'original';
 		}
 
-		// Original = full file (signed via MediaUrl::for_file).
-		// Otherwise = sized thumbnail (signed via MediaUrl::for_thumbnail).
+		// Original = signed full-file URL. Otherwise = signed sized thumbnail.
 		if ( 'original' === $source ) {
-			$signed = \WPMediaVerse\Services\MediaUrl::for_file( $media_id );
-			if ( $signed ) {
+			$signed = (string) MediaRepository::get( $media_id, 'file_url' );
+			if ( '' !== $signed ) {
 				return $signed;
 			}
 		}
@@ -110,7 +109,7 @@ class TemplateHelpers {
 		if ( $size_url ) {
 			return $size_url;
 		}
-		return \WPMediaVerse\Services\MediaUrl::for_file( $media_id );
+		return (string) MediaRepository::get( $media_id, 'file_url' );
 	}
 
 	/**

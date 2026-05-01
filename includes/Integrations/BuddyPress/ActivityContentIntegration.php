@@ -15,7 +15,6 @@ defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
-use WPMediaVerse\Services\MediaUrl;
 
 /**
  * Transforms legacy activity content and renders media thumbnails inside
@@ -187,7 +186,7 @@ class ActivityContentIntegration {
 		// (the `mvs_signed_url_ttl` default is 1h, but activity HTML lives
 		// in bp_activity.content for months). Without this, every activity
 		// older than 1h renders broken images. New activities (post-fix)
-		// store YEAR_IN_SECONDS URLs via MediaUrl::for_broadcast(); this
+		// store YEAR_IN_SECONDS URLs via MediaRepository::get_broadcast_url(); this
 		// pass keeps already-saved short-TTL URLs working for legacy data.
 		if ( strpos( $content, 'mvs-activity-media' ) !== false ) {
 			return $this->refresh_broadcast_urls( $content );
@@ -397,14 +396,10 @@ class ActivityContentIntegration {
 				}
 				$mvs_id = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
 				if ( $mvs_id ) {
-					$signed_video = MediaUrl::for_file( $mvs_id );
-					if ( $signed_video ) {
+					$signed_video = (string) MediaRepository::get( $mvs_id, 'file_url' );
+					if ( '' !== $signed_video ) {
 						$src = $signed_video;
-					} else {
-						$src = MediaUrl::resolve( $src, $mvs_id );
 					}
-				} elseif ( $src ) {
-					$src = MediaUrl::resolve( $src );
 				}
 				$link     = $src ?: $href;
 				$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
@@ -435,14 +430,10 @@ class ActivityContentIntegration {
 				}
 				$mvs_id = $src ? $this->get_mvs_id_from_file_url( $src ) : 0;
 				if ( $mvs_id ) {
-					$signed_audio = MediaUrl::for_file( $mvs_id );
-					if ( $signed_audio ) {
+					$signed_audio = (string) MediaRepository::get( $mvs_id, 'file_url' );
+					if ( '' !== $signed_audio ) {
 						$src = $signed_audio;
-					} else {
-						$src = MediaUrl::resolve( $src, $mvs_id );
 					}
-				} elseif ( $src ) {
-					$src = MediaUrl::resolve( $src );
 				}
 				$link     = $src ?: $href;
 				$data_mid = $mvs_id ? ' data-mvs-media-id="' . $mvs_id . '"' : '';
@@ -479,17 +470,13 @@ class ActivityContentIntegration {
 					$full_src = preg_replace( '/-\d+x\d+(\.[a-zA-Z]+)$/', '$1', $src );
 					$link     = $mvs_id ? MediaRepository::get_permalink( $mvs_id ) : ( $full_src ?: $src );
 
-					// Route URLs through SignedUrlService when they reference protected MVS uploads.
+					// Sign protected MVS URLs; pass through avatars / theme images / external URLs unchanged.
 					$img_src = $full_src ?: $src;
 					if ( $mvs_id ) {
-						$signed_full = MediaUrl::for_file( $mvs_id );
-						if ( $signed_full ) {
+						$signed_full = (string) MediaRepository::get( $mvs_id, 'file_url' );
+						if ( '' !== $signed_full ) {
 							$img_src = $signed_full;
-						} else {
-							$img_src = MediaUrl::resolve( $img_src, $mvs_id );
 						}
-					} else {
-						$img_src = MediaUrl::resolve( $img_src );
 					}
 
 					// Output same format as regular MVS media upload activity.
@@ -716,8 +703,8 @@ class ActivityContentIntegration {
 					return $m[0];
 				}
 
-				$file_url  = MediaUrl::for_broadcast( $media_id );
-				$thumb_url = MediaUrl::for_broadcast_thumbnail( $media_id, 'large' );
+				$file_url  = MediaRepository::get_broadcast_url( $media_id );
+				$thumb_url = MediaRepository::get_broadcast_thumbnail_url( $media_id, 'large' );
 
 				// Refresh outer <a href="..."> when the href targets the gated
 				// uploads dir. Permalinks (which point to the public single

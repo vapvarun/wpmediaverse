@@ -50,15 +50,72 @@ class MediaRepository {
 	);
 
 	/**
+	 * Map of thumbnail meta keys to SignedUrlService size names.
+	 *
+	 * @var array<string,string>
+	 */
+	private static array $thumb_size_map = array(
+		'thumb_large'  => 'large',
+		'thumb_medium' => 'medium',
+		'thumb_thumb'  => 'thumbnail',
+	);
+
+	/**
 	 * Get a single field for a media item.
 	 *
 	 * Checks mvs_media_index first (core fields), then mvs_media_meta (sparse fields).
 	 *
+	 * URL fields are special-cased to return SIGNED URLs via SignedUrlService:
+	 * - `file_url` — signed full-file URL via `SignedUrlService::generate`.
+	 * - `thumb_large` / `thumb_medium` / `thumb_thumb` — signed thumbnail URLs
+	 *   via `SignedUrlService::generate_thumbnail` (skip-privacy at sign time;
+	 *   serve endpoint re-applies access control).
+	 * - `watermark_url` — signed watermark URL (size=watermark variant) for
+	 *   the Pro-generated preview file. Returns empty string when no
+	 *   watermark has been generated yet.
+	 *
+	 * Every caller (REST controllers, templates, BP integration, blocks)
+	 * automatically receives token-bearing URLs that flow through the gated
+	 * uploads serve endpoint. Returns empty string when the signing service
+	 * is unavailable.
+	 *
+	 * Internal callers that need the raw stored URL (the signing service
+	 * itself, the upload pipeline backfilling thumb_large, presence checks,
+	 * find_by_url reverse-lookup) MUST use `get_raw()`.
+	 *
 	 * @param int    $media_id Media ID.
 	 * @param string $key      Field name (without _mvs_ prefix).
-	 * @return mixed|null Value or null if not found.
+	 * @return mixed|null Value or null if not found. For URL fields: signed URL string or empty string.
 	 */
 	public static function get( int $media_id, string $key ) {
+		if ( 'file_url' === $key ) {
+			return self::sign_file_url( $media_id );
+		}
+
+		if ( isset( self::$thumb_size_map[ $key ] ) ) {
+			return self::sign_thumbnail_url( $media_id, self::$thumb_size_map[ $key ] );
+		}
+
+		if ( 'watermark_url' === $key ) {
+			return self::sign_watermark_url( $media_id );
+		}
+
+		return self::get_raw( $media_id, $key );
+	}
+
+	/**
+	 * Get the raw stored value of a field — bypasses URL signing.
+	 *
+	 * INTERNAL USE ONLY. Reserved for callers that need the literal stored
+	 * value: SignedUrlService (signs URLs and serves files), filesystem-path
+	 * resolution, find_by_url reverse lookup. Frontend / template / block /
+	 * REST callers MUST use `get()` so URLs flow through SignedUrlService.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $key      Field name (without _mvs_ prefix).
+	 * @return mixed|null Raw value or null if not found.
+	 */
+	public static function get_raw( int $media_id, string $key ) {
 		global $wpdb;
 
 		if ( in_array( $key, self::$index_columns, true ) ) {
@@ -77,6 +134,247 @@ class MediaRepository {
 				$key
 			)
 		);
+	}
+
+	/**
+	 * Reverse-lookup a media_id from a stored file_url.
+	 *
+	 * Used by callers that have a raw URL string but no media_id — typically
+	 * activity-feed integrations parsing legacy HTML, or schema migrations
+	 * backfilling FK columns. Skips URLs outside the gated uploads directory
+	 * (avatars, theme images, external CDN assets).
+	 *
+	 * @param string $url Raw URL.
+	 * @return int Media ID, or 0 when the URL doesn't match any indexed media.
+	 */
+	public static function find_by_url( string $url ): int {
+		if ( '' === $url ) {
+			return 0;
+		}
+		// Pass-through guard: only URLs inside the gated uploads dir map to media.
+		if ( false === strpos( $url, '/wp-content/uploads/wpmediaverse/' ) ) {
+			return 0;
+		}
+
+		global $wpdb;
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery
+		$id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT media_id FROM {$index} WHERE file_url = %s LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$url
+			)
+		);
+		// phpcs:enable
+
+		return (int) $id;
+	}
+
+	/**
+	 * Long-lived signed URL for "broadcast" surfaces (BP activity feed,
+	 * notification emails, embeds) where the URL is baked into HTML that
+	 * may be read days or months after emission.
+	 *
+	 * Bypasses the short `mvs_signed_url_ttl` (default 1h) which would make
+	 * activity feeds older than 1 hour render with broken images. Signed
+	 * with `user_id = 0` (anonymous viewer) so the URL works for everyone
+	 * who can see the activity — privacy is enforced at sign time
+	 * (`PrivacyService::can_view`) so private media silently returns ''
+	 * and the caller falls back to no image, which is correct: private
+	 * media should not be broadcast in a public feed.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Signed URL valid for ~1 year, or empty string when the
+	 *                media is non-public or signing service is unavailable.
+	 */
+	public static function get_broadcast_url( int $media_id ): string {
+		if ( $media_id <= 0 ) {
+			return '';
+		}
+		$signed = self::signed_urls_service();
+		if ( ! $signed ) {
+			return '';
+		}
+		$url = $signed->generate( $media_id, 0, YEAR_IN_SECONDS );
+		return is_string( $url ) ? $url : '';
+	}
+
+	/**
+	 * Long-lived signed thumbnail URL for "broadcast" surfaces.
+	 *
+	 * Same TTL + user_id semantics as `get_broadcast_url`. Privacy is
+	 * enforced at sign time so private media never gets a broadcast URL.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $size     Thumbnail meta key: 'thumb_large' | 'thumb_medium' | 'thumb_thumb'.
+	 *                         Or the SignedUrlService size: 'large' | 'medium' | 'thumbnail'.
+	 * @return string Signed URL valid for ~1 year, or empty string.
+	 */
+	public static function get_broadcast_thumbnail_url( int $media_id, string $size = 'thumb_large' ): string {
+		if ( $media_id <= 0 ) {
+			return '';
+		}
+		$signed = self::signed_urls_service();
+		if ( ! $signed ) {
+			return '';
+		}
+		// Accept either thumb_* meta key or the SignedUrlService size name.
+		$svc_size = self::$thumb_size_map[ $size ] ?? $size;
+		// $skip_privacy_check = false — broadcast emission MUST verify privacy
+		// at sign time so private media never gets a broadcast URL.
+		$url = $signed->generate_thumbnail( $media_id, 0, $svc_size, YEAR_IN_SECONDS, false );
+		return is_string( $url ) ? $url : '';
+	}
+
+	/**
+	 * Resolve the absolute filesystem path for a media file.
+	 *
+	 * Internal API for callers that need to read the source file directly:
+	 * Whisper transcription, watermark generation, EXIF strip, video
+	 * transcoding, thumbnail regeneration, the signed-URL serve endpoint.
+	 * Frontend / template / REST callers MUST use `get($id, 'file_url')` so
+	 * URLs flow through SignedUrlService — `get_filesystem_path` returns the
+	 * raw on-disk path with no signing applied.
+	 *
+	 * Stored `file_path` is normally relative to `{uploads}/wpmediaverse/`,
+	 * but legacy / imported records may store an absolute path; both are
+	 * handled. Path-traversal containment ensures the resolved path stays
+	 * inside the uploads tree — returns null on out-of-tree paths or missing
+	 * files. Cloud-stored media (S3, BunnyCDN) returns null because there is
+	 * no local file; callers must handle that case explicitly.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string|null Absolute filesystem path, or null when no valid file is reachable.
+	 */
+	public static function get_filesystem_path( int $media_id ): ?string {
+		if ( $media_id <= 0 ) {
+			return null;
+		}
+		$rel = (string) self::get_raw( $media_id, 'file_path' );
+		if ( '' === $rel ) {
+			return null;
+		}
+
+		$upload_dir = wp_upload_dir();
+		$base_dir   = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse';
+
+		// Stored path may be absolute (legacy) or relative-to-{uploads}/wpmediaverse/.
+		if ( 0 === strpos( $rel, ABSPATH ) || 0 === strpos( $rel, '/' ) ) {
+			$full = $rel;
+		} else {
+			$full = $base_dir . '/' . ltrim( $rel, '/' );
+		}
+
+		if ( ! file_exists( $full ) ) {
+			return null;
+		}
+
+		// Containment: resolved path must stay inside the uploads tree.
+		$real_path = realpath( $full );
+		$real_base = realpath( $base_dir );
+		if ( false === $real_path || false === $real_base
+			|| 0 !== strpos( $real_path, $real_base . DIRECTORY_SEPARATOR ) ) {
+			return null;
+		}
+
+		return $real_path;
+	}
+
+	/**
+	 * Resolve the SignedUrlService instance from the container.
+	 *
+	 * Returns null during early bootstrap or in unit tests without an
+	 * initialized container — callers fail-quiet by returning empty string.
+	 *
+	 * @return \WPMediaVerse\Services\SignedUrlService|null
+	 */
+	private static function signed_urls_service() {
+		if ( ! class_exists( '\\WPMediaVerse\\Core\\Plugin' ) ) {
+			return null;
+		}
+		$container = \WPMediaVerse\Core\Plugin::container();
+		if ( ! $container->has( 'signed_urls' ) ) {
+			return null;
+		}
+		return $container->get( 'signed_urls' );
+	}
+
+	/**
+	 * Sign the file URL for a media item via SignedUrlService.
+	 *
+	 * Returns empty string when signing service is unavailable. Fail-quiet
+	 * semantics — callers that emit the URL into HTML render empty src
+	 * rather than a 403-bound raw URL.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Signed URL or empty string.
+	 */
+	private static function sign_file_url( int $media_id ): string {
+		if ( $media_id <= 0 ) {
+			return '';
+		}
+		$signed = self::signed_urls_service();
+		if ( ! $signed ) {
+			return '';
+		}
+		$url = $signed->generate( $media_id, get_current_user_id() );
+		return is_string( $url ) ? $url : '';
+	}
+
+	/**
+	 * Sign the watermark URL for a media item via SignedUrlService.
+	 *
+	 * Returns empty string when no watermark has been generated yet —
+	 * `watermark_url` meta is the cache marker. Skip-privacy at sign time
+	 * is correct because the watermark is the degraded preview shown to
+	 * viewers WITHOUT access to the original; the serve endpoint validates
+	 * the HMAC signature regardless.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Signed URL or empty string.
+	 */
+	private static function sign_watermark_url( int $media_id ): string {
+		if ( $media_id <= 0 ) {
+			return '';
+		}
+		// Cache marker — Pro's Watermarker writes the raw URL into meta only
+		// after generating the preview file. No meta = no file to serve.
+		if ( ! self::get_raw( $media_id, 'watermark_url' ) ) {
+			return '';
+		}
+		$signed = self::signed_urls_service();
+		if ( ! $signed ) {
+			return '';
+		}
+		$url = $signed->generate_thumbnail( $media_id, get_current_user_id(), 'watermark', 0, true );
+		return is_string( $url ) ? $url : '';
+	}
+
+	/**
+	 * Sign a thumbnail URL for a media item via SignedUrlService.
+	 *
+	 * Skip-privacy at sign time: grid queries already filter by privacy
+	 * upstream and the serve endpoint re-applies access control regardless.
+	 * Long-lived broadcast emissions (BP activity feed, notification emails)
+	 * use `get_broadcast_thumbnail_url()` which enforces privacy at sign
+	 * time — that helper is the right tool when the URL is baked into
+	 * persisted HTML read days or months later.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $size     SignedUrlService size: 'large' | 'medium' | 'thumbnail'.
+	 * @return string Signed URL or empty string.
+	 */
+	private static function sign_thumbnail_url( int $media_id, string $size ): string {
+		if ( $media_id <= 0 ) {
+			return '';
+		}
+		$signed = self::signed_urls_service();
+		if ( ! $signed ) {
+			return '';
+		}
+		$url = $signed->generate_thumbnail( $media_id, get_current_user_id(), $size, 0, true );
+		return is_string( $url ) ? $url : '';
 	}
 
 	/**

@@ -590,7 +590,8 @@ class MediaController extends WP_REST_Controller {
 
 		// Save client-generated video thumbnail if provided and no server thumbnail exists.
 		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
-			$existing_thumb = MediaRepository::get( $media_id, 'thumb_large' );
+			// Raw read — presence check, not URL emission.
+			$existing_thumb = MediaRepository::get_raw( $media_id, 'thumb_large' );
 			if ( ! $existing_thumb ) {
 				$upload_dir = wp_upload_dir();
 				$thumb_dir  = $upload_dir['basedir'] . '/wpmediaverse/thumbs';
@@ -1087,21 +1088,15 @@ class MediaController extends WP_REST_Controller {
 			return null;
 		}
 
-		// Resolve signed-URL service + viewer once; both file_url and thumbnail
-		// route through it for .htaccess-protected uploads.
-		$signed_urls = Plugin::container()->get( 'signed_urls' );
-		$viewer_id   = get_current_user_id();
-
-		// Use signed URL to bypass .htaccess protection on uploads directory.
-		$file_url = '';
-		if ( ! empty( $all['file_url'] ) ) {
-			$signed   = $signed_urls ? $signed_urls->generate( $media_id, $viewer_id ) : false;
-			$file_url = $signed ?: '';
+		// Always-signed via MediaRepository — Phase 0a item 5 consolidated
+		// signing into the data layer; this controller is now a thin emitter.
+		$file_url      = ! empty( $all['file_url'] )
+			? (string) MediaRepository::get( $media_id, 'file_url' )
+			: '';
+		$thumbnail_url = (string) MediaRepository::get( $media_id, 'thumb_large' );
+		if ( '' === $thumbnail_url ) {
+			$thumbnail_url = TemplateHelpers::get_thumb_url( $media_id, 'large' );
 		}
-
-		// Thumbnail also routed through the signed URL serve endpoint.
-		$thumb_signed  = $signed_urls ? $signed_urls->generate_thumbnail( $media_id, $viewer_id ) : false;
-		$thumbnail_url = $thumb_signed ?: TemplateHelpers::get_thumb_url( $media_id, 'large' );
 
 		// Lightbox URL respects the admin-chosen image source.
 		$lightbox_url = TemplateHelpers::get_lightbox_url( $media_id, (string) $all['file_url'] );

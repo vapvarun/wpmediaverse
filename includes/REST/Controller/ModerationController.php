@@ -291,9 +291,6 @@ class ModerationController extends WP_REST_Controller {
 	 * @return array
 	 */
 	private function prepare_item_from_meta( int $media_id ): array {
-		$mod_su  = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-		$file_su = $mod_su ? $mod_su->generate( $media_id, get_current_user_id() ) : '';
-
 		return array(
 			'id'                => $media_id,
 			'title'             => MediaRepository::get( $media_id, 'title' ),
@@ -301,7 +298,7 @@ class ModerationController extends WP_REST_Controller {
 			'date'              => MediaRepository::get( $media_id, 'created_at' ),
 			'status'            => MediaRepository::get( $media_id, 'status' ),
 			'moderation_status' => $this->moderation->get_status( $media_id ),
-			'file_url'          => $file_su,
+			'file_url'          => (string) MediaRepository::get( $media_id, 'file_url' ),
 			'file_type'         => MediaRepository::get( $media_id, 'file_type' ),
 			'ai_description'    => MediaRepository::get( $media_id, 'ai_description' ),
 			'ai_tags'           => MediaRepository::get( $media_id, 'ai_tags' ),

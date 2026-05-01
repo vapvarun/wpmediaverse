@@ -143,10 +143,19 @@ class WatermarkService {
 			return $cached_url;
 		}
 
-		// Delegate watermark generation to Pro. Pro's Watermarker uses $file_path
-		// (filesystem) for image processing; the URL is informational only.
-		$file_path = MediaRepository::get( $media_id, 'file_path' );
-		$file_url  = MediaRepository::get( $media_id, 'file_url' ); // CI: storage-internal (filter arg, not emitted).
+		// Short-circuit when the source file isn't reachable on local disk
+		// (e.g. cloud-stored media, deleted file). Pro's Watermarker fails
+		// gracefully on its own, but skipping here avoids the round trip.
+		if ( null === MediaRepository::get_filesystem_path( $media_id ) ) {
+			$this->preview_cache[ $media_id ] = '';
+			return '';
+		}
+
+		// Pro's Watermarker filter contract: relative `file_path` (composed
+		// against {uploads}/wpmediaverse/ on the Pro side). Pass the raw
+		// stored value — the filter argument is never emitted to a browser.
+		$file_path = (string) MediaRepository::get_raw( $media_id, 'file_path' );
+		$file_url  = (string) MediaRepository::get_raw( $media_id, 'file_url' );
 		$config    = $this->get_config();
 
 		/**
@@ -164,7 +173,11 @@ class WatermarkService {
 		$preview_url = apply_filters( 'mvs_generate_watermark', '', $media_id, $file_path, $file_url, $config );
 
 		if ( $preview_url ) {
+			// Persist the raw URL returned by Pro's Watermarker, then
+			// re-fetch via get() so the caller emits the signed variant
+			// (Phase 0a item 3 — watermark_url always-signed at the data layer).
 			MediaRepository::set( $media_id, 'watermark_url', $preview_url );
+			$preview_url = (string) MediaRepository::get( $media_id, 'watermark_url' );
 		}
 
 		$this->preview_cache[ $media_id ] = $preview_url;

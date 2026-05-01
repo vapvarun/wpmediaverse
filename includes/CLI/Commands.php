@@ -478,8 +478,9 @@ class Commands {
 			$media_id = (int) $video->media_id;
 			$title    = $video->title ?: "(ID: {$media_id})";
 
-			// Check if thumbnail already exists.
-			$existing_thumb = MediaRepository::get( $media_id, 'thumb_large' );
+			// Check if thumbnail already exists. Raw read — presence check,
+			// not URL emission.
+			$existing_thumb = MediaRepository::get_raw( $media_id, 'thumb_large' );
 			if ( $existing_thumb && ! $force ) {
 				++$skipped;
 				if ( $dry_run ) {
@@ -488,17 +489,11 @@ class Commands {
 				continue;
 			}
 
-			// Get the file path from the index.
-			$file_path = MediaRepository::get( $media_id, 'file_path' );
-			if ( empty( $file_path ) ) {
+			// Resolve absolute filesystem path with traversal containment.
+			$file_path = MediaRepository::get_filesystem_path( $media_id );
+			if ( null === $file_path ) {
 				++$skipped;
-				WP_CLI::warning( "No file_path for media {$media_id}: {$title} — skipping." );
-				continue;
-			}
-
-			if ( ! file_exists( $file_path ) ) {
-				++$skipped;
-				WP_CLI::warning( "File not found for media {$media_id}: {$file_path} — skipping." );
+				WP_CLI::warning( "No reachable file for media {$media_id}: {$title} — skipping." );
 				continue;
 			}
 

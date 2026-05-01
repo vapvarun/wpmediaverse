@@ -14,7 +14,6 @@ defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
-use WPMediaVerse\Services\MediaUrl;
 
 /**
  * Static helpers for rendering media thumbnails and type labels inside
@@ -37,17 +36,15 @@ class MediaDisplayHelper {
 			return '';
 		}
 
-		// `$file_url` is used purely as a fallback for the link `href` when
-		// the media has no permalink (e.g. cleanup state). Must be signed —
-		// raw `/wp-content/uploads/wpmediaverse/` URLs hit the .htaccess gate.
-		// We use `for_broadcast()` (1-year TTL, user_id=0) instead of
-		// `for_file()` (1-hour TTL, current user) because this thumbnail HTML
-		// gets baked into bp_activity.content and read by anyone scrolling
-		// the activity feed days later. Short-TTL URLs would 403 on every
-		// activity older than 1 hour. Privacy is enforced at sign time so
-		// non-public media silently returns '' and the link omits the href.
+		// `$file_url` is the fallback for the link `href` when the media has
+		// no permalink (e.g. cleanup state). Broadcast TTL (1 year, user_id=0)
+		// because this thumbnail HTML gets baked into bp_activity.content and
+		// read by anyone scrolling the feed days later — short-TTL URLs would
+		// 403 on activities older than 1 hour. Privacy is enforced at sign
+		// time so non-public media silently returns '' and the link omits
+		// the href.
 		$permalink = MediaRepository::get_permalink( $media_id );
-		$file_url  = MediaUrl::for_broadcast( $media_id );
+		$file_url  = MediaRepository::get_broadcast_url( $media_id );
 		$title     = MediaRepository::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 		$href      = $permalink ?: $file_url;
 		$data_mid  = ' data-mvs-media-id="' . esc_attr( $media_id ) . '"';
