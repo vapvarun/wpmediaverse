@@ -28,7 +28,7 @@ estimated_runtime_minutes: 3
 - **Expect**: redirected to wp-admin dashboard, top-bar shows "Howdy, admin".
 
 ### 2. Open Settings → Social tab
-- **Action**: `playwright_navigate $SITE_URL/wp-admin/admin.php?page=wpmediaverse-settings#social`
+- **Action**: `playwright_navigate $SITE_URL/wp-admin/admin.php?page=mvs-settings#social`
 - **Expect**: `select[name="mvs_dm_access"]` is present in DOM with options `everyone`, `followers`, `mutual`, `nobody`.
 
 ### 3. Save "Nobody" for DM access
@@ -36,7 +36,7 @@ estimated_runtime_minutes: 3
 - **Expect**: HTTP 302 → reload → admin notice contains "Settings saved."
 
 ### 4. Reload the Settings page
-- **Action**: `playwright_navigate $SITE_URL/wp-admin/admin.php?page=wpmediaverse-settings#social`
+- **Action**: `playwright_navigate $SITE_URL/wp-admin/admin.php?page=mvs-settings#social`
 - **Expect**: `select[name="mvs_dm_access"]` selected option is `nobody` (NOT `everyone`).
 
 ### 5. Confirm DB persistence

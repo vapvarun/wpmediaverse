@@ -110,6 +110,17 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Changelog ==
 
+= 1.2.0 =
+**Important fixes**
+
+* Fix: DM access dropdown (Settings → Social → "Who can send me direct messages") no longer silently reverts "Nobody" or "Mutual followers only" to "Everyone" on save. Same root cause silently flipped the "Show online status" preference. The save path looked successful (admin notice "Settings saved." appeared) but the option stored a different value than the dropdown showed. After upgrading to 1.2.0, please reopen Settings → Social and confirm your preferred DM access and online-status visibility — the dropdown now reflects the saved value byte-for-byte. Affected since: 1.1.0. Commit: `d986525`.
+
+**Architecture**
+
+* New: `Core\SettingsHelper` — canonical static accessor for paired-plugin settings reads. First slot covers the page-id family (`dashboard` / `explore` / `upload`) plus `mvs_thumbnail_size` and `mvs_openai_api_key`. Pro and themes must use this instead of direct `get_option('mvs_page_*')` reads (Free invariant A4).
+* New: Hook signatures now carry full type-annotated arg shapes in `audit/manifest.json` (`args_signature[]` on 14 of 22 hooks); enables Pro arch-check A11 to detect cross-plugin contract drift.
+* New: `SettingsContractTest` enforces register_setting whitelist alignment — settings registration drift is now caught at unit-test time rather than at customer save-time.
+
 = 1.1.3 =
 * Fix: Lightbox now opens the original full-size image instead of the low-res grid thumbnail. New Display setting "Lightbox Image Size" lets admins pick Original / Large / Medium / Auto (defaults to Original)
 * Fix: Lightbox opens full-viewport in Facebook-style layout — image fills the left panel, social sidebar on the right; close button (X) correctly positioned and visible over the image panel
@@ -258,6 +269,9 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Restores DM-access and online-status privacy preferences — they previously silently reverted to "Everyone" on save. Reopen Settings → Social after upgrading to confirm your saved values.
 
 = 1.1.3 =
 Fixes lightbox full-resolution images and full-viewport layout. Upgrade recommended for all users.
