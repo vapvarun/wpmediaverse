@@ -1712,6 +1712,6 @@
     "registry_bypasses": [],
     "suppressed_baseline_inventory": {},
     "registry_strategy": [],
-    "notes": "Phase 2.5.11\u20132.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits \u2014 WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-01 captures the live findings (7 plugin-dev-rules failures, 6 REST/JS contract proximity-window false positives, 3 wiring false positives). See audit/wppqa-baseline-2026-05-01/SUMMARY.md."
+    "notes": "Phase 2.5.11\u20132.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits \u2014 WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-01 captures the live findings (7 plugin-dev-rules failures, 6 REST/JS contract proximity-window false positives, 3 wiring false positives). See audit/wppqa-baseline-2026-05-01/SUMMARY.md. Settings access for paired plugins (Pro/themes/integrations) flows through Core\\SettingsHelper static API; the canonical accessor today covers page-id slots (dashboard/explore/upload) and exposes filter mvs_page_id_{slot}. New cross-plugin readable settings should be added there before any consumer goes to get_option() directly."
   }
 }

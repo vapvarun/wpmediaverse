@@ -25,7 +25,7 @@
 
 | Namespace | Responsibility | Key Classes |
 |-----------|---------------|-------------|
-| `Core\` | Bootstrap, DI container, migrations, templates | `Plugin`, `ServiceContainer`, `Migrator`, `Loader`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers`, `Abilities` |
+| `Core\` | Bootstrap, DI container, migrations, templates, settings helper | `Plugin`, `ServiceContainer`, `Migrator`, `Loader`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers`, `Abilities`, `SettingsHelper` |
 | `Admin\` | WP admin pages, moderation queue | `OverviewPage`, `StatsPage`, `ModerationQueue`, `LogViewerPage`, `SetupWizard`, `CollectionMetaBox`, `MediaListPage` |
 | `Admin\Settings\` | Settings page (5 focused classes) | `SettingsPage`, `SettingsRegistrar`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
 | `REST\Controller\` | REST API endpoints (18 controllers) | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `AccessController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController` |
@@ -232,6 +232,7 @@ _Updated after each commit._
 
 | Date | Commit | Summary |
 |------|--------|---------|
+| 2026-04-30 | (pending) | Add `Core\SettingsHelper` — canonical static accessor for paired-plugin settings reads. First slot is page-id family (`dashboard`/`explore`/`upload`) with `mvs_page_id_{slot}` filter. Pro/themes must use this instead of `get_option('mvs_page_*')` (Free invariant A4). |
 | 2026-05-01 | `d986525` | Fix: DM-access dropdown silently rewriting Nobody/Mutual to Everyone — duplicate `register_setting()` overwrote enum sanitizer with bool sanitizer. Modified Sanitizers.php + SettingsRegistrar.php. Regression journey: `audit/journeys/customer/05-dm-access-setting-persists.md`. |
 | 2026-05-01 | (skill run) | `/wp-plugin-onboard --refresh` regenerated manifest to v2.2 (added `mvs_storage_driver` + `mvs_comment_edit_window` settings, populated `consumed_by[]` on 7 Free hooks); dropped local-CI scaffold + 5 critical journeys; wppqa baseline saved (no new findings vs 2026-04-29). |
 | 2026-04-29 | `ab21046` | Sign every upload-URL emission path: BP activity rebuild signs through MediaUrl; AIService analyze/auto_tag/moderate use signed URLs (no raw fallback); MediaDisplayHelper href fallback signed; TemplateHelpers defensive fallback returns ''; bin/ci-local.sh honors `// CI: storage-internal` markers; new `Services/MediaUrl.php` static helper as single signing entry point |
