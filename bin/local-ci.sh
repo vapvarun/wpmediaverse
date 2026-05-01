@@ -116,6 +116,17 @@ if [ -x bin/architecture-checks.sh ]; then
   run_stage "2.2" "Architecture invariants (Free/Pro contract)" bash bin/architecture-checks.sh
 fi
 
+# Settings API contract test — catches the d986525 dm_access bug class:
+# duplicate register_setting() calls, dropdown choices vs sanitizer whitelist
+# drift, sanitize_text_field used on fixed-choice dropdowns.
+if [ -x vendor/bin/phpunit ] && [ -f tests/unit/SettingsContractTest.php ]; then
+  if [ -f /tmp/wordpress-tests-lib/includes/functions.php ]; then
+    run_stage "2.3" "Settings API contract (PHPUnit)" composer test:contract
+  else
+    warn "2.3 Settings contract test skipped — WP_TESTS_DIR (/tmp/wordpress-tests-lib) not installed"
+  fi
+fi
+
 # ─── 3.x — Manifest freshness ────────────────────────────────────────────────
 
 if [ "$MODE" != "quick" ]; then

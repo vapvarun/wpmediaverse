@@ -41,41 +41,22 @@ class SettingsRegistrar {
 
 	/**
 	 * Declare settings that are referenced by `get_option()` callers and
-	 * documented in `qa/WHAT-TO-CHECK.md` but previously lacked a matching
-	 * `register_setting()` entry.
+	 * documented in `qa/WHAT-TO-CHECK.md` but lack a tab UI of their own.
 	 *
 	 * Without `register_setting()` WP's Settings API cannot sanitize or REST-
 	 * expose these keys, and a `get_option()` call returns `false` (not the
 	 * documented default) until the option is manually written somewhere.
 	 *
-	 * This method declares the keys; field UI is intentionally not added here
-	 * — each setting needs a home in an existing or new settings tab. Declaring
-	 * the keys first is the minimum that makes `get_option()` predictable and
-	 * `update_option()` go through the proper sanitizer.
+	 * Note: `mvs_grid_columns` and `mvs_thumbnail_style` USED to be registered
+	 * here AND in register_display_settings(). Two register_setting() calls
+	 * for the same option silently overwrites the first sanitize_callback —
+	 * the same class of bug that wiped dm_access values. Both are now owned
+	 * solely by register_display_settings(). This method only registers
+	 * options without a settings-page UI.
 	 *
 	 * See qa/runs/FINDINGS-HISTORY.md (E3, F13) for background.
 	 */
 	private function register_undocumented_settings(): void {
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_grid_columns',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_grid_columns' ),
-				'default'           => 3,
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_thumbnail_style',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_style' ),
-				'default'           => 'square',
-			)
-		);
-
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_general',
 			'mvs_comment_edit_window',
@@ -160,7 +141,7 @@ class SettingsRegistrar {
 			'mvs_default_privacy',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_default_privacy' ),
 				'default'           => 'public',
 			)
 		);
@@ -208,7 +189,7 @@ class SettingsRegistrar {
 			'mvs_duplicate_action',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_duplicate_action' ),
 				'default'           => 'warn',
 			)
 		);
@@ -258,7 +239,7 @@ class SettingsRegistrar {
 			'mvs_storage_driver',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_storage_driver' ),
 				'default'           => 'local',
 			)
 		);
@@ -334,7 +315,7 @@ class SettingsRegistrar {
 			'mvs_grid_columns',
 			array(
 				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_grid_columns' ),
 				'default'           => 3,
 			)
 		);
@@ -361,7 +342,7 @@ class SettingsRegistrar {
 			'mvs_items_per_page',
 			array(
 				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_items_per_page' ),
 				'default'           => 12,
 			)
 		);
@@ -387,7 +368,7 @@ class SettingsRegistrar {
 			'mvs_thumbnail_style',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_style' ),
 				'default'           => 'square',
 			)
 		);
@@ -412,7 +393,7 @@ class SettingsRegistrar {
 			'mvs_thumbnail_size',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_size' ),
 				'default'           => 'large',
 			)
 		);
@@ -477,7 +458,7 @@ class SettingsRegistrar {
 			'mvs_ai_provider',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_ai_provider' ),
 				'default'           => 'openai',
 			)
 		);
@@ -542,7 +523,7 @@ class SettingsRegistrar {
 			'mvs_openai_model',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_openai_model' ),
 				'default'           => 'gpt-4o-mini',
 			)
 		);
@@ -679,7 +660,7 @@ class SettingsRegistrar {
 			'mvs_moderation_auto_action',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_moderation_auto_action' ),
 				'default'           => 'flag',
 			)
 		);

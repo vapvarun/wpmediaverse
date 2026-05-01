@@ -43,6 +43,7 @@
         "journeys:dry-run": "bash bin/run-journeys.sh --dry-run",
         "coding-rules": "bash bin/coding-rules-check.sh",
         "arch-checks": "bash bin/architecture-checks.sh",
+        "test:contract": "vendor/bin/phpunit --filter SettingsContractTest",
         "install-hooks": "git config core.hooksPath bin/git-hooks && echo 'Pre-push hook installed (bypass with SKIP_LOCAL_CI=1)'"
     }
 }
