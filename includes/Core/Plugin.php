@@ -33,6 +33,7 @@ use WPMediaVerse\REST\Controller\ReactionController;
 use WPMediaVerse\REST\Controller\CommentController;
 use WPMediaVerse\REST\Controller\FavoriteController;
 use WPMediaVerse\REST\Controller\StatsController;
+use WPMediaVerse\REST\Controller\AdminController;
 use WPMediaVerse\REST\Controller\TagController;
 use WPMediaVerse\REST\Controller\ModerationController;
 use WPMediaVerse\REST\Controller\AccessController;
@@ -588,6 +589,7 @@ class Plugin {
 			new ReportController( $reports ),
 			new ActivityController( $activity ),
 			new ProfileController( $profile ),
+			new AdminController(),
 		);
 
 		foreach ( $controllers as $controller ) {
