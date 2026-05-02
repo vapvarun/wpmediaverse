@@ -6,6 +6,13 @@
 > behavioral invariants). This file answers the structural question: **"I'm
 > adding a new feature — where does each piece go?"**
 
+> **Skill reference**: the generic Wbcom-wide layered architecture lives at
+> `wp-plugin-development/references/layered-architecture.md` (seven layers,
+> per-file shape cheat sheets, anti-patterns, flowchart). This document is
+> WPMediaVerse's **plugin-specific instance** of that guidance — it adds the
+> concrete service-container keys, table names, and incident-driven
+> anti-patterns that motivated each rule.
+
 ---
 
 ## 1. The seven layers
