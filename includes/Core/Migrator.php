@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 11;
+	const CURRENT_VERSION = 12;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -688,6 +688,44 @@ class Migrator {
 	 */
 	private function migrate_to_11(): void {
 		add_option( 'mvs_ai_monthly_budget', 10 );
+	}
+
+	/**
+	 * Migration v12 — `mvs_bp_activity_media` linkage table.
+	 *
+	 * Phase 8 of the 1.2.0 plan: replaces regex-parsing of saved
+	 * `bp_activity.content` HTML to extract MVS media references with
+	 * structured storage. When MVS media is added to a BP activity row,
+	 * we write one linkage row per media item with its position in the
+	 * activity. Render reads the linkage table and emits markup via
+	 * `TemplateHelpers::media_thumbnail()` — zero regex on saved HTML.
+	 *
+	 * The legacy regex parser (`ActivityContentIntegration::enhance_activity_media_content`)
+	 * stays in place as a deprecated fallback for activity rows that
+	 * pre-date this migration AND have no backfill match.
+	 *
+	 * @since 1.2.0
+	 */
+	private function migrate_to_12(): void {
+		global $wpdb;
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$charset = $wpdb->get_charset_collate();
+
+		dbDelta(
+			"CREATE TABLE {$wpdb->prefix}mvs_bp_activity_media (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				activity_id bigint(20) unsigned NOT NULL,
+				media_id bigint(20) unsigned NOT NULL,
+				variant varchar(20) NOT NULL DEFAULT 'image',
+				position int unsigned NOT NULL DEFAULT 0,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY activity_id (activity_id),
+				KEY media_id (media_id),
+				KEY activity_position (activity_id, position)
+			) {$charset};"
+		);
 	}
 
 	/**

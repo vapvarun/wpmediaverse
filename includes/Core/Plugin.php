@@ -187,6 +187,7 @@ class Plugin {
 
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
+		self::$container->get( 'integration.bp_activity_linkage' );
 		self::$container->get( 'integration.webhooks' );
 
 		// Action Scheduler callback for async webhook delivery.
@@ -443,6 +444,18 @@ class Plugin {
 				$bp = new BuddyPressManager();
 				$bp->init();
 				return $bp;
+			}
+		);
+
+		self::$container->register(
+			'integration.bp_activity_linkage',
+			function ( $container ) {
+				$linkage = new \WPMediaVerse\Integrations\BuddyPress\ActivityMediaLinkage(
+					$container->get( 'media_repository' ),
+					$container->get( 'template_helpers' )
+				);
+				$linkage->init();
+				return $linkage;
 			}
 		);
 

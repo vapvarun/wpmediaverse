@@ -179,13 +179,32 @@ class ActivityContentIntegration {
 	 * @return string Enhanced content.
 	 */
 	public function enhance_activity_media_content( string $content, $activity = null ): string {
-		// Activity already has MVS media markup. Refresh the URLs in place
-		// before returning — saved markup may carry expired signed URLs
-		// (the `mvs_signed_url_ttl` default is 1h, but activity HTML lives
-		// in bp_activity.content for months). Without this, every activity
-		// older than 1h renders broken images. New activities (post-fix)
-		// store YEAR_IN_SECONDS URLs via \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_url(); this
-		// pass keeps already-saved short-TTL URLs working for legacy data.
+		// Phase 8 (1.2.0) structured-render path: when this activity has
+		// linkage rows in mvs_bp_activity_media, render directly from the
+		// table — zero regex on saved HTML. Falls through to the legacy
+		// regex-parser branches below ONLY for activity rows that pre-date
+		// the linkage table AND have no backfill match.
+		$activity_id = is_object( $activity ) && isset( $activity->id ) ? (int) $activity->id : 0;
+		if ( $activity_id > 0 ) {
+			$container = \WPMediaVerse\Core\Plugin::container();
+			if ( $container->has( 'integration.bp_activity_linkage' ) ) {
+				$linkage = $container->get( 'integration.bp_activity_linkage' );
+				if ( $linkage->has_links( $activity_id ) ) {
+					$rendered = $linkage->render( $activity_id );
+					if ( '' !== $rendered ) {
+						return $content . $rendered;
+					}
+				}
+			}
+		}
+
+		// Legacy path. Activity already has MVS media markup baked in.
+		// Refresh the URLs in place before returning — saved markup may
+		// carry expired signed URLs (the `mvs_signed_url_ttl` default is
+		// 1h, but activity HTML lives in bp_activity.content for months).
+		// Without this, every activity older than 1h renders broken images.
+		// New activities (post-Phase-8) bypass this entirely via the
+		// linkage path above.
 		if ( strpos( $content, 'mvs-activity-media' ) !== false ) {
 			return $this->refresh_broadcast_urls( $content );
 		}
