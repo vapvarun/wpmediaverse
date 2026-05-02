@@ -270,8 +270,22 @@ invariants. Structural summary:
    other `*Service` classes** — that's a facade (Rule B violation).
 5. **`use WPMediaVerse\<ConcreteClass>;` in Pro source** — interfaces
    only. CI guard rejects this.
-6. **`add_action('wp_ajax_*', …)` for new code** — Rule A says 100%
-   REST end-to-end. Existing handlers are migrating in Phase 6.
+6. **`add_action('wp_ajax_*', …)` for new code without an allowlist
+   entry** — Rule A's motivation (REST nonces, schema validation,
+   rate limiting, single auth model for headless/decoupled clients)
+   is real, but doesn't apply to admin-only one-click utilities
+   triggered manually by a logged-in admin (connection testers,
+   "dismiss this welcome banner", chunked admin migration tools,
+   demo-data import/cleanup). Migrate handlers where REST adds
+   structural value; **allowlist** admin-only manual triggers with
+   a documented carve-out comment next to the `add_action` line.
+   The CI guard tightens to forbid `admin-ajax` everywhere except
+   the documented allowlist (mirrors Pro's `__return_true` REST
+   callback allowlist pattern). Phase 6 demonstrated this — Free
+   migrated `mvs_dismiss_welcome` (1-line update_user_meta) and
+   allowlisted `mvs_import_demo_data` + `mvs_cleanup_demo_data`
+   (admin manual triggers — refactoring 1,541 lines for zero
+   structural payoff is over-engineering).
 7. **`current_user_can('mvs/…')` for plugin-defined abilities** —
    route through `MediaCapabilities` / Pro's Permission_Engine.
 8. **A new top-level directory** that doesn't match the seven layers
