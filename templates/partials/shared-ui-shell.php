@@ -221,16 +221,30 @@ $mvs_show_fab = $mvs_is_logged_in && (
 					</div>
 					<div class="mvs-modal-field-row">
 						<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
+							aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 							data-wp-on--input="actions.updateUploadTags"
 							data-wp-bind--value="state.uploadModalTags" />
 						<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
 						<select data-wp-on--change="actions.updateUploadPrivacy"
-							data-wp-bind--value="state.uploadModalPrivacy">
+							data-wp-bind--value="state.uploadModalPrivacy"
+							aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
 							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 							<option value="members"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
 							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 						</select>
 						<?php endif; ?>
+					</div>
+					<!-- Popular tag pills — lazy-loaded; click to add to the
+						 tag input above. Hidden when none returned. -->
+					<div class="mvs-tag-pills" data-wp-bind--hidden="!state.popularTagsLoaded" role="group" aria-label="<?php esc_attr_e( 'Popular tags', 'wpmediaverse' ); ?>">
+						<span class="mvs-tag-pills__label"><?php esc_html_e( 'Popular tags:', 'wpmediaverse' ); ?></span>
+						<template data-wp-each="state.popularTags">
+							<button type="button" class="mvs-tag-pill"
+								data-wp-on--click="actions.addUploadTag"
+								data-wp-bind--data-mvs-tag-name="context.item.name">
+								<span data-wp-text="context.item.name"></span>
+							</button>
+						</template>
 					</div>
 				</div>
 

@@ -153,6 +153,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		editModalAllowDownload: true,
 		editModalError: '',
 
+		// --- Popular tag pills (cached for the session, lazily loaded the
+		// first time the upload or edit modal opens).
+		popularTags: [],
+		popularTagsLoaded: false,
+
 		get lightboxImageUrl() {
 			const d = state.lightboxMediaData;
 			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
@@ -364,6 +369,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalAlbumDescription = '';
 			state.uploadModalMediaGroup = null;
 			document.body.style.overflow = 'hidden';
+			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
 		},
 		closeUploadModal() {
 			state.uploadModalVisible = false;
@@ -384,7 +390,39 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			document.body.style.overflow = '';
 		},
 		// --- Edit Media modal actions ---
+		async loadPopularTags() {
+			if ( state.popularTagsLoaded ) return;
+			state.popularTagsLoaded = true; // race-guard before the await.
+			try {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				const res = await fetch( `${ restUrl }tags/cloud?limit=8`, {
+					headers: { Accept: 'application/json' },
+					credentials: 'same-origin',
+				} );
+				if ( ! res.ok ) return;
+				const data = await res.json();
+				state.popularTags = Array.isArray( data )
+					? data.map( ( t ) => ( { name: t.name || t.slug || '', slug: t.slug || '' } ) ).filter( ( t ) => !! t.name )
+					: [];
+			} catch {
+				// Silent — pills are an enhancement, not load-blocking.
+			}
+		},
+		// Click on a popular-tag pill in the upload modal: append the tag
+		// name to the existing tag input, comma-separated, without dupes.
+		addUploadTag() {
+			const wrap = getElement().ref?.closest( '[data-mvs-tag-name]' );
+			const tag = wrap?.getAttribute( 'data-mvs-tag-name' );
+			if ( ! tag ) return;
+			const current = ( state.uploadModalTags || '' ).split( ',' ).map( ( s ) => s.trim() ).filter( Boolean );
+			if ( current.includes( tag ) ) return;
+			current.push( tag );
+			state.uploadModalTags = current.join( ', ' );
+		},
 		async openEditModal( mediaId ) {
+			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
+
 			const id = parseInt( mediaId, 10 );
 			if ( ! id ) return;
 			state.editModalMediaId = id;

@@ -732,3 +732,56 @@
 .mvs-media-edit-btn:focus-visible {
 	color: var( --mvs-primary, #2271b1 );
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Popular-tag pills — show in upload + edit modals to help users discover
+   existing tags and avoid creating near-duplicate ones (e.g. "sunset" vs
+   "Sunset").
+   ────────────────────────────────────────────────────────────────────── */
+.mvs-tag-pills {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+	margin-top: 8px;
+}
+
+.mvs-tag-pills[hidden] {
+	display: none !important;
+}
+
+.mvs-tag-pills__label {
+	font-size: 12px;
+	color: var( --mvs-text-muted, #757575 );
+	margin-right: 4px;
+}
+
+.mvs-tag-pill {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 10px;
+	border-radius: 999px;
+	border: 1px solid var( --mvs-border, #c3c4c7 );
+	background: var( --mvs-bg, #fff );
+	font-size: 12px;
+	color: var( --mvs-text, #1d2327 );
+	cursor: pointer;
+	transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.mvs-tag-pill:hover {
+	background: var( --mvs-primary, #2271b1 );
+	border-color: var( --mvs-primary, #2271b1 );
+	color: #fff;
+}
+
+.mvs-tag-pill:focus-visible {
+	outline: 2px solid var( --mvs-primary, #2271b1 );
+	outline-offset: 2px;
+}
+
+.mvs-tag-pill::before {
+	content: '#';
+	margin-right: 2px;
+	opacity: 0.6;
+}
