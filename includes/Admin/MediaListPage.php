@@ -30,6 +30,21 @@ class MediaListPage {
 		// Handle bulk actions.
 		self::handle_bulk_actions();
 
+		// Bulk-action success notice (shown after the redirect from
+		// handle_bulk_action_apply()).
+		if ( isset( $_GET['mvs_bulk_done'], $_GET['mvs_bulk_action'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$done   = absint( $_GET['mvs_bulk_done'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$action = sanitize_text_field( wp_unslash( $_GET['mvs_bulk_action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$labels = array(
+				'bulk_trash'   => /* translators: %d: count */ _n( '%d item moved to Trash.', '%d items moved to Trash.', $done, 'wpmediaverse' ),
+				'bulk_restore' => /* translators: %d: count */ _n( '%d item restored.', '%d items restored.', $done, 'wpmediaverse' ),
+				'bulk_delete'  => /* translators: %d: count */ _n( '%d item permanently deleted.', '%d items permanently deleted.', $done, 'wpmediaverse' ),
+			);
+			if ( isset( $labels[ $action ] ) && $done > 0 ) {
+				printf( '<div class="notice notice-success is-dismissible"><p>%s</p></div>', esc_html( sprintf( $labels[ $action ], $done ) ) );
+			}
+		}
+
 		global $wpdb;
 
 		$table = $wpdb->prefix . 'mvs_media_index';
@@ -121,6 +136,20 @@ class MediaListPage {
 
 				<div class="mvs-admin-widget">
 					<div class="mvs-widget-header mvs-widget-header--toolbar">
+						<div class="alignleft actions bulkactions">
+							<label for="mvs-bulk-action" class="screen-reader-text"><?php esc_html_e( 'Select bulk action', 'wpmediaverse' ); ?></label>
+							<select name="bulk_action" id="mvs-bulk-action">
+								<option value=""><?php esc_html_e( 'Bulk actions', 'wpmediaverse' ); ?></option>
+								<?php if ( 'trash' === $status_filter ) : ?>
+									<option value="bulk_restore"><?php esc_html_e( 'Restore', 'wpmediaverse' ); ?></option>
+									<option value="bulk_delete"><?php esc_html_e( 'Delete permanently', 'wpmediaverse' ); ?></option>
+								<?php else : ?>
+									<option value="bulk_trash"><?php esc_html_e( 'Move to Trash', 'wpmediaverse' ); ?></option>
+								<?php endif; ?>
+							</select>
+							<?php submit_button( __( 'Apply', 'wpmediaverse' ), 'action', 'do_bulk', false, array( 'id' => 'mvs-do-bulk' ) ); ?>
+							<?php wp_nonce_field( 'mvs_bulk_media', 'mvs_bulk_nonce' ); ?>
+						</div>
 						<div class="alignleft actions">
 							<select name="media_type">
 								<option value=""><?php esc_html_e( 'All Types', 'wpmediaverse' ); ?></option>
@@ -149,7 +178,7 @@ class MediaListPage {
 						<table class="wp-list-table widefat fixed striped table-view-list">
 							<thead>
 								<tr>
-									<td class="manage-column column-cb check-column"><input type="checkbox" /></td>
+									<td class="manage-column column-cb check-column"><input type="checkbox" class="mvs-cb-select-all" aria-label="<?php esc_attr_e( 'Select all media', 'wpmediaverse' ); ?>" /></td>
 									<th class="manage-column mvs-col-id"><?php esc_html_e( 'ID', 'wpmediaverse' ); ?></th>
 									<th class="manage-column mvs-col-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
 									<th class="manage-column column-primary"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
@@ -195,7 +224,7 @@ class MediaListPage {
 							</tbody>
 							<tfoot>
 								<tr>
-									<td class="manage-column column-cb check-column"><input type="checkbox" /></td>
+									<td class="manage-column column-cb check-column"><input type="checkbox" class="mvs-cb-select-all" aria-label="<?php esc_attr_e( 'Select all media', 'wpmediaverse' ); ?>" /></td>
 									<th class="manage-column mvs-col-id"><?php esc_html_e( 'ID', 'wpmediaverse' ); ?></th>
 									<th class="manage-column mvs-col-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
 									<th class="manage-column column-primary"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
@@ -214,6 +243,40 @@ class MediaListPage {
 					</div>
 				</div>
 			</form>
+			<script>
+			// Bulk select-all toggle (header + footer checkboxes both
+			// trigger the same all-toggle on the column-cb row inputs).
+			// Uses event delegation so it works for both thead + tfoot
+			// without binding twice.
+			( function () {
+				var rowSelector = 'input[type="checkbox"][name="media_ids[]"]';
+				document.addEventListener( 'change', function ( event ) {
+					if ( event.target && event.target.classList && event.target.classList.contains( 'mvs-cb-select-all' ) ) {
+						var checked = event.target.checked;
+						document.querySelectorAll( rowSelector ).forEach( function ( cb ) { cb.checked = checked; } );
+						document.querySelectorAll( '.mvs-cb-select-all' ).forEach( function ( cb ) { cb.checked = checked; } );
+					}
+				} );
+
+				// Confirm before bulk delete (permanent).
+				var bulkForm = document.getElementById( 'mvs-do-bulk' );
+				if ( bulkForm ) {
+					bulkForm.closest( 'form' ).addEventListener( 'submit', function ( event ) {
+						var sel = document.getElementById( 'mvs-bulk-action' );
+						if ( ! sel || sel.value !== 'bulk_delete' ) return;
+						var checked = document.querySelectorAll( rowSelector + ':checked' );
+						if ( checked.length === 0 ) {
+							event.preventDefault();
+							alert( '<?php echo esc_js( __( 'No media selected.', 'wpmediaverse' ) ); ?>' );
+							return;
+						}
+						if ( ! confirm( <?php echo wp_json_encode( __( 'Permanently delete the selected media? This cannot be undone.', 'wpmediaverse' ) ); ?> ) ) {
+							event.preventDefault();
+						}
+					} );
+				}
+			} )();
+			</script>
 		</div>
 		<?php
 	}
@@ -416,6 +479,16 @@ class MediaListPage {
 	private static function handle_bulk_actions(): void {
 		global $wpdb;
 
+		// Bulk path — new in 1.2.0. Toolbar dropdown + checkboxes; the
+		// "Apply" submit button is named "do_bulk" so we know it was a
+		// bulk submission (vs a Filter submit which has its own button).
+		if ( isset( $_GET['do_bulk'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			self::handle_bulk_action_apply();
+			return;
+		}
+
+		// Single-item legacy path — row-action links pass action+media_id
+		// via GET with their own per-row nonce.
 		$action   = isset( $_GET['action'] ) ? sanitize_text_field( wp_unslash( $_GET['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 		$media_id = isset( $_GET['media_id'] ) ? (int) $_GET['media_id'] : 0; // phpcs:ignore WordPress.Security.NonceVerification
 
@@ -438,16 +511,93 @@ class MediaListPage {
 
 			case 'delete':
 				check_admin_referer( 'mvs_delete_media_' . $media_id );
-				// Delete from custom tables.
-				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
-				$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->delete( $wpdb->prefix . 'mvs_reactions', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->delete( $wpdb->prefix . 'mvs_favorites', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				self::permanently_delete_media( $media_id );
 				break;
 		}
 
 		wp_safe_redirect( admin_url( 'admin.php?page=mvs-media' ) );
 		exit;
+	}
+
+	/**
+	 * Apply a bulk action submitted from the Media list toolbar.
+	 *
+	 * Validates capability + nonce, then dispatches to per-action handlers.
+	 * Allowed actions: bulk_trash | bulk_restore | bulk_delete.
+	 */
+	private static function handle_bulk_action_apply(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to perform bulk actions.', 'wpmediaverse' ) );
+		}
+		check_admin_referer( 'mvs_bulk_media', 'mvs_bulk_nonce' );
+
+		$action = isset( $_GET['bulk_action'] ) ? sanitize_text_field( wp_unslash( $_GET['bulk_action'] ) ) : '';
+		$ids    = isset( $_GET['media_ids'] ) ? array_map( 'absint', (array) $_GET['media_ids'] ) : array();
+		$ids    = array_filter( array_unique( $ids ) );
+
+		if ( ! $action || empty( $ids ) ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=mvs-media' ) );
+			exit;
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_media_index';
+
+		$count = 0;
+		foreach ( $ids as $media_id ) {
+			$media_id = (int) $media_id;
+			if ( $media_id <= 0 ) {
+				continue;
+			}
+
+			switch ( $action ) {
+				case 'bulk_trash':
+					$ok = $wpdb->update( $table, array( 'status' => 'trash' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					if ( false !== $ok ) {
+						++$count;
+					}
+					break;
+
+				case 'bulk_restore':
+					$ok = $wpdb->update( $table, array( 'status' => 'publish' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					if ( false !== $ok ) {
+						++$count;
+					}
+					break;
+
+				case 'bulk_delete':
+					self::permanently_delete_media( $media_id );
+					++$count;
+					break;
+			}
+		}
+
+		// Add a query arg so render() can show a success notice on redirect.
+		$redirect = add_query_arg(
+			array(
+				'page'            => 'mvs-media',
+				'mvs_bulk_done'   => $count,
+				'mvs_bulk_action' => $action,
+			),
+			admin_url( 'admin.php' )
+		);
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
+	 * Delete a single media item from every related custom table. Shared
+	 * between the single-item delete path and the bulk-delete loop so
+	 * neither drifts away from the other on schema changes.
+	 *
+	 * @param int $media_id Media ID.
+	 */
+	private static function permanently_delete_media( int $media_id ): void {
+		global $wpdb;
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
+		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $wpdb->prefix . 'mvs_reactions', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $wpdb->prefix . 'mvs_favorites', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	}
 }

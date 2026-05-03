@@ -261,10 +261,10 @@ class TemplateLoader {
 				$signed    = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 				$thumb_url = $signed ? $signed->generate_thumbnail( (int) $media['media_id'], 0, 'large', 0, true ) : '';
 
-				$permalink   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $media['media_id'] );
-				$site_name   = get_bloginfo( 'name' );
-				$is_video    = isset( $media['media_type'] ) && 'video' === $media['media_type'];
-				$is_audio    = isset( $media['media_type'] ) && 'audio' === $media['media_type'];
+				$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $media['media_id'] );
+				$site_name = get_bloginfo( 'name' );
+				$is_video  = isset( $media['media_type'] ) && 'video' === $media['media_type'];
+				$is_audio  = isset( $media['media_type'] ) && 'audio' === $media['media_type'];
 
 				echo "\n<!-- WPMediaVerse Open Graph -->\n";
 				echo '<meta property="og:title" content="' . esc_attr( $title ) . '" />' . "\n";
