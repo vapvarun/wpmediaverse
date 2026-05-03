@@ -227,12 +227,7 @@ parameters:
 
 		-
 			message: "#^Function groups_get_current_group not found\\.$#"
-			count: 4
-			path: includes/Integrations/BuddyPress/GroupTabIntegration.php
-
-		-
-			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
-			count: 2
+			count: 9
 			path: includes/Integrations/BuddyPress/GroupTabIntegration.php
 
 		-
@@ -242,11 +237,6 @@ parameters:
 
 		-
 			message: "#^Function buddypress not found\\.$#"
-			count: 2
-			path: includes/Integrations/BuddyPress/ProfileTabIntegration.php
-
-		-
-			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
 			count: 2
 			path: includes/Integrations/BuddyPress/ProfileTabIntegration.php
 
