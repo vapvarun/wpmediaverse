@@ -731,7 +731,11 @@ class MediaController extends WP_REST_Controller {
 		$title = $request->get_param( 'title' );
 		if ( null !== $title ) {
 			$update_data['title'] = sanitize_text_field( $title );
-			$update_data['slug']  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->generate_unique_slug( $update_data['title'] );
+			// Pass $media_id to exclude THIS media's row from the uniqueness
+			// check. Without it, saving the same title twice bumps the slug
+			// (`unite-4-india` → `unite-4-india-1`) and the URL the user just
+			// left in their address bar 404s on the next page-load.
+			$update_data['slug']  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->generate_unique_slug( $update_data['title'], $media_id );
 		}
 
 		$description = $request->get_param( 'description' );

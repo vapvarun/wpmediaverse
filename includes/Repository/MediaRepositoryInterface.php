@@ -269,9 +269,13 @@ interface MediaRepositoryInterface {
 	/**
 	 * Generate a unique slug from a title.
 	 *
-	 * @param string $title Title.
+	 * @param string $title            Title.
+	 * @param int    $exclude_media_id Optional. media_id to exclude from
+	 *                                 the collision check (use when
+	 *                                 re-slugging an existing media so its
+	 *                                 own row doesn't trigger a suffix).
 	 */
-	public function generate_unique_slug( string $title ): string;
+	public function generate_unique_slug( string $title, int $exclude_media_id = 0 ): string;
 
 	/**
 	 * Hard-delete a media row plus its meta + stats.

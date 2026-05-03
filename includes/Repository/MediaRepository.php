@@ -999,10 +999,20 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * Generate a unique slug from a title.
 	 *
-	 * @param string $title Media title.
+	 * Pass `$exclude_media_id` when re-slugging an existing media item — the
+	 * uniqueness check then ignores that media's current row, so saving the
+	 * same title twice doesn't bump `unite-4-india` → `unite-4-india-1`.
+	 * Without the exclude, an edit-then-save loop steadily appends suffixes
+	 * to the slug on every save and the URL the user just left in their
+	 * address bar 404s on the next page-load.
+	 *
+	 * @param string $title            Media title.
+	 * @param int    $exclude_media_id Optional. media_id to exclude from the
+	 *                                 collision check. Default 0 (no exclude;
+	 *                                 used for inserts).
 	 * @return string Unique slug.
 	 */
-	public function generate_unique_slug( string $title ): string {
+	public function generate_unique_slug( string $title, int $exclude_media_id = 0 ): string {
 		global $wpdb;
 
 		$slug = sanitize_title( $title );
@@ -1014,12 +1024,22 @@ class MediaRepository implements MediaRepositoryInterface {
 		$counter   = 1;
 
 		while ( true ) {
-			$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s",
-					$slug
-				)
-			);
+			if ( $exclude_media_id > 0 ) {
+				$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s AND media_id != %d",
+						$slug,
+						$exclude_media_id
+					)
+				);
+			} else {
+				$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE slug = %s",
+						$slug
+					)
+				);
+			}
 
 			if ( ! $exists ) {
 				break;
