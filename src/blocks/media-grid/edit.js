@@ -1,8 +1,11 @@
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, RangeControl, SelectControl, ToggleControl, TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { StandardInspectorPanels } from '../../shared/components';
+import { useUniqueId } from '../../shared/hooks';
 
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { attributes, setAttributes, clientId } ) {
+	useUniqueId( clientId, attributes.uniqueId, setAttributes );
 	const { columns, perPage, mediaType, category, tag, orderBy, showLightbox, showReactions, gap } = attributes;
 	const blockProps = useBlockProps();
 
@@ -80,6 +83,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( val ) => setAttributes( { showReactions: val } ) }
 					/>
 				</PanelBody>
+				<StandardInspectorPanels attributes={ attributes } setAttributes={ setAttributes } />
 			</InspectorControls>
 			<div { ...blockProps }>
 				<div className={ `mvs-media-grid mvs-cols-${ columns || 3 }` } style={ { gap: `${ gap }px` } }>
