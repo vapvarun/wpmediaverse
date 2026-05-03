@@ -54,3 +54,70 @@
 	background: var(--mvs-primary);
 	color: var(--mvs-surface);
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Search autocomplete — debounced dropdown of top-8 title matches.
+   Keyboard arrow nav + Enter, ESC closes. Blur closes too (with a 150ms
+   delay so click on a suggestion still fires).
+   ────────────────────────────────────────────────────────────────────── */
+.mvs-explore-search-wrap {
+	position: relative;
+	margin-bottom: 16px;
+}
+
+.mvs-explore-suggestions {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	margin: 4px 0 0;
+	padding: 6px 0;
+	background: var( --mvs-bg, #fff );
+	border: 1px solid var( --mvs-border, #c3c4c7 );
+	border-radius: 8px;
+	box-shadow: 0 8px 24px rgba( 0, 0, 0, 0.08 );
+	list-style: none;
+	z-index: 90;
+	max-height: 360px;
+	overflow-y: auto;
+}
+
+.mvs-explore-suggestions[hidden] {
+	display: none !important;
+}
+
+.mvs-explore-suggestion {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 12px;
+	cursor: pointer;
+	transition: background 0.1s ease;
+}
+
+.mvs-explore-suggestion:hover,
+.mvs-explore-suggestion:focus,
+.mvs-explore-suggestion[aria-selected="true"] {
+	background: var( --mvs-surface-2, #f6f7f7 );
+}
+
+.mvs-explore-suggestion__thumb {
+	width: 36px;
+	height: 36px;
+	border-radius: 6px;
+	object-fit: cover;
+	flex-shrink: 0;
+	background: var( --mvs-surface-2, #f6f7f7 );
+}
+
+.mvs-explore-suggestion__thumb[hidden] {
+	display: none !important;
+}
+
+.mvs-explore-suggestion__title {
+	font-size: 14px;
+	color: var( --mvs-text, #1d2327 );
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}

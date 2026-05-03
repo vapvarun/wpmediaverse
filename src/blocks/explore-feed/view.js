@@ -6,6 +6,10 @@
 
 import { store, getContext } from '@wordpress/interactivity';
 
+// Debounce-state map keyed by IA context so concurrent block instances
+// on a single page don't share a timer.
+const searchTimers = new WeakMap();
+
 store( 'mvs/explore-feed', {
 	state: {
 		get isMasonry() {
@@ -14,6 +18,10 @@ store( 'mvs/explore-feed', {
 		get isActiveFilter() {
 			const itemCtx = getContext();
 			return itemCtx.filterValue === getContext().filter;
+		},
+		get hasSuggestions() {
+			const ctx = getContext();
+			return ctx.suggestionsOpen && Array.isArray( ctx.suggestions ) && ctx.suggestions.length > 0;
 		},
 	},
 	actions: {
@@ -26,6 +34,95 @@ store( 'mvs/explore-feed', {
 		handleSearch( event ) {
 			const ctx = getContext();
 			ctx.search = event.target.value;
+
+			// Reset highlight when the query changes so arrow nav is sane.
+			ctx.suggestionHighlight = -1;
+
+			// Debounced fetch of title matches — same /media REST endpoint
+			// the loadMore flow uses, just with per_page capped at 8.
+			const existing = searchTimers.get( ctx );
+			if ( existing ) clearTimeout( existing );
+
+			const query = ( ctx.search || '' ).trim();
+			if ( query.length < 2 ) {
+				ctx.suggestions = [];
+				ctx.suggestionsOpen = false;
+				return;
+			}
+
+			const timer = setTimeout( async () => {
+				try {
+					const url = new URL( ctx.restUrl );
+					url.searchParams.set( 's', query );
+					url.searchParams.set( 'per_page', '8' );
+					url.searchParams.set( 'page', '1' );
+					if ( ctx.filter ) url.searchParams.set( 'media_type', ctx.filter );
+
+					const res = await fetch( url.toString(), { credentials: 'same-origin' } );
+					if ( ! res.ok ) return;
+					const data = await res.json();
+					if ( ! Array.isArray( data ) ) return;
+
+					ctx.suggestions = data.slice( 0, 8 ).map( ( item ) => ( {
+						id: item.id || 0,
+						title: item.title || '(untitled)',
+						thumb: item.thumbnail_url || '',
+						url: item.link || '',
+					} ) );
+					ctx.suggestionsOpen = true;
+				} catch {
+					// Silent — autocomplete is enhancement, not load-blocking.
+				}
+			}, 250 );
+			searchTimers.set( ctx, timer );
+		},
+		handleSearchKeydown( event ) {
+			const ctx = getContext();
+			if ( ! ctx.suggestionsOpen || ! Array.isArray( ctx.suggestions ) || ctx.suggestions.length === 0 ) {
+				if ( event.key === 'Escape' ) {
+					ctx.search = '';
+					ctx.suggestions = [];
+					ctx.suggestionsOpen = false;
+				}
+				return;
+			}
+
+			if ( event.key === 'ArrowDown' ) {
+				event.preventDefault();
+				ctx.suggestionHighlight = Math.min(
+					( ctx.suggestionHighlight ?? -1 ) + 1,
+					ctx.suggestions.length - 1
+				);
+			} else if ( event.key === 'ArrowUp' ) {
+				event.preventDefault();
+				ctx.suggestionHighlight = Math.max( ( ctx.suggestionHighlight ?? 0 ) - 1, -1 );
+			} else if ( event.key === 'Enter' ) {
+				const idx = ctx.suggestionHighlight ?? -1;
+				if ( idx >= 0 && idx < ctx.suggestions.length ) {
+					event.preventDefault();
+					const target = ctx.suggestions[ idx ];
+					if ( target?.url ) window.location.href = target.url;
+				}
+			} else if ( event.key === 'Escape' ) {
+				event.preventDefault();
+				ctx.suggestionsOpen = false;
+				ctx.suggestionHighlight = -1;
+			}
+		},
+		selectSuggestion() {
+			const itemCtx = getContext();
+			if ( itemCtx?.item?.url ) {
+				window.location.href = itemCtx.item.url;
+			}
+		},
+		closeSuggestions() {
+			const ctx = getContext();
+			// Delay so a click on a suggestion still fires before the
+			// dropdown unmounts (focusout fires before click).
+			setTimeout( () => {
+				ctx.suggestionsOpen = false;
+				ctx.suggestionHighlight = -1;
+			}, 150 );
 		},
 		async loadMore() {
 			const ctx = getContext();

@@ -61,27 +61,53 @@ $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 	<?php
 	echo wp_json_encode(
 		array(
-			'restUrl' => $rest_url,
-			'page'    => 1,
-			'perPage' => $mvs_per_page,
-			'filter'  => '',
-			'search'  => '',
-			'loading' => false,
-			'hasMore' => $max_num_pages > 1,
+			'restUrl'             => $rest_url,
+			'page'                => 1,
+			'perPage'             => $mvs_per_page,
+			'filter'              => '',
+			'search'              => '',
+			'loading'             => false,
+			'hasMore'             => $max_num_pages > 1,
+			'suggestions'         => array(),
+			'suggestionsOpen'     => false,
+			'suggestionHighlight' => -1,
 		)
 	);
 	?>
 	'
 >
 	<?php if ( $show_search ) : ?>
-		<div class="mvs-explore-filters">
+		<div class="mvs-explore-search-wrap">
 			<input type="search"
 				class="mvs-explore-search"
+				role="combobox"
+				aria-autocomplete="list"
+				aria-controls="mvs-explore-suggestions-list"
+				aria-haspopup="listbox"
 				placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>"
 				aria-label="<?php esc_attr_e( 'Search media', 'wpmediaverse' ); ?>"
+				data-wp-bind--aria-expanded="state.hasSuggestions"
 				data-wp-on--input="actions.handleSearch"
+				data-wp-on--keydown="actions.handleSearchKeydown"
+				data-wp-on--blur="actions.closeSuggestions"
 				data-wp-bind--value="context.search"
 			/>
+			<!-- Autocomplete dropdown — debounced 250ms, top 8 title matches. -->
+			<ul class="mvs-explore-suggestions" id="mvs-explore-suggestions-list"
+				role="listbox"
+				data-wp-bind--hidden="!state.hasSuggestions">
+				<template data-wp-each="context.suggestions">
+					<li class="mvs-explore-suggestion"
+						role="option"
+						data-wp-on--click="actions.selectSuggestion">
+						<img class="mvs-explore-suggestion__thumb"
+							data-wp-bind--src="context.item.thumb"
+							data-wp-bind--hidden="!context.item.thumb"
+							alt="" />
+						<span class="mvs-explore-suggestion__title" data-wp-text="context.item.title"></span>
+					</li>
+				</template>
+			</ul>
 		</div>
 	<?php endif; ?>
 

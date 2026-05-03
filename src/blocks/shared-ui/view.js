@@ -1090,6 +1090,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		async lightboxShare() {
+			// Two valid surfaces, in priority order:
+			//   1. navigator.share — native OS share sheet on mobile +
+			//      Edge/Chrome desktop where supported. Lets the user copy
+			//      OR send to any installed sharing target.
+			//   2. navigator.clipboard.writeText — silent copy + toast.
+			// We do NOT fall back to window.prompt() any more — that
+			// surfaced an ugly browser-native dialog with a pre-selected
+			// URL on top of our own UI; redundant with the toast pattern.
+			// Modern browsers all expose at least one of the two APIs;
+			// the rare case where both are missing now shows a toast
+			// pointing the user at the permalink button instead.
 			const data = state.lightboxMediaData;
 			const url = data?.link || window.location.href;
 			let shared = false;
@@ -1098,18 +1109,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				try {
 					await navigator.share( { title: state.lightboxTitle, url } );
 					shared = true;
-				} catch { /* user cancelled share dialog */ }
-			} else if ( navigator.clipboard ) {
+				} catch { /* user cancelled — silent */ }
+			} else if ( navigator.clipboard?.writeText ) {
 				try {
 					await navigator.clipboard.writeText( url );
 					actions.showToast( 'Link copied!', 'success' );
 					shared = true;
 				} catch {
-					actions.showToast( 'Could not copy link.', 'error' );
+					actions.showToast( 'Could not copy link. Use the Open button to view this media in a new tab.', 'error' );
 				}
 			} else {
-				window.prompt( 'Copy this link:', url );
-				shared = true;
+				actions.showToast( 'Sharing is not supported in this browser. Use the Open button to view this media in a new tab.', 'error' );
 			}
 
 			// Best-effort stat increment — non-blocking. Only counts as a
