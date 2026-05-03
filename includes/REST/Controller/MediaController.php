@@ -745,18 +745,22 @@ class MediaController extends WP_REST_Controller {
 			$update_data['privacy'] = sanitize_text_field( $privacy );
 		}
 
-		// JSON body inspection — used by both per-media flags below AND
-		// the tags/categories block further down to distinguish "key
-		// omitted" (leave alone) from "key sent as null/empty"
-		// (intentional clear). Previously this block existed only for
-		// tags; pulled up here for the per-media flags.
+		// JSON body inspection — used by the tags/categories block further
+		// down to distinguish "key omitted" (leave alone) from "key sent as
+		// null/empty" (intentional clear).
 		$json_params = $request->get_json_params();
 		$json_params = is_array( $json_params ) ? $json_params : array();
 
-		// Per-media download flag — only honored when the global toggle is
-		// also on. Stored as '1' / '0' string so it round-trips cleanly.
-		if ( array_key_exists( 'allow_download', $json_params ) ) {
-			$update_data['allow_download'] = $json_params['allow_download'] ? '1' : '0';
+		// Per-media download flag — honor regardless of body encoding so
+		// JSON apiFetch, form-encoded clients, and internal REST calls all
+		// land the change. Read via get_param (covers all sources) and
+		// distinguish "absent" (null) from "intentional false" (boolean
+		// false) so a `false` value correctly stores '0'. Only honored
+		// when the global mvs_allow_downloads toggle is also on at read
+		// time. Stored as '1' / '0' string so it round-trips cleanly.
+		$allow_download_param = $request->get_param( 'allow_download' );
+		if ( null !== $allow_download_param ) {
+			$update_data['allow_download'] = rest_sanitize_boolean( $allow_download_param ) ? '1' : '0';
 		}
 
 		// Write all index/meta changes in one call.
