@@ -1085,6 +1085,19 @@ class MediaController extends WP_REST_Controller {
 			)
 		);
 
+		/**
+		 * Fires when a media item is shared.
+		 *
+		 * Listeners include `CacheService::on_media_stat_change` (drops the
+		 * cached stats row so the next read sees the incremented count).
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param int $media_id Media post ID that was shared.
+		 * @param int $user_id  User who shared (0 for anonymous).
+		 */
+		do_action( 'mvs_share_recorded', $media_id, $user_id );
+
 		return rest_ensure_response( array( 'recorded' => true ) );
 	}
 

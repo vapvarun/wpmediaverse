@@ -140,6 +140,11 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 **Important fixes**
 
+* Fix: Moderation webhooks now fire reliably. Two listeners (`WebhookService::on_media_moderated` + `CacheService::on_moderation_change`) were registered against `mvs_media_moderated`, but the firer in `ModerationService::set_status()` uses `mvs_moderation_changed` (the established hook name; `LoggerService` already used it). Result: customers using outbound webhooks for moderation approve/reject events were getting **zero** events delivered, and the moderation-status cache stayed stale. Both listeners renamed to the correct hook name. Affected since: 1.0.0.
+* Fix: `mvs_reaction_removed` action now fires when a user un-reacts. The action existed conceptually (cache invalidation listener was registered) but `ReactionService::remove()` never fired it, so the media-stat cache stayed warm with the old reaction count after an un-react. The reaction count itself was correct (re-read from DB), but cached aggregates lagged.
+* Fix: `mvs_share_recorded` action now fires from the new `record_share` REST endpoint so the cache invalidation listener clears the media-stat row. Without this, share counts in feed cards lagged behind reality until the cache TTL expired.
+* Fix: Search autocomplete on the Explore feed now aborts in-flight requests when a newer keystroke arrives. Previously, typing fast (e.g. "ne" then "new" within 250 ms) could leave the slower "ne" results visible if its response landed second — a classic race condition. Each keystroke now spawns an `AbortController`-equipped fetch and supersedes any in-flight request.
+
 * Fix: DM access dropdown (Settings → Social → "Who can send me direct messages") no longer silently reverts "Nobody" or "Mutual followers only" to "Everyone" on save. Same root cause silently flipped the "Show online status" preference. The save path looked successful (admin notice "Settings saved." appeared) but the option stored a different value than the dropdown showed. After upgrading to 1.2.0, please reopen Settings → Social and confirm your preferred DM access and online-status visibility — the dropdown now reflects the saved value byte-for-byte. Affected since: 1.1.0. Commit: `d986525`.
 
 **Architecture**

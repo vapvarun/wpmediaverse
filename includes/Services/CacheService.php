@@ -331,7 +331,7 @@ class CacheService {
 		add_action( 'mvs_share_recorded', array( $this, 'on_media_stat_change' ), 10, 1 );
 
 		// Invalidate moderation cache.
-		add_action( 'mvs_media_moderated', array( $this, 'on_moderation_change' ) );
+		add_action( 'mvs_moderation_changed', array( $this, 'on_moderation_change' ) );
 		add_action( 'mvs_media_uploaded', array( $this, 'on_moderation_change' ) );
 
 		// Invalidate follow counts on follow/unfollow.

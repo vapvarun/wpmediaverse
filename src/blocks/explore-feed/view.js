@@ -10,6 +10,12 @@ import { store, getContext } from '@wordpress/interactivity';
 // on a single page don't share a timer.
 const searchTimers = new WeakMap();
 
+// In-flight AbortController per context so a slow first request can't
+// land its results AFTER a fast second request — fixes the search
+// autocomplete race where typing "ne" then "new" could leave "ne"
+// suggestions visible if the "ne" response arrived second.
+const searchAborters = new WeakMap();
+
 store( 'mvs/explore-feed', {
 	state: {
 		get isMasonry() {
@@ -51,6 +57,13 @@ store( 'mvs/explore-feed', {
 			}
 
 			const timer = setTimeout( async () => {
+				// Abort any in-flight request for this context so its late
+				// response can't overwrite the current query's results.
+				const inflight = searchAborters.get( ctx );
+				if ( inflight ) inflight.abort();
+				const aborter = new AbortController();
+				searchAborters.set( ctx, aborter );
+
 				try {
 					const url = new URL( ctx.restUrl );
 					url.searchParams.set( 's', query );
@@ -58,10 +71,17 @@ store( 'mvs/explore-feed', {
 					url.searchParams.set( 'page', '1' );
 					if ( ctx.filter ) url.searchParams.set( 'media_type', ctx.filter );
 
-					const res = await fetch( url.toString(), { credentials: 'same-origin' } );
+					const res = await fetch( url.toString(), {
+						credentials: 'same-origin',
+						signal: aborter.signal,
+					} );
 					if ( ! res.ok ) return;
 					const data = await res.json();
 					if ( ! Array.isArray( data ) ) return;
+
+					// Drop the result if a newer request superseded us mid-flight
+					// (the WeakMap entry was reassigned by a later keystroke).
+					if ( searchAborters.get( ctx ) !== aborter ) return;
 
 					ctx.suggestions = data.slice( 0, 8 ).map( ( item ) => ( {
 						id: item.id || 0,
@@ -70,8 +90,13 @@ store( 'mvs/explore-feed', {
 						url: item.link || '',
 					} ) );
 					ctx.suggestionsOpen = true;
-				} catch {
-					// Silent — autocomplete is enhancement, not load-blocking.
+				} catch ( err ) {
+					// AbortError is expected when a newer keystroke supersedes
+					// us. Anything else stays silent — autocomplete is
+					// enhancement, not load-blocking.
+					if ( err && err.name !== 'AbortError' ) {
+						// no-op — autocomplete failures shouldn't surface to UX.
+					}
 				}
 			}, 250 );
 			searchTimers.set( ctx, timer );

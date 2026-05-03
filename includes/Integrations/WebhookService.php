@@ -37,7 +37,7 @@ class WebhookService {
 		// Always register hooks — dispatch() checks for configured webhooks at send time.
 		add_action( 'mvs_media_uploaded', array( $this, 'on_media_uploaded' ) );
 		add_action( 'mvs_media_deleted', array( $this, 'on_media_deleted' ), 10, 2 );
-		add_action( 'mvs_media_moderated', array( $this, 'on_media_moderated' ), 10, 2 );
+		add_action( 'mvs_moderation_changed', array( $this, 'on_media_moderated' ), 10, 2 );
 
 		// Social events.
 		add_action( 'mvs_reaction_added', array( $this, 'on_reaction' ), 10, 3 );
