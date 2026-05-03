@@ -54,7 +54,21 @@ foreach ( $stories as $story ) {
 	$by_author[ $author_id ][] = $story;
 }
 
-$wrapper = get_block_wrapper_attributes( array( 'class' => 'mvs-story-viewer-block' ) );
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-story-viewer-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/story-viewer"

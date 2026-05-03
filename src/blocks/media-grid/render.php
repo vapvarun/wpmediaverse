@@ -93,7 +93,23 @@ $media_items  = $wpdb->get_results( $wpdb->prepare( $items_sql, ...$all_params )
 // phpcs:enable
 
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $found_posts / $mvs_per_page ) : 1;
-$wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-grid-block' ) ) : 'class="mvs-media-grid-block"';
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+if ( empty( $mvs_shortcode_context ) ) {
+	\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+}
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-media-grid-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 
 // Lightbox handled by shared-ui Interactivity API module.
 ?>

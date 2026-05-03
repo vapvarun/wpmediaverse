@@ -41,7 +41,21 @@ $file_url    = $lo_signed ? $lo_signed->generate( $media_id, $user_id ) : '';
 // Blurred preview thumbnail shown to locked users as a teaser (privacy check skipped — intentional).
 $preview_url = $lo_signed ? $lo_signed->generate_thumbnail( $media_id, $user_id, 'large', 0, true ) : '';
 $is_image    = 0 === strpos( (string) $file_type, 'image/' );
-$wrapper   = get_block_wrapper_attributes( array( 'class' => 'mvs-lock-overlay-block' ) );
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-lock-overlay-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper   = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 
 // Determine active rule types for display.
 $access_rules = $container->get( 'access_rules' );

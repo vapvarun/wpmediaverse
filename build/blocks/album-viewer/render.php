@@ -46,7 +46,23 @@ $items = $wpdb->get_results(
 );
 // phpcs:enable
 
-$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-album-viewer-block' ) ) : 'class="mvs-album-viewer-block"';
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+if ( empty( $mvs_shortcode_context ) ) {
+	\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+}
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-album-viewer-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( $show_title ) : ?>

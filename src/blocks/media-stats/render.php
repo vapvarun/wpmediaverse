@@ -65,7 +65,23 @@ $user_count = (int) $wpdb->get_var(
 	)
 );
 
-$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-stats-block' ) ) : 'class="mvs-stats-block"';
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+if ( empty( $mvs_shortcode_context ) ) {
+	\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+}
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-stats-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="mvs-stats-cards" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;">

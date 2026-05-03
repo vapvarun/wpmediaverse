@@ -38,6 +38,8 @@ class BlockRegistrar {
 	public function init(): void {
 		add_action( 'init', array( $this, 'register_blocks' ) );
 		add_filter( 'block_categories_all', array( $this, 'register_category' ) );
+		add_filter( 'block_type_metadata', array( StandardAttributes::class, 'inject' ) );
+		MVS_CSS::init();
 	}
 
 	/**

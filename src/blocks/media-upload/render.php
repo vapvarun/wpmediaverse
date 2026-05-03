@@ -19,7 +19,23 @@ $max_files     = isset( $attributes['maxFiles'] ) ? absint( $attributes['maxFile
 // Admin setting "Allow users to set privacy for their content" can force-hide
 // the dropdown regardless of the block attribute (matches Dashboard + FAB modal behaviour).
 $show_privacy  = ! empty( $attributes['showPrivacy'] ) && (bool) get_option( 'mvs_allow_user_privacy', true );
-$wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-upload-block' ) ) : 'class="mvs-upload-block"';
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+if ( empty( $mvs_shortcode_context ) ) {
+	\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+}
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-upload-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 $rest_url      = esc_url( rest_url( 'mvs/v1/media' ) );
 $nonce         = wp_create_nonce( 'wp_rest' );
 $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );

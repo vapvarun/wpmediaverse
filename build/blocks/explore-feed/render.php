@@ -38,7 +38,21 @@ $total_count = (int) $wpdb->get_var(
 
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $total_count / $mvs_per_page ) : 1;
 
-$wrapper  = get_block_wrapper_attributes( array( 'class' => 'mvs-explore-feed-block' ) );
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-explore-feed-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper  = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
