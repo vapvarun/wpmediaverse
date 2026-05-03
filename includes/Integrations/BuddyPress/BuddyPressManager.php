@@ -30,23 +30,18 @@ class BuddyPressManager {
 			( new ActivityFormIntegration() )->init();
 		}
 
-		// BP notifications integration intentionally NOT registered.
-		//
-		// MVS owns notifications via NotificationService + the bell on the
-		// dashboard surface. The previous BP integration mirrored every
-		// MVS notification into bp_notifications, which produced two
-		// surfaces showing the same items (BP nav bell + MVS dashboard
-		// bell on dashboard pages) and added a maintenance surface (a
-		// TYPE_TO_BP_ACTION map per new notification type).
-		//
-		// Right long-term shape (deferred to 1.2.1): wire the same
-		// notification source with BP — either by injecting MVS rows
-		// into bp_notifications_get_notifications_for_user at read time
-		// (single store, BP renders it), or by mounting the MVS bell
-		// globally in the WP admin bar / theme header so BP-active sites
-		// see notifications everywhere through the MVS surface itself.
-		// Either way: ONE source, ONE write per event, multiple render
-		// surfaces — never the dual-write pattern this commit removed.
+		// BP notifications integration:
+		// MVS owns notifications via NotificationService (canonical store
+		// in mvs_notifications). When BP is active, NotificationIntegration
+		// injects each MVS event into BP's bp_notifications table so BP's
+		// nav bell shows them on every page (not just the MVS dashboard).
+		// Dashboard-bell duplication is prevented at render-time — the
+		// MVS dashboard bell is suppressed on BP-active sites since BP's
+		// nav bell is already global. See render check in
+		// templates/partials/dashboard-content.php.
+		if ( bp_is_active( 'notifications' ) ) {
+			( new NotificationIntegration() )->init();
+		}
 
 		// Profile tab is always available (core BP feature).
 		( new ProfileTabIntegration() )->init();

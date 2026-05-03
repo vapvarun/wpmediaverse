@@ -263,8 +263,20 @@ wp_enqueue_style( 'mvs-frontend' );
 	<script>(function(){var pp=document.getElementById('mvs-profile-prompt');var btn=document.getElementById('mvs-profile-prompt-close');if(pp&&localStorage.getItem('mvs_profile_prompt_dismissed')==='1'){pp.style.display='none';}if(btn)btn.addEventListener('click',function(){if(pp)pp.style.display='none';localStorage.setItem('mvs_profile_prompt_dismissed','1');});}());</script>
 	<?php endif; ?>
 
+	<?php
+	// Show the MVS dashboard bell ONLY when BP is not active.
+	//
+	// When BP is active, every MVS event is also injected into
+	// bp_notifications (see Integrations/BuddyPress/NotificationIntegration)
+	// so BP's nav bell is already showing them globally — including on this
+	// dashboard page. Rendering a second bell here would surface the same
+	// items twice. The MVS bell stays as the canonical surface for
+	// non-BP sites where there is no other notification chrome.
+	$mvs_show_dashboard_bell = ! function_exists( 'buddypress' );
+	?>
 	<div class="mvs-dashboard-header">
 		<span class="mvs-dashboard-heading"><?php esc_html_e( 'My Media', 'wpmediaverse' ); ?></span>
+		<?php if ( $mvs_show_dashboard_bell ) : ?>
 		<div class="mvs-notification-bell" data-wp-on--click="actions.toggleNotifications"
 			role="button" tabindex="0" aria-label="<?php esc_attr_e( 'Notifications', 'wpmediaverse' ); ?>">
 			<span class="mvs-notification-bell-icon">&#128276;</span>
@@ -294,6 +306,7 @@ wp_enqueue_style( 'mvs-frontend' );
 				</p>
 			</div>
 		</div>
+		<?php endif; ?>
 	</div>
 
 	<nav class="mvs-dashboard-tabs" role="tablist">
