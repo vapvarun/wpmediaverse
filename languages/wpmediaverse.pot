@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.2.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-05-03 13:45:33+00:00\n"
+"POT-Creation-Date: 2026-05-03 13:57:36+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -40,6 +40,7 @@ msgid "48"
 msgstr ""
 
 #: build/album-viewer/render.php:103 build/blocks/album-viewer/render.php:103
+#: dist/wpmediaverse/build/album-viewer/render.php:103
 #: dist/wpmediaverse/build/blocks/album-viewer/render.php:103
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/GroupTabIntegration.php:202
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ProfileTabIntegration.php:228
@@ -53,6 +54,7 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:87 build/explore-feed/render.php:87
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:87
+#: dist/wpmediaverse/build/explore-feed/render.php:87
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:170
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:87
 #: dist/wpmediaverse/templates/explore.php:153
@@ -64,6 +66,7 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:88 build/explore-feed/render.php:88
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:88
+#: dist/wpmediaverse/build/explore-feed/render.php:88
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:88
 #: dist/wpmediaverse/templates/explore.php:152
 #: src/blocks/explore-feed/render.php:88 templates/explore.php:152
@@ -72,6 +75,7 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:118 build/explore-feed/render.php:118
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:118
+#: dist/wpmediaverse/build/explore-feed/render.php:118
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:300
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:118
 #: dist/wpmediaverse/templates/explore.php:265
@@ -82,6 +86,7 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:119 build/explore-feed/render.php:119
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:119
+#: dist/wpmediaverse/build/explore-feed/render.php:119
 #: dist/wpmediaverse/includes/Admin/Settings/FieldRenderer.php:77
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:119
 #: includes/Admin/Settings/FieldRenderer.php:77
@@ -91,6 +96,7 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:120 build/explore-feed/render.php:120
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:120
+#: dist/wpmediaverse/build/explore-feed/render.php:120
 #: dist/wpmediaverse/includes/Admin/CollectionMetaBox.php:297
 #: dist/wpmediaverse/includes/Admin/Settings/FieldRenderer.php:83
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:120
@@ -104,6 +110,7 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:121 build/explore-feed/render.php:121
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:121
+#: dist/wpmediaverse/build/explore-feed/render.php:121
 #: dist/wpmediaverse/includes/Admin/CollectionMetaBox.php:298
 #: dist/wpmediaverse/includes/Admin/Settings/FieldRenderer.php:87
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:121
@@ -117,6 +124,7 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:160 build/explore-feed/render.php:160
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:160
+#: dist/wpmediaverse/build/explore-feed/render.php:160
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/BaseBPTabIntegration.php:502
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:160
 #: dist/wpmediaverse/templates/explore.php:480
@@ -131,6 +139,7 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:161 build/explore-feed/render.php:161
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:161
+#: dist/wpmediaverse/build/explore-feed/render.php:161
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:161
 #: src/blocks/explore-feed/render.php:161
 msgid "Loading..."
@@ -141,6 +150,8 @@ msgstr ""
 #: build/media-grid/render.php:244
 #: dist/wpmediaverse/build/blocks/explore-feed/render.php:164
 #: dist/wpmediaverse/build/blocks/media-grid/render.php:244
+#: dist/wpmediaverse/build/explore-feed/render.php:164
+#: dist/wpmediaverse/build/media-grid/render.php:244
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:164
 #: dist/wpmediaverse/src/blocks/media-grid/render.php:244
 #: src/blocks/explore-feed/render.php:164 src/blocks/media-grid/render.php:244
@@ -149,6 +160,7 @@ msgstr ""
 
 #: build/blocks/lock-overlay/render.php:19 build/lock-overlay/render.php:19
 #: dist/wpmediaverse/build/blocks/lock-overlay/render.php:19
+#: dist/wpmediaverse/build/lock-overlay/render.php:19
 #: dist/wpmediaverse/src/blocks/lock-overlay/render.php:19
 #: src/blocks/lock-overlay/render.php:19
 msgid "Restricted Content"
@@ -156,6 +168,7 @@ msgstr ""
 
 #: build/blocks/lock-overlay/render.php:117 build/lock-overlay/render.php:117
 #: dist/wpmediaverse/build/blocks/lock-overlay/render.php:117
+#: dist/wpmediaverse/build/lock-overlay/render.php:117
 #: dist/wpmediaverse/src/blocks/lock-overlay/render.php:117
 #: src/blocks/lock-overlay/render.php:117
 msgid "Log in to View"
@@ -163,6 +176,7 @@ msgstr ""
 
 #: build/blocks/lock-overlay/render.php:121 build/lock-overlay/render.php:121
 #: dist/wpmediaverse/build/blocks/lock-overlay/render.php:121
+#: dist/wpmediaverse/build/lock-overlay/render.php:121
 #: dist/wpmediaverse/src/blocks/lock-overlay/render.php:121
 #: src/blocks/lock-overlay/render.php:121
 msgid ""
@@ -172,6 +186,7 @@ msgstr ""
 
 #: build/blocks/media-grid/render.php:223 build/media-grid/render.php:223
 #: dist/wpmediaverse/build/blocks/media-grid/render.php:223
+#: dist/wpmediaverse/build/media-grid/render.php:223
 #: dist/wpmediaverse/src/blocks/media-grid/render.php:223
 #: src/blocks/media-grid/render.php:223
 #. translators: 1: current page, 2: total pages
@@ -180,6 +195,7 @@ msgstr ""
 
 #: build/blocks/media-grid/render.php:233 build/media-grid/render.php:233
 #: dist/wpmediaverse/build/blocks/media-grid/render.php:233
+#: dist/wpmediaverse/build/media-grid/render.php:233
 #: dist/wpmediaverse/src/blocks/media-grid/render.php:233
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:386
 #: src/blocks/media-grid/render.php:233
@@ -189,6 +205,7 @@ msgstr ""
 
 #: build/blocks/media-grid/render.php:234 build/media-grid/render.php:234
 #: dist/wpmediaverse/build/blocks/media-grid/render.php:234
+#: dist/wpmediaverse/build/media-grid/render.php:234
 #: dist/wpmediaverse/src/blocks/media-grid/render.php:234
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:398
 #: src/blocks/media-grid/render.php:234
@@ -198,6 +215,7 @@ msgstr ""
 
 #: build/blocks/media-player/render.php:131 build/media-player/render.php:131
 #: dist/wpmediaverse/build/blocks/media-player/render.php:131
+#: dist/wpmediaverse/build/media-player/render.php:131
 #: dist/wpmediaverse/src/blocks/media-player/render.php:131
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:469
 #: src/blocks/media-player/render.php:131
@@ -207,6 +225,7 @@ msgstr ""
 
 #: build/blocks/media-stats/render.php:90 build/media-stats/render.php:90
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:90
+#: dist/wpmediaverse/build/media-stats/render.php:90
 #: dist/wpmediaverse/includes/Services/GDPRService.php:104
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:90
 #: includes/Services/GDPRService.php:104 src/blocks/media-stats/render.php:90
@@ -218,6 +237,8 @@ msgstr ""
 #: build/media-stats/render.php:140
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:96
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:140
+#: dist/wpmediaverse/build/media-stats/render.php:96
+#: dist/wpmediaverse/build/media-stats/render.php:140
 #: dist/wpmediaverse/includes/Admin/StatsPage.php:400
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:96
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:140
@@ -228,6 +249,7 @@ msgstr ""
 
 #: build/blocks/media-stats/render.php:103 build/media-stats/render.php:103
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:103
+#: dist/wpmediaverse/build/media-stats/render.php:103
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:103
 #: src/blocks/media-stats/render.php:103
 msgid "Downloads"
@@ -238,6 +260,8 @@ msgstr ""
 #: build/media-stats/render.php:141
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:110
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:141
+#: dist/wpmediaverse/build/media-stats/render.php:110
+#: dist/wpmediaverse/build/media-stats/render.php:141
 #: dist/wpmediaverse/includes/Admin/StatsPage.php:378
 #: dist/wpmediaverse/includes/Admin/StatsPage.php:401
 #: dist/wpmediaverse/includes/Services/GDPRService.php:171
@@ -253,6 +277,7 @@ msgstr ""
 
 #: build/blocks/media-stats/render.php:135 build/media-stats/render.php:135
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:135
+#: dist/wpmediaverse/build/media-stats/render.php:135
 #: dist/wpmediaverse/src/blocks/media-stats/render.php:135
 #: src/blocks/media-stats/render.php:135
 msgid "Top Media"
@@ -260,6 +285,7 @@ msgstr ""
 
 #: build/blocks/media-stats/render.php:139 build/media-stats/render.php:139
 #: dist/wpmediaverse/build/blocks/media-stats/render.php:139
+#: dist/wpmediaverse/build/media-stats/render.php:139
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:184
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:230
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:341
@@ -288,6 +314,7 @@ msgstr ""
 
 #: build/blocks/media-upload/render.php:77 build/media-upload/render.php:77
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:77
+#: dist/wpmediaverse/build/media-upload/render.php:77
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:77
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:197
 #: src/blocks/media-upload/render.php:77
@@ -297,6 +324,7 @@ msgstr ""
 
 #: build/blocks/media-upload/render.php:79 build/media-upload/render.php:79
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:79
+#: dist/wpmediaverse/build/media-upload/render.php:79
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:79
 #: src/blocks/media-upload/render.php:79
 msgid "Choose files to upload"
@@ -304,6 +332,7 @@ msgstr ""
 
 #: build/blocks/media-upload/render.php:87 build/media-upload/render.php:87
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:87
+#: dist/wpmediaverse/build/media-upload/render.php:87
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:87
 #: src/blocks/media-upload/render.php:87
 msgid "Privacy for uploaded media"
@@ -311,6 +340,7 @@ msgstr ""
 
 #: build/blocks/media-upload/render.php:88 build/media-upload/render.php:88
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:88
+#: dist/wpmediaverse/build/media-upload/render.php:88
 #: dist/wpmediaverse/includes/Admin/CollectionMetaBox.php:307
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:157
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivityFormIntegration.php:67
@@ -332,6 +362,7 @@ msgstr ""
 
 #: build/blocks/media-upload/render.php:89 build/media-upload/render.php:89
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:89
+#: dist/wpmediaverse/build/media-upload/render.php:89
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:158
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivityFormIntegration.php:68
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:89
@@ -345,6 +376,7 @@ msgstr ""
 
 #: build/blocks/media-upload/render.php:90 build/media-upload/render.php:90
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:90
+#: dist/wpmediaverse/build/media-upload/render.php:90
 #: dist/wpmediaverse/includes/Admin/CollectionMetaBox.php:309
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:159
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivityFormIntegration.php:69
@@ -369,6 +401,8 @@ msgstr ""
 #: build/media-upload/render.php:98
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:97
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:98
+#: dist/wpmediaverse/build/media-upload/render.php:97
+#: dist/wpmediaverse/build/media-upload/render.php:98
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:97
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:98
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:368
@@ -384,6 +418,8 @@ msgstr ""
 #: build/media-upload/render.php:102
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:101
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:102
+#: dist/wpmediaverse/build/media-upload/render.php:101
+#: dist/wpmediaverse/build/media-upload/render.php:102
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/BaseBPTabIntegration.php:434
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:101
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:102
@@ -402,6 +438,8 @@ msgstr ""
 #: build/media-upload/render.php:106
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:105
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:106
+#: dist/wpmediaverse/build/media-upload/render.php:105
+#: dist/wpmediaverse/build/media-upload/render.php:106
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:105
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:106
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:373
@@ -417,6 +455,7 @@ msgstr ""
 
 #: build/blocks/media-upload/render.php:111 build/media-upload/render.php:111
 #: dist/wpmediaverse/build/blocks/media-upload/render.php:111
+#: dist/wpmediaverse/build/media-upload/render.php:111
 #: dist/wpmediaverse/src/blocks/media-upload/render.php:111
 #: src/blocks/media-upload/render.php:111
 msgid "Dismiss error"
@@ -424,6 +463,7 @@ msgstr ""
 
 #: build/blocks/member-photos/render.php:92 build/member-photos/render.php:92
 #: dist/wpmediaverse/build/blocks/member-photos/render.php:92
+#: dist/wpmediaverse/build/member-photos/render.php:92
 #: dist/wpmediaverse/src/blocks/member-photos/render.php:92
 #: src/blocks/member-photos/render.php:92
 msgid ""
@@ -433,6 +473,7 @@ msgstr ""
 
 #: build/blocks/member-photos/render.php:163 build/member-photos/render.php:163
 #: dist/wpmediaverse/build/blocks/member-photos/render.php:163
+#: dist/wpmediaverse/build/member-photos/render.php:163
 #: dist/wpmediaverse/src/blocks/member-photos/render.php:163
 #: src/blocks/member-photos/render.php:163
 #. translators: %s: member display name.
@@ -441,6 +482,7 @@ msgstr ""
 
 #: build/blocks/member-photos/render.php:191 build/member-photos/render.php:191
 #: dist/wpmediaverse/build/blocks/member-photos/render.php:191
+#: dist/wpmediaverse/build/member-photos/render.php:191
 #: dist/wpmediaverse/src/blocks/member-photos/render.php:191
 #: src/blocks/member-photos/render.php:191
 msgid "Member statistics"
@@ -448,6 +490,7 @@ msgstr ""
 
 #: build/blocks/member-photos/render.php:194 build/member-photos/render.php:194
 #: dist/wpmediaverse/build/blocks/member-photos/render.php:194
+#: dist/wpmediaverse/build/member-photos/render.php:194
 #: dist/wpmediaverse/src/blocks/member-photos/render.php:194
 #: src/blocks/member-photos/render.php:194
 msgid "Photos"
@@ -455,6 +498,7 @@ msgstr ""
 
 #: build/blocks/member-photos/render.php:198 build/member-photos/render.php:198
 #: dist/wpmediaverse/build/blocks/member-photos/render.php:198
+#: dist/wpmediaverse/build/member-photos/render.php:198
 #: dist/wpmediaverse/src/blocks/member-photos/render.php:198
 #: src/blocks/member-photos/render.php:198
 msgid "Followers"
@@ -465,6 +509,8 @@ msgstr ""
 #: build/member-photos/render.php:218
 #: dist/wpmediaverse/build/blocks/member-photos/render.php:202
 #: dist/wpmediaverse/build/blocks/member-photos/render.php:218
+#: dist/wpmediaverse/build/member-photos/render.php:202
+#: dist/wpmediaverse/build/member-photos/render.php:218
 #: dist/wpmediaverse/includes/Services/GDPRService.php:201
 #: dist/wpmediaverse/src/blocks/member-photos/render.php:202
 #: dist/wpmediaverse/src/blocks/member-photos/render.php:218
@@ -481,6 +527,7 @@ msgstr ""
 
 #: build/blocks/member-photos/render.php:209 build/member-photos/render.php:209
 #: dist/wpmediaverse/build/blocks/member-photos/render.php:209
+#: dist/wpmediaverse/build/member-photos/render.php:209
 #: dist/wpmediaverse/src/blocks/member-photos/render.php:209
 #: src/blocks/member-photos/render.php:209
 msgid "View profile"
@@ -488,6 +535,7 @@ msgstr ""
 
 #: build/blocks/member-photos/render.php:217 build/member-photos/render.php:217
 #: dist/wpmediaverse/build/blocks/member-photos/render.php:217
+#: dist/wpmediaverse/build/member-photos/render.php:217
 #: dist/wpmediaverse/src/blocks/member-photos/render.php:217
 #: dist/wpmediaverse/templates/media-single.php:169
 #: dist/wpmediaverse/templates/partials/profile-actions-js.php:45
@@ -500,6 +548,7 @@ msgstr ""
 
 #: build/blocks/pdf-viewer/render.php:53 build/pdf-viewer/render.php:53
 #: dist/wpmediaverse/build/blocks/pdf-viewer/render.php:53
+#: dist/wpmediaverse/build/pdf-viewer/render.php:53
 #: dist/wpmediaverse/src/blocks/pdf-viewer/render.php:53
 #: src/blocks/pdf-viewer/render.php:53
 msgid "No PDF selected. Edit this block and set a Media ID to display a PDF."
@@ -507,6 +556,7 @@ msgstr ""
 
 #: build/blocks/pdf-viewer/render.php:67 build/pdf-viewer/render.php:67
 #: dist/wpmediaverse/build/blocks/pdf-viewer/render.php:67
+#: dist/wpmediaverse/build/pdf-viewer/render.php:67
 #: dist/wpmediaverse/src/blocks/pdf-viewer/render.php:67
 #: src/blocks/pdf-viewer/render.php:67
 msgid "PDF not found."
@@ -514,6 +564,7 @@ msgstr ""
 
 #: build/blocks/pdf-viewer/render.php:84 build/pdf-viewer/render.php:84
 #: dist/wpmediaverse/build/blocks/pdf-viewer/render.php:84
+#: dist/wpmediaverse/build/pdf-viewer/render.php:84
 #: dist/wpmediaverse/src/blocks/pdf-viewer/render.php:84
 #: src/blocks/pdf-viewer/render.php:84
 msgid ""
@@ -523,6 +574,7 @@ msgstr ""
 
 #: build/blocks/pdf-viewer/render.php:103 build/pdf-viewer/render.php:103
 #: dist/wpmediaverse/build/blocks/pdf-viewer/render.php:103
+#: dist/wpmediaverse/build/pdf-viewer/render.php:103
 #: dist/wpmediaverse/src/blocks/pdf-viewer/render.php:103
 #: src/blocks/pdf-viewer/render.php:103
 msgid "You do not have permission to view this PDF."
@@ -530,6 +582,7 @@ msgstr ""
 
 #: build/blocks/pdf-viewer/render.php:120 build/pdf-viewer/render.php:120
 #: dist/wpmediaverse/build/blocks/pdf-viewer/render.php:120
+#: dist/wpmediaverse/build/pdf-viewer/render.php:120
 #: dist/wpmediaverse/src/blocks/pdf-viewer/render.php:120
 #: src/blocks/pdf-viewer/render.php:120
 msgid "PDF document"
@@ -537,6 +590,7 @@ msgstr ""
 
 #: build/blocks/story-viewer/render.php:68 build/story-viewer/render.php:68
 #: dist/wpmediaverse/build/blocks/story-viewer/render.php:68
+#: dist/wpmediaverse/build/story-viewer/render.php:68
 #: dist/wpmediaverse/src/blocks/story-viewer/render.php:68
 #: src/blocks/story-viewer/render.php:68
 msgid ""
@@ -2891,7 +2945,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Core/Plugin.php:685
 #: dist/wpmediaverse/includes/Core/Plugin.php:686
 #: dist/wpmediaverse/includes/Taxonomies/MediaTag.php:35
-#: dist/wpmediaverse/templates/media-single.php:459
+#: dist/wpmediaverse/templates/media-single.php:457
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:711
 #: includes/Admin/TagManagementPage.php:115 includes/Core/Plugin.php:685
 #: includes/Core/Plugin.php:686 includes/Taxonomies/MediaTag.php:35
@@ -2932,7 +2986,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:312
 #: dist/wpmediaverse/templates/media-single.php:404
 #: dist/wpmediaverse/templates/media-single.php:407
-#: dist/wpmediaverse/templates/media-single.php:548
+#: dist/wpmediaverse/templates/media-single.php:546
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:419
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:459
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:555
@@ -2997,7 +3051,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:311
 #: dist/wpmediaverse/templates/media-single.php:397
 #: dist/wpmediaverse/templates/media-single.php:400
-#: dist/wpmediaverse/templates/media-single.php:546
+#: dist/wpmediaverse/templates/media-single.php:544
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:417
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:457
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:553
@@ -3452,7 +3506,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:184
 #: dist/wpmediaverse/includes/Social/NotificationService.php:461
 #: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:184
-#: includes/Social/NotificationService.php:461
+#: includes/Social/NotificationService.php:466
 #. translators: 1: user link, 2: media link
 #. translators: 1: user name, 2: media title
 msgid "%1$s commented on %2$s"
@@ -3498,9 +3552,9 @@ msgstr ""
 #: dist/wpmediaverse/templates/album.php:194
 #: dist/wpmediaverse/templates/album.php:219
 #: dist/wpmediaverse/templates/album.php:568
-#: dist/wpmediaverse/templates/media-single.php:494
-#: dist/wpmediaverse/templates/media-single.php:541
-#: dist/wpmediaverse/templates/media-single.php:591
+#: dist/wpmediaverse/templates/media-single.php:492
+#: dist/wpmediaverse/templates/media-single.php:539
+#: dist/wpmediaverse/templates/media-single.php:589
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:229
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:669
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:747
@@ -3677,7 +3731,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/NotificationIntegration.php:157
 #: dist/wpmediaverse/includes/Social/NotificationService.php:456
 #: includes/Integrations/BuddyPress/NotificationIntegration.php:157
-#: includes/Social/NotificationService.php:456
+#: includes/Social/NotificationService.php:461
 #. translators: %s: user display name
 #. translators: %s: user name
 msgid "%s reacted to your media"
@@ -3686,7 +3740,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/NotificationIntegration.php:161
 #: dist/wpmediaverse/includes/Social/NotificationService.php:464
 #: includes/Integrations/BuddyPress/NotificationIntegration.php:161
-#: includes/Social/NotificationService.php:464
+#: includes/Social/NotificationService.php:469
 #. translators: %s: user display name
 #. translators: %s: user name
 msgid "%s commented on your media"
@@ -3695,7 +3749,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/NotificationIntegration.php:165
 #: dist/wpmediaverse/includes/Social/NotificationService.php:468
 #: includes/Integrations/BuddyPress/NotificationIntegration.php:165
-#: includes/Social/NotificationService.php:468
+#: includes/Social/NotificationService.php:473
 #. translators: %s: user display name
 #. translators: %s: user name
 msgid "%s mentioned you"
@@ -4688,7 +4742,7 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Shortcodes/Shortcodes.php:767
 #: dist/wpmediaverse/templates/album.php:190
-#: dist/wpmediaverse/templates/media-single.php:490
+#: dist/wpmediaverse/templates/media-single.php:488
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:225
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:677
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:752
@@ -4728,37 +4782,37 @@ msgid "Someone"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Social/NotificationService.php:448
-#: includes/Social/NotificationService.php:448
+#: includes/Social/NotificationService.php:453
 #. translators: %s: user name
 msgid "%s started following you"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Social/NotificationService.php:453
-#: includes/Social/NotificationService.php:453
+#: includes/Social/NotificationService.php:458
 #. translators: 1: user name, 2: media title
 msgid "%1$s reacted to %2$s"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Social/NotificationService.php:473
-#: includes/Social/NotificationService.php:473
+#: includes/Social/NotificationService.php:478
 #. translators: 1: user name, 2: media title
 msgid "%1$s favorited %2$s"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Social/NotificationService.php:476
-#: includes/Social/NotificationService.php:476
+#: includes/Social/NotificationService.php:481
 #. translators: %s: user name
 msgid "%s favorited your media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Social/NotificationService.php:480
-#: includes/Social/NotificationService.php:480
+#: includes/Social/NotificationService.php:485
 #. translators: %s: user name
 msgid "%s sent you a message"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Social/NotificationService.php:484
-#: includes/Social/NotificationService.php:484
+#: includes/Social/NotificationService.php:489
 #. translators: %s: user name
 msgid "%s interacted with your content"
 msgstr ""
@@ -4929,8 +4983,8 @@ msgid "Delete Album"
 msgstr ""
 
 #: dist/wpmediaverse/templates/album.php:189
-#: dist/wpmediaverse/templates/media-single.php:489
-#: dist/wpmediaverse/templates/media-single.php:539
+#: dist/wpmediaverse/templates/media-single.php:487
+#: dist/wpmediaverse/templates/media-single.php:537
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:224
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:675
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:751
@@ -5158,41 +5212,41 @@ msgid ""
 "inbound links stable."
 msgstr ""
 
-#: dist/wpmediaverse/templates/media-single.php:454
+#: dist/wpmediaverse/templates/media-single.php:452
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:329
 #: templates/media-single.php:452 templates/partials/shared-ui-shell.php:329
 msgid "Update URL slug"
 msgstr ""
 
-#: dist/wpmediaverse/templates/media-single.php:470
+#: dist/wpmediaverse/templates/media-single.php:468
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:722
 #: templates/media-single.php:468 templates/partials/dashboard-content.php:722
 msgid "Add tags..."
 msgstr ""
 
-#: dist/wpmediaverse/templates/media-single.php:502
+#: dist/wpmediaverse/templates/media-single.php:500
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:494
 #: templates/media-single.php:500 templates/partials/shared-ui-shell.php:494
 msgid "Comments"
 msgstr ""
 
-#: dist/wpmediaverse/templates/media-single.php:505
+#: dist/wpmediaverse/templates/media-single.php:503
 #: templates/media-single.php:503
 msgid "Write a comment..."
 msgstr ""
 
-#: dist/wpmediaverse/templates/media-single.php:508
+#: dist/wpmediaverse/templates/media-single.php:506
 #: templates/media-single.php:506
 msgid "Post comment"
 msgstr ""
 
-#: dist/wpmediaverse/templates/media-single.php:508
+#: dist/wpmediaverse/templates/media-single.php:506
 #: dist/wpmediaverse/templates/partials/shared-ui-shell.php:530
 #: templates/media-single.php:506 templates/partials/shared-ui-shell.php:530
 msgid "Post"
 msgstr ""
 
-#: dist/wpmediaverse/templates/media-single.php:513
+#: dist/wpmediaverse/templates/media-single.php:511
 #: templates/media-single.php:511
 msgid "Log in to leave a comment"
 msgstr ""

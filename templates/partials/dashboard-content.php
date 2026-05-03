@@ -124,7 +124,7 @@ wp_enqueue_style( 'mvs-frontend' );
 			</div>
 			<div class="mvs-dashboard-profile-actions">
 				<a class="mvs-btn mvs-btn--secondary mvs-btn--small"
-					href="<?php echo esc_url( home_url( '/media/@' . $mvs_current_user->user_login . '/' ) ); ?>">
+					href="<?php echo esc_url( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_current_user->ID ) ); ?>">
 					<?php esc_html_e( 'View Profile', 'wpmediaverse' ); ?>
 				</a>
 				<button class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-dashboard-profile-edit-btn"

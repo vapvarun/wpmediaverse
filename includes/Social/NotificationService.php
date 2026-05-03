@@ -393,8 +393,13 @@ class NotificationService {
 		if ( $row->media_id ) {
 			$url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $row->media_id );
 		} elseif ( 'new_follower' === $row->type ) {
-			$actor_login = get_the_author_meta( 'user_login', (int) $row->actor_id );
-			$url         = $actor_login ? home_url( '/media/@' . $actor_login . '/' ) : '';
+			// Route to the canonical author-profile URL — BP profile when BP
+			// is active, plugin's /media/@user/ otherwise. NEVER hard-code
+			// `/media/@` here: when the notification text is rendered into a
+			// BP content path, `bp_activity_at_name_filter` rewrites the
+			// `@user` substring into mention HTML and corrupts the URL.
+			$tpl = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+			$url = ( $tpl && (int) $row->actor_id > 0 ) ? $tpl->get_user_profile_url( (int) $row->actor_id ) : '';
 		} elseif ( 'new_message' === $row->type ) {
 			$url = home_url( '/messages/' );
 		}
