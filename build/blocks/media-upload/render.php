@@ -76,6 +76,7 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 		</div>
 		<p class="mvs-upload-text"><?php esc_html_e( 'Drag & drop files here or click to browse', 'wpmediaverse' ); ?></p>
 		<input type="file" class="mvs-upload-input" multiple
+			aria-label="<?php esc_attr_e( 'Choose files to upload', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.handleFileSelect"
 			accept="<?php echo esc_attr( $allowed_types ); ?>"
 		/>
@@ -83,7 +84,7 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 		if ( $show_privacy ) :
 			$default_privacy = get_option( 'mvs_default_privacy', 'public' );
 			?>
-			<select class="mvs-upload-privacy" data-wp-on--change="actions.setPrivacy">
+			<select class="mvs-upload-privacy" data-wp-on--change="actions.setPrivacy" aria-label="<?php esc_attr_e( 'Privacy for uploaded media', 'wpmediaverse' ); ?>">
 				<option value="public" <?php selected( $default_privacy, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 				<option value="members" <?php selected( $default_privacy, 'members' ); ?>><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
 				<option value="private" <?php selected( $default_privacy, 'private' ); ?>><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
@@ -94,12 +95,15 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 	<div class="mvs-upload-fields">
 		<input type="text" class="mvs-upload-title-input"
 			placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
+			aria-label="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setTitle" />
 		<textarea class="mvs-upload-desc-input" rows="2"
 			placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>"
+			aria-label="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setDescription"></textarea>
 		<input type="text" class="mvs-upload-tags-input"
 			placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
+			aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setTags" />
 	</div>
 	<div class="mvs-upload-error" data-wp-bind--hidden="!state.hasError" hidden>

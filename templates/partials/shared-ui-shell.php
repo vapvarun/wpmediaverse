@@ -282,25 +282,25 @@ $mvs_show_fab = $mvs_is_logged_in && (
 				</div>
 
 				<!-- Reactions -->
-				<div class="mvs-lightbox-reactions">
+				<div class="mvs-lightbox-reactions" role="group" aria-label="<?php esc_attr_e( 'Reactions', 'wpmediaverse' ); ?>">
 					<?php if ( $mvs_is_logged_in ) : ?>
-						<button class="mvs-lightbox-reaction" data-reaction="like" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsLike">
-							<span>&#x1F44D;</span> <span data-wp-text="state.lightboxReactionCount_like"></span>
+						<button class="mvs-lightbox-reaction" data-reaction="like" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsLike" data-wp-bind--aria-pressed="state.lightboxUserReactionIsLike" aria-label="<?php esc_attr_e( 'Like', 'wpmediaverse' ); ?>">
+							<span aria-hidden="true">&#x1F44D;</span> <span data-wp-text="state.lightboxReactionCount_like"></span>
 						</button>
-						<button class="mvs-lightbox-reaction" data-reaction="love" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsLove">
-							<span>&#x2764;&#xFE0F;</span> <span data-wp-text="state.lightboxReactionCount_love"></span>
+						<button class="mvs-lightbox-reaction" data-reaction="love" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsLove" data-wp-bind--aria-pressed="state.lightboxUserReactionIsLove" aria-label="<?php esc_attr_e( 'Love', 'wpmediaverse' ); ?>">
+							<span aria-hidden="true">&#x2764;&#xFE0F;</span> <span data-wp-text="state.lightboxReactionCount_love"></span>
 						</button>
-						<button class="mvs-lightbox-reaction" data-reaction="haha" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsHaha">
-							<span>&#x1F602;</span> <span data-wp-text="state.lightboxReactionCount_haha"></span>
+						<button class="mvs-lightbox-reaction" data-reaction="haha" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsHaha" data-wp-bind--aria-pressed="state.lightboxUserReactionIsHaha" aria-label="<?php esc_attr_e( 'Haha', 'wpmediaverse' ); ?>">
+							<span aria-hidden="true">&#x1F602;</span> <span data-wp-text="state.lightboxReactionCount_haha"></span>
 						</button>
-						<button class="mvs-lightbox-reaction" data-reaction="wow" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsWow">
-							<span>&#x1F62E;</span> <span data-wp-text="state.lightboxReactionCount_wow"></span>
+						<button class="mvs-lightbox-reaction" data-reaction="wow" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsWow" data-wp-bind--aria-pressed="state.lightboxUserReactionIsWow" aria-label="<?php esc_attr_e( 'Wow', 'wpmediaverse' ); ?>">
+							<span aria-hidden="true">&#x1F62E;</span> <span data-wp-text="state.lightboxReactionCount_wow"></span>
 						</button>
-						<button class="mvs-lightbox-reaction" data-reaction="sad" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsSad">
-							<span>&#x1F622;</span> <span data-wp-text="state.lightboxReactionCount_sad"></span>
+						<button class="mvs-lightbox-reaction" data-reaction="sad" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsSad" data-wp-bind--aria-pressed="state.lightboxUserReactionIsSad" aria-label="<?php esc_attr_e( 'Sad', 'wpmediaverse' ); ?>">
+							<span aria-hidden="true">&#x1F622;</span> <span data-wp-text="state.lightboxReactionCount_sad"></span>
 						</button>
-						<button class="mvs-lightbox-reaction" data-reaction="angry" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsAngry">
-							<span>&#x1F621;</span> <span data-wp-text="state.lightboxReactionCount_angry"></span>
+						<button class="mvs-lightbox-reaction" data-reaction="angry" data-wp-on--click="actions.lightboxToggleReaction" data-wp-class--active="state.lightboxUserReactionIsAngry" data-wp-bind--aria-pressed="state.lightboxUserReactionIsAngry" aria-label="<?php esc_attr_e( 'Angry', 'wpmediaverse' ); ?>">
+							<span aria-hidden="true">&#x1F621;</span> <span data-wp-text="state.lightboxReactionCount_angry"></span>
 						</button>
 					<?php else : ?>
 						<span class="mvs-lightbox-reaction mvs-lightbox-reaction--readonly"><span>&#x1F44D;</span> <span data-wp-text="state.lightboxReactionCount_like"></span></span>

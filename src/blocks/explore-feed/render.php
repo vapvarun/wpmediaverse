@@ -78,6 +78,7 @@ $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 			<input type="search"
 				class="mvs-explore-search"
 				placeholder="<?php esc_attr_e( 'Search media...', 'wpmediaverse' ); ?>"
+				aria-label="<?php esc_attr_e( 'Search media', 'wpmediaverse' ); ?>"
 				data-wp-on--input="actions.handleSearch"
 				data-wp-bind--value="context.search"
 			/>
