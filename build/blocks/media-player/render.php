@@ -23,12 +23,12 @@ if ( ! $media_id ) {
 }
 
 // Verify media exists in the index table.
-if ( ! \WPMediaVerse\Repository\MediaRepository::exists( $media_id ) ) {
+if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 	return;
 }
 
-$file_type  = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_type' );
-$media_title = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'title' );
+$file_type  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
+$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' );
 
 $mp_signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 $file_url  = $mp_signed ? $mp_signed->generate( $media_id, get_current_user_id() ) : '';

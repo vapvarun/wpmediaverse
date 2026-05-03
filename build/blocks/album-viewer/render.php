@@ -66,12 +66,12 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 				$file_type  = $item_row['file_type'] ?? '';
 				$media_type = $item_row['media_type'] ?? '';
 				$item_title = $item_row['title'] ?? '';
-				$permalink  = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_id );
+				$permalink  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
 				?>
 				<div class="mvs-grid-item">
 					<a href="<?php echo esc_url( $permalink ); ?>">
 						<?php
-						echo \WPMediaVerse\Core\TemplateHelpers::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- alt pre-escaped here; helper validates size and emits already-escaped markup.
+						echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- alt pre-escaped here; helper validates size and emits already-escaped markup.
 							$media_id,
 							array( 'alt' => esc_attr( $item_title ) )
 						);

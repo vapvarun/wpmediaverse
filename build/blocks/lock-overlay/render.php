@@ -24,17 +24,17 @@ if ( ! $media_id ) {
 }
 
 // Verify media exists in the index table.
-if ( ! \WPMediaVerse\Repository\MediaRepository::exists( $media_id ) ) {
+if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 	return;
 }
 
-$media_title = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'title' ) ?: '';
+$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) ?: '';
 $user_id     = get_current_user_id();
 $container   = \WPMediaVerse\Core\Plugin::container();
 $privacy     = $container->get( 'privacy' );
 $has_access  = $privacy->can_view( $media_id, $user_id );
 
-$file_type   = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_type' );
+$file_type   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 $lo_signed   = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 // Full signed URL only for users with access; generate() already checks can_view().
 $file_url    = $lo_signed ? $lo_signed->generate( $media_id, $user_id ) : '';
@@ -48,7 +48,7 @@ $access_rules = $container->get( 'access_rules' );
 $rules        = $access_rules->get_rules( $media_id );
 $rule_types   = array_unique( array_column( $rules, 'rule_type' ) );
 
-$permalink = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_id );
+$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/lock-overlay"

@@ -1,0 +1,89 @@
+/* Block reset — prevent theme interference */
+[class^="wp-block-mvs-"] {
+	box-sizing: border-box;
+	margin: 0;
+}
+
+[class^="wp-block-mvs-"] *,
+[class^="wp-block-mvs-"] *::before,
+[class^="wp-block-mvs-"] *::after {
+	box-sizing: inherit;
+}
+
+/* Device visibility — toggled by DeviceVisibility component */
+.mvs-hide-desktop {
+	/* visible by default, hidden at desktop via media query below */
+}
+
+.mvs-hide-tablet {
+	/* hidden at tablet range */
+}
+
+.mvs-hide-mobile {
+	/* hidden at mobile range */
+}
+
+/* Desktop: > 1024px */
+@media (min-width: 1025px) {
+	.mvs-hide-desktop {
+		display: none !important;
+	}
+}
+
+/* Tablet: 768px - 1024px */
+@media (min-width: 768px) and (max-width: 1024px) {
+	.mvs-hide-tablet {
+		display: none !important;
+	}
+}
+
+/* Mobile: < 768px */
+@media (max-width: 767px) {
+	.mvs-hide-mobile {
+		display: none !important;
+	}
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+	[class^="wp-block-mvs-"] *,
+	[class^="wp-block-mvs-"] *::before,
+	[class^="wp-block-mvs-"] *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
+
+/* Common block layout helpers */
+.mvs-block-container {
+	width: 100%;
+	max-width: var(--mvs-container-width, 100%);
+	margin-left: auto;
+	margin-right: auto;
+}
+
+/* Screen reader only */
+.mvs-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
+}
+
+/* Dependency notice — shown when required plugin is deactivated */
+.mvs-block-notice {
+	padding: 16px 20px;
+	margin: 12px 0;
+	background: #fef3cd;
+	border: 1px solid #ffc107;
+	border-radius: 6px;
+	color: #856404;
+	font-size: 14px;
+	text-align: center;
+}

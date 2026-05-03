@@ -1,0 +1,88 @@
+:root {
+	/* Spacing scale (used by SpacingControl) */
+	--mvs-space-0: 0;
+	--mvs-space-xs: 4px;
+	--mvs-space-sm: 8px;
+	--mvs-space-md: 16px;
+	--mvs-space-lg: 24px;
+	--mvs-space-xl: 32px;
+	--mvs-space-2xl: 48px;
+	--mvs-space-3xl: 64px;
+
+	/* Border radius scale */
+	--mvs-radius-none: 0;
+	--mvs-radius-sm: 4px;
+	--mvs-radius-md: 8px;
+	--mvs-radius-lg: 12px;
+	--mvs-radius-xl: 16px;
+	--mvs-radius-full: 9999px;
+
+	/* Shadow presets */
+	--mvs-shadow-none: none;
+	--mvs-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--mvs-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+	--mvs-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+	--mvs-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+	/* Typography scale */
+	--mvs-font-xs: 12px;
+	--mvs-font-sm: 14px;
+	--mvs-font-md: 16px;
+	--mvs-font-lg: 18px;
+	--mvs-font-xl: 20px;
+	--mvs-font-2xl: 24px;
+	--mvs-font-3xl: 30px;
+	--mvs-font-4xl: 36px;
+	--mvs-font-5xl: 48px;
+
+	/* Font weights */
+	--mvs-weight-normal: 400;
+	--mvs-weight-medium: 500;
+	--mvs-weight-semibold: 600;
+	--mvs-weight-bold: 700;
+
+	/* Line heights */
+	--mvs-leading-tight: 1.25;
+	--mvs-leading-normal: 1.5;
+	--mvs-leading-relaxed: 1.75;
+
+	/* Colors — neutral palette */
+	--mvs-color-white: #ffffff;
+	--mvs-color-text: #1e293b;
+	--mvs-color-text-muted: #475569;
+	--mvs-color-text-light: #64748b;
+	--mvs-color-border: #e2e8f0;
+	--mvs-color-surface: #f8fafc;
+	--mvs-color-surface-alt: #f1f5f9;
+	--mvs-color-accent: var(--wbcom-link-color, #0073aa);
+	--mvs-color-accent-hover: var(--wbcom-link-hover-color, #005a87);
+	--mvs-color-accent-light: rgba(0, 115, 170, 0.08);
+	--mvs-color-accent-ring: rgba(0, 115, 170, 0.2);
+
+	/* Colors — semantic */
+	--mvs-color-success: #16a34a;
+	--mvs-color-success-bg: #dcfce7;
+	--mvs-color-warning: #d97706;
+	--mvs-color-warning-bg: #fef3c7;
+	--mvs-color-danger: #ef4444;
+	--mvs-color-danger-bg: #fef2f2;
+	--mvs-color-info: #2563eb;
+	--mvs-color-info-bg: #eff6ff;
+
+	/* Responsive breakpoints (used by CSS generation utility) */
+	--mvs-bp-tablet: 1024px;
+	--mvs-bp-mobile: 767px;
+
+	/* Transition */
+	--mvs-transition-fast: 150ms ease;
+	--mvs-transition-normal: 300ms ease;
+	--mvs-transition-slow: 500ms ease;
+
+	/* Z-index scale */
+	--mvs-z-below: -1;
+	--mvs-z-base: 0;
+	--mvs-z-above: 1;
+	--mvs-z-dropdown: 10;
+	--mvs-z-overlay: 100;
+	--mvs-z-modal: 1000;
+}

@@ -103,10 +103,10 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 			<?php
 			foreach ( $media_items as $item ) :
 				$item_id             = (int) $item['media_id'];
-				$mvs_grid_media_type = \WPMediaVerse\Core\TemplateHelpers::get_media_type( $item_id );
+				$mvs_grid_media_type = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $item_id );
 				$mvs_grid_signed     = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 				$mvs_grid_file_url   = $mvs_grid_signed ? $mvs_grid_signed->generate( $item_id, get_current_user_id() ) : '';
-				$mvs_grid_group      = \WPMediaVerse\Repository\MediaRepository::get( $item_id, 'media_group' );
+				$mvs_grid_group      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $item_id, 'media_group' );
 				$mvs_grid_group_cnt  = 0;
 				if ( $mvs_grid_group ) {
 					$mvs_grid_group_cnt = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -116,9 +116,9 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				}
 				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group ? ' mvs-grid-item--gallery' : '' );
 				$item_title          = $item['title'] ?? '';
-				$item_permalink      = \WPMediaVerse\Repository\MediaRepository::get_permalink( $item_id );
+				$item_permalink      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id );
 				$mvs_grid_author_id  = ! empty( $item['post_author'] ) ? (int) $item['post_author'] : 0;
-				$mvs_grid_thumb_url  = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $item_id, 'large' );
+				$mvs_grid_thumb_url  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $item_id, 'large' );
 				$mvs_grid_lightbox   = array(
 					'id'            => $item_id,
 					'title'         => $item_title,
@@ -134,7 +134,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					'author_data'   => array(
 						'name'        => get_the_author_meta( 'display_name', $mvs_grid_author_id ),
 						'avatar'      => get_avatar_url( $mvs_grid_author_id, array( 'size' => 64 ) ),
-						'profile_url' => \WPMediaVerse\Core\TemplateHelpers::get_user_profile_url( $mvs_grid_author_id ),
+						'profile_url' => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $mvs_grid_author_id ),
 					),
 				);
 				?>
@@ -144,7 +144,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					data-media-json="<?php echo esc_attr( wp_json_encode( $mvs_grid_lightbox ) ); ?>"
 				>
 					<a href="<?php echo esc_url( $item_permalink ); ?>" class="mvs-grid-item-link">
-					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( $item_id, 'large', $item_title ); ?>
+					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, 'large', $item_title ); ?>
 					<?php if ( $mvs_grid_group && $mvs_grid_group_cnt > 1 ) : ?>
 						<span class="mvs-gallery-badge" title="<?php echo esc_attr( sprintf( '%d photos', $mvs_grid_group_cnt ) ); ?>">
 							<span class="dashicons dashicons-images-alt2"></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>
