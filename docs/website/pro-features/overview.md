@@ -32,6 +32,31 @@ Pro features activate immediately after a valid license is confirmed. No site re
 
 When an update is available, WordPress shows it in the standard **Plugins** screen. The updater requires a valid active license. If your license has expired, download the latest ZIP from your account at [wbcomdesigns.com](https://wbcomdesigns.com/my-account/) and upload it manually.
 
+## 1.2.0: All Pro features now Gutenberg blocks
+
+Every Pro feature now ships as a first-class Gutenberg block — drop-in, configurable in the editor, no shortcodes-as-the-only-option. Each block has a matching `[mvs_pro_*]` shortcode for classic editor and template-tag use.
+
+| Block | Handle | Notes |
+|-------|--------|-------|
+| Tournament | `mvs/pro-tournament` | Configurable `tournamentId` attribute. |
+| Tournaments List | `mvs/pro-tournaments-list` | Lists active tournaments. |
+| Challenge | `mvs/pro-challenge` | Configurable `challengeId` attribute. |
+| Challenges List | `mvs/pro-challenges-list` | Lists active and upcoming challenges. |
+| Battle | `mvs/pro-battle` | Configurable `battleId` attribute. |
+| Battles Active | `mvs/pro-battles-active` | Currently running battles. |
+| Instagram Feed | `mvs/pro-instagram-feed` | Instagram-style square grid layout. |
+| Flickr Feed | `mvs/pro-flickr-feed` | Flickr-style justified rows layout. |
+| Pinterest Feed | `mvs/pro-pinterest-feed` | Pinterest-style masonry layout. |
+| Dribbble Feed | `mvs/pro-dribbble-feed` | Dribbble-style card grid layout. |
+| Leaderboard | `mvs/pro-leaderboard` | Top performers across competitions. |
+| Compete Hub | `mvs/pro-compete-hub` | Combined challenges + battles + tournaments dashboard. |
+
+**Layout flexibility:** because each layout (Instagram, Flickr, Pinterest, Dribbble) is its own block, admins can mix layouts on different pages — e.g. a Pinterest feed on the home page and an Instagram feed on a member directory — instead of being locked to one site-wide layout setting.
+
+### MigrationPage admin restructure
+
+The migration tool admin page is now a generic shell that hosts per-platform cards (rtMedia, MediaPress, BuddyBoss). Two pre-existing detection bugs were fixed in the same pass: the **Imported** count was always `0` regardless of actual progress, and the MediaPress dedup query was running against an undefined `$wpdb`. Migrations now report accurate counts and skip already-imported items correctly.
+
 ## Pro Feature Categories
 
 | Category | Page | What It Adds |

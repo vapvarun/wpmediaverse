@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "1.1.3",
+    "version": "1.2.0",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -36,7 +36,28 @@
         ],
         "handler": "MediaController",
         "permission": "per-method permission_check",
-        "purpose": "Single media CRUD"
+        "purpose": "Single media CRUD",
+        "notes": "1.2.0: PUT now accepts an `allow_download` boolean param (stored as media_meta '1'/'0', default '1' when absent). prepare_item_for_response emits `allow_download` (defaults true when meta absent or != '0')."
+      },
+      {
+        "route": "/media/(?P<id>[0-9]+)/download",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::record_download",
+        "permission": "__return_true (read endpoint, gated by privacy + global mvs_allow_downloads + per-media allow_download meta)",
+        "purpose": "Record a download event + increment mvs_media_stats.downloads",
+        "notes": "1.2.0: rate-limited 30/min per user/IP; 403 if global mvs_allow_downloads off or per-media allow_download='0'; writes mvs_media_views row with event_type='download' and increments mvs_media_stats.downloads via INSERT...ON DUPLICATE KEY UPDATE."
+      },
+      {
+        "route": "/media/(?P<id>[0-9]+)/share",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::record_share",
+        "permission": "__return_true (read endpoint, gated by privacy)",
+        "purpose": "Record a share event + increment mvs_media_stats.shares",
+        "notes": "1.2.0: mirrors record_download but writes shares; same privacy gate (privacy->can_view); rate-limited 30/min per user/IP."
       },
       {
         "route": "/media/bulk",
@@ -771,6 +792,32 @@
       "type": "int",
       "default": 900,
       "controls": "Comment edit window (seconds). 0 disables editing."
+    },
+    {
+      "key": "mvs_chat_panel_visibility",
+      "group": "messaging",
+      "type": "enum",
+      "default": "everywhere",
+      "registered_in_option_group": "mvs_settings_social",
+      "section": "mvs_messaging",
+      "sanitize_callback": "Sanitizers::sanitize_chat_panel_visibility",
+      "whitelist": [
+        "everywhere",
+        "mvs_pages",
+        "bp_pages",
+        "disabled"
+      ],
+      "controls": "Where the floating slide-out chat icon appears for logged-in users. Consumed by Plugin::render_chat_panel() (wp_footer). Filterable per-page via mvs_should_render_chat_panel."
+    },
+    {
+      "key": "mvs_allow_downloads",
+      "group": "display",
+      "type": "bool",
+      "default": true,
+      "registered_in_option_group": "mvs_settings_display",
+      "section": "mvs_display",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "controls": "Global Allow Downloads toggle. Hides the lightbox Download button + gates the POST /mvs/v1/media/{id}/download REST endpoint (defense-in-depth: hiding the button alone wouldn't stop a determined caller). Per-media `allow_download` meta still applies on top of this."
     }
   ],
   "shortcodes": [
@@ -782,8 +829,10 @@
         "category",
         "tag",
         "orderby",
-        "per_page"
-      ]
+        "order",
+        "user_id"
+      ],
+      "notes": "1.2.0: gained `user_id` attr (filters grid to a single user; falls back to bp_displayed_user_id() inside BP templates) and `order` attr ('asc'|'desc', default 'desc'). `per_page` and `columns` now always come from backend settings (mvs_items_per_page / mvs_grid_columns) — shortcode attributes intentionally do NOT override admin-configured display values."
     },
     {
       "tag": "mvs_upload",
@@ -839,6 +888,52 @@
       "tag": "mvs_profile_edit",
       "handler": "Shortcodes/Shortcodes.php::render_profile_edit",
       "attrs": []
+    },
+    {
+      "tag": "mvs_explore_feed",
+      "handler": "Shortcodes/Shortcodes.php::render_explore_feed",
+      "attrs": [
+        "layout",
+        "columns",
+        "per_page",
+        "filters",
+        "search"
+      ],
+      "notes": "1.2.0: classic-editor wrapper around the `mvs/explore-feed` block (delegates to render_block_template)."
+    },
+    {
+      "tag": "mvs_lock_overlay",
+      "handler": "Shortcodes/Shortcodes.php::render_lock_overlay",
+      "attrs": [
+        "id",
+        "blur",
+        "overlay_opacity",
+        "unlock_label"
+      ],
+      "notes": "1.2.0: classic-editor wrapper around the `mvs/lock-overlay` block."
+    },
+    {
+      "tag": "mvs_member_photos",
+      "handler": "Shortcodes/Shortcodes.php::render_member_photos",
+      "attrs": [
+        "user_id",
+        "columns",
+        "per_page",
+        "type",
+        "show_header",
+        "actions"
+      ],
+      "notes": "1.2.0: classic-editor wrapper around the `mvs/member-photos` block; same auto-resolve order (explicit user_id → BP displayed user → post author → current user)."
+    },
+    {
+      "tag": "mvs_pdf_viewer",
+      "handler": "Shortcodes/Shortcodes.php::render_pdf_viewer",
+      "attrs": [
+        "id",
+        "height",
+        "toolbar"
+      ],
+      "notes": "1.2.0: classic-editor wrapper around the `mvs/pdf-viewer` block; height clamped 200-1400."
     }
   ],
   "blocks": [
@@ -888,9 +983,16 @@
       "interactivity": true
     },
     {
-      "name": "wpmediaverse/story-viewer",
-      "render": "src/blocks/story-viewer/render.php",
-      "interactivity": true
+      "name": "mvs/member-photos",
+      "render": "src/blocks/member-photos/render.php",
+      "interactivity": false,
+      "notes": "1.2.0: auto-resolves user (explicit userId attr → BP displayed user → post author → current user). Delegates grid render to media-grid via do_blocks(). Attrs: userId (int), columns (int, default 3), perPage (int, default 12), mediaType (string), showHeader (bool, default true), showActions (bool, default true)."
+    },
+    {
+      "name": "mvs/pdf-viewer",
+      "render": "src/blocks/pdf-viewer/render.php",
+      "interactivity": false,
+      "notes": "1.2.0: iframe with `#view=FitH` URL fragment. Attrs: mediaId (int), height (int, range 200-1400, default 600), showToolbar (bool, default true). 5 server-side empty states (no mediaId, missing media, not a PDF, no signed URL, etc.)."
     },
     {
       "name": "wpmediaverse/lock-overlay",
@@ -1475,6 +1577,19 @@
       "where": "includes/Core/SettingsHelper.php:112",
       "purpose": "Per-context override of resolved thumbnail size (validated against medium|large|full)",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_should_render_chat_panel",
+      "type": "filter",
+      "args": "$should_render",
+      "args_signature": [
+        "bool $should_render",
+        "string $resolved_visibility"
+      ],
+      "args_count": 1,
+      "where": "includes/Core/Plugin.php:1470",
+      "purpose": "Per-page override of the slide-out chat panel render decision after the mvs_chat_panel_visibility setting has resolved (e.g. force-hide on WooCommerce checkout, single-product, or specific post IDs / roles). Returning false skips the chat-panel render in wp_footer for the current request.",
+      "consumed_by": []
     }
   ],
   "buddypress_integration": {
@@ -1699,8 +1814,8 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-04-30T19:16:10Z",
-    "from": "wp-plugin-onboard skill (refresh 2026-05-01)",
+    "at": "2026-05-03T11:38:28Z",
+    "from": "wp-plugin-onboard skill (1.2.0 targeted refresh 2026-05-03)",
     "branch": "1.2.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
@@ -1712,6 +1827,48 @@
       "populated": 14,
       "phantom": 8,
       "total": 22
+    },
+    "refresh_2026_05_03": {
+      "scope": "targeted (REST + blocks + shortcodes + settings + 1 hook + bulk admin)",
+      "added": {
+        "rest_endpoints": [
+          "POST /media/{id}/download",
+          "POST /media/{id}/share"
+        ],
+        "rest_endpoints_updated": [
+          "PUT /media/{id} (added allow_download param)"
+        ],
+        "blocks_added": [
+          "mvs/member-photos",
+          "mvs/pdf-viewer"
+        ],
+        "blocks_unregistered": [
+          "wpmediaverse/story-viewer (source kept; not registered in BlockRegistrar::BLOCKS for 1.2.0)"
+        ],
+        "shortcodes_added": [
+          "mvs_explore_feed",
+          "mvs_lock_overlay",
+          "mvs_member_photos",
+          "mvs_pdf_viewer"
+        ],
+        "shortcodes_updated": [
+          "mvs_gallery (added user_id + order attrs)"
+        ],
+        "settings_added": [
+          "mvs_chat_panel_visibility",
+          "mvs_allow_downloads"
+        ],
+        "hooks_fired_added": [
+          "mvs_should_render_chat_panel"
+        ],
+        "media_meta_keys_added": [
+          "allow_download (string '1'/'0', default '1' when absent)"
+        ],
+        "admin_pages_extended": [
+          "Admin/MediaListPage.php::handle_bulk_action_apply (multi-select Trash/Restore/Delete on the existing All Media page)"
+        ]
+      },
+      "out_of_scope": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3 outputs) NOT regenerated. audit/derived/ cache untouched. Journeys untouched."
     }
   },
   "category_sources": {

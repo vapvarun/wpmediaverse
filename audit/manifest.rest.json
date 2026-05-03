@@ -23,7 +23,28 @@
         ],
         "handler": "MediaController",
         "permission": "per-method permission_check",
-        "purpose": "Single media CRUD"
+        "purpose": "Single media CRUD",
+        "notes": "1.2.0: PUT now accepts an `allow_download` boolean param (stored as media_meta '1'/'0', default '1' when absent). prepare_item_for_response emits `allow_download` (defaults true when meta absent or != '0')."
+      },
+      {
+        "route": "/media/(?P<id>[0-9]+)/download",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::record_download",
+        "permission": "__return_true (read endpoint, gated by privacy + global mvs_allow_downloads + per-media allow_download meta)",
+        "purpose": "Record a download event + increment mvs_media_stats.downloads",
+        "notes": "1.2.0: rate-limited 30/min per user/IP; 403 if global mvs_allow_downloads off or per-media allow_download='0'; writes mvs_media_views row with event_type='download' and increments mvs_media_stats.downloads via INSERT...ON DUPLICATE KEY UPDATE."
+      },
+      {
+        "route": "/media/(?P<id>[0-9]+)/share",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::record_share",
+        "permission": "__return_true (read endpoint, gated by privacy)",
+        "purpose": "Record a share event + increment mvs_media_stats.shares",
+        "notes": "1.2.0: mirrors record_download but writes shares; same privacy gate (privacy->can_view); rate-limited 30/min per user/IP."
       },
       {
         "route": "/media/bulk",
