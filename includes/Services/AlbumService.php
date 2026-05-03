@@ -18,6 +18,80 @@ defined( 'ABSPATH' ) || exit;
 class AlbumService {
 
 	/**
+	 * Create a new album.
+	 *
+	 * Wraps the `mvs_album` CPT insertion + privacy / album_type / group
+	 * association meta writes that REST and template callers used to repeat
+	 * inline. Single canonical entry point so seeders, WP-CLI, and any
+	 * future caller produce identical state to the REST flow.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param int   $author_id Album author user ID. Must be > 0.
+	 * @param array $args      {
+	 *     Album attributes.
+	 *
+	 *     @type string $title       Required. Album title.
+	 *     @type string $description Optional. Album description (kses_post-ed).
+	 *     @type string $privacy     Optional. 'public' (default) | 'members' | 'private' | 'group'.
+	 *     @type string $album_type  Optional. Free-form album category. Default 'default'.
+	 *     @type int    $group_id    Optional. BP group association. When non-zero
+	 *                               and the user is a group member, privacy is
+	 *                               forced to 'group' and the group_id is
+	 *                               written to both mvs_media_meta AND
+	 *                               post_meta `_mvs_group_id` (BP group tab
+	 *                               listings WP_Query against post_meta).
+	 *     @type array  $categories  Optional. mvs_category term IDs.
+	 * }
+	 * @return int|\WP_Error Album post ID on success, WP_Error on validation
+	 *                      failure or DB error.
+	 */
+	public function create( int $author_id, array $args ) {
+		$title = isset( $args['title'] ) ? sanitize_text_field( $args['title'] ) : '';
+		if ( '' === $title ) {
+			return new \WP_Error( 'mvs_missing_title', __( 'Album title is required.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		$album_id = wp_insert_post(
+			array(
+				'post_type'    => 'mvs_album',
+				'post_title'   => $title,
+				'post_content' => isset( $args['description'] ) ? wp_kses_post( $args['description'] ) : '',
+				'post_status'  => 'publish',
+				'post_author'  => $author_id,
+			),
+			true
+		);
+
+		if ( is_wp_error( $album_id ) ) {
+			return $album_id;
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		$privacy    = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : 'public';
+		$album_type = isset( $args['album_type'] ) ? sanitize_text_field( $args['album_type'] ) : 'default';
+
+		$repo->set( $album_id, 'privacy', $privacy );
+		$repo->set( $album_id, 'album_type', $album_type );
+
+		// Group association — only honour when the author is actually a member.
+		$group_id = isset( $args['group_id'] ) ? absint( $args['group_id'] ) : 0;
+		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( $author_id, $group_id ) ) {
+			$repo->set( $album_id, 'privacy', 'group' );
+			$repo->set( $album_id, 'group_id', $group_id );
+			update_post_meta( $album_id, '_mvs_group_id', $group_id );
+		}
+
+		// Categories (mvs_category taxonomy on the mvs_album CPT).
+		if ( isset( $args['categories'] ) && is_array( $args['categories'] ) ) {
+			wp_set_object_terms( $album_id, array_map( 'absint', array_filter( $args['categories'] ) ), 'mvs_category' );
+		}
+
+		return (int) $album_id;
+	}
+
+	/**
 	 * Get items for an album, ordered by position.
 	 *
 	 * @param int $album_id Album post ID.

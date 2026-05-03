@@ -295,49 +295,20 @@ class AlbumController extends WP_REST_Controller {
 			return $rate_check;
 		}
 
-		$title = sanitize_text_field( $request->get_param( 'title' ) ?? '' );
-		if ( empty( $title ) ) {
-			return new WP_Error( 'mvs_missing_title', __( 'Album title is required.', 'wpmediaverse' ), array( 'status' => 400 ) );
-		}
-
-		$post_data = array(
-			'post_type'    => 'mvs_album',
-			'post_title'   => $title,
-			'post_content' => wp_kses_post( $request->get_param( 'description' ) ?? '' ),
-			'post_status'  => 'publish',
-			'post_author'  => get_current_user_id(),
+		$album_id = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->create(
+			get_current_user_id(),
+			array(
+				'title'       => $request->get_param( 'title' ) ?? '',
+				'description' => $request->get_param( 'description' ) ?? '',
+				'privacy'     => $request->get_param( 'privacy' ) ?? 'public',
+				'album_type'  => $request->get_param( 'album_type' ) ?? 'default',
+				'group_id'    => $request->get_param( 'group_id' ),
+				'categories'  => $request->get_param( 'categories' ),
+			)
 		);
-
-		$album_id = wp_insert_post( $post_data, true );
 
 		if ( is_wp_error( $album_id ) ) {
 			return $album_id;
-		}
-
-		$privacy = sanitize_text_field( $request->get_param( 'privacy' ) ?? 'public' );
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'privacy', $privacy );
-
-		$album_type = sanitize_text_field( $request->get_param( 'album_type' ) ?? 'default' );
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'album_type', $album_type );
-
-		// Set group association if group_id is provided and user is a member.
-		// Writes to both the custom mvs_media_meta table (keyed "group_id") AND
-		// WP post meta (keyed "_mvs_group_id"), because GroupTabIntegration's
-		// album listing uses WP_Query meta_query against the latter. Without
-		// the post meta write, freshly-created group albums never appeared in
-		// the group's Albums tab.
-		$group_id = absint( $request->get_param( 'group_id' ) );
-		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'privacy', 'group' );
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'group_id', $group_id );
-			update_post_meta( $album_id, '_mvs_group_id', $group_id );
-		}
-
-		// Apply categories if provided — mvs_category is registered on mvs_album so this writes
-		// to the standard taxonomy tables. Accepts an array of term IDs.
-		$categories = $request->get_param( 'categories' );
-		if ( is_array( $categories ) ) {
-			wp_set_object_terms( $album_id, array_map( 'absint', array_filter( $categories ) ), 'mvs_category' );
 		}
 
 		$response = rest_ensure_response( $this->prepare_album_response( get_post( $album_id ) ) );
