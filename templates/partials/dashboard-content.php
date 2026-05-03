@@ -699,13 +699,23 @@ wp_enqueue_style( 'mvs-frontend' );
 					<textarea data-wp-bind--value="state.editModal.description"
 						data-wp-on--input="actions.setEditDesc"></textarea>
 				</div>
-				<div class="mvs-field">
-					<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-					<select data-wp-on--change="actions.setEditPrivacy">
-						<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-						<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-						<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
-					</select>
+				<!-- Privacy + slug-regenerate share a row to save vertical space.
+				     Off by default — keeps inbound URLs stable. -->
+				<div class="mvs-field-row">
+					<div class="mvs-field mvs-field--inline">
+						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+						<select data-wp-on--change="actions.setEditPrivacy">
+							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+							<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+						</select>
+					</div>
+					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
+						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
+							<input type="checkbox" class="mvs-edit-regenerate-slug" />
+							<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
+						</label>
+					</div>
 				</div>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
