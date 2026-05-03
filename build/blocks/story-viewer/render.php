@@ -41,6 +41,34 @@ $stories = $wpdb->get_results(
 // phpcs:enable
 
 if ( empty( $stories ) ) {
+	// Empty state — Coding Rule #11 (no silent render fallthrough).
+	// Anonymous visitors see nothing; logged-in users get a hint about how stories appear.
+	if ( ! is_user_logged_in() ) {
+		return;
+	}
+	$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+	$mvs_classes   = trim(
+		implode(
+			' ',
+			array_filter(
+				array(
+					'mvs-story-viewer-block',
+					'mvs-story-viewer-block--empty',
+					$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+					\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+				)
+			)
+		)
+	);
+	$wrapper       = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
+	?>
+	<div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+		<div class="mvs-empty-state">
+			<i data-lucide="clock" aria-hidden="true"></i>
+			<p><?php esc_html_e( 'No active stories yet. Stories appear here when users upload media with story visibility — they expire after 24 hours.', 'wpmediaverse' ); ?></p>
+		</div>
+	</div>
+	<?php
 	return;
 }
 
