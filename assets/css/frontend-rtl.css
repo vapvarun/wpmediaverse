@@ -5147,15 +5147,26 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-primary);
 }
 
+/* Action toolbar — 5 buttons (Favorite / Share / Download / Open / Report)
+   share the row evenly. flex:1 + space-between makes them auto-fit the
+   sidebar at any width without horizontal scroll. The previous design
+   used inline-flex + margin-left:auto on Report which overflowed the
+   380 px sidebar (5 × ~70 px + gaps + padding ≈ 414 px). Customer
+   reported a horizontal scrollbar on both desktop and mobile. */
 .mvs-lightbox-actions {
     display: flex;
-    gap: 8px;
-    padding: 10px 16px;
+    gap: 4px;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--mvs-border-light);
+    justify-content: space-between;
+    align-items: stretch;
+    flex-wrap: nowrap;
 }
 
 .mvs-lightbox-action {
     display: flex;
+    flex: 1 1 0;
+    min-width: 0;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -5163,12 +5174,15 @@ a.mvs-dashboard-card-title:hover {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 14px;
-    padding: 6px 12px;
+    font-size: 13px;
+    padding: 6px 4px;
     text-align: center;
     border-radius: 6px;
     text-decoration: none;
     color: var(--mvs-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .mvs-lightbox-action:hover,
@@ -5220,7 +5234,9 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-action--report {
-    margin-right: auto;
+    /* No margin-left:auto — flex:1 + space-between on the parent already
+       distributes the 5 buttons evenly. Forcing Report to the right used
+       to overflow the sidebar's 380 px width. */
     color: var(--mvs-text-secondary);
     font-size: 13px;
 }
@@ -5228,6 +5244,79 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-action--report:hover {
     color: var(--mvs-danger);
     background: var(--mvs-danger-bg);
+}
+
+/* ─── Lightbox — mobile responsive layout ──────────────────────────────────
+   Stack vertically below tablet so the 380 px sidebar doesn't push the
+   media off-screen and force a horizontal scrollbar on narrow viewports.
+   Action buttons distribute evenly (flex:1) so 5 fit on one row at any
+   width without scrolling. */
+@media (max-width: 768px) {
+    .mvs-lightbox {
+        flex-direction: column;
+        max-width: 100vw;
+        max-height: 100vh;
+        height: 100vh;
+        width: 100vw;
+        border-radius: 0;
+    }
+
+    .mvs-lightbox-media {
+        flex: 0 0 auto;
+        max-height: 50vh;
+        min-height: 240px;
+    }
+
+    .mvs-lightbox-sidebar {
+        width: 100%;
+        flex: 1 1 auto;
+        border-right: none;
+        border-top: 1px solid var(--mvs-border-light);
+    }
+
+    /* 5-button row distributes evenly; no scroll, no margin-left:auto pushing
+       Report off-row. Padding tightens so labels fit. */
+    .mvs-lightbox-actions {
+        gap: 0;
+        padding: 8px 4px;
+        flex-wrap: nowrap;
+        overflow-x: visible;
+        justify-content: space-around;
+    }
+
+    .mvs-lightbox-action {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 6px 4px;
+        font-size: 12px;
+    }
+
+    /* Override --report's margin-left:auto so the 5 buttons distribute
+       evenly via space-around above. */
+    .mvs-lightbox-action--report {
+        margin-right: 0;
+        font-size: 12px;
+    }
+
+    .mvs-lightbox-action [data-lucide],
+    .mvs-lightbox-action svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Very narrow phones — drop labels to icons-only so 5 still fit. */
+@media (max-width: 380px) {
+    .mvs-lightbox-action {
+        font-size: 0; /* hide the text node */
+        padding: 8px 4px;
+    }
+
+    .mvs-lightbox-action [data-lucide],
+    .mvs-lightbox-action svg {
+        width: 22px;
+        height: 22px;
+    }
 }
 
 .mvs-lightbox-desc {
