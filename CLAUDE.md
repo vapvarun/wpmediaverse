@@ -146,21 +146,19 @@ This is the index. Every rule below links to its full spec in `qa/`. Add new rul
 
 ## Known Debt (Do Not Worsen)
 
-| File | Lines | Status |
-|------|------:|--------|
-| `includes/Integrations/BuddyPress/` | DONE | Split into 7 classes (was 2,811-line god class) |
-| `includes/Admin/Settings/` | DONE | Split into 5 classes (was 2,401-line god class) — except `SettingsRegistrar.php`, see below |
-| `includes/Messaging/MessagingService.php` | 1,606 | God class — extract conversation/message sub-services |
-| `includes/Core/Plugin.php` | 1,208 | Bootstrap monolith — acceptable but avoid adding logic |
-| `includes/REST/Controller/MediaController.php` | 1,105 | Largest controller — extract bulk/filter helpers |
-| `includes/Admin/Settings/SettingsRegistrar.php` | 928 | Added 2026-04-24 after audit. Consolidates 7 settings groups into one class — extract per-group registrars. |
-| `includes/Services/UploadService.php` | 911 | Added 2026-04-24. Mixes validation, type detection, storage routing, progress tracking. Extract ValidatorService + ProgressTrackerService. |
-| `includes/Repository/MediaRepository.php` | 820 | Added 2026-04-24. Single data-access layer for 8+ query patterns. Extract MediaQueryBuilder + MediaStatsRepository. |
-| `includes/Messaging/MessagingController.php` | 803 | Large controller — extract route handlers |
-| `includes/Integrations/BuddyPress/ProfileTabIntegration.php` | 736 | Added 2026-04-24. 80% duplicate with GroupTabIntegration — extract BaseBPTabIntegration. |
-| `includes/Integrations/BuddyPress/GroupTabIntegration.php` | 712 | Added 2026-04-24. 80% duplicate with ProfileTabIntegration — extract BaseBPTabIntegration. |
+> **Debt criterion (2026-05-03 update):** A file lands here only when it has a CONCRETE structural problem — duplicate sibling classes, multiple unrelated responsibilities, a 350-line method, etc. Size alone is not a reason. For a plugin at WPMediaVerse's scale (34 services, 19 controllers, Free + Pro pair), files in the 1k–3k range are normal and healthy as long as they're focused on one responsibility. The team splits at ~2.5k+ when a file's scope genuinely outgrows one class (BP manager was 2,811; Settings was 2,401 — both already split).
 
-**Debt tax (Coding Rule #15):** No PR adds lines to any file above. Every edit to a debt file must reduce its line count or extract code out. If the change truly can't reduce the file, the PR body must explicitly justify the addition — that justification is what future reviewers use to decide whether the file should escape the debt list.
+| File | Issue | Status |
+|------|-------|--------|
+| `includes/Integrations/BuddyPress/` | (was 2,811-line manager mixing 7 unrelated BP integration concerns) | DONE — split into 7 focused classes |
+| `includes/Admin/Settings/` | (was 2,401-line registrar with 7 settings groups + UI + sanitizers in one) | DONE — split into 5 classes (except `SettingsRegistrar.php`, see below) |
+| `includes/Admin/Settings/SettingsRegistrar.php` | Single class consolidates 7 distinct settings groups (each a coherent unit on its own). Extract per-group registrars when next touched. | OPEN |
+| `includes/Services/UploadService.php` | Mixes 4 unrelated concerns: validation, type detection, storage routing, progress tracking. Extract ValidatorService + ProgressTrackerService when next touched. | OPEN |
+| `includes/Integrations/BuddyPress/ProfileTabIntegration.php` ↔ `GroupTabIntegration.php` | 80% duplicate method bodies between the two siblings. Extract `BaseBPTabIntegration` per Coding Rule #14 (n=2 sibling duplication threshold). | OPEN |
+
+**Files that are large but NOT debt** (mentioned because someone might wonder): `MessagingService.php` (1,596), `MessagingController.php` (803), `Plugin.php` (1,208), `MediaController.php` (1,105), `MediaRepository.php` (820). All are large because their domain is genuinely large, not because responsibilities are tangled. Don't propose splits unless a real organizational problem surfaces.
+
+**Debt tax (Coding Rule #15):** No PR adds lines to a file in the OPEN rows above. Every edit must reduce the line count or extract code out. Files in the "large but NOT debt" list have no debt tax — edit them normally.
 
 ---
 
