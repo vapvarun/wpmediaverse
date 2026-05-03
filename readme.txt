@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.1.3
+Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,33 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 == Changelog ==
 
 = 1.2.0 =
+**New features (frontend)**
+
+* New: **Member Photos block + shortcode** (`mvs/member-photos`, `[mvs_member_photos]`) — auto-detects whose photos to show: explicit `userId` → BP displayed user → post author → current user. Drop it into a BP profile, an author template, or a regular page and it just works.
+* New: **PDF Viewer block + shortcode** (`mvs/pdf-viewer`, `[mvs_pdf_viewer]`) — embeds PDFs uploaded to WPMediaVerse using the browser's native PDF viewer (`#view=FitH`); inspector exposes height (200–1400 px) and toolbar toggle. Five distinct empty states (no id / not found / not a PDF / no permission / asset missing) — never a blank rectangle.
+* New: **More sort options on Media Grid** — added "Most Popular", "Most Viewed", "Most Reactions", and "Random". Asc/Desc direction toggle exposed in the inspector (hidden when sort = Random). New `userId` attribute on `mvs/media-grid` and `user_id` attr on `[mvs_gallery]` filter to one author.
+* New: **Search autocomplete** on the Explore feed — type two or more characters and a top-8 title-match dropdown opens (debounced 250 ms). Full keyboard support: ArrowDown / ArrowUp / Enter / ESC. ARIA combobox + listbox semantics so screen readers announce matches as you type.
+* New: **Lightbox Download button** — toolbar button next to Share + Open. Counts each download in `mvs_media_stats.downloads`; rate-limited at 30/min/user via the central `RateLimiter`. New `POST /mvs/v1/media/{id}/download` REST endpoint.
+* New: **Lightbox Fullscreen button** — uses the browser's native Fullscreen API on the image panel; `F` keyboard shortcut toggles. ESC exits cleanly. Closing the lightbox while fullscreen exits cleanly (no orphaned fullscreen state).
+* New: **Per-media Edit modal** — click the cog icon on your own dashboard cards to change title, description, privacy, and (new) allow-download per-media. Save → live update without reload. `PUT /mvs/v1/media/{id}` now accepts `allow_download` (boolean) and `prepare_item_for_response` emits it (defaults `true` when meta absent).
+* New: **Open Graph + Twitter Card meta** on every `/media/{slug}/` page — `og:title` / `og:type` / `og:url` / `og:site_name` / `og:description` / `og:image` / `og:image:alt` plus `twitter:card=summary_large_image` + `twitter:title/description/image`. Paste a media URL into Slack / Twitter / LinkedIn / Discord and it unfurls correctly.
+* New: **Popular tag pills** in the upload modal — top-8 most-used tags surface as click-to-add chips below the tags input. Clicking a pill appends to the comma-separated input and de-dupes silently.
+* New: **Upload modal polish** — preview tiles show filename + per-tile (×) remove button; audio files get an audio-fallback icon (no broken-image SVG).
+
+**New features (admin)**
+
+* New: **Bulk Actions on All Media** — multi-select header/footer checkboxes + a Bulk Actions toolbar. Action menu is context-aware to the active filter: in the Trash filter → Restore + Delete permanently; otherwise → Move to Trash. Capability + `wp_nonce_field('mvs_bulk_media')` gates on submit; success notice with count + action.
+* New: **Chat panel visibility setting** under Direct Messages — pick where the floating chat panel renders: Everywhere (default) / WPMediaVerse pages only / BuddyPress pages only / Disabled. New `mvs_should_render_chat_panel` filter wraps the resolved decision so themes / add-ons can fine-tune by URL pattern.
+* New: **Global "Allow downloads" toggle** under Media Display — single switch that hides the new lightbox Download button site-wide AND makes the `record_download` REST endpoint refuse with 403. Per-media `allow_download` meta still gates further when the global is on.
+
+**UX + Accessibility**
+
+* Fix: **Lightbox Share** no longer falls back to a `window.prompt()` "Copy this link:" popup when neither `navigator.share` nor clipboard write is available — instead a toast error renders. `mvs_media_stats.shares` now also increments via the new `POST /mvs/v1/media/{id}/share` REST endpoint.
+* New: **6-reaction accessibility** in the lightbox — Like / Love / Haha / Wow / Sad / Angry each carry sentence-form `aria-label` and `aria-pressed` toggles; the emoji span is `aria-hidden`; the wrapper carries `role="group" aria-label="Reactions"`. Toolbar buttons (Share / Open / Favorite / Report / Download / Fullscreen) all gain `aria-label`. `:focus-visible` outline on `.mvs-lightbox-action / -close / -nav` so keyboard nav is visible.
+* New: **Block render forms a11y** — explore-feed search input, media-upload file input + privacy select + title/description/tags inputs all gain `aria-label` (placeholder ≠ label per WCAG).
+* New: **Search-mode toggle a11y** — Media / People toggle on `templates/explore.php` gets `role="tablist"` + `role="tab"` + `aria-selected` semantics; search input gets a screen-reader label.
+* New: **BuddyPress notification dedup** — restored `NotificationIntegration` (mirrors `mvs_notification_created` to BP's `bp_notifications_add_notification`) and added a `function_exists('buddypress')` guard around the dashboard's `.mvs-notification-bell` markup so BP-active sites render notifications in the BP nav bell only — never twice.
+
 **Important fixes**
 
 * Fix: DM access dropdown (Settings → Social → "Who can send me direct messages") no longer silently reverts "Nobody" or "Mutual followers only" to "Everyone" on save. Same root cause silently flipped the "Show online status" preference. The save path looked successful (admin notice "Settings saved." appeared) but the option stored a different value than the dropdown showed. After upgrading to 1.2.0, please reopen Settings → Social and confirm your preferred DM access and online-status visibility — the dropdown now reflects the saved value byte-for-byte. Affected since: 1.1.0. Commit: `d986525`.
@@ -120,6 +147,8 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * New: `Core\SettingsHelper` — canonical static accessor for paired-plugin settings reads. First slot covers the page-id family (`dashboard` / `explore` / `upload`) plus `mvs_thumbnail_size` and `mvs_openai_api_key`. Pro and themes must use this instead of direct `get_option('mvs_page_*')` reads (Free invariant A4).
 * New: Hook signatures now carry full type-annotated arg shapes in `audit/manifest.json` (`args_signature[]` on 14 of 22 hooks); enables Pro arch-check A11 to detect cross-plugin contract drift.
 * New: `SettingsContractTest` enforces register_setting whitelist alignment — settings registration drift is now caught at unit-test time rather than at customer save-time.
+* New: **Block standard alignment (Phase 7)** — Free's 9 registered Gutenberg blocks now share the same Spacing / Border / Shadow / Visibility inspector panels as Pro and wbcom-essential. `WPMediaVerse\Blocks\StandardAttributes` injects the 20 standard layout attrs via the `block_type_metadata` filter; `WPMediaVerse\Blocks\MVS_CSS` collects per-instance scoped CSS keyed off `mvs-block-{uniqueId}` and dumps it on `wp_footer`. Pro's `src/shared/` tree (17 files) ported with text-domain swaps.
+* New: **`BaseBPTabIntegration` extracted** (Phase 5 P2.4) from `ProfileTabIntegration` + `GroupTabIntegration` — a single bug fix on either BP tab now propagates to both. Net delta -109 lines.
 
 = 1.1.3 =
 * Fix: Lightbox now opens the original full-size image instead of the low-res grid thumbnail. New Display setting "Lightbox Image Size" lets admins pick Original / Large / Medium / Auto (defaults to Original)

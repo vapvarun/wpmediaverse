@@ -3,7 +3,7 @@
 [![WordPress](https://img.shields.io/badge/WordPress-6.5%2B-blue?logo=wordpress)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892BF?logo=php)](https://php.net/)
 [![License](https://img.shields.io/badge/License-GPLv2-green)](https://www.gnu.org/licenses/gpl-2.0.html)
-[![Version](https://img.shields.io/badge/Version-1.1.3-brightgreen)](https://github.com/vapvarun/wpmediaverse/releases/tag/1.1.3)
+[![Version](https://img.shields.io/badge/Version-1.2.0-brightgreen)](https://github.com/vapvarun/wpmediaverse/releases/tag/1.2.0)
 [![BuddyPress](https://img.shields.io/badge/BuddyPress-Compatible-orange)](https://buddypress.org/)
 [![Gutenberg](https://img.shields.io/badge/Gutenberg-12%20Blocks-purple)](https://developer.wordpress.org/block-editor/)
 [![REST API](https://img.shields.io/badge/REST%20API-80%2B%20Endpoints-red)](https://developer.wordpress.org/rest-api/)
@@ -18,51 +18,52 @@
 
 ---
 
-## 🚀 What's New — 1.1.3 (Apr 2026)
+## 🚀 What's New — 1.2.0 (May 2026)
 
-This release polishes the everyday photo experience and hardens media access.
+The "complete the experience" release. Every UX gap from 1.1.x closed before shipping. WCAG 2.1 AA pass on every customer-facing surface.
 
-**Highlights:**
+**Frontend highlights:**
 
-- **Facebook-style full-viewport lightbox** with full-resolution images. Click any photo, get a clean fullscreen experience.
-- **Signed-URL hardening across every thumbnail surface.** Album covers, grid items, lightbox previews, and BuddyPress activity media all flow through the access-controlled signed-URL endpoint. Private media stays private; logged-in users see what they should see.
-- **Real video previews in grids** — phone videos (MP4/MOV) get proper preview thumbnails extracted from the video, not black squares.
-- **Activity images now have breathing room** in BuddyPress activity cards.
-- **Lucide icon system** — sharp matching SVGs across feeds, dashboards, and lightbox.
-- Plus carry-over fixes: 5-column grids, Stats date filters, tag cloud counts, lightbox favorite/share polish.
+- **Member Photos block + shortcode** (`mvs/member-photos`, `[mvs_member_photos]`) — auto-detects whose photos to render: explicit `userId` → BP displayed user → post author → current user.
+- **PDF Viewer block + shortcode** (`mvs/pdf-viewer`, `[mvs_pdf_viewer]`) — browser-native PDF embed with `#view=FitH`, configurable height + toolbar toggle. Five distinct empty states.
+- **Sort options on Media Grid** — Most Popular / Most Viewed / Most Reactions / Random + asc/desc + per-author filter.
+- **Search autocomplete on Explore** — debounced 250 ms, top-8 title matches, full keyboard nav.
+- **Lightbox Download + Fullscreen** — toolbar buttons + `F` keyboard shortcut. Download counts to `mvs_media_stats.downloads`, rate-limited 30/min.
+- **Per-media Edit modal** — cog icon on own dashboard cards opens prefilled modal (title / description / privacy / allow-download). Live update without reload.
+- **Open Graph + Twitter Card meta** — every `/media/{slug}/` unfurls correctly in Slack / Twitter / LinkedIn / Discord.
+- **Popular tag pills** in upload modal + filename + per-tile remove buttons + audio-fallback icon.
 
-→ [Full release notes](https://github.com/vapvarun/wpmediaverse/releases/tag/1.1.3) · [Changelog](#changelog) (below)
+**Admin highlights:**
+
+- **Bulk Actions on All Media** — multi-select + context-aware action menu (Trash filter → Restore + Delete-permanently; else Move-to-Trash).
+- **Chat panel visibility setting** — Everywhere / WPMediaVerse pages only / BuddyPress pages only / Disabled, plus `mvs_should_render_chat_panel` filter.
+- **Global "Allow downloads" toggle** under Media Display — single switch hides the lightbox button site-wide AND refuses the REST endpoint.
+
+**Accessibility:**
+
+- 6-reaction lightbox bar gains `aria-label` + `aria-pressed`; emoji `aria-hidden`; group `role="group"`. Toolbar buttons all gain `aria-label` + `:focus-visible` outlines.
+- Block render forms get `aria-label` (placeholder ≠ label per WCAG).
+- Search-mode toggles get `role="tablist"` + `role="tab"` semantics.
+
+**Architecture:**
+
+- **`Core\SettingsHelper`** — canonical static accessor for paired-plugin settings reads (Free invariant A4).
+- **`SettingsContractTest`** — register_setting whitelist drift caught at unit-test time, not customer save-time.
+- **Block standard alignment (Phase 7)** — all 9 registered Free blocks share Spacing / Border / Shadow / Visibility panels with Pro + wbcom-essential.
+- **`BaseBPTabIntegration` extracted** — single bug fix on either BP tab now propagates to both.
+- **BuddyPress notification dedup** — MVS notifications mirror to BP's bell only; no double-render on dashboard.
+
+→ [Full release notes](https://github.com/vapvarun/wpmediaverse/releases/tag/1.2.0) · [Changelog](#changelog) (below)
 
 ---
 
-## 🗺️ Roadmap — 1.2.0 (in development)
+## 🗺️ Roadmap — 1.2.1 (next)
 
-Single-file milestone plan: [`docs/superpowers/plans/2026-04-28-1.2.0-milestone.md`](docs/superpowers/plans/2026-04-28-1.2.0-milestone.md)
-
-### Architecture commitments (locked-in invariants for 1.2.0)
-
-- **100% REST API on the frontend.** No `admin-ajax`. CI guard enforces it.
-- **Composable units. No facades.** Single-responsibility services, no aggregator wrappers.
-- **One calling surface per capability.** Same renderer powers blocks, shortcodes, REST endpoints, archive templates.
-- **No backward-compat shims.** Plugin is new — clean architecture wins over legacy preservation.
-
-### Customer-facing changes coming
-
-- **Per-page Pro layout blocks** — Instagram / Flickr / Pinterest / Dribbble feeds embeddable on any page (instead of one site-wide layout).
-- **Tournament block with frontend registration** — embed a tournament anywhere on the site, viewers register inline.
-- **Bulk actions, sorting, autocomplete search, tagging suggestions** for the media grid.
-- **PDF/document upload** with a reusable `mvs/pdf-viewer` block.
-- **Media download functionality** with stats tracking.
-- **Social sharing enhancements** — proper OG/Twitter cards, share-count tracking, more networks.
-- **Lightbox fullscreen mode** + **WCAG 2.1 AA accessibility** pass.
-- **Three messaging services** (DirectMessage, GroupConversation, ReadReceipts) split out — unblocks Group DM in 1.3.
-
-### Engineering improvements
-
-- Free/Pro boundary moves to interfaces (`MediaRepositoryInterface`, `TemplateHelpersInterface`) registered in the container.
-- Pro plugin reorganized — every third-party platform implementation lives under `Integrations/<Platform>/`.
-- All 25 blocks (13 retrofitted Free + 12 new Pro) under one block standard with CI-enforced performance budgets.
-- 100% public-method coverage + 80% line coverage on core service classes.
+- Color-contrast audit against shipped themes (BuddyX, Reign, BuddyBoss).
+- `aria-live` toast container so screen readers announce upload progress / comments / downloads.
+- `prefers-reduced-motion: reduce` honored on lightbox open/close + story bar.
+- Story Service create-flow + REST endpoint + scheduled expiry cron — re-enables `mvs/story-viewer` block.
+- Three messaging services (DirectMessage / GroupConversation / ReadReceipts) split out — unblocks Group DM in 1.3.
 
 ---
 
