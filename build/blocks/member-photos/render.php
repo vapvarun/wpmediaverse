@@ -100,16 +100,127 @@ if ( $mvs_member_resolved_user_id <= 0 ) {
 // Resolve display info for the header (only if we're actually showing it).
 $mvs_member_user_obj = $mvs_member_header ? get_userdata( $mvs_member_resolved_user_id ) : null;
 
+// Stats — pulled live from the repositories. Each is a single COUNT
+// query so we don't bother caching at the block level.
+$mvs_member_stats = array(
+	'media'     => 0,
+	'followers' => 0,
+	'following' => 0,
+);
+if ( $mvs_member_user_obj ) {
+	$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+	if ( $repo ) {
+		$mvs_member_stats['media'] = (int) $repo->count_by_author( $mvs_member_resolved_user_id );
+	}
+	$follows = \WPMediaVerse\Core\Plugin::container()->get( 'follows' );
+	if ( $follows ) {
+		$counts                        = $follows->get_counts( $mvs_member_resolved_user_id );
+		$mvs_member_stats['followers'] = (int) ( $counts['followers'] ?? 0 );
+		$mvs_member_stats['following'] = (int) ( $counts['following'] ?? 0 );
+	}
+}
+
+// Profile URL — prefer BP profile when BP is active, else WP author archive.
+$mvs_member_profile_url = '';
+if ( $mvs_member_user_obj ) {
+	if ( function_exists( 'bp_core_get_user_domain' ) ) {
+		$mvs_member_profile_url = bp_core_get_user_domain( $mvs_member_resolved_user_id );
+	}
+	if ( empty( $mvs_member_profile_url ) ) {
+		$mvs_member_profile_url = get_author_posts_url( $mvs_member_resolved_user_id );
+	}
+}
+
+// Follow button: only when actions enabled, viewer logged in, viewer != target,
+// and the FollowService is available.
+$mvs_member_show_follow  = false;
+$mvs_member_is_following = false;
+if ( $mvs_member_actions && is_user_logged_in() && get_current_user_id() !== $mvs_member_resolved_user_id ) {
+	$follows = \WPMediaVerse\Core\Plugin::container()->get( 'follows' );
+	if ( $follows ) {
+		$mvs_member_show_follow  = true;
+		$mvs_member_is_following = $follows->is_following( get_current_user_id(), $mvs_member_resolved_user_id );
+	}
+}
+
+// Initials — visible until the avatar IMG loads, and a graceful fallback
+// when get_avatar returns the default gray ghost (Gravatar unreachable).
+$mvs_member_initials = '';
+if ( $mvs_member_user_obj ) {
+	$parts                = preg_split( '/\s+/', trim( (string) $mvs_member_user_obj->display_name ) );
+	$mvs_member_initials  = mb_strtoupper(
+		mb_substr( $parts[0] ?? '', 0, 1 ) . mb_substr( $parts[1] ?? '', 0, 1 )
+	);
+}
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( $mvs_member_header && $mvs_member_user_obj ) : ?>
-		<header class="mvs-member-photos-header">
-			<a class="mvs-member-photos-header__link" href="<?php echo esc_url( get_author_posts_url( $mvs_member_resolved_user_id ) ); ?>">
-				<?php echo get_avatar( $mvs_member_resolved_user_id, 48, '', '', array( 'class' => 'mvs-member-photos-header__avatar' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar returns escaped IMG tag. ?>
-				<span class="mvs-member-photos-header__name">
-					<?php echo esc_html( $mvs_member_user_obj->display_name ); ?>
-				</span>
+		<header class="mvs-member-photos-card">
+			<a class="mvs-member-photos-card__avatar-link"
+				href="<?php echo esc_url( $mvs_member_profile_url ); ?>"
+				aria-label="<?php echo esc_attr( sprintf(
+					/* translators: %s: member display name. */
+					__( 'View %s\'s profile', 'wpmediaverse' ),
+					$mvs_member_user_obj->display_name
+				) ); ?>">
+				<span class="mvs-member-photos-card__initials" aria-hidden="true"><?php echo esc_html( $mvs_member_initials ); ?></span>
+				<?php
+				echo get_avatar( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar returns escaped IMG tag.
+					$mvs_member_resolved_user_id,
+					128,
+					'',
+					$mvs_member_user_obj->display_name,
+					array( 'class' => 'mvs-member-photos-card__avatar' )
+				);
+				?>
 			</a>
+
+			<div class="mvs-member-photos-card__body">
+				<h2 class="mvs-member-photos-card__name">
+					<a href="<?php echo esc_url( $mvs_member_profile_url ); ?>"><?php echo esc_html( $mvs_member_user_obj->display_name ); ?></a>
+				</h2>
+
+				<?php if ( $mvs_member_user_obj->user_login && $mvs_member_user_obj->user_login !== $mvs_member_user_obj->display_name ) : ?>
+					<p class="mvs-member-photos-card__handle">@<?php echo esc_html( $mvs_member_user_obj->user_login ); ?></p>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $mvs_member_user_obj->description ) ) : ?>
+					<p class="mvs-member-photos-card__bio"><?php echo esc_html( wp_trim_words( $mvs_member_user_obj->description, 24, '…' ) ); ?></p>
+				<?php endif; ?>
+
+				<dl class="mvs-member-photos-card__stats" aria-label="<?php esc_attr_e( 'Member statistics', 'wpmediaverse' ); ?>">
+					<div class="mvs-member-photos-card__stat">
+						<dd><?php echo esc_html( number_format_i18n( $mvs_member_stats['media'] ) ); ?></dd>
+						<dt><?php esc_html_e( 'Photos', 'wpmediaverse' ); ?></dt>
+					</div>
+					<div class="mvs-member-photos-card__stat">
+						<dd><?php echo esc_html( number_format_i18n( $mvs_member_stats['followers'] ) ); ?></dd>
+						<dt><?php esc_html_e( 'Followers', 'wpmediaverse' ); ?></dt>
+					</div>
+					<div class="mvs-member-photos-card__stat">
+						<dd><?php echo esc_html( number_format_i18n( $mvs_member_stats['following'] ) ); ?></dd>
+						<dt><?php esc_html_e( 'Following', 'wpmediaverse' ); ?></dt>
+					</div>
+				</dl>
+
+				<?php if ( $mvs_member_actions ) : ?>
+					<div class="mvs-member-photos-card__actions">
+						<a class="mvs-member-photos-card__btn mvs-member-photos-card__btn--secondary" href="<?php echo esc_url( $mvs_member_profile_url ); ?>">
+							<?php esc_html_e( 'View profile', 'wpmediaverse' ); ?>
+						</a>
+						<?php if ( $mvs_member_show_follow ) : ?>
+							<button
+								type="button"
+								class="mvs-member-photos-card__btn mvs-member-photos-card__btn--primary mvs-follow-toggle <?php echo $mvs_member_is_following ? 'is-following' : ''; ?>"
+								data-target-user-id="<?php echo esc_attr( $mvs_member_resolved_user_id ); ?>"
+								aria-pressed="<?php echo $mvs_member_is_following ? 'true' : 'false'; ?>">
+								<span class="mvs-follow-toggle__follow"><?php esc_html_e( 'Follow', 'wpmediaverse' ); ?></span>
+								<span class="mvs-follow-toggle__following"><?php esc_html_e( 'Following', 'wpmediaverse' ); ?></span>
+							</button>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
+			</div>
 		</header>
 	<?php endif; ?>
 

@@ -457,10 +457,6 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
 					</button>
 					<?php endif; ?>
-					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFullscreen" aria-label="<?php esc_attr_e( 'Toggle fullscreen view (press F)', 'wpmediaverse' ); ?>">
-						<i data-lucide="maximize-2" aria-hidden="true"></i>
-						<?php esc_html_e( 'Fullscreen', 'wpmediaverse' ); ?>
-					</button>
 					<a class="mvs-lightbox-action" data-wp-bind--href="state.lightboxPermalink" target="_blank" aria-label="<?php esc_attr_e( 'Open this media in a new tab', 'wpmediaverse' ); ?>">
 						<i data-lucide="external-link" aria-hidden="true"></i>
 						<?php esc_html_e( 'Open', 'wpmediaverse' ); ?>
