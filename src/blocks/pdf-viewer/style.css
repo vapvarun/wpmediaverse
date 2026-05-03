@@ -1,0 +1,33 @@
+.mvs-pdf-viewer-block {
+	display: block;
+}
+
+.mvs-pdf-viewer-frame {
+	display: block;
+	width: 100%;
+}
+
+.mvs-pdf-viewer-caption {
+	margin: 8px 0 0;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	color: var( --mvs-text-muted, #757575 );
+}
+
+.mvs-pdf-viewer-caption i,
+.mvs-pdf-viewer-caption svg {
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+}
+
+@media ( max-width: 768px ) {
+	/* On small viewports the browser PDF UI gets cramped; cap height
+	   so the page remains scrollable and the PDF viewer doesn't take
+	   up the entire viewport on a touch device. */
+	.mvs-pdf-viewer-frame {
+		height: min( 70vh, 600px );
+	}
+}

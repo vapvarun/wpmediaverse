@@ -369,7 +369,7 @@ class UploadService {
 	 * @return string[]
 	 */
 	private function get_allowed_types(): array {
-		$types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );
+		$types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg,application/pdf' );
 
 		/**
 		 * Filters the allowed file MIME types for upload.

@@ -160,7 +160,7 @@ class Activator {
 		$defaults = array(
 			// General.
 			'mvs_max_upload_size'     => 104857600, // 100MB in bytes.
-			'mvs_allowed_file_types'  => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg',
+			'mvs_allowed_file_types'  => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg,application/pdf',
 			'mvs_default_privacy'     => 'public',
 			'mvs_duplicate_action'    => 'warn',
 			'mvs_strip_exif'          => true,

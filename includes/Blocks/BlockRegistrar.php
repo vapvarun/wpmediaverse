@@ -42,6 +42,7 @@ class BlockRegistrar {
 		'explore-feed',
 		'lock-overlay',
 		'member-photos',
+		'pdf-viewer',
 	);
 
 	/**

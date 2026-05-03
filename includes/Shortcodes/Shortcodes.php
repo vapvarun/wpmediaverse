@@ -32,6 +32,7 @@ class Shortcodes {
 		add_shortcode( 'mvs_explore_feed', array( $this, 'render_explore_feed' ) );
 		add_shortcode( 'mvs_lock_overlay', array( $this, 'render_lock_overlay' ) );
 		add_shortcode( 'mvs_member_photos', array( $this, 'render_member_photos' ) );
+		add_shortcode( 'mvs_pdf_viewer', array( $this, 'render_pdf_viewer' ) );
 		// [mvs_story_viewer] intentionally NOT registered — the story
 		// create-flow (upload-form toggle + REST endpoint + expiry cron)
 		// lands in 1.2.1; until then a story-viewer shortcode would
@@ -327,6 +328,34 @@ class Shortcodes {
 	}
 
 	/**
+	 * Render the [mvs_pdf_viewer] shortcode.
+	 *
+	 * Usage: [mvs_pdf_viewer id="123" height="600" toolbar="true"]
+	 *
+	 * @param array|string $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_pdf_viewer( $atts ): string {
+		$atts = shortcode_atts(
+			array(
+				'id'      => 0,
+				'height'  => 600,
+				'toolbar' => 'true',
+			),
+			$atts,
+			'mvs_pdf_viewer'
+		);
+
+		$block_attrs = array(
+			'mediaId'     => absint( $atts['id'] ),
+			'height'      => max( 200, min( 1400, absint( $atts['height'] ) ) ),
+			'showToolbar' => filter_var( $atts['toolbar'], FILTER_VALIDATE_BOOLEAN ),
+		);
+
+		return $this->render_block_template( 'pdf-viewer', $block_attrs );
+	}
+
+	/**
 	 * Render the [mvs_dashboard] shortcode.
 	 *
 	 * Usage: [mvs_dashboard]
@@ -448,7 +477,7 @@ class Shortcodes {
 	 * @return string Rendered HTML.
 	 */
 	private function render_block_template( string $block_name, array $attributes ): string {
-		$allowed = array( 'media-grid', 'media-upload', 'album-viewer', 'media-player', 'media-stats', 'explore-feed', 'lock-overlay', 'member-photos' );
+		$allowed = array( 'media-grid', 'media-upload', 'album-viewer', 'media-player', 'media-stats', 'explore-feed', 'lock-overlay', 'member-photos', 'pdf-viewer' );
 		if ( ! in_array( $block_name, $allowed, true ) ) {
 			return '';
 		}
