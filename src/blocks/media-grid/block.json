@@ -54,6 +54,10 @@
 		"gap": {
 			"type": "number",
 			"default": 8
+		},
+		"userId": {
+			"type": "number",
+			"default": 0
 		}
 	},
 	"textdomain": "wpmediaverse",

@@ -510,8 +510,8 @@ class ActivitySyncIntegration {
 		}
 
 		// Build thumbnail grid (cap at 6 — beyond that is visual noise).
-		$shown      = array_slice( $media_ids, 0, 6 );
-		$grid_html  = '';
+		$shown     = array_slice( $media_ids, 0, 6 );
+		$grid_html = '';
 		foreach ( $shown as $mid ) {
 			$grid_html .= MediaDisplayHelper::get_media_thumbnail_html( (int) $mid, 'large' );
 		}

@@ -43,7 +43,7 @@ class StandardAttributes {
 	 * Rule 1 for the why.
 	 */
 	public const SPACING = array(
-		'padding'        => array(
+		'padding'       => array(
 			'type'    => 'object',
 			'default' => array(
 				'top'    => 24,
@@ -52,13 +52,13 @@ class StandardAttributes {
 				'left'   => 24,
 			),
 		),
-		'paddingTablet'  => array( 'type' => 'object' ),
-		'paddingMobile'  => array( 'type' => 'object' ),
-		'paddingUnit'    => array(
+		'paddingTablet' => array( 'type' => 'object' ),
+		'paddingMobile' => array( 'type' => 'object' ),
+		'paddingUnit'   => array(
 			'type'    => 'string',
 			'default' => 'px',
 		),
-		'margin'         => array(
+		'margin'        => array(
 			'type'    => 'object',
 			'default' => array(
 				'top'    => 0,
@@ -67,9 +67,9 @@ class StandardAttributes {
 				'left'   => 0,
 			),
 		),
-		'marginTablet'   => array( 'type' => 'object' ),
-		'marginMobile'   => array( 'type' => 'object' ),
-		'marginUnit'     => array(
+		'marginTablet'  => array( 'type' => 'object' ),
+		'marginMobile'  => array( 'type' => 'object' ),
+		'marginUnit'    => array(
 			'type'    => 'string',
 			'default' => 'px',
 		),
@@ -84,28 +84,28 @@ class StandardAttributes {
 	 * configuration.
 	 */
 	public const TYPOGRAPHY = array(
-		'fontFamily'      => array(
+		'fontFamily'     => array(
 			'type'    => 'string',
 			'default' => '',
 		),
-		'fontSize'        => array( 'type' => 'number' ),
-		'fontSizeTablet'  => array( 'type' => 'number' ),
-		'fontSizeMobile'  => array( 'type' => 'number' ),
-		'fontSizeUnit'    => array(
+		'fontSize'       => array( 'type' => 'number' ),
+		'fontSizeTablet' => array( 'type' => 'number' ),
+		'fontSizeMobile' => array( 'type' => 'number' ),
+		'fontSizeUnit'   => array(
 			'type'    => 'string',
 			'default' => 'px',
 		),
-		'fontWeight'      => array(
+		'fontWeight'     => array(
 			'type'    => 'string',
 			'default' => '',
 		),
-		'lineHeight'      => array( 'type' => 'number' ),
-		'lineHeightUnit'  => array(
+		'lineHeight'     => array( 'type' => 'number' ),
+		'lineHeightUnit' => array(
 			'type'    => 'string',
 			'default' => '',
 		),
-		'letterSpacing'   => array( 'type' => 'number' ),
-		'textTransform'   => array(
+		'letterSpacing'  => array( 'type' => 'number' ),
+		'textTransform'  => array(
 			'type'    => 'string',
 			'default' => '',
 		),

@@ -21,15 +21,27 @@ class BlockRegistrar {
 	 *
 	 * @var string[]
 	 */
+	/**
+	 * Registered Gutenberg blocks.
+	 *
+	 * `story-viewer` is intentionally NOT in this list for 1.2.0 — the
+	 * StoryService primitives exist server-side but there's no upload-flow
+	 * UI to mark media as a story, no REST endpoint, and no scheduled
+	 * expiry cron. Shipping the viewer would surface an empty-by-default
+	 * block to customers. Re-enable once the create-flow lands (planned
+	 * for 1.2.1; tracked in plan/1.2.0.md "Out of scope" list).
+	 *
+	 * @var string[]
+	 */
 	const BLOCKS = array(
 		'media-upload',
 		'media-grid',
 		'media-player',
 		'album-viewer',
-		'story-viewer',
 		'media-stats',
 		'explore-feed',
 		'lock-overlay',
+		'member-photos',
 	);
 
 	/**

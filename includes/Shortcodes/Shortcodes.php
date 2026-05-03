@@ -29,6 +29,13 @@ class Shortcodes {
 		add_shortcode( 'mvs_dashboard', array( $this, 'render_dashboard' ) );
 		add_shortcode( 'mvs_collection', array( $this, 'render_collection' ) );
 		add_shortcode( 'mvs_profile_edit', array( $this, 'render_profile_edit' ) );
+		add_shortcode( 'mvs_explore_feed', array( $this, 'render_explore_feed' ) );
+		add_shortcode( 'mvs_lock_overlay', array( $this, 'render_lock_overlay' ) );
+		add_shortcode( 'mvs_member_photos', array( $this, 'render_member_photos' ) );
+		// [mvs_story_viewer] intentionally NOT registered — the story
+		// create-flow (upload-form toggle + REST endpoint + expiry cron)
+		// lands in 1.2.1; until then a story-viewer shortcode would
+		// always render empty.
 	}
 
 	/**
@@ -46,10 +53,24 @@ class Shortcodes {
 				'category' => '',
 				'tag'      => '',
 				'orderby'  => 'date',
+				'user_id'  => 0,
 			),
 			$atts,
 			'mvs_gallery'
 		);
+
+		// Resolve user filter:
+		// - explicit user_id="123" attribute wins,
+		// - else fall back to BuddyPress displayed member if running inside
+		// a BP template (matches the mvs/member-photos block's auto-detect),
+		// - else 0 = no user filter.
+		$mvs_resolved_user_id = absint( $atts['user_id'] );
+		if ( ! $mvs_resolved_user_id && function_exists( 'bp_displayed_user_id' ) ) {
+			$bp_user_id = (int) bp_displayed_user_id();
+			if ( $bp_user_id > 0 ) {
+				$mvs_resolved_user_id = $bp_user_id;
+			}
+		}
 
 		// Columns and per_page always come from backend settings — shortcode
 		// attributes must not override admin-configured display values.
@@ -63,6 +84,7 @@ class Shortcodes {
 			'showLightbox'  => true,
 			'showReactions' => true,
 			'gap'           => 8,
+			'userId'        => $mvs_resolved_user_id,
 		);
 
 		return $this->render_block_template( 'media-grid', $block_attrs );
@@ -200,6 +222,109 @@ class Shortcodes {
 	}
 
 	/**
+	 * Render the [mvs_explore_feed] shortcode.
+	 *
+	 * Usage: [mvs_explore_feed layout="grid" columns="3" per_page="12" filters="true" search="true"]
+	 *
+	 * @param array|string $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_explore_feed( $atts ): string {
+		$atts = shortcode_atts(
+			array(
+				'layout'   => 'grid',
+				'columns'  => 3,
+				'per_page' => 12,
+				'filters'  => 'true',
+				'search'   => 'true',
+			),
+			$atts,
+			'mvs_explore_feed'
+		);
+
+		$block_attrs = array(
+			'layout'      => sanitize_text_field( $atts['layout'] ),
+			'columns'     => absint( $atts['columns'] ),
+			'perPage'     => absint( $atts['per_page'] ),
+			'showFilters' => filter_var( $atts['filters'], FILTER_VALIDATE_BOOLEAN ),
+			'showSearch'  => filter_var( $atts['search'], FILTER_VALIDATE_BOOLEAN ),
+		);
+
+		return $this->render_block_template( 'explore-feed', $block_attrs );
+	}
+
+	/**
+	 * Render the [mvs_lock_overlay] shortcode.
+	 *
+	 * Usage: [mvs_lock_overlay id="123" blur="20" overlay_opacity="60" unlock_label="Restricted Content"]
+	 *
+	 * @param array|string $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_lock_overlay( $atts ): string {
+		$atts = shortcode_atts(
+			array(
+				'id'              => 0,
+				'blur'            => 20,
+				'overlay_opacity' => 60,
+				'unlock_label'    => '',
+			),
+			$atts,
+			'mvs_lock_overlay'
+		);
+
+		$block_attrs = array(
+			'mediaId'        => absint( $atts['id'] ),
+			'blurAmount'     => absint( $atts['blur'] ),
+			'overlayOpacity' => absint( $atts['overlay_opacity'] ),
+			'unlockLabel'    => sanitize_text_field( $atts['unlock_label'] ),
+		);
+
+		return $this->render_block_template( 'lock-overlay', $block_attrs );
+	}
+
+	/**
+	 * Render the [mvs_member_photos] shortcode.
+	 *
+	 * Usage: [mvs_member_photos user_id="123" columns="3" per_page="12" type="image" show_header="true"]
+	 *
+	 * Auto-detect order when user_id is empty (matches the block):
+	 *   1. Explicit user_id attribute.
+	 *   2. BuddyPress displayed member.
+	 *   3. Post author on a single-author page.
+	 *   4. Current logged-in user.
+	 *   5. Empty state.
+	 *
+	 * @param array|string $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_member_photos( $atts ): string {
+		$atts = shortcode_atts(
+			array(
+				'user_id'     => 0,
+				'columns'     => 3,
+				'per_page'    => 12,
+				'type'        => '',
+				'show_header' => 'true',
+				'actions'     => 'true',
+			),
+			$atts,
+			'mvs_member_photos'
+		);
+
+		$block_attrs = array(
+			'userId'      => absint( $atts['user_id'] ),
+			'columns'     => absint( $atts['columns'] ),
+			'perPage'     => absint( $atts['per_page'] ),
+			'mediaType'   => sanitize_text_field( $atts['type'] ),
+			'showHeader'  => filter_var( $atts['show_header'], FILTER_VALIDATE_BOOLEAN ),
+			'showActions' => filter_var( $atts['actions'], FILTER_VALIDATE_BOOLEAN ),
+		);
+
+		return $this->render_block_template( 'member-photos', $block_attrs );
+	}
+
+	/**
 	 * Render the [mvs_dashboard] shortcode.
 	 *
 	 * Usage: [mvs_dashboard]
@@ -321,7 +446,7 @@ class Shortcodes {
 	 * @return string Rendered HTML.
 	 */
 	private function render_block_template( string $block_name, array $attributes ): string {
-		$allowed = array( 'media-grid', 'media-upload', 'album-viewer', 'media-player', 'media-stats' );
+		$allowed = array( 'media-grid', 'media-upload', 'album-viewer', 'media-player', 'media-stats', 'explore-feed', 'lock-overlay', 'member-photos' );
 		if ( ! in_array( $block_name, $allowed, true ) ) {
 			return '';
 		}

@@ -25,6 +25,7 @@ $order_by       = isset( $attributes['orderBy'] ) ? sanitize_text_field( $attrib
 $show_lightbox  = ! empty( $attributes['showLightbox'] );
 $show_reactions = ! empty( $attributes['showReactions'] );
 $gap            = isset( $attributes['gap'] ) ? absint( $attributes['gap'] ) : 8;
+$mvs_user_id    = isset( $attributes['userId'] ) ? absint( $attributes['userId'] ) : 0; // 0 = no filter; > 0 scopes to post_author.
 
 // Pagination support -- static front pages use 'page', archive pages use 'paged'.
 $mvs_paged = 1;
@@ -40,6 +41,11 @@ $meta_table  = $wpdb->prefix . 'mvs_media_meta';
 $where  = "WHERE m.status = 'publish'";
 $joins  = '';
 $params = array();
+
+if ( $mvs_user_id > 0 ) {
+	$where   .= ' AND m.post_author = %d';
+	$params[] = $mvs_user_id;
+}
 
 if ( $media_type ) {
 	$where   .= ' AND m.media_type = %s';
