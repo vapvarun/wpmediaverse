@@ -358,10 +358,12 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						<i data-lucide="share-2" aria-hidden="true"></i>
 						<?php esc_html_e( 'Share', 'wpmediaverse' ); ?>
 					</button>
+					<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
 					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxDownload" aria-label="<?php esc_attr_e( 'Download this media to your device', 'wpmediaverse' ); ?>">
 						<i data-lucide="download" aria-hidden="true"></i>
 						<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
 					</button>
+					<?php endif; ?>
 					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFullscreen" aria-label="<?php esc_attr_e( 'Toggle fullscreen view (press F)', 'wpmediaverse' ); ?>">
 						<i data-lucide="maximize-2" aria-hidden="true"></i>
 						<?php esc_html_e( 'Fullscreen', 'wpmediaverse' ); ?>

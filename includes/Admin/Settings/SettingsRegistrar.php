@@ -440,6 +440,31 @@ class SettingsRegistrar {
 				'description' => __( 'Which image size opens in the lightbox. Users can always tap "View Original" to open the full file in a new tab.', 'wpmediaverse' ),
 			)
 		);
+
+		// Allow downloads — global toggle. When off, the lightbox Download
+		// button is hidden and the /mvs/v1/media/{id}/download REST endpoint
+		// rejects with 403 (defense-in-depth: hiding the button alone won't
+		// stop a determined caller hitting the endpoint directly).
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_display',
+			'mvs_allow_downloads',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			'mvs_allow_downloads',
+			__( 'Allow Downloads', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-display',
+			'mvs_display',
+			array(
+				'option'      => 'mvs_allow_downloads',
+				'description' => __( 'Show the Download button in the lightbox and accept download events. When off, customers can still view media but the download button is hidden everywhere.', 'wpmediaverse' ),
+			)
+		);
 	}
 
 	// -------------------------------------------------------------------------

@@ -980,6 +980,14 @@ class MediaController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function record_download( $request ) {
+		// Global toggle — when admin disables downloads, reject the event
+		// regardless of media-level privacy. Defense-in-depth: the lightbox
+		// button is also hidden, but a savvy caller could still hit this
+		// endpoint directly.
+		if ( ! (bool) get_option( 'mvs_allow_downloads', true ) ) {
+			return new WP_Error( 'mvs_downloads_disabled', __( 'Downloads are disabled on this site.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+
 		// Rate limit: 30 downloads/min per user/IP — half the view rate
 		// since downloads are higher-cost operations.
 		$rate_check = RateLimiter::check( 'record_download', 30, 60 );
