@@ -745,19 +745,24 @@ class MediaController extends WP_REST_Controller {
 			$update_data['privacy'] = sanitize_text_field( $privacy );
 		}
 
+		// JSON body inspection — used by both per-media flags below AND
+		// the tags/categories block further down to distinguish "key
+		// omitted" (leave alone) from "key sent as null/empty"
+		// (intentional clear). Previously this block existed only for
+		// tags; pulled up here for the per-media flags.
+		$json_params = $request->get_json_params();
+		$json_params = is_array( $json_params ) ? $json_params : array();
+
+		// Per-media download flag — only honored when the global toggle is
+		// also on. Stored as '1' / '0' string so it round-trips cleanly.
+		if ( array_key_exists( 'allow_download', $json_params ) ) {
+			$update_data['allow_download'] = $json_params['allow_download'] ? '1' : '0';
+		}
+
 		// Write all index/meta changes in one call.
 		if ( ! empty( $update_data ) ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many( $media_id, $update_data );
 		}
-
-		// Update tags / categories only when explicitly sent in the request body.
-		// Using $request->get_json_params() + array_key_exists distinguishes
-		// "key not sent" (leave existing data alone) from "key sent as empty
-		// array" (caller intentionally cleared the list). Previously we used
-		// `null !== $tags` which treated both cases identically and wiped tags
-		// on any unrelated save.
-		$json_params = $request->get_json_params();
-		$json_params = is_array( $json_params ) ? $json_params : array();
 
 		if ( array_key_exists( 'tags', $json_params ) ) {
 			$tags = $request->get_param( 'tags' );
@@ -1007,6 +1012,13 @@ class MediaController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 
+		// Per-media opt-out: owner can disable downloads on a single item
+		// even when the global toggle is on. Absent meta = default allow.
+		$per_media = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'allow_download' );
+		if ( '0' === $per_media ) {
+			return new WP_Error( 'mvs_download_blocked', __( 'The owner has disabled downloads for this media.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+
 		global $wpdb;
 
 		$ip_hash = hash( 'sha256', self::get_client_ip() . wp_salt() );
@@ -1251,6 +1263,12 @@ class MediaController extends WP_REST_Controller {
 		$can_edit      = $viewer_id > 0
 			&& ( $viewer_id === $author_id_raw || user_can( $viewer_id, 'manage_options' ) );
 
+		// allow_download: per-media flag. Absent meta = default true.
+		// '0' string = explicit opt-out by the owner. The lightbox button
+		// honors both this AND the global mvs_allow_downloads setting.
+		$allow_download_raw = isset( $all['allow_download'] ) ? (string) $all['allow_download'] : '';
+		$allow_download     = ( '0' !== $allow_download_raw );
+
 		$data = array(
 			'id'                => $media_id,
 			'title'             => ! empty( $all['title'] ) ? $all['title'] : '',
@@ -1263,6 +1281,7 @@ class MediaController extends WP_REST_Controller {
 			'file_type'         => ! empty( $all['file_type'] ) ? $all['file_type'] : '',
 			'media_type'        => $media_type_value,
 			'privacy'           => $privacy_value,
+			'allow_download'    => $allow_download,
 			'moderation_status' => $moderation_value,
 			'tags'              => self::parse_meta_list( $all['tags'] ?? '' ),
 			'categories'        => self::parse_meta_list( $all['category'] ?? '' ),

@@ -452,6 +452,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$can_edit  = $viewer_id > 0 && ( $viewer_id === $author_id || user_can( $viewer_id, 'manage_options' ) );
 		if ( $show_actions && $can_edit ) {
 			echo '<div class="mvs-grid-item-actions">';
+			echo '<button type="button" class="mvs-grid-item-action mvs-media-edit-btn" data-media-id="' . esc_attr( (string) $media_id ) . '" aria-label="' . esc_attr__( 'Edit media settings', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Edit settings', 'wpmediaverse' ) . '">';
+			echo '<i data-lucide="settings" aria-hidden="true"></i>';
+			echo '</button>';
 			echo '<button type="button" class="mvs-grid-item-action mvs-grid-item-action--danger mvs-media-delete-btn" data-media-id="' . esc_attr( (string) $media_id ) . '" aria-label="' . esc_attr__( 'Delete media', 'wpmediaverse' ) . '" title="' . esc_attr__( 'Delete media', 'wpmediaverse' ) . '">';
 			echo '<i data-lucide="trash-2" aria-hidden="true"></i>';
 			echo '</button>';

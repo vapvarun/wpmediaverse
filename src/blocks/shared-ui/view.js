@@ -13,7 +13,7 @@
  * @package WPMediaVerse
  */
 
-import { store, getContext } from '@wordpress/interactivity';
+import { store, getContext, getElement } from '@wordpress/interactivity';
 
 let toastTimer = null;
 let tagSearchTimer = null;
@@ -140,6 +140,19 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxIsFavorited: false,
 		lightboxStats: {},
 
+		// --- Edit Media modal (per-media settings: title, description,
+		// privacy, allow_download). Opened via window.mvsOpenEditModal( id )
+		// from the .mvs-media-edit-btn delegated click in bp-actions.js.
+		editModalVisible: false,
+		editModalMediaId: 0,
+		editModalLoading: false,
+		editModalSaving: false,
+		editModalTitle: '',
+		editModalDescription: '',
+		editModalPrivacy: 'public',
+		editModalAllowDownload: true,
+		editModalError: '',
+
 		get lightboxImageUrl() {
 			const d = state.lightboxMediaData;
 			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
@@ -191,6 +204,19 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get lightboxPermalink() {
 			return state.lightboxMediaData?.link || '#';
+		},
+		// Per-media download flag — defaults to true when the response
+		// doesn't carry the field (older builds, public callers without
+		// /media/{id} expansion). The lightbox Download button uses this
+		// AND the global mvs_allow_downloads toggle (rendered server-
+		// side; if global is off the button is not in the DOM at all).
+		get lightboxAllowDownload() {
+			const d = state.lightboxMediaData;
+			if ( ! d ) return false;
+			return d.allow_download !== false;
+		},
+		get lightboxHideDownload() {
+			return ! state.lightboxAllowDownload;
 		},
 		get lightboxViewsText() {
 			const s = state.lightboxStats;
@@ -356,6 +382,92 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalLastDuplicateId = 0;
 			state.uploadModalLastError = '';
 			document.body.style.overflow = '';
+		},
+		// --- Edit Media modal actions ---
+		async openEditModal( mediaId ) {
+			const id = parseInt( mediaId, 10 );
+			if ( ! id ) return;
+			state.editModalMediaId = id;
+			state.editModalVisible = true;
+			state.editModalLoading = true;
+			state.editModalError = '';
+			document.body.style.overflow = 'hidden';
+
+			try {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				const nonce = window.mvsBpActions?.nonce || '';
+				const res = await fetch( `${ restUrl }media/${ id }`, {
+					headers: { 'X-WP-Nonce': nonce },
+					credentials: 'same-origin',
+				} );
+				if ( ! res.ok ) throw new Error( 'fetch_failed' );
+				const data = await res.json();
+				state.editModalTitle = data.title || '';
+				state.editModalDescription = data.description || '';
+				state.editModalPrivacy = data.privacy || 'public';
+				state.editModalAllowDownload = data.allow_download !== false;
+			} catch {
+				state.editModalError = 'Could not load this media. Try again.';
+			}
+			state.editModalLoading = false;
+		},
+		closeEditModal() {
+			state.editModalVisible = false;
+			state.editModalMediaId = 0;
+			state.editModalTitle = '';
+			state.editModalDescription = '';
+			state.editModalPrivacy = 'public';
+			state.editModalAllowDownload = true;
+			state.editModalError = '';
+			state.editModalSaving = false;
+			document.body.style.overflow = '';
+		},
+		updateEditTitle() {
+			state.editModalTitle = getElement().ref?.value || '';
+		},
+		updateEditDescription() {
+			state.editModalDescription = getElement().ref?.value || '';
+		},
+		updateEditPrivacy() {
+			state.editModalPrivacy = getElement().ref?.value || 'public';
+		},
+		toggleEditAllowDownload() {
+			state.editModalAllowDownload = !! getElement().ref?.checked;
+		},
+		async saveEditModal() {
+			if ( state.editModalSaving || ! state.editModalMediaId ) return;
+			state.editModalSaving = true;
+			state.editModalError = '';
+
+			try {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				const nonce = window.mvsBpActions?.nonce || '';
+				const res = await fetch( `${ restUrl }media/${ state.editModalMediaId }`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': nonce,
+					},
+					credentials: 'same-origin',
+					body: JSON.stringify( {
+						title: state.editModalTitle,
+						description: state.editModalDescription,
+						privacy: state.editModalPrivacy,
+						allow_download: state.editModalAllowDownload,
+					} ),
+				} );
+				if ( ! res.ok ) {
+					const err = await res.json().catch( () => ({}) );
+					throw new Error( err.message || 'save_failed' );
+				}
+				actions.showToast( 'Media settings saved.', 'success' );
+				actions.closeEditModal();
+			} catch ( err ) {
+				state.editModalError = err.message || 'Could not save. Try again.';
+				state.editModalSaving = false;
+			}
 		},
 		setUploadMode() {
 			const ctx = getContext();
@@ -1099,7 +1211,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		handleLightboxKeydown( event ) {
 			if ( event.key === 'Escape' ) {
-				if ( state.uploadModalVisible ) {
+				if ( state.editModalVisible ) {
+					actions.closeEditModal();
+				} else if ( state.uploadModalVisible ) {
 					actions.closeUploadModal();
 				} else if ( state.lightboxVisible ) {
 					actions.closeLightbox();
@@ -1125,4 +1239,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 // Bridge: expose openLightboxById to vanilla JS (used by load-more.js delegated click handler).
 window.mvsOpenLightbox = function ( mediaId ) {
 	actions.openLightboxById( mediaId );
+};
+
+// Bridge: expose openEditModal to vanilla JS (used by bp-actions.js
+// delegated click handler on .mvs-media-edit-btn).
+window.mvsOpenEditModal = function ( mediaId ) {
+	actions.openEditModal( mediaId );
 };

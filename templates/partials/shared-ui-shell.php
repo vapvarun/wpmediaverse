@@ -257,6 +257,85 @@ $mvs_show_fab = $mvs_is_logged_in && (
 	</div>
 	<?php endif; ?>
 
+	<!-- Edit Media modal — opened via window.mvsOpenEditModal( id )
+	     when an owner clicks .mvs-media-edit-btn on their own card. -->
+	<?php if ( $mvs_is_logged_in ) : ?>
+	<div class="mvs-modal-overlay mvs-edit-modal-overlay" hidden data-wp-bind--hidden="!state.editModalVisible" data-wp-on--click="actions.closeEditModal" role="dialog" aria-modal="true" aria-labelledby="mvs-edit-modal-title">
+		<div class="mvs-modal mvs-edit-modal" data-wp-on--click="actions.handleModalClick">
+			<div class="mvs-modal-header">
+				<h2 class="mvs-modal-title" id="mvs-edit-modal-title">
+					<?php esc_html_e( 'Edit media settings', 'wpmediaverse' ); ?>
+				</h2>
+				<button class="mvs-modal-close" data-wp-on--click="actions.closeEditModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+					</svg>
+				</button>
+			</div>
+
+			<div class="mvs-modal-body">
+				<!-- Loading state while fetching the current media data. -->
+				<div class="mvs-modal-loading" data-wp-bind--hidden="!state.editModalLoading">
+					<div class="mvs-spinner"></div>
+					<p><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></p>
+				</div>
+
+				<!-- Edit form -->
+				<div class="mvs-modal-fields" data-wp-bind--hidden="state.editModalLoading">
+					<div class="mvs-modal-field">
+						<label for="mvs-edit-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
+						<input type="text" id="mvs-edit-title" class="mvs-modal-field-input"
+							data-wp-on--input="actions.updateEditTitle"
+							data-wp-bind--value="state.editModalTitle" />
+					</div>
+					<div class="mvs-modal-field">
+						<label for="mvs-edit-description"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
+						<textarea id="mvs-edit-description" rows="3" class="mvs-modal-field-input"
+							data-wp-on--input="actions.updateEditDescription"
+							data-wp-bind--value="state.editModalDescription"></textarea>
+					</div>
+					<div class="mvs-modal-field">
+						<label for="mvs-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+						<select id="mvs-edit-privacy"
+							data-wp-on--change="actions.updateEditPrivacy"
+							data-wp-bind--value="state.editModalPrivacy">
+							<option value="public"><?php esc_html_e( 'Public — anyone can view', 'wpmediaverse' ); ?></option>
+							<option value="members"><?php esc_html_e( 'Members Only — logged-in users', 'wpmediaverse' ); ?></option>
+							<option value="private"><?php esc_html_e( 'Private — only you', 'wpmediaverse' ); ?></option>
+						</select>
+					</div>
+					<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
+					<div class="mvs-modal-field mvs-modal-field--checkbox">
+						<label for="mvs-edit-allow-download">
+							<input type="checkbox" id="mvs-edit-allow-download"
+								data-wp-on--change="actions.toggleEditAllowDownload"
+								data-wp-bind--checked="state.editModalAllowDownload" />
+							<?php esc_html_e( 'Allow viewers to download this media', 'wpmediaverse' ); ?>
+						</label>
+						<p class="mvs-modal-field-hint">
+							<?php esc_html_e( 'Uncheck to hide the Download button on this single item. The site-wide download setting still applies.', 'wpmediaverse' ); ?>
+						</p>
+					</div>
+					<?php endif; ?>
+					<div class="mvs-modal-error" data-wp-bind--hidden="!state.editModalError">
+						<p data-wp-text="state.editModalError"></p>
+					</div>
+				</div>
+			</div>
+
+			<div class="mvs-modal-footer">
+				<button class="mvs-btn mvs-btn--secondary" data-wp-on--click="actions.closeEditModal" data-wp-bind--disabled="state.editModalSaving">
+					<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
+				</button>
+				<button class="mvs-btn mvs-btn--primary" data-wp-on--click="actions.saveEditModal" data-wp-bind--disabled="state.editModalSaving">
+					<span data-wp-bind--hidden="state.editModalSaving"><?php esc_html_e( 'Save changes', 'wpmediaverse' ); ?></span>
+					<span data-wp-bind--hidden="!state.editModalSaving"><?php esc_html_e( 'Saving…', 'wpmediaverse' ); ?></span>
+				</button>
+			</div>
+		</div>
+	</div>
+	<?php endif; ?>
+
 	<!-- Lightbox Overlay -->
 	<div class="mvs-lightbox-overlay" hidden data-wp-bind--hidden="!state.lightboxVisible" data-wp-on--click="actions.closeLightbox">
 		<div class="mvs-lightbox" data-wp-on--click="actions.handleModalClick">
@@ -359,7 +438,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						<?php esc_html_e( 'Share', 'wpmediaverse' ); ?>
 					</button>
 					<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
-					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxDownload" aria-label="<?php esc_attr_e( 'Download this media to your device', 'wpmediaverse' ); ?>">
+					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxDownload" data-wp-bind--hidden="state.lightboxHideDownload" aria-label="<?php esc_attr_e( 'Download this media to your device', 'wpmediaverse' ); ?>">
 						<i data-lucide="download" aria-hidden="true"></i>
 						<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
 					</button>

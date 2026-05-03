@@ -84,6 +84,21 @@
 	}
 
 	document.addEventListener( 'click', function ( event ) {
+		// Media edit (settings cog) — bridges to the Interactivity API
+		// store via window.mvsOpenEditModal so the modal renders / fetches
+		// / saves through the shared-ui state, not duplicate vanilla code.
+		var mediaEdit = event.target.closest( '.mvs-media-edit-btn' );
+		if ( mediaEdit ) {
+			event.preventDefault();
+			event.stopPropagation();
+			var editId = mediaEdit.dataset.mediaId;
+			if ( ! editId ) { return; }
+			if ( typeof window.mvsOpenEditModal === 'function' ) {
+				window.mvsOpenEditModal( editId );
+			}
+			return;
+		}
+
 		// Media delete.
 		var mediaDel = event.target.closest( '.mvs-media-delete-btn' );
 		if ( mediaDel ) {

@@ -578,3 +578,157 @@
 		height: 18px;
 	}
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Edit Media modal — premium, simple, matches upload-modal language.
+   Triggered by .mvs-media-edit-btn on owner cards in render_grid_item.
+   ────────────────────────────────────────────────────────────────────── */
+.mvs-edit-modal-overlay {
+	z-index: 100050;
+}
+
+.mvs-edit-modal {
+	max-width: 480px;
+	width: 100%;
+}
+
+.mvs-edit-modal .mvs-modal-body {
+	padding: 20px 24px;
+}
+
+.mvs-modal-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.mvs-modal-fields[hidden] {
+	display: none !important;
+}
+
+.mvs-modal-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.mvs-modal-field label {
+	font-weight: 600;
+	font-size: 13px;
+	color: var( --mvs-text, #1d2327 );
+}
+
+.mvs-modal-field-input,
+.mvs-modal-field input[type="text"],
+.mvs-modal-field textarea,
+.mvs-modal-field select {
+	width: 100%;
+	padding: 8px 12px;
+	font-size: 14px;
+	border: 1px solid var( --mvs-border, #c3c4c7 );
+	border-radius: 6px;
+	background: var( --mvs-bg, #fff );
+	color: var( --mvs-text, #1d2327 );
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	box-sizing: border-box;
+}
+
+.mvs-modal-field-input:focus-visible,
+.mvs-modal-field input[type="text"]:focus-visible,
+.mvs-modal-field textarea:focus-visible,
+.mvs-modal-field select:focus-visible {
+	outline: none;
+	border-color: var( --mvs-primary, #2271b1 );
+	box-shadow: 0 0 0 1px var( --mvs-primary, #2271b1 );
+}
+
+.mvs-modal-field--checkbox label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.mvs-modal-field--checkbox input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	cursor: pointer;
+}
+
+.mvs-modal-field-hint {
+	margin: 0;
+	font-size: 12px;
+	color: var( --mvs-text-muted, #757575 );
+	padding-left: 24px;
+}
+
+.mvs-modal-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 32px 0;
+	color: var( --mvs-text-muted, #757575 );
+}
+
+.mvs-modal-loading[hidden] {
+	display: none !important;
+}
+
+.mvs-modal-error {
+	background: rgba( 214, 54, 56, 0.08 );
+	border: 1px solid rgba( 214, 54, 56, 0.2 );
+	border-radius: 6px;
+	padding: 8px 12px;
+	color: var( --mvs-danger, #d63638 );
+	font-size: 13px;
+}
+
+.mvs-modal-error[hidden] {
+	display: none !important;
+}
+
+.mvs-modal-error p {
+	margin: 0;
+}
+
+/* Footer matches existing modal footer */
+.mvs-edit-modal .mvs-modal-footer {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+	padding: 16px 24px;
+	border-top: 1px solid var( --mvs-border-light, #e5e5e5 );
+}
+
+/* Mobile sizing — full-screen on small viewports for premium feel. */
+@media ( max-width: 640px ) {
+	.mvs-edit-modal {
+		max-width: 100vw;
+		max-height: 100vh;
+		border-radius: 0;
+	}
+
+	.mvs-edit-modal .mvs-modal-body {
+		padding: 16px;
+	}
+
+	.mvs-edit-modal .mvs-modal-footer {
+		padding: 12px 16px;
+	}
+}
+
+/* The Settings (cog) edit button on media cards — matches the existing
+   delete button style but in neutral color so it doesn't compete
+   visually for attention. */
+.mvs-media-edit-btn {
+	color: var( --mvs-text, #1d2327 );
+}
+
+.mvs-media-edit-btn:hover,
+.mvs-media-edit-btn:focus-visible {
+	color: var( --mvs-primary, #2271b1 );
+}
