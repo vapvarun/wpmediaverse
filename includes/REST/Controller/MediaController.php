@@ -731,11 +731,21 @@ class MediaController extends WP_REST_Controller {
 		$title = $request->get_param( 'title' );
 		if ( null !== $title ) {
 			$update_data['title'] = sanitize_text_field( $title );
-			// Pass $media_id to exclude THIS media's row from the uniqueness
-			// check. Without it, saving the same title twice bumps the slug
-			// (`unite-4-india` → `unite-4-india-1`) and the URL the user just
-			// left in their address bar 404s on the next page-load.
-			$update_data['slug']  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->generate_unique_slug( $update_data['title'], $media_id );
+			// IMPORTANT: do NOT regenerate slug from the title. Title edits
+			// must NOT change the public URL — that breaks inbound links,
+			// shared OG cards, search-engine cache, and the URL the user
+			// just had in their address bar (which would 404 on reload).
+			// Callers that want to change the slug pass it explicitly via
+			// the `slug` param below; everyone else gets URL stability.
+		}
+
+		// Explicit slug change — only when the caller explicitly supplies a
+		// slug. Sanitized + uniqueness-checked against every other row.
+		$slug_param = $request->get_param( 'slug' );
+		if ( null !== $slug_param && '' !== trim( (string) $slug_param ) ) {
+			$repo                = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$requested_slug      = sanitize_title( (string) $slug_param );
+			$update_data['slug'] = $repo->generate_unique_slug( $requested_slug, $media_id );
 		}
 
 		$description = $request->get_param( 'description' );
