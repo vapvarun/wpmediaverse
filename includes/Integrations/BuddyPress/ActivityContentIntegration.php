@@ -179,11 +179,27 @@ class ActivityContentIntegration {
 	 * @return string Enhanced content.
 	 */
 	public function enhance_activity_media_content( string $content, $activity = null ): string {
+		// Activity already has MVS media markup baked into content
+		// (BP composer flow saves content with `mvs-activity-media-grid`
+		// inline). Refresh the URLs in place before returning — saved markup
+		// may carry expired signed URLs (the `mvs_signed_url_ttl` default is
+		// 1h, but activity HTML lives in bp_activity.content for months).
+		// Without this, every activity older than 1h renders broken images.
+		//
+		// IMPORTANT: this branch must run BEFORE the Phase 8 structured-render
+		// path. Otherwise activities saved by the composer (which write both
+		// the inline grid AND linkage rows via on_activity_save) double-render
+		// the same media — once from inline content, once appended from the
+		// linkage table. Bug discovered 2026-05-03 via the
+		// /members/{user}/activity/{id}/ permalink view.
+		if ( strpos( $content, 'mvs-activity-media' ) !== false ) {
+			return $this->refresh_broadcast_urls( $content );
+		}
+
 		// Phase 8 (1.2.0) structured-render path: when this activity has
-		// linkage rows in mvs_bp_activity_media, render directly from the
-		// table — zero regex on saved HTML. Falls through to the legacy
-		// regex-parser branches below ONLY for activity rows that pre-date
-		// the linkage table AND have no backfill match.
+		// linkage rows in `mvs_bp_activity_media` AND no inline markup yet
+		// (content text-only, or media-only activity with empty content),
+		// render directly from the table — zero regex on saved HTML.
 		$activity_id = is_object( $activity ) && isset( $activity->id ) ? (int) $activity->id : 0;
 		if ( $activity_id > 0 ) {
 			$container = \WPMediaVerse\Core\Plugin::container();
@@ -196,17 +212,6 @@ class ActivityContentIntegration {
 					}
 				}
 			}
-		}
-
-		// Legacy path. Activity already has MVS media markup baked in.
-		// Refresh the URLs in place before returning — saved markup may
-		// carry expired signed URLs (the `mvs_signed_url_ttl` default is
-		// 1h, but activity HTML lives in bp_activity.content for months).
-		// Without this, every activity older than 1h renders broken images.
-		// New activities (post-Phase-8) bypass this entirely via the
-		// linkage path above.
-		if ( strpos( $content, 'mvs-activity-media' ) !== false ) {
-			return $this->refresh_broadcast_urls( $content );
 		}
 
 		// --- 1. rtMedia legacy transform ---
