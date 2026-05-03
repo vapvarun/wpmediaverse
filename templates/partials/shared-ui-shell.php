@@ -308,15 +308,27 @@ $mvs_show_fab = $mvs_is_logged_in && (
 							data-wp-on--input="actions.updateEditDescription"
 							data-wp-bind--value="state.editModalDescription"></textarea>
 					</div>
-					<div class="mvs-modal-field">
-						<label for="mvs-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-						<select id="mvs-edit-privacy"
-							data-wp-on--change="actions.updateEditPrivacy"
-							data-wp-bind--value="state.editModalPrivacy">
-							<option value="public"><?php esc_html_e( 'Public — anyone can view', 'wpmediaverse' ); ?></option>
-							<option value="members"><?php esc_html_e( 'Members Only — logged-in users', 'wpmediaverse' ); ?></option>
-							<option value="private"><?php esc_html_e( 'Private — only you', 'wpmediaverse' ); ?></option>
-						</select>
+					<!-- Privacy + slug-regenerate sit on the same row to save
+					     vertical space — pure presentation, no functional pairing. -->
+					<div class="mvs-modal-row">
+						<div class="mvs-modal-field mvs-modal-field--inline">
+							<label for="mvs-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+							<select id="mvs-edit-privacy"
+								data-wp-on--change="actions.updateEditPrivacy"
+								data-wp-bind--value="state.editModalPrivacy">
+								<option value="public"><?php esc_html_e( 'Public — anyone can view', 'wpmediaverse' ); ?></option>
+								<option value="members"><?php esc_html_e( 'Members Only — logged-in users', 'wpmediaverse' ); ?></option>
+								<option value="private"><?php esc_html_e( 'Private — only you', 'wpmediaverse' ); ?></option>
+							</select>
+						</div>
+						<div class="mvs-modal-field mvs-modal-field--inline mvs-modal-field--checkbox">
+							<label for="mvs-edit-regenerate-slug" title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
+								<input type="checkbox" id="mvs-edit-regenerate-slug"
+									data-wp-on--change="actions.updateEditRegenerateSlug"
+									data-wp-bind--checked="state.editModalRegenerateSlug" />
+								<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
+							</label>
+						</div>
 					</div>
 					<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
 					<div class="mvs-modal-field mvs-modal-field--checkbox">

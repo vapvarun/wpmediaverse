@@ -369,6 +369,61 @@
 	box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.15);
 }
 
+/* Two-column row inside the Edit modal — used for paired controls
+   (Privacy + slug-regenerate checkbox) so they share one row instead
+   of stacking. Each cell takes 50% on desktop; collapses to a single
+   column at ≤640px so the controls don't crush together on mobile. */
+.mvs-modal-row {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 12px;
+	align-items: flex-end;
+}
+
+.mvs-modal-row .mvs-modal-field {
+	margin-bottom: 0;
+}
+
+.mvs-modal-field--inline {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+/* Checkbox cell sits at the field's baseline so the label aligns with
+   the Privacy select's text rather than its label. */
+.mvs-modal-row .mvs-modal-field--checkbox {
+	flex: 0 0 auto;
+	padding-bottom: 10px;
+}
+
+.mvs-modal-field--checkbox label {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-weight: 500;
+	cursor: pointer;
+	margin: 0;
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.mvs-modal-field--checkbox input[type="checkbox"] {
+	width: auto;
+	margin: 0;
+	flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+	.mvs-modal-row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.mvs-modal-row .mvs-modal-field--checkbox {
+		padding-bottom: 0;
+	}
+}
+
 .mvs-modal-field-row {
 	display: flex;
 	gap: 12px;

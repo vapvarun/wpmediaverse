@@ -151,6 +151,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		editModalDescription: '',
 		editModalPrivacy: 'public',
 		editModalAllowDownload: true,
+		// Off by default — title edits leave the URL slug alone. The user
+		// can opt in via the "Update URL slug from title" checkbox; the
+		// save handler will compute sanitize_title(title) on the JS side
+		// and pass it as `slug` so the REST controller's explicit-slug
+		// branch applies.
+		editModalRegenerateSlug: false,
 		editModalError: '',
 
 		// --- Popular tag pills (cached for the session, lazily loaded the
@@ -457,6 +463,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalDescription = '';
 			state.editModalPrivacy = 'public';
 			state.editModalAllowDownload = true;
+			state.editModalRegenerateSlug = false;
 			state.editModalError = '';
 			state.editModalSaving = false;
 			document.body.style.overflow = '';
@@ -473,6 +480,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		toggleEditAllowDownload() {
 			state.editModalAllowDownload = !! getElement().ref?.checked;
 		},
+		updateEditRegenerateSlug() {
+			state.editModalRegenerateSlug = !! getElement().ref?.checked;
+		},
 		async saveEditModal() {
 			if ( state.editModalSaving || ! state.editModalMediaId ) return;
 			state.editModalSaving = true;
@@ -482,6 +492,28 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const restUrl = window.mvsBpActions?.restUrl
 					|| ( window.location.origin + '/wp-json/mvs/v1/' );
 				const nonce = window.mvsBpActions?.nonce || '';
+				const body = {
+					title: state.editModalTitle,
+					description: state.editModalDescription,
+					privacy: state.editModalPrivacy,
+					allow_download: state.editModalAllowDownload,
+				};
+				// Only include `slug` when the admin explicitly opted into
+				// regenerating it from the new title. Leaving the field out
+				// preserves the existing URL — the safer default per the
+				// WordPress permalink convention.
+				if ( state.editModalRegenerateSlug ) {
+					// Match the server's sanitize_title — lowercase, dashes
+					// for spaces, strip everything else. The server runs the
+					// same pass + collision check, so this is just optimistic
+					// formatting (and no-op if title unchanged).
+					body.slug = ( state.editModalTitle || '' )
+						.toLowerCase()
+						.replace( /[^\w\s-]/g, '' )
+						.trim()
+						.replace( /\s+/g, '-' )
+						.replace( /-+/g, '-' );
+				}
 				const res = await fetch( `${ restUrl }media/${ state.editModalMediaId }`, {
 					method: 'PUT',
 					headers: {
@@ -489,17 +521,32 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						'X-WP-Nonce': nonce,
 					},
 					credentials: 'same-origin',
-					body: JSON.stringify( {
-						title: state.editModalTitle,
-						description: state.editModalDescription,
-						privacy: state.editModalPrivacy,
-						allow_download: state.editModalAllowDownload,
-					} ),
+					body: JSON.stringify( body ),
 				} );
 				if ( ! res.ok ) {
 					const err = await res.json().catch( () => ({}) );
 					throw new Error( err.message || 'save_failed' );
 				}
+				const updated = await res.json().catch( () => ({}) );
+
+				// When the user opted into a slug change AND they're CURRENTLY
+				// on the media's single page (`/media/{old-slug}/`), the page
+				// they're viewing now points at a dead URL. Redirect to the
+				// new permalink so reload doesn't 404. On other pages
+				// (Explore, BP profile, etc.) we just close the modal — the
+				// page they're on is unaffected by the slug change.
+				if (
+					updated.link &&
+					typeof window !== 'undefined' &&
+					window.location.pathname !== new URL( updated.link ).pathname &&
+					/\/media\/[^/]+\/?$/.test( window.location.pathname )
+				) {
+					actions.showToast( 'Saved! Redirecting to the new URL…', 'success' );
+					actions.closeEditModal();
+					window.location.replace( updated.link );
+					return;
+				}
+
 				actions.showToast( 'Media settings saved.', 'success' );
 				actions.closeEditModal();
 			} catch ( err ) {

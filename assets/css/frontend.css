@@ -2273,6 +2273,58 @@ a.mvs-dashboard-card-title:hover {
     margin-bottom: 12px;
 }
 
+/* Two-column row inside the inline-edit form — used for paired controls
+   (Privacy + slug-regenerate checkbox) so they share one row instead
+   of stacking. Collapses to single column at ≤640px. */
+.mvs-inline-edit .mvs-field-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: flex-end;
+}
+
+.mvs-inline-edit .mvs-field-row .mvs-field {
+    margin-bottom: 0;
+}
+
+.mvs-inline-edit .mvs-field--inline {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.mvs-inline-edit .mvs-field-row .mvs-field--checkbox {
+    flex: 0 0 auto;
+    padding-bottom: 10px;
+}
+
+.mvs-inline-edit .mvs-field--checkbox label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 13px;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.mvs-inline-edit .mvs-field--checkbox input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+    .mvs-inline-edit .mvs-field-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mvs-inline-edit .mvs-field-row .mvs-field--checkbox {
+        padding-bottom: 0;
+    }
+}
+
 .mvs-inline-edit-actions {
     display: flex;
     gap: 8px;

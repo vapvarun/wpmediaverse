@@ -330,6 +330,8 @@ $mvs_archive_url = home_url( '/media/' );
 			'editTitle'          => $mvs_title,
 			'editDesc'           => $mvs_desc,
 			'editPrivacy'        => $current_privacy,
+			// Off by default — title edits leave the URL slug alone.
+			'editRegenerateSlug' => false,
 			'editTags'           => $mvs_tag_names,
 			'tagInput'           => '',
 			'tagResults'         => array(),
@@ -431,15 +433,25 @@ $mvs_archive_url = home_url( '/media/' );
 					<textarea data-wp-on--input="actions.updateEditDesc"
 						data-wp-bind--value="context.editDesc"></textarea>
 				</div>
-				<div class="mvs-field">
-					<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-					<select data-wp-on--change="actions.updateEditPrivacy">
-						<?php foreach ( array( 'public', 'members', 'private' ) as $opt ) : ?>
-							<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $current_privacy, $opt ); ?>>
-								<?php echo esc_html( ucfirst( $opt ) ); ?>
-							</option>
-						<?php endforeach; ?>
-					</select>
+				<!-- Privacy + slug-regenerate share a row to save vertical space.
+				     Off by default — keeps inbound URLs stable. -->
+				<div class="mvs-field-row">
+					<div class="mvs-field mvs-field--inline">
+						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+						<select data-wp-on--change="actions.updateEditPrivacy">
+							<?php foreach ( array( 'public', 'members', 'private' ) as $opt ) : ?>
+								<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $current_privacy, $opt ); ?>>
+									<?php echo esc_html( ucfirst( $opt ) ); ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
+						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
+							<input type="checkbox" class="mvs-edit-regenerate-slug" />
+							<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
+						</label>
+					</div>
 				</div>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
