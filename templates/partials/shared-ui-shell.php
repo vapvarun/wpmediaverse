@@ -315,22 +315,30 @@ $mvs_show_fab = $mvs_is_logged_in && (
 				<!-- Actions bar -->
 				<div class="mvs-lightbox-actions">
 					<?php if ( $mvs_is_logged_in ) : ?>
-						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited">
+						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
 							<i data-lucide="heart" aria-hidden="true"></i>
 							<span data-wp-text="state.lightboxFavoriteLabel"></span>
 						</button>
 					<?php endif; ?>
-					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxShare">
+					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxShare" aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>">
 						<i data-lucide="share-2" aria-hidden="true"></i>
 						<?php esc_html_e( 'Share', 'wpmediaverse' ); ?>
 					</button>
-					<a class="mvs-lightbox-action" data-wp-bind--href="state.lightboxPermalink" target="_blank">
+					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxDownload" aria-label="<?php esc_attr_e( 'Download this media to your device', 'wpmediaverse' ); ?>">
+						<i data-lucide="download" aria-hidden="true"></i>
+						<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
+					</button>
+					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFullscreen" aria-label="<?php esc_attr_e( 'Toggle fullscreen view (press F)', 'wpmediaverse' ); ?>">
+						<i data-lucide="maximize-2" aria-hidden="true"></i>
+						<?php esc_html_e( 'Fullscreen', 'wpmediaverse' ); ?>
+					</button>
+					<a class="mvs-lightbox-action" data-wp-bind--href="state.lightboxPermalink" target="_blank" aria-label="<?php esc_attr_e( 'Open this media in a new tab', 'wpmediaverse' ); ?>">
 						<i data-lucide="external-link" aria-hidden="true"></i>
 						<?php esc_html_e( 'Open', 'wpmediaverse' ); ?>
 					</a>
 					<?php if ( $mvs_is_logged_in ) : ?>
 						<button class="mvs-lightbox-action mvs-lightbox-action--report" data-wp-on--click="actions.lightboxReport"
-							data-wp-bind--hidden="state.lightboxIsOwner">
+							data-wp-bind--hidden="state.lightboxIsOwner" aria-label="<?php esc_attr_e( 'Report this media for review', 'wpmediaverse' ); ?>">
 							<i data-lucide="flag" aria-hidden="true"></i>
 							<?php esc_html_e( 'Report', 'wpmediaverse' ); ?>
 						</button>

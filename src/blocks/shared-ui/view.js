@@ -915,6 +915,61 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				window.location.href = url + '#report';
 			}
 		},
+		async lightboxToggleFullscreen() {
+			// Toggle browser fullscreen on the lightbox container. ESC exits
+			// natively; the keyboard shortcut F also toggles via
+			// handleLightboxKeydown.
+			const el = document.querySelector( '.mvs-lightbox' );
+			if ( ! el ) {
+				return;
+			}
+			try {
+				if ( document.fullscreenElement ) {
+					await document.exitFullscreen();
+				} else {
+					await el.requestFullscreen();
+				}
+			} catch {
+				actions.showToast( 'Fullscreen is not available in this browser.', 'error' );
+			}
+		},
+		async lightboxDownload() {
+			// Browser-native download via the file URL (signed URLs already
+			// carry Content-Disposition headers from the storage driver).
+			// Increments the downloads stat via the /event endpoint —
+			// non-blocking on failure. Gracefully degrades when the item has
+			// no downloadable file_url.
+			const data = state.lightboxMediaData;
+			if ( ! data || ! data.file_url ) {
+				actions.showToast( 'This media is not available for download.', 'error' );
+				return;
+			}
+
+			// Hidden anchor with the download attribute — the browser honors
+			// Content-Disposition; falls back to client-side rename via the
+			// download attr value.
+			const a = document.createElement( 'a' );
+			a.href = data.file_url;
+			a.download = data.title || 'media';
+			a.rel = 'noopener';
+			document.body.appendChild( a );
+			a.click();
+			document.body.removeChild( a );
+
+			// Best-effort stat increment — non-blocking.
+			try {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				const nonce = window.mvsBpActions?.nonce || '';
+				await fetch( `${ restUrl }media/${ data.id }/download`, {
+					method: 'POST',
+					headers: { 'X-WP-Nonce': nonce },
+					credentials: 'same-origin',
+				} );
+			} catch {
+				// Stat increment failure is non-blocking — the download still happened.
+			}
+		},
 		lightboxPrev() {
 			if ( state.lightboxGroupItems.length > 1 ) {
 				let idx = state.lightboxCurrentIndex - 1;
@@ -982,6 +1037,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					actions.lightboxPrev();
 				} else if ( event.key === 'ArrowRight' && state.lightboxHasNext ) {
 					actions.lightboxNext();
+				} else if ( event.key === 'f' || event.key === 'F' ) {
+					// Don't intercept F when the user is typing in the comment composer.
+					const tag = ( event.target?.tagName || '' ).toLowerCase();
+					if ( tag !== 'input' && tag !== 'textarea' ) {
+						event.preventDefault();
+						actions.lightboxToggleFullscreen();
+					}
 				}
 			}
 		},

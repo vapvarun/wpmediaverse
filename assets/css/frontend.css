@@ -5137,6 +5137,36 @@ a.mvs-dashboard-card-title:hover {
     stroke-width: 2;
 }
 
+/* Fullscreen — when the lightbox enters browser fullscreen via the
+   Fullscreen API, override the dialog max sizes so the media fills the
+   actual viewport. ESC and the F shortcut both exit. */
+.mvs-lightbox:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+}
+
+.mvs-lightbox:fullscreen .mvs-lightbox-media {
+    max-height: calc(100vh - 64px);
+}
+
+.mvs-lightbox:fullscreen .mvs-lightbox-media img,
+.mvs-lightbox:fullscreen .mvs-lightbox-video {
+    max-height: calc(100vh - 64px);
+    object-fit: contain;
+}
+
+/* High-contrast focus ring on every lightbox action — keyboard a11y for
+   the new Download / Fullscreen buttons + the existing Share / Open. */
+.mvs-lightbox-action:focus-visible,
+.mvs-lightbox-close:focus-visible,
+.mvs-lightbox-nav:focus-visible {
+    outline: 2px solid var(--mvs-primary, #2271b1);
+    outline-offset: 2px;
+}
+
 .mvs-lightbox-action--report {
     margin-left: auto;
     color: var(--mvs-text-secondary);
