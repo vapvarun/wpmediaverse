@@ -181,6 +181,11 @@ parameters:
 			path: includes/Core/TemplateLoader.php
 
 		-
+			message: "#^Ternary operator condition is always true\\.$#"
+			count: 1
+			path: includes/Core/TemplateLoader.php
+
+		-
 			message: "#^Access to an undefined property object\\:\\:\\$component\\.$#"
 			count: 4
 			path: includes/Integrations/BuddyPress/ActivityContentIntegration.php

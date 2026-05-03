@@ -193,6 +193,24 @@ class MediaController extends WP_REST_Controller {
 			)
 		);
 
+		// POST /media/{id}/share — record a share event + increment shares stat.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/share',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'record_share' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
 		// GET /media/{id}/access — check access.
 		register_rest_route(
 			$this->namespace,
@@ -1002,6 +1020,46 @@ class MediaController extends WP_REST_Controller {
 			$wpdb->prepare(
 				"INSERT INTO {$wpdb->prefix}mvs_media_stats (media_id, downloads, updated_at) VALUES (%d, 1, %s)
 				ON DUPLICATE KEY UPDATE downloads = downloads + 1, updated_at = VALUES(updated_at)",
+				$media_id,
+				current_time( 'mysql', true )
+			)
+		);
+
+		return rest_ensure_response( array( 'recorded' => true ) );
+	}
+
+	/**
+	 * Record a share event for a media item and increment the shares stat.
+	 * Mirrors record_download but writes shares instead. Same privacy gate.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function record_share( $request ) {
+		// Rate limit: 30 shares/min per user/IP (same as downloads).
+		$rate_check = RateLimiter::check( 'record_share', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
+		$media_id = (int) $request->get_param( 'id' );
+
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$user_id = get_current_user_id();
+		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+
+		global $wpdb;
+
+		// Ensure stats row exists, then increment shares.
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"INSERT INTO {$wpdb->prefix}mvs_media_stats (media_id, shares, updated_at) VALUES (%d, 1, %s)
+				ON DUPLICATE KEY UPDATE shares = shares + 1, updated_at = VALUES(updated_at)",
 				$media_id,
 				current_time( 'mysql', true )
 			)

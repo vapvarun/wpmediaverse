@@ -940,20 +940,44 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		async lightboxShare() {
-			const url = state.lightboxMediaData?.link || window.location.href;
+			const data = state.lightboxMediaData;
+			const url = data?.link || window.location.href;
+			let shared = false;
+
 			if ( navigator.share ) {
 				try {
 					await navigator.share( { title: state.lightboxTitle, url } );
+					shared = true;
 				} catch { /* user cancelled share dialog */ }
 			} else if ( navigator.clipboard ) {
 				try {
 					await navigator.clipboard.writeText( url );
 					actions.showToast( 'Link copied!', 'success' );
+					shared = true;
 				} catch {
 					actions.showToast( 'Could not copy link.', 'error' );
 				}
 			} else {
 				window.prompt( 'Copy this link:', url );
+				shared = true;
+			}
+
+			// Best-effort stat increment — non-blocking. Only counts as a
+			// share when the user actually completed the share flow (didn't
+			// cancel the native picker, didn't fail clipboard).
+			if ( shared && data?.id ) {
+				try {
+					const restUrl = window.mvsBpActions?.restUrl
+						|| ( window.location.origin + '/wp-json/mvs/v1/' );
+					const nonce = window.mvsBpActions?.nonce || '';
+					await fetch( `${ restUrl }media/${ data.id }/share`, {
+						method: 'POST',
+						headers: { 'X-WP-Nonce': nonce },
+						credentials: 'same-origin',
+					} );
+				} catch {
+					// Stat increment failure is non-blocking.
+				}
 			}
 		},
 		lightboxReport() {
