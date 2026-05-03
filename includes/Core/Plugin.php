@@ -1401,13 +1401,31 @@ JS;
 	}
 
 	/**
-	 * Render the chat panel in wp_footer for logged-in users.
+	 * Render the slide-out chat panel in wp_footer for logged-in users.
 	 *
-	 * The slide-out chat panel is the compact DM UI that appears on every
-	 * plugin page via wp_footer. On the dedicated `/messages/` page the full
-	 * messages template is already rendering, so mounting the slide-out would
-	 * double-initialise the `mvs/messaging` Interactivity API store and put
-	 * two DM UIs on the same screen. Skip in that case.
+	 * The slide-out chat panel is the compact DM UI (the floating chat
+	 * icon + the docked panel that opens from it). It used to appear on
+	 * every page for logged-in users, which produced visual clutter on
+	 * landing pages, blog posts, and other non-MVS surfaces. Visibility
+	 * is now controlled by the `mvs_chat_panel_visibility` admin setting
+	 * — see SettingsRegistrar::register_messaging_settings().
+	 *
+	 * Suppression order (any condition skips the render):
+	 *   1. Anonymous viewer (panel needs auth state).
+	 *   2. BuddyNext active (delegated DM UI).
+	 *   3. The dedicated /messages/ full-page template — already renders
+	 *      its own chat UI; a second mount would dual-init the
+	 *      mvs/messaging Interactivity API store.
+	 *   4. Setting = 'disabled'.
+	 *   5. Setting = 'mvs_pages' AND the current request is NOT one of
+	 *      the plugin-owned URLs (Explore archive, Dashboard, Album,
+	 *      Collection, Profile, single-media, BP profile/group when MVS
+	 *      tab is active).
+	 *   6. Setting = 'bp_pages' AND we're not on a BuddyPress profile
+	 *      or group page.
+	 *   7. The `mvs_should_render_chat_panel` filter returns false.
+	 *      Lets themes / plugins force a per-page override (e.g. hide on
+	 *      checkout pages, on a WooCommerce single-product, etc.).
 	 */
 	public static function render_chat_panel(): void {
 		if ( ! is_user_logged_in() ) {
@@ -1419,9 +1437,37 @@ JS;
 			return;
 		}
 
-		// Suppress on the dedicated `/messages/` full-page template — it
-		// already renders its own chat UI; a second mount would dual-render.
+		// Suppress on the dedicated `/messages/` full-page template.
 		if ( (int) get_query_var( 'mvs_messages_page' ) ) {
+			return;
+		}
+
+		$visibility = (string) get_option( 'mvs_chat_panel_visibility', 'everywhere' );
+
+		if ( 'disabled' === $visibility ) {
+			return;
+		}
+
+		if ( 'mvs_pages' === $visibility && ! self::is_mvs_page() ) {
+			return;
+		}
+
+		if ( 'bp_pages' === $visibility && ! self::is_bp_page() ) {
+			return;
+		}
+
+		/**
+		 * Filter the chat panel render decision.
+		 *
+		 * Use this to force a per-page override that the visibility
+		 * setting can't express — e.g. hide on WooCommerce checkout, on
+		 * specific post IDs, or based on user role.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param bool $should_render Default decision (true at this point).
+		 */
+		if ( ! apply_filters( 'mvs_should_render_chat_panel', true ) ) {
 			return;
 		}
 
@@ -1429,6 +1475,57 @@ JS;
 		if ( file_exists( $template ) ) {
 			include $template;
 		}
+	}
+
+	/**
+	 * Is the current request a WPMediaVerse-owned page surface?
+	 *
+	 * Used by `render_chat_panel()` when visibility = 'mvs_pages'.
+	 * Recognises: media archive (Explore), single media, album CPT,
+	 * collection CPT, dashboard page, upload page, member profile when
+	 * the Media tab is the current sub-nav.
+	 *
+	 * @return bool
+	 */
+	private static function is_mvs_page(): bool {
+		if ( ! empty( $GLOBALS['mvs_current_media'] ) ) {
+			return true;
+		}
+		if ( ! empty( $GLOBALS['mvs_is_media_archive'] ) ) {
+			return true;
+		}
+		if ( is_singular( array( 'mvs_album', 'mvs_collection' ) ) ) {
+			return true;
+		}
+		// Plugin-owned WP Pages — IDs come from the standard slot map.
+		$page_ids = array_filter(
+			array(
+				(int) get_option( 'mvs_page_dashboard', 0 ),
+				(int) get_option( 'mvs_page_explore', 0 ),
+				(int) get_option( 'mvs_page_upload', 0 ),
+			)
+		);
+		if ( $page_ids && is_page( $page_ids ) ) {
+			return true;
+		}
+		// BP member profile with the MVS Media tab active.
+		if ( function_exists( 'bp_is_user' ) && bp_is_user() && function_exists( 'bp_current_component' ) && 'media' === bp_current_component() ) {
+			return true;
+		}
+		// BP group with the Media tab active.
+		if ( function_exists( 'bp_is_group' ) && bp_is_group() && function_exists( 'bp_current_action' ) && 'media' === bp_current_action() ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Is the current request any BuddyPress page?
+	 *
+	 * @return bool
+	 */
+	private static function is_bp_page(): bool {
+		return function_exists( 'is_buddypress' ) && is_buddypress();
 	}
 
 	/**

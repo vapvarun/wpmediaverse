@@ -46,6 +46,7 @@ class Sanitizers {
 		'mvs_moderation_auto_action' => array( 'flag', 'hide', 'reject' ),
 		'mvs_dm_access'              => array( 'everyone', 'followers', 'mutual', 'nobody' ),
 		'mvs_show_online_status'     => array( 'everyone', 'followers', 'nobody' ),
+		'mvs_chat_panel_visibility'  => array( 'everywhere', 'mvs_pages', 'bp_pages', 'disabled' ),
 	);
 
 	/**
@@ -320,6 +321,19 @@ class Sanitizers {
 	public static function sanitize_show_online_status( $value ): string {
 		$value = is_string( $value ) ? $value : '';
 		return in_array( $value, self::WHITELISTS['mvs_show_online_status'], true ) ? $value : 'everyone';
+	}
+
+	/**
+	 * Sanitize chat-panel visibility. Whitelist must stay in lockstep with
+	 * the dropdown choices in SettingsRegistrar::register_messaging_settings()
+	 * AND the consumer in Plugin::render_chat_panel().
+	 *
+	 * @param mixed $value Raw input.
+	 * @return string Sanitized visibility setting.
+	 */
+	public static function sanitize_chat_panel_visibility( $value ): string {
+		$value = is_string( $value ) ? $value : '';
+		return in_array( $value, self::WHITELISTS['mvs_chat_panel_visibility'], true ) ? $value : 'everywhere';
 	}
 
 	/**

@@ -804,6 +804,36 @@ class SettingsRegistrar {
 			)
 		);
 
+		// Chat-panel visibility — controls where the slide-out chat icon
+		// appears for logged-in users. Defaults to 'everywhere' to preserve
+		// 1.1.x behavior; sites that want a quieter chrome can scope it.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_social',
+			'mvs_chat_panel_visibility',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_chat_panel_visibility' ),
+				'default'           => 'everywhere',
+			)
+		);
+		add_settings_field(
+			'mvs_chat_panel_visibility',
+			__( 'Chat Panel Visibility', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_select_field' ),
+			SettingsPage::PAGE_SLUG . '-social',
+			'mvs_messaging',
+			array(
+				'option'      => 'mvs_chat_panel_visibility',
+				'choices'     => array(
+					'everywhere' => __( 'Everywhere (default)', 'wpmediaverse' ),
+					'mvs_pages'  => __( 'WPMediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
+					'bp_pages'   => __( 'BuddyPress pages only (member + group)', 'wpmediaverse' ),
+					'disabled'   => __( 'Never show the slide-out (use only the dedicated /messages/ page)', 'wpmediaverse' ),
+				),
+				'description' => __( 'Controls where the floating chat icon appears for logged-in users. Themes and other plugins can override per-page via the <code>mvs_should_render_chat_panel</code> filter.', 'wpmediaverse' ),
+			)
+		);
+
 		// Online status visibility.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_social',
