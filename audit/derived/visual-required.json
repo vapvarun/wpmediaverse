@@ -1,0 +1,10 @@
+{
+  "name": "visual-required",
+  "computed_at": "2026-05-03T17:30:00Z",
+  "input_globs": ["src/**/*.{js,php,html}", "templates/**/*.php", "assets/js/**/*.js"],
+  "input_hash": "sha1:55e686df762858b362de2a2235ee9e90b08e970b",
+  "method": "Searched for visual required-marker patterns (asterisk text, span class containing 'required', visible '*' tokens) adjacent to <input>/<textarea>/<select> emissions. Cross-checked whether the same input has the HTML5 `required` attribute or `aria-required=\"true\"`.",
+  "result": [],
+  "result_count": 0,
+  "notes": "No <span class=\"required\"> markers and no visible asterisk-style required indicators were found in src/, templates/, or assets/js/ across the upload modal, edit modal, profile edit form, or settings forms. The plugin uses inline placeholder text + descriptive labels instead of asterisk markers. The Edit modal (1.2.0) does not visually mark any field as required — title is technically optional in MediaController::update_item, so this is consistent. The Profile-edit form's display_name field is enforced server-side via WP_Error 'rest_invalid_param' rather than visually marked. Nothing to flag."
+}

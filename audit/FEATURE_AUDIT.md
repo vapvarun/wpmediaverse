@@ -1,8 +1,8 @@
 # WPMediaVerse — Feature Audit
 
-**Generated:** 2026-04-29 · **Plugin version:** 1.1.3 · **Branch:** `1.2.0`
+**Generated:** 2026-05-03 · **Plugin version:** 1.2.0 · **Branch:** `1.2.0`
 
-**Counts at a glance:** 76 REST routes · 3 AJAX handlers · 8 admin pages · 12 Gutenberg blocks · 8 shortcodes · 15 custom tables · 12 capabilities · 4 BP integration sub-classes · 2 cron events · 9 frontend JS modules · 6 CSS modules.
+**Counts at a glance:** 53 REST endpoints · 3 AJAX handlers · 7 admin pages · 13 Gutenberg blocks · 12 shortcodes · 21 custom tables · 10 capabilities · 7 BP integration sub-classes · 2 cron events · 9 frontend JS modules · 5 CSS modules · 33 settings · 19 hooks fired (7 with Pro consumers).
 
 This document is the canonical inventory of every user-facing surface the plugin exposes. Companion docs:
 
@@ -25,10 +25,14 @@ This document is the canonical inventory of every user-facing surface the plugin
 | `/media/{id}` | GET | `MediaController::get_item` | `get_item_permissions_check` | Get single media |
 | `/media/{id}` | PUT | `MediaController::update_item` | `update_item_permissions_check` | Update title/description/tags/privacy |
 | `/media/{id}` | DELETE | `MediaController::delete_item` | `delete_item_permissions_check` | Delete media |
+| `/media/{id}/download` | POST | `MediaController::record_download` | public (privacy-gated) | **1.2.0:** Record download event + increment `mvs_media_stats.downloads`. Rate-limited 30/min. 403 if global `mvs_allow_downloads` off OR per-media `allow_download='0'`. |
+| `/media/{id}/share` | POST | `MediaController::record_share` | public (privacy-gated) | **1.2.0:** Record share event + increment `mvs_media_stats.shares`. Rate-limited 30/min. |
 | `/media/bulk` | POST | `BulkController::handle_bulk` | `bulk_permissions_check` | Bulk delete/move/privacy |
 | `/media/{id}/signed-url` | GET | `SignedUrlController::get_signed_url` | `get_signed_url_permissions_check` | Generate signed URL |
 | `/serve` | GET | `SignedUrlController::serve_file` | public (token-validated) | Stream file via signed URL |
 | `/media/{id}/report` | POST | `ReportController::report_media` | logged-in | Flag media |
+
+**1.2.0 PUT change:** `PUT /media/{id}` now accepts an `allow_download` boolean param (stored as `mvs_media_meta` value `'1'`/`'0'`, default `'1'` when absent). The response from `prepare_item_for_response()` emits `allow_download` (defaults `true` when meta absent or `!= '0'`).
 
 ### 1.2 Social
 
@@ -145,6 +149,17 @@ Top-level menu `wpmediaverse` (slug `wpmediaverse`) registered in `Core/Plugin.p
 | Setup Wizard | `wpmediaverse-setup` | `wpmediaverse` | `Admin/SetupWizard.php` |
 | Collection meta-box | (post.php) | n/a | `Admin/CollectionMetaBox.php` |
 
+### 3.1 Bulk Actions on All Media (1.2.0)
+
+`Admin/MediaListPage.php` gained a multi-select bulk-actions toolbar (`handle_bulk_action_apply()`):
+
+- **Trash filter active:** offers Restore + Delete-permanently.
+- **Default view:** offers Move-to-Trash.
+- Each form posts a `wp_nonce_field('mvs_bulk_media')` nonce + a checkbox-array of media IDs.
+- Capability gate: `manage_options` OR `moderate_mvs_media`.
+- Success notice shows row count + action.
+- New helper `permanently_delete_media()` extracts the file-system + DB delete sequence (was inlined into single-row delete previously).
+
 ---
 
 ## 4. Settings (option keys)
@@ -195,18 +210,27 @@ Registered in `Admin/Settings/SettingsRegistrar.php`. Sanitizers in `Admin/Setti
 | `mvs_dm_access` | enum | `everyone` / `followers` / `mutual` |
 | `mvs_dm_min_age` | int (days) | Account-age gate |
 | `mvs_show_online_status` | bool | Online presence |
+| `mvs_chat_panel_visibility` | enum | **1.2.0:** `everywhere` / `mvs_pages` / `bp_pages` / `disabled`. Where the floating slide-out chat icon appears for logged-in users. Filterable per-page via `mvs_should_render_chat_panel`. |
 | `mvs_page_dashboard` | int | Page ID for `[mvs_dashboard]` |
 | `mvs_page_explore` | int | Page ID for explore |
 | `mvs_page_upload` | int | Page ID for upload |
 | `mvs_webhooks` | array | Registered outbound webhooks |
+| `mvs_storage_driver` | enum | Active storage driver (local / S3 / BunnyCDN — Pro-extensible via `mvs_storage_driver` filter) |
+| `mvs_comment_edit_window` | int (s) | Comment edit window. 0 disables editing. Default 900. |
+
+### 4.5 Display additions
+
+| Key | Type | Default | Controls |
+|---|---|---|---|
+| `mvs_allow_downloads` | bool | `true` | **1.2.0:** Global Allow Downloads toggle. Hides the lightbox Download button + gates the `POST /mvs/v1/media/{id}/download` REST endpoint. Per-media `allow_download` meta still applies on top of this. |
 
 ---
 
-## 5. Shortcodes
+## 5. Shortcodes (12)
 
 | Tag | Handler (`Shortcodes/Shortcodes.php`) | Key attributes |
 |---|---|---|
-| `[mvs_gallery]` | `render_gallery` | `type`, `category`, `tag`, `orderby`, `per_page` |
+| `[mvs_gallery]` | `render_gallery` | `type`, `category`, `tag`, `orderby`, `order` (asc/desc — 1.2.0), `user_id` (1.2.0; falls back to `bp_displayed_user_id()` inside BP templates) — `per_page` and `columns` always come from backend settings (`mvs_items_per_page` / `mvs_grid_columns`); intentionally not overridable via attrs |
 | `[mvs_upload]` | `render_upload` | `max_files`, `show_privacy` |
 | `[mvs_album]` | `render_album` | `id`, `columns`, `show_title` |
 | `[mvs_player]` | `render_player` | `id`, `autoplay`, `loop`, `download` |
@@ -214,10 +238,14 @@ Registered in `Admin/Settings/SettingsRegistrar.php`. Sanitizers in `Admin/Setti
 | `[mvs_dashboard]` | `render_dashboard` | (auth-gated) |
 | `[mvs_collection]` | `render_collection` | `id`, `columns`, `per_page` |
 | `[mvs_profile_edit]` | `render_profile_edit` | (auth-gated) |
+| `[mvs_explore_feed]` | `render_explore_feed` | **1.2.0:** classic-editor wrapper around the `mvs/explore-feed` block. Attrs: `layout`, `columns`, `per_page`, `filters`, `search`. Delegates to `render_block_template()`. |
+| `[mvs_lock_overlay]` | `render_lock_overlay` | **1.2.0:** classic-editor wrapper around the `mvs/lock-overlay` block. Attrs: `id`, `blur`, `overlay_opacity`, `unlock_label`. |
+| `[mvs_member_photos]` | `render_member_photos` | **1.2.0:** classic-editor wrapper around the `mvs/member-photos` block. Attrs: `user_id`, `columns`, `per_page`, `type`, `show_header`, `actions`. Same auto-resolve order (explicit user_id → BP displayed user → post author → current user). |
+| `[mvs_pdf_viewer]` | `render_pdf_viewer` | **1.2.0:** classic-editor wrapper around the `mvs/pdf-viewer` block. Attrs: `id`, `height` (clamped 200-1400), `toolbar`. |
 
 ---
 
-## 6. Gutenberg Blocks (`src/blocks/`)
+## 6. Gutenberg Blocks (13 registered)
 
 Registered via `Blocks/BlockRegistrar.php`. All use the WP Interactivity API; render PHP lives in each block's `render.php`.
 
@@ -232,9 +260,12 @@ Registered via `Blocks/BlockRegistrar.php`. All use the WP Interactivity API; re
 | `wpmediaverse/explore-feed` | `src/blocks/explore-feed/render.php` | Public feed |
 | `wpmediaverse/explore-view` | `src/blocks/explore-view/render.php` | Explore landing |
 | `wpmediaverse/dashboard-view` | `src/blocks/dashboard-view/render.php` | User dashboard tabs |
-| `wpmediaverse/story-viewer` | `src/blocks/story-viewer/render.php` | 24h stories |
+| `mvs/member-photos` | `src/blocks/member-photos/render.php` | **1.2.0 NEW.** Auto-resolves user (explicit `userId` attr → BP displayed user → post author → current user). Delegates grid render to media-grid via `do_blocks()`. Attrs: `userId` (int), `columns` (int, default 3), `perPage` (int, default 12), `mediaType` (string), `showHeader` (bool), `showActions` (bool). |
+| `mvs/pdf-viewer` | `src/blocks/pdf-viewer/render.php` | **1.2.0 NEW.** Iframe with `#view=FitH&toolbar={0\|1}` URL fragment. Attrs: `mediaId` (int), `height` (int, range 200-1400, default 600), `showToolbar` (bool). 5 server-side empty states: no `mediaId` / not found / wrong type (not PDF) / privacy gate fail / asset missing. |
 | `wpmediaverse/lock-overlay` | `src/blocks/lock-overlay/render.php` | Paywall/access overlay |
-| `wpmediaverse/shared-ui` | `src/blocks/shared-ui/render.php` | Shared UI primitives |
+| `wpmediaverse/shared-ui` | `src/blocks/shared-ui/render.php` | Shared UI primitives (lightbox, modals, toast) |
+
+**Source-kept-but-not-registered (1.2.0):** `src/blocks/story-viewer/` source remains in tree but is intentionally NOT in the `BlockRegistrar::BLOCKS` array — feature paused for 1.2.0 and will return in 1.3 once the 24h-story flow is redesigned.
 
 ---
 
@@ -249,7 +280,7 @@ Registered via `Blocks/BlockRegistrar.php`. All use the WP Interactivity API; re
 
 ---
 
-## 8. Custom Database Tables (15)
+## 8. Custom Database Tables (21)
 
 All prefixed `{$wpdb->prefix}mvs_`. Schema in `Core/Migrator.php`.
 
@@ -374,7 +405,7 @@ Top 30 most-significant; full list grep `do_action.*mvs_\|apply_filters.*mvs_` i
 
 ## 13. BuddyPress Integration
 
-7 focused classes in `includes/Integrations/BuddyPress/`. Top-level `BuddyPressManager` boots only when BP is active.
+7 focused classes in `includes/Integrations/BuddyPress/` (BP manager was split from a 2,811-line monolith into 7 focused classes; further deduped in 1.2.0 by extracting `BaseBPTabIntegration` shared by Profile + Group tab integrations). Top-level `BuddyPressManager` boots only when BP is active.
 
 | Class | Hooks into | What it injects |
 |---|---|---|

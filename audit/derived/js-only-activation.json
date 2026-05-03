@@ -1,0 +1,40 @@
+{
+  "name": "js-only-activation",
+  "computed_at": "2026-05-03T17:30:00Z",
+  "input_globs": ["assets/css/**/*.css", "src/blocks/**/*.{css,js,php}"],
+  "input_hash": "sha1:9965da96fa41b9c17cbe882ccf88bc35ef8f947a",
+  "method": "Looked for the pattern: a CSS rule sets `display: none` on a base selector, and only adds `display: block|flex|grid` when paired with `.is-active` / `.active` / `.is-open` / `[data-active]` modifier. If the modifier is added by JS only and there is no PHP-side fallback adding it (`class=\"foo is-active\"` in render.php / template), the UI is broken when JS fails to load.",
+  "result": [
+    {
+      "selector_family": ".mvs-modal / .mvs-upload-modal / .mvs-edit-modal / .mvs-privacy-modal",
+      "css_pattern": "display:none on base; display:flex when .is-open or .is-active",
+      "where_class_added": "src/blocks/shared-ui/view.js (multiple toggle sites, e.g. line 463, 470 around the editModalMediaId state)",
+      "php_fallback": "Intentional — modals are interaction-driven; no SSR fallback expected. JS-required by design.",
+      "verdict": "Acceptable. Modals only open from clicks; no SSR state to mirror."
+    },
+    {
+      "selector_family": ".mvs-toast / .mvs-toast-container",
+      "css_pattern": "transform: translateY(100%); opacity:0 on base; .show variant slides in",
+      "where_class_added": "src/blocks/shared-ui/view.js (showToast helper)",
+      "php_fallback": "Intentional — ephemeral notifications.",
+      "verdict": "Acceptable."
+    },
+    {
+      "selector_family": ".mvs-tab-panel + .mvs-tab.active",
+      "css_pattern": "display:none on .mvs-tab-panel; .mvs-tab-panel.is-active { display:block }",
+      "where_class_added": "src/blocks/dashboard-view/view.js + src/blocks/explore-view/view.js (tab click handlers)",
+      "php_fallback": "Yes — render.php emits the first tab with `is-active` class baked in. So the page renders the first tab without JS; only secondary tab switching needs JS.",
+      "verdict": "OK — graceful degradation: first tab visible without JS."
+    },
+    {
+      "selector_family": ".mvs-search-suggestions",
+      "css_pattern": "display:none on base; .is-active when results present (1.2.0 search autocomplete)",
+      "where_class_added": "src/blocks/shared-ui/view.js (line ~340-360 area, post-debounce)",
+      "php_fallback": "None — server-rendered combobox listbox is empty at first render. Acceptable since the suggestions only have meaning after the user types.",
+      "verdict": "Acceptable."
+    }
+  ],
+  "result_count": 0,
+  "real_findings": 0,
+  "notes": "Zero real findings. Every JS-only display-toggle pattern is either (a) interaction-only (modals, toasts) where SSR doesn't apply, or (b) has an SSR-baked first-tab/first-state fallback. The 1.2.0 additions (Edit modal, search autocomplete suggestions, Bulk action toolbar) all follow the same disciplined pattern. Bulk action toolbar is server-rendered with all controls present from the start (admin only, JS enriches but does not gate). No regressions."
+}

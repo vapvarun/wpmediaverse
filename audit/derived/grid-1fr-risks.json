@@ -1,0 +1,56 @@
+{
+  "name": "grid-1fr-risks",
+  "computed_at": "2026-05-03T17:30:00Z",
+  "input_globs": ["assets/css/**/*.css", "src/blocks/**/style.css", "src/blocks/**/editor.css"],
+  "input_hash": "sha1:9965da96fa41b9c17cbe882ccf88bc35ef8f947a",
+  "method": "Listed every `grid-template-columns` rule using bare `1fr` (or `repeat(N, 1fr)`) without `minmax(0, 1fr)`. Bare 1fr collapses to content width when a child has `min-content` larger than the column would otherwise be (e.g. a long unbroken token like a URL or a wide image without max-width:100%). The fix pattern is `minmax(0, 1fr)` so the track can shrink below content min-content.",
+  "result": [
+    {
+      "file": "assets/css/frontend.css",
+      "lines": [468, 858, 862, 866, 870, 876, 885, 895, 1705, 1706, 1707, 1708, 1713, 1718, 1724, 3816, 4096, 4774, 4778],
+      "rule_count": 19,
+      "highest_impact": [
+        {
+          "selector": ".mvs-media-grid (cols-2/3/4/5)",
+          "lines": "858-870 + responsive 876-895",
+          "risk": "Medium — media grids host <img> tags that already enforce `max-width:100%`, so collapse risk is low in practice. But long captions / file names emitted as overlay text without `word-wrap` can overflow."
+        },
+        {
+          "selector": ".mvs-dashboard-grid",
+          "lines": "1705-1724",
+          "risk": "Low — children are user-supplied widgets; child `min-width` is usually 0 already."
+        },
+        {
+          "selector": ".mvs-search-row (line 3816)",
+          "lines": [3816],
+          "risk": "Low — search input + button; button has fixed width; input has flex-grow."
+        }
+      ]
+    },
+    {
+      "file": "assets/css/bp-integration.css",
+      "lines": [781, 788, 800, 812, 840, 1169],
+      "rule_count": 6,
+      "highest_impact": [
+        {
+          "selector": "BP profile + group media tab grids (lines 781, 788, 800, 812, 840)",
+          "risk": "Medium — BP themes (BuddyX, BuddyBoss) commonly inject long activity text. The mvs-bp-* containers under #buddypress can collapse on narrow theme widths because `repeat(6, 1fr)` (line 812) leaves no room for image min-content. Recommend `minmax(0, 1fr)` for line 812."
+        }
+      ]
+    },
+    {
+      "file": "src/blocks/media-grid/style.css",
+      "lines": [6, 7, 8, 9, 77],
+      "rule_count": 5,
+      "risk": "Low — same as the frontend.css mvs-media-grid mirror; img max-width:100% is the safety net."
+    }
+  ],
+  "result_count": {
+    "total_bare_1fr_grid_rules": 30,
+    "files_scanned": 4,
+    "high_risk_rules": 1,
+    "medium_risk_rules": 7,
+    "low_risk_rules": 22
+  },
+  "notes": "Systemic CSS pattern (predates 1.2.0). One concrete real-world bug class: BP integration grids on narrow tablet widths under a theme that injects unbreakable strings (long URLs in activity text mirrored into media tabs) — line 812 `repeat(6, 1fr)` is the most likely candidate. No 1.2.0 regressions: pdf-viewer + member-photos blocks delegate grid to the existing media-grid wrapper, so they inherit this pattern but don't add new bare-1fr rules of their own. RTL CSS files are mirrors of LTR — counted only once. Skipped phpcs.xml-suppressed CSS (vendor/) and minified files."
+}

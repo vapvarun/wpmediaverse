@@ -1,6 +1,6 @@
 # WPMediaVerse — Code Flows
 
-**Generated:** 2026-04-29
+**Generated:** 2026-04-29 · **1.2.0 flows added:** 2026-05-03
 
 End-to-end request paths for the high-traffic features. Use this when debugging "why is X showing the wrong value" — trace from the browser entry point down to the DB query and back. For the full surface inventory, see [`FEATURE_AUDIT.md`](FEATURE_AUDIT.md).
 
@@ -193,6 +193,129 @@ ProfileTabIntegration::render_tab() / GroupTabIntegration::render_tab()
 |---|---|
 | Cover resolver | `includes/Services/AlbumService.php:resolve_media_image_url` |
 | Tab render | `includes/Integrations/BuddyPress/{Profile,Group}TabIntegration.php` |
+
+---
+
+## Flow 7 — Lightbox Download (1.2.0)
+
+**Trigger:** user opens the lightbox and clicks the toolbar Download button.
+
+```
+Browser (src/blocks/shared-ui/view.js)
+  └─ User clicks .mvs-lightbox-action[data-action="download"]
+     └─ JS handler lightboxDownload(state)
+        ├─ Pre-check: state.allow_download === true && global mvs_allow_downloads === true
+        │   (button is hidden via CSS if either is off — defense-in-depth client + server)
+        ├─ POST /wp-json/mvs/v1/media/{id}/download   (line 1196 of shared-ui/view.js)
+        │   (no AbortController — fire-and-forget; 30/min rate limit)
+        └─ MediaController::record_download($request)
+           ├─ check_user_ip() + RateLimiter (30/min per user/IP)
+           ├─ MediaRepository::find($id)  → 404 if missing
+           ├─ Privacy gate: PrivacyService::can_view($media_id, $current_user_id)
+           │   └─ apply_filters('mvs_privacy_can_view', …)  ← Pro PrivacyUI filter
+           ├─ Global toggle: get_option('mvs_allow_downloads', true)  → 403 if off
+           ├─ Per-media toggle: mvs_media_meta.allow_download !== '0'  → 403 if off
+           ├─ INSERT INTO mvs_media_views (media_id, user_id, event_type='download', ip_hash, created_at)
+           ├─ INSERT INTO mvs_media_stats (media_id, downloads=1) ON DUPLICATE KEY UPDATE downloads = downloads + 1
+           └─ JSON response { success: true, downloads: <new_count> }
+     └─ JS triggers actual file download via window.location = signed_url
+        (signed URL was already on the lightbox card — no second REST call)
+```
+
+**Key files:**
+
+| Layer | File |
+|---|---|
+| REST | `includes/REST/Controller/MediaController.php::record_download` |
+| Privacy gate | `includes/Services/PrivacyService.php::can_view` |
+| Stats writer | `includes/Repository/MediaRepository.php::increment_stat('downloads')` |
+| Frontend JS | `src/blocks/shared-ui/view.js` (line 1196 area) |
+| Settings | `mvs_allow_downloads` (display group) + per-media `allow_download` meta |
+
+**Failure modes:** Privacy 403 → toast "You don't have access". Rate-limit 429 → toast "Slow down". Network hang → no recovery (UX polish deferred to 1.2.1; see `audit/derived/rest-hang-risks.json`).
+
+**Why both global toggle + per-media toggle:** the global toggle is a tenant-wide on/off; the per-media toggle is the author's per-asset choice (settable from the Edit modal). Both must be `true` for the download to record + the file to be served. The UI hides the button if either is off — but the REST endpoint re-validates server-side because hiding alone is not a security boundary.
+
+---
+
+## Flow 8 — Per-media Edit modal (1.2.0)
+
+**Trigger:** user clicks the cog icon on a media card in their dashboard.
+
+```
+Browser (src/blocks/shared-ui/view.js)
+  └─ User clicks .mvs-media-card-cog
+     └─ JS handler openEditModal(mediaId)
+        ├─ state.editModalMediaId = mediaId
+        ├─ GET /wp-json/mvs/v1/media/{id}   (line 438)
+        │   └─ MediaController::get_item($request)
+        │      └─ Returns { id, title, description, privacy, allow_download, … }
+        ├─ Populate modal fields: title, description, privacy <select>, allow_download <input type="checkbox">
+        └─ Display modal (.mvs-edit-modal.is-open)
+  └─ User edits + clicks Save
+     └─ PUT /wp-json/mvs/v1/media/{id}   (line 485)
+        └─ MediaController::update_item($request)
+           ├─ permission_callback → MediaCapabilities::can_edit($user, $media_id)  (author OR edit_others_mvs_media)
+           ├─ Sanitize: title (sanitize_text_field), description (wp_kses_post), privacy (enum)
+           ├─ Sanitize: allow_download (rest_sanitize_boolean) → '1' or '0'
+           ├─ MediaRepository::update($id, [ 'title', 'description', 'privacy' ])
+           ├─ MediaRepository::set_meta($id, 'allow_download', $allow_download ? '1' : '0')
+           └─ apply_filters('mvs_media_response', $data, $media_id) → 200 OK
+        └─ JS refresh: re-fetch lightbox card data, close modal, toast "Saved"
+```
+
+**Key files:**
+
+| Layer | File |
+|---|---|
+| REST | `includes/REST/Controller/MediaController.php::update_item` (PUT handler — `allow_download` param added 1.2.0) |
+| Repository | `includes/Repository/MediaRepository.php::update` + `set_meta` |
+| Frontend | `src/blocks/shared-ui/view.js` (line 438 GET, 485 PUT, 463 modal open) |
+
+**Failure modes:** validation error 400 → field-level error inline. Permission denied 403 → toast "Not allowed". Hang → modal stays open (see hang-risks cache); recommend 10s AbortController in 1.2.1.
+
+**Schema note:** `allow_download` is `string '1'|'0'` in the DB (not bool) because all `mvs_media_meta` values are TEXT. `prepare_item_for_response()` casts to bool for the response: `'allow_download' => ( '0' !== get_meta($id, 'allow_download') )` — so absent meta defaults to `true`.
+
+---
+
+## Flow 9 — PDF Viewer block render (1.2.0)
+
+**Trigger:** page contains a `mvs/pdf-viewer` block (or `[mvs_pdf_viewer]` shortcode).
+
+```
+PHP render
+  └─ src/blocks/pdf-viewer/render.php
+     └─ State machine — 5 server-side states:
+        ├─ 1. !$media_id → render_block_empty_state("Pick a PDF media item.")  ← editor placeholder
+        ├─ 2. !$media   → render_block_empty_state("Media not found.")           ← deleted media
+        ├─ 3. mime not application/pdf → render_block_empty_state("Not a PDF.")  ← wrong type
+        ├─ 4. !PrivacyService::can_view($id) → render_block_empty_state("Restricted.")  ← privacy fail
+        ├─ 5. !($signed_url = MediaUrl::for_file($id)) → render_block_empty_state("Asset missing.")  ← storage missing
+        └─ Happy path: emit
+            <iframe
+              src="<?= esc_url( $signed_url . '#view=FitH&toolbar=' . ( $show_toolbar ? '1' : '0' ) ) ?>"
+              width="100%"
+              height="<?= esc_attr( max(200, min(1400, $height)) ) ?>"
+              loading="lazy"
+              title="<?= esc_attr( $title ) ?>"
+            />
+```
+
+**Key files:**
+
+| Layer | File |
+|---|---|
+| Block render | `src/blocks/pdf-viewer/render.php` |
+| Empty states helper | `includes/Core/TemplateHelpers.php::render_block_empty_state` (Coding Rule #11) |
+| Signed URL | `includes/Services/MediaUrl.php::for_file` |
+| Privacy | `includes/Services/PrivacyService.php::can_view` |
+| Editor | `src/blocks/pdf-viewer/index.js` + `block.json` (apiVersion 3, attrs `mediaId`/`height`/`showToolbar`) |
+
+**Why URL fragment instead of params:** `#view=FitH&toolbar=...` is the standard PDF Open Parameters spec — supported by Chrome's built-in viewer, Firefox PDF.js, Safari Preview, and Edge. The fragment is browser-side, not server-side, so it works with our signed-URL token (which lives in the query string) without colliding.
+
+**Why iframe + signed URL instead of `<embed>`:** `<embed>` does not honor URL fragments consistently across browsers. iframe respects `#view=FitH` everywhere. The signed-URL token in the query string ensures the upload `.htaccess` deny-all is bypassed only with valid auth.
+
+**Mobile note:** below 640px viewport the iframe still renders at the configured height. iOS Safari uses Apple's PDF preview which ignores `#view=FitH` — viewer drops to default zoom. Not a regression — same behavior as `<a href>` to a PDF.
 
 ---
 

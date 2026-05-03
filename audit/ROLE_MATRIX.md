@@ -1,6 +1,6 @@
 # WPMediaVerse — Role Permission Matrix
 
-**Generated:** 2026-04-29
+**Generated:** 2026-04-29 · **1.2.0 actions appended:** 2026-05-03
 
 Maps every user-facing feature to the WordPress roles that can access it. Capabilities are defined in `includes/Capabilities/MediaCapabilities.php` and assigned to roles by `MediaCapabilities::map_to_roles()`.
 
@@ -28,6 +28,9 @@ Legend: **C**=Create · **R**=Read · **U**=Update · **D**=Delete · **—**=No
 | Send DM | — | C (per `mvs_dm_access`) | C | C | C | C |
 | Report media/user | — | C | C | C | C | C |
 | Block user | — | C/D | C/D | C/D | C/D | C/D |
+| Record download (1.2.0) | R (privacy + global toggle) | R | R | R | R | R |
+| Record share (1.2.0) | R (privacy gate) | R | R | R | R | R |
+| Edit own media — `allow_download` toggle (1.2.0) | — | U | U | U | U | U |
 
 Capability map:
 
@@ -79,11 +82,19 @@ All admin pages require `manage_options` or `manage_mvs_settings` (admin only) �
 |---|---|---|
 | Overview / Dashboard | — | R |
 | All Media (admin list) | — | R/U/D |
+| All Media — Bulk Trash (1.2.0) | — | D (`manage_options` OR `moderate_mvs_media`) |
+| All Media — Bulk Restore from Trash (1.2.0) | — | U |
+| All Media — Bulk Delete-permanently (1.2.0) | — | D |
 | Settings | — | R/U |
 | Stats | — | R |
 | Moderation | R/U/D | R/U/D |
 | Logs | — | R |
 | Setup Wizard | — | R/U |
+
+**Notes on 1.2.0 bulk actions:**
+- All three bulk actions are gated by `wp_nonce_field('mvs_bulk_media')` + a capability check on each row.
+- Capability fallback: if the user lacks `manage_options`, `moderate_mvs_media` is checked (so editors can also moderate via this UI when granted that custom cap).
+- `permanently_delete_media()` helper: extracted from the single-row delete path; now reused for both single + bulk permanent delete (file-system + `mvs_media_index` + `mvs_media_meta` + `mvs_media_views` + `mvs_media_stats` + `mvs_album_items` cleanup).
 
 ---
 
