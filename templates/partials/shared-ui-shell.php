@@ -147,9 +147,43 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						data-wp-on--change="actions.handleFileSelect" />
 
 					<!-- Preview thumbnails -->
-					<div class="mvs-modal-previews" data-wp-bind--hidden="!state.hasFiles">
+					<div class="mvs-modal-previews" data-wp-bind--hidden="!state.hasFiles" role="list">
 						<template data-wp-each="state.uploadModalPreviews">
-							<img class="mvs-modal-preview-thumb" data-wp-bind--src="context.item" data-wp-bind--hidden="!context.item" alt="" />
+							<div class="mvs-modal-preview" role="listitem"
+								data-wp-bind--data-mvs-file-uid="context.item.uid">
+								<!-- Image / video thumbnail (when src is populated) -->
+								<img class="mvs-modal-preview-thumb"
+									data-wp-bind--src="context.item.src"
+									data-wp-bind--hidden="!context.item.src"
+									alt="" />
+								<!-- Audio fallback icon (no src possible) -->
+								<div class="mvs-modal-preview-icon"
+									data-wp-bind--hidden="!context.item.isAudio">
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32" aria-hidden="true">
+										<path d="M9 18V5l12-2v13"/>
+										<circle cx="6" cy="18" r="3"/>
+										<circle cx="18" cy="16" r="3"/>
+									</svg>
+								</div>
+								<!-- Generic file fallback (other / not-yet-loaded video) -->
+								<div class="mvs-modal-preview-icon"
+									data-wp-bind--hidden="!context.item.isOther">
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32" aria-hidden="true">
+										<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+										<polyline points="14 2 14 8 20 8"/>
+									</svg>
+								</div>
+								<!-- File name -->
+								<span class="mvs-modal-preview-name" data-wp-text="context.item.name"></span>
+								<!-- Remove this single file -->
+								<button type="button" class="mvs-modal-preview-remove"
+									data-wp-on--click="actions.removeUploadFile"
+									aria-label="<?php esc_attr_e( 'Remove this file from upload', 'wpmediaverse' ); ?>">
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true">
+										<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+									</svg>
+								</button>
+							</div>
 						</template>
 					</div>
 

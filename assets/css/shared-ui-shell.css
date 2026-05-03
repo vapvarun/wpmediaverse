@@ -226,6 +226,77 @@
 	border: 2px solid var(--mvs-border-light);
 }
 
+/* Each preview is a thumbnail / icon + filename + remove button. Audio
+   files (no thumbnail possible) and other types use a Lucide icon
+   placeholder so the user always sees they selected the file. */
+.mvs-modal-preview {
+	position: relative;
+	width: 96px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+}
+
+.mvs-modal-preview .mvs-modal-preview-thumb {
+	width: 80px;
+	height: 80px;
+}
+
+.mvs-modal-preview-icon {
+	width: 80px;
+	height: 80px;
+	border-radius: 8px;
+	border: 2px dashed var(--mvs-border-light);
+	background: var(--mvs-surface-2, #f6f7f7);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--mvs-text-muted, #757575);
+}
+
+.mvs-modal-preview-icon[hidden] {
+	display: none !important;
+}
+
+.mvs-modal-preview-name {
+	font-size: 11px;
+	color: var(--mvs-text-muted, #757575);
+	max-width: 96px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: center;
+}
+
+.mvs-modal-preview-remove {
+	position: absolute;
+	top: -6px;
+	right: -6px;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: var(--mvs-danger, #d63638);
+	color: #fff;
+	border: 2px solid var(--mvs-bg, #fff);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	padding: 0;
+	transition: transform 0.15s ease;
+}
+
+.mvs-modal-preview-remove:hover,
+.mvs-modal-preview-remove:focus-visible {
+	transform: scale( 1.1 );
+}
+
+.mvs-modal-preview-remove:focus-visible {
+	outline: 2px solid var(--mvs-primary, #2271b1);
+	outline-offset: 2px;
+}
+
 /* ─── Progress ─── */
 .mvs-modal-progress {
 	padding: 32px 0;

@@ -406,16 +406,38 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			event.preventDefault();
 		},
 		generatePreviews() {
-			state.uploadModalPreviews = [];
+			// Each preview is { uid, src, name, type, isAudio, isOther }
+			// so the template can render filename + an icon for non-image
+			// types (audio especially — previously rendered an empty <img>
+			// with no visual cue at all). uid is a stable per-file marker
+			// so removeUploadFile can identify which entry to drop without
+			// relying on array index (which data-wp-each doesn't expose
+			// directly in template context).
+			const stamp = Date.now();
+			const previews = state.uploadModalFiles.map( ( file, i ) => ( {
+				uid: stamp + ':' + i + ':' + ( file.size || 0 ) + ':' + ( file.name || '' ),
+				src: '',
+				name: file.name || 'file',
+				type: file.type || '',
+				isAudio: file.type.startsWith( 'audio/' ),
+				isOther: ! file.type.startsWith( 'image/' )
+					&& ! file.type.startsWith( 'video/' )
+					&& ! file.type.startsWith( 'audio/' ),
+			} ) );
+			state.uploadModalPreviews = previews;
+
 			state.uploadModalFiles.forEach( ( file, idx ) => {
 				if ( file.type.startsWith( 'image/' ) ) {
 					const reader = new FileReader();
 					reader.onload = ( e ) => {
-						state.uploadModalPreviews = [ ...state.uploadModalPreviews, e.target.result ];
+						const next = [ ...state.uploadModalPreviews ];
+						if ( next[ idx ] ) {
+							next[ idx ] = { ...next[ idx ], src: e.target.result };
+							state.uploadModalPreviews = next;
+						}
 					};
 					reader.readAsDataURL( file );
 				} else if ( file.type.startsWith( 'video/' ) ) {
-					// Generate thumbnail from video first frame.
 					const video = document.createElement( 'video' );
 					video.preload = 'metadata';
 					video.muted = true;
@@ -432,18 +454,44 @@ const { state, actions } = store( 'mvs/shared-ui', {
 							canvas.height = video.videoHeight || 180;
 							canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
 							const thumb = canvas.toDataURL( 'image/jpeg', 0.7 );
-							state.uploadModalPreviews = [ ...state.uploadModalPreviews, thumb ];
+							const next = [ ...state.uploadModalPreviews ];
+							if ( next[ idx ] ) {
+								next[ idx ] = { ...next[ idx ], src: thumb };
+								state.uploadModalPreviews = next;
+							}
 						} catch {
-							// CORS or other error — use placeholder.
-							state.uploadModalPreviews = [ ...state.uploadModalPreviews, '' ];
+							// CORS / decode failure — leave src empty; template
+							// shows the video icon as a fallback.
 						}
 						URL.revokeObjectURL( url );
 					} );
-				} else {
-					// Audio or other — no preview.
-					state.uploadModalPreviews = [ ...state.uploadModalPreviews, '' ];
 				}
+				// Audio + other types: no thumbnail. Template renders an
+				// icon based on the type flags above.
 			} );
+		},
+		removeUploadFile( event ) {
+			const wrap = event.target?.closest?.( '[data-mvs-file-uid]' );
+			if ( ! wrap ) {
+				return;
+			}
+			const uid = wrap.getAttribute( 'data-mvs-file-uid' );
+			if ( ! uid ) {
+				return;
+			}
+			const idx = state.uploadModalPreviews.findIndex( ( p ) => p.uid === uid );
+			if ( idx < 0 ) {
+				return;
+			}
+			state.uploadModalFiles = state.uploadModalFiles.filter( ( _, i ) => i !== idx );
+			state.uploadModalPreviews = state.uploadModalPreviews.filter( ( _, i ) => i !== idx );
+			if ( state.uploadModalFiles.length === 0 ) {
+				// All files removed — reset metadata so the modal shows the
+				// dropzone placeholder again instead of stale field values.
+				state.uploadModalTitle = '';
+				state.uploadModalDescription = '';
+				state.uploadModalTags = '';
+			}
 		},
 		filterFilesByMode( files ) {
 			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
