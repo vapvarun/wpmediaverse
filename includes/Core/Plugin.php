@@ -1465,9 +1465,16 @@ JS;
 		 *
 		 * @since 1.2.0
 		 *
-		 * @param bool $should_render Default decision (true at this point).
+		 * @param bool   $should_render Default decision (true at this point).
+		 * @param string $visibility    Resolved visibility setting that got us
+		 *                              here — one of `everywhere`, `mvs_pages`,
+		 *                              `bp_pages`. Lets callbacks scope their
+		 *                              override by the admin's intent (e.g.
+		 *                              suppress only when the admin chose
+		 *                              `everywhere`, leave page-specific
+		 *                              modes alone).
 		 */
-		if ( ! apply_filters( 'mvs_should_render_chat_panel', true ) ) {
+		if ( ! apply_filters( 'mvs_should_render_chat_panel', true, $visibility ) ) {
 			return;
 		}
 

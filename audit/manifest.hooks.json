@@ -156,13 +156,13 @@
     {
       "name": "mvs_should_render_chat_panel",
       "type": "filter",
-      "args": "$should_render",
+      "args": "$should_render, $visibility",
       "args_signature": [
         "bool $should_render",
         "string $resolved_visibility"
       ],
-      "args_count": 1,
-      "where": "includes/Core/Plugin.php:1470",
+      "args_count": 2,
+      "where": "includes/Core/Plugin.php:1477",
       "purpose": "Per-page override of the slide-out chat panel render decision after the mvs_chat_panel_visibility setting has resolved (e.g. force-hide on WooCommerce checkout, single-product, or specific post IDs / roles). Returning false skips the chat-panel render in wp_footer for the current request.",
       "consumed_by": []
     },
