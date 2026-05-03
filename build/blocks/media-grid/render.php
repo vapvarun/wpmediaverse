@@ -22,6 +22,7 @@ $media_type     = isset( $attributes['mediaType'] ) ? sanitize_text_field( $attr
 $category       = isset( $attributes['category'] ) ? sanitize_text_field( $attributes['category'] ) : '';
 $mvs_tag        = isset( $attributes['tag'] ) ? sanitize_text_field( $attributes['tag'] ) : '';
 $order_by       = isset( $attributes['orderBy'] ) ? sanitize_text_field( $attributes['orderBy'] ) : 'date';
+$order_dir      = isset( $attributes['order'] ) && 'asc' === strtolower( $attributes['order'] ) ? 'ASC' : 'DESC';
 $show_lightbox  = ! empty( $attributes['showLightbox'] );
 $show_reactions = ! empty( $attributes['showReactions'] );
 $gap            = isset( $attributes['gap'] ) ? absint( $attributes['gap'] ) : 8;
@@ -81,8 +82,40 @@ $where .= " AND m.media_id NOT IN (
 	AND mm2.meta_value != '0'
 )";
 
-$order_clause = 'date' === $order_by ? 'm.created_at DESC' : 'm.title ASC';
-$offset       = ( $mvs_paged - 1 ) * $mvs_per_page;
+// ── ORDER BY clause (and optional JOIN for popularity-based sort) ─────────
+// Supported values: date | title | popular | views | reactions | random.
+// $order_dir = ASC | DESC (ignored for `random`).
+$stats_table = $wpdb->prefix . 'mvs_media_stats';
+switch ( $order_by ) {
+	case 'title':
+		$order_clause = 'm.title ' . $order_dir;
+		break;
+
+	case 'popular':
+	case 'views':
+	case 'reactions':
+		// Popular = reactions + views (engagement), 0 fallback for media without a stats row.
+		$joins .= " LEFT JOIN {$stats_table} s ON s.media_id = m.media_id";
+		if ( 'views' === $order_by ) {
+			$order_clause = 'COALESCE(s.views, 0) ' . $order_dir;
+		} elseif ( 'reactions' === $order_by ) {
+			$order_clause = 'COALESCE(s.reactions, 0) ' . $order_dir;
+		} else {
+			$order_clause = '(COALESCE(s.reactions, 0) + COALESCE(s.views, 0)) ' . $order_dir;
+		}
+		break;
+
+	case 'random':
+		$order_clause = 'RAND()';
+		break;
+
+	case 'date':
+	default:
+		$order_clause = 'm.created_at ' . $order_dir;
+		break;
+}
+
+$offset = ( $mvs_paged - 1 ) * $mvs_per_page;
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 // Count total.

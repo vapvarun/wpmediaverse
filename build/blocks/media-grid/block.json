@@ -51,6 +51,10 @@
       "type": "string",
       "default": "date"
     },
+    "order": {
+      "type": "string",
+      "default": "desc"
+    },
     "showLightbox": {
       "type": "boolean",
       "default": true
