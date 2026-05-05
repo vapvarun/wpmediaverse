@@ -181,6 +181,16 @@ $mvs_archive_url = home_url( '/media/' );
 					<img src="<?php echo esc_url( $mvs_file_url ); ?>" alt="<?php echo esc_attr( $mvs_title ); ?>" />
 				</div>
 			<?php elseif ( $is_video ) : ?>
+				<?php
+				// Lock the player box to the source's aspect ratio so the
+				// frame stays the same height before play (poster), during
+				// play, and after pause. Without this, the <video> element
+				// briefly reflows when metadata loads or playback starts.
+				$mvs_video_aspect_style = '';
+				if ( (int) $mvs_width > 0 && (int) $mvs_height > 0 ) {
+					$mvs_video_aspect_style = sprintf( ' style="aspect-ratio:%d/%d;"', (int) $mvs_width, (int) $mvs_height );
+				}
+				?>
 				<div class="mvs-media-video"
 					data-wp-interactive="mvs/media-player"
 					<?php
@@ -194,8 +204,13 @@ $mvs_archive_url = home_url( '/media/' );
 						)
 					);
 					?>
-					data-wp-init="actions.trackView">
+					data-wp-init="actions.trackView"
+					<?php echo $mvs_video_aspect_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped above. ?>
+				>
 					<video controls preload="metadata"
+						<?php if ( (int) $mvs_width > 0 && (int) $mvs_height > 0 ) : ?>
+							width="<?php echo (int) $mvs_width; ?>" height="<?php echo (int) $mvs_height; ?>"
+						<?php endif; ?>
 						<?php echo $poster_url ? 'poster="' . esc_url( $poster_url ) . '"' : ''; ?>
 						data-wp-on--play="actions.onPlay"
 						data-wp-on--pause="actions.onPause">
