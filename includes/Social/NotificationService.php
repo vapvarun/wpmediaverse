@@ -399,7 +399,7 @@ class NotificationService {
 			// BP content path, `bp_activity_at_name_filter` rewrites the
 			// `@user` substring into mention HTML and corrupts the URL.
 			$tpl = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
-			$url = ( $tpl && (int) $row->actor_id > 0 ) ? $tpl->get_user_profile_url( (int) $row->actor_id ) : '';
+			$url = ( (int) $row->actor_id > 0 ) ? $tpl->get_user_profile_url( (int) $row->actor_id ) : '';
 		} elseif ( 'new_message' === $row->type ) {
 			$url = home_url( '/messages/' );
 		}
