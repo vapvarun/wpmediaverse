@@ -57,19 +57,24 @@ class Activator {
 	 * upload form respectively.
 	 */
 	private static function create_pages(): void {
+		// Page titles stored in wp_posts.post_title at insert time; admins can
+		// rename freely afterwards. NOT wrapped in __() because the activation
+		// hook fires before `init` and translation lookups at that point trigger
+		// the WP 6.7+ `_load_textdomain_just_in_time was called incorrectly`
+		// notice. Titles are not re-translated on each page render anyway.
 		$pages = array(
 			'mvs_page_explore'   => array(
-				'title'     => __( 'Explore Media', 'wpmediaverse' ),
+				'title'     => 'Explore Media',
 				'slug'      => 'explore-media',
 				'shortcode' => '[mvs_gallery columns="3" count="24"]',
 			),
 			'mvs_page_dashboard' => array(
-				'title'     => __( 'My Media', 'wpmediaverse' ),
+				'title'     => 'My Media',
 				'slug'      => 'my-media',
 				'shortcode' => '[mvs_dashboard]',
 			),
 			'mvs_page_upload'    => array(
-				'title'     => __( 'Upload Media', 'wpmediaverse' ),
+				'title'     => 'Upload Media',
 				'slug'      => 'upload-media',
 				'shortcode' => '[mvs_upload]',
 			),
