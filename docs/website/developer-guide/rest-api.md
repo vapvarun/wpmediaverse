@@ -98,7 +98,32 @@ Delete a media item and its stored file. Requires ownership or `delete_others_mv
 
 ### GET /media/{id}/signed-url
 
-Generate a time-limited signed URL for a private file. Requires view access to the media.
+Generate a time-limited signed URL for a private file. Requires view access to the media. The signed URL points at `/mvs/v1/serve` and carries an HMAC-SHA256 signature that binds the request to a specific user, media id, and expiration timestamp.
+
+### GET /mvs/v1/serve
+
+Serves the underlying file (full-file or thumbnail) for a validated signed URL. Public endpoint — the HMAC signature on the URL itself is the credential. Drains output buffers + disables `zlib.output_compression` before streaming so byte-counts match `Content-Length` exactly (added in 1.2.0 to fix `ERR_CONTENT_LENGTH_MISMATCH` on hosts with output buffering enabled). Honours `Range:` headers for video/audio streaming with chunked partial responses.
+
+| Param | Required | Description |
+|-------|:--------:|-------------|
+| `mvs_id` | yes | Media id |
+| `mvs_uid` | yes | User id the URL was signed for (0 for anonymous public media) |
+| `mvs_exp` | yes | Unix expiration timestamp |
+| `mvs_sig` | yes | HMAC-SHA256 signature |
+| `mvs_size` | no | One of `large` / `medium` / `thumbnail` / `watermark` to serve a thumbnail variant |
+| `mvs_dl` | no | When `1`, sets `Content-Disposition: attachment` and increments the download counter |
+
+### POST /media/{id}/download
+
+Records a download event for the media item. Increments `mvs_media_stats.downloads` and writes a row to `mvs_media_views` with `event_type = 'download'`. Refused with 403 when the global **Allow Downloads** toggle is off OR the per-media `allow_download` meta is set to `'0'`. Rate-limited to 30 requests/min/user.
+
+Added in 1.2.0.
+
+### POST /media/{id}/share
+
+Records a share event for the media item. Increments `mvs_media_stats.shares`. Used by the lightbox Share button after a successful `navigator.share` / clipboard copy. Rate-limited to 60 requests/min/user.
+
+Added in 1.2.0.
 
 ---
 
