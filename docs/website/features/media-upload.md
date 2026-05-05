@@ -44,9 +44,19 @@ Share photos, videos, and audio with your community — no admin access needed, 
 
 Customize allowed types in **Media > Settings > General**.
 
+## Bulk Album Upload (1.2.0)
+
+When uploading multiple files at once into an album, WPMediaVerse now creates **one** activity entry for the whole batch ("Varun uploaded 3 photos to album Portrait Series") with a thumbnail grid, instead of one separate activity per file. Single-file uploads and ad-hoc photo posts retain their existing per-post behaviour.
+
+## Per-Media Edit Modal (1.2.0)
+
+The settings cog on dashboard cards now opens a prefilled edit modal — change title, description, privacy level, and per-media **Allow Downloads** in place. Save updates the row live without a page reload. The matching `PUT /mvs/v1/media/{id}` REST endpoint accepts an `allow_download` boolean.
+
+When you change the title, the URL slug stays stable by default. Tick the new **Update URL slug** checkbox if you want the slug regenerated from the new title — the page redirects to the new URL automatically so existing tabs and bookmarks don't 404.
+
 ## What Happens After Upload
 
-- Thumbnails are generated automatically for images and videos
+- Thumbnails are generated automatically for images and videos (videos: ffmpeg poster extraction; run `wp mvs generate-video-thumbnails` to backfill any uploaded before 1.2.0)
 - EXIF GPS data is stripped from JPEG files (other metadata like camera model is kept)
 - A SHA-256 hash is computed to detect duplicate files
 - If AI moderation is enabled, the file is queued for automatic review

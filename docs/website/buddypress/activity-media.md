@@ -26,6 +26,15 @@ These appear in the BuddyPress activity filter dropdown.
 | Comment posted on media | `mvs_comment_created` | "Username commented on [media title]" |
 | Media added to an album | `mvs_album_items_added` | Updates existing upload activity to reference the album |
 | Media assigned to a group | `mvs_media_group_assigned` | Reassigns activity to the group component |
+| Bulk album upload | `mvs_album_items_added` | One grouped activity for all files in the same upload action — see below |
+
+### Bulk album upload activity grouping (1.2.0)
+
+When a user uploads multiple files at once via the album upload modal, WPMediaVerse emits **one** grouped activity entry for the whole batch instead of one entry per file:
+
+> **Username uploaded 3 photos to album _Portrait Series_** — with a 3-thumbnail grid
+
+The mechanism: the upload modal sends `?album_upload=1` with each per-file `POST /media` request. The `mvs_media_uploaded` listener records a skip flag on the activity row, suppressing per-media activity creation. After the JS link call finishes, `mvs_album_items_added` fires once with the bundled media IDs and the listener emits a single grouped `bp_activity_add` with the thumbnail grid as content. Single-file album uploads still produce a per-photo activity (no bundling needed); ad-hoc photo posts via the activity composer keep their existing one-row-per-post behaviour.
 
 ## Activity Format
 
