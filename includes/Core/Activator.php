@@ -48,6 +48,13 @@ class Activator {
 	 *
 	 * Pages are only created when the stored option is missing or points to a
 	 * non-existent page, so re-activation is safely idempotent.
+	 *
+	 * The three pages match the canonical slot map in
+	 * `Core\SettingsHelper::PAGE_SLOT_OPTIONS` (`dashboard` / `explore` /
+	 * `upload`). Site owners must NOT see blank/zero defaults that require
+	 * manual configuration before the plugin's main UI surfaces work — these
+	 * pages back the Explore feed, the per-user dashboard, and the front-end
+	 * upload form respectively.
 	 */
 	private static function create_pages(): void {
 		$pages = array(
@@ -60,6 +67,11 @@ class Activator {
 				'title'     => __( 'My Media', 'wpmediaverse' ),
 				'slug'      => 'my-media',
 				'shortcode' => '[mvs_dashboard]',
+			),
+			'mvs_page_upload'    => array(
+				'title'     => __( 'Upload Media', 'wpmediaverse' ),
+				'slug'      => 'upload-media',
+				'shortcode' => '[mvs_upload]',
 			),
 		);
 
@@ -148,11 +160,19 @@ class Activator {
 		$defaults = array(
 			// General.
 			'mvs_max_upload_size'     => 104857600, // 100MB in bytes.
-			'mvs_allowed_file_types'  => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg',
+			'mvs_allowed_file_types'  => 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg,application/pdf',
 			'mvs_default_privacy'     => 'public',
 			'mvs_duplicate_action'    => 'warn',
 			'mvs_strip_exif'          => true,
 			'mvs_storage_driver'      => 'local',
+			// AI cost guardrails.
+			// Conservative monthly cap so a fresh install can never silently
+			// run an unbounded OpenAI bill. Site owners who want unlimited
+			// spend can set this to 0 in the AI settings tab — that intent is
+			// then explicit and recorded in wp_options. add_option() below
+			// only inserts when the row is missing, so existing installs that
+			// already chose 0 (or any other value) are not overwritten.
+			'mvs_ai_monthly_budget'   => 10,
 			// Watermark (Pro controls the UI; free seeds defaults).
 			'mvs_watermark_enabled'   => false,
 			'mvs_watermark_type'      => 'text',

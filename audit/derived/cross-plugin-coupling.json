@@ -1,0 +1,70 @@
+{
+  "name": "cross-plugin-coupling",
+  "computed_at": "2026-05-03T17:30:00Z",
+  "input_globs": ["includes/**/*.php", "../wpmediaverse-pro/includes/**/*.php"],
+  "input_hash": "sha1:bc5e6e32bfd96d7c27c3adc81cea74cb6b2e6cd3+25285a4cecc27c50b9befe9b209e0a492748bd68",
+  "result": {
+    "free_hooks_consumed_by_pro": [
+      {"hook": "mvs_media_uploaded", "plugin": "wpmediaverse-pro", "where": "includes/Connectors/ConnectorManager.php:60", "kind": "add_action_listener"},
+      {"hook": "mvs_media_uploaded", "plugin": "wpmediaverse-pro", "where": "includes/Captions/TranscriptionService.php:71", "kind": "add_action_listener"},
+      {"hook": "mvs_media_uploaded", "plugin": "wpmediaverse-pro", "where": "includes/Video/TranscodeService.php:98", "kind": "add_action_listener"},
+      {"hook": "mvs_media_uploaded", "plugin": "wpmediaverse-pro", "where": "includes/Quota/QuotaService.php:40", "kind": "add_action_listener"},
+      {"hook": "mvs_media_uploaded", "plugin": "wpmediaverse-pro", "where": "includes/Streaks/StreakService.php:53", "kind": "add_action_listener"},
+      {"hook": "mvs_media_deleted", "plugin": "wpmediaverse-pro", "where": "includes/Quota/QuotaService.php:41", "kind": "add_action_listener"},
+      {"hook": "mvs_media_response", "plugin": "wpmediaverse-pro", "where": "includes/Captions/TranscriptionService.php:74", "kind": "add_filter_listener"},
+      {"hook": "mvs_media_response", "plugin": "wpmediaverse-pro", "where": "includes/Video/ChapterService.php:32", "kind": "add_filter_listener"},
+      {"hook": "mvs_media_response", "plugin": "wpmediaverse-pro", "where": "includes/Privacy/PrivacyUIService.php:76", "kind": "add_filter_listener"},
+      {"hook": "mvs_storage_driver", "plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:236", "kind": "add_filter_listener"},
+      {"hook": "mvs_ai_providers", "plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:242", "kind": "add_action_listener"},
+      {"hook": "mvs_generate_watermark", "plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:239", "kind": "add_filter_listener"},
+      {"hook": "mvs_privacy_can_view", "plugin": "wpmediaverse-pro", "where": "includes/Privacy/PrivacyUIService.php:79", "kind": "add_filter_listener"}
+    ],
+    "free_hooks_no_longer_consumed_by_pro": [
+      {
+        "hook": "mvs_message_sent",
+        "previous_consumer": "wpmediaverse-pro/includes/Messaging/NotificationListener.php:33",
+        "removed_in": "Pro 1.2.0 (Messaging engine deleted from Pro; messaging is now Free-only)",
+        "free_side_listener_still_present": "includes/Messaging/NotificationListener.php:33 (Free-side listener; not Pro)",
+        "free_side_listener_2": "includes/Social/NotificationService.php:56"
+      }
+    ],
+    "pro_only_hooks_pro_fires_for_pro_consumption": [
+      "mvs_pro_transcode_cleanup",
+      "mvs_resolve_expired_battles",
+      "mvs_activate_scheduled_challenges",
+      "mvs_close_challenge_entries",
+      "mvs_finalize_expired_challenges",
+      "mvs_start_registered_tournaments",
+      "mvs_resolve_expired_matches",
+      "mvs_expire_boosts",
+      "mvs_pro_prune_play_events",
+      "mvs_challenge_created",
+      "mvs_challenge_entry_submitted",
+      "mvs_challenge_finalized",
+      "mvs_tournament_match_resolved"
+    ],
+    "free_filters_pro_extends_but_free_does_not_fire": [
+      {"filter": "mvs_settings_sections", "where_pro": "includes/Core/LicenseManager.php:48 + includes/Admin/ProSettings.php:28 + includes/Admin/GamificationSettings.php:27", "free_status": "Free does NOT apply_filters('mvs_settings_sections') anywhere — Pro-side ProSettings.php registers sections that Pro itself renders. Settings page in Free uses a different SettingsRegistrar group-based contract. Marking as Pro-only ecosystem hook (Pro listens, Pro fires)."},
+      {"filter": "mvs_settings_group_labels", "where_pro": "includes/Admin/GamificationSettings.php:28", "free_status": "Same situation — Pro-only."},
+      {"filter": "mvs_notification_types", "where_pro": "includes/Challenges/ChallengeNotificationListener.php:52", "free_status": "Free does not fire mvs_notification_types — Free's NotificationService uses an internal const TYPE_* registry. Pro hook is for Pro→Pro extension only."},
+      {"filter": "mvs_notification_message", "where_pro": "includes/Challenges/ChallengeNotificationListener.php:53", "free_status": "Free does not fire mvs_notification_message — Free composes messages via a switch in NotificationService::format_message(). Pro hook works only when Pro composes its own messages."},
+      {"filter": "mvs_locate_template", "where_pro": "includes/Frontend/InstagramFeedService.php:31 + includes/Frontend/Layouts/LayoutManager.php:100", "free_status": "Free does not apply_filters('mvs_locate_template') — TemplateLoader uses load_template() directly. Pro can override via template_include or single_template chain instead. Listed as documentation gap, not a runtime bug."},
+      {"filter": "mvs_upload_args", "where_pro": "includes/Quota/QuotaService.php:37", "free_status": "Free does not apply_filters('mvs_upload_args') — Pro's QuotaService can intercept REST args via rest_pre_dispatch instead. Pre-existing manifest-drift; predates 1.2.0."},
+      {"filter": "mvs_feed_media_ids", "where_pro": "includes/Boosts/BoostService.php:38", "free_status": "Free does not apply_filters('mvs_feed_media_ids') — Free's feed query is direct $wpdb in ActivityService. Pre-existing."},
+      {"action": "mvs_dashboard_tabs", "where_pro": "includes/Core/Plugin.php:187 + 516", "free_status": "Free does not do_action('mvs_dashboard_tabs') — dashboard tab markup is hard-coded in the dashboard-view block. Pro listener never fires."},
+      {"action": "mvs_dashboard_panels", "where_pro": "includes/Core/Plugin.php:188 + 517", "free_status": "Same as mvs_dashboard_tabs — never fired."},
+      {"action": "mvs_after_content", "where_pro": "includes/Core/Plugin.php:507", "free_status": "Free does not do_action('mvs_after_content')."},
+      {"action": "mvs_before_explore_grid", "where_pro": "includes/Core/Plugin.php:510", "free_status": "Free does not do_action('mvs_before_explore_grid')."},
+      {"action": "mvs_before_upload_form", "where_pro": "includes/Frontend/UsageWidget.php:41", "free_status": "Free does not do_action('mvs_before_upload_form')."},
+      {"action": "mvs_dashboard_after_content", "where_pro": "includes/Frontend/UsageWidget.php:44", "free_status": "Free does not do_action('mvs_dashboard_after_content')."},
+      {"action": "mvs_settings_render_license", "where_pro": "includes/Core/LicenseManager.php:49", "free_status": "Free does not do_action('mvs_settings_render_license') — only do_action('mvs_settings_render_' . $tab) dynamic. Pro passes its own tab name; works only for tab routing, not as a render-after hook on Free's existing tabs."}
+    ]
+  },
+  "result_count": {
+    "free_hooks_consumed_by_pro": 13,
+    "free_hooks_no_longer_consumed_by_pro": 1,
+    "pro_only_pro_fires_pro_consumes": 13,
+    "free_filters_pro_extends_but_free_does_not_fire": 14
+  },
+  "notes": "1.2.0 refresh: Pro deleted its Messaging engine entirely (Pro/includes/Messaging/ no longer exists). The mvs_message_sent listener at Pro/includes/Messaging/NotificationListener.php:33 is gone — that contract is now Free-only. Free still fires mvs_message_sent (MessagingService.php:832 + 350) but only Free-side listeners (Social/NotificationService.php:56 + Messaging/NotificationListener.php:33) catch it. Discovered 14 Pro-side filters/actions that listen for hooks Free does not fire (extensibility-gap candidates) — most are Pro-internal ecosystem hooks (compete/challenges/tournaments) so not actionable for Free. Three are documentation gaps where Free could fire a hook to enable Pro extensibility (mvs_dashboard_tabs/panels, mvs_after_content) — defer to 1.2.1 or 1.3."
+}

@@ -53,7 +53,7 @@ function run_ux_expectations_tests(): array {
 	assert_test( 'Created media for replace test', $replace_id > 0 ) ? $p++ : $f++;
 
 	if ( $replace_id ) {
-		$old_url = \WPMediaVerse\Repository\MediaRepository::get( $replace_id, 'file_url' );
+		$old_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $replace_id, 'file_url' );
 
 		// Create replacement file.
 		$tmp2 = tempnam( sys_get_temp_dir(), 'mvs_new_' ) . '.jpg';
@@ -81,7 +81,7 @@ function run_ux_expectations_tests(): array {
 		assert_test( 'Replace file accepted', $res->get_status() < 300, 'status:' . $res->get_status() ) ? $p++ : $f++;
 
 		// Verify file URL changed.
-		$new_url = \WPMediaVerse\Repository\MediaRepository::get( $replace_id, 'file_url' );
+		$new_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $replace_id, 'file_url' );
 		if ( $res->get_status() < 300 ) {
 			assert_test( 'File URL changed after replace', $new_url !== $old_url, "old=$old_url new=$new_url" ) ? $p++ : $f++;
 		} else {
@@ -214,7 +214,7 @@ function run_ux_expectations_tests(): array {
 		assert_test( 'UX: Title matches what user entered', ( $r['data']['title'] ?? '' ) === $ux_title ) ? $p++ : $f++;
 
 		// User expects: permalink works.
-		$permalink = \WPMediaVerse\Repository\MediaRepository::get_permalink( $ux_id );
+		$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $ux_id );
 		assert_test( 'UX: Permalink is /media/{slug}/ format', strpos( $permalink, '/media/' ) !== false, $permalink ) ? $p++ : $f++;
 
 		// User expects: thumbnail generated for images.

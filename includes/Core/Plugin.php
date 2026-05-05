@@ -33,6 +33,7 @@ use WPMediaVerse\REST\Controller\ReactionController;
 use WPMediaVerse\REST\Controller\CommentController;
 use WPMediaVerse\REST\Controller\FavoriteController;
 use WPMediaVerse\REST\Controller\StatsController;
+use WPMediaVerse\REST\Controller\AdminController;
 use WPMediaVerse\REST\Controller\TagController;
 use WPMediaVerse\REST\Controller\ModerationController;
 use WPMediaVerse\REST\Controller\AccessController;
@@ -66,6 +67,7 @@ use WPMediaVerse\REST\Controller\ReportController;
 use WPMediaVerse\REST\Controller\ActivityController;
 use WPMediaVerse\REST\Controller\ProfileController;
 use WPMediaVerse\Services\ProfileService;
+use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
 
 /**
@@ -166,8 +168,10 @@ class Plugin {
 		$access_rules = self::$container->get( 'access_rules' );
 		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );
 
-		// Signed URL filter — replaces file_url in REST responses for gated media.
-		add_filter( 'mvs_media_response', array( self::class, 'maybe_sign_file_url' ), 10, 2 );
+		// Signing now lives in \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get($id, 'file_url') — the
+		// previous `mvs_media_response` listener at priority 10 was retired
+		// in Phase 0a item 5. Other listeners (Pro chapters, privacy options,
+		// watermark preview, captions) still fire on the filter.
 
 		// Initialize watermark service (adds preview_url filter at priority 30).
 		self::$container->get( 'watermark' );
@@ -183,6 +187,7 @@ class Plugin {
 
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
+		self::$container->get( 'integration.bp_activity_linkage' );
 		self::$container->get( 'integration.webhooks' );
 
 		// Action Scheduler callback for async webhook delivery.
@@ -199,6 +204,13 @@ class Plugin {
 		add_action( 'admin_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
 
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
+
+		// Auto-pair the mvs-confirm stylesheet whenever its script is enqueued.
+		// Runs late so any enqueue made by integrations (BP profile/group tabs,
+		// Pro dashboard panel) is reflected. Frontend + admin both covered so
+		// the helper is usable from any context.
+		add_action( 'wp_enqueue_scripts', array( self::class, 'auto_enqueue_confirm_style' ), 100 );
+		add_action( 'admin_enqueue_scripts', array( self::class, 'auto_enqueue_confirm_style' ), 100 );
 
 		// Fix nav menu items when BuddyPress is not active.
 		if ( ! function_exists( 'buddypress' ) ) {
@@ -436,6 +448,18 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'integration.bp_activity_linkage',
+			function ( $container ) {
+				$linkage = new \WPMediaVerse\Integrations\BuddyPress\ActivityMediaLinkage(
+					$container->get( 'media_repository' ),
+					$container->get( 'template_helpers' )
+				);
+				$linkage->init();
+				return $linkage;
+			}
+		);
+
+		self::$container->register(
 			'integration.webhooks',
 			function () {
 				$webhooks = new WebhookService();
@@ -526,6 +550,13 @@ class Plugin {
 				return new MediaRepository();
 			}
 		);
+
+		self::$container->register(
+			'template_helpers',
+			function () {
+				return new TemplateHelpers();
+			}
+		);
 	}
 
 	/**
@@ -571,6 +602,7 @@ class Plugin {
 			new ReportController( $reports ),
 			new ActivityController( $activity ),
 			new ProfileController( $profile ),
+			new AdminController(),
 		);
 
 		foreach ( $controllers as $controller ) {
@@ -733,49 +765,9 @@ class Plugin {
 		$webhooks->send( $url, $body, $headers, $attempt );
 	}
 
-	/**
-	 * Replace file_url with signed URL for gated media in REST responses.
-	 *
-	 * @param array $data     Response data.
-	 * @param int   $media_id Media post ID.
-	 * @return array Modified response data.
-	 */
-	public static function maybe_sign_file_url( array $data, int $media_id ): array {
-		$signed_urls = self::$container->get( 'signed_urls' );
-		if ( ! $signed_urls ) {
-			return $data;
-		}
-
-		$user_id = get_current_user_id();
-
-		// ALWAYS sign — public-tier media has no access rules but the
-		// .htaccess in wp-content/uploads/wpmediaverse/ blocks every direct
-		// URL regardless. The serve endpoint short-circuits the permission
-		// check when the media has no access rules, so the cost of signing
-		// public URLs is zero. This is the architectural Option A fix —
-		// single source of URL signing at the response-builder layer,
-		// instead of patching every emission site.
-		$signed_file_url = $signed_urls->generate( $media_id, $user_id );
-
-		// `gated` flag stays bound to access-rules state, not to whether
-		// we signed the URL.
-		if ( $signed_urls->requires_signed_url( $media_id ) ) {
-			$data['gated'] = true;
-			// Gated media + no permission = strip the URL entirely so the
-			// frontend renders the lock-overlay state instead of a broken img.
-			$data['file_url'] = $signed_file_url ?: '';
-		} else {
-			// Public media — always sign so the URL flows through the gated
-			// uploads serve endpoint. Falls back to existing data['file_url']
-			// only if signing failed (defensive — should never happen since
-			// the service is always present and public media has no privacy
-			// veto).
-			$data['file_url'] = $signed_file_url ?: ( $data['file_url'] ?? '' );
-			$data['gated']    = false;
-		}
-
-		return $data;
-	}
+	// Note: maybe_sign_file_url() removed in Phase 0a item 5. Signing now
+	// lives in \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get($id, 'file_url'/'thumb_*'/'watermark_url')
+	// — every emission site automatically gets a signed URL.
 
 	// Note: ensure_media_rows methods removed — media is created directly in custom tables.
 
@@ -915,15 +907,40 @@ class Plugin {
 		// set up in Plugin::init(). No per-integration re-registration
 		// needed anywhere else in the codebase.
 
+		// Frontend confirmation modal — exposes window.mvsConfirm() as a
+		// promise-based replacement for native window.confirm(). Loaded as a
+		// dep of any frontend script that needs styled confirmation
+		// (bp-actions, dashboard-connectors). Idempotent: if Pro admin's
+		// ConfirmDialog has already installed window.mvsConfirm, this is a
+		// no-op. See assets/js/frontend/mvs-confirm.js for API contract.
+		wp_register_script(
+			'mvs-confirm',
+			MVS_PLUGIN_URL . 'assets/js/frontend/mvs-confirm.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_register_style(
+			'mvs-confirm',
+			MVS_PLUGIN_URL . 'assets/css/mvs-confirm.css',
+			array(),
+			MVS_VERSION
+		);
+
 		// BP-integration script — wires up per-item delete/edit actions on
 		// owner-visible grid cards. Declares `mvs-lucide` as a dep so the
 		// `<i data-lucide="trash-2">` icons we emit on action buttons are
 		// guaranteed to render even if the shared-ui shell didn't enqueue
-		// it. Config is injected inline so no extra request is needed.
+		// it. Also depends on `mvs-confirm` because the destructive delete
+		// flows call window.mvsConfirm() instead of window.confirm().
+		// Config is injected inline so no extra request is needed.
 		wp_register_script(
 			'mvs-bp-actions',
 			MVS_PLUGIN_URL . 'assets/js/frontend/bp-actions.js',
-			array( 'mvs-lucide' ),
+			array( 'mvs-lucide', 'mvs-confirm' ),
 			MVS_VERSION,
 			array(
 				'in_footer' => true,
@@ -1233,6 +1250,20 @@ class Plugin {
 	 * blocks existed and any one forgetting or diverging produced the
 	 * "icon renders as an empty box" class of bug we kept re-fixing.
 	 */
+	/**
+	 * Late-priority callback that pairs the `mvs-confirm` stylesheet with its
+	 * script automatically. Any code path that calls
+	 * wp_enqueue_script('mvs-confirm') (directly or via a dep chain like
+	 * mvs-bp-actions → mvs-confirm) gets the matching stylesheet without
+	 * having to remember a second wp_enqueue_style call. Runs on both
+	 * frontend and admin so the helper styles correctly in every context.
+	 */
+	public static function auto_enqueue_confirm_style(): void {
+		if ( wp_script_is( 'mvs-confirm', 'enqueued' ) && wp_style_is( 'mvs-confirm', 'registered' ) && ! wp_style_is( 'mvs-confirm', 'enqueued' ) ) {
+			wp_enqueue_style( 'mvs-confirm' );
+		}
+	}
+
 	public static function register_lucide_script(): void {
 		if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
 			return;
@@ -1370,13 +1401,31 @@ JS;
 	}
 
 	/**
-	 * Render the chat panel in wp_footer for logged-in users.
+	 * Render the slide-out chat panel in wp_footer for logged-in users.
 	 *
-	 * The slide-out chat panel is the compact DM UI that appears on every
-	 * plugin page via wp_footer. On the dedicated `/messages/` page the full
-	 * messages template is already rendering, so mounting the slide-out would
-	 * double-initialise the `mvs/messaging` Interactivity API store and put
-	 * two DM UIs on the same screen. Skip in that case.
+	 * The slide-out chat panel is the compact DM UI (the floating chat
+	 * icon + the docked panel that opens from it). It used to appear on
+	 * every page for logged-in users, which produced visual clutter on
+	 * landing pages, blog posts, and other non-MVS surfaces. Visibility
+	 * is now controlled by the `mvs_chat_panel_visibility` admin setting
+	 * — see SettingsRegistrar::register_messaging_settings().
+	 *
+	 * Suppression order (any condition skips the render):
+	 *   1. Anonymous viewer (panel needs auth state).
+	 *   2. BuddyNext active (delegated DM UI).
+	 *   3. The dedicated /messages/ full-page template — already renders
+	 *      its own chat UI; a second mount would dual-init the
+	 *      mvs/messaging Interactivity API store.
+	 *   4. Setting = 'disabled'.
+	 *   5. Setting = 'mvs_pages' AND the current request is NOT one of
+	 *      the plugin-owned URLs (Explore archive, Dashboard, Album,
+	 *      Collection, Profile, single-media, BP profile/group when MVS
+	 *      tab is active).
+	 *   6. Setting = 'bp_pages' AND we're not on a BuddyPress profile
+	 *      or group page.
+	 *   7. The `mvs_should_render_chat_panel` filter returns false.
+	 *      Lets themes / plugins force a per-page override (e.g. hide on
+	 *      checkout pages, on a WooCommerce single-product, etc.).
 	 */
 	public static function render_chat_panel(): void {
 		if ( ! is_user_logged_in() ) {
@@ -1388,9 +1437,44 @@ JS;
 			return;
 		}
 
-		// Suppress on the dedicated `/messages/` full-page template — it
-		// already renders its own chat UI; a second mount would dual-render.
+		// Suppress on the dedicated `/messages/` full-page template.
 		if ( (int) get_query_var( 'mvs_messages_page' ) ) {
+			return;
+		}
+
+		$visibility = (string) get_option( 'mvs_chat_panel_visibility', 'everywhere' );
+
+		if ( 'disabled' === $visibility ) {
+			return;
+		}
+
+		if ( 'mvs_pages' === $visibility && ! self::is_mvs_page() ) {
+			return;
+		}
+
+		if ( 'bp_pages' === $visibility && ! self::is_bp_page() ) {
+			return;
+		}
+
+		/**
+		 * Filter the chat panel render decision.
+		 *
+		 * Use this to force a per-page override that the visibility
+		 * setting can't express — e.g. hide on WooCommerce checkout, on
+		 * specific post IDs, or based on user role.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param bool   $should_render Default decision (true at this point).
+		 * @param string $visibility    Resolved visibility setting that got us
+		 *                              here — one of `everywhere`, `mvs_pages`,
+		 *                              `bp_pages`. Lets callbacks scope their
+		 *                              override by the admin's intent (e.g.
+		 *                              suppress only when the admin chose
+		 *                              `everywhere`, leave page-specific
+		 *                              modes alone).
+		 */
+		if ( ! apply_filters( 'mvs_should_render_chat_panel', true, $visibility ) ) {
 			return;
 		}
 
@@ -1398,6 +1482,57 @@ JS;
 		if ( file_exists( $template ) ) {
 			include $template;
 		}
+	}
+
+	/**
+	 * Is the current request a WPMediaVerse-owned page surface?
+	 *
+	 * Used by `render_chat_panel()` when visibility = 'mvs_pages'.
+	 * Recognises: media archive (Explore), single media, album CPT,
+	 * collection CPT, dashboard page, upload page, member profile when
+	 * the Media tab is the current sub-nav.
+	 *
+	 * @return bool
+	 */
+	private static function is_mvs_page(): bool {
+		if ( ! empty( $GLOBALS['mvs_current_media'] ) ) {
+			return true;
+		}
+		if ( ! empty( $GLOBALS['mvs_is_media_archive'] ) ) {
+			return true;
+		}
+		if ( is_singular( array( 'mvs_album', 'mvs_collection' ) ) ) {
+			return true;
+		}
+		// Plugin-owned WP Pages — IDs come from the standard slot map.
+		$page_ids = array_filter(
+			array(
+				(int) get_option( 'mvs_page_dashboard', 0 ),
+				(int) get_option( 'mvs_page_explore', 0 ),
+				(int) get_option( 'mvs_page_upload', 0 ),
+			)
+		);
+		if ( $page_ids && is_page( $page_ids ) ) {
+			return true;
+		}
+		// BP member profile with the MVS Media tab active.
+		if ( function_exists( 'bp_is_user' ) && bp_is_user() && function_exists( 'bp_current_component' ) && 'media' === bp_current_component() ) {
+			return true;
+		}
+		// BP group with the Media tab active.
+		if ( function_exists( 'bp_is_group' ) && bp_is_group() && function_exists( 'bp_current_action' ) && 'media' === bp_current_action() ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Is the current request any BuddyPress page?
+	 *
+	 * @return bool
+	 */
+	private static function is_bp_page(): bool {
+		return function_exists( 'is_buddypress' ) && is_buddypress();
 	}
 
 	/**

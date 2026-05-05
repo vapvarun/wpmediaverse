@@ -1,0 +1,146 @@
+/*
+ * Theme Isolation Layer
+ *
+ * Neutralizes aggressive theme global styles (Reign, BuddyX, etc.)
+ * that override block CSS through specificity.
+ *
+ * Strategy: Use attribute selectors matching the block wrapper to beat
+ * bare element selectors. For Reign's high-specificity context selectors
+ * (.post .entry-content a:not(.read-more)), add matching context.
+ *
+ * All resets use `inherit` so block CSS just needs to set properties on
+ * the wrapper — children inherit naturally.
+ */
+
+/* ── Links ───────────────────────────────────────────────── */
+[class^="wp-block-mvs-"] a {
+	color: inherit;
+	text-decoration: none;
+}
+
+/* Beat Reign's .post .entry-content a:not(.read-more) at (0,2,2) */
+.entry-content [class^="wp-block-mvs-"] a:not(.read-more):not(.wp-element-button) {
+	color: inherit;
+	text-decoration: none;
+}
+
+/* ── Headings ────────────────────────────────────────────── */
+/* [class^="wp-block-mvs-"] h1,
+[class^="wp-block-mvs-"] h2,
+[class^="wp-block-mvs-"] h3,
+[class^="wp-block-mvs-"] h4,
+[class^="wp-block-mvs-"] h5,
+[class^="wp-block-mvs-"] h6 {
+	color: inherit;
+	margin-top: 0;
+	margin-bottom: 0;
+	font-weight: inherit;
+	font-size: inherit;
+	line-height: inherit;
+} */
+
+/* ── Buttons ─────────────────────────────────────────────── */
+[class^="wp-block-mvs-"] button:not(.components-button) {
+	background-color: inherit;
+	color: inherit;
+	border: inherit;
+	padding: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	border-radius: inherit;
+	line-height: inherit;
+	text-transform: inherit;
+	text-shadow: none;
+	float: none;
+}
+
+/* ── Form inputs ─────────────────────────────────────────── */
+/* Only reset properties that themes aggressively override (width, height).
+   Leave font-size, color, background, border to each block's own CSS. */
+[class^="wp-block-mvs-"] select,
+[class^="wp-block-mvs-"] input[type="text"],
+[class^="wp-block-mvs-"] input[type="email"],
+[class^="wp-block-mvs-"] input[type="search"],
+[class^="wp-block-mvs-"] input[type="password"],
+[class^="wp-block-mvs-"] input[type="number"],
+[class^="wp-block-mvs-"] input[type="tel"],
+[class^="wp-block-mvs-"] input[type="url"],
+[class^="wp-block-mvs-"] textarea {
+	width: auto;
+	height: auto;
+}
+
+/* ── Submit / reset inputs ───────────────────────────────── */
+[class^="wp-block-mvs-"] input[type="submit"],
+[class^="wp-block-mvs-"] input[type="button"],
+[class^="wp-block-mvs-"] input[type="reset"] {
+	background-color: inherit;
+	color: inherit;
+	border: inherit;
+	padding: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	border-radius: inherit;
+	line-height: inherit;
+	float: none;
+}
+
+/* ── Lists ───────────────────────────────────────────────── */
+[class^="wp-block-mvs-"] ul,
+[class^="wp-block-mvs-"] ol {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+[class^="wp-block-mvs-"] li {
+	margin-bottom: 0;
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+[class^="wp-block-mvs-"] table {
+	border-collapse: collapse;
+}
+
+[class^="wp-block-mvs-"] th,
+[class^="wp-block-mvs-"] td {
+	border-top: none;
+	border-bottom: none;
+	padding: inherit;
+	text-align: inherit;
+}
+
+/* ── Paragraphs / misc ───────────────────────────────────── */
+[class^="wp-block-mvs-"] p {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+/* ── Entry-content direct child margin reset ─────────────── */
+.entry-content > [class^="wp-block-mvs-"] {
+	margin-bottom: 0;
+}
+
+/* ── Blockquote ──────────────────────────────────────────── */
+[class^="wp-block-mvs-"] blockquote {
+	border-left: none;
+	margin: 0;
+	padding: 0;
+	background: none;
+	font-style: inherit;
+	width: auto;
+}
+
+/* ── Code / pre ──────────────────────────────────────────── */
+[class^="wp-block-mvs-"] pre {
+	background: inherit;
+	border: inherit;
+	padding: inherit;
+}
+
+[class^="wp-block-mvs-"] code {
+	background: inherit;
+	border: inherit;
+	padding: inherit;
+	font-size: inherit;
+}

@@ -13,7 +13,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Manages the media attachment UI in BuddyPress activity post forms.
@@ -57,7 +56,7 @@ class ActivityFormIntegration {
 				// Server-rendered SVG (no JS/Lucide dependency) so the icon is
 				// visible even when BP Nouveau's Backbone re-render races the
 				// Lucide MutationObserver. Card #8.
-				echo \WPMediaVerse\Core\TemplateHelpers::icon_image_plus_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_image_plus_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				?>
 				<span class="mvs-activity-media-btn__label"><?php esc_html_e( 'Attach media', 'wpmediaverse' ); ?></span>
 			</button>
@@ -79,14 +78,14 @@ class ActivityFormIntegration {
 	 */
 	public function enqueue_activity_media_scripts(): void {
 		// Activity surfaces need both stylesheets:
-		//   mvs-frontend       — design tokens, media grid, lightbox (shared).
-		//   mvs-bp-integration — all BP-scoped rules (`#buddypress X`),
-		//                         including activity form controls, activity
-		//                         stream image sizing, and theme-compat
-		//                         overrides for Reign/BuddyBoss. Matches the
-		//                         enqueue pattern already used by
-		//                         ProfileTabIntegration and GroupTabIntegration
-		//                         — every BP surface we touch loads both.
+		// mvs-frontend       — design tokens, media grid, lightbox (shared).
+		// mvs-bp-integration — all BP-scoped rules (`#buddypress X`),
+		// including activity form controls, activity
+		// stream image sizing, and theme-compat
+		// overrides for Reign/BuddyBoss. Matches the
+		// enqueue pattern already used by
+		// ProfileTabIntegration and GroupTabIntegration
+		// — every BP surface we touch loads both.
 		wp_enqueue_style( 'mvs-frontend' );
 		wp_enqueue_style( 'mvs-bp-integration' );
 
@@ -157,18 +156,18 @@ class ActivityFormIntegration {
 		$thumbnails = '';
 		$valid_ids  = array();
 		foreach ( $media_ids as $media_id ) {
-			if ( ! MediaRepository::exists( $media_id ) ) {
+			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 				continue;
 			}
-			$media_author = MediaRepository::get_author( $media_id );
+			$media_author = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 			if ( $media_author !== $user_id ) {
 				continue;
 			}
 
 			// Publish draft media now that the activity is being posted.
-			$media_status = MediaRepository::get( $media_id, 'status' );
+			$media_status = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'status' );
 			if ( 'draft' === $media_status ) {
-				MediaRepository::set( $media_id, 'status', 'publish' );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'status', 'publish' );
 			}
 
 			$valid_ids[] = $media_id;
@@ -188,7 +187,7 @@ class ActivityFormIntegration {
 		// Store the activity ID on each media post so comments on these media
 		// can be threaded back as activity comments via find_media_upload_activity().
 		foreach ( $valid_ids as $mid ) {
-			MediaRepository::set( $mid, 'bp_activity_id', $activity_id );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $mid, 'bp_activity_id', $activity_id );
 		}
 
 		$activity = new \BP_Activity_Activity( $activity_id );
@@ -218,8 +217,8 @@ class ActivityFormIntegration {
 		if ( $raw_ids ) {
 			$media_ids = array_filter( array_map( 'absint', explode( ',', $raw_ids ) ) );
 			foreach ( $media_ids as $media_id ) {
-				MediaRepository::set( $media_id, 'privacy', 'group' );
-				MediaRepository::set( $media_id, 'group_id', $group_id );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', 'group' );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_id', $group_id );
 			}
 		}
 	}

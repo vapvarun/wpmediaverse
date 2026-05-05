@@ -11,12 +11,85 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Manages album item membership, ordering, and metadata.
  */
 class AlbumService {
+
+	/**
+	 * Create a new album.
+	 *
+	 * Wraps the `mvs_album` CPT insertion + privacy / album_type / group
+	 * association meta writes that REST and template callers used to repeat
+	 * inline. Single canonical entry point so seeders, WP-CLI, and any
+	 * future caller produce identical state to the REST flow.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param int   $author_id Album author user ID. Must be > 0.
+	 * @param array $args      {
+	 *     Album attributes.
+	 *
+	 *     @type string $title       Required. Album title.
+	 *     @type string $description Optional. Album description (kses_post-ed).
+	 *     @type string $privacy     Optional. 'public' (default) | 'members' | 'private' | 'group'.
+	 *     @type string $album_type  Optional. Free-form album category. Default 'default'.
+	 *     @type int    $group_id    Optional. BP group association. When non-zero
+	 *                               and the user is a group member, privacy is
+	 *                               forced to 'group' and the group_id is
+	 *                               written to both mvs_media_meta AND
+	 *                               post_meta `_mvs_group_id` (BP group tab
+	 *                               listings WP_Query against post_meta).
+	 *     @type array  $categories  Optional. mvs_category term IDs.
+	 * }
+	 * @return int|\WP_Error Album post ID on success, WP_Error on validation
+	 *                      failure or DB error.
+	 */
+	public function create( int $author_id, array $args ) {
+		$title = isset( $args['title'] ) ? sanitize_text_field( $args['title'] ) : '';
+		if ( '' === $title ) {
+			return new \WP_Error( 'mvs_missing_title', __( 'Album title is required.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
+		$album_id = wp_insert_post(
+			array(
+				'post_type'    => 'mvs_album',
+				'post_title'   => $title,
+				'post_content' => isset( $args['description'] ) ? wp_kses_post( $args['description'] ) : '',
+				'post_status'  => 'publish',
+				'post_author'  => $author_id,
+			),
+			true
+		);
+
+		if ( is_wp_error( $album_id ) ) {
+			return $album_id;
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		$privacy    = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : 'public';
+		$album_type = isset( $args['album_type'] ) ? sanitize_text_field( $args['album_type'] ) : 'default';
+
+		$repo->set( $album_id, 'privacy', $privacy );
+		$repo->set( $album_id, 'album_type', $album_type );
+
+		// Group association — only honour when the author is actually a member.
+		$group_id = isset( $args['group_id'] ) ? absint( $args['group_id'] ) : 0;
+		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( $author_id, $group_id ) ) {
+			$repo->set( $album_id, 'privacy', 'group' );
+			$repo->set( $album_id, 'group_id', $group_id );
+			update_post_meta( $album_id, '_mvs_group_id', $group_id );
+		}
+
+		// Categories (mvs_category taxonomy on the mvs_album CPT).
+		if ( isset( $args['categories'] ) && is_array( $args['categories'] ) ) {
+			wp_set_object_terms( $album_id, array_map( 'absint', array_filter( $args['categories'] ) ), 'mvs_category' );
+		}
+
+		return (int) $album_id;
+	}
 
 	/**
 	 * Get items for an album, ordered by position.
@@ -65,7 +138,7 @@ class AlbumService {
 	public function add_items( int $album_id, array $media_ids ): int {
 		global $wpdb;
 
-		$is_playlist = 'playlist' === MediaRepository::get( $album_id, 'album_type' );
+		$is_playlist = 'playlist' === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'album_type' );
 
 		$max_pos = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
@@ -78,13 +151,13 @@ class AlbumService {
 		foreach ( $media_ids as $media_id ) {
 			$media_id = (int) $media_id;
 
-			if ( ! MediaRepository::exists( $media_id ) ) {
+			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 				continue;
 			}
 
 			// Playlist albums only accept audio media.
 			if ( $is_playlist ) {
-				$file_type = MediaRepository::get( $media_id, 'file_type' );
+				$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 				if ( $file_type && 0 !== strpos( $file_type, 'audio/' ) ) {
 					continue;
 				}
@@ -110,7 +183,7 @@ class AlbumService {
 		// Store album association on each media item.
 		if ( $added > 0 ) {
 			foreach ( $media_ids as $mid ) {
-				MediaRepository::set( (int) $mid, 'album_id', $album_id );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( (int) $mid, 'album_id', $album_id );
 			}
 
 			/**
@@ -196,7 +269,7 @@ class AlbumService {
 		}
 
 		// Reject cover requests for media that doesn't exist at all.
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new \WP_Error(
 				'mvs_media_not_found',
 				__( 'Media item not found.', 'wpmediaverse' ),
@@ -205,7 +278,7 @@ class AlbumService {
 		}
 
 		// Only image-type media makes sense as a cover. Validate before any mutation.
-		$file_type = MediaRepository::get( $media_id, 'file_type' );
+		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 		if ( ! is_string( $file_type ) || 0 !== strpos( $file_type, 'image/' ) ) {
 			return new \WP_Error(
 				'mvs_cover_not_image',
@@ -315,18 +388,17 @@ class AlbumService {
 	 * @return string|null
 	 */
 	private function resolve_media_image_url( int $media_id, string $size ): ?string {
-		$thumb = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $media_id, $size );
+		$thumb = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, $size );
 		if ( $thumb ) {
 			return $thumb;
 		}
 
-		// Fallback for image-type media: route through MediaUrl so the file
-		// URL passes the .htaccess gate. Previously returned a raw
-		// /wp-content/uploads/wpmediaverse/... URL that 403s.
-		$file_type = MediaRepository::get( $media_id, 'file_type' );
+		// Fallback for image-type media: signed file URL passes the
+		// .htaccess gate. Previously returned a raw URL that 403s.
+		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 		if ( is_string( $file_type ) && 0 === strpos( $file_type, 'image/' ) ) {
-			$signed = \WPMediaVerse\Services\MediaUrl::for_file( $media_id );
-			if ( $signed ) {
+			$signed = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' );
+			if ( '' !== $signed ) {
 				return $signed;
 			}
 		}

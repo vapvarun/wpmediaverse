@@ -9,7 +9,6 @@ namespace WPMediaVerse\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Services\ModerationService;
 
 /**
@@ -419,7 +418,7 @@ class ModerationQueue {
 	 * @param int $media_id Media ID from the mvs_media_index table.
 	 */
 	private function render_row( int $media_id ): void {
-		$data = MediaRepository::get_all( $media_id );
+		$data = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );
 		if ( empty( $data ) ) {
 			return;
 		}

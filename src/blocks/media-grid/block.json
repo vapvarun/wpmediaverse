@@ -43,6 +43,10 @@
 			"type": "string",
 			"default": "date"
 		},
+		"order": {
+			"type": "string",
+			"default": "desc"
+		},
 		"showLightbox": {
 			"type": "boolean",
 			"default": true
@@ -54,6 +58,10 @@
 		"gap": {
 			"type": "number",
 			"default": 8
+		},
+		"userId": {
+			"type": "number",
+			"default": 0
 		}
 	},
 	"textdomain": "wpmediaverse",

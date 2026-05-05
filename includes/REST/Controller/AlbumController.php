@@ -16,7 +16,6 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
 use WPMediaVerse\Services\AlbumService;
-use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Services\PrivacyService;
 
 /**
@@ -67,6 +66,12 @@ class AlbumController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on both __return_true callbacks below (GET /albums and
+		// GET /albums/{id}): album reads enforce privacy at the SQL/service
+		// layer. Private albums 404 for non-owners (no info disclosure). The
+		// `__return_true` is correct because the gate lives in the query.
+		// Triaged 2026-05-01 (Item 5). All write routes (POST/PUT/DELETE,
+		// reorder, items add/remove) carry proper permission_callbacks.
 		register_rest_route(
 			$this->namespace,
 			'/' . $this->rest_base,
@@ -290,49 +295,20 @@ class AlbumController extends WP_REST_Controller {
 			return $rate_check;
 		}
 
-		$title = sanitize_text_field( $request->get_param( 'title' ) ?? '' );
-		if ( empty( $title ) ) {
-			return new WP_Error( 'mvs_missing_title', __( 'Album title is required.', 'wpmediaverse' ), array( 'status' => 400 ) );
-		}
-
-		$post_data = array(
-			'post_type'    => 'mvs_album',
-			'post_title'   => $title,
-			'post_content' => wp_kses_post( $request->get_param( 'description' ) ?? '' ),
-			'post_status'  => 'publish',
-			'post_author'  => get_current_user_id(),
+		$album_id = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->create(
+			get_current_user_id(),
+			array(
+				'title'       => $request->get_param( 'title' ) ?? '',
+				'description' => $request->get_param( 'description' ) ?? '',
+				'privacy'     => $request->get_param( 'privacy' ) ?? 'public',
+				'album_type'  => $request->get_param( 'album_type' ) ?? 'default',
+				'group_id'    => $request->get_param( 'group_id' ),
+				'categories'  => $request->get_param( 'categories' ),
+			)
 		);
-
-		$album_id = wp_insert_post( $post_data, true );
 
 		if ( is_wp_error( $album_id ) ) {
 			return $album_id;
-		}
-
-		$privacy = sanitize_text_field( $request->get_param( 'privacy' ) ?? 'public' );
-		MediaRepository::set( $album_id, 'privacy', $privacy );
-
-		$album_type = sanitize_text_field( $request->get_param( 'album_type' ) ?? 'default' );
-		MediaRepository::set( $album_id, 'album_type', $album_type );
-
-		// Set group association if group_id is provided and user is a member.
-		// Writes to both the custom mvs_media_meta table (keyed "group_id") AND
-		// WP post meta (keyed "_mvs_group_id"), because GroupTabIntegration's
-		// album listing uses WP_Query meta_query against the latter. Without
-		// the post meta write, freshly-created group albums never appeared in
-		// the group's Albums tab.
-		$group_id = absint( $request->get_param( 'group_id' ) );
-		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
-			MediaRepository::set( $album_id, 'privacy', 'group' );
-			MediaRepository::set( $album_id, 'group_id', $group_id );
-			update_post_meta( $album_id, '_mvs_group_id', $group_id );
-		}
-
-		// Apply categories if provided — mvs_category is registered on mvs_album so this writes
-		// to the standard taxonomy tables. Accepts an array of term IDs.
-		$categories = $request->get_param( 'categories' );
-		if ( is_array( $categories ) ) {
-			wp_set_object_terms( $album_id, array_map( 'absint', array_filter( $categories ) ), 'mvs_category' );
 		}
 
 		$response = rest_ensure_response( $this->prepare_album_response( get_post( $album_id ) ) );
@@ -381,7 +357,7 @@ class AlbumController extends WP_REST_Controller {
 
 		$privacy = $request->get_param( 'privacy' );
 		if ( $privacy ) {
-			MediaRepository::set( $album_id, 'privacy', sanitize_text_field( $privacy ) );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $album_id, 'privacy', sanitize_text_field( $privacy ) );
 		}
 
 		// Categories — distinguish "not sent" from "explicitly cleared" by checking the JSON body,
@@ -590,8 +566,8 @@ class AlbumController extends WP_REST_Controller {
 	 */
 	private function prepare_album_response( $post, bool $include_items = false ): array {
 		$album_id      = $post->ID;
-		$privacy_value = MediaRepository::get( $album_id, 'privacy' );
-		$album_type    = MediaRepository::get( $album_id, 'album_type' );
+		$privacy_value = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' );
+		$album_type    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'album_type' );
 
 		$category_terms = get_the_terms( $album_id, 'mvs_category' );
 		$categories     = array();
@@ -606,18 +582,18 @@ class AlbumController extends WP_REST_Controller {
 		}
 
 		$data = array(
-			'id'          => $album_id,
-			'title'       => $post->post_title,
-			'description' => $post->post_content,
-			'author'      => (int) $post->post_author,
-			'date'        => $post->post_date_gmt,
-			'link'        => get_permalink( $album_id ),
-			'privacy'     => $privacy_value ? $privacy_value : 'public',
-			'album_type'  => $album_type ? $album_type : 'default',
-			'media_count'     => $this->albums->get_item_count( $album_id ),
-			'cover_url'       => $this->albums->get_cover_url( $album_id ),
-			'cover_media_id'  => $this->albums->get_cover_media_id( $album_id ),
-			'categories'      => $categories,
+			'id'             => $album_id,
+			'title'          => $post->post_title,
+			'description'    => $post->post_content,
+			'author'         => (int) $post->post_author,
+			'date'           => $post->post_date_gmt,
+			'link'           => get_permalink( $album_id ),
+			'privacy'        => $privacy_value ? $privacy_value : 'public',
+			'album_type'     => $album_type ? $album_type : 'default',
+			'media_count'    => $this->albums->get_item_count( $album_id ),
+			'cover_url'      => $this->albums->get_cover_url( $album_id ),
+			'cover_media_id' => $this->albums->get_cover_media_id( $album_id ),
+			'categories'     => $categories,
 		);
 
 		if ( $include_items ) {

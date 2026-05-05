@@ -14,7 +14,6 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
-use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Services\StatsService;
 use WPMediaVerse\Services\PrivacyService;
 
@@ -60,6 +59,11 @@ class StatsController extends WP_REST_Controller {
 	 */
 	public function register_routes(): void {
 		// GET /media/{id}/stats.
+		// PUBLIC_OK: aggregated counts only (views, reactions, comments) — no
+		// per-viewer data. Same surface as YouTube's "1.2M views" public
+		// counter. Private media's stats endpoint 404s because
+		// \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists short-circuits on privacy at line 103.
+		// /me/stats below requires is_user_logged_in. Triaged 2026-05-01 (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/media/(?P<media_id>[\d]+)/stats',
@@ -100,7 +104,7 @@ class StatsController extends WP_REST_Controller {
 	public function get_media_stats( $request ) {
 		$media_id = $request->get_param( 'media_id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 

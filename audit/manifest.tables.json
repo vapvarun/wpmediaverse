@@ -1,0 +1,88 @@
+{
+  "tables": [
+    {
+      "name": "mvs_media_index",
+      "purpose": "Authoritative media record (CPT-free)"
+    },
+    {
+      "name": "mvs_media_meta",
+      "purpose": "Sparse key/value media metadata"
+    },
+    {
+      "name": "mvs_media_views",
+      "purpose": "Per-user view tracking"
+    },
+    {
+      "name": "mvs_media_stats",
+      "purpose": "Aggregated stats"
+    },
+    {
+      "name": "mvs_reactions",
+      "purpose": "Emoji reactions"
+    },
+    {
+      "name": "mvs_favorites",
+      "purpose": "Bookmarks"
+    },
+    {
+      "name": "mvs_follows",
+      "purpose": "Follow graph"
+    },
+    {
+      "name": "mvs_mentions",
+      "purpose": "@-mentions"
+    },
+    {
+      "name": "mvs_activity",
+      "purpose": "Activity feed entries"
+    },
+    {
+      "name": "mvs_notifications",
+      "purpose": "In-app notifications"
+    },
+    {
+      "name": "mvs_reports",
+      "purpose": "Abuse reports"
+    },
+    {
+      "name": "mvs_blocks",
+      "purpose": "User blocklist"
+    },
+    {
+      "name": "mvs_access_rules",
+      "purpose": "Per-media access rules"
+    },
+    {
+      "name": "mvs_access_grants",
+      "purpose": "Granted tokens"
+    },
+    {
+      "name": "mvs_album_items",
+      "purpose": "Album\u2194media join"
+    },
+    {
+      "name": "mvs_error_log",
+      "purpose": "Internal log table"
+    },
+    {
+      "name": "mvs_conversations",
+      "purpose": "DM threads"
+    },
+    {
+      "name": "mvs_conversation_participants",
+      "purpose": "DM membership"
+    },
+    {
+      "name": "mvs_messages",
+      "purpose": "DM messages"
+    },
+    {
+      "name": "mvs_message_reactions",
+      "purpose": "DM message reactions"
+    },
+    {
+      "name": "mvs_transactions",
+      "purpose": "Credit/payment ledger (Pro consumes)"
+    }
+  ]
+}

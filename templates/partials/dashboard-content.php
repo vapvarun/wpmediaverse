@@ -124,7 +124,7 @@ wp_enqueue_style( 'mvs-frontend' );
 			</div>
 			<div class="mvs-dashboard-profile-actions">
 				<a class="mvs-btn mvs-btn--secondary mvs-btn--small"
-					href="<?php echo esc_url( home_url( '/media/@' . $mvs_current_user->user_login . '/' ) ); ?>">
+					href="<?php echo esc_url( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_current_user->ID ) ); ?>">
 					<?php esc_html_e( 'View Profile', 'wpmediaverse' ); ?>
 				</a>
 				<button class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-dashboard-profile-edit-btn"
@@ -263,8 +263,20 @@ wp_enqueue_style( 'mvs-frontend' );
 	<script>(function(){var pp=document.getElementById('mvs-profile-prompt');var btn=document.getElementById('mvs-profile-prompt-close');if(pp&&localStorage.getItem('mvs_profile_prompt_dismissed')==='1'){pp.style.display='none';}if(btn)btn.addEventListener('click',function(){if(pp)pp.style.display='none';localStorage.setItem('mvs_profile_prompt_dismissed','1');});}());</script>
 	<?php endif; ?>
 
+	<?php
+	// Show the MVS dashboard bell ONLY when BP is not active.
+	//
+	// When BP is active, every MVS event is also injected into
+	// bp_notifications (see Integrations/BuddyPress/NotificationIntegration)
+	// so BP's nav bell is already showing them globally — including on this
+	// dashboard page. Rendering a second bell here would surface the same
+	// items twice. The MVS bell stays as the canonical surface for
+	// non-BP sites where there is no other notification chrome.
+	$mvs_show_dashboard_bell = ! function_exists( 'buddypress' );
+	?>
 	<div class="mvs-dashboard-header">
 		<span class="mvs-dashboard-heading"><?php esc_html_e( 'My Media', 'wpmediaverse' ); ?></span>
+		<?php if ( $mvs_show_dashboard_bell ) : ?>
 		<div class="mvs-notification-bell" data-wp-on--click="actions.toggleNotifications"
 			role="button" tabindex="0" aria-label="<?php esc_attr_e( 'Notifications', 'wpmediaverse' ); ?>">
 			<span class="mvs-notification-bell-icon">&#128276;</span>
@@ -294,6 +306,7 @@ wp_enqueue_style( 'mvs-frontend' );
 				</p>
 			</div>
 		</div>
+		<?php endif; ?>
 	</div>
 
 	<nav class="mvs-dashboard-tabs" role="tablist">
@@ -383,14 +396,14 @@ wp_enqueue_style( 'mvs-frontend' );
 						<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 							data-wp-bind--hidden="!state.showMediaVideoPreview"
 							data-wp-bind--src="state.mediaVideoPreviewUrl"></video>
-						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showMediaPlayIcon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showMediaPlayIcon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 							data-wp-bind--hidden="!state.showMediaVideoPlaceholder">
-							<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio"
 							data-wp-bind--hidden="!state.showMediaAudioPlaceholder">
-							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 					</a>
 					<div class="mvs-dashboard-card-body">
@@ -467,14 +480,14 @@ wp_enqueue_style( 'mvs-frontend' );
 						<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 							data-wp-bind--hidden="!state.showFavVideoPreview"
 							data-wp-bind--src="state.favVideoPreviewUrl"></video>
-						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showFavPlayIcon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showFavPlayIcon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 							data-wp-bind--hidden="!state.showFavVideoPlaceholder">
-							<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio"
 							data-wp-bind--hidden="!state.showFavAudioPlaceholder">
-							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</div>
 					</a>
 					<div class="mvs-dashboard-card-body">
@@ -686,13 +699,23 @@ wp_enqueue_style( 'mvs-frontend' );
 					<textarea data-wp-bind--value="state.editModal.description"
 						data-wp-on--input="actions.setEditDesc"></textarea>
 				</div>
-				<div class="mvs-field">
-					<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-					<select data-wp-on--change="actions.setEditPrivacy">
-						<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-						<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
-						<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
-					</select>
+				<!-- Privacy + slug-regenerate share a row to save vertical space.
+				     Off by default — keeps inbound URLs stable. -->
+				<div class="mvs-field-row">
+					<div class="mvs-field mvs-field--inline">
+						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+						<select data-wp-on--change="actions.setEditPrivacy">
+							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+							<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+						</select>
+					</div>
+					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
+						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
+							<input type="checkbox" class="mvs-edit-regenerate-slug" />
+							<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
+						</label>
+					</div>
 				</div>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
@@ -791,14 +814,14 @@ wp_enqueue_style( 'mvs-frontend' );
 								<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 									data-wp-bind--hidden="!state.showPickerVideoPreview"
 									data-wp-bind--src="state.pickerVideoPreviewUrl"></video>
-								<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showPickerPlayIcon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+								<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showPickerPlayIcon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 								<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
 									data-wp-bind--hidden="!state.showPickerVideoPlaceholder">
-									<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+									<span class="mvs-grid-play-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 								</div>
 								<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio"
 									data-wp-bind--hidden="!state.showPickerAudioPlaceholder">
-									<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\TemplateHelpers::icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+									<span class="mvs-grid-audio-icon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 								</div>
 								<span class="mvs-media-picker-check">&#x2713;</span>
 								<button class="mvs-media-picker-cover-btn" type="button"

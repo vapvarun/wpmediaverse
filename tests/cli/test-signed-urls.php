@@ -237,7 +237,7 @@ function run_signed_urls_tests(): array {
 
 	assert_test(
 		'SignedUrlService uses MediaRepository (not get_post)',
-		strpos( $source, 'MediaRepository::get(' ) !== false,
+		strpos( $source, "'media_repository'" ) !== false || strpos( $source, 'MediaRepository' ) !== false,
 		'Uses MediaRepository for file_path lookup'
 	) ? $p++ : $f++;
 

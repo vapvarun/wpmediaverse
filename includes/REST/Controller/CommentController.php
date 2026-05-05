@@ -15,7 +15,6 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
-use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Social\CommentService;
 
 /**
@@ -57,6 +56,12 @@ class CommentController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on the GET /comments __return_true below: comments inherit
+		// the parent media's visibility. If the media is private the comments
+		// query returns empty (the underlying repo joins on
+		// mvs_media_index.privacy). Same model as WP core comments REST.
+		// POST /comments + edit/delete below carry proper permission_callbacks.
+		// Triaged 2026-05-01 (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/' . $this->rest_base,
@@ -236,7 +241,7 @@ class CommentController extends WP_REST_Controller {
 				'author'        => $cmt_author_id,
 				'author_name'   => $comment->comment_author,
 				'author_avatar' => $cmt_author_id ? (string) get_avatar_url( $cmt_author_id, array( 'size' => 96 ) ) : '',
-				'author_url'    => $cmt_author_id ? \WPMediaVerse\Core\TemplateHelpers::get_user_profile_url( $cmt_author_id ) : '',
+				'author_url'    => $cmt_author_id ? \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $cmt_author_id ) : '',
 				'content'       => $comment->comment_content,
 				'parent'        => (int) $comment->comment_parent,
 				'date'          => $comment->comment_date_gmt,
@@ -389,6 +394,6 @@ class CommentController extends WP_REST_Controller {
 	 * @return bool
 	 */
 	private function media_exists( int $media_id ): bool {
-		return MediaRepository::exists( $media_id );
+		return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id );
 	}
 }

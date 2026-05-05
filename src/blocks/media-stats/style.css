@@ -5,13 +5,29 @@
 .mvs-stats-block {
 	max-width: 960px;
 	margin: 0 auto;
+	/* Prevent the inner grid (180 px min track) from forcing the block
+	   wider than the parent on narrow viewports. Without this, the
+	   showcase page on a 390 px phone overflows by ~11 px and triggers
+	   a horizontal scroll on the Stats block container. */
+	min-width: 0;
+	overflow: hidden;
 }
 
 .mvs-stats-cards {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	/* `minmax(0, 1fr)` for the grow side keeps the track from blowing
+	   past the container when the 180 px minimum doesn't fit. */
+	grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
 	gap: 16px;
 	margin-bottom: 24px;
+}
+
+@media (max-width: 480px) {
+	/* On very narrow phones, drop the 180 px minimum and let cards
+	   stack one per row so the Stats block fits in 360 px viewports. */
+	.mvs-stats-cards {
+		grid-template-columns: 1fr;
+	}
 }
 
 .mvs-stat-card {
@@ -41,6 +57,14 @@
 
 .mvs-top-media {
 	margin-top: 24px;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.mvs-top-media li {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .mvs-top-media h3 {

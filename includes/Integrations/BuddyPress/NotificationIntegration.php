@@ -9,7 +9,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Handles BuddyPress notifications for WPMediaVerse events.
@@ -148,8 +147,8 @@ class NotificationIntegration {
 		}
 
 		$user_name = bp_core_get_user_displayname( $secondary_item_id );
-		$link      = MediaRepository::exists( $item_id )
-			? MediaRepository::get_permalink( $item_id )
+		$link      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $item_id )
+			? \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id )
 			: bp_get_notifications_permalink();
 
 		switch ( $component_action ) {

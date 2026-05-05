@@ -117,7 +117,7 @@ parameters:
 
 		-
 			message: "#^Call to static method warning\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 5
+			count: 4
 			path: includes/CLI/Commands.php
 
 		-
@@ -157,12 +157,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 16
-			path: includes/Core/Plugin.php
-
-		-
-			message: "#^Negated boolean expression is always false\\.$#"
-			count: 1
+			count: 18
 			path: includes/Core/Plugin.php
 
 		-
@@ -182,6 +177,11 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Core/TemplateLoader.php
+
+		-
+			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/Core/TemplateLoader.php
 
@@ -232,12 +232,7 @@ parameters:
 
 		-
 			message: "#^Function groups_get_current_group not found\\.$#"
-			count: 4
-			path: includes/Integrations/BuddyPress/GroupTabIntegration.php
-
-		-
-			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
-			count: 2
+			count: 9
 			path: includes/Integrations/BuddyPress/GroupTabIntegration.php
 
 		-
@@ -247,11 +242,6 @@ parameters:
 
 		-
 			message: "#^Function buddypress not found\\.$#"
-			count: 2
-			path: includes/Integrations/BuddyPress/ProfileTabIntegration.php
-
-		-
-			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
 			count: 2
 			path: includes/Integrations/BuddyPress/ProfileTabIntegration.php
 
@@ -316,11 +306,6 @@ parameters:
 			path: includes/REST/Controller/FavoriteController.php
 
 		-
-			message: "#^Ternary operator condition is always true\\.$#"
-			count: 2
-			path: includes/REST/Controller/FavoriteController.php
-
-		-
 			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\FollowController\\:\\:unfollow_user\\(\\) should return WP_REST_Response but returns WP_Error\\.$#"
 			count: 1
 			path: includes/REST/Controller/FollowController.php
@@ -346,18 +331,8 @@ parameters:
 			path: includes/REST/Controller/MediaController.php
 
 		-
-			message: "#^Ternary operator condition is always true\\.$#"
-			count: 2
-			path: includes/REST/Controller/MediaController.php
-
-		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
 			count: 2
-			path: includes/REST/Controller/ModerationController.php
-
-		-
-			message: "#^Ternary operator condition is always true\\.$#"
-			count: 1
 			path: includes/REST/Controller/ModerationController.php
 
 		-
@@ -404,11 +379,6 @@ parameters:
 			message: "#^Negated boolean expression is always false\\.$#"
 			count: 1
 			path: includes/Services/LocalDriver.php
-
-		-
-			message: "#^Negated boolean expression is always false\\.$#"
-			count: 1
-			path: includes/Services/MediaUrl.php
 
 		-
 			message: "#^Property WPMediaVerse\\\\Services\\\\ModerationService\\:\\:\\$ai is never read, only written\\.$#"

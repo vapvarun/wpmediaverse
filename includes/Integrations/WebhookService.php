@@ -9,7 +9,6 @@ namespace WPMediaVerse\Integrations;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Outbound webhook system for media events.
@@ -38,7 +37,7 @@ class WebhookService {
 		// Always register hooks — dispatch() checks for configured webhooks at send time.
 		add_action( 'mvs_media_uploaded', array( $this, 'on_media_uploaded' ) );
 		add_action( 'mvs_media_deleted', array( $this, 'on_media_deleted' ), 10, 2 );
-		add_action( 'mvs_media_moderated', array( $this, 'on_media_moderated' ), 10, 2 );
+		add_action( 'mvs_moderation_changed', array( $this, 'on_media_moderated' ), 10, 2 );
 
 		// Social events.
 		add_action( 'mvs_reaction_added', array( $this, 'on_reaction' ), 10, 3 );
@@ -254,7 +253,7 @@ class WebhookService {
 	 * @return array
 	 */
 	private function build_media_payload( int $media_id ): array {
-		$data = MediaRepository::get_all( $media_id );
+		$data = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );
 		if ( empty( $data ) ) {
 			return array( 'media_id' => $media_id );
 		}
@@ -263,7 +262,7 @@ class WebhookService {
 			'media_id'  => $media_id,
 			'title'     => $data['title'] ?? '',
 			'author'    => (int) ( $data['post_author'] ?? 0 ),
-			'url'       => MediaRepository::get_permalink( $media_id ),
+			'url'       => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ),
 			'file_url'  => $data['file_url'] ?? '',
 			'file_type' => $data['file_type'] ?? '',
 			'privacy'   => $data['privacy'] ?? 'public',

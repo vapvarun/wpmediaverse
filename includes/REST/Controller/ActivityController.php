@@ -47,6 +47,12 @@ class ActivityController extends WP_REST_Controller {
 	 * @since 1.1.0
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on both __return_true callbacks below (GET /feed and
+		// GET /users/{id}/activity): activity entries are filtered to
+		// public-media events at the query layer. Private message events
+		// + private media uploads NEVER appear. The /feed scope='following'
+		// short-circuits to empty for anon callers (handler reads
+		// is_user_logged_in internally). Triaged 2026-05-01 (Item 5).
 		// GET /feed — public or following feed.
 		register_rest_route(
 			$this->namespace,

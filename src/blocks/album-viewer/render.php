@@ -46,7 +46,23 @@ $items = $wpdb->get_results(
 );
 // phpcs:enable
 
-$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-album-viewer-block' ) ) : 'class="mvs-album-viewer-block"';
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+if ( empty( $mvs_shortcode_context ) ) {
+	\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+}
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-album-viewer-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( $show_title ) : ?>
@@ -66,12 +82,12 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 				$file_type  = $item_row['file_type'] ?? '';
 				$media_type = $item_row['media_type'] ?? '';
 				$item_title = $item_row['title'] ?? '';
-				$permalink  = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_id );
+				$permalink  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
 				?>
 				<div class="mvs-grid-item">
 					<a href="<?php echo esc_url( $permalink ); ?>">
 						<?php
-						echo \WPMediaVerse\Core\TemplateHelpers::media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- alt pre-escaped here; helper validates size and emits already-escaped markup.
+						echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- alt pre-escaped here; helper validates size and emits already-escaped markup.
 							$media_id,
 							array( 'alt' => esc_attr( $item_title ) )
 						);

@@ -239,6 +239,59 @@ class TemplateLoader {
 			}
 		);
 
+		// Open Graph + Twitter Card meta — when this URL is shared on
+		// Facebook / X / LinkedIn / Slack / etc., the platform scrapes
+		// these tags to render a preview card with image + title +
+		// description. Without these the link renders as a bare URL.
+		add_action(
+			'wp_head',
+			function () use ( $media ) {
+				$title       = $media['title'] ? $media['title'] : __( 'Media', 'wpmediaverse' );
+				$description = isset( $media['description'] ) ? wp_strip_all_tags( $media['description'] ) : '';
+				if ( strlen( $description ) > 280 ) {
+					$description = substr( $description, 0, 277 ) . '…';
+				}
+
+				// Use a thumbnail (signed if needed) so private-but-shareable
+				// items still get a preview image. The signed_urls service
+				// is registered unconditionally on plugin init so this
+				// returns a usable instance in any normal request, but the
+				// guard stays for the rare edge case where service
+				// resolution failed (e.g. plugin half-activated).
+				$signed    = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+				$thumb_url = $signed ? $signed->generate_thumbnail( (int) $media['media_id'], 0, 'large', 0, true ) : '';
+
+				$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $media['media_id'] );
+				$site_name = get_bloginfo( 'name' );
+				$is_video  = isset( $media['media_type'] ) && 'video' === $media['media_type'];
+				$is_audio  = isset( $media['media_type'] ) && 'audio' === $media['media_type'];
+
+				echo "\n<!-- WPMediaVerse Open Graph -->\n";
+				echo '<meta property="og:title" content="' . esc_attr( $title ) . '" />' . "\n";
+				echo '<meta property="og:type" content="' . esc_attr( $is_video ? 'video.other' : ( $is_audio ? 'music.song' : 'article' ) ) . '" />' . "\n";
+				echo '<meta property="og:url" content="' . esc_url( $permalink ) . '" />' . "\n";
+				echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '" />' . "\n";
+				if ( $description ) {
+					echo '<meta property="og:description" content="' . esc_attr( $description ) . '" />' . "\n";
+				}
+				if ( $thumb_url ) {
+					echo '<meta property="og:image" content="' . esc_url( $thumb_url ) . '" />' . "\n";
+					echo '<meta property="og:image:alt" content="' . esc_attr( $title ) . '" />' . "\n";
+				}
+
+				echo '<meta name="twitter:card" content="' . esc_attr( $thumb_url ? 'summary_large_image' : 'summary' ) . '" />' . "\n";
+				echo '<meta name="twitter:title" content="' . esc_attr( $title ) . '" />' . "\n";
+				if ( $description ) {
+					echo '<meta name="twitter:description" content="' . esc_attr( $description ) . '" />' . "\n";
+				}
+				if ( $thumb_url ) {
+					echo '<meta name="twitter:image" content="' . esc_url( $thumb_url ) . '" />' . "\n";
+				}
+				echo "<!-- /WPMediaVerse Open Graph -->\n";
+			},
+			5 // run early so themes / SEO plugins can override below.
+		);
+
 		$template = self::locate( 'media-single.php' );
 		if ( $template ) {
 			include $template;

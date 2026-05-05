@@ -15,9 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\Core\Plugin;
-use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\REST\RateLimiter;
-use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Services\PrivacyService;
 
 /**
@@ -59,6 +57,24 @@ class MediaController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on the four __return_true callbacks in this controller
+		// (GET /media, POST /media/{id}/view, GET /media/{id}/access,
+		// GET /media/{id}/group):
+		// - GET /media — handler SQL at line 254-262 enforces
+		// `moderation_status='approved' AND (privacy='public' OR
+		// privacy='members' OR post_author=$current)`. Privacy gate
+		// in the query, not the callback.
+		// - POST /media/{id}/view — deliberate analytics ingest; counts
+		// anonymous views by intent. Rate-limited inside record_view().
+		// Hardening flagged for v1.3 (require session token); not a bug
+		// today.
+		// - GET /media/{id}/access — read-only access boolean. Returns
+		// {can_view: bool} only — non-disclosive in itself.
+		// - GET /media/{id}/group — gallery navigation; inherits the
+		// privacy filter via MediaRepository.
+		// Triaged 2026-05-01 (Item 5). All write routes
+		// (POST /media, PUT/DELETE /media/{id}, POST /media/{id}/replace)
+		// carry proper permission_callbacks.
 		// GET /media — list, POST /media — create.
 		register_rest_route(
 			$this->namespace,
@@ -148,6 +164,42 @@ class MediaController extends WP_REST_Controller {
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'record_view' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
+		// POST /media/{id}/download — record a download event + increment downloads stat.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/download',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'record_download' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+
+		// POST /media/{id}/share — record a share event + increment shares stat.
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/(?P<id>[\d]+)/share',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'record_share' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
 					'id' => array(
@@ -461,11 +513,11 @@ class MediaController extends WP_REST_Controller {
 	 */
 	public function get_item( $request ) {
 		$media_id = (int) $request->get_param( 'id' );
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$privacy = MediaRepository::get( $media_id, 'privacy' );
+		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
 		if ( 'public' !== $privacy ) {
 			$viewer_id = get_current_user_id();
 			if ( ! $this->privacy->can_view( $media_id, $viewer_id ) ) {
@@ -485,11 +537,11 @@ class MediaController extends WP_REST_Controller {
 	public function get_group_items( $request ) {
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$group_id = MediaRepository::get( $media_id, 'media_group' );
+		$group_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_group' );
 		if ( ! $group_id ) {
 			return rest_ensure_response( array( $this->prepare_item_for_response( $media_id, $request ) ) );
 		}
@@ -572,7 +624,8 @@ class MediaController extends WP_REST_Controller {
 
 		// Save client-generated video thumbnail if provided and no server thumbnail exists.
 		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
-			$existing_thumb = MediaRepository::get( $media_id, 'thumb_large' );
+			// Raw read — presence check, not URL emission.
+			$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
 			if ( ! $existing_thumb ) {
 				$upload_dir = wp_upload_dir();
 				$thumb_dir  = $upload_dir['basedir'] . '/wpmediaverse/thumbs';
@@ -583,9 +636,9 @@ class MediaController extends WP_REST_Controller {
 				if ( copy( $files['thumbnail']['tmp_name'], $thumb_path ) ) {
 					unlink( $files['thumbnail']['tmp_name'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 					$thumb_url = $upload_dir['baseurl'] . '/wpmediaverse/thumbs/' . $thumb_name;
-					MediaRepository::set( $media_id, 'thumb_large', $thumb_url );
-					MediaRepository::set( $media_id, 'thumb_medium', $thumb_url );
-					MediaRepository::set( $media_id, 'thumb_thumb', $thumb_url );
+					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_large', $thumb_url );
+					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_medium', $thumb_url );
+					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_thumb', $thumb_url );
 				}
 			}
 		}
@@ -600,7 +653,7 @@ class MediaController extends WP_REST_Controller {
 			$tags = array_filter( array_map( 'sanitize_text_field', $tags ) );
 			if ( $tags ) {
 				wp_set_object_terms( $media_id, $tags, 'mvs_tag' );
-				MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( $tags ) ) );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'tags', wp_json_encode( array_values( $tags ) ) );
 			}
 		}
 
@@ -609,27 +662,27 @@ class MediaController extends WP_REST_Controller {
 			wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
 			$cat_terms = get_the_terms( $media_id, 'mvs_category' );
 			if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
-				MediaRepository::set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
 			}
 		}
 
 		// Store media group (gallery post) metadata.
 		$media_group = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
 		if ( $media_group ) {
-			MediaRepository::set( $media_id, 'media_group', $media_group );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'media_group', $media_group );
 			$group_position = absint( $request->get_param( 'group_position' ) );
-			MediaRepository::set( $media_id, 'group_position', $group_position );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_position', $group_position );
 			if ( 0 === $group_position ) {
-				MediaRepository::set( $media_id, 'group_cover', 1 );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_cover', 1 );
 			}
 		}
 
 		// Set group association if group_id is provided and user is a member.
 		$group_id = absint( $request->get_param( 'group_id' ) );
 		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( get_current_user_id(), $group_id ) ) {
-			// privacy is an index column — MediaRepository::set writes directly to mvs_media_index.
-			MediaRepository::set( $media_id, 'privacy', 'group' );
-			MediaRepository::set( $media_id, 'group_id', $group_id );
+			// privacy is an index column — \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set writes directly to mvs_media_index.
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', 'group' );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_id', $group_id );
 
 			/**
 			 * Fires after media is assigned to a group.
@@ -669,7 +722,7 @@ class MediaController extends WP_REST_Controller {
 
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -678,7 +731,21 @@ class MediaController extends WP_REST_Controller {
 		$title = $request->get_param( 'title' );
 		if ( null !== $title ) {
 			$update_data['title'] = sanitize_text_field( $title );
-			$update_data['slug']  = MediaRepository::generate_unique_slug( $update_data['title'] );
+			// IMPORTANT: do NOT regenerate slug from the title. Title edits
+			// must NOT change the public URL — that breaks inbound links,
+			// shared OG cards, search-engine cache, and the URL the user
+			// just had in their address bar (which would 404 on reload).
+			// Callers that want to change the slug pass it explicitly via
+			// the `slug` param below; everyone else gets URL stability.
+		}
+
+		// Explicit slug change — only when the caller explicitly supplies a
+		// slug. Sanitized + uniqueness-checked against every other row.
+		$slug_param = $request->get_param( 'slug' );
+		if ( null !== $slug_param && '' !== trim( (string) $slug_param ) ) {
+			$repo                = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$requested_slug      = sanitize_title( (string) $slug_param );
+			$update_data['slug'] = $repo->generate_unique_slug( $requested_slug, $media_id );
 		}
 
 		$description = $request->get_param( 'description' );
@@ -692,26 +759,35 @@ class MediaController extends WP_REST_Controller {
 			$update_data['privacy'] = sanitize_text_field( $privacy );
 		}
 
-		// Write all index/meta changes in one call.
-		if ( ! empty( $update_data ) ) {
-			MediaRepository::set_many( $media_id, $update_data );
-		}
-
-		// Update tags / categories only when explicitly sent in the request body.
-		// Using $request->get_json_params() + array_key_exists distinguishes
-		// "key not sent" (leave existing data alone) from "key sent as empty
-		// array" (caller intentionally cleared the list). Previously we used
-		// `null !== $tags` which treated both cases identically and wiped tags
-		// on any unrelated save.
+		// JSON body inspection — used by the tags/categories block further
+		// down to distinguish "key omitted" (leave alone) from "key sent as
+		// null/empty" (intentional clear).
 		$json_params = $request->get_json_params();
 		$json_params = is_array( $json_params ) ? $json_params : array();
+
+		// Per-media download flag — honor regardless of body encoding so
+		// JSON apiFetch, form-encoded clients, and internal REST calls all
+		// land the change. Read via get_param (covers all sources) and
+		// distinguish "absent" (null) from "intentional false" (boolean
+		// false) so a `false` value correctly stores '0'. Only honored
+		// when the global mvs_allow_downloads toggle is also on at read
+		// time. Stored as '1' / '0' string so it round-trips cleanly.
+		$allow_download_param = $request->get_param( 'allow_download' );
+		if ( null !== $allow_download_param ) {
+			$update_data['allow_download'] = rest_sanitize_boolean( $allow_download_param ) ? '1' : '0';
+		}
+
+		// Write all index/meta changes in one call.
+		if ( ! empty( $update_data ) ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many( $media_id, $update_data );
+		}
 
 		if ( array_key_exists( 'tags', $json_params ) ) {
 			$tags = $request->get_param( 'tags' );
 			if ( is_array( $tags ) ) {
 				$sanitized_tags = array_map( 'sanitize_text_field', $tags );
 				wp_set_object_terms( $media_id, $sanitized_tags, 'mvs_tag' );
-				MediaRepository::set( $media_id, 'tags', wp_json_encode( array_values( $sanitized_tags ) ) );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'tags', wp_json_encode( array_values( $sanitized_tags ) ) );
 			}
 		}
 
@@ -721,10 +797,10 @@ class MediaController extends WP_REST_Controller {
 				wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
 				$cat_terms = get_the_terms( $media_id, 'mvs_category' );
 				if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
-					MediaRepository::set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
+					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
 				} else {
 					// Empty array sent → user cleared categories, so clear the cached list too.
-					MediaRepository::set( $media_id, 'category', wp_json_encode( array() ) );
+					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'category', wp_json_encode( array() ) );
 				}
 			}
 		}
@@ -749,7 +825,7 @@ class MediaController extends WP_REST_Controller {
 
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new \WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -786,7 +862,7 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Delete old file.
-		$old_path = MediaRepository::get( $media_id, 'file_path' );
+		$old_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
 		if ( $old_path ) {
 			$driver->delete( $old_path );
 		}
@@ -797,7 +873,7 @@ class MediaController extends WP_REST_Controller {
 			$media_type = 'document';
 		}
 
-		MediaRepository::set_many(
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many(
 			$media_id,
 			array(
 				'file_url'   => $driver->url( $dest_path ),
@@ -826,14 +902,14 @@ class MediaController extends WP_REST_Controller {
 
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$author_id = MediaRepository::get_author( $media_id );
+		$author_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 
 		// Delete stored file.
-		$file_path = MediaRepository::get( $media_id, 'file_path' );
+		$file_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
 		if ( $file_path ) {
 			$storage = Plugin::container()->get( 'storage' );
 			$storage->get_driver()->delete( $file_path );
@@ -841,7 +917,7 @@ class MediaController extends WP_REST_Controller {
 
 		// Remove from custom tables.
 		global $wpdb;
-		MediaRepository::delete_all( $media_id );
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 		// Remove taxonomy relationships.
@@ -877,7 +953,7 @@ class MediaController extends WP_REST_Controller {
 
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -917,6 +993,133 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Record a download event for a media item and increment the downloads
+	 * stat. Mirrors `record_view` but writes `event_type='download'` to
+	 * `mvs_media_views` and increments the `downloads` column on
+	 * `mvs_media_stats`. Public callers (anonymous viewers) can record
+	 * downloads — same surface as views.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function record_download( $request ) {
+		// Global toggle — when admin disables downloads, reject the event
+		// regardless of media-level privacy. Defense-in-depth: the lightbox
+		// button is also hidden, but a savvy caller could still hit this
+		// endpoint directly.
+		if ( ! (bool) get_option( 'mvs_allow_downloads', true ) ) {
+			return new WP_Error( 'mvs_downloads_disabled', __( 'Downloads are disabled on this site.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+
+		// Rate limit: 30 downloads/min per user/IP — half the view rate
+		// since downloads are higher-cost operations.
+		$rate_check = RateLimiter::check( 'record_download', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
+		$media_id = (int) $request->get_param( 'id' );
+
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		// Privacy gate: callers without view access can't record a download.
+		$user_id = get_current_user_id();
+		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+
+		// Per-media opt-out: owner can disable downloads on a single item
+		// even when the global toggle is on. Absent meta = default allow.
+		$per_media = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'allow_download' );
+		if ( '0' === $per_media ) {
+			return new WP_Error( 'mvs_download_blocked', __( 'The owner has disabled downloads for this media.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+
+		global $wpdb;
+
+		$ip_hash = hash( 'sha256', self::get_client_ip() . wp_salt() );
+
+		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_media_views',
+			array(
+				'media_id'   => $media_id,
+				'user_id'    => $user_id ? $user_id : null,
+				'ip_hash'    => $ip_hash,
+				'event_type' => 'download',
+				'created_at' => current_time( 'mysql', true ),
+			),
+			array( '%d', '%d', '%s', '%s', '%s' )
+		);
+
+		// Ensure stats row exists, then increment downloads.
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"INSERT INTO {$wpdb->prefix}mvs_media_stats (media_id, downloads, updated_at) VALUES (%d, 1, %s)
+				ON DUPLICATE KEY UPDATE downloads = downloads + 1, updated_at = VALUES(updated_at)",
+				$media_id,
+				current_time( 'mysql', true )
+			)
+		);
+
+		return rest_ensure_response( array( 'recorded' => true ) );
+	}
+
+	/**
+	 * Record a share event for a media item and increment the shares stat.
+	 * Mirrors record_download but writes shares instead. Same privacy gate.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function record_share( $request ) {
+		// Rate limit: 30 shares/min per user/IP (same as downloads).
+		$rate_check = RateLimiter::check( 'record_share', 30, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
+		$media_id = (int) $request->get_param( 'id' );
+
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$user_id = get_current_user_id();
+		if ( ! $this->privacy->can_view( $media_id, $user_id ) ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this media item.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+
+		global $wpdb;
+
+		// Ensure stats row exists, then increment shares.
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"INSERT INTO {$wpdb->prefix}mvs_media_stats (media_id, shares, updated_at) VALUES (%d, 1, %s)
+				ON DUPLICATE KEY UPDATE shares = shares + 1, updated_at = VALUES(updated_at)",
+				$media_id,
+				current_time( 'mysql', true )
+			)
+		);
+
+		/**
+		 * Fires when a media item is shared.
+		 *
+		 * Listeners include `CacheService::on_media_stat_change` (drops the
+		 * cached stats row so the next read sees the incremented count).
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param int $media_id Media post ID that was shared.
+		 * @param int $user_id  User who shared (0 for anonymous).
+		 */
+		do_action( 'mvs_share_recorded', $media_id, $user_id );
+
+		return rest_ensure_response( array( 'recorded' => true ) );
+	}
+
+	/**
 	 * Check access for a media item.
 	 *
 	 * @param WP_REST_Request $request Request.
@@ -925,17 +1128,17 @@ class MediaController extends WP_REST_Controller {
 	public function check_access( $request ) {
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
 		$user_id  = get_current_user_id();
 		$can_view = $this->privacy->can_view( $media_id, $user_id );
-		$is_owner = $user_id && MediaRepository::get_author( $media_id ) === $user_id;
+		$is_owner = $user_id && \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id;
 
 		// Only expose privacy details to users who can view or own the media.
 		if ( $can_view || $is_owner ) {
-			$privacy_meta = MediaRepository::get( $media_id, 'privacy' );
+			$privacy_meta = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
 			return rest_ensure_response(
 				array(
 					'media_id' => $media_id,
@@ -987,7 +1190,7 @@ class MediaController extends WP_REST_Controller {
 	public function get_item_permissions_check( $request ) {
 		$media_id = (int) $request->get_param( 'id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
@@ -1009,11 +1212,11 @@ class MediaController extends WP_REST_Controller {
 		$media_id = (int) $request->get_param( 'id' );
 		$user_id  = get_current_user_id();
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		if ( MediaRepository::get_author( $media_id ) === $user_id && current_user_can( 'edit_mvs_medias' ) ) {
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id && current_user_can( 'edit_mvs_medias' ) ) {
 			return true;
 		}
 
@@ -1034,11 +1237,11 @@ class MediaController extends WP_REST_Controller {
 		$media_id = (int) $request->get_param( 'id' );
 		$user_id  = get_current_user_id();
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		if ( MediaRepository::get_author( $media_id ) === $user_id && current_user_can( 'delete_mvs_medias' ) ) {
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id ) === $user_id && current_user_can( 'delete_mvs_medias' ) ) {
 			return true;
 		}
 
@@ -1063,30 +1266,24 @@ class MediaController extends WP_REST_Controller {
 		global $wpdb;
 
 		$media_id = (int) $media_id;
-		$all      = MediaRepository::get_all( $media_id );
+		$all      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );
 
 		if ( empty( $all ) ) {
 			return null;
 		}
 
-		// Resolve signed-URL service + viewer once; both file_url and thumbnail
-		// route through it for .htaccess-protected uploads.
-		$signed_urls = Plugin::container()->get( 'signed_urls' );
-		$viewer_id   = get_current_user_id();
-
-		// Use signed URL to bypass .htaccess protection on uploads directory.
-		$file_url = '';
-		if ( ! empty( $all['file_url'] ) ) {
-			$signed   = $signed_urls ? $signed_urls->generate( $media_id, $viewer_id ) : false;
-			$file_url = $signed ?: '';
+		// Always-signed via MediaRepository — Phase 0a item 5 consolidated
+		// signing into the data layer; this controller is now a thin emitter.
+		$file_url      = ! empty( $all['file_url'] )
+			? (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' )
+			: '';
+		$thumbnail_url = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'thumb_large' );
+		if ( '' === $thumbnail_url ) {
+			$thumbnail_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, 'large' );
 		}
 
-		// Thumbnail also routed through the signed URL serve endpoint.
-		$thumb_signed  = $signed_urls ? $signed_urls->generate_thumbnail( $media_id, $viewer_id ) : false;
-		$thumbnail_url = $thumb_signed ?: TemplateHelpers::get_thumb_url( $media_id, 'large' );
-
 		// Lightbox URL respects the admin-chosen image source.
-		$lightbox_url = TemplateHelpers::get_lightbox_url( $media_id, (string) $all['file_url'] );
+		$lightbox_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_url( $media_id, (string) $all['file_url'] );
 
 		$media_type_value = ! empty( $all['media_type'] ) ? $all['media_type'] : '';
 		$privacy_value    = ! empty( $all['privacy'] ) ? $all['privacy'] : 'public';
@@ -1097,18 +1294,25 @@ class MediaController extends WP_REST_Controller {
 		$can_edit      = $viewer_id > 0
 			&& ( $viewer_id === $author_id_raw || user_can( $viewer_id, 'manage_options' ) );
 
+		// allow_download: per-media flag. Absent meta = default true.
+		// '0' string = explicit opt-out by the owner. The lightbox button
+		// honors both this AND the global mvs_allow_downloads setting.
+		$allow_download_raw = isset( $all['allow_download'] ) ? (string) $all['allow_download'] : '';
+		$allow_download     = ( '0' !== $allow_download_raw );
+
 		$data = array(
 			'id'                => $media_id,
 			'title'             => ! empty( $all['title'] ) ? $all['title'] : '',
 			'description'       => ! empty( $all['description'] ) ? $all['description'] : '',
 			'author'            => $author_id_raw,
 			'date'              => ! empty( $all['created_at'] ) ? $all['created_at'] : '',
-			'link'              => MediaRepository::get_permalink( $media_id ),
+			'link'              => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ),
 			'file_url'          => $file_url,
 			'file_size'         => ! empty( $all['file_size'] ) ? (int) $all['file_size'] : 0,
 			'file_type'         => ! empty( $all['file_type'] ) ? $all['file_type'] : '',
 			'media_type'        => $media_type_value,
 			'privacy'           => $privacy_value,
+			'allow_download'    => $allow_download,
 			'moderation_status' => $moderation_value,
 			'tags'              => self::parse_meta_list( $all['tags'] ?? '' ),
 			'categories'        => self::parse_meta_list( $all['category'] ?? '' ),
@@ -1121,7 +1325,7 @@ class MediaController extends WP_REST_Controller {
 		$author_id             = $data['author'];
 		$author_name           = get_the_author_meta( 'display_name', $author_id );
 		$author_avatar         = get_avatar_url( $author_id, array( 'size' => 64 ) );
-		$author_url            = TemplateHelpers::get_user_profile_url( $author_id );
+		$author_url            = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $author_id );
 		$data['author_name']   = $author_name;
 		$data['author_avatar'] = $author_avatar;
 		$data['author_url']    = $author_url;

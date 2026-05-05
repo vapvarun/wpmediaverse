@@ -37,8 +37,20 @@ When you add a feature, add a line here. When the AI finishes a pass, it should 
 | Admin Pro Quota & Credits | package list + credit log | "no packages yet" with create CTA |
 | Admin Pro Theme Library | themes grid | — (default themes seeded on activation) |
 | Admin Pro Migration Tool | detected counts | "no migrable data detected" |
+| Lightbox Edit-Media modal | title/description/privacy/allow-download fields prefilled from media, save → REST PUT → live update | save disabled while title empty; ESC closes without saving |
+| Lightbox Download button | downloads original asset; increments `mvs_media_stats.downloads` once per click; rate-limited at 30/min/user | hidden when global `mvs_allow_downloads` off OR per-media `allow_download='0'` |
+| Lightbox Fullscreen button | enters native Fullscreen API on the image panel; F key toggles | exit on ESC or F again; toolbar still operable in fullscreen |
+| Upload modal popular tag pills | top-8 popular tags rendered as clickable chips that append to the tag input | hidden when no tags exist anywhere |
+| Explore search autocomplete | top-8 title matches as a dropdown after 250ms debounce; ArrowDown/Up/Enter/ESC keyboard nav | hidden on `<2` chars or zero-result |
+| Per-media edit modal — `?autologin=1` | Edit cog visible on dashboard cards (`/my-media/`) only when `can_edit`; opens prefilled modal | not visible on Explore / Album / Collection cards |
+| Admin All Media — Bulk Actions toolbar | multi-select, Move-to-Trash / Restore / Delete-permanently (context-aware to current filter); success notice with count | bulk submit with 0 selected → friendly error, no destructive call |
+| Block: `mvs/member-photos` | auto-resolves user (explicit ID → BP displayed user → post author → current user); media grid renders | logged-out + no userId → "no user resolved" empty state |
+| Block: `mvs/pdf-viewer` | iframe with `#view=FitH` URL fragment; toolbar toggle; lazy-load | 5 distinct empty states: no id / not found / wrong type / privacy fail / asset missing |
+| Single-media OG + Twitter Card meta | `og:title`/`og:image`/`og:description`/`twitter:card` injected on `wp_head` priority 5 | absent on non-media pages |
+| Frontend chat-panel | renders or not per `mvs_chat_panel_visibility` (`everywhere` / `mvs_pages` / `bp_pages` / `disabled`) | `disabled` mode → no `.mvs-chat-panel` markup at all |
+| BP notification surface (BP active) | only the BP nav bell renders MVS notifications | dashboard-content `.mvs-notification-bell` suppressed (no double-render) |
 
-Render rule (standing): every row above must produce visible output in both populated and empty branches. No bare `return;` in render paths. This includes all 8 Gutenberg blocks (`mvs/*`) and all 8 shortcodes (`[mvs_*]`).
+Render rule (standing): every row above must produce visible output in both populated and empty branches. No bare `return;` in render paths. This includes all 9 registered Gutenberg blocks (`mvs/*`) and all 12 shortcodes (`[mvs_*]`).
 
 ---
 
@@ -55,6 +67,10 @@ Render rule (standing): every row above must produce visible output in both popu
 | Activity composer attach-media button | Proper button with visible `.mvs-activity-media-btn__label` text "Attach media", Lucide `image-plus` icon pinned to 18px via `.mvs-activity-media-btn svg` rule, `aria-label` on the button. Icon-only bare-box states are a bug — see note in `ActivityFormIntegration::activity_post_media_button()`. | Rendered as icon-only bare box (no label + no SVG size rule) until `<sha-tbd>`. Customer screenshot flagged the empty outlined box twice. |
 | Activity composer attach-media + privacy alignment | `#mvs-activity-media-btn` and `#mvs-activity-privacy` render on the same row inside `.mvs-activity-media-btn-wrap` (flex row, 10px gap). Both at `min-height: 36px`, matching `4px` border-radius, `13px` font-size, `1px` border. Select uses custom chevron SVG, not native UA arrow. `yDelta` between their top edges must be 0px on wb-reign-theme. | Regressed repeatedly because raw CSS rules targeting `<select>` inside `#whats-new-form #whats-new-options` in Reign's `main.min.css` have specificity `(3,1,3)` with `height: 42px`; our rule must anchor at `#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy` (specificity `5,1,0`) and force `height: auto`. |
 | BP CSS file ownership | **All BP-specific CSS lives in `assets/css/bp-integration.css`**, scoped under `#buddypress` (and `.activity-list` where an AJAX-injected activity stream can render outside `#buddypress`). `frontend.css` is for generic plugin frontend only: design tokens, templates, shortcodes, blocks, dashboard, single-media, lightbox. `ActivityFormIntegration`, `ProfileTabIntegration`, `GroupTabIntegration` all enqueue both stylesheets. A new BP rule added to `frontend.css` is a bug — move it to `bp-integration.css`. | Entire BP rule set (~2500 lines across 5+ sections) was initially accumulated in `frontend.css` because `ActivityFormIntegration` only enqueued `mvs-frontend`. Dead `.theme-flavor` selectors, duplicate `.mvs-activity-media-btn` class/ID pairs, and a broken dangling `.theme-flavor` selector merging into a sibling rule all landed as consequence. Migrated in commits `8f63b3b` → `df15593` (2026-04-24). |
+| Lightbox 6-reaction a11y | Each of `Like / Love / Haha / Wow / Sad / Angry` carries `aria-label` (sentence-form), `aria-pressed` toggle, and the emoji span has `aria-hidden="true"`. Group wrapper has `role="group" aria-label="Reactions"`. Toolbar buttons (Share / Open / Favorite / Report / Download / Fullscreen) all carry `aria-label`. `:focus-visible` outline on `.mvs-lightbox-action / -close / -nav` so keyboard nav is visible. | A11y pass 2026-05-03 (`51d95ba` + `c250f75`). Drift = screen-reader-only users see emoji glyphs only, no semantic action name. |
+| Share button must NOT show `window.prompt` fallback | `lightboxShare` action: try `navigator.share()` → `navigator.clipboard.writeText()` → toast on failure. Never `window.prompt()`. The third popup ("Copy this link:") is a shipping bug. | Removed during 1.2.0 RC walkthrough — customer flagged the ugly browser-native prompt screenshot. |
+| `mvs_pro_*` option prefix on Pro side | Every Pro-owned setting carries `mvs_pro_` prefix. Activation migration copies any unprefixed `mvs_*` value once on first 1.2.0 boot then deletes the old key. | Renamed in 1.2.0 to avoid Free namespace collision. A regression here = duplicate options + drift. |
+| Block render must enqueue Layout assets (Pro Rule 6) | Any Pro block whose `render.php` instantiates a `WPMediaVersePro\Frontend\Layouts\*` class MUST call `$layout->enqueue_assets()` in the same file. Idempotent — `wp_enqueue_*` dedupes by handle. | Enforced by `bin/coding-rules-check.sh` Rule 6. The bug class shipped briefly in 1.2.0 — feed blocks instantiated Layout but never enqueued per-layout CSS, so SVG icons rendered at viewBox-default size. Locked 2026-05-03. |
 
 ---
 
@@ -96,6 +112,15 @@ Render rule (standing): every row above must produce visible output in both popu
 | Upload at quota (Pro) | upload blocked with upgrade CTA | — |
 | Transcoding job (Pro) | `_mvs_transcodes` meta populated with outputs | `mvs_pro_transcode_complete` fires |
 | Caption generation (Pro) | `_mvs_captions` meta populated with VTT+SRT URLs | `mvs_pro_captions_generated` fires |
+| Edit own media via lightbox modal | `PUT /mvs/v1/media/{id}` updates title/description/privacy + `allow_download` meta; lightbox card refreshes in place | none if title is empty (button gated) |
+| Lightbox download | `POST /mvs/v1/media/{id}/download`; `mvs_media_stats.downloads` increments by 1 | rate-limited to 30/min/user → 429 |
+| Lightbox share (native or copy) | `POST /mvs/v1/media/{id}/share`; `mvs_media_stats.shares` increments | toast confirms; no `window.prompt` ever fires |
+| Lightbox fullscreen | Fullscreen API enters/exits on the image panel; `F` shortcut toggles | ESC exits; toolbar still operable in fullscreen |
+| Click popular tag pill in upload modal | tag appended to comma-separated tags input (no duplicates) | — |
+| Type in Explore search | `GET /mvs/v1/media?s=&per_page=8` after 250ms debounce; suggestion dropdown opens | no network on `<2` chars |
+| Bulk move to Trash (admin) | selected `mvs_media_index` rows flipped to `status='trashed'`; `mvs_media_deleted` does NOT fire | redirect with `?mvs_bulk_done=N&mvs_bulk_action=trash` notice |
+| Bulk Restore from Trash filter | rows flipped back to `status='published'` | redirect notice |
+| Bulk Delete permanently | rows + meta + stats removed; files removed from disk; `mvs_media_deleted` fires per-row | confirmation prompt before submit |
 
 ---
 
@@ -128,6 +153,8 @@ For each: saving it should change what users see or what the system allows.
 | `mvs_pro_ffmpeg_path` (Pro) | transcoding uses that binary |
 | `mvs_pro_s3_*` / `mvs_pro_bunny_*` (Pro) | storage driver uses those credentials |
 | `mvs_pro_google_vision_key` / `mvs_pro_aws_*` (Pro) | AI vision provider reachable |
+| `mvs_chat_panel_visibility` | `everywhere` (default) / `mvs_pages` (only `is_mvs_page`) / `bp_pages` (only `is_bp_page`) / `disabled` — controls `Plugin::render_chat_panel()` output. `mvs_should_render_chat_panel` filter wraps the resolved decision. |
+| `mvs_allow_downloads` | global gate — when off, the lightbox Download button is hidden everywhere AND `record_download` REST refuses with 403. Per-media `allow_download` meta still gates further when global is on. |
 
 Every key must have at least one reader in `templates/` or `includes/**/Service.php`. A setting with no reader is dead weight — flag it.
 
@@ -178,9 +205,9 @@ When any of these diverge, UI silently breaks (the envelope-drift class):
 
 **Pro admin:** Competitions Dashboard, Challenge Manager, Tournament Manager, Battle Monitor, Quota & Credits, Theme Library, Migration, Gamification Settings, License, Pro settings tabs (AI / S3 / BunnyCDN / FFmpeg), Moderation's User Reports tab, Stats' Video Analytics tab.
 
-**Shortcodes (8, namespace `mvs_`):** gallery, upload, album, player, stats, dashboard, collection, profile_edit.
+**Shortcodes (12, namespace `mvs_`):** gallery, upload, album, player, stats, dashboard, collection, profile_edit, explore_feed, lock_overlay, member_photos, pdf_viewer.
 
-**Blocks (8 registered, namespace `mvs/`):** media-grid, explore-feed, album-viewer, media-player, media-upload, media-stats, story-viewer, lock-overlay.
+**Blocks (9 registered, namespace `mvs/`):** media-grid, explore-feed, album-viewer, media-player, media-upload, media-stats, lock-overlay, member-photos, pdf-viewer. (`story-viewer` source exists but is intentionally not in `BLOCKS` for 1.2.0 — Story create-flow + REST endpoint deferred to 1.2.1.)
 
 ---
 

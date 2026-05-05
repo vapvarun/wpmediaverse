@@ -703,6 +703,20 @@ const { state, actions } = store( 'mvs/dashboard', {
 				tags: Array.from( state.editModal.tags || [] ),
 			};
 
+			// Slug stays put unless the user explicitly opted in via the
+			// "Update URL slug" checkbox. Read DOM directly — keeps the
+			// checkbox state authoritative regardless of any IA hydration
+			// timing quirks. Server runs sanitize_title + collision check.
+			const slugCheckbox = document.querySelector( '.mvs-edit-regenerate-slug' );
+			if ( slugCheckbox && slugCheckbox.checked ) {
+				payload.slug = ( state.editModal.title || '' )
+					.toLowerCase()
+					.replace( /[^\w\s-]/g, '' )
+					.trim()
+					.replace( /\s+/g, '-' )
+					.replace( /-+/g, '-' );
+			}
+
 			try {
 				const res = await apiFetch( ctx, 'media/' + state.editModal.itemId, {
 					method: 'PUT',

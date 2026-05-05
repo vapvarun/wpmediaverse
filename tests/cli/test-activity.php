@@ -139,7 +139,7 @@ function run_activity_tests(): array {
 			// MVS permalink should contain /media/ in the URL, not a raw ?p= or default post URL.
 			$expected_mid = (int) $item['media_id'];
 			if ( $expected_mid ) {
-				$expected_link = \WPMediaVerse\Repository\MediaRepository::get_permalink( $expected_mid );
+				$expected_link = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $expected_mid );
 				if ( $expected_link && $link_value === $expected_link ) {
 					$link_correct = true;
 				}

@@ -123,18 +123,18 @@ do_action( 'mvs_before_content' );
 
 			<!-- Media Grid -->
 			<?php if ( ! empty( $items ) ) : ?>
-				<?php $stats_map = \WPMediaVerse\Core\TemplateHelpers::bulk_get_stats( array_map( 'intval', $items ) ); ?>
+				<?php $stats_map = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( array_map( 'intval', $items ) ); ?>
 				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
 				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed">
 					<?php
 					foreach ( $items as $media_id ) :
 						$media_id     = (int) $media_id;
-						$media_title  = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'title' );
-						$media_status = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'status' );
+						$media_title  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' );
+						$media_status = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'status' );
 						if ( ! $media_title || 'publish' !== $media_status ) {
 							continue;
 						}
-						\WPMediaVerse\Core\TemplateHelpers::render_grid_item(
+						\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_item(
 							$media_id,
 							$stats_map[ $media_id ] ?? array(),
 							array(

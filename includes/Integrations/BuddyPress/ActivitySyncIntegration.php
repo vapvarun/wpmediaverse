@@ -13,7 +13,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Records and manages BuddyPress activity entries for WPMediaVerse media events.
@@ -112,7 +111,7 @@ class ActivitySyncIntegration {
 		$is_group = ( 'groups' === $activity->component && $activity->secondary_item_id > 0 );
 		$media_id = $is_group ? (int) $activity->secondary_item_id : (int) $activity->item_id;
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			// Always return a valid action string — empty strings crash BP Nouveau's strpos().
 			$user_link = bp_core_get_userlink( $activity->user_id );
 			return $user_link
@@ -120,7 +119,7 @@ class ActivitySyncIntegration {
 				? sprintf( __( '%s uploaded new media', 'wpmediaverse' ), $user_link )
 				: __( 'A member uploaded new media', 'wpmediaverse' );
 		}
-		$file_type  = MediaRepository::get( $media_id, 'file_type' );
+		$file_type  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 		$type_label = MediaDisplayHelper::get_media_type_label( $file_type );
 		$user_link  = bp_core_get_userlink( $activity->user_id );
 
@@ -139,7 +138,7 @@ class ActivitySyncIntegration {
 		}
 
 		// Check if this media belongs to an album.
-		$album_id = (int) MediaRepository::get( $media_id, 'album_id' );
+		$album_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'album_id' );
 		if ( $album_id ) {
 			$album = get_post( $album_id );
 			if ( $album && 'mvs_album' === $album->post_type ) {
@@ -172,19 +171,19 @@ class ActivitySyncIntegration {
 	 */
 	public function format_activity_action_comment( $action, $activity ) {
 		$media_id = (int) $activity->item_id;
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			$user_link = bp_core_get_userlink( $activity->user_id );
 			return $user_link
 				// translators: %s: linked user name.
 				? sprintf( __( '%s commented on a media item', 'wpmediaverse' ), $user_link )
 				: __( 'A member commented on a media item', 'wpmediaverse' );
 		}
-		$media_title = MediaRepository::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
+		$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 		return sprintf(
 			/* translators: 1: user link, 2: media link */
 			__( '%1$s commented on %2$s', 'wpmediaverse' ),
 			bp_core_get_userlink( $activity->user_id ),
-			'<a href="' . esc_url( MediaRepository::get_permalink( $media_id ) ) . '">' . esc_html( $media_title ) . '</a>'
+			'<a href="' . esc_url( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ) ) . '">' . esc_html( $media_title ) . '</a>'
 		);
 	}
 
@@ -211,7 +210,18 @@ class ActivitySyncIntegration {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['context'] ) && 'activity' === sanitize_key( wp_unslash( $_GET['context'] ) ) ) {
-			MediaRepository::set( $media_id, 'activity_upload', '1' );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'activity_upload', '1' );
+		}
+
+		// Album bulk-upload batch: when the JS dropzone uploads N files in one
+		// user action it sets `?album_upload=1` so each individual upload skips
+		// per-media activity creation. update_activity_with_album() emits ONE
+		// gallery activity for the batch when the album link call lands.
+		// Later additions to the album (same album, different user action) do
+		// NOT carry the album_upload flag and behave normally.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['album_upload'] ) && '1' === sanitize_key( wp_unslash( $_GET['album_upload'] ) ) ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'activity_upload', '1' );
 		}
 	}
 
@@ -229,25 +239,25 @@ class ActivitySyncIntegration {
 		}
 
 		// Skip if this media was uploaded via the BP activity form.
-		if ( MediaRepository::get( $media_id, 'activity_upload' ) ) {
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'activity_upload' ) ) {
 			return;
 		}
 
 		// Skip imported media — their original source activity is preserved and rendered via transform_legacy_media_content().
-		if ( MediaRepository::get( $media_id, 'imported_media' ) ) {
+		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'imported_media' ) ) {
 			return;
 		}
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return;
 		}
 
-		$user_id   = MediaRepository::get_author( $media_id );
+		$user_id   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 		$thumbnail = MediaDisplayHelper::get_media_thumbnail_html( $media_id, 'large' );
 
 		// Build action string at insert time (format callback regenerates on display,
 		// but storing it prevents empty-action crashes in BP Nouveau's strpos()).
-		$file_type  = MediaRepository::get( $media_id, 'file_type' );
+		$file_type  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
 		$type_label = MediaDisplayHelper::get_media_type_label( $file_type );
 		$action_str = sprintf(
 			/* translators: 1: user link, 2: media type */
@@ -266,7 +276,7 @@ class ActivitySyncIntegration {
 		);
 
 		// If media belongs to a group, record activity in the group stream.
-		$mvs_group_id = (int) MediaRepository::get( $media_id, 'group_id' );
+		$mvs_group_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'group_id' );
 		if ( $mvs_group_id > 0 && bp_is_active( 'groups' ) ) {
 			$activity_args['component']         = 'groups';
 			$activity_args['item_id']           = $mvs_group_id;
@@ -278,7 +288,7 @@ class ActivitySyncIntegration {
 
 		// Store the activity ID on the media post for easy lookup/updates.
 		if ( $activity_id ) {
-			MediaRepository::set( $media_id, 'bp_activity_id', $activity_id );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'bp_activity_id', $activity_id );
 		}
 	}
 
@@ -330,13 +340,13 @@ class ActivitySyncIntegration {
 		}
 
 		// 1. Standalone upload activity via back-reference.
-		$stored_activity_id = (int) MediaRepository::get( $media_id, 'bp_activity_id' );
+		$stored_activity_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' );
 		if ( $stored_activity_id > 0 ) {
 			bp_activity_delete( array( 'id' => $stored_activity_id ) );
 		}
 
 		// 2. Any other activities still pointing at this media via item_id or
-		//    secondary_item_id (covers legacy rows where the back-ref was lost).
+		// secondary_item_id (covers legacy rows where the back-ref was lost).
 		bp_activity_delete(
 			array(
 				'type'    => 'mvs_media_upload',
@@ -369,8 +379,8 @@ class ActivitySyncIntegration {
 			if ( $activity_id <= 0 ) {
 				continue;
 			}
-			$raw = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
-			$ids = array_filter( array_map( 'intval', explode( ',', (string) $raw ) ) );
+			$raw       = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
+			$ids       = array_filter( array_map( 'intval', explode( ',', (string) $raw ) ) );
 			$remaining = array_values( array_diff( $ids, array( $media_id ) ) );
 
 			if ( empty( $remaining ) ) {
@@ -441,6 +451,11 @@ class ActivitySyncIntegration {
 			return;
 		}
 
+		// Track media that came through the album bulk-upload batch path
+		// (flag_activity_upload set activity_upload=1 because of `?album_upload=1`).
+		// Those have no per-media activity by design; we owe them ONE gallery activity.
+		$bundled_ids = array();
+
 		foreach ( $media_ids as $media_id ) {
 			$media_id = (int) $media_id;
 			$activity = $this->find_media_upload_activity( $media_id );
@@ -455,6 +470,97 @@ class ActivitySyncIntegration {
 					array( '%s' ),
 					array( '%d' )
 				);
+				continue;
+			}
+
+			// No per-media activity AND media has activity_upload=1 → batched.
+			if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'activity_upload' ) ) {
+				$bundled_ids[] = $media_id;
+			}
+		}
+
+		if ( ! empty( $bundled_ids ) && function_exists( 'bp_activity_add' ) && bp_is_active( 'activity' ) ) {
+			$this->emit_album_gallery_activity( $album_id, $bundled_ids );
+		}
+	}
+
+	/**
+	 * Emit a single grouped "uploaded N photos to album X" activity for a
+	 * bulk-upload batch. Reuses the existing thumbnail-grid render path so
+	 * the activity feed shows the same media-grid markup as the recovery
+	 * path in `ActivityContentIntegration::enhance_activity_media_content`.
+	 *
+	 * @param int   $album_id  Album post ID.
+	 * @param int[] $media_ids Media post IDs in upload order (first = cover).
+	 */
+	private function emit_album_gallery_activity( int $album_id, array $media_ids ): void {
+		$album = get_post( $album_id );
+		if ( ! $album || 'mvs_album' !== $album->post_type ) {
+			return;
+		}
+
+		// Pull the user from the first media item (album.post_author can lag in
+		// fresh-install fixtures; the per-media author is the actual uploader).
+		$user_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( (int) $media_ids[0] );
+		if ( $user_id <= 0 ) {
+			$user_id = (int) $album->post_author;
+		}
+		if ( $user_id <= 0 ) {
+			return;
+		}
+
+		// Build thumbnail grid (cap at 6 — beyond that is visual noise).
+		$shown     = array_slice( $media_ids, 0, 6 );
+		$grid_html = '';
+		foreach ( $shown as $mid ) {
+			$grid_html .= MediaDisplayHelper::get_media_thumbnail_html( (int) $mid, 'large' );
+		}
+		if ( '' === $grid_html ) {
+			return; // Couldn't render any thumbnails — abort rather than ship empty activity.
+		}
+		$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( count( $shown ), 6 );
+		$content    = '<div class="' . esc_attr( $grid_class ) . '">' . $grid_html . '</div>';
+
+		$album_link = '<a href="' . esc_url( get_permalink( $album_id ) ) . '">' . esc_html( $album->post_title ) . '</a>';
+		$user_link  = bp_core_get_userlink( $user_id );
+		$count      = count( $media_ids );
+		$action     = sprintf(
+			/* translators: 1: user link, 2: photo count, 3: album link */
+			_n(
+				'%1$s uploaded %2$d photo to album %3$s',
+				'%1$s uploaded %2$d photos to album %3$s',
+				$count,
+				'wpmediaverse'
+			),
+			$user_link,
+			$count,
+			$album_link
+		);
+
+		$activity_id = bp_activity_add(
+			array(
+				'user_id'           => $user_id,
+				'component'         => 'wpmediaverse',
+				'type'              => 'mvs_media_upload',
+				'action'            => $action,
+				'content'           => $content,
+				'item_id'           => $album_id,
+				'secondary_item_id' => 0,
+				'hide_sitewide'     => false,
+			)
+		);
+
+		if ( $activity_id && ! is_wp_error( $activity_id ) ) {
+			// Persist the media list so ActivityContent's recovery path can
+			// reconstruct the grid if `content` is ever lost (matches the
+			// existing _mvs_media_ids meta used by the BP composer flow).
+			bp_activity_update_meta( $activity_id, '_mvs_media_ids', implode( ',', array_map( 'absint', $media_ids ) ) );
+			bp_activity_update_meta( $activity_id, '_mvs_album_id', (int) $album_id );
+
+			// Tag every media in the bundle so future album-add calls can
+			// find this activity instead of emitting a second one.
+			foreach ( $media_ids as $mid ) {
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( (int) $mid, 'bp_activity_id', (int) $activity_id );
 			}
 		}
 	}
@@ -490,7 +596,7 @@ class ActivitySyncIntegration {
 		}
 
 		// Get the linked BP activity ID for this media.
-		$activity_id = (int) MediaRepository::get( $media_id, 'bp_activity_id' );
+		$activity_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' );
 		if ( ! $activity_id ) {
 			return;
 		}
@@ -526,7 +632,7 @@ class ActivitySyncIntegration {
 		}
 
 		// Fast path: use stored activity ID from post meta.
-		$stored_id = (int) MediaRepository::get( $media_id, 'bp_activity_id' );
+		$stored_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' );
 		if ( $stored_id ) {
 			$activity = new \BP_Activity_Activity( $stored_id );
 			if ( ! empty( $activity->id ) ) {
@@ -547,7 +653,7 @@ class ActivitySyncIntegration {
 
 		if ( ! empty( $activities['activities'] ) ) {
 			// Cache for next time.
-			MediaRepository::set( $media_id, 'bp_activity_id', $activities['activities'][0]->id );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'bp_activity_id', $activities['activities'][0]->id );
 			return $activities['activities'][0];
 		}
 
@@ -565,7 +671,7 @@ class ActivitySyncIntegration {
 		);
 
 		if ( ! empty( $activities['activities'] ) ) {
-			MediaRepository::set( $media_id, 'bp_activity_id', $activities['activities'][0]->id );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'bp_activity_id', $activities['activities'][0]->id );
 			return $activities['activities'][0];
 		}
 

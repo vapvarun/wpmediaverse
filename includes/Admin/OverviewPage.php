@@ -9,8 +9,6 @@ namespace WPMediaVerse\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Core\TemplateHelpers;
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Overview page — the landing page under WPMediaVerse admin menu.
@@ -27,9 +25,14 @@ class OverviewPage {
 	 */
 	public function __construct() {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		// Phase 6 (1.2.0): retiring wp_ajax_mvs_* in favor of REST routes
+		// under /mvs/v1/admin/. Welcome-dismiss already migrated; demo
+		// import/cleanup waiting on the seeder refactor that converts the
+		// 1,541-line seed-demo-data.php from "emit JSON mid-flight via
+		// wp_send_json_*" to "return a structured array" so the same logic
+		// is reusable from REST, WP-CLI, and unit tests.
 		add_action( 'wp_ajax_mvs_import_demo_data', array( $this, 'ajax_import_demo_data' ) );
 		add_action( 'wp_ajax_mvs_cleanup_demo_data', array( $this, 'handle_cleanup_demo' ) );
-		add_action( 'wp_ajax_mvs_dismiss_welcome', array( $this, 'ajax_dismiss_welcome' ) );
 	}
 
 	/**
@@ -411,8 +414,8 @@ class OverviewPage {
 											$item_title    = $item['title'] ?? '';
 											$item_author   = (int) ( $item['post_author'] ?? 0 );
 											$item_date     = $item['created_at'] ?? '';
-											$thumb_url     = $item_media_id ? TemplateHelpers::get_thumb_url( $item_media_id, 'thumbnail' ) : '';
-											$view_url      = $item_media_id ? MediaRepository::get_permalink( $item_media_id ) : '';
+											$thumb_url     = $item_media_id ? \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $item_media_id, 'thumbnail' ) : '';
+											$view_url      = $item_media_id ? \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_media_id ) : '';
 											$link_url      = $view_url;
 											?>
 											<tr>
@@ -565,7 +568,6 @@ class OverviewPage {
 				<?php $this->render_pages_created_notice(); ?>
 			</div>
 			<button type="button" class="mvs-welcome-banner__dismiss" id="mvs-dismiss-welcome"
-				data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_dismiss_welcome' ) ); ?>"
 				aria-label="<?php esc_attr_e( 'Dismiss welcome banner', 'wpmediaverse' ); ?>">
 				<i data-lucide="x"></i>
 			</button>
@@ -574,10 +576,12 @@ class OverviewPage {
 		document.getElementById('mvs-dismiss-welcome').addEventListener('click', function() {
 			var banner = document.getElementById('mvs-welcome-banner');
 			banner.classList.add('mvs-hidden');
-			var xhr = new XMLHttpRequest();
-			xhr.open('POST', ajaxurl);
-			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-			xhr.send('action=mvs_dismiss_welcome&_nonce=' + this.getAttribute('data-nonce'));
+			// Phase 6: REST replaces wp_ajax_mvs_dismiss_welcome. wp.apiFetch
+			// is enqueued on every admin page by core; the wp_rest nonce header
+			// is auto-attached by its middleware.
+			if ( window.wp && wp.apiFetch ) {
+				wp.apiFetch({ path: '/mvs/v1/admin/welcome/dismiss', method: 'POST' });
+			}
 		});
 		</script>
 		<?php
@@ -619,14 +623,9 @@ class OverviewPage {
 		<?php
 	}
 
-	/**
-	 * AJAX handler for dismissing the welcome banner.
-	 */
-	public function ajax_dismiss_welcome(): void {
-		check_ajax_referer( 'mvs_dismiss_welcome', '_nonce' );
-		update_user_meta( get_current_user_id(), '_mvs_welcome_dismissed', 1 );
-		wp_send_json_success();
-	}
+	// Phase 6: ajax_dismiss_welcome removed. Welcome-dismiss now goes through
+	// POST /mvs/v1/admin/welcome/dismiss (AdminController). The button JS uses
+	// wp.apiFetch.
 
 	// -------------------------------------------------------------------------
 	// Data helpers

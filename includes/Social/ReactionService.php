@@ -127,6 +127,16 @@ class ReactionService {
 
 		if ( $deleted ) {
 			$this->sync_stats( $media_id );
+
+			/**
+			 * Fires when a user removes their reaction from a media item.
+			 *
+			 * @since 1.2.0
+			 *
+			 * @param int $media_id Media post ID.
+			 * @param int $user_id  User ID who removed the reaction.
+			 */
+			do_action( 'mvs_reaction_removed', $media_id, $user_id );
 		}
 
 		return (bool) $deleted;

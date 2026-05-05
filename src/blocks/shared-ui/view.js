@@ -13,7 +13,7 @@
  * @package WPMediaVerse
  */
 
-import { store, getContext } from '@wordpress/interactivity';
+import { store, getContext, getElement } from '@wordpress/interactivity';
 
 let toastTimer = null;
 let tagSearchTimer = null;
@@ -140,6 +140,30 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxIsFavorited: false,
 		lightboxStats: {},
 
+		// --- Edit Media modal (per-media settings: title, description,
+		// privacy, allow_download). Opened via window.mvsOpenEditModal( id )
+		// from the .mvs-media-edit-btn delegated click in bp-actions.js.
+		editModalVisible: false,
+		editModalMediaId: 0,
+		editModalLoading: false,
+		editModalSaving: false,
+		editModalTitle: '',
+		editModalDescription: '',
+		editModalPrivacy: 'public',
+		editModalAllowDownload: true,
+		// Off by default — title edits leave the URL slug alone. The user
+		// can opt in via the "Update URL slug from title" checkbox; the
+		// save handler will compute sanitize_title(title) on the JS side
+		// and pass it as `slug` so the REST controller's explicit-slug
+		// branch applies.
+		editModalRegenerateSlug: false,
+		editModalError: '',
+
+		// --- Popular tag pills (cached for the session, lazily loaded the
+		// first time the upload or edit modal opens).
+		popularTags: [],
+		popularTagsLoaded: false,
+
 		get lightboxImageUrl() {
 			const d = state.lightboxMediaData;
 			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
@@ -191,6 +215,19 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get lightboxPermalink() {
 			return state.lightboxMediaData?.link || '#';
+		},
+		// Per-media download flag — defaults to true when the response
+		// doesn't carry the field (older builds, public callers without
+		// /media/{id} expansion). The lightbox Download button uses this
+		// AND the global mvs_allow_downloads toggle (rendered server-
+		// side; if global is off the button is not in the DOM at all).
+		get lightboxAllowDownload() {
+			const d = state.lightboxMediaData;
+			if ( ! d ) return false;
+			return d.allow_download !== false;
+		},
+		get lightboxHideDownload() {
+			return ! state.lightboxAllowDownload;
 		},
 		get lightboxViewsText() {
 			const s = state.lightboxStats;
@@ -338,6 +375,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalAlbumDescription = '';
 			state.uploadModalMediaGroup = null;
 			document.body.style.overflow = 'hidden';
+			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
 		},
 		closeUploadModal() {
 			state.uploadModalVisible = false;
@@ -356,6 +394,165 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalLastDuplicateId = 0;
 			state.uploadModalLastError = '';
 			document.body.style.overflow = '';
+		},
+		// --- Edit Media modal actions ---
+		async loadPopularTags() {
+			if ( state.popularTagsLoaded ) return;
+			state.popularTagsLoaded = true; // race-guard before the await.
+			try {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				const res = await fetch( `${ restUrl }tags/cloud?limit=8`, {
+					headers: { Accept: 'application/json' },
+					credentials: 'same-origin',
+				} );
+				if ( ! res.ok ) return;
+				const data = await res.json();
+				state.popularTags = Array.isArray( data )
+					? data.map( ( t ) => ( { name: t.name || t.slug || '', slug: t.slug || '' } ) ).filter( ( t ) => !! t.name )
+					: [];
+			} catch {
+				// Silent — pills are an enhancement, not load-blocking.
+			}
+		},
+		// Click on a popular-tag pill in the upload modal: append the tag
+		// name to the existing tag input, comma-separated, without dupes.
+		addUploadTag() {
+			const wrap = getElement().ref?.closest( '[data-mvs-tag-name]' );
+			const tag = wrap?.getAttribute( 'data-mvs-tag-name' );
+			if ( ! tag ) return;
+			const current = ( state.uploadModalTags || '' ).split( ',' ).map( ( s ) => s.trim() ).filter( Boolean );
+			if ( current.includes( tag ) ) return;
+			current.push( tag );
+			state.uploadModalTags = current.join( ', ' );
+		},
+		async openEditModal( mediaId ) {
+			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
+
+			const id = parseInt( mediaId, 10 );
+			if ( ! id ) return;
+			state.editModalMediaId = id;
+			state.editModalVisible = true;
+			state.editModalLoading = true;
+			state.editModalError = '';
+			document.body.style.overflow = 'hidden';
+
+			try {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				const nonce = window.mvsBpActions?.nonce || '';
+				const res = await fetch( `${ restUrl }media/${ id }`, {
+					headers: { 'X-WP-Nonce': nonce },
+					credentials: 'same-origin',
+				} );
+				if ( ! res.ok ) throw new Error( 'fetch_failed' );
+				const data = await res.json();
+				state.editModalTitle = data.title || '';
+				state.editModalDescription = data.description || '';
+				state.editModalPrivacy = data.privacy || 'public';
+				state.editModalAllowDownload = data.allow_download !== false;
+			} catch {
+				state.editModalError = 'Could not load this media. Try again.';
+			}
+			state.editModalLoading = false;
+		},
+		closeEditModal() {
+			state.editModalVisible = false;
+			state.editModalMediaId = 0;
+			state.editModalTitle = '';
+			state.editModalDescription = '';
+			state.editModalPrivacy = 'public';
+			state.editModalAllowDownload = true;
+			state.editModalRegenerateSlug = false;
+			state.editModalError = '';
+			state.editModalSaving = false;
+			document.body.style.overflow = '';
+		},
+		updateEditTitle() {
+			state.editModalTitle = getElement().ref?.value || '';
+		},
+		updateEditDescription() {
+			state.editModalDescription = getElement().ref?.value || '';
+		},
+		updateEditPrivacy() {
+			state.editModalPrivacy = getElement().ref?.value || 'public';
+		},
+		toggleEditAllowDownload() {
+			state.editModalAllowDownload = !! getElement().ref?.checked;
+		},
+		updateEditRegenerateSlug() {
+			state.editModalRegenerateSlug = !! getElement().ref?.checked;
+		},
+		async saveEditModal() {
+			if ( state.editModalSaving || ! state.editModalMediaId ) return;
+			state.editModalSaving = true;
+			state.editModalError = '';
+
+			try {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				const nonce = window.mvsBpActions?.nonce || '';
+				const body = {
+					title: state.editModalTitle,
+					description: state.editModalDescription,
+					privacy: state.editModalPrivacy,
+					allow_download: state.editModalAllowDownload,
+				};
+				// Only include `slug` when the admin explicitly opted into
+				// regenerating it from the new title. Leaving the field out
+				// preserves the existing URL — the safer default per the
+				// WordPress permalink convention.
+				if ( state.editModalRegenerateSlug ) {
+					// Match the server's sanitize_title — lowercase, dashes
+					// for spaces, strip everything else. The server runs the
+					// same pass + collision check, so this is just optimistic
+					// formatting (and no-op if title unchanged).
+					body.slug = ( state.editModalTitle || '' )
+						.toLowerCase()
+						.replace( /[^\w\s-]/g, '' )
+						.trim()
+						.replace( /\s+/g, '-' )
+						.replace( /-+/g, '-' );
+				}
+				const res = await fetch( `${ restUrl }media/${ state.editModalMediaId }`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': nonce,
+					},
+					credentials: 'same-origin',
+					body: JSON.stringify( body ),
+				} );
+				if ( ! res.ok ) {
+					const err = await res.json().catch( () => ({}) );
+					throw new Error( err.message || 'save_failed' );
+				}
+				const updated = await res.json().catch( () => ({}) );
+
+				// When the user opted into a slug change AND they're CURRENTLY
+				// on the media's single page (`/media/{old-slug}/`), the page
+				// they're viewing now points at a dead URL. Redirect to the
+				// new permalink so reload doesn't 404. On other pages
+				// (Explore, BP profile, etc.) we just close the modal — the
+				// page they're on is unaffected by the slug change.
+				if (
+					updated.link &&
+					typeof window !== 'undefined' &&
+					window.location.pathname !== new URL( updated.link ).pathname &&
+					/\/media\/[^/]+\/?$/.test( window.location.pathname )
+				) {
+					actions.showToast( 'Saved! Redirecting to the new URL…', 'success' );
+					actions.closeEditModal();
+					window.location.replace( updated.link );
+					return;
+				}
+
+				actions.showToast( 'Media settings saved.', 'success' );
+				actions.closeEditModal();
+			} catch ( err ) {
+				state.editModalError = err.message || 'Could not save. Try again.';
+				state.editModalSaving = false;
+			}
 		},
 		setUploadMode() {
 			const ctx = getContext();
@@ -406,16 +603,38 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			event.preventDefault();
 		},
 		generatePreviews() {
-			state.uploadModalPreviews = [];
+			// Each preview is { uid, src, name, type, isAudio, isOther }
+			// so the template can render filename + an icon for non-image
+			// types (audio especially — previously rendered an empty <img>
+			// with no visual cue at all). uid is a stable per-file marker
+			// so removeUploadFile can identify which entry to drop without
+			// relying on array index (which data-wp-each doesn't expose
+			// directly in template context).
+			const stamp = Date.now();
+			const previews = state.uploadModalFiles.map( ( file, i ) => ( {
+				uid: stamp + ':' + i + ':' + ( file.size || 0 ) + ':' + ( file.name || '' ),
+				src: '',
+				name: file.name || 'file',
+				type: file.type || '',
+				isAudio: file.type.startsWith( 'audio/' ),
+				isOther: ! file.type.startsWith( 'image/' )
+					&& ! file.type.startsWith( 'video/' )
+					&& ! file.type.startsWith( 'audio/' ),
+			} ) );
+			state.uploadModalPreviews = previews;
+
 			state.uploadModalFiles.forEach( ( file, idx ) => {
 				if ( file.type.startsWith( 'image/' ) ) {
 					const reader = new FileReader();
 					reader.onload = ( e ) => {
-						state.uploadModalPreviews = [ ...state.uploadModalPreviews, e.target.result ];
+						const next = [ ...state.uploadModalPreviews ];
+						if ( next[ idx ] ) {
+							next[ idx ] = { ...next[ idx ], src: e.target.result };
+							state.uploadModalPreviews = next;
+						}
 					};
 					reader.readAsDataURL( file );
 				} else if ( file.type.startsWith( 'video/' ) ) {
-					// Generate thumbnail from video first frame.
 					const video = document.createElement( 'video' );
 					video.preload = 'metadata';
 					video.muted = true;
@@ -432,18 +651,44 @@ const { state, actions } = store( 'mvs/shared-ui', {
 							canvas.height = video.videoHeight || 180;
 							canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
 							const thumb = canvas.toDataURL( 'image/jpeg', 0.7 );
-							state.uploadModalPreviews = [ ...state.uploadModalPreviews, thumb ];
+							const next = [ ...state.uploadModalPreviews ];
+							if ( next[ idx ] ) {
+								next[ idx ] = { ...next[ idx ], src: thumb };
+								state.uploadModalPreviews = next;
+							}
 						} catch {
-							// CORS or other error — use placeholder.
-							state.uploadModalPreviews = [ ...state.uploadModalPreviews, '' ];
+							// CORS / decode failure — leave src empty; template
+							// shows the video icon as a fallback.
 						}
 						URL.revokeObjectURL( url );
 					} );
-				} else {
-					// Audio or other — no preview.
-					state.uploadModalPreviews = [ ...state.uploadModalPreviews, '' ];
 				}
+				// Audio + other types: no thumbnail. Template renders an
+				// icon based on the type flags above.
 			} );
+		},
+		removeUploadFile( event ) {
+			const wrap = event.target?.closest?.( '[data-mvs-file-uid]' );
+			if ( ! wrap ) {
+				return;
+			}
+			const uid = wrap.getAttribute( 'data-mvs-file-uid' );
+			if ( ! uid ) {
+				return;
+			}
+			const idx = state.uploadModalPreviews.findIndex( ( p ) => p.uid === uid );
+			if ( idx < 0 ) {
+				return;
+			}
+			state.uploadModalFiles = state.uploadModalFiles.filter( ( _, i ) => i !== idx );
+			state.uploadModalPreviews = state.uploadModalPreviews.filter( ( _, i ) => i !== idx );
+			if ( state.uploadModalFiles.length === 0 ) {
+				// All files removed — reset metadata so the modal shows the
+				// dropzone placeholder again instead of stale field values.
+				state.uploadModalTitle = '';
+				state.uploadModalDescription = '';
+				state.uploadModalTags = '';
+			}
 		},
 		filterFilesByMode( files ) {
 			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
@@ -567,8 +812,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					} catch { /* skip thumbnail */ }
 				}
 
+				// Album bulk-upload batch (≥2 files in one user action): tag the
+				// upload so flag_activity_upload sets the activity_upload skip
+				// flag. After the album link call below, the server emits ONE
+				// "uploaded N photos to album X" gallery activity instead of
+				// N "uploaded a new photo" per-file activities. Single-file
+				// album uploads keep the per-photo activity (no bundling needed).
+				const uploadUrl = restUrl + 'media' +
+					( isAlbum && files.length > 1 ? '?album_upload=1' : '' );
+
 				try {
-					const res = await fetch( restUrl + 'media', {
+					const res = await fetch( uploadUrl, {
 						method: 'POST',
 						headers: { 'X-WP-Nonce': nonce },
 						credentials: 'same-origin',
@@ -883,20 +1137,54 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		async lightboxShare() {
-			const url = state.lightboxMediaData?.link || window.location.href;
+			// Two valid surfaces, in priority order:
+			//   1. navigator.share — native OS share sheet on mobile +
+			//      Edge/Chrome desktop where supported. Lets the user copy
+			//      OR send to any installed sharing target.
+			//   2. navigator.clipboard.writeText — silent copy + toast.
+			// We do NOT fall back to window.prompt() any more — that
+			// surfaced an ugly browser-native dialog with a pre-selected
+			// URL on top of our own UI; redundant with the toast pattern.
+			// Modern browsers all expose at least one of the two APIs;
+			// the rare case where both are missing now shows a toast
+			// pointing the user at the permalink button instead.
+			const data = state.lightboxMediaData;
+			const url = data?.link || window.location.href;
+			let shared = false;
+
 			if ( navigator.share ) {
 				try {
 					await navigator.share( { title: state.lightboxTitle, url } );
-				} catch { /* user cancelled share dialog */ }
-			} else if ( navigator.clipboard ) {
+					shared = true;
+				} catch { /* user cancelled — silent */ }
+			} else if ( navigator.clipboard?.writeText ) {
 				try {
 					await navigator.clipboard.writeText( url );
 					actions.showToast( 'Link copied!', 'success' );
+					shared = true;
 				} catch {
-					actions.showToast( 'Could not copy link.', 'error' );
+					actions.showToast( 'Could not copy link. Use the Open button to view this media in a new tab.', 'error' );
 				}
 			} else {
-				window.prompt( 'Copy this link:', url );
+				actions.showToast( 'Sharing is not supported in this browser. Use the Open button to view this media in a new tab.', 'error' );
+			}
+
+			// Best-effort stat increment — non-blocking. Only counts as a
+			// share when the user actually completed the share flow (didn't
+			// cancel the native picker, didn't fail clipboard).
+			if ( shared && data?.id ) {
+				try {
+					const restUrl = window.mvsBpActions?.restUrl
+						|| ( window.location.origin + '/wp-json/mvs/v1/' );
+					const nonce = window.mvsBpActions?.nonce || '';
+					await fetch( `${ restUrl }media/${ data.id }/share`, {
+						method: 'POST',
+						headers: { 'X-WP-Nonce': nonce },
+						credentials: 'same-origin',
+					} );
+				} catch {
+					// Stat increment failure is non-blocking.
+				}
 			}
 		},
 		lightboxReport() {
@@ -904,6 +1192,43 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const url = state.lightboxMediaData?.link;
 			if ( url ) {
 				window.location.href = url + '#report';
+			}
+		},
+		async lightboxDownload() {
+			// Browser-native download via the file URL (signed URLs already
+			// carry Content-Disposition headers from the storage driver).
+			// Increments the downloads stat via the /event endpoint —
+			// non-blocking on failure. Gracefully degrades when the item has
+			// no downloadable file_url.
+			const data = state.lightboxMediaData;
+			if ( ! data || ! data.file_url ) {
+				actions.showToast( 'This media is not available for download.', 'error' );
+				return;
+			}
+
+			// Hidden anchor with the download attribute — the browser honors
+			// Content-Disposition; falls back to client-side rename via the
+			// download attr value.
+			const a = document.createElement( 'a' );
+			a.href = data.file_url;
+			a.download = data.title || 'media';
+			a.rel = 'noopener';
+			document.body.appendChild( a );
+			a.click();
+			document.body.removeChild( a );
+
+			// Best-effort stat increment — non-blocking.
+			try {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				const nonce = window.mvsBpActions?.nonce || '';
+				await fetch( `${ restUrl }media/${ data.id }/download`, {
+					method: 'POST',
+					headers: { 'X-WP-Nonce': nonce },
+					credentials: 'same-origin',
+				} );
+			} catch {
+				// Stat increment failure is non-blocking — the download still happened.
 			}
 		},
 		lightboxPrev() {
@@ -963,7 +1288,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		handleLightboxKeydown( event ) {
 			if ( event.key === 'Escape' ) {
-				if ( state.uploadModalVisible ) {
+				if ( state.editModalVisible ) {
+					actions.closeEditModal();
+				} else if ( state.uploadModalVisible ) {
 					actions.closeUploadModal();
 				} else if ( state.lightboxVisible ) {
 					actions.closeLightbox();
@@ -982,4 +1309,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 // Bridge: expose openLightboxById to vanilla JS (used by load-more.js delegated click handler).
 window.mvsOpenLightbox = function ( mediaId ) {
 	actions.openLightboxById( mediaId );
+};
+
+// Bridge: expose openEditModal to vanilla JS (used by bp-actions.js
+// delegated click handler on .mvs-media-edit-btn).
+window.mvsOpenEditModal = function ( mediaId ) {
+	actions.openEditModal( mediaId );
 };

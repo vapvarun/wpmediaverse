@@ -3,7 +3,7 @@
 > **Included in Free** — This feature is available in the free version of WPMediaVerse.
 
 
-WPMediaVerse provides 8 shortcodes for embedding media features in pages, posts, and classic editor content.
+WPMediaVerse provides **12** shortcodes for embedding media features in pages, posts, and classic editor content.
 
 ## [mvs_gallery]
 
@@ -19,7 +19,9 @@ Displays a filterable media grid. Columns and items-per-page come from **Media >
 | `type` | (all types) | Filter by media type: `image`, `video`, or `audio` |
 | `category` | (all) | Filter by `mvs_category` slug |
 | `tag` | (all) | Filter by `mvs_tag` slug |
-| `orderby` | `date` | Sort order: `date`, `title`, or `views` |
+| `user_id` | (all authors) | Filter to a single author. Pair with `orderby="popular"` for a "Top media by this member" embed. |
+| `orderby` | `date` | Sort order: `date`, `title`, `views`, `popular`, `reactions`, or `random`. |
+| `order` | `desc` | Sort direction: `asc` or `desc`. |
 
 ## [mvs_upload]
 
@@ -122,3 +124,57 @@ Displays a profile edit form for the logged-in user, allowing them to update the
 No configurable attributes. The form is powered by the `mvs/profile-edit` Interactivity API store and saves to `/mvs/v1/profile`.
 
 ![Profile edit form with avatar upload and name fields](../images/profile-own.png)
+
+## [mvs_explore_feed]
+
+Embeds the explore archive — infinite-scroll public media feed with filter chips and the new search autocomplete dropdown. Use this when you want the explore experience on a custom page rather than the dedicated archive route.
+
+```
+[mvs_explore_feed]
+```
+
+No configurable attributes. Display options inherit from **Media > Settings > Display**.
+
+## [mvs_lock_overlay]
+
+Renders a privacy lock overlay for a single media item. If the current user has access, the overlay falls through and renders the player or image inline. If they do not, the overlay shows the configured restriction message.
+
+```
+[mvs_lock_overlay media_id="456"]
+```
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `media_id` | (required) | Media post ID to evaluate access against. |
+
+## [mvs_member_photos]
+
+Renders a member's media grid. Auto-resolves the user — explicit `user_id` attribute first, then the BuddyPress displayed user, then the post author, then the current user — so the same shortcode works on profile pages, member-specific landing pages, and author archives.
+
+> Added in 1.2.0.
+
+```
+[mvs_member_photos]
+[mvs_member_photos user_id="42"]
+```
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `user_id` | (auto-detect) | Force a specific user. Leave empty to use the four-step resolution chain. |
+
+## [mvs_pdf_viewer]
+
+Embeds a PDF using the browser-native viewer (the `#view=FitH` URL fragment). No third-party JS, no licensing concerns.
+
+> Added in 1.2.0.
+
+```
+[mvs_pdf_viewer id="123"]
+[mvs_pdf_viewer id="123" height="800" show_toolbar="0"]
+```
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `id` | (required) | Media ID of the PDF. |
+| `height` | `600` | Viewer height in pixels. Range: 200–1400. |
+| `show_toolbar` | `1` | Show or hide the browser PDF toolbar. `1` to show, `0` to hide. |

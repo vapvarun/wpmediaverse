@@ -1,8 +1,11 @@
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, RangeControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { StandardInspectorPanels } from '../../shared/components';
+import { useUniqueId } from '../../shared/hooks';
 
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { attributes, setAttributes, clientId } ) {
+	useUniqueId( clientId, attributes.uniqueId, setAttributes );
 	const { count, avatarSize } = attributes;
 	const blockProps = useBlockProps();
 
@@ -25,6 +28,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 96 }
 					/>
 				</PanelBody>
+				<StandardInspectorPanels attributes={ attributes } setAttributes={ setAttributes } />
 			</InspectorControls>
 			<div { ...blockProps }>
 				<div style={ { display: 'flex', gap: '12px', overflowX: 'auto', padding: '8px 0' } }>

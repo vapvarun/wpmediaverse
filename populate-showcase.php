@@ -545,7 +545,7 @@ foreach ( $stock_images as $idx => $img ) {
 	}
 
 	// Set meta via custom tables (not wp_postmeta).
-	\WPMediaVerse\Repository\MediaRepository::set_many(
+	\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many(
 		$post_id,
 		array(
 			'file_url'          => $file_url,
@@ -565,7 +565,7 @@ foreach ( $stock_images as $idx => $img ) {
 		$tag_ids = mvs_showcase_ensure_tags( $img['tags'] );
 		if ( $tag_ids ) {
 			wp_set_object_terms( $post_id, $tag_ids, 'mvs_tag' );
-			\WPMediaVerse\Repository\MediaRepository::set( $post_id, 'tags', wp_json_encode( array_values( $img['tags'] ) ) );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $post_id, 'tags', wp_json_encode( array_values( $img['tags'] ) ) );
 		}
 	}
 
@@ -573,7 +573,7 @@ foreach ( $stock_images as $idx => $img ) {
 		$cat_id = mvs_showcase_ensure_category( $img['category'] );
 		if ( $cat_id ) {
 			wp_set_object_terms( $post_id, array( $cat_id ), 'mvs_category' );
-			\WPMediaVerse\Repository\MediaRepository::set( $post_id, 'category', wp_json_encode( array( $img['category'] ) ) );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $post_id, 'category', wp_json_encode( array( $img['category'] ) ) );
 		}
 	}
 
@@ -674,7 +674,7 @@ foreach ( $albums_config as $album_cfg ) {
 				),
 				array( '%d', '%d', '%d', '%s' )
 			);
-			\WPMediaVerse\Repository\MediaRepository::set( $media['post_id'], 'album_id', $album_id );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media['post_id'], 'album_id', $album_id );
 			$album_items[] = $media['post_id'];
 			++$position;
 		}
@@ -910,7 +910,7 @@ if ( function_exists( 'bp_activity_add' ) ) {
 	$bp_activities = 0;
 	foreach ( $created_media as $media ) {
 		$thumb_url = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( (int) $media['post_id'], 'medium' );
-		$content   = $thumb_url ? '<div class="mvs-activity-media"><img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( \WPMediaVerse\Repository\MediaRepository::get( (int) $media['post_id'], 'title' ) ?: '' ) . '"></div>' : '';
+		$content   = $thumb_url ? '<div class="mvs-activity-media"><img src="' . esc_url( $thumb_url ) . '" alt="' . esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( (int) $media['post_id'], 'title' ) ?: '' ) . '"></div>' : '';
 
 		bp_activity_add(
 			array(
@@ -921,7 +921,7 @@ if ( function_exists( 'bp_activity_add' ) ) {
 				'content'       => $content,
 				'primary_link'  => get_permalink( $media['post_id'] ),
 				'date_recorded' => $media['date'],
-				'hide_sitewide' => ( 'public' !== \WPMediaVerse\Repository\MediaRepository::get( $media['post_id'], 'privacy' ) ),
+				'hide_sitewide' => ( 'public' !== \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media['post_id'], 'privacy' ) ),
 			)
 		);
 		++$bp_activities;

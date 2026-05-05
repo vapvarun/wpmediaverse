@@ -10,7 +10,6 @@ namespace WPMediaVerse\Messaging;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 class MessagingService {
 
@@ -1514,15 +1513,15 @@ class MessagingService {
 	 * @return array|null
 	 */
 	private function get_media_share_data( int $media_id ) {
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return null;
 		}
 
 		$data = array(
 			'id'        => $media_id,
-			'title'     => MediaRepository::get( $media_id, 'title' ),
-			'permalink' => MediaRepository::get_permalink( $media_id ),
-			'type'      => MediaRepository::get( $media_id, 'media_type' ) ?: 'image',
+			'title'     => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ),
+			'permalink' => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ),
+			'type'      => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' ) ?: 'image',
 		);
 
 		$msg_su = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mvs/pdf-viewer",
+  "version": "1.0.0",
+  "title": "PDF Viewer",
+  "category": "wpmediaverse",
+  "icon": "media-document",
+  "description": "Embed a PDF document inline using the browser's native PDF viewer. Pick a media item that's already been uploaded; the viewer respects the same privacy + access rules as other media.",
+  "keywords": [
+    "pdf",
+    "document",
+    "embed",
+    "viewer"
+  ],
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "attributes": {
+    "mediaId": {
+      "type": "number",
+      "default": 0
+    },
+    "height": {
+      "type": "number",
+      "default": 600
+    },
+    "showToolbar": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "textdomain": "wpmediaverse",
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php",
+  "style": "file:./style-index.css"
+}

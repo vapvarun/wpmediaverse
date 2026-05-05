@@ -19,7 +19,23 @@ $max_files     = isset( $attributes['maxFiles'] ) ? absint( $attributes['maxFile
 // Admin setting "Allow users to set privacy for their content" can force-hide
 // the dropdown regardless of the block attribute (matches Dashboard + FAB modal behaviour).
 $show_privacy  = ! empty( $attributes['showPrivacy'] ) && (bool) get_option( 'mvs_allow_user_privacy', true );
-$wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-upload-block' ) ) : 'class="mvs-upload-block"';
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+if ( empty( $mvs_shortcode_context ) ) {
+	\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+}
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-upload-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 $rest_url      = esc_url( rest_url( 'mvs/v1/media' ) );
 $nonce         = wp_create_nonce( 'wp_rest' );
 $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );
@@ -60,6 +76,7 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 		</div>
 		<p class="mvs-upload-text"><?php esc_html_e( 'Drag & drop files here or click to browse', 'wpmediaverse' ); ?></p>
 		<input type="file" class="mvs-upload-input" multiple
+			aria-label="<?php esc_attr_e( 'Choose files to upload', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.handleFileSelect"
 			accept="<?php echo esc_attr( $allowed_types ); ?>"
 		/>
@@ -67,7 +84,7 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 		if ( $show_privacy ) :
 			$default_privacy = get_option( 'mvs_default_privacy', 'public' );
 			?>
-			<select class="mvs-upload-privacy" data-wp-on--change="actions.setPrivacy">
+			<select class="mvs-upload-privacy" data-wp-on--change="actions.setPrivacy" aria-label="<?php esc_attr_e( 'Privacy for uploaded media', 'wpmediaverse' ); ?>">
 				<option value="public" <?php selected( $default_privacy, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 				<option value="members" <?php selected( $default_privacy, 'members' ); ?>><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
 				<option value="private" <?php selected( $default_privacy, 'private' ); ?>><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
@@ -78,12 +95,15 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 	<div class="mvs-upload-fields">
 		<input type="text" class="mvs-upload-title-input"
 			placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
+			aria-label="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setTitle" />
 		<textarea class="mvs-upload-desc-input" rows="2"
 			placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>"
+			aria-label="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setDescription"></textarea>
 		<input type="text" class="mvs-upload-tags-input"
 			placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
+			aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setTags" />
 	</div>
 	<div class="mvs-upload-error" data-wp-bind--hidden="!state.hasError" hidden>

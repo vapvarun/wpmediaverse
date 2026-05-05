@@ -134,6 +134,7 @@ store( 'mvs/media-social', {
 		editTitle: '',
 		editDesc: '',
 		editPrivacy: 'public',
+		editRegenerateSlug: false,
 		editTags: [],
 		tagInput: '',
 		tagResults: [],
@@ -415,6 +416,13 @@ store( 'mvs/media-social', {
 			getContext().editPrivacy = event.target.value;
 		},
 
+		updateEditRegenerateSlug( event ) {
+			// Off by default — title edits leave the URL slug alone. Tick
+			// to opt into regenerating the slug from the title (will break
+			// inbound links to the old URL).
+			getContext().editRegenerateSlug = !! event.target.checked;
+		},
+
 		/* --- Owner Tag Input --- */
 		updateTagInput( event ) {
 			const ctx = getContext();
@@ -470,6 +478,21 @@ store( 'mvs/media-social', {
 			if ( ctx.type !== 'album' ) {
 				payload.tags = ctx.editTags;
 			}
+			// Slug stays put unless the user explicitly opted in via the
+			// "Update URL slug" checkbox. Read the DOM directly so the
+			// IA reactive context isn't on the critical path — keeps the
+			// checkbox state authoritative regardless of any hydration
+			// timing quirks. The server still runs sanitize_title +
+			// collision check.
+			const slugCheckbox = document.querySelector( '.mvs-inline-edit .mvs-edit-regenerate-slug' );
+			if ( slugCheckbox && slugCheckbox.checked ) {
+				payload.slug = ( ctx.editTitle || '' )
+					.toLowerCase()
+					.replace( /[^\w\s-]/g, '' )
+					.trim()
+					.replace( /\s+/g, '-' )
+					.replace( /-+/g, '-' );
+			}
 
 			try {
 				const res = await fetch( ctx.restUrl + ep + ctx.mediaId, {
@@ -481,6 +504,21 @@ store( 'mvs/media-social', {
 				const updated = await res.json();
 				ctx.saving = false;
 				ctx.editVisible = false;
+
+				// If the slug changed (admin opted into the regenerate-slug
+				// checkbox), the URL the user is currently on is now stale
+				// and would 404 on reload. Redirect to the new permalink so
+				// the address bar reflects reality. `replace` (vs `assign`)
+				// so the back-button doesn't bounce them back to the dead URL.
+				if (
+					updated.link &&
+					typeof window !== 'undefined' &&
+					window.location.pathname !== new URL( updated.link ).pathname
+				) {
+					sharedUI.actions.showToast( 'Saved! Redirecting to the new URL…', 'success' );
+					window.location.replace( updated.link );
+					return;
+				}
 
 				const titleEl = document.querySelector( ctx.type === 'album' ? '.mvs-album-title' : '.mvs-media-title' );
 				if ( titleEl ) titleEl.textContent = updated.title || '';

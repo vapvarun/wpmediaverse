@@ -38,13 +38,15 @@ class FollowService {
 
 		// Check if either user has blocked the other.
 		global $wpdb;
-		$blocked = $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_blocks WHERE (blocker_id = %d AND blocked_id = %d) OR (blocker_id = %d AND blocked_id = %d)", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$follower_id,
-			$following_id,
-			$following_id,
-			$follower_id
-		) );
+		$blocked = $wpdb->get_var(
+			$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_blocks WHERE (blocker_id = %d AND blocked_id = %d) OR (blocker_id = %d AND blocked_id = %d)", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$follower_id,
+				$following_id,
+				$following_id,
+				$follower_id
+			)
+		);
 		if ( $blocked ) {
 			return false;
 		}

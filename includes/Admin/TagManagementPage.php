@@ -188,10 +188,22 @@ class TagManagementPage {
 			<thead>
 				<?php
 				$sort_columns = array(
-					'term_id' => array( 'label' => __( 'ID', 'wpmediaverse' ), 'class' => 'column-id' ),
-					'name'    => array( 'label' => __( 'Name', 'wpmediaverse' ), 'class' => 'column-primary' ),
-					'slug'    => array( 'label' => __( 'Slug', 'wpmediaverse' ), 'class' => 'column-slug' ),
-					'count'   => array( 'label' => __( 'Count', 'wpmediaverse' ), 'class' => 'column-count' ),
+					'term_id' => array(
+						'label' => __( 'ID', 'wpmediaverse' ),
+						'class' => 'column-id',
+					),
+					'name'    => array(
+						'label' => __( 'Name', 'wpmediaverse' ),
+						'class' => 'column-primary',
+					),
+					'slug'    => array(
+						'label' => __( 'Slug', 'wpmediaverse' ),
+						'class' => 'column-slug',
+					),
+					'count'   => array(
+						'label' => __( 'Count', 'wpmediaverse' ),
+						'class' => 'column-count',
+					),
 				);
 				?>
 				<tr>
@@ -200,7 +212,13 @@ class TagManagementPage {
 						<?php
 						$is_current   = ( $orderby === $col_key );
 						$next_order   = ( $is_current && 'ASC' === $order ) ? 'desc' : 'asc';
-						$sort_url     = add_query_arg( array( 'orderby' => $col_key, 'order' => $next_order ), $base_url );
+						$sort_url     = add_query_arg(
+							array(
+								'orderby' => $col_key,
+								'order'   => $next_order,
+							),
+							$base_url
+						);
 						$sorted_class = $is_current ? ' sorted ' . strtolower( $order ) : ' sortable asc';
 						?>
 						<th class="manage-column <?php echo esc_attr( $col['class'] . $sorted_class ); ?>">
@@ -393,15 +411,20 @@ class TagManagementPage {
 		foreach ( $tag_ids as $tag_id ) {
 			$result = wp_delete_term( $tag_id, 'mvs_tag' );
 			if ( $result && ! is_wp_error( $result ) ) {
-				$deleted++;
+				++$deleted;
 			}
 		}
 
 		// Recalculate valid page after deletion so we don't redirect to an empty page.
-		$paged       = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
-		$remaining   = (int) wp_count_terms( array( 'taxonomy' => 'mvs_tag', 'hide_empty' => false ) );
-		$max_page    = max( 1, (int) ceil( $remaining / self::PER_PAGE ) );
-		$paged       = min( $paged, $max_page );
+		$paged     = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification
+		$remaining = (int) wp_count_terms(
+			array(
+				'taxonomy'   => 'mvs_tag',
+				'hide_empty' => false,
+			)
+		);
+		$max_page  = max( 1, (int) ceil( $remaining / self::PER_PAGE ) );
+		$paged     = min( $paged, $max_page );
 
 		$redirect_url = add_query_arg(
 			array(
@@ -545,10 +568,15 @@ class TagManagementPage {
 		}
 
 		// Recalculate valid page after deletion so we don't redirect to an empty page.
-		$paged       = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$remaining   = (int) wp_count_terms( array( 'taxonomy' => 'mvs_tag', 'hide_empty' => false ) );
-		$max_page    = max( 1, (int) ceil( $remaining / self::PER_PAGE ) );
-		$paged       = min( $paged, $max_page );
+		$paged     = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$remaining = (int) wp_count_terms(
+			array(
+				'taxonomy'   => 'mvs_tag',
+				'hide_empty' => false,
+			)
+		);
+		$max_page  = max( 1, (int) ceil( $remaining / self::PER_PAGE ) );
+		$paged     = min( $paged, $max_page );
 
 		$redirect_url = add_query_arg(
 			array(
@@ -592,14 +620,14 @@ class TagManagementPage {
 		$media_items = array();
 		if ( ! empty( $media_ids ) ) {
 			foreach ( $media_ids as $media_id ) {
-				$media_data = \WPMediaVerse\Repository\MediaRepository::get_all( $media_id );
+				$media_data = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );
 				if ( $media_data ) {
 					$media_items[] = $media_data;
 				}
 			}
 		}
 
-		$cancel_url = admin_url( 'admin.php?page=mvs-tags' );
+		$cancel_url  = admin_url( 'admin.php?page=mvs-tags' );
 		$form_action = admin_url( 'admin.php?page=mvs-tags' );
 		?>
 		<div class="wrap">
@@ -664,8 +692,8 @@ class TagManagementPage {
 					<tbody>
 						<?php foreach ( $media_items as $media ) : ?>
 							<?php
-							$media_id = $media['media_id'] ?? 0;
-							$permalink = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_id );
+							$media_id  = $media['media_id'] ?? 0;
+							$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
 							// Fallback to admin URL if permalink is not available.
 							if ( empty( $permalink ) ) {
 								$permalink = admin_url( 'admin.php?page=mvs-media&mvs_media_id=' . $media_id );

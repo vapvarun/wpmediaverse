@@ -41,71 +41,22 @@ class SettingsRegistrar {
 
 	/**
 	 * Declare settings that are referenced by `get_option()` callers and
-	 * documented in `qa/WHAT-TO-CHECK.md` but previously lacked a matching
-	 * `register_setting()` entry.
+	 * documented in `qa/WHAT-TO-CHECK.md` but lack a tab UI of their own.
 	 *
 	 * Without `register_setting()` WP's Settings API cannot sanitize or REST-
 	 * expose these keys, and a `get_option()` call returns `false` (not the
 	 * documented default) until the option is manually written somewhere.
 	 *
-	 * This method declares the keys; field UI is intentionally not added here
-	 * — each setting needs a home in an existing or new settings tab. Declaring
-	 * the keys first is the minimum that makes `get_option()` predictable and
-	 * `update_option()` go through the proper sanitizer.
+	 * Note: `mvs_grid_columns` and `mvs_thumbnail_style` USED to be registered
+	 * here AND in register_display_settings(). Two register_setting() calls
+	 * for the same option silently overwrites the first sanitize_callback —
+	 * the same class of bug that wiped dm_access values. Both are now owned
+	 * solely by register_display_settings(). This method only registers
+	 * options without a settings-page UI.
 	 *
 	 * See qa/runs/FINDINGS-HISTORY.md (E3, F13) for background.
 	 */
 	private function register_undocumented_settings(): void {
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_grid_columns',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_grid_columns' ),
-				'default'           => 3,
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_display',
-			'mvs_thumbnail_style',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_style' ),
-				'default'           => 'square',
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_messaging',
-			'mvs_dm_access',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_dm_access' ),
-				'default'           => 'all',
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_messaging',
-			'mvs_dm_min_age',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
-				'default'           => 0,
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_messaging',
-			'mvs_show_online_status',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => true,
-			)
-		);
-
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_general',
 			'mvs_comment_edit_window',
@@ -190,7 +141,7 @@ class SettingsRegistrar {
 			'mvs_default_privacy',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_default_privacy' ),
 				'default'           => 'public',
 			)
 		);
@@ -238,7 +189,7 @@ class SettingsRegistrar {
 			'mvs_duplicate_action',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_duplicate_action' ),
 				'default'           => 'warn',
 			)
 		);
@@ -288,7 +239,7 @@ class SettingsRegistrar {
 			'mvs_storage_driver',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_storage_driver' ),
 				'default'           => 'local',
 			)
 		);
@@ -364,7 +315,7 @@ class SettingsRegistrar {
 			'mvs_grid_columns',
 			array(
 				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_grid_columns' ),
 				'default'           => 3,
 			)
 		);
@@ -391,7 +342,7 @@ class SettingsRegistrar {
 			'mvs_items_per_page',
 			array(
 				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_items_per_page' ),
 				'default'           => 12,
 			)
 		);
@@ -417,7 +368,7 @@ class SettingsRegistrar {
 			'mvs_thumbnail_style',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_style' ),
 				'default'           => 'square',
 			)
 		);
@@ -442,7 +393,7 @@ class SettingsRegistrar {
 			'mvs_thumbnail_size',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_size' ),
 				'default'           => 'large',
 			)
 		);
@@ -490,6 +441,30 @@ class SettingsRegistrar {
 			)
 		);
 
+		// Allow downloads — global toggle. When off, the lightbox Download
+		// button is hidden and the /mvs/v1/media/{id}/download REST endpoint
+		// rejects with 403 (defense-in-depth: hiding the button alone won't
+		// stop a determined caller hitting the endpoint directly).
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_display',
+			'mvs_allow_downloads',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			'mvs_allow_downloads',
+			__( 'Allow Downloads', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-display',
+			'mvs_display',
+			array(
+				'option'      => 'mvs_allow_downloads',
+				'description' => __( 'Show the Download button in the lightbox and accept download events. When off, customers can still view media but the download button is hidden everywhere.', 'wpmediaverse' ),
+			)
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -507,7 +482,7 @@ class SettingsRegistrar {
 			'mvs_ai_provider',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_ai_provider' ),
 				'default'           => 'openai',
 			)
 		);
@@ -572,7 +547,7 @@ class SettingsRegistrar {
 			'mvs_openai_model',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_openai_model' ),
 				'default'           => 'gpt-4o-mini',
 			)
 		);
@@ -661,7 +636,14 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'number',
 				'sanitize_callback' => 'floatval',
-				'default'           => 0,
+				// Default of 10 (USD) is a conservative cap so a fresh install
+				// never silently runs against an unbounded OpenAI bill if the
+				// owner enables auto-analyze / auto-tag without first picking
+				// a budget. Set explicitly to 0 in the UI to opt back into
+				// unlimited spend. Existing installs that already have a
+				// stored value are untouched (Activator::set_defaults() and
+				// the v1 budget migration both use add_option).
+				'default'           => 10,
 			)
 		);
 		add_settings_field(
@@ -672,7 +654,7 @@ class SettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_ai_monthly_budget',
-				'description' => __( 'Set to 0 for unlimited. AI calls will stop when budget is exceeded.', 'wpmediaverse' ),
+				'description' => __( 'Hard cap on OpenAI spend per calendar month. AI calls stop when this cap is reached and resume next month. Set to 0 to disable the cap (unlimited spend) — recommended only after you have a billing alert configured on the OpenAI account itself.', 'wpmediaverse' ),
 			)
 		);
 
@@ -709,7 +691,7 @@ class SettingsRegistrar {
 			'mvs_moderation_auto_action',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_moderation_auto_action' ),
 				'default'           => 'flag',
 			)
 		);
@@ -803,7 +785,7 @@ class SettingsRegistrar {
 			'mvs_dm_access',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_dm_access' ),
 				'default'           => 'everyone',
 			)
 		);
@@ -847,13 +829,43 @@ class SettingsRegistrar {
 			)
 		);
 
+		// Chat-panel visibility — controls where the slide-out chat icon
+		// appears for logged-in users. Defaults to 'everywhere' to preserve
+		// 1.1.x behavior; sites that want a quieter chrome can scope it.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_social',
+			'mvs_chat_panel_visibility',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_chat_panel_visibility' ),
+				'default'           => 'everywhere',
+			)
+		);
+		add_settings_field(
+			'mvs_chat_panel_visibility',
+			__( 'Chat Panel Visibility', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_select_field' ),
+			SettingsPage::PAGE_SLUG . '-social',
+			'mvs_messaging',
+			array(
+				'option'      => 'mvs_chat_panel_visibility',
+				'choices'     => array(
+					'everywhere' => __( 'Everywhere (default)', 'wpmediaverse' ),
+					'mvs_pages'  => __( 'WPMediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)', 'wpmediaverse' ),
+					'bp_pages'   => __( 'BuddyPress pages only (member + group)', 'wpmediaverse' ),
+					'disabled'   => __( 'Never show the slide-out (use only the dedicated /messages/ page)', 'wpmediaverse' ),
+				),
+				'description' => __( 'Controls where the floating chat icon appears for logged-in users. Themes and other plugins can override per-page via the <code>mvs_should_render_chat_panel</code> filter.', 'wpmediaverse' ),
+			)
+		);
+
 		// Online status visibility.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_social',
 			'mvs_show_online_status',
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_show_online_status' ),
 				'default'           => 'everyone',
 			)
 		);

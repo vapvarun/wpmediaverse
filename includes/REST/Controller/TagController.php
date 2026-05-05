@@ -14,7 +14,6 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * REST controller for media tags (mvs_tag taxonomy).
@@ -32,6 +31,11 @@ class TagController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on both __return_true callbacks below (GET /tags and
+		// GET /tags/cloud): tags are public taxonomy terms — same surface
+		// as WP's /wp-json/wp/v2/tags. No PII. Discovery / SEO surface.
+		// POST /tags + POST /tags/merge below carry proper permission
+		// callbacks. Triaged 2026-05-01 (Item 5).
 		// GET /tags — search/autocomplete.
 		// POST /tags — create a new tag (any user who can upload media).
 		register_rest_route(
@@ -289,7 +293,7 @@ class TagController extends WP_REST_Controller {
 		foreach ( $posts as $mid ) {
 			$all_terms = get_the_terms( $mid, 'mvs_tag' );
 			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
-				MediaRepository::set( $mid, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $mid, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
 			}
 		}
 
@@ -368,7 +372,7 @@ class TagController extends WP_REST_Controller {
 
 		return rest_ensure_response(
 			array(
-				'deleted' => true,
+				'deleted'  => true,
 				'previous' => $this->format_term( $term ),
 			)
 		);

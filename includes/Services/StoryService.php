@@ -11,7 +11,6 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Manages time-limited media stories.
@@ -54,8 +53,8 @@ class StoryService {
 	public function create( int $media_id, int $duration_hours = self::DEFAULT_DURATION_HOURS ): string {
 		$expires_at = gmdate( 'Y-m-d H:i:s', time() + ( $duration_hours * HOUR_IN_SECONDS ) );
 
-		MediaRepository::set( $media_id, 'is_story', '1' );
-		MediaRepository::set( $media_id, 'story_expires_at', $expires_at );
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'is_story', '1' );
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'story_expires_at', $expires_at );
 
 		/**
 		 * Fires after a story is created.
@@ -75,12 +74,12 @@ class StoryService {
 	 * @return bool
 	 */
 	public function is_active( int $media_id ): bool {
-		$is_story = MediaRepository::get( $media_id, 'is_story' );
+		$is_story = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'is_story' );
 		if ( '1' !== $is_story ) {
 			return false;
 		}
 
-		$expires_at = MediaRepository::get( $media_id, 'story_expires_at' );
+		$expires_at = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'story_expires_at' );
 		if ( ! $expires_at ) {
 			return false;
 		}
@@ -156,7 +155,7 @@ class StoryService {
 				'media_id'   => (int) $row['media_id'],
 				'author'     => (int) $row['post_author'],
 				'title'      => $row['title'],
-				'expires_at' => MediaRepository::get( (int) $row['media_id'], 'story_expires_at' ),
+				'expires_at' => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( (int) $row['media_id'], 'story_expires_at' ),
 			);
 		}
 
@@ -194,8 +193,8 @@ class StoryService {
 
 		foreach ( $expired_ids as $media_id ) {
 			$media_id = (int) $media_id;
-			MediaRepository::delete( $media_id, 'is_story' );
-			MediaRepository::delete( $media_id, 'story_expires_at' );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete( $media_id, 'is_story' );
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete( $media_id, 'story_expires_at' );
 			++$cleaned;
 
 			/**

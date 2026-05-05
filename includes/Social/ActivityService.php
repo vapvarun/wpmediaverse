@@ -13,8 +13,6 @@ namespace WPMediaVerse\Social;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Core\TemplateHelpers;
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Records and queries activity feed items.
@@ -176,7 +174,7 @@ class ActivityService {
 	 * @param array $file_data File data.
 	 */
 	public function on_upload( int $media_id, array $file_data ): void {
-		$author = MediaRepository::get_author( $media_id );
+		$author = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 		if ( $author ) {
 			$this->record( $author, 'media_upload', $media_id );
 		}
@@ -239,16 +237,16 @@ class ActivityService {
 
 		// Attach media summary if present.
 		if ( $row->media_id ) {
-			$media_row = MediaRepository::get_all( (int) $row->media_id );
+			$media_row = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( (int) $row->media_id );
 			if ( ! empty( $media_row ) && ! empty( $media_row['media_id'] ) ) {
 				$mid       = (int) $media_row['media_id'];
-				$thumb_url = TemplateHelpers::get_thumb_url( $mid, 'thumbnail' );
+				$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $mid, 'thumbnail' );
 
 				$activity['media'] = array(
 					'title'     => $media_row['title'] ?? '',
 					'type'      => $media_row['media_type'] ?? '',
 					'thumbnail' => $thumb_url,
-					'link'      => MediaRepository::get_permalink( $mid ),
+					'link'      => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $mid ),
 				);
 			}
 		}

@@ -12,9 +12,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 
 defined( 'ABSPATH' ) || exit;
 
-use WPMediaVerse\Core\TemplateHelpers;
-use WPMediaVerse\Repository\MediaRepository;
-use WPMediaVerse\Services\MediaUrl;
 
 /**
  * Static helpers for rendering media thumbnails and type labels inside
@@ -32,25 +29,29 @@ class MediaDisplayHelper {
 	 * @return string Escaped HTML ready for output.
 	 */
 	public static function get_media_thumbnail_html( int $media_id, string $size = 'medium' ): string {
-		$media_type = (string) MediaRepository::get( $media_id, 'media_type' );
+		$media_type = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' );
 		if ( ! in_array( $media_type, array( 'image', 'video', 'audio' ), true ) ) {
 			return '';
 		}
 
-		// `$file_url` is used purely as a fallback for the link `href` when
-		// the media has no permalink (e.g. cleanup state). Must be signed —
-		// raw `/wp-content/uploads/wpmediaverse/` URLs hit the .htaccess gate.
-		$permalink = MediaRepository::get_permalink( $media_id );
-		$file_url  = MediaUrl::for_file( $media_id );
-		$title     = MediaRepository::get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
+		// `$file_url` is the fallback for the link `href` when the media has
+		// no permalink (e.g. cleanup state). Broadcast TTL (1 year, user_id=0)
+		// because this thumbnail HTML gets baked into bp_activity.content and
+		// read by anyone scrolling the feed days later — short-TTL URLs would
+		// 403 on activities older than 1 hour. Privacy is enforced at sign
+		// time so non-public media silently returns '' and the link omits
+		// the href.
+		$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
+		$file_url  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_broadcast_url( $media_id );
+		$title     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) ?: __( 'Untitled', 'wpmediaverse' );
 		$href      = $permalink ?: $file_url;
 		$data_mid  = ' data-mvs-media-id="' . esc_attr( $media_id ) . '"';
 
 		// Audio gets a compact card that isn't suitable for the canonical
 		// thumbnail helper (which targets square-ish grid cells). Keep it local.
 		if ( 'audio' === $media_type ) {
-			$artist   = MediaRepository::get( $media_id, 'artist' );
-			$duration = MediaRepository::get( $media_id, 'duration' );
+			$artist   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'artist' );
+			$duration = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'duration' );
 			$sub      = '';
 			if ( $artist ) {
 				$sub .= esc_html( $artist );
@@ -65,13 +66,18 @@ class MediaDisplayHelper {
 
 		// Images + videos: delegate to the canonical helper so BP activity, the
 		// Explore grid, and Pro layouts all share one branching logic (img /
-		// native <video> preview / placeholder).
-		$inner = TemplateHelpers::media_thumbnail(
+		// native <video> preview / placeholder). `ttl` + `user_id` force the
+		// inner <img src> through the same broadcast-TTL signing as $file_url
+		// above — otherwise the inner thumbnail would still 403 after 1h even
+		// though the outer link href stays valid for a year.
+		$inner = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->media_thumbnail(
 			$media_id,
 			array(
 				'size'      => $size,
 				'alt'       => esc_attr( $title ),
 				'show_play' => true,
+				'ttl'       => YEAR_IN_SECONDS,
+				'user_id'   => 0,
 			)
 		);
 

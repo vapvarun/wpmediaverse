@@ -79,7 +79,7 @@ $media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 );
 $media_count = 0;
 foreach ( $media_ids as $mid ) {
-	\WPMediaVerse\Repository\MediaRepository::delete_cascade( (int) $mid );
+	\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( (int) $mid );
 	++$media_count;
 }
 

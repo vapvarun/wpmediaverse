@@ -1,8 +1,11 @@
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, RangeControl, TextControl, ToggleControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { StandardInspectorPanels } from '../../shared/components';
+import { useUniqueId } from '../../shared/hooks';
 
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { attributes, setAttributes, clientId } ) {
+	useUniqueId( clientId, attributes.uniqueId, setAttributes );
 	const { mediaId, blurAmount, showPrice, unlockLabel, overlayOpacity } = attributes;
 	const blockProps = useBlockProps();
 
@@ -45,6 +48,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						placeholder={ __( 'Unlock This Media', 'wpmediaverse' ) }
 					/>
 				</PanelBody>
+				<StandardInspectorPanels attributes={ attributes } setAttributes={ setAttributes } />
 			</InspectorControls>
 			<div { ...blockProps }>
 				<div className="mvs-lock-overlay-preview" style={ { position: 'relative', background: '#f0f0f0', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', overflow: 'hidden' } }>

@@ -330,11 +330,11 @@ At 390 wide, re-test the **core step** of every plugin-page journey.
 
 ---
 
-## 15.5. Journey 14 — Shortcodes sweep (Free — 8 shortcodes)
+## 15.5. Journey 14 — Shortcodes sweep (Free — 12 shortcodes)
 
 Create a staging test page `/mvs-test-shortcodes/` containing every `[mvs_*]` shortcode with realistic attributes, then visit as logged-in user and as anonymous.
 
-- [ ] **14.1** `[mvs_gallery]` — renders a media grid; check default sort + pagination + card layout.
+- [ ] **14.1** `[mvs_gallery]` — renders a media grid; check default sort + pagination + card layout. Verify new attrs `user_id="{userId}"` (filter to one author) and `order="asc"` (oldest first).
 - [ ] **14.2** `[mvs_upload]` — renders the upload form/FAB; logged-out state is gated with login CTA.
 - [ ] **14.3** `[mvs_album id="{valid_id}"]` — renders album cover + item grid; attrs `columns=3`, `show_title=1`.
 - [ ] **14.4** `[mvs_player id="{valid_media_id}"]` — renders media player (image/video/audio); attrs `autoplay=0`, `loop=0`.
@@ -342,6 +342,10 @@ Create a staging test page `/mvs-test-shortcodes/` containing every `[mvs_*]` sh
 - [ ] **14.6** `[mvs_dashboard]` — already covered by `/my-media/` journey; sanity-check output when embedded on a non-dashboard page.
 - [ ] **14.7** `[mvs_collection id="{valid_id}"]` — renders collection (smart rules or curated); attrs `columns=3`, `per_page=12`.
 - [ ] **14.8** `[mvs_profile_edit]` — renders profile edit form; logged-out redirects (or shows gate).
+- [ ] **14.9** `[mvs_explore_feed]` (1.2.0) — renders the explore feed including the new search autocomplete dropdown when typing.
+- [ ] **14.10** `[mvs_lock_overlay media_id="{private_id}"]` (1.2.0) — renders the privacy lock overlay for a private/restricted media id; for an accessible id, falls through to the player.
+- [ ] **14.11** `[mvs_member_photos]` (1.2.0) — auto-resolves to current user; with explicit `user_id="{id}"` renders that member's grid; on a BP profile page with no `user_id` resolves to the displayed user.
+- [ ] **14.12** `[mvs_pdf_viewer id="{pdf_media_id}"]` (1.2.0) — renders the iframe viewer with FitH; toggle `show_toolbar="0"` and verify the browser PDF UI hides; verify each of the 5 empty states (no id / not found / not a PDF / no permission / asset missing).
 
 **Pass criterion per shortcode:**
 - HTML output present (not blank, not a shortcode-literal echo).
@@ -353,30 +357,148 @@ Create a staging test page `/mvs-test-shortcodes/` containing every `[mvs_*]` sh
 
 ---
 
-## 15.7. Journey 15 — Blocks sweep (Free — 12 blocks)
+## 15.7. Journey 15 — Blocks sweep (Free — 9 registered blocks)
 
-Create a staging test page `/mvs-test-blocks/` containing block markup for each `wpmediaverse/*` block. Visit frontend AND open the page in the block editor.
+Create a staging test page `/mvs-test-blocks/` containing block markup for each `mvs/*` block. Visit frontend AND open the page in the block editor. (`explore-view`, `media-social`, `dashboard-view`, `shared-ui` are view-only Interactivity stores, not registered blocks — no inserter entry.)
 
-- [ ] **15.1** `wpmediaverse/media-grid` — frontend renders a grid; editor inspector controls render without console error.
-- [ ] **15.2** `wpmediaverse/explore-feed` — frontend shows a feed (may mirror `/media/`); editor preview OK.
-- [ ] **15.3** `wpmediaverse/explore-view` — frontend renders; editor OK.
-- [ ] **15.4** `wpmediaverse/album-viewer` (with `albumId`) — frontend renders album grid; editor inspector lets user pick album.
-- [ ] **15.5** `wpmediaverse/media-player` (with `mediaId`) — frontend renders correct player for media type.
-- [ ] **15.6** `wpmediaverse/media-upload` — frontend renders upload zone (gated for anon).
-- [ ] **15.7** `wpmediaverse/media-stats` — frontend renders stats card; empty-state for zero data.
-- [ ] **15.8** `wpmediaverse/media-social` — frontend renders reaction/comment bar; editor OK.
-- [ ] **15.9** `wpmediaverse/story-viewer` — frontend renders stories ring; empty-state when no stories.
-- [ ] **15.10** `wpmediaverse/lock-overlay` — frontend renders locked-content overlay variant.
-- [ ] **15.11** `wpmediaverse/dashboard-view` — frontend renders dashboard-widget style panel.
-- [ ] **15.12** `wpmediaverse/shared-ui` — present on every plugin-frontend page (FAB + lightbox shell); confirm no double-mount.
+- [ ] **15.1** `mvs/media-grid` — frontend renders a grid; editor inspector controls render without console error. Verify new sort options: `popular` / `views` / `reactions` / `random`. Verify `userId` attr filters by author. Verify `order` attr (asc/desc; hidden in editor when orderBy=random).
+- [ ] **15.2** `mvs/explore-feed` — frontend shows a feed (may mirror `/media/`); search autocomplete dropdown opens after 250ms with ArrowDown/Up/Enter/ESC keyboard nav.
+- [ ] **15.3** `mvs/album-viewer` (with `albumId`) — frontend renders album grid; editor inspector lets user pick album.
+- [ ] **15.4** `mvs/media-player` (with `mediaId`) — frontend renders correct player for media type.
+- [ ] **15.5** `mvs/media-upload` — frontend renders upload zone (gated for anon). Drop multiple files → preview tiles each show filename + per-tile remove button. Audio file → audio fallback icon (no broken thumb). Top-8 popular tag pills appear under the tags input; click appends to the input without duplicates.
+- [ ] **15.6** `mvs/media-stats` — frontend renders stats card; empty-state for zero data.
+- [ ] **15.7** `mvs/lock-overlay` — frontend renders locked-content overlay variant.
+- [ ] **15.8** `mvs/member-photos` (1.2.0) — auto-resolves user (explicit userId → BP displayed user → post author → current user). With nothing to resolve, renders the empty state. Editor: `userId` field empties → re-resolves on next save.
+- [ ] **15.9** `mvs/pdf-viewer` (1.2.0) — frontend embeds PDF iframe with `#view=FitH`. Inspector: `mediaId` field, `height` range (200–1400), `showToolbar` toggle. Verify each of 5 server-side states: no `mediaId` set, `mediaId` not found, mediaId points to a non-PDF, current viewer lacks permission, asset file missing on disk.
+
+> `mvs/story-viewer` source exists in `src/blocks/story-viewer/` but is intentionally NOT in `BlockRegistrar::BLOCKS` for 1.2.0 — Story create-flow + REST endpoint deferred to 1.2.1. Skip from this sweep.
 
 **Pass criterion per block:**
 - Renders in editor without "Block error" placeholder.
 - Renders on frontend without fatal or blank output.
 - Block category `WPMediaVerse` appears in the block inserter.
 - Inspector controls work (attributes persist on save).
+- Standard inspector panels (Spacing / Border / Shadow / Visibility) appear AFTER block-specific panels — same canonical order as wbcom-essential and Pro.
 
 **Heuristic score for J15:** __ / 50. Findings:
+
+---
+
+## 15.9. Journey 16 — 1.2.0 new features (gated by Definition of Done)
+
+Every item must be browser-verified at desktop AND 390px mobile per the project Verify-Per-Item rule.
+
+### 16.1 Lightbox: Edit-Media modal
+
+- [ ] On `/my-media/`, click the cog icon (top-right of own card) → modal opens prefilled with current title, description, privacy radio, allow-download toggle.
+- [ ] Edit fields → Save → modal closes, card metadata updates in place (no full reload).
+- [ ] Empty title → Save button disabled (gating + visible state).
+- [ ] ESC key closes without saving.
+- [ ] On Explore / public album / collection cards (NOT own), the cog icon is absent (`can_edit` gate).
+- [ ] Reload `/my-media/` → values persisted.
+- [ ] Try as anon: cog icon never renders.
+- [ ] **A11y:** `role="dialog"`, `aria-modal="true"`, focus trap, ESC closes, focus returns to the cog button.
+
+### 16.2 Lightbox: Download
+
+- [ ] Open lightbox on a public image → toolbar shows Download button (with aria-label).
+- [ ] Click Download → file downloads (`Content-Disposition: attachment`).
+- [ ] `mvs_media_stats.downloads` count for that media id increments by exactly 1 per click.
+- [ ] Spam-click 31 times in <60s → 31st returns 429 with friendly toast.
+- [ ] Settings → Display → uncheck "Allow downloads" → save → reload lightbox → button hidden everywhere.
+- [ ] Per-media: edit modal → toggle "Allow downloads" off → save → reload → button hidden ONLY for that media.
+- [ ] As anon on public media → download still works (read-only doesn't require login by design).
+
+### 16.3 Lightbox: Fullscreen
+
+- [ ] Toolbar shows Fullscreen button (aria-label, aria-pressed reflects state).
+- [ ] Click → image panel goes fullscreen.
+- [ ] `F` keyboard shortcut toggles fullscreen even without focus on the button.
+- [ ] ESC exits.
+- [ ] In fullscreen, prev/next nav still works.
+- [ ] Close lightbox while fullscreen → exits fullscreen cleanly (no orphaned fullscreen state).
+
+### 16.4 Lightbox: Share — no `window.prompt` fallback
+
+- [ ] Click Share on a Chrome Android (or any UA that exposes `navigator.share`) → native share sheet opens.
+- [ ] Click Share on desktop Chrome → clipboard copy → toast "Link copied to clipboard".
+- [ ] Disable clipboard permission → click Share → toast "Could not copy link". **Must NOT show a `window.prompt()` "Copy this link:" popup.**
+- [ ] `mvs_media_stats.shares` count increments by 1 per successful share OR copy.
+
+### 16.5 Lightbox: 6 reactions a11y + focus rings
+
+- [ ] Tab to the reactions group: visible focus ring.
+- [ ] Each of Like / Love / Haha / Wow / Sad / Angry has its own `aria-label` and `aria-pressed` toggles on click.
+- [ ] VoiceOver / NVDA reads "Like, button" not just "👍".
+- [ ] Group wrapper has `role="group" aria-label="Reactions"`.
+
+### 16.6 Upload: filenames + per-tile remove + audio fallback + tag pills
+
+- [ ] Drop 3 files → 3 preview tiles, each with filename + per-tile (×) remove button.
+- [ ] Click × on the middle tile → only that file removes; other two stay; selected count updates.
+- [ ] Drop an MP3 → tile shows audio fallback icon (no broken-image SVG).
+- [ ] Below tags input: 8 popular-tag pills appear.
+- [ ] Click a pill → tag is appended to the comma-separated tags input; clicking again does NOT duplicate.
+
+### 16.7 Explore: search autocomplete
+
+- [ ] Type 3 chars in the search input → after 250ms, a dropdown appears with up to 8 matches (titles + thumbs).
+- [ ] ArrowDown highlights, ArrowUp moves up, Enter navigates, ESC closes.
+- [ ] Type 1 char → no network call, no dropdown.
+- [ ] Clear input → dropdown closes.
+- [ ] Click outside → dropdown closes.
+
+### 16.8 Single media: Open Graph + Twitter Card meta
+
+- [ ] View source on `/media/{slug}/` → confirm `<meta property="og:title">`, `og:type=article`, `og:url`, `og:site_name`, `og:description`, `og:image`, `og:image:alt` injected at `wp_head` priority 5.
+- [ ] Same view: `<meta name="twitter:card" content="summary_large_image">`, `twitter:title`, `twitter:description`, `twitter:image`.
+- [ ] Paste the URL into Slack or Twitter card validator → unfurls with the correct image and title.
+- [ ] On a private media URL while logged out → meta still emits (or is absent — choose, then assert).
+- [ ] On a non-media page → none of the `og:` tags emitted from this plugin.
+
+### 16.9 Settings: chat panel visibility
+
+- [ ] Settings → Direct Messages → "Chat panel visibility" select shows 4 options: Everywhere / WPMediaVerse pages only / BuddyPress pages only / Disabled.
+- [ ] **Everywhere** → `.mvs-chat-panel` markup present on home, on a non-MVS page, and on `/media/`.
+- [ ] **WPMediaVerse pages only** → present only on `/media/` and `/my-media/` (and other plugin-owned URLs); absent on home.
+- [ ] **BuddyPress pages only** → present only on `/members/...` etc; absent elsewhere.
+- [ ] **Disabled** → markup absent everywhere; `wp_footer` still emits without errors.
+- [ ] Filter `mvs_should_render_chat_panel` returning false → markup absent on every page regardless of setting.
+
+### 16.10 Settings: global Allow Downloads toggle
+
+- [ ] Settings → Media Display → "Allow downloads" checkbox (ON by default).
+- [ ] Toggle OFF → save → reload lightbox → Download button hidden everywhere.
+- [ ] `POST /mvs/v1/media/{id}/download` returns 403 with reason "downloads disabled site-wide".
+- [ ] Toggle back ON → save → button reappears; per-media gate still enforced.
+
+### 16.11 Admin All Media: Bulk Actions
+
+- [ ] Admin → All Media → header + footer checkboxes select-all toggles row checkboxes.
+- [ ] Select 3 rows → choose "Move to Trash" → Apply → 3 rows trashed; success notice shows count + action.
+- [ ] Switch filter to "Trash" → bulk select → "Restore" appears in the dropdown (context-aware) → restores rows.
+- [ ] In Trash filter → "Delete permanently" → requires confirm dialog; on confirm, files removed from disk + `mvs_media_deleted` fires per row.
+- [ ] Submit with 0 rows selected → friendly error notice; no destructive call.
+- [ ] Capability gate: as a contributor (no `manage_options`), Apply returns 403.
+- [ ] Nonce gate: tamper with `mvs_bulk_nonce` → 403.
+
+### 16.12 BuddyPress active: notification dedup
+
+- [ ] BP active. Trigger an MVS notification (e.g. someone reacts to your media).
+- [ ] BP top nav bell shows the badge with the new notification.
+- [ ] Dashboard-content `.mvs-notification-bell` is suppressed (no `function_exists('buddypress')` render gate).
+- [ ] Open BP notifications page → MVS notification renders with correct copy.
+- [ ] Mark-read in BP nav → MVS notification status updates server-side.
+
+### 16.13 Block standards: Spacing / Border / Shadow / Visibility panels
+
+- [ ] In `/wp-admin/post-new.php`, insert `mvs/media-grid`. Sidebar shows: Grid Settings → Filters → Features → **Spacing → Border → Shadow → Visibility → Advanced** in that order.
+- [ ] Set padding 40 px tablet → switch to tablet preview → padding visible.
+- [ ] Set border-radius 16 px + shadow → frontend reflects via `mvs-block-{uniqueId}` scoped CSS dumped in `wp_footer`.
+- [ ] Set "Hide on mobile" → desktop preview shows; mobile preview hides via `mvs-hide-mobile` class.
+- [ ] Same canonical order across all 9 registered blocks.
+
+**Heuristic score for J16:** __ / 60. Findings:
 
 ---
 

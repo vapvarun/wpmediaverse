@@ -11,6 +11,21 @@ Access these settings at **Media > Settings > Display**.
 | Grid Columns | 3 | Number of columns in the media grid. Applies to `[mvs_gallery]`, the Media Grid block, and the explore archive. Options: 2, 3, 4 columns. |
 | Items Per Page | 12 | Number of media items loaded per page. Options: 12, 24, 48. |
 | Thumbnail Style | Square (cropped) | Controls the aspect ratio of grid thumbnails. **Square** crops images to a 1:1 ratio. **Original proportions** preserves the file's native aspect ratio. |
+| Allow Downloads | On | Master toggle for the lightbox **Download** button. When off, the button is hidden site-wide and the `/mvs/v1/media/{id}/download` REST endpoint refuses requests. Per-media Allow Downloads (set in the per-media Edit modal) is still honoured when this master toggle is on. |
+
+## Lightbox Toolbar
+
+The full-screen lightbox includes a toolbar with three quick-action buttons.
+
+| Button | Behaviour |
+|--------|-----------|
+| Download | Streams the original file to the user and increments the `mvs_media_stats.downloads` counter. Hidden when **Allow Downloads** is off (either site-wide or per-media). Rate-limited to 30 requests per minute per user. |
+| Fullscreen | Expands the lightbox to fill the viewport using the browser Fullscreen API. Also bound to the `F` keyboard shortcut. |
+| Share | Uses `navigator.share` where supported, falls back to copying the URL to the clipboard, falls back to a toast error. No `window.prompt()` fallback. |
+
+All three buttons carry `aria-label` text and `:focus-visible` outlines for keyboard users.
+
+![Lightbox with toolbar showing download, fullscreen, share, and reaction controls](../images/lightbox.png)
 
 ## How Display Settings Interact with Shortcodes
 

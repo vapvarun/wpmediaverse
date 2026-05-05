@@ -4,11 +4,15 @@ This is the prioritized structural refactoring backlog for the WPMediaVerse free
 
 P1 items must be completed before v1.2.0 ships. The API surface is still small; every week that passes makes these extractions harder.
 
+## Status
+
+P1 items are **all done** in 1.1.x. P2 + P3 items are scheduled inside the per-plugin `docs/superpowers/plans/2026-04-28-1.2.0-milestone.md` plans (Free + Pro) — that single plan file is the working source of truth for 1.2.0 task tracking. Per-item status is recorded inline below.
+
 ---
 
 ## Priority 1 — Foundation (Complete Before v1.2.0)
 
-### 1.1 Extract MediaRepository
+### 1.1 Extract MediaRepository — ✅ DONE
 
 **Current state**
 ~842 `$wpdb` calls are scattered across 30+ files. There is no single place that owns media data access; SQL is duplicated, inconsistently escaped, and impossible to mock in tests.
@@ -33,7 +37,7 @@ Untestable data access spread across 30+ files is the single biggest barrier to 
 
 ---
 
-### 1.2 Split BuddyPressIntegration.php
+### 1.2 Split BuddyPressIntegration.php — ✅ DONE
 
 **Current state**
 `includes/Integrations/BuddyPressIntegration.php` — 2,811 lines handling activity sync, notifications, profile tabs, group tabs, and form handling in one class. Six concerns, one file.
@@ -59,7 +63,7 @@ A 2,811-line integration file cannot be reviewed, tested, or safely modified —
 
 ---
 
-### 1.3 Split SettingsPage.php
+### 1.3 Split SettingsPage.php — ✅ DONE
 
 **Current state**
 `includes/Admin/SettingsPage.php` — 2,401 lines. Five tabs are rendered inline with direct `echo` and `sprintf` calls mixed throughout business logic. Registration, validation, and output are interleaved.
@@ -85,7 +89,7 @@ Inline HTML in logic classes makes settings untestable and prevents the design s
 
 ## Priority 2 — Pro Stabilization
 
-### 2.1 Split MigrationPage.php (Pro)
+### 2.1 Split MigrationPage.php (Pro) — 1.2.0 Phase 5
 
 **Current state**
 `includes/Admin/MigrationPage.php` (Pro) — 1,776 lines. Detection logic, batch processing logic, and HTML are all in one class. Impossible to run detection without triggering rendering.
@@ -103,7 +107,7 @@ Detection and batching need to be callable from WP-CLI without triggering admin 
 
 ---
 
-### 2.2 Extract AbstractBatchImporter (Pro)
+### 2.2 Extract AbstractBatchImporter (Pro) — 1.2.0 Phase 5
 
 **Current state**
 Three CLI importers — `ImportRtMedia`, `ImportMediaPress`, `ImportBuddyBoss` — each copy-paste the same batch loop, flag parsing, progress bar, state persistence, and duplicate detection logic. Changes to shared behavior require touching all three files.
@@ -125,7 +129,7 @@ Duplicate batch logic has diverged across the three importers — bugs fixed in 
 
 ---
 
-### 2.3 Split MessagingService (Both Plugins)
+### 2.3 Split MessagingService (Both Plugins) — 1.2.0 Phase 5
 
 **Current state**
 `includes/Services/MessagingService.php` (Free) — 1,606 lines mixing access control, rate limiting, thread CRUD, and message delivery. Pro has a parallel file of similar size.
@@ -146,7 +150,7 @@ Rate limiting and privacy logic buried inside a CRUD service cannot be independe
 
 ## Priority 3 — Quality Infrastructure
 
-### 3.1 Add Interfaces for the Free/Pro Boundary
+### 3.1 Add Interfaces for the Free/Pro Boundary — 1.2.0 Phase 1
 
 **Current state**
 Pro imports Free classes directly. `MediaMeta` is used in 12+ Pro files via direct class reference. If Free refactors `MediaMeta`, Pro breaks. No contracts exist to stabilize this boundary.
@@ -168,7 +172,7 @@ Direct class coupling between Free and Pro means a Free refactor can silently br
 
 ---
 
-### 3.2 Increase Test Coverage
+### 3.2 Increase Test Coverage — 1.2.0 Phase 4 (Free)
 
 **Current state**
 ~10% coverage. 11 test files exist under `tests/unit/`. Core services — BP integration, messaging, settings, storage, AI moderation — have no unit tests.
@@ -194,7 +198,7 @@ At 10% coverage, structural refactoring cannot be validated — regressions are 
 
 ---
 
-### 3.3 Admin Page Template Extraction
+### 3.3 Admin Page Template Extraction — deferred to 1.3
 
 **Current state**
 Admin pages across both plugins render HTML directly via `echo` and `sprintf` inside PHP controller classes. This pattern is inconsistent, untestable, and prevents global layout changes from being applied in one place.
@@ -212,7 +216,7 @@ Inline HTML in controllers blocks design system adoption and makes admin pages i
 
 ---
 
-### 3.4 Extract Plugin.php Feature Bootstrappers (Pro)
+### 3.4 Extract Plugin.php Feature Bootstrappers (Pro) — deferred to 1.3
 
 **Current state**
 Pro's `Plugin.php` has an `init()` method of ~822 lines. Route registration, admin page registration, cron scheduling, and feature flag checks for every Pro feature are all inlined in this one method.

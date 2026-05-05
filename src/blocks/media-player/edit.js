@@ -1,6 +1,8 @@
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, TextControl, ToggleControl, Button, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { StandardInspectorPanels } from '../../shared/components';
+import { useUniqueId } from '../../shared/hooks';
 import { useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 
@@ -77,7 +79,8 @@ function MediaBrowser( { onSelect } ) {
 	);
 }
 
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { attributes, setAttributes, clientId } ) {
+	useUniqueId( clientId, attributes.uniqueId, setAttributes );
 	const { mediaId, autoplay, loop, showDownload } = attributes;
 	const [ showBrowser, setShowBrowser ] = useState( false );
 	const blockProps = useBlockProps();
@@ -122,6 +125,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( val ) => setAttributes( { showDownload: val } ) }
 					/>
 				</PanelBody>
+				<StandardInspectorPanels attributes={ attributes } setAttributes={ setAttributes } />
 			</InspectorControls>
 			<div { ...blockProps }>
 				<div style={ { background: '#1a1a1a', borderRadius: '8px', padding: '40px', textAlign: 'center', color: '#fff' } }>

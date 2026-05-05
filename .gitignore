@@ -1,5 +1,11 @@
 node_modules/
-dist/
+
+# dist/ — only commit the final release ZIPs (e.g. wpmediaverse-1.2.0.zip).
+# The extracted plugin tree under dist/<slug>/ is a build artifact that
+# gets fully recreated on every `npx grunt dist` run; tracking it bloats
+# the repo with thousands of derived-file diffs.
+dist/*/
+
 *.log
 .DS_Store
 .phpunit.result.cache
@@ -37,3 +43,10 @@ wpcs-report.md
 /build/media-upload/
 /build/shared-ui/
 /build/story-viewer/
+.claude-tmp/
+audit/journey-runs/
+
+# Playwright (Phase 0c E2E specs)
+playwright-report/
+test-results/
+.playwright-mcp/

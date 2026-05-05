@@ -15,7 +15,6 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
-use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Services\PrivacyService;
 use WPMediaVerse\Services\SignedUrlService;
 
@@ -89,6 +88,11 @@ class SignedUrlController extends WP_REST_Controller {
 		);
 
 		// GET /serve — serve a file via signed URL (no auth required, signature validates).
+		// PUBLIC_OK: this is the analogue of S3 pre-signed URLs — the HMAC
+		// signature on the URL itself is the credential. Validation happens
+		// inside serve_file() (signature + expiry + bound user_id all
+		// checked). The __return_true is intentional. Triaged 2026-05-01
+		// (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/serve',
@@ -171,7 +175,15 @@ class SignedUrlController extends WP_REST_Controller {
 	 * @param WP_REST_Request $request Request.
 	 */
 	public function serve_file( $request ) {
-		$rate_check = RateLimiter::check( 'serve_file', 60, 60 );
+		// Generous rate limit for community-site image grids. Any media-heavy
+		// page (Explore feed, album view, BP activity) easily renders 60-200
+		// image requests on first load — the previous 60/60s limit caused
+		// HTTP 429 on roughly half of them, which the browser shows as broken
+		// images. The signed URL signature is the actual access gate; this
+		// rate check is only defense-in-depth against per-user replay loops,
+		// so it can be much higher than write-endpoint limits without
+		// weakening security.
+		$rate_check = RateLimiter::check( 'serve_file', 1200, 60 );
 		if ( is_wp_error( $rate_check ) ) {
 			return $rate_check;
 		}
@@ -214,7 +226,7 @@ class SignedUrlController extends WP_REST_Controller {
 
 		$media_id = $request->get_param( 'media_id' );
 
-		if ( ! MediaRepository::exists( $media_id ) ) {
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 			return new WP_Error(
 				'mvs_not_found',
 				__( 'Media item not found.', 'wpmediaverse' ),

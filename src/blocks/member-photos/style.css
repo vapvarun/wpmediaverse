@@ -1,0 +1,391 @@
+/* ============================================================================
+   mvs/member-photos — Member card + delegated grid.
+   The card is the focal point; grid below is rendered by mvs/media-grid.
+
+   Layout strategy: wide layout uses container query (cq) to switch between
+   horizontal "hero" form (avatar left, body right) and vertical "stacked"
+   form when the block sits in a narrow sidebar or widget area. Container
+   queries let the SAME block adapt without depending on viewport breakpoints
+   (a sidebar widget on desktop is narrow even though viewport is wide).
+   ========================================================================== */
+
+.mvs-member-photos-block {
+	container-type: inline-size;
+	container-name: mvs-member;
+	display: block;
+}
+
+/* ----- Card ----- */
+
+.mvs-member-photos-card {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 24px;
+	align-items: center;
+	padding: 24px;
+	margin-bottom: 24px;
+	background: var( --mvs-card-bg, #fff );
+	border: 1px solid var( --mvs-card-border, #e5e7eb );
+	border-radius: 12px;
+	box-shadow: 0 1px 2px rgba( 0, 0, 0, 0.04 );
+}
+
+/* ----- Avatar ----- */
+
+.mvs-member-photos-card__avatar-link {
+	position: relative;
+	width: 96px;
+	height: 96px;
+	display: block;
+	flex-shrink: 0;
+	text-decoration: none;
+	color: inherit;
+	border-radius: 50%;
+	overflow: hidden;
+	background: linear-gradient( 135deg, var( --mvs-primary-color, #ef4444 ), var( --mvs-primary-color-dark, #b91c1c ) );
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mvs-member-photos-card__avatar-link:hover {
+	transform: translateY( -1px );
+	box-shadow: 0 4px 12px rgba( 0, 0, 0, 0.15 );
+}
+
+.mvs-member-photos-card__avatar-link:focus-visible {
+	outline: 2px solid var( --mvs-primary-color, #ef4444 );
+	outline-offset: 2px;
+}
+
+.mvs-member-photos-card__initials {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 32px;
+	font-weight: 600;
+	color: #fff;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	user-select: none;
+}
+
+/* The avatar IMG covers the gradient initials when Gravatar resolves. */
+.mvs-member-photos-card__avatar {
+	position: absolute;
+	inset: 0;
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover;
+	border-radius: 0; /* parent .__avatar-link rounds */
+}
+
+/* ----- Body ----- */
+
+.mvs-member-photos-card__body {
+	min-width: 0; /* allow text-overflow inside grid cell */
+}
+
+.mvs-member-photos-card__name {
+	margin: 0 0 2px;
+	font-size: 22px;
+	line-height: 1.2;
+	font-weight: 700;
+}
+
+.mvs-member-photos-card__name a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.mvs-member-photos-card__name a:hover {
+	text-decoration: underline;
+}
+
+.mvs-member-photos-card__handle {
+	margin: 0 0 8px;
+	font-size: 13px;
+	color: var( --mvs-text-muted, #6b7280 );
+}
+
+.mvs-member-photos-card__bio {
+	margin: 0 0 12px;
+	font-size: 14px;
+	line-height: 1.5;
+	color: var( --mvs-text, #374151 );
+}
+
+/* ----- Stats ----- */
+
+.mvs-member-photos-card__stats {
+	display: flex;
+	gap: 24px;
+	margin: 0 0 12px;
+	padding: 0;
+	flex-wrap: wrap;
+}
+
+.mvs-member-photos-card__stat {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.mvs-member-photos-card__stat dd {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 1;
+	color: var( --mvs-text, #111827 );
+}
+
+.mvs-member-photos-card__stat dt {
+	margin: 0;
+	font-size: 12px;
+	font-weight: 500;
+	color: var( --mvs-text-muted, #6b7280 );
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+/* ----- Action buttons ----- */
+
+.mvs-member-photos-card__actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.mvs-member-photos-card__btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 40px; /* meets the 40px tap-target rule */
+	padding: 8px 16px;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.2;
+	border-radius: 6px;
+	border: 1px solid transparent;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.mvs-member-photos-card__btn--primary {
+	background: var( --mvs-primary-color, #ef4444 );
+	color: #fff;
+}
+
+.mvs-member-photos-card__btn--primary:hover {
+	background: var( --mvs-primary-color-dark, #b91c1c );
+	color: #fff;
+}
+
+.mvs-member-photos-card__btn--secondary {
+	background: transparent;
+	color: var( --mvs-text, #111827 );
+	border-color: var( --mvs-card-border, #d1d5db );
+}
+
+.mvs-member-photos-card__btn--secondary:hover {
+	background: var( --mvs-bg-muted, #f3f4f6 );
+	color: var( --mvs-text, #111827 );
+}
+
+.mvs-member-photos-card__btn:focus-visible {
+	outline: 2px solid var( --mvs-primary-color, #ef4444 );
+	outline-offset: 2px;
+}
+
+/* Follow toggle: swap label based on `is-following` class. */
+.mvs-follow-toggle .mvs-follow-toggle__following,
+.mvs-follow-toggle.is-following .mvs-follow-toggle__follow {
+	display: none;
+}
+
+.mvs-follow-toggle.is-following .mvs-follow-toggle__following {
+	display: inline;
+}
+
+.mvs-follow-toggle.is-following {
+	background: var( --mvs-bg-muted, #f3f4f6 );
+	color: var( --mvs-text, #111827 );
+	border-color: var( --mvs-card-border, #d1d5db );
+}
+
+.mvs-follow-toggle.is-following:hover {
+	background: var( --mvs-danger-bg, #fee2e2 );
+	color: var( --mvs-danger, #b91c1c );
+	border-color: var( --mvs-danger, #b91c1c );
+}
+
+/* ============================================================================
+   Container-query responsiveness — stack vertically when the block sits in
+   a narrow column (sidebar widget, FSE template part, BuddyX widget area).
+   Below ~520px wide the horizontal hero card looks cramped; switch to a
+   centered vertical layout.
+   ========================================================================== */
+
+@container mvs-member ( max-width: 520px ) {
+	.mvs-member-photos-card {
+		grid-template-columns: 1fr;
+		justify-items: center;
+		text-align: center;
+		padding: 20px 16px;
+		gap: 12px;
+	}
+
+	.mvs-member-photos-card__avatar-link {
+		width: 88px;
+		height: 88px;
+	}
+
+	.mvs-member-photos-card__initials {
+		font-size: 28px;
+	}
+
+	.mvs-member-photos-card__stats {
+		justify-content: center;
+		gap: 16px;
+	}
+
+	.mvs-member-photos-card__stat {
+		text-align: center;
+		align-items: center;
+	}
+
+	.mvs-member-photos-card__actions {
+		justify-content: center;
+		width: 100%;
+	}
+
+	.mvs-member-photos-card__btn {
+		flex: 1 1 auto;
+		min-width: 120px;
+	}
+}
+
+/* Very narrow — typical 240–280 px sidebar widget. */
+@container mvs-member ( max-width: 320px ) {
+	.mvs-member-photos-card {
+		padding: 16px 12px;
+	}
+
+	.mvs-member-photos-card__avatar-link {
+		width: 72px;
+		height: 72px;
+	}
+
+	.mvs-member-photos-card__initials {
+		font-size: 24px;
+	}
+
+	.mvs-member-photos-card__name {
+		font-size: 18px;
+	}
+
+	.mvs-member-photos-card__stats {
+		gap: 12px;
+	}
+
+	.mvs-member-photos-card__stat dd {
+		font-size: 16px;
+	}
+
+	.mvs-member-photos-card__btn {
+		padding: 6px 10px;
+		font-size: 13px;
+		min-width: 0;
+	}
+
+	/* Hide non-essential text on tiny widths to save space. */
+	.mvs-member-photos-card__handle {
+		display: none;
+	}
+}
+
+/* Viewport-level fallback for browsers without container-query support
+   (Safari < 16, Chrome < 105). The breakpoint matches our 640 px standard. */
+@media ( max-width: 640px ) {
+	.mvs-member-photos-card {
+		grid-template-columns: 1fr;
+		justify-items: center;
+		text-align: center;
+	}
+
+	.mvs-member-photos-card__stats {
+		justify-content: center;
+	}
+}
+
+/* ============================================================================
+   Empty state (no user resolvable).
+   ========================================================================== */
+
+.mvs-member-photos-empty {
+	padding: 32px 16px;
+	text-align: center;
+	color: var( --mvs-text-muted, #6b7280 );
+	background: var( --mvs-bg-muted, #f9fafb );
+	border: 1px dashed var( --mvs-card-border, #e5e7eb );
+	border-radius: 8px;
+}
+
+.mvs-member-photos-empty i,
+.mvs-member-photos-empty svg {
+	width: 32px;
+	height: 32px;
+	opacity: 0.5;
+	margin-bottom: 12px;
+}
+
+.mvs-member-photos-empty p {
+	margin: 0;
+	font-size: 14px;
+	max-width: 480px;
+	margin-inline: auto;
+}
+
+/* ============================================================================
+   Editor preview — block placeholder before the real render attaches.
+   ========================================================================== */
+
+.mvs-member-photos-preview {
+	border: 1px dashed #ddd;
+	padding: 16px;
+	border-radius: 4px;
+}
+
+.mvs-member-photos-preview__header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.mvs-member-photos-preview__avatar {
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	background: #f0f0f0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.mvs-member-photos-preview__hint {
+	margin: 2px 0 0;
+	font-size: 11px;
+	color: #999;
+}
+
+.mvs-member-photos-preview__caption {
+	text-align: center;
+	font-size: 12px;
+	color: #999;
+	margin-top: 12px;
+	margin-bottom: 0;
+}

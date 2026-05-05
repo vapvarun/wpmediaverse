@@ -317,7 +317,7 @@ class NotificationService {
 	 * @param string $type     Reaction type.
 	 */
 	public function on_reaction( int $media_id, int $user_id, string $type ): void {
-		$owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
+		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
 		$this->create( $owner, 'media_reaction', $user_id, $media_id );
 	}
 
@@ -329,7 +329,7 @@ class NotificationService {
 	 * @param int $comment_id Comment ID.
 	 */
 	public function on_comment( int $media_id, int $user_id, int $comment_id ): void {
-		$owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
+		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
 		$this->create( $owner, 'media_comment', $user_id, $media_id, $comment_id );
 	}
 
@@ -355,7 +355,7 @@ class NotificationService {
 	 * @param int $user_id  User who favorited.
 	 */
 	public function on_favorite( int $media_id, int $user_id ): void {
-		$owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
+		$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
 		$this->create( $owner, 'media_favorite', $user_id, $media_id );
 	}
 
@@ -384,17 +384,22 @@ class NotificationService {
 		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 		$media_title = '';
 		if ( $row->media_id ) {
-			$media_title = \WPMediaVerse\Repository\MediaRepository::get( (int) $row->media_id, 'title' ) ?: '';
+			$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( (int) $row->media_id, 'title' ) ?: '';
 		}
 
 		$message = $this->build_notification_message( $row->type, $actor_name, $media_title );
 
 		$url = '';
 		if ( $row->media_id ) {
-			$url = \WPMediaVerse\Repository\MediaRepository::get_permalink( (int) $row->media_id );
+			$url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $row->media_id );
 		} elseif ( 'new_follower' === $row->type ) {
-			$actor_login = get_the_author_meta( 'user_login', (int) $row->actor_id );
-			$url         = $actor_login ? home_url( '/media/@' . $actor_login . '/' ) : '';
+			// Route to the canonical author-profile URL — BP profile when BP
+			// is active, plugin's /media/@user/ otherwise. NEVER hard-code
+			// `/media/@` here: when the notification text is rendered into a
+			// BP content path, `bp_activity_at_name_filter` rewrites the
+			// `@user` substring into mention HTML and corrupts the URL.
+			$tpl = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+			$url = ( (int) $row->actor_id > 0 ) ? $tpl->get_user_profile_url( (int) $row->actor_id ) : '';
 		} elseif ( 'new_message' === $row->type ) {
 			$url = home_url( '/messages/' );
 		}

@@ -269,7 +269,7 @@ class CacheService {
 		$this->delete( "media_stats_{$media_id}" );
 
 		// Also invalidate the author's user stats.
-		$author_id = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'post_author' );
+		$author_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
 		if ( $author_id ) {
 			$this->delete( "user_stats_{$author_id}" );
 		}
@@ -331,7 +331,7 @@ class CacheService {
 		add_action( 'mvs_share_recorded', array( $this, 'on_media_stat_change' ), 10, 1 );
 
 		// Invalidate moderation cache.
-		add_action( 'mvs_media_moderated', array( $this, 'on_moderation_change' ) );
+		add_action( 'mvs_moderation_changed', array( $this, 'on_moderation_change' ) );
 		add_action( 'mvs_media_uploaded', array( $this, 'on_moderation_change' ) );
 
 		// Invalidate follow counts on follow/unfollow.

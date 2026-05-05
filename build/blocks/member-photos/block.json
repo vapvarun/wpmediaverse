@@ -1,0 +1,56 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "mvs/member-photos",
+  "version": "1.0.0",
+  "title": "Member Photos",
+  "category": "wpmediaverse",
+  "icon": "id",
+  "description": "Display a member's photos. Auto-detects the displayed BuddyPress member, the post author, or the current user — or pick a specific user. Drop into any sidebar, FSE template part, or BuddyPress profile area.",
+  "keywords": [
+    "member",
+    "user",
+    "photos",
+    "gallery",
+    "profile",
+    "buddypress",
+    "rtmedia"
+  ],
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "attributes": {
+    "userId": {
+      "type": "number",
+      "default": 0
+    },
+    "columns": {
+      "type": "number",
+      "default": 3
+    },
+    "perPage": {
+      "type": "number",
+      "default": 12
+    },
+    "mediaType": {
+      "type": "string",
+      "default": ""
+    },
+    "showHeader": {
+      "type": "boolean",
+      "default": true
+    },
+    "showActions": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "textdomain": "wpmediaverse",
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php",
+  "style": "file:./style-index.css"
+}

@@ -1,9 +1,12 @@
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, RangeControl, SelectControl, ToggleControl, TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { StandardInspectorPanels } from '../../shared/components';
+import { useUniqueId } from '../../shared/hooks';
 
-export default function Edit( { attributes, setAttributes } ) {
-	const { columns, perPage, mediaType, category, tag, orderBy, showLightbox, showReactions, gap } = attributes;
+export default function Edit( { attributes, setAttributes, clientId } ) {
+	useUniqueId( clientId, attributes.uniqueId, setAttributes );
+	const { columns, perPage, mediaType, category, tag, orderBy, order, showLightbox, showReactions, gap } = attributes;
 	const blockProps = useBlockProps();
 
 	return (
@@ -63,10 +66,24 @@ export default function Edit( { attributes, setAttributes } ) {
 						options={ [
 							{ label: __( 'Date', 'wpmediaverse' ), value: 'date' },
 							{ label: __( 'Title', 'wpmediaverse' ), value: 'title' },
-							{ label: __( 'Popular', 'wpmediaverse' ), value: 'popular' },
+							{ label: __( 'Popular (reactions + views)', 'wpmediaverse' ), value: 'popular' },
+							{ label: __( 'Most viewed', 'wpmediaverse' ), value: 'views' },
+							{ label: __( 'Most reactions', 'wpmediaverse' ), value: 'reactions' },
+							{ label: __( 'Random', 'wpmediaverse' ), value: 'random' },
 						] }
 						onChange={ ( val ) => setAttributes( { orderBy: val } ) }
 					/>
+					{ 'random' !== orderBy && (
+						<SelectControl
+							label={ __( 'Direction', 'wpmediaverse' ) }
+							value={ order }
+							options={ [
+								{ label: __( 'Newest / highest first', 'wpmediaverse' ), value: 'desc' },
+								{ label: __( 'Oldest / lowest first', 'wpmediaverse' ), value: 'asc' },
+							] }
+							onChange={ ( val ) => setAttributes( { order: val } ) }
+						/>
+					) }
 				</PanelBody>
 				<PanelBody title={ __( 'Features', 'wpmediaverse' ) } initialOpen={ false }>
 					<ToggleControl
@@ -80,6 +97,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						onChange={ ( val ) => setAttributes( { showReactions: val } ) }
 					/>
 				</PanelBody>
+				<StandardInspectorPanels attributes={ attributes } setAttributes={ setAttributes } />
 			</InspectorControls>
 			<div { ...blockProps }>
 				<div className={ `mvs-media-grid mvs-cols-${ columns || 3 }` } style={ { gap: `${ gap }px` } }>

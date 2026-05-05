@@ -64,9 +64,9 @@ function run_notifications_tests(): array {
 	section( 'COMMENT NOTIFICATION DATA ACCURACY' );
 
 	// Get the actual media title from mvs_media_index (the source of truth).
-	$mvs_title = \WPMediaVerse\Repository\MediaRepository::get( $own_mid, 'title' );
-	$mvs_owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $own_mid, 'post_author' );
-	$mvs_url   = \WPMediaVerse\Repository\MediaRepository::get_permalink( $own_mid );
+	$mvs_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $own_mid, 'title' );
+	$mvs_owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $own_mid, 'post_author' );
+	$mvs_url   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $own_mid );
 
 	assert_test( 'MVS media title exists in index', ! empty( $mvs_title ), 'title: ' . ( $mvs_title ?: 'EMPTY' ) ) ? $p++ : $f++;
 	assert_test( 'MVS media owner matches admin', $mvs_owner === $admin_id, "owner:$mvs_owner expected:$admin_id" ) ? $p++ : $f++;

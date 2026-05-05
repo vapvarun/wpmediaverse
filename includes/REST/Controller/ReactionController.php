@@ -15,7 +15,6 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WPMediaVerse\REST\RateLimiter;
-use WPMediaVerse\Repository\MediaRepository;
 use WPMediaVerse\Social\ReactionService;
 
 /**
@@ -57,6 +56,13 @@ class ReactionController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// PUBLIC_OK on the GET /reactions __return_true below: aggregated
+		// counts grouped by reaction type — not a per-user reaction list.
+		// The "did_I_react" data only emits when a logged-in viewer hits
+		// the route (handler reads get_current_user_id() and conditionally
+		// adds the field). Public counts mirror Twitter's "12 likes"
+		// indicator. POST/DELETE on the same route carry proper permission
+		// callbacks. Triaged 2026-05-01 (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/' . $this->rest_base,
@@ -233,6 +239,6 @@ class ReactionController extends WP_REST_Controller {
 	 * @return bool
 	 */
 	private function media_exists( int $media_id ): bool {
-		return MediaRepository::exists( $media_id );
+		return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id );
 	}
 }

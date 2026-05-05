@@ -22,9 +22,11 @@ $media_type     = isset( $attributes['mediaType'] ) ? sanitize_text_field( $attr
 $category       = isset( $attributes['category'] ) ? sanitize_text_field( $attributes['category'] ) : '';
 $mvs_tag        = isset( $attributes['tag'] ) ? sanitize_text_field( $attributes['tag'] ) : '';
 $order_by       = isset( $attributes['orderBy'] ) ? sanitize_text_field( $attributes['orderBy'] ) : 'date';
+$order_dir      = isset( $attributes['order'] ) && 'asc' === strtolower( $attributes['order'] ) ? 'ASC' : 'DESC';
 $show_lightbox  = ! empty( $attributes['showLightbox'] );
 $show_reactions = ! empty( $attributes['showReactions'] );
 $gap            = isset( $attributes['gap'] ) ? absint( $attributes['gap'] ) : 8;
+$mvs_user_id    = isset( $attributes['userId'] ) ? absint( $attributes['userId'] ) : 0; // 0 = no filter; > 0 scopes to post_author.
 
 // Pagination support -- static front pages use 'page', archive pages use 'paged'.
 $mvs_paged = 1;
@@ -40,6 +42,11 @@ $meta_table  = $wpdb->prefix . 'mvs_media_meta';
 $where  = "WHERE m.status = 'publish'";
 $joins  = '';
 $params = array();
+
+if ( $mvs_user_id > 0 ) {
+	$where   .= ' AND m.post_author = %d';
+	$params[] = $mvs_user_id;
+}
 
 if ( $media_type ) {
 	$where   .= ' AND m.media_type = %s';
@@ -75,8 +82,40 @@ $where .= " AND m.media_id NOT IN (
 	AND mm2.meta_value != '0'
 )";
 
-$order_clause = 'date' === $order_by ? 'm.created_at DESC' : 'm.title ASC';
-$offset       = ( $mvs_paged - 1 ) * $mvs_per_page;
+// ── ORDER BY clause (and optional JOIN for popularity-based sort) ─────────
+// Supported values: date | title | popular | views | reactions | random.
+// $order_dir = ASC | DESC (ignored for `random`).
+$stats_table = $wpdb->prefix . 'mvs_media_stats';
+switch ( $order_by ) {
+	case 'title':
+		$order_clause = 'm.title ' . $order_dir;
+		break;
+
+	case 'popular':
+	case 'views':
+	case 'reactions':
+		// Popular = reactions + views (engagement), 0 fallback for media without a stats row.
+		$joins .= " LEFT JOIN {$stats_table} s ON s.media_id = m.media_id";
+		if ( 'views' === $order_by ) {
+			$order_clause = 'COALESCE(s.views, 0) ' . $order_dir;
+		} elseif ( 'reactions' === $order_by ) {
+			$order_clause = 'COALESCE(s.reactions, 0) ' . $order_dir;
+		} else {
+			$order_clause = '(COALESCE(s.reactions, 0) + COALESCE(s.views, 0)) ' . $order_dir;
+		}
+		break;
+
+	case 'random':
+		$order_clause = 'RAND()';
+		break;
+
+	case 'date':
+	default:
+		$order_clause = 'm.created_at ' . $order_dir;
+		break;
+}
+
+$offset = ( $mvs_paged - 1 ) * $mvs_per_page;
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 // Count total.
@@ -93,7 +132,23 @@ $media_items  = $wpdb->get_results( $wpdb->prepare( $items_sql, ...$all_params )
 // phpcs:enable
 
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $found_posts / $mvs_per_page ) : 1;
-$wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-grid-block' ) ) : 'class="mvs-media-grid-block"';
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+if ( empty( $mvs_shortcode_context ) ) {
+	\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+}
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-media-grid-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 
 // Lightbox handled by shared-ui Interactivity API module.
 ?>
@@ -103,10 +158,10 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 			<?php
 			foreach ( $media_items as $item ) :
 				$item_id             = (int) $item['media_id'];
-				$mvs_grid_media_type = \WPMediaVerse\Core\TemplateHelpers::get_media_type( $item_id );
+				$mvs_grid_media_type = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $item_id );
 				$mvs_grid_signed     = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 				$mvs_grid_file_url   = $mvs_grid_signed ? $mvs_grid_signed->generate( $item_id, get_current_user_id() ) : '';
-				$mvs_grid_group      = \WPMediaVerse\Repository\MediaRepository::get( $item_id, 'media_group' );
+				$mvs_grid_group      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $item_id, 'media_group' );
 				$mvs_grid_group_cnt  = 0;
 				if ( $mvs_grid_group ) {
 					$mvs_grid_group_cnt = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -116,9 +171,9 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				}
 				$mvs_grid_item_class = 'mvs-grid-item' . ( $mvs_grid_group ? ' mvs-grid-item--gallery' : '' );
 				$item_title          = $item['title'] ?? '';
-				$item_permalink      = \WPMediaVerse\Repository\MediaRepository::get_permalink( $item_id );
+				$item_permalink      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id );
 				$mvs_grid_author_id  = ! empty( $item['post_author'] ) ? (int) $item['post_author'] : 0;
-				$mvs_grid_thumb_url  = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $item_id, 'large' );
+				$mvs_grid_thumb_url  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $item_id, 'large' );
 				$mvs_grid_lightbox   = array(
 					'id'            => $item_id,
 					'title'         => $item_title,
@@ -134,7 +189,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					'author_data'   => array(
 						'name'        => get_the_author_meta( 'display_name', $mvs_grid_author_id ),
 						'avatar'      => get_avatar_url( $mvs_grid_author_id, array( 'size' => 64 ) ),
-						'profile_url' => \WPMediaVerse\Core\TemplateHelpers::get_user_profile_url( $mvs_grid_author_id ),
+						'profile_url' => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $mvs_grid_author_id ),
 					),
 				);
 				?>
@@ -144,7 +199,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					data-media-json="<?php echo esc_attr( wp_json_encode( $mvs_grid_lightbox ) ); ?>"
 				>
 					<a href="<?php echo esc_url( $item_permalink ); ?>" class="mvs-grid-item-link">
-					<?php \WPMediaVerse\Core\TemplateHelpers::render_grid_thumbnail( $item_id, 'large', $item_title ); ?>
+					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, 'large', $item_title ); ?>
 					<?php if ( $mvs_grid_group && $mvs_grid_group_cnt > 1 ) : ?>
 						<span class="mvs-gallery-badge" title="<?php echo esc_attr( sprintf( '%d photos', $mvs_grid_group_cnt ) ); ?>">
 							<span class="dashicons dashicons-images-alt2"></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>

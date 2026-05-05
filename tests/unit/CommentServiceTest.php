@@ -10,7 +10,6 @@ namespace WPMediaVerse\Tests\Unit;
 use WP_UnitTestCase;
 use WP_Error;
 use WPMediaVerse\Social\CommentService;
-use WPMediaVerse\Repository\MediaRepository;
 
 class CommentServiceTest extends WP_UnitTestCase {
 
@@ -23,7 +22,7 @@ class CommentServiceTest extends WP_UnitTestCase {
 
 		$this->service  = new CommentService();
 		$this->user_id  = self::factory()->user->create( array( 'role' => 'author' ) );
-		$this->media_id = MediaRepository::insert(
+		$this->media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Test Photo',
 				'post_author' => $this->user_id,
@@ -99,7 +98,7 @@ class CommentServiceTest extends WP_UnitTestCase {
 	 */
 	public function test_add_invalid_parent(): void {
 		// Create a second media item and add a comment to it.
-		$other_media = MediaRepository::insert(
+		$other_media = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Other Photo',
 				'post_author' => $this->user_id,

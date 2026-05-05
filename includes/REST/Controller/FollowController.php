@@ -86,7 +86,12 @@ class FollowController extends WP_REST_Controller {
 			)
 		);
 
-		// GET /users/{id}/followers.
+		// GET /users/{id}/followers and GET /users/{id}/following.
+		// PUBLIC_OK on both: returns display name + avatar of users in the
+		// follow graph. Mirrors any public social network's "who follows X"
+		// list. Note that /me/followers and /me/following (separate routes
+		// below) DO require is_user_logged_in — the public variants are
+		// intentional. Triaged 2026-05-01 (Item 5).
 		register_rest_route(
 			$this->namespace,
 			'/users/(?P<id>[\d]+)/followers',
@@ -98,7 +103,6 @@ class FollowController extends WP_REST_Controller {
 			)
 		);
 
-		// GET /users/{id}/following.
 		register_rest_route(
 			$this->namespace,
 			'/users/(?P<id>[\d]+)/following',

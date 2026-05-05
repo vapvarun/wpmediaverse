@@ -23,12 +23,12 @@ if ( ! $media_id ) {
 }
 
 // Verify media exists in the index table.
-if ( ! \WPMediaVerse\Repository\MediaRepository::exists( $media_id ) ) {
+if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
 	return;
 }
 
-$file_type  = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'file_type' );
-$media_title = \WPMediaVerse\Repository\MediaRepository::get( $media_id, 'title' );
+$file_type  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
+$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' );
 
 $mp_signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 $file_url  = $mp_signed ? $mp_signed->generate( $media_id, get_current_user_id() ) : '';
@@ -44,7 +44,23 @@ if ( ! $is_video && ! $is_audio ) {
 	return;
 }
 
-$wrapper  = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => 'mvs-media-player-block' ) ) : 'class="mvs-media-player-block"';
+$mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
+if ( empty( $mvs_shortcode_context ) ) {
+	\WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
+}
+$mvs_classes = trim(
+	implode(
+		' ',
+		array_filter(
+			array(
+				'mvs-media-player-block',
+				$mvs_block_uid ? 'mvs-block-' . sanitize_html_class( $mvs_block_uid ) : '',
+				\WPMediaVerse\Blocks\StandardAttributes::visibility_classes( $attributes ),
+			)
+		)
+	)
+);
+$wrapper  = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 $rest_url = esc_url( rest_url( 'mvs/v1/media/' . $media_id . '/view' ) );
 $nonce    = wp_create_nonce( 'wp_rest' );
 

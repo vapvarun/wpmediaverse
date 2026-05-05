@@ -97,10 +97,11 @@ module.exports = function( grunt ) {
 							'!dist/**',
 							// src/ included — block CSS loaded from src/blocks/ at runtime.
 
-							// ── Docs, plans, marketing (GitHub only) ──
+							// ── Docs, plans, audit, marketing (GitHub only) ──
 							'!docs/**',
 							'!plan/**',
 							'!plans/**',
+							'!audit/**',
 							'!marketing/**',
 
 							// ── Dev config files ──

@@ -226,6 +226,77 @@
 	border: 2px solid var(--mvs-border-light);
 }
 
+/* Each preview is a thumbnail / icon + filename + remove button. Audio
+   files (no thumbnail possible) and other types use a Lucide icon
+   placeholder so the user always sees they selected the file. */
+.mvs-modal-preview {
+	position: relative;
+	width: 96px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+}
+
+.mvs-modal-preview .mvs-modal-preview-thumb {
+	width: 80px;
+	height: 80px;
+}
+
+.mvs-modal-preview-icon {
+	width: 80px;
+	height: 80px;
+	border-radius: 8px;
+	border: 2px dashed var(--mvs-border-light);
+	background: var(--mvs-surface-2, #f6f7f7);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--mvs-text-muted, #757575);
+}
+
+.mvs-modal-preview-icon[hidden] {
+	display: none !important;
+}
+
+.mvs-modal-preview-name {
+	font-size: 11px;
+	color: var(--mvs-text-muted, #757575);
+	max-width: 96px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: center;
+}
+
+.mvs-modal-preview-remove {
+	position: absolute;
+	top: -6px;
+	left: -6px;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: var(--mvs-danger, #d63638);
+	color: #fff;
+	border: 2px solid var(--mvs-bg, #fff);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	padding: 0;
+	transition: transform 0.15s ease;
+}
+
+.mvs-modal-preview-remove:hover,
+.mvs-modal-preview-remove:focus-visible {
+	transform: scale( 1.1 );
+}
+
+.mvs-modal-preview-remove:focus-visible {
+	outline: 2px solid var(--mvs-primary, #2271b1);
+	outline-offset: 2px;
+}
+
 /* ─── Progress ─── */
 .mvs-modal-progress {
 	padding: 32px 0;
@@ -296,6 +367,61 @@
 	border-color: var(--mvs-primary);
 	outline: none;
 	box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.15);
+}
+
+/* Two-column row inside the Edit modal — used for paired controls
+   (Privacy + slug-regenerate checkbox) so they share one row instead
+   of stacking. Each cell takes 50% on desktop; collapses to a single
+   column at ≤640px so the controls don't crush together on mobile. */
+.mvs-modal-row {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 12px;
+	align-items: flex-end;
+}
+
+.mvs-modal-row .mvs-modal-field {
+	margin-bottom: 0;
+}
+
+.mvs-modal-field--inline {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+/* Checkbox cell sits at the field's baseline so the label aligns with
+   the Privacy select's text rather than its label. */
+.mvs-modal-row .mvs-modal-field--checkbox {
+	flex: 0 0 auto;
+	padding-bottom: 10px;
+}
+
+.mvs-modal-field--checkbox label {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-weight: 500;
+	cursor: pointer;
+	margin: 0;
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.mvs-modal-field--checkbox input[type="checkbox"] {
+	width: auto;
+	margin: 0;
+	flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+	.mvs-modal-row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.mvs-modal-row .mvs-modal-field--checkbox {
+		padding-bottom: 0;
+	}
 }
 
 .mvs-modal-field-row {
@@ -506,4 +632,211 @@
 		width: 18px;
 		height: 18px;
 	}
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Edit Media modal — premium, simple, matches upload-modal language.
+   Triggered by .mvs-media-edit-btn on owner cards in render_grid_item.
+   ────────────────────────────────────────────────────────────────────── */
+.mvs-edit-modal-overlay {
+	z-index: 100050;
+}
+
+.mvs-edit-modal {
+	max-width: 480px;
+	width: 100%;
+}
+
+.mvs-edit-modal .mvs-modal-body {
+	padding: 20px 24px;
+}
+
+.mvs-modal-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.mvs-modal-fields[hidden] {
+	display: none !important;
+}
+
+.mvs-modal-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.mvs-modal-field label {
+	font-weight: 600;
+	font-size: 13px;
+	color: var( --mvs-text, #1d2327 );
+}
+
+.mvs-modal-field-input,
+.mvs-modal-field input[type="text"],
+.mvs-modal-field textarea,
+.mvs-modal-field select {
+	width: 100%;
+	padding: 8px 12px;
+	font-size: 14px;
+	border: 1px solid var( --mvs-border, #c3c4c7 );
+	border-radius: 6px;
+	background: var( --mvs-bg, #fff );
+	color: var( --mvs-text, #1d2327 );
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	box-sizing: border-box;
+}
+
+.mvs-modal-field-input:focus-visible,
+.mvs-modal-field input[type="text"]:focus-visible,
+.mvs-modal-field textarea:focus-visible,
+.mvs-modal-field select:focus-visible {
+	outline: none;
+	border-color: var( --mvs-primary, #2271b1 );
+	box-shadow: 0 0 0 1px var( --mvs-primary, #2271b1 );
+}
+
+.mvs-modal-field--checkbox label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.mvs-modal-field--checkbox input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	cursor: pointer;
+}
+
+.mvs-modal-field-hint {
+	margin: 0;
+	font-size: 12px;
+	color: var( --mvs-text-muted, #757575 );
+	padding-right: 24px;
+}
+
+.mvs-modal-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 32px 0;
+	color: var( --mvs-text-muted, #757575 );
+}
+
+.mvs-modal-loading[hidden] {
+	display: none !important;
+}
+
+.mvs-modal-error {
+	background: rgba( 214, 54, 56, 0.08 );
+	border: 1px solid rgba( 214, 54, 56, 0.2 );
+	border-radius: 6px;
+	padding: 8px 12px;
+	color: var( --mvs-danger, #d63638 );
+	font-size: 13px;
+}
+
+.mvs-modal-error[hidden] {
+	display: none !important;
+}
+
+.mvs-modal-error p {
+	margin: 0;
+}
+
+/* Footer matches existing modal footer */
+.mvs-edit-modal .mvs-modal-footer {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+	padding: 16px 24px;
+	border-top: 1px solid var( --mvs-border-light, #e5e5e5 );
+}
+
+/* Mobile sizing — full-screen on small viewports for premium feel. */
+@media ( max-width: 640px ) {
+	.mvs-edit-modal {
+		max-width: 100vw;
+		max-height: 100vh;
+		border-radius: 0;
+	}
+
+	.mvs-edit-modal .mvs-modal-body {
+		padding: 16px;
+	}
+
+	.mvs-edit-modal .mvs-modal-footer {
+		padding: 12px 16px;
+	}
+}
+
+/* The Settings (cog) edit button on media cards — matches the existing
+   delete button style but in neutral color so it doesn't compete
+   visually for attention. */
+.mvs-media-edit-btn {
+	color: var( --mvs-text, #1d2327 );
+}
+
+.mvs-media-edit-btn:hover,
+.mvs-media-edit-btn:focus-visible {
+	color: var( --mvs-primary, #2271b1 );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Popular-tag pills — show in upload + edit modals to help users discover
+   existing tags and avoid creating near-duplicate ones (e.g. "sunset" vs
+   "Sunset").
+   ────────────────────────────────────────────────────────────────────── */
+.mvs-tag-pills {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+	margin-top: 8px;
+}
+
+.mvs-tag-pills[hidden] {
+	display: none !important;
+}
+
+.mvs-tag-pills__label {
+	font-size: 12px;
+	color: var( --mvs-text-muted, #757575 );
+	margin-left: 4px;
+}
+
+.mvs-tag-pill {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 10px;
+	border-radius: 999px;
+	border: 1px solid var( --mvs-border, #c3c4c7 );
+	background: var( --mvs-bg, #fff );
+	font-size: 12px;
+	color: var( --mvs-text, #1d2327 );
+	cursor: pointer;
+	transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.mvs-tag-pill:hover {
+	background: var( --mvs-primary, #2271b1 );
+	border-color: var( --mvs-primary, #2271b1 );
+	color: #fff;
+}
+
+.mvs-tag-pill:focus-visible {
+	outline: 2px solid var( --mvs-primary, #2271b1 );
+	outline-offset: 2px;
+}
+
+.mvs-tag-pill::before {
+	content: '#';
+	margin-left: 2px;
+	opacity: 0.6;
 }

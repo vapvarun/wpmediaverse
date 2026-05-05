@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 10;
+	const CURRENT_VERSION = 12;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -666,5 +666,157 @@ class Migrator {
 			);
 		}
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * Migration v11 — seed `mvs_ai_monthly_budget` for installs that pre-date
+	 * the 1.2.0 default change.
+	 *
+	 * Prior to 1.2.0 the registered default for `mvs_ai_monthly_budget` was 0,
+	 * which the AI cost guard interprets as "unlimited". Any install that had
+	 * never explicitly saved the option was therefore reading 0 and would have
+	 * run uncapped OpenAI calls if AI features were enabled — a billing trap.
+	 *
+	 * From 1.2.0 the registrar default is 10 (USD/month). Activator handles the
+	 * fresh-install seed; this migration handles the existing-install case.
+	 *
+	 * `add_option()` only inserts when the row is missing, so admins who
+	 * deliberately saved `0` (or any other value) are NOT overwritten — only
+	 * the genuine "never touched" case gets the safer $10/month cap.
+	 *
+	 * @since 1.2.0
+	 */
+	private function migrate_to_11(): void {
+		add_option( 'mvs_ai_monthly_budget', 10 );
+	}
+
+	/**
+	 * Migration v12 — `mvs_bp_activity_media` linkage table.
+	 *
+	 * Phase 8 of the 1.2.0 plan: replaces regex-parsing of saved
+	 * `bp_activity.content` HTML to extract MVS media references with
+	 * structured storage. When MVS media is added to a BP activity row,
+	 * we write one linkage row per media item with its position in the
+	 * activity. Render reads the linkage table and emits markup via
+	 * `TemplateHelpers::media_thumbnail()` — zero regex on saved HTML.
+	 *
+	 * The legacy regex parser (`ActivityContentIntegration::enhance_activity_media_content`)
+	 * stays in place as a deprecated fallback for activity rows that
+	 * pre-date this migration AND have no backfill match.
+	 *
+	 * @since 1.2.0
+	 */
+	private function migrate_to_12(): void {
+		global $wpdb;
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$charset = $wpdb->get_charset_collate();
+
+		dbDelta(
+			"CREATE TABLE {$wpdb->prefix}mvs_bp_activity_media (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				activity_id bigint(20) unsigned NOT NULL,
+				media_id bigint(20) unsigned NOT NULL,
+				variant varchar(20) NOT NULL DEFAULT 'image',
+				position int unsigned NOT NULL DEFAULT 0,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY  (id),
+				KEY activity_id (activity_id),
+				KEY media_id (media_id),
+				KEY activity_position (activity_id, position)
+			) {$charset};"
+		);
+	}
+
+	/**
+	 * Backfill a BIGINT FK column from a varchar URL column.
+	 *
+	 * Generic schema-migration utility used by Pro's Phase 0b cover-image
+	 * migration and any future column that swaps URL-storage for an FK to
+	 * `mvs_media_index.id`. Reverse-resolves each existing URL via
+	 * `\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->find_by_url` and writes the resolved media_id into
+	 * the new column. Rows whose URL doesn't reverse-resolve (orphans,
+	 * external URLs, deleted media) get null in the new column — the caller
+	 * decides whether to fall back to an empty cover or fail loudly.
+	 *
+	 * Idempotent: only updates rows where the new column is still NULL.
+	 * Safe to re-run after a partial completion.
+	 *
+	 * Caller is responsible for ensuring `$id_col` exists on the table
+	 * (via dbDelta in the per-plugin Migrator) BEFORE calling this helper.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string $table_unprefixed Table name without the `$wpdb->prefix` (e.g. `'mvs_competitions'`).
+	 * @param string $url_col          Existing varchar URL column (e.g. `'cover_image_url'`).
+	 * @param string $id_col           New BIGINT FK column (e.g. `'cover_media_id'`).
+	 * @return array{rows_seen:int,rows_updated:int,rows_unresolved:int} Migration counters.
+	 */
+	public static function migrate_url_column_to_id( string $table_unprefixed, string $url_col, string $id_col ): array {
+		global $wpdb;
+
+		// Allowlist identifiers — interpolated into SQL because $wpdb->prepare
+		// has no placeholder for table/column names.
+		$valid_ident = '/^[A-Za-z_][A-Za-z0-9_]*$/';
+		if ( ! preg_match( $valid_ident, $table_unprefixed )
+			|| ! preg_match( $valid_ident, $url_col )
+			|| ! preg_match( $valid_ident, $id_col ) ) {
+			return array(
+				'rows_seen'       => 0,
+				'rows_updated'    => 0,
+				'rows_unresolved' => 0,
+			);
+		}
+
+		$table = $wpdb->prefix . $table_unprefixed;
+
+		// Discover the table's primary-key column so we can target updates
+		// without assuming `id`. Falls back to `id` when the lookup fails.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$pk_row = $wpdb->get_row(
+			"SHOW KEYS FROM `{$table}` WHERE Key_name = 'PRIMARY'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			ARRAY_A
+		);
+		$pk_col = $pk_row['Column_name'] ?? 'id';
+		if ( ! preg_match( $valid_ident, $pk_col ) ) {
+			$pk_col = 'id';
+		}
+
+		$rows_seen       = 0;
+		$rows_updated    = 0;
+		$rows_unresolved = 0;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results(
+			"SELECT `{$pk_col}` AS pk, `{$url_col}` AS url FROM `{$table}` WHERE `{$id_col}` IS NULL AND `{$url_col}` IS NOT NULL AND `{$url_col}` <> ''" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		foreach ( (array) $rows as $row ) {
+			++$rows_seen;
+			$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->find_by_url( (string) $row->url );
+			if ( $media_id <= 0 ) {
+				++$rows_unresolved;
+				continue;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$updated = $wpdb->update(
+				$table,
+				array( $id_col => $media_id ),
+				array( $pk_col => $row->pk ),
+				array( '%d' ),
+				array( '%d' )
+			);
+
+			if ( false !== $updated ) {
+				++$rows_updated;
+			}
+		}
+
+		return array(
+			'rows_seen'       => $rows_seen,
+			'rows_updated'    => $rows_updated,
+			'rows_unresolved' => $rows_unresolved,
+		);
 	}
 }

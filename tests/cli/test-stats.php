@@ -32,7 +32,7 @@ function run_stats_tests(): array {
 		)
 	);
 	if ( ! $has_stats ) {
-		\WPMediaVerse\Repository\MediaRepository::init_stats( $mid );
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->init_stats( $mid );
 	}
 
 	$r = rest( 'GET', "/mvs/v1/media/$mid/stats" );

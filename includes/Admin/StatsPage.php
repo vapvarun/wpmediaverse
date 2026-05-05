@@ -10,7 +10,6 @@ namespace WPMediaVerse\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Services\AIService;
-use WPMediaVerse\Repository\MediaRepository;
 
 /**
  * Admin stats dashboard page.
@@ -241,7 +240,7 @@ class StatsPage {
 
 		// Overall counts (apply date filter so cards change across Today / Week / Month / All).
 		if ( $range_start ) {
-			$total_media = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$total_media  = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$range_start
@@ -405,7 +404,7 @@ class StatsPage {
 							<tbody>
 								<?php foreach ( $top_media as $item ) : ?>
 									<?php
-									$item_link = MediaRepository::get_permalink( (int) $item['media_id'] );
+									$item_link = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $item['media_id'] );
 									?>
 									<tr>
 										<td>

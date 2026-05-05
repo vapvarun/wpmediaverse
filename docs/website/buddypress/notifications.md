@@ -60,3 +60,9 @@ curl -X PUT https://yoursite.com/wp-json/mvs/v1/notifications/123 \
 ## Real-Time Notification Polling
 
 WPMediaVerse includes a REST polling transport (`RestPollingTransport`) that the frontend uses to poll `/mvs/v1/notifications` for new notifications without requiring WebSockets.
+
+## 1.2.0 update — single notification surface
+
+When BuddyPress is active, every WPMediaVerse notification is mirrored to BuddyPress via `bp_notifications_add_notification`, and the standalone dashboard `.mvs-notification-bell` markup is suppressed. This means BP-active sites see one bell — the BP nav bell — instead of two competing bells rendering the same notifications.
+
+This is automatic. No setting to flip, no filter to add. If BuddyPress is deactivated, the standalone WPMediaVerse bell returns automatically.

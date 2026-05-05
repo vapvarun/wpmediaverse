@@ -71,11 +71,11 @@ $is_video = 'video' === $mvs_media_type;
 $is_audio = 'audio' === $mvs_media_type;
 
 // Extra metadata from meta table.
-$artist     = \WPMediaVerse\Repository\MediaRepository::get( $mvs_media_id, 'artist' );
-$album_name = \WPMediaVerse\Repository\MediaRepository::get( $mvs_media_id, 'album_name' );
+$artist     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'artist' );
+$album_name = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'album_name' );
 
 // Poster/thumbnail from media meta.
-$poster_url = \WPMediaVerse\Core\TemplateHelpers::get_thumb_url( $mvs_media_id, 'large' );
+$poster_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $mvs_media_id, 'large' );
 
 // Format duration for display.
 $mvs_is_owner = is_user_logged_in() && $mvs_author_id === get_current_user_id();
@@ -102,13 +102,13 @@ $mvs_author_login = $mvs_author ? $mvs_author->user_login : '';
 $mvs_date_display = $mvs_created ? date_i18n( get_option( 'date_format' ), strtotime( $mvs_created ) ) : '';
 
 // Permalink for this media.
-$mvs_permalink = \WPMediaVerse\Repository\MediaRepository::get_permalink( $mvs_media_id );
+$mvs_permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $mvs_media_id );
 
 // Archive URL (base media page).
 $mvs_archive_url = home_url( '/media/' );
 ?>
 <div class="mvs-single-media mvs-page">
-	<?php \WPMediaVerse\Core\TemplateHelpers::render_back_link( 'single-media' ); ?>
+	<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_back_link( 'single-media' ); ?>
 	<article id="mvs-media-<?php echo absint( $mvs_media_id ); ?>" class="mvs-media-article">
 		<header class="mvs-media-header">
 			<div class="mvs-media-header-row">
@@ -181,6 +181,16 @@ $mvs_archive_url = home_url( '/media/' );
 					<img src="<?php echo esc_url( $mvs_file_url ); ?>" alt="<?php echo esc_attr( $mvs_title ); ?>" />
 				</div>
 			<?php elseif ( $is_video ) : ?>
+				<?php
+				// Lock the player box to the source's aspect ratio so the
+				// frame stays the same height before play (poster), during
+				// play, and after pause. Without this, the <video> element
+				// briefly reflows when metadata loads or playback starts.
+				$mvs_video_aspect_style = '';
+				if ( (int) $mvs_width > 0 && (int) $mvs_height > 0 ) {
+					$mvs_video_aspect_style = sprintf( ' style="aspect-ratio:%d/%d;"', (int) $mvs_width, (int) $mvs_height );
+				}
+				?>
 				<div class="mvs-media-video"
 					data-wp-interactive="mvs/media-player"
 					<?php
@@ -194,8 +204,13 @@ $mvs_archive_url = home_url( '/media/' );
 						)
 					);
 					?>
-					data-wp-init="actions.trackView">
+					data-wp-init="actions.trackView"
+					<?php echo $mvs_video_aspect_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped above. ?>
+				>
 					<video controls preload="metadata"
+						<?php if ( (int) $mvs_width > 0 && (int) $mvs_height > 0 ) : ?>
+							width="<?php echo (int) $mvs_width; ?>" height="<?php echo (int) $mvs_height; ?>"
+						<?php endif; ?>
 						<?php echo $poster_url ? 'poster="' . esc_url( $poster_url ) . '"' : ''; ?>
 						data-wp-on--play="actions.onPlay"
 						data-wp-on--pause="actions.onPause">
@@ -248,7 +263,7 @@ $mvs_archive_url = home_url( '/media/' );
 
 		// Get tags from taxonomy (media_id -> mvs_tag term relationships via mvs_media_meta).
 		$mvs_tag_names = array();
-		$mvs_tags_raw  = \WPMediaVerse\Repository\MediaRepository::get( $mvs_media_id, 'tags' );
+		$mvs_tags_raw  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'tags' );
 		if ( $mvs_tags_raw ) {
 			// Handle both JSON array and comma-separated formats.
 			$decoded = json_decode( $mvs_tags_raw, true );
@@ -330,6 +345,8 @@ $mvs_archive_url = home_url( '/media/' );
 			'editTitle'          => $mvs_title,
 			'editDesc'           => $mvs_desc,
 			'editPrivacy'        => $current_privacy,
+			// Off by default — title edits leave the URL slug alone.
+			'editRegenerateSlug' => false,
 			'editTags'           => $mvs_tag_names,
 			'tagInput'           => '',
 			'tagResults'         => array(),
@@ -431,15 +448,25 @@ $mvs_archive_url = home_url( '/media/' );
 					<textarea data-wp-on--input="actions.updateEditDesc"
 						data-wp-bind--value="context.editDesc"></textarea>
 				</div>
-				<div class="mvs-field">
-					<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-					<select data-wp-on--change="actions.updateEditPrivacy">
-						<?php foreach ( array( 'public', 'members', 'private' ) as $opt ) : ?>
-							<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $current_privacy, $opt ); ?>>
-								<?php echo esc_html( ucfirst( $opt ) ); ?>
-							</option>
-						<?php endforeach; ?>
-					</select>
+				<!-- Privacy + slug-regenerate share a row to save vertical space.
+				     Off by default — keeps inbound URLs stable. -->
+				<div class="mvs-field-row">
+					<div class="mvs-field mvs-field--inline">
+						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+						<select data-wp-on--change="actions.updateEditPrivacy">
+							<?php foreach ( array( 'public', 'members', 'private' ) as $opt ) : ?>
+								<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $current_privacy, $opt ); ?>>
+									<?php echo esc_html( ucfirst( $opt ) ); ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
+						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
+							<input type="checkbox" class="mvs-edit-regenerate-slug" />
+							<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
+						</label>
+					</div>
 				</div>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>

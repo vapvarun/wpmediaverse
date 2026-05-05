@@ -157,7 +157,7 @@ function run_user_flows_tests(): array {
 		'content' => 'Notification content test.',
 	) );
 
-	$media_title = \WPMediaVerse\Repository\MediaRepository::get( $media_b, 'title' );
+	$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_b, 'title' );
 
 	wp_set_current_user( $user_b );
 	$r = rest( 'GET', '/mvs/v1/me/notifications' );
@@ -176,7 +176,7 @@ function run_user_flows_tests(): array {
 	assert_test( 'No "Hello world!" in notifications', ! $found_wrong_title ) ? $p++ : $f++;
 
 	// Verify notification URL points to media permalink, not a WP post.
-	$expected_url = \WPMediaVerse\Repository\MediaRepository::get_permalink( $media_b );
+	$expected_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_b );
 	$found_url    = false;
 	foreach ( $r['data'] as $n ) {
 		if ( ( $n['url'] ?? '' ) === $expected_url ) {
@@ -187,7 +187,7 @@ function run_user_flows_tests(): array {
 	assert_test( 'Notification URL is MVS media permalink', $found_url, 'expected: ' . $expected_url ) ? $p++ : $f++;
 
 	// Verify notification recipient is the media owner (from mvs_media_index, not wp_posts).
-	$mvs_owner = (int) \WPMediaVerse\Repository\MediaRepository::get( $media_b, 'post_author' );
+	$mvs_owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_b, 'post_author' );
 	assert_test( 'Notification sent to MVS media owner', $mvs_owner === $user_b, "mvs_owner=$mvs_owner user_b=$user_b" ) ? $p++ : $f++;
 
 	wp_set_current_user( $user_a );
