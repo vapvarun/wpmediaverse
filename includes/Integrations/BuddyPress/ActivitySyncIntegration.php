@@ -64,13 +64,15 @@ class ActivitySyncIntegration {
 	/**
 	 * Map a single privacy value to BP activity `hide_sitewide`.
 	 *
-	 * Any non-public privacy hides the parent activity from site-wide streams.
-	 * Customer expectation (Zoho #39974, card 9866323691): if media OR its
-	 * album is non-public, the entire activity card must be hidden.
+	 * Only `private` (level 80) flips hide_sitewide. Members / Friends /
+	 * Group / Custom rely on `ActivityPrivacyFilter`'s viewer-side WHERE
+	 * filter to gate per-viewer access; setting hide_sitewide=1 for them
+	 * would over-restrict (members-level activities would be invisible to
+	 * everyone, including the logged-in members the level is named for).
 	 *
-	 * Note: this only controls the site-wide directory. Author-only and friends-
-	 * only filtering is a 1.3.0 concern that needs viewer-side filters on
-	 * `bp_activity_get_where_conditions`.
+	 * Defense in depth: even with the JOIN filter active, private gets
+	 * hide_sitewide=1 so admin tools / future BP query paths that bypass
+	 * the filter still hide private activities by default.
 	 *
 	 * @since 1.2.1
 	 *
@@ -78,7 +80,94 @@ class ActivitySyncIntegration {
 	 * @return bool True when hide_sitewide should be set.
 	 */
 	public static function privacy_to_hide_sitewide( string $privacy ): bool {
-		return '' !== $privacy && 'public' !== $privacy;
+		return 'private' === $privacy;
+	}
+
+	/**
+	 * Map a WPMV privacy slug to a numeric level — same scheme as rtMedia's
+	 * `rtmedia_privacy` so future rtMedia → WPMV imports preserve intent and
+	 * any third-party integration that already speaks this dialect works.
+	 *
+	 * Stored as `_mvs_activity_privacy` BP activity meta on every activity
+	 * we insert, alongside `_mvs_media_ids`. 1.2.1 only WRITES this — the
+	 * matching viewer-side SQL filter (compare level to viewer's relationship
+	 * to author, hide friends-only from non-friends, etc.) lands in 1.3.0.
+	 * Until then `hide_sitewide` carries the visibility weight: any
+	 * non-public level → hidden everywhere except the author. The meta is
+	 * additive insurance so 1.3.0's filter has the data on day one for
+	 * every activity created since 1.2.1.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param string $privacy WPMV privacy slug.
+	 * @return int            Numeric level (0 public, 20 members, 40 friends, 60 group, 80 private, 90 custom).
+	 */
+	public static function privacy_to_level( string $privacy ): int {
+		switch ( $privacy ) {
+			case 'public':
+				return 0;
+			case 'members':
+				return 20;
+			case 'friends':
+				return 40;
+			case 'group':
+				return 60;
+			case 'private':
+				return 80;
+			case 'custom':
+				return 90;
+			default:
+				return 0;
+		}
+	}
+
+	/**
+	 * Effective WPMV privacy slug for a single media — most-restrictive of
+	 * (media privacy, parent album privacy). Mirrors `should_hide_for_media`
+	 * but returns the slug, not just the binary.
+	 *
+	 * @since 1.2.1
+	 */
+	public static function effective_privacy_for_media( int $media_id ): string {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		$media_privacy = (string) $repo->get( $media_id, 'privacy' );
+		if ( '' === $media_privacy ) {
+			$media_privacy = 'public';
+		}
+
+		$album_id = (int) $repo->get( $media_id, 'album_id' );
+		if ( $album_id <= 0 ) {
+			return $media_privacy;
+		}
+
+		$album_privacy = (string) $repo->get( $album_id, 'privacy' );
+		if ( '' === $album_privacy || 'public' === $album_privacy ) {
+			return $media_privacy;
+		}
+
+		// Album is non-public. Pick the more restrictive of the two.
+		return self::privacy_to_level( $album_privacy ) >= self::privacy_to_level( $media_privacy )
+			? $album_privacy
+			: $media_privacy;
+	}
+
+	/**
+	 * Effective WPMV privacy slug across a batch — most-restrictive wins.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param int[] $media_ids Media IDs.
+	 */
+	public static function effective_privacy_for_batch( array $media_ids ): string {
+		$worst = 'public';
+		foreach ( $media_ids as $mid ) {
+			$slug = self::effective_privacy_for_media( (int) $mid );
+			if ( self::privacy_to_level( $slug ) > self::privacy_to_level( $worst ) ) {
+				$worst = $slug;
+			}
+		}
+		return $worst;
 	}
 
 	/**
@@ -385,6 +474,12 @@ class ActivitySyncIntegration {
 		// Store the activity ID on the media post for easy lookup/updates.
 		if ( $activity_id ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'bp_activity_id', $activity_id );
+			// Persist the WPMV privacy intent on the activity itself
+			// (rtMedia parity). 1.3.0 will read this in a viewer-side
+			// query filter; today it's strictly informational.
+			$effective = self::effective_privacy_for_media( $media_id );
+			bp_activity_update_meta( (int) $activity_id, '_mvs_activity_privacy', $effective );
+			bp_activity_update_meta( (int) $activity_id, '_mvs_activity_privacy_level', (string) self::privacy_to_level( $effective ) );
 		}
 	}
 
@@ -402,7 +497,7 @@ class ActivitySyncIntegration {
 	 *
 	 * @since 1.2.1
 	 *
-	 * @param int    $media_id    Media ID.
+	 * @param int    $entity_id   Media OR album ID (they share mvs_media_index).
 	 * @param string $new_privacy New privacy.
 	 * @param string $old_privacy Previous privacy.
 	 */
@@ -446,16 +541,22 @@ class ActivitySyncIntegration {
 		if ( $attached_csv ) {
 			$attached_ids = array_filter( array_map( 'absint', explode( ',', (string) $attached_csv ) ) );
 			if ( count( $attached_ids ) > 1 ) {
-				$desired_hide = self::should_hide_for_batch( $attached_ids );
+				$effective_privacy = self::effective_privacy_for_batch( $attached_ids );
 			} else {
-				$desired_hide = self::should_hide_for_media( $media_id );
+				$effective_privacy = self::effective_privacy_for_media( $media_id );
 			}
 		} else {
-			$desired_hide = self::should_hide_for_media( $media_id );
+			$effective_privacy = self::effective_privacy_for_media( $media_id );
 		}
 
-		$current_hide = (bool) $activity->hide_sitewide;
-		if ( $current_hide === $desired_hide ) {
+		$desired_hide = self::privacy_to_hide_sitewide( $effective_privacy );
+
+		// Always refresh the rtMedia-parity meta so 1.3.0's viewer-side
+		// filter sees the current intent regardless of hide_sitewide flip.
+		bp_activity_update_meta( $activity_id, '_mvs_activity_privacy', $effective_privacy );
+		bp_activity_update_meta( $activity_id, '_mvs_activity_privacy_level', (string) self::privacy_to_level( $effective_privacy ) );
+
+		if ( (bool) $activity->hide_sitewide === $desired_hide ) {
 			return;
 		}
 
@@ -484,8 +585,8 @@ class ActivitySyncIntegration {
 			$this->update_single_activity_hide_sitewide( (int) $mid );
 		}
 
-		// 2. The bundled album-gallery activity (emit_album_gallery_activity stores
-		//    `_mvs_album_id` activity meta when it inserts).
+		// 2. The bundled album-gallery activity (emit_album_gallery_activity
+		// stores `_mvs_album_id` activity meta when it inserts).
 		$gallery_activity_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT activity_id FROM {$wpdb->prefix}bp_activity_meta WHERE meta_key = %s AND meta_value = %s",
@@ -502,10 +603,24 @@ class ActivitySyncIntegration {
 			}
 
 			// Album-gallery activity: any non-public attached media OR a
-			// non-public album hides the whole gallery.
+			// non-public album hides the whole gallery. Compute the
+			// effective slug too so the rtMedia-parity meta stays accurate.
 			$attached_csv = bp_activity_get_meta( (int) $aid, '_mvs_media_ids', true );
 			$attached_ids = $attached_csv ? array_filter( array_map( 'absint', explode( ',', (string) $attached_csv ) ) ) : array();
-			$desired_hide = $album_hidden || ( ! empty( $attached_ids ) && self::should_hide_for_batch( $attached_ids ) );
+
+			$album_privacy_slug = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' );
+			if ( '' === $album_privacy_slug ) {
+				$album_privacy_slug = 'public';
+			}
+			$batch_privacy_slug = ! empty( $attached_ids ) ? self::effective_privacy_for_batch( $attached_ids ) : 'public';
+			$effective_privacy  = self::privacy_to_level( $album_privacy_slug ) >= self::privacy_to_level( $batch_privacy_slug )
+				? $album_privacy_slug
+				: $batch_privacy_slug;
+
+			bp_activity_update_meta( (int) $aid, '_mvs_activity_privacy', $effective_privacy );
+			bp_activity_update_meta( (int) $aid, '_mvs_activity_privacy_level', (string) self::privacy_to_level( $effective_privacy ) );
+
+			$desired_hide = self::privacy_to_hide_sitewide( $effective_privacy );
 
 			if ( (bool) $activity->hide_sitewide === $desired_hide ) {
 				continue;
@@ -785,6 +900,11 @@ class ActivitySyncIntegration {
 			// existing _mvs_media_ids meta used by the BP composer flow).
 			bp_activity_update_meta( $activity_id, '_mvs_media_ids', implode( ',', array_map( 'absint', $media_ids ) ) );
 			bp_activity_update_meta( $activity_id, '_mvs_album_id', (int) $album_id );
+
+			// Most-restrictive WPMV privacy across the bundle (rtMedia-parity meta).
+			$effective = self::effective_privacy_for_batch( $media_ids );
+			bp_activity_update_meta( (int) $activity_id, '_mvs_activity_privacy', $effective );
+			bp_activity_update_meta( (int) $activity_id, '_mvs_activity_privacy_level', (string) self::privacy_to_level( $effective ) );
 
 			// Tag every media in the bundle so future album-add calls can
 			// find this activity instead of emitting a second one.

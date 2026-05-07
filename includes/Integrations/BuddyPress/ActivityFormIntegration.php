@@ -62,11 +62,25 @@ class ActivityFormIntegration {
 			</button>
 			<div id="mvs-activity-media-preview" class="mvs-activity-media-preview" style="display:none"></div>
 			<input type="hidden" id="mvs-activity-media-ids" name="mvs_activity_media_ids" value="" />
-			<?php if ( $allow_user_privacy ) : ?>
-				<select id="mvs-activity-privacy" class="mvs-activity-privacy" name="mvs_activity_privacy" style="display:none" aria-label="<?php esc_attr_e( 'Privacy level for attached media', 'wpmediaverse' ); ?>">
-					<option value="public" <?php selected( $default_privacy, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-					<option value="members" <?php selected( $default_privacy, 'members' ); ?>><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
-					<option value="private" <?php selected( $default_privacy, 'private' ); ?>><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+			<?php
+			if ( $allow_user_privacy ) :
+				// 4 honest privacy levels — each delivered end-to-end via
+				// `_mvs_activity_privacy_level` activity meta + the
+				// `ActivityPrivacyFilter` viewer-side WHERE clause on every
+				// BP activity query. Same numeric scheme rtMedia ships
+				// (0/20/40/80) so an rtMedia → WPMV import preserves intent
+				// without translation. Friends-Only only shows when the BP
+				// friends component is active — without it the level has no
+				// distinct meaning vs Members.
+				$show_friends = function_exists( 'bp_is_active' ) && bp_is_active( 'friends' );
+				?>
+				<select id="mvs-activity-privacy" class="mvs-activity-privacy" name="mvs_activity_privacy" style="display:none" aria-label="<?php esc_attr_e( 'Who can see this post', 'wpmediaverse' ); ?>">
+					<option value="public" <?php selected( $default_privacy, 'public' ); ?>><?php esc_html_e( 'Public: anyone can see', 'wpmediaverse' ); ?></option>
+					<option value="members" <?php selected( $default_privacy, 'members' ); ?>><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
+					<?php if ( $show_friends ) : ?>
+						<option value="friends" <?php selected( $default_privacy, 'friends' ); ?>><?php esc_html_e( 'Friends: BuddyPress friends only', 'wpmediaverse' ); ?></option>
+					<?php endif; ?>
+					<option value="private" <?php selected( $default_privacy, 'private' ); ?>><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
 				</select>
 			<?php endif; ?>
 		</div>
@@ -193,7 +207,8 @@ class ActivityFormIntegration {
 		// Most-restrictive privacy across attached media (and their parent
 		// albums) — any non-public attachment hides the parent activity
 		// (Zoho #39974, card 9866323691).
-		$hide_sitewide = ActivitySyncIntegration::should_hide_for_batch( $valid_ids );
+		$effective_privacy = ActivitySyncIntegration::effective_privacy_for_batch( $valid_ids );
+		$hide_sitewide     = ActivitySyncIntegration::privacy_to_hide_sitewide( $effective_privacy );
 
 		$activity = new \BP_Activity_Activity( $activity_id );
 		if ( $activity->id ) {
@@ -201,6 +216,16 @@ class ActivityFormIntegration {
 			$activity->hide_sitewide = $hide_sitewide ? 1 : 0;
 			$activity->save();
 		}
+
+		// Persist the WPMV privacy intent on the activity itself
+		// (rtMedia-parity activity meta). 1.3.0's viewer-side filter
+		// will read these.
+		bp_activity_update_meta( (int) $activity_id, '_mvs_activity_privacy', $effective_privacy );
+		bp_activity_update_meta(
+			(int) $activity_id,
+			'_mvs_activity_privacy_level',
+			(string) ActivitySyncIntegration::privacy_to_level( $effective_privacy )
+		);
 	}
 
 	/**

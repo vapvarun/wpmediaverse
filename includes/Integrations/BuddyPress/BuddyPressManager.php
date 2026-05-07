@@ -28,6 +28,10 @@ class BuddyPressManager {
 			( new ActivitySyncIntegration() )->init();
 			( new ActivityContentIntegration() )->init();
 			( new ActivityFormIntegration() )->init();
+			// Viewer-side privacy filter — gates the activity stream by the
+			// `_mvs_activity_privacy_level` meta written by ActivitySyncIntegration.
+			// Public/Members/Friends/Private end-to-end (1.2.1+).
+			( new ActivityPrivacyFilter() )->init();
 		}
 
 		// BP notifications integration:
