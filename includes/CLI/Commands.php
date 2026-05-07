@@ -869,6 +869,22 @@ class Commands {
 
 			// Skip if destination already has the file (idempotent re-run).
 			if ( $dest_driver->exists( $rel_path ) ) {
+				// Backfill file_url for files migrated before Stage 3.5
+				// existed (pre-1.2.1). Idempotent — wpdb->update is a
+				// no-op when the value already matches.
+				if ( ! $dry_run ) {
+					$expected = $dest_driver->url( $rel_path );
+					if ( '' !== $expected ) {
+						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+						$wpdb->update(
+							$wpdb->prefix . 'mvs_media_index',
+							array( 'file_url' => $expected ),
+							array( 'media_id' => (int) $row->media_id ),
+							array( '%s' ),
+							array( '%d' )
+						);
+					}
+				}
 				++$skipped;
 				$progress->tick();
 				continue;
@@ -906,6 +922,25 @@ class Commands {
 				++$failed;
 				$progress->tick();
 				continue;
+			}
+
+			// Stage 3.5 — refresh mvs_media_index.file_url to the destination
+			// driver's URL. Display surfaces (lightbox, explore, BP activity
+			// rebuild) don't depend on this column — they sign URLs through
+			// the active driver dynamically. But storage-internal callers
+			// (UploadService thumb-fallback, WatermarkService) read the raw
+			// column via get_raw('file_url') and would otherwise see the
+			// old driver's URL until the next re-upload.
+			$new_url = $dest_driver->url( $rel_path );
+			if ( '' !== $new_url ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+				$wpdb->update(
+					$wpdb->prefix . 'mvs_media_index',
+					array( 'file_url' => $new_url ),
+					array( 'media_id' => (int) $row->media_id ),
+					array( '%s' ),
+					array( '%d' )
+				);
 			}
 
 			// Stage 4 — delete the source unless keep-source flag set.
