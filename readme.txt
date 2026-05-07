@@ -129,6 +129,12 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 * New: **Filename strategy.** New setting `mvs_filename_strategy`: `original_sanitized` (default for upgrade installs — preserves prior behaviour) or `hashed` (default for fresh installs — 16 hex chars + sanitized extension). Hashed mode preserves the user-facing filename in `mvs_media_meta.original_filename` and surfaces it via REST + Content-Disposition headers, so end-user downloads still see "vacation-photo.jpg" even though the on-disk file is `a3f8c1b2.jpg`. Existing media is **never renamed** — only the strategy applied to new uploads after the setting flips. New filter `mvs_filename_strategy` for site-level overrides.
 
+**New: cloud-storage tooling (Pro paired)**
+
+* New: **`wp mvs migrate-storage --from=<driver> --to=<driver>` CLI** — moves every media file between storage drivers (local ↔ s3 ↔ bunnycdn) with verify-before-delete safety. Idempotent (re-runs skip already-migrated rows). Supports `--dry-run`, `--keep-source` (safety copy), `--media-id` (single-row repair), `--limit` (batched runs). Does NOT auto-flip the active `mvs_storage_driver` option — operator does that explicitly after verification. Fixes the long-standing "no migration tool when admin switches storage backend" gap.
+* New: **`StorageDriverInterface::download( string $path, string $local_dest ): bool`** — required new contract method on storage drivers (also unblocks future cloud-mode multi-size thumbnail generation, on the 1.3.0 list). Free's LocalDriver and Pro's S3 + BunnyCDN drivers implement it. Third-party storage drivers must add this method or extend an abstract base — backwards-incompatible only at the implementation level.
+* New: **`docs/cloud-storage-verification.md`** — full QA matrix (4 phases: fresh upload, delete cleanup, 5 migration directions, failure modes), operator runbook for the local→s3 cutover, and 2 documented gaps with 1.3.0 fix paths (multi-size thumbnails on cloud + signed-GET path for private buckets).
+
 **Other**
 
 * New: action hook `mvs_media_privacy_changed( $media_id, $new_privacy, $old_privacy )` — fires from `MediaRepository::set` and `set_many` when the privacy column is UPDATEd (not on INSERT). Internally consumed by `ActivitySyncIntegration::sync_activity_privacy`.
