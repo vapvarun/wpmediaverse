@@ -395,6 +395,16 @@ class MediaRepository implements MediaRepositoryInterface {
 		global $wpdb;
 
 		if ( in_array( $key, self::$index_columns, true ) ) {
+			$old_privacy = null;
+			if ( 'privacy' === $key ) {
+				$old_privacy = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
+						$media_id
+					)
+				);
+			}
+
 			$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
@@ -420,6 +430,21 @@ class MediaRepository implements MediaRepositoryInterface {
 						'created_at' => current_time( 'mysql', true ),
 					)
 				);
+			}
+
+			// Fire only on UPDATE (old value existed) and when value actually changes.
+			// Inserts skip — uploaders set privacy at activity-creation time directly.
+			if ( 'privacy' === $key && null !== $old_privacy && (string) $old_privacy !== (string) $value ) {
+				/**
+				 * Fires when a media item's privacy changes.
+				 *
+				 * @since 1.2.1
+				 *
+				 * @param int    $media_id    Media ID.
+				 * @param string $new_privacy New privacy value.
+				 * @param string $old_privacy Previous privacy value.
+				 */
+				do_action( 'mvs_media_privacy_changed', $media_id, (string) $value, (string) $old_privacy );
 			}
 			return;
 		}
@@ -463,6 +488,16 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		// Bulk update index columns in one query.
 		if ( ! empty( $index_data ) ) {
+			$old_privacy = null;
+			if ( array_key_exists( 'privacy', $index_data ) ) {
+				$old_privacy = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
+						$media_id
+					)
+				);
+			}
+
 			$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
@@ -485,6 +520,11 @@ class MediaRepository implements MediaRepositoryInterface {
 					$wpdb->prefix . 'mvs_media_index',
 					$index_data
 				);
+			}
+
+			if ( array_key_exists( 'privacy', $index_data ) && null !== $old_privacy && (string) $old_privacy !== (string) $index_data['privacy'] ) {
+				/** This action is documented in MediaRepository::set(). */
+				do_action( 'mvs_media_privacy_changed', $media_id, (string) $index_data['privacy'], (string) $old_privacy );
 			}
 		}
 

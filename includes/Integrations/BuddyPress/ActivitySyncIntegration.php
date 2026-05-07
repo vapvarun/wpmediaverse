@@ -57,7 +57,100 @@ class ActivitySyncIntegration {
 		add_action( 'mvs_comment_created', array( $this, 'sync_media_comment_to_activity' ), 10, 5 );
 		add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
 		add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
+		add_action( 'mvs_media_privacy_changed', array( $this, 'sync_activity_privacy' ), 10, 3 );
 		add_action( 'bp_register_activity_actions', array( $this, 'register_activity_actions' ) );
+	}
+
+	/**
+	 * Map a single privacy value to BP activity `hide_sitewide`.
+	 *
+	 * Any non-public privacy hides the parent activity from site-wide streams.
+	 * Customer expectation (Zoho #39974, card 9866323691): if media OR its
+	 * album is non-public, the entire activity card must be hidden.
+	 *
+	 * Note: this only controls the site-wide directory. Author-only and friends-
+	 * only filtering is a 1.3.0 concern that needs viewer-side filters on
+	 * `bp_activity_get_where_conditions`.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param string $privacy Privacy value (public|members|private|friends|group|custom).
+	 * @return bool True when hide_sitewide should be set.
+	 */
+	public static function privacy_to_hide_sitewide( string $privacy ): bool {
+		return '' !== $privacy && 'public' !== $privacy;
+	}
+
+	/**
+	 * Effective hide_sitewide for a single media — considers BOTH media privacy
+	 * AND its parent album's privacy. Most-restrictive wins.
+	 *
+	 * If the media belongs to an album and the album is non-public, the activity
+	 * is hidden even when the media itself is public. Same for the inverse.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param int $media_id Media ID (or album ID — albums + media share the table).
+	 * @return bool
+	 */
+	public static function should_hide_for_media( int $media_id ): bool {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		$media_privacy = (string) $repo->get( $media_id, 'privacy' );
+		if ( self::privacy_to_hide_sitewide( $media_privacy ) ) {
+			return true;
+		}
+
+		$album_id = (int) $repo->get( $media_id, 'album_id' );
+		if ( $album_id > 0 ) {
+			$album_privacy = (string) $repo->get( $album_id, 'privacy' );
+			if ( self::privacy_to_hide_sitewide( $album_privacy ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Effective hide_sitewide across a batch of media — short-circuits on
+	 * the first non-public sibling (or non-public album).
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param int[] $media_ids Media IDs in the batch.
+	 * @return bool
+	 */
+	public static function should_hide_for_batch( array $media_ids ): bool {
+		if ( empty( $media_ids ) ) {
+			return false;
+		}
+
+		$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$batch = $repo->get_batch( $media_ids );
+
+		$album_ids = array();
+		foreach ( $batch as $row ) {
+			$row_privacy = isset( $row['privacy'] ) ? (string) $row['privacy'] : '';
+			if ( self::privacy_to_hide_sitewide( $row_privacy ) ) {
+				return true;
+			}
+			if ( ! empty( $row['album_id'] ) ) {
+				$album_ids[ (int) $row['album_id'] ] = true;
+			}
+		}
+
+		if ( ! empty( $album_ids ) ) {
+			$albums = $repo->get_batch( array_keys( $album_ids ) );
+			foreach ( $albums as $album ) {
+				$album_privacy = isset( $album['privacy'] ) ? (string) $album['privacy'] : '';
+				if ( self::privacy_to_hide_sitewide( $album_privacy ) ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -266,13 +359,16 @@ class ActivitySyncIntegration {
 			esc_html( $type_label )
 		);
 
+		// Honour media + album privacy at activity creation — non-public media
+		// (or media in a non-public album) must not leak the activity card.
 		$activity_args = array(
-			'user_id'   => $user_id,
-			'component' => 'wpmediaverse',
-			'type'      => 'mvs_media_upload',
-			'action'    => $action_str,
-			'content'   => $thumbnail,
-			'item_id'   => $media_id,
+			'user_id'       => $user_id,
+			'component'     => 'wpmediaverse',
+			'type'          => 'mvs_media_upload',
+			'action'        => $action_str,
+			'content'       => $thumbnail,
+			'item_id'       => $media_id,
+			'hide_sitewide' => self::should_hide_for_media( $media_id ),
 		);
 
 		// If media belongs to a group, record activity in the group stream.
@@ -289,6 +385,134 @@ class ActivitySyncIntegration {
 		// Store the activity ID on the media post for easy lookup/updates.
 		if ( $activity_id ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'bp_activity_id', $activity_id );
+		}
+	}
+
+	/**
+	 * Sync the linked BP activity's hide_sitewide when a media's privacy changes.
+	 *
+	 * Listens on `mvs_media_privacy_changed`. The single-upload path stores
+	 * `bp_activity_id` on the media (record_upload_activity); the BP composer
+	 * path stores it via attach_media_to_activity. When privacy flips later
+	 * (e.g. user edits via the dashboard cog modal), this propagates the
+	 * change to the activity row so the site-wide stream stays in sync.
+	 *
+	 * Composer activities can have multiple attached media — we recompute the
+	 * most-restrictive privacy across siblings, not the single new value.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param int    $media_id    Media ID.
+	 * @param string $new_privacy New privacy.
+	 * @param string $old_privacy Previous privacy.
+	 */
+	public function sync_activity_privacy( int $entity_id, string $new_privacy, string $old_privacy = '' ): void {
+		unset( $new_privacy, $old_privacy );
+
+		if ( ! class_exists( '\BP_Activity_Activity' ) ) {
+			return;
+		}
+
+		// Albums share mvs_media_index with media — detect by post type so we can
+		// fan out: every media in this album, plus the album-gallery activity if any.
+		if ( 'mvs_album' === get_post_type( $entity_id ) ) {
+			$this->sync_album_activities( $entity_id );
+			return;
+		}
+
+		$this->update_single_activity_hide_sitewide( $entity_id );
+	}
+
+	/**
+	 * Recompute hide_sitewide for the BP activity linked to a single media.
+	 * Considers media + album privacy; for composer activities recomputes
+	 * across all attached siblings (a single sibling becoming public must
+	 * NOT unhide an activity that still has another non-public attachment).
+	 *
+	 * @param int $media_id Media ID.
+	 */
+	private function update_single_activity_hide_sitewide( int $media_id ): void {
+		$activity_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' );
+		if ( $activity_id <= 0 ) {
+			return;
+		}
+
+		$activity = new \BP_Activity_Activity( $activity_id );
+		if ( empty( $activity->id ) ) {
+			return;
+		}
+
+		$attached_csv = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
+		if ( $attached_csv ) {
+			$attached_ids = array_filter( array_map( 'absint', explode( ',', (string) $attached_csv ) ) );
+			if ( count( $attached_ids ) > 1 ) {
+				$desired_hide = self::should_hide_for_batch( $attached_ids );
+			} else {
+				$desired_hide = self::should_hide_for_media( $media_id );
+			}
+		} else {
+			$desired_hide = self::should_hide_for_media( $media_id );
+		}
+
+		$current_hide = (bool) $activity->hide_sitewide;
+		if ( $current_hide === $desired_hide ) {
+			return;
+		}
+
+		$activity->hide_sitewide = $desired_hide ? 1 : 0;
+		$activity->save();
+	}
+
+	/**
+	 * Album-privacy change fan-out: update every activity that links into
+	 * this album, both per-media upload activities and the bundled gallery
+	 * activity (located by `_mvs_album_id` activity meta).
+	 *
+	 * @param int $album_id Album ID.
+	 */
+	private function sync_album_activities( int $album_id ): void {
+		global $wpdb;
+
+		// 1. Per-media upload activities for media in this album.
+		$media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE album_id = %d",
+				$album_id
+			)
+		);
+		foreach ( $media_ids as $mid ) {
+			$this->update_single_activity_hide_sitewide( (int) $mid );
+		}
+
+		// 2. The bundled album-gallery activity (emit_album_gallery_activity stores
+		//    `_mvs_album_id` activity meta when it inserts).
+		$gallery_activity_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT activity_id FROM {$wpdb->prefix}bp_activity_meta WHERE meta_key = %s AND meta_value = %s",
+				'_mvs_album_id',
+				(string) $album_id
+			)
+		);
+		$album_hidden = self::privacy_to_hide_sitewide( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' ) );
+
+		foreach ( $gallery_activity_ids as $aid ) {
+			$activity = new \BP_Activity_Activity( (int) $aid );
+			if ( empty( $activity->id ) ) {
+				continue;
+			}
+
+			// Album-gallery activity: any non-public attached media OR a
+			// non-public album hides the whole gallery.
+			$attached_csv = bp_activity_get_meta( (int) $aid, '_mvs_media_ids', true );
+			$attached_ids = $attached_csv ? array_filter( array_map( 'absint', explode( ',', (string) $attached_csv ) ) ) : array();
+			$desired_hide = $album_hidden || ( ! empty( $attached_ids ) && self::should_hide_for_batch( $attached_ids ) );
+
+			if ( (bool) $activity->hide_sitewide === $desired_hide ) {
+				continue;
+			}
+
+			$activity->hide_sitewide = $desired_hide ? 1 : 0;
+			$activity->save();
 		}
 	}
 
@@ -537,6 +761,11 @@ class ActivitySyncIntegration {
 			$album_link
 		);
 
+		// Most-restrictive privacy across the bundle — any non-public attachment
+		// (or non-public parent album) hides the entire gallery activity.
+		$album_hidden  = self::privacy_to_hide_sitewide( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' ) );
+		$hide_sitewide = $album_hidden || self::should_hide_for_batch( $media_ids );
+
 		$activity_id = bp_activity_add(
 			array(
 				'user_id'           => $user_id,
@@ -546,7 +775,7 @@ class ActivitySyncIntegration {
 				'content'           => $content,
 				'item_id'           => $album_id,
 				'secondary_item_id' => 0,
-				'hide_sitewide'     => false,
+				'hide_sitewide'     => $hide_sitewide,
 			)
 		);
 

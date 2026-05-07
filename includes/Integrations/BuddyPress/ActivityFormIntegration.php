@@ -190,9 +190,15 @@ class ActivityFormIntegration {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $mid, 'bp_activity_id', $activity_id );
 		}
 
+		// Most-restrictive privacy across attached media (and their parent
+		// albums) — any non-public attachment hides the parent activity
+		// (Zoho #39974, card 9866323691).
+		$hide_sitewide = ActivitySyncIntegration::should_hide_for_batch( $valid_ids );
+
 		$activity = new \BP_Activity_Activity( $activity_id );
 		if ( $activity->id ) {
-			$activity->content = $new_content;
+			$activity->content       = $new_content;
+			$activity->hide_sitewide = $hide_sitewide ? 1 : 0;
 			$activity->save();
 		}
 	}
