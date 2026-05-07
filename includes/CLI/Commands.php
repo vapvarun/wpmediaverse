@@ -1043,7 +1043,11 @@ class Commands {
 
 		global $wpdb;
 
-		$where = "i.status IN ('publish','draft') AND i.file_path IS NOT NULL AND i.file_path != '' AND i.file_type LIKE 'image/%'";
+		// IMPORTANT: only public media. Non-public media routes through the
+		// gated /serve proxy which (as of 1.2.2) can only read from local
+		// disk — flipping non-public thumb meta to CDN URLs would 404 the
+		// proxy. Cloud-aware /serve is on the 1.3.0 list.
+		$where = "i.status IN ('publish','draft') AND i.file_path IS NOT NULL AND i.file_path != '' AND i.file_type LIKE 'image/%' AND i.privacy = 'public'";
 		if ( $media_id > 0 ) {
 			$where .= $wpdb->prepare( ' AND i.media_id = %d', $media_id );
 		}
@@ -1152,6 +1156,180 @@ class Commands {
 				$migrated,
 				$skipped,
 				$failed
+			)
+		);
+	}
+
+	/**
+	 * Delete local copies of media that are verified on the active cloud
+	 * driver. Use after a successful `wp mvs migrate-storage --keep-source`
+	 * run + a verification window where the operator confirmed the cloud
+	 * driver serves all media correctly.
+	 *
+	 * For each media row: verifies the original AND every thumbnail variant
+	 * exists on the cloud driver via `$driver->exists($rel_path)`, then
+	 * deletes the local file. Idempotent — files that don't exist locally
+	 * (already cleaned) are silent no-ops.
+	 *
+	 * **Irreversible.** After running this, flipping back to driver=local
+	 * means the site has no source files. To go back to local, run
+	 * `wp mvs migrate-storage --from=cloud --to=local` first (which
+	 * downloads everything back) before flipping the driver.
+	 *
+	 * Pre-conditions checked at runtime:
+	 *   - Active driver must NOT be local (prevents self-delete on a local-
+	 *     only site).
+	 *   - Each candidate file must exist on the cloud driver before we
+	 *     delete the local copy. A failed exists() means we keep the local
+	 *     file — never an orphan.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Walk the candidate list and report which files would be deleted.
+	 *   No files removed.
+	 *
+	 * [--media-id=<id>]
+	 * : Process a single media row only.
+	 *
+	 * [--limit=<n>]
+	 * : Stop after this many rows.
+	 *
+	 * [--keep-thumbs]
+	 * : Only delete the original local file. Keep local thumbnail
+	 *   variants. Use when something on the site still relies on local
+	 *   thumbs (legacy theme, third-party integration). Default is to
+	 *   delete originals AND every -<width>x<height>.* variant in the
+	 *   same directory.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs cleanup-local --dry-run
+	 *     wp mvs cleanup-local --media-id=42
+	 *     wp mvs cleanup-local --limit=100
+	 *     wp mvs cleanup-local --keep-thumbs
+	 *
+	 * @subcommand cleanup-local
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional CLI args (unused).
+	 * @param array $assoc_args Associative CLI flags.
+	 */
+	public function cleanup_local( $args, $assoc_args ) {
+		unset( $args );
+
+		$dry_run     = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$media_id    = (int) Utils\get_flag_value( $assoc_args, 'media-id', 0 );
+		$limit       = (int) Utils\get_flag_value( $assoc_args, 'limit', 0 );
+		$keep_thumbs = (bool) Utils\get_flag_value( $assoc_args, 'keep-thumbs', false );
+
+		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		if ( 'local' === $driver_slug ) {
+			WP_CLI::error( 'Active driver is "local" — cleaning local files would break the site. Migrate to a cloud driver first.' );
+		}
+
+		$driver = apply_filters( 'mvs_storage_driver', null, $driver_slug );
+		if ( ! $driver instanceof \WPMediaVerse\Services\StorageDriverInterface ) {
+			WP_CLI::error( "Storage driver '{$driver_slug}' is not available. Pro plugin required for s3/bunnycdn." );
+		}
+
+		global $wpdb;
+
+		// IMPORTANT: only public media. Non-public media routes through the
+		// gated /serve proxy which (as of 1.2.2) can only read from local
+		// disk. Deleting locals for those would break /serve. Cloud-aware
+		// /serve lands in 1.3.0 — until then, private/members/friends
+		// media keeps its local copy as a hard requirement.
+		$where = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public'";
+		if ( $media_id > 0 ) {
+			$where .= $wpdb->prepare( ' AND media_id = %d', $media_id );
+		}
+		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( "SELECT media_id, file_path FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY media_id ASC{$limit_sql}" );
+
+		$total = count( $rows );
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No public media rows match. Nothing to clean. (Non-public media is intentionally not cleaned — see 1.3.0 for cloud-aware /serve.)' );
+			return;
+		}
+
+		WP_CLI::log( sprintf( 'Cleaning local copies for %d PUBLIC media row(s) on driver=%s%s%s', $total, $driver_slug, $dry_run ? ' [DRY-RUN]' : '', $keep_thumbs ? ' [KEEP-THUMBS]' : '' ) );
+
+		if ( ! $dry_run ) {
+			WP_CLI::warning( 'IRREVERSIBLE: this deletes local files. Make sure your cloud driver serves all media correctly before proceeding. To go back to driver=local later, run `wp mvs migrate-storage --from=' . $driver_slug . ' --to=local` first.' );
+			WP_CLI::confirm( 'Proceed?' );
+		}
+
+		$upload_basedir = (string) ( wp_upload_dir()['basedir'] ?? '' );
+		$wpmv_local_dir = trailingslashit( $upload_basedir ) . 'wpmediaverse';
+
+		$cleaned          = 0;
+		$skipped_no_file  = 0;
+		$skipped_no_cloud = 0;
+		$thumbs_removed   = 0;
+		$progress         = Utils\make_progress_bar( 'Cleaning local files', $total );
+
+		foreach ( $rows as $row ) {
+			$rel_path        = (string) $row->file_path;
+			$local_full_path = trailingslashit( $wpmv_local_dir ) . $rel_path;
+
+			// 1. Skip if no local file exists (already cleaned, or born-on-cloud).
+			if ( ! file_exists( $local_full_path ) ) {
+				++$skipped_no_file;
+				$progress->tick();
+				continue;
+			}
+
+			// 2. Verify the cloud HAS this file before we delete the local
+			// one. A failed exists() check means we keep the local copy —
+			// never create an orphan.
+			if ( ! $driver->exists( $rel_path ) ) {
+				WP_CLI::warning( sprintf( 'Cloud verify FAILED for media #%d (%s) — keeping local file as safety', $row->media_id, $rel_path ) );
+				++$skipped_no_cloud;
+				$progress->tick();
+				continue;
+			}
+
+			if ( $dry_run ) {
+				++$cleaned;
+				$progress->tick();
+				continue;
+			}
+
+			// 3. Delete the original.
+			wp_delete_file( $local_full_path );
+
+			// 4. Delete sibling variants (foo-300x200.jpg, foo-150x150.jpg, etc).
+			if ( ! $keep_thumbs ) {
+				$dir      = dirname( $local_full_path );
+				$base     = pathinfo( $local_full_path, PATHINFO_FILENAME );
+				$pattern  = $dir . '/' . $base . '-*x*.*';
+				$siblings = glob( $pattern ) ?: array();
+				foreach ( $siblings as $sibling ) {
+					if ( is_file( $sibling ) ) {
+						wp_delete_file( $sibling );
+						++$thumbs_removed;
+					}
+				}
+			}
+
+			++$cleaned;
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		$prefix = $dry_run ? '[dry-run] Would clean' : 'Cleaned';
+		WP_CLI::success(
+			sprintf(
+				'%s %d original(s)%s. Skipped: %d already-clean, %d not-on-cloud (kept local).',
+				$prefix,
+				$cleaned,
+				$keep_thumbs ? '' : sprintf( ' + %d thumbnail variant(s)', $thumbs_removed ),
+				$skipped_no_file,
+				$skipped_no_cloud
 			)
 		);
 	}
