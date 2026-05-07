@@ -193,5 +193,20 @@ class Activator {
 				add_option( $key, $value );
 			}
 		}
+
+		// Filename strategy — only set on TRUE fresh installs. Detected by an
+		// empty mvs_media_index table: re-activations of a long-running site
+		// fall through to DEFAULT_UPGRADE so existing on-disk filenames stay
+		// the canonical pattern. Once the option is set, this branch never
+		// runs again (add_option no-ops on existing keys).
+		if ( false === get_option( \WPMediaVerse\Services\FilenameStrategy::SETTING ) ) {
+			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$has_media = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index LIMIT 1" );
+			$default   = ( 0 === $has_media )
+				? \WPMediaVerse\Services\FilenameStrategy::DEFAULT_FRESH
+				: \WPMediaVerse\Services\FilenameStrategy::DEFAULT_UPGRADE;
+			add_option( \WPMediaVerse\Services\FilenameStrategy::SETTING, $default );
+		}
 	}
 }

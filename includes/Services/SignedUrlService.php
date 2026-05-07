@@ -209,8 +209,16 @@ class SignedUrlService {
 		}
 
 		$is_download = ! empty( $params[ self::PARAM_DOWNLOAD ] );
-		$filename    = sanitize_file_name( basename( $full_path ) );
-		$filename    = str_replace( array( "\r", "\n" ), '', $filename );
+		// Prefer the original (user-provided) filename when present — keeps
+		// downloads recognisable for end users even when the on-disk basename
+		// is a 1.2.1+ hash. Falls back to the on-disk basename for older
+		// uploads where original_filename meta is absent.
+		$repo              = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$original_filename = (string) $repo->get( $media_id, 'original_filename' );
+		$filename          = '' !== $original_filename
+			? sanitize_file_name( $original_filename )
+			: sanitize_file_name( basename( $full_path ) );
+		$filename          = str_replace( array( "\r", "\n", '"' ), '', $filename );
 
 		// Record download event if applicable.
 		if ( $is_download ) {

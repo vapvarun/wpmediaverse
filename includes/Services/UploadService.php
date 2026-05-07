@@ -220,10 +220,16 @@ class UploadService {
 		 */
 		$dest_subdir = apply_filters( 'mvs_upload_directory', gmdate( 'Y/m' ), $user_id, $media_type );
 
-		$filename  = wp_unique_filename(
+		// Filename strategy — controlled by `mvs_filename_strategy` setting.
+		// Fresh installs default to `hashed` (security + storage robustness);
+		// upgrade installs default to `original_sanitized` (preserves prior
+		// behaviour). Existing on-disk files are NEVER renamed.
+		$filename_pick = FilenameStrategy::pick(
+			(string) $file['name'],
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_subdir,
-			sanitize_file_name( $file['name'] )
+			$user_id
 		);
+		$filename  = $filename_pick['stored'];
 		$dest_path = $dest_subdir . '/' . $filename;
 
 		// Store file.
@@ -323,6 +329,18 @@ class UploadService {
 		// Store EXIF data in meta table (sparse data).
 		if ( ! empty( $exif_raw ) ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'exif_raw', $exif_raw );
+		}
+
+		// Preserve the user-facing filename for display + Content-Disposition
+		// when the strategy hashed the on-disk name. Old uploads (pre-1.2.1
+		// or strategy=original_sanitized) skip this — readers fall back to
+		// file_path basename when the meta is absent.
+		if ( 'hashed' === $filename_pick['strategy'] && '' !== $filename_pick['original'] ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set(
+				$media_id,
+				'original_filename',
+				$filename_pick['original']
+			);
 		}
 
 		// Extract and store media metadata (duration, dimensions, etc.).

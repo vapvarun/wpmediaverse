@@ -1320,6 +1320,12 @@ class MediaController extends WP_REST_Controller {
 			'media_type'        => $media_type_value,
 			'privacy'           => $privacy_value,
 			'allow_download'    => $allow_download,
+			// Display filename — original user-provided name when the upload
+			// strategy hashed the on-disk basename (1.2.1+). Falls back to the
+			// stored file_path basename for older uploads / sanitized strategy.
+			'original_filename' => ! empty( $all['original_filename'] )
+				? (string) $all['original_filename']
+				: ( ! empty( $all['file_path'] ) ? basename( (string) $all['file_path'] ) : '' ),
 			'moderation_status' => $moderation_value,
 			'tags'              => self::parse_meta_list( $all['tags'] ?? '' ),
 			'categories'        => self::parse_meta_list( $all['category'] ?? '' ),

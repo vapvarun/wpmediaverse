@@ -323,6 +323,33 @@ class SettingsRegistrar {
 				'description' => sprintf( __( 'How long raw view events are kept in the database. Aggregated counts (Total Views, etc.) are NOT affected. Default: 90 days. Set to 0 to retain forever. Maximum: %d.', 'wpmediaverse' ), \WPMediaVerse\Services\ViewRetentionService::MAX_DAYS ),
 			)
 		);
+
+		// Filename strategy. Controls how new uploads are named on disk.
+		// Existing media is NEVER renamed — this only affects future uploads.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			\WPMediaVerse\Services\FilenameStrategy::SETTING,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( \WPMediaVerse\Services\FilenameStrategy::class, 'sanitize_setting' ),
+				'default'           => \WPMediaVerse\Services\FilenameStrategy::DEFAULT_UPGRADE,
+			)
+		);
+		add_settings_field(
+			\WPMediaVerse\Services\FilenameStrategy::SETTING,
+			__( 'Stored Filenames', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_select_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => \WPMediaVerse\Services\FilenameStrategy::SETTING,
+				'choices'     => array(
+					'hashed'              => __( 'Hashed (recommended) — random 16-char filename, original kept as metadata', 'wpmediaverse' ),
+					'original_sanitized'  => __( 'Original (sanitized) — keeps the user filename, capped at 100 chars', 'wpmediaverse' ),
+				),
+				'description' => __( 'How new uploads are named on disk. "Hashed" is more secure (no enumeration) and avoids long-filename / emoji edge cases. Existing media is never renamed.', 'wpmediaverse' ),
+			)
+		);
 	}
 
 	// -------------------------------------------------------------------------
