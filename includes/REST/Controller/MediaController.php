@@ -350,13 +350,22 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
-		// Search filter.
-		$search = $request->get_param( 's' );
-		if ( $search ) {
-			$like     = '%' . $wpdb->esc_like( $search ) . '%';
-			$where[]  = '(title LIKE %s OR description LIKE %s)';
-			$params[] = $like;
-			$params[] = $like;
+		// Search filter — FULLTEXT index when supported, LIKE fallback otherwise.
+		// FULLTEXT swap is the 100k-readiness fix (Phase 3B): LIKE '%term%' on
+		// 100k rows is a sequential scan, MATCH/AGAINST hits the index.
+		// `media_search_ft` is created in Migrator::migrate_to_13.
+		$search = trim( (string) $request->get_param( 's' ) );
+		if ( '' !== $search ) {
+			$ft_term = $this->build_fulltext_search_term( $search );
+			if ( null !== $ft_term && self::has_fulltext_search_index() ) {
+				$where[]  = 'MATCH(title, description) AGAINST (%s IN BOOLEAN MODE)';
+				$params[] = $ft_term;
+			} else {
+				$like     = '%' . $wpdb->esc_like( $search ) . '%';
+				$where[]  = '(title LIKE %s OR description LIKE %s)';
+				$params[] = $like;
+				$params[] = $like;
+			}
 		}
 
 		// Scope filter.
@@ -1498,5 +1507,61 @@ class MediaController extends WP_REST_Controller {
 			return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
 		return '127.0.0.1';
+	}
+
+	/**
+	 * Build a BOOLEAN MODE search term for MATCH/AGAINST. Returns null when
+	 * the input is too short or every token gets dropped (fall back to LIKE).
+	 *
+	 * Splits on whitespace, drops tokens shorter than the InnoDB minimum
+	 * token length (3 chars by default), strips MySQL boolean-mode operators
+	 * (`+`, `-`, `*`, `(`, `)`, `~`, `<`, `>`, `"`, `@`, NUL) and appends a
+	 * trailing `*` for prefix matching ("auto" matches "automotive"). Each
+	 * token also gets a leading `+` so the user effectively sees AND-search.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param string $search Raw search input.
+	 * @return string|null   BOOLEAN MODE term or null to indicate fallback.
+	 */
+	private static function build_fulltext_search_term( string $search ): ?string {
+		$cleaned = preg_replace( '/[+\-*()~<>"@\x00]/', ' ', $search );
+		$tokens  = preg_split( '/\s+/u', (string) $cleaned, -1, PREG_SPLIT_NO_EMPTY );
+		if ( ! $tokens ) {
+			return null;
+		}
+
+		$kept = array();
+		foreach ( $tokens as $token ) {
+			if ( mb_strlen( $token, 'UTF-8' ) < 3 ) {
+				continue;
+			}
+			$kept[] = '+' . $token . '*';
+		}
+		if ( ! $kept ) {
+			return null;
+		}
+
+		return implode( ' ', $kept );
+	}
+
+	/**
+	 * Detect whether the FULLTEXT search index exists. Cached for the
+	 * request lifetime via a static — schema doesn't change between
+	 * REST calls, so a single SHOW INDEX per request is plenty.
+	 *
+	 * @since 1.2.1
+	 */
+	private static function has_fulltext_search_index(): bool {
+		static $cached = null;
+		if ( null !== $cached ) {
+			return $cached;
+		}
+		global $wpdb;
+		$table  = $wpdb->prefix . 'mvs_media_index';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$exists = $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'media_search_ft'" );
+		$cached = (bool) $exists;
+		return $cached;
 	}
 }
