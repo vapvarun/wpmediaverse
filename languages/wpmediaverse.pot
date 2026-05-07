@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-05-07T12:48:55+00:00\n"
+"POT-Creation-Date: 2026-05-07T17:27:23+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: wpmediaverse\n"
@@ -166,7 +166,7 @@ msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:297
 #: includes/Admin/Settings/FieldRenderer.php:98
-#: includes/Core/Plugin.php:874
+#: includes/Core/Plugin.php:883
 #: src/blocks/explore-feed/render.php:120
 #: templates/partials/shared-ui-frame.php:108
 #: src/blocks/media-grid/edit.js:48
@@ -744,7 +744,7 @@ msgstr ""
 
 #: includes/Admin/OverviewPage.php:185
 #: includes/Admin/StatsPage.php:46
-#: includes/Core/Plugin.php:876
+#: includes/Core/Plugin.php:885
 msgid "Stats"
 msgstr ""
 
@@ -926,7 +926,7 @@ msgstr ""
 
 #: includes/Admin/OverviewPage.php:596
 #: includes/Admin/SetupWizard.php:254
-#: includes/Core/Plugin.php:1096
+#: includes/Core/Plugin.php:1105
 #: includes/Services/HealthCheckService.php:172
 #: templates/partials/dashboard-content.php:278
 msgid "My Media"
@@ -1942,7 +1942,7 @@ msgid "Top Media by Views"
 msgstr ""
 
 #: includes/Admin/StatsPage.php:399
-#: includes/Core/Plugin.php:878
+#: includes/Core/Plugin.php:887
 #: src/blocks/media-stats/render.php:96
 #: src/blocks/media-stats/render.php:140
 msgid "Views"
@@ -2017,7 +2017,7 @@ msgstr ""
 #: includes/Admin/TagManagementPage.php:179
 #: includes/Admin/TagManagementPage.php:265
 #: includes/Admin/TagManagementPage.php:312
-#: includes/Core/Plugin.php:968
+#: includes/Core/Plugin.php:977
 #: templates/media-single.php:419
 #: templates/media-single.php:422
 #: templates/media-single.php:561
@@ -2290,28 +2290,28 @@ msgstr ""
 msgid "View public user profiles with stats, media, and follow counts."
 msgstr ""
 
-#: includes/Core/Plugin.php:873
+#: includes/Core/Plugin.php:882
 #: includes/Core/TemplateHelpers.php:458
 msgid "Delete media"
 msgstr ""
 
-#: includes/Core/Plugin.php:875
+#: includes/Core/Plugin.php:884
 msgid "View media"
 msgstr ""
 
-#: includes/Core/Plugin.php:877
+#: includes/Core/Plugin.php:886
 msgid "Likes"
 msgstr ""
 
-#: includes/Core/Plugin.php:965
+#: includes/Core/Plugin.php:974
 msgid "Are you sure?"
 msgstr ""
 
-#: includes/Core/Plugin.php:966
+#: includes/Core/Plugin.php:975
 msgid "Confirm"
 msgstr ""
 
-#: includes/Core/Plugin.php:967
+#: includes/Core/Plugin.php:976
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:302
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:439
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:640
@@ -4361,6 +4361,27 @@ msgstr ""
 
 #: templates/partials/shared-ui-frame.php:536
 msgid "Log in to comment"
+msgstr ""
+
+#: assets/js/messaging.js:37
+msgid "Request failed"
+msgstr ""
+
+#: assets/js/messaging.js:315
+msgid "Could not open conversation."
+msgstr ""
+
+#: assets/js/messaging.js:424
+msgid "Could not share media."
+msgstr ""
+
+#: assets/js/messaging.js:714
+#: assets/js/messaging.js:820
+msgid "Upload failed"
+msgstr ""
+
+#: assets/js/messaging.js:764
+msgid "Microphone access denied"
 msgstr ""
 
 #: src/blocks/album-viewer/edit.js:15

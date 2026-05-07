@@ -1245,6 +1245,9 @@ class Plugin {
 			),
 			MVS_VERSION
 		);
+		if ( function_exists( 'wp_set_script_module_translations' ) ) {
+			wp_set_script_module_translations( 'mvs-messaging', 'wpmediaverse', MVS_PLUGIN_DIR . 'languages' );
+		}
 		wp_enqueue_script_module( 'mvs-messaging' );
 	}
 
