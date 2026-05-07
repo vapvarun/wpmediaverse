@@ -1344,6 +1344,21 @@
       "args_count": 2
     },
     {
+      "name": "mvs_media_privacy_changed",
+      "type": "action",
+      "args": "$entity_id, $new_privacy, $old_privacy",
+      "where": "includes/Repository/MediaRepository.php:447",
+      "consumed_by": [],
+      "args_signature": [
+        "int $entity_id",
+        "string $new_privacy",
+        "string $old_privacy"
+      ],
+      "args_count": 3,
+      "_added_in": "1.2.1",
+      "_purpose": "Fires when a media OR album privacy is updated (UPDATE only — INSERT skipped, since uploaders set initial state at activity creation). ActivitySyncIntegration listens to keep BP activity hide_sitewide in sync; albums fan out to all linked per-media + gallery activities. Most-restrictive-wins across media + parent album."
+    },
+    {
       "name": "mvs_media_deleted",
       "type": "action",
       "args": "$media_id, $user_id",
@@ -1814,9 +1829,9 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-05-03T11:38:28Z",
-    "from": "wp-plugin-onboard skill (1.2.0 targeted refresh 2026-05-03)",
-    "branch": "1.2.0",
+    "at": "2026-05-07T08:30:00Z",
+    "from": "wp-plugin-onboard skill (1.2.1 targeted refresh 2026-05-07)",
+    "branch": "1.2.1",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -2005,6 +2020,22 @@
       ],
       "computed_at": "2026-05-03T17:30:00Z"
     },
-    "notes": "Phase 2.5.11–2.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits — WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-03 captures the live findings (zero real bugs — see audit/wppqa-baseline-2026-05-03/SUMMARY.md). Settings access for paired plugins (Pro/themes/integrations) flows through Core\\SettingsHelper static API; the canonical accessor today covers page-id slots (dashboard/explore/upload) and exposes filter mvs_page_id_{slot}. New cross-plugin readable settings should be added there before any consumer goes to get_option() directly. Static-analysis findings: 3 dead listeners (1 high-severity: mvs_media_moderated webhook silently broken), 6 extensibility gaps (Pro listens but Free does not fire — 4 low / 2 medium), 1 medium-severity REST hang risk (search autocomplete race condition — line 332 of shared-ui/view.js), 1 medium-severity grid-1fr collapse risk (bp-integration.css:812), all other categories clean."
+    "notes": "Phase 2.5.11–2.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits — WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-03 captures the live findings (zero real bugs — see audit/wppqa-baseline-2026-05-03/SUMMARY.md). Settings access for paired plugins (Pro/themes/integrations) flows through Core\\SettingsHelper static API; the canonical accessor today covers page-id slots (dashboard/explore/upload) and exposes filter mvs_page_id_{slot}. New cross-plugin readable settings should be added there before any consumer goes to get_option() directly. Static-analysis findings: 3 dead listeners (1 high-severity: mvs_media_moderated webhook silently broken), 6 extensibility gaps (Pro listens but Free does not fire — 4 low / 2 medium), 1 medium-severity REST hang risk (search autocomplete race condition — line 332 of shared-ui/view.js), 1 medium-severity grid-1fr collapse risk (bp-integration.css:812), all other categories clean.",
+    "refresh_2026_05_07": {
+      "scope": "targeted (1.2.1 privacy-sync fix + shared-ui-shell→shared-ui-frame rename)",
+      "added": {
+        "hooks_fired": [
+          "mvs_media_privacy_changed (3 args, fired from MediaRepository::set + set_many on UPDATE only; consumed internally by ActivitySyncIntegration::sync_activity_privacy)"
+        ]
+      },
+      "renamed": {
+        "css_files": ["shared-ui-shell.css → shared-ui-frame.css (+rtl + .min variants)"],
+        "templates": ["templates/partials/shared-ui-shell.php → shared-ui-frame.php"],
+        "methods": ["Plugin::render_shared_ui_shell → render_shared_ui_frame"],
+        "enqueue_handles": ["mvs-shared-ui-shell → mvs-shared-ui-frame (legacy handle kept as register-only shim until 1.3.0)"]
+      },
+      "rationale": "Customer WAFs (Crisp #NZRSBX) flag any 'shell' token in filenames; rename eliminates the trigger. Privacy hook closes Zoho #39974: media + album privacy now drive BP activity hide_sitewide instead of being ignored.",
+      "out_of_scope": "Full Phase 0–6 onboard run (wppqa baseline, 14 sub-checks, FEATURE_AUDIT regen, derived/ cache rebuild). Defer to a full /wp-plugin-onboard --refresh after Phase 6 release."
+    }
   }
 }

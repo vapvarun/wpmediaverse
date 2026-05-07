@@ -24,10 +24,10 @@
     "tables": 21,
     "capabilities": 10,
     "services": 28,
-    "hooks_fired": 19,
+    "hooks_fired": 20,
     "cron": 2,
     "wp_cli": 1,
-    "hooks_with_args_signature": 19,
+    "hooks_with_args_signature": 20,
     "hooks_no_call_site": 0
   },
   "detail_files": {
@@ -42,9 +42,9 @@
     "args_signature_extraction": "14 of 22 original hooks_fired entries populated; 8 phantom (no call site in source — manifest drift); 4 new hooks added from Core/SettingsHelper. PRO arch-checks A11 reads args_signature[] for cross-plugin contract drift detection."
   },
   "generated": {
-    "at": "2026-05-03T11:38:28Z",
-    "from": "wp-plugin-onboard skill (1.2.0 targeted refresh 2026-05-03)",
-    "branch": "1.2.0",
+    "at": "2026-05-07T08:30:00Z",
+    "from": "wp-plugin-onboard skill (1.2.1 targeted refresh 2026-05-07)",
+    "branch": "1.2.1",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",

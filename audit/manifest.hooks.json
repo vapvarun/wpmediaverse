@@ -204,6 +204,21 @@
       "args": "$media_id",
       "where": "Services/WatermarkService.php",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_media_privacy_changed",
+      "type": "action",
+      "args": "$entity_id, $new_privacy, $old_privacy",
+      "where": "includes/Repository/MediaRepository.php:447",
+      "consumed_by": [],
+      "args_signature": [
+        "int $entity_id",
+        "string $new_privacy",
+        "string $old_privacy"
+      ],
+      "args_count": 3,
+      "_added_in": "1.2.1",
+      "_purpose": "Fires when a media OR album privacy is updated (UPDATE only). ActivitySyncIntegration listens to keep BP activity hide_sitewide in sync; albums fan out to all linked per-media + gallery activities."
     }
   ]
 }
