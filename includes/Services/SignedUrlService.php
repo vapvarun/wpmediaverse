@@ -418,24 +418,6 @@ class SignedUrlService {
 	}
 
 	/**
-	 * If conditions allow, return the active driver's direct public URL.
-	 *
-	 * Returns a non-empty string only when ALL of:
-	 *   - setting `mvs_cloud_direct_public_urls` = '1' (operator opt-in)
-	 *   - active storage driver is NOT local (`mvs_storage_driver !== 'local'`)
-	 *   - media privacy = 'public'
-	 *   - media has no active access rules
-	 *
-	 * Else returns '' so the caller falls through to the gated /serve path.
-	 *
-	 * **Privacy caveat:** the direct URL is on the CDN's public pull-zone.
-	 * Anyone with the URL can view, including after the media's privacy is
-	 * later flipped to private. Document this in the setting description.
-	 *
-	 * @param int $media_id Media ID.
-	 * @return string Direct CDN URL or empty string.
-	 */
-	/**
 	 * Size-aware variant of maybe_direct_cloud_url for thumbnail reads.
 	 *
 	 * Returns the per-size cloud URL when ALL of:
@@ -487,7 +469,7 @@ class SignedUrlService {
 		}
 
 		// If the stored URL still points at the local uploads directory,
-		// this thumbnail was generated before 1.2.2's cloud-thumb push (or
+		// this thumbnail was generated before 1.2.1's cloud-thumb push (or
 		// the cloud upload failed and we fell back to the local URL). Don't
 		// short-circuit — let the gated /serve proxy stream the local file.
 		// The backfill CLI will eventually push these to cloud.
@@ -501,6 +483,26 @@ class SignedUrlService {
 		return $thumb_url;
 	}
 
+	/**
+	 * If conditions allow, return the active driver's direct public URL.
+	 *
+	 * Returns a non-empty string only when ALL of:
+	 *   - setting `mvs_cloud_direct_public_urls` = '1' (operator opt-in)
+	 *   - active storage driver is NOT local (`mvs_storage_driver !== 'local'`)
+	 *   - media privacy = 'public'
+	 *   - media has no active access rules
+	 *
+	 * Else returns '' so the caller falls through to the gated /serve path.
+	 *
+	 * **Privacy caveat:** the direct URL is on the CDN's public pull-zone.
+	 * Anyone with the URL can view, including after the media's privacy is
+	 * later flipped to private. Document this in the setting description.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Direct CDN URL or empty string.
+	 */
 	private function maybe_direct_cloud_url( int $media_id ): string {
 		if ( ! (bool) get_option( 'mvs_cloud_direct_public_urls', false ) ) {
 			return '';

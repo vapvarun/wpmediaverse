@@ -7,7 +7,7 @@
  * methods to keep the implementation in one place.
  *
  * @package WPMediaVerse
- * @since   1.2.2
+ * @since   1.2.1
  */
 
 namespace WPMediaVerse\Services;
@@ -264,18 +264,12 @@ class CloudOps {
 	/**
 	 * Count media that need each kind of operation.
 	 *
-	 * Called by the admin UI to render "X media on local, Y on cloud" stats
-	 * + button enabled/disabled state. All counts respect the same WHERE
-	 * clauses the admin handlers use, so the numbers match what the buttons
-	 * will actually process.
+	 * Called by the admin UI to render the storage-management stat tiles
+	 * (in cloud / on server / private kept) + button enabled/disabled state.
+	 * All counts respect the same WHERE clauses the admin handlers use, so
+	 * the numbers match what the buttons will actually process.
 	 *
-	 * @return array {
-	 *   total: int,
-	 *   needs_migration: int,
-	 *   needs_cleanup_local: int,
-	 *   already_clean: int,
-	 *   non_public_kept: int,
-	 * }
+	 * @return array{total:int, needs_migration:int, non_public_kept:int}
 	 */
 	public static function count_candidates(): array {
 		global $wpdb;
