@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,29 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** — AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.2.1 =
+**Bug fixes**
+
+* Fix: **BP activity privacy now follows media + album privacy.** Customer-reported (Zoho #39974): when a media uploaded to a BP activity was set to non-public, the activity card itself stayed visible in the public stream — composer text + timestamp + author leaked. Activity `hide_sitewide` is now derived from the most-restrictive of (media privacy, parent album privacy). Album-level privacy changes fan out to every linked per-media + bundled gallery activity. New action hook `mvs_media_privacy_changed` fires from `MediaRepository::set` on UPDATE.
+* Fix: **CSS file rename `shared-ui-shell.css` → `shared-ui-frame.css`** (Crisp #NZRSBX). Customer WAFs auto-block any file with the "shell" token. `templates/partials/shared-ui-shell.php` → `shared-ui-frame.php`. `Plugin::render_shared_ui_shell` → `render_shared_ui_frame`. Old `mvs-shared-ui-shell` enqueue handle kept as a register-only deprecation shim until 1.3.0.
+
+**100k-readiness pass**
+
+* New: **`Services\AdminAggregatesService`** — single source of truth for site-wide counts (total media, views, storage, recent media). Every admin / CLI surface now reads through this service instead of running its own `SUM()` / `COUNT(*)` scan on each load. Cache layer uses `wp_cache` primary + daily transient fallback (only when no persistent object cache present). New Coding Rule #16: any `$wpdb->get_var SUM/COUNT` against `mvs_*` outside this service fails `bin/coding-rules-check.sh` Rule 3.
+* New: **FULLTEXT search index** on `mvs_media_index(title, description)`. Migrator v13 adds `media_search_ft`; REST `/media?s=` now uses `MATCH(...) AGAINST (... IN BOOLEAN MODE)` for queries ≥ 3 chars and falls back to `LIKE '%term%'` for shorter inputs. At 100k rows the swap drops worst-case search latency by orders of magnitude; on lockdown hosts that don't permit ALTER (engine != InnoDB or DBA-restricted), the LIKE path keeps search functional.
+* New: **View-event retention cron.** Setting `mvs_view_retention_days` (default 90, max 730, 0 = unlimited). Daily cron `mvs_purge_old_views` drops rows older than the window from `mvs_media_views` in 50k-row batches. Aggregates in `mvs_media_stats` are unaffected — only the raw event log is trimmed.
+* New: **REST per_page hardening.** All 14 list endpoints now route `per_page` through `WPMediaVerse\REST\Pagination::resolve_per_page` — clamps to `apply_filters('mvs_rest_pagination_max', 100)` even on routes whose schema `'maximum'` was being silently ignored (WP REST validation is bypassed when `sanitize_callback` is set). Pre-1.2.1 a malicious caller could pass `per_page=999999`.
+* New: **`MediaRepository` per-request row cache + `prefetch()`** — render paths (BP activity, lightbox, dashboard) call `get($id, ...)` repeatedly per media. The new static cache turns the first read into a full-row fetch and subsequent reads into static-array lookups. `prefetch(array $ids)` batch-loads index + meta in 2 queries, eliminating N+1 across the activity stream's recovery path and the BuddyBoss imported-media loop.
+* New: **Storage discipline audit + Coding Rule #16.** All 22 existing `set_transient` callsites + 13 `wp_cache_*` callsites checked for cardinality leaks. `MessagingService::set_typing` was storing per-(conversation, user) typing indicators in `wp_options` — at a busy DM site that's thousands of writes/min churning options. Migrated to `wp_cache_set` with a dedicated cache group; degrades gracefully (no "typing…" pip) on sites without persistent object cache. New `bin/coding-rules-check.sh` Rule 4 prevents future drift.
+
+**New: customer-driven structural change**
+
+* New: **Filename strategy.** New setting `mvs_filename_strategy`: `original_sanitized` (default for upgrade installs — preserves prior behaviour) or `hashed` (default for fresh installs — 16 hex chars + sanitized extension). Hashed mode preserves the user-facing filename in `mvs_media_meta.original_filename` and surfaces it via REST + Content-Disposition headers, so end-user downloads still see "vacation-photo.jpg" even though the on-disk file is `a3f8c1b2.jpg`. Existing media is **never renamed** — only the strategy applied to new uploads after the setting flips. New filter `mvs_filename_strategy` for site-level overrides.
+
+**Other**
+
+* New: action hook `mvs_media_privacy_changed( $media_id, $new_privacy, $old_privacy )` — fires from `MediaRepository::set` and `set_many` when the privacy column is UPDATEd (not on INSERT). Internally consumed by `ActivitySyncIntegration::sync_activity_privacy`.
 
 = 1.2.0 =
 **New features (frontend)**
