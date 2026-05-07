@@ -10,11 +10,11 @@ defined( 'ABSPATH' ) || exit;
 ?>
 <!-- Header -->
 <div class="mvs-chat-header">
-	<button class="mvs-chat-header__back" data-wp-on--click="actions.goBackToList" type="button" aria-label="Back">
+	<button class="mvs-chat-header__back" data-wp-on--click="actions.goBackToList" type="button" aria-label="<?php esc_attr_e( 'Back', 'wpmediaverse' ); ?>">
 		<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/></svg>
 	</button>
-	<h3 class="mvs-chat-header__title">New Message</h3>
-	<button class="mvs-chat-header__close" data-wp-on--click="actions.closeChatPanel" type="button" aria-label="Close">
+	<h3 class="mvs-chat-header__title"><?php esc_html_e( 'New Message', 'wpmediaverse' ); ?></h3>
+	<button class="mvs-chat-header__close" data-wp-on--click="actions.closeChatPanel" type="button" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
 		<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>
 	</button>
 </div>
@@ -25,7 +25,7 @@ defined( 'ABSPATH' ) || exit;
 		<input
 			class="mvs-chat-search__input"
 			type="text"
-			placeholder="Search users..."
+			placeholder="<?php esc_attr_e( 'Search users...', 'wpmediaverse' ); ?>"
 			data-wp-on--input="actions.updateSearchQuery"
 			data-wp-bind--value="state.searchQuery"
 			autofocus
@@ -34,7 +34,7 @@ defined( 'ABSPATH' ) || exit;
 
 	<!-- Search Results -->
 	<div class="mvs-chat-new__results">
-		<div class="mvs-chat-new__section-title" data-wp-bind--hidden="!state.hasSearchResults">Search Results</div>
+		<div class="mvs-chat-new__section-title" data-wp-bind--hidden="!state.hasSearchResults"><?php esc_html_e( 'Search Results', 'wpmediaverse' ); ?></div>
 
 		<template data-wp-each="state.searchResults">
 			<button
@@ -48,11 +48,11 @@ defined( 'ABSPATH' ) || exit;
 		</template>
 
 		<div class="mvs-chat-list__empty" data-wp-bind--hidden="!state.noSearchResults">
-			No users found
+			<?php esc_html_e( 'No users found', 'wpmediaverse' ); ?>
 		</div>
 
 		<div class="mvs-chat-list__empty" data-wp-bind--hidden="state.searchQueryReady">
-			Type a name to search for users
+			<?php esc_html_e( 'Type a name to search for users', 'wpmediaverse' ); ?>
 		</div>
 	</div>
 </div>

@@ -32,9 +32,10 @@
 	 */
 	function confirmAction( message ) {
 		if ( typeof window.mvsConfirm === 'function' ) {
+			var i18n = window.mvsConfirmI18n || {};
 			return window.mvsConfirm( message, {
-				confirmLabel: 'Delete',
-				cancelLabel:  'Cancel',
+				confirmLabel: i18n.delete || 'Delete',
+				cancelLabel:  i18n.cancel || 'Cancel',
 				tone:         'destructive',
 			} );
 		}

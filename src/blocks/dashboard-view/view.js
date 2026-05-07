@@ -8,6 +8,9 @@
 
 import { store, getContext } from '@wordpress/interactivity';
 
+// i18n: wp-i18n is loaded as a classic script on every WP page; read it
+// from window since @wordpress/i18n is not yet importable in script modules.
+const __ = ( str, domain ) => ( window.wp && window.wp.i18n && window.wp.i18n.__ ) ? window.wp.i18n.__( str, domain || 'wpmediaverse' ) : str;
 const sharedUI = store( 'mvs/shared-ui' );
 
 function apiHeaders( nonce ) {
@@ -433,7 +436,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				}
 				if ( rejected.length ) {
 					sharedUI.actions.showToast(
-						'File type not allowed: ' + rejected.join( ', ' ) + '. Supported: ' + ctx.allowedExtensions,
+						__( 'File type not allowed: ', 'wpmediaverse' ) + rejected.join( ', ' ) + '. Supported: ' + ctx.allowedExtensions,
 						'error'
 					);
 				}
@@ -678,13 +681,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 					if ( idx !== -1 ) {
 						state.media.items[ idx ] = { ...state.media.items[ idx ], ...updated };
 					}
-					sharedUI.actions.showToast( 'File replaced!', 'success' );
+					sharedUI.actions.showToast( __( 'File replaced!', 'wpmediaverse' ), 'success' );
 				} else {
 					const err = await res.json().catch( () => ( {} ) );
 					sharedUI.actions.showToast( err.message || 'Replace failed.', 'error' );
 				}
 			} catch {
-				sharedUI.actions.showToast( 'Replace failed.', 'error' );
+				sharedUI.actions.showToast( __( 'Replace failed.', 'wpmediaverse' ), 'error' );
 			}
 			state.editModal.saving = false;
 		},
@@ -733,10 +736,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 					state.media.items[ idx ] = { ...state.media.items[ idx ], ...updated };
 				}
 
-				sharedUI.actions.showToast( 'Media updated!', 'success' );
+				sharedUI.actions.showToast( __( 'Media updated!', 'wpmediaverse' ), 'success' );
 			} catch {
 				state.editModal.saving = false;
-				sharedUI.actions.showToast( 'Update failed.', 'error' );
+				sharedUI.actions.showToast( __( 'Update failed.', 'wpmediaverse' ), 'error' );
 			}
 		},
 
@@ -762,12 +765,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 					} );
 					if ( res.ok ) {
 						state.media.items = state.media.items.filter( ( m ) => m.id !== id );
-						sharedUI.actions.showToast( 'Media deleted.', 'success' );
+						sharedUI.actions.showToast( __( 'Media deleted.', 'wpmediaverse' ), 'success' );
 					} else {
-						sharedUI.actions.showToast( 'Delete failed.', 'error' );
+						sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
 					}
 				} catch {
-					sharedUI.actions.showToast( 'Delete failed.', 'error' );
+					sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
 				}
 			} );
 		},
@@ -951,7 +954,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				await actions.loadAlbums( ctx );
 			} catch {
 				state.albumModal.saving = false;
-				sharedUI.actions.showToast( 'Save failed.', 'error' );
+				sharedUI.actions.showToast( __( 'Save failed.', 'wpmediaverse' ), 'error' );
 			}
 		},
 
@@ -967,12 +970,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 					} );
 					if ( res.ok ) {
 						state.albums.items = state.albums.items.filter( ( a ) => a.id !== id );
-						sharedUI.actions.showToast( 'Album deleted.', 'success' );
+						sharedUI.actions.showToast( __( 'Album deleted.', 'wpmediaverse' ), 'success' );
 					} else {
-						sharedUI.actions.showToast( 'Delete failed.', 'error' );
+						sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
 					}
 				} catch {
-					sharedUI.actions.showToast( 'Delete failed.', 'error' );
+					sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
 				}
 			} );
 		},
@@ -1015,7 +1018,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			} );
 			if ( res.ok ) {
 				state.favorites.items = state.favorites.items.filter( ( f ) => f.media_id !== mediaId );
-				sharedUI.actions.showToast( 'Removed from favorites.', 'success' );
+				sharedUI.actions.showToast( __( 'Removed from favorites.', 'wpmediaverse' ), 'success' );
 			}
 		},
 
@@ -1267,21 +1270,21 @@ const { state, actions } = store( 'mvs/dashboard', {
 							body: JSON.stringify( { rules: validRules } ),
 						} );
 					}
-					sharedUI.actions.showToast( 'Collection updated!', 'success' );
+					sharedUI.actions.showToast( __( 'Collection updated!', 'wpmediaverse' ), 'success' );
 				} else {
 					await apiFetch( ctx, 'collections', {
 						method: 'POST',
 						headers: apiHeaders( ctx.nonce ),
 						body: JSON.stringify( payload ),
 					} );
-					sharedUI.actions.showToast( 'Collection created!', 'success' );
+					sharedUI.actions.showToast( __( 'Collection created!', 'wpmediaverse' ), 'success' );
 				}
 				state.collectionModal.visible = false;
 				state.collectionModal.saving = false;
 				await actions.loadCollections( ctx );
 			} catch {
 				state.collectionModal.saving = false;
-				sharedUI.actions.showToast( 'Save failed.', 'error' );
+				sharedUI.actions.showToast( __( 'Save failed.', 'wpmediaverse' ), 'error' );
 			}
 		},
 
@@ -1297,12 +1300,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 					} );
 					if ( res.ok ) {
 						state.collections.items = state.collections.items.filter( ( c ) => c.id !== id );
-						sharedUI.actions.showToast( 'Collection deleted.', 'success' );
+						sharedUI.actions.showToast( __( 'Collection deleted.', 'wpmediaverse' ), 'success' );
 					} else {
-						sharedUI.actions.showToast( 'Delete failed.', 'error' );
+						sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
 					}
 				} catch {
-					sharedUI.actions.showToast( 'Delete failed.', 'error' );
+					sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
 				}
 			} );
 		},
@@ -1343,7 +1346,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				} );
 				state.notifications.count = 0;
 				state.notifications.items = state.notifications.items.map( ( n ) => ( { ...n, read: true } ) );
-				sharedUI.actions.showToast( 'All notifications marked as read.', 'success' );
+				sharedUI.actions.showToast( __( 'All notifications marked as read.', 'wpmediaverse' ), 'success' );
 			} catch {
 				// Ignore.
 			}

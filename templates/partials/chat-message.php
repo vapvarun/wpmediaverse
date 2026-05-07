@@ -46,13 +46,13 @@ defined( 'ABSPATH' ) || exit;
 				type="button"
 			><?php echo esc_html( $emoji ); ?></button>
 		<?php endforeach; ?>
-		<button class="mvs-chat-msg__context-btn" data-wp-on--click="actions.setReplyTo" type="button" title="Reply">
+		<button class="mvs-chat-msg__context-btn" data-wp-on--click="actions.setReplyTo" type="button" title="<?php esc_attr_e( 'Reply', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" fill="currentColor"/></svg>
 		</button>
-		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--delete" data-wp-on--click="actions.deleteMessage" data-wp-bind--hidden="context.item.isReceived" type="button" title="Delete for me">
+		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--delete" data-wp-on--click="actions.deleteMessage" data-wp-bind--hidden="context.item.isReceived" type="button" title="<?php esc_attr_e( 'Delete for me', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
 		</button>
-		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--unsend" data-wp-on--click="actions.unsendMessage" data-wp-bind--hidden="state.hideUnsend" type="button" title="Unsend for everyone">
+		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--unsend" data-wp-on--click="actions.unsendMessage" data-wp-bind--hidden="state.hideUnsend" type="button" title="<?php esc_attr_e( 'Unsend for everyone', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z" fill="currentColor"/></svg>
 		</button>
 	</div>

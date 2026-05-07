@@ -10,11 +10,11 @@ defined( 'ABSPATH' ) || exit;
 ?>
 <!-- Header -->
 <div class="mvs-chat-header">
-	<h3 class="mvs-chat-header__title">Messages</h3>
-	<button class="mvs-chat-header__new" data-wp-on--click="actions.openNewConversation" type="button" aria-label="New message">
+	<h3 class="mvs-chat-header__title"><?php esc_html_e( 'Messages', 'wpmediaverse' ); ?></h3>
+	<button class="mvs-chat-header__new" data-wp-on--click="actions.openNewConversation" type="button" aria-label="<?php esc_attr_e( 'New message', 'wpmediaverse' ); ?>">
 		<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>
 	</button>
-	<button class="mvs-chat-header__close" data-wp-on--click="actions.closeChatPanel" type="button" aria-label="Close">
+	<button class="mvs-chat-header__close" data-wp-on--click="actions.closeChatPanel" type="button" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">
 		<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>
 	</button>
 </div>
@@ -30,7 +30,7 @@ defined( 'ABSPATH' ) || exit;
 		?>
 		data-wp-bind--data-active="state.isTabAll"
 		type="button"
-	>All</button>
+	><?php esc_html_e( 'All', 'wpmediaverse' ); ?></button>
 	<button
 		class="mvs-chat-tabs__tab"
 		data-wp-on--click="actions.setTab"
@@ -40,7 +40,7 @@ defined( 'ABSPATH' ) || exit;
 		?>
 		data-wp-bind--data-active="state.isTabUnread"
 		type="button"
-	>Unread</button>
+	><?php esc_html_e( 'Unread', 'wpmediaverse' ); ?></button>
 	<button
 		class="mvs-chat-tabs__tab"
 		data-wp-on--click="actions.setTab"
@@ -50,7 +50,7 @@ defined( 'ABSPATH' ) || exit;
 		?>
 		data-wp-bind--data-active="state.isTabRequests"
 		type="button"
-	>Requests</button>
+	><?php esc_html_e( 'Requests', 'wpmediaverse' ); ?></button>
 </div>
 
 <!-- Search -->
@@ -58,7 +58,7 @@ defined( 'ABSPATH' ) || exit;
 	<input
 		class="mvs-chat-search__input"
 		type="text"
-		placeholder="Search conversations..."
+		placeholder="<?php esc_attr_e( 'Search conversations...', 'wpmediaverse' ); ?>"
 		data-wp-on--input="actions.updateSearchQuery"
 	/>
 </div>
@@ -81,7 +81,7 @@ defined( 'ABSPATH' ) || exit;
 				<div class="mvs-chat-conv-item__preview" data-wp-text="context.item.last_message_preview"></div>
 			</div>
 			<div class="mvs-chat-conv-item__meta">
-				<span class="mvs-chat-conv-item__pin" data-wp-bind--hidden="!context.item.is_pinned">Pinned</span>
+				<span class="mvs-chat-conv-item__pin" data-wp-bind--hidden="!context.item.is_pinned"><?php esc_html_e( 'Pinned', 'wpmediaverse' ); ?></span>
 				<span
 					class="mvs-chat-conv-item__unread"
 					data-wp-text="context.item.unread_count"
@@ -92,7 +92,7 @@ defined( 'ABSPATH' ) || exit;
 	</template>
 
 	<div class="mvs-chat-list__empty" data-wp-bind--hidden="state.hasConversations">
-		<p>No conversations yet</p>
-		<p>Start a new conversation to begin messaging.</p>
+		<p><?php esc_html_e( 'No conversations yet', 'wpmediaverse' ); ?></p>
+		<p><?php esc_html_e( 'Start a new conversation to begin messaging.', 'wpmediaverse' ); ?></p>
 	</div>
 </div>

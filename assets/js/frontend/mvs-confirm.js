@@ -96,9 +96,10 @@
 
 		ensureDialog();
 
-		messageEl.textContent  = message || 'Are you sure?';
-		okBtn.textContent      = opts.confirmLabel || 'Confirm';
-		cancelBtn.textContent  = opts.cancelLabel  || 'Cancel';
+		var i18n = window.mvsConfirmI18n || {};
+		messageEl.textContent  = message || i18n.areYouSure || 'Are you sure?';
+		okBtn.textContent      = opts.confirmLabel || i18n.confirm || 'Confirm';
+		cancelBtn.textContent  = opts.cancelLabel  || i18n.cancel  || 'Cancel';
 		dialog.classList.toggle( 'mvs-frontend-confirm-dialog--destructive', opts.tone === 'destructive' );
 
 		return new Promise( function ( resolve ) {

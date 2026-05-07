@@ -856,6 +856,15 @@ class Plugin {
 				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
 			);
 
+			// wp-i18n exposes window.wp.i18n.__ which our Interactivity-API
+			// view scripts (media-social, dashboard-view, shared-ui) call
+			// via a runtime shim — script modules cannot import @wordpress/i18n
+			// yet (WP limitation as of 6.6). Without wp-i18n present, the shim
+			// falls back to the English source string, so this enqueue is the
+			// difference between "user sees German toasts" and "user sees
+			// English fallback toasts on a German site."
+			wp_enqueue_script( 'wp-i18n' );
+
 			wp_enqueue_script(
 				'mvs-card-builders',
 				MVS_PLUGIN_URL . 'assets/js/frontend/card-builders.js',
@@ -864,6 +873,18 @@ class Plugin {
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
+				)
+			);
+			wp_localize_script(
+				'mvs-card-builders',
+				'mvsCardBuildersI18n',
+				array(
+					'deleteMedia' => __( 'Delete media', 'wpmediaverse' ),
+					'video'       => __( 'Video', 'wpmediaverse' ),
+					'viewMedia'   => __( 'View media', 'wpmediaverse' ),
+					'stats'       => __( 'Stats', 'wpmediaverse' ),
+					'likes'       => __( 'Likes', 'wpmediaverse' ),
+					'views'       => __( 'Views', 'wpmediaverse' ),
 				)
 			);
 
@@ -944,6 +965,16 @@ class Plugin {
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			'mvs-confirm',
+			'mvsConfirmI18n',
+			array(
+				'areYouSure' => __( 'Are you sure?', 'wpmediaverse' ),
+				'confirm'    => __( 'Confirm', 'wpmediaverse' ),
+				'cancel'     => __( 'Cancel', 'wpmediaverse' ),
+				'delete'     => __( 'Delete', 'wpmediaverse' ),
 			)
 		);
 		wp_register_style(

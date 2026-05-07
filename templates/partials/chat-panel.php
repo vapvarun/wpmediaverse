@@ -26,7 +26,7 @@ if ( ! $user_id ) {
 		class="mvs-chat-trigger"
 		data-wp-on--click="actions.toggleChatPanel"
 		type="button"
-		aria-label="Open messages"
+		aria-label="<?php esc_attr_e( 'Open messages', 'wpmediaverse' ); ?>"
 	>
 		<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
 		<span
@@ -48,7 +48,7 @@ if ( ! $user_id ) {
 		class="mvs-chat-panel"
 		data-wp-bind--data-open="state.chatPanelOpen"
 		role="dialog"
-		aria-label="Messages"
+		aria-label="<?php esc_attr_e( 'Messages', 'wpmediaverse' ); ?>"
 	>
 		<!-- List View -->
 		<div data-wp-bind--hidden="!state.isViewList">

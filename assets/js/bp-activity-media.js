@@ -1075,11 +1075,12 @@
 
 		document.addEventListener( 'click', function( e ) {
 			if ( ! suiState.active ) { return; }
-			// Match the first button.mvs-lightbox-action inside .mvs-lightbox-actions.
-			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lightbox-action' );
+			// Target ONLY the favorite button via its Interactivity action attribute.
+			// Matching on textContent ('Share') was locale-broken on non-English sites
+			// because the share button's text is translated. The data-wp-on--click
+			// attribute always carries the action name regardless of UI language.
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lightbox-action[data-wp-on--click*="lightboxToggleFavorite"]' );
 			if ( ! btn ) { return; }
-			// Skip if it's the share button (contains "Share" text).
-			if ( btn.textContent.indexOf( 'Share' ) !== -1 ) { return; }
 			if ( ! suiState.mediaId ) { return; }
 
 			var isFav   = btn.classList.contains( 'active' );
@@ -1103,9 +1104,12 @@
 
 		document.addEventListener( 'click', function( e ) {
 			if ( ! suiState.active ) { return; }
-			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lightbox-action' );
+			// Target ONLY the share button via its Interactivity action attribute.
+			// Matching on textContent ('Share' / 'Copied') was locale-broken on
+			// non-English sites because the button's text is translated. The
+			// data-wp-on--click attribute always carries the action name.
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lightbox-action[data-wp-on--click*="lightboxShare"]' );
 			if ( ! btn ) { return; }
-			if ( btn.textContent.indexOf( 'Share' ) === -1 && btn.textContent.indexOf( 'Copied' ) === -1 ) { return; }
 
 			var url = suiState.permalink || window.location.href;
 			if ( navigator.share ) {
