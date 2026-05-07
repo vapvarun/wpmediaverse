@@ -2022,10 +2022,38 @@
     },
     "notes": "Phase 2.5.11–2.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits — WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-03 captures the live findings (zero real bugs — see audit/wppqa-baseline-2026-05-03/SUMMARY.md). Settings access for paired plugins (Pro/themes/integrations) flows through Core\\SettingsHelper static API; the canonical accessor today covers page-id slots (dashboard/explore/upload) and exposes filter mvs_page_id_{slot}. New cross-plugin readable settings should be added there before any consumer goes to get_option() directly. Static-analysis findings: 3 dead listeners (1 high-severity: mvs_media_moderated webhook silently broken), 6 extensibility gaps (Pro listens but Free does not fire — 4 low / 2 medium), 1 medium-severity REST hang risk (search autocomplete race condition — line 332 of shared-ui/view.js), 1 medium-severity grid-1fr collapse risk (bp-integration.css:812), all other categories clean.",
     "refresh_2026_05_07": {
-      "scope": "targeted (1.2.1 privacy-sync fix + shared-ui-shell→shared-ui-frame rename)",
+      "scope": "targeted (1.2.1 privacy-sync fix + 100k-readiness pass + filename refactor + 4-level activity privacy)",
       "added": {
         "hooks_fired": [
           "mvs_media_privacy_changed (3 args, fired from MediaRepository::set + set_many on UPDATE only; consumed internally by ActivitySyncIntegration::sync_activity_privacy)"
+        ],
+        "services": [
+          "AdminAggregatesService (single source of truth for site-wide counts; `admin_aggregates` container key)",
+          "ViewRetentionService (daily cron mvs_purge_old_views; bounded mvs_media_views growth)",
+          "FilenameStrategy (hashed/original_sanitized strategies for new uploads)"
+        ],
+        "rest_helpers": [
+          "WPMediaVerse\\REST\\Pagination::resolve_per_page / resolve_page (uniform clamp across 14 list endpoints)"
+        ],
+        "bp_integration_classes": [
+          "Integrations\\BuddyPress\\ActivityPrivacyFilter (hooks bp_activity_get_join_sql + bp_activity_get_where_conditions + bp_activity_total_activities_sql + bp_activity_get_user_join_filter; rtMedia-parity numeric privacy levels 0/20/40/60/80/90)"
+        ],
+        "settings": [
+          "mvs_view_retention_days (storage tab, default 90)",
+          "mvs_filename_strategy (storage tab, hashed default for fresh installs)"
+        ],
+        "schema_migration": "v13: ALTER TABLE mvs_media_index ADD FULLTEXT KEY media_search_ft (title, description)",
+        "activity_meta_keys": [
+          "_mvs_activity_privacy (slug: public|members|friends|group|private|custom)",
+          "_mvs_activity_privacy_level (numeric: 0|20|40|60|80|90 — rtMedia parity)"
+        ],
+        "media_meta_keys": [
+          "original_filename (display name for uploads stored under hashed strategy)"
+        ],
+        "coding_rules": [
+          "Rule 3 (no raw $wpdb SUM/COUNT against mvs_* outside AdminAggregatesService)",
+          "Rule 4 (no per-entity transients — Coding Rule #16)",
+          "Rule 5 (every REST per_page schema entry must declare 'maximum')"
         ]
       },
       "renamed": {
@@ -2034,7 +2062,7 @@
         "methods": ["Plugin::render_shared_ui_shell → render_shared_ui_frame"],
         "enqueue_handles": ["mvs-shared-ui-shell → mvs-shared-ui-frame (legacy handle kept as register-only shim until 1.3.0)"]
       },
-      "rationale": "Customer WAFs (Crisp #NZRSBX) flag any 'shell' token in filenames; rename eliminates the trigger. Privacy hook closes Zoho #39974: media + album privacy now drive BP activity hide_sitewide instead of being ignored.",
+      "rationale": "(1) Customer WAFs (Crisp #NZRSBX) flag any 'shell' token in filenames; rename eliminates the trigger. (2) Zoho #39974: media + album privacy now drive a 4-level BP activity privacy model with viewer-side JOIN filter (rtMedia parity) instead of being ignored. (3) 100k-readiness — search FULLTEXT, AdminAggregatesService consolidation, MediaRepository request cache + prefetch kill render N+1, REST per_page caps. (4) Filename refactor (Crisp #NZRSBX) — additive, never rewrites existing media on disk.",
       "out_of_scope": "Full Phase 0–6 onboard run (wppqa baseline, 14 sub-checks, FEATURE_AUDIT regen, derived/ cache rebuild). Defer to a full /wp-plugin-onboard --refresh after Phase 6 release."
     }
   }
