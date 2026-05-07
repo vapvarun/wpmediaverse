@@ -726,12 +726,19 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-media-video {
     width: 100%;
     background: var(--mvs-overlay);
+    /* aspect-ratio is set inline from the media's stored width/height so
+     * the frame is reserved on first paint. Without it, the box reflows
+     * when metadata/poster/playback transitions happen. */
 }
 
 .mvs-media-video video {
     display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
+    /* Letterbox the source inside the locked frame instead of stretching
+     * — keeps poster and playback at identical dimensions. */
+    object-fit: contain;
+    background: #000;
 }
 
 .mvs-media-audio {
@@ -2655,11 +2662,12 @@ a.mvs-dashboard-card-title:hover {
    28. Enhanced Single Media Player
    ========================================================================== */
 
-.mvs-media-video video {
-    display: block;
-    width: 100%;
-    height: auto;
+/* `.mvs-media-video video` rule lives in section "Media Content" — single
+ * source of truth so width/height/object-fit can't drift. Border-radius
+ * applies to the wrapper so it clips the letterbox bars too. */
+.mvs-media-video {
     border-radius: 4px;
+    overflow: hidden;
 }
 
 .mvs-audio-info {
