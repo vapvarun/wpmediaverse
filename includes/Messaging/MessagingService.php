@@ -1096,17 +1096,42 @@ class MessagingService {
 	}
 
 	/**
-	 * Set typing indicator.
+	 * Typing-indicator object-cache group. Per-(conversation, user) key —
+	 * unbounded cardinality, must NOT live in wp_options. Coding Rule #16.
+	 *
+	 * @since 1.2.1
+	 */
+	private const TYPING_CACHE_GROUP = 'wpmediaverse_typing';
+
+	/**
+	 * Build the typing cache key for a (conversation, user) pair.
+	 */
+	private static function typing_cache_key( int $conversation_id, int $user_id ): string {
+		return $conversation_id . ':' . $user_id;
+	}
+
+	/**
+	 * Set typing indicator. Stored in `wp_cache` only — degrades gracefully
+	 * (no "typing…" pip) when no persistent object cache is present, but
+	 * never bloats wp_options with millions of (conv, user) rows on busy
+	 * sites. 5-second TTL matches the previous transient lifetime.
 	 *
 	 * @param int $conversation_id Conversation ID.
 	 * @param int $user_id         User ID.
 	 */
 	public function set_typing( int $conversation_id, int $user_id ): void {
-		set_transient( "mvs_typing_{$conversation_id}_{$user_id}", true, 5 );
+		wp_cache_set(
+			self::typing_cache_key( $conversation_id, $user_id ),
+			true,
+			self::TYPING_CACHE_GROUP,
+			5
+		);
 	}
 
 	/**
-	 * Get typing users for a conversation.
+	 * Get typing users for a conversation. Reads from `wp_cache` only;
+	 * sites without a persistent object cache simply won't show typing
+	 * indicators (acceptable degradation — the rest of DM still works).
 	 *
 	 * @param int $conversation_id Conversation ID.
 	 * @param int $exclude_user_id User to exclude (current user).
@@ -1120,7 +1145,14 @@ class MessagingService {
 			if ( $p['id'] === $exclude_user_id ) {
 				continue;
 			}
-			if ( get_transient( "mvs_typing_{$conversation_id}_{$p['id']}" ) ) {
+			$found = false;
+			$value = wp_cache_get(
+				self::typing_cache_key( $conversation_id, (int) $p['id'] ),
+				self::TYPING_CACHE_GROUP,
+				false,
+				$found
+			);
+			if ( $found && $value ) {
 				$typing[] = array(
 					'id'   => $p['id'],
 					'name' => $p['display_name'],

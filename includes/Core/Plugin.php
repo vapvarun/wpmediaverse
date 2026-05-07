@@ -477,6 +477,20 @@ class Plugin {
 			}
 		);
 
+		// Admin aggregates — single source of truth for site-wide counts
+		// (total media, views, storage, etc.). Coding Rule #16: every
+		// admin/CLI surface MUST read aggregates through this service so the
+		// cache layer applies uniformly. Raw $wpdb SUM/COUNT against mvs_*
+		// tables outside this service is forbidden by bin/coding-rules-check.sh.
+		self::$container->register(
+			'admin_aggregates',
+			function () {
+				return new \WPMediaVerse\Services\AdminAggregatesService(
+					self::$container->get( 'cache' )
+				);
+			}
+		);
+
 		// Log pruning cron (daily).
 		if ( ! wp_next_scheduled( 'mvs_prune_logs' ) ) {
 			wp_schedule_event( time(), 'daily', 'mvs_prune_logs' );

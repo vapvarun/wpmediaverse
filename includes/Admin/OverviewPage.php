@@ -637,35 +637,9 @@ class OverviewPage {
 	 * @return array{total_media:int, total_albums:int, pending_moderation:int, total_views:int, storage_used:string}
 	 */
 	private function get_stats(): array {
-		$cache_key = 'mvs_overview_stats';
-		$cached    = wp_cache_get( $cache_key, 'wpmediaverse' );
-		if ( false !== $cached && is_array( $cached ) ) {
-			return $cached;
-		}
-
-		global $wpdb;
-
-		$total_media  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		$total_albums = (int) wp_count_posts( 'mvs_album' )->publish;
-
-		$pending_moderation = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE moderation_status = 'pending'"
-		);
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$total_views_row = $wpdb->get_var( "SELECT SUM(views) FROM {$wpdb->prefix}mvs_media_stats" );
-		$total_views     = $total_views_row ? (int) $total_views_row : 0;
-
-		// Storage used (from mvs_media_index table).
-		$storage_size = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			"SELECT SUM(file_size) FROM {$wpdb->prefix}mvs_media_index" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		);
-		$storage_used = size_format( (int) $storage_size );
-
-		$stats = compact( 'total_media', 'total_albums', 'pending_moderation', 'total_views', 'storage_used' );
-		wp_cache_set( $cache_key, $stats, 'wpmediaverse', 5 * MINUTE_IN_SECONDS );
-
-		return $stats;
+		// Single source of truth — see AdminAggregatesService::overview_cards.
+		// Cache, invalidation, and query shape all live there per Coding Rule #16.
+		return \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' )->overview_cards();
 	}
 
 	/**
@@ -674,23 +648,8 @@ class OverviewPage {
 	 * @return array[] Array of media rows.
 	 */
 	private function get_recent_media(): array {
-		global $wpdb;
-
-		$cache_key = 'mvs_overview_recent';
-		$cached    = wp_cache_get( $cache_key, 'wpmediaverse' );
-		if ( false !== $cached && is_array( $cached ) ) {
-			return $cached;
-		}
-
-		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' ORDER BY created_at DESC LIMIT 5",
-			ARRAY_A
-		);
-
-		$result = $rows ?: array();
-		wp_cache_set( $cache_key, $result, 'wpmediaverse', 5 * MINUTE_IN_SECONDS );
-
-		return $result;
+		// Single source of truth — see AdminAggregatesService::recent_media.
+		return \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' )->recent_media();
 	}
 
 	/**

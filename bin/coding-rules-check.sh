@@ -117,12 +117,59 @@ check_unauthenticated_rest_allowlist() {
 
 # ------------------------------------------------------------------------------
 
+# Rule 3: site-wide aggregate counts MUST go through AdminAggregatesService.
+# Coding Rule #16 in CLAUDE.md: raw $wpdb->get_var() with SUM() / COUNT(*)
+# against any mvs_* table is forbidden outside this service. Why: each ad-hoc
+# query bypasses the cache layer, so optimizations only apply where someone
+# remembered to wrap them. Centralising in AdminAggregatesService gives a
+# single source of truth + uniform daily-TTL persistent cache.
+check_no_raw_aggregate_queries_outside_service() {
+    local hits
+    hits=$(grep -rEn "get_var\([^)]*(SUM|COUNT)\([^)]*\)\s*FROM\s*\\\$wpdb->prefix\s*\.\s*['\"]mvs_|get_var\([^)]*(SUM|COUNT)\([^)]*\)\s*FROM\s*\\\$wpdb->prefix\s*\.\s*'mvs_|get_var\([^)]*\"SELECT\s+(SUM|COUNT)\([^)]*\)\s*FROM\s*\\\$wpdb->prefix" \
+            "$PLUGIN_DIR/includes/" 2>/dev/null \
+            | grep -vE "/Services/AdminAggregatesService\.php|/Services/StatsService\.php|/Admin/StatsPage\.php:.*--user_count|/CLI/Commands\.php:.*\\\$total_users" \
+            || true)
+    if [ -n "$hits" ]; then
+        violation "Rule 3 — raw SUM/COUNT against mvs_* outside AdminAggregatesService:"
+        echo "$hits" | sed 's/^/    /'
+        echo "    Fix: add a method to includes/Services/AdminAggregatesService.php"
+        echo "         and call \$container->get('admin_aggregates')->that_method()."
+        echo "         See CLAUDE.md Coding Rule #16 (cache backend by cardinality)."
+    else
+        ok "Rule 3 — admin aggregates routed through AdminAggregatesService"
+    fi
+}
+
+# Rule 4: high-cardinality data MUST NOT live in transients/options.
+# Coding Rule #16 in CLAUDE.md: any set_transient($key, ...) where $key is
+# interpolated with a per-entity variable ($user_id, $media_id, etc.) is a
+# wp_options bloat at scale. Use a custom mvs_* table or wp_cache_* with
+# a wp_using_ext_object_cache() guard.
+check_no_per_entity_transients() {
+    local hits
+    hits=$(grep -rEn "set_transient\(\s*['\"][^'\"]*\\\$(user_id|media_id|conversation_id|album_id|post_id|comment_id|term_id)" \
+            "$PLUGIN_DIR/includes/" 2>/dev/null \
+            || true)
+    if [ -n "$hits" ]; then
+        violation "Rule 4 — per-entity transient (pollutes wp_options at scale):"
+        echo "$hits" | sed 's/^/    /'
+        echo "    Fix: store in a custom mvs_* table OR use wp_cache_* gated by"
+        echo "         wp_using_ext_object_cache(). See CLAUDE.md Coding Rule #16."
+    else
+        ok "Rule 4 — no per-entity transient keys"
+    fi
+}
+
+# ------------------------------------------------------------------------------
+
 echo "=== WPMediaVerse coding-rules check ==="
 echo "Plugin: $PLUGIN_DIR"
 echo ""
 
 check_no_native_cap_check_for_plugin_abilities
 check_unauthenticated_rest_allowlist
+check_no_raw_aggregate_queries_outside_service
+check_no_per_entity_transients
 
 echo ""
 COUNT=$(violations_count)

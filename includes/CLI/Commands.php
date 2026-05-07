@@ -27,16 +27,15 @@ class Commands {
 	 * @subcommand stats
 	 */
 	public function stats( $args, $assoc_args ) {
-		global $wpdb;
-
-		$media_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$album_count = (int) wp_count_posts( 'mvs_album' )->publish;
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names only, no user input.
-		$total_views     = (int) $wpdb->get_var( "SELECT COALESCE(SUM(views), 0) FROM {$wpdb->prefix}mvs_media_stats" );
-		$total_reactions = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_reactions" );
-		$total_favorites = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_favorites" );
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// Single source of truth — see AdminAggregatesService. The cache
+		// layer there guarantees `wp mvs stats` from a cron poll doesn't
+		// trigger fresh SUM scans on every invocation.
+		$aggregates      = \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' );
+		$media_count     = $aggregates->total_media();
+		$album_count     = $aggregates->total_albums();
+		$total_views     = $aggregates->total_views();
+		$total_reactions = $aggregates->total_reactions();
+		$total_favorites = $aggregates->total_favorites();
 
 		$items = array(
 			array(
