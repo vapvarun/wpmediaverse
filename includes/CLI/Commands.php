@@ -836,7 +836,19 @@ class Commands {
 
 		global $wpdb;
 
+		// IMPORTANT: privacy filter. Cloud buckets we support today (S3,
+		// BunnyCDN) are public-readable by default — uploading a private
+		// media's original to such a bucket leaks it to anyone with the URL,
+		// defeating the privacy promise. Cloud-aware /serve + signed-GET
+		// URLs land in 1.3.0; until then, non-public media STAYS on local.
+		// Customer override: pass --include-non-public if they've configured
+		// a private cloud bucket and accept the responsibility for serving
+		// it themselves (e.g. via CloudFront with origin access identity).
+		$include_non_public = (bool) Utils\get_flag_value( $assoc_args, 'include-non-public', false );
 		$where = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''";
+		if ( ! $include_non_public ) {
+			$where .= " AND privacy = 'public'";
+		}
 		if ( $media_id > 0 ) {
 			$where .= $wpdb->prepare( ' AND media_id = %d', $media_id );
 		}
@@ -847,7 +859,7 @@ class Commands {
 
 		$total = count( $rows );
 		if ( 0 === $total ) {
-			WP_CLI::success( 'No media rows match. Nothing to migrate.' );
+			WP_CLI::success( $include_non_public ? 'No media rows match. Nothing to migrate.' : 'No PUBLIC media rows match. Nothing to migrate. (Pass --include-non-public to also migrate non-public media — only do this if your cloud bucket is private.)' );
 			return;
 		}
 

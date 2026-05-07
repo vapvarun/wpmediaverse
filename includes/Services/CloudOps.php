@@ -47,13 +47,32 @@ class CloudOps {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT media_id, file_path FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d AND status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''", $media_id ) );
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT media_id, file_path, privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d AND status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''", $media_id ) );
 		if ( ! $row ) {
 			return array(
 				'ok'     => false,
 				'status' => 'failed',
 				'error'  => 'media row not found',
 			);
+		}
+
+		// Defense in depth — privacy gate. Cloud buckets we support today
+		// (S3, BunnyCDN) are public-readable. Uploading a non-public media's
+		// original to such a bucket leaks it to anyone with the URL. Callers
+		// MUST gate at the query level (`WHERE privacy = 'public'`); this
+		// check is the safety net if a caller forgets. Filter override
+		// `mvs_cloudops_allow_non_public_to_cloud` lets customers with
+		// private cloud buckets bypass after they've taken responsibility
+		// for restricting public access at the bucket / CDN layer.
+		if ( 'public' !== (string) $row->privacy && 'local' !== $to ) {
+			$allow = (bool) apply_filters( 'mvs_cloudops_allow_non_public_to_cloud', false, $media_id, (string) $row->privacy, $to );
+			if ( ! $allow ) {
+				return array(
+					'ok'     => false,
+					'status' => 'skipped-non-public',
+					'error'  => 'non-public media not migrated to cloud (would leak via public bucket); set mvs_cloudops_allow_non_public_to_cloud filter if your cloud bucket is private',
+				);
+			}
 		}
 
 		$rel_path      = (string) $row->file_path;
