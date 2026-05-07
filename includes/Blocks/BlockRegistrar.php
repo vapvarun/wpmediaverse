@@ -29,7 +29,7 @@ class BlockRegistrar {
 	 * UI to mark media as a story, no REST endpoint, and no scheduled
 	 * expiry cron. Shipping the viewer would surface an empty-by-default
 	 * block to customers. Re-enable once the create-flow lands (planned
-	 * for 1.2.1; tracked in plan/1.2.0.md "Out of scope" list).
+	 * for 1.2.1; tracked in plan/archive/1.2.0.md "Out of scope" list).
 	 *
 	 * @var string[]
 	 */
