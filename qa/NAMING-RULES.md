@@ -217,14 +217,14 @@ Exception: `includes/` files that don't define a class (bootstrap scripts, templ
 
 ### CSS / JS
 
-kebab-case: `bp-integration.css`, `shared-ui-shell.css`, `bp-activity-media.js`. Prefix with `mvs-` only if the file is shipped as an enqueue handle that might collide globally — in practice, the enqueue handle is prefixed (`'mvs-frontend'`), not the filename.
+kebab-case: `bp-integration.css`, `shared-ui-frame.css`, `bp-activity-media.js`. Prefix with `mvs-` only if the file is shipped as an enqueue handle that might collide globally — in practice, the enqueue handle is prefixed (`'mvs-frontend'`), not the filename. Avoid security-flagged tokens like `shell`/`exec` in filenames — customer WAFs may block the file (`shared-ui-shell.css` was renamed to `shared-ui-frame.css` in 1.2.1 for this reason).
 
 ### Templates
 
 kebab-case under `templates/`:
 
 - `templates/admin/settings-page.php`
-- `templates/partials/shared-ui-shell.php`
+- `templates/partials/shared-ui-frame.php`
 
 ---
 

@@ -226,9 +226,9 @@ class Plugin {
 		// Plugin-level theme.json — design tokens at lowest priority (theme always wins).
 		add_filter( 'wp_theme_json_data_default', array( self::class, 'register_theme_json' ) );
 
-		// Shared UI shell — FAB, upload modal, lightbox (all frontend pages).
+		// Shared UI frame — FAB, upload modal, lightbox (all frontend pages).
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_shared_ui_assets' ) );
-		add_action( 'wp_footer', array( self::class, 'render_shared_ui_shell' ) );
+		add_action( 'wp_footer', array( self::class, 'render_shared_ui_frame' ) );
 
 		// Messaging — DM engine.
 		self::init_messaging();
@@ -873,8 +873,8 @@ class Plugin {
 			);
 
 			wp_enqueue_style(
-				'mvs-shared-ui-shell',
-				MVS_PLUGIN_URL . 'assets/css/shared-ui-shell.css',
+				'mvs-shared-ui-frame',
+				MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
 				array(),
 				MVS_VERSION
 			);
@@ -1338,9 +1338,24 @@ JS;
 		}
 
 		wp_enqueue_style(
-			'mvs-shared-ui-shell',
-			MVS_PLUGIN_URL . 'assets/css/shared-ui-shell.css',
+			'mvs-shared-ui-frame',
+			MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
 			array(),
+			MVS_VERSION
+		);
+
+		// Deprecation shim: third-party callers using the legacy
+		// `mvs-shared-ui-shell` handle still resolve to the new file. The
+		// handle name itself is internal — no surface re-uses it — so the
+		// shim is register-only (won't emit a `<link id="mvs-shared-ui-shell-css">`
+		// unless someone explicitly enqueues it). Slated for removal in 1.3.0.
+		// Customer ask (Crisp #NZRSBX): WAFs flag any "shell" token, so this
+		// alias exists strictly so an unrelated theme/plugin enqueueing
+		// `mvs-shared-ui-shell` doesn't 404 during the migration window.
+		wp_register_style(
+			'mvs-shared-ui-shell',
+			MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
+			array( 'mvs-shared-ui-frame' ),
 			MVS_VERSION
 		);
 
@@ -1362,9 +1377,9 @@ JS;
 	}
 
 	/**
-	 * Render the shared UI shell in wp_footer (FAB, upload modal, lightbox).
+	 * Render the shared UI frame in wp_footer (FAB, upload modal, lightbox).
 	 */
-	public static function render_shared_ui_shell(): void {
+	public static function render_shared_ui_frame(): void {
 		if ( is_admin() ) {
 			return;
 		}
@@ -1378,7 +1393,7 @@ JS;
 		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
 
 		// Detect mapped MVS pages.
-		$mvs_shell_page_ids = array_filter(
+		$mvs_frame_page_ids = array_filter(
 			array_map(
 				'absint',
 				array(
@@ -1388,13 +1403,13 @@ JS;
 				)
 			)
 		);
-		$is_mvs_shell_page  = ! empty( $mvs_shell_page_ids ) && is_page( $mvs_shell_page_ids );
+		$is_mvs_frame_page  = ! empty( $mvs_frame_page_ids ) && is_page( $mvs_frame_page_ids );
 
-		if ( ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl && ! $is_mvs_shell_page ) {
+		if ( ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl && ! $is_mvs_frame_page ) {
 			return;
 		}
 
-		$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-shell.php';
+		$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-frame.php';
 		if ( file_exists( $template ) ) {
 			include $template;
 		}

@@ -458,7 +458,7 @@ Your driver must implement `WPMediaVerse\Services\StorageDriverInterface`.
 - Unified thumbnail pipeline shared by Free and Pro.
 - Upload failures now visible to admins via error log instead of failing silently.
 - Block editor blocks load correctly via WordPress Interactivity API on block-rendered pages.
-- `shared-ui-shell.css` simplified by 160 lines after lightbox refactor.
+- `shared-ui-frame.css` simplified by 160 lines after lightbox refactor (renamed from `shared-ui-shell.css` in 1.2.1).
 - Hardened uninstall.
 
 ### 1.1.2 — Apr 22, 2026

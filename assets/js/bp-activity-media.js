@@ -554,7 +554,7 @@
 	}
 
 	// ── Shared-UI Lightbox Driver for BuddyPress Pages ──────────────
-	// Drives the `.mvs-lightbox-overlay` DOM rendered by shared-ui-shell.php
+	// Drives the `.mvs-lightbox-overlay` DOM rendered by shared-ui-frame.php
 	// using vanilla JS. On Explore/Instagram pages the Interactivity API
 	// handles the same DOM; on BP pages this driver takes over.
 	( function() {

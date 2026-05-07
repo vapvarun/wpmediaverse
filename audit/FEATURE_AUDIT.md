@@ -336,7 +336,7 @@ Block-scoped JS lives in each `src/blocks/*/view.js` (loaded via Interactivity).
 | `assets/css/admin.css` | wp-admin only | `.mvs-admin-*` |
 | `assets/css/bp-integration.css` | BP-only | Scoped under `#buddypress` |
 | `assets/css/messaging.css` | DM UI | `.mvs-messaging-*` |
-| `assets/css/shared-ui-shell.css` | Layout primitives | `.mvs-shell-*` |
+| `assets/css/shared-ui-frame.css` | Layout primitives | `.mvs-shell-*` |
 | `*-rtl.css` | RTL variants for each | Auto-generated |
 
 Block-specific CSS lives in `src/blocks/*/style.css`.

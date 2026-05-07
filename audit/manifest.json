@@ -1733,7 +1733,7 @@
         "prefix": ".mvs-messaging-"
       },
       {
-        "file": "assets/css/shared-ui-shell.css",
+        "file": "assets/css/shared-ui-frame.css",
         "scope": "layout primitives",
         "prefix": ".mvs-shell-"
       }

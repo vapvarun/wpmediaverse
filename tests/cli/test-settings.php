@@ -161,10 +161,10 @@ function run_settings_tests(): array {
 	$has_social_enqueue = strpos( $plugin_src, '@mvs/media-social' ) !== false;
 	assert_test( 'Plugin.php enqueues @mvs/media-social module', $has_social_enqueue ) ? $p++ : $f++;
 
-	// Shared-ui-shell must pass allowedTypes to context.
-	$shell_src = file_get_contents( ABSPATH . 'wp-content/plugins/wpmediaverse/templates/partials/shared-ui-shell.php' );
-	$has_allowed_types = strpos( $shell_src, 'allowedTypes' ) !== false;
-	assert_test( 'shared-ui-shell passes allowedTypes to context', $has_allowed_types ) ? $p++ : $f++;
+	// shared-ui-frame must pass allowedTypes to context.
+	$frame_src = file_get_contents( ABSPATH . 'wp-content/plugins/wpmediaverse/templates/partials/shared-ui-frame.php' );
+	$has_allowed_types = strpos( $frame_src, 'allowedTypes' ) !== false;
+	assert_test( 'shared-ui-frame passes allowedTypes to context', $has_allowed_types ) ? $p++ : $f++;
 
 	// NotificationService must hook mvs_message_sent for DM notifications.
 	$has_dm_hook = strpos( $notif_src, 'mvs_message_sent' ) !== false;

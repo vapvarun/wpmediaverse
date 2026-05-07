@@ -16,7 +16,7 @@ Every CSS file in `assets/css/` has a single scope. If a rule doesn't match the 
 | `bp-integration.css` | BuddyPress surfaces only | Everything scoped under `#buddypress` or `.activity-list`: profile media tab, group media tab, activity composer, activity stream, sub-tabs, dropzone, upload preview, theme-compat for Reign / BuddyBoss / BuddyX | Generic plugin UI (→ `frontend.css`), wp-admin rules (→ `admin.css`) |
 | `admin.css` | wp-admin only | Settings page, Overview / Stats / Logs / Moderation / Setup Wizard pages, list tables, metaboxes, admin modals | Frontend rules. `admin.css` does NOT load on the frontend, so referencing `--mvs-*` tokens from `frontend.css` will silently fall back to defaults. Tokens needed here must be duplicated or extracted to a shared `vars-only.css` (not yet extracted — deferred). |
 | `messaging.css` | DM / inbox surfaces only | `.mvs-dm-*`, `.mvs-conversation-*`, `.mvs-message-*` | Notification bell (→ `frontend.css` unless BP-scoped), generic modals |
-| `shared-ui-shell.css` | The shared lightbox/overlay shell used by both frontend and BP | Lightbox social sidebar variables, overlay utility classes shared across surfaces | Anything surface-specific |
+| `shared-ui-frame.css` | The shared lightbox/overlay frame used by both frontend and BP (renamed from `shared-ui-shell.css` in 1.2.1 — customer WAFs flag the "shell" token) | Lightbox social sidebar variables, overlay utility classes shared across surfaces | Anything surface-specific |
 | `src/blocks/*/style.css` | That specific Gutenberg block only | Block's own wrapper styles, editor parity | Rules intended for anywhere else the plugin renders (those go in `frontend.css`) |
 
 ### Decision tree
