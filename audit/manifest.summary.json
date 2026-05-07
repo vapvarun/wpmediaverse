@@ -36,7 +36,7 @@
     "tables": "manifest.tables.json"
   },
   "static_analysis_summary": {
-    "wppqa_baseline_dir": "wppqa-baseline-2026-05-01",
+    "wppqa_baseline_dir": "wppqa-baseline-2026-05-03",
     "phase_2_5_11_14_skipped": true,
     "phase_2_5_11_14_skip_reason": "ServiceContainer DI (no Adapter pattern)",
     "args_signature_extraction": "14 of 22 original hooks_fired entries populated; 8 phantom (no call site in source — manifest drift); 4 new hooks added from Core/SettingsHelper. PRO arch-checks A11 reads args_signature[] for cross-plugin contract drift detection."
