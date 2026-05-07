@@ -293,10 +293,8 @@ class MediaController extends WP_REST_Controller {
 			return rest_ensure_response( array() );
 		}
 
-		$per_page = $request->get_param( 'per_page' );
-		$per_page = $per_page ? (int) $per_page : 20;
-		$page     = $request->get_param( 'page' );
-		$page     = $page ? (int) $page : 1;
+		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
+		$page     = \WPMediaVerse\REST\Pagination::resolve_page( $request );
 		$offset   = ( $page - 1 ) * $per_page;
 		$user_id  = get_current_user_id();
 

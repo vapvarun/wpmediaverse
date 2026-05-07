@@ -162,6 +162,45 @@ check_no_per_entity_transients() {
 
 # ------------------------------------------------------------------------------
 
+# Rule 5: every REST `'per_page' => array(...)` entry MUST declare a 'maximum'.
+# Phase 3E added missing caps (AccessController had no upper bound, letting
+# a malicious client request per_page=999999). The grep is intentionally
+# coarse — multi-line array() blocks where the per_page key opens and
+# closes on different lines are flagged via a python pass against the
+# raw source so that nested arrays don't confuse a regex.
+check_rest_per_page_has_maximum() {
+    local hits
+    hits=$(python3 - "$PLUGIN_DIR" <<'PY'
+import os, re, sys
+plugin_dir = sys.argv[1]
+controller_dir = os.path.join(plugin_dir, 'includes', 'REST', 'Controller')
+violations = []
+if os.path.isdir(controller_dir):
+    for name in sorted(os.listdir(controller_dir)):
+        if not name.endswith('.php'):
+            continue
+        path = os.path.join(controller_dir, name)
+        src = open(path).read()
+        for m in re.finditer(r"'per_page'\s*=>\s*array\(([^()]*?)\)\s*,", src, re.DOTALL):
+            block = m.group(1)
+            if "'maximum'" not in block:
+                line_no = src[:m.start()].count('\n') + 1
+                violations.append(f"{path}:{line_no} 'per_page' missing 'maximum'")
+print('\n'.join(violations))
+PY
+2>/dev/null)
+    if [ -n "$hits" ]; then
+        violation "Rule 5 — REST per_page param without 'maximum' cap:"
+        echo "$hits" | sed 's/^/    /'
+        echo "    Fix: add 'maximum' => apply_filters( 'mvs_rest_pagination_max', 100 )"
+        echo "         alongside the 'default' / 'sanitize_callback' entries."
+    else
+        ok "Rule 5 — every REST per_page declares a 'maximum' cap"
+    fi
+}
+
+# ------------------------------------------------------------------------------
+
 echo "=== WPMediaVerse coding-rules check ==="
 echo "Plugin: $PLUGIN_DIR"
 echo ""
@@ -170,6 +209,7 @@ check_no_native_cap_check_for_plugin_abilities
 check_unauthenticated_rest_allowlist
 check_no_raw_aggregate_queries_outside_service
 check_no_per_entity_transients
+check_rest_per_page_has_maximum
 
 echo ""
 COUNT=$(violations_count)
