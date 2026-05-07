@@ -1829,13 +1829,51 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-05-07T08:30:00Z",
-    "from": "wp-plugin-onboard skill (1.2.1 targeted refresh 2026-05-07)",
+    "at": "2026-05-07T14:30:00Z",
+    "from": "wp-plugin-onboard skill (1.2.1 cloud + i18n targeted refresh 2026-05-07 PM)",
     "branch": "1.2.1",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
-    "php_file_count": 160,
+    "php_file_count": 162,
+    "refresh_2026_05_07_pm": {
+      "scope": "targeted (cloud-storage tooling + cloud thumbnails + i18n sweep + privacy gate)",
+      "added": {
+        "services_added": [
+          "WPMediaVerse\\Services\\CloudOps"
+        ],
+        "interface_changes": [
+          "StorageDriverInterface::download(string $path, string $local_dest): bool — new contract method"
+        ],
+        "cli_subcommands_added": [
+          "wp mvs migrate-storage --from --to [--keep-source] [--include-non-public]",
+          "wp mvs cloud-thumbs-backfill",
+          "wp mvs cleanup-local [--keep-thumbs]"
+        ],
+        "settings_added": [
+          "mvs_cloud_direct_public_urls (boolean, default false)"
+        ],
+        "filters_added": [
+          "mvs_cloud_thumbnail_url($url, $size, $media_id) — delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
+          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) — opt-in for private-bucket setups"
+        ],
+        "options_added": [
+          "mvs_cloud_ops_status — last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
+        ],
+        "i18n_strings_wrapped": 98,
+        "pot_entries": "1 → 1,179",
+        "wp_localize_script_handles": [
+          "mvsConfirmI18n",
+          "mvsCardBuildersI18n"
+        ],
+        "view_script_strings_via_runtime_shim": 50,
+        "locale_broken_matchers_fixed": [
+          "bp-activity-media.js favorite-button click delegation (was textContent.indexOf Share)",
+          "bp-activity-media.js share-button click delegation (was textContent.indexOf Share/Copied)"
+        ]
+      },
+      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration, Phase 4.7 scaffold (already in place)."
+    },
     "args_signature_extraction": {
       "at": "2026-04-30",
       "tool": "wp-plugin-onboard SKILL.md Phase 2.5.2 extractor",
@@ -1948,27 +1986,98 @@
   },
   "static_analysis": {
     "dead_listeners": [
-      {"hook": "mvs_share_recorded", "listener": "Services/CacheService.php:331", "severity": "low", "note": "1.2.0 record_share endpoint does not fire this hook — cache stays stale on share recordings"},
-      {"hook": "mvs_reaction_removed", "listener": "Services/CacheService.php:329", "severity": "medium", "note": "ReactionService::remove never fires symmetric hook (mvs_reaction_added IS fired) — cache stays stale on reaction removal"},
-      {"hook": "mvs_media_moderated", "listener_1": "Services/CacheService.php:334", "listener_2": "Integrations/WebhookService.php:40", "severity": "high", "note": "ModerationController::approve/reject_item writes moderation_status without firing hook — outbound webhooks for moderation events are silently broken"}
+      {
+        "hook": "mvs_share_recorded",
+        "listener": "Services/CacheService.php:331",
+        "severity": "low",
+        "note": "1.2.0 record_share endpoint does not fire this hook — cache stays stale on share recordings"
+      },
+      {
+        "hook": "mvs_reaction_removed",
+        "listener": "Services/CacheService.php:329",
+        "severity": "medium",
+        "note": "ReactionService::remove never fires symmetric hook (mvs_reaction_added IS fired) — cache stays stale on reaction removal"
+      },
+      {
+        "hook": "mvs_media_moderated",
+        "listener_1": "Services/CacheService.php:334",
+        "listener_2": "Integrations/WebhookService.php:40",
+        "severity": "high",
+        "note": "ModerationController::approve/reject_item writes moderation_status without firing hook — outbound webhooks for moderation events are silently broken"
+      }
     ],
     "cap_context_mismatches": [],
     "extensibility_gaps": [
-      {"action": "mvs_dashboard_tabs", "consumer": "wpmediaverse-pro/includes/Core/Plugin.php:187", "free_status": "never_fired", "severity": "low", "note": "Pro listens to extend dashboard tabs but Free hard-codes tab markup in dashboard-view block"},
-      {"action": "mvs_dashboard_panels", "consumer": "wpmediaverse-pro/includes/Core/Plugin.php:188", "free_status": "never_fired", "severity": "low"},
-      {"action": "mvs_after_content", "consumer": "wpmediaverse-pro/includes/Core/Plugin.php:507", "free_status": "never_fired", "severity": "low"},
-      {"filter": "mvs_locate_template", "consumer": "wpmediaverse-pro/includes/Frontend/InstagramFeedService.php:31", "free_status": "never_fired", "severity": "low"},
-      {"filter": "mvs_upload_args", "consumer": "wpmediaverse-pro/includes/Quota/QuotaService.php:37", "free_status": "never_fired", "severity": "medium", "note": "Pro QuotaService falls back to rest_pre_dispatch interception — works but indirect"},
-      {"filter": "mvs_feed_media_ids", "consumer": "wpmediaverse-pro/includes/Boosts/BoostService.php:38", "free_status": "never_fired", "severity": "medium", "note": "Pro Boosts cannot promote in feed without Free firing this filter"}
+      {
+        "action": "mvs_dashboard_tabs",
+        "consumer": "wpmediaverse-pro/includes/Core/Plugin.php:187",
+        "free_status": "never_fired",
+        "severity": "low",
+        "note": "Pro listens to extend dashboard tabs but Free hard-codes tab markup in dashboard-view block"
+      },
+      {
+        "action": "mvs_dashboard_panels",
+        "consumer": "wpmediaverse-pro/includes/Core/Plugin.php:188",
+        "free_status": "never_fired",
+        "severity": "low"
+      },
+      {
+        "action": "mvs_after_content",
+        "consumer": "wpmediaverse-pro/includes/Core/Plugin.php:507",
+        "free_status": "never_fired",
+        "severity": "low"
+      },
+      {
+        "filter": "mvs_locate_template",
+        "consumer": "wpmediaverse-pro/includes/Frontend/InstagramFeedService.php:31",
+        "free_status": "never_fired",
+        "severity": "low"
+      },
+      {
+        "filter": "mvs_upload_args",
+        "consumer": "wpmediaverse-pro/includes/Quota/QuotaService.php:37",
+        "free_status": "never_fired",
+        "severity": "medium",
+        "note": "Pro QuotaService falls back to rest_pre_dispatch interception — works but indirect"
+      },
+      {
+        "filter": "mvs_feed_media_ids",
+        "consumer": "wpmediaverse-pro/includes/Boosts/BoostService.php:38",
+        "free_status": "never_fired",
+        "severity": "medium",
+        "note": "Pro Boosts cannot promote in feed without Free firing this filter"
+      }
     ],
     "js_only_activation": [],
     "rest_hang_risks": [
-      {"file": "src/blocks/shared-ui/view.js", "fetch_count": 23, "abort_aware_count": 0, "severity": "medium", "note": "Zero AbortController/signal usage. New 1.2.0 sites: line 332 (search autocomplete — race condition real bug), line 485 (Edit modal save), line 1133 (record_share), line 1196 (record_download). Recommend 1.2.1 fetch hardening pass."}
+      {
+        "file": "src/blocks/shared-ui/view.js",
+        "fetch_count": 23,
+        "abort_aware_count": 0,
+        "severity": "medium",
+        "note": "Zero AbortController/signal usage. New 1.2.0 sites: line 332 (search autocomplete — race condition real bug), line 485 (Edit modal save), line 1133 (record_share), line 1196 (record_download). Recommend 1.2.1 fetch hardening pass."
+      }
     ],
     "visual_required_no_enforcement": [],
     "grid_track_overflow_risks": [
-      {"selector": ".mvs-bp-* group/profile media tabs", "file": "assets/css/bp-integration.css:812", "rule": "grid-template-columns: repeat(6, 1fr)", "severity": "medium", "note": "Risk of column collapse on narrow tablet under BP themes injecting unbreakable strings — recommend minmax(0,1fr)"},
-      {"selector_family": ".mvs-media-grid + .mvs-dashboard-grid + various", "files": ["assets/css/frontend.css", "assets/css/bp-integration.css", "src/blocks/media-grid/style.css"], "total_bare_1fr_rules": 30, "severity": "low", "note": "Systemic CSS pattern, predates 1.2.0. img max-width:100% is the safety net."}
+      {
+        "selector": ".mvs-bp-* group/profile media tabs",
+        "file": "assets/css/bp-integration.css:812",
+        "rule": "grid-template-columns: repeat(6, 1fr)",
+        "severity": "medium",
+        "note": "Risk of column collapse on narrow tablet under BP themes injecting unbreakable strings — recommend minmax(0,1fr)"
+      },
+      {
+        "selector_family": ".mvs-media-grid + .mvs-dashboard-grid + various",
+        "files": [
+          "assets/css/frontend.css",
+          "assets/css/bp-integration.css",
+          "src/blocks/media-grid/style.css"
+        ],
+        "total_bare_1fr_rules": 30,
+        "severity": "low",
+        "note": "Systemic CSS pattern, predates 1.2.0. img max-width:100% is the safety net."
+      }
     ],
     "hook_signature_drift": [],
     "adapter_undefined_calls": [],
@@ -1998,13 +2107,38 @@
     },
     "registry_strategy": [],
     "layout_owning_blocks": [
-      {"name": "mvs/media-grid", "layout_owning": true},
-      {"name": "mvs/album-viewer", "layout_owning": true},
-      {"name": "mvs/explore-feed", "layout_owning": true},
-      {"name": "mvs/explore-view", "layout_owning": true},
-      {"name": "mvs/dashboard-view", "layout_owning": true},
-      {"name": "mvs/member-photos", "layout_owning": true, "added": "1.2.0", "note": "Inherits via do_blocks(media-grid)"},
-      {"name": "mvs/pdf-viewer", "layout_owning": false, "added": "1.2.0", "note": "Single-iframe embed; no inner-block flow — correct value"}
+      {
+        "name": "mvs/media-grid",
+        "layout_owning": true
+      },
+      {
+        "name": "mvs/album-viewer",
+        "layout_owning": true
+      },
+      {
+        "name": "mvs/explore-feed",
+        "layout_owning": true
+      },
+      {
+        "name": "mvs/explore-view",
+        "layout_owning": true
+      },
+      {
+        "name": "mvs/dashboard-view",
+        "layout_owning": true
+      },
+      {
+        "name": "mvs/member-photos",
+        "layout_owning": true,
+        "added": "1.2.0",
+        "note": "Inherits via do_blocks(media-grid)"
+      },
+      {
+        "name": "mvs/pdf-viewer",
+        "layout_owning": false,
+        "added": "1.2.0",
+        "note": "Single-iframe embed; no inner-block flow — correct value"
+      }
     ],
     "derived_caches": {
       "directory": "audit/derived/",
@@ -2057,10 +2191,18 @@
         ]
       },
       "renamed": {
-        "css_files": ["shared-ui-shell.css → shared-ui-frame.css (+rtl + .min variants)"],
-        "templates": ["templates/partials/shared-ui-shell.php → shared-ui-frame.php"],
-        "methods": ["Plugin::render_shared_ui_shell → render_shared_ui_frame"],
-        "enqueue_handles": ["mvs-shared-ui-shell → mvs-shared-ui-frame (legacy handle kept as register-only shim until 1.3.0)"]
+        "css_files": [
+          "shared-ui-shell.css → shared-ui-frame.css (+rtl + .min variants)"
+        ],
+        "templates": [
+          "templates/partials/shared-ui-shell.php → shared-ui-frame.php"
+        ],
+        "methods": [
+          "Plugin::render_shared_ui_shell → render_shared_ui_frame"
+        ],
+        "enqueue_handles": [
+          "mvs-shared-ui-shell → mvs-shared-ui-frame (legacy handle kept as register-only shim until 1.3.0)"
+        ]
       },
       "rationale": "(1) Customer WAFs (Crisp #NZRSBX) flag any 'shell' token in filenames; rename eliminates the trigger. (2) Zoho #39974: media + album privacy now drive a 4-level BP activity privacy model with viewer-side JOIN filter (rtMedia parity) instead of being ignored. (3) 100k-readiness — search FULLTEXT, AdminAggregatesService consolidation, MediaRepository request cache + prefetch kill render N+1, REST per_page caps. (4) Filename refactor (Crisp #NZRSBX) — additive, never rewrites existing media on disk.",
       "out_of_scope": "Full Phase 0–6 onboard run (wppqa baseline, 14 sub-checks, FEATURE_AUDIT regen, derived/ cache rebuild). Defer to a full /wp-plugin-onboard --refresh after Phase 6 release."
