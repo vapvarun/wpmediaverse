@@ -122,10 +122,20 @@ class SignedUrlService {
 			return false;
 		}
 
-		// Direct CDN path: the original is on cloud, no per-size variants
-		// exist there yet (1.3.0 will add cloud-side resizing). Browser
-		// downloads the original even for thumbnail slots — perf trade-off
-		// the operator opted into. Public media only.
+		// Direct CDN path — size-aware. If thumbnails for this media were
+		// pushed to cloud at upload time (UploadService Phase 1.2.2 work),
+		// the stored thumb_<size> meta IS already the cloud URL — return
+		// it directly so the browser hits the CDN edge instead of WP.
+		$direct_thumb = $this->maybe_direct_cloud_thumbnail_url( $media_id, $size );
+		if ( '' !== $direct_thumb ) {
+			return $direct_thumb;
+		}
+
+		// Fallback: full-file direct-CDN. Used when thumb variants haven't
+		// been pushed to cloud (e.g. media uploaded before 1.2.2 + before
+		// the backfill CLI runs, or when the customer's CDN-resize filter
+		// returned an empty value). Browser downloads the original — not
+		// ideal but functional, no broken images.
 		$direct = $this->maybe_direct_cloud_url( $media_id );
 		if ( '' !== $direct ) {
 			return $direct;
@@ -425,6 +435,72 @@ class SignedUrlService {
 	 * @param int $media_id Media ID.
 	 * @return string Direct CDN URL or empty string.
 	 */
+	/**
+	 * Size-aware variant of maybe_direct_cloud_url for thumbnail reads.
+	 *
+	 * Returns the per-size cloud URL when ALL of:
+	 *   - setting `mvs_cloud_direct_public_urls` = '1'
+	 *   - active driver is non-local
+	 *   - media privacy = 'public'
+	 *   - no active access rules
+	 *   - the stored `thumb_<size>` meta is on the cloud (not local uploads dir)
+	 *
+	 * Else returns '' so the caller falls through to either the full-file
+	 * direct-CDN path or the gated /serve proxy.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $size     Size key: large / medium / thumbnail.
+	 * @return string Cloud URL for the size-specific thumbnail or empty string.
+	 */
+	private function maybe_direct_cloud_thumbnail_url( int $media_id, string $size ): string {
+		if ( ! (bool) get_option( 'mvs_cloud_direct_public_urls', false ) ) {
+			return '';
+		}
+
+		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		if ( 'local' === $driver_slug ) {
+			return '';
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		if ( 'public' !== (string) $repo->get_raw( $media_id, 'privacy' ) ) {
+			return '';
+		}
+
+		if ( $this->access_rules->has_active_rules( $media_id ) ) {
+			return '';
+		}
+
+		$size_map = array(
+			'large'     => 'thumb_large',
+			'medium'    => 'thumb_medium',
+			'thumbnail' => 'thumb_thumb',
+		);
+		$meta_key = $size_map[ $size ] ?? null;
+		if ( null === $meta_key ) {
+			return '';
+		}
+
+		$thumb_url = (string) $repo->get_raw( $media_id, $meta_key );
+		if ( '' === $thumb_url ) {
+			return '';
+		}
+
+		// If the stored URL still points at the local uploads directory,
+		// this thumbnail was generated before 1.2.2's cloud-thumb push (or
+		// the cloud upload failed and we fell back to the local URL). Don't
+		// short-circuit — let the gated /serve proxy stream the local file.
+		// The backfill CLI will eventually push these to cloud.
+		$upload_dir = wp_upload_dir();
+		if ( is_array( $upload_dir ) && ! empty( $upload_dir['baseurl'] ) ) {
+			if ( 0 === strpos( $thumb_url, (string) $upload_dir['baseurl'] ) ) {
+				return '';
+			}
+		}
+
+		return $thumb_url;
+	}
+
 	private function maybe_direct_cloud_url( int $media_id ): string {
 		if ( ! (bool) get_option( 'mvs_cloud_direct_public_urls', false ) ) {
 			return '';

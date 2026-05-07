@@ -982,4 +982,177 @@ class Commands {
 			WP_CLI::log( "  wp option update mvs_storage_driver {$to}" );
 		}
 	}
+
+	/**
+	 * Push thumbnail variants to the active cloud storage driver for media
+	 * uploaded before 1.2.2 (when cloud-side thumbs landed). Iterates every
+	 * publish/draft image media row whose `thumb_<size>` meta still points
+	 * at a local URL, regenerates from the original, and uploads each size
+	 * to the cloud driver — same path convention as fresh uploads.
+	 *
+	 * After this CLI runs, the size-aware direct-CDN read path
+	 * (`maybe_direct_cloud_thumbnail_url`) returns cloud URLs for every
+	 * media's thumbnail slot — browser never fetches the full original
+	 * for a 200×200 thumbnail again.
+	 *
+	 * Pre-condition: original files must already exist on cloud (run
+	 * `wp mvs migrate-storage` first if not). The original is downloaded
+	 * to a temp file, multi_resize'd via WP image editor, and each variant
+	 * uploaded. Temp files are cleaned up after every row.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Walk the candidate list and report what would migrate. No files
+	 *   downloaded, no thumbs generated, no uploads.
+	 *
+	 * [--media-id=<id>]
+	 * : Process a single media row only (testing / repair).
+	 *
+	 * [--limit=<n>]
+	 * : Stop after this many rows (testing / batched runs).
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs cloud-thumbs-backfill --dry-run
+	 *     wp mvs cloud-thumbs-backfill --limit=100
+	 *     wp mvs cloud-thumbs-backfill --media-id=42
+	 *
+	 * @subcommand cloud-thumbs-backfill
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional CLI args (unused).
+	 * @param array $assoc_args Associative CLI flags.
+	 */
+	public function cloud_thumbs_backfill( $args, $assoc_args ) {
+		unset( $args );
+
+		$dry_run  = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$media_id = (int) Utils\get_flag_value( $assoc_args, 'media-id', 0 );
+		$limit    = (int) Utils\get_flag_value( $assoc_args, 'limit', 0 );
+
+		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		if ( 'local' === $driver_slug ) {
+			WP_CLI::error( 'Active driver is "local" — nothing to push to cloud. Set mvs_storage_driver to s3 or bunnycdn first.' );
+		}
+
+		$driver = apply_filters( 'mvs_storage_driver', null, $driver_slug );
+		if ( ! $driver instanceof \WPMediaVerse\Services\StorageDriverInterface ) {
+			WP_CLI::error( "Storage driver '{$driver_slug}' is not available. Pro plugin required for s3/bunnycdn." );
+		}
+
+		global $wpdb;
+
+		$where = "i.status IN ('publish','draft') AND i.file_path IS NOT NULL AND i.file_path != '' AND i.file_type LIKE 'image/%'";
+		if ( $media_id > 0 ) {
+			$where .= $wpdb->prepare( ' AND i.media_id = %d', $media_id );
+		}
+		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( "SELECT i.media_id, i.file_path, i.file_type FROM {$wpdb->prefix}mvs_media_index i WHERE {$where} ORDER BY i.media_id ASC{$limit_sql}" );
+
+		$total = count( $rows );
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No image media rows match. Nothing to backfill.' );
+			return;
+		}
+
+		WP_CLI::log( sprintf( 'Backfilling cloud thumbnails for %d image(s) → %s%s', $total, $driver_slug, $dry_run ? ' [DRY-RUN]' : '' ) );
+
+		if ( ! $dry_run ) {
+			WP_CLI::warning( 'This downloads each original from the cloud, regenerates 3 size variants locally, and uploads each variant. Network + CPU heavy. Recommend running off-peak.' );
+			WP_CLI::confirm( 'Proceed?' );
+		}
+
+		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$service  = \WPMediaVerse\Core\Plugin::container()->get( 'upload' );
+		$tmp_root = trailingslashit( get_temp_dir() ) . 'mvs-thumbs-' . uniqid() . '/';
+		$migrated = 0;
+		$skipped  = 0;
+		$failed   = 0;
+		$progress = Utils\make_progress_bar( 'Backfilling thumbnails', $total );
+
+		foreach ( $rows as $row ) {
+			$rel_path = (string) $row->file_path;
+
+			// Skip if EVERY size already has a non-local URL — nothing to do.
+			$thumb_keys = array( 'thumb_large', 'thumb_medium', 'thumb_thumb' );
+			$all_cloud  = true;
+			foreach ( $thumb_keys as $key ) {
+				$val = (string) $repo->get_raw( (int) $row->media_id, $key );
+				if ( '' === $val ) {
+					$all_cloud = false;
+					break;
+				}
+				$upload_dir = wp_upload_dir();
+				if ( is_array( $upload_dir ) && ! empty( $upload_dir['baseurl'] ) && 0 === strpos( $val, (string) $upload_dir['baseurl'] ) ) {
+					$all_cloud = false;
+					break;
+				}
+			}
+			if ( $all_cloud ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			if ( $dry_run ) {
+				++$migrated;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 1 — pull original from cloud to local temp.
+			$tmp_path = $tmp_root . ltrim( $rel_path, '/' );
+			if ( ! $driver->download( $rel_path, $tmp_path ) ) {
+				WP_CLI::warning( sprintf( 'Original download failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
+				++$failed;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 2 — call generate_thumbnails. Same code path as a fresh
+			// upload: WP multi_resize creates locals, the driver pushes each
+			// to cloud, meta updates to cloud URLs.
+			$ok = $service->generate_thumbnails( (int) $row->media_id, $tmp_path, (string) $row->file_type );
+
+			// Stage 3 — clean up the temp original (size variants the
+			// generate_thumbnails call wrote next to it are also cleaned).
+			if ( file_exists( $tmp_path ) ) {
+				wp_delete_file( $tmp_path );
+			}
+			$tmp_dir = dirname( $tmp_path );
+			if ( is_dir( $tmp_dir ) ) {
+				$siblings = glob( $tmp_dir . '/*-*x*.*' ) ?: array();
+				foreach ( $siblings as $s ) {
+					wp_delete_file( $s );
+				}
+			}
+
+			if ( $ok ) {
+				++$migrated;
+			} else {
+				++$failed;
+			}
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		if ( is_dir( $tmp_root ) ) {
+			@rmdir( $tmp_root ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- empty-dir best-effort
+		}
+
+		$prefix = $dry_run ? '[dry-run] Would backfill' : 'Backfilled';
+		WP_CLI::success(
+			sprintf(
+				'%s thumbnails for %d image(s). Skipped %d (already on cloud). Failed %d.',
+				$prefix,
+				$migrated,
+				$skipped,
+				$failed
+			)
+		);
+	}
 }
