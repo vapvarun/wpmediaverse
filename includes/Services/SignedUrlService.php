@@ -74,6 +74,17 @@ class SignedUrlService {
 			return false;
 		}
 
+		// Opt-in: skip the gated proxy and return the active driver's direct
+		// URL for public media on cloud drivers. Browsers hit the CDN edge
+		// instead of WordPress for every <img>. Download requests stay on
+		// the gated path (Content-Disposition headers + download counters).
+		if ( ! $download ) {
+			$direct = $this->maybe_direct_cloud_url( $media_id );
+			if ( '' !== $direct ) {
+				return $direct;
+			}
+		}
+
 		if ( 0 === $ttl ) {
 			$ttl = $this->get_ttl();
 		}
@@ -109,6 +120,15 @@ class SignedUrlService {
 	public function generate_thumbnail( int $media_id, int $user_id, string $size = 'large', int $ttl = 0, bool $skip_privacy_check = false ) {
 		if ( ! $skip_privacy_check && ! $this->privacy->can_view( $media_id, $user_id ) ) {
 			return false;
+		}
+
+		// Direct CDN path: the original is on cloud, no per-size variants
+		// exist there yet (1.3.0 will add cloud-side resizing). Browser
+		// downloads the original even for thumbnail slots — perf trade-off
+		// the operator opted into. Public media only.
+		$direct = $this->maybe_direct_cloud_url( $media_id );
+		if ( '' !== $direct ) {
+			return $direct;
 		}
 
 		$expires = time() + ( $ttl ?: $this->get_ttl() );
@@ -385,6 +405,59 @@ class SignedUrlService {
 	 */
 	public function requires_signed_url( int $media_id ): bool {
 		return $this->access_rules->has_active_rules( $media_id );
+	}
+
+	/**
+	 * If conditions allow, return the active driver's direct public URL.
+	 *
+	 * Returns a non-empty string only when ALL of:
+	 *   - setting `mvs_cloud_direct_public_urls` = '1' (operator opt-in)
+	 *   - active storage driver is NOT local (`mvs_storage_driver !== 'local'`)
+	 *   - media privacy = 'public'
+	 *   - media has no active access rules
+	 *
+	 * Else returns '' so the caller falls through to the gated /serve path.
+	 *
+	 * **Privacy caveat:** the direct URL is on the CDN's public pull-zone.
+	 * Anyone with the URL can view, including after the media's privacy is
+	 * later flipped to private. Document this in the setting description.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Direct CDN URL or empty string.
+	 */
+	private function maybe_direct_cloud_url( int $media_id ): string {
+		if ( ! (bool) get_option( 'mvs_cloud_direct_public_urls', false ) ) {
+			return '';
+		}
+
+		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		if ( 'local' === $driver_slug ) {
+			return '';
+		}
+
+		// Public privacy only — anything restricted must stay on the gated
+		// proxy so the privacy check fires per request.
+		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$privacy = (string) $repo->get_raw( $media_id, 'privacy' );
+		if ( 'public' !== $privacy ) {
+			return '';
+		}
+
+		if ( $this->access_rules->has_active_rules( $media_id ) ) {
+			return '';
+		}
+
+		$file_path = (string) $repo->get_raw( $media_id, 'file_path' );
+		if ( '' === $file_path ) {
+			return '';
+		}
+
+		$driver = apply_filters( 'mvs_storage_driver', null, $driver_slug );
+		if ( ! $driver instanceof StorageDriverInterface ) {
+			return '';
+		}
+
+		return (string) $driver->url( $file_path );
 	}
 
 	/**

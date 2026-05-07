@@ -299,6 +299,32 @@ class SettingsRegistrar {
 			)
 		);
 
+		// Direct CDN URLs for public media on cloud drivers. When enabled
+		// AND the active driver is s3/bunnycdn, public-privacy media skip
+		// the gated /serve proxy and emit the CDN edge URL directly.
+		// Restricted media still flows through the gated proxy. Off by
+		// default so upgrades do not silently change URL behavior.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			'mvs_cloud_direct_public_urls',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+		add_settings_field(
+			'mvs_cloud_direct_public_urls',
+			__( 'Serve public media direct from CDN', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => 'mvs_cloud_direct_public_urls',
+				'description' => __( 'When using a cloud storage driver (S3, BunnyCDN), emit the CDN edge URL directly for public media so browsers fetch from the CDN instead of through WordPress. Restricted media (members-only, friends, private) and media with access rules continue to flow through the gated /serve proxy. <strong>Caveat:</strong> once a public URL is on the CDN edge, anyone who has it can keep viewing — even after you flip the media to private. Leave off if you need WordPress to re-validate privacy on every image request.', 'wpmediaverse' ),
+			)
+		);
+
 		// View-event retention. Daily cron drops rows from mvs_media_views
 		// older than this window — keeps the table bounded as traffic grows.
 		// Aggregates in mvs_media_stats (counts, totals) are unaffected.
