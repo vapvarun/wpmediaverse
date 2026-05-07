@@ -41,10 +41,28 @@ calls (the canonical BP query path that the activity stream + REST
 
 ## Browser confirmation (Playwright MCP)
 
-- **anon at /activity-2/ with fresh friends-only activity #40 in DB**:
-  count = 7 (activity-40 excluded), `activity40Visible: false`,
-  body classes confirm `isAnon: true` (no `logged-in` class).
-  Screenshot: `qa-anon-friends-hidden.png`.
+Friends-only fresh upload (activity 41, author user 1, friend user 6,
+non-friend user 2) — all three viewer types verified in real browser
+sessions on /activity-2/:
+
+| Viewer | Login | Stream count | activity-41 in list | Verdict |
+|---|---|---|---|---|
+| Anonymous | logged out via wp-login.php?action=logout | 7 | no | ✅ correctly hidden |
+| Mina Aoki (user 2, non-friend) | autologin=mina_aoki | 7 | no | ✅ correctly hidden |
+| Emma Williams (user 6, FRIEND) | autologin=emma_williams | 8 | YES | ✅ correctly visible |
+
+The two-cell delta (count 7 vs 8 / activity-41 absence vs presence)
+proves the JOIN filter discriminates by friendship correctly:
+- Same activity, same DB state
+- Friend sees it, non-friend (also logged-in) does NOT
+- Anonymous (no auth) does NOT
+
+Earlier verification — anonymous excluded from a separate friends-only
+fresh upload (activity 40, since cleaned up) — captured as
+`qa-anon-friends-hidden.png`. Friend-view verified visually as
+`qa-friend-sees-friends-only.png`. Non-friend correctly excluded
+captured as `qa-nonfriend-cant-see-friends-only.png`.
+
 - **author (admin) at own profile activity tab**:
   prior verification — activity 8 (private) visible to author via
   `show_hidden=true` path. Same code path used here.
