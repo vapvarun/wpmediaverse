@@ -858,11 +858,11 @@ class Commands {
 			WP_CLI::confirm( 'Proceed?' );
 		}
 
-		$tmp_root  = trailingslashit( get_temp_dir() ) . 'mvs-migrate-' . uniqid() . '/';
-		$migrated  = 0;
-		$skipped   = 0;
-		$failed    = 0;
-		$progress  = Utils\make_progress_bar( 'Migrating media', $total );
+		$tmp_root = trailingslashit( get_temp_dir() ) . 'mvs-migrate-' . uniqid() . '/';
+		$migrated = 0;
+		$skipped  = 0;
+		$failed   = 0;
+		$progress = Utils\make_progress_bar( 'Migrating media', $total );
 
 		foreach ( $rows as $row ) {
 			$rel_path = (string) $row->file_path;

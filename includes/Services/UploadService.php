@@ -229,8 +229,8 @@ class UploadService {
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_subdir,
 			$user_id
 		);
-		$filename  = $filename_pick['stored'];
-		$dest_path = $dest_subdir . '/' . $filename;
+		$filename      = $filename_pick['stored'];
+		$dest_path     = $dest_subdir . '/' . $filename;
 
 		// Store file.
 		$driver = $this->storage->get_driver();

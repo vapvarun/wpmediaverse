@@ -344,8 +344,8 @@ class SettingsRegistrar {
 			array(
 				'option'      => \WPMediaVerse\Services\FilenameStrategy::SETTING,
 				'choices'     => array(
-					'hashed'              => __( 'Hashed (recommended) — random 16-char filename, original kept as metadata', 'wpmediaverse' ),
-					'original_sanitized'  => __( 'Original (sanitized) — keeps the user filename, capped at 100 chars', 'wpmediaverse' ),
+					'hashed'             => __( 'Hashed (recommended) — random 16-char filename, original kept as metadata', 'wpmediaverse' ),
+					'original_sanitized' => __( 'Original (sanitized) — keeps the user filename, capped at 100 chars', 'wpmediaverse' ),
 				),
 				'description' => __( 'How new uploads are named on disk. "Hashed" is more secure (no enumeration) and avoids long-filename / emoji edge cases. Existing media is never renamed.', 'wpmediaverse' ),
 			)

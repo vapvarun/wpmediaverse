@@ -1562,7 +1562,7 @@ class MediaController extends WP_REST_Controller {
 			return $cached;
 		}
 		global $wpdb;
-		$table  = $wpdb->prefix . 'mvs_media_index';
+		$table = $wpdb->prefix . 'mvs_media_index';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$exists = $wpdb->get_var( "SHOW INDEX FROM {$table} WHERE Key_name = 'media_search_ft'" );
 		$cached = (bool) $exists;

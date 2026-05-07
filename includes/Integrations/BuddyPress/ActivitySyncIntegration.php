@@ -594,7 +594,7 @@ class ActivitySyncIntegration {
 				(string) $album_id
 			)
 		);
-		$album_hidden = self::privacy_to_hide_sitewide( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' ) );
+		$album_hidden         = self::privacy_to_hide_sitewide( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' ) );
 
 		foreach ( $gallery_activity_ids as $aid ) {
 			$activity = new \BP_Activity_Activity( (int) $aid );

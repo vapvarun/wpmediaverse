@@ -287,13 +287,13 @@ class SignedUrlService {
 		if ( 'watermark' === $size ) {
 			$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'watermark_url' );
 		} else {
-			$size_map  = array(
+			$size_map = array(
 				'large'     => 'thumb_large',
 				'medium'    => 'thumb_medium',
 				'thumbnail' => 'thumb_thumb',
 			);
-			$meta_key  = $size_map[ $size ] ?? 'thumb_large';
-			$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$meta_key = $size_map[ $size ] ?? 'thumb_large';
+			$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 			// Fall back through image sizes only. NEVER fall back to file_url —
 			// for videos that's a .mp4 served with image/jpeg headers, which
@@ -344,8 +344,8 @@ class SignedUrlService {
 			exit;
 		}
 
-		$ext       = strtolower( pathinfo( $full_path, PATHINFO_EXTENSION ) );
-		$mime_map  = array(
+		$ext      = strtolower( pathinfo( $full_path, PATHINFO_EXTENSION ) );
+		$mime_map = array(
 			'jpg'  => 'image/jpeg',
 			'jpeg' => 'image/jpeg',
 			'png'  => 'image/png',
