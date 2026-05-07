@@ -564,4 +564,179 @@ class Commands {
 
 		Utils\format_items( 'table', $items, array( 'Status', 'Count' ) );
 	}
+
+	/**
+	 * Sync BP activity hide_sitewide flag for all existing media.
+	 *
+	 * Walks every mvs_media_upload activity + every activity_update with
+	 * `_mvs_media_ids` meta and recomputes hide_sitewide from the linked
+	 * media's effective privacy (media + parent album, most-restrictive
+	 * wins). Run this once after deploying 1.2.1's privacy-sync fix to
+	 * bring legacy activity rows in line with the new behaviour.
+	 *
+	 * Originally drafted by Nitin Patil (Free remote 1.2.1 commit edfc643)
+	 * as the migration counterpart to the `hide_sitewide` flip. Adapted
+	 * here to use the canonical `ActivitySyncIntegration::should_hide_for_*`
+	 * helpers introduced in 1.2.1 so single-source-of-truth on the privacy
+	 * mapping (media + album, level scheme, future viewer-side filter)
+	 * remains in one place. Idempotent — re-runs only update rows that
+	 * have actually drifted.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Show what would change without writing to the database.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs sync-activity-privacy --dry-run
+	 *     wp mvs sync-activity-privacy
+	 *
+	 * @subcommand sync-activity-privacy
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional CLI args (unused).
+	 * @param array $assoc_args Associative CLI flags.
+	 */
+	public function sync_activity_privacy( $args, $assoc_args ) {
+		unset( $args );
+
+		if ( ! function_exists( 'buddypress' ) || ! bp_is_active( 'activity' ) ) {
+			WP_CLI::error( 'BuddyPress activity component is not active.' );
+		}
+
+		global $wpdb;
+
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+
+		// Pass 1 — standalone mvs_media_upload activities (single-photo path).
+		$upload_activities = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			"SELECT id, component, item_id, secondary_item_id, hide_sitewide
+			 FROM {$wpdb->prefix}bp_activity
+			 WHERE type = 'mvs_media_upload'
+			 ORDER BY id ASC"
+		);
+
+		// Pass 2 — composer activities with attached media (`_mvs_media_ids` meta).
+		$composer_activity_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			"SELECT DISTINCT activity_id
+			 FROM {$wpdb->prefix}bp_activity_meta
+			 WHERE meta_key = '_mvs_media_ids'"
+		);
+
+		$total = count( $upload_activities ) + count( $composer_activity_ids );
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No MVS activities found. Nothing to sync.' );
+			return;
+		}
+
+		WP_CLI::log( sprintf( 'Found %d standalone upload activities and %d composer activities to inspect.', count( $upload_activities ), count( $composer_activity_ids ) ) );
+
+		if ( ! $dry_run ) {
+			WP_CLI::warning( 'This will update hide_sitewide + activity privacy meta in bp_activity / bp_activity_meta. Ensure you have a backup.' );
+			WP_CLI::confirm( 'Proceed?' );
+		}
+
+		$hidden   = 0;
+		$restored = 0;
+		$skipped  = 0;
+		$progress = Utils\make_progress_bar( 'Syncing activity privacy', $total );
+
+		// Standalone mvs_media_upload activities.
+		foreach ( $upload_activities as $act ) {
+			$media_id = 0;
+			if ( 'wpmediaverse' === $act->component && $act->item_id > 0 ) {
+				$media_id = (int) $act->item_id;
+			} elseif ( 'groups' === $act->component && $act->secondary_item_id > 0 ) {
+				$media_id = (int) $act->secondary_item_id;
+			}
+
+			if ( $media_id <= 0 || ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			$desired_hide = \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::should_hide_for_media( $media_id ) ? 1 : 0;
+			$current_hide = (int) $act->hide_sitewide;
+
+			if ( $desired_hide === $current_hide ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			if ( ! $dry_run ) {
+				$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prefix . 'bp_activity',
+					array( 'hide_sitewide' => $desired_hide ),
+					array( 'id' => (int) $act->id ),
+					array( '%d' ),
+					array( '%d' )
+				);
+				$effective = \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::effective_privacy_for_media( $media_id );
+				bp_activity_update_meta( (int) $act->id, '_mvs_activity_privacy', $effective );
+				bp_activity_update_meta( (int) $act->id, '_mvs_activity_privacy_level', (string) \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::privacy_to_level( $effective ) );
+			}
+
+			$desired_hide ? ++$hidden : ++$restored;
+			$progress->tick();
+		}
+
+		// Composer (activity_update) activities with attached media.
+		foreach ( $composer_activity_ids as $act_id ) {
+			$act_id = (int) $act_id;
+
+			$current_hide = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare( "SELECT hide_sitewide FROM {$wpdb->prefix}bp_activity WHERE id = %d", $act_id )
+			);
+
+			$raw_ids = bp_activity_get_meta( $act_id, '_mvs_media_ids', true );
+			$ids     = array_filter( array_map( 'absint', explode( ',', (string) $raw_ids ) ) );
+
+			if ( empty( $ids ) ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			$desired_hide = \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::should_hide_for_batch( $ids ) ? 1 : 0;
+
+			if ( $desired_hide === $current_hide ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			if ( ! $dry_run ) {
+				$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prefix . 'bp_activity',
+					array( 'hide_sitewide' => $desired_hide ),
+					array( 'id' => $act_id ),
+					array( '%d' ),
+					array( '%d' )
+				);
+				$effective = \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::effective_privacy_for_batch( $ids );
+				bp_activity_update_meta( $act_id, '_mvs_activity_privacy', $effective );
+				bp_activity_update_meta( $act_id, '_mvs_activity_privacy_level', (string) \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::privacy_to_level( $effective ) );
+			}
+
+			$desired_hide ? ++$hidden : ++$restored;
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		$prefix = $dry_run ? '[dry-run] Would' : '';
+		WP_CLI::success(
+			sprintf(
+				'%s hide %d activities. %s restore %d activities. %d skipped (already correct or media missing).',
+				$prefix ? $prefix : 'Hidden',
+				$hidden,
+				$prefix ? $prefix : 'Restored',
+				$restored,
+				$skipped
+			)
+		);
+	}
 }
