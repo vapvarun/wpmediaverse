@@ -497,6 +497,15 @@ class Plugin {
 		}
 		add_action( 'mvs_prune_logs', array( \WPMediaVerse\Services\LoggerService::class, 'prune' ) );
 
+		// View-retention cron (daily). Bounded growth on mvs_media_views —
+		// every page view inserts a row, so without retention the table
+		// grows linearly with traffic. Default: 90 days. Site owners can
+		// raise (up to 730) or set 0 = retain forever.
+		if ( ! wp_next_scheduled( 'mvs_purge_old_views' ) ) {
+			wp_schedule_event( time(), 'daily', 'mvs_purge_old_views' );
+		}
+		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge' ) );
+
 		// Wire LoggerService into key operations.
 		\WPMediaVerse\Services\LoggerService::register_hooks();
 

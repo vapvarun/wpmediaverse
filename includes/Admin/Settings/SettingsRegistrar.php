@@ -298,6 +298,31 @@ class SettingsRegistrar {
 				'description' => __( 'How long signed URLs remain valid for private media files. Default: 3600 (1 hour).', 'wpmediaverse' ),
 			)
 		);
+
+		// View-event retention. Daily cron drops rows from mvs_media_views
+		// older than this window — keeps the table bounded as traffic grows.
+		// Aggregates in mvs_media_stats (counts, totals) are unaffected.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			\WPMediaVerse\Services\ViewRetentionService::SETTING,
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => array( \WPMediaVerse\Services\ViewRetentionService::class, 'sanitize_setting' ),
+				'default'           => \WPMediaVerse\Services\ViewRetentionService::DEFAULT_DAYS,
+			)
+		);
+		add_settings_field(
+			\WPMediaVerse\Services\ViewRetentionService::SETTING,
+			__( 'View Event Retention (days)', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_number_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => \WPMediaVerse\Services\ViewRetentionService::SETTING,
+				/* translators: %d: maximum allowed retention in days. */
+				'description' => sprintf( __( 'How long raw view events are kept in the database. Aggregated counts (Total Views, etc.) are NOT affected. Default: 90 days. Set to 0 to retain forever. Maximum: %d.', 'wpmediaverse' ), \WPMediaVerse\Services\ViewRetentionService::MAX_DAYS ),
+			)
+		);
 	}
 
 	// -------------------------------------------------------------------------
