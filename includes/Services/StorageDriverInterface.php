@@ -56,4 +56,25 @@ interface StorageDriverInterface {
 	 * @return string Absolute file path.
 	 */
 	public function get_full_path( string $path ): string;
+
+	/**
+	 * Download a stored file to a local destination path.
+	 *
+	 * REQUIRED for two flows:
+	 *   1. migrate-storage CLI — copy media between drivers without losing files.
+	 *   2. Thumbnail generation in cloud mode — images stored on S3/BunnyCDN
+	 *      must be pulled to local temp before wp_get_image_editor can resize.
+	 *
+	 * Local driver returns true immediately if `$path` and `$local_dest`
+	 * resolve to the same file (no-op). Cloud drivers stream the remote
+	 * object into `$local_dest`. Returns false on any download failure
+	 * (caller is responsible for retries / cleanup of partial writes).
+	 *
+	 * @since 1.2.2
+	 *
+	 * @param string $path       Relative path of the source file.
+	 * @param string $local_dest Absolute local filesystem path to write to.
+	 * @return bool True on success.
+	 */
+	public function download( string $path, string $local_dest ): bool;
 }

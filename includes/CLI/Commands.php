@@ -739,4 +739,212 @@ class Commands {
 			)
 		);
 	}
+
+	/**
+	 * Migrate every stored media file from one storage driver to another.
+	 *
+	 * Reads the current storage driver, walks every media row in
+	 * mvs_media_index, downloads each file from the source driver, uploads
+	 * it to the destination driver, then verifies and removes the source
+	 * copy. Idempotent — re-running skips media already present on the
+	 * destination. The plugin's `mvs_storage_driver` option is NOT flipped
+	 * automatically; the operator does that explicitly via
+	 * `wp option update mvs_storage_driver <to>` once migrate verifies.
+	 *
+	 * Use cases:
+	 *   - Activated S3 mid-life and need to move existing local files into
+	 *     the bucket so signed URLs work for them.
+	 *   - Switching FROM cloud back to local (S3 quota changes,
+	 *     compliance, etc).
+	 *   - Switching between cloud providers (S3 → BunnyCDN).
+	 *
+	 * Drivers must implement `download()` (added in interface 1.2.2).
+	 * Both Free's LocalDriver and Pro's S3 + BunnyCDN drivers do.
+	 *
+	 * ## OPTIONS
+	 *
+	 * --from=<driver>
+	 * : Source driver slug. local|s3|bunnycdn.
+	 *
+	 * --to=<driver>
+	 * : Destination driver slug. Must differ from --from.
+	 *
+	 * [--dry-run]
+	 * : Walk the media list and report which rows would migrate, but
+	 *   do not download / upload / delete anything.
+	 *
+	 * [--keep-source]
+	 * : Skip the post-verify source-side delete. Use when you want a
+	 *   safety copy on the source until QA confirms the new driver
+	 *   serves all media correctly. Default: source is deleted.
+	 *
+	 * [--media-id=<id>]
+	 * : Migrate only one specific media row (testing / repair).
+	 *
+	 * [--limit=<n>]
+	 * : Stop after this many rows (testing / batched runs).
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs migrate-storage --from=local --to=s3 --dry-run
+	 *     wp mvs migrate-storage --from=local --to=s3 --keep-source
+	 *     wp mvs migrate-storage --from=local --to=s3
+	 *     wp mvs migrate-storage --from=s3 --to=bunnycdn --limit=100
+	 *
+	 * @subcommand migrate-storage
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional CLI args (unused).
+	 * @param array $assoc_args Associative CLI flags.
+	 */
+	public function migrate_storage( $args, $assoc_args ) {
+		unset( $args );
+
+		$from        = (string) Utils\get_flag_value( $assoc_args, 'from', '' );
+		$to          = (string) Utils\get_flag_value( $assoc_args, 'to', '' );
+		$dry_run     = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$keep_source = (bool) Utils\get_flag_value( $assoc_args, 'keep-source', false );
+		$media_id    = (int) Utils\get_flag_value( $assoc_args, 'media-id', 0 );
+		$limit       = (int) Utils\get_flag_value( $assoc_args, 'limit', 0 );
+
+		if ( '' === $from || '' === $to ) {
+			WP_CLI::error( 'Both --from and --to are required.' );
+		}
+		if ( $from === $to ) {
+			WP_CLI::error( 'Source and destination drivers must differ.' );
+		}
+
+		// Resolve driver instances. The mvs_storage_driver filter is the
+		// canonical entry point — it returns Pro's S3 / BunnyCDN drivers
+		// when Pro is active, falls through to LocalDriver otherwise.
+		$source_driver = apply_filters( 'mvs_storage_driver', null, $from );
+		$dest_driver   = apply_filters( 'mvs_storage_driver', null, $to );
+
+		if ( ! $source_driver instanceof \WPMediaVerse\Services\StorageDriverInterface ) {
+			$source_driver = ( 'local' === $from ) ? new \WPMediaVerse\Services\LocalDriver() : null;
+		}
+		if ( ! $dest_driver instanceof \WPMediaVerse\Services\StorageDriverInterface ) {
+			$dest_driver = ( 'local' === $to ) ? new \WPMediaVerse\Services\LocalDriver() : null;
+		}
+
+		if ( ! $source_driver ) {
+			WP_CLI::error( "Source driver '{$from}' not available. Pro plugin required for s3/bunnycdn." );
+		}
+		if ( ! $dest_driver ) {
+			WP_CLI::error( "Destination driver '{$to}' not available. Pro plugin required for s3/bunnycdn." );
+		}
+
+		global $wpdb;
+
+		$where = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''";
+		if ( $media_id > 0 ) {
+			$where .= $wpdb->prepare( ' AND media_id = %d', $media_id );
+		}
+		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( "SELECT media_id, file_path, file_size FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY media_id ASC{$limit_sql}" );
+
+		$total = count( $rows );
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No media rows match. Nothing to migrate.' );
+			return;
+		}
+
+		WP_CLI::log( sprintf( 'Migrating %d media file(s) from %s → %s%s%s', $total, $from, $to, $dry_run ? ' [DRY-RUN]' : '', $keep_source ? ' [KEEP-SOURCE]' : '' ) );
+
+		if ( ! $dry_run ) {
+			WP_CLI::warning( 'This will move files between storage drivers. Ensure both source AND destination are accessible. A backup of the source bucket / directory is strongly recommended.' );
+			WP_CLI::confirm( 'Proceed?' );
+		}
+
+		$tmp_root  = trailingslashit( get_temp_dir() ) . 'mvs-migrate-' . uniqid() . '/';
+		$migrated  = 0;
+		$skipped   = 0;
+		$failed    = 0;
+		$progress  = Utils\make_progress_bar( 'Migrating media', $total );
+
+		foreach ( $rows as $row ) {
+			$rel_path = (string) $row->file_path;
+
+			// Skip if destination already has the file (idempotent re-run).
+			if ( $dest_driver->exists( $rel_path ) ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			if ( $dry_run ) {
+				++$migrated;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 1 — pull source to local temp.
+			$tmp_path = $tmp_root . ltrim( $rel_path, '/' );
+			if ( ! $source_driver->download( $rel_path, $tmp_path ) ) {
+				WP_CLI::warning( sprintf( 'Download failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
+				++$failed;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 2 — push local temp to destination.
+			if ( ! $dest_driver->store( $tmp_path, $rel_path ) ) {
+				WP_CLI::warning( sprintf( 'Upload to destination failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
+				if ( file_exists( $tmp_path ) ) {
+					wp_delete_file( $tmp_path );
+				}
+				++$failed;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 3 — verify destination presence before any deletes.
+			if ( ! $dest_driver->exists( $rel_path ) ) {
+				WP_CLI::warning( sprintf( 'Post-upload verify failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
+				++$failed;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 4 — delete the source unless keep-source flag set.
+			if ( ! $keep_source ) {
+				$source_driver->delete( $rel_path );
+			}
+
+			if ( file_exists( $tmp_path ) ) {
+				wp_delete_file( $tmp_path );
+			}
+			++$migrated;
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		// Cleanup temp root if empty.
+		if ( is_dir( $tmp_root ) ) {
+			@rmdir( $tmp_root ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- empty-dir best-effort
+		}
+
+		$prefix = $dry_run ? '[dry-run] Would migrate' : 'Migrated';
+		WP_CLI::success(
+			sprintf(
+				'%s %d file(s) from %s → %s. Skipped %d (already on destination). Failed %d.',
+				$prefix,
+				$migrated,
+				$from,
+				$to,
+				$skipped,
+				$failed
+			)
+		);
+
+		if ( ! $dry_run && $failed > 0 ) {
+			WP_CLI::warning( 'Some files failed to migrate. Review log lines above and re-run for retry. The mvs_storage_driver option has NOT been changed — flip it manually after a clean run: wp option update mvs_storage_driver ' . $to );
+		} elseif ( ! $dry_run && 0 === $failed ) {
+			WP_CLI::log( "Next step: flip the active driver to '{$to}':" );
+			WP_CLI::log( "  wp option update mvs_storage_driver {$to}" );
+		}
+	}
 }
