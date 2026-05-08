@@ -197,7 +197,7 @@
 }
 
 .mvs-modal-dropzone-placeholder svg {
-	color: var(--mvs-border-light);
+	color: var(--mvs-text-muted, #e9e9ea);
 	margin-bottom: 12px;
 }
 
@@ -433,7 +433,9 @@
 .mvs-modal-field-row input {
 	flex: 1;
 	padding: 10px 12px;
-	border: 1px solid var(--mvs-border);
+    background: var(--mvs-bg, #fff);
+    color: var(--mvs-text, #1d2327);
+	border: 1px solid var(--mvs-border, #c3c4c7);
 	border-radius: 8px;
 	font-size: 14px;
 }
@@ -442,7 +444,9 @@
 	width: auto;
 	min-width: 140px;
 	padding: 10px 12px;
-	border: 1px solid var(--mvs-border);
+	background: var(--mvs-bg, #fff);
+    color: var(--mvs-text, #1d2327);
+	border: 1px solid var(--mvs-border, #c3c4c7);
 	border-radius: 8px;
 	font-size: 14px;
 }

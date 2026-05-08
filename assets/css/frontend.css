@@ -131,6 +131,16 @@ body.dark-mode {
     --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.18);
 }
 
+.dark-mode .mvs-album-badge,
+.dark-mode .mvs-album-badge .dashicons,
+.dark-mode .mvs-grid-item-overlay {
+    color: var(--mvs-text);
+}
+
+.dark-mode .mvs-empty-state .dashicons {
+    color: var(--mvs-text-muted, #6c7781);
+}
+
 /* ==========================================================================
    0a. Type Reset — lock down all typography inside MVS templates.
        Follows BuddyNext type scale. Works with or without BuddyNext.
@@ -2367,7 +2377,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-tag-cloud-item:hover,
 .mvs-tag-cloud-item.active {
     background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    color: var(--mvs-text);
 }
 
 /* ==========================================================================
