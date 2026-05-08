@@ -1001,6 +1001,24 @@ class Plugin {
 				'strategy'  => 'defer',
 			)
 		);
+
+		// BP profile / group Media tab — enqueue confirm + BP-integration CSS
+		// early, inside wp_enqueue_scripts, so they land in <head>.
+		// The scripts (mvs-bp-actions, mvs-confirm) are enqueued later by
+		// BaseBPTabIntegration::enqueue_assets() inside bp_template_content,
+		// but CSS has no footer fallback, so it must be in the queue before
+		// wp_head() fires. The auto_enqueue_confirm_style() hook at priority
+		// 100 fires before the BP screen function adds its late script enqueue,
+		// so the auto-pair misses it on BP media tab pages.
+		$is_bp_media_tab =
+			( function_exists( 'bp_is_user' ) && bp_is_user()
+				&& function_exists( 'bp_current_component' ) && 'media' === bp_current_component() )
+			|| ( function_exists( 'bp_is_group' ) && bp_is_group()
+				&& function_exists( 'bp_current_action' ) && 'media' === bp_current_action() );
+
+		if ( $is_bp_media_tab ) {
+			wp_enqueue_style( 'mvs-confirm' );
+		}
 	}
 
 	/**

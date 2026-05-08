@@ -4977,6 +4977,7 @@ a.mvs-dashboard-card-title:hover {
     border-radius: 50%;
     width: 36px;
     height: 36px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
