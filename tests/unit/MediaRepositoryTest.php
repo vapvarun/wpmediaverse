@@ -625,21 +625,30 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 
 	/**
 	 * delete() sets an index column to NULL.
+	 *
+	 * Uses `width` (schema: `int unsigned DEFAULT NULL`) — a truly nullable
+	 * index column. Earlier this test used `media_type`, which is
+	 * `varchar(20) NOT NULL DEFAULT ''`; MySQL silently rewrites NULL → ''
+	 * on that column, so the post-delete read returns '' not null and the
+	 * test fails for reasons unrelated to delete() correctness.
 	 */
 	public function test_delete_index_column(): void {
-		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		$media_id = $repo->insert(
 			array(
 				'title'       => 'Delete Column Test',
 				'post_author' => $this->admin_id,
 				'media_type'  => 'image',
+				'width'       => 1024,
 			)
 		);
 
-		$this->assertSame( 'image', \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' ) );
+		$this->assertSame( 1024, (int) $repo->get( $media_id, 'width' ) );
 
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete( $media_id, 'media_type' );
+		$repo->delete( $media_id, 'width' );
 
-		$this->assertNull( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' ) );
+		$this->assertNull( $repo->get( $media_id, 'width' ) );
 	}
 
 	/**

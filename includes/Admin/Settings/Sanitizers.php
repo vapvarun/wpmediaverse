@@ -47,6 +47,7 @@ class Sanitizers {
 		'mvs_dm_access'              => array( 'everyone', 'followers', 'mutual', 'nobody' ),
 		'mvs_show_online_status'     => array( 'everyone', 'followers', 'nobody' ),
 		'mvs_chat_panel_visibility'  => array( 'everywhere', 'mvs_pages', 'bp_pages', 'disabled' ),
+		'mvs_filename_strategy'      => array( 'original_sanitized', 'hashed' ),
 	);
 
 	/**
@@ -334,6 +335,24 @@ class Sanitizers {
 	public static function sanitize_chat_panel_visibility( $value ): string {
 		$value = is_string( $value ) ? $value : '';
 		return in_array( $value, self::WHITELISTS['mvs_chat_panel_visibility'], true ) ? $value : 'everywhere';
+	}
+
+	/**
+	 * Sanitize filename strategy. Whitelist must stay in lockstep with the
+	 * dropdown choices in SettingsRegistrar::register_uploads_settings()
+	 * AND the consumer in Services\FilenameStrategy::is_valid_strategy().
+	 *
+	 * Default fallback matches FilenameStrategy::DEFAULT_UPGRADE so existing
+	 * sites preserve prior behaviour when garbage gets posted.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param mixed $value Raw input.
+	 * @return string Sanitized strategy slug.
+	 */
+	public static function sanitize_filename_strategy( $value ): string {
+		$value = is_string( $value ) ? trim( $value ) : '';
+		return in_array( $value, self::WHITELISTS['mvs_filename_strategy'], true ) ? $value : 'original_sanitized';
 	}
 
 	/**

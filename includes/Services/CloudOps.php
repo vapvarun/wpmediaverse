@@ -157,7 +157,8 @@ class CloudOps {
 		}
 		$tmp_dir = dirname( $tmp_path );
 		if ( is_dir( $tmp_dir ) ) {
-			@rmdir( $tmp_dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- empty-dir best-effort
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- best-effort cleanup of a plugin-controlled tmp dir; WP_Filesystem isn't initialized in this CLI/cron path and would add a credentials prompt for an internal-only path.
+			@rmdir( $tmp_dir );
 		}
 
 		return array(

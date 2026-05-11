@@ -971,7 +971,8 @@ class Commands {
 
 		// Cleanup temp root if empty.
 		if ( is_dir( $tmp_root ) ) {
-			@rmdir( $tmp_root ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- empty-dir best-effort
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- best-effort cleanup of a plugin-controlled tmp dir from a WP-CLI command; WP_Filesystem isn't initialized here and would add a credentials prompt for an internal-only path.
+			@rmdir( $tmp_root );
 		}
 
 		$prefix = $dry_run ? '[dry-run] Would migrate' : 'Migrated';
@@ -1157,7 +1158,8 @@ class Commands {
 		$progress->finish();
 
 		if ( is_dir( $tmp_root ) ) {
-			@rmdir( $tmp_root ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- empty-dir best-effort
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- best-effort cleanup of a plugin-controlled tmp dir from a WP-CLI command; WP_Filesystem isn't initialized here and would add a credentials prompt for an internal-only path.
+			@rmdir( $tmp_root );
 		}
 
 		$prefix = $dry_run ? '[dry-run] Would backfill' : 'Backfilled';
