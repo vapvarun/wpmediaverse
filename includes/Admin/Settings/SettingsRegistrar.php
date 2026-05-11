@@ -352,12 +352,14 @@ class SettingsRegistrar {
 
 		// Filename strategy. Controls how new uploads are named on disk.
 		// Existing media is NEVER renamed — this only affects future uploads.
+		// Sanitizer lives in Sanitizers (canonical home for every select-field
+		// whitelist sanitizer) so SettingsContractTest can introspect it.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_storage',
 			\WPMediaVerse\Services\FilenameStrategy::SETTING,
 			array(
 				'type'              => 'string',
-				'sanitize_callback' => array( \WPMediaVerse\Services\FilenameStrategy::class, 'sanitize_setting' ),
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_filename_strategy' ),
 				'default'           => \WPMediaVerse\Services\FilenameStrategy::DEFAULT_UPGRADE,
 			)
 		);

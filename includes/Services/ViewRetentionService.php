@@ -72,7 +72,8 @@ class ViewRetentionService {
 		// Loop in 50k batches up to a safety cap so a 10M-row backlog
 		// drains over multiple days without blocking other cron jobs.
 		for ( $i = 0; $i < 20; $i++ ) {
-			$rows = (int) $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.NotPrepared -- $sql is built by $wpdb->prepare() on line 64; re-preparing inside the loop wastes cycles.
+			$rows = (int) $wpdb->query( $sql );
 			if ( $rows <= 0 ) {
 				break;
 			}

@@ -338,6 +338,24 @@ class Sanitizers {
 	}
 
 	/**
+	 * Sanitize filename strategy. Whitelist must stay in lockstep with the
+	 * dropdown choices in SettingsRegistrar::register_uploads_settings()
+	 * AND the consumer in Services\FilenameStrategy::is_valid_strategy().
+	 *
+	 * Default fallback matches FilenameStrategy::DEFAULT_UPGRADE so existing
+	 * sites preserve prior behaviour when garbage gets posted.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param mixed $value Raw input.
+	 * @return string Sanitized strategy slug.
+	 */
+	public static function sanitize_filename_strategy( $value ): string {
+		$value = is_string( $value ) ? trim( $value ) : '';
+		return in_array( $value, self::WHITELISTS['mvs_filename_strategy'], true ) ? $value : 'original_sanitized';
+	}
+
+	/**
 	 * Sanitize comment edit window in seconds. Clamp to [60, 24h].
 	 *
 	 * @param mixed $value Raw input (seconds).

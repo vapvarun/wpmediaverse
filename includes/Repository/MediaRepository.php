@@ -1289,6 +1289,11 @@ class MediaRepository implements MediaRepositoryInterface {
 			array( '%d' )
 		);
 
+		// 1.2.1 cache layer: row_cache holds the pre-trash status. Without
+		// this invalidation, subsequent get_raw() calls return the stale
+		// value — caught by test_trash_then_restore_round_trip.
+		self::invalidate_row_cache( $media_id );
+
 		return false !== $result;
 	}
 
@@ -1311,6 +1316,9 @@ class MediaRepository implements MediaRepositoryInterface {
 			array( '%s', '%s' ),
 			array( '%d' )
 		);
+
+		// Same cache-invalidation rationale as trash() above.
+		self::invalidate_row_cache( $media_id );
 
 		return false !== $result;
 	}
