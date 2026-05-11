@@ -94,14 +94,21 @@ module.exports = function( grunt ) {
 							'!node_modules/**',
 							'!tests/**',
 							'!bin/**',
+							'!tools/**',
 							'!dist/**',
+							'!.claude/**',
+							'!.phpunit.result.cache',
+							'!playwright.config.ts',
+							'!test-results/**',
 							// src/ included — block CSS loaded from src/blocks/ at runtime.
 
-							// ── Docs, plans, audit, marketing (GitHub only) ──
+							// ── Docs, plans, audit, QA, marketing (internal / GitHub-only) ──
+							// Free is shipped publicly — none of this goes to customers.
 							'!docs/**',
 							'!plan/**',
 							'!plans/**',
 							'!audit/**',
+							'!qa/**',
 							'!marketing/**',
 
 							// ── Dev config files ──

@@ -195,8 +195,8 @@ class FavoriteController extends WP_REST_Controller {
 	 */
 	public function get_my_favorites( $request ) {
 		$collection_id = $request->get_param( 'collection_id' );
-		$per_page      = (int) $request->get_param( 'per_page' );
-		$page          = (int) $request->get_param( 'page' );
+		$per_page      = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
+		$page          = \WPMediaVerse\REST\Pagination::resolve_page( $request );
 
 		$result = $this->favorites->get_user_favorites(
 			get_current_user_id(),

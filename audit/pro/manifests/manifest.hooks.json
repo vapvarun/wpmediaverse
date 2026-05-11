@@ -1,0 +1,113 @@
+{
+  "free_filters_hooked": [
+    {
+      "filter": "mvs_storage_driver",
+      "where": "Core/Plugin.php:?",
+      "behavior": "Returns S3Driver or BunnyCDNDriver based on mvs_storage_provider setting"
+    },
+    {
+      "filter": "mvs_generate_watermark",
+      "where": "Core/Plugin.php:214",
+      "behavior": "Watermarker::generate() \u2014 uses $file_path filesystem read; outputs preview to /uploads/wpmediaverse/previews/"
+    },
+    {
+      "filter": "mvs_stats_tabs",
+      "where": "?",
+      "behavior": "Injects Video Analytics tab"
+    },
+    {
+      "filter": "mvs_moderation_tabs",
+      "where": "?",
+      "behavior": "Injects User Reports tab"
+    },
+    {
+      "action": "mvs_ai_providers",
+      "where": "?",
+      "behavior": "Registers GoogleVisionProvider + RekognitionProvider on AIService"
+    },
+    {
+      "filter": "mvs_media_uploaded",
+      "where": "includes/Connectors/ConnectorManager.php:60",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_action_listener"
+    },
+    {
+      "filter": "mvs_media_uploaded",
+      "where": "includes/Captions/TranscriptionService.php:71",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_action_listener"
+    },
+    {
+      "filter": "mvs_media_response",
+      "where": "includes/Captions/TranscriptionService.php:74",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_filter_listener"
+    },
+    {
+      "filter": "mvs_media_response",
+      "where": "includes/Video/ChapterService.php:34",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_filter_listener"
+    },
+    {
+      "filter": "mvs_media_uploaded",
+      "where": "includes/Video/TranscodeService.php:100",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_action_listener"
+    },
+    {
+      "filter": "mvs_storage_driver",
+      "where": "includes/Core/Plugin.php:211",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_filter_listener"
+    },
+    {
+      "filter": "mvs_generate_watermark",
+      "where": "includes/Core/Plugin.php:214",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_filter_listener"
+    },
+    {
+      "filter": "mvs_ai_providers",
+      "where": "includes/Core/Plugin.php:217",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_action_listener"
+    },
+    {
+      "filter": "mvs_media_response",
+      "where": "includes/Privacy/PrivacyUIService.php:78",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_filter_listener"
+    },
+    {
+      "filter": "mvs_media_uploaded",
+      "where": "includes/Quota/QuotaService.php:42",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_action_listener"
+    },
+    {
+      "filter": "mvs_media_deleted",
+      "where": "includes/Quota/QuotaService.php:43",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_action_listener"
+    },
+    {
+      "filter": "mvs_media_uploaded",
+      "where": "includes/Streaks/StreakService.php:53",
+      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
+      "fired_by": "wpmediaverse",
+      "kind": "add_action_listener"
+    }
+  ]
+}

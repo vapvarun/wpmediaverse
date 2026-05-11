@@ -219,7 +219,7 @@ class AlbumController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_items( $request ) {
-		$per_page = $request->get_param( 'per_page' );
+		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
 		$per_page = $per_page ? (int) $per_page : 20;
 		$page     = $request->get_param( 'page' );
 		$page     = $page ? (int) $page : 1;

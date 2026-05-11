@@ -220,11 +220,17 @@ class UploadService {
 		 */
 		$dest_subdir = apply_filters( 'mvs_upload_directory', gmdate( 'Y/m' ), $user_id, $media_type );
 
-		$filename  = wp_unique_filename(
+		// Filename strategy — controlled by `mvs_filename_strategy` setting.
+		// Fresh installs default to `hashed` (security + storage robustness);
+		// upgrade installs default to `original_sanitized` (preserves prior
+		// behaviour). Existing on-disk files are NEVER renamed.
+		$filename_pick = FilenameStrategy::pick(
+			(string) $file['name'],
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_subdir,
-			sanitize_file_name( $file['name'] )
+			$user_id
 		);
-		$dest_path = $dest_subdir . '/' . $filename;
+		$filename      = $filename_pick['stored'];
+		$dest_path     = $dest_subdir . '/' . $filename;
 
 		// Store file.
 		$driver = $this->storage->get_driver();
@@ -323,6 +329,18 @@ class UploadService {
 		// Store EXIF data in meta table (sparse data).
 		if ( ! empty( $exif_raw ) ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'exif_raw', $exif_raw );
+		}
+
+		// Preserve the user-facing filename for display + Content-Disposition
+		// when the strategy hashed the on-disk name. Old uploads (pre-1.2.1
+		// or strategy=original_sanitized) skip this — readers fall back to
+		// file_path basename when the meta is absent.
+		if ( 'hashed' === $filename_pick['strategy'] && '' !== $filename_pick['original'] ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set(
+				$media_id,
+				'original_filename',
+				$filename_pick['original']
+			);
 		}
 
 		// Extract and store media metadata (duration, dimensions, etc.).
@@ -667,9 +685,92 @@ class UploadService {
 		$upload_dir = wp_upload_dir();
 		$rel_dir    = str_replace( $upload_dir['basedir'] . '/', '', dirname( $file_path ) );
 		$base_url   = $upload_dir['baseurl'] . '/' . $rel_dir;
+		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// Cloud-thumbnail strategy. When the active driver is non-local AND
+		// the customer hasn't overridden via the filter (e.g. to delegate
+		// thumbnail resizing to a CDN URL-parameter service like BunnyCDN
+		// Optimizer), upload each size variant to cloud at a sibling path
+		// next to the original (`2026/05/foo-large.jpg` etc). The stored
+		// thumb_<size> meta then points at the CDN URL, not the local URL,
+		// so the size-aware direct-CDN read path can short-circuit /serve.
+		$driver_slug   = (string) get_option( 'mvs_storage_driver', 'local' );
+		$cloud_driver  = null;
+		if ( 'local' !== $driver_slug ) {
+			$candidate = apply_filters( 'mvs_storage_driver', null, $driver_slug );
+			if ( $candidate instanceof StorageDriverInterface ) {
+				$cloud_driver = $candidate;
+			}
+		}
+		// Cloud destination dir for variant siblings. MUST come from the
+		// MEDIA's stable file_path column (e.g. "2026/05") — NOT from the
+		// local $file_path. Backfill flows pass a temp-dir source path
+		// (`/var/folders/.../T/.../foo.jpg`) which would otherwise produce
+		// nonsense cloud paths like `wpmediaverse/var/folders/.../foo-300x179.jpg`.
+		// Driver itself prepends `wpmediaverse/` so we don't include it here.
+		$media_rel_path = (string) $repo->get_raw( $media_id, 'file_path' );
+		$cloud_rel_dir  = dirname( $media_rel_path );
+		if ( '.' === $cloud_rel_dir || '' === $cloud_rel_dir ) {
+			$cloud_rel_dir = '';
+		}
 
 		foreach ( $generated as $size_name => $data ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_' . $size_name, $base_url . '/' . $data['file'] );
+			$local_thumb_url  = $base_url . '/' . $data['file'];
+			$local_thumb_path = trailingslashit( dirname( $file_path ) ) . $data['file'];
+
+			$stored_url = $local_thumb_url;
+
+			if ( $cloud_driver ) {
+				$rel_thumb_path = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $data['file'];
+
+				/**
+				 * Filter the thumbnail URL when on a cloud driver.
+				 *
+				 * Returning a non-empty string SHORT-CIRCUITS the per-size
+				 * cloud upload — the URL you return is stored as the thumb
+				 * meta directly. Use this to delegate resizing to a CDN
+				 * URL-parameter service (BunnyCDN Optimizer, Cloudflare
+				 * Images, CloudFront with Lambda@Edge resize, Imgix, etc.).
+				 *
+				 * The default URL we'd otherwise upload to is computed from
+				 * the active driver's url() against the sibling path —
+				 * e.g. `https://zone.b-cdn.net/wpmediaverse/2026/05/foo-large.jpg`.
+				 *
+				 * Example mu-plugin for BunnyCDN Optimizer customers:
+				 *
+				 *     add_filter( 'mvs_cloud_thumbnail_url', function( $url, $size, $media_id ) {
+				 *         $widths = array( 'large' => 1024, 'medium' => 640, 'thumb' => 240 );
+				 *         // Use the original's URL with width param instead of size-suffixed file.
+				 *         $orig = ( new WPMediaVerse\Repository\MediaRepository() )->get_raw( $media_id, 'file_url' );
+				 *         return $orig . '?width=' . ( $widths[ $size ] ?? 1024 );
+				 *     }, 10, 3 );
+				 *
+				 * @since 1.2.2
+				 *
+				 * @param string $url      Empty string by default (= upload size variant).
+				 * @param string $size     Size key: large / medium / thumb.
+				 * @param int    $media_id Media ID.
+				 */
+				$filtered = (string) apply_filters( 'mvs_cloud_thumbnail_url', '', $size_name, $media_id );
+
+				if ( '' !== $filtered ) {
+					$stored_url = $filtered;
+				} elseif ( $cloud_driver->store( $local_thumb_path, $rel_thumb_path ) ) {
+					$stored_url = (string) $cloud_driver->url( $rel_thumb_path );
+				} else {
+					LoggerService::warning(
+						'upload',
+						sprintf( 'Cloud thumbnail upload failed for media #%d size %s — falling back to local URL', $media_id, $size_name ),
+						array(
+							'media_id' => $media_id,
+							'size'     => $size_name,
+							'driver'   => $driver_slug,
+						)
+					);
+				}
+			}
+
+			$repo->set( $media_id, 'thumb_' . $size_name, $stored_url );
 		}
 
 		// WP's multi_resize() skips sizes that would upscale the source. For
@@ -679,11 +780,11 @@ class UploadService {
 		// URL — it IS the largest available version of the image.
 		// Storage-internal: must be the raw stored URL — persisting a
 		// signed URL into the meta table would freeze the token.
-		$file_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_url' );
+		$file_url = $repo->get_raw( $media_id, 'file_url' );
 		if ( $file_url ) {
 			foreach ( array_keys( $sizes ) as $size_name ) {
 				if ( ! isset( $generated[ $size_name ] ) ) {
-					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_' . $size_name, $file_url );
+					$repo->set( $media_id, 'thumb_' . $size_name, $file_url );
 				}
 			}
 		}

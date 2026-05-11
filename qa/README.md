@@ -1,32 +1,71 @@
 # WPMediaVerse — QA
 
-Canonical home for what must be true about the plugin. Not process, not runbooks — just the inventory.
-
-## Files
-
-### Specs — what must be true
-
-- `WHAT-TO-CHECK.md` — flat list of surfaces, actions, settings, data stores, and cross-layer contracts that must work. Includes the **Regression Locks** table — specific specs that have regressed at least once and must not drift.
-- `MANUAL-UX-QA.md` — procedural walkthrough of the surfaces in WHAT-TO-CHECK §1, step by step. Use when walking a specific journey or writing a spec for it.
-
-### Rules — how we work (canonical specs behind `CLAUDE.md` Coding Rules)
-
-- `CSS-ORGANIZATION-RULES.md` — file ownership matrix, scoping, specificity strategy, duplicate-rule ban, dead-selector ban, file-top banners, section numbering. Full spec for CLAUDE.md Rule #12.
-- `PHP-ORGANIZATION-RULES.md` — file/method size, no-inline-HTML, no-inline-JS, enqueue consistency, sibling base-class rule, service container discipline, Free/Pro boundary. Covers CLAUDE.md Rules #1, #2, #4, #8, #10.
-- `NAMING-RULES.md` — "names don't lie." CSS classes, PHP classes/methods, hooks, REST routes, DB tables, i18n, option keys, CSS tokens. Covers CLAUDE.md Rule #5.
-- `RENDER-STATE-RULES.md` — every render path emits a visible state, populated or empty. Covers CLAUDE.md Rule #11.
-- `PROCESS-RULES.md` — where rules live, debt tax, regression-lock workflow, CI aspirations, rule retirement. Meta-doc that keeps the others coherent.
-
-### Runs — evidence
-
-- `runs/` — dated output of previous release passes. Append only.
-
-## Pro
-
-`../../wpmediaverse-pro/qa/` has Pro's equivalents. Pro releases run both sets.
+Single QA home for **both Free and Pro**. Pro has no `qa/` directory — this is the canonical inventory of what must be true about the paired plugins.
 
 ## How this gets used
 
-Doesn't matter who runs it — AI agent or human. The question at every release is the same: *can the plugin demonstrate the things in WHAT-TO-CHECK?* If yes, ship. If not, fix what's broken.
+Doesn't matter who runs it — AI agent or human. The question at every release is the same: *can the plugin demonstrate the things in `inventory/WHAT-TO-CHECK.md`?* If yes, ship. If not, fix what's broken.
 
-The `/mediaverse-qa` skill is one way to run a pass; a human opening `MANUAL-UX-QA.md` is another. Both consume the same lists.
+The release gate (`bin/build-release.sh`) reads `.last-smoke-pass.json` (combo mode) or `.last-smoke-pass-free.json` (free-only) and refuses to package without a fresh green pass.
+
+## Layout
+
+```
+qa/
+├── runbooks/                 # what to walk, step by step
+│   ├── AGENT_SMOKE_RUNBOOK.md       # pre-release gate runbook (sections A–G)
+│   ├── MANUAL-UX-QA-free.md         # Free manual UX walkthrough
+│   └── MANUAL-UX-QA-pro.md          # Pro manual UX walkthrough (20 journeys)
+│
+├── inventory/                # flat list of what must be true
+│   └── WHAT-TO-CHECK.md      # surfaces, actions, settings, data stores, cross-layer contracts.
+│                             # Includes the Regression Locks table — specs that have regressed
+│                             # at least once and must not drift.
+│
+├── rules/                    # canonical specs behind CLAUDE.md Coding Rules
+│   ├── CSS-ORGANIZATION-RULES.md    # file ownership, scoping, specificity — Rule #12
+│   ├── NAMING-RULES.md              # names don't lie — Rules #5, #13
+│   ├── PHP-ORGANIZATION-RULES.md    # file/method size, no-inline-HTML, boundary — Rules #1, #2, #4, #8, #10, #16
+│   ├── RENDER-STATE-RULES.md        # every render emits a state — Rule #11
+│   └── PROCESS-RULES.md             # where rules live, debt tax, rule retirement — Rule #15
+│
+├── audits/                   # dated audits (a11y, doc-drift, etc.)
+│   ├── A11Y-AUDIT-2026-05-03.md
+│   └── 2026-05-09-doc-drift-audit.md
+│
+├── runs/                     # append-only run evidence
+│   ├── FINDINGS-HISTORY.md          # past findings + cleared-FN status
+│   ├── drafts/                      # worker-agent drafts (Sonnet) before reviewer gate
+│   └── {date}-{mode}.md             # dated run reports
+│
+├── .last-smoke-pass.json     # green-light signal — combo mode (Free + Pro)
+└── .last-smoke-pass-free.json # green-light signal — free-only mode
+```
+
+## Two execution modes (both walked by the `mediaverse-qa` skill)
+
+| Mode | When | What's walked |
+|------|------|---------------|
+| `free` | Verifying Free alone | Free `inventory/WHAT-TO-CHECK.md` + `runbooks/MANUAL-UX-QA-free.md` + Pro-absent guards (404 / hidden / gated) |
+| `combo` | Verifying paired release | Free + Pro runbooks walked together + Pro layout cycle + feature-toggle degradation |
+
+## Worker → reviewer gate (non-negotiable)
+
+Sonnet (worker) findings are drafts. A reviewer (Opus or human) runs the 4-question citation gate before any row reaches a Basecamp card, the release-blocking JSON, or a "this is broken" label. See `runbooks/AGENT_SMOKE_RUNBOOK.md` "verification gate" section for the gate's exact form.
+
+This rule exists because earlier sessions filed WP-core conventions as plugin bugs and aesthetic opinions as Majors. The reviewer gate keeps the runbook honest.
+
+## Pre-release green-pass contract
+
+When a run completes with zero `from`-origin failures and zero new debug.log entries, the worker writes `qa/.last-smoke-pass.json` (combo) or `qa/.last-smoke-pass-free.json` (free). Schema is in the `mediaverse-qa` skill spec (`wpmediaverse-pro/.claude/skills/mediaverse-qa/SKILL.md`). The build script asserts `release_version` matches HEAD before it will package.
+
+On red runs: write the `runs/{date}-{mode}.md` evidence file but **NOT** the JSON. A red run blocks the gate; an "almost green" JSON would silently corrupt it.
+
+## Quick links
+
+- Smoke runbook: [`runbooks/AGENT_SMOKE_RUNBOOK.md`](runbooks/AGENT_SMOKE_RUNBOOK.md)
+- Inventory: [`inventory/WHAT-TO-CHECK.md`](inventory/WHAT-TO-CHECK.md)
+- Findings history: [`runs/FINDINGS-HISTORY.md`](runs/FINDINGS-HISTORY.md)
+- Doc-drift audit: [`audits/2026-05-09-doc-drift-audit.md`](audits/2026-05-09-doc-drift-audit.md)
+- Build-release script: [`../bin/build-release.sh`](../bin/build-release.sh)
+- mediaverse-qa skill: [`../../wpmediaverse-pro/.claude/skills/mediaverse-qa/SKILL.md`](../../wpmediaverse-pro/.claude/skills/mediaverse-qa/SKILL.md)

@@ -74,6 +74,17 @@ class SignedUrlService {
 			return false;
 		}
 
+		// Opt-in: skip the gated proxy and return the active driver's direct
+		// URL for public media on cloud drivers. Browsers hit the CDN edge
+		// instead of WordPress for every <img>. Download requests stay on
+		// the gated path (Content-Disposition headers + download counters).
+		if ( ! $download ) {
+			$direct = $this->maybe_direct_cloud_url( $media_id );
+			if ( '' !== $direct ) {
+				return $direct;
+			}
+		}
+
 		if ( 0 === $ttl ) {
 			$ttl = $this->get_ttl();
 		}
@@ -109,6 +120,25 @@ class SignedUrlService {
 	public function generate_thumbnail( int $media_id, int $user_id, string $size = 'large', int $ttl = 0, bool $skip_privacy_check = false ) {
 		if ( ! $skip_privacy_check && ! $this->privacy->can_view( $media_id, $user_id ) ) {
 			return false;
+		}
+
+		// Direct CDN path — size-aware. If thumbnails for this media were
+		// pushed to cloud at upload time (UploadService Phase 1.2.2 work),
+		// the stored thumb_<size> meta IS already the cloud URL — return
+		// it directly so the browser hits the CDN edge instead of WP.
+		$direct_thumb = $this->maybe_direct_cloud_thumbnail_url( $media_id, $size );
+		if ( '' !== $direct_thumb ) {
+			return $direct_thumb;
+		}
+
+		// Fallback: full-file direct-CDN. Used when thumb variants haven't
+		// been pushed to cloud (e.g. media uploaded before 1.2.2 + before
+		// the backfill CLI runs, or when the customer's CDN-resize filter
+		// returned an empty value). Browser downloads the original — not
+		// ideal but functional, no broken images.
+		$direct = $this->maybe_direct_cloud_url( $media_id );
+		if ( '' !== $direct ) {
+			return $direct;
 		}
 
 		$expires = time() + ( $ttl ?: $this->get_ttl() );
@@ -209,8 +239,16 @@ class SignedUrlService {
 		}
 
 		$is_download = ! empty( $params[ self::PARAM_DOWNLOAD ] );
-		$filename    = sanitize_file_name( basename( $full_path ) );
-		$filename    = str_replace( array( "\r", "\n" ), '', $filename );
+		// Prefer the original (user-provided) filename when present — keeps
+		// downloads recognisable for end users even when the on-disk basename
+		// is a 1.2.1+ hash. Falls back to the on-disk basename for older
+		// uploads where original_filename meta is absent.
+		$repo              = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$original_filename = (string) $repo->get( $media_id, 'original_filename' );
+		$filename          = '' !== $original_filename
+			? sanitize_file_name( $original_filename )
+			: sanitize_file_name( basename( $full_path ) );
+		$filename          = str_replace( array( "\r", "\n", '"' ), '', $filename );
 
 		// Record download event if applicable.
 		if ( $is_download ) {
@@ -279,13 +317,13 @@ class SignedUrlService {
 		if ( 'watermark' === $size ) {
 			$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'watermark_url' );
 		} else {
-			$size_map  = array(
+			$size_map = array(
 				'large'     => 'thumb_large',
 				'medium'    => 'thumb_medium',
 				'thumbnail' => 'thumb_thumb',
 			);
-			$meta_key  = $size_map[ $size ] ?? 'thumb_large';
-			$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$meta_key = $size_map[ $size ] ?? 'thumb_large';
+			$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
 			// Fall back through image sizes only. NEVER fall back to file_url —
 			// for videos that's a .mp4 served with image/jpeg headers, which
@@ -336,8 +374,8 @@ class SignedUrlService {
 			exit;
 		}
 
-		$ext       = strtolower( pathinfo( $full_path, PATHINFO_EXTENSION ) );
-		$mime_map  = array(
+		$ext      = strtolower( pathinfo( $full_path, PATHINFO_EXTENSION ) );
+		$mime_map = array(
 			'jpg'  => 'image/jpeg',
 			'jpeg' => 'image/jpeg',
 			'png'  => 'image/png',
@@ -377,6 +415,127 @@ class SignedUrlService {
 	 */
 	public function requires_signed_url( int $media_id ): bool {
 		return $this->access_rules->has_active_rules( $media_id );
+	}
+
+	/**
+	 * Size-aware variant of maybe_direct_cloud_url for thumbnail reads.
+	 *
+	 * Returns the per-size cloud URL when ALL of:
+	 *   - setting `mvs_cloud_direct_public_urls` = '1'
+	 *   - active driver is non-local
+	 *   - media privacy = 'public'
+	 *   - no active access rules
+	 *   - the stored `thumb_<size>` meta is on the cloud (not local uploads dir)
+	 *
+	 * Else returns '' so the caller falls through to either the full-file
+	 * direct-CDN path or the gated /serve proxy.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $size     Size key: large / medium / thumbnail.
+	 * @return string Cloud URL for the size-specific thumbnail or empty string.
+	 */
+	private function maybe_direct_cloud_thumbnail_url( int $media_id, string $size ): string {
+		if ( ! (bool) get_option( 'mvs_cloud_direct_public_urls', false ) ) {
+			return '';
+		}
+
+		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		if ( 'local' === $driver_slug ) {
+			return '';
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		if ( 'public' !== (string) $repo->get_raw( $media_id, 'privacy' ) ) {
+			return '';
+		}
+
+		if ( $this->access_rules->has_active_rules( $media_id ) ) {
+			return '';
+		}
+
+		$size_map = array(
+			'large'     => 'thumb_large',
+			'medium'    => 'thumb_medium',
+			'thumbnail' => 'thumb_thumb',
+		);
+		$meta_key = $size_map[ $size ] ?? null;
+		if ( null === $meta_key ) {
+			return '';
+		}
+
+		$thumb_url = (string) $repo->get_raw( $media_id, $meta_key );
+		if ( '' === $thumb_url ) {
+			return '';
+		}
+
+		// If the stored URL still points at the local uploads directory,
+		// this thumbnail was generated before 1.2.1's cloud-thumb push (or
+		// the cloud upload failed and we fell back to the local URL). Don't
+		// short-circuit — let the gated /serve proxy stream the local file.
+		// The backfill CLI will eventually push these to cloud.
+		$upload_dir = wp_upload_dir();
+		if ( is_array( $upload_dir ) && ! empty( $upload_dir['baseurl'] ) ) {
+			if ( 0 === strpos( $thumb_url, (string) $upload_dir['baseurl'] ) ) {
+				return '';
+			}
+		}
+
+		return $thumb_url;
+	}
+
+	/**
+	 * If conditions allow, return the active driver's direct public URL.
+	 *
+	 * Returns a non-empty string only when ALL of:
+	 *   - setting `mvs_cloud_direct_public_urls` = '1' (operator opt-in)
+	 *   - active storage driver is NOT local (`mvs_storage_driver !== 'local'`)
+	 *   - media privacy = 'public'
+	 *   - media has no active access rules
+	 *
+	 * Else returns '' so the caller falls through to the gated /serve path.
+	 *
+	 * **Privacy caveat:** the direct URL is on the CDN's public pull-zone.
+	 * Anyone with the URL can view, including after the media's privacy is
+	 * later flipped to private. Document this in the setting description.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Direct CDN URL or empty string.
+	 */
+	private function maybe_direct_cloud_url( int $media_id ): string {
+		if ( ! (bool) get_option( 'mvs_cloud_direct_public_urls', false ) ) {
+			return '';
+		}
+
+		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		if ( 'local' === $driver_slug ) {
+			return '';
+		}
+
+		// Public privacy only — anything restricted must stay on the gated
+		// proxy so the privacy check fires per request.
+		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$privacy = (string) $repo->get_raw( $media_id, 'privacy' );
+		if ( 'public' !== $privacy ) {
+			return '';
+		}
+
+		if ( $this->access_rules->has_active_rules( $media_id ) ) {
+			return '';
+		}
+
+		$file_path = (string) $repo->get_raw( $media_id, 'file_path' );
+		if ( '' === $file_path ) {
+			return '';
+		}
+
+		$driver = apply_filters( 'mvs_storage_driver', null, $driver_slug );
+		if ( ! $driver instanceof StorageDriverInterface ) {
+			return '';
+		}
+
+		return (string) $driver->url( $file_path );
 	}
 
 	/**

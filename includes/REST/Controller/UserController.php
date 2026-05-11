@@ -171,7 +171,7 @@ class UserController extends WP_REST_Controller {
 		global $wpdb;
 
 		$user_id  = $request->get_param( 'id' );
-		$per_page = (int) $request->get_param( 'per_page' );
+		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
 		$page     = (int) $request->get_param( 'page' );
 		$offset   = ( $page - 1 ) * $per_page;
 
@@ -239,7 +239,7 @@ class UserController extends WP_REST_Controller {
 		}
 
 		$query    = sanitize_text_field( $request->get_param( 'q' ) );
-		$per_page = (int) $request->get_param( 'per_page' );
+		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
 
 		if ( strlen( $query ) < 2 ) {
 			return rest_ensure_response( array() );

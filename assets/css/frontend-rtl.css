@@ -131,6 +131,16 @@ body.dark-mode {
     --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.18);
 }
 
+.dark-mode .mvs-album-badge,
+.dark-mode .mvs-album-badge .dashicons,
+.dark-mode .mvs-grid-item-overlay {
+    color: var(--mvs-text);
+}
+
+.dark-mode .mvs-empty-state .dashicons {
+    color: var(--mvs-text-muted, #6c7781);
+}
+
 /* ==========================================================================
    0a. Type Reset — lock down all typography inside MVS templates.
        Follows BuddyNext type scale. Works with or without BuddyNext.
@@ -726,12 +736,19 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-media-video {
     width: 100%;
     background: var(--mvs-overlay);
+    /* aspect-ratio is set inline from the media's stored width/height so
+     * the frame is reserved on first paint. Without it, the box reflows
+     * when metadata/poster/playback transitions happen. */
 }
 
 .mvs-media-video video {
     display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
+    /* Letterbox the source inside the locked frame instead of stretching
+     * — keeps poster and playback at identical dimensions. */
+    object-fit: contain;
+    background: #000;
 }
 
 .mvs-media-audio {
@@ -2360,7 +2377,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-tag-cloud-item:hover,
 .mvs-tag-cloud-item.active {
     background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    color: var(--mvs-text);
 }
 
 /* ==========================================================================
@@ -2655,11 +2672,12 @@ a.mvs-dashboard-card-title:hover {
    28. Enhanced Single Media Player
    ========================================================================== */
 
-.mvs-media-video video {
-    display: block;
-    width: 100%;
-    height: auto;
+/* `.mvs-media-video video` rule lives in section "Media Content" — single
+ * source of truth so width/height/object-fit can't drift. Border-radius
+ * applies to the wrapper so it clips the letterbox bars too. */
+.mvs-media-video {
     border-radius: 4px;
+    overflow: hidden;
 }
 
 .mvs-audio-info {
@@ -4969,6 +4987,7 @@ a.mvs-dashboard-card-title:hover {
     border-radius: 50%;
     width: 36px;
     height: 36px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;

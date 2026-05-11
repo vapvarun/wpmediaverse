@@ -322,11 +322,10 @@ class StatsPage {
 		// AI usage.
 		$ai_stats = $this->ai->get_usage_stats();
 
-		// Storage used (from mvs_media_index table).
-		$storage_size      = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			"SELECT SUM(file_size) FROM {$wpdb->prefix}mvs_media_index" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		);
-		$storage_formatted = size_format( (int) $storage_size );
+		// Single source of truth — see AdminAggregatesService.
+		$aggregates        = \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' );
+		$storage_size      = $aggregates->storage_size_bytes();
+		$storage_formatted = $aggregates->storage_used_human();
 
 		?>
 		<!-- Date Range Selector -->

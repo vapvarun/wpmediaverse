@@ -1,0 +1,13 @@
+{
+  "run_id": "2026-05-02-1439",
+  "site": "http://mediaverse.local",
+  "started_at": "2026-05-02T09:09:47Z",
+  "journeys": [
+    { "slug": "pro-bootstraps-after-free", "priority": "critical", "path": "audit/journeys/admin/01-pro-bootstraps-after-free.md" },
+    { "slug": "feature-toggle-gates-battles", "priority": "high", "path": "audit/journeys/admin/02-feature-toggle-gates-battles.md" },
+    { "slug": "pro-storage-driver-registers", "priority": "high", "path": "audit/journeys/admin/03-pro-storage-driver-registers.md" },
+    { "slug": "pro-options-rename-migration", "priority": "critical", "path": "audit/journeys/admin/04-pro-options-rename-migration.md" },
+    { "slug": "connector-disconnect-uses-modal", "priority": "high", "path": "audit/journeys/admin/05-connector-disconnect-uses-modal.md" },
+    { "slug": "pro-rest-routes-distinct", "priority": "high", "path": "audit/journeys/security/04-pro-rest-routes-distinct.md" }
+  ]
+}

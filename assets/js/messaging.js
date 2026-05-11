@@ -7,6 +7,12 @@
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
+// i18n runtime shim — script modules can't import @wordpress/i18n yet,
+// so we read it from the global wp.i18n that core enqueues for admin
+// + Interactivity-API-aware frontend. Falls back to the literal string
+// if the global isn't present (e.g. before wp-i18n boots).
+const __ = ( str, domain ) => ( window.wp && window.wp.i18n && window.wp.i18n.__ ) ? window.wp.i18n.__( str, domain || 'wpmediaverse' ) : str;
+
 const config = window.mvsMessagingConfig || {};
 const REST   = config.restBase || '/wp-json/mvs/v1';
 const NONCE  = config.nonce || '';
@@ -28,7 +34,7 @@ async function apiFetch( path, options = {} ) {
 
 	if ( res.status === 204 ) return null;
 	const data = await res.json();
-	if ( ! res.ok ) throw new Error( data.error || data.message || 'Request failed' );
+	if ( ! res.ok ) throw new Error( data.error || data.message || __( 'Request failed', 'wpmediaverse' ) );
 	return data;
 }
 
@@ -306,7 +312,7 @@ const { state, actions } = store( 'mvs/messaging', {
 					yield actions.loadMessages();
 				}
 			} catch ( e ) {
-				actions.showToast( e.message || 'Could not open conversation.' );
+				actions.showToast( e.message || __( 'Could not open conversation.', 'wpmediaverse' ) );
 			}
 		},
 
@@ -415,7 +421,7 @@ const { state, actions } = store( 'mvs/messaging', {
 							state.messages = [ ...state.messages, enrichMessage( msg ) ];
 							actions.scrollToBottom();
 						} catch ( shareErr ) {
-							actions.showToast( 'Could not share media.' );
+							actions.showToast( __( 'Could not share media.', 'wpmediaverse' ) );
 						}
 					}
 				}
@@ -705,7 +711,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				} );
 				const data = yield res.json();
 
-				if ( ! res.ok ) throw new Error( data.message || 'Upload failed' );
+				if ( ! res.ok ) throw new Error( data.message || __( 'Upload failed', 'wpmediaverse' ) );
 
 				state.selectedAttachment = {
 					id: data.id,
@@ -755,7 +761,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				}, 1000 );
 
 			} catch ( e ) {
-				actions.showToast( 'Microphone access denied' );
+				actions.showToast( __( 'Microphone access denied', 'wpmediaverse' ) );
 			}
 		},
 
@@ -811,7 +817,7 @@ const { state, actions } = store( 'mvs/messaging', {
 					body: formData,
 				} );
 				const data = yield res.json();
-				if ( ! res.ok ) throw new Error( data.message || 'Upload failed' );
+				if ( ! res.ok ) throw new Error( data.message || __( 'Upload failed', 'wpmediaverse' ) );
 
 				// Send message.
 				const msg = yield apiFetch(

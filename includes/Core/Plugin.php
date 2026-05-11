@@ -226,9 +226,9 @@ class Plugin {
 		// Plugin-level theme.json — design tokens at lowest priority (theme always wins).
 		add_filter( 'wp_theme_json_data_default', array( self::class, 'register_theme_json' ) );
 
-		// Shared UI shell — FAB, upload modal, lightbox (all frontend pages).
+		// Shared UI frame — FAB, upload modal, lightbox (all frontend pages).
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_shared_ui_assets' ) );
-		add_action( 'wp_footer', array( self::class, 'render_shared_ui_shell' ) );
+		add_action( 'wp_footer', array( self::class, 'render_shared_ui_frame' ) );
 
 		// Messaging — DM engine.
 		self::init_messaging();
@@ -477,11 +477,34 @@ class Plugin {
 			}
 		);
 
+		// Admin aggregates — single source of truth for site-wide counts
+		// (total media, views, storage, etc.). Coding Rule #16: every
+		// admin/CLI surface MUST read aggregates through this service so the
+		// cache layer applies uniformly. Raw $wpdb SUM/COUNT against mvs_*
+		// tables outside this service is forbidden by bin/coding-rules-check.sh.
+		self::$container->register(
+			'admin_aggregates',
+			function () {
+				return new \WPMediaVerse\Services\AdminAggregatesService(
+					self::$container->get( 'cache' )
+				);
+			}
+		);
+
 		// Log pruning cron (daily).
 		if ( ! wp_next_scheduled( 'mvs_prune_logs' ) ) {
 			wp_schedule_event( time(), 'daily', 'mvs_prune_logs' );
 		}
 		add_action( 'mvs_prune_logs', array( \WPMediaVerse\Services\LoggerService::class, 'prune' ) );
+
+		// View-retention cron (daily). Bounded growth on mvs_media_views —
+		// every page view inserts a row, so without retention the table
+		// grows linearly with traffic. Default: 90 days. Site owners can
+		// raise (up to 730) or set 0 = retain forever.
+		if ( ! wp_next_scheduled( 'mvs_purge_old_views' ) ) {
+			wp_schedule_event( time(), 'daily', 'mvs_purge_old_views' );
+		}
+		add_action( 'mvs_purge_old_views', array( \WPMediaVerse\Services\ViewRetentionService::class, 'purge' ) );
 
 		// Wire LoggerService into key operations.
 		\WPMediaVerse\Services\LoggerService::register_hooks();
@@ -833,6 +856,15 @@ class Plugin {
 				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
 			);
 
+			// wp-i18n exposes window.wp.i18n.__ which our Interactivity-API
+			// view scripts (media-social, dashboard-view, shared-ui) call
+			// via a runtime shim — script modules cannot import @wordpress/i18n
+			// yet (WP limitation as of 6.6). Without wp-i18n present, the shim
+			// falls back to the English source string, so this enqueue is the
+			// difference between "user sees German toasts" and "user sees
+			// English fallback toasts on a German site."
+			wp_enqueue_script( 'wp-i18n' );
+
 			wp_enqueue_script(
 				'mvs-card-builders',
 				MVS_PLUGIN_URL . 'assets/js/frontend/card-builders.js',
@@ -841,6 +873,18 @@ class Plugin {
 				array(
 					'in_footer' => true,
 					'strategy'  => 'defer',
+				)
+			);
+			wp_localize_script(
+				'mvs-card-builders',
+				'mvsCardBuildersI18n',
+				array(
+					'deleteMedia' => __( 'Delete media', 'wpmediaverse' ),
+					'video'       => __( 'Video', 'wpmediaverse' ),
+					'viewMedia'   => __( 'View media', 'wpmediaverse' ),
+					'stats'       => __( 'Stats', 'wpmediaverse' ),
+					'likes'       => __( 'Likes', 'wpmediaverse' ),
+					'views'       => __( 'Views', 'wpmediaverse' ),
 				)
 			);
 
@@ -873,8 +917,8 @@ class Plugin {
 			);
 
 			wp_enqueue_style(
-				'mvs-shared-ui-shell',
-				MVS_PLUGIN_URL . 'assets/css/shared-ui-shell.css',
+				'mvs-shared-ui-frame',
+				MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
 				array(),
 				MVS_VERSION
 			);
@@ -923,6 +967,16 @@ class Plugin {
 				'strategy'  => 'defer',
 			)
 		);
+		wp_localize_script(
+			'mvs-confirm',
+			'mvsConfirmI18n',
+			array(
+				'areYouSure' => __( 'Are you sure?', 'wpmediaverse' ),
+				'confirm'    => __( 'Confirm', 'wpmediaverse' ),
+				'cancel'     => __( 'Cancel', 'wpmediaverse' ),
+				'delete'     => __( 'Delete', 'wpmediaverse' ),
+			)
+		);
 		wp_register_style(
 			'mvs-confirm',
 			MVS_PLUGIN_URL . 'assets/css/mvs-confirm.css',
@@ -947,6 +1001,24 @@ class Plugin {
 				'strategy'  => 'defer',
 			)
 		);
+
+		// BP profile / group Media tab — enqueue confirm + BP-integration CSS
+		// early, inside wp_enqueue_scripts, so they land in <head>.
+		// The scripts (mvs-bp-actions, mvs-confirm) are enqueued later by
+		// BaseBPTabIntegration::enqueue_assets() inside bp_template_content,
+		// but CSS has no footer fallback, so it must be in the queue before
+		// wp_head() fires. The auto_enqueue_confirm_style() hook at priority
+		// 100 fires before the BP screen function adds its late script enqueue,
+		// so the auto-pair misses it on BP media tab pages.
+		$is_bp_media_tab =
+			( function_exists( 'bp_is_user' ) && bp_is_user()
+				&& function_exists( 'bp_current_component' ) && 'media' === bp_current_component() )
+			|| ( function_exists( 'bp_is_group' ) && bp_is_group()
+				&& function_exists( 'bp_current_action' ) && 'media' === bp_current_action() );
+
+		if ( $is_bp_media_tab ) {
+			wp_enqueue_style( 'mvs-confirm' );
+		}
 	}
 
 	/**
@@ -1191,6 +1263,9 @@ class Plugin {
 			),
 			MVS_VERSION
 		);
+		if ( function_exists( 'wp_set_script_module_translations' ) ) {
+			wp_set_script_module_translations( 'mvs-messaging', 'wpmediaverse', MVS_PLUGIN_DIR . 'languages' );
+		}
 		wp_enqueue_script_module( 'mvs-messaging' );
 	}
 
@@ -1338,9 +1413,24 @@ JS;
 		}
 
 		wp_enqueue_style(
-			'mvs-shared-ui-shell',
-			MVS_PLUGIN_URL . 'assets/css/shared-ui-shell.css',
+			'mvs-shared-ui-frame',
+			MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
 			array(),
+			MVS_VERSION
+		);
+
+		// Deprecation shim: third-party callers using the legacy
+		// `mvs-shared-ui-shell` handle still resolve to the new file. The
+		// handle name itself is internal — no surface re-uses it — so the
+		// shim is register-only (won't emit a `<link id="mvs-shared-ui-shell-css">`
+		// unless someone explicitly enqueues it). Slated for removal in 1.3.0.
+		// Customer ask (Crisp #NZRSBX): WAFs flag any "shell" token, so this
+		// alias exists strictly so an unrelated theme/plugin enqueueing
+		// `mvs-shared-ui-shell` doesn't 404 during the migration window.
+		wp_register_style(
+			'mvs-shared-ui-shell',
+			MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
+			array( 'mvs-shared-ui-frame' ),
 			MVS_VERSION
 		);
 
@@ -1362,9 +1452,9 @@ JS;
 	}
 
 	/**
-	 * Render the shared UI shell in wp_footer (FAB, upload modal, lightbox).
+	 * Render the shared UI frame in wp_footer (FAB, upload modal, lightbox).
 	 */
-	public static function render_shared_ui_shell(): void {
+	public static function render_shared_ui_frame(): void {
 		if ( is_admin() ) {
 			return;
 		}
@@ -1378,7 +1468,7 @@ JS;
 		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
 
 		// Detect mapped MVS pages.
-		$mvs_shell_page_ids = array_filter(
+		$mvs_frame_page_ids = array_filter(
 			array_map(
 				'absint',
 				array(
@@ -1388,13 +1478,13 @@ JS;
 				)
 			)
 		);
-		$is_mvs_shell_page  = ! empty( $mvs_shell_page_ids ) && is_page( $mvs_shell_page_ids );
+		$is_mvs_frame_page  = ! empty( $mvs_frame_page_ids ) && is_page( $mvs_frame_page_ids );
 
-		if ( ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl && ! $is_mvs_shell_page ) {
+		if ( ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl && ! $is_mvs_frame_page ) {
 			return;
 		}
 
-		$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-shell.php';
+		$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-frame.php';
 		if ( file_exists( $template ) ) {
 			include $template;
 		}

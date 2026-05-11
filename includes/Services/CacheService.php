@@ -77,6 +77,68 @@ class CacheService {
 	}
 
 	/**
+	 * Persistent two-tier remember for low-cardinality global aggregates.
+	 *
+	 * Tier 1: `wp_cache_*` — instant when an external object cache (Redis,
+	 * Memcached) is wired up; per-request only otherwise.
+	 *
+	 * Tier 2: `set_transient` — only when no external object cache. This
+	 * guarantees aggregates survive across requests on stock-WP hosts
+	 * without polluting `wp_options` for sites that already have Redis.
+	 *
+	 * Use ONLY for keys whose cardinality is bounded and tiny — global
+	 * counters, system stats, settings derivatives. NEVER for per-user or
+	 * per-entity values: see Coding Rule #16 (cache backend by cardinality).
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param string   $key      Cache key (must be a fixed identifier, not entity-keyed).
+	 * @param callable $callback Callback that returns the value to cache.
+	 * @param int      $ttl      Time to live in seconds (defaults to 1 day).
+	 * @return mixed Cached or freshly generated value.
+	 */
+	public function remember_persistent( string $key, callable $callback, int $ttl = DAY_IN_SECONDS ) {
+		$found = false;
+		$value = $this->get( $key, $found );
+		if ( $found ) {
+			return $value;
+		}
+
+		$transient_fallback = ! wp_using_ext_object_cache();
+		$transient_key      = 'mvs_pcache_' . $key;
+
+		if ( $transient_fallback ) {
+			$cached = get_transient( $transient_key );
+			if ( false !== $cached ) {
+				$this->set( $key, $cached, $ttl );
+				return $cached;
+			}
+		}
+
+		$value = $callback();
+		$this->set( $key, $value, $ttl );
+
+		if ( $transient_fallback ) {
+			set_transient( $transient_key, $value, $ttl );
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Invalidate a persistent two-tier cache entry — clears BOTH layers so
+	 * the next read recomputes. Pair with `remember_persistent`.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param string $key Cache key.
+	 */
+	public function forget_persistent( string $key ): void {
+		$this->delete( $key );
+		delete_transient( 'mvs_pcache_' . $key );
+	}
+
+	/**
 	 * Get media stats with caching.
 	 *
 	 * @param int $media_id Media post ID.
@@ -345,6 +407,27 @@ class CacheService {
 
 		// Invalidate media meta cache on upload (media is custom table, not CPT).
 		add_action( 'mvs_media_uploaded', array( $this, 'on_media_save' ) );
+
+		// Bust the persistent admin-overview aggregates whenever total counts
+		// can change. Low-cardinality (5 keys total) so cost is bounded.
+		add_action( 'mvs_media_uploaded', array( $this, 'on_admin_aggregate_change' ) );
+		add_action( 'mvs_media_deleted', array( $this, 'on_admin_aggregate_change' ) );
+	}
+
+	/**
+	 * Bust the persistent admin-overview aggregate keys. Low-cardinality
+	 * (5 fixed keys: total_media, total_albums, pending_moderation,
+	 * total_views, storage_used + recent_5).
+	 *
+	 * @since 1.2.1
+	 */
+	public function on_admin_aggregate_change(): void {
+		// AdminAggregatesService owns the canonical key list — iterating it
+		// here keeps the two files honest. Adding a new aggregate adds a
+		// CACHE_KEYS entry; invalidation updates automatically.
+		foreach ( AdminAggregatesService::CACHE_KEYS as $key ) {
+			$this->forget_persistent( $key );
+		}
 	}
 
 	/**

@@ -179,7 +179,7 @@ class TagController extends WP_REST_Controller {
 		$args = array(
 			'taxonomy'   => 'mvs_tag',
 			'hide_empty' => false,
-			'number'     => (int) $request->get_param( 'per_page' ),
+			'number'     => \WPMediaVerse\REST\Pagination::resolve_per_page( $request ),
 			'orderby'    => $request->get_param( 'orderby' ),
 			'order'      => 'count' === $request->get_param( 'orderby' ) ? 'DESC' : 'ASC',
 		);

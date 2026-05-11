@@ -27,16 +27,15 @@ class Commands {
 	 * @subcommand stats
 	 */
 	public function stats( $args, $assoc_args ) {
-		global $wpdb;
-
-		$media_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$album_count = (int) wp_count_posts( 'mvs_album' )->publish;
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names only, no user input.
-		$total_views     = (int) $wpdb->get_var( "SELECT COALESCE(SUM(views), 0) FROM {$wpdb->prefix}mvs_media_stats" );
-		$total_reactions = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_reactions" );
-		$total_favorites = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_favorites" );
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// Single source of truth — see AdminAggregatesService. The cache
+		// layer there guarantees `wp mvs stats` from a cron poll doesn't
+		// trigger fresh SUM scans on every invocation.
+		$aggregates      = \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' );
+		$media_count     = $aggregates->total_media();
+		$album_count     = $aggregates->total_albums();
+		$total_views     = $aggregates->total_views();
+		$total_reactions = $aggregates->total_reactions();
+		$total_favorites = $aggregates->total_favorites();
 
 		$items = array(
 			array(
@@ -564,5 +563,786 @@ class Commands {
 		}
 
 		Utils\format_items( 'table', $items, array( 'Status', 'Count' ) );
+	}
+
+	/**
+	 * Sync BP activity hide_sitewide flag for all existing media.
+	 *
+	 * Walks every mvs_media_upload activity + every activity_update with
+	 * `_mvs_media_ids` meta and recomputes hide_sitewide from the linked
+	 * media's effective privacy (media + parent album, most-restrictive
+	 * wins). Run this once after deploying 1.2.1's privacy-sync fix to
+	 * bring legacy activity rows in line with the new behaviour.
+	 *
+	 * Originally drafted by Nitin Patil (Free remote 1.2.1 commit edfc643)
+	 * as the migration counterpart to the `hide_sitewide` flip. Adapted
+	 * here to use the canonical `ActivitySyncIntegration::should_hide_for_*`
+	 * helpers introduced in 1.2.1 so single-source-of-truth on the privacy
+	 * mapping (media + album, level scheme, future viewer-side filter)
+	 * remains in one place. Idempotent — re-runs only update rows that
+	 * have actually drifted.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Show what would change without writing to the database.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs sync-activity-privacy --dry-run
+	 *     wp mvs sync-activity-privacy
+	 *
+	 * @subcommand sync-activity-privacy
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional CLI args (unused).
+	 * @param array $assoc_args Associative CLI flags.
+	 */
+	public function sync_activity_privacy( $args, $assoc_args ) {
+		unset( $args );
+
+		if ( ! function_exists( 'buddypress' ) || ! bp_is_active( 'activity' ) ) {
+			WP_CLI::error( 'BuddyPress activity component is not active.' );
+		}
+
+		global $wpdb;
+
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+
+		// Pass 1 — standalone mvs_media_upload activities (single-photo path).
+		$upload_activities = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			"SELECT id, component, item_id, secondary_item_id, hide_sitewide
+			 FROM {$wpdb->prefix}bp_activity
+			 WHERE type = 'mvs_media_upload'
+			 ORDER BY id ASC"
+		);
+
+		// Pass 2 — composer activities with attached media (`_mvs_media_ids` meta).
+		$composer_activity_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			"SELECT DISTINCT activity_id
+			 FROM {$wpdb->prefix}bp_activity_meta
+			 WHERE meta_key = '_mvs_media_ids'"
+		);
+
+		$total = count( $upload_activities ) + count( $composer_activity_ids );
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No MVS activities found. Nothing to sync.' );
+			return;
+		}
+
+		WP_CLI::log( sprintf( 'Found %d standalone upload activities and %d composer activities to inspect.', count( $upload_activities ), count( $composer_activity_ids ) ) );
+
+		if ( ! $dry_run ) {
+			WP_CLI::warning( 'This will update hide_sitewide + activity privacy meta in bp_activity / bp_activity_meta. Ensure you have a backup.' );
+			WP_CLI::confirm( 'Proceed?' );
+		}
+
+		$hidden   = 0;
+		$restored = 0;
+		$skipped  = 0;
+		$progress = Utils\make_progress_bar( 'Syncing activity privacy', $total );
+
+		// Standalone mvs_media_upload activities.
+		foreach ( $upload_activities as $act ) {
+			$media_id = 0;
+			if ( 'wpmediaverse' === $act->component && $act->item_id > 0 ) {
+				$media_id = (int) $act->item_id;
+			} elseif ( 'groups' === $act->component && $act->secondary_item_id > 0 ) {
+				$media_id = (int) $act->secondary_item_id;
+			}
+
+			if ( $media_id <= 0 || ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			$desired_hide = \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::should_hide_for_media( $media_id ) ? 1 : 0;
+			$current_hide = (int) $act->hide_sitewide;
+
+			if ( $desired_hide === $current_hide ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			if ( ! $dry_run ) {
+				$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prefix . 'bp_activity',
+					array( 'hide_sitewide' => $desired_hide ),
+					array( 'id' => (int) $act->id ),
+					array( '%d' ),
+					array( '%d' )
+				);
+				$effective = \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::effective_privacy_for_media( $media_id );
+				bp_activity_update_meta( (int) $act->id, '_mvs_activity_privacy', $effective );
+				bp_activity_update_meta( (int) $act->id, '_mvs_activity_privacy_level', (string) \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::privacy_to_level( $effective ) );
+			}
+
+			$desired_hide ? ++$hidden : ++$restored;
+			$progress->tick();
+		}
+
+		// Composer (activity_update) activities with attached media.
+		foreach ( $composer_activity_ids as $act_id ) {
+			$act_id = (int) $act_id;
+
+			$current_hide = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare( "SELECT hide_sitewide FROM {$wpdb->prefix}bp_activity WHERE id = %d", $act_id )
+			);
+
+			$raw_ids = bp_activity_get_meta( $act_id, '_mvs_media_ids', true );
+			$ids     = array_filter( array_map( 'absint', explode( ',', (string) $raw_ids ) ) );
+
+			if ( empty( $ids ) ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			$desired_hide = \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::should_hide_for_batch( $ids ) ? 1 : 0;
+
+			if ( $desired_hide === $current_hide ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			if ( ! $dry_run ) {
+				$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prefix . 'bp_activity',
+					array( 'hide_sitewide' => $desired_hide ),
+					array( 'id' => $act_id ),
+					array( '%d' ),
+					array( '%d' )
+				);
+				$effective = \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::effective_privacy_for_batch( $ids );
+				bp_activity_update_meta( $act_id, '_mvs_activity_privacy', $effective );
+				bp_activity_update_meta( $act_id, '_mvs_activity_privacy_level', (string) \WPMediaVerse\Integrations\BuddyPress\ActivitySyncIntegration::privacy_to_level( $effective ) );
+			}
+
+			$desired_hide ? ++$hidden : ++$restored;
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		$prefix = $dry_run ? '[dry-run] Would' : '';
+		WP_CLI::success(
+			sprintf(
+				'%s hide %d activities. %s restore %d activities. %d skipped (already correct or media missing).',
+				$prefix ? $prefix : 'Hidden',
+				$hidden,
+				$prefix ? $prefix : 'Restored',
+				$restored,
+				$skipped
+			)
+		);
+	}
+
+	/**
+	 * Migrate every stored media file from one storage driver to another.
+	 *
+	 * Reads the current storage driver, walks every media row in
+	 * mvs_media_index, downloads each file from the source driver, uploads
+	 * it to the destination driver, then verifies and removes the source
+	 * copy. Idempotent — re-running skips media already present on the
+	 * destination. The plugin's `mvs_storage_driver` option is NOT flipped
+	 * automatically; the operator does that explicitly via
+	 * `wp option update mvs_storage_driver <to>` once migrate verifies.
+	 *
+	 * Use cases:
+	 *   - Activated S3 mid-life and need to move existing local files into
+	 *     the bucket so signed URLs work for them.
+	 *   - Switching FROM cloud back to local (S3 quota changes,
+	 *     compliance, etc).
+	 *   - Switching between cloud providers (S3 → BunnyCDN).
+	 *
+	 * Drivers must implement `download()` (added in interface 1.2.2).
+	 * Both Free's LocalDriver and Pro's S3 + BunnyCDN drivers do.
+	 *
+	 * ## OPTIONS
+	 *
+	 * --from=<driver>
+	 * : Source driver slug. local|s3|bunnycdn.
+	 *
+	 * --to=<driver>
+	 * : Destination driver slug. Must differ from --from.
+	 *
+	 * [--dry-run]
+	 * : Walk the media list and report which rows would migrate, but
+	 *   do not download / upload / delete anything.
+	 *
+	 * [--keep-source]
+	 * : Skip the post-verify source-side delete. Use when you want a
+	 *   safety copy on the source until QA confirms the new driver
+	 *   serves all media correctly. Default: source is deleted.
+	 *
+	 * [--media-id=<id>]
+	 * : Migrate only one specific media row (testing / repair).
+	 *
+	 * [--limit=<n>]
+	 * : Stop after this many rows (testing / batched runs).
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs migrate-storage --from=local --to=s3 --dry-run
+	 *     wp mvs migrate-storage --from=local --to=s3 --keep-source
+	 *     wp mvs migrate-storage --from=local --to=s3
+	 *     wp mvs migrate-storage --from=s3 --to=bunnycdn --limit=100
+	 *
+	 * @subcommand migrate-storage
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional CLI args (unused).
+	 * @param array $assoc_args Associative CLI flags.
+	 */
+	public function migrate_storage( $args, $assoc_args ) {
+		unset( $args );
+
+		$from        = (string) Utils\get_flag_value( $assoc_args, 'from', '' );
+		$to          = (string) Utils\get_flag_value( $assoc_args, 'to', '' );
+		$dry_run     = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$keep_source = (bool) Utils\get_flag_value( $assoc_args, 'keep-source', false );
+		$media_id    = (int) Utils\get_flag_value( $assoc_args, 'media-id', 0 );
+		$limit       = (int) Utils\get_flag_value( $assoc_args, 'limit', 0 );
+
+		if ( '' === $from || '' === $to ) {
+			WP_CLI::error( 'Both --from and --to are required.' );
+		}
+		if ( $from === $to ) {
+			WP_CLI::error( 'Source and destination drivers must differ.' );
+		}
+
+		// Resolve driver instances. The mvs_storage_driver filter is the
+		// canonical entry point — it returns Pro's S3 / BunnyCDN drivers
+		// when Pro is active, falls through to LocalDriver otherwise.
+		$source_driver = apply_filters( 'mvs_storage_driver', null, $from );
+		$dest_driver   = apply_filters( 'mvs_storage_driver', null, $to );
+
+		if ( ! $source_driver instanceof \WPMediaVerse\Services\StorageDriverInterface ) {
+			$source_driver = ( 'local' === $from ) ? new \WPMediaVerse\Services\LocalDriver() : null;
+		}
+		if ( ! $dest_driver instanceof \WPMediaVerse\Services\StorageDriverInterface ) {
+			$dest_driver = ( 'local' === $to ) ? new \WPMediaVerse\Services\LocalDriver() : null;
+		}
+
+		if ( ! $source_driver ) {
+			WP_CLI::error( "Source driver '{$from}' not available. Pro plugin required for s3/bunnycdn." );
+		}
+		if ( ! $dest_driver ) {
+			WP_CLI::error( "Destination driver '{$to}' not available. Pro plugin required for s3/bunnycdn." );
+		}
+
+		global $wpdb;
+
+		// IMPORTANT: privacy filter. Cloud buckets we support today (S3,
+		// BunnyCDN) are public-readable by default — uploading a private
+		// media's original to such a bucket leaks it to anyone with the URL,
+		// defeating the privacy promise. Cloud-aware /serve + signed-GET
+		// URLs land in 1.3.0; until then, non-public media STAYS on local.
+		// Customer override: pass --include-non-public if they've configured
+		// a private cloud bucket and accept the responsibility for serving
+		// it themselves (e.g. via CloudFront with origin access identity).
+		$include_non_public = (bool) Utils\get_flag_value( $assoc_args, 'include-non-public', false );
+		$where = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''";
+		if ( ! $include_non_public ) {
+			$where .= " AND privacy = 'public'";
+		}
+		if ( $media_id > 0 ) {
+			$where .= $wpdb->prepare( ' AND media_id = %d', $media_id );
+		}
+		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( "SELECT media_id, file_path, file_size FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY media_id ASC{$limit_sql}" );
+
+		$total = count( $rows );
+		if ( 0 === $total ) {
+			WP_CLI::success( $include_non_public ? 'No media rows match. Nothing to migrate.' : 'No PUBLIC media rows match. Nothing to migrate. (Pass --include-non-public to also migrate non-public media — only do this if your cloud bucket is private.)' );
+			return;
+		}
+
+		WP_CLI::log( sprintf( 'Migrating %d media file(s) from %s → %s%s%s', $total, $from, $to, $dry_run ? ' [DRY-RUN]' : '', $keep_source ? ' [KEEP-SOURCE]' : '' ) );
+
+		if ( ! $dry_run ) {
+			WP_CLI::warning( 'This will move files between storage drivers. Ensure both source AND destination are accessible. A backup of the source bucket / directory is strongly recommended.' );
+			WP_CLI::confirm( 'Proceed?' );
+		}
+
+		$tmp_root = trailingslashit( get_temp_dir() ) . 'mvs-migrate-' . uniqid() . '/';
+		$migrated = 0;
+		$skipped  = 0;
+		$failed   = 0;
+		$progress = Utils\make_progress_bar( 'Migrating media', $total );
+
+		foreach ( $rows as $row ) {
+			$rel_path = (string) $row->file_path;
+
+			// Skip if destination already has the file (idempotent re-run).
+			if ( $dest_driver->exists( $rel_path ) ) {
+				// Backfill file_url for files migrated before Stage 3.5
+				// existed (pre-1.2.1). Idempotent — wpdb->update is a
+				// no-op when the value already matches.
+				if ( ! $dry_run ) {
+					$expected = $dest_driver->url( $rel_path );
+					if ( '' !== $expected ) {
+						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+						$wpdb->update(
+							$wpdb->prefix . 'mvs_media_index',
+							array( 'file_url' => $expected ),
+							array( 'media_id' => (int) $row->media_id ),
+							array( '%s' ),
+							array( '%d' )
+						);
+					}
+				}
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			if ( $dry_run ) {
+				++$migrated;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 1 — pull source to local temp.
+			$tmp_path = $tmp_root . ltrim( $rel_path, '/' );
+			if ( ! $source_driver->download( $rel_path, $tmp_path ) ) {
+				WP_CLI::warning( sprintf( 'Download failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
+				++$failed;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 2 — push local temp to destination.
+			if ( ! $dest_driver->store( $tmp_path, $rel_path ) ) {
+				WP_CLI::warning( sprintf( 'Upload to destination failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
+				if ( file_exists( $tmp_path ) ) {
+					wp_delete_file( $tmp_path );
+				}
+				++$failed;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 3 — verify destination presence before any deletes.
+			if ( ! $dest_driver->exists( $rel_path ) ) {
+				WP_CLI::warning( sprintf( 'Post-upload verify failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
+				++$failed;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 3.5 — refresh mvs_media_index.file_url to the destination
+			// driver's URL. Display surfaces (lightbox, explore, BP activity
+			// rebuild) don't depend on this column — they sign URLs through
+			// the active driver dynamically. But storage-internal callers
+			// (UploadService thumb-fallback, WatermarkService) read the raw
+			// column via get_raw('file_url') and would otherwise see the
+			// old driver's URL until the next re-upload.
+			$new_url = $dest_driver->url( $rel_path );
+			if ( '' !== $new_url ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+				$wpdb->update(
+					$wpdb->prefix . 'mvs_media_index',
+					array( 'file_url' => $new_url ),
+					array( 'media_id' => (int) $row->media_id ),
+					array( '%s' ),
+					array( '%d' )
+				);
+			}
+
+			// Stage 4 — delete the source unless keep-source flag set.
+			if ( ! $keep_source ) {
+				$source_driver->delete( $rel_path );
+			}
+
+			if ( file_exists( $tmp_path ) ) {
+				wp_delete_file( $tmp_path );
+			}
+			++$migrated;
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		// Cleanup temp root if empty.
+		if ( is_dir( $tmp_root ) ) {
+			@rmdir( $tmp_root ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- empty-dir best-effort
+		}
+
+		$prefix = $dry_run ? '[dry-run] Would migrate' : 'Migrated';
+		WP_CLI::success(
+			sprintf(
+				'%s %d file(s) from %s → %s. Skipped %d (already on destination). Failed %d.',
+				$prefix,
+				$migrated,
+				$from,
+				$to,
+				$skipped,
+				$failed
+			)
+		);
+
+		if ( ! $dry_run && $failed > 0 ) {
+			WP_CLI::warning( 'Some files failed to migrate. Review log lines above and re-run for retry. The mvs_storage_driver option has NOT been changed — flip it manually after a clean run: wp option update mvs_storage_driver ' . $to );
+		} elseif ( ! $dry_run && 0 === $failed ) {
+			WP_CLI::log( "Next step: flip the active driver to '{$to}':" );
+			WP_CLI::log( "  wp option update mvs_storage_driver {$to}" );
+		}
+	}
+
+	/**
+	 * Push thumbnail variants to the active cloud storage driver for media
+	 * uploaded before 1.2.2 (when cloud-side thumbs landed). Iterates every
+	 * publish/draft image media row whose `thumb_<size>` meta still points
+	 * at a local URL, regenerates from the original, and uploads each size
+	 * to the cloud driver — same path convention as fresh uploads.
+	 *
+	 * After this CLI runs, the size-aware direct-CDN read path
+	 * (`maybe_direct_cloud_thumbnail_url`) returns cloud URLs for every
+	 * media's thumbnail slot — browser never fetches the full original
+	 * for a 200×200 thumbnail again.
+	 *
+	 * Pre-condition: original files must already exist on cloud (run
+	 * `wp mvs migrate-storage` first if not). The original is downloaded
+	 * to a temp file, multi_resize'd via WP image editor, and each variant
+	 * uploaded. Temp files are cleaned up after every row.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Walk the candidate list and report what would migrate. No files
+	 *   downloaded, no thumbs generated, no uploads.
+	 *
+	 * [--media-id=<id>]
+	 * : Process a single media row only (testing / repair).
+	 *
+	 * [--limit=<n>]
+	 * : Stop after this many rows (testing / batched runs).
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs cloud-thumbs-backfill --dry-run
+	 *     wp mvs cloud-thumbs-backfill --limit=100
+	 *     wp mvs cloud-thumbs-backfill --media-id=42
+	 *
+	 * @subcommand cloud-thumbs-backfill
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional CLI args (unused).
+	 * @param array $assoc_args Associative CLI flags.
+	 */
+	public function cloud_thumbs_backfill( $args, $assoc_args ) {
+		unset( $args );
+
+		$dry_run  = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$media_id = (int) Utils\get_flag_value( $assoc_args, 'media-id', 0 );
+		$limit    = (int) Utils\get_flag_value( $assoc_args, 'limit', 0 );
+
+		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		if ( 'local' === $driver_slug ) {
+			WP_CLI::error( 'Active driver is "local" — nothing to push to cloud. Set mvs_storage_driver to s3 or bunnycdn first.' );
+		}
+
+		$driver = apply_filters( 'mvs_storage_driver', null, $driver_slug );
+		if ( ! $driver instanceof \WPMediaVerse\Services\StorageDriverInterface ) {
+			WP_CLI::error( "Storage driver '{$driver_slug}' is not available. Pro plugin required for s3/bunnycdn." );
+		}
+
+		global $wpdb;
+
+		// IMPORTANT: only public media. Non-public media routes through the
+		// gated /serve proxy which (as of 1.2.2) can only read from local
+		// disk — flipping non-public thumb meta to CDN URLs would 404 the
+		// proxy. Cloud-aware /serve is on the 1.3.0 list.
+		$where = "i.status IN ('publish','draft') AND i.file_path IS NOT NULL AND i.file_path != '' AND i.file_type LIKE 'image/%' AND i.privacy = 'public'";
+		if ( $media_id > 0 ) {
+			$where .= $wpdb->prepare( ' AND i.media_id = %d', $media_id );
+		}
+		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( "SELECT i.media_id, i.file_path, i.file_type FROM {$wpdb->prefix}mvs_media_index i WHERE {$where} ORDER BY i.media_id ASC{$limit_sql}" );
+
+		$total = count( $rows );
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No image media rows match. Nothing to backfill.' );
+			return;
+		}
+
+		WP_CLI::log( sprintf( 'Backfilling cloud thumbnails for %d image(s) → %s%s', $total, $driver_slug, $dry_run ? ' [DRY-RUN]' : '' ) );
+
+		if ( ! $dry_run ) {
+			WP_CLI::warning( 'This downloads each original from the cloud, regenerates 3 size variants locally, and uploads each variant. Network + CPU heavy. Recommend running off-peak.' );
+			WP_CLI::confirm( 'Proceed?' );
+		}
+
+		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$service  = \WPMediaVerse\Core\Plugin::container()->get( 'upload' );
+		$tmp_root = trailingslashit( get_temp_dir() ) . 'mvs-thumbs-' . uniqid() . '/';
+		$migrated = 0;
+		$skipped  = 0;
+		$failed   = 0;
+		$progress = Utils\make_progress_bar( 'Backfilling thumbnails', $total );
+
+		foreach ( $rows as $row ) {
+			$rel_path = (string) $row->file_path;
+
+			// Skip if EVERY size already has a non-local URL — nothing to do.
+			$thumb_keys = array( 'thumb_large', 'thumb_medium', 'thumb_thumb' );
+			$all_cloud  = true;
+			foreach ( $thumb_keys as $key ) {
+				$val = (string) $repo->get_raw( (int) $row->media_id, $key );
+				if ( '' === $val ) {
+					$all_cloud = false;
+					break;
+				}
+				$upload_dir = wp_upload_dir();
+				if ( is_array( $upload_dir ) && ! empty( $upload_dir['baseurl'] ) && 0 === strpos( $val, (string) $upload_dir['baseurl'] ) ) {
+					$all_cloud = false;
+					break;
+				}
+			}
+			if ( $all_cloud ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			if ( $dry_run ) {
+				++$migrated;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 1 — pull original from cloud to local temp.
+			$tmp_path = $tmp_root . ltrim( $rel_path, '/' );
+			if ( ! $driver->download( $rel_path, $tmp_path ) ) {
+				WP_CLI::warning( sprintf( 'Original download failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
+				++$failed;
+				$progress->tick();
+				continue;
+			}
+
+			// Stage 2 — call generate_thumbnails. Same code path as a fresh
+			// upload: WP multi_resize creates locals, the driver pushes each
+			// to cloud, meta updates to cloud URLs.
+			$ok = $service->generate_thumbnails( (int) $row->media_id, $tmp_path, (string) $row->file_type );
+
+			// Stage 3 — clean up the temp original (size variants the
+			// generate_thumbnails call wrote next to it are also cleaned).
+			if ( file_exists( $tmp_path ) ) {
+				wp_delete_file( $tmp_path );
+			}
+			$tmp_dir = dirname( $tmp_path );
+			if ( is_dir( $tmp_dir ) ) {
+				$siblings = glob( $tmp_dir . '/*-*x*.*' ) ?: array();
+				foreach ( $siblings as $s ) {
+					wp_delete_file( $s );
+				}
+			}
+
+			if ( $ok ) {
+				++$migrated;
+			} else {
+				++$failed;
+			}
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		if ( is_dir( $tmp_root ) ) {
+			@rmdir( $tmp_root ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- empty-dir best-effort
+		}
+
+		$prefix = $dry_run ? '[dry-run] Would backfill' : 'Backfilled';
+		WP_CLI::success(
+			sprintf(
+				'%s thumbnails for %d image(s). Skipped %d (already on cloud). Failed %d.',
+				$prefix,
+				$migrated,
+				$skipped,
+				$failed
+			)
+		);
+	}
+
+	/**
+	 * Delete local copies of media that are verified on the active cloud
+	 * driver. Use after a successful `wp mvs migrate-storage --keep-source`
+	 * run + a verification window where the operator confirmed the cloud
+	 * driver serves all media correctly.
+	 *
+	 * For each media row: verifies the original AND every thumbnail variant
+	 * exists on the cloud driver via `$driver->exists($rel_path)`, then
+	 * deletes the local file. Idempotent — files that don't exist locally
+	 * (already cleaned) are silent no-ops.
+	 *
+	 * **Irreversible.** After running this, flipping back to driver=local
+	 * means the site has no source files. To go back to local, run
+	 * `wp mvs migrate-storage --from=cloud --to=local` first (which
+	 * downloads everything back) before flipping the driver.
+	 *
+	 * Pre-conditions checked at runtime:
+	 *   - Active driver must NOT be local (prevents self-delete on a local-
+	 *     only site).
+	 *   - Each candidate file must exist on the cloud driver before we
+	 *     delete the local copy. A failed exists() means we keep the local
+	 *     file — never an orphan.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Walk the candidate list and report which files would be deleted.
+	 *   No files removed.
+	 *
+	 * [--media-id=<id>]
+	 * : Process a single media row only.
+	 *
+	 * [--limit=<n>]
+	 * : Stop after this many rows.
+	 *
+	 * [--keep-thumbs]
+	 * : Only delete the original local file. Keep local thumbnail
+	 *   variants. Use when something on the site still relies on local
+	 *   thumbs (legacy theme, third-party integration). Default is to
+	 *   delete originals AND every -<width>x<height>.* variant in the
+	 *   same directory.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs cleanup-local --dry-run
+	 *     wp mvs cleanup-local --media-id=42
+	 *     wp mvs cleanup-local --limit=100
+	 *     wp mvs cleanup-local --keep-thumbs
+	 *
+	 * @subcommand cleanup-local
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional CLI args (unused).
+	 * @param array $assoc_args Associative CLI flags.
+	 */
+	public function cleanup_local( $args, $assoc_args ) {
+		unset( $args );
+
+		$dry_run     = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$media_id    = (int) Utils\get_flag_value( $assoc_args, 'media-id', 0 );
+		$limit       = (int) Utils\get_flag_value( $assoc_args, 'limit', 0 );
+		$keep_thumbs = (bool) Utils\get_flag_value( $assoc_args, 'keep-thumbs', false );
+
+		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		if ( 'local' === $driver_slug ) {
+			WP_CLI::error( 'Active driver is "local" — cleaning local files would break the site. Migrate to a cloud driver first.' );
+		}
+
+		$driver = apply_filters( 'mvs_storage_driver', null, $driver_slug );
+		if ( ! $driver instanceof \WPMediaVerse\Services\StorageDriverInterface ) {
+			WP_CLI::error( "Storage driver '{$driver_slug}' is not available. Pro plugin required for s3/bunnycdn." );
+		}
+
+		global $wpdb;
+
+		// IMPORTANT: only public media. Non-public media routes through the
+		// gated /serve proxy which (as of 1.2.2) can only read from local
+		// disk. Deleting locals for those would break /serve. Cloud-aware
+		// /serve lands in 1.3.0 — until then, private/members/friends
+		// media keeps its local copy as a hard requirement.
+		$where = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public'";
+		if ( $media_id > 0 ) {
+			$where .= $wpdb->prepare( ' AND media_id = %d', $media_id );
+		}
+		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( "SELECT media_id, file_path FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY media_id ASC{$limit_sql}" );
+
+		$total = count( $rows );
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No public media rows match. Nothing to clean. (Non-public media is intentionally not cleaned — see 1.3.0 for cloud-aware /serve.)' );
+			return;
+		}
+
+		WP_CLI::log( sprintf( 'Cleaning local copies for %d PUBLIC media row(s) on driver=%s%s%s', $total, $driver_slug, $dry_run ? ' [DRY-RUN]' : '', $keep_thumbs ? ' [KEEP-THUMBS]' : '' ) );
+
+		if ( ! $dry_run ) {
+			WP_CLI::warning( 'IRREVERSIBLE: this deletes local files. Make sure your cloud driver serves all media correctly before proceeding. To go back to driver=local later, run `wp mvs migrate-storage --from=' . $driver_slug . ' --to=local` first.' );
+			WP_CLI::confirm( 'Proceed?' );
+		}
+
+		$upload_basedir = (string) ( wp_upload_dir()['basedir'] ?? '' );
+		$wpmv_local_dir = trailingslashit( $upload_basedir ) . 'wpmediaverse';
+
+		$cleaned          = 0;
+		$skipped_no_file  = 0;
+		$skipped_no_cloud = 0;
+		$thumbs_removed   = 0;
+		$progress         = Utils\make_progress_bar( 'Cleaning local files', $total );
+
+		foreach ( $rows as $row ) {
+			$rel_path        = (string) $row->file_path;
+			$local_full_path = trailingslashit( $wpmv_local_dir ) . $rel_path;
+
+			// 1. Skip if no local file exists (already cleaned, or born-on-cloud).
+			if ( ! file_exists( $local_full_path ) ) {
+				++$skipped_no_file;
+				$progress->tick();
+				continue;
+			}
+
+			// 2. Verify the cloud HAS this file before we delete the local
+			// one. A failed exists() check means we keep the local copy —
+			// never create an orphan.
+			if ( ! $driver->exists( $rel_path ) ) {
+				WP_CLI::warning( sprintf( 'Cloud verify FAILED for media #%d (%s) — keeping local file as safety', $row->media_id, $rel_path ) );
+				++$skipped_no_cloud;
+				$progress->tick();
+				continue;
+			}
+
+			if ( $dry_run ) {
+				++$cleaned;
+				$progress->tick();
+				continue;
+			}
+
+			// 3. Delete the original.
+			wp_delete_file( $local_full_path );
+
+			// 4. Delete sibling variants (foo-300x200.jpg, foo-150x150.jpg, etc).
+			if ( ! $keep_thumbs ) {
+				$dir      = dirname( $local_full_path );
+				$base     = pathinfo( $local_full_path, PATHINFO_FILENAME );
+				$pattern  = $dir . '/' . $base . '-*x*.*';
+				$siblings = glob( $pattern ) ?: array();
+				foreach ( $siblings as $sibling ) {
+					if ( is_file( $sibling ) ) {
+						wp_delete_file( $sibling );
+						++$thumbs_removed;
+					}
+				}
+			}
+
+			++$cleaned;
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		$prefix = $dry_run ? '[dry-run] Would clean' : 'Cleaned';
+		WP_CLI::success(
+			sprintf(
+				'%s %d original(s)%s. Skipped: %d already-clean, %d not-on-cloud (kept local).',
+				$prefix,
+				$cleaned,
+				$keep_thumbs ? '' : sprintf( ' + %d thumbnail variant(s)', $thumbs_removed ),
+				$skipped_no_file,
+				$skipped_no_cloud
+			)
+		);
 	}
 }

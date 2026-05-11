@@ -68,6 +68,40 @@ class MediaRepository implements MediaRepositoryInterface {
 	);
 
 	/**
+	 * Per-request value cache — `[media_id => [key => value]]`.
+	 *
+	 * Populated lazily by `get_raw()` and eagerly by `prefetch()`. Cleared
+	 * for a given media_id whenever `set()` / `set_many()` / `delete()`
+	 * mutates that row. NOT a cross-request cache — request lifetime only,
+	 * so process restarts and CLI invocations always read fresh.
+	 *
+	 * Why this matters: render paths (BP activity, lightbox, dashboard
+	 * cards) call `get($id, 'title')`, then `get($id, 'file_url')`, then
+	 * `get($id, 'privacy')` — three round-trips per media. At 20 activities
+	 * × 6 media each that's 360 queries. With this cache, each media is
+	 * one query for the index columns + one for any meta lookups, regardless
+	 * of how many times it's read in the same request.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private static array $row_cache = array();
+
+	/**
+	 * Tracks media_ids that have had ALL their meta loaded via prefetch.
+	 * Without this, a meta-miss in `$row_cache` could mean either "not
+	 * loaded yet" or "loaded and confirmed absent." Indexed columns are
+	 * fully covered by the row insert in `prefetch_index()`, so the gap
+	 * is meta-only.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @var array<int, true>
+	 */
+	private static array $meta_fully_loaded = array();
+
+	/**
 	 * Get a single field for a media item.
 	 *
 	 * Checks mvs_media_index first (core fields), then mvs_media_meta (sparse fields).
@@ -123,24 +157,145 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return mixed|null Raw value or null if not found.
 	 */
 	public function get_raw( int $media_id, string $key ) {
+		// Tier 1: per-request cache hit.
+		if ( isset( self::$row_cache[ $media_id ] ) && array_key_exists( $key, self::$row_cache[ $media_id ] ) ) {
+			return self::$row_cache[ $media_id ][ $key ];
+		}
+
 		global $wpdb;
 
 		if ( in_array( $key, self::$index_columns, true ) ) {
-			return $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			// Index miss for this media → load the whole row at once. Reads
+			// of subsequent index columns become free.
+			$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"SELECT `{$key}` FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$media_id
-				)
+				),
+				ARRAY_A
 			);
+			if ( ! is_array( $row ) ) {
+				// Don't cache the absent state — a subsequent insert under
+				// the same media_id (rare but valid) would see stale.
+				return null;
+			}
+			if ( ! isset( self::$row_cache[ $media_id ] ) ) {
+				self::$row_cache[ $media_id ] = array();
+			}
+			foreach ( $row as $col => $val ) {
+				self::$row_cache[ $media_id ][ $col ] = $val;
+			}
+			return self::$row_cache[ $media_id ][ $key ] ?? null;
 		}
 
-		return $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// Meta miss — single key fetch. Caching the result skips repeat
+		// fetches in the same request without firing a wasted query for
+		// keys that genuinely don't exist.
+		$value = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key = %s",
 				$media_id,
 				$key
 			)
 		);
+		if ( ! isset( self::$row_cache[ $media_id ] ) ) {
+			self::$row_cache[ $media_id ] = array();
+		}
+		self::$row_cache[ $media_id ][ $key ] = $value;
+		return $value;
+	}
+
+	/**
+	 * Eagerly load index rows + ALL meta for a list of media IDs.
+	 *
+	 * Render paths (BP activity stream, lightbox, dashboard) typically need
+	 * 4-6 keys per media item across N items. Without prefetch that's 4N-6N
+	 * queries (one per key per item). With prefetch it's 2 queries total:
+	 * one for index columns, one for meta — both keyed `WHERE media_id IN
+	 * (…)`. Subsequent `get()` calls hit the request cache (free).
+	 *
+	 * Idempotent — re-prefetching already-cached IDs is a no-op.
+	 * Safe to call with mixed (cached + uncached) IDs; the SQL filters down
+	 * to the uncached subset.
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param int[] $media_ids Media IDs to prefetch.
+	 */
+	public function prefetch( array $media_ids ): void {
+		if ( empty( $media_ids ) ) {
+			return;
+		}
+
+		$ids = array();
+		foreach ( $media_ids as $id ) {
+			$id = (int) $id;
+			if ( $id <= 0 ) {
+				continue;
+			}
+			// Index already cached AND meta already fully loaded? Skip.
+			if ( isset( self::$row_cache[ $id ] ) && isset( self::$meta_fully_loaded[ $id ] ) ) {
+				continue;
+			}
+			$ids[ $id ] = true;
+		}
+		if ( empty( $ids ) ) {
+			return;
+		}
+		$id_list      = array_keys( $ids );
+		$placeholders = implode( ',', array_fill( 0, count( $id_list ), '%d' ) );
+
+		global $wpdb;
+
+		// Pull every index row in one query.
+		$index_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE media_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$id_list
+			),
+			ARRAY_A
+		);
+		foreach ( $index_rows as $row ) {
+			$mid = (int) $row['media_id'];
+			if ( ! isset( self::$row_cache[ $mid ] ) ) {
+				self::$row_cache[ $mid ] = array();
+			}
+			foreach ( $row as $col => $val ) {
+				self::$row_cache[ $mid ][ $col ] = $val;
+			}
+		}
+
+		// Pull every meta row for these media in one query.
+		$meta_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id, meta_key, meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$id_list
+			),
+			ARRAY_A
+		);
+		foreach ( $meta_rows as $row ) {
+			$mid = (int) $row['media_id'];
+			if ( ! isset( self::$row_cache[ $mid ] ) ) {
+				self::$row_cache[ $mid ] = array();
+			}
+			self::$row_cache[ $mid ][ $row['meta_key'] ] = $row['meta_value'];
+		}
+
+		// Mark every requested ID as fully loaded — even those with zero
+		// meta rows. Subsequent get() calls for absent keys can return null
+		// without an extra DB hit.
+		foreach ( $id_list as $mid ) {
+			self::$meta_fully_loaded[ $mid ] = true;
+		}
+	}
+
+	/**
+	 * Drop a media's cached row. Called on every set / set_many / delete.
+	 *
+	 * @since 1.2.1
+	 */
+	private static function invalidate_row_cache( int $media_id ): void {
+		unset( self::$row_cache[ $media_id ], self::$meta_fully_loaded[ $media_id ] );
 	}
 
 	/**
@@ -395,6 +550,16 @@ class MediaRepository implements MediaRepositoryInterface {
 		global $wpdb;
 
 		if ( in_array( $key, self::$index_columns, true ) ) {
+			$old_privacy = null;
+			if ( 'privacy' === $key ) {
+				$old_privacy = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
+						$media_id
+					)
+				);
+			}
+
 			$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
@@ -421,6 +586,22 @@ class MediaRepository implements MediaRepositoryInterface {
 					)
 				);
 			}
+
+			// Fire only on UPDATE (old value existed) and when value actually changes.
+			// Inserts skip — uploaders set privacy at activity-creation time directly.
+			if ( 'privacy' === $key && null !== $old_privacy && (string) $old_privacy !== (string) $value ) {
+				/**
+				 * Fires when a media item's privacy changes.
+				 *
+				 * @since 1.2.1
+				 *
+				 * @param int    $media_id    Media ID.
+				 * @param string $new_privacy New privacy value.
+				 * @param string $old_privacy Previous privacy value.
+				 */
+				do_action( 'mvs_media_privacy_changed', $media_id, (string) $value, (string) $old_privacy );
+			}
+			self::invalidate_row_cache( $media_id );
 			return;
 		}
 
@@ -439,6 +620,8 @@ class MediaRepository implements MediaRepositoryInterface {
 			),
 			array( '%d', '%s', '%s' )
 		);
+
+		self::invalidate_row_cache( $media_id );
 	}
 
 	/**
@@ -463,6 +646,16 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		// Bulk update index columns in one query.
 		if ( ! empty( $index_data ) ) {
+			$old_privacy = null;
+			if ( array_key_exists( 'privacy', $index_data ) ) {
+				$old_privacy = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT privacy FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
+						$media_id
+					)
+				);
+			}
+
 			$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d",
@@ -486,9 +679,16 @@ class MediaRepository implements MediaRepositoryInterface {
 					$index_data
 				);
 			}
+
+			if ( array_key_exists( 'privacy', $index_data ) && null !== $old_privacy && (string) $old_privacy !== (string) $index_data['privacy'] ) {
+				/** This action is documented in MediaRepository::set(). */
+				do_action( 'mvs_media_privacy_changed', $media_id, (string) $index_data['privacy'], (string) $old_privacy );
+			}
+
+			self::invalidate_row_cache( $media_id );
 		}
 
-		// Meta fields one by one (upsert).
+		// Meta fields one by one (upsert). Each set() call self-invalidates.
 		foreach ( $meta_data as $key => $value ) {
 			$this->set( $media_id, $key, $value );
 		}
@@ -509,6 +709,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				array( $key => null ),
 				array( 'media_id' => $media_id )
 			);
+			self::invalidate_row_cache( $media_id );
 			return;
 		}
 
@@ -520,6 +721,8 @@ class MediaRepository implements MediaRepositoryInterface {
 			), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 			array( '%d', '%s' )
 		);
+
+		self::invalidate_row_cache( $media_id );
 	}
 
 	/**

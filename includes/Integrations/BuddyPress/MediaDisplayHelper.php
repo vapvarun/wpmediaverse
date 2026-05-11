@@ -81,6 +81,32 @@ class MediaDisplayHelper {
 			)
 		);
 
+		// For private/members media, the user_id=0 sign above fails the privacy
+		// check and template_helpers returns a placeholder div (no <img>). When
+		// a logged-in viewer who CAN see the media lands on a stored-content
+		// activity (broadcast cache, late-rendered template), fall back to a
+		// per-viewer signed URL so the thumbnail shows. The activity stream's
+		// SQL filter (ActivityPrivacyFilter) already prevents the activity from
+		// reaching unauthorized viewers; this guard handles the case where the
+		// SQL filter passes the activity through but the cached URL was signed
+		// for an anonymous viewer. Refresh-on-render handles the short TTL.
+		// Originally drafted by Nitin Patil (1.2.1 commit edfc643).
+		if ( false !== strpos( $inner, 'mvs-grid-item-placeholder' ) ) {
+			$current_user_id = get_current_user_id();
+			if ( $current_user_id > 0 && \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, $current_user_id ) ) {
+				$inner = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->media_thumbnail(
+					$media_id,
+					array(
+						'size'      => $size,
+						'alt'       => esc_attr( $title ),
+						'show_play' => true,
+						'ttl'       => 0,
+						'user_id'   => $current_user_id,
+					)
+				);
+			}
+		}
+
 		return '<div class="mvs-activity-media mvs-activity-media--' . esc_attr( $media_type ) . '"' . $data_mid . '><a href="' . esc_url( $href ) . '">' . $inner . '</a></div>';
 	}
 

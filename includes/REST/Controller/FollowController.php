@@ -201,7 +201,7 @@ class FollowController extends WP_REST_Controller {
 	 */
 	public function get_followers( $request ) {
 		$user_id  = $request->get_param( 'id' );
-		$per_page = (int) $request->get_param( 'per_page' );
+		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
 		$page     = (int) $request->get_param( 'page' );
 
 		$data  = $this->follows->get_followers( $user_id, $per_page, $page );
@@ -221,7 +221,7 @@ class FollowController extends WP_REST_Controller {
 	 */
 	public function get_following( $request ) {
 		$user_id  = $request->get_param( 'id' );
-		$per_page = (int) $request->get_param( 'per_page' );
+		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
 		$page     = (int) $request->get_param( 'page' );
 
 		$data  = $this->follows->get_following( $user_id, $per_page, $page );

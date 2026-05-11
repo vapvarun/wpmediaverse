@@ -188,8 +188,8 @@ class ModerationController extends WP_REST_Controller {
 		$result = $this->moderation->get_queue(
 			array(
 				'status'   => $request->get_param( 'status' ) ?? 'flagged',
-				'per_page' => $request->get_param( 'per_page' ) ?? 20,
-				'page'     => $request->get_param( 'page' ) ?? 1,
+				'per_page' => \WPMediaVerse\REST\Pagination::resolve_per_page( $request ),
+				'page'     => \WPMediaVerse\REST\Pagination::resolve_page( $request ),
 			)
 		);
 

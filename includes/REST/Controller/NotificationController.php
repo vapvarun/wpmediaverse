@@ -119,8 +119,8 @@ class NotificationController extends WP_REST_Controller {
 	public function get_notifications( $request ) {
 		$data = $this->notifications->get_notifications(
 			get_current_user_id(),
-			(int) $request->get_param( 'per_page' ),
-			(int) $request->get_param( 'page' ),
+			\WPMediaVerse\REST\Pagination::resolve_per_page( $request ),
+			\WPMediaVerse\REST\Pagination::resolve_page( $request ),
 			sanitize_text_field( $request->get_param( 'filter' ) )
 		);
 

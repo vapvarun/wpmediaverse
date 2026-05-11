@@ -179,7 +179,7 @@ class CommentController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$per_page = (int) $request->get_param( 'per_page' );
+		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
 		$page     = (int) $request->get_param( 'page' );
 
 		$result = $this->comments->get_for_media( $media_id, $per_page, $page );

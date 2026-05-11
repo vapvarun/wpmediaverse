@@ -27,7 +27,22 @@ class FieldRenderer {
 			esc_attr( $value )
 		);
 		if ( ! empty( $args['description'] ) ) {
-			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+			printf(
+				'<p class="description">%s</p>',
+				wp_kses(
+					$args['description'],
+					array(
+						'code'   => array(),
+						'strong' => array(),
+						'em'     => array(),
+						'a'      => array(
+							'href'   => array(),
+							'target' => array(),
+							'rel'    => array(),
+						),
+					)
+				)
+			);
 		}
 	}
 
@@ -100,7 +115,22 @@ class FieldRenderer {
 		$custom_types = array_diff( $selected, $known_mimes, array( '' ) );
 
 		if ( ! empty( $args['description'] ) ) {
-			printf( '<p class="description mvs-desc-mb">%s</p>', esc_html( $args['description'] ) );
+			printf(
+				'<p class="description mvs-desc-mb">%s</p>',
+				wp_kses(
+					$args['description'],
+					array(
+						'code'   => array(),
+						'strong' => array(),
+						'em'     => array(),
+						'a'      => array(
+							'href'   => array(),
+							'target' => array(),
+							'rel'    => array(),
+						),
+					)
+				)
+			);
 		}
 		echo '<div class="mvs-file-types-grid">';
 		foreach ( $groups as $group_label => $mimes ) {
@@ -149,7 +179,22 @@ class FieldRenderer {
 			esc_textarea( $value )
 		);
 		if ( ! empty( $args['description'] ) ) {
-			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+			printf(
+				'<p class="description">%s</p>',
+				wp_kses(
+					$args['description'],
+					array(
+						'code'   => array(),
+						'strong' => array(),
+						'em'     => array(),
+						'a'      => array(
+							'href'   => array(),
+							'target' => array(),
+							'rel'    => array(),
+						),
+					)
+				)
+			);
 		}
 	}
 
@@ -173,7 +218,22 @@ class FieldRenderer {
 		}
 		echo '</select>';
 		if ( ! empty( $args['description'] ) ) {
-			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+			printf(
+				'<p class="description">%s</p>',
+				wp_kses(
+					$args['description'],
+					array(
+						'code'   => array(),
+						'strong' => array(),
+						'em'     => array(),
+						'a'      => array(
+							'href'   => array(),
+							'target' => array(),
+							'rel'    => array(),
+						),
+					)
+				)
+			);
 		}
 	}
 
@@ -199,7 +259,22 @@ class FieldRenderer {
 			echo '<p class="description">' . esc_html__( 'Leave empty to keep the current key.', 'wpmediaverse' ) . '</p>';
 		}
 		if ( ! empty( $args['description'] ) ) {
-			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+			printf(
+				'<p class="description">%s</p>',
+				wp_kses(
+					$args['description'],
+					array(
+						'code'   => array(),
+						'strong' => array(),
+						'em'     => array(),
+						'a'      => array(
+							'href'   => array(),
+							'target' => array(),
+							'rel'    => array(),
+						),
+					)
+				)
+			);
 		}
 	}
 
@@ -217,7 +292,22 @@ class FieldRenderer {
 			esc_html( $args['label'] ?? '' )
 		);
 		if ( ! empty( $args['description'] ) ) {
-			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+			printf(
+				'<p class="description">%s</p>',
+				wp_kses(
+					$args['description'],
+					array(
+						'code'   => array(),
+						'strong' => array(),
+						'em'     => array(),
+						'a'      => array(
+							'href'   => array(),
+							'target' => array(),
+							'rel'    => array(),
+						),
+					)
+				)
+			);
 		}
 	}
 
@@ -234,7 +324,22 @@ class FieldRenderer {
 			esc_attr( $value )
 		);
 		if ( ! empty( $args['description'] ) ) {
-			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+			printf(
+				'<p class="description">%s</p>',
+				wp_kses(
+					$args['description'],
+					array(
+						'code'   => array(),
+						'strong' => array(),
+						'em'     => array(),
+						'a'      => array(
+							'href'   => array(),
+							'target' => array(),
+							'rel'    => array(),
+						),
+					)
+				)
+			);
 		}
 	}
 
@@ -251,7 +356,22 @@ class FieldRenderer {
 			esc_attr( $value )
 		);
 		if ( ! empty( $args['description'] ) ) {
-			printf( '<p class="description">%s</p>', esc_html( $args['description'] ) );
+			printf(
+				'<p class="description">%s</p>',
+				wp_kses(
+					$args['description'],
+					array(
+						'code'   => array(),
+						'strong' => array(),
+						'em'     => array(),
+						'a'      => array(
+							'href'   => array(),
+							'target' => array(),
+							'rel'    => array(),
+						),
+					)
+				)
+			);
 		}
 	}
 

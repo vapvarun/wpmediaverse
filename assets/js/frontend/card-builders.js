@@ -361,11 +361,13 @@
 		var showActions = !! ( container && container.getAttribute && '1' === container.getAttribute( 'data-show-actions' ) );
 		if ( item.can_edit && showActions ) {
 			var actions = el( 'div', 'mvs-grid-item-actions' );
+			var cbI18n = window.mvsCardBuildersI18n || {};
+			var deleteMediaLabel = cbI18n.deleteMedia || 'Delete media';
 			var delBtn = el( 'button', 'mvs-grid-item-action mvs-grid-item-action--danger mvs-media-delete-btn', {
 				type: 'button',
 				'data-media-id': mediaId,
-				'aria-label': 'Delete media',
-				title: 'Delete media',
+				'aria-label': deleteMediaLabel,
+				title: deleteMediaLabel,
 			} );
 			var delIcon = el( 'i', '', { 'data-lucide': 'trash-2' } );
 			delIcon.setAttribute( 'aria-hidden', 'true' );
@@ -621,7 +623,7 @@
 		// Video badge.
 		if ( isVideo ) {
 			var badge = el( 'span', 'mvs-flickr-item__video-badge', {
-				'aria-label': 'Video',
+				'aria-label': ( window.mvsCardBuildersI18n && window.mvsCardBuildersI18n.video ) || 'Video',
 			} );
 			badge.appendChild( flickrPlaySvg() );
 			root.appendChild( badge );
@@ -660,7 +662,7 @@
 		// Clickable link.
 		var anchor = el( 'a', 'mvs-flickr-item__link', {
 			href: link,
-			'aria-label': title || 'View media',
+			'aria-label': title || ( window.mvsCardBuildersI18n && window.mvsCardBuildersI18n.viewMedia ) || 'View media',
 		} );
 		root.appendChild( anchor );
 
@@ -778,19 +780,20 @@
 		}
 
 		// Stats.
+		var dribbbleI18n = window.mvsCardBuildersI18n || {};
 		var statsDiv = el( 'div', 'mvs-dribbble-card__stats', {
-			'aria-label': 'Stats',
+			'aria-label': dribbbleI18n.stats || 'Stats',
 		} );
 
 		var likeStat = el( 'span', 'mvs-dribbble-card__stat', {
-			title: 'Likes',
+			title: dribbbleI18n.likes || 'Likes',
 		} );
 		likeStat.appendChild( dribbbleHeartSvg() );
 		likeStat.appendChild( document.createTextNode( '\n' + fmtNum( stats.reactions || 0 ) ) );
 		statsDiv.appendChild( likeStat );
 
 		var viewStat = el( 'span', 'mvs-dribbble-card__stat', {
-			title: 'Views',
+			title: dribbbleI18n.views || 'Views',
 		} );
 		viewStat.appendChild( dribbbleEyeSvg() );
 		viewStat.appendChild( document.createTextNode( '\n' + fmtNum( stats.views || 0 ) ) );

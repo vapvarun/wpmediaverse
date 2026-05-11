@@ -108,6 +108,36 @@ class LocalDriver implements StorageDriverInterface {
 	}
 
 	/**
+	 * Download a stored file to a local destination path.
+	 *
+	 * For the local driver this is a copy from the canonical local path
+	 * (`base_dir + $path`) to the requested `$local_dest`. Same-file
+	 * short-circuits as a no-op so callers don't need to know they're on
+	 * the local driver.
+	 *
+	 * @since 1.2.2
+	 *
+	 * @param string $path       Relative source path.
+	 * @param string $local_dest Absolute destination path.
+	 * @return bool
+	 */
+	public function download( string $path, string $local_dest ): bool {
+		$source = $this->base_dir . $path;
+		if ( ! file_exists( $source ) ) {
+			return false;
+		}
+		// Same-file no-op (when caller is unaware of driver).
+		if ( realpath( $source ) === realpath( $local_dest ) ) {
+			return true;
+		}
+		$dest_dir = dirname( $local_dest );
+		if ( ! wp_mkdir_p( $dest_dir ) ) {
+			return false;
+		}
+		return copy( $source, $local_dest );
+	}
+
+	/**
 	 * Ensure the base upload directory has .htaccess and index.php protection.
 	 */
 	private function ensure_protection_files(): void {

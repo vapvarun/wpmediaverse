@@ -243,7 +243,13 @@ class ActivityContentIntegration {
 		if ( ! function_exists( 'buddyboss_platform_plugin_basename' ) ) {
 			$bb_media_ids = bp_activity_get_meta( (int) $activity->id, 'bp_media_ids', true );
 			if ( $bb_media_ids ) {
-				$bb_ids    = array_filter( array_map( 'intval', explode( ',', $bb_media_ids ) ) );
+				$bb_ids = array_filter( array_map( 'intval', explode( ',', $bb_media_ids ) ) );
+				// resolve_imported_thumbnail() reads multiple meta keys per source ID;
+				// pre-warm the request cache so each ID becomes one batched query
+				// instead of N round-trips. Phase 3D fix.
+				if ( $bb_ids ) {
+					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $bb_ids );
+				}
 				$grid_html = '';
 				foreach ( $bb_ids as $bb_id ) {
 					$thumbnail = $this->resolve_imported_thumbnail( $bb_id, '_mvs_bb_media_id', '_mvs_attachment_id' );
@@ -283,7 +289,13 @@ class ActivityContentIntegration {
 		// grid from the `_mvs_media_ids` activity meta on the fly.
 		$saved_ids = bp_activity_get_meta( (int) $activity->id, '_mvs_media_ids', true );
 		if ( $saved_ids ) {
-			$ids       = array_filter( array_map( 'absint', explode( ',', (string) $saved_ids ) ) );
+			$ids = array_filter( array_map( 'absint', explode( ',', (string) $saved_ids ) ) );
+			// Pre-warm request cache: get_media_thumbnail_html reads ~4 keys
+			// per media (file_url, thumb_*, file_type, title). At 6 attached
+			// media that's 24 round-trips without prefetch; with it, 2.
+			if ( $ids ) {
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $ids );
+			}
 			$grid_html = '';
 			foreach ( $ids as $mid ) {
 				if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $mid ) ) {

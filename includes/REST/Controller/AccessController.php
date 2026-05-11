@@ -189,11 +189,15 @@ class AccessController extends WP_REST_Controller {
 						'per_page'    => array(
 							'type'              => 'integer',
 							'default'           => 20,
+							'minimum'           => 1,
+							/** This filter is documented in MediaController::get_collection_params(). */
+							'maximum'           => apply_filters( 'mvs_rest_pagination_max', 100 ),
 							'sanitize_callback' => 'absint',
 						),
 						'page'        => array(
 							'type'              => 'integer',
 							'default'           => 1,
+							'minimum'           => 1,
 							'sanitize_callback' => 'absint',
 						),
 						'active_only' => array(
@@ -359,8 +363,8 @@ class AccessController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_my_grants( $request ) {
-		$mvs_per_page = $request->get_param( 'per_page' );
-		$page         = $request->get_param( 'page' );
+		$mvs_per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
+		$page         = \WPMediaVerse\REST\Pagination::resolve_page( $request );
 		$active_only  = $request->get_param( 'active_only' );
 
 		$result = $this->access->get_user_grants( get_current_user_id(), $mvs_per_page, $page, $active_only );

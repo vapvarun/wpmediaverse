@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 12;
+	const CURRENT_VERSION = 13;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -726,6 +726,55 @@ class Migrator {
 				KEY activity_position (activity_id, position)
 			) {$charset};"
 		);
+	}
+
+	/**
+	 * Migration v13 — FULLTEXT search index on mvs_media_index.(title, description).
+	 *
+	 * REST `/media?s=<term>` previously did `LIKE '%term%'` on title/description.
+	 * That's a sequential scan — fine at 1k rows, brutal at 100k. The 1.2.0
+	 * Explore-page autocomplete fires on every keystroke (debounced 250ms),
+	 * so search is a hot path. FULLTEXT + MATCH/AGAINST drops worst-case
+	 * latency from O(n) to roughly log n with a sub-millisecond ceiling on
+	 * indexed terms.
+	 *
+	 * REST/MediaController gates the swap on length ≥ 3 chars and falls back
+	 * to LIKE for shorter queries (default innodb_ft_min_token_size is 3,
+	 * so shorter terms wouldn't match the index anyway).
+	 *
+	 * Add only — no schema rewrite, no row movement. Safe to skip on hosts
+	 * that lack InnoDB FULLTEXT (return early on error rather than fatal).
+	 *
+	 * @since 1.2.1
+	 */
+	private function migrate_to_13(): void {
+		global $wpdb;
+
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+
+		// Skip silently if the index already exists (fresh installs may seed
+		// it via dbDelta later, or a previous partial run created it).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$exists = $wpdb->get_var( "SHOW INDEX FROM {$index_table} WHERE Key_name = 'media_search_ft'" );
+		if ( $exists ) {
+			return;
+		}
+
+		// FULLTEXT requires InnoDB, which has been the default since MySQL 5.5.
+		// On the unlikely host that returns MyISAM here we skip the index;
+		// search keeps working via the LIKE fallback in MediaController.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$engine = $wpdb->get_var( "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$index_table}'" );
+		if ( $engine && 0 !== strcasecmp( (string) $engine, 'InnoDB' ) ) {
+			return;
+		}
+
+		// Suppress wpdb error display — this ALTER may legitimately fail on
+		// extremely small / locked-down hosts and the LIKE fallback covers it.
+		$prev_show = $wpdb->show_errors( false );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "ALTER TABLE {$index_table} ADD FULLTEXT KEY media_search_ft (title, description)" );
+		$wpdb->show_errors( $prev_show );
 	}
 
 	/**
