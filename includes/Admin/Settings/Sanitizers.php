@@ -47,6 +47,7 @@ class Sanitizers {
 		'mvs_dm_access'              => array( 'everyone', 'followers', 'mutual', 'nobody' ),
 		'mvs_show_online_status'     => array( 'everyone', 'followers', 'nobody' ),
 		'mvs_chat_panel_visibility'  => array( 'everywhere', 'mvs_pages', 'bp_pages', 'disabled' ),
+		'mvs_filename_strategy'      => array( 'original_sanitized', 'hashed' ),
 	);
 
 	/**
