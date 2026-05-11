@@ -1335,15 +1335,48 @@ class MediaController extends WP_REST_Controller {
 		);
 
 		// Add author data for lightbox sidebar.
+		// `name` is the plain display name — safe in aria-label / alt contexts.
+		// `badge_html` carries optional trusted decoration (verified-member
+		// badge, VIP/role badges, anything any plugin registers via the
+		// `mvs_user_badge_html` filter) rendered in a sibling node via
+		// `data-wp-html`. Keeping the two fields separate means the plain
+		// value stays escapable for attribute use; the lightbox path (REST →
+		// `data-wp-text`) had been bypassing the `mvs_user_display_name`
+		// filter chain so the badge never reached the popup — see Basecamp
+		// card #9872031539, follow-up 2026-05-11.
+		// `get_the_author_meta( 'display_name' )` flows through
+		// `bp_core_get_user_displayname` — which bp-verified-member hooks
+		// to append its badge `<span>`. The legacy `$data['author_name']`
+		// field keeps that combined string (PHP consumers rely on it). For
+		// the lightbox payload we strip tags so `author_data.name` is plain
+		// text safe to bind via `data-wp-text`, and surface decorations
+		// separately through `author_data.badge_html`.
 		$author_id             = $data['author'];
 		$author_name           = get_the_author_meta( 'display_name', $author_id );
+		$author_name_plain     = wp_strip_all_tags( (string) $author_name );
 		$author_avatar         = get_avatar_url( $author_id, array( 'size' => 64 ) );
 		$author_url            = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $author_id );
+
+		/**
+		 * Accumulated badge HTML for a user. Listeners append their own
+		 * decoration markup (verified badge, VIP badge, role badge, etc.)
+		 * to the running string and return it. Returned HTML is rendered
+		 * as a sibling to the display name in the media lightbox via
+		 * `data-wp-html`, so it must be trusted markup — never echo
+		 * untrusted input through this filter.
+		 *
+		 * @since 1.2.2
+		 *
+		 * @param string $badges_html Accumulated badge HTML (initially '').
+		 * @param int    $user_id     User the badges are being collected for.
+		 */
+		$author_badge_html     = (string) apply_filters( 'mvs_user_badge_html', '', (int) $author_id );
 		$data['author_name']   = $author_name;
 		$data['author_avatar'] = $author_avatar;
 		$data['author_url']    = $author_url;
 		$data['author_data']   = array(
-			'name'        => $author_name,
+			'name'        => $author_name_plain,
+			'badge_html'  => $author_badge_html,
 			'avatar'      => $author_avatar,
 			'profile_url' => $author_url,
 		);

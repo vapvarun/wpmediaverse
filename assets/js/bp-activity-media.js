@@ -761,20 +761,43 @@
 				}
 			}
 
-			// Author.
+			// Author. The cloned lightbox strips `data-wp-*` directives, so
+			// we wire the Interactivity contract by hand: plain name from
+			// `author_data.name` on the `<strong>` via `textContent` (the
+			// legacy `author_name` field still carries badge markup for PHP
+			// back-compat and would render as literal `<span>` text here),
+			// and trusted decoration HTML from `author_data.badge_html`
+			// injected into the sibling badges node. Source is
+			// server-controlled (REST → `mvs_user_badge_html` filter); see
+			// `shared-ui/view.js` `renderAuthorBadge` for the same pattern
+			// on the Interactivity lightbox.
+			var authorData   = data.author_data || {};
+			var authorPlain  = authorData.name || '';
+			var authorBadge  = authorData.badge_html || '';
 			var authorLink   = overlay.querySelector( '.mvs-lightbox-author-link' );
 			var authorAvatar = overlay.querySelector( '.mvs-lightbox-author-avatar' );
 			var authorName   = overlay.querySelector( '.mvs-lightbox-author strong' );
-			if ( authorLink && data.author_url )    { authorLink.href = data.author_url; }
+			var authorBadges = overlay.querySelector( '.mvs-lightbox-author-badges' );
+			if ( authorLink && data.author_url )      { authorLink.href = data.author_url; }
 			if ( authorAvatar && data.author_avatar ) { authorAvatar.src = data.author_avatar; }
-			if ( authorName )                        { authorName.textContent = data.author_name || ''; }
+			if ( authorName )                         { authorName.textContent = authorPlain; }
+			if ( authorBadges ) {
+				while ( authorBadges.firstChild ) { authorBadges.removeChild( authorBadges.firstChild ); }
+				if ( authorBadge ) {
+					var parsed = new DOMParser().parseFromString( authorBadge, 'text/html' );
+					var nodes  = Array.prototype.slice.call( parsed.body.childNodes );
+					nodes.forEach( function ( n ) { authorBadges.appendChild( n ); } );
+				}
+			}
 
-			// Description.
+			// Description block reuses the author label as a "byline" prefix.
+			// Keep it plain (no badge) — badges already render in the author
+			// header above; repeating them here would double up.
 			var descBlock = overlay.querySelector( '.mvs-lightbox-desc' );
 			if ( descBlock ) {
 				var descAuthor = descBlock.querySelector( 'strong' );
 				var descText   = descBlock.querySelector( 'span' );
-				if ( descAuthor ) { descAuthor.textContent = data.author_name || ''; }
+				if ( descAuthor ) { descAuthor.textContent = authorPlain; }
 				if ( descText )   { descText.textContent = data.description || ''; }
 				if ( data.description ) {
 					descBlock.removeAttribute( 'hidden' );

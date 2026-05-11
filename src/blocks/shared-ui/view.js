@@ -208,6 +208,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxAuthor() {
 			return state.lightboxMediaData?.author_data?.name || '';
 		},
+		// Trusted decoration (currently bp-verified-member badge `<img>`)
+		// rendered in a sibling node via `data-wp-html`. Source is the REST
+		// `author_data.badge_html` field — see MediaController for the
+		// payload contract. Empty string when the integration is inactive
+		// or the user isn't verified; the template's sibling node degrades
+		// silently in that case.
+		get lightboxAuthorBadgeHtml() {
+			return state.lightboxMediaData?.author_data?.badge_html || '';
+		},
 		get lightboxAuthorAvatar() {
 			return state.lightboxMediaData?.author_data?.avatar || '';
 		},
@@ -1310,6 +1319,37 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					actions.lightboxNext();
 				}
 			}
+		},
+	},
+	callbacks: {
+		// Inject trusted badge HTML (verified-member, VIP, etc.) into the
+		// lightbox author sibling node. The Interactivity API has no built-in
+		// HTML directive — `data-wp-text` would render markup as literal text
+		// and there is no `data-wp-bind--inner-html`. Wiring this through
+		// `data-wp-init` (initial render) + `data-wp-watch` (reactive on
+		// lightbox media change) keeps it in sync as the user navigates
+		// between media in a gallery.
+		//
+		// Source markup is server-controlled — built by the
+		// `mvs_user_badge_html` PHP filter chain and surfaced as
+		// `author_data.badge_html` in the REST response. Plugins hooking
+		// that filter must return trusted markup; the lightbox treats it
+		// the same way PHP templates treat the existing
+		// `mvs_user_display_name` filter (rendered through `wp_kses_post()`).
+		// We use DOMParser + `replaceChildren` instead of `innerHTML` to
+		// keep the call site explicit about the parse-then-attach flow.
+		renderAuthorBadge() {
+			const { ref } = getElement();
+			if ( ! ref ) {
+				return;
+			}
+			const html = state.lightboxAuthorBadgeHtml || '';
+			if ( '' === html ) {
+				ref.replaceChildren();
+				return;
+			}
+			const parsed = new DOMParser().parseFromString( html, 'text/html' );
+			ref.replaceChildren( ...parsed.body.childNodes );
 		},
 	},
 } );

@@ -179,6 +179,12 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	/**
 	 * Get the display name for a user with optional badge/decoration.
 	 *
+	 * Use on surfaces that have room for the badge: the single-media page
+	 * (author header) and the lightbox sidebar. Compact surfaces — grid
+	 * cards, profile lists — should use `get_display_name_plain()` so the
+	 * badge stays a deliberate identity signal rather than visual noise on
+	 * every thumbnail.
+	 *
 	 * @param int $user_id User ID.
 	 * @return string Display name (may contain HTML from filters).
 	 */
@@ -191,6 +197,26 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		 * @param int    $user_id User ID.
 		 */
 		return (string) apply_filters( 'mvs_user_display_name', $name, $user_id );
+	}
+
+	/**
+	 * Plain display name with all decoration stripped.
+	 *
+	 * `get_the_author_meta( 'display_name' )` flows through BuddyPress's
+	 * `bp_core_get_user_displayname` filter on every BP install — and the
+	 * bp-verified-member plugin hooks that filter to append its badge
+	 * `<span>` markup. That's the right call on author-focused surfaces
+	 * (single-media, lightbox) but creates visual clutter when repeated
+	 * on every grid card. Use this helper on compact surfaces — guarantees
+	 * a plain string regardless of which third-party filters are active.
+	 *
+	 * @since 1.2.2
+	 *
+	 * @param int $user_id User ID.
+	 * @return string Display name with HTML tags stripped.
+	 */
+	public function get_display_name_plain( int $user_id ): string {
+		return wp_strip_all_tags( (string) get_the_author_meta( 'display_name', $user_id ) );
 	}
 
 	/**
@@ -485,18 +511,11 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		echo '</a>';
 
 		if ( $show_author && $author_id ) {
+			// Plain name only — badges belong on author-focused surfaces
+			// (single-media header, lightbox), not on every grid thumbnail.
 			echo '<div class="mvs-grid-item-info">';
 			echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
-			echo '<span class="mvs-grid-item-author">' . wp_kses(
-				$this->get_display_name( $author_id ),
-				array(
-					'span' => array(
-						'class'      => true,
-						'title'      => true,
-						'aria-label' => true,
-					),
-				)
-			) . '</span>';
+			echo '<span class="mvs-grid-item-author">' . esc_html( $this->get_display_name_plain( $author_id ) ) . '</span>';
 			echo '</div>';
 		}
 

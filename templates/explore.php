@@ -441,7 +441,12 @@ $mvs_archive_url = home_url( '/media/' );
 					</a>
 					<div class="mvs-grid-item-info">
 						<?php echo get_avatar( (int) $album_post->post_author, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) ); ?>
-						<span class="mvs-grid-item-author"><?php echo esc_html( get_the_author_meta( 'display_name', $album_post->post_author ) ); ?></span>
+						<?php
+						// Plain name only — keep badge decoration for the
+						// single-media / lightbox surfaces, not on every
+						// grid thumbnail.
+						?>
+						<span class="mvs-grid-item-author"><?php echo esc_html( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_display_name_plain( (int) $album_post->post_author ) ); ?></span>
 					</div>
 				</div>
 			<?php endforeach; ?>

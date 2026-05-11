@@ -412,6 +412,17 @@ $mvs_show_fab = $mvs_is_logged_in && (
 					<a class="mvs-lightbox-author-link" data-wp-bind--href="state.lightboxAuthorUrl">
 						<img class="mvs-lightbox-author-avatar" data-wp-bind--src="state.lightboxAuthorAvatar" alt="" width="36" height="36" />
 						<strong data-wp-text="state.lightboxAuthor"></strong>
+						<?php
+						// Trusted decoration HTML (badges) accumulated by the
+						// `mvs_user_badge_html` filter — see MediaController.
+						// The Interactivity API has no built-in HTML directive,
+						// so we wire init+watch to the `renderAuthorBadge`
+						// callback which parses the trusted string and swaps
+						// child nodes. Empty string degrades to an empty span.
+						?>
+						<span class="mvs-lightbox-author-badges"
+							data-wp-init="callbacks.renderAuthorBadge"
+							data-wp-watch="callbacks.renderAuthorBadge"></span>
 					</a>
 				</div>
 

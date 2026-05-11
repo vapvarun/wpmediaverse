@@ -187,7 +187,15 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					'group_count'   => $mvs_grid_group_cnt,
 					'author'        => $mvs_grid_author_id,
 					'author_data'   => array(
-						'name'        => get_the_author_meta( 'display_name', $mvs_grid_author_id ),
+						// Plain name — third-party filters (bp-verified-member
+						// hooks `bp_core_get_user_displayname`) can inject
+						// HTML into the raw meta, which would arrive in the
+						// lightbox as a literal `<span>` via `data-wp-text`.
+						// The lightbox renders decorations from a separate
+						// `badge_html` field via `data-wp-init`/`data-wp-watch`,
+						// so we mirror the REST payload contract here.
+						'name'        => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_display_name_plain( $mvs_grid_author_id ),
+						'badge_html'  => (string) apply_filters( 'mvs_user_badge_html', '', (int) $mvs_grid_author_id ),
 						'avatar'      => get_avatar_url( $mvs_grid_author_id, array( 'size' => 64 ) ),
 						'profile_url' => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $mvs_grid_author_id ),
 					),
