@@ -1,0 +1,65 @@
+<?php
+/**
+ * BP Verified Member badge integration.
+ *
+ * Customer ask (Basecamp #9872031539): the bp-verified-member plugin renders
+ * a "verified" badge next to author names in BuddyPress activity, but WPMV's
+ * media surfaces don't show the badge. Customers reading a media single page
+ * or lightbox can't tell that the uploader is verified.
+ *
+ * The badge is sourced from bp-verified-member's existing helper
+ * `bp_verified_member_get_user_badge()`. We hook it onto MVS's own
+ * `mvs_user_display_name` filter — the one TemplateHelpers::get_display_name()
+ * already fires — so every surface that renders a display name through the
+ * canonical helper picks up the badge automatically.
+ *
+ * The badge returned by bp-verified-member is trusted HTML (an <img> with
+ * srcset pointing at its bundled SVG). It's already escaped for output, so
+ * MVS templates that emit the value must use wp_kses_post(), not esc_html().
+ *
+ * @since 1.2.1
+ *
+ * @package WPMediaVerse\Integrations\BPVerifiedMember
+ */
+
+namespace WPMediaVerse\Integrations\BPVerifiedMember;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Append the verified-member badge to MVS display names.
+ */
+final class BadgeIntegration {
+
+	/**
+	 * Wire the filter. Safe to call on every request — the filter callback
+	 * itself guards against a missing badge helper.
+	 */
+	public function init(): void {
+		add_filter( 'mvs_user_display_name', array( $this, 'append_badge' ), 10, 2 );
+	}
+
+	/**
+	 * Append the verified badge HTML to the display name when:
+	 *  - bp-verified-member is active (helper function exists)
+	 *  - The user has the verified status (helper returns a non-empty string)
+	 *
+	 * @param string $name    Current display name. May already contain HTML
+	 *                        from other listeners — we always append, never
+	 *                        replace.
+	 * @param int    $user_id User ID being rendered.
+	 * @return string Display name with optional appended badge.
+	 */
+	public function append_badge( string $name, int $user_id ): string {
+		if ( ! function_exists( 'bp_verified_member_get_user_badge' ) ) {
+			return $name;
+		}
+
+		$badge = bp_verified_member_get_user_badge( $user_id );
+		if ( ! is_string( $badge ) || '' === $badge ) {
+			return $name;
+		}
+
+		return $name . ' ' . $badge;
+	}
+}

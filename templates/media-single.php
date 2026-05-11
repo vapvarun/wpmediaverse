@@ -94,9 +94,17 @@ if ( $mvs_duration ) {
 }
 
 // Author info.
+// Display name flows through TemplateHelpers::get_display_name() so the
+// mvs_user_display_name filter chain runs — that's how the bp-verified-member
+// badge appears next to the author name (Basecamp #9872031539). The decorated
+// HTML must be emitted via wp_kses_post() rather than esc_html(). Keep the
+// plain name for attribute contexts (aria-label, alt) that need escapable text.
 $mvs_author       = get_userdata( $mvs_author_id );
-$mvs_author_name  = $mvs_author ? $mvs_author->display_name : __( 'Unknown', 'wpmediaverse' );
+$mvs_author_plain = $mvs_author ? (string) $mvs_author->display_name : __( 'Unknown', 'wpmediaverse' );
 $mvs_author_login = $mvs_author ? $mvs_author->user_login : '';
+$mvs_author_name  = $mvs_author
+	? \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_display_name( $mvs_author_id )
+	: $mvs_author_plain;
 
 // Format date.
 $mvs_date_display = $mvs_created ? date_i18n( get_option( 'date_format' ), strtotime( $mvs_created ) ) : '';
@@ -128,10 +136,10 @@ $mvs_archive_url = home_url( '/media/' );
 						if ( $mvs_author_url ) :
 							?>
 					<a href="<?php echo esc_url( $mvs_author_url ); ?>" class="mvs-media-author-name">
-							<?php echo esc_html( $mvs_author_name ); ?>
+							<?php echo wp_kses_post( $mvs_author_name ); ?>
 					</a>
 					<?php else : ?>
-					<span class="mvs-media-author-name"><?php echo esc_html( $mvs_author_name ); ?></span>
+					<span class="mvs-media-author-name"><?php echo wp_kses_post( $mvs_author_name ); ?></span>
 					<?php endif; ?>
 						<span class="mvs-media-date"><?php echo esc_html( $mvs_date_display ); ?>
 							<?php if ( $duration_display ) : ?>
@@ -162,8 +170,8 @@ $mvs_archive_url = home_url( '/media/' );
 						data-wp-on--click="actions.toggleFollow"
 						aria-label="
 						<?php
-						// translators: %s: author display name.
-						echo esc_attr( sprintf( __( 'Follow %s', 'wpmediaverse' ), $mvs_author_name ) );
+						// translators: %s: author display name. Use the plain name (no badge HTML) for attribute context.
+						echo esc_attr( sprintf( __( 'Follow %s', 'wpmediaverse' ), $mvs_author_plain ) );
 						?>
 						">
 						<span data-wp-bind--hidden="context.isFollowing"><?php esc_html_e( 'Follow', 'wpmediaverse' ); ?></span>

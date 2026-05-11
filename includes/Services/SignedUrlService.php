@@ -141,6 +141,17 @@ class SignedUrlService {
 			return $direct;
 		}
 
+		// Existence gate (Basecamp #9871025511). For videos with no embedded
+		// poster frame, no thumb_<size> meta was ever written. Pre-1.2.2 this
+		// function still returned a valid-looking signed URL — the template
+		// rendered <img src=signed-url> which then 404'd at serve time,
+		// producing a blank/broken poster instead of triggering the template's
+		// <video>/placeholder fallback. Mirror serve_thumbnail()'s fallback
+		// chain here so we only sign URLs that will actually resolve to bytes.
+		if ( ! $this->has_resolvable_thumbnail( $media_id ) ) {
+			return false;
+		}
+
 		$expires = time() + ( $ttl ?: $this->get_ttl() );
 
 		$params = array(
@@ -153,6 +164,45 @@ class SignedUrlService {
 		$params[ self::PARAM_SIGNATURE ] = $this->sign( $params );
 
 		return add_query_arg( $params, $this->get_serve_endpoint() );
+	}
+
+	/**
+	 * Will serve_thumbnail() be able to find any byte for this media?
+	 *
+	 * Mirrors the fallback chain inside serve_thumbnail() exactly:
+	 *   1. Any of thumb_large / thumb_medium / thumb_thumb meta exists
+	 *   2. OR (image only) file_url exists
+	 *
+	 * Returning false here lets generate_thumbnail() return false, which lets
+	 * the calling template render its placeholder/<video> fallback instead of
+	 * shipping a signed URL that's guaranteed to 404 (Basecamp #9871025511).
+	 *
+	 * @since 1.2.1
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool True when at least one resolvable bytes source exists.
+	 */
+	private function has_resolvable_thumbnail( int $media_id ): bool {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		foreach ( array( 'thumb_large', 'thumb_medium', 'thumb_thumb' ) as $thumb_key ) {
+			$value = $repo->get_raw( $media_id, $thumb_key );
+			if ( is_string( $value ) && '' !== $value ) {
+				return true;
+			}
+		}
+
+		// Images can use the original file as a poster — videos cannot
+		// (serving a .mp4 with image headers produces a black poster).
+		$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
+		if ( 0 === strpos( $file_type, 'image/' ) ) {
+			$file_url = $repo->get_raw( $media_id, 'file_url' );
+			if ( is_string( $file_url ) && '' !== $file_url ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
