@@ -228,7 +228,7 @@ fi
 # --- 5. browser smoke gate (combo report required) -----------------------
 # Gates the package behind a documented browser walk of customer-facing
 # flows. Customer-first-hand-experience protection: no release ships unless
-# a fresh agent run of docs/qa/AGENT_SMOKE_RUNBOOK.md (dispatched via the
+# a fresh agent run of qa/runbooks/AGENT_SMOKE_RUNBOOK.md (dispatched via the
 # mediaverse-qa skill) reported zero from-origin failures and was tagged
 # with the current release version.
 #
@@ -239,10 +239,10 @@ fi
 # Emergency bypass: --skip-browser-smoke (logs a warning).
 step "5. browser smoke gate"
 if [ "$FREE_ONLY" -eq 1 ]; then
-	SMOKE_REPORT="$FREE_ROOT/docs/qa/.last-smoke-pass-free.json"
+	SMOKE_REPORT="$FREE_ROOT/qa/.last-smoke-pass-free.json"
 	REQUIRED_MODE="free"
 else
-	SMOKE_REPORT="$FREE_ROOT/docs/qa/.last-smoke-pass.json"
+	SMOKE_REPORT="$FREE_ROOT/qa/.last-smoke-pass.json"
 	REQUIRED_MODE="combo"
 fi
 

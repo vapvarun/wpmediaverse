@@ -1,0 +1,62 @@
+{
+  "$schema": "https://wpmediaverse.com/schemas/wp-plugin-manifest-summary-v1.json",
+  "plugin": {
+    "slug": "wpmediaverse-pro",
+    "name": "WPMediaVerse Pro",
+    "version": "1.2.0",
+    "namespace": "WPMediaVersePro",
+    "main_file": "wpmediaverse-pro.php",
+    "text_domain": "wpmediaverse-pro",
+    "requires_php": "7.4",
+    "requires_wp": "6.5",
+    "extends": "wpmediaverse",
+    "extension_hook_consumed": "mvs_loaded",
+    "extension_hook_fired": "mvs_pro_loaded",
+    "license_provider": "EDD Software Licensing",
+    "license_item_id": 1660828
+  },
+  "counts": {
+    "rest_endpoints": 37,
+    "ajax": 6,
+    "admin_pages": 10,
+    "settings": 0,
+    "tables": 8,
+    "subsystems": 19,
+    "feature_toggles": 7,
+    "free_services_consumed": 1,
+    "free_filters_hooked": 17,
+    "extension_patterns": 6,
+    "cron": 4,
+    "wp_cli": 3,
+    "storage_drivers": 2,
+    "templates": 16,
+    "blocks": 12,
+    "shortcodes": 12,
+    "coding_rules": 12
+  },
+  "detail_files": {
+    "rest": "manifest.rest.json",
+    "hooks": "manifest.hooks.json",
+    "tables": "manifest.tables.json"
+  },
+  "static_analysis_summary": {
+    "wppqa_baseline_dir": "wppqa-baseline-2026-05-03",
+    "phase_2_5_11_14_skipped": true,
+    "phase_2_5_11_14_skip_reason": "ServiceContainer DI (no Adapter registry pattern)"
+  },
+  "free_plugin": {
+    "slug": "wpmediaverse",
+    "manifest_url": "../../wpmediaverse/audit/manifest.json"
+  },
+  "generated": {
+    "at": "2026-05-03T11:39:56Z",
+    "from": "targeted refresh for 1.2.0 release (Phase 3a–3e blocks/shortcodes + Phase 5 P2.1/P2.2 + Messaging cleanup + Rules 5/6)",
+    "branch": "1.2.0",
+    "schema_version": "v2.2",
+    "scan_scope": "distignore",
+    "scan_path": ".",
+    "php_file_count": 93,
+    "phase_2_rescan_skipped": true,
+    "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred"
+  }
+}

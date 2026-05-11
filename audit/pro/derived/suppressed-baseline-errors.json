@@ -1,0 +1,144 @@
+{
+  "name": "suppressed-baseline-errors",
+  "computed_at": "2026-05-03T17:35:00Z",
+  "input_globs": [
+    "phpstan-baseline.neon"
+  ],
+  "input_hash": "sha1:96f1c83556c23f8ef4d4d6fa432c03fed2688910",
+  "totals": {
+    "ignore_blocks": 89,
+    "ignored_errors": 141
+  },
+  "result": [
+    {
+      "bucket": "pro_constant_not_found_in_phpstan_scope",
+      "ignore_blocks": 23,
+      "errors": 45,
+      "what": "MVS_PRO_DIR / MVS_PRO_URL constants defined in wpmediaverse-pro.php but PHPStan analysis scope only sees includes/, never the bootstrap that defines them. Stub or shim would clear all 45.",
+      "severity": "noise",
+      "fix_cost": "trivial — add a phpstan-stubs file declaring the two constants"
+    },
+    {
+      "bucket": "wp_cli_class_not_stubbed",
+      "ignore_blocks": 15,
+      "errors": 26,
+      "what": "WP_CLI:: static-method calls in CLI importer code paths and AbstractBatchImporter base. PHPStan WordPress stubs don't ship the WP_CLI class.",
+      "severity": "noise",
+      "fix_cost": "trivial — add szepeviktor/phpstan-wordpress wp-cli stubs to phpstan.neon"
+    },
+    {
+      "bucket": "numeric_to_esc_string_coercion",
+      "ignore_blocks": 11,
+      "errors": 19,
+      "what": "esc_html()/esc_attr() called on int/float values from query results — PHPStan flags the missing string cast. WP itself does the coercion at runtime, so no functional bug.",
+      "severity": "low",
+      "fix_cost": "small — cast each int to (string) before esc_*. Worth doing in 1.2.1; defensible to suppress now."
+    },
+    {
+      "bucket": "dead_branch_or_always_evaluable_condition",
+      "ignore_blocks": 8,
+      "errors": 8,
+      "what": "PHPStan-inferred-true ternary/empty conditions — typically defensive guards that the type system can prove unreachable but humans want kept for runtime safety.",
+      "severity": "low",
+      "fix_cost": "case-by-case — sometimes the type is wrong (real bug), sometimes the guard is genuinely defensive (suppress)."
+    },
+    {
+      "bucket": "wp_constant_not_found_phpstan_no_stub",
+      "ignore_blocks": 2,
+      "errors": 6,
+      "what": "WPINC constant referenced from base classes (AbstractBatchImporter, AbstractMigrationAdmin). Not stubbed in this phpstan setup.",
+      "severity": "noise",
+      "fix_cost": "trivial — already stubbed in szepeviktor/phpstan-wordpress; add it"
+    },
+    {
+      "bucket": "is_wp_error_always_false_for_typed_returns",
+      "ignore_blocks": 5,
+      "errors": 5,
+      "what": "Defensive `is_wp_error()` checks on methods whose typed signature doesn't include WP_Error. WhisperProvider (Integrations\\Whisper\\CaptionProvider) is the main one — its method returns array but real-world it can also return WP_Error. The typed signature is wrong, not the check.",
+      "severity": "medium",
+      "fix_cost": "small — widen return type to WP_Error|array on the provider"
+    },
+    {
+      "bucket": "get_posts_meta_query_shape",
+      "ignore_blocks": 4,
+      "errors": 4,
+      "what": "get_posts() called with meta_key/meta_value flat shape; PHPStan's WP stubs prefer the meta_query nested shape. Functional but stricter-than-WP signature in the stubs.",
+      "severity": "low",
+      "fix_cost": "small — migrate to meta_query nested shape on the 4 BuddyBoss/MediaPress importer + migration-admin queries"
+    },
+    {
+      "bucket": "undefined_property_on_object_dynamic",
+      "ignore_blocks": 4,
+      "errors": 4,
+      "what": "rtMedia row objects accessed via ->media_author etc. — rtMedia's stdClass doesn't have a typed schema and PHPStan can't prove the property exists.",
+      "severity": "noise",
+      "fix_cost": "small — type-cast or PHPDoc-annotate the rtMedia row shapes"
+    },
+    {
+      "bucket": "unused_method",
+      "ignore_blocks": 2,
+      "errors": 2,
+      "what": "Two methods (Privacy/PrivacyUIService, Video/TranscodeService::get_transcode_timeout) not called from anywhere PHPStan can see. May be filter callbacks invoked dynamically.",
+      "severity": "low",
+      "fix_cost": "verify each — delete if truly dead, suppress if dynamic-dispatch"
+    },
+    {
+      "bucket": "paginate_links_arg_shape",
+      "ignore_blocks": 1,
+      "errors": 1,
+      "what": "paginate_links() called with `total: float` instead of int (QuotaPage.php).",
+      "severity": "low",
+      "fix_cost": "trivial — wrap with (int) ceil(...)"
+    },
+    {
+      "bucket": "action_callback_return_drift",
+      "ignore_blocks": 1,
+      "errors": 1,
+      "what": "AnalyticsService::prune_events action callback returns int (DELETE row count) but action callbacks should return void.",
+      "severity": "low",
+      "fix_cost": "trivial — drop the return"
+    },
+    {
+      "bucket": "whisper_provider_typed_return_aliasing",
+      "ignore_blocks": 1,
+      "errors": 1,
+      "what": "TranscriptionService line treats Whisper provider's WP_Error return as if it lived in WPMediaVersePro\\Integrations\\Whisper\\WP_Error namespace. Use clause not aliased.",
+      "severity": "low",
+      "fix_cost": "trivial — add `use WP_Error;` import at top of CaptionProvider.php"
+    },
+    {
+      "bucket": "action_scheduler_function_not_stubbed",
+      "ignore_blocks": 1,
+      "errors": 1,
+      "what": "as_has_scheduled_action() — Action Scheduler integration. Functions not in core stubs.",
+      "severity": "noise",
+      "fix_cost": "trivial — stub the 4 AS functions in phpstan.neon"
+    },
+    {
+      "bucket": "docblock_type_typo",
+      "ignore_blocks": 1,
+      "errors": 1,
+      "what": "Method docblock has invalid type (QuotaService::enforce_quota's $args parameter).",
+      "severity": "low",
+      "fix_cost": "trivial — fix docblock"
+    },
+    {
+      "bucket": "nullsafe_on_non_nullable",
+      "ignore_blocks": 1,
+      "errors": 1,
+      "what": "StreakService uses ?-> on a non-nullable type. Either the type is over-narrowed or the nullsafe is over-defensive.",
+      "severity": "low",
+      "fix_cost": "trivial — drop ? or widen the type"
+    },
+    {
+      "bucket": "undefined_variable",
+      "ignore_blocks": 1,
+      "errors": 1,
+      "what": "TranscodeService references $file_path in a path where it isn't always defined — possible real bug. Worth verifying.",
+      "severity": "medium",
+      "fix_cost": "small — confirm the bug, add the missing initialization OR convert to a local"
+    }
+  ],
+  "result_count": 16,
+  "notes": "Sub-check 2.5.13. Down 17 errors from 158 (2026-05-01 baseline) to 141 (2026-05-03), driven entirely by the messaging cleanup deletion of 5 PHP files in includes/Messaging/. Of the 141 ignored errors, ~75 (53%) are pure noise from missing stubs (Pro constants, WP_CLI class, WPINC, Action Scheduler) — clearable with one phpstan.neon edit. Functionally meaningful candidates: 5 is_wp_error_always_false (Whisper return-type widening), 1 undefined_variable (TranscodeService — should re-check), 19 numeric_to_esc_string_coercion (low-risk, low-effort cleanup target for 1.2.1)."
+}

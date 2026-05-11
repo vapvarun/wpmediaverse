@@ -1,6 +1,6 @@
 # WPMediaVerse — AI Quick Reference
 
-> **READ FIRST:** [`audit/manifest.summary.json`](audit/manifest.summary.json) is a ≤2 KB index — load it first. The full inventory in [`audit/manifest.json`](audit/manifest.json) (v2.2 schema) covers **51 REST endpoints, 3 plugin AJAX actions, 7 admin pages, 31 settings, 18 hooks fired (7 with Pro consumers), 21 tables, 12 blocks, 34 services**. Detail files: [`manifest.rest.json`](audit/manifest.rest.json), [`manifest.hooks.json`](audit/manifest.hooks.json), [`manifest.tables.json`](audit/manifest.tables.json). Cross-plugin coupling: [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Bug-finder baseline: [`audit/wppqa-baseline-2026-05-03/SUMMARY.md`](audit/wppqa-baseline-2026-05-03/SUMMARY.md). Reports: [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/graph.html`](audit/graph.html). Refresh: `/wp-plugin-onboard --refresh`.
+> **READ FIRST:** [`audit/manifests/manifest.summary.json`](audit/manifests/manifest.summary.json) is a ≤2 KB index — load it first. The full inventory in [`audit/manifests/manifest.json`](audit/manifests/manifest.json) (v2.2 schema) covers **51 REST endpoints, 3 plugin AJAX actions, 7 admin pages, 31 settings, 18 hooks fired (7 with Pro consumers), 21 tables, 12 blocks, 34 services**. Detail files: [`manifest.rest.json`](audit/manifests/manifest.rest.json), [`manifest.hooks.json`](audit/manifests/manifest.hooks.json), [`manifest.tables.json`](audit/manifests/manifest.tables.json). Cross-plugin coupling: [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Bug-finder baseline: [`audit/runs/2026-05-03-wppqa-baseline-SUMMARY.md`](audit/runs/2026-05-03-wppqa-baseline-SUMMARY.md). Reports: [`audit/reports/FEATURE_AUDIT.md`](audit/reports/FEATURE_AUDIT.md), [`audit/reports/CODE_FLOWS.md`](audit/reports/CODE_FLOWS.md), [`audit/reports/ROLE_MATRIX.md`](audit/reports/ROLE_MATRIX.md), [`audit/graph.html`](audit/graph.html). Pro audit mirror: [`audit/pro/`](audit/pro/). Refresh: `/wp-plugin-onboard --refresh`.
 
 ## Quick Facts
 
@@ -124,24 +124,24 @@ All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`
 
 This is the index. Every rule below links to its full spec in `qa/`. Add new rules here first (1-2 sentence canonical version), then write the detailed spec.
 
-1. **Max file size: 500 lines.** Files above this are tech debt (see Known Debt below). Spec: `qa/PHP-ORGANIZATION-RULES.md` §1.
-2. **Max method size: 50 lines.** Extract helpers or delegate to services. Spec: `qa/PHP-ORGANIZATION-RULES.md` §1.
+1. **Max file size: 500 lines.** Files above this are tech debt (see Known Debt below). Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §1.
+2. **Max method size: 50 lines.** Extract helpers or delegate to services. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §1.
 3. **Database queries: always `$wpdb->prepare()`.** No raw interpolation.
-4. **Admin HTML: template files only.** Never inline `echo` of HTML or `<script>` in PHP classes; use `templates/admin/`. Spec: `qa/PHP-ORGANIZATION-RULES.md` §2–§3.
-5. **Hook names: `mvs_` prefix, snake_case.** Example: `mvs_media_uploaded`, `mvs_ai_providers`. Spec: `qa/NAMING-RULES.md` §5.
+4. **Admin HTML: template files only.** Never inline `echo` of HTML or `<script>` in PHP classes; use `templates/admin/`. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §2–§3.
+5. **Hook names: `mvs_` prefix, snake_case.** Example: `mvs_media_uploaded`, `mvs_ai_providers`. Spec: `qa/rules/NAMING-RULES.md` §5.
 6. **REST: extend `WP_REST_Controller`.** Every endpoint must define `get_item_schema()` and `get_item_permissions_check()` / `permission_callback`.
 7. **Security: nonce + capability on every write.** Use `wp_verify_nonce()` for admin forms, `permission_callback` for REST.
-8. **Error handling: `WP_Error` or `LoggerService`.** No silent `return false` — log failures. Spec: `qa/PHP-ORGANIZATION-RULES.md` §5.
-9. **i18n: all user-facing strings wrapped.** Use `__()`, `esc_html__()`, `esc_attr__()` with text domain `wpmediaverse`. Spec: `qa/NAMING-RULES.md` §10.
-10. **Pro boundary: never import Free classes directly.** Pro hooks into `mvs_loaded` and uses `ServiceContainer` — no `use WPMediaVerse\...` in Pro code. Spec: `qa/PHP-ORGANIZATION-RULES.md` §9.
-11. **No silent render fallthrough.** Every `return;` inside a render path (block `render.php`, shortcode callback, template, admin list, widget) must be paired with a visible empty state. Use `TemplateHelpers::render_block_empty_state()` / `render_admin_empty_state()`. Bare returns are only acceptable in hook callbacks, cron handlers, and REST permission checks. Spec: `qa/RENDER-STATE-RULES.md`.
-12. **CSS file ownership.** BP rules live in `bp-integration.css` (scoped under `#buddypress`). `frontend.css` is for generic plugin frontend only. Admin rules in `admin.css`. Messaging in `messaging.css`. Block-specific in `src/blocks/*/style.css`. Every BP-touching integration enqueues both `mvs-frontend` and `mvs-bp-integration`. No duplicate class-vs-ID rules. No `!important` without a one-line comment explaining what theme rule it fights. No dead selectors (every `.mvs-*` / `#mvs-*` must have an emitter). Spec: `qa/CSS-ORGANIZATION-RULES.md`. Locked in `qa/WHAT-TO-CHECK.md` regression row "BP CSS file ownership".
-13. **Names don't lie.** Class names, hook names, CSS classes must match actual usage. A `.mvs-bp-X` class used outside BP is a bug; either rename or narrow usage. Spec: `qa/NAMING-RULES.md`.
-14. **Sibling classes with ≥50% duplicate method bodies share a base class.** At n=2 duplication is tolerable; at n=3 it must be extracted. Spec: `qa/PHP-ORGANIZATION-RULES.md` §6.
-15. **Debt tax.** No PR adds lines to files in the Known Debt table below. Every edit to a debt file must reduce its line count or extract code out, unless the PR body justifies the addition. Spec: `qa/PROCESS-RULES.md` §3.
-16. **Cache backend by cardinality.** Pick the storage by how many distinct keys a callsite produces, not by convenience. ≤ ~50 fixed keys (settings, global counters, feature flags) → `wp_options` or transients are fine. Anything keyed by `user_id` / `media_id` / `conversation_id` / any entity → custom `mvs_*` table. Never options. Never transients without a `wp_using_ext_object_cache()` guard. Per-request reuse → static array on the service class. Site-wide aggregate counts (total media, total views, storage size) MUST go through `Services\AdminAggregatesService` — raw `$wpdb->get_var` SUM/COUNT against `mvs_*` tables outside that service is a Rule 3 violation in `bin/coding-rules-check.sh`. Per-entity transients (key contains `$user_id` etc.) is a Rule 4 violation. Spec: `qa/PERFORMANCE-RULES.md`.
+8. **Error handling: `WP_Error` or `LoggerService`.** No silent `return false` — log failures. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §5.
+9. **i18n: all user-facing strings wrapped.** Use `__()`, `esc_html__()`, `esc_attr__()` with text domain `wpmediaverse`. Spec: `qa/rules/NAMING-RULES.md` §10.
+10. **Pro boundary: never import Free classes directly.** Pro hooks into `mvs_loaded` and uses `ServiceContainer` — no `use WPMediaVerse\...` in Pro code. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §9.
+11. **No silent render fallthrough.** Every `return;` inside a render path (block `render.php`, shortcode callback, template, admin list, widget) must be paired with a visible empty state. Use `TemplateHelpers::render_block_empty_state()` / `render_admin_empty_state()`. Bare returns are only acceptable in hook callbacks, cron handlers, and REST permission checks. Spec: `qa/rules/RENDER-STATE-RULES.md`.
+12. **CSS file ownership.** BP rules live in `bp-integration.css` (scoped under `#buddypress`). `frontend.css` is for generic plugin frontend only. Admin rules in `admin.css`. Messaging in `messaging.css`. Block-specific in `src/blocks/*/style.css`. Every BP-touching integration enqueues both `mvs-frontend` and `mvs-bp-integration`. No duplicate class-vs-ID rules. No `!important` without a one-line comment explaining what theme rule it fights. No dead selectors (every `.mvs-*` / `#mvs-*` must have an emitter). Spec: `qa/rules/CSS-ORGANIZATION-RULES.md`. Locked in `qa/inventory/WHAT-TO-CHECK.md` regression row "BP CSS file ownership".
+13. **Names don't lie.** Class names, hook names, CSS classes must match actual usage. A `.mvs-bp-X` class used outside BP is a bug; either rename or narrow usage. Spec: `qa/rules/NAMING-RULES.md`.
+14. **Sibling classes with ≥50% duplicate method bodies share a base class.** At n=2 duplication is tolerable; at n=3 it must be extracted. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` §6.
+15. **Debt tax.** No PR adds lines to files in the Known Debt table below. Every edit to a debt file must reduce its line count or extract code out, unless the PR body justifies the addition. Spec: `qa/rules/PROCESS-RULES.md` §3.
+16. **Cache backend by cardinality.** Pick the storage by how many distinct keys a callsite produces, not by convenience. ≤ ~50 fixed keys (settings, global counters, feature flags) → `wp_options` or transients are fine. Anything keyed by `user_id` / `media_id` / `conversation_id` / any entity → custom `mvs_*` table. Never options. Never transients without a `wp_using_ext_object_cache()` guard. Per-request reuse → static array on the service class. Site-wide aggregate counts (total media, total views, storage size) MUST go through `Services\AdminAggregatesService` — raw `$wpdb->get_var` SUM/COUNT against `mvs_*` tables outside that service is a Rule 3 violation in `bin/coding-rules-check.sh`. Per-entity transients (key contains `$user_id` etc.) is a Rule 4 violation. Spec: `qa/rules/PHP-ORGANIZATION-RULES.md` (performance section).
 
-**Process meta:** how rules are added, checked, and retired — `qa/PROCESS-RULES.md`.
+**Process meta:** how rules are added, checked, and retired — `qa/rules/PROCESS-RULES.md`.
 
 ---
 
@@ -206,22 +206,50 @@ This is the index. Every rule below links to its full spec in `qa/`. Add new rul
 | `templates/` | PHP template files |
 | `languages/` | Translation files (.pot/.po/.mo) |
 | `tests/` | PHPUnit tests + bootstrap |
-| `plan/` | Development plans and status docs |
 | `dist/` | Release ZIP (generated) |
-| `docs/` | Documentation |
+| `docs/` | Human-facing reference docs (see Doc Map below) |
+| `qa/` | All pre-release QA — runbooks, rules, inventory, audits, runs (Free + Pro) |
+| `audit/` | Machine-derived audits — manifests, reports, journeys, runs. Pro mirror: `audit/pro/` |
+| `marketing/` | Marketing copy and assets |
+
+---
+
+## Doc Map
+
+All docs (Free + Pro) live in this plugin. Pro is intentionally doc-free.
+
+| Path | Contents |
+|------|----------|
+| `docs/architecture/ARCHITECTURE.md` | Free architecture |
+| `docs/architecture/architecture-contract.md` | Free ↔ Pro contract |
+| `docs/architecture/pro/` | Pro architecture + Interactivity-API design |
+| `docs/architecture/specs/` | Per-feature design specs (date-stamped) |
+| `docs/development/` | CODING_STANDARDS, CONTRIBUTING, EXTENSION_GUIDE, GIT_WORKFLOW, LOCAL_TESTING, LOCAL_TESTING-pro, MOBILE_UX_GUIDELINE, REFACTORING_ROADMAP, STRUCTURAL_GUIDELINE |
+| `docs/security/SECURITY_CHECKLIST.md` | Security checklist |
+| `docs/verification/` | Ad-hoc verification reports (e.g. `cloud-storage-verification.md`) |
+| `docs/website/` | Public docs site source (published to wbcomdesigns.com) |
+| `docs/marketing/` | Marketing asset folder (different from `marketing/`) |
 
 ---
 
 ## QA
 
-All lives in `qa/`. Content is inventory-style (what must be true), not process.
+All QA lives in `qa/` — single home for Free + Pro. Pro has no `qa/` directory of its own.
 
-- `qa/WHAT-TO-CHECK.md` — flat list: surfaces, actions, settings, data stores, contracts.
-- `qa/RENDER-STATE-RULES.md` — every render surface must emit a populated or empty state; no bare `return;` in render paths.
-- `qa/MANUAL-UX-QA.md` — procedural walkthrough.
-- Pro has its mirror at `../wpmediaverse-pro/qa/`.
+| Path | Contents |
+|------|----------|
+| `qa/README.md` | Index — what's where and when to run |
+| `qa/runbooks/AGENT_SMOKE_RUNBOOK.md` | Pre-release gate (release-blocking) — sections A–G |
+| `qa/runbooks/MANUAL-UX-QA-free.md` | Free manual UX walkthrough |
+| `qa/runbooks/MANUAL-UX-QA-pro.md` | Pro manual UX walkthrough |
+| `qa/rules/` | Organization rules — CSS, NAMING, PHP, PROCESS, RENDER-STATE |
+| `qa/inventory/WHAT-TO-CHECK.md` | Flat list — surfaces, actions, settings, data stores, contracts |
+| `qa/audits/` | Dated audits (a11y, doc-drift, etc.) |
+| `qa/runs/` | Append-only run evidence + `FINDINGS-HISTORY.md` + `drafts/` |
+| `qa/.last-smoke-pass.json` | Release-gate green-light signal (combo mode) |
+| `qa/.last-smoke-pass-free.json` | Release-gate green-light signal (free mode) |
 
-At release: can the plugin demonstrate the things in `WHAT-TO-CHECK.md`? Yes → ship. No → fix what's broken.
+At release: can the plugin demonstrate the things in `qa/inventory/WHAT-TO-CHECK.md`? Yes → ship. No → fix what's broken. The release gate (`bin/build-release.sh`) reads `qa/.last-smoke-pass*.json` and refuses to package without a fresh green pass.
 
 ---
 
@@ -258,7 +286,7 @@ What the gate runs (in order, see `bin/local-ci.sh`):
 | 2.1 Coding rules | `bin/coding-rules-check.sh` | plugin-specific rules (Rule 1: no native cap checks, Rule 2: REST __return_true allowlist) | ⚠️ Rule 2 has 23 callsites awaiting Item-5 triage; allowlist will be populated as part of that work |
 | 2.2 (Pro only) | `bin/architecture-checks.sh` | Free/Pro contract invariants | (Pro only) |
 | 2.3 Settings contract | `composer test:contract` | register_setting whitelist alignment (catches the d986525 bug class) | ✅ exits 0 |
-| 3.1 Manifest | `jq` on `audit/manifest.json` | manifest validity + freshness | ✅ exits 0 |
+| 3.1 Manifest | `jq` on `audit/manifests/manifest.json` | manifest validity + freshness | ✅ exits 0 |
 | 4.1 Journeys | `bin/run-journeys.sh` | customer flows end-to-end | (skipped in `:no-journeys` mode) |
 
 **Composer scripts (added 2026-05-01):**

@@ -1,0 +1,36 @@
+{
+  "tables": [
+    {
+      "name": "mvs_quota_packages",
+      "purpose": "Quota plan definitions (image_limit, video_limit, storage_bytes)"
+    },
+    {
+      "name": "mvs_credit_log",
+      "purpose": "Gamification points transaction history"
+    },
+    {
+      "name": "mvs_play_events",
+      "purpose": "Video analytics events (play/pause/seek/complete)"
+    },
+    {
+      "name": "mvs_competitions",
+      "purpose": "Unified competition header (battles, challenges, tournaments)"
+    },
+    {
+      "name": "mvs_competition_entries",
+      "purpose": "Participants/submissions per competition"
+    },
+    {
+      "name": "mvs_competition_matches",
+      "purpose": "Head-to-head matches (battles + tournament rounds)"
+    },
+    {
+      "name": "mvs_competition_votes",
+      "purpose": "Votes on entries or matches"
+    },
+    {
+      "name": "mvs_boosts",
+      "purpose": "Media visibility boosts (points spent)"
+    }
+  ]
+}

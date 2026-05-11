@@ -1,0 +1,99 @@
+{
+  "name": "rest-hang-risks",
+  "computed_at": "2026-05-03T17:35:00Z",
+  "input_globs": [
+    "src/blocks/**/*.js",
+    "assets/js/*.js"
+  ],
+  "input_hash": "sha1:src_blocks_js=4d1fdf3a86f30cc2791a131329b86d5e8e09e66b+assets_js=44df2161dfa2c9c456fe20f69bb163ceb9f9ef55",
+  "result": [
+    {
+      "file": "assets/js/challenges-store.js",
+      "fetch_call_count": 8,
+      "uses_abort_signal": false,
+      "context": "Interactivity store actions (list/detail/submit/vote/cancel/results paths)",
+      "severity": "low",
+      "rationale": "Plugin-owned `mvs-pro/v1` REST endpoints — server response is bounded (DB-only, no upstream HTTP). Worst-case is a slow query, not an indefinite hang. Documented as known-debt for 1.2.1 hardening; not a 1.2.0 ship-blocker."
+    },
+    {
+      "file": "assets/js/battles-store.js",
+      "fetch_call_count": 7,
+      "uses_abort_signal": false,
+      "context": "Interactivity store actions (list/detail/accept/decline/submit/vote)",
+      "severity": "low",
+      "rationale": "Same as challenges-store — bounded server-side."
+    },
+    {
+      "file": "assets/js/tournaments-store.js",
+      "fetch_call_count": 6,
+      "uses_abort_signal": false,
+      "context": "Interactivity store actions (list/detail/bracket/register/vote-match)",
+      "severity": "low",
+      "rationale": "Same as challenges-store."
+    },
+    {
+      "file": "assets/js/compete-hub-store.js",
+      "fetch_call_count": 2,
+      "uses_abort_signal": false,
+      "context": "Interactivity store actions (compete-summary, leaderboard)",
+      "severity": "low",
+      "rationale": "Same as challenges-store."
+    },
+    {
+      "file": "assets/js/streaks-store.js",
+      "fetch_call_count": 1,
+      "uses_abort_signal": false,
+      "context": "Interactivity store action (streak-status read)",
+      "severity": "low",
+      "rationale": "Same as challenges-store."
+    },
+    {
+      "file": "assets/js/boosts-store.js",
+      "fetch_call_count": 2,
+      "uses_abort_signal": false,
+      "context": "Interactivity store actions (my-boosts, create-boost)",
+      "severity": "low",
+      "rationale": "Same as challenges-store."
+    },
+    {
+      "file": "assets/js/connector-import.js",
+      "fetch_call_count": 6,
+      "uses_abort_signal": false,
+      "context": "Admin connector import modal (browse remote / import / sync-delta)",
+      "severity": "medium",
+      "rationale": "These DO call upstream APIs (Flickr, etc.) on the server side via wp_remote_*. Without an AbortController on the JS side, the admin modal will spin until the WP request times out (default 5s for wp_remote_get). Not catastrophic but worth adding AbortController in 1.2.1."
+    },
+    {
+      "file": "assets/js/connector-settings.js",
+      "fetch_call_count": 3,
+      "uses_abort_signal": false,
+      "context": "Admin connector settings (connect/disconnect/status)",
+      "severity": "medium",
+      "rationale": "Same upstream-API exposure as connector-import.js."
+    },
+    {
+      "file": "assets/js/dashboard-connectors.js",
+      "fetch_call_count": 2,
+      "uses_abort_signal": false,
+      "context": "Frontend dashboard connectors panel (browse/connect)",
+      "severity": "medium",
+      "rationale": "Same upstream-API exposure as connector-settings.js."
+    },
+    {
+      "file": "assets/js/instagram-feed.js",
+      "fetch_call_count": 2,
+      "uses_abort_signal": false,
+      "context": "Frontend Instagram-feed layout (infinite-scroll fetch + filter changes)",
+      "severity": "low",
+      "rationale": "Plugin-owned REST endpoints; bounded. Could add AbortController to cancel inflight on rapid filter switches, but not a hang risk."
+    }
+  ],
+  "result_count": 10,
+  "scan_summary": {
+    "files_with_fetch": 10,
+    "files_with_abort_signal": 0,
+    "total_fetch_calls": 39,
+    "src_blocks_fetch_calls": 0
+  },
+  "notes": "Sub-check 2.5 — REST hang risk audit. Phase 3a/3b/3c/3d/3e blocks ADD ZERO new fetch/apiFetch calls — all 12 src/blocks/pro-* blocks delegate to server-side renderers (Tournaments\\Renderer, Challenges\\Renderer, Battles\\Renderer, Frontend\\LeaderboardRenderer, Frontend\\CompeteHubRenderer) or to Frontend\\Layouts\\* classes. Editor-side preview uses src/blocks/shared/block-preview-card.js, a static React component with no fetch. ServerSideRender component is NOT used (deliberately replaced by BlockPreviewCard). The 10 files listed above are pre-existing assets/js/ store + admin scripts unchanged by 1.2.0 block work. Deferred remediation — adding AbortController to the 6 plugin-owned-REST stores is a clean 1.2.1 task; the 4 connector/admin scripts (medium severity) hit upstream APIs and should ship AbortController + a 10-second user-visible timeout in 1.2.1."
+}

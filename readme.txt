@@ -354,6 +354,9 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Upgrade Notice ==
 
+= 1.2.1 =
+**Privacy + WAF fixes that affect live sites:** (1) BP activity privacy now follows media privacy — non-public media no longer leaks composer text/timestamp/author into the public activity stream (customer-reported, Zoho #39974). (2) CSS file `shared-ui-shell.css` renamed to `shared-ui-frame.css` because customer WAFs auto-block the "shell" token (Crisp #NZRSBX). (3) Cloud-storage public URLs are now opt-in per setting — review `mvs_cloud_direct_public_urls` if you flip your driver to S3/BunnyCDN. Plus 100k-readiness work (FULLTEXT search, view-retention cron, REST per_page hardening, AdminAggregatesService). Recommended for all sites.
+
 = 1.2.0 =
 Restores DM-access and online-status privacy preferences — they previously silently reverted to "Everyone" on save. Reopen Settings → Social after upgrading to confirm your saved values.
 

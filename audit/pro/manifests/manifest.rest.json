@@ -1,0 +1,346 @@
+{
+  "rest": {
+    "namespace": "mvs-pro/v1",
+    "endpoints": [
+      {
+        "route": "/connectors",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Connectors/ConnectorRESTController::list_connectors",
+        "permission": "logged-in",
+        "purpose": "List available connectors"
+      },
+      {
+        "route": "/connectors/(?P<id>[\\w-]+)/connect",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Connectors/ConnectorRESTController::start_connect",
+        "permission": "logged-in",
+        "purpose": "Begin OAuth/connect flow"
+      },
+      {
+        "route": "/connectors/(?P<id>[\\w-]+)/disconnect",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Connectors/ConnectorRESTController::do_disconnect",
+        "permission": "connected",
+        "purpose": "Disconnect platform"
+      },
+      {
+        "route": "/connectors/(?P<id>[\\w-]+)/status",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Connectors/ConnectorRESTController::get_status",
+        "permission": "connected",
+        "purpose": "Connection status"
+      },
+      {
+        "route": "/connectors/(?P<id>[\\w-]+)/browse",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Connectors/ConnectorRESTController::browse_remote",
+        "permission": "connected",
+        "purpose": "Browse remote media"
+      },
+      {
+        "route": "/connectors/(?P<id>[\\w-]+)/import",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Connectors/ConnectorRESTController::import_media",
+        "permission": "connected",
+        "purpose": "Sideload import remote media"
+      },
+      {
+        "route": "/connectors/(?P<id>[\\w-]+)/sync-delta",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Connectors/ConnectorRESTController::sync_delta",
+        "permission": "connected",
+        "purpose": "Incremental sync since last import"
+      },
+      {
+        "route": "/battles",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "Battles/BattleController",
+        "permission": "public read; logged-in create",
+        "purpose": "1v1 photo battles"
+      },
+      {
+        "route": "/battles/(?P<id>\\d+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Battles/BattleController::get_item",
+        "permission": "public",
+        "purpose": "Battle detail"
+      },
+      {
+        "route": "/battles/(?P<id>\\d+)/accept",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Battles/BattleController::accept_item",
+        "permission": "opponent",
+        "purpose": "Accept battle invite"
+      },
+      {
+        "route": "/battles/(?P<id>\\d+)/decline",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Battles/BattleController::decline_item",
+        "permission": "opponent",
+        "purpose": "Decline battle invite"
+      },
+      {
+        "route": "/battles/(?P<id>\\d+)/submit",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Battles/BattleController::submit_entry",
+        "permission": "participant",
+        "purpose": "Submit battle entry"
+      },
+      {
+        "route": "/battles/(?P<id>\\d+)/vote",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Battles/BattleController::vote_item",
+        "permission": "can_vote",
+        "purpose": "Vote in battle"
+      },
+      {
+        "route": "/challenges",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "Challenges/ChallengeController",
+        "permission": "public read; admin create",
+        "purpose": "Challenges list/create"
+      },
+      {
+        "route": "/challenges/(?P<id>\\d+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Challenges/ChallengeController::get_item",
+        "permission": "public",
+        "purpose": "Challenge detail"
+      },
+      {
+        "route": "/challenges/(?P<id>\\d+)/cancel",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Challenges/ChallengeController::cancel_item",
+        "permission": "creator/admin",
+        "purpose": "Cancel challenge"
+      },
+      {
+        "route": "/challenges/(?P<id>\\d+)/entries",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Challenges/ChallengeController::get_entries",
+        "permission": "public",
+        "purpose": "List entries"
+      },
+      {
+        "route": "/challenges/(?P<id>\\d+)/entries/(?P<entry_id>\\d+)/vote",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Challenges/ChallengeController::vote_entry",
+        "permission": "logged-in",
+        "purpose": "Vote on entry"
+      },
+      {
+        "route": "/challenges/(?P<id>\\d+)/results",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Challenges/ChallengeController::get_results",
+        "permission": "public",
+        "purpose": "Challenge results"
+      },
+      {
+        "route": "/tournaments",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "Tournaments/TournamentController",
+        "permission": "public read; admin create",
+        "purpose": "Tournaments list/create"
+      },
+      {
+        "route": "/tournaments/(?P<id>\\d+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Tournaments/TournamentController::get_item",
+        "permission": "public",
+        "purpose": "Tournament detail"
+      },
+      {
+        "route": "/tournaments/(?P<id>\\d+)/bracket",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Tournaments/TournamentController::get_bracket",
+        "permission": "public",
+        "purpose": "Bracket data"
+      },
+      {
+        "route": "/tournaments/(?P<id>\\d+)/register",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Tournaments/TournamentController::register_item",
+        "permission": "logged-in",
+        "purpose": "Register participant"
+      },
+      {
+        "route": "/tournaments/(?P<id>\\d+)/matches/(?P<match_id>\\d+)/vote",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Tournaments/TournamentController::vote_match",
+        "permission": "logged-in",
+        "purpose": "Vote on match"
+      },
+      {
+        "route": "/me/quota",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Quota/QuotaController::get_my_quota",
+        "permission": "logged-in",
+        "purpose": "My quota"
+      },
+      {
+        "route": "/users/(?P<user_id>\\d+)/quota",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Quota/QuotaController::get_user_quota",
+        "permission": "admin",
+        "purpose": "User's quota"
+      },
+      {
+        "route": "/users/(?P<user_id>\\d+)/quota/assign",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Quota/QuotaController::assign_package",
+        "permission": "admin",
+        "purpose": "Assign quota package"
+      },
+      {
+        "route": "/me/boosts",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Boosts/BoostController::get_my_boosts",
+        "permission": "logged-in",
+        "purpose": "My boosts"
+      },
+      {
+        "route": "/boosts",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Boosts/BoostController::create_boost",
+        "permission": "logged-in",
+        "purpose": "Create boost"
+      },
+      {
+        "route": "/captions/(?P<media_id>\\d+)",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "Captions/CaptionController",
+        "permission": "media owner/admin",
+        "purpose": "Captions get/transcribe"
+      },
+      {
+        "route": "/transcode",
+        "methods": [
+          "POST"
+        ],
+        "handler": "Video/TranscodeController::start_transcode",
+        "permission": "admin",
+        "purpose": "Start transcode job"
+      },
+      {
+        "route": "/transcode/(?P<job_id>\\d+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Video/TranscodeController::get_status",
+        "permission": "admin",
+        "purpose": "Job status"
+      },
+      {
+        "route": "/videos/(?P<id>\\d+)/chapters",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Video/VideoController::get_chapters",
+        "permission": "public",
+        "purpose": "Video chapters"
+      },
+      {
+        "route": "/videos/(?P<id>\\d+)/resume",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "Video/VideoController",
+        "permission": "viewer",
+        "purpose": "Resume position"
+      },
+      {
+        "route": "/videos/(?P<id>\\d+)/analytics",
+        "methods": [
+          "GET"
+        ],
+        "handler": "Analytics/AnalyticsController::get_heatmap",
+        "permission": "owner/admin",
+        "purpose": "Video heatmap"
+      },
+      {
+        "route": "/privacy/settings",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "Privacy/PrivacyController",
+        "permission": "logged-in",
+        "purpose": "Advanced privacy settings"
+      },
+      {
+        "route": "/compete-summary",
+        "methods": [
+          "GET"
+        ],
+        "handler": "REST/CompeteSummaryController::get_summary",
+        "permission": "logged-in",
+        "purpose": "Competition dashboard summary"
+      }
+    ]
+  }
+}
