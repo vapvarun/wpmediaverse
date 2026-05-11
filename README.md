@@ -3,7 +3,7 @@
 [![WordPress](https://img.shields.io/badge/WordPress-6.5%2B-blue?logo=wordpress)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892BF?logo=php)](https://php.net/)
 [![License](https://img.shields.io/badge/License-GPLv2-green)](https://www.gnu.org/licenses/gpl-2.0.html)
-[![Version](https://img.shields.io/badge/Version-1.2.0-brightgreen)](https://github.com/vapvarun/wpmediaverse/releases/tag/1.2.0)
+[![Version](https://img.shields.io/badge/Version-1.2.1-brightgreen)](https://github.com/vapvarun/wpmediaverse/releases/tag/v1.2.1)
 [![BuddyPress](https://img.shields.io/badge/BuddyPress-Compatible-orange)](https://buddypress.org/)
 [![Gutenberg](https://img.shields.io/badge/Gutenberg-12%20Blocks-purple)](https://developer.wordpress.org/block-editor/)
 [![REST API](https://img.shields.io/badge/REST%20API-80%2B%20Endpoints-red)](https://developer.wordpress.org/rest-api/)
@@ -18,52 +18,59 @@
 
 ---
 
-## 🚀 What's New — 1.2.0 (May 2026)
+## What's New in 1.2.1 (May 2026)
 
-The "complete the experience" release. Every UX gap from 1.1.x closed before shipping. WCAG 2.1 AA pass on every customer-facing surface.
+The "ready for 100k uploads" release. Cloud-storage migration, faster admin pages on large sites, and customer-reported fixes that affect live sites.
 
-**Frontend highlights:**
+- Fix: BuddyPress activity privacy now follows media privacy. If a media uploaded to a BP activity was set to non-public, the activity card itself was staying visible in the public stream, so the composer text, timestamp, and author leaked. Activity visibility is now derived from the most-restrictive of media privacy and parent album privacy.
+- Fix: CSS file `shared-ui-shell.css` renamed to `shared-ui-frame.css` because some customer firewalls auto-block any file with the word "shell" in its name. The old name is kept as a deprecation shim until 1.3.0.
+- Fix: Video uploads no longer crash the upload modal. A type mismatch in the upload preview state was throwing on every video file picked.
+- Fix: Video thumbnails render correctly. Where a video had no generated thumbnail yet, the page was loading a broken image instead of falling back to the inline player.
+- Fix: bp-verified-member badge now appears next to the author name on `/media/{slug}/` and inside the lightbox author row, de-duplicated so it renders exactly once.
+- New: Site-wide counts (total media, views, storage, recent media) now read through a single cached aggregates service instead of running a SUM/COUNT scan on every admin page load.
+- New: Full-text search index on media title and description. Search latency at 100,000 rows drops by orders of magnitude. Falls back to standard LIKE on hosts that do not allow ALTER.
+- New: View-event retention setting `mvs_view_retention_days` (default 90, max 730, 0 = unlimited). A daily cron trims old rows from the view-events table in 50,000-row batches.
+- New: REST API per-page hardening. All 14 list endpoints now clamp `per_page` to a filterable maximum (default 100). Before 1.2.1, a malicious caller could request 999,999 rows in a single call.
+- New: Per-request row cache on the media repository, eliminating N+1 reads across the activity stream and the BuddyBoss imported-media loop.
+- New: Typing indicators moved off `wp_options` to the object cache. Busy DM sites were churning thousands of options-table writes per minute.
+- New: WP-CLI command `wp mvs migrate-storage --from=<driver> --to=<driver>`. Move every media file between local, S3, and BunnyCDN with verify-before-delete safety. Idempotent. Supports `--dry-run`, `--keep-source`, `--media-id`, `--limit`.
+- New: Direct CDN URLs for public media (opt-in: `mvs_cloud_direct_public_urls`). When enabled and the active driver is cloud, public media short-circuits to the CDN edge URL instead of routing through WordPress. Members-only and private media still flow through the gated /serve endpoint.
+- New: Operator runbook at `docs/verification/cloud-storage-verification.md` covers fresh upload, delete cleanup, the five migration directions, and failure modes.
+- New: Required contract method `StorageDriverInterface::download( string $path, string $local_dest ): bool` for storage-driver authors. Local, S3, and BunnyCDN drivers implement it.
+- New: Filename strategy setting `mvs_filename_strategy`. `original_sanitized` (default for upgrades) preserves prior behavior. `hashed` (default for fresh installs) stores files on disk as a 16-character hex name plus the sanitized extension; the original filename is preserved in metadata and returned via REST and Content-Disposition headers. Existing media is never renamed.
+- New: 98 i18n strings wrapped across chat templates, frontend JavaScript, and Interactivity API view scripts. Translation template regenerated from 1 entry to 1,179 entries.
+- New: Action hook `mvs_media_privacy_changed( $media_id, $new_privacy, $old_privacy )` fires when the privacy column is updated.
+- New: Filter `mvs_filename_strategy` for site-level filename-strategy overrides.
+- New: Filter `mvs_rest_pagination_max` to override the default `per_page` clamp.
 
-- **Member Photos block + shortcode** (`mvs/member-photos`, `[mvs_member_photos]`) — auto-detects whose photos to render: explicit `userId` → BP displayed user → post author → current user.
-- **PDF Viewer block + shortcode** (`mvs/pdf-viewer`, `[mvs_pdf_viewer]`) — browser-native PDF embed with `#view=FitH`, configurable height + toolbar toggle. Five distinct empty states.
-- **Sort options on Media Grid** — Most Popular / Most Viewed / Most Reactions / Random + asc/desc + per-author filter.
-- **Search autocomplete on Explore** — debounced 250 ms, top-8 title matches, full keyboard nav.
-- **Lightbox Download + Fullscreen** — toolbar buttons + `F` keyboard shortcut. Download counts to `mvs_media_stats.downloads`, rate-limited 30/min.
-- **Per-media Edit modal** — cog icon on own dashboard cards opens prefilled modal (title / description / privacy / allow-download). Live update without reload.
-- **Open Graph + Twitter Card meta** — every `/media/{slug}/` unfurls correctly in Slack / Twitter / LinkedIn / Discord.
-- **Popular tag pills** in upload modal + filename + per-tile remove buttons + audio-fallback icon.
-
-**Admin highlights:**
-
-- **Bulk Actions on All Media** — multi-select + context-aware action menu (Trash filter → Restore + Delete-permanently; else Move-to-Trash).
-- **Chat panel visibility setting** — Everywhere / WPMediaVerse pages only / BuddyPress pages only / Disabled, plus `mvs_should_render_chat_panel` filter.
-- **Global "Allow downloads" toggle** under Media Display — single switch hides the lightbox button site-wide AND refuses the REST endpoint.
-
-**Accessibility:**
-
-- 6-reaction lightbox bar gains `aria-label` + `aria-pressed`; emoji `aria-hidden`; group `role="group"`. Toolbar buttons all gain `aria-label` + `:focus-visible` outlines.
-- Block render forms get `aria-label` (placeholder ≠ label per WCAG).
-- Search-mode toggles get `role="tablist"` + `role="tab"` semantics.
-
-**Architecture:**
-
-- **`Core\SettingsHelper`** — canonical static accessor for paired-plugin settings reads (Free invariant A4).
-- **`SettingsContractTest`** — register_setting whitelist drift caught at unit-test time, not customer save-time.
-- **Block standard alignment (Phase 7)** — all 9 registered Free blocks share Spacing / Border / Shadow / Visibility panels with Pro + wbcom-essential.
-- **`BaseBPTabIntegration` extracted** — single bug fix on either BP tab now propagates to both.
-- **BuddyPress notification dedup** — MVS notifications mirror to BP's bell only; no double-render on dashboard.
-
-→ [Full release notes](https://github.com/vapvarun/wpmediaverse/releases/tag/1.2.0) · [Changelog](#changelog) (below)
+[Full release notes](https://github.com/vapvarun/wpmediaverse/releases/tag/v1.2.1) · [Changelog](#changelog) (below)
 
 ---
 
-## 🗺️ Roadmap — 1.2.1 (next)
+## What's New in 1.2.0 (May 2026)
 
-- Color-contrast audit against shipped themes (BuddyX, Reign, BuddyBoss).
-- `aria-live` toast container so screen readers announce upload progress / comments / downloads.
-- `prefers-reduced-motion: reduce` honored on lightbox open/close + story bar.
-- Story Service create-flow + REST endpoint + scheduled expiry cron — re-enables `mvs/story-viewer` block.
-- Three messaging services (DirectMessage / GroupConversation / ReadReceipts) split out — unblocks Group DM in 1.3.
+The "complete the experience" release. Every UX gap from 1.1.x closed before shipping. WCAG 2.1 AA pass on every customer-facing surface.
+
+- New: Member Photos block and shortcode (`mvs/member-photos`, `[mvs_member_photos]`). Auto-detects whose photos to render: explicit `userId`, BuddyPress displayed user, post author, or current user.
+- New: PDF Viewer block and shortcode (`mvs/pdf-viewer`, `[mvs_pdf_viewer]`). Browser-native PDF embed with configurable height and toolbar toggle. Five distinct empty states.
+- New: Sort options on Media Grid: Most Popular, Most Viewed, Most Reactions, Random, plus asc/desc and per-author filter.
+- New: Search autocomplete on Explore. Debounced 250 ms, top-8 title matches, full keyboard navigation.
+- New: Lightbox Download and Fullscreen. Toolbar buttons plus `F` keyboard shortcut. Download count tracked, rate-limited at 30 per minute per user.
+- New: Per-media Edit modal. Cog icon on your own dashboard cards opens a prefilled modal for title, description, privacy, and allow-download. Live update without reload.
+- New: Open Graph and Twitter Card meta on every `/media/{slug}/` so links unfurl correctly in Slack, Twitter, LinkedIn, and Discord.
+- New: Popular tag pills in the upload modal, per-tile filename and remove buttons, and an audio-fallback icon.
+- New: Bulk Actions on All Media. Multi-select plus a context-aware action menu (Restore + Delete permanently in the Trash filter, otherwise Move to Trash).
+- New: Chat panel visibility setting. Choose Everywhere, WPMediaVerse pages only, BuddyPress pages only, or Disabled. Filter `mvs_should_render_chat_panel` for fine-grained overrides.
+- New: Global "Allow downloads" toggle under Media Display. Single switch hides the lightbox button site-wide and refuses the REST endpoint.
+- New: 6-reaction lightbox bar gains `aria-label` and `aria-pressed`. Toolbar buttons all gain `aria-label` and `:focus-visible` outlines.
+- New: Block render forms get `aria-label` (placeholder is not a label, per WCAG).
+- New: `Core\SettingsHelper` canonical static accessor for paired-plugin settings reads.
+- New: `SettingsContractTest` catches register_setting drift at unit-test time instead of at customer save-time.
+- New: Block standard alignment. All 9 registered Free blocks share Spacing, Border, Shadow, and Visibility panels with Pro and wbcom-essential.
+- New: `BaseBPTabIntegration` extracted. A single bug fix on either BuddyPress tab now propagates to both.
+- Fix: BuddyPress notification dedup. Notifications mirror to the BP bell only, no double-render on the dashboard.
+
+[Full release notes](https://github.com/vapvarun/wpmediaverse/releases/tag/v1.2.0) · [Changelog](#changelog) (below)
 
 ---
 
