@@ -806,10 +806,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					fd.append( 'group_position', String( i ) );
 				}
 				// Send client-generated video thumbnail if available.
+				// generatePreviews() stores preview objects: { uid, src, name, type, ... }.
+				// The thumbnail data URL lives on `preview.src` — calling startsWith
+				// on the object itself throws TypeError and aborts the whole upload
+				// for video files (Basecamp #9871815208).
 				const preview = state.uploadModalPreviews[ i ];
-				if ( files[ i ].type.startsWith( 'video/' ) && preview && preview.startsWith( 'data:' ) ) {
+				const previewSrc = preview && typeof preview.src === 'string' ? preview.src : '';
+				if ( files[ i ].type.startsWith( 'video/' ) && previewSrc.startsWith( 'data:' ) ) {
 					try {
-						const resp = await fetch( preview );
+						const resp = await fetch( previewSrc );
 						const blob = await resp.blob();
 						fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
 					} catch { /* skip thumbnail */ }
