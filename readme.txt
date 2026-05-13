@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,10 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** — AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.2.2 =
+
+* Fix     - Video and audio thumbnails on Bunny.net (and any cloud driver running with `mvs_cloud_direct_public_urls=1`) no longer render as a broken image when the media has no poster variant pushed to the CDN. The thumbnail signer was falling back to the original cloud file URL as a poster, which the grid template wrapped in `<img src=".mp4">` / `<img src=".mp3">`. The fallback is now gated to image MIME types only. Videos drop to the existing `<video preload="metadata">` first-frame render path; audio drops to the music-icon placeholder card. Mirrors the file-type gate already present in `serve_thumbnail()` and `has_resolvable_thumbnail()`.
 
 = 1.2.1 =
 * Fix: BP activity privacy now follows media + album privacy. Customer-reported (Zoho #39974): when a media uploaded to a BP activity was set to non-public, the activity card itself stayed visible in the public stream — composer text + timestamp + author leaked. Activity `hide_sitewide` is now derived from the most-restrictive of (media privacy, parent album privacy). Album-level privacy changes fan out to every linked per-media + bundled gallery activity. New action hook `mvs_media_privacy_changed` fires from `MediaRepository::set` on UPDATE.
@@ -333,6 +337,9 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 1.2.2 =
+Fix for broken video and audio thumbnails on cloud storage (Bunny.net / S3 with direct-public-URL mode). Non-image media in the grid was rendering `<img src=".mp4">` / `<img src=".mp3">` instead of the proper video first-frame preview or audio placeholder. Recommended for any site using a non-local storage driver.
 
 = 1.2.1 =
 Privacy + WAF fixes that affect live sites: (1) BP activity privacy now follows media privacy — non-public media no longer leaks composer text/timestamp/author into the public activity stream (customer-reported, Zoho #39974). (2) CSS file `shared-ui-shell.css` renamed to `shared-ui-frame.css` because customer WAFs auto-block the "shell" token (Crisp #NZRSBX). (3) Cloud-storage public URLs are now opt-in per setting — review `mvs_cloud_direct_public_urls` if you flip your driver to S3/BunnyCDN. Plus 100k-readiness work (FULLTEXT search, view-retention cron, REST per_page hardening, AdminAggregatesService). Recommended for all sites.

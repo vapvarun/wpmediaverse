@@ -131,14 +131,20 @@ class SignedUrlService {
 			return $direct_thumb;
 		}
 
-		// Fallback: full-file direct-CDN. Used when thumb variants haven't
-		// been pushed to cloud (e.g. media uploaded before 1.2.2 + before
-		// the backfill CLI runs, or when the customer's CDN-resize filter
-		// returned an empty value). Browser downloads the original — not
-		// ideal but functional, no broken images.
-		$direct = $this->maybe_direct_cloud_url( $media_id );
-		if ( '' !== $direct ) {
-			return $direct;
+		// Fallback: full-file direct-CDN. Only valid for images — an MP4 / MP3
+		// / WebM served as <img src> renders as a broken image (the browser
+		// cannot decode media bytes as a still). Videos must fall through to
+		// the <video preload="metadata"> render path, and audio to the audio
+		// placeholder card — both in TemplateHelpers::media_thumbnail(). This
+		// mirrors the file_type gate already present in has_resolvable_thumbnail()
+		// and serve_thumbnail().
+		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
+		if ( 0 === strpos( $file_type, 'image/' ) ) {
+			$direct = $this->maybe_direct_cloud_url( $media_id );
+			if ( '' !== $direct ) {
+				return $direct;
+			}
 		}
 
 		// Existence gate (Basecamp #9871025511). For videos with no embedded
