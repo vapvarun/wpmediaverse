@@ -45,6 +45,18 @@ class MediaListPage {
 			}
 		}
 
+		// Per-row repair-thumb notice.
+		$repair_notice = get_transient( 'mvs_repair_thumb_notice' );
+		if ( is_array( $repair_notice ) && ! empty( $repair_notice['message'] ) ) {
+			delete_transient( 'mvs_repair_thumb_notice' );
+			$class = 'success' === ( $repair_notice['type'] ?? '' ) ? 'notice-success' : 'notice-warning';
+			printf(
+				'<div class="notice %1$s is-dismissible"><p>%2$s</p></div>',
+				esc_attr( $class ),
+				esc_html( (string) $repair_notice['message'] )
+			);
+		}
+
 		global $wpdb;
 
 		$table = $wpdb->prefix . 'mvs_media_index';
@@ -369,6 +381,22 @@ class MediaListPage {
 				<div class="row-actions">
 					<span class="view"><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php esc_html_e( 'View', 'wpmediaverse' ); ?></a></span>
 					<?php if ( 'trash' !== $status ) : ?>
+						| <span class="repair-thumb"><a href="
+						<?php
+						echo esc_url(
+							wp_nonce_url(
+								add_query_arg(
+									array(
+										'action'   => 'repair_thumb',
+										'media_id' => $media_id,
+									),
+									admin_url( 'admin.php?page=mvs-media' )
+								),
+								'mvs_repair_thumb_' . $media_id
+							)
+						);
+						?>
+															" title="<?php esc_attr_e( 'Clear stale cloud thumbnail meta and regenerate locally if possible. Use this when the grid shows a broken image for this media.', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Repair thumb', 'wpmediaverse' ); ?></a></span>
 						| <span class="trash"><a href="
 						<?php
 						echo esc_url(
@@ -513,10 +541,157 @@ class MediaListPage {
 				check_admin_referer( 'mvs_delete_media_' . $media_id );
 				self::permanently_delete_media( $media_id );
 				break;
+
+			case 'repair_thumb':
+				check_admin_referer( 'mvs_repair_thumb_' . $media_id );
+				$repair_result = self::repair_media_thumb( $media_id );
+				set_transient(
+					'mvs_repair_thumb_notice',
+					array(
+						'type'     => $repair_result['ok'] ? 'success' : 'warning',
+						'message'  => $repair_result['message'],
+						'media_id' => $media_id,
+					),
+					60
+				);
+				break;
 		}
 
 		wp_safe_redirect( admin_url( 'admin.php?page=mvs-media' ) );
 		exit;
+	}
+
+	/**
+	 * Repair a single media item's thumbnail.
+	 *
+	 * Symptom this fixes: the grid renders a broken-image icon because the
+	 * stored cloud poster URL (`thumb_large` / `thumb_medium` / `thumb_thumb`)
+	 * 404s on the CDN. Cloud poster generation is best-effort — when the
+	 * upload silently fails or the file is later cleaned up out-of-band,
+	 * the meta is left holding a CDN URL with no file behind it.
+	 *
+	 * Strategy:
+	 *   1. Clear the stored cloud thumb_* meta keys. The render path's
+	 *      direct-CDN shortcut (`SignedUrlService::maybe_direct_cloud_thumbnail_url`)
+	 *      returns empty when the meta is empty, so the request falls
+	 *      through to the gated /serve proxy.
+	 *   2. For images, regenerate the size variants locally from the
+	 *      original via `wp_get_image_editor()`. Only attempted when the
+	 *      original is on local disk — cloud-only originals would need a
+	 *      download round-trip which is out of scope here (use the
+	 *      `wp mvs cloud-thumbs-backfill` CLI for the bulk path).
+	 *   3. For videos / audio, the render's existing fallbacks take over —
+	 *      videos show the first frame via <video preload="metadata">, audio
+	 *      shows the audio placeholder. ffmpeg-based poster regeneration is
+	 *      a Pro concern and lives in the TranscodeService pipeline for
+	 *      new uploads; per-row regeneration for existing videos can hook in
+	 *      via the `mvs_repair_media_thumb` filter (see below).
+	 *
+	 * @param int $media_id Media ID to repair.
+	 * @return array{ok: bool, message: string} Result for the admin notice.
+	 */
+	private static function repair_media_thumb( int $media_id ): array {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		if ( ! $repo || ! $repo->exists( $media_id ) ) {
+			return array(
+				'ok'      => false,
+				'message' => __( 'Media not found.', 'wpmediaverse' ),
+			);
+		}
+
+		// Step 1 — wipe the stale cloud thumb meta so the render falls
+		// back to the gated /serve proxy / video-first-frame path.
+		foreach ( array( 'thumb_large', 'thumb_medium', 'thumb_thumb' ) as $meta_key ) {
+			$repo->set( $media_id, $meta_key, '' );
+		}
+
+		$file_type  = (string) $repo->get( $media_id, 'file_type' );
+		$file_path  = (string) $repo->get( $media_id, 'file_path' );
+		$is_image   = 0 === strpos( $file_type, 'image/' );
+		$regenerated = 0;
+
+		// Step 2 — for images, regenerate size variants locally if the
+		// original is reachable on disk.
+		if ( $is_image && $file_path ) {
+			$upload     = wp_upload_dir();
+			$local_path = trailingslashit( (string) ( $upload['basedir'] ?? '' ) ) . 'wpmediaverse/' . ltrim( $file_path, '/' );
+			if ( file_exists( $local_path ) ) {
+				$editor = wp_get_image_editor( $local_path );
+				if ( ! is_wp_error( $editor ) ) {
+					$sizes = array(
+						'thumb'  => array( 200, 200 ),
+						'medium' => array( 600, 600 ),
+						'large'  => array( 1280, 1280 ),
+					);
+					foreach ( $sizes as $size_key => $dims ) {
+						$resized = clone $editor;
+						$resized->resize( $dims[0], $dims[1], false );
+						$saved = $resized->save();
+						if ( ! is_wp_error( $saved ) && ! empty( $saved['path'] ) ) {
+							// Store the local URL under thumb_<size>. The render
+							// helper's URL detector treats a local-uploads URL
+							// as "fall through to /serve" which is what we want
+							// after a repair: no risky direct-CDN shortcut until
+							// the next successful cloud upload re-populates the
+							// meta with a verified URL.
+							$rel = ltrim( str_replace( (string) $upload['basedir'], '', (string) $saved['path'] ), '/' );
+							$url = trailingslashit( (string) $upload['baseurl'] ) . $rel;
+							$repo->set( $media_id, 'thumb_' . $size_key, $url );
+							++$regenerated;
+						}
+					}
+				}
+			}
+		}
+
+		/**
+		 * Allow Pro / external code to do extra repair work (e.g. extract a
+		 * fresh video poster via ffmpeg and upload it).
+		 *
+		 * Listeners receive the regenerated count so far and can return an
+		 * incremented value to reflect their own work.
+		 *
+		 * @since 1.2.3
+		 *
+		 * @param int   $regenerated Number of size variants this repair pass produced.
+		 * @param int   $media_id    Media being repaired.
+		 * @param array $context     File context: file_type, file_path.
+		 */
+		$regenerated = (int) apply_filters(
+			'mvs_repair_media_thumb',
+			$regenerated,
+			$media_id,
+			array(
+				'file_type' => $file_type,
+				'file_path' => $file_path,
+			)
+		);
+
+		if ( $regenerated > 0 ) {
+			return array(
+				'ok'      => true,
+				'message' => sprintf(
+					/* translators: 1: media id, 2: count of regenerated thumbs */
+					_n(
+						'Media #%1$d — cleared stale cloud thumb cache and regenerated %2$d size variant.',
+						'Media #%1$d — cleared stale cloud thumb cache and regenerated %2$d size variants.',
+						$regenerated,
+						'wpmediaverse'
+					),
+					$media_id,
+					$regenerated
+				),
+			);
+		}
+
+		return array(
+			'ok'      => true,
+			'message' => sprintf(
+				/* translators: %d: media id */
+				__( 'Media #%d — cleared stale cloud thumb cache. Render will use the local fallback (video first frame, image placeholder, or /serve proxy).', 'wpmediaverse' ),
+				$media_id
+			),
+		);
 	}
 
 	/**
