@@ -278,25 +278,34 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$loading     = $args['lazy'] ? ' loading="lazy"' : '';
 		$play_icon   = $args['show_play'] ? $this->icon_play() : '';
 
-		if ( $thumb_url ) {
-			$img_class = trim( 'mvs-media-thumb ' . $extra_class );
-			$markup    = '<img class="' . esc_attr( $img_class ) . '" src="' . esc_url( $thumb_url ) . '" alt="' . $alt . '"' . $loading . ' />';
-			if ( 'video' === $media_type ) {
-				$markup .= $play_icon;
-			}
-			return $markup;
-		}
-
+		// VIDEO — always render <video> with the cloud thumb as the poster.
+		// Rationale: cloud poster generation is best-effort. When the upload
+		// silently fails (or the file gets cleaned up later) the meta still
+		// holds a CDN URL. <img src="bad-url"> shows the OS broken-image
+		// icon; <video poster="bad-url"> degrades to the video's first frame
+		// (preload="metadata" fetches only the moov atom, ~few KB) and then
+		// to a black background with the play overlay if even that fails.
+		// This makes the render path self-validating instead of trusting the
+		// stored URL.
 		if ( 'video' === $media_type ) {
-			// Route through SignedUrlService — direct file_url paths are blocked
-			// by the .htaccess in wp-content/uploads/wpmediaverse/.
 			$th_signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 			$file_url  = $th_signed ? $th_signed->generate( $media_id, get_current_user_id() ) : '';
 			if ( $file_url ) {
-				$vid_class = trim( 'mvs-grid-video-preview ' . $extra_class );
-				return '<video class="' . esc_attr( $vid_class ) . '" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true" src="' . esc_url( $file_url ) . '#t=0.1"></video>' . $play_icon;
+				$vid_class   = trim( 'mvs-grid-video-preview ' . $extra_class );
+				$poster_attr = $thumb_url ? ' poster="' . esc_url( $thumb_url ) . '"' : '';
+				return '<video class="' . esc_attr( $vid_class ) . '" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"' . $poster_attr . ' src="' . esc_url( $file_url ) . '#t=0.1"></video>' . $play_icon;
 			}
 			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">' . $play_icon . '</div>';
+		}
+
+		// IMAGE / non-video media — keep the <img> fast path. A broken cloud
+		// thumb here is still a broken image, but that's the meta-row bug
+		// surfacing visibly (which is what we want for images — a cleanup
+		// CLI can repair). Videos are different because we have a perfectly
+		// good fallback (the video file itself) the browser knows how to use.
+		if ( $thumb_url ) {
+			$img_class = trim( 'mvs-media-thumb ' . $extra_class );
+			return '<img class="' . esc_attr( $img_class ) . '" src="' . esc_url( $thumb_url ) . '" alt="' . $alt . '"' . $loading . ' />';
 		}
 
 		if ( 'audio' === $media_type ) {
