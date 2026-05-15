@@ -53,16 +53,31 @@ class StoryService {
 	public function create( int $media_id, int $duration_hours = self::DEFAULT_DURATION_HOURS ): string {
 		$expires_at = gmdate( 'Y-m-d H:i:s', time() + ( $duration_hours * HOUR_IN_SECONDS ) );
 
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'is_story', '1' );
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'story_expires_at', $expires_at );
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->set( $media_id, 'is_story', '1' );
+		$repo->set( $media_id, 'story_expires_at', $expires_at );
+
+		// Resolve story author so listeners (gamification, activity-sync, webhooks)
+		// don't each repeat the DB read. Falls back to current user when the
+		// author meta is absent (legacy/seed data).
+		$user_id = $repo->get_author( $media_id );
+		if ( ! $user_id ) {
+			$user_id = get_current_user_id();
+		}
 
 		/**
 		 * Fires after a story is created.
 		 *
+		 * @since 1.1.0
+		 * @since 1.2.3 Added $user_id as positional arg 2 (was previously
+		 *              ($media_id, $expires_at)). No external listeners existed
+		 *              at the time of the change.
+		 *
 		 * @param int    $media_id   Media post ID.
+		 * @param int    $user_id    Story author user ID.
 		 * @param string $expires_at Expiration datetime (UTC).
 		 */
-		do_action( 'mvs_story_created', $media_id, $expires_at );
+		do_action( 'mvs_story_created', $media_id, $user_id, $expires_at );
 
 		return $expires_at;
 	}

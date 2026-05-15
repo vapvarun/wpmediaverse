@@ -349,11 +349,28 @@ class UploadService {
 		// Initialize stats row.
 		$this->init_stats( $media_id );
 
+		// is_first is computed once per upload — cheap COUNT, gates "first upload" badges
+		// in gamification/notification adapters without forcing every listener to repeat the query.
+		$is_first_upload = 1 === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->count_by_author( $user_id );
+
 		/**
 		 * Fires after a media file has been uploaded and processed.
 		 *
-		 * @param int   $media_id  The created media post ID.
-		 * @param array $file_data File metadata.
+		 * Positional args 3 + 4 ($user_id, $media_type) were added in 1.2.3 so
+		 * gamification / activity-feed / external adapters can receive the actor
+		 * and media-type directly instead of looking them up. Existing listeners
+		 * registered with accepted_args=1 or =2 continue to work unchanged.
+		 *
+		 * @since 1.1.0
+		 * @since 1.2.3 Added $user_id and $media_type positional args, and
+		 *              user_id/is_first/mime keys on $file_data.
+		 *
+		 * @param int    $media_id   The created media post ID.
+		 * @param array  $file_data  File metadata. Keys: file_url, file_path,
+		 *                           file_size, file_type, file_hash, media_type,
+		 *                           privacy, mime, user_id, is_first.
+		 * @param int    $user_id    Uploader user ID.
+		 * @param string $media_type Resolved media type ('photo' | 'video' | 'audio' | 'document').
 		 */
 		do_action(
 			'mvs_media_uploaded',
@@ -366,7 +383,12 @@ class UploadService {
 				'file_hash'  => $hash,
 				'media_type' => $media_type,
 				'privacy'    => $privacy,
-			)
+				'mime'       => $mime,
+				'user_id'    => $user_id,
+				'is_first'   => $is_first_upload,
+			),
+			$user_id,
+			$media_type
 		);
 
 		return $media_id;

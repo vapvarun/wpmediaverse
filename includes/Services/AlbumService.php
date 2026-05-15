@@ -186,14 +186,27 @@ class AlbumService {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( (int) $mid, 'album_id', $album_id );
 			}
 
+			// The actor may be a co-collaborator, not the album owner — keep it
+			// distinct from the author lookup so gamification adapters can award
+			// the right user.
+			$actor_id = get_current_user_id();
+
 			/**
 			 * Fires after media items are added to an album.
 			 *
+			 * @since 1.1.0
+			 * @since 1.2.3 Added $actor_id as positional arg 2 — was previously
+			 *              ($album_id, $media_ids, $added). The in-tree
+			 *              ActivitySyncIntegration listener was updated in the
+			 *              same change.
+			 *
 			 * @param int   $album_id  Album post ID.
+			 * @param int   $actor_id  User who added the items (may differ from
+			 *                         album owner on co-collaborated albums).
 			 * @param array $media_ids Media post IDs that were added.
 			 * @param int   $added     Number of items successfully added.
 			 */
-			do_action( 'mvs_album_items_added', $album_id, $media_ids, $added );
+			do_action( 'mvs_album_items_added', $album_id, $actor_id, $media_ids, $added );
 		}
 
 		return $added;
