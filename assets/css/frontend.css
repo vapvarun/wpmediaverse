@@ -4992,7 +4992,12 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--mvs-surface);
+    /* Always-light icon — the backdrop is rgba(0,0,0,.5) regardless of
+       theme, so referencing --mvs-surface (which flips dark in dark mode)
+       turned the close icon invisible (dark on dark). The lightbox itself
+       overlays the page with a dark veil, so #fff is the right fixed
+       choice here. */
+    color: #fff;
 }
 
 .mvs-lightbox-close:hover {
