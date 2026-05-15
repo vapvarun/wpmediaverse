@@ -461,12 +461,17 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		$item_class = 'mvs-grid-item' . ( $is_gallery ? ' mvs-grid-item--gallery' : '' );
 
-		// Interactivity API context for lightbox.
+		// Interactivity API context for lightbox. currentUserId is included
+		// so the shared-ui view.js can correctly gate authenticated UI
+		// (favorite status read on lightbox open, etc.); without it the
+		// "lightboxIsFavorited" state would never reflect server truth for
+		// logged-in viewers — see the favorite-modal desync fix.
 		$lightbox_ctx = wp_interactivity_data_wp_context(
 			array(
-				'mediaId' => $media_id,
-				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'mediaId'       => $media_id,
+				'restUrl'       => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'         => wp_create_nonce( 'wp_rest' ),
+				'currentUserId' => get_current_user_id(),
 			)
 		);
 
