@@ -409,7 +409,9 @@ class UploadService {
 	 * @return string[]
 	 */
 	private function get_allowed_types(): array {
-		$types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg,application/pdf' );
+		// Default matches SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES. PDF
+		// dropped from the default in 1.2.3 — see scope decision note there.
+		$types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );
 
 		/**
 		 * Filters the allowed file MIME types for upload.

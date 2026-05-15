@@ -103,9 +103,10 @@ class FieldRenderer {
 				'audio/mpeg' => 'MP3',
 				'audio/ogg'  => 'OGG',
 			),
-			__( 'Documents', 'wpmediaverse' ) => array(
-				'application/pdf' => 'PDF',
-			),
+			// Documents group (PDF) removed from the picker in 1.2.3 — see
+			// SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES note. Sites that
+			// previously stored application/pdf still see it in the
+			// "Custom types" row below; the option is still respected end-to-end.
 		);
 
 		$known_mimes = array();

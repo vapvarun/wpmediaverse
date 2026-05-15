@@ -23,7 +23,13 @@ class SettingsRegistrar {
 	 *
 	 * @var string
 	 */
-	public const DEFAULT_ALLOWED_FILE_TYPES = 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg,application/pdf';
+	// PDF (application/pdf) dropped from the default in 1.2.3 — focus is
+	// images + videos. Existing installs keep PDF in their stored
+	// mvs_allowed_file_types until they re-save the option; new installs
+	// reject PDF uploads out of the box. The 'document' media_type and
+	// the PDF-serve content-type whitelist stay in place so historical
+	// PDF rows still display + download.
+	public const DEFAULT_ALLOWED_FILE_TYPES = 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg';
 
 	/**
 	 * Register all settings, sections, and fields.
