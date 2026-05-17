@@ -155,6 +155,39 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Resolve the AVIF sibling for the lightbox image, matching the size choice
+	 * made by `get_lightbox_url()`. Returns '' when no AVIF variant exists or
+	 * when the JPEG URL routes through the gated /serve endpoint.
+	 *
+	 * Used by the REST media payload so the Interactivity-API lightbox can
+	 * bind an `<source type="image/avif">` element above the WebP source.
+	 * AVIF-capable browsers will pick this and skip the WebP/JPEG fallback.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $media_id     Media ID.
+	 * @param string $lightbox_url The resolved JPEG/PNG lightbox URL.
+	 * @return string AVIF variant URL or empty string.
+	 */
+	public function get_lightbox_avif_url( int $media_id, string $lightbox_url ): string {
+		if ( $media_id <= 0 || '' === $lightbox_url ) {
+			return '';
+		}
+		if ( 'image' !== $this->get_media_type( $media_id ) ) {
+			return '';
+		}
+
+		$source = (string) get_option( 'mvs_lightbox_image_source', 'original' );
+		if ( 'auto' === $source ) {
+			$source = wp_is_mobile() ? 'large' : 'original';
+		}
+
+		$size = ( 'original' === $source ) ? '' : $source;
+
+		return $this->get_avif_variant_url( $media_id, $size, $lightbox_url );
+	}
+
+	/**
 	 * Get the media type (image, video, audio, document) for a media item.
 	 *
 	 * @param int $media_id Media ID (mvs_media_index.media_id).
@@ -471,10 +504,24 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$img_tag    = '<img' . $class_attr . ' src="' . esc_url( $jpeg_url ) . '" alt="' . esc_attr( $alt ) . '"' . $attrs_html . ' />';
 
 		$webp_url = $this->get_webp_variant_url( $media_id, $size, $jpeg_url );
-		if ( '' === $webp_url ) {
+		$avif_url = $this->get_avif_variant_url( $media_id, $size, $jpeg_url );
+
+		if ( '' === $webp_url && '' === $avif_url ) {
 			return $img_tag;
 		}
-		return '<picture><source type="image/webp" srcset="' . esc_url( $webp_url ) . '">' . $img_tag . '</picture>';
+
+		// AVIF first — browsers walk `<source>` elements in document order and
+		// pick the first match they support. Modern browsers prefer AVIF; the
+		// WebP source below catches the (now-narrow) gap of browsers with WebP
+		// but no AVIF support. Older browsers fall through to the `<img>` JPEG.
+		$sources = '';
+		if ( '' !== $avif_url ) {
+			$sources .= '<source type="image/avif" srcset="' . esc_url( $avif_url ) . '">';
+		}
+		if ( '' !== $webp_url ) {
+			$sources .= '<source type="image/webp" srcset="' . esc_url( $webp_url ) . '">';
+		}
+		return '<picture>' . $sources . $img_tag . '</picture>';
 	}
 
 	/**
@@ -548,6 +595,71 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			$has_size_thumb = '' !== (string) $repo->get_raw( $media_id, $thumb_meta_key );
 			if ( ! $has_size_thumb ) {
 				$url = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
+			}
+		}
+
+		return '' !== $url ? $url : '';
+	}
+
+	/**
+	 * Resolve the AVIF variant URL for a thumbnail, or return '' to fall back.
+	 *
+	 * Mirrors `get_webp_variant_url()`. AVIF siblings are emitted by
+	 * `ImageOptimizationService::emit_avif_sibling()` when the
+	 * `mvs_generate_avif` setting is on AND the editor supports AVIF; they
+	 * are stored in `original_avif` / `thumb_<size>_avif` meta keys. As with
+	 * WebP, we skip the gated /serve URL case — /serve handles AVIF/WebP
+	 * negotiation server-side via the Accept header (see SignedUrlService).
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $media_id Media id.
+	 * @param string $size     Size key (large/medium/thumb/full).
+	 * @param string $jpeg_url The resolved JPEG/PNG URL — used to detect the
+	 *                         gated /serve case and skip AVIF for it.
+	 * @return string Browser-safe AVIF variant URL or empty string.
+	 */
+	public function get_avif_variant_url( int $media_id, string $size, string $jpeg_url ): string {
+		if ( $media_id <= 0 || '' === $jpeg_url ) {
+			return '';
+		}
+
+		if ( false !== strpos( $jpeg_url, '/mvs/v1/serve' ) || false !== strpos( $jpeg_url, '/serve?' ) ) {
+			return '';
+		}
+
+		$meta_key = '';
+		switch ( $size ) {
+			case '':
+			case 'full':
+				$meta_key = \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF;
+				break;
+			case 'thumbnail':
+				$meta_key = 'thumb_thumb_avif';
+				break;
+			case 'large':
+			case 'medium':
+			case 'thumb':
+				$meta_key = 'thumb_' . $size . '_avif';
+				break;
+			default:
+				return '';
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$url  = (string) $repo->get_raw( $media_id, $meta_key );
+
+		// Same original-AVIF fallback as the WebP path: if the requested size
+		// has no AVIF sibling AND no JPEG sibling either (cloud uploads, etc.),
+		// fall back to the original AVIF. Downloading the original AVIF at
+		// thumbnail dimensions is still a win — AVIF is so much smaller than
+		// JPEG/PNG that even at full resolution it beats the smaller-format
+		// thumb in bytes.
+		if ( '' === $url && \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF !== $meta_key ) {
+			$thumb_meta_key = ( 'thumbnail' === $size ) ? 'thumb_thumb' : 'thumb_' . $size;
+			$has_size_thumb = '' !== (string) $repo->get_raw( $media_id, $thumb_meta_key );
+			if ( ! $has_size_thumb ) {
+				$url = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF );
 			}
 		}
 

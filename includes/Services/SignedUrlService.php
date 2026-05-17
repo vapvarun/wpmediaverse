@@ -333,16 +333,21 @@ class SignedUrlService {
 		);
 		$content_type = ( $file_type && in_array( $file_type, $safe_types, true ) ) ? $file_type : 'application/octet-stream';
 
-		// WebP content negotiation: when the client sends `Accept: image/webp`
-		// and a local WebP sibling exists, swap the bytes we're about to stream.
-		// The signed URL still validates the JPEG/PNG path; we just substitute
-		// the response body so HTTP caches and the browser only ever see one
-		// surface per signed URL. Vary: Accept keeps shared caches honest.
-		// 1.3.0+.
-		$webp_path = $this->local_webp_variant_path( $media_id, '', $content_type, $is_download );
-		if ( '' !== $webp_path ) {
-			$full_path    = $webp_path;
-			$content_type = 'image/webp';
+		// Modern-format content negotiation: prefer AVIF, then WebP, then the
+		// original. The signed URL still validates the JPEG/PNG path; we just
+		// substitute the response body so HTTP caches and the browser only
+		// ever see one surface per signed URL. Vary: Accept keeps shared
+		// caches honest. AVIF/WebP since 1.3.0.
+		$avif_path = $this->local_avif_variant_path( $media_id, '', $content_type, $is_download );
+		if ( '' !== $avif_path ) {
+			$full_path    = $avif_path;
+			$content_type = 'image/avif';
+		} else {
+			$webp_path = $this->local_webp_variant_path( $media_id, '', $content_type, $is_download );
+			if ( '' !== $webp_path ) {
+				$full_path    = $webp_path;
+				$content_type = 'image/webp';
+			}
 		}
 
 		// Drain output buffers + disable compression BEFORE sending headers
@@ -466,13 +471,18 @@ class SignedUrlService {
 		$mime_type = $mime_map[ $ext ];
 		$filename  = sanitize_file_name( basename( $full_path ) );
 
-		// WebP content negotiation for thumbnails (1.3.0+) — same pattern as
-		// serve(): when Accept advertises image/webp and a sibling exists
-		// locally, swap bytes + Content-Type without changing the URL.
-		$webp_path = $this->local_webp_variant_path( $media_id, $size, $mime_type, false );
-		if ( '' !== $webp_path ) {
-			$full_path = $webp_path;
-			$mime_type = 'image/webp';
+		// Modern-format content negotiation for thumbnails (1.3.0+) — AVIF
+		// first, then WebP, then the original. Same pattern as serve().
+		$avif_path = $this->local_avif_variant_path( $media_id, $size, $mime_type, false );
+		if ( '' !== $avif_path ) {
+			$full_path = $avif_path;
+			$mime_type = 'image/avif';
+		} else {
+			$webp_path = $this->local_webp_variant_path( $media_id, $size, $mime_type, false );
+			if ( '' !== $webp_path ) {
+				$full_path = $webp_path;
+				$mime_type = 'image/webp';
+			}
 		}
 
 		$this->prepare_binary_stream();
@@ -792,9 +802,10 @@ class SignedUrlService {
 	/**
 	 * Inspect the client's `Accept` header for `image/webp` advertisement.
 	 *
-	 * Returns true for explicit `image/webp`, browser-default `image/*`, or
-	 * the catch-all `*\/*`. Anything else (e.g. legacy `image/jpeg,image/png`)
-	 * returns false so we don't ship WebP to a client that didn't ask for it.
+	 * Returns true for explicit `image/webp`. Anything else (legacy
+	 * `image/jpeg,image/png`, or generic `image/*` / `*\/*` which doesn't
+	 * actually guarantee WebP support) returns false so we don't ship WebP
+	 * bytes to a client that didn't ask for them.
 	 *
 	 * @since 1.3.0
 	 *
@@ -806,6 +817,100 @@ class SignedUrlService {
 		}
 		$accept = strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT'] ) ) );
 		return ( false !== strpos( $accept, 'image/webp' ) );
+	}
+
+	/**
+	 * Inspect the client's `Accept` header for `image/avif` advertisement.
+	 *
+	 * Same conservative rule as `client_accepts_webp()`: explicit advertisement
+	 * only. Modern browsers send `image/avif` in the Accept list when they
+	 * have decoder support; we won't ship AVIF to anything else.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @return bool
+	 */
+	private function client_accepts_avif(): bool {
+		if ( empty( $_SERVER['HTTP_ACCEPT'] ) ) {
+			return false;
+		}
+		$accept = strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT'] ) ) );
+		return ( false !== strpos( $accept, 'image/avif' ) );
+	}
+
+	/**
+	 * AVIF analogue of `local_webp_variant_path()`. See that method's docblock
+	 * for the full contract — this differs only in the Accept-header check,
+	 * the source-mime short-circuit (image/avif), and the meta key map.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $media_id          Media ID.
+	 * @param string $size              Size key ('' / 'large' / 'medium' / 'thumbnail').
+	 * @param string $current_mime_type Content-Type the caller would have used.
+	 * @param bool   $is_download       True when the request is a download.
+	 * @return string Absolute FS path of a readable AVIF file, or '' to fall through.
+	 */
+	private function local_avif_variant_path( int $media_id, string $size, string $current_mime_type, bool $is_download ): string {
+		if ( $is_download || $media_id <= 0 ) {
+			return '';
+		}
+		if ( 'image/avif' === $current_mime_type ) {
+			return '';
+		}
+		if ( 0 !== strpos( $current_mime_type, 'image/' ) ) {
+			return '';
+		}
+		if ( ! $this->client_accepts_avif() ) {
+			return '';
+		}
+
+		switch ( $size ) {
+			case '':
+				$meta_key = \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF;
+				break;
+			case 'large':
+			case 'medium':
+				$meta_key = 'thumb_' . $size . '_avif';
+				break;
+			case 'thumbnail':
+				$meta_key = 'thumb_thumb_avif';
+				break;
+			default:
+				return '';
+		}
+
+		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$avif_url = (string) $repo->get_raw( $media_id, $meta_key );
+		if ( '' === $avif_url ) {
+			return '';
+		}
+
+		$upload_dir = wp_upload_dir();
+		if ( ! is_array( $upload_dir ) || empty( $upload_dir['baseurl'] ) || empty( $upload_dir['basedir'] ) ) {
+			return '';
+		}
+
+		$base_url      = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
+		$avif_url_http = set_url_scheme( $avif_url, 'http' );
+		if ( 0 !== strpos( $avif_url_http, $base_url ) ) {
+			return '';
+		}
+
+		$candidate = trailingslashit( $upload_dir['basedir'] ) . substr( $avif_url_http, strlen( $base_url ) );
+		$real_path = realpath( $candidate );
+		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
+		if ( false === $real_path || false === $real_base ) {
+			return '';
+		}
+		if ( 0 !== strpos( $real_path, $real_base . DIRECTORY_SEPARATOR ) ) {
+			return '';
+		}
+		if ( ! is_readable( $real_path ) ) {
+			return '';
+		}
+
+		return $real_path;
 	}
 
 	/**

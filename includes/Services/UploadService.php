@@ -241,6 +241,7 @@ class UploadService {
 		// detection should match on the user's source, not on the post-encode
 		// bytes which can differ run-to-run on already-optimized inputs.
 		$webp_local   = null;
+		$avif_local   = null;
 		$bytes_before = (int) $actual_size;
 		if ( 0 === strpos( $mime, 'image/' ) ) {
 			$image_opt   = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
@@ -254,6 +255,7 @@ class UploadService {
 			clearstatcache( true, $file['tmp_name'] );
 			$actual_size = (int) filesize( $file['tmp_name'] );
 			$webp_local  = $image_opt->emit_webp_sibling( $file['tmp_name'], $opt_context );
+			$avif_local  = $image_opt->emit_avif_sibling( $file['tmp_name'], $opt_context );
 		}
 
 		// Store file.
@@ -287,6 +289,18 @@ class UploadService {
 			}
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 			@unlink( $webp_local );
+		}
+
+		// AVIF sibling — same pattern, gated on the mvs_generate_avif setting
+		// (default off). Failure is non-fatal.
+		$avif_url = '';
+		if ( null !== $avif_local && file_exists( $avif_local ) ) {
+			$avif_dest = dirname( $dest_path ) . '/' . pathinfo( $dest_path, PATHINFO_FILENAME ) . '.avif';
+			if ( $driver->store( $avif_local, $avif_dest ) ) {
+				$avif_url = (string) $driver->url( $avif_dest );
+			}
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			@unlink( $avif_local );
 		}
 
 		$file_url = $driver->url( $dest_path );
@@ -371,6 +385,14 @@ class UploadService {
 		// Persist optimization outcome on the media row. Done here (after the
 		// media insert) because the meta keys need a media_id. The original
 		// optimization itself already ran on the temp file pre-store().
+		if ( '' !== $avif_url ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set(
+				$media_id,
+				\WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF,
+				$avif_url
+			);
+		}
+
 		if ( '' !== $webp_url ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set(
 				$media_id,
@@ -847,6 +869,7 @@ class UploadService {
 			);
 			$image_opt->optimize( $local_thumb_path, $variant_ctx );
 			$variant_webp_local = $image_opt->emit_webp_sibling( $local_thumb_path, $variant_ctx );
+			$variant_avif_local = $image_opt->emit_avif_sibling( $local_thumb_path, $variant_ctx );
 
 			$stored_url = $local_thumb_url;
 
@@ -916,6 +939,21 @@ class UploadService {
 					@unlink( $variant_webp_local );
 				} else {
 					$repo->set( $media_id, 'thumb_' . $size_name . '_webp', $base_url . '/' . $webp_filename );
+				}
+			}
+
+			// AVIF sibling — same plumbing as WebP, gated on mvs_generate_avif.
+			if ( null !== $variant_avif_local && file_exists( $variant_avif_local ) ) {
+				$avif_filename = pathinfo( $data['file'], PATHINFO_FILENAME ) . '.avif';
+				if ( $cloud_driver ) {
+					$avif_rel = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $avif_filename;
+					if ( $cloud_driver->store( $variant_avif_local, $avif_rel ) ) {
+						$repo->set( $media_id, 'thumb_' . $size_name . '_avif', (string) $cloud_driver->url( $avif_rel ) );
+					}
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+					@unlink( $variant_avif_local );
+				} else {
+					$repo->set( $media_id, 'thumb_' . $size_name . '_avif', $base_url . '/' . $avif_filename );
 				}
 			}
 		}

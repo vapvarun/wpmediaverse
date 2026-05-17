@@ -31,12 +31,14 @@ class ImageOptimizationService {
 
 	public const SETTING_OPTIMIZE_ORIGINALS = 'mvs_optimize_originals';
 	public const SETTING_GENERATE_WEBP      = 'mvs_generate_webp';
+	public const SETTING_GENERATE_AVIF      = 'mvs_generate_avif';
 
 	public const META_OPTIMIZED_AT    = '_mvs_optimized_at';
 	public const META_OPTIMIZE_FAILED = '_mvs_optimize_failed';
 	public const META_BYTES_BEFORE    = '_mvs_bytes_before';
 	public const META_BYTES_AFTER     = '_mvs_bytes_after';
 	public const META_ORIGINAL_WEBP   = 'original_webp';
+	public const META_ORIGINAL_AVIF   = 'original_avif';
 
 	/**
 	 * MIMEs we know how to re-encode. Other image types pass through
@@ -51,11 +53,26 @@ class ImageOptimizationService {
 	private const WEBP_SOURCE_MIMES = array( 'image/jpeg', 'image/png', 'image/gif' );
 
 	/**
+	 * MIMEs we will source from when emitting an AVIF sibling.
+	 *
+	 * Same shape as WEBP_SOURCE_MIMES. Kept as a separate constant so future
+	 * additions to one format don't accidentally cascade to the other.
+	 */
+	private const AVIF_SOURCE_MIMES = array( 'image/jpeg', 'image/png', 'image/gif' );
+
+	/**
 	 * In-process cache to avoid re-checking editor WebP capability per call.
 	 *
 	 * @var bool|null
 	 */
 	private static $webp_supported_cache = null;
+
+	/**
+	 * In-process cache for editor AVIF capability.
+	 *
+	 * @var bool|null
+	 */
+	private static $avif_supported_cache = null;
 
 	/**
 	 * Run the optimization pass on a file and dispatch the public filter.
@@ -258,6 +275,116 @@ class ImageOptimizationService {
 	}
 
 	/**
+	 * Emit an AVIF sibling next to a source image and return its absolute path.
+	 *
+	 * Same contract as `emit_webp_sibling()`: no-op + null return when the
+	 * pass is disabled, the editor can't produce AVIF, the source MIME isn't
+	 * one we'll re-encode, or the encoded AVIF didn't end up smaller than the
+	 * source (size-compare guard, identical to the WebP path).
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $file_path Absolute path to source image on local disk.
+	 * @param array  $context   { media_id, variant, mime, user_id }.
+	 *
+	 * @return string|null Absolute path to the AVIF sibling, or null on no-op / failure.
+	 */
+	public function emit_avif_sibling( string $file_path, array $context ): ?string {
+		if ( ! $this->is_enabled( 'avif' ) ) {
+			return null;
+		}
+		if ( ! $this->is_avif_supported() ) {
+			return null;
+		}
+		if ( ! file_exists( $file_path ) ) {
+			return null;
+		}
+
+		$mime = (string) ( $context['mime'] ?? '' );
+		if ( '' === $mime ) {
+			$mime = (string) wp_check_filetype( $file_path )['type'];
+		}
+		if ( ! in_array( $mime, self::AVIF_SOURCE_MIMES, true ) ) {
+			return null;
+		}
+
+		self::require_image_editor();
+		$editor = wp_get_image_editor( $file_path );
+		if ( is_wp_error( $editor ) ) {
+			return null;
+		}
+
+		$dest = self::avif_sibling_path( $file_path );
+
+		/**
+		 * Filter the AVIF encoding quality (0-100).
+		 *
+		 * Default 50 is a typical "looks indistinguishable from source at
+		 * normal viewing distance" setting for AVIF — the codec achieves
+		 * dramatic compression at quality levels well below JPEG's equivalent.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param int   $quality Quality value passed to the image editor (0-100).
+		 * @param array $context Encoder context — { media_id, variant, mime, user_id }.
+		 */
+		$editor->set_quality( (int) apply_filters( 'mvs_avif_quality', 50, $context ) );
+		$saved = $editor->save( $dest, 'image/avif' );
+		if ( is_wp_error( $saved ) ) {
+			LoggerService::warning(
+				'optimize',
+				'AVIF emit failed',
+				array(
+					'media_id' => (int) ( $context['media_id'] ?? 0 ),
+					'variant'  => (string) ( $context['variant'] ?? '' ),
+					'error'    => $saved->get_error_message(),
+				)
+			);
+			return null;
+		}
+
+		$absolute = is_array( $saved ) && ! empty( $saved['path'] ) ? (string) $saved['path'] : $dest;
+		if ( ! file_exists( $absolute ) ) {
+			return null;
+		}
+
+		// Same size-compare guard as the WebP path — discard AVIF that doesn't
+		// beat the source. Modern AVIF encoders almost always win for photo
+		// content, but tiny pre-quantized thumbnails can encode larger.
+		$source_bytes = (int) filesize( $file_path );
+		$avif_bytes   = (int) filesize( $absolute );
+		if ( $source_bytes > 0 && $avif_bytes >= $source_bytes ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			@unlink( $absolute );
+			LoggerService::info(
+				'optimize',
+				'AVIF no smaller than source; discarding',
+				array(
+					'media_id'     => (int) ( $context['media_id'] ?? 0 ),
+					'variant'      => (string) ( $context['variant'] ?? '' ),
+					'source_bytes' => $source_bytes,
+					'avif_bytes'   => $avif_bytes,
+				)
+			);
+			return null;
+		}
+
+		// Dispatch the public filter against the AVIF sibling too so external
+		// compressors can post-process it.
+		$avif_context            = $context;
+		$avif_context['mime']    = 'image/avif';
+		$avif_context['variant'] = (string) ( $context['variant'] ?? 'original' ) . '-avif';
+
+		/** This filter is documented in includes/Services/ImageOptimizationService.php */
+		$final = apply_filters( 'mvs_optimize_image', $absolute, $avif_context );
+		if ( is_string( $final ) && '' !== $final && file_exists( $final ) ) {
+			$absolute = $final;
+		}
+
+		return $absolute;
+	}
+
+	/**
 	 * Bulk-friendly: optimize one media row end-to-end (original + variants).
 	 *
 	 * Used by the CLI commands and the admin row action.
@@ -333,6 +460,17 @@ class ImageOptimizationService {
 			}
 		}
 
+		// AVIF sibling for the original — same plumbing as WebP, gated on a
+		// separate setting (default off) because AVIF encoding is slow.
+		$avif_path = $this->emit_avif_sibling( $abs_path, $context );
+		if ( null !== $avif_path ) {
+			$rel_path     = (string) $repo->get_raw( $media_id, 'file_path' );
+			$published_url = $this->publish_avif_to_active_driver( $avif_path, $rel_path );
+			if ( '' !== $published_url ) {
+				$repo->set( $media_id, self::META_ORIGINAL_AVIF, $published_url );
+			}
+		}
+
 		// Variants — only when explicitly requested. Bulk runs include them;
 		// new uploads do not because variants are optimized at thumbnail
 		// generation time inside UploadService.
@@ -368,16 +506,26 @@ class ImageOptimizationService {
 					'user_id'  => $user_id,
 				);
 				$this->optimize( $variant_local, $variant_ctx );
+
+				$variant_basename = basename( (string) wp_parse_url( $variant_url, PHP_URL_PATH ) );
+				$variant_rel      = ( '' === $file_path_dir || '.' === $file_path_dir ) ? $variant_basename : trailingslashit( $file_path_dir ) . $variant_basename;
+
 				$variant_webp = $this->emit_webp_sibling( $variant_local, $variant_ctx );
 				if ( null !== $variant_webp ) {
 					// Cloud driver: publish next to the variant on CDN and
 					// drop the local sibling so disk usage stays flat.
 					// Local driver: keep on disk and record its public URL.
-					$variant_basename = basename( (string) wp_parse_url( $variant_url, PHP_URL_PATH ) );
-					$variant_rel      = ( '' === $file_path_dir || '.' === $file_path_dir ) ? $variant_basename : trailingslashit( $file_path_dir ) . $variant_basename;
 					$published_url    = $this->publish_webp_to_active_driver( $variant_webp, $variant_rel );
 					if ( '' !== $published_url ) {
 						$repo->set( $media_id, 'thumb_' . $size . '_webp', $published_url );
+					}
+				}
+
+				$variant_avif = $this->emit_avif_sibling( $variant_local, $variant_ctx );
+				if ( null !== $variant_avif ) {
+					$published_url = $this->publish_avif_to_active_driver( $variant_avif, $variant_rel );
+					if ( '' !== $published_url ) {
+						$repo->set( $media_id, 'thumb_' . $size . '_avif', $published_url );
 					}
 				}
 				++$result['variants_processed'];
@@ -415,9 +563,27 @@ class ImageOptimizationService {
 	}
 
 	/**
+	 * Whether the active editor can produce image/avif.
+	 *
+	 * Cached for the request. Returns false on most cheap shared hosts (libavif
+	 * is uncommon in pre-built Imagick/GD packages) — callers must treat AVIF
+	 * as best-effort.
+	 *
+	 * @since 1.3.0
+	 */
+	public function is_avif_supported(): bool {
+		if ( null !== self::$avif_supported_cache ) {
+			return self::$avif_supported_cache;
+		}
+		self::require_image_editor();
+		self::$avif_supported_cache = (bool) wp_image_editor_supports( array( 'mime_type' => 'image/avif' ) );
+		return self::$avif_supported_cache;
+	}
+
+	/**
 	 * Whether the named pass is enabled via the corresponding option.
 	 *
-	 * @param string $type 'originals' | 'webp'.
+	 * @param string $type 'originals' | 'webp' | 'avif'.
 	 */
 	public function is_enabled( string $type ): bool {
 		if ( 'originals' === $type ) {
@@ -425,6 +591,12 @@ class ImageOptimizationService {
 		}
 		if ( 'webp' === $type ) {
 			return (bool) get_option( self::SETTING_GENERATE_WEBP, true );
+		}
+		if ( 'avif' === $type ) {
+			// Default OFF — AVIF encoding is 10x+ slower than WebP on Imagick,
+			// so opting in is the right default. Sites with strong CPU and
+			// bandwidth-cost concerns can flip it on in Settings.
+			return (bool) get_option( self::SETTING_GENERATE_AVIF, false );
 		}
 		return false;
 	}
@@ -609,6 +781,46 @@ class ImageOptimizationService {
 	}
 
 	/**
+	 * Publish a locally-generated AVIF file via the active storage driver.
+	 *
+	 * Mirrors `publish_webp_to_active_driver()` exactly — see that method's
+	 * docblock for the rationale (cloud drivers own every artifact so disk
+	 * usage stays flat; local driver leaves the file on disk and returns its
+	 * public URL).
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $local_avif_path Absolute path of the AVIF just emitted by emit_avif_sibling().
+	 * @param string $source_rel_path Relative path of the source file.
+	 *
+	 * @return string Public URL of the published AVIF, or '' on failure.
+	 */
+	private function publish_avif_to_active_driver( string $local_avif_path, string $source_rel_path ): string {
+		if ( '' === $source_rel_path || ! file_exists( $local_avif_path ) ) {
+			return '';
+		}
+
+		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver();
+		if ( ! $driver instanceof StorageDriverInterface ) {
+			return '';
+		}
+
+		$avif_dest   = self::avif_rel_sibling_path( $source_rel_path );
+		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+
+		if ( 'local' === $driver_slug ) {
+			return (string) $driver->url( $avif_dest );
+		}
+
+		if ( ! $driver->store( $local_avif_path, $avif_dest ) ) {
+			return '';
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+		@unlink( $local_avif_path );
+		return (string) $driver->url( $avif_dest );
+	}
+
+	/**
 	 * Derive `<dir>/<basename>.webp` from a relative source path.
 	 */
 	private static function sibling_rel_path( string $source_rel_path ): string {
@@ -624,6 +836,28 @@ class ImageOptimizationService {
 		$dir  = dirname( $file_path );
 		$base = pathinfo( $file_path, PATHINFO_FILENAME );
 		return trailingslashit( $dir ) . $base . '.webp';
+	}
+
+	/**
+	 * Sibling AVIF path for a given image — same dir, same basename, .avif ext.
+	 *
+	 * @since 1.3.0
+	 */
+	private static function avif_sibling_path( string $file_path ): string {
+		$dir  = dirname( $file_path );
+		$base = pathinfo( $file_path, PATHINFO_FILENAME );
+		return trailingslashit( $dir ) . $base . '.avif';
+	}
+
+	/**
+	 * Derive `<dir>/<basename>.avif` from a relative source path.
+	 *
+	 * @since 1.3.0
+	 */
+	private static function avif_rel_sibling_path( string $source_rel_path ): string {
+		$dir  = dirname( $source_rel_path );
+		$base = pathinfo( $source_rel_path, PATHINFO_FILENAME );
+		return ( '' === $dir || '.' === $dir ) ? $base . '.avif' : trailingslashit( $dir ) . $base . '.avif';
 	}
 
 	/**

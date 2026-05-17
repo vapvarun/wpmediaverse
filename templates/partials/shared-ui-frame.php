@@ -388,6 +388,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 				</button>
 
 				<picture data-wp-bind--hidden="state.lightboxHideImage">
+					<source type="image/avif" data-wp-bind--srcset="state.lightboxImageAvifUrl" data-wp-bind--hidden="state.lightboxHideImageAvif" />
 					<source type="image/webp" data-wp-bind--srcset="state.lightboxImageWebpUrl" data-wp-bind--hidden="state.lightboxHideImageWebp" />
 					<img data-wp-bind--src="state.lightboxImageUrl" alt="" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
 				</picture>

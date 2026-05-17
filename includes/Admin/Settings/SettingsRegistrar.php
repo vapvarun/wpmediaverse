@@ -404,6 +404,32 @@ class SettingsRegistrar {
 			)
 		);
 
+		// AVIF variants — sibling AVIF file for the original and every thumb
+		// size. AVIF compresses 30 to 50 percent smaller than WebP but takes
+		// noticeably longer to encode and depends on the host PHP image editor
+		// supporting it (Imagick with libheif, or GD on PHP 8.1+ with libavif).
+		// Default OFF so the slower encode is opt-in.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+		add_settings_field(
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
+			__( 'Create AVIF copies for the smallest possible files', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
+				'description' => __( 'Save a third copy of every image in the newer AVIF format. AVIF is around 30 to 50 percent smaller than WebP, so pages load even faster on modern browsers (Chrome, Firefox, Safari 16.4+, Edge). Older browsers fall back to WebP, then the original. Encoding AVIF is much slower than WebP so uploads will take longer. Requires a host with AVIF-capable Imagick or GD; the option will silently no-op if the server cannot encode AVIF.', 'wpmediaverse' ),
+			)
+		);
+
 		// Anonymous opt-in usage telemetry. Counter-only, local-only — no
 		// data leaves the customer's site. Helps the plugin team know
 		// which hooks / routes / commands are actually used across the

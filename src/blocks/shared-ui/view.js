@@ -198,6 +198,24 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 			return ! d.lightbox_webp_url;
 		},
+		get lightboxImageAvifUrl() {
+			// AVIF sibling — same contract as the WebP getter. Browsers walk
+			// `<source>` elements in document order so we put the AVIF source
+			// FIRST in the template; AVIF-capable browsers (Chrome, Firefox,
+			// Safari 16.4+, Edge) pick it and skip the WebP/JPEG fallbacks.
+			const d = state.lightboxMediaData;
+			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+				return '';
+			}
+			return d.lightbox_avif_url || '';
+		},
+		get lightboxHideImageAvif() {
+			const d = state.lightboxMediaData;
+			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+				return true;
+			}
+			return ! d.lightbox_avif_url;
+		},
 		get lightboxIsVideo() {
 			return state.lightboxMediaData?.media_type === 'video';
 		},
