@@ -112,6 +112,12 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 = 1.2.2 =
 
+* New     - Image optimization pipeline. Every JPEG, PNG, and GIF upload is re-encoded losslessly at storage time. Metadata is stripped, PNG/GIF run at the editor's optimal compression, JPEG re-encodes at quality 92 (filter `mvs_optimize_jpeg_quality`).
+* New     - WebP sibling generation. Each uploaded image emits a `.webp` sibling for the original and every thumbnail size, stored as `original_webp` and `thumb_<size>_webp` meta keys. Works with the local driver and cloud drivers (S3, BunnyCDN).
+* New     - `mvs_optimize_image` filter. Single extension point for EWWW, Imagify, Smush, ShortPixel, and any other compressor. Ready-to-paste mu-plugin snippets shipped in `docs/development/COMPRESSION_INTEGRATIONS.md`. No per-plugin adapters maintained in core.
+* New     - WP-CLI commands `wp mvs optimize <id>` and `wp mvs optimize-bulk`. Bulk supports `--limit`, `--offset`, `--mime`, `--media-type`, `--include-variants`, `--dry-run`, `--include-failed`. Resume-safe via `_mvs_optimized_at` sentinel.
+* New     - Per-image admin actions on the All Media listing. New Optimization column shows savings percentage. Row actions "Optimize" and "Details" added. The Details mini-page (`?view=details`) shows file metadata, optimization status, WebP URLs, every thumbnail variant, and inline Re-optimize / Repair thumb / Trash buttons.
+* New     - Admin settings `Optimize originals` and `Generate WebP variants` on the Storage tab. Both default to on for fresh installs. WebP auto-disables when the active image editor (Imagick or GD) can't write image/webp.
 * Fix     - Video and audio thumbnails on Bunny.net (and any cloud driver running with `mvs_cloud_direct_public_urls=1`) no longer render as a broken image when the media has no poster variant pushed to the CDN. The thumbnail signer was falling back to the original cloud file URL as a poster, which the grid template wrapped in `<img src=".mp4">` / `<img src=".mp3">`. The fallback is now gated to image MIME types only. Videos drop to the existing `<video preload="metadata">` first-frame render path; audio drops to the music-icon placeholder card. Mirrors the file-type gate already present in `serve_thumbnail()` and `has_resolvable_thumbnail()`.
 
 = 1.2.1 =

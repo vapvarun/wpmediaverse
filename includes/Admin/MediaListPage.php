@@ -27,6 +27,16 @@ class MediaListPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
+		// Detail mini-page — read-only view + per-image actions. Branches
+		// before bulk handling because the detail page has its own redirect
+		// targets that preserve the view=details query param.
+		$view = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		if ( 'details' === $view ) {
+			self::handle_bulk_actions(); // honours nonced row actions from the detail page.
+			self::render_detail();
+			return;
+		}
+
 		// Handle bulk actions.
 		self::handle_bulk_actions();
 
@@ -54,6 +64,18 @@ class MediaListPage {
 				'<div class="notice %1$s is-dismissible"><p>%2$s</p></div>',
 				esc_attr( $class ),
 				esc_html( (string) $repair_notice['message'] )
+			);
+		}
+
+		// Per-row optimize notice.
+		$optimize_notice = get_transient( 'mvs_optimize_notice' );
+		if ( is_array( $optimize_notice ) && ! empty( $optimize_notice['message'] ) ) {
+			delete_transient( 'mvs_optimize_notice' );
+			$class = 'success' === ( $optimize_notice['type'] ?? '' ) ? 'notice-success' : 'notice-warning';
+			printf(
+				'<div class="notice %1$s is-dismissible"><p>%2$s</p></div>',
+				esc_attr( $class ),
+				esc_html( (string) $optimize_notice['message'] )
 			);
 		}
 
@@ -198,6 +220,7 @@ class MediaListPage {
 									<th class="manage-column"><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
+									<th class="manage-column mvs-col-optimization"><?php esc_html_e( 'Optimization', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
 								</tr>
 							</thead>
@@ -208,7 +231,7 @@ class MediaListPage {
 									$base_url           = admin_url( 'admin.php?page=mvs-media' );
 									?>
 									<tr>
-										<td colspan="8">
+										<td colspan="9">
 											<div class="mvs-empty-state-admin">
 												<i data-lucide="images"></i>
 												<?php if ( $has_active_filters ) : ?>
@@ -244,6 +267,7 @@ class MediaListPage {
 									<th class="manage-column"><?php esc_html_e( 'Type', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
+									<th class="manage-column mvs-col-optimization"><?php esc_html_e( 'Optimization', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
 								</tr>
 							</tfoot>
@@ -380,6 +404,35 @@ class MediaListPage {
 				<strong><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php echo esc_html( $title ); ?></a></strong>
 				<div class="row-actions">
 					<span class="view"><a href="<?php echo esc_url( $view_url ); ?>" target="_blank"><?php esc_html_e( 'View', 'wpmediaverse' ); ?></a></span>
+					<?php
+					$details_url = add_query_arg(
+						array(
+							'page'     => 'mvs-media',
+							'view'     => 'details',
+							'media_id' => $media_id,
+						),
+						admin_url( 'admin.php' )
+					);
+					?>
+					| <span class="details"><a href="<?php echo esc_url( $details_url ); ?>"><?php esc_html_e( 'Details', 'wpmediaverse' ); ?></a></span>
+					<?php if ( 'trash' !== $status && 0 === strpos( (string) ( $item['file_type'] ?? '' ), 'image/' ) ) : ?>
+						| <span class="optimize"><a href="
+						<?php
+						echo esc_url(
+							wp_nonce_url(
+								add_query_arg(
+									array(
+										'action'   => 'optimize',
+										'media_id' => $media_id,
+									),
+									admin_url( 'admin.php?page=mvs-media' )
+								),
+								'mvs_optimize_media_' . $media_id
+							)
+						);
+						?>
+																					" title="<?php esc_attr_e( 'Re-encode this image, strip metadata, and emit a WebP sibling.', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Optimize', 'wpmediaverse' ); ?></a></span>
+					<?php endif; ?>
 					<?php if ( 'trash' !== $status && self::can_repair_thumb( $media_id, (string) ( $item['file_type'] ?? '' ) ) ) : ?>
 						| <span class="repair-thumb"><a href="
 						<?php
@@ -455,9 +508,76 @@ class MediaListPage {
 			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $type ); ?>"><?php echo esc_html( ucfirst( $type ) ); ?></span></td>
 			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $privacy ); ?>"><?php echo esc_html( ucfirst( $privacy ) ); ?></span></td>
 			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $status ); ?>"><?php echo esc_html( ucfirst( $status ) ); ?></span></td>
+			<td><?php self::render_optimization_cell( $media_id, (string) ( $item['file_type'] ?? '' ) ); ?></td>
 			<td><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $item['created_at'] ) ) ); ?></td>
 		</tr>
 		<?php
+	}
+
+	/**
+	 * Render the Optimization column cell for one media row.
+	 */
+	private static function render_optimization_cell( int $media_id, string $mime ): void {
+		if ( 0 !== strpos( $mime, 'image/' ) ) {
+			echo '<span class="mvs-media-badge mvs-media-badge--neutral">' . esc_html__( 'N/A', 'wpmediaverse' ) . '</span>';
+			return;
+		}
+
+		$repo         = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$optimized_at = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZED_AT );
+		$failed_code  = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZE_FAILED );
+
+		if ( '' !== $failed_code ) {
+			printf(
+				'<span class="mvs-media-badge mvs-media-badge--danger" title="%s">%s</span>',
+				esc_attr( $failed_code ),
+				esc_html__( 'Failed', 'wpmediaverse' )
+			);
+			return;
+		}
+
+		if ( 0 === $optimized_at ) {
+			echo '<span class="mvs-media-badge mvs-media-badge--draft">' . esc_html__( 'Not optimized', 'wpmediaverse' ) . '</span>';
+			return;
+		}
+
+		$before = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_BYTES_BEFORE );
+		$after  = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_BYTES_AFTER );
+		$webp   = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
+
+		$saved_pct = ( $before > 0 ) ? round( ( $before - $after ) / $before * 100, 1 ) : 0;
+
+		// Pick badge style + label by outcome:
+		// 1. JPEG shrunk -> green badge with savings %
+		// 2. No JPEG savings but a WebP copy was created -> success "WebP ready"
+		// 3. No savings, no WebP -> neutral "No lossless gain". We deliberately
+		// avoid the word "Optimized" here because an admin staring at a 3 MB
+		// file would (correctly) push back on that claim.
+		if ( $saved_pct > 0 ) {
+			$badge_class = 'mvs-media-badge--success';
+			$badge_label = '-' . $saved_pct . '%';
+		} elseif ( '' !== $webp ) {
+			$badge_class = 'mvs-media-badge--success';
+			$badge_label = __( 'WebP ready', 'wpmediaverse' );
+		} else {
+			$badge_class = 'mvs-media-badge--neutral';
+			$badge_label = __( 'No lossless gain', 'wpmediaverse' );
+		}
+
+		$title = sprintf(
+			/* translators: 1: original file size, 2: optimized file size, 3: webp variant availability */
+			__( 'Original %1$s, optimized %2$s. WebP variant: %3$s.', 'wpmediaverse' ),
+			$before > 0 ? size_format( $before ) : '-',
+			$after > 0 ? size_format( $after ) : '-',
+			'' !== $webp ? __( 'available', 'wpmediaverse' ) : __( 'not generated', 'wpmediaverse' )
+		);
+
+		printf(
+			'<span class="mvs-media-badge %s" title="%s">%s</span>',
+			esc_attr( $badge_class ),
+			esc_attr( $title ),
+			esc_html( $badge_label )
+		);
 	}
 
 	/**
@@ -557,8 +677,61 @@ class MediaListPage {
 					60
 				);
 				break;
+
+			case 'optimize':
+				check_admin_referer( 'mvs_optimize_media_' . $media_id );
+				$opt_service = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
+				$opt_result  = $opt_service->optimize_media(
+					$media_id,
+					array(
+						'force'            => true,
+						'include_variants' => true,
+					)
+				);
+				if ( ! empty( $opt_result['errors'] ) ) {
+					$notice = array(
+						'type'    => 'warning',
+						'message' => sprintf(
+							/* translators: 1: media id, 2: error code list */
+							__( 'Could not optimize media #%1$d: %2$s', 'wpmediaverse' ),
+							$media_id,
+							implode( ', ', $opt_result['errors'] )
+						),
+					);
+				} else {
+					$notice = array(
+						'type'    => 'success',
+						'message' => sprintf(
+							/* translators: 1: media id, 2: bytes before formatted, 3: bytes after formatted, 4: savings percentage */
+							__( 'Optimized media #%1$d: %2$s to %3$s (saved %4$s%%).', 'wpmediaverse' ),
+							$media_id,
+							size_format( (int) $opt_result['bytes_before'] ),
+							size_format( (int) $opt_result['bytes_after'] ),
+							(string) $opt_result['saved_pct']
+						),
+					);
+				}
+				$notice['media_id'] = $media_id;
+				set_transient( 'mvs_optimize_notice', $notice, 60 );
+				break;
 		}
 
+		// Preserve view=details so the action redirects back to the detail
+		// page when triggered from there. Everywhere else goes to the list.
+		$view = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		if ( 'details' === $view && $media_id > 0 ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'page'     => 'mvs-media',
+						'view'     => 'details',
+						'media_id' => $media_id,
+					),
+					admin_url( 'admin.php' )
+				)
+			);
+			exit;
+		}
 		wp_safe_redirect( admin_url( 'admin.php?page=mvs-media' ) );
 		exit;
 	}
@@ -794,5 +967,316 @@ class MediaListPage {
 		$wpdb->delete( $wpdb->prefix . 'mvs_reactions', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->delete( $wpdb->prefix . 'mvs_favorites', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	}
+
+	/**
+	 * Render the read-only Details mini-page for a single media row.
+	 *
+	 * Reachable via ?page=mvs-media&view=details&media_id=X. Shows:
+	 *  - File metadata (path, MIME, hash, dimensions, sizes)
+	 *  - Optimization status + savings
+	 *  - WebP variant URLs
+	 *  - Every thumb_<size> URL
+	 *  - Inline action buttons: Re-optimize, Repair thumb, Trash
+	 *
+	 * No field editing in 1.2.2 — titles/descriptions/privacy editing lands in 1.3.0.
+	 */
+	private static function render_detail(): void {
+		$media_id = isset( $_GET['media_id'] ) ? (int) $_GET['media_id'] : 0; // phpcs:ignore WordPress.Security.NonceVerification
+		if ( $media_id <= 0 ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=mvs-media' ) );
+			exit;
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_media_index';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$item = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE media_id = %d", $media_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		if ( ! $item ) {
+			?>
+			<div class="wrap wpmediaverse-admin">
+				<h1><?php esc_html_e( 'Media not found', 'wpmediaverse' ); ?></h1>
+				<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>"><?php esc_html_e( 'Back to all media', 'wpmediaverse' ); ?></a></p>
+			</div>
+			<?php
+			return;
+		}
+
+		$repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$mime   = (string) ( $item['file_type'] ?? '' );
+		$is_img = 0 === strpos( $mime, 'image/' );
+
+		$optimized_at = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZED_AT );
+		$failed_code  = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZE_FAILED );
+		$bytes_before = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_BYTES_BEFORE );
+		$bytes_after  = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_BYTES_AFTER );
+		$webp_orig    = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
+		$width        = (int) $repo->get_raw( $media_id, 'width' );
+		$height       = (int) $repo->get_raw( $media_id, 'height' );
+		$saved_pct    = ( $bytes_before > 0 ) ? round( ( $bytes_before - $bytes_after ) / $bytes_before * 100, 2 ) : 0;
+
+		$optimize_url = wp_nonce_url(
+			add_query_arg(
+				array(
+					'page'     => 'mvs-media',
+					'view'     => 'details',
+					'action'   => 'optimize',
+					'media_id' => $media_id,
+				),
+				admin_url( 'admin.php' )
+			),
+			'mvs_optimize_media_' . $media_id
+		);
+		$repair_url   = wp_nonce_url(
+			add_query_arg(
+				array(
+					'page'     => 'mvs-media',
+					'view'     => 'details',
+					'action'   => 'repair_thumb',
+					'media_id' => $media_id,
+				),
+				admin_url( 'admin.php' )
+			),
+			'mvs_repair_thumb_' . $media_id
+		);
+		$trash_url    = wp_nonce_url(
+			add_query_arg(
+				array(
+					'page'     => 'mvs-media',
+					'action'   => 'trash',
+					'media_id' => $media_id,
+				),
+				admin_url( 'admin.php' )
+			),
+			'mvs_trash_media_' . $media_id
+		);
+		?>
+		<div class="wrap wpmediaverse-admin">
+			<div class="mvs-page-header">
+				<div class="mvs-page-header__left">
+					<h1 class="mvs-page-header__title">
+						<i data-lucide="image"></i>
+						<?php
+						/* translators: %d: media id */
+						echo esc_html( sprintf( __( 'Media #%d', 'wpmediaverse' ), $media_id ) );
+						?>
+					</h1>
+					<p class="mvs-page-header__desc">
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>">&larr; <?php esc_html_e( 'All media', 'wpmediaverse' ); ?></a>
+					</p>
+				</div>
+			</div>
+
+			<?php
+			$optimize_notice = get_transient( 'mvs_optimize_notice' );
+			if ( is_array( $optimize_notice ) && ! empty( $optimize_notice['message'] ) ) {
+				delete_transient( 'mvs_optimize_notice' );
+				$class = 'success' === ( $optimize_notice['type'] ?? '' ) ? 'notice-success' : 'notice-warning';
+				printf(
+					'<div class="notice %1$s is-dismissible"><p>%2$s</p></div>',
+					esc_attr( $class ),
+					esc_html( (string) $optimize_notice['message'] )
+				);
+			}
+			$repair_notice = get_transient( 'mvs_repair_thumb_notice' );
+			if ( is_array( $repair_notice ) && ! empty( $repair_notice['message'] ) ) {
+				delete_transient( 'mvs_repair_thumb_notice' );
+				$class = 'success' === ( $repair_notice['type'] ?? '' ) ? 'notice-success' : 'notice-warning';
+				printf(
+					'<div class="notice %1$s is-dismissible"><p>%2$s</p></div>',
+					esc_attr( $class ),
+					esc_html( (string) $repair_notice['message'] )
+				);
+			}
+			?>
+
+			<div class="mvs-admin-widget">
+				<div class="mvs-widget-body">
+					<h2><?php esc_html_e( 'About this image', 'wpmediaverse' ); ?></h2>
+					<table class="form-table" role="presentation">
+						<tbody>
+							<tr><th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th><td><?php echo esc_html( (string) $item['title'] ); ?></td></tr>
+							<?php if ( $is_img && ( $width > 0 || $height > 0 ) ) : ?>
+								<tr><th><?php esc_html_e( 'Image size', 'wpmediaverse' ); ?></th><td><?php echo esc_html( sprintf( '%d × %d', $width, $height ) ) . ' ' . esc_html__( 'pixels', 'wpmediaverse' ); ?></td></tr>
+							<?php endif; ?>
+							<tr><th><?php esc_html_e( 'File size', 'wpmediaverse' ); ?></th><td><?php echo esc_html( size_format( (int) $item['file_size'] ) ); ?></td></tr>
+							<tr><th><?php esc_html_e( 'Who can see it', 'wpmediaverse' ); ?></th><td><?php echo esc_html( ucfirst( (string) $item['privacy'] ) ); ?></td></tr>
+							<tr><th><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th><td><?php echo esc_html( ucfirst( (string) $item['status'] ) ); ?></td></tr>
+							<tr><th><?php esc_html_e( 'Uploaded', 'wpmediaverse' ); ?></th><td><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( (string) $item['created_at'] ) ) ); ?></td></tr>
+							<tr><th><?php esc_html_e( 'Preview', 'wpmediaverse' ); ?></th><td><a href="<?php echo esc_url( (string) $item['file_url'] ); ?>" target="_blank"><?php esc_html_e( 'Open the original image', 'wpmediaverse' ); ?> &rarr;</a></td></tr>
+						</tbody>
+					</table>
+
+					<?php if ( $is_img ) : ?>
+						<h2><?php esc_html_e( 'Optimization', 'wpmediaverse' ); ?></h2>
+						<?php
+						// When no lossless gain happened on this image, give the
+						// admin one transparent line explaining why an
+						// already-high-quality JPEG often cannot be shrunk on
+						// PHP-GD environments. Mentions Imagick as the path
+						// to real savings without scaring photographers.
+						$show_gd_hint = false;
+						if ( $optimized_at > 0 && 0 === $saved_pct && '' === $webp_orig ) {
+							$abs_path = trailingslashit( wp_upload_dir()['basedir'] ) . 'wpmediaverse/' . (string) $item['file_path'];
+							if ( file_exists( $abs_path ) ) {
+								$probe = wp_get_image_editor( $abs_path );
+								if ( ! is_wp_error( $probe ) && 'WP_Image_Editor_GD' === get_class( $probe ) ) {
+									$show_gd_hint = true;
+								}
+							}
+						}
+						if ( $show_gd_hint ) :
+							?>
+							<p class="description" style="margin: 0 0 12px;">
+								<?php esc_html_e( 'Your server is using PHP-GD for image processing. GD is a weaker JPEG and WebP encoder than ImageMagick, so already-high-quality photos often cannot be shrunk further without losing visible quality. Ask your host to enable the ImageMagick PHP extension for better savings on large photos.', 'wpmediaverse' ); ?>
+							</p>
+							<?php
+						endif;
+						?>
+						<table class="form-table" role="presentation">
+							<tbody>
+								<tr>
+									<th><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
+									<td>
+										<?php
+										if ( '' !== $failed_code ) :
+											?>
+											<span class="mvs-media-badge mvs-media-badge--danger"><?php esc_html_e( 'Could not optimize', 'wpmediaverse' ); ?></span>
+											&nbsp;<?php esc_html_e( 'Try Re-optimize below. If it keeps failing, ask your developer to check the error logs.', 'wpmediaverse' ); ?>
+											<?php
+										elseif ( $optimized_at > 0 && $saved_pct > 0 ) :
+											?>
+											<span class="mvs-media-badge mvs-media-badge--success"><?php esc_html_e( 'Optimized', 'wpmediaverse' ); ?></span>
+											&nbsp;
+											<?php
+											/* translators: %s: human-readable date and time */
+											echo esc_html( sprintf( __( 'on %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $optimized_at ) ) );
+											?>
+											<?php
+										elseif ( $optimized_at > 0 && '' !== $webp_orig ) :
+											?>
+											<span class="mvs-media-badge mvs-media-badge--success"><?php esc_html_e( 'WebP copy created', 'wpmediaverse' ); ?></span>
+											&nbsp;
+											<?php
+											/* translators: %s: human-readable date and time */
+											echo esc_html( sprintf( __( 'on %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $optimized_at ) ) );
+											?>
+											<?php
+										elseif ( $optimized_at > 0 ) :
+											?>
+											<span class="mvs-media-badge mvs-media-badge--neutral"><?php esc_html_e( 'No lossless gain', 'wpmediaverse' ); ?></span>
+											&nbsp;
+											<?php
+											/* translators: %s: human-readable date and time */
+											echo esc_html( sprintf( __( 'checked on %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $optimized_at ) ) );
+											?>
+											<?php
+										else :
+											?>
+											<span class="mvs-media-badge mvs-media-badge--draft"><?php esc_html_e( 'Not optimized', 'wpmediaverse' ); ?></span>
+											&nbsp;<?php esc_html_e( 'Click Re-optimize below to shrink this image.', 'wpmediaverse' ); ?>
+											<?php
+										endif;
+										?>
+									</td>
+								</tr>
+								<?php if ( $saved_pct > 0 ) : ?>
+									<tr><th><?php esc_html_e( 'Original size', 'wpmediaverse' ); ?></th><td><?php echo esc_html( size_format( $bytes_before ) ); ?></td></tr>
+									<tr><th><?php esc_html_e( 'After optimization', 'wpmediaverse' ); ?></th><td><?php echo esc_html( size_format( $bytes_after ) ); ?></td></tr>
+									<tr>
+										<th><?php esc_html_e( 'Space saved', 'wpmediaverse' ); ?></th>
+										<td>
+											<?php
+											/* translators: 1: saved size in human-readable form, 2: saved percentage */
+											echo esc_html( sprintf( __( '%1$s smaller (%2$s%% less)', 'wpmediaverse' ), size_format( max( 0, $bytes_before - $bytes_after ) ), (string) $saved_pct ) );
+											?>
+										</td>
+									</tr>
+								<?php elseif ( $bytes_before > 0 ) : ?>
+									<tr>
+										<th><?php esc_html_e( 'Result', 'wpmediaverse' ); ?></th>
+										<td>
+											<?php
+											if ( '' !== $webp_orig ) {
+												/* translators: %s: file size in human-readable form */
+												echo wp_kses_post( sprintf( __( 'Lossless compression could not shrink this %s image further. A smaller WebP copy was created instead, so visitors on modern browsers get a faster page load.', 'wpmediaverse' ), '<strong>' . esc_html( size_format( $bytes_before ) ) . '</strong>' ) );
+											} else {
+												/* translators: %s: file size in human-readable form */
+												echo wp_kses_post( sprintf( __( 'This %s image was saved at a high quality level. Lossless compression cannot make it smaller, and a WebP copy would have been larger than the original (so we did not create one). To reduce the file size further you can re-upload at a smaller resolution, or save it at a lower JPEG quality before uploading.', 'wpmediaverse' ), '<strong>' . esc_html( size_format( $bytes_before ) ) . '</strong>' ) );
+											}
+											?>
+										</td>
+									</tr>
+								<?php endif; ?>
+								<tr>
+									<th><?php esc_html_e( 'WebP copy', 'wpmediaverse' ); ?></th>
+									<td>
+										<?php if ( '' !== $webp_orig ) : ?>
+											<span class="mvs-media-badge mvs-media-badge--success"><?php esc_html_e( 'Available', 'wpmediaverse' ); ?></span>
+											&nbsp;<a href="<?php echo esc_url( $webp_orig ); ?>" target="_blank"><?php esc_html_e( 'Open WebP copy', 'wpmediaverse' ); ?> &rarr;</a>
+										<?php else : ?>
+											<em><?php esc_html_e( 'Not created yet', 'wpmediaverse' ); ?></em>
+										<?php endif; ?>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+
+						<h2><?php esc_html_e( 'Thumbnail sizes', 'wpmediaverse' ); ?></h2>
+						<p class="description"><?php esc_html_e( 'WPMediaVerse keeps three smaller versions of every image so pages load fast.', 'wpmediaverse' ); ?></p>
+						<table class="widefat striped">
+							<thead><tr>
+								<th><?php esc_html_e( 'Size', 'wpmediaverse' ); ?></th>
+								<th><?php esc_html_e( 'Image', 'wpmediaverse' ); ?></th>
+								<th><?php esc_html_e( 'WebP copy', 'wpmediaverse' ); ?></th>
+							</tr></thead>
+							<tbody>
+								<?php
+								$size_labels = array(
+									'large'  => __( 'Large', 'wpmediaverse' ),
+									'medium' => __( 'Medium', 'wpmediaverse' ),
+									'thumb'  => __( 'Thumbnail', 'wpmediaverse' ),
+								);
+								foreach ( \WPMediaVerse\Services\ImageOptimizationService::variant_keys() as $size ) :
+									$thumb_url      = (string) $repo->get_raw( $media_id, 'thumb_' . $size );
+									$thumb_webp_url = (string) $repo->get_raw( $media_id, 'thumb_' . $size . '_webp' );
+									$label          = $size_labels[ $size ] ?? $size;
+									?>
+									<tr>
+										<td><?php echo esc_html( $label ); ?></td>
+										<td>
+											<?php if ( '' !== $thumb_url ) : ?>
+												<a href="<?php echo esc_url( $thumb_url ); ?>" target="_blank"><?php esc_html_e( 'View', 'wpmediaverse' ); ?> &rarr;</a>
+											<?php else : ?>
+												<em><?php esc_html_e( 'Not available', 'wpmediaverse' ); ?></em>
+											<?php endif; ?>
+										</td>
+										<td>
+											<?php if ( '' !== $thumb_webp_url ) : ?>
+												<a href="<?php echo esc_url( $thumb_webp_url ); ?>" target="_blank"><?php esc_html_e( 'View', 'wpmediaverse' ); ?> &rarr;</a>
+											<?php else : ?>
+												<em><?php esc_html_e( 'Not created', 'wpmediaverse' ); ?></em>
+											<?php endif; ?>
+										</td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					<?php endif; ?>
+
+					<h2><?php esc_html_e( 'Actions', 'wpmediaverse' ); ?></h2>
+					<p>
+						<?php if ( $is_img ) : ?>
+							<a class="button button-primary" href="<?php echo esc_url( $optimize_url ); ?>"><?php esc_html_e( 'Re-optimize', 'wpmediaverse' ); ?></a>
+						<?php endif; ?>
+						<?php if ( $is_img && self::can_repair_thumb( $media_id, $mime ) ) : ?>
+							<a class="button" href="<?php echo esc_url( $repair_url ); ?>"><?php esc_html_e( 'Repair thumbnails', 'wpmediaverse' ); ?></a>
+						<?php endif; ?>
+						<a class="button button-link-delete" href="<?php echo esc_url( $trash_url ); ?>"><?php esc_html_e( 'Move to Trash', 'wpmediaverse' ); ?></a>
+					</p>
+				</div>
+			</div>
+		</div>
+		<?php
 	}
 }

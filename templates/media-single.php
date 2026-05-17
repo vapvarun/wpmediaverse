@@ -186,7 +186,16 @@ $mvs_archive_url = home_url( '/media/' );
 		<div class="mvs-media-content">
 			<?php if ( $is_image ) : ?>
 				<div class="mvs-media-image">
-					<img src="<?php echo esc_url( $mvs_file_url ); ?>" alt="<?php echo esc_attr( $mvs_title ); ?>" />
+					<?php
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper pre-escapes inner values.
+					echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->picture_or_img(
+						$mvs_media_id,
+						$mvs_file_url,
+						$mvs_title,
+						'',
+						'full'
+					);
+					?>
 				</div>
 			<?php elseif ( $is_video ) : ?>
 				<?php

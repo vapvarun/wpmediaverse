@@ -356,6 +356,54 @@ class SettingsRegistrar {
 			)
 		);
 
+		// Image optimization — lossless re-encode of originals. PNG/GIF are
+		// re-encoded; JPEG is re-encoded at quality 92 (filterable via
+		// `mvs_optimize_jpeg_quality`) with metadata stripped. Default on.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
+			__( 'Compress uploaded images', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
+				'description' => __( 'Shrink each uploaded image automatically by removing hidden camera data and re-saving with stronger compression. Works on JPEG, PNG, and GIF. Most uploads end up 10 to 30 percent smaller with no visible quality change. If you already use EWWW, Imagify, Smush, or ShortPixel, leave this on; they will run alongside.', 'wpmediaverse' ),
+			)
+		);
+
+		// WebP variants — sibling WebP file generated for the original and
+		// every thumbnail size. Default on when the active editor (Imagick or
+		// GD) can write image/webp.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_WEBP,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_WEBP,
+			__( 'Create WebP copies for faster loading', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_WEBP,
+				'description' => __( 'Save a second copy of every image in WebP format. WebP files are about 25 to 35 percent smaller than JPEG, so pages load faster for your visitors. Browsers that support WebP use the smaller file; older browsers keep using the original. Already have older uploads to optimize? Visit a media item and use Re-optimize, or ask your developer to run the bulk optimizer command.', 'wpmediaverse' ),
+			)
+		);
+
 		// Filename strategy. Controls how new uploads are named on disk.
 		// Existing media is NEVER renamed — this only affects future uploads.
 		// Sanitizer lives in Sanitizers (canonical home for every select-field

@@ -305,14 +305,217 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// good fallback (the video file itself) the browser knows how to use.
 		if ( $thumb_url ) {
 			$img_class = trim( 'mvs-media-thumb ' . $extra_class );
-			return '<img class="' . esc_attr( $img_class ) . '" src="' . esc_url( $thumb_url ) . '" alt="' . $alt . '"' . $loading . ' />';
+			$img_tag   = '<img class="' . esc_attr( $img_class ) . '" src="' . esc_url( $thumb_url ) . '" alt="' . $alt . '"' . $loading . ' />';
+
+			// WebP sibling — wrap in <picture> so browsers that accept WebP
+			// fetch the smaller copy and older browsers keep the JPEG.
+			// <picture> delegates the choice to the browser, so there's no
+			// Accept-header sniffing on the server and no Vary cache issues
+			// for page/CDN caches.
+			$webp_url = $this->get_webp_variant_url( $media_id, $size, $thumb_url );
+			if ( '' !== $webp_url ) {
+				return '<picture><source type="image/webp" srcset="' . esc_url( $webp_url ) . '">' . $img_tag . '</picture>';
+			}
+
+			return $img_tag;
 		}
 
 		if ( 'audio' === $media_type ) {
-			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio">' . $this->icon_music() . '</div>';
+			// Stylized fallback when no embedded album art was extracted.
+			// Renders a deterministic waveform from the media_id so each track
+			// gets a unique visual fingerprint that stays stable across
+			// re-renders. Same shape every time, no audio analysis required.
+			$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$title    = (string) $repo->get( $media_id, 'title' );
+			$artist   = (string) $repo->get( $media_id, 'artist' );
+			$duration = (float) $repo->get( $media_id, 'duration' );
+			$mins     = $duration > 0 ? floor( $duration / 60 ) : 0;
+			$secs     = $duration > 0 ? (int) $duration % 60 : 0;
+			$dur_txt  = $duration > 0 ? sprintf( '%d:%02d', $mins, $secs ) : '';
+
+			$out  = '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio mvs-audio-card">';
+			$out .= '<span class="mvs-audio-card__waveform" aria-hidden="true">' . $this->render_audio_waveform_svg( $media_id ) . '</span>';
+			if ( '' !== $title ) {
+				$out .= '<span class="mvs-audio-card__title">' . esc_html( $title ) . '</span>';
+			}
+			if ( '' !== $artist || '' !== $dur_txt ) {
+				$out .= '<span class="mvs-audio-card__meta">';
+				if ( '' !== $artist ) {
+					$out .= esc_html( $artist );
+				}
+				if ( '' !== $artist && '' !== $dur_txt ) {
+					$out .= ' &middot; ';
+				}
+				if ( '' !== $dur_txt ) {
+					$out .= esc_html( $dur_txt );
+				}
+				$out .= '</span>';
+			}
+			$out .= '</div>';
+			return $out;
 		}
 
 		return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--generic">' . $this->icon_image() . '</div>';
+	}
+
+	/**
+	 * Render a SoundCloud-style waveform SVG for audio fallback cards.
+	 *
+	 * Heights are derived from a SHA-1 hash of the media_id so each track
+	 * gets a unique-but-stable pattern. No audio analysis or external tools
+	 * needed — runs in microseconds per call.
+	 *
+	 * @param int $media_id Media id used as the visual seed.
+	 *
+	 * @return string Inline SVG markup.
+	 */
+	public function render_audio_waveform_svg( int $media_id ): string {
+		$bars   = 48;
+		$width  = 240;
+		$height = 64;
+		$gap    = 2;
+		$bar_w  = max( 2.0, ( $width - ( $bars - 1 ) * $gap ) / $bars );
+
+		// SHA-1 hex → 40 chars. Cycle through it so 48 bars is fine.
+		$seed = sha1( 'mvs-wave-' . (string) $media_id );
+		$len  = strlen( $seed );
+
+		$rects = '';
+		for ( $i = 0; $i < $bars; $i++ ) {
+			// Two hex digits → 0..255 → normalize to 12..56px (preserves a
+			// floor of presence so bars never disappear, keeps a peak
+			// headroom for visual breathing room at the card edges).
+			$pair    = hexdec( $seed[ ( $i * 2 ) % $len ] . $seed[ ( $i * 2 + 1 ) % $len ] );
+			$bar_h   = 12 + (int) round( $pair / 255 * 44 );
+			$y       = (int) round( ( $height - $bar_h ) / 2 );
+			$x       = (int) round( $i * ( $bar_w + $gap ) );
+			$rects  .= sprintf(
+				'<rect x="%d" y="%d" width="%s" height="%d" rx="1" />',
+				$x,
+				$y,
+				number_format( $bar_w, 2, '.', '' ),
+				$bar_h
+			);
+		}
+
+		return sprintf(
+			'<svg class="mvs-audio-waveform-svg" viewBox="0 0 %d %d" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" fill="currentColor">%s</svg>',
+			$width,
+			$height,
+			$rects
+		);
+	}
+
+	/**
+	 * Render a `<picture>` element that prefers WebP when a variant exists.
+	 *
+	 * Single-image renderers (media-single, lightbox, custom templates) that
+	 * already hold a resolved JPEG URL should call this instead of emitting
+	 * `<img>` directly so visitors with modern browsers fetch the smaller
+	 * WebP copy.
+	 *
+	 * @param int    $media_id       Media id.
+	 * @param string $jpeg_url       Resolved JPEG/source URL (already signed if needed).
+	 * @param string $alt            Alt text. Caller must pre-escape if it contains markup.
+	 * @param string $extra_classes  Optional space-separated classes added to the <img>.
+	 * @param string $size           Size key to look up the right `*_webp` meta. Default 'full' = original.
+	 * @param array  $extra_attrs    Extra attributes for the <img> tag (key => value). Pre-sanitized.
+	 *
+	 * @return string `<picture>...</picture>` when WebP is available, otherwise a plain `<img>`.
+	 */
+	public function picture_or_img( int $media_id, string $jpeg_url, string $alt = '', string $extra_classes = '', string $size = 'full', array $extra_attrs = array() ): string {
+		if ( '' === $jpeg_url ) {
+			return '';
+		}
+		$attrs_html = '';
+		foreach ( $extra_attrs as $k => $v ) {
+			$attrs_html .= ' ' . esc_attr( (string) $k ) . '="' . esc_attr( (string) $v ) . '"';
+		}
+		$class_attr = '' !== $extra_classes ? ' class="' . esc_attr( $extra_classes ) . '"' : '';
+		$img_tag    = '<img' . $class_attr . ' src="' . esc_url( $jpeg_url ) . '" alt="' . esc_attr( $alt ) . '"' . $attrs_html . ' />';
+
+		$webp_url = $this->get_webp_variant_url( $media_id, $size, $jpeg_url );
+		if ( '' === $webp_url ) {
+			return $img_tag;
+		}
+		return '<picture><source type="image/webp" srcset="' . esc_url( $webp_url ) . '">' . $img_tag . '</picture>';
+	}
+
+	/**
+	 * Resolve the WebP variant URL for a thumbnail, or return '' to keep the JPEG.
+	 *
+	 * The WebP files are written by ImageOptimizationService at upload time
+	 * (1.2.2) and stored as `thumb_<size>_webp` / `original_webp` meta keys.
+	 * This helper returns the variant URL only when it is browser-safe to
+	 * embed in a <source> element. We skip cases where the underlying JPEG
+	 * URL flows through the gated /serve route — that route doesn't speak
+	 * WebP yet (cloud-aware /serve negotiation is 1.3.0). For everything else
+	 * (direct CDN URLs, local NGINX uploads paths, BunnyCDN/S3 direct mode,
+	 * future R2) the WebP URL is a sibling at the same path and is safe to
+	 * emit directly.
+	 *
+	 * @param int    $media_id   Media id.
+	 * @param string $size       Size key (large/medium/thumb/full).
+	 * @param string $jpeg_url   The resolved JPEG thumb URL — used to detect
+	 *                           the gated /serve case and skip WebP for it.
+	 *
+	 * @return string Browser-safe WebP variant URL or empty string.
+	 */
+	public function get_webp_variant_url( int $media_id, string $size, string $jpeg_url ): string {
+		if ( $media_id <= 0 || '' === $jpeg_url ) {
+			return '';
+		}
+
+		// Skip when the JPEG URL routes through the gated /serve REST
+		// endpoint. The endpoint reads `file_path` from mvs_media_index and
+		// streams the bytes; it has no WebP variant negotiation yet. Emitting
+		// a `_webp` URL that bypasses /serve would break privacy enforcement.
+		if ( false !== strpos( $jpeg_url, '/mvs/v1/serve' ) || false !== strpos( $jpeg_url, '/serve?' ) ) {
+			return '';
+		}
+
+		// Resolve which meta key holds the WebP sibling for this size. The
+		// 'full' / empty cases hit the original WebP; the named intermediate
+		// sizes (large/medium/thumb) map to thumb_<size>_webp. Anything else
+		// gracefully falls through (returns '' so the JPEG stays).
+		$meta_key = '';
+		switch ( $size ) {
+			case '':
+			case 'full':
+				$meta_key = \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP;
+				break;
+			case 'thumbnail':
+				$meta_key = 'thumb_thumb_webp';
+				break;
+			case 'large':
+			case 'medium':
+			case 'thumb':
+				$meta_key = 'thumb_' . $size . '_webp';
+				break;
+			default:
+				return '';
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$url  = (string) $repo->get_raw( $media_id, $meta_key );
+
+		// Fallback: if the requested size has no WebP sibling AND the JPEG
+		// renderer fell back to the original (i.e. no thumb_<size> exists
+		// either, which currently happens on cloud uploads where thumbnail
+		// generation needs a local source file), reuse `original_webp`.
+		// Browsers downloading the original WebP at thumbnail-size container
+		// dimensions is still a strict win because the WebP is dramatically
+		// smaller than the original JPEG/PNG. Skip when the requested size
+		// IS `full` to avoid recursion.
+		if ( '' === $url && \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP !== $meta_key ) {
+			$thumb_meta_key = ( 'thumbnail' === $size ) ? 'thumb_thumb' : 'thumb_' . $size;
+			$has_size_thumb = '' !== (string) $repo->get_raw( $media_id, $thumb_meta_key );
+			if ( ! $has_size_thumb ) {
+				$url = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
+			}
+		}
+
+		return '' !== $url ? $url : '';
 	}
 
 	/**

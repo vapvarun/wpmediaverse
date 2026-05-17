@@ -367,38 +367,27 @@ $mvs_archive_url = home_url( '/media/' );
 		);
 	}
 
-	$total_combined = $total_items + $album_count;
-	$max_pages      = $per_page > 0 ? (int) ceil( $total_combined / $per_page ) : 1;
+	$max_pages = $per_page > 0 ? (int) ceil( $total_items / $per_page ) : 1;
 
-	// Fetch albums for the first page (show them at top).
-	$albums = array();
-	if ( $album_count > 0 && 1 === $paged ) {
-		$albums = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT ID, post_title, post_author FROM {$wpdb->posts} WHERE post_type = 'mvs_album' AND post_status = 'publish' ORDER BY post_date DESC LIMIT %d",
-				min( $album_count, $per_page )
-			)
-		);
-	}
+	// Explore feed is media-only, recent-upload-first. Albums are static
+	// containers (people keep uploading new media INTO an existing album
+	// without the album itself getting a fresher date), so mixing them
+	// in misrepresents what's actually fresh. Albums live on their own
+	// /albums page and via per-album permalinks. The Explore page focuses
+	// purely on the media stream. Search / profile / tag / category filters
+	// already worked this way; this just removes the album-on-top exception
+	// from page 1.
+	$albums = array(); // no albums in this feed.
 
-	// Calculate how many media items to fetch (account for albums on first page).
-	$albums_on_page = count( $albums );
-	$media_limit    = max( 0, $per_page - $albums_on_page );
-	$media_offset   = ( $paged > 1 ) ? $offset - $album_count : 0;
-	if ( $media_offset < 0 ) {
-		$media_offset = 0;
-	}
-
-	// Fetch media items.
 	$media_items = array();
-	if ( $media_limit > 0 ) {
+	if ( $per_page > 0 ) {
 		$media_sql   = "SELECT m.* FROM {$index_table} m {$mvs_tag_join} {$mvs_cat_join} {$where} ORDER BY m.created_at DESC LIMIT %d OFFSET %d";
-		$all_params  = array_merge( $params, array( $media_limit, $media_offset ) );
+		$all_params  = array_merge( $params, array( $per_page, $offset ) );
 		$media_items = $wpdb->get_results( $wpdb->prepare( $media_sql, ...$all_params ), ARRAY_A );
 	}
 	// phpcs:enable
 
-	$has_items = ! empty( $albums ) || ! empty( $media_items );
+	$has_items = ! empty( $media_items );
 	?>
 
 	<?php do_action( 'mvs_before_explore_grid' ); ?>

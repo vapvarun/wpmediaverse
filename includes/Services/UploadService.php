@@ -232,6 +232,30 @@ class UploadService {
 		$filename      = $filename_pick['stored'];
 		$dest_path     = $dest_subdir . '/' . $filename;
 
+		// Image optimization pass — runs on the temp file BEFORE store() so
+		// cloud drivers receive the optimized bytes (no double upload). Also
+		// dispatches the `mvs_optimize_image` filter so external compressors
+		// (EWWW/Imagify/Smush/ShortPixel) can hook in. See spec:
+		// docs/architecture/specs/2026-05-17-image-optimization-pipeline.md.
+		// $hash above (line 123) intentionally stays pre-optimization — dup
+		// detection should match on the user's source, not on the post-encode
+		// bytes which can differ run-to-run on already-optimized inputs.
+		$webp_local   = null;
+		$bytes_before = (int) $actual_size;
+		if ( 0 === strpos( $mime, 'image/' ) ) {
+			$image_opt   = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
+			$opt_context = array(
+				'media_id' => 0, // not yet assigned — set after media insert.
+				'variant'  => 'original',
+				'mime'     => $mime,
+				'user_id'  => $user_id,
+			);
+			$image_opt->optimize( $file['tmp_name'], $opt_context );
+			clearstatcache( true, $file['tmp_name'] );
+			$actual_size = (int) filesize( $file['tmp_name'] );
+			$webp_local  = $image_opt->emit_webp_sibling( $file['tmp_name'], $opt_context );
+		}
+
 		// Store file.
 		$driver = $this->storage->get_driver();
 		$stored = $driver->store( $file['tmp_name'], $dest_path );
@@ -250,6 +274,19 @@ class UploadService {
 				__( 'Failed to store the uploaded file.', 'wpmediaverse' ),
 				array( 'status' => 500 )
 			);
+		}
+
+		// Store the WebP sibling, if optimization produced one. Same dir as
+		// the original, same basename, .webp extension. Failure here is non
+		// fatal — original is already stored, we just won't have a WebP URL.
+		$webp_url = '';
+		if ( null !== $webp_local && file_exists( $webp_local ) ) {
+			$webp_dest = dirname( $dest_path ) . '/' . pathinfo( $dest_path, PATHINFO_FILENAME ) . '.webp';
+			if ( $driver->store( $webp_local, $webp_dest ) ) {
+				$webp_url = (string) $driver->url( $webp_dest );
+			}
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			@unlink( $webp_local );
 		}
 
 		$file_url = $driver->url( $dest_path );
@@ -331,6 +368,23 @@ class UploadService {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'exif_raw', $exif_raw );
 		}
 
+		// Persist optimization outcome on the media row. Done here (after the
+		// media insert) because the meta keys need a media_id. The original
+		// optimization itself already ran on the temp file pre-store().
+		if ( '' !== $webp_url ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set(
+				$media_id,
+				\WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP,
+				$webp_url
+			);
+		}
+		if ( 0 === strpos( $mime, 'image/' ) ) {
+			$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$repo->set( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZED_AT, time() );
+			$repo->set( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_BYTES_BEFORE, $bytes_before );
+			$repo->set( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_BYTES_AFTER, (int) $actual_size );
+		}
+
 		// Preserve the user-facing filename for display + Content-Disposition
 		// when the strategy hashed the on-disk name. Old uploads (pre-1.2.1
 		// or strategy=original_sanitized) skip this — readers fall back to
@@ -343,8 +397,30 @@ class UploadService {
 			);
 		}
 
+		// Ensure a local copy of the source exists at the canonical uploads
+		// path before metadata extraction + thumbnail generation. Cloud
+		// storage drivers (BunnyCDN, S3) push the original to the CDN via
+		// $driver->store() and may not retain a local copy — without this
+		// guard, generate_thumbnails() finds no source file and the row
+		// ends up with no thumb_* meta, no thumb_*_webp, and no dimensions.
+		// The local copy is whatever the temp file holds at this point
+		// (post-optimization, post-WebP-emit), so the thumb pipeline reads
+		// the optimized bytes. cleanup-local CLI removes these locals later
+		// if the admin opts in.
+		$upload_dir   = wp_upload_dir();
+		$local_source = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . $dest_path;
+		if ( ! file_exists( $local_source ) && file_exists( $file['tmp_name'] ) ) {
+			wp_mkdir_p( dirname( $local_source ) );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy
+			@copy( $file['tmp_name'], $local_source );
+		}
+
 		// Extract and store media metadata (duration, dimensions, etc.).
-		$this->extract_and_store_metadata( $media_id, $driver->get_full_path( $dest_path ), $media_type, $mime );
+		// Prefer the guaranteed local copy over $driver->get_full_path() —
+		// the latter returns the cloud-prefixed path on non-local drivers
+		// which WP_Image_Editor can't open.
+		$meta_source_path = file_exists( $local_source ) ? $local_source : $driver->get_full_path( $dest_path );
+		$this->extract_and_store_metadata( $media_id, $meta_source_path, $media_type, $mime );
 
 		// Initialize stats row.
 		$this->init_stats( $media_id );
@@ -607,6 +683,21 @@ class UploadService {
 						$metadata['album_name'] = sanitize_text_field( $audio_meta['album'] );
 						\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'album_name', $metadata['album_name'] );
 					}
+
+					// Embedded album art (MP3 ID3v2 APIC, OGG METADATA_BLOCK_PICTURE).
+					// Feed through the same thumbnail pipeline as videos so the
+					// audio card in grids/feeds gets a real cover image plus
+					// WebP siblings, instead of the music-note placeholder.
+					if ( ! empty( $audio_meta['image']['data'] ) ) {
+						$poster_path = $this->save_video_poster( $media_id, $audio_meta['image'] );
+						if ( $poster_path && file_exists( $poster_path ) ) {
+							$this->generate_thumbnails(
+								$media_id,
+								$poster_path,
+								(string) ( $audio_meta['image']['mime'] ?? 'image/jpeg' )
+							);
+						}
+					}
 				}
 				break;
 
@@ -738,9 +829,23 @@ class UploadService {
 			$cloud_rel_dir = '';
 		}
 
+		$image_opt = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
+
 		foreach ( $generated as $size_name => $data ) {
 			$local_thumb_url  = $base_url . '/' . $data['file'];
 			$local_thumb_path = trailingslashit( dirname( $file_path ) ) . $data['file'];
+
+			// Per-variant optimization pass — dispatches mvs_optimize_image so
+			// external compressors can process the thumbnail. The internal
+			// lossless re-encode skips variants (they're already minimal).
+			$variant_ctx = array(
+				'media_id' => $media_id,
+				'variant'  => $size_name,
+				'mime'     => $mime,
+				'user_id'  => (int) $repo->get_raw( $media_id, 'post_author' ),
+			);
+			$image_opt->optimize( $local_thumb_path, $variant_ctx );
+			$variant_webp_local = $image_opt->emit_webp_sibling( $local_thumb_path, $variant_ctx );
 
 			$stored_url = $local_thumb_url;
 
@@ -795,6 +900,23 @@ class UploadService {
 			}
 
 			$repo->set( $media_id, 'thumb_' . $size_name, $stored_url );
+
+			// WebP sibling for this variant. For cloud drivers we upload it
+			// next to the variant; for local we keep the file on disk and
+			// just record the public URL. Failure is non-fatal.
+			if ( null !== $variant_webp_local && file_exists( $variant_webp_local ) ) {
+				$webp_filename = pathinfo( $data['file'], PATHINFO_FILENAME ) . '.webp';
+				if ( $cloud_driver ) {
+					$webp_rel = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $webp_filename;
+					if ( $cloud_driver->store( $variant_webp_local, $webp_rel ) ) {
+						$repo->set( $media_id, 'thumb_' . $size_name . '_webp', (string) $cloud_driver->url( $webp_rel ) );
+					}
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+					@unlink( $variant_webp_local );
+				} else {
+					$repo->set( $media_id, 'thumb_' . $size_name . '_webp', $base_url . '/' . $webp_filename );
+				}
+			}
 		}
 
 		// WP's multi_resize() skips sizes that would upscale the source. For
@@ -933,20 +1055,151 @@ class UploadService {
 			}
 		}
 
-		if ( empty( $video_meta['image']['data'] ) ) {
-			return false;
+		// Path A — video has an embedded cover atom (phone-shot footage
+		// usually does). Save the bytes to disk and feed through the normal
+		// thumbnail pipeline.
+		if ( ! empty( $video_meta['image']['data'] ) ) {
+			$poster_path = $this->save_video_poster( $media_id, $video_meta['image'] );
+			if ( $poster_path && file_exists( $poster_path ) ) {
+				return $this->generate_thumbnails(
+					$media_id,
+					$poster_path,
+					(string) ( $video_meta['image']['mime'] ?? 'image/jpeg' )
+				);
+			}
 		}
 
-		$poster_path = $this->save_video_poster( $media_id, $video_meta['image'] );
-		if ( ! $poster_path || ! file_exists( $poster_path ) ) {
-			return false;
+		// Path B — no embedded poster (synthetic test files, some screen
+		// recordings, certain webm encodes). Fall back to extracting the
+		// first useful frame via ffmpeg. Skipped silently when ffmpeg is not
+		// available on the server; admins on hosts without it keep the
+		// play-icon placeholder and can run the per-row Repair thumbs action
+		// later (which Pro hooks for ffmpeg-equipped backends).
+		$poster_path = $this->extract_video_poster_via_ffmpeg( $media_id, $file_path );
+		if ( $poster_path && file_exists( $poster_path ) ) {
+			return $this->generate_thumbnails( $media_id, $poster_path, 'image/jpeg' );
 		}
 
-		return $this->generate_thumbnails(
-			$media_id,
-			$poster_path,
-			(string) ( $video_meta['image']['mime'] ?? 'image/jpeg' )
+		return false;
+	}
+
+	/**
+	 * Extract a poster frame from a video using ffmpeg, if available.
+	 *
+	 * Tries the 1-second mark first (avoids the all-black opening frame
+	 * common in fade-in intros). Falls back to frame 0 when the video is
+	 * shorter than 1s. Writes the JPEG to the same posters/ directory used
+	 * by save_video_poster so the rest of the pipeline doesn't need to
+	 * special-case it.
+	 *
+	 * @since 1.2.2
+	 *
+	 * @param int    $media_id   Media id (filename anchor).
+	 * @param string $video_path Absolute path to the video on local disk.
+	 *
+	 * @return string|null Absolute poster path or null when ffmpeg is missing / extraction failed.
+	 */
+	private function extract_video_poster_via_ffmpeg( int $media_id, string $video_path ): ?string {
+		/**
+		 * Filter the ffmpeg binary path used for video poster extraction.
+		 *
+		 * @since 1.2.2
+		 *
+		 * @param string $binary Default 'ffmpeg' (relies on PATH). Filter to provide an absolute path.
+		 */
+		$ffmpeg = (string) apply_filters( 'mvs_ffmpeg_binary', 'ffmpeg' );
+
+		if ( ! function_exists( 'proc_open' ) ) {
+			return null;
+		}
+
+		$upload_dir = wp_upload_dir();
+		if ( ! empty( $upload_dir['error'] ) ) {
+			return null;
+		}
+		$dir = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/posters';
+		if ( ! wp_mkdir_p( $dir ) ) {
+			return null;
+		}
+		$dest = trailingslashit( $dir ) . $media_id . '.jpg';
+
+		// Seek to 1s, take one frame at q=2 (visually lossless JPEG out of
+		// ffmpeg). -y overwrites if a poster already exists.
+		if ( ! $this->run_ffmpeg_extract( $ffmpeg, $video_path, $dest, true ) ) {
+			return null;
+		}
+
+		if ( ! file_exists( $dest ) || filesize( $dest ) < 200 ) {
+			// Some videos are shorter than 1s — retry from frame 0.
+			$this->run_ffmpeg_extract( $ffmpeg, $video_path, $dest, false );
+		}
+
+		if ( ! file_exists( $dest ) || filesize( $dest ) < 200 ) {
+			LoggerService::info(
+				'upload',
+				sprintf( 'ffmpeg poster extraction produced no usable frame for media #%d', $media_id ),
+				array( 'media_id' => $media_id )
+			);
+			return null;
+		}
+
+		return $dest;
+	}
+
+	/**
+	 * Invoke ffmpeg via proc_open with an arg array (no shell, no injection
+	 * surface). Mirrors the pattern used in Pro's TranscodeService.
+	 *
+	 * @param string $binary     ffmpeg binary path or name.
+	 * @param string $video_path Source video path.
+	 * @param string $dest       Output JPEG path.
+	 * @param bool   $seek_one_second  When true, pass `-ss 1` to skip opening fades.
+	 * @return bool True when the process exited 0.
+	 */
+	private function run_ffmpeg_extract( string $binary, string $video_path, string $dest, bool $seek_one_second ): bool {
+		$args = array( $binary, '-loglevel', 'error' );
+		if ( $seek_one_second ) {
+			$args[] = '-ss';
+			$args[] = '1';
+		}
+		$args[] = '-i';
+		$args[] = $video_path;
+		$args[] = '-vframes';
+		$args[] = '1';
+		$args[] = '-q:v';
+		$args[] = '2';
+		$args[] = '-y';
+		$args[] = $dest;
+
+		$descriptors = array(
+			0 => array( 'pipe', 'r' ),
+			1 => array( 'pipe', 'w' ),
+			2 => array( 'pipe', 'w' ),
 		);
+
+		// proc_open with array $cmd bypasses shell interpretation on PHP 7.4+
+		// — each argument is passed to execve() directly. No string escaping
+		// concerns even if $video_path / $dest contain shell metacharacters.
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open, Generic.PHP.ForbiddenFunctions.Found
+		$process = @proc_open( $args, $descriptors, $pipes ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( ! is_resource( $process ) ) {
+			return false;
+		}
+		// Close stdin; drain stdout/stderr so the child can exit.
+		if ( isset( $pipes[0] ) && is_resource( $pipes[0] ) ) {
+			fclose( $pipes[0] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+		}
+		if ( isset( $pipes[1] ) && is_resource( $pipes[1] ) ) {
+			stream_get_contents( $pipes[1] );
+			fclose( $pipes[1] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+		}
+		if ( isset( $pipes[2] ) && is_resource( $pipes[2] ) ) {
+			stream_get_contents( $pipes[2] );
+			fclose( $pipes[2] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+		}
+
+		$status = proc_close( $process );
+		return 0 === $status;
 	}
 
 	/**

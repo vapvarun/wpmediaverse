@@ -487,6 +487,13 @@ class Plugin {
 			}
 		);
 
+		self::$container->register(
+			'image_optimization',
+			function () {
+				return new \WPMediaVerse\Services\ImageOptimizationService();
+			}
+		);
+
 		// Admin aggregates — single source of truth for site-wide counts
 		// (total media, views, storage, etc.). Coding Rule #16: every
 		// admin/CLI surface MUST read aggregates through this service so the
