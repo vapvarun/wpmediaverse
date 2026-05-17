@@ -13,10 +13,10 @@
     "extension_hook_fired": "mvs_loaded"
   },
   "counts": {
-    "rest_endpoints": 85,
+    "rest_endpoints": 82,
     "ajax": 4,
-    "admin_pages": 7,
-    "settings": 35,
+    "admin_pages": 22,
+    "settings": 40,
     "shortcodes": 13,
     "blocks": 13,
     "post_types": 2,
@@ -24,7 +24,7 @@
     "tables": 23,
     "capabilities": 10,
     "services": 29,
-    "hooks_fired": 24,
+    "hooks_fired": 154,
     "cron": 5,
     "wp_cli": 16,
     "hooks_with_args_signature": 24,
@@ -70,5 +70,26 @@
     "refresh_2026_05_17": {
       "note": "wp_cli detail refreshed manually from @subcommand annotations — 15 documented commands plus the wp mvs router entry"
     }
-  }
+  },
+  "baseline_drift": {
+    "at": "2026-05-17T08:50:00Z",
+    "method": "F5-FINISH parallel-agent enumeration",
+    "status": "CLOSED",
+    "summary": "All four drift categories enumerated to ground truth.",
+    "results": {
+      "rest_endpoints": "82 detail entries (was 53, baseline 85 callsites compressed to 82 unique route+method-group registrations)",
+      "hooks_fired": "154 detail entries (was 24, matches 154 callsite ground truth)",
+      "admin_pages": "22 detail entries (was 7, 9 registration call sites + 7 settings sub-pages + 4 setup-wizard steps + 2 CPT-injected pages)",
+      "settings": "40 detail entries (was 35, matches 40 runtime register_setting invocations after collapsing the foreach loop at line 1107)"
+    },
+    "prior_drift": {
+      "rest_endpoints": "85 baseline vs 53 in detail file (32 unenumerated)",
+      "hooks_fired_combined": "124 baseline (61 do_action + 63 apply_filters unique) vs 24 in detail file (100+ unenumerated)",
+      "wp_cli": "15 @subcommand vs 3 in detail file (12 unenumerated)",
+      "admin_pages": "20 add_*_page calls vs 7 top-level pages in detail file (13 settings sub-pages not enumerated)",
+      "register_setting": "40 calls vs 35 unique in detail file (drift on multi-register flows)",
+      "blocks": "42 block.json files includes build copies; logical block count remains 13"
+    }
+  },
+  "refreshed_at": "2026-05-17T08:50:00Z"
 }

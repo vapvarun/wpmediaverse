@@ -14,23 +14,6 @@ meta:
 
 open:
 
-  - id: F5-FINISH
-    name: "Manifest detail sections — REST/hooks/admin_pages enumeration"
-    why: |
-      audit/manifests/manifest.summary.json#/baseline_drift records the
-      gap. wp_cli enumeration was completed earlier (16 entries). The
-      remaining three categories still drift behind ground-truth grep
-      counts.
-    scope:
-      - "REST endpoints: 53 manifested vs 85 register_rest_route call sites (32 missing)"
-      - "hooks_fired: 24 manifested vs 124 unique callsites (~100 missing)"
-      - "admin_pages: 7 manifested vs 20 add_*_page call sites (13 sub-pages missing)"
-      - "register_setting: 35 in detail vs 40 callsites (5 missing)"
-    estimate: "~3 hours focused parallel-agent session"
-    customer_impact: "none — descriptive accuracy only"
-    risk: zero
-    blocker: "none — can run any time"
-
   - id: TIER-D
     name: "Complex aggregations needing MediaRepository::query() builder"
     why: |
