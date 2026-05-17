@@ -1142,11 +1142,20 @@ class UploadService {
 		/**
 		 * Filter the ffmpeg binary path used for video poster extraction.
 		 *
+		 * Default behavior (1.3.0+): the helper auto-detects common ffmpeg
+		 * install locations (Homebrew, /usr/local, /usr/bin) when bare
+		 * `ffmpeg` isn't on the PATH PHP-FPM inherits. Web SAPI typically
+		 * gets a minimal PATH from the launching service (Local, MAMP, hosting
+		 * panels) that omits Homebrew and other user-mode installs, so a bare
+		 * `ffmpeg` exec returns 127 even when the binary is reachable from a
+		 * shell. Sites with non-standard locations can still override here.
+		 *
 		 * @since 1.2.2
 		 *
-		 * @param string $binary Default 'ffmpeg' (relies on PATH). Filter to provide an absolute path.
+		 * @param string $binary Default 'ffmpeg' (or an auto-resolved absolute
+		 *                       path when the default doesn't resolve).
 		 */
-		$ffmpeg = (string) apply_filters( 'mvs_ffmpeg_binary', 'ffmpeg' );
+		$ffmpeg = (string) apply_filters( 'mvs_ffmpeg_binary', self::resolve_ffmpeg_binary() );
 
 		if ( ! function_exists( 'proc_open' ) ) {
 			return null;
@@ -1165,6 +1174,14 @@ class UploadService {
 		// Seek to 1s, take one frame at q=2 (visually lossless JPEG out of
 		// ffmpeg). -y overwrites if a poster already exists.
 		if ( ! $this->run_ffmpeg_extract( $ffmpeg, $video_path, $dest, true ) ) {
+			LoggerService::warning(
+				'upload',
+				sprintf( 'ffmpeg poster extraction failed (binary not found or exec non-zero) for media #%d', $media_id ),
+				array(
+					'media_id' => $media_id,
+					'binary'   => $ffmpeg,
+				)
+			);
 			return null;
 		}
 
@@ -1183,6 +1200,50 @@ class UploadService {
 		}
 
 		return $dest;
+	}
+
+	/**
+	 * Resolve a usable ffmpeg binary path for the current SAPI.
+	 *
+	 * Returns the first match from a short list of canonical install paths
+	 * (Homebrew, /usr/local, /usr/bin, /opt/ffmpeg). Falls back to bare
+	 * `ffmpeg` when none resolve — that preserves the pre-1.3.0 behavior
+	 * for hosts where ffmpeg IS on the inherited PATH.
+	 *
+	 * Cached per-request because callers may invoke this many times in a
+	 * bulk-regenerate path.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @return string Absolute path when one resolved, else 'ffmpeg'.
+	 */
+	private static function resolve_ffmpeg_binary(): string {
+		static $cached = null;
+		if ( null !== $cached ) {
+			return $cached;
+		}
+
+		// Common install locations — first hit wins. Order matters: prefer
+		// Homebrew on macOS (most common dev environment) and standard system
+		// locations everywhere else. Add to this list rather than reorder if a
+		// host's path needs to be supported; consumers who want a different
+		// preference should use the `mvs_ffmpeg_binary` filter.
+		$candidates = array(
+			'/opt/homebrew/bin/ffmpeg',  // macOS Apple Silicon Homebrew
+			'/usr/local/bin/ffmpeg',     // macOS Intel Homebrew + many Linux installs
+			'/usr/bin/ffmpeg',           // Distro packages (apt, dnf)
+			'/opt/ffmpeg/bin/ffmpeg',    // Some shared-hosting layouts
+		);
+
+		foreach ( $candidates as $candidate ) {
+			if ( is_executable( $candidate ) ) {
+				$cached = $candidate;
+				return $cached;
+			}
+		}
+
+		$cached = 'ffmpeg';
+		return $cached;
 	}
 
 	/**
