@@ -830,6 +830,145 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Query the most recent published media rows since a given datetime.
+	 *
+	 * Returns full mvs_media_index rows in created_at DESC order. Used by
+	 * stories-bar templates and other "recent activity" surfaces.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $limit          Max rows to return. Default 20.
+	 * @param string $since_datetime Optional ISO datetime ("Y-m-d H:i:s")
+	 *                               cutoff. Default '' = no cutoff.
+	 * @return array<int, array> Numerically-indexed list of media rows.
+	 */
+	public function query_recent( int $limit = 20, string $since_datetime = '' ): array {
+		global $wpdb;
+
+		$limit = max( 1, $limit );
+
+		if ( '' === $since_datetime ) {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' ORDER BY created_at DESC LIMIT %d",
+					$limit
+				),
+				ARRAY_A
+			);
+		} else {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s ORDER BY created_at DESC LIMIT %d",
+					$since_datetime,
+					$limit
+				),
+				ARRAY_A
+			);
+		}
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Get media IDs belonging to a gallery group, ordered by group_position.
+	 *
+	 * Sister method to `count_by_group()`. The gallery group is identified by
+	 * the `media_group` meta value (a generated key shared across all items
+	 * in one gallery upload). Group items are ordered by the `group_position`
+	 * meta cast to UNSIGNED so positions sort numerically rather than
+	 * lexically. Status filter ensures only published items appear in the
+	 * gallery expansion.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $media_group Group key (from `media_group` meta).
+	 * @param string $status      Status filter on mvs_media_index. Default 'publish'.
+	 * @return array<int> Media IDs in group-position order.
+	 */
+	public function get_group_media_ids( string $media_group, string $status = 'publish' ): array {
+		global $wpdb;
+
+		if ( '' === $media_group ) {
+			return array();
+		}
+
+		$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT mm1.media_id FROM {$wpdb->prefix}mvs_media_meta mm1
+				INNER JOIN {$wpdb->prefix}mvs_media_meta mm2 ON mm1.media_id = mm2.media_id AND mm2.meta_key = 'group_position'
+				INNER JOIN {$wpdb->prefix}mvs_media_index mi ON mm1.media_id = mi.media_id AND mi.status = %s
+				WHERE mm1.meta_key = 'media_group' AND mm1.meta_value = %s
+				ORDER BY CAST(mm2.meta_value AS UNSIGNED) ASC",
+				$status,
+				$media_group
+			)
+		);
+
+		return array_map( 'absint', (array) $rows );
+	}
+
+	/**
+	 * Query media rows filtered by author, with optional status + moderation
+	 * + pagination. Returns full mvs_media_index rows in created_at DESC order.
+	 *
+	 * Used by profile/feed templates that previously did direct $wpdb against
+	 * the index table. Centralizes the "show me this user's published feed"
+	 * query so per-template direct $wpdb calls go away.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int   $user_id Author user ID.
+	 * @param array $args    {
+	 *     @type string $status            Status filter. Default 'publish'.
+	 *                                     Pass '' to skip the filter.
+	 *     @type string $moderation_status Moderation status filter. Default ''
+	 *                                     (no filter). Pass 'approved' to
+	 *                                     hide flagged/pending items.
+	 *     @type int    $limit             Max rows. Default 20.
+	 *     @type int    $offset            Pagination offset. Default 0.
+	 * }
+	 * @return array<int, array> Numerically-indexed list of media rows.
+	 */
+	public function query_by_author( int $user_id, array $args = array() ): array {
+		global $wpdb;
+
+		$args = wp_parse_args(
+			$args,
+			array(
+				'status'            => 'publish',
+				'moderation_status' => '',
+				'limit'             => 20,
+				'offset'            => 0,
+			)
+		);
+
+		$where  = 'post_author = %d';
+		$params = array( $user_id );
+
+		if ( '' !== (string) $args['status'] ) {
+			$where   .= ' AND status = %s';
+			$params[] = (string) $args['status'];
+		}
+		if ( '' !== (string) $args['moderation_status'] ) {
+			$where   .= ' AND moderation_status = %s';
+			$params[] = (string) $args['moderation_status'];
+		}
+
+		$params[] = max( 1, (int) $args['limit'] );
+		$params[] = max( 0, (int) $args['offset'] );
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$params
+			),
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * Read every meta_value for a media_id + meta_key (multi-value meta).
 	 *
 	 * The repository's `get()` / `get_raw()` collapse repeated rows to the
@@ -905,14 +1044,25 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param string $status  Post status to match.
 	 * @return int
 	 */
-	public function count_by_author( int $user_id, string $status = 'publish' ): int {
+	public function count_by_author( int $user_id, string $status = 'publish', string $moderation_status = '' ): int {
 		global $wpdb;
+
+		if ( '' === $moderation_status ) {
+			return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = %s",
+					$user_id,
+					$status
+				)
+			);
+		}
 
 		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = %s",
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = %s AND moderation_status = %s",
 				$user_id,
-				$status
+				$status,
+				$moderation_status
 			)
 		);
 	}
