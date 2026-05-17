@@ -404,6 +404,32 @@ class SettingsRegistrar {
 			)
 		);
 
+		// Anonymous opt-in usage telemetry. Counter-only, local-only — no
+		// data leaves the customer's site. Helps the plugin team know
+		// which hooks / routes / commands are actually used across the
+		// fleet, so cleanup decisions in future versions can be data-driven
+		// instead of guesswork. Disabled by default.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			\WPMediaVerse\Services\TelemetryService::SETTING_KEY,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+		add_settings_field(
+			\WPMediaVerse\Services\TelemetryService::SETTING_KEY,
+			__( 'Help improve WPMediaVerse', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => \WPMediaVerse\Services\TelemetryService::SETTING_KEY,
+				'description' => __( 'Allow this site to record anonymous usage counters locally. Only event names are counted (e.g. "thumbnail_generated", "rest:media:GET") — never user IDs, URLs, file paths, or media content. The counters stay on this site; nothing is transmitted. The plugin team will ask you to share the counter report manually when they need data to make a backwards-compatibility decision. Disabled by default.', 'wpmediaverse' ),
+			)
+		);
+
 		// Filename strategy. Controls how new uploads are named on disk.
 		// Existing media is NEVER renamed — this only affects future uploads.
 		// Sanitizer lives in Sanitizers (canonical home for every select-field

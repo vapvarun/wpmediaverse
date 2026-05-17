@@ -494,6 +494,13 @@ class Plugin {
 			}
 		);
 
+		self::$container->register(
+			'telemetry',
+			function () {
+				return new \WPMediaVerse\Services\TelemetryService();
+			}
+		);
+
 		// Admin aggregates — single source of truth for site-wide counts
 		// (total media, views, storage, etc.). Coding Rule #16: every
 		// admin/CLI surface MUST read aggregates through this service so the

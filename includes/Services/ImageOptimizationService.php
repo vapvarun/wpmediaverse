@@ -141,14 +141,14 @@ class ImageOptimizationService {
 			return false;
 		}
 		$count = 0;
-		while ( ! feof( $fh ) && $count < 2 ) {
+		while ( ! feof( $fh ) ) {
 			$chunk = fread( $fh, 4096 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread
 			if ( false === $chunk ) {
 				break;
 			}
-			// GCE sentinel: 0x21 0xF9 0x04. Counting occurrences across a
-			// rolling window means second-GCE in the same chunk also
-			// registers. Animated GIFs have >= 2 GCEs (one per frame).
+			// GCE sentinel: 0x21 0xF9 0x04. Animated GIFs have >= 2 GCEs
+			// (one per frame). Once we see two, we have our answer and
+			// can stop reading.
 			$count += substr_count( $chunk, "\x21\xF9\x04" );
 			if ( $count >= 2 ) {
 				break;
@@ -624,18 +624,6 @@ class ImageOptimizationService {
 		$dir  = dirname( $file_path );
 		$base = pathinfo( $file_path, PATHINFO_FILENAME );
 		return trailingslashit( $dir ) . $base . '.webp';
-	}
-
-	/**
-	 * Convert an absolute local path under wp-content/uploads to a public URL.
-	 */
-	private static function path_to_url( string $path ): string {
-		$upload_dir = wp_upload_dir();
-		$basedir    = trailingslashit( $upload_dir['basedir'] );
-		if ( 0 !== strpos( $path, $basedir ) ) {
-			return '';
-		}
-		return set_url_scheme( trailingslashit( $upload_dir['baseurl'] ) . substr( $path, strlen( $basedir ) ) );
 	}
 
 	/**

@@ -566,13 +566,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
-	 * Full music icon with the standard wrapper span.
-	 */
-	private function icon_music(): string {
-		return '<span class="mvs-grid-audio-icon" aria-hidden="true">' . $this->icon_music_svg() . '</span>';
-	}
-
-	/**
 	 * Full generic-image icon with the standard wrapper span.
 	 */
 	private function icon_image(): string {
