@@ -1,348 +1,92 @@
-# Stabilization Sweep — 2026-05-17
+# 1.3.0 Stabilization Sweep — what's still open
 #
-# Target release: 1.2.3 (patch)
-# Sites in production: 50+
+# Big-picture: 1.3.0 is feature-complete. Versions are bumped (Free + Pro
+# both at 1.3.0), changelogs are in place, branches pushed. The items below
+# are the ONLY things still pending.
 #
-# Principle: every fix is risk-classified. Lows execute today, mediums need
-# feature-flags + 30-day soak, highs are deferred to 1.3.0+. Verification gate
-# runs after EVERY single fix — if anything regresses we stop, rollback,
-# write a follow-up plan.
+# What shipped — read `git log` on both repos. Don't re-document here.
 
 meta:
   date: 2026-05-17
-  target_version: 1.2.3
-  branch: 1.2.2  # patch work continues on 1.2.2 branch until tagged
-  sites_in_production: 50
-  framework_version: 1  # cleanup-framework version
-  reviewer_required: true
+  release: 1.3.0
+  free_branch: 1.2.2   # patch branch carried 1.3.0 work; rename at tag time if desired
+  pro_branch: 1.2.2
 
-principles:
-  - id: P1
-    rule: "Never break existing customer behavior in a patch release"
-  - id: P2
-    rule: "Every behavior change goes behind a feature filter, defaults to OLD behavior"
-  - id: P3
-    rule: "Every fix has a verification gate; if any gate fails, rollback and write a follow-up"
-  - id: P4
-    rule: "One fix = one commit. No combined refactors."
-  - id: P5
-    rule: "No public API removal in a patch release. Deprecation only."
+open:
 
-verification_gates:
-  # Runs after EVERY fix. ALL must pass to proceed.
-  per_fix:
-    - "phpcs clean on changed files (no new errors)"
-    - "phpstan baseline doesn't grow"
-    - "if the fix touches templates/CSS/JS: browser-smoke the affected surface"
-    - "if the fix touches a category tracked by cleanup framework: re-run the relevant script; counts must not grow"
-    - "git status clean before next fix starts"
+  - id: M3-REVISIT
+    name: "MVS_CSS consolidation"
+    why: |
+      bin/cleanup-duplicate-detect.php flagged a 1288-token cross-plugin
+      duplicate at includes/Blocks/MVS_CSS.php. The earlier decline
+      doc (now deleted) used wrong reasoning — Pro requires Free per
+      its plugin header + bootstrap check, so Pro can call
+      \WPMediaVerse\Blocks\MVS_CSS directly.
+    scope:
+      - "Delete wpmediaverse-pro/includes/Blocks/MVS_CSS.php (276 lines)"
+      - "Update Pro block render.php files (~10-15 files in build/blocks/*/) to call \\WPMediaVerse\\Blocks\\MVS_CSS::add() instead of \\WPMediaVersePro\\Blocks\\MVS_CSS::add()"
+      - "Smoke: compete page + any block-heavy Pro page renders, single <style id='mvs-block-styles'> on wp_footer carries both Free + Pro block CSS"
+    estimate: "~30 min including verification"
+    risk: low
+    blocker: "Waiting on user go/no-go"
 
-# ----------------------------------------------------------------------------
-# RISK BANDS — only LOW items get done today
-# ----------------------------------------------------------------------------
+  - id: F5-FINISH
+    name: "Manifest detail sections — REST/hooks/admin_pages enumeration"
+    why: |
+      audit/manifests/manifest.summary.json#/baseline_drift records the
+      gap. wp_cli enumeration was completed earlier (16 entries). The
+      remaining three categories still drift behind ground-truth grep
+      counts.
+    scope:
+      - "REST endpoints: 53 manifested vs 85 register_rest_route call sites (32 missing)"
+      - "hooks_fired: 24 manifested vs 124 unique callsites (~100 missing)"
+      - "admin_pages: 7 manifested vs 20 add_*_page call sites (13 sub-pages missing)"
+      - "register_setting: 35 in detail vs 40 callsites (5 missing)"
+    estimate: "~3 hours focused parallel-agent session"
+    customer_impact: "none — descriptive accuracy only"
+    risk: zero
+    blocker: "none — can run any time"
 
-risk_bands:
-  LOW:
-    description: "Pure cleanup or audit/doc work. Zero customer-observable behavior change."
-    today: true
-  MEDIUM:
-    description: "Refactor with same external behavior. Requires feature flag + 30-day soak."
-    today: false
-    schedule: "1.2.4 - 1.2.5"
-  HIGH:
-    description: "Architectural change. Multi-release deprecation cycle."
-    today: false
-    schedule: "1.3.0+"
+  - id: TIER-D
+    name: "Complex aggregations needing MediaRepository::query() builder"
+    why: |
+      Free + Pro have several places that build dynamic SQL with
+      conditional joins / NOT IN subqueries (search/tag/cat/profile
+      filters, gallery_exclude). They don't fit cleanly behind the
+      simple repository methods we have. A small query-builder design
+      unblocks all of them at once.
+    scope:
+      - "Free templates/explore.php:340-368 (explore listing aggregation)"
+      - "Pro templates/layouts/{dribbble,flickr,pinterest}/feed-body.php"
+      - "Pro templates/instagram-feed.php (top-level)"
+      - "Pro templates/layouts/{dribbble,flickr}/profile.php (gallery_exclude NOT IN subqueries)"
+      - "Pro Integrations/{RtMedia,MediaPress,BuddyBoss}/MigrationAdmin.php (admin-only, lowest priority)"
+    estimate: "design query builder = ~2 hours; refactor consumers = ~4 hours"
+    risk: medium
+    blocker: "Tier D won't move until the query-builder design is reviewed"
 
-# ----------------------------------------------------------------------------
-# FIXES — execute in this order
-# ----------------------------------------------------------------------------
+  - id: BOUNDARY-CHECK-TIGHTEN
+    name: "bin/cleanup-boundary-check.sh — distinguish Free vs Pro tables"
+    why: |
+      Current rule 'direct_wpdb_on_mvs_table' matches any mvs_* prefix
+      indiscriminately. This session caught ~12 false positives where
+      Pro services legitimately query Pro-owned tables
+      (mvs_competition_entries, mvs_play_events, mvs_pro_*).
+    scope:
+      - "Hard-code FREE_TABLES list in the script (mvs_media_index, mvs_media_meta, mvs_favorites, mvs_album_items, mvs_notifications, mvs_follows, mvs_reports, mvs_access_rules, mvs_reactions, mvs_mentions, mvs_activity, mvs_blocks, mvs_messages, mvs_conversations, mvs_conversation_participants, mvs_message_reactions, mvs_media_views, mvs_media_stats, mvs_transactions, mvs_access_grants, mvs_error_log)"
+      - "Skip any wpdb query whose table token is not in FREE_TABLES"
+    estimate: "~30 min"
+    risk: zero
+    customer_impact: "none"
 
-fixes:
+operator_actions:
+  - "Tag + GitHub release 1.3.0 on both repos when ready"
+  - "Decide M3-REVISIT (execute now vs 1.3.1 vs defer)"
 
-  # ---- LOW RISK — do today ----
-
-  - id: F1
-    name: "Remove deprecated finfo_close() calls"
-    risk: LOW
-    behavior_change: none
-    files:
-      - includes/Services/UploadService.php
-      - includes/Messaging/MessagingController.php
-      - includes/REST/Controller/MediaController.php
-    reason: |
-      PHP 8.5 deprecated finfo_close(). The resource is GC'd automatically
-      when the finfo handle goes out of scope. Calls are functionally no-ops
-      and they trigger WPCS errors on PHP 8.5+.
-    fix_pattern: "Delete the finfo_close() call lines. Add `// finfo handle GC'd automatically — PHP 8.5+ deprecated finfo_close` comment."
-    verification:
-      - "phpcs --standard=phpcs.xml --warning-severity=0 reports no deprecation errors on these files"
-      - "Upload a JPEG via admin — MIME detection still works"
-    rollback: "Add `finfo_close($finfo);` back at original location"
-    estimated_minutes: 15
-
-  - id: F2
-    name: "Remove deprecated imagedestroy() calls"
-    risk: LOW
-    behavior_change: none
-    files:
-      - includes/Services/UploadService.php
-    reason: |
-      PHP 8.4+ deprecated imagedestroy(). GdImage instances are now first-class
-      objects and GC'd automatically.
-    fix_pattern: "Delete the imagedestroy() call lines."
-    verification:
-      - "phpcs reports no deprecation errors"
-      - "Upload PNG with EXIF — strip + thumbnail generation still works"
-    rollback: "Add calls back"
-    estimated_minutes: 10
-
-  - id: F3
-    name: "Add Production Rules block to CLAUDE.md"
-    risk: LOW
-    behavior_change: none
-    files:
-      - CLAUDE.md
-    reason: |
-      Codify the 9 non-negotiables for 50-site production so future sessions
-      automatically honor them. No PR should remove a public symbol, rename
-      an option, change a default, etc. without going through the rules.
-    fix_pattern: "Append `## Production Rules` section after `## Coding Rules`. Reference plan/.template.cleanup.md."
-    verification:
-      - "git diff CLAUDE.md shows only the new section appended"
-      - "No existing content modified"
-    rollback: "git revert"
-    estimated_minutes: 10
-
-  - id: F4
-    name: "Harden bridge inventory script — fix 5 awk patterns returning 0"
-    risk: LOW
-    behavior_change: none
-    files:
-      - bin/cleanup-bridge-inventory.sh
-    reason: |
-      Initial run returned 0 for overridable_templates, rest_routes,
-      capabilities, options, service_keys. The data IS in the codebase;
-      the awk extraction misfired (regex escapes for bash heredoc context).
-      Without this fix the bridge inventory leaks — future cleanups won't
-      catch theme-overridable templates or REST endpoint removals.
-    fix_pattern: |
-      - locate_template scan: change grep regex to capture the path argument
-        properly (currently caught the call but not the path)
-      - register_rest_route: extract the second arg (route pattern) not the
-        whole call line
-      - add_cap: handle `->add_cap('foo')` AND `add_cap('foo', true)` shapes
-      - register_setting: the current pattern requires `'mvs_'` prefix
-        in the second arg position; verify the regex
-      - container->register: ensure backslash escaping in shell context
-    verification:
-      - "bin/cleanup-bridge-inventory.sh runs without error"
-      - "audit/cleanup/bridges.json shows non-zero counts for the 5 fixed categories"
-      - "Total bridge count is ≥ 80 (current baseline)"
-      - "Diff audit/cleanup/bridges.json — only adds entries, no removes"
-    rollback: "git revert"
-    estimated_minutes: 60
-
-  - id: F5
-    name: "Refresh manifest detail sections — wp_cli done; REST/hooks/admin_pages deferred"
-    risk: LOW
-    behavior_change: none
-    status: PARTIAL
-    completed_at: "2026-05-17"
-    completed:
-      - "wp_cli: 3 -> 16 entries (manual @subcommand enumeration; commit a181826)"
-    deferred:
-      - category: "REST endpoints"
-        gap: "53 manifested vs 85 register_rest_route call sites — 32 missing"
-        reason: "Routes are dynamically constructed via '/' . $this->rest_base + regex — needs per-controller reading to extract canonical paths. Each REST controller's register_routes() method must be read to enumerate."
-        effort: "~90 min focused Phase 2 enumeration session"
-      - category: "hooks_fired (do_action + apply_filters)"
-        gap: "24 manifested vs 124 unique callsites — 100+ missing"
-        reason: "Many hooks fire from deeply-nested helper methods; needs parallel Explore agents per the skill's Large-plugin strategy"
-        effort: "~60 min parallel-agent enumeration"
-      - category: "admin_pages"
-        gap: "7 top-level pages manifested vs 20 add_*_page call sites — 13 sub-pages missing"
-        reason: "Settings sub-pages registered conditionally inside SettingsRegistrar; need controlled reading"
-        effort: "~20 min focused enumeration"
-      - category: "register_setting"
-        gap: "35 in detail file vs 40 callsites — 5 missing"
-        reason: "Multi-register flows under different option groups"
-        effort: "~10 min"
-    rationale_for_deferral: |
-      F5 is audit-only — descriptive accuracy improvements, not customer-facing behavior. The bridge inventory script reads from these manifest sections so completeness benefits the cleanup framework, but the framework still works correctly with partial data (it just has a slightly smaller bridge list).
-      Deferring this to a dedicated parallel-agent enumeration session keeps "1.2.3 stabilization" focused on customer-affecting work. The drift is documented in audit/manifests/manifest.summary.json#/generated.baseline_drift so future sessions see it.
-
-  - id: F6
-    name: "Add opt-in telemetry stub (DISABLED by default)"
-    risk: LOW
-    behavior_change: "none when toggle is off (default)"
-    files:
-      - includes/Services/TelemetryService.php  # NEW
-      - includes/Core/Plugin.php  # register service
-      - includes/Admin/Settings/SettingsRegistrar.php  # add toggle
-    reason: |
-      Without telemetry every cleanup decision is gambling. With it, we know
-      which hooks fire, which REST endpoints called, which options read.
-      30 days of data → mechanical cleanup decisions for 1.2.4+.
-
-      CRITICAL: this fix only ADDS the infrastructure (service + setting).
-      Default is OFF. No data is captured or transmitted unless admin
-      opts in. Anonymous payload only — never user IDs, never URLs.
-    fix_pattern: |
-      - New service: TelemetryService with capture() that's a no-op when
-        the setting is off
-      - New setting: mvs_telemetry_enabled (bool, default false)
-      - Settings tab: "Help improve WPMediaVerse" with checkbox + explanation
-        of exactly what's captured (counter increments only, anonymous)
-      - No transmission yet — store in mvs_media_meta site-keyed for now
-    verification:
-      - "Setting page renders; checkbox unchecked by default"
-      - "Disabling/enabling the toggle has no effect on any flow when nobody calls capture()"
-      - "wppqa_check_plugin_dev_rules passes — toggle has nonce, cap, escape"
-    rollback: "git revert"
-    estimated_minutes: 120
-
-  - id: F7
-    name: "Wire wppqa baseline into pre-push hook"
-    risk: LOW
-    behavior_change: none
-    files:
-      - bin/git-hooks/pre-push
-      - bin/local-ci.sh (or composer ci script)
-    reason: |
-      Hard rule #6 from wp-plugin-onboard skill says wppqa runs BEFORE
-      manifest analysis. Currently the hook runs phpcs + phpstan only.
-      Adding wppqa catches REST contract drift, silent UI bugs in ~120ms.
-      Without this, the next session repeats the find-bug-fix-bug loop.
-    fix_pattern: |
-      - Add wppqa_check_plugin_dev_rules + check_rest_js_contract +
-        check_wiring_completeness to bin/local-ci.sh as stage 2.4
-      - Pre-push hook calls composer ci:no-journeys which includes this
-      - Failed wppqa run blocks push; SKIP_LOCAL_CI=1 bypass works as before
-    verification:
-      - "composer ci:no-journeys runs wppqa and reports per-check result"
-      - "Pre-push test on a deliberately-broken file fails the gate"
-      - "Bypass via SKIP_LOCAL_CI=1 git push still works"
-    rollback: "git revert hook + ci script"
-    estimated_minutes: 45
-
-  # ---- MEDIUM RISK — schedule for 1.2.4-1.2.5 (NOT today) ----
-
-  - id: M1
-    name: "Refactor template direct \\$wpdb on mvs_* tables → MediaRepository"
-    risk: MEDIUM
-    behavior_change: "external: none; internal: routes through cache + privacy"
-    affected: ["templates/layouts/pinterest/profile.php", "templates/layouts/instagram/profile.php", "templates/user-profile.php"]
-    feature_flag: "mvs_route_template_reads_through_repository"
-    schedule: 1.2.4
-    soak_days: 30
-    deprecation_cycle: "1.2.4 OFF default → 1.2.5 ON default → 2.0 remove old code"
-    today: false
-
-  - id: M2
-    name: "Refactor Pro→Free direct \\$wpdb on mvs_* tables → MediaRepository"
-    risk: MEDIUM
-    behavior_change: same
-    affected_files: 11  # from audit/cleanup/boundary-violations.json
-    feature_flag: "mvs_route_pro_reads_through_repository"
-    schedule: 1.2.5
-    today: false
-
-  - id: M3
-    name: "Consolidate MVS_CSS::generate (1288-token cross-plugin duplicate)"
-    risk: MEDIUM
-    behavior_change: "external: none; internal: Pro calls Free's"
-    feature_flag: "mvs_use_consolidated_css_generator"
-    schedule: 1.2.4 → 1.3.0 → 2.0 (hard remove)
-    today: false
-
-  # ---- HIGH RISK — deferred to 1.3.0+ ----
-
-  - id: H1
-    name: "Cloud-aware /serve with Accept-header WebP negotiation"
-    risk: HIGH
-    schedule: 1.3.0
-    already_on_roadmap: true
-
-  - id: H2
-    name: "AVIF variant generation"
-    risk: HIGH
-    schedule: 1.3.0
-    already_on_roadmap: true
-
-  - id: H3
-    name: "Lightbox WebP via Interactivity API state binding"
-    risk: HIGH
-    schedule: 1.3.0
-    already_on_roadmap: true
-
-# ----------------------------------------------------------------------------
-# Execution log — filled in as we go
-# ----------------------------------------------------------------------------
-
-execution:
-  started_at: "2026-05-17T00:00:00Z"
-  finished_at: "2026-05-17T08:30:00Z"
-  release: "1.3.0"
-
-  completed:
-    # ---- LOW-RISK F-series ----
-    - { id: F1, name: "Remove finfo_close()",         commit: "(earlier-session)" }
-    - { id: F2, name: "Remove imagedestroy()",        commit: "(earlier-session)" }
-    - { id: F3, name: "Production Rules in CLAUDE.md", commit: "(earlier-session)" }
-    - { id: F4, name: "Bridge inventory script",      commit: "(earlier-session)" }
-    - { id: F6, name: "Telemetry stub (default OFF)", commit: "09301d8 (earlier)" }
-    - { id: F7, name: "wppqa baseline in pre-push",   commit: "8273d28 (earlier)" }
-
-    # ---- HIGH-RISK H-series ----
-    - { id: H1, name: "/serve Accept-header WebP nego", commit: "free:8058e58" }
-    - { id: H2, name: "AVIF variant generation",        commit: "free:d046a5b" }
-    - { id: H3, name: "Lightbox WebP (Interactivity)",  commit: "free:5f2ba71" }
-
-    # ---- MEDIUM-RISK M-series (originally scheduled 1.2.4/1.2.5; collapsed into 1.3.0 per user decision today) ----
-    - { id: M1, name: "Template direct \\$wpdb -> services",
-        scope: "4 Free templates + 5 Pro profile templates + 4 Pro partials = 13 files / ~17 call sites refactored",
-        commits: ["free:9c5cb55", "free:d434a04", "pro:ea25593", "pro:04d008d"] }
-    - { id: M2, name: "Pro->Free direct \\$wpdb -> services",
-        scope: "Tier B (2 files) + Tier C (7 files) = 9 files / ~12 call sites refactored",
-        commits: ["free:c9aa46b", "free:2630e7f", "pro:2538814", "pro:cc80682"] }
-
-    # ---- Bonus work (not in original plan) ----
-    - { id: BONUS-1, name: "ffmpeg path resolver fix for PHP-FPM",   commit: "free:402dc09" }
-    - { id: BONUS-2, name: "Default video poster + retire legacy",   commit: "free:cdcbf64" }
-    - { id: BONUS-3, name: "~/claude-backup skills sync + push",     commit: "(backup repo)" }
-    - { id: BONUS-4, name: "1.3.0 version bump + changelog",         commit: "free:b4c4f25, free:de635f7, pro:84f3f48" }
-
-  partial:
-    - id: F5
-      name: "Manifest detail sections — REST/hooks/admin_pages enumeration drift"
-      status: "wp_cli enumeration DONE; REST/hooks/admin_pages drift documented in audit/manifests/manifest.summary.json#/baseline_drift"
-      customer_impact: "none (descriptive-only)"
-      effort_remaining: "~3 hours focused parallel-agent session"
-      blocker: "none — can run any time"
-
-  open:
-    - id: M3-REVISIT
-      name: "MVS_CSS consolidation — reconsidered"
-      status: "OPEN — earlier decline was based on wrong reasoning (assumed Pro standalone; actually Pro requires Free per plugin header)"
-      target: "Delete wpmediaverse-pro/includes/Blocks/MVS_CSS.php (276 lines); update Pro block render.php files to call \\WPMediaVerse\\Blocks\\MVS_CSS directly"
-      estimate: "30 min including browser smoke"
-      previous_doc: "plan/cleanup-mvs-css-2026-05-17.md (SUPERSEDED — reasoning wrong)"
-
-  deferred_tier_d:
-    description: "Refactors blocked on a small MediaRepository::query() builder for conditional joins / subquery patterns"
-    items:
-      - "Free templates/explore.php:340-368 — explore listing aggregation"
-      - "Pro feed-body files (dribbble, flickr, pinterest, instagram-feed)"
-      - "Pro dribbble/profile.php + flickr/profile.php gallery_exclude listings"
-      - "Pro migration admins (RtMedia, MediaPress, BuddyBoss) — admin-only, low priority"
-
-  declined:
-    - id: M3-original
-      name: "MVS_CSS as analyzed in plan/cleanup-mvs-css-2026-05-17.md"
-      verdict: "decline reasoning was wrong — see M3-REVISIT for correct analysis"
-
-  notes:
-    - "Production Rules cycle (1.3.0 OFF -> 1.4.0 ON -> 2.0 remove) renamed from 1.2.4/1.2.5/2.0 per user decision today (skipping minor releases)"
-    - "Customer fleet is mostly experimenting per user clarification — feature-flag soak pattern is overkill at current scale, refactors landed without flags"
-    - "boundary-check.sh overcounts: 'direct_wpdb_on_mvs_table' rule matches any mvs_* prefix and doesn't distinguish Free-owned tables from Pro-owned ones; ~12 Pro-on-Pro service queries were correctly left as-is. Follow-up to tighten the script."
+production_rules_status:
+  note: |
+    The 9 Production Rules block in CLAUDE.md was written assuming 50+
+    live customer sites. User clarified in today's session that most
+    sites are still experimenting. The rules stay as preventive
+    scaffolding for when the fleet matures; for now we ship clean
+    refactors without feature-flag soak.
