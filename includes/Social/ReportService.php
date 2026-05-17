@@ -157,6 +157,51 @@ class ReportService {
 	}
 
 	/**
+	 * Count reports by overall status (pending/resolved/dismissed).
+	 *
+	 * Used by Pro's moderation admin to render queue badges. Sister of
+	 * get_report_count() which is scoped to one target.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $status Status value to count.
+	 * @return int
+	 */
+	public function count_by_status( string $status ): int {
+		global $wpdb;
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_reports WHERE status = %s",
+				$status
+			)
+		);
+	}
+
+	/**
+	 * Update a report's status (resolved / dismissed / pending).
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $report_id Report row id.
+	 * @param string $status    New status.
+	 * @return bool True when one row was updated.
+	 */
+	public function update_status( int $report_id, string $status ): bool {
+		global $wpdb;
+
+		$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_reports',
+			array( 'status' => $status ),
+			array( 'id' => $report_id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+
+		return false !== $updated && $updated > 0;
+	}
+
+	/**
 	 * Block a user.
 	 *
 	 * @since 1.1.0
