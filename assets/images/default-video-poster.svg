@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 576" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Video preview unavailable">
+	<defs>
+		<linearGradient id="mvsVideoBg" x1="0" y1="0" x2="0" y2="1">
+			<stop offset="0%" stop-color="#1f2937"/>
+			<stop offset="100%" stop-color="#0b1220"/>
+		</linearGradient>
+		<linearGradient id="mvsVideoGloss" x1="0" y1="0" x2="0" y2="1">
+			<stop offset="0%" stop-color="#ffffff" stop-opacity="0.06"/>
+			<stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+		</linearGradient>
+	</defs>
+	<rect width="1024" height="576" fill="url(#mvsVideoBg)"/>
+	<rect width="1024" height="288" fill="url(#mvsVideoGloss)"/>
+	<g fill="#1a2535">
+		<rect x="0" y="36" width="1024" height="36"/>
+		<rect x="0" y="504" width="1024" height="36"/>
+	</g>
+	<g fill="#0b1220">
+		<rect x="32"  y="44" width="36" height="20" rx="3"/>
+		<rect x="96"  y="44" width="36" height="20" rx="3"/>
+		<rect x="160" y="44" width="36" height="20" rx="3"/>
+		<rect x="224" y="44" width="36" height="20" rx="3"/>
+		<rect x="288" y="44" width="36" height="20" rx="3"/>
+		<rect x="352" y="44" width="36" height="20" rx="3"/>
+		<rect x="416" y="44" width="36" height="20" rx="3"/>
+		<rect x="480" y="44" width="36" height="20" rx="3"/>
+		<rect x="544" y="44" width="36" height="20" rx="3"/>
+		<rect x="608" y="44" width="36" height="20" rx="3"/>
+		<rect x="672" y="44" width="36" height="20" rx="3"/>
+		<rect x="736" y="44" width="36" height="20" rx="3"/>
+		<rect x="800" y="44" width="36" height="20" rx="3"/>
+		<rect x="864" y="44" width="36" height="20" rx="3"/>
+		<rect x="928" y="44" width="36" height="20" rx="3"/>
+		<rect x="32"  y="512" width="36" height="20" rx="3"/>
+		<rect x="96"  y="512" width="36" height="20" rx="3"/>
+		<rect x="160" y="512" width="36" height="20" rx="3"/>
+		<rect x="224" y="512" width="36" height="20" rx="3"/>
+		<rect x="288" y="512" width="36" height="20" rx="3"/>
+		<rect x="352" y="512" width="36" height="20" rx="3"/>
+		<rect x="416" y="512" width="36" height="20" rx="3"/>
+		<rect x="480" y="512" width="36" height="20" rx="3"/>
+		<rect x="544" y="512" width="36" height="20" rx="3"/>
+		<rect x="608" y="512" width="36" height="20" rx="3"/>
+		<rect x="672" y="512" width="36" height="20" rx="3"/>
+		<rect x="736" y="512" width="36" height="20" rx="3"/>
+		<rect x="800" y="512" width="36" height="20" rx="3"/>
+		<rect x="864" y="512" width="36" height="20" rx="3"/>
+		<rect x="928" y="512" width="36" height="20" rx="3"/>
+	</g>
+	<circle cx="512" cy="288" r="64" fill="#ffffff" fill-opacity="0.12"/>
+	<circle cx="512" cy="288" r="56" fill="#ffffff" fill-opacity="0.18"/>
+	<path d="M495 260 L495 316 L538 288 Z" fill="#ffffff" fill-opacity="0.9"/>
+</svg>

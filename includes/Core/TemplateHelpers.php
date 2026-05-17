@@ -356,15 +356,28 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// to a black background with the play overlay if even that fails.
 		// This makes the render path self-validating instead of trusting the
 		// stored URL.
+		//
+		// 1.3.0: when no per-upload poster exists (cover-less + ffmpeg-less +
+		// no JS canvas frame) we substitute the plugin-bundled default poster
+		// SVG. Same asset URL for every cover-less video site-wide, browser-
+		// cached on first hit, never written to mvs_media_meta and never
+		// pushed to cloud storage. Mirrors the audio waveform pattern.
 		if ( 'video' === $media_type ) {
 			$th_signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 			$file_url  = $th_signed ? $th_signed->generate( $media_id, get_current_user_id() ) : '';
+			$poster_url = '' !== $thumb_url ? $thumb_url : self::default_video_poster_url();
 			if ( $file_url ) {
 				$vid_class   = trim( 'mvs-grid-video-preview ' . $extra_class );
-				$poster_attr = $thumb_url ? ' poster="' . esc_url( $thumb_url ) . '"' : '';
+				$poster_attr = ' poster="' . esc_url( $poster_url ) . '"';
 				return '<video class="' . esc_attr( $vid_class ) . '" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"' . $poster_attr . ' src="' . esc_url( $file_url ) . '#t=0.1"></video>' . $play_icon;
 			}
-			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">' . $play_icon . '</div>';
+			// No streamable URL (access-rules locked the file). Show the
+			// default poster as a still image with the play overlay.
+			$img_alt = $alt;
+			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">'
+				. '<img class="mvs-grid-default-poster" src="' . esc_url( $poster_url ) . '" alt="' . $img_alt . '"' . $loading . ' />'
+				. $play_icon
+				. '</div>';
 		}
 
 		// IMAGE / non-video media — keep the <img> fast path. A broken cloud
@@ -473,6 +486,44 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			$height,
 			$rects
 		);
+	}
+
+	/**
+	 * URL of the plugin-bundled default video poster.
+	 *
+	 * Used as the `<video poster=...>` source AND as the standalone fallback
+	 * image when a video has no per-upload poster (no embedded cover atom,
+	 * no ffmpeg extraction, no client-side canvas frame).
+	 *
+	 * Critical contract: this URL is ALWAYS the plugin's own static asset.
+	 * It must never be written to `mvs_media_meta` and must never be pushed
+	 * to cloud storage — one URL serves every cover-less video site-wide,
+	 * browser-cached on first hit, identical to how the audio waveform SVG
+	 * is rendered inline at template time.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @return string Absolute URL of the bundled SVG asset.
+	 */
+	public static function default_video_poster_url(): string {
+		/**
+		 * Filter the default video poster URL.
+		 *
+		 * Sites that want a different placeholder (custom branding, animated
+		 * GIF, theme-matching gradient) can override via this filter. The
+		 * returned URL must be a single asset reused across every cover-less
+		 * video; do not return a per-media URL or anything that would pollute
+		 * the meta table.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param string $url Default: plugin-bundled SVG asset URL.
+		 */
+		// `plugins_url()` resolves the static asset URL without needing the
+		// MVS_PLUGIN_URL constant (which static analyzers can't always see
+		// because it's defined in the plugin entry file).
+		$default = plugins_url( 'assets/images/default-video-poster.svg', dirname( __DIR__, 2 ) . '/wpmediaverse.php' );
+		return (string) apply_filters( 'mvs_default_video_poster_url', $default );
 	}
 
 	/**

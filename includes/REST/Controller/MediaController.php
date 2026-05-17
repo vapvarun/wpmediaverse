@@ -629,23 +629,30 @@ class MediaController extends WP_REST_Controller {
 			return $media_id;
 		}
 
-		// Save client-generated video thumbnail if provided and no server thumbnail exists.
+		// Client-generated video thumbnail (JS canvas captured first frame).
+		// Used as a last-resort poster when the server-side ffmpeg / cover-atom
+		// paths both failed. 1.3.0 routes the client frame through
+		// `UploadService::generate_thumbnails()` so it gets sized variants +
+		// WebP / AVIF siblings just like every other image input — instead of
+		// the pre-1.3.0 single-unsized `wpmediaverse/thumbs/video-thumb-{id}.jpg`
+		// write that hid behind privacy gates and broke modern-format serving.
 		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
-			// Raw read — presence check, not URL emission.
 			$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
 			if ( ! $existing_thumb ) {
-				$upload_dir = wp_upload_dir();
-				$thumb_dir  = $upload_dir['basedir'] . '/wpmediaverse/thumbs';
-				wp_mkdir_p( $thumb_dir );
-				$thumb_name = 'video-thumb-' . $media_id . '.jpg';
-				$thumb_path = $thumb_dir . '/' . $thumb_name;
-				// Use copy + unlink instead of move_uploaded_file (forbidden by plugin-check).
-				if ( copy( $files['thumbnail']['tmp_name'], $thumb_path ) ) {
-					unlink( $files['thumbnail']['tmp_name'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-					$thumb_url = $upload_dir['baseurl'] . '/wpmediaverse/thumbs/' . $thumb_name;
-					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_large', $thumb_url );
-					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_medium', $thumb_url );
-					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_thumb', $thumb_url );
+				// Stage the client frame into the posters dir at the same path
+				// shape the server-side ffmpeg fallback uses. generate_thumbnails
+				// reads it, resizes to large/medium/thumb, pushes to the active
+				// driver, and emits WebP/AVIF siblings per the optimization
+				// settings. Failure path is non-fatal; meta stays empty so the
+				// frontend renders the default video poster at template time.
+				$upload_dir   = wp_upload_dir();
+				$posters_dir  = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/posters';
+				if ( wp_mkdir_p( $posters_dir ) ) {
+					$staged_path = trailingslashit( $posters_dir ) . $media_id . '.jpg';
+					if ( copy( $files['thumbnail']['tmp_name'], $staged_path ) ) {
+						unlink( $files['thumbnail']['tmp_name'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+						$upload_service->generate_thumbnails( $media_id, $staged_path, 'image/jpeg' );
+					}
 				}
 			}
 		}
