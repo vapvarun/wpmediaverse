@@ -514,7 +514,8 @@ class UploadService {
 		if ( function_exists( 'finfo_open' ) ) {
 			$finfo = finfo_open( FILEINFO_MIME_TYPE );
 			$mime  = finfo_file( $finfo, $file_path );
-			finfo_close( $finfo );
+			// PHP 8.5 deprecated finfo_close — finfo handle is GC'd when $finfo
+			// goes out of scope.
 			return $mime ? $mime : '';
 		}
 		return '';

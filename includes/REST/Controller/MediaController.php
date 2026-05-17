@@ -848,7 +848,7 @@ class MediaController extends WP_REST_Controller {
 		$allowed        = $upload_service->get_allowed_types_public();
 		$finfo          = finfo_open( FILEINFO_MIME_TYPE );
 		$mime           = finfo_file( $finfo, $file['tmp_name'] );
-		finfo_close( $finfo );
+		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
 		if ( ! in_array( $mime, $allowed, true ) ) {
 			return new \WP_Error( 'mvs_invalid_type', __( 'This file type is not allowed.', 'wpmediaverse' ), array( 'status' => 400 ) );
