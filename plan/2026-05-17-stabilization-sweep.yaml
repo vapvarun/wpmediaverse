@@ -281,9 +281,68 @@ fixes:
 # ----------------------------------------------------------------------------
 
 execution:
-  started_at: null      # set when F1 begins
+  started_at: "2026-05-17T00:00:00Z"
+  finished_at: "2026-05-17T08:30:00Z"
+  release: "1.3.0"
+
   completed:
-    # - { id: F1, finished_at: "...", commit: "..." }
-  current: null
-  blocked: []
-  notes: []
+    # ---- LOW-RISK F-series ----
+    - { id: F1, name: "Remove finfo_close()",         commit: "(earlier-session)" }
+    - { id: F2, name: "Remove imagedestroy()",        commit: "(earlier-session)" }
+    - { id: F3, name: "Production Rules in CLAUDE.md", commit: "(earlier-session)" }
+    - { id: F4, name: "Bridge inventory script",      commit: "(earlier-session)" }
+    - { id: F6, name: "Telemetry stub (default OFF)", commit: "09301d8 (earlier)" }
+    - { id: F7, name: "wppqa baseline in pre-push",   commit: "8273d28 (earlier)" }
+
+    # ---- HIGH-RISK H-series ----
+    - { id: H1, name: "/serve Accept-header WebP nego", commit: "free:8058e58" }
+    - { id: H2, name: "AVIF variant generation",        commit: "free:d046a5b" }
+    - { id: H3, name: "Lightbox WebP (Interactivity)",  commit: "free:5f2ba71" }
+
+    # ---- MEDIUM-RISK M-series (originally scheduled 1.2.4/1.2.5; collapsed into 1.3.0 per user decision today) ----
+    - { id: M1, name: "Template direct \\$wpdb -> services",
+        scope: "4 Free templates + 5 Pro profile templates + 4 Pro partials = 13 files / ~17 call sites refactored",
+        commits: ["free:9c5cb55", "free:d434a04", "pro:ea25593", "pro:04d008d"] }
+    - { id: M2, name: "Pro->Free direct \\$wpdb -> services",
+        scope: "Tier B (2 files) + Tier C (7 files) = 9 files / ~12 call sites refactored",
+        commits: ["free:c9aa46b", "free:2630e7f", "pro:2538814", "pro:cc80682"] }
+
+    # ---- Bonus work (not in original plan) ----
+    - { id: BONUS-1, name: "ffmpeg path resolver fix for PHP-FPM",   commit: "free:402dc09" }
+    - { id: BONUS-2, name: "Default video poster + retire legacy",   commit: "free:cdcbf64" }
+    - { id: BONUS-3, name: "~/claude-backup skills sync + push",     commit: "(backup repo)" }
+    - { id: BONUS-4, name: "1.3.0 version bump + changelog",         commit: "free:b4c4f25, free:de635f7, pro:84f3f48" }
+
+  partial:
+    - id: F5
+      name: "Manifest detail sections — REST/hooks/admin_pages enumeration drift"
+      status: "wp_cli enumeration DONE; REST/hooks/admin_pages drift documented in audit/manifests/manifest.summary.json#/baseline_drift"
+      customer_impact: "none (descriptive-only)"
+      effort_remaining: "~3 hours focused parallel-agent session"
+      blocker: "none — can run any time"
+
+  open:
+    - id: M3-REVISIT
+      name: "MVS_CSS consolidation — reconsidered"
+      status: "OPEN — earlier decline was based on wrong reasoning (assumed Pro standalone; actually Pro requires Free per plugin header)"
+      target: "Delete wpmediaverse-pro/includes/Blocks/MVS_CSS.php (276 lines); update Pro block render.php files to call \\WPMediaVerse\\Blocks\\MVS_CSS directly"
+      estimate: "30 min including browser smoke"
+      previous_doc: "plan/cleanup-mvs-css-2026-05-17.md (SUPERSEDED — reasoning wrong)"
+
+  deferred_tier_d:
+    description: "Refactors blocked on a small MediaRepository::query() builder for conditional joins / subquery patterns"
+    items:
+      - "Free templates/explore.php:340-368 — explore listing aggregation"
+      - "Pro feed-body files (dribbble, flickr, pinterest, instagram-feed)"
+      - "Pro dribbble/profile.php + flickr/profile.php gallery_exclude listings"
+      - "Pro migration admins (RtMedia, MediaPress, BuddyBoss) — admin-only, low priority"
+
+  declined:
+    - id: M3-original
+      name: "MVS_CSS as analyzed in plan/cleanup-mvs-css-2026-05-17.md"
+      verdict: "decline reasoning was wrong — see M3-REVISIT for correct analysis"
+
+  notes:
+    - "Production Rules cycle (1.3.0 OFF -> 1.4.0 ON -> 2.0 remove) renamed from 1.2.4/1.2.5/2.0 per user decision today (skipping minor releases)"
+    - "Customer fleet is mostly experimenting per user clarification — feature-flag soak pattern is overkill at current scale, refactors landed without flags"
+    - "boundary-check.sh overcounts: 'direct_wpdb_on_mvs_table' rule matches any mvs_* prefix and doesn't distinguish Free-owned tables from Pro-owned ones; ~12 Pro-on-Pro service queries were correctly left as-is. Follow-up to tighten the script."

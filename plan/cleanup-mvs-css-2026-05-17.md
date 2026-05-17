@@ -1,10 +1,27 @@
-# Cleanup Plan: MVS_CSS::generate consolidation — **DECLINED**
+# Cleanup Plan: MVS_CSS::generate consolidation — **SUPERSEDED**
 
 **Date:** 2026-05-17
-**Target version:** N/A (cleanup declined after inventory phase)
+**Target version:** N/A
 **Owner:** Claude session 2026-05-17
 **Reviewer:** Varun (self-review of framework output)
-**Status:** ❌ **Will not execute** — see "Why declined" section.
+**Status:** ⚠️ **SUPERSEDED — reasoning below was wrong.**
+
+> **Correction (2026-05-17, later same day):** The "Pro must work standalone"
+> argument in the original decline rationale was incorrect. Pro's plugin
+> header declares `Requires Plugins: wpmediaverse` and the runtime
+> `mvs_pro_check_requirements()` bails on missing `MVS_VERSION` — Pro is
+> never active without Free. Coding Rule #10 (no `use WPMediaVerse\\...`
+> imports in Pro) is about indirection for refactor safety, not standalone
+> capability.
+>
+> Consolidation IS valid. The original analysis below is preserved for
+> historical context. Tracked as **M3-REVISIT** in
+> `plan/2026-05-17-stabilization-sweep.yaml#/execution/open` — pending
+> execution once user signs off.
+
+---
+
+## ⚠️ Below this line: original (wrong) analysis preserved for the record
 
 ---
 
