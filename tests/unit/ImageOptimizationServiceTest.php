@@ -145,7 +145,12 @@ class ImageOptimizationServiceTest extends WP_UnitTestCase {
 	}
 
 	public function test_emit_webp_sibling_returns_null_when_disabled(): void {
-		update_option( ImageOptimizationService::SETTING_GENERATE_WEBP, false );
+		// WP short-circuits update_option(X, false) when the option does not yet
+		// exist (old value is also false), leaving the row unset and get_option
+		// returning the true default. register_setting's default-filter would
+		// fix this in real admin requests, but it runs on admin_init and is not
+		// active in unit tests. Use a non-false falsy value to force a real write.
+		update_option( ImageOptimizationService::SETTING_GENERATE_WEBP, '0' );
 
 		$service = new ImageOptimizationService();
 		$result  = $service->emit_webp_sibling(
