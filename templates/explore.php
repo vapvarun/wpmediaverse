@@ -82,15 +82,9 @@ $mvs_archive_url = home_url( '/media/' );
 
 	<?php
 	if ( $mvs_profile ) :
-		// Count media from the index table.
-		global $wpdb;
-		$index_table            = $wpdb->prefix . 'mvs_media_index';
-		$mvs_profile_post_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$index_table} WHERE post_author = %d AND status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$mvs_profile->ID
-			)
-		);
+		$mvs_profile_post_count = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->count_by_author( (int) $mvs_profile->ID, 'publish' );
 		$mvs_follow_counts      = array(
 			'followers' => 0,
 			'following' => 0,

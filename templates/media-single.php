@@ -290,20 +290,19 @@ $mvs_archive_url = home_url( '/media/' );
 				$mvs_tag_names = array_filter( array_map( 'trim', explode( ',', $mvs_tags_raw ) ) );
 			}
 		}
-		// Also try taxonomy terms if still stored there.
+		// Also try taxonomy terms if still stored there. Legacy uploads
+		// stored one mvs_tag_id meta row per tag; resolve those to WP term
+		// names through the repository + standard term API instead of a
+		// direct JOIN against mvs_media_meta.
 		if ( empty( $mvs_tag_names ) ) {
-			global $wpdb;
-			$mvs_tag_rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT t.name
-					FROM {$wpdb->prefix}mvs_media_meta mm
-					INNER JOIN {$wpdb->terms} t ON t.term_id = mm.meta_value
-					WHERE mm.media_id = %d AND mm.meta_key = 'mvs_tag_id'",
-					$mvs_media_id
-				)
-			);
-			if ( $mvs_tag_rows ) {
-				$mvs_tag_names = $mvs_tag_rows;
+			$mvs_term_ids = \WPMediaVerse\Core\Plugin::container()
+				->get( 'media_repository' )
+				->get_meta_values( $mvs_media_id, 'mvs_tag_id' );
+			foreach ( $mvs_term_ids as $mvs_term_id ) {
+				$mvs_term = get_term( (int) $mvs_term_id );
+				if ( $mvs_term && ! is_wp_error( $mvs_term ) ) {
+					$mvs_tag_names[] = $mvs_term->name;
+				}
 			}
 		}
 		// Final fallback: WP term relationships (legacy).
@@ -466,7 +465,7 @@ $mvs_archive_url = home_url( '/media/' );
 						data-wp-bind--value="context.editDesc"></textarea>
 				</div>
 				<!-- Privacy + slug-regenerate share a row to save vertical space.
-				     Off by default — keeps inbound URLs stable. -->
+					 Off by default — keeps inbound URLs stable. -->
 				<div class="mvs-field-row">
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>

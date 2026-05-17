@@ -830,6 +830,33 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Read every meta_value for a media_id + meta_key (multi-value meta).
+	 *
+	 * The repository's `get()` / `get_raw()` collapse repeated rows to the
+	 * first match. This helper returns ALL rows for callers that store
+	 * multi-row meta (legacy tag-id-per-row, multi-author lists, etc.).
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $meta_key Meta key to fetch.
+	 * @return array<string>   All meta_value strings in storage order.
+	 */
+	public function get_meta_values( int $media_id, string $meta_key ): array {
+		global $wpdb;
+
+		$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key = %s",
+				$media_id,
+				$meta_key
+			)
+		);
+
+		return is_array( $rows ) ? array_map( 'strval', $rows ) : array();
+	}
+
+	/**
 	 * Find a media ID by a specific meta key-value pair.
 	 *
 	 * @param string $meta_key   Meta key to search.

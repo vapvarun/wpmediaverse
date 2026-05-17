@@ -110,6 +110,41 @@ class AlbumService {
 	}
 
 	/**
+	 * Get full media rows for an album, in album order, filtered by status.
+	 *
+	 * Convenience wrapper around `get_items()` + `MediaRepository::get_batch()`
+	 * that templates can call directly without doing the join themselves.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $album_id Album post ID.
+	 * @param string $status   Status filter (default 'publish'). Pass '' to skip filtering.
+	 * @return array<int, array> Numerically-indexed list of media rows in album order.
+	 */
+	public function get_items_with_data( int $album_id, string $status = 'publish' ): array {
+		$items = $this->get_items( $album_id );
+		if ( empty( $items ) ) {
+			return array();
+		}
+
+		$media_ids = array_column( $items, 'media_id' );
+		$rows      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_batch( $media_ids );
+
+		$ordered = array();
+		foreach ( $items as $item ) {
+			$mid = (int) $item['media_id'];
+			if ( ! isset( $rows[ $mid ] ) ) {
+				continue;
+			}
+			if ( '' !== $status && ( $rows[ $mid ]['status'] ?? '' ) !== $status ) {
+				continue;
+			}
+			$ordered[] = $rows[ $mid ];
+		}
+		return $ordered;
+	}
+
+	/**
 	 * Get the item count for an album.
 	 *
 	 * @param int $album_id Album post ID.

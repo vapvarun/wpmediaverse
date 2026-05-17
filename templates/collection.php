@@ -32,13 +32,7 @@ do_action( 'mvs_before_content' );
 			$resolved = $service->resolve( $collection_id, 100, 1 );
 			$items    = array_column( $resolved['items'], 'media_id' );
 		} else {
-			global $wpdb;
-			$items = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$collection_id
-				)
-			);
+			$items = $container->get( 'favorites' )->get_collection_media_ids( $collection_id, 100 );
 		}
 
 		$rules = $service->get_rules( $collection_id );

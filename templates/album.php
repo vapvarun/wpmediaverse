@@ -24,23 +24,12 @@ $mvs_archive_url = home_url( '/media/' );
 	while ( have_posts() ) :
 		the_post();
 
-		global $wpdb;
-		$album_items_table = $wpdb->prefix . 'mvs_album_items';
-		$index_table       = $wpdb->prefix . 'mvs_media_index';
-
-		// Get media items from album via the join to mvs_media_index.
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$items = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT idx.* FROM {$album_items_table} ai
-				INNER JOIN {$index_table} idx ON idx.media_id = ai.media_id
-				WHERE ai.album_id = %d AND idx.status = 'publish'
-				ORDER BY ai.position ASC",
-				get_the_ID()
-			),
-			ARRAY_A
-		);
-		// phpcs:enable
+		// Media items in album order, status=publish only. Routes through
+		// AlbumService + MediaRepository::get_batch so the request-scope
+		// cache + privacy invariants apply uniformly.
+		$items = \WPMediaVerse\Core\Plugin::container()
+			->get( 'albums' )
+			->get_items_with_data( (int) get_the_ID(), 'publish' );
 
 		$item_ids = array_column( $items, 'media_id' );
 		?>

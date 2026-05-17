@@ -140,6 +140,43 @@ class FavoriteService {
 	}
 
 	/**
+	 * Get media IDs in a collection across all users, newest first.
+	 *
+	 * Used by the manual-curation collection template. For smart collections
+	 * use `CollectionService::resolve()` instead — this method returns the
+	 * raw favorited media-id list without rule resolution.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int $collection_id Collection post ID.
+	 * @param int $limit         Max rows to return. 0 = no limit.
+	 * @return array<int> Media IDs ordered by created_at DESC.
+	 */
+	public function get_collection_media_ids( int $collection_id, int $limit = 100 ): array {
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_favorites';
+
+		if ( $limit > 0 ) {
+			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id FROM {$table} WHERE collection_id = %d ORDER BY created_at DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$collection_id,
+					$limit
+				)
+			);
+		} else {
+			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id FROM {$table} WHERE collection_id = %d ORDER BY created_at DESC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$collection_id
+				)
+			);
+		}
+
+		return array_map( 'absint', (array) $rows );
+	}
+
+	/**
 	 * Get the favorite count for a media item.
 	 *
 	 * @param int $media_id Media post ID.
