@@ -187,7 +187,7 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php if ( $is_image ) : ?>
 				<div class="mvs-media-image">
 					<?php
-					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper pre-escapes inner values.
+					// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- helper pre-escapes inner values.
 					echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->picture_or_img(
 						$mvs_media_id,
 						$mvs_file_url,
@@ -195,6 +195,7 @@ $mvs_archive_url = home_url( '/media/' );
 						'',
 						'full'
 					);
+					// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 					?>
 				</div>
 			<?php elseif ( $is_video ) : ?>

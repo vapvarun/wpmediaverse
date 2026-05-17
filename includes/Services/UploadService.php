@@ -1280,8 +1280,8 @@ class UploadService {
 		// proc_open with array $cmd bypasses shell interpretation on PHP 7.4+
 		// — each argument is passed to execve() directly. No string escaping
 		// concerns even if $video_path / $dest contain shell metacharacters.
-		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open, Generic.PHP.ForbiddenFunctions.Found
-		$process = @proc_open( $args, $descriptors, $pipes ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open, Generic.PHP.ForbiddenFunctions.Found, WordPress.PHP.NoSilencedErrors.Discouraged
+		$process = @proc_open( $args, $descriptors, $pipes );
 		if ( ! is_resource( $process ) ) {
 			return false;
 		}

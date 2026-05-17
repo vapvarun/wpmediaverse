@@ -663,8 +663,10 @@ class ImageOptimizationService {
 
 		if ( $bytes_after > 0 && $bytes_after < $bytes_before ) {
 			// Re-encode is smaller — commit it. Atomic rename so a partial
-			// write can never leave the source in a half-state.
-			if ( ! @rename( $temp_path, $file_path ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			// write can never leave the source in a half-state. WP_Filesystem
+			// is unavailable in REST/cron contexts where this runs, and the
+			// fallback below covers cross-device cases that rename() rejects.
+			if ( ! @rename( $temp_path, $file_path ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.rename_rename
 				// Fall back to copy+unlink if rename fails (e.g. cross-device).
 				if ( copy( $temp_path, $file_path ) ) {
 					// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
