@@ -387,7 +387,10 @@ $mvs_show_fab = $mvs_is_logged_in && (
 					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
 				</button>
 
-				<img data-wp-bind--src="state.lightboxImageUrl" alt="" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
+				<picture data-wp-bind--hidden="state.lightboxHideImage">
+					<source type="image/webp" data-wp-bind--srcset="state.lightboxImageWebpUrl" data-wp-bind--hidden="state.lightboxHideImageWebp" />
+					<img data-wp-bind--src="state.lightboxImageUrl" alt="" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
+				</picture>
 				<video class="mvs-lightbox-video" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
 

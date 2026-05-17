@@ -119,6 +119,42 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Resolve the WebP sibling for the lightbox image, matching the size
+	 * choice made by get_lightbox_url(). Returns '' when no WebP variant
+	 * exists or when the JPEG URL routes through the gated /serve endpoint.
+	 *
+	 * Used by the REST media payload so the Interactivity-API lightbox can
+	 * bind a `<picture><source>` element and serve WebP to capable browsers
+	 * without changing the canonical fallback URL.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $media_id     Media ID.
+	 * @param string $lightbox_url The resolved JPEG/PNG lightbox URL.
+	 * @return string WebP variant URL or empty string.
+	 */
+	public function get_lightbox_webp_url( int $media_id, string $lightbox_url ): string {
+		if ( $media_id <= 0 || '' === $lightbox_url ) {
+			return '';
+		}
+		if ( 'image' !== $this->get_media_type( $media_id ) ) {
+			return '';
+		}
+
+		$source = (string) get_option( 'mvs_lightbox_image_source', 'original' );
+		if ( 'auto' === $source ) {
+			$source = wp_is_mobile() ? 'large' : 'original';
+		}
+
+		// Map the lightbox source choice to the size key understood by
+		// get_webp_variant_url(). 'original' → '' (full), everything else
+		// passes through as-is (large/medium/thumb).
+		$size = ( 'original' === $source ) ? '' : $source;
+
+		return $this->get_webp_variant_url( $media_id, $size, $lightbox_url );
+	}
+
+	/**
 	 * Get the media type (image, video, audio, document) for a media item.
 	 *
 	 * @param int $media_id Media ID (mvs_media_index.media_id).

@@ -1290,7 +1290,8 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Lightbox URL respects the admin-chosen image source.
-		$lightbox_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_url( $media_id, (string) $all['file_url'] );
+		$lightbox_url      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_url( $media_id, (string) $all['file_url'] );
+		$lightbox_webp_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_webp_url( $media_id, $lightbox_url );
 
 		$media_type_value = ! empty( $all['media_type'] ) ? $all['media_type'] : '';
 		$privacy_value    = ! empty( $all['privacy'] ) ? $all['privacy'] : 'public';
@@ -1331,6 +1332,7 @@ class MediaController extends WP_REST_Controller {
 			'categories'        => self::parse_meta_list( $all['category'] ?? '' ),
 			'thumbnail_url'     => $thumbnail_url,
 			'lightbox_url'      => $lightbox_url,
+			'lightbox_webp_url' => $lightbox_webp_url,
 			'can_edit'          => $can_edit,
 		);
 

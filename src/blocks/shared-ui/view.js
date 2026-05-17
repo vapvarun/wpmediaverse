@@ -177,6 +177,27 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// open full-size images instead of the low-res grid thumbnail.
 			return d.lightbox_url || d.file_url || d.thumbnail_url || '';
 		},
+		get lightboxImageWebpUrl() {
+			// WebP sibling of the lightbox image. Empty string when the upload
+			// pre-dates 1.2.2 optimization or the variant is not safe to embed
+			// directly (gated /serve route). Empty `srcset` makes the browser
+			// skip the `<source>` and use the JPEG `<img>` fallback.
+			const d = state.lightboxMediaData;
+			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+				return '';
+			}
+			return d.lightbox_webp_url || '';
+		},
+		get lightboxHideImageWebp() {
+			// Hide the `<source>` when WebP is missing OR when the lightbox is
+			// showing a non-image item. `data-wp-bind--hidden` on a `<source>`
+			// element makes the browser ignore it during type negotiation.
+			const d = state.lightboxMediaData;
+			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+				return true;
+			}
+			return ! d.lightbox_webp_url;
+		},
 		get lightboxIsVideo() {
 			return state.lightboxMediaData?.media_type === 'video';
 		},
