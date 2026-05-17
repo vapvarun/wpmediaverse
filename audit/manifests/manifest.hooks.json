@@ -219,6 +219,57 @@
       "args_count": 3,
       "_added_in": "1.2.1",
       "_purpose": "Fires when a media OR album privacy is updated (UPDATE only). ActivitySyncIntegration listens to keep BP activity hide_sitewide in sync; albums fan out to all linked per-media + gallery activities."
+    },
+    {
+      "name": "mvs_optimize_image",
+      "type": "filter",
+      "args": "$file_path, $context",
+      "args_signature": [
+        "string $file_path",
+        "array $context"
+      ],
+      "where": "Services/ImageOptimizationService.php:90",
+      "purpose": "Single extension point for external compressors (EWWW/Imagify/Smush/ShortPixel). Dispatched at every disk-write moment (original + variants + WebP siblings). Listeners may modify file in place or return replacement path; WP_Error logs failure and keeps original.",
+      "consumed_by": [],
+      "added": "1.2.2"
+    },
+    {
+      "name": "mvs_optimize_jpeg_quality",
+      "type": "filter",
+      "args": "$quality, $context",
+      "args_signature": [
+        "int $quality",
+        "array $context"
+      ],
+      "where": "Services/ImageOptimizationService.php:330",
+      "purpose": "Quality level for the lossless JPEG re-encode pass. Default 92. Set to 100 for near-lossless; lower for more aggressive compression.",
+      "consumed_by": [],
+      "added": "1.2.2"
+    },
+    {
+      "name": "mvs_webp_quality",
+      "type": "filter",
+      "args": "$quality, $context",
+      "args_signature": [
+        "int $quality",
+        "array $context"
+      ],
+      "where": "Services/ImageOptimizationService.php:198",
+      "purpose": "Quality level for WebP sibling generation. Default 82 (matches WP core JPEG default).",
+      "consumed_by": [],
+      "added": "1.2.2"
+    },
+    {
+      "name": "mvs_ffmpeg_binary",
+      "type": "filter",
+      "args": "$binary",
+      "args_signature": [
+        "string $binary"
+      ],
+      "where": "Services/UploadService.php (extract_video_poster_via_ffmpeg)",
+      "purpose": "Path to ffmpeg binary used for the video poster fallback when a video has no embedded cover atom. Default 'ffmpeg' (relies on PATH). Override for Docker / custom-prefix installs.",
+      "consumed_by": [],
+      "added": "1.2.2"
     }
   ]
 }

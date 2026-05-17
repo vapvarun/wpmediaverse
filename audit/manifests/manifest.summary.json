@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "1.2.0",
+    "version": "1.2.2",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -13,22 +13,26 @@
     "extension_hook_fired": "mvs_loaded"
   },
   "counts": {
-    "rest_endpoints": 53,
-    "ajax": 3,
+    "rest_endpoints": 85,
+    "ajax": 4,
     "admin_pages": 7,
-    "settings": 33,
-    "shortcodes": 12,
+    "settings": 35,
+    "shortcodes": 13,
     "blocks": 13,
     "post_types": 2,
     "taxonomies": 2,
-    "tables": 21,
+    "tables": 23,
     "capabilities": 10,
-    "services": 28,
-    "hooks_fired": 20,
-    "cron": 2,
-    "wp_cli": 1,
-    "hooks_with_args_signature": 20,
-    "hooks_no_call_site": 0
+    "services": 29,
+    "hooks_fired": 24,
+    "cron": 5,
+    "wp_cli": 15,
+    "hooks_with_args_signature": 24,
+    "hooks_no_call_site": 0,
+    "admin_pages_baseline": 20,
+    "hooks_fired_baseline": 124,
+    "services_registered": 41,
+    "settings_registered": 40
   },
   "detail_files": {
     "rest": "manifest.rest.json",
@@ -39,15 +43,28 @@
     "wppqa_baseline_dir": "wppqa-baseline-2026-05-03",
     "phase_2_5_11_14_skipped": true,
     "phase_2_5_11_14_skip_reason": "ServiceContainer DI (no Adapter pattern)",
-    "args_signature_extraction": "14 of 22 original hooks_fired entries populated; 8 phantom (no call site in source — manifest drift); 4 new hooks added from Core/SettingsHelper. PRO arch-checks A11 reads args_signature[] for cross-plugin contract drift detection."
+    "args_signature_extraction": "14 of 22 original hooks_fired entries populated; 8 phantom (no call site in source - manifest drift); 4 new hooks added from Core/SettingsHelper (1.2.1); 4 new filters added from ImageOptimizationService + UploadService (1.2.2)."
   },
   "generated": {
-    "at": "2026-05-07T08:30:00Z",
-    "from": "wp-plugin-onboard skill (1.2.1 targeted refresh 2026-05-07)",
-    "branch": "1.2.1",
+    "at": "2026-05-17T03:45:00Z",
+    "from": "wp-plugin-onboard skill (1.2.2 image optimization + ground-truth baseline 2026-05-17)",
+    "branch": "1.2.2",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
-    "php_file_count": 160
+    "php_file_count": 146,
+    "baseline_drift": {
+      "at": "2026-05-17T03:45:00Z",
+      "method": "fresh ground-truth grep across 146 PHP files (excluding vendor/node_modules/tests/dist/build/audit)",
+      "note": "counts.* reflect actual code, but DETAIL SECTIONS (rest.endpoints[], hooks_fired[], wp_cli[], admin_pages[]) still hold the targeted-refresh shape. Full Phase 2 parallel-agent re-enumeration is needed to fill the per-entry detail. Counts are honest; per-entry inventory has drift.",
+      "drift_per_category": {
+        "rest_endpoints": "85 baseline vs 53 in detail file (32 unenumerated)",
+        "hooks_fired_combined": "124 baseline (61 do_action + 63 apply_filters unique) vs 24 in detail file (100+ unenumerated)",
+        "wp_cli": "15 @subcommand vs 3 in detail file (12 unenumerated — bulk of historical commands)",
+        "admin_pages": "20 add_*_page calls vs 7 top-level pages in detail file (13 settings sub-pages not enumerated)",
+        "register_setting": "40 calls vs 35 unique in detail file (drift on multi-register flows)",
+        "blocks": "42 block.json files includes build copies; logical block count remains 13"
+      }
+    }
   }
 }

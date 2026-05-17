@@ -1,0 +1,460 @@
+{
+  "generated_at": "2026-05-17T04:11:34Z",
+  "generator": "bin/cleanup-boundary-check.sh",
+  "violations": [
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Connectors/ConnectorRESTController.php",
+      "line": 836,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Connectors/ConnectorRESTController.php",
+      "line": 837,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Video/TranscodeController.php",
+      "line": 309,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Video/TranscodeController.php",
+      "line": 310,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Video/TranscodeController.php",
+      "line": 319,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Privacy/PrivacyUIService.php",
+      "line": 338,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Challenges/ChallengeService.php",
+      "line": 829,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Challenges/ChallengeService.php",
+      "line": 830,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Challenges/ChallengeNotificationListener.php",
+      "line": 315,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Admin/ReportManager.php",
+      "line": 208,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Admin/ReportManager.php",
+      "line": 209,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Admin/ReportManager.php",
+      "line": 258,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Admin/CloudOpsManager.php",
+      "line": 170,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Admin/CloudOpsManager.php",
+      "line": 248,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/CLI/ImportThumbnailTrait.php",
+      "line": 108,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/MediaPress/Importer.php",
+      "line": 414,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/MediaPress/MigrationAdmin.php",
+      "line": 68,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/MediaPress/MigrationAdmin.php",
+      "line": 69,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/MediaPress/MigrationAdmin.php",
+      "line": 109,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/MediaPress/MigrationAdmin.php",
+      "line": 110,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/RtMedia/MigrationAdmin.php",
+      "line": 59,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/RtMedia/MigrationAdmin.php",
+      "line": 65,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/RtMedia/MigrationAdmin.php",
+      "line": 66,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/RtMedia/MigrationAdmin.php",
+      "line": 103,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/RtMedia/MigrationAdmin.php",
+      "line": 104,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/RtMedia/MigrationAdmin.php",
+      "line": 343,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/AbstractBatchImporter.php",
+      "line": 136,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/AbstractBatchImporter.php",
+      "line": 137,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/BuddyBoss/Importer.php",
+      "line": 524,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/BuddyBoss/MigrationAdmin.php",
+      "line": 92,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/BuddyBoss/MigrationAdmin.php",
+      "line": 93,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/BuddyBoss/MigrationAdmin.php",
+      "line": 191,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Integrations/BuddyBoss/MigrationAdmin.php",
+      "line": 192,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Quota/QuotaService.php",
+      "line": 538,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Quota/QuotaService.php",
+      "line": 539,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Tournaments/TournamentService.php",
+      "line": 913,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Tournaments/TournamentService.php",
+      "line": 914,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/REST/CompeteSummaryController.php",
+      "line": 432,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/REST/CompeteSummaryController.php",
+      "line": 433,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "includes/Analytics/AnalyticsService.php",
+      "line": 397,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/pinterest/profile.php",
+      "line": 31,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/pinterest/profile.php",
+      "line": 32,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/pinterest/profile.php",
+      "line": 152,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/pinterest/profile.php",
+      "line": 153,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/pinterest/profile.php",
+      "line": 160,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/pinterest/profile.php",
+      "line": 161,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/instagram/profile.php",
+      "line": 28,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/instagram/profile.php",
+      "line": 29,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/instagram/profile.php",
+      "line": 264,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/instagram/profile.php",
+      "line": 265,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/instagram/profile.php",
+      "line": 272,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/instagram/profile.php",
+      "line": 273,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/instagram/partials/stories-bar.php",
+      "line": 18,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/instagram/partials/stories-bar.php",
+      "line": 19,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/instagram/partials/feed-card.php",
+      "line": 97,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/layouts/instagram/partials/feed-card.php",
+      "line": 98,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/user-profile.php",
+      "line": 28,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/user-profile.php",
+      "line": 29,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/user-profile.php",
+      "line": 259,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/user-profile.php",
+      "line": 260,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/partials/stories-bar.php",
+      "line": 18,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/partials/stories-bar.php",
+      "line": 19,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/partials/feed-card.php",
+      "line": 106,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    },
+    {
+      "violation": "direct_wpdb_on_mvs_table",
+      "file": "templates/partials/feed-card.php",
+      "line": 107,
+      "rule": "Coding Rule #16 + boundary",
+      "fix": "Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants."
+    }
+  ],
+  "counts": {
+    "direct_free_imports": 0,
+    "direct_wpdb_on_mvs_tables": 64,
+    "new_free_class": 0,
+    "total": 64
+  }
+}

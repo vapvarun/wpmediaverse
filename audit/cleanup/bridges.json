@@ -1,0 +1,417 @@
+{
+  "generated_at": "2026-05-17T04:11:29Z",
+  "generator": "bin/cleanup-bridge-inventory.sh",
+  "bridges": [
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_media_privacy_changed",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Repository/MediaRepository.php:602"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_body_classes",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Core/TemplateLoader.php:510"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_template_variables",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Core/TemplateLoader.php:633"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_before_template_render",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Core/TemplateLoader.php:647"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_after_template_render",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Core/TemplateLoader.php:659"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_should_render_chat_panel",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Core/Plugin.php:1584"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_settings_before_save",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/Settings/SettingsPage.php:118"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_settings_sidebar_after",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/Settings/SettingsPage.php:450"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_settings_render_",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/Settings/SettingsPage.php:482"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_dashboard_widgets",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/OverviewPage.php:519"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_can_repair_thumb",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/MediaListPage.php:887"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_before_upload_form",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Shortcodes/Shortcodes.php:128"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_notification_types",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/NotificationService.php:87"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_should_send_notification",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/NotificationService.php:106"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_notification_created",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/NotificationService.php:153"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_notification_message",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/NotificationService.php:445"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_reaction_added",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/ReactionService.php:100"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_reaction_removed",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/ReactionService.php:139"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_user_followed",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/FollowService.php:76"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_user_unfollowed",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/FollowService.php:115"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_activity_types",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/ActivityService.php:61"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_favorite_added",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/FavoriteService.php:68"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_report_submitted",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/ReportService.php:112"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_user_blocked",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/ReportService.php:198"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_story_created",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/StoryService.php:80"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_ai_moderation_result",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/AIService.php:183"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_media_flagged",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/AIService.php:194"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_should_ai_analyze",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/AIService.php:225"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_ai_result",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/AIService.php:256"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_filename_strategy",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/FilenameStrategy.php:95"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_album_items_added",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/AlbumService.php:209"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_optimize_image",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ImageOptimizationService.php:90"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_profile_data",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:86"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_profile_update_fields",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:107"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_profile_updated",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:141"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_avatar_allowed_types",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:167"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_avatar_max_size",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:179"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_avatar_uploaded",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:238"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_avatar_deleted",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:268"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_max_upload_size",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:98"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_upload_directory",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:221"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_before_media_insert",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:335"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_allowed_file_types",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:499"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_media_metadata",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:727"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_before_thumbnail_generation",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:788"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_cloud_thumbnail_url",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:883"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_after_thumbnail_generation",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:947"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_thumbnail_sizes",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:989"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_ffmpeg_binary",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:1110"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_rest_pagination_max",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Pagination.php:55"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_collection_response",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/CollectionController.php:432"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_album_response",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/AlbumController.php:611"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_feed_media_ids",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:498"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_media_deleted",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:943"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_share_recorded",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:1124"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_user_badge_html",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:1373"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "maximum",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:1459"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "enum",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:1491"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_after_explore_grid",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/explore.php:601"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_after_content",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/explore.php:613"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_dashboard_before_content",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/partials/dashboard-content.php:20"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_dashboard_tabs",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/partials/dashboard-content.php:341"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_dashboard_panels",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/partials/dashboard-content.php:576"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_dashboard_after_content",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/partials/dashboard-content.php:888"
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_before_content",
+      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/messages.php:13"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs backfill-activity-thumbnails",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs cache-flush",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs cleanup-expired",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs cleanup-local",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs cloud-thumbs-backfill",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs generate-video-thumbnails",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs migrate",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs migrate-storage",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs moderation-stats",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs optimize",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs optimize-bulk",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs prune-views",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs reindex",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs stats",
+      "provenance": "@subcommand — automation scripts depend"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs sync-activity-privacy",
+      "provenance": "@subcommand — automation scripts depend"
+    }
+  ],
+  "counts": {
+    "cross_plugin_hooks": 0,
+    "documented_hooks": 65,
+    "overridable_templates": 0,
+    "rest_routes": 0,
+    "capabilities": 0,
+    "options": 0,
+    "wp_cli": 15,
+    "service_keys": 0,
+    "total": 80
+  }
+}

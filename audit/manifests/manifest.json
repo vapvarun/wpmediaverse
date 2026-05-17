@@ -818,6 +818,28 @@
       "section": "mvs_display",
       "sanitize_callback": "rest_sanitize_boolean",
       "controls": "Global Allow Downloads toggle. Hides the lightbox Download button + gates the POST /mvs/v1/media/{id}/download REST endpoint (defense-in-depth: hiding the button alone wouldn't stop a determined caller). Per-media `allow_download` meta still applies on top of this."
+    },
+    {
+      "key": "mvs_optimize_originals",
+      "group": "storage",
+      "type": "bool",
+      "default": true,
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "controls": "Compress uploaded JPEG/PNG/GIF via WP_Image_Editor. Temp-write + size-compare protects against re-encode inflation. Fires mvs_optimize_image filter so EWWW/Imagify/Smush/ShortPixel run alongside.",
+      "added": "1.2.2"
+    },
+    {
+      "key": "mvs_generate_webp",
+      "group": "storage",
+      "type": "bool",
+      "default": true,
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "controls": "Emit WebP sibling for original + each thumbnail size. Stored as original_webp / thumb_*_webp meta. Only kept when strictly smaller than source. Uploaded to active cloud driver for cloud installs.",
+      "added": "1.2.2"
     }
   ],
   "shortcodes": [
@@ -1310,6 +1332,11 @@
     {
       "key": "profile",
       "class": "Services/ProfileService.php"
+    },
+    {
+      "key": "image_optimization",
+      "class": "Services/ImageOptimizationService.php",
+      "added": "1.2.2"
     }
   ],
   "hooks_fired": [
@@ -1605,6 +1632,57 @@
       "where": "includes/Core/Plugin.php:1477",
       "purpose": "Per-page override of the slide-out chat panel render decision after the mvs_chat_panel_visibility setting has resolved (e.g. force-hide on WooCommerce checkout, single-product, or specific post IDs / roles). Returning false skips the chat-panel render in wp_footer for the current request.",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_optimize_image",
+      "type": "filter",
+      "args": "$file_path, $context",
+      "args_signature": [
+        "string $file_path",
+        "array $context"
+      ],
+      "where": "Services/ImageOptimizationService.php:90",
+      "purpose": "Single extension point for external compressors (EWWW/Imagify/Smush/ShortPixel). Dispatched at every disk-write moment (original + variants + WebP siblings). Listeners may modify file in place or return replacement path; WP_Error logs failure and keeps original.",
+      "consumed_by": [],
+      "added": "1.2.2"
+    },
+    {
+      "name": "mvs_optimize_jpeg_quality",
+      "type": "filter",
+      "args": "$quality, $context",
+      "args_signature": [
+        "int $quality",
+        "array $context"
+      ],
+      "where": "Services/ImageOptimizationService.php:330",
+      "purpose": "Quality level for the lossless JPEG re-encode pass. Default 92. Set to 100 for near-lossless; lower for more aggressive compression.",
+      "consumed_by": [],
+      "added": "1.2.2"
+    },
+    {
+      "name": "mvs_webp_quality",
+      "type": "filter",
+      "args": "$quality, $context",
+      "args_signature": [
+        "int $quality",
+        "array $context"
+      ],
+      "where": "Services/ImageOptimizationService.php:198",
+      "purpose": "Quality level for WebP sibling generation. Default 82 (matches WP core JPEG default).",
+      "consumed_by": [],
+      "added": "1.2.2"
+    },
+    {
+      "name": "mvs_ffmpeg_binary",
+      "type": "filter",
+      "args": "$binary",
+      "args_signature": [
+        "string $binary"
+      ],
+      "where": "Services/UploadService.php (extract_video_poster_via_ffmpeg)",
+      "purpose": "Path to ffmpeg binary used for the video poster fallback when a video has no embedded cover atom. Default 'ffmpeg' (relies on PATH). Override for Docker / custom-prefix installs.",
+      "consumed_by": [],
+      "added": "1.2.2"
     }
   ],
   "buddypress_integration": {
@@ -1772,7 +1850,17 @@
     {
       "command": "wp mvs",
       "class": "CLI/Commands.php",
-      "purpose": "Router for sub-commands (regenerate-thumbnails, recount-stats, export-user-data)"
+      "purpose": "Router for sub-commands"
+    },
+    {
+      "command": "wp mvs optimize",
+      "class": "CLI/Commands.php",
+      "purpose": "Optimize one media row. Flags: <media_id> [--include-variants] [--force]. Added 1.2.2."
+    },
+    {
+      "command": "wp mvs optimize-bulk",
+      "class": "CLI/Commands.php",
+      "purpose": "Bulk optimize image library with resume support via _mvs_optimized_at sentinel. Flags: [--limit] [--offset] [--mime] [--media-type] [--include-variants] [--dry-run] [--include-failed]. Added 1.2.2."
     }
   ],
   "storage_drivers": [
@@ -1922,6 +2010,72 @@
         ]
       },
       "out_of_scope": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3 outputs) NOT regenerated. audit/derived/ cache untouched. Journeys untouched."
+    },
+    "refreshed_at": "2026-05-17T03:30:00Z",
+    "refresh_2026_05_17": {
+      "scope": "targeted: 1.2.2 image optimization pipeline (services + settings + CLI + filters + video poster ffmpeg fallback + audio waveform + explore feed chronology)",
+      "services_added": [
+        "image_optimization"
+      ],
+      "settings_added": [
+        "mvs_optimize_originals",
+        "mvs_generate_webp"
+      ],
+      "cli_added": [
+        "wp mvs optimize",
+        "wp mvs optimize-bulk"
+      ],
+      "filters_added": [
+        "mvs_optimize_image - single extension point for external compressors",
+        "mvs_optimize_jpeg_quality - default 92 for lossless re-encode",
+        "mvs_webp_quality - default 82 for WebP sibling",
+        "mvs_ffmpeg_binary - default ffmpeg, override for Docker"
+      ],
+      "meta_keys_added": [
+        "original_webp",
+        "thumb_large_webp",
+        "thumb_medium_webp",
+        "thumb_thumb_webp",
+        "_mvs_optimized_at",
+        "_mvs_optimize_failed",
+        "_mvs_bytes_before",
+        "_mvs_bytes_after"
+      ],
+      "files_added": [
+        "includes/Services/ImageOptimizationService.php",
+        "tests/unit/ImageOptimizationServiceTest.php",
+        "docs/architecture/specs/2026-05-17-image-optimization-pipeline.md",
+        "docs/development/COMPRESSION_INTEGRATIONS.md"
+      ],
+      "templates_changed": [
+        "templates/explore.php - albums removed from feed (static containers misrepresented freshness); media-only strict created_at DESC",
+        "templates/media-single.php - uses picture_or_img() so single-media view serves WebP via picture+source when sibling exists"
+      ],
+      "template_helpers_added": [
+        "picture_or_img() - emits picture when WebP sibling exists and JPEG URL is not /serve-gated",
+        "get_webp_variant_url() - central choke point; size mapping + original_webp fallback",
+        "render_audio_waveform_svg() - deterministic 48-bar waveform from media_id for audio cards without album art"
+      ],
+      "upload_service_changes": [
+        "process_upload: optimize runs on temp file BEFORE driver->store so cloud drivers receive optimized bytes",
+        "process_upload: ensure-local-copy fallback before extract_and_store_metadata for cloud-driver installs",
+        "generate_thumbnails: per-variant optimize + emit_webp_sibling; cloud upload of variant WebPs",
+        "extract_and_store_metadata audio case: embedded album art feeds through generate_thumbnails",
+        "generate_video_poster_thumbnails: Path B added - ffmpeg fallback when no embedded cover atom (proc_open with arg array, no shell injection)"
+      ],
+      "admin_changes": [
+        "MediaListPage Optimization column with badges: -X.X% / WebP ready / No lossless gain / Not optimized / Could not optimize",
+        "MediaListPage row actions: Details (?view=details mini-page), Optimize (admin-php nonced trigger)",
+        "MediaListPage::render_detail - read-only mini-page with site-owner-friendly metadata"
+      ],
+      "not_re_enumerated": "REST/AJAX/post_types/taxonomies/tables/capabilities/shortcodes/blocks/cron unchanged",
+      "deferred_to_1_3_0": [
+        "AVIF variant generation",
+        "/serve content negotiation reading Accept header",
+        "Lightbox WebP serving (needs Interactivity state + REST schema + JS build)",
+        "Screen Options column toggles",
+        "Admin bulk-optimize progress UI"
+      ]
     }
   },
   "category_sources": {
