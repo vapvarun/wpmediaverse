@@ -1,417 +1,1266 @@
 {
-  "generated_at": "2026-05-17T04:11:29Z",
+  "generated_at": "2026-05-17T04:50:36Z",
   "generator": "bin/cleanup-bridge-inventory.sh",
+  "source": "audit/manifests/*.json + audit/derived/cross-plugin-coupling.json",
   "bridges": [
     {
-      "type": "documented_hook",
-      "symbol": "mvs_media_privacy_changed",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Repository/MediaRepository.php:602"
+      "type": "cross_plugin_hook",
+      "symbol": "mvs_ai_providers",
+      "provenance": "Pro listens via add_filter/add_action",
+      "consumed_by": [
+        "wpmediaverse-pro:includes/Core/Plugin.php:242 (add_action_listener)"
+      ]
     },
     {
-      "type": "documented_hook",
-      "symbol": "mvs_body_classes",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Core/TemplateLoader.php:510"
+      "type": "cross_plugin_hook",
+      "symbol": "mvs_generate_watermark",
+      "provenance": "Pro listens via add_filter/add_action",
+      "consumed_by": [
+        "wpmediaverse-pro:includes/Core/Plugin.php:239 (add_filter_listener)"
+      ]
     },
     {
-      "type": "documented_hook",
-      "symbol": "mvs_template_variables",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Core/TemplateLoader.php:633"
+      "type": "cross_plugin_hook",
+      "symbol": "mvs_media_deleted",
+      "provenance": "Pro listens via add_filter/add_action",
+      "consumed_by": [
+        "wpmediaverse-pro:includes/Quota/QuotaService.php:41 (add_action_listener)"
+      ]
     },
     {
-      "type": "documented_hook",
-      "symbol": "mvs_before_template_render",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Core/TemplateLoader.php:647"
+      "type": "cross_plugin_hook",
+      "symbol": "mvs_media_response",
+      "provenance": "Pro listens via add_filter/add_action",
+      "consumed_by": [
+        "wpmediaverse-pro:includes/Captions/TranscriptionService.php:74 (add_filter_listener)",
+        "wpmediaverse-pro:includes/Video/ChapterService.php:32 (add_filter_listener)",
+        "wpmediaverse-pro:includes/Privacy/PrivacyUIService.php:76 (add_filter_listener)"
+      ]
     },
     {
-      "type": "documented_hook",
-      "symbol": "mvs_after_template_render",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Core/TemplateLoader.php:659"
+      "type": "cross_plugin_hook",
+      "symbol": "mvs_media_uploaded",
+      "provenance": "Pro listens via add_filter/add_action",
+      "consumed_by": [
+        "wpmediaverse-pro:includes/Connectors/ConnectorManager.php:60 (add_action_listener)",
+        "wpmediaverse-pro:includes/Captions/TranscriptionService.php:71 (add_action_listener)",
+        "wpmediaverse-pro:includes/Video/TranscodeService.php:98 (add_action_listener)",
+        "wpmediaverse-pro:includes/Quota/QuotaService.php:40 (add_action_listener)",
+        "wpmediaverse-pro:includes/Streaks/StreakService.php:53 (add_action_listener)"
+      ]
     },
     {
-      "type": "documented_hook",
-      "symbol": "mvs_should_render_chat_panel",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Core/Plugin.php:1584"
+      "type": "cross_plugin_hook",
+      "symbol": "mvs_privacy_can_view",
+      "provenance": "Pro listens via add_filter/add_action",
+      "consumed_by": [
+        "wpmediaverse-pro:includes/Privacy/PrivacyUIService.php:79 (add_filter_listener)"
+      ]
     },
     {
-      "type": "documented_hook",
-      "symbol": "mvs_settings_before_save",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/Settings/SettingsPage.php:118"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_settings_sidebar_after",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/Settings/SettingsPage.php:450"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_settings_render_",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/Settings/SettingsPage.php:482"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_dashboard_widgets",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/OverviewPage.php:519"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_can_repair_thumb",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/MediaListPage.php:887"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_before_upload_form",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Shortcodes/Shortcodes.php:128"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_notification_types",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/NotificationService.php:87"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_should_send_notification",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/NotificationService.php:106"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_notification_created",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/NotificationService.php:153"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_notification_message",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/NotificationService.php:445"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_reaction_added",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/ReactionService.php:100"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_reaction_removed",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/ReactionService.php:139"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_user_followed",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/FollowService.php:76"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_user_unfollowed",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/FollowService.php:115"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_activity_types",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/ActivityService.php:61"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_favorite_added",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/FavoriteService.php:68"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_report_submitted",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/ReportService.php:112"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_user_blocked",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Social/ReportService.php:198"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_story_created",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/StoryService.php:80"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_ai_moderation_result",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/AIService.php:183"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_media_flagged",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/AIService.php:194"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_should_ai_analyze",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/AIService.php:225"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_ai_result",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/AIService.php:256"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_filename_strategy",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/FilenameStrategy.php:95"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_album_items_added",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/AlbumService.php:209"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_optimize_image",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ImageOptimizationService.php:90"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_profile_data",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:86"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_profile_update_fields",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:107"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_profile_updated",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:141"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_avatar_allowed_types",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:167"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_avatar_max_size",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:179"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_avatar_uploaded",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:238"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_avatar_deleted",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/ProfileService.php:268"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_max_upload_size",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:98"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_upload_directory",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:221"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_before_media_insert",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:335"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_allowed_file_types",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:499"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_media_metadata",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:727"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_before_thumbnail_generation",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:788"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_cloud_thumbnail_url",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:883"
+      "type": "cross_plugin_hook",
+      "symbol": "mvs_storage_driver",
+      "provenance": "Pro listens via add_filter/add_action",
+      "consumed_by": [
+        "wpmediaverse-pro:includes/Core/Plugin.php:236 (add_filter_listener)"
+      ]
     },
     {
       "type": "documented_hook",
       "symbol": "mvs_after_thumbnail_generation",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:947"
+      "provenance": "manifest hooks_fired (action) — Services/UploadService.php",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_thumbnail_sizes",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:989"
+      "symbol": "mvs_ai_providers",
+      "provenance": "manifest hooks_fired (action) — Services/AIService.php",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_ffmpeg_binary",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Services/UploadService.php:1110"
+      "symbol": "mvs_generate_watermark",
+      "provenance": "manifest hooks_fired (filter) — Services/WatermarkService.php",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_rest_pagination_max",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Pagination.php:55"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_collection_response",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/CollectionController.php:432"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_album_response",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/AlbumController.php:611"
-    },
-    {
-      "type": "documented_hook",
-      "symbol": "mvs_feed_media_ids",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:498"
+      "symbol": "mvs_loaded",
+      "provenance": "manifest hooks_fired (action) — Core/Plugin.php::init",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
       "symbol": "mvs_media_deleted",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:943"
+      "provenance": "manifest hooks_fired (action) — Services/UploadService.php",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_share_recorded",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:1124"
+      "symbol": "mvs_media_response",
+      "provenance": "manifest hooks_fired (filter) — REST controllers",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_user_badge_html",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:1373"
+      "symbol": "mvs_media_uploaded",
+      "provenance": "manifest hooks_fired (action) — Services/UploadService.php",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
-      "symbol": "maximum",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:1459"
+      "symbol": "mvs_message_sent",
+      "provenance": "manifest hooks_fired (action) — Messaging/MessagingService.php",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
-      "symbol": "enum",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/REST/Controller/MediaController.php:1491"
+      "symbol": "mvs_moderation_tabs",
+      "provenance": "manifest hooks_fired (filter) — Admin/ModerationQueue.php",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_after_explore_grid",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/explore.php:601"
+      "symbol": "mvs_notification_created",
+      "provenance": "manifest hooks_fired (action) — Social/NotificationService.php",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_after_content",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/explore.php:613"
+      "symbol": "mvs_page_id_dashboard",
+      "provenance": "manifest hooks_fired (filter) — includes/Core/SettingsHelper.php:66",
+      "args_signature": [
+        "int $page_id",
+        "string $slot"
+      ]
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_dashboard_before_content",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/partials/dashboard-content.php:20"
+      "symbol": "mvs_page_id_explore",
+      "provenance": "manifest hooks_fired (filter) — includes/Core/SettingsHelper.php:66",
+      "args_signature": [
+        "int $page_id",
+        "string $slot"
+      ]
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_dashboard_tabs",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/partials/dashboard-content.php:341"
+      "symbol": "mvs_page_id_upload",
+      "provenance": "manifest hooks_fired (filter) — includes/Core/SettingsHelper.php:66",
+      "args_signature": [
+        "int $page_id",
+        "string $slot"
+      ]
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_dashboard_panels",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/partials/dashboard-content.php:576"
+      "symbol": "mvs_stats_tabs",
+      "provenance": "manifest hooks_fired (filter) — Admin/StatsPage.php",
+      "args_signature": []
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_dashboard_after_content",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/partials/dashboard-content.php:888"
+      "symbol": "mvs_should_render_chat_panel",
+      "provenance": "manifest hooks_fired (filter) — includes/Core/Plugin.php:1477",
+      "args_signature": [
+        "bool $should_render",
+        "string $resolved_visibility"
+      ]
     },
     {
       "type": "documented_hook",
-      "symbol": "mvs_before_content",
-      "provenance": "@since-annotated in /Users/varundubey/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/templates/messages.php:13"
+      "symbol": "mvs_storage_driver",
+      "provenance": "manifest hooks_fired (filter) — Services/StorageService.php",
+      "args_signature": []
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_thumbnail_size_resolved",
+      "provenance": "manifest hooks_fired (filter) — includes/Core/SettingsHelper.php:112",
+      "args_signature": [
+        "string $size"
+      ]
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_thumbnail_sizes",
+      "provenance": "manifest hooks_fired (filter) — Services/UploadService.php",
+      "args_signature": []
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_watermark_invalidated",
+      "provenance": "manifest hooks_fired (action) — Services/WatermarkService.php",
+      "args_signature": []
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_media_privacy_changed",
+      "provenance": "manifest hooks_fired (action) — includes/Repository/MediaRepository.php:447",
+      "args_signature": [
+        "int $entity_id",
+        "string $new_privacy",
+        "string $old_privacy"
+      ]
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_optimize_image",
+      "provenance": "manifest hooks_fired (filter) — Services/ImageOptimizationService.php:90",
+      "args_signature": [
+        "string $file_path",
+        "array $context"
+      ]
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_optimize_jpeg_quality",
+      "provenance": "manifest hooks_fired (filter) — Services/ImageOptimizationService.php:330",
+      "args_signature": [
+        "int $quality",
+        "array $context"
+      ]
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_webp_quality",
+      "provenance": "manifest hooks_fired (filter) — Services/ImageOptimizationService.php:198",
+      "args_signature": [
+        "int $quality",
+        "array $context"
+      ]
+    },
+    {
+      "type": "documented_hook",
+      "symbol": "mvs_ffmpeg_binary",
+      "provenance": "manifest hooks_fired (filter) — Services/UploadService.php (extract_video_poster_via_ffmpeg)",
+      "args_signature": [
+        "string $binary"
+      ]
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/404.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/album.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/collection.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/explore.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/media-single.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/messages.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/chat-composer.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/chat-conversation.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/chat-list.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/chat-media-card.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/chat-message.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/chat-new.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/chat-panel.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/dashboard-content.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/profile-actions-js.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/profile-actions.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/partials/shared-ui-frame.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "overridable_template",
+      "symbol": "templates/profile-edit.php",
+      "provenance": "templates/ directory — themes override via locate_template by convention"
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media",
+      "provenance": "REST endpoint — GET|POST — external API",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)",
+      "provenance": "REST endpoint — GET|PUT|DELETE — external API",
+      "methods": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>[0-9]+)/download",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>[0-9]+)/share",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/bulk",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)/signed-url",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/serve",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)/report",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)/reactions",
+      "provenance": "REST endpoint — GET|POST|DELETE — external API",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)/comments",
+      "provenance": "REST endpoint — GET|POST — external API",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)/comments/(?P<comment_id>\\d+)",
+      "provenance": "REST endpoint — PUT|DELETE — external API",
+      "methods": [
+        "PUT",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)/favorite",
+      "provenance": "REST endpoint — GET|POST|DELETE — external API",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/me/favorites",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/albums",
+      "provenance": "REST endpoint — GET|POST — external API",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/albums/(?P<id>\\d+)",
+      "provenance": "REST endpoint — GET|PUT|DELETE — external API",
+      "methods": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/albums/(?P<id>\\d+)/items",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/collections",
+      "provenance": "REST endpoint — GET|POST — external API",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/collections/(?P<id>\\d+)",
+      "provenance": "REST endpoint — GET|PUT|DELETE — external API",
+      "methods": [
+        "GET",
+        "PUT",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/tags",
+      "provenance": "REST endpoint — GET|POST — external API",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/tags/cloud",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/tags/(?P<id>\\d+)",
+      "provenance": "REST endpoint — PUT|DELETE — external API",
+      "methods": [
+        "PUT",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/tags/merge",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/users/(?P<id>\\d+)",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/users/(?P<id>\\d+)/media",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/users/search",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/users/(?P<id>\\d+)/follow",
+      "provenance": "REST endpoint — POST|DELETE — external API",
+      "methods": [
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/users/(?P<id>\\d+)/followers",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/users/(?P<id>\\d+)/following",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/me/profile",
+      "provenance": "REST endpoint — GET|PUT|PATCH — external API",
+      "methods": [
+        "GET",
+        "PUT",
+        "PATCH"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/me/avatar",
+      "provenance": "REST endpoint — POST|DELETE — external API",
+      "methods": [
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/users/(?P<id>\\d+)/report",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/users/(?P<id>\\d+)/block",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/me/blocked",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/feed",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/users/(?P<id>\\d+)/activity",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)/stats",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/me/stats",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)/rules",
+      "provenance": "REST endpoint — GET|POST — external API",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)/rules/(?P<rule_id>\\d+)",
+      "provenance": "REST endpoint — DELETE — external API",
+      "methods": [
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/media/(?P<id>\\d+)/grant",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/moderation",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/moderation/counts",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/moderation/(?P<id>\\d+)/approve",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/moderation/(?P<id>\\d+)/reject",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/me/notifications",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/me/notifications/read",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/me/notifications/count",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/me/conversations",
+      "provenance": "REST endpoint — GET — external API",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/conversations",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/conversations/(?P<id>\\d+)",
+      "provenance": "REST endpoint — GET|PATCH|DELETE — external API",
+      "methods": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/conversations/(?P<id>\\d+)/messages",
+      "provenance": "REST endpoint — GET|POST — external API",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/conversations/(?P<id>\\d+)/messages/(?P<msg_id>\\d+)",
+      "provenance": "REST endpoint — PUT|DELETE — external API",
+      "methods": [
+        "PUT",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "rest_route",
+      "symbol": "/conversations/(?P<id>\\d+)/messages/(?P<msg_id>\\d+)/reactions",
+      "provenance": "REST endpoint — POST — external API",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "type": "capability",
+      "symbol": "upload_mvs_media",
+      "provenance": "manifest capabilities — role plugins read these",
+      "default_roles": [
+        "administrator",
+        "editor",
+        "author",
+        "contributor",
+        "subscriber"
+      ]
+    },
+    {
+      "type": "capability",
+      "symbol": "edit_mvs_media",
+      "provenance": "manifest capabilities — role plugins read these",
+      "default_roles": [
+        "administrator",
+        "editor",
+        "author",
+        "contributor",
+        "subscriber"
+      ]
+    },
+    {
+      "type": "capability",
+      "symbol": "edit_others_mvs_media",
+      "provenance": "manifest capabilities — role plugins read these",
+      "default_roles": [
+        "administrator",
+        "editor"
+      ]
+    },
+    {
+      "type": "capability",
+      "symbol": "delete_mvs_media",
+      "provenance": "manifest capabilities — role plugins read these",
+      "default_roles": [
+        "administrator",
+        "editor",
+        "author",
+        "contributor",
+        "subscriber"
+      ]
+    },
+    {
+      "type": "capability",
+      "symbol": "delete_others_mvs_media",
+      "provenance": "manifest capabilities — role plugins read these",
+      "default_roles": [
+        "administrator",
+        "editor"
+      ]
+    },
+    {
+      "type": "capability",
+      "symbol": "publish_mvs_media",
+      "provenance": "manifest capabilities — role plugins read these",
+      "default_roles": [
+        "administrator",
+        "editor",
+        "author",
+        "subscriber"
+      ]
+    },
+    {
+      "type": "capability",
+      "symbol": "read_mvs_media",
+      "provenance": "manifest capabilities — role plugins read these",
+      "default_roles": [
+        "administrator",
+        "editor",
+        "author",
+        "contributor",
+        "subscriber"
+      ]
+    },
+    {
+      "type": "capability",
+      "symbol": "moderate_mvs_media",
+      "provenance": "manifest capabilities — role plugins read these",
+      "default_roles": [
+        "administrator",
+        "editor"
+      ]
+    },
+    {
+      "type": "capability",
+      "symbol": "manage_mvs_settings",
+      "provenance": "manifest capabilities — role plugins read these",
+      "default_roles": [
+        "administrator"
+      ]
+    },
+    {
+      "type": "capability",
+      "symbol": "manage_mvs_access",
+      "provenance": "manifest capabilities — role plugins read these",
+      "default_roles": [
+        "administrator",
+        "editor"
+      ]
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_max_upload_size",
+      "provenance": "register_setting — group=general — devops/migration scripts set this",
+      "default": 50
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_allowed_file_types",
+      "provenance": "register_setting — group=general — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_default_privacy",
+      "provenance": "register_setting — group=general — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_allow_user_privacy",
+      "provenance": "register_setting — group=general — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_duplicate_action",
+      "provenance": "register_setting — group=general — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_strip_exif",
+      "provenance": "register_setting — group=general — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_signed_url_ttl",
+      "provenance": "register_setting — group=general — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_grid_columns",
+      "provenance": "register_setting — group=display — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_items_per_page",
+      "provenance": "register_setting — group=display — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_thumbnail_style",
+      "provenance": "register_setting — group=display — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_thumbnail_size",
+      "provenance": "register_setting — group=display — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_lightbox_image_source",
+      "provenance": "register_setting — group=display — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_ai_provider",
+      "provenance": "register_setting — group=ai — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_openai_api_key",
+      "provenance": "register_setting — group=ai — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_openai_model",
+      "provenance": "register_setting — group=ai — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_ai_auto_analyze",
+      "provenance": "register_setting — group=ai — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_ai_auto_apply_tags",
+      "provenance": "register_setting — group=ai — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_ai_auto_moderate",
+      "provenance": "register_setting — group=ai — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_ai_monthly_budget",
+      "provenance": "register_setting — group=ai — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_ai_cost_per_call",
+      "provenance": "register_setting — group=ai — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_moderation_auto_action",
+      "provenance": "register_setting — group=moderation — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_report_auto_hide_threshold",
+      "provenance": "register_setting — group=moderation — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_dm_access",
+      "provenance": "register_setting — group=messaging — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_dm_min_age",
+      "provenance": "register_setting — group=messaging — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_show_online_status",
+      "provenance": "register_setting — group=messaging — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_page_dashboard",
+      "provenance": "register_setting — group=pages — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_page_explore",
+      "provenance": "register_setting — group=pages — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_page_upload",
+      "provenance": "register_setting — group=pages — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_webhooks",
+      "provenance": "register_setting — group=webhook — devops/migration scripts set this",
+      "default": null
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_storage_driver",
+      "provenance": "register_setting — group=general — devops/migration scripts set this",
+      "default": "local"
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_comment_edit_window",
+      "provenance": "register_setting — group=general — devops/migration scripts set this",
+      "default": 900
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_chat_panel_visibility",
+      "provenance": "register_setting — group=messaging — devops/migration scripts set this",
+      "default": "everywhere"
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_allow_downloads",
+      "provenance": "register_setting — group=display — devops/migration scripts set this",
+      "default": true
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_optimize_originals",
+      "provenance": "register_setting — group=storage — devops/migration scripts set this",
+      "default": true
+    },
+    {
+      "type": "option",
+      "symbol": "mvs_generate_webp",
+      "provenance": "register_setting — group=storage — devops/migration scripts set this",
+      "default": true
     },
     {
       "type": "wp_cli",
-      "symbol": "wp mvs backfill-activity-thumbnails",
-      "provenance": "@subcommand — automation scripts depend"
-    },
-    {
-      "type": "wp_cli",
-      "symbol": "wp mvs cache-flush",
-      "provenance": "@subcommand — automation scripts depend"
-    },
-    {
-      "type": "wp_cli",
-      "symbol": "wp mvs cleanup-expired",
-      "provenance": "@subcommand — automation scripts depend"
-    },
-    {
-      "type": "wp_cli",
-      "symbol": "wp mvs cleanup-local",
-      "provenance": "@subcommand — automation scripts depend"
-    },
-    {
-      "type": "wp_cli",
-      "symbol": "wp mvs cloud-thumbs-backfill",
-      "provenance": "@subcommand — automation scripts depend"
-    },
-    {
-      "type": "wp_cli",
-      "symbol": "wp mvs generate-video-thumbnails",
-      "provenance": "@subcommand — automation scripts depend"
-    },
-    {
-      "type": "wp_cli",
-      "symbol": "wp mvs migrate",
-      "provenance": "@subcommand — automation scripts depend"
-    },
-    {
-      "type": "wp_cli",
-      "symbol": "wp mvs migrate-storage",
-      "provenance": "@subcommand — automation scripts depend"
-    },
-    {
-      "type": "wp_cli",
-      "symbol": "wp mvs moderation-stats",
-      "provenance": "@subcommand — automation scripts depend"
+      "symbol": "wp mvs",
+      "provenance": "@subcommand — Router for sub-commands"
     },
     {
       "type": "wp_cli",
       "symbol": "wp mvs optimize",
-      "provenance": "@subcommand — automation scripts depend"
+      "provenance": "@subcommand — Optimize one media row. Flags: <media_id> [--include-variants] [--force]. Added 1.2.2."
     },
     {
       "type": "wp_cli",
       "symbol": "wp mvs optimize-bulk",
-      "provenance": "@subcommand — automation scripts depend"
+      "provenance": "@subcommand — Bulk optimize image library with resume support via _mvs_optimized_at sentinel. Flags: [--limit] [--offset] [--mime] [--media-type] [--include-variants] [--dry-run] [--include-failed]. Added 1.2.2."
     },
     {
-      "type": "wp_cli",
-      "symbol": "wp mvs prune-views",
-      "provenance": "@subcommand — automation scripts depend"
+      "type": "service_key",
+      "symbol": "storage",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
     },
     {
-      "type": "wp_cli",
-      "symbol": "wp mvs reindex",
-      "provenance": "@subcommand — automation scripts depend"
+      "type": "service_key",
+      "symbol": "upload",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
     },
     {
-      "type": "wp_cli",
-      "symbol": "wp mvs stats",
-      "provenance": "@subcommand — automation scripts depend"
+      "type": "service_key",
+      "symbol": "privacy",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
     },
     {
-      "type": "wp_cli",
-      "symbol": "wp mvs sync-activity-privacy",
-      "provenance": "@subcommand — automation scripts depend"
+      "type": "service_key",
+      "symbol": "albums",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "collections",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "stories",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "ai",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "moderation",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "stats",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "access_rules",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "signed_urls",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "watermark",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "cache",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "media_url_helper",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "reactions",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "comments",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "favorites",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "mentions",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "shares",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "follows",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "notifications",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "reports",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "activity",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "messaging",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "media_repository",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "integration.buddypress",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "integration.webhooks",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "profile",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
+    },
+    {
+      "type": "service_key",
+      "symbol": "image_optimization",
+      "provenance": "container->register( + .key + ) — Pro+mu-plugins resolve via container->get"
     }
   ],
   "counts": {
-    "cross_plugin_hooks": 0,
-    "documented_hooks": 65,
-    "overridable_templates": 0,
-    "rest_routes": 0,
-    "capabilities": 0,
-    "options": 0,
-    "wp_cli": 15,
-    "service_keys": 0,
-    "total": 80
+    "cross_plugin_hooks": 7,
+    "documented_hooks": 24,
+    "overridable_templates": 18,
+    "rest_routes": 53,
+    "capabilities": 10,
+    "options": 35,
+    "wp_cli": 3,
+    "service_keys": 29,
+    "total": 179
   }
 }
