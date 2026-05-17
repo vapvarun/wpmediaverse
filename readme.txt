@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.2.2
+Stable tag: 1.3.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -110,15 +110,35 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Changelog ==
 
-= 1.2.2 =
+= 1.3.0 =
+
+Stabilization release for the 50+ live customer fleet. Bundles the image optimization pipeline shipped during the 1.2.2 branch cycle plus stabilization hardening, no customer-observable behavior change except where explicitly noted.
 
 * New     - Image optimization pipeline. Every JPEG, PNG, and GIF upload is re-encoded losslessly at storage time. Metadata is stripped, PNG/GIF run at the editor's optimal compression, JPEG re-encodes at quality 92 (filter `mvs_optimize_jpeg_quality`).
 * New     - WebP sibling generation. Each uploaded image emits a `.webp` sibling for the original and every thumbnail size, stored as `original_webp` and `thumb_<size>_webp` meta keys. Works with the local driver and cloud drivers (S3, BunnyCDN).
+* New     - Frontend `<picture>` rendering. Explore grid, BP activity feed, dashboard cards, and single-media view automatically serve WebP via `<picture><source type="image/webp">` when a sibling exists. Older browsers fall back to the original.
 * New     - `mvs_optimize_image` filter. Single extension point for EWWW, Imagify, Smush, ShortPixel, and any other compressor. Ready-to-paste mu-plugin snippets shipped in `docs/development/COMPRESSION_INTEGRATIONS.md`. No per-plugin adapters maintained in core.
 * New     - WP-CLI commands `wp mvs optimize <id>` and `wp mvs optimize-bulk`. Bulk supports `--limit`, `--offset`, `--mime`, `--media-type`, `--include-variants`, `--dry-run`, `--include-failed`. Resume-safe via `_mvs_optimized_at` sentinel.
 * New     - Per-image admin actions on the All Media listing. New Optimization column shows savings percentage. Row actions "Optimize" and "Details" added. The Details mini-page (`?view=details`) shows file metadata, optimization status, WebP URLs, every thumbnail variant, and inline Re-optimize / Repair thumb / Trash buttons.
 * New     - Admin settings `Optimize originals` and `Generate WebP variants` on the Storage tab. Both default to on for fresh installs. WebP auto-disables when the active image editor (Imagick or GD) can't write image/webp.
+* New     - Video poster ffmpeg fallback. Videos without an embedded cover atom (synthetic test files, some screen recordings) now extract a first-frame poster via ffmpeg when the binary is available. Skipped silently on hosts without ffmpeg. Filter `mvs_ffmpeg_binary` lets Docker / custom-prefix installs override the binary path.
+* New     - Audio card UX. Audio with embedded album art (ID3 / FLAC PICTURE) renders as an image card with WebP siblings. Audio without art renders a deterministic 48-bar waveform SVG seeded from the media id — same shape every time per track, no audio analysis required.
+* New     - Opt-in anonymous telemetry counters. New Storage setting `Help improve WPMediaVerse` (default OFF). When enabled, the site records local counters per event name (no user IDs, URLs, file paths, or content). Counters stay on the site; nothing is transmitted. Helps the team know which hooks and routes are still in use when deciding what to deprecate.
+* Improve - Explore feed is now strictly recent-upload-first. Albums no longer pin to the top of page 1 (they are static containers whose own date does not change when new media is uploaded inside). Albums remain reachable via their own permalinks.
+* Improve - Admin "Details" mini-page on the All Media table, surfaced via the new "Details" row action. Read-only view of every meta key (sizes, WebP URLs, thumbnail variants) plus inline Re-optimize / Repair thumbnails / Move to Trash buttons.
+* Improve - Production stability rules codified in CLAUDE.md and a stabilization YAML plan documents what is shipped vs deferred. Adds a cleanup audit framework (bridge inventory, boundary-violation detector, duplicate detector, plan template) so future cleanup PRs go through pre-conditions instead of creating loop bugs.
+* Improve - wppqa baseline freshness check in the local-CI pre-push gate. Push is blocked when no wppqa baseline exists or it is older than 14 days (override via `WPPQA_MAX_AGE_DAYS`).
+* Fix     - Drop deprecated `finfo_close()` calls in UploadService, MessagingController, and MediaController. PHP 8.5 deprecated the function; the finfo handle is GC'd automatically. No behavior change.
+* Fix     - Drop deprecated `imagedestroy()` calls in UploadService. PHP 8.4 promoted GdImage to a first-class object; imagedestroy became a no-op. No behavior change.
+* Fix     - Cloud-driver uploads now generate thumbnails reliably. Pre-existing bug: BunnyCDN driver did not retain a local source file, so `generate_thumbnails` exited silently when called after `$driver->store()`. Fix: ensure a local copy exists at the canonical uploads path before metadata extraction.
+* Fix     - Lossless re-encode pass never inflates the source. Temp-write to a sibling path, compare bytes, atomic rename only when the new file is strictly smaller. Same guard applied to the WebP sibling emit.
+* Fix     - Animated GIFs preserved. Pre-existing risk: the lossless re-encode would have flattened animated GIFs to their first frame. New `is_animated_gif()` detection via GCE-block scan skips the pass for animated sources.
 * Fix     - Video and audio thumbnails on Bunny.net (and any cloud driver running with `mvs_cloud_direct_public_urls=1`) no longer render as a broken image when the media has no poster variant pushed to the CDN. The thumbnail signer was falling back to the original cloud file URL as a poster, which the grid template wrapped in `<img src=".mp4">` / `<img src=".mp3">`. The fallback is now gated to image MIME types only. Videos drop to the existing `<video preload="metadata">` first-frame render path; audio drops to the music-icon placeholder card. Mirrors the file-type gate already present in `serve_thumbnail()` and `has_resolvable_thumbnail()`.
+* Dev     - New `mvs_optimize_image`, `mvs_optimize_jpeg_quality`, `mvs_webp_quality`, `mvs_ffmpeg_binary` filters. Documented in `docs/architecture/specs/2026-05-17-image-optimization-pipeline.md`.
+* Dev     - New `image_optimization` and `telemetry` service container keys.
+* Dev     - Manifest refresh: 4 new filters in `manifest.hooks.json`, services bumped 28 -> 29, settings 33 -> 35, wp_cli 1 -> 16, hooks_fired 20 -> 24. Bridge inventory rebuilt against the manifest (was 80, now 192).
+* Dev     - New `bin/cleanup-bridge-inventory.sh`, `bin/cleanup-boundary-check.sh`, `bin/cleanup-duplicate-detect.php`, and `plan/.template.cleanup.md`. Required scaffolding for every cleanup PR going forward.
+* Dev     - `plan/cleanup-mvs-css-2026-05-17.md` worked example: a 1288-token cross-plugin duplicate was investigated, the framework caught the intentional design (Pro must work standalone per Coding Rule #10), and the cleanup was declined before any code moved.
 
 = 1.2.1 =
 * Fix: BP activity privacy now follows media + album privacy. Customer-reported (Zoho #39974): when a media uploaded to a BP activity was set to non-public, the activity card itself stayed visible in the public stream — composer text + timestamp + author leaked. Activity `hide_sitewide` is now derived from the most-restrictive of (media privacy, parent album privacy). Album-level privacy changes fan out to every linked per-media + bundled gallery activity. New action hook `mvs_media_privacy_changed` fires from `MediaRepository::set` on UPDATE.

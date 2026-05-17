@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse-pro",
     "name": "WPMediaVerse Pro",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "namespace": "WPMediaVersePro",
     "main_file": "wpmediaverse-pro.php",
     "text_domain": "wpmediaverse-pro",
@@ -63,11 +63,12 @@
     "phase_2_rescan_skipped": true,
     "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
     "confirmed_against_free": {
-      "free_version": "1.2.2",
+      "free_version": "1.3.0",
       "free_refresh_at": "2026-05-17T03:30:00Z",
       "at": "2026-05-17T03:35:00Z",
       "scope": "Free 1.2.2 added image optimization (new mvs_optimize_image filter + 3 supporting filters + 1 service + 2 settings + 2 CLI subcommands). NONE of these are consumed by Pro: image optimization is intentionally exposed only as a public filter for external compressors (EWWW/Imagify/Smush/ShortPixel via documented mu-plugin snippets), not as a Pro extension point. Pro PHP source unchanged since 2026-05-07. Cross-plugin coupling map (17 free_filters_hooked + 1 free_services_consumed) unchanged.",
-      "verified_by": "wp-plugin-onboard refresh — grep for mvs_optimize_image|mvs_optimize_jpeg_quality|mvs_webp_quality|mvs_ffmpeg_binary|image_optimization in wpmediaverse-pro/includes/ returned 0 hits"
+      "verified_by": "wp-plugin-onboard refresh — grep for mvs_optimize_image|mvs_optimize_jpeg_quality|mvs_webp_quality|mvs_ffmpeg_binary|image_optimization in wpmediaverse-pro/includes/ returned 0 hits",
+      "refreshed_at": "2026-05-17T05:30:00Z"
     },
     "baseline_drift": {
       "at": "2026-05-17T03:45:00Z",
