@@ -32,20 +32,6 @@ open:
     risk: medium
     blocker: "Tier D won't move until the query-builder design is reviewed"
 
-  - id: BOUNDARY-CHECK-TIGHTEN
-    name: "bin/cleanup-boundary-check.sh — distinguish Free vs Pro tables"
-    why: |
-      Current rule 'direct_wpdb_on_mvs_table' matches any mvs_* prefix
-      indiscriminately. This session caught ~12 false positives where
-      Pro services legitimately query Pro-owned tables
-      (mvs_competition_entries, mvs_play_events, mvs_pro_*).
-    scope:
-      - "Hard-code FREE_TABLES list in the script (mvs_media_index, mvs_media_meta, mvs_favorites, mvs_album_items, mvs_notifications, mvs_follows, mvs_reports, mvs_access_rules, mvs_reactions, mvs_mentions, mvs_activity, mvs_blocks, mvs_messages, mvs_conversations, mvs_conversation_participants, mvs_message_reactions, mvs_media_views, mvs_media_stats, mvs_transactions, mvs_access_grants, mvs_error_log)"
-      - "Skip any wpdb query whose table token is not in FREE_TABLES"
-    estimate: "~30 min"
-    risk: zero
-    customer_impact: "none"
-
 operator_actions:
   - "Tag + GitHub release 1.3.0 on both repos when ready"
   - "Decide M3-REVISIT (execute now vs 1.3.1 vs defer)"

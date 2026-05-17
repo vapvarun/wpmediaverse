@@ -51,14 +51,28 @@ xargs -0 grep -nHE "^\s*use\s+WPMediaVerse\\\\" < "$TMP/pro-scan.bin" 2>/dev/nul
 # ---------------------------------------------------------------------------
 # Violation B: Direct `$wpdb` queries against mvs_* tables in Pro
 # ---------------------------------------------------------------------------
+# Free-owned tables (21 total — anything not in this list is Pro-owned and
+# legitimately queryable by Pro services). Update this list when Free's
+# Migrator adds a new table.
+FREE_TABLES_RE='mvs_(media_index|media_meta|media_views|media_stats|reactions|favorites|follows|comments|mentions|activity|notifications|reports|blocks|access_rules|access_grants|album_items|error_log|conversations|conversation_participants|messages|message_reactions|transactions)'
+
+# Match the Free-table name only when it appears on a line ALSO containing
+# an SQL access keyword. This excludes false positives where a docblock
+# comment mentions a Free-table FK above an unrelated query (e.g.,
+# Pro's ChallengeService comments "cover_media_id is a FK to mvs_media_index"
+# right above a SELECT on mvs_competition_entries — the docblock would
+# previously trip the 10-line window scan).
+SQL_KEYWORDS_RE='(FROM[[:space:]]|UPDATE[[:space:]]|INTO[[:space:]]|JOIN[[:space:]]|DELETE[[:space:]]+FROM|SHOW[[:space:]]+TABLES)'
+
 xargs -0 grep -nHE "\\\$wpdb->(query|get_var|get_row|get_results|get_col|insert|update|delete|prepare)\s*\(" < "$TMP/pro-scan.bin" 2>/dev/null \
     | while IFS=$'\n' read -r match; do
-        # Extract file:line:body
         file=$(echo "$match" | awk -F: '{print $1}')
         line=$(echo "$match" | awk -F: '{print $2}')
-        # Read context (10 lines around) and check for mvs_ table reference
-        ctx=$(awk -v l="$line" 'NR>=l-2 && NR<=l+8' "$file" 2>/dev/null)
-        if echo "$ctx" | grep -qE "mvs_(media_index|media_meta|media_views|media_stats|reactions|favorites|follows|comments|mentions|activity|notifications|reports|blocks|access_rules|access_grants|album_items|error_log|conversations|conversation_participants|messages|message_reactions|transactions)" ; then
+        # Narrower context window (line-1 .. line+5) AND require an SQL
+        # keyword on the same line as the Free-table reference.
+        if awk -v l="$line" 'NR>=l-1 && NR<=l+5' "$file" 2>/dev/null \
+            | grep -E "$SQL_KEYWORDS_RE" \
+            | grep -qE "$FREE_TABLES_RE" ; then
             rel="${file#$PRO_DIR/}"
             echo "{\"violation\":\"direct_wpdb_on_mvs_table\",\"file\":\"$rel\",\"line\":$line,\"rule\":\"Coding Rule #16 + boundary\",\"fix\":\"Route through Plugin::container()->get('media_repository') or the appropriate service. Direct wpdb against Free tables bypasses caching, privacy, request-cache invariants.\"}"
         fi
