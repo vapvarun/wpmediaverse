@@ -127,6 +127,56 @@ if [ -x vendor/bin/phpunit ] && [ -f tests/unit/SettingsContractTest.php ]; then
   fi
 fi
 
+# ─── 2.4 — wppqa baseline freshness ──────────────────────────────────────────
+# wppqa is an MCP bug-finder that catches REST/JS contract drift, silent UI
+# bugs, and admin-rule violations in ~120ms. It's invocable only from
+# Claude Code (no CLI), so this stage can't run it directly. Instead, it
+# enforces that a baseline exists AND is fresh — if either fails, push
+# is blocked with instructions to refresh via the skill.
+#
+# Hard rule #6 of wp-plugin-onboard: "wppqa is the bug-finder, manifest is
+# the map." Skipping wppqa is how the 1.2.2 session shipped 14 bugs that
+# wppqa would have caught structurally.
+if [ "$MODE" != "quick" ]; then
+  WPPQA_MAX_AGE_DAYS="${WPPQA_MAX_AGE_DAYS:-14}"
+  WPPQA_BASELINE_GLOB="audit/runs/*wppqa-baseline*.md audit/wppqa-baseline-*/SUMMARY.md"
+  LATEST_BASELINE=""
+  LATEST_TS=0
+  for pattern in $WPPQA_BASELINE_GLOB; do
+    for f in $pattern; do
+      [ -f "$f" ] || continue
+      file_ts=$(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f" 2>/dev/null || echo 0)
+      if [ "$file_ts" -gt "$LATEST_TS" ]; then
+        LATEST_TS="$file_ts"
+        LATEST_BASELINE="$f"
+      fi
+    done
+  done
+
+  if [ -z "$LATEST_BASELINE" ]; then
+    step "2.4" "wppqa baseline — MISSING"
+    printf "${RED}✗${RESET}  No wppqa baseline found.\n"
+    printf "    Skill rule #6: wppqa is the bug-finder, manifest is the map.\n"
+    printf "    Run via Claude Code: mcp__wp-plugin-qa__wppqa_audit_plugin --plugin_path=\"\$(pwd)\"\n"
+    printf "    Save the result to audit/runs/\$(date +%%Y-%%m-%%d)-wppqa-baseline-SUMMARY.md\n"
+    printf "    Bypass for emergencies: SKIP_LOCAL_CI=1 git push\n"
+    FAILED+=("2.4 wppqa baseline missing")
+  else
+    NOW_TS=$(date -u +%s)
+    AGE_DAYS=$(( (NOW_TS - LATEST_TS) / 86400 ))
+    if [ "$AGE_DAYS" -gt "$WPPQA_MAX_AGE_DAYS" ]; then
+      step "2.4" "wppqa baseline — STALE (${AGE_DAYS} days old, cap ${WPPQA_MAX_AGE_DAYS})"
+      printf "${RED}✗${RESET}  Latest baseline: %s (%d days old)\n" "$LATEST_BASELINE" "$AGE_DAYS"
+      printf "    Refresh via Claude Code: mcp__wp-plugin-qa__wppqa_audit_plugin\n"
+      printf "    Override the cap: WPPQA_MAX_AGE_DAYS=30 composer ci:no-journeys\n"
+      printf "    Bypass for emergencies: SKIP_LOCAL_CI=1 git push\n"
+      FAILED+=("2.4 wppqa baseline stale (${AGE_DAYS}d)")
+    else
+      pass "2.4 wppqa baseline fresh (${AGE_DAYS}d old, cap ${WPPQA_MAX_AGE_DAYS}d) — ${LATEST_BASELINE}"
+    fi
+  fi
+fi
+
 # ─── 3.x — Manifest freshness ────────────────────────────────────────────────
 
 if [ "$MODE" != "quick" ]; then
