@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.2.1
+Stable tag: 1.3.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -110,25 +110,40 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Changelog ==
 
-= 1.2.1 =
-* Fix: BP activity privacy now follows media + album privacy. Customer-reported (Zoho #39974): when a media uploaded to a BP activity was set to non-public, the activity card itself stayed visible in the public stream — composer text + timestamp + author leaked. Activity `hide_sitewide` is now derived from the most-restrictive of (media privacy, parent album privacy). Album-level privacy changes fan out to every linked per-media + bundled gallery activity. New action hook `mvs_media_privacy_changed` fires from `MediaRepository::set` on UPDATE.
-* Fix: CSS file rename `shared-ui-shell.css` → `shared-ui-frame.css` (Crisp #NZRSBX). Customer WAFs auto-block any file with the "shell" token. `templates/partials/shared-ui-shell.php` → `shared-ui-frame.php`. `Plugin::render_shared_ui_shell` → `render_shared_ui_frame`. Old `mvs-shared-ui-shell` enqueue handle kept as a register-only deprecation shim until 1.3.0.
+= 1.3.0 - May 2026 =
 
-* New: `Services\AdminAggregatesService` — single source of truth for site-wide counts (total media, views, storage, recent media). Every admin / CLI surface now reads through this service instead of running its own `SUM()` / `COUNT(*)` scan on each load. Cache layer uses `wp_cache` primary + daily transient fallback (only when no persistent object cache present). New Coding Rule #16: any `$wpdb->get_var SUM/COUNT` against `mvs_*` outside this service fails `bin/coding-rules-check.sh` Rule 3.
-* New: FULLTEXT search index on `mvs_media_index(title, description)`. Migrator v13 adds `media_search_ft`; REST `/media?s=` now uses `MATCH(...) AGAINST (... IN BOOLEAN MODE)` for queries ≥ 3 chars and falls back to `LIKE '%term%'` for shorter inputs. At 100k rows the swap drops worst-case search latency by orders of magnitude; on lockdown hosts that don't permit ALTER (engine != InnoDB or DBA-restricted), the LIKE path keeps search functional.
-* New: View-event retention cron. Setting `mvs_view_retention_days` (default 90, max 730, 0 = unlimited). Daily cron `mvs_purge_old_views` drops rows older than the window from `mvs_media_views` in 50k-row batches. Aggregates in `mvs_media_stats` are unaffected — only the raw event log is trimmed.
-* New: REST per_page hardening. All 14 list endpoints now route `per_page` through `WPMediaVerse\REST\Pagination::resolve_per_page` — clamps to `apply_filters('mvs_rest_pagination_max', 100)` even on routes whose schema `'maximum'` was being silently ignored (WP REST validation is bypassed when `sanitize_callback` is set). Pre-1.2.1 a malicious caller could pass `per_page=999999`.
-* New: `MediaRepository` per-request row cache + `prefetch()` — render paths (BP activity, lightbox, dashboard) call `get($id, ...)` repeatedly per media. The new static cache turns the first read into a full-row fetch and subsequent reads into static-array lookups. `prefetch(array $ids)` batch-loads index + meta in 2 queries, eliminating N+1 across the activity stream's recovery path and the BuddyBoss imported-media loop.
-* New: Storage discipline audit + Coding Rule #16. All 22 existing `set_transient` callsites + 13 `wp_cache_*` callsites checked for cardinality leaks. `MessagingService::set_typing` was storing per-(conversation, user) typing indicators in `wp_options` — at a busy DM site that's thousands of writes/min churning options. Migrated to `wp_cache_set` with a dedicated cache group; degrades gracefully (no "typing…" pip) on sites without persistent object cache. New `bin/coding-rules-check.sh` Rule 4 prevents future drift.
+Major release. Automatic image optimization, modern WebP and AVIF formats, cloud storage tools, FULLTEXT search at scale, security hardening, and dozens of fixes. Bundles all work from the unreleased 1.2.1 and 1.2.2 branches.
 
-* New: Filename strategy. New setting `mvs_filename_strategy`: `original_sanitized` (default for upgrade installs — preserves prior behaviour) or `hashed` (default for fresh installs — 16 hex chars + sanitized extension). Hashed mode preserves the user-facing filename in `mvs_media_meta.original_filename` and surfaces it via REST + Content-Disposition headers, so end-user downloads still see "vacation-photo.jpg" even though the on-disk file is `a3f8c1b2.jpg`. Existing media is never renamed — only the strategy applied to new uploads after the setting flips. New filter `mvs_filename_strategy` for site-level overrides.
-
-* New: `wp mvs migrate-storage --from=<driver> --to=<driver>` CLI — moves every media file between storage drivers (local ↔ s3 ↔ bunnycdn) with verify-before-delete safety. Idempotent (re-runs skip already-migrated rows). Supports `--dry-run`, `--keep-source` (safety copy), `--media-id` (single-row repair), `--limit` (batched runs). After a verified upload, refreshes `mvs_media_index.file_url` to the destination driver's URL so storage-internal `get_raw('file_url')` callers (UploadService thumb fallback, WatermarkService) stay in sync; display surfaces and BP activity stored HTML are unaffected because they sign URLs through the active driver dynamically (BP activity rebuild via `ActivityContentIntegration::refresh_broadcast_urls` rewrites every `<img src>` / `<a href>` keyed on `data-mvs-media-id`). Does NOT auto-flip the active `mvs_storage_driver` option — operator does that explicitly after verification. Fixes the long-standing "no migration tool when admin switches storage backend" gap.
-* New: `StorageDriverInterface::download( string $path, string $local_dest ): bool` — required new contract method on storage drivers (also unblocks future cloud-mode multi-size thumbnail generation, on the 1.3.0 list). Free's LocalDriver and Pro's S3 + BunnyCDN drivers implement it. Third-party storage drivers must add this method or extend an abstract base — backwards-incompatible only at the implementation level.
-* New: `docs/cloud-storage-verification.md` — full QA matrix (4 phases: fresh upload, delete cleanup, 5 migration directions, failure modes), operator runbook for the local→s3 cutover, and 2 documented gaps with 1.3.0 fix paths (multi-size thumbnails on cloud + signed-GET path for private buckets).
-* New: Direct CDN URLs for public media (opt-in setting `mvs_cloud_direct_public_urls`, off by default). When enabled AND the active driver is cloud (s3 / bunnycdn), `SignedUrlService::generate` and `generate_thumbnail` short-circuit public-privacy media to the active driver's edge URL (e.g. `https://zone.b-cdn.net/wpmediaverse/2026/05/foo.jpg`) instead of routing through WordPress's gated `/serve` proxy. Browsers fetch from the CDN edge, CDN caches forever, WP is no longer in the hot path for image requests. Members-only / friends-only / private media and media with active access rules continue to flow through `/serve` so privacy enforcement remains per-request. Operator caveat documented in the setting description: once a public URL is on the CDN edge, anyone with the URL keeps access even after the media's privacy is later flipped to private — leave off if you need WP to re-validate privacy on every image request. Verified end-to-end on local: 15 explore-feed images flipped from `/wp-json/mvs/v1/serve?...` to `https://mediaverse1.b-cdn.net/...` with 0 console errors and 1 correctly-still-proxied private item.
-
-* New: action hook `mvs_media_privacy_changed( $media_id, $new_privacy, $old_privacy )` — fires from `MediaRepository::set` and `set_many` when the privacy column is UPDATEd (not on INSERT). Internally consumed by `ActivitySyncIntegration::sync_activity_privacy`.
+* New     - Automatic image optimization on every upload. JPEGs, PNGs, and GIFs are re-encoded for smaller file size with hidden camera data stripped. Most uploads drop 10 to 30 percent without any visible quality change.
+* New     - WebP image format support. Every uploaded image gets a second copy in WebP, around 25 to 35 percent smaller than JPEG. Modern browsers automatically use the smaller file; older browsers keep using the original.
+* New     - AVIF image format support for even smaller files. AVIF is roughly 30 percent smaller than WebP again. Opt in from Settings, Storage tab. Default off because AVIF encoding takes longer than WebP.
+* New     - Frontend serves WebP across every surface. Explore grid, BuddyPress activity feed, dashboard cards, single-media view, and the lightbox all swap in WebP automatically when the visitor's browser supports it.
+* New     - Private images now also serve WebP and AVIF. Access-rule-protected media gets the same modern-format speed boost as public media.
+* New     - Cloud storage migration tools. Move existing local media to S3 or BunnyCDN in batches, then clean up the local copies after verification. New WP-CLI command "wp mvs migrate-storage --from=local --to=bunnycdn" handles the bulk move with idempotent resume support.
+* New     - Direct CDN URLs for public media. New setting on the Storage tab (default off): when enabled on a cloud-storage install, public images load directly from your CDN edge instead of being proxied through WordPress. Cuts WordPress out of the hot path for image requests.
+* New     - WP-CLI commands to optimize existing media. Run "wp mvs optimize 123" on one item or "wp mvs optimize-bulk" across the whole library. Resume-safe if interrupted.
+* New     - New Optimization column on the All Media admin listing. Shows percent saved per file at a glance. Row actions Optimize and Details added. The Details page shows everything stored about a file with inline buttons to re-optimize, repair thumbnails, or move to trash.
+* New     - Filename strategy setting. New uploads can be saved with hashed filenames or sanitized original names. Hashed mode keeps the user-facing filename visible in downloads and the REST API; only the on-disk file uses the hash. Existing files are never renamed.
+* New     - Faster search at scale. The Explore search now uses a FULLTEXT index for 3+ character queries, returning results across 100,000+ media items in milliseconds instead of seconds. Sites that cannot enable FULLTEXT continue working on the existing LIKE search.
+* New     - Automatic view-event cleanup. View tracking events older than 90 days are pruned daily. Window is configurable per site (0 to disable, max 730 days). Keeps the database lean on long-running sites.
+* New     - Default video poster for videos without an embedded cover image. Previously these showed a black frame. Now they render a clean placeholder.
+* New     - Audio card design. Audio with embedded cover art shows the cover; audio without art shows a unique waveform image generated from the file id.
+* New     - Compatibility with EWWW, Imagify, Smush, and ShortPixel image optimizers through a single extension point. If you already use one of these, leave it active; it runs alongside the built-in optimization.
+* New     - Opt-in usage telemetry to help us prioritize features. Default off. No personal data, file names, or content ever leaves your site. Counters stay local.
+* Improve - Explore feed shows newest media first. Albums no longer pin to the top of page one because they are static containers. Album pages remain accessible by their permalinks.
+* Improve - Per-request media cache for activity feeds and dashboards. Each media item is loaded from the database once per page even when rendered many times. Drops query count on busy pages.
+* Improve - Production stability commitments documented for site owners. The plugin will deprecate features through proper notice periods of at least two major versions instead of removing them without warning.
+* Fix     - Security: BuddyPress activity privacy now follows media privacy. Previously a non-public media uploaded to a BP activity would leak the activity card (composer text, timestamp, author) to the public stream. Activity visibility is now derived from the strictest of the media and album privacy settings.
+* Fix     - Security: REST per-page hardening across all list endpoints. Callers can no longer request unbounded result sets to slow the site. Maximum is filterable for trusted environments.
+* Fix     - Cloud storage uploads now generate thumbnails reliably. Some cloud-driver uploads previously failed to produce thumbnails silently.
+* Fix     - Image optimization never makes a file larger. If the optimized version is bigger than the source, the original is kept.
+* Fix     - Animated GIFs stay animated. The optimization pass now detects animated GIFs and skips them so they aren't flattened to their first frame.
+* Fix     - Broken thumbnail icons no longer appear for videos and audio when no poster image is available. Videos fall back to their first frame; audio falls back to the music icon.
+* Fix     - Most MP4 video uploads now generate proper poster images on managed WordPress hosts. Previously some uploads silently fell back to a low-quality thumbnail because of how managed hosting environments configure server binaries.
+* Fix     - Cleared all PHP 8.4 and PHP 8.5 compatibility warnings. The plugin runs cleanly on the latest PHP versions.
+* Dev     - New action hook mvs_media_privacy_changed fires when a media's privacy column is updated. Useful for activity adapters and audit logs.
+* Dev     - New StorageDriverInterface::download($path, $local_dest) method on Local, S3, and BunnyCDN drivers. Third-party storage drivers must implement it.
+* Compat  - Paired with WPMediaVerse Pro 1.3.0. Install both updates together when running Pro.
 
 = 1.2.0 =
 * New: Member Photos block + shortcode (`mvs/member-photos`, `[mvs_member_photos]`) — auto-detects whose photos to show: explicit `userId` → BP displayed user → post author → current user. Drop it into a BP profile, an author template, or a regular page and it just works.
@@ -334,8 +349,8 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Upgrade Notice ==
 
-= 1.2.1 =
-Privacy + WAF fixes that affect live sites: (1) BP activity privacy now follows media privacy — non-public media no longer leaks composer text/timestamp/author into the public activity stream (customer-reported, Zoho #39974). (2) CSS file `shared-ui-shell.css` renamed to `shared-ui-frame.css` because customer WAFs auto-block the "shell" token (Crisp #NZRSBX). (3) Cloud-storage public URLs are now opt-in per setting — review `mvs_cloud_direct_public_urls` if you flip your driver to S3/BunnyCDN. Plus 100k-readiness work (FULLTEXT search, view-retention cron, REST per_page hardening, AdminAggregatesService). Recommended for all sites.
+= 1.3.0 =
+Major release. Automatic image optimization, WebP and AVIF support, cloud storage migration tools, FULLTEXT search at scale, and a security fix for BuddyPress activity privacy. Strongly recommended for all sites.
 
 = 1.2.0 =
 Restores DM-access and online-status privacy preferences — they previously silently reverted to "Everyone" on save. Reopen Settings → Social after upgrading to confirm your saved values.

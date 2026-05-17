@@ -11,6 +11,16 @@ parameters:
 			path: includes/Admin/MediaListPage.php
 
 		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: includes/Admin/MediaListPage.php
+
+		-
+			message: "#^Offset 'basedir' on array\\{path\\: string, url\\: string, subdir\\: string, basedir\\: string, baseurl\\: string, error\\: string\\|false\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 2
+			path: includes/Admin/MediaListPage.php
+
+		-
 			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/Admin/MediaListPage.php
@@ -102,22 +112,22 @@ parameters:
 
 		-
 			message: "#^Call to static method error\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 11
+			count: 12
 			path: includes/CLI/Commands.php
 
 		-
 			message: "#^Call to static method log\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 15
+			count: 16
 			path: includes/CLI/Commands.php
 
 		-
 			message: "#^Call to static method success\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 19
+			count: 22
 			path: includes/CLI/Commands.php
 
 		-
 			message: "#^Call to static method warning\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 14
+			count: 15
 			path: includes/CLI/Commands.php
 
 		-
@@ -127,12 +137,12 @@ parameters:
 
 		-
 			message: "#^Function WP_CLI\\\\Utils\\\\get_flag_value not found\\.$#"
-			count: 24
+			count: 33
 			path: includes/CLI/Commands.php
 
 		-
 			message: "#^Function WP_CLI\\\\Utils\\\\make_progress_bar not found\\.$#"
-			count: 5
+			count: 6
 			path: includes/CLI/Commands.php
 
 		-
@@ -154,6 +164,27 @@ parameters:
 			message: "#^Call to function is_wp_error\\(\\) with int\\<1, max\\> will always evaluate to false\\.$#"
 			count: 1
 			path: includes/Core/Activator.php
+
+		-
+			# Defensive WP_Error handling for filters declared to return string.
+			# External listeners (e.g. Imagify bridge) may legitimately return
+			# WP_Error per the mvs_optimize_image contract; the runtime check
+			# stays even though the doc type says string.
+			message: "#^Call to function is_wp_error\\(\\) with string will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/ImageOptimizationService.php
+
+		-
+			message: "#^is_wp_error\\(string\\) will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/ImageOptimizationService.php
+
+		-
+			# WPINC is a WordPress core constant — defined in wp-load.php before
+			# any plugin file loads. WP stubs don't declare it.
+			message: "#^Constant WPINC not found\\.$#"
+			count: 3
+			path: includes/Services/ImageOptimizationService.php
 
 		-
 			message: "#^is_wp_error\\(int\\<1, max\\>\\) will always evaluate to false\\.$#"

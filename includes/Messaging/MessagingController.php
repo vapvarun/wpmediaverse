@@ -739,7 +739,7 @@ class MessagingController extends WP_REST_Controller {
 
 		$finfo     = finfo_open( FILEINFO_MIME_TYPE );
 		$real_mime = finfo_file( $finfo, $file['tmp_name'] );
-		finfo_close( $finfo );
+		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
 		if ( ! in_array( $real_mime, $allowed, true ) ) {
 			return new WP_REST_Response( array( 'message' => 'File type not allowed.' ), 400 );

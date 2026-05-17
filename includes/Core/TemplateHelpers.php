@@ -119,6 +119,75 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Resolve the WebP sibling for the lightbox image, matching the size
+	 * choice made by get_lightbox_url(). Returns '' when no WebP variant
+	 * exists or when the JPEG URL routes through the gated /serve endpoint.
+	 *
+	 * Used by the REST media payload so the Interactivity-API lightbox can
+	 * bind a `<picture><source>` element and serve WebP to capable browsers
+	 * without changing the canonical fallback URL.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $media_id     Media ID.
+	 * @param string $lightbox_url The resolved JPEG/PNG lightbox URL.
+	 * @return string WebP variant URL or empty string.
+	 */
+	public function get_lightbox_webp_url( int $media_id, string $lightbox_url ): string {
+		if ( $media_id <= 0 || '' === $lightbox_url ) {
+			return '';
+		}
+		if ( 'image' !== $this->get_media_type( $media_id ) ) {
+			return '';
+		}
+
+		$source = (string) get_option( 'mvs_lightbox_image_source', 'original' );
+		if ( 'auto' === $source ) {
+			$source = wp_is_mobile() ? 'large' : 'original';
+		}
+
+		// Map the lightbox source choice to the size key understood by
+		// get_webp_variant_url(). 'original' → '' (full), everything else
+		// passes through as-is (large/medium/thumb).
+		$size = ( 'original' === $source ) ? '' : $source;
+
+		return $this->get_webp_variant_url( $media_id, $size, $lightbox_url );
+	}
+
+	/**
+	 * Resolve the AVIF sibling for the lightbox image, matching the size choice
+	 * made by `get_lightbox_url()`. Returns '' when no AVIF variant exists or
+	 * when the JPEG URL routes through the gated /serve endpoint.
+	 *
+	 * Used by the REST media payload so the Interactivity-API lightbox can
+	 * bind an `<source type="image/avif">` element above the WebP source.
+	 * AVIF-capable browsers will pick this and skip the WebP/JPEG fallback.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $media_id     Media ID.
+	 * @param string $lightbox_url The resolved JPEG/PNG lightbox URL.
+	 * @return string AVIF variant URL or empty string.
+	 */
+	public function get_lightbox_avif_url( int $media_id, string $lightbox_url ): string {
+		if ( $media_id <= 0 || '' === $lightbox_url ) {
+			return '';
+		}
+		if ( 'image' !== $this->get_media_type( $media_id ) ) {
+			return '';
+		}
+
+		$source = (string) get_option( 'mvs_lightbox_image_source', 'original' );
+		if ( 'auto' === $source ) {
+			$source = wp_is_mobile() ? 'large' : 'original';
+		}
+
+		$size = ( 'original' === $source ) ? '' : $source;
+
+		return $this->get_avif_variant_url( $media_id, $size, $lightbox_url );
+	}
+
+	/**
 	 * Get the media type (image, video, audio, document) for a media item.
 	 *
 	 * @param int $media_id Media ID (mvs_media_index.media_id).
@@ -278,32 +347,374 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$loading     = $args['lazy'] ? ' loading="lazy"' : '';
 		$play_icon   = $args['show_play'] ? $this->icon_play() : '';
 
-		if ( $thumb_url ) {
-			$img_class = trim( 'mvs-media-thumb ' . $extra_class );
-			$markup    = '<img class="' . esc_attr( $img_class ) . '" src="' . esc_url( $thumb_url ) . '" alt="' . $alt . '"' . $loading . ' />';
-			if ( 'video' === $media_type ) {
-				$markup .= $play_icon;
-			}
-			return $markup;
-		}
-
+		// VIDEO — always render <video> with the cloud thumb as the poster.
+		// Rationale: cloud poster generation is best-effort. When the upload
+		// silently fails (or the file gets cleaned up later) the meta still
+		// holds a CDN URL. <img src="bad-url"> shows the OS broken-image
+		// icon; <video poster="bad-url"> degrades to the video's first frame
+		// (preload="metadata" fetches only the moov atom, ~few KB) and then
+		// to a black background with the play overlay if even that fails.
+		// This makes the render path self-validating instead of trusting the
+		// stored URL.
+		//
+		// 1.3.0: when no per-upload poster exists (cover-less + ffmpeg-less +
+		// no JS canvas frame) we substitute the plugin-bundled default poster
+		// SVG. Same asset URL for every cover-less video site-wide, browser-
+		// cached on first hit, never written to mvs_media_meta and never
+		// pushed to cloud storage. Mirrors the audio waveform pattern.
 		if ( 'video' === $media_type ) {
-			// Route through SignedUrlService — direct file_url paths are blocked
-			// by the .htaccess in wp-content/uploads/wpmediaverse/.
 			$th_signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 			$file_url  = $th_signed ? $th_signed->generate( $media_id, get_current_user_id() ) : '';
+			$poster_url = '' !== $thumb_url ? $thumb_url : self::default_video_poster_url();
 			if ( $file_url ) {
-				$vid_class = trim( 'mvs-grid-video-preview ' . $extra_class );
-				return '<video class="' . esc_attr( $vid_class ) . '" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true" src="' . esc_url( $file_url ) . '#t=0.1"></video>' . $play_icon;
+				$vid_class   = trim( 'mvs-grid-video-preview ' . $extra_class );
+				$poster_attr = ' poster="' . esc_url( $poster_url ) . '"';
+				return '<video class="' . esc_attr( $vid_class ) . '" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"' . $poster_attr . ' src="' . esc_url( $file_url ) . '#t=0.1"></video>' . $play_icon;
 			}
-			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">' . $play_icon . '</div>';
+			// No streamable URL (access-rules locked the file). Show the
+			// default poster as a still image with the play overlay.
+			$img_alt = $alt;
+			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video">'
+				. '<img class="mvs-grid-default-poster" src="' . esc_url( $poster_url ) . '" alt="' . $img_alt . '"' . $loading . ' />'
+				. $play_icon
+				. '</div>';
+		}
+
+		// IMAGE / non-video media — keep the <img> fast path. A broken cloud
+		// thumb here is still a broken image, but that's the meta-row bug
+		// surfacing visibly (which is what we want for images — a cleanup
+		// CLI can repair). Videos are different because we have a perfectly
+		// good fallback (the video file itself) the browser knows how to use.
+		if ( $thumb_url ) {
+			$img_class = trim( 'mvs-media-thumb ' . $extra_class );
+			$img_tag   = '<img class="' . esc_attr( $img_class ) . '" src="' . esc_url( $thumb_url ) . '" alt="' . $alt . '"' . $loading . ' />';
+
+			// WebP sibling — wrap in <picture> so browsers that accept WebP
+			// fetch the smaller copy and older browsers keep the JPEG.
+			// <picture> delegates the choice to the browser, so there's no
+			// Accept-header sniffing on the server and no Vary cache issues
+			// for page/CDN caches.
+			$webp_url = $this->get_webp_variant_url( $media_id, $size, $thumb_url );
+			if ( '' !== $webp_url ) {
+				return '<picture><source type="image/webp" srcset="' . esc_url( $webp_url ) . '">' . $img_tag . '</picture>';
+			}
+
+			return $img_tag;
 		}
 
 		if ( 'audio' === $media_type ) {
-			return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio">' . $this->icon_music() . '</div>';
+			// Stylized fallback when no embedded album art was extracted.
+			// Renders a deterministic waveform from the media_id so each track
+			// gets a unique visual fingerprint that stays stable across
+			// re-renders. Same shape every time, no audio analysis required.
+			$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$title    = (string) $repo->get( $media_id, 'title' );
+			$artist   = (string) $repo->get( $media_id, 'artist' );
+			$duration = (float) $repo->get( $media_id, 'duration' );
+			$mins     = $duration > 0 ? floor( $duration / 60 ) : 0;
+			$secs     = $duration > 0 ? (int) $duration % 60 : 0;
+			$dur_txt  = $duration > 0 ? sprintf( '%d:%02d', $mins, $secs ) : '';
+
+			$out  = '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--audio mvs-audio-card">';
+			$out .= '<span class="mvs-audio-card__waveform" aria-hidden="true">' . $this->render_audio_waveform_svg( $media_id ) . '</span>';
+			if ( '' !== $title ) {
+				$out .= '<span class="mvs-audio-card__title">' . esc_html( $title ) . '</span>';
+			}
+			if ( '' !== $artist || '' !== $dur_txt ) {
+				$out .= '<span class="mvs-audio-card__meta">';
+				if ( '' !== $artist ) {
+					$out .= esc_html( $artist );
+				}
+				if ( '' !== $artist && '' !== $dur_txt ) {
+					$out .= ' &middot; ';
+				}
+				if ( '' !== $dur_txt ) {
+					$out .= esc_html( $dur_txt );
+				}
+				$out .= '</span>';
+			}
+			$out .= '</div>';
+			return $out;
 		}
 
 		return '<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--generic">' . $this->icon_image() . '</div>';
+	}
+
+	/**
+	 * Render a SoundCloud-style waveform SVG for audio fallback cards.
+	 *
+	 * Heights are derived from a SHA-1 hash of the media_id so each track
+	 * gets a unique-but-stable pattern. No audio analysis or external tools
+	 * needed — runs in microseconds per call.
+	 *
+	 * @param int $media_id Media id used as the visual seed.
+	 *
+	 * @return string Inline SVG markup.
+	 */
+	public function render_audio_waveform_svg( int $media_id ): string {
+		$bars   = 48;
+		$width  = 240;
+		$height = 64;
+		$gap    = 2;
+		$bar_w  = max( 2.0, ( $width - ( $bars - 1 ) * $gap ) / $bars );
+
+		// SHA-1 hex → 40 chars. Cycle through it so 48 bars is fine.
+		$seed = sha1( 'mvs-wave-' . (string) $media_id );
+		$len  = strlen( $seed );
+
+		$rects = '';
+		for ( $i = 0; $i < $bars; $i++ ) {
+			// Two hex digits → 0..255 → normalize to 12..56px (preserves a
+			// floor of presence so bars never disappear, keeps a peak
+			// headroom for visual breathing room at the card edges).
+			$pair    = hexdec( $seed[ ( $i * 2 ) % $len ] . $seed[ ( $i * 2 + 1 ) % $len ] );
+			$bar_h   = 12 + (int) round( $pair / 255 * 44 );
+			$y       = (int) round( ( $height - $bar_h ) / 2 );
+			$x       = (int) round( $i * ( $bar_w + $gap ) );
+			$rects  .= sprintf(
+				'<rect x="%d" y="%d" width="%s" height="%d" rx="1" />',
+				$x,
+				$y,
+				number_format( $bar_w, 2, '.', '' ),
+				$bar_h
+			);
+		}
+
+		return sprintf(
+			'<svg class="mvs-audio-waveform-svg" viewBox="0 0 %d %d" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" fill="currentColor">%s</svg>',
+			$width,
+			$height,
+			$rects
+		);
+	}
+
+	/**
+	 * URL of the plugin-bundled default video poster.
+	 *
+	 * Used as the `<video poster=...>` source AND as the standalone fallback
+	 * image when a video has no per-upload poster (no embedded cover atom,
+	 * no ffmpeg extraction, no client-side canvas frame).
+	 *
+	 * Critical contract: this URL is ALWAYS the plugin's own static asset.
+	 * It must never be written to `mvs_media_meta` and must never be pushed
+	 * to cloud storage — one URL serves every cover-less video site-wide,
+	 * browser-cached on first hit, identical to how the audio waveform SVG
+	 * is rendered inline at template time.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @return string Absolute URL of the bundled SVG asset.
+	 */
+	public static function default_video_poster_url(): string {
+		/**
+		 * Filter the default video poster URL.
+		 *
+		 * Sites that want a different placeholder (custom branding, animated
+		 * GIF, theme-matching gradient) can override via this filter. The
+		 * returned URL must be a single asset reused across every cover-less
+		 * video; do not return a per-media URL or anything that would pollute
+		 * the meta table.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param string $url Default: plugin-bundled SVG asset URL.
+		 */
+		// `plugins_url()` resolves the static asset URL without needing the
+		// MVS_PLUGIN_URL constant (which static analyzers can't always see
+		// because it's defined in the plugin entry file).
+		$default = plugins_url( 'assets/images/default-video-poster.svg', dirname( __DIR__, 2 ) . '/wpmediaverse.php' );
+		return (string) apply_filters( 'mvs_default_video_poster_url', $default );
+	}
+
+	/**
+	 * Render a `<picture>` element that prefers WebP when a variant exists.
+	 *
+	 * Single-image renderers (media-single, lightbox, custom templates) that
+	 * already hold a resolved JPEG URL should call this instead of emitting
+	 * `<img>` directly so visitors with modern browsers fetch the smaller
+	 * WebP copy.
+	 *
+	 * @param int    $media_id       Media id.
+	 * @param string $jpeg_url       Resolved JPEG/source URL (already signed if needed).
+	 * @param string $alt            Alt text. Caller must pre-escape if it contains markup.
+	 * @param string $extra_classes  Optional space-separated classes added to the <img>.
+	 * @param string $size           Size key to look up the right `*_webp` meta. Default 'full' = original.
+	 * @param array  $extra_attrs    Extra attributes for the <img> tag (key => value). Pre-sanitized.
+	 *
+	 * @return string `<picture>...</picture>` when WebP is available, otherwise a plain `<img>`.
+	 */
+	public function picture_or_img( int $media_id, string $jpeg_url, string $alt = '', string $extra_classes = '', string $size = 'full', array $extra_attrs = array() ): string {
+		if ( '' === $jpeg_url ) {
+			return '';
+		}
+		$attrs_html = '';
+		foreach ( $extra_attrs as $k => $v ) {
+			$attrs_html .= ' ' . esc_attr( (string) $k ) . '="' . esc_attr( (string) $v ) . '"';
+		}
+		$class_attr = '' !== $extra_classes ? ' class="' . esc_attr( $extra_classes ) . '"' : '';
+		$img_tag    = '<img' . $class_attr . ' src="' . esc_url( $jpeg_url ) . '" alt="' . esc_attr( $alt ) . '"' . $attrs_html . ' />';
+
+		$webp_url = $this->get_webp_variant_url( $media_id, $size, $jpeg_url );
+		$avif_url = $this->get_avif_variant_url( $media_id, $size, $jpeg_url );
+
+		if ( '' === $webp_url && '' === $avif_url ) {
+			return $img_tag;
+		}
+
+		// AVIF first — browsers walk `<source>` elements in document order and
+		// pick the first match they support. Modern browsers prefer AVIF; the
+		// WebP source below catches the (now-narrow) gap of browsers with WebP
+		// but no AVIF support. Older browsers fall through to the `<img>` JPEG.
+		$sources = '';
+		if ( '' !== $avif_url ) {
+			$sources .= '<source type="image/avif" srcset="' . esc_url( $avif_url ) . '">';
+		}
+		if ( '' !== $webp_url ) {
+			$sources .= '<source type="image/webp" srcset="' . esc_url( $webp_url ) . '">';
+		}
+		return '<picture>' . $sources . $img_tag . '</picture>';
+	}
+
+	/**
+	 * Resolve the WebP variant URL for a thumbnail, or return '' to keep the JPEG.
+	 *
+	 * The WebP files are written by ImageOptimizationService at upload time
+	 * (1.2.2) and stored as `thumb_<size>_webp` / `original_webp` meta keys.
+	 * This helper returns the variant URL only when it is browser-safe to
+	 * embed in a <source> element. We skip cases where the underlying JPEG
+	 * URL flows through the gated /serve route — that route doesn't speak
+	 * WebP yet (cloud-aware /serve negotiation is 1.3.0). For everything else
+	 * (direct CDN URLs, local NGINX uploads paths, BunnyCDN/S3 direct mode,
+	 * future R2) the WebP URL is a sibling at the same path and is safe to
+	 * emit directly.
+	 *
+	 * @param int    $media_id   Media id.
+	 * @param string $size       Size key (large/medium/thumb/full).
+	 * @param string $jpeg_url   The resolved JPEG thumb URL — used to detect
+	 *                           the gated /serve case and skip WebP for it.
+	 *
+	 * @return string Browser-safe WebP variant URL or empty string.
+	 */
+	public function get_webp_variant_url( int $media_id, string $size, string $jpeg_url ): string {
+		if ( $media_id <= 0 || '' === $jpeg_url ) {
+			return '';
+		}
+
+		// Skip when the JPEG URL routes through the gated /serve REST
+		// endpoint. The endpoint reads `file_path` from mvs_media_index and
+		// streams the bytes; it has no WebP variant negotiation yet. Emitting
+		// a `_webp` URL that bypasses /serve would break privacy enforcement.
+		if ( false !== strpos( $jpeg_url, '/mvs/v1/serve' ) || false !== strpos( $jpeg_url, '/serve?' ) ) {
+			return '';
+		}
+
+		// Resolve which meta key holds the WebP sibling for this size. The
+		// 'full' / empty cases hit the original WebP; the named intermediate
+		// sizes (large/medium/thumb) map to thumb_<size>_webp. Anything else
+		// gracefully falls through (returns '' so the JPEG stays).
+		$meta_key = '';
+		switch ( $size ) {
+			case '':
+			case 'full':
+				$meta_key = \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP;
+				break;
+			case 'thumbnail':
+				$meta_key = 'thumb_thumb_webp';
+				break;
+			case 'large':
+			case 'medium':
+			case 'thumb':
+				$meta_key = 'thumb_' . $size . '_webp';
+				break;
+			default:
+				return '';
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$url  = (string) $repo->get_raw( $media_id, $meta_key );
+
+		// Fallback: if the requested size has no WebP sibling AND the JPEG
+		// renderer fell back to the original (i.e. no thumb_<size> exists
+		// either, which currently happens on cloud uploads where thumbnail
+		// generation needs a local source file), reuse `original_webp`.
+		// Browsers downloading the original WebP at thumbnail-size container
+		// dimensions is still a strict win because the WebP is dramatically
+		// smaller than the original JPEG/PNG. Skip when the requested size
+		// IS `full` to avoid recursion.
+		if ( '' === $url && \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP !== $meta_key ) {
+			$thumb_meta_key = ( 'thumbnail' === $size ) ? 'thumb_thumb' : 'thumb_' . $size;
+			$has_size_thumb = '' !== (string) $repo->get_raw( $media_id, $thumb_meta_key );
+			if ( ! $has_size_thumb ) {
+				$url = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
+			}
+		}
+
+		return '' !== $url ? $url : '';
+	}
+
+	/**
+	 * Resolve the AVIF variant URL for a thumbnail, or return '' to fall back.
+	 *
+	 * Mirrors `get_webp_variant_url()`. AVIF siblings are emitted by
+	 * `ImageOptimizationService::emit_avif_sibling()` when the
+	 * `mvs_generate_avif` setting is on AND the editor supports AVIF; they
+	 * are stored in `original_avif` / `thumb_<size>_avif` meta keys. As with
+	 * WebP, we skip the gated /serve URL case — /serve handles AVIF/WebP
+	 * negotiation server-side via the Accept header (see SignedUrlService).
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $media_id Media id.
+	 * @param string $size     Size key (large/medium/thumb/full).
+	 * @param string $jpeg_url The resolved JPEG/PNG URL — used to detect the
+	 *                         gated /serve case and skip AVIF for it.
+	 * @return string Browser-safe AVIF variant URL or empty string.
+	 */
+	public function get_avif_variant_url( int $media_id, string $size, string $jpeg_url ): string {
+		if ( $media_id <= 0 || '' === $jpeg_url ) {
+			return '';
+		}
+
+		if ( false !== strpos( $jpeg_url, '/mvs/v1/serve' ) || false !== strpos( $jpeg_url, '/serve?' ) ) {
+			return '';
+		}
+
+		$meta_key = '';
+		switch ( $size ) {
+			case '':
+			case 'full':
+				$meta_key = \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF;
+				break;
+			case 'thumbnail':
+				$meta_key = 'thumb_thumb_avif';
+				break;
+			case 'large':
+			case 'medium':
+			case 'thumb':
+				$meta_key = 'thumb_' . $size . '_avif';
+				break;
+			default:
+				return '';
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$url  = (string) $repo->get_raw( $media_id, $meta_key );
+
+		// Same original-AVIF fallback as the WebP path: if the requested size
+		// has no AVIF sibling AND no JPEG sibling either (cloud uploads, etc.),
+		// fall back to the original AVIF. Downloading the original AVIF at
+		// thumbnail dimensions is still a win — AVIF is so much smaller than
+		// JPEG/PNG that even at full resolution it beats the smaller-format
+		// thumb in bytes.
+		if ( '' === $url && \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF !== $meta_key ) {
+			$thumb_meta_key = ( 'thumbnail' === $size ) ? 'thumb_thumb' : 'thumb_' . $size;
+			$has_size_thumb = '' !== (string) $repo->get_raw( $media_id, $thumb_meta_key );
+			if ( ! $has_size_thumb ) {
+				$url = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF );
+			}
+		}
+
+		return '' !== $url ? $url : '';
 	}
 
 	/**
@@ -351,13 +762,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 */
 	private function icon_play(): string {
 		return '<span class="mvs-grid-play-icon" aria-hidden="true">' . $this->icon_play_svg() . '</span>';
-	}
-
-	/**
-	 * Full music icon with the standard wrapper span.
-	 */
-	private function icon_music(): string {
-		return '<span class="mvs-grid-audio-icon" aria-hidden="true">' . $this->icon_music_svg() . '</span>';
 	}
 
 	/**
@@ -452,12 +856,17 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		$item_class = 'mvs-grid-item' . ( $is_gallery ? ' mvs-grid-item--gallery' : '' );
 
-		// Interactivity API context for lightbox.
+		// Interactivity API context for lightbox. currentUserId is included
+		// so the shared-ui view.js can correctly gate authenticated UI
+		// (favorite status read on lightbox open, etc.); without it the
+		// "lightboxIsFavorited" state would never reflect server truth for
+		// logged-in viewers — see the favorite-modal desync fix.
 		$lightbox_ctx = wp_interactivity_data_wp_context(
 			array(
-				'mediaId' => $media_id,
-				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'mediaId'       => $media_id,
+				'restUrl'       => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'         => wp_create_nonce( 'wp_rest' ),
+				'currentUserId' => get_current_user_id(),
 			)
 		);
 

@@ -23,7 +23,13 @@ class SettingsRegistrar {
 	 *
 	 * @var string
 	 */
-	public const DEFAULT_ALLOWED_FILE_TYPES = 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg,application/pdf';
+	// PDF (application/pdf) dropped from the default in 1.2.3 — focus is
+	// images + videos. Existing installs keep PDF in their stored
+	// mvs_allowed_file_types until they re-save the option; new installs
+	// reject PDF uploads out of the box. The 'document' media_type and
+	// the PDF-serve content-type whitelist stay in place so historical
+	// PDF rows still display + download.
+	public const DEFAULT_ALLOWED_FILE_TYPES = 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg';
 
 	/**
 	 * Register all settings, sections, and fields.
@@ -347,6 +353,106 @@ class SettingsRegistrar {
 				'option'      => \WPMediaVerse\Services\ViewRetentionService::SETTING,
 				/* translators: %d: maximum allowed retention in days. */
 				'description' => sprintf( __( 'How long raw view events are kept in the database. Aggregated counts (Total Views, etc.) are NOT affected. Default: 90 days. Set to 0 to retain forever. Maximum: %d.', 'wpmediaverse' ), \WPMediaVerse\Services\ViewRetentionService::MAX_DAYS ),
+			)
+		);
+
+		// Image optimization — lossless re-encode of originals. PNG/GIF are
+		// re-encoded; JPEG is re-encoded at quality 92 (filterable via
+		// `mvs_optimize_jpeg_quality`) with metadata stripped. Default on.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
+			__( 'Compress uploaded images', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
+				'description' => __( 'Shrink each uploaded image automatically by removing hidden camera data and re-saving with stronger compression. Works on JPEG, PNG, and GIF. Most uploads end up 10 to 30 percent smaller with no visible quality change. If you already use EWWW, Imagify, Smush, or ShortPixel, leave this on; they will run alongside.', 'wpmediaverse' ),
+			)
+		);
+
+		// WebP variants — sibling WebP file generated for the original and
+		// every thumbnail size. Default on when the active editor (Imagick or
+		// GD) can write image/webp.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_WEBP,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_WEBP,
+			__( 'Create WebP copies for faster loading', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_WEBP,
+				'description' => __( 'Save a second copy of every image in WebP format. WebP files are about 25 to 35 percent smaller than JPEG, so pages load faster for your visitors. Browsers that support WebP use the smaller file; older browsers keep using the original. Already have older uploads to optimize? Visit a media item and use Re-optimize, or ask your developer to run the bulk optimizer command.', 'wpmediaverse' ),
+			)
+		);
+
+		// AVIF variants — sibling AVIF file for the original and every thumb
+		// size. AVIF compresses 30 to 50 percent smaller than WebP but takes
+		// noticeably longer to encode and depends on the host PHP image editor
+		// supporting it (Imagick with libheif, or GD on PHP 8.1+ with libavif).
+		// Default OFF so the slower encode is opt-in.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+		add_settings_field(
+			\WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
+			__( 'Create AVIF copies for the smallest possible files', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_GENERATE_AVIF,
+				'description' => __( 'Save a third copy of every image in the newer AVIF format. AVIF is around 30 to 50 percent smaller than WebP, so pages load even faster on modern browsers (Chrome, Firefox, Safari 16.4+, Edge). Older browsers fall back to WebP, then the original. Encoding AVIF is much slower than WebP so uploads will take longer. Requires a host with AVIF-capable Imagick or GD; the option will silently no-op if the server cannot encode AVIF.', 'wpmediaverse' ),
+			)
+		);
+
+		// Anonymous opt-in usage telemetry. Counter-only, local-only — no
+		// data leaves the customer's site. Helps the plugin team know
+		// which hooks / routes / commands are actually used across the
+		// fleet, so cleanup decisions in future versions can be data-driven
+		// instead of guesswork. Disabled by default.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_storage',
+			\WPMediaVerse\Services\TelemetryService::SETTING_KEY,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => false,
+			)
+		);
+		add_settings_field(
+			\WPMediaVerse\Services\TelemetryService::SETTING_KEY,
+			__( 'Help improve WPMediaVerse', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-storage',
+			'mvs_storage',
+			array(
+				'option'      => \WPMediaVerse\Services\TelemetryService::SETTING_KEY,
+				'description' => __( 'Allow this site to record anonymous usage counters locally. Only event names are counted (e.g. "thumbnail_generated", "rest:media:GET") — never user IDs, URLs, file paths, or media content. The counters stay on this site; nothing is transmitted. The plugin team will ask you to share the counter report manually when they need data to make a backwards-compatibility decision. Disabled by default.', 'wpmediaverse' ),
 			)
 		);
 

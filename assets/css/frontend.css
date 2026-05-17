@@ -17,9 +17,21 @@
     --mvs-font: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
     --mvs-font-heading: var(--font-display, var(--mvs-font));
 
-    /* Brand — BuddyX Pro → BuddyNext → fallback */
-    --mvs-primary: var(--color-theme-primary, var(--brand, #0073aa));
-    --mvs-primary-hover: var(--color-theme-primary, var(--brand-hover, #005a87));
+    /* Brand — prefer theme BUTTON tokens first so the plugin's primary
+       buttons (Follow / Post / Add Media (+) / .mvs-btn--primary / .mvs-fab)
+       match the theme's own button palette. Fall back to the theme's
+       primary/link color, then to the plugin's hard-coded brand color.
+         BuddyX, BuddyX Pro       → --button-background-color
+         BuddyBoss                → --bb-primary-button-background
+         Reign + generic themes   → --color-theme-primary
+       Without this cascade, Follow/Post/+ buttons were always the
+       brand/link color regardless of how the theme styled its own
+       buttons — visibly off-palette next to native theme buttons.
+       --mvs-on-primary picks up the theme's button text color via the
+       same chain. */
+    --mvs-primary: var(--button-background-color, var(--bb-primary-button-background, var(--color-theme-primary, var(--brand, #0073aa))));
+    --mvs-primary-hover: var(--button-background-hover-color, var(--bb-primary-button-background-regular-hover, var(--color-theme-primary, var(--brand-hover, #005a87))));
+    --mvs-on-primary: var(--button-text-color, var(--bb-primary-button-text-regular, #ffffff));
     --mvs-primary-rgb: 0, 115, 170;
     --mvs-danger: var(--red, #d63638);
     --mvs-danger-rgb: 214, 54, 56;
@@ -2783,6 +2795,71 @@ a.mvs-dashboard-card-title:hover {
     color: #fff;
 }
 
+/* Audio fallback card — used when an audio upload has no embedded album
+   art. Lays out a centered icon, title, and meta line so the cell carries
+   information at-a-glance instead of just a music glyph. */
+.mvs-audio-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 18px;
+    text-align: center;
+    color: #fff;
+}
+
+.mvs-audio-card__waveform {
+    display: block;
+    width: 100%;
+    max-width: 240px;
+    height: 64px;
+    color: rgba(255, 255, 255, 0.85);
+    flex-shrink: 0;
+}
+
+.mvs-audio-card__waveform svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    max-width: none;
+    max-height: none;
+    opacity: 1;
+}
+
+.mvs-audio-card__title {
+    font-weight: 600;
+    line-height: 1.3;
+    max-width: 100%;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+
+.mvs-audio-card__meta {
+    font-size: 0.85em;
+    opacity: 0.85;
+    line-height: 1.3;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .mvs-audio-card {
+        padding: 12px 14px;
+        gap: 6px;
+    }
+    .mvs-audio-card__waveform {
+        height: 44px;
+        max-width: 200px;
+    }
+}
+
 .mvs-grid-item-placeholder--generic {
     background: linear-gradient(135deg, #2b3544, #1a1f2b);
 }
@@ -4992,7 +5069,12 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--mvs-surface);
+    /* Always-light icon — the backdrop is rgba(0,0,0,.5) regardless of
+       theme, so referencing --mvs-surface (which flips dark in dark mode)
+       turned the close icon invisible (dark on dark). The lightbox itself
+       overlays the page with a dark veil, so #fff is the right fixed
+       choice here. */
+    color: #fff;
 }
 
 .mvs-lightbox-close:hover {

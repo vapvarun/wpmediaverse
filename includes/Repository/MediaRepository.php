@@ -830,6 +830,377 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Count distinct media that have a given meta key (and optional value).
+	 *
+	 * Used by Pro's transcode admin queue for "how many videos have
+	 * transcode_status = queued/processing/done". Joins mvs_media_index to
+	 * skip orphaned meta rows where the index entry was deleted.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string      $meta_key   Required meta key.
+	 * @param string|null $meta_value Optional value. Null = match any value.
+	 * @return int Distinct media count.
+	 */
+	public function count_by_meta( string $meta_key, ?string $meta_value = null ): int {
+		global $wpdb;
+
+		if ( null === $meta_value ) {
+			return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT COUNT(DISTINCT mi.media_id) FROM {$wpdb->prefix}mvs_media_index mi INNER JOIN {$wpdb->prefix}mvs_media_meta mm ON mi.media_id = mm.media_id WHERE mm.meta_key = %s",
+					$meta_key
+				)
+			);
+		}
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT mi.media_id) FROM {$wpdb->prefix}mvs_media_index mi INNER JOIN {$wpdb->prefix}mvs_media_meta mm ON mi.media_id = mm.media_id WHERE mm.meta_key = %s AND mm.meta_value = %s",
+				$meta_key,
+				$meta_value
+			)
+		);
+	}
+
+	/**
+	 * Query media that have a given meta key (and optional value), with the
+	 * small set of index columns Pro's transcode admin needs (id/title/author).
+	 *
+	 * Sister method of count_by_meta(). Same join + filter shape, paginated.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string      $meta_key   Required meta key.
+	 * @param string|null $meta_value Optional value. Null = match any value.
+	 * @param int         $limit      Max rows.
+	 * @param int         $offset     Pagination offset.
+	 * @return array<int, array{media_id:int,title:string,post_author:int}>
+	 */
+	public function query_by_meta( string $meta_key, ?string $meta_value, int $limit, int $offset = 0 ): array {
+		global $wpdb;
+
+		$limit  = max( 1, $limit );
+		$offset = max( 0, $offset );
+
+		if ( null === $meta_value ) {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT DISTINCT mi.media_id, mi.title, mi.post_author FROM {$wpdb->prefix}mvs_media_index mi INNER JOIN {$wpdb->prefix}mvs_media_meta mm ON mi.media_id = mm.media_id WHERE mm.meta_key = %s ORDER BY mi.media_id DESC LIMIT %d OFFSET %d",
+					$meta_key,
+					$limit,
+					$offset
+				),
+				ARRAY_A
+			);
+		} else {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT DISTINCT mi.media_id, mi.title, mi.post_author FROM {$wpdb->prefix}mvs_media_index mi INNER JOIN {$wpdb->prefix}mvs_media_meta mm ON mi.media_id = mm.media_id WHERE mm.meta_key = %s AND mm.meta_value = %s ORDER BY mi.media_id DESC LIMIT %d OFFSET %d",
+					$meta_key,
+					$meta_value,
+					$limit,
+					$offset
+				),
+				ARRAY_A
+			);
+		}
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Find public-privacy media rows for cloud operations (migrate / cleanup).
+	 *
+	 * Returns rows with the small set of columns CloudOps actually reads
+	 * (media_id, file_path, file_url). Filters to status IN ('publish',
+	 * 'draft') AND privacy = 'public'. Optional `local_url_only` flag adds a
+	 * `file_url LIKE 'http%/wp-content/uploads/%'` filter for the migration
+	 * scan (find media still pointing at local URLs); the cleanup scan omits
+	 * it because cleanup wants all public media with local files regardless
+	 * of where the public URL currently resolves.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int  $limit          Max rows to return.
+	 * @param bool $local_url_only When true, restrict to rows whose file_url
+	 *                              still points at the local uploads dir.
+	 * @return array<int, array{media_id:int,file_path:string,file_url:string}>
+	 */
+	public function query_public_cloud_candidates( int $limit, bool $local_url_only = false ): array {
+		global $wpdb;
+
+		$limit = max( 1, $limit );
+
+		if ( $local_url_only ) {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id, file_path, file_url FROM {$wpdb->prefix}mvs_media_index
+					WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public' AND file_url LIKE %s
+					ORDER BY media_id ASC LIMIT %d",
+					'http%/wp-content/uploads/%',
+					$limit
+				),
+				ARRAY_A
+			);
+		} else {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id, file_path, file_url FROM {$wpdb->prefix}mvs_media_index
+					WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public'
+					ORDER BY media_id ASC LIMIT %d",
+					$limit
+				),
+				ARRAY_A
+			);
+		}
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Aggregate row count + total bytes per file_type for a user.
+	 *
+	 * Used by Pro's QuotaService.recalculate_usage(). Single GROUP BY that
+	 * returns one row per mime type with `cnt` and `total_size`. The caller
+	 * maps file_type -> high-level bucket (image/video/audio).
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int $user_id Author ID.
+	 * @return array<int, array{file_type:string,cnt:int,total_size:int}>
+	 */
+	public function aggregate_usage_by_author( int $user_id ): array {
+		global $wpdb;
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT file_type, COUNT(*) AS cnt, COALESCE(SUM(file_size), 0) AS total_size
+				FROM {$wpdb->prefix}mvs_media_index
+				WHERE post_author = %d
+				GROUP BY file_type",
+				$user_id
+			),
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Query the most recent published media rows since a given datetime.
+	 *
+	 * Returns full mvs_media_index rows in created_at DESC order. Used by
+	 * stories-bar templates and other "recent activity" surfaces.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $limit          Max rows to return. Default 20.
+	 * @param string $since_datetime Optional ISO datetime ("Y-m-d H:i:s")
+	 *                               cutoff. Default '' = no cutoff.
+	 * @return array<int, array> Numerically-indexed list of media rows.
+	 */
+	public function query_recent( int $limit = 20, string $since_datetime = '' ): array {
+		global $wpdb;
+
+		$limit = max( 1, $limit );
+
+		if ( '' === $since_datetime ) {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' ORDER BY created_at DESC LIMIT %d",
+					$limit
+				),
+				ARRAY_A
+			);
+		} else {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s ORDER BY created_at DESC LIMIT %d",
+					$since_datetime,
+					$limit
+				),
+				ARRAY_A
+			);
+		}
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Get media IDs belonging to a gallery group, ordered by group_position.
+	 *
+	 * Sister method to `count_by_group()`. The gallery group is identified by
+	 * the `media_group` meta value (a generated key shared across all items
+	 * in one gallery upload). Group items are ordered by the `group_position`
+	 * meta cast to UNSIGNED so positions sort numerically rather than
+	 * lexically. Status filter ensures only published items appear in the
+	 * gallery expansion.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $media_group Group key (from `media_group` meta).
+	 * @param string $status      Status filter on mvs_media_index. Default 'publish'.
+	 * @return array<int> Media IDs in group-position order.
+	 */
+	public function get_group_media_ids( string $media_group, string $status = 'publish' ): array {
+		global $wpdb;
+
+		if ( '' === $media_group ) {
+			return array();
+		}
+
+		$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT mm1.media_id FROM {$wpdb->prefix}mvs_media_meta mm1
+				INNER JOIN {$wpdb->prefix}mvs_media_meta mm2 ON mm1.media_id = mm2.media_id AND mm2.meta_key = 'group_position'
+				INNER JOIN {$wpdb->prefix}mvs_media_index mi ON mm1.media_id = mi.media_id AND mi.status = %s
+				WHERE mm1.meta_key = 'media_group' AND mm1.meta_value = %s
+				ORDER BY CAST(mm2.meta_value AS UNSIGNED) ASC",
+				$status,
+				$media_group
+			)
+		);
+
+		return array_map( 'absint', (array) $rows );
+	}
+
+	/**
+	 * Query media rows filtered by author, with optional status + moderation
+	 * + pagination. Returns full mvs_media_index rows in created_at DESC order.
+	 *
+	 * Used by profile/feed templates that previously did direct $wpdb against
+	 * the index table. Centralizes the "show me this user's published feed"
+	 * query so per-template direct $wpdb calls go away.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int   $user_id Author user ID.
+	 * @param array $args    {
+	 *     @type string $status            Status filter. Default 'publish'.
+	 *                                     Pass '' to skip the filter.
+	 *     @type string $moderation_status Moderation status filter. Default ''
+	 *                                     (no filter). Pass 'approved' to
+	 *                                     hide flagged/pending items.
+	 *     @type int    $limit             Max rows. Default 20.
+	 *     @type int    $offset            Pagination offset. Default 0.
+	 * }
+	 * @return array<int, array> Numerically-indexed list of media rows.
+	 */
+	public function query_by_author( int $user_id, array $args = array() ): array {
+		global $wpdb;
+
+		$args = wp_parse_args(
+			$args,
+			array(
+				'status'            => 'publish',
+				'moderation_status' => '',
+				'limit'             => 20,
+				'offset'            => 0,
+			)
+		);
+
+		$where  = 'post_author = %d';
+		$params = array( $user_id );
+
+		if ( '' !== (string) $args['status'] ) {
+			$where   .= ' AND status = %s';
+			$params[] = (string) $args['status'];
+		}
+		if ( '' !== (string) $args['moderation_status'] ) {
+			$where   .= ' AND moderation_status = %s';
+			$params[] = (string) $args['moderation_status'];
+		}
+
+		$params[] = max( 1, (int) $args['limit'] );
+		$params[] = max( 0, (int) $args['offset'] );
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$params
+			),
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Read every meta_value for a media_id + meta_key (multi-value meta).
+	 *
+	 * The repository's `get()` / `get_raw()` collapse repeated rows to the
+	 * first match. This helper returns ALL rows for callers that store
+	 * multi-row meta (legacy tag-id-per-row, multi-author lists, etc.).
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $meta_key Meta key to fetch.
+	 * @return array<string>   All meta_value strings in storage order.
+	 */
+	public function get_meta_values( int $media_id, string $meta_key ): array {
+		global $wpdb;
+
+		$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key = %s",
+				$media_id,
+				$meta_key
+			)
+		);
+
+		return is_array( $rows ) ? array_map( 'strval', $rows ) : array();
+	}
+
+	/**
+	 * Find all media IDs matching a meta key/value, with optional author scope.
+	 *
+	 * Sister method to find_by_meta() which returns only the first match.
+	 * Use this for one-to-many meta keys (connector links, external IDs,
+	 * legacy multi-row meta) or when an author filter is needed.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $meta_key   Meta key to match.
+	 * @param string $meta_value Meta value to match.
+	 * @param array  $args       {
+	 *     @type int $author_id Optional author filter (joins to index).
+	 *                          Default 0 = no filter.
+	 * }
+	 * @return array<int> Media IDs matching the criteria.
+	 */
+	public function find_ids_by_meta( string $meta_key, string $meta_value, array $args = array() ): array {
+		global $wpdb;
+
+		$author_id = isset( $args['author_id'] ) ? (int) $args['author_id'] : 0;
+
+		if ( $author_id > 0 ) {
+			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT m.media_id
+					 FROM {$wpdb->prefix}mvs_media_meta m
+					 INNER JOIN {$wpdb->prefix}mvs_media_index i ON i.media_id = m.media_id
+					 WHERE m.meta_key = %s AND m.meta_value = %s AND i.post_author = %d",
+					$meta_key,
+					$meta_value,
+					$author_id
+				)
+			);
+		} else {
+			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = %s AND meta_value = %s",
+					$meta_key,
+					$meta_value
+				)
+			);
+		}
+
+		return array_map( 'absint', (array) $rows );
+	}
+
+	/**
 	 * Find a media ID by a specific meta key-value pair.
 	 *
 	 * @param string $meta_key   Meta key to search.
@@ -878,14 +1249,25 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param string $status  Post status to match.
 	 * @return int
 	 */
-	public function count_by_author( int $user_id, string $status = 'publish' ): int {
+	public function count_by_author( int $user_id, string $status = 'publish', string $moderation_status = '' ): int {
 		global $wpdb;
+
+		if ( '' === $moderation_status ) {
+			return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = %s",
+					$user_id,
+					$status
+				)
+			);
+		}
 
 		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = %s",
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = %s AND moderation_status = %s",
 				$user_id,
-				$status
+				$status,
+				$moderation_status
 			)
 		);
 	}

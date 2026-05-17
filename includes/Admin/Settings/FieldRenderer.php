@@ -103,9 +103,10 @@ class FieldRenderer {
 				'audio/mpeg' => 'MP3',
 				'audio/ogg'  => 'OGG',
 			),
-			__( 'Documents', 'wpmediaverse' ) => array(
-				'application/pdf' => 'PDF',
-			),
+			// Documents group (PDF) removed from the picker in 1.2.3 — see
+			// SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES note. Sites that
+			// previously stored application/pdf still see it in the
+			// "Custom types" row below; the option is still respected end-to-end.
 		);
 
 		$known_mimes = array();
@@ -284,7 +285,16 @@ class FieldRenderer {
 	 * @param array $args Field arguments.
 	 */
 	public static function render_checkbox_field( array $args ): void {
-		$value = get_option( $args['option'], false );
+		// Honor the `default` from `register_setting` instead of hardcoding
+		// false. Without this, settings declared as `'default' => true`
+		// (e.g. `mvs_optimize_originals`, `mvs_generate_webp`) appeared
+		// unchecked on first visit; the first admin Save would then persist
+		// them as false and silently disable the feature. 1.3.0 fix.
+		$registered = get_registered_settings();
+		$default    = isset( $registered[ $args['option'] ]['default'] )
+			? $registered[ $args['option'] ]['default']
+			: false;
+		$value      = get_option( $args['option'], $default );
 		printf(
 			'<label><input type="checkbox" name="%s" value="1" %s /> %s</label>',
 			esc_attr( $args['option'] ),

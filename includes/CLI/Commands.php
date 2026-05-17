@@ -1347,4 +1347,198 @@ class Commands {
 			)
 		);
 	}
+
+	/**
+	 * Optimize a single media row (re-encode original + emit WebP siblings).
+	 *
+	 * ## OPTIONS
+	 *
+	 * <media_id>
+	 * : The media row id to optimize.
+	 *
+	 * [--include-variants]
+	 * : Also re-process every thumbnail variant.
+	 *
+	 * [--force]
+	 * : Re-run even when the row has already been optimized.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs optimize 42
+	 *     wp mvs optimize 42 --include-variants --force
+	 *
+	 * @subcommand optimize
+	 */
+	public function optimize( $args, $assoc_args ) {
+		$media_id = (int) ( $args[0] ?? 0 );
+		if ( $media_id <= 0 ) {
+			WP_CLI::error( 'Missing or invalid <media_id>.' );
+		}
+
+		$service = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
+		$result  = $service->optimize_media(
+			$media_id,
+			array(
+				'include_variants' => (bool) Utils\get_flag_value( $assoc_args, 'include-variants', false ),
+				'force'            => (bool) Utils\get_flag_value( $assoc_args, 'force', false ),
+			)
+		);
+
+		if ( ! empty( $result['errors'] ) ) {
+			WP_CLI::warning( sprintf( 'Media #%d: %s', $media_id, implode( ', ', $result['errors'] ) ) );
+			return;
+		}
+
+		WP_CLI::success(
+			sprintf(
+				'Media #%d: %s -> %s (saved %s%%). Variants processed: %d.',
+				$media_id,
+				size_format( $result['bytes_before'] ),
+				size_format( $result['bytes_after'] ),
+				$result['saved_pct'],
+				$result['variants_processed']
+			)
+		);
+	}
+
+	/**
+	 * Optimize every image in the library matching the filters.
+	 *
+	 * Writes a `_mvs_optimized_at` sentinel so re-runs resume from where they
+	 * left off without `--force`. Failures write `_mvs_optimize_failed` and
+	 * are skipped on subsequent runs unless `--include-failed` is passed.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--limit=<n>]
+	 * : Cap rows processed.
+	 *
+	 * [--offset=<n>]
+	 * : Skip the first N rows (manual resume).
+	 *
+	 * [--mime=<types>]
+	 * : Comma-separated MIME types to include. Default: every image/*.
+	 *
+	 * [--media-type=<type>]
+	 * : Restrict to one media_type column value (photo, image, etc.).
+	 *
+	 * [--include-variants]
+	 * : Process thumbnail variants alongside the original.
+	 *
+	 * [--dry-run]
+	 * : Report what would be processed without writing.
+	 *
+	 * [--include-failed]
+	 * : Re-process rows previously marked as failed.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs optimize-bulk --limit=100 --include-variants
+	 *     wp mvs optimize-bulk --mime=image/jpeg --dry-run
+	 *
+	 * @subcommand optimize-bulk
+	 */
+	public function optimize_bulk( $args, $assoc_args ) {
+		unset( $args );
+
+		$limit            = (int) Utils\get_flag_value( $assoc_args, 'limit', 0 );
+		$offset           = (int) Utils\get_flag_value( $assoc_args, 'offset', 0 );
+		$mime_filter      = (string) Utils\get_flag_value( $assoc_args, 'mime', '' );
+		$media_type       = (string) Utils\get_flag_value( $assoc_args, 'media-type', '' );
+		$include_variants = (bool) Utils\get_flag_value( $assoc_args, 'include-variants', false );
+		$dry_run          = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$include_failed   = (bool) Utils\get_flag_value( $assoc_args, 'include-failed', false );
+
+		global $wpdb;
+		$where = "i.status IN ('publish','draft') AND i.file_path IS NOT NULL AND i.file_path != '' AND i.file_type LIKE 'image/%'";
+		if ( '' !== $mime_filter ) {
+			$mimes = array_filter( array_map( 'trim', explode( ',', $mime_filter ) ) );
+			if ( ! empty( $mimes ) ) {
+				$placeholders = implode( ',', array_fill( 0, count( $mimes ), '%s' ) );
+				$where       .= $wpdb->prepare( " AND i.file_type IN ($placeholders)", $mimes ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+		}
+		if ( '' !== $media_type ) {
+			$where .= $wpdb->prepare( ' AND i.media_type = %s', $media_type );
+		}
+
+		$limit_sql  = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
+		$offset_sql = $offset > 0 ? $wpdb->prepare( ' OFFSET %d', $offset ) : '';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_col( "SELECT i.media_id FROM {$wpdb->prefix}mvs_media_index i WHERE {$where} ORDER BY i.media_id ASC{$limit_sql}{$offset_sql}" );
+
+		$total = count( $rows );
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No image rows match the filters.' );
+			return;
+		}
+
+		WP_CLI::log( sprintf( 'Optimizing %d image(s)%s%s', $total, $dry_run ? ' [DRY-RUN]' : '', $include_variants ? ' (with variants)' : '' ) );
+
+		$repo           = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$service        = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
+		$progress       = Utils\make_progress_bar( 'Optimizing', $total );
+		$processed      = 0;
+		$skipped        = 0;
+		$failed         = 0;
+		$bytes_before_t = 0;
+		$bytes_after_t  = 0;
+		$variants_total = 0;
+
+		foreach ( $rows as $media_id_str ) {
+			$id = (int) $media_id_str;
+
+			// Resume support: skip already-optimized rows unless explicitly told
+			// to re-run. Failed rows are skipped unless --include-failed.
+			if ( (int) $repo->get_raw( $id, \WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZED_AT ) > 0 ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+			if ( ! $include_failed && '' !== (string) $repo->get_raw( $id, \WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZE_FAILED ) ) {
+				++$skipped;
+				$progress->tick();
+				continue;
+			}
+
+			$result = $service->optimize_media(
+				$id,
+				array(
+					'include_variants' => $include_variants,
+					'dry_run'          => $dry_run,
+				)
+			);
+
+			if ( ! empty( $result['errors'] ) ) {
+				++$failed;
+			} else {
+				++$processed;
+				$bytes_before_t += (int) $result['bytes_before'];
+				$bytes_after_t  += (int) $result['bytes_after'];
+				$variants_total += (int) $result['variants_processed'];
+			}
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		$saved_pct = $bytes_before_t > 0
+			? round( ( $bytes_before_t - $bytes_after_t ) / $bytes_before_t * 100, 2 )
+			: 0;
+
+		WP_CLI::success(
+			sprintf(
+				'%s %d image(s). Skipped %d. Failed %d. Total: %s -> %s (saved %s%%). Variants: %d.',
+				$dry_run ? '[DRY-RUN] Would process' : 'Processed',
+				$processed,
+				$skipped,
+				$failed,
+				size_format( $bytes_before_t ),
+				size_format( $bytes_after_t ),
+				$saved_pct,
+				$variants_total
+			)
+		);
+	}
 }

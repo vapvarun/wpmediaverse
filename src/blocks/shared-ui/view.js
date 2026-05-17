@@ -177,6 +177,45 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// open full-size images instead of the low-res grid thumbnail.
 			return d.lightbox_url || d.file_url || d.thumbnail_url || '';
 		},
+		get lightboxImageWebpUrl() {
+			// WebP sibling of the lightbox image. Empty string when the upload
+			// pre-dates 1.2.2 optimization or the variant is not safe to embed
+			// directly (gated /serve route). Empty `srcset` makes the browser
+			// skip the `<source>` and use the JPEG `<img>` fallback.
+			const d = state.lightboxMediaData;
+			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+				return '';
+			}
+			return d.lightbox_webp_url || '';
+		},
+		get lightboxHideImageWebp() {
+			// Hide the `<source>` when WebP is missing OR when the lightbox is
+			// showing a non-image item. `data-wp-bind--hidden` on a `<source>`
+			// element makes the browser ignore it during type negotiation.
+			const d = state.lightboxMediaData;
+			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+				return true;
+			}
+			return ! d.lightbox_webp_url;
+		},
+		get lightboxImageAvifUrl() {
+			// AVIF sibling — same contract as the WebP getter. Browsers walk
+			// `<source>` elements in document order so we put the AVIF source
+			// FIRST in the template; AVIF-capable browsers (Chrome, Firefox,
+			// Safari 16.4+, Edge) pick it and skip the WebP/JPEG fallbacks.
+			const d = state.lightboxMediaData;
+			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+				return '';
+			}
+			return d.lightbox_avif_url || '';
+		},
+		get lightboxHideImageAvif() {
+			const d = state.lightboxMediaData;
+			if ( ! d || d.media_type === 'video' || d.media_type === 'audio' ) {
+				return true;
+			}
+			return ! d.lightbox_avif_url;
+		},
 		get lightboxIsVideo() {
 			return state.lightboxMediaData?.media_type === 'video';
 		},
@@ -1072,16 +1111,25 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				const s = await fetch( ctx.restUrl + 'media/' + mediaId + '/stats', opts );
 				state.lightboxStats = await s.json();
 			} catch { state.lightboxStats = {}; }
-			// Favorite status (requires authentication).
-			if ( ctx.isLoggedIn ) {
-				try {
-					const f = await fetch( ctx.restUrl + 'media/' + mediaId + '/favorite', opts );
+			// Favorite status. Attempt unconditionally — the REST endpoint
+			// enforces its own auth, returning 401 for guests which lands in
+			// the catch and leaves the default `false`. The previous
+			// ctx.isLoggedIn gate was driven by parsed.currentUserId, which
+			// is not emitted into every per-card data-wp-context (only
+			// mediaId/restUrl/nonce are guaranteed). That mismatch caused
+			// the "lightbox heart never reflects server truth after refresh"
+			// desync: server records the favorite correctly, but the
+			// lightbox always boots with lightboxIsFavorited=false because
+			// the GET was skipped.
+			try {
+				const f = await fetch( ctx.restUrl + 'media/' + mediaId + '/favorite', opts );
+				if ( f.ok ) {
 					const fd = await f.json();
 					state.lightboxIsFavorited = !! fd.favorited;
-				} catch { state.lightboxIsFavorited = false; }
-			} else {
-				state.lightboxIsFavorited = false;
-			}
+				} else {
+					state.lightboxIsFavorited = false;
+				}
+			} catch { state.lightboxIsFavorited = false; }
 		},
 		async lightboxToggleReaction( event ) {
 			const ctx = getContext();
@@ -1115,14 +1163,33 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const ctx = getContext();
 			if ( ! state.lightboxMediaId ) return;
 			const headers = { 'X-WP-Nonce': ctx.nonce };
+			// Optimistic flip for snappy UI; roll back on error / verify
+			// against server response. Previously the flip was unconditional
+			// and the catch was silent — a 4xx response (rate-limit, auth
+			// lapse) would leave the heart filled with no server record,
+			// then a refresh would re-show it empty.
+			const previous = !! state.lightboxIsFavorited;
+			state.lightboxIsFavorited = ! previous;
 			try {
-				await fetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/favorite', {
-					method: state.lightboxIsFavorited ? 'DELETE' : 'POST',
+				const res = await fetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/favorite', {
+					method: previous ? 'DELETE' : 'POST',
 					credentials: 'same-origin',
 					headers,
 				} );
-				state.lightboxIsFavorited = ! state.lightboxIsFavorited;
-			} catch { /* ignore */ }
+				if ( res.ok ) {
+					// Trust server-authoritative value if present in body.
+					try {
+						const body = await res.json();
+						if ( body && typeof body.favorited === 'boolean' ) {
+							state.lightboxIsFavorited = body.favorited;
+						}
+					} catch { /* keep optimistic flip */ }
+				} else {
+					state.lightboxIsFavorited = previous;
+				}
+			} catch {
+				state.lightboxIsFavorited = previous;
+			}
 		},
 		lightboxUpdateComment( event ) {
 			state.lightboxCommentText = event.target.value;

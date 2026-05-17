@@ -66,11 +66,17 @@ class NotificationService {
 	 * @param int    $actor_id   User who triggered it.
 	 * @param int    $media_id   Related media ID (0 if none).
 	 * @param int    $comment_id Related comment ID (0 if none).
+	 * @param bool   $allow_self Allow recipient === actor (system events
+	 *                            announcing the recipient's own milestone).
+	 *                            Default false. Added 1.3.0.
 	 * @return int|false Notification ID or false.
 	 */
-	public function create( int $user_id, string $type, int $actor_id, int $media_id = 0, int $comment_id = 0 ) {
-		// Don't notify yourself.
-		if ( $user_id === $actor_id ) {
+	public function create( int $user_id, string $type, int $actor_id, int $media_id = 0, int $comment_id = 0, bool $allow_self = false ) {
+		// Don't notify yourself unless explicitly opted in. Pro challenge /
+		// tournament announcements ("you placed 2nd") use $allow_self=true
+		// because user_id === actor_id by design — the system IS notifying
+		// the user about THEIR own milestone.
+		if ( ! $allow_self && $user_id === $actor_id ) {
 			return false;
 		}
 

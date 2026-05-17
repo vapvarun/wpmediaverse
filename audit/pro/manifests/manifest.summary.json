@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse-pro",
     "name": "WPMediaVerse Pro",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "namespace": "WPMediaVersePro",
     "main_file": "wpmediaverse-pro.php",
     "text_domain": "wpmediaverse-pro",
@@ -16,7 +16,7 @@
     "license_item_id": 1660828
   },
   "counts": {
-    "rest_endpoints": 37,
+    "rest_endpoints": 58,
     "ajax": 6,
     "admin_pages": 10,
     "settings": 0,
@@ -26,13 +26,17 @@
     "free_services_consumed": 1,
     "free_filters_hooked": 17,
     "extension_patterns": 6,
-    "cron": 4,
+    "cron": 3,
     "wp_cli": 3,
     "storage_drivers": 2,
     "templates": 16,
     "blocks": 12,
     "shortcodes": 12,
-    "coding_rules": 12
+    "coding_rules": 12,
+    "admin_pages_baseline": 28,
+    "free_filters_hooked_baseline": 14,
+    "free_actions_hooked_baseline": 25,
+    "hooks_fired_baseline": 72
   },
   "detail_files": {
     "rest": "manifest.rest.json",
@@ -49,14 +53,37 @@
     "manifest_url": "../../wpmediaverse/audit/manifest.json"
   },
   "generated": {
-    "at": "2026-05-03T11:39:56Z",
-    "from": "targeted refresh for 1.2.0 release (Phase 3a–3e blocks/shortcodes + Phase 5 P2.1/P2.2 + Messaging cleanup + Rules 5/6)",
-    "branch": "1.2.0",
+    "at": "2026-05-17T03:45:00Z",
+    "from": "wp-plugin-onboard skill (Pro paired with Free 1.2.2 + ground-truth baseline 2026-05-17)",
+    "branch": "1.2.0+",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
     "php_file_count": 93,
     "phase_2_rescan_skipped": true,
-    "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred"
+    "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
+    "confirmed_against_free": {
+      "free_version": "1.3.0",
+      "free_refresh_at": "2026-05-17T03:30:00Z",
+      "at": "2026-05-17T03:35:00Z",
+      "scope": "Free 1.2.2 added image optimization (new mvs_optimize_image filter + 3 supporting filters + 1 service + 2 settings + 2 CLI subcommands). NONE of these are consumed by Pro: image optimization is intentionally exposed only as a public filter for external compressors (EWWW/Imagify/Smush/ShortPixel via documented mu-plugin snippets), not as a Pro extension point. Pro PHP source unchanged since 2026-05-07. Cross-plugin coupling map (17 free_filters_hooked + 1 free_services_consumed) unchanged.",
+      "verified_by": "wp-plugin-onboard refresh — grep for mvs_optimize_image|mvs_optimize_jpeg_quality|mvs_webp_quality|mvs_ffmpeg_binary|image_optimization in wpmediaverse-pro/includes/ returned 0 hits",
+      "refreshed_at": "2026-05-17T05:30:00Z"
+    },
+    "baseline_drift": {
+      "at": "2026-05-17T03:45:00Z",
+      "method": "fresh ground-truth grep across 151 PHP files in wpmediaverse-pro/",
+      "note": "counts.* reflect actual code, but DETAIL SECTIONS still hold the 2026-05-03 enumeration shape. Pro PHP source did not change in 1.2.2 (verified — no consumption of new Free filters), so per-entry detail is stable since 2026-05-07 even where counts show drift. Drift is from REST/admin enumeration that was already partial at the 2026-05-03 baseline.",
+      "drift_per_category": {
+        "rest_endpoints": "58 baseline vs 37 in detail file (21 unenumerated — bulk of Pro extension endpoints)",
+        "free_filters_hooked": "14 baseline (down from 17 stored — 3 entries may be stale/removed listeners)",
+        "free_actions_hooked": "25 baseline (new metric not previously tracked)",
+        "admin_pages": "28 add_*_page calls vs 10 top-level pages in detail file (18 sub-pages not enumerated)",
+        "blocks": "24 block.json files includes build copies; logical block count remains 12 from the existing detail file"
+      }
+    }
+  },
+  "confirmed_against_free": {
+    "refreshed_at": "2026-05-17T03:45:00Z"
   }
 }

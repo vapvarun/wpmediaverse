@@ -14,7 +14,7 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_theme_json` | filter | Free | 1.0 |
 | `mvs_theme_json_transport` | filter | Free | 1.0 |
 | `mvs_before_media_insert` | action | Free | 1.0 |
-| `mvs_media_uploaded` | action | Free | 1.0 |
+| `mvs_media_uploaded` | action | Free | 1.0 (signature extended in 1.2.3) |
 | `mvs_before_upload_form` | action | Free | 1.0 |
 | `mvs_before_thumbnail_generation` | action | Free | 1.1 |
 | `mvs_after_thumbnail_generation` | action | Free | 1.1 |
@@ -257,27 +257,37 @@ add_action( 'mvs_ai_providers', function( $ai_service ) {
 
 ### `mvs_media_uploaded`
 
-Fires after a new media post is created, stored, and indexed. This is the primary hook for post-upload processing.
+Fires after a new media post is created, stored, and indexed. This is the primary hook for post-upload processing — use it for gamification, activity feeds, external pipelines, and analytics.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `$media_id` | int | The new `mvs_media` post ID |
-| `$file_data` | array | File data array including `mime`, `file_path`, `file_url`, `file_size` |
+| `$file_data` | array | File data. Keys: `mime`, `file_path`, `file_url`, `file_size`, `file_type`, `file_hash`, `media_type`, `privacy`, `user_id`, `is_first` (1.2.3+) |
+| `$user_id` | int | Uploader user ID (1.2.3+) |
+| `$media_type` | string | Resolved type: `photo`, `video`, `audio`, `document` (1.2.3+) |
+
+**Backward compatibility:** Listeners registered with `accepted_args=1` or `=2` continue to work unchanged — the new positional args are appended.
 
 ```php
 /**
- * Trigger a third-party sync after a new media upload.
+ * Award gamification points on every upload, plus a one-time "first upload" badge.
  *
- * @since 1.0
+ * @since 1.2.3
  *
- * @param int   $media_id  The new media post ID.
- * @param array $file_data File data array.
+ * @param int    $media_id   The new media post ID.
+ * @param array  $file_data  File data (now includes user_id and is_first).
+ * @param int    $user_id    Uploader user ID.
+ * @param string $media_type 'photo' | 'video' | 'audio' | 'document'.
  */
-add_action( 'mvs_media_uploaded', function( int $media_id, array $file_data ) {
-    my_cdn_sync( $file_data['file_path'] );
-}, 10, 2 );
+add_action( 'mvs_media_uploaded', function( int $media_id, array $file_data, int $user_id, string $media_type ) {
+    wb_gamification_award( $user_id, 'mvs_upload_photo', 10 );
+
+    if ( ! empty( $file_data['is_first'] ) ) {
+        wb_gamification_award_badge( $user_id, 'first_upload' );
+    }
+}, 10, 4 );
 ```
 
 ---
@@ -1251,7 +1261,8 @@ add_filter( 'mvs_privacy_can_view', function( $result, int $media_id, int $user_
 | `mvs_access_rule_deleted` | action | Access rule removed | `$rule_id`, `$media_id`, `$rule_type` | 1.0 |
 | `mvs_access_granted` | action | User granted access to restricted media | `$grant_id`, `$media_id`, `$user_id`, `$source` | 1.0 |
 | `mvs_access_revoked` | action | User access revoked | `$media_id`, `$user_id` | 1.0 |
-| `mvs_story_created` | action | Story published | `$media_id`, `$expires_at` | 1.0 |
+| `mvs_story_created` | action | Story published | `$media_id`, `$user_id`, `$expires_at` (signature changed in 1.2.3) | 1.0 |
+| `mvs_album_items_added` | action | Media added to an album | `$album_id`, `$actor_id`, `$media_ids`, `$added` (signature changed in 1.2.3) | 1.0 |
 | `mvs_story_expired` | action | Story expired and removed | `$media_id` | 1.0 |
 
 ---
@@ -1549,22 +1560,25 @@ add_filter( 'mvs_pro_before_quota_check', function( $args, int $user_id ) {
 |------|------|-------------|------------|-------|
 | `mvs_challenge_created` | action | Challenge created | `$competition_id`, `$args`, `$created_by` | 1.0 |
 | `mvs_challenge_entry_submitted` | action | User submits an entry | `$challenge_id`, `$user_id`, `$media_id` | 1.0 |
+| `mvs_challenge_winner_named` | action | Fires once per top-3 rank when a challenge is finalized — fires before `mvs_challenge_finalized` | `$challenge_id`, `$user_id`, `$rank` (1, 2, or 3) | 1.2.3 |
 | `mvs_challenge_finalized` | action | Voting ends, winners determined | `$challenge_id`, `$results` | 1.0 |
 
 ```php
 /**
- * Award extra XP to the challenge winner.
+ * Award scaled XP per rank without parsing the private $results shape.
  *
- * @since 1.0
+ * @since 1.2.3
  *
- * @param int   $challenge_id Challenge competition ID.
- * @param array $results      Results array including winner data.
+ * @param int $challenge_id Challenge competition ID.
+ * @param int $user_id      Winning user ID.
+ * @param int $rank         1, 2, or 3.
  */
-add_action( 'mvs_challenge_finalized', function( int $challenge_id, array $results ) {
-    if ( ! empty( $results['winner_id'] ) ) {
-        my_award_xp( $results['winner_id'], 500 );
+add_action( 'mvs_challenge_winner_named', function( int $challenge_id, int $user_id, int $rank ) {
+    $scale = array( 1 => 500, 2 => 250, 3 => 100 );
+    if ( isset( $scale[ $rank ] ) ) {
+        my_award_xp( $user_id, $scale[ $rank ] );
     }
-}, 10, 2 );
+}, 10, 3 );
 ```
 
 ---

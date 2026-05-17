@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -553,254 +553,628 @@
   ],
   "admin_pages": [
     {
-      "title": "WPMediaVerse",
       "slug": "wpmediaverse",
-      "parent": null,
+      "parent": "",
+      "title": "WPMediaVerse",
+      "menu_title": "WPMediaVerse",
       "capability": "manage_options",
-      "source": "Core/Plugin.php:620",
-      "renders": "Admin/OverviewPage.php"
+      "where": "Core/Plugin.php:699 (add_menu_page)",
+      "renders": "Admin/OverviewPage.php::render_page",
+      "purpose": "Top-level WPMediaVerse admin menu; renders the Overview dashboard with quick stats, recent uploads, setup checklist, and links to all sub-pages."
     },
     {
+      "slug": "wpmediaverse",
+      "parent": "wpmediaverse",
+      "title": "Overview",
+      "menu_title": "Overview",
+      "capability": "manage_options",
+      "where": "Core/Plugin.php:710 (add_submenu_page)",
+      "renders": "Admin/OverviewPage.php::render_page",
+      "purpose": "First sub-menu entry that replaces the auto-created duplicate of the top-level menu; routes to the Overview dashboard."
+    },
+    {
+      "slug": "mvs-media",
+      "parent": "wpmediaverse",
       "title": "All Media",
-      "slug": "wpmediaverse-media",
-      "parent": "wpmediaverse",
+      "menu_title": "All Media",
       "capability": "manage_options",
-      "source": "Admin/MediaListPage.php"
+      "where": "Core/Plugin.php:720 (add_submenu_page)",
+      "renders": "Admin/MediaListPage.php::render",
+      "purpose": "Custom WP_List_Table-style listing of all mvs_media records with bulk actions (delete, change privacy, set status), filters by privacy/status/owner, and per-row action links (edit, view, optimize, details)."
     },
     {
-      "title": "Settings",
-      "slug": "wpmediaverse-settings",
+      "slug": "mvs-tags",
       "parent": "wpmediaverse",
+      "title": "Tags",
+      "menu_title": "Tags",
       "capability": "manage_options",
-      "source": "Admin/Settings/SettingsPage.php"
+      "where": "Core/Plugin.php:730 (add_submenu_page)",
+      "renders": "Admin/TagManagementPage.php::render",
+      "purpose": "Tag management screen for the mvs_media_tag taxonomy: add, edit, merge, and bulk-delete tags applied to media items."
     },
     {
-      "title": "Stats",
-      "slug": "wpmediaverse-stats",
+      "slug": "mvs-settings",
       "parent": "wpmediaverse",
+      "title": "WPMediaVerse Settings",
+      "menu_title": "Settings",
       "capability": "manage_options",
-      "source": "Admin/StatsPage.php"
+      "where": "Admin/Settings/SettingsPage.php:200 (add_submenu_page via admin_menu)",
+      "renders": "Admin/Settings/SettingsPage.php::render_page",
+      "purpose": "Master settings page; sidebar-tabbed UI orchestrated by SettingsPage, with sections registered by SettingsRegistrar (general, storage, display, ai+moderation, webhooks, social/DM, monetization)."
     },
     {
-      "title": "Moderation",
-      "slug": "wpmediaverse-moderation",
-      "parent": "wpmediaverse",
-      "capability": "moderate_mvs_media",
-      "source": "Admin/ModerationQueue.php"
+      "slug": "mvs-settings&tab=general",
+      "parent": "mvs-settings",
+      "title": "General Settings",
+      "menu_title": "General",
+      "capability": "manage_options",
+      "where": "Admin/Settings/SettingsRegistrar.php:95 (add_settings_section mvs_general)",
+      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=general)",
+      "purpose": "General tab of the settings page: upload limits, allowed file types, privacy defaults, and duplicate-detection options."
     },
     {
-      "title": "Logs",
-      "slug": "wpmediaverse-logs",
-      "parent": "wpmediaverse",
+      "slug": "mvs-settings&tab=storage",
+      "parent": "mvs-settings",
+      "title": "Storage Settings",
+      "menu_title": "Storage",
       "capability": "manage_options",
-      "source": "Admin/LogViewerPage.php"
+      "where": "Admin/Settings/SettingsRegistrar.php:241 (add_settings_section mvs_storage)",
+      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=storage)",
+      "purpose": "Storage tab: storage driver selection (local/cloud), cloud credentials, thumbnail-generation toggles, WebP/optimization, filename strategy, signed-URL TTL."
     },
     {
-      "title": "Setup Wizard",
-      "slug": "wpmediaverse-setup",
-      "parent": "wpmediaverse",
+      "slug": "mvs-settings&tab=display",
+      "parent": "mvs-settings",
+      "title": "Media Display Settings",
+      "menu_title": "Display",
       "capability": "manage_options",
-      "source": "Admin/SetupWizard.php"
+      "where": "Admin/Settings/SettingsRegistrar.php:497 (add_settings_section mvs_display)",
+      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=display)",
+      "purpose": "Display tab: grid layout, columns per breakpoint, lightbox behavior, lazy-load, infinite scroll, default sort order, watermark display."
+    },
+    {
+      "slug": "mvs-settings&tab=ai",
+      "parent": "mvs-settings",
+      "title": "AI Features Settings",
+      "menu_title": "AI & Moderation",
+      "capability": "manage_options",
+      "where": "Admin/Settings/SettingsRegistrar.php:664 (add_settings_section mvs_ai) + 873 (mvs_moderation)",
+      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=ai)",
+      "purpose": "AI & Moderation tab: OpenAI key, auto-tag toggle, auto-alt-text, NSFW detection threshold, manual-review queue thresholds, banned-keyword list."
+    },
+    {
+      "slug": "mvs-settings&tab=webhooks",
+      "parent": "mvs-settings",
+      "title": "Webhooks Settings",
+      "menu_title": "Webhooks",
+      "capability": "manage_options",
+      "where": "Admin/Settings/SettingsRegistrar.php:928 (add_settings_section mvs_webhooks)",
+      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=webhooks)",
+      "purpose": "Webhooks tab: outbound webhook URLs, signing secrets, event subscriptions (media uploaded/approved/deleted) and retry policy."
+    },
+    {
+      "slug": "mvs-settings&tab=social",
+      "parent": "mvs-settings",
+      "title": "Social & Messaging Settings",
+      "menu_title": "Social / DM",
+      "capability": "manage_options",
+      "where": "Admin/Settings/SettingsRegistrar.php:956 (add_settings_section mvs_messaging)",
+      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=social)",
+      "purpose": "Social tab: DM access (everyone/followers/mutual/nobody), minimum account age, chat-panel visibility scope, online-status visibility."
+    },
+    {
+      "slug": "mvs-settings&tab=monetization",
+      "parent": "mvs-settings",
+      "title": "Monetization Settings",
+      "menu_title": "Monetization",
+      "capability": "manage_options",
+      "where": "Admin/Settings/SettingsRegistrar.php:1088 (add_settings_section monetization)",
+      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=monetization)",
+      "purpose": "Monetization tab: credit-system toggles, transaction defaults, payout settings, and Pro-only paywall hooks."
+    },
+    {
+      "slug": "mvs-stats",
+      "parent": "wpmediaverse",
+      "title": "Media Stats",
+      "menu_title": "Stats",
+      "capability": "manage_options",
+      "where": "Admin/StatsPage.php:43 (add_submenu_page via admin_menu)",
+      "renders": "Admin/StatsPage.php::render_page",
+      "purpose": "Statistics dashboard: top media by views/reactions/comments, AI usage and cost tracking, with CSV export of top-media stats via admin_init handler."
+    },
+    {
+      "slug": "mvs-moderation",
+      "parent": "wpmediaverse",
+      "title": "Media Moderation",
+      "menu_title": "Moderation (with awaiting-mod badge)",
+      "capability": "manage_options",
+      "where": "Admin/ModerationQueue.php:56 (add_submenu_page via admin_menu)",
+      "renders": "Admin/ModerationQueue.php::render_page",
+      "purpose": "Moderation queue for flagged/pending media; supports approve/reject (single + bulk) actions; menu title includes live awaiting-moderation count badge from ModerationService."
+    },
+    {
+      "slug": "mvs-logs",
+      "parent": "wpmediaverse",
+      "title": "Log Viewer",
+      "menu_title": "Logs",
+      "capability": "manage_options",
+      "where": "Admin/LogViewerPage.php:33 (add_submenu_page via admin_menu)",
+      "renders": "Admin/LogViewerPage.php::render_page",
+      "purpose": "Read-only viewer for the mvs_error_log custom table; supports filtering by level/source, pagination, and a Clear Logs admin_init action with nonce."
+    },
+    {
+      "slug": "mvs-setup",
+      "parent": "wpmediaverse",
+      "title": "WPMediaVerse Setup",
+      "menu_title": "Setup (hidden via CSS)",
+      "capability": "manage_options",
+      "where": "Admin/SetupWizard.php:39 (add_submenu_page via admin_menu)",
+      "renders": "Admin/SetupWizard.php::render_wizard",
+      "purpose": "First-time setup wizard router; the submenu entry is hidden via CSS but kept in $submenu so user_can_access_admin_page() still works for direct URL access."
+    },
+    {
+      "slug": "mvs-setup&step=welcome",
+      "parent": "mvs-setup",
+      "title": "Setup Wizard - Welcome",
+      "menu_title": "",
+      "capability": "manage_options",
+      "where": "Admin/SetupWizard.php:195 (render_wizard step switch)",
+      "renders": "Admin/SetupWizard.php::render_welcome_step",
+      "purpose": "Step 1 of setup wizard: welcomes the admin and explains what the wizard will configure (pages, display, completion)."
+    },
+    {
+      "slug": "mvs-setup&step=pages",
+      "parent": "mvs-setup",
+      "title": "Setup Wizard - Pages",
+      "menu_title": "",
+      "capability": "manage_options",
+      "where": "Admin/SetupWizard.php:198 (render_wizard step switch)",
+      "renders": "Admin/SetupWizard.php::render_pages_step",
+      "purpose": "Step 2 of setup wizard: auto-creates required WP pages (Explore, Dashboard, Albums, Messages) with the matching shortcodes/blocks."
+    },
+    {
+      "slug": "mvs-setup&step=display",
+      "parent": "mvs-setup",
+      "title": "Setup Wizard - Display",
+      "menu_title": "",
+      "capability": "manage_options",
+      "where": "Admin/SetupWizard.php:201 (render_wizard step switch); save handler 84",
+      "renders": "Admin/SetupWizard.php::render_display_step",
+      "purpose": "Step 3 of setup wizard: collects basic display preferences (grid columns, lightbox enable, default privacy) and writes them to settings options."
+    },
+    {
+      "slug": "mvs-setup&step=done",
+      "parent": "mvs-setup",
+      "title": "Setup Wizard - Done",
+      "menu_title": "",
+      "capability": "manage_options",
+      "where": "Admin/SetupWizard.php:204 (render_wizard step switch); save handler 89",
+      "renders": "Admin/SetupWizard.php::render_done_step",
+      "purpose": "Step 4 of setup wizard: marks setup complete, sets the mvs_setup_complete flag, and links to Overview/Settings."
+    },
+    {
+      "slug": "edit.php?post_type=mvs_album",
+      "parent": "wpmediaverse",
+      "title": "Albums",
+      "menu_title": "Albums",
+      "capability": "edit_posts",
+      "where": "PostTypes/Album.php:46 (register_post_type show_in_menu => wpmediaverse)",
+      "renders": "wp-admin/edit.php (WP core list table)",
+      "purpose": "WP-core post-list screen for the mvs_album CPT, injected under the WPMediaVerse menu via show_in_menu so album CRUD lives next to the rest of the plugin."
+    },
+    {
+      "slug": "edit.php?post_type=mvs_collection",
+      "parent": "wpmediaverse",
+      "title": "Collections",
+      "menu_title": "Collections",
+      "capability": "edit_posts",
+      "where": "PostTypes/Collection.php:46 (register_post_type show_in_menu => wpmediaverse)",
+      "renders": "wp-admin/edit.php (WP core list table)",
+      "purpose": "WP-core post-list screen for the mvs_collection CPT, injected under the WPMediaVerse menu via show_in_menu so collection CRUD lives next to the rest of the plugin."
     }
   ],
   "settings": [
     {
+      "key": "mvs_comment_edit_window",
+      "group": "general",
+      "type": "integer",
+      "default": 900,
+      "registered_in_option_group": "mvs_settings_general",
+      "section": null,
+      "sanitize_callback": "Sanitizers::sanitize_comment_edit_window",
+      "where": "Admin/Settings/SettingsRegistrar.php:66",
+      "controls": "Comment edit window (seconds). 0 disables editing. Registered via register_undocumented_settings (no UI; documented in qa/WHAT-TO-CHECK.md)."
+    },
+    {
       "key": "mvs_max_upload_size",
       "group": "general",
-      "type": "int",
-      "default": 50,
+      "type": "integer",
+      "default": 104857600,
+      "registered_in_option_group": "mvs_settings_general",
+      "section": "mvs_general",
+      "sanitize_callback": "Sanitizers::sanitize_size_mb",
+      "where": "Admin/Settings/SettingsRegistrar.php:104",
       "controls": "Max upload size (MB)"
     },
     {
       "key": "mvs_allowed_file_types",
       "group": "general",
-      "type": "csv",
+      "type": "string",
+      "default": "image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg",
+      "registered_in_option_group": "mvs_settings_general",
+      "section": "mvs_general",
+      "sanitize_callback": "Sanitizers::sanitize_file_types",
+      "where": "Admin/Settings/SettingsRegistrar.php:124",
       "controls": "Allowed file extensions"
     },
     {
       "key": "mvs_default_privacy",
       "group": "general",
-      "type": "enum",
+      "type": "string",
+      "default": "public",
+      "registered_in_option_group": "mvs_settings_general",
+      "section": "mvs_general",
+      "sanitize_callback": "Sanitizers::sanitize_default_privacy",
+      "where": "Admin/Settings/SettingsRegistrar.php:145",
       "controls": "Default upload privacy"
     },
     {
       "key": "mvs_allow_user_privacy",
       "group": "general",
-      "type": "bool",
+      "type": "boolean",
+      "default": true,
+      "registered_in_option_group": "mvs_settings_general",
+      "section": "mvs_general",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:171",
       "controls": "Per-user privacy override"
     },
     {
       "key": "mvs_duplicate_action",
       "group": "general",
-      "type": "enum",
+      "type": "string",
+      "default": "warn",
+      "registered_in_option_group": "mvs_settings_general",
+      "section": "mvs_general",
+      "sanitize_callback": "Sanitizers::sanitize_duplicate_action",
+      "where": "Admin/Settings/SettingsRegistrar.php:193",
       "controls": "Dedupe behavior"
     },
     {
       "key": "mvs_strip_exif",
       "group": "general",
-      "type": "bool",
+      "type": "boolean",
+      "default": true,
+      "registered_in_option_group": "mvs_settings_general",
+      "section": "mvs_general",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:219",
       "controls": "Strip EXIF on upload"
     },
     {
+      "key": "mvs_storage_driver",
+      "group": "storage",
+      "type": "string",
+      "default": "local",
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "Sanitizers::sanitize_storage_driver",
+      "where": "Admin/Settings/SettingsRegistrar.php:243",
+      "controls": "Active storage driver (local/S3/BunnyCDN — Pro-extensible via mvs_storage_driver filter)"
+    },
+    {
       "key": "mvs_signed_url_ttl",
-      "group": "general",
-      "type": "int",
+      "group": "storage",
+      "type": "integer",
+      "default": 3600,
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "absint",
+      "where": "Admin/Settings/SettingsRegistrar.php:287",
       "controls": "Signed URL TTL (seconds)"
+    },
+    {
+      "key": "mvs_cloud_direct_public_urls",
+      "group": "storage",
+      "type": "boolean",
+      "default": false,
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:313",
+      "controls": "Serve public media direct from CDN. When on AND active driver is s3/bunnycdn, public-privacy media skip the gated /serve proxy and emit the CDN edge URL directly.",
+      "added": "1.2.1"
+    },
+    {
+      "key": "mvs_view_retention_days",
+      "group": "storage",
+      "type": "integer",
+      "default": 90,
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "ViewRetentionService::sanitize_setting",
+      "where": "Admin/Settings/SettingsRegistrar.php:337",
+      "controls": "View Event Retention (days). Daily cron drops rows from mvs_media_views older than this window. Aggregates in mvs_media_stats unaffected. 0 = retain forever.",
+      "added": "1.2.1"
+    },
+    {
+      "key": "mvs_optimize_originals",
+      "group": "storage",
+      "type": "boolean",
+      "default": true,
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:362",
+      "controls": "Compress uploaded JPEG/PNG/GIF via WP_Image_Editor. Temp-write + size-compare protects against re-encode inflation. Fires mvs_optimize_image filter so EWWW/Imagify/Smush/ShortPixel run alongside.",
+      "added": "1.2.2"
+    },
+    {
+      "key": "mvs_generate_webp",
+      "group": "storage",
+      "type": "boolean",
+      "default": true,
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:386",
+      "controls": "Emit WebP sibling for original + each thumbnail size. Stored as original_webp / thumb_*_webp meta. Only kept when strictly smaller than source. Uploaded to active cloud driver for cloud installs.",
+      "added": "1.2.2"
+    },
+    {
+      "key": "mvs_generate_avif",
+      "group": "storage",
+      "type": "boolean",
+      "default": false,
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:412",
+      "controls": "Emit AVIF sibling for original + each thumbnail size. AVIF is 30–50% smaller than WebP but encodes 3–10× slower. Requires AVIF-capable Imagick (libheif) or GD on PHP 8.1+ (libavif); silent no-op when unavailable. Default OFF (opt-in).",
+      "added": "1.2.3"
+    },
+    {
+      "key": "mvs_telemetry_enabled",
+      "group": "storage",
+      "type": "boolean",
+      "default": false,
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:438",
+      "controls": "Anonymous opt-in local-only usage counters. Records event-name counters via TelemetryService (no user IDs, URLs, paths, or media content). Stays on-site; never transmitted. Disabled by default.",
+      "added": "1.2.3"
+    },
+    {
+      "key": "mvs_filename_strategy",
+      "group": "storage",
+      "type": "string",
+      "default": "original_sanitized",
+      "registered_in_option_group": "mvs_settings_storage",
+      "section": "mvs_storage",
+      "sanitize_callback": "Sanitizers::sanitize_filename_strategy",
+      "where": "Admin/Settings/SettingsRegistrar.php:463",
+      "controls": "Stored filename strategy (hashed | original_sanitized). Existing media never renamed; only affects future uploads. Default 'original_sanitized' on upgrade; FilenameStrategy::DEFAULT_FRESH ('hashed') for fresh installs.",
+      "added": "1.2.1"
     },
     {
       "key": "mvs_grid_columns",
       "group": "display",
-      "type": "int",
+      "type": "integer",
+      "default": 3,
+      "registered_in_option_group": "mvs_settings_display",
+      "section": "mvs_display",
+      "sanitize_callback": "Sanitizers::sanitize_grid_columns",
+      "where": "Admin/Settings/SettingsRegistrar.php:499",
       "controls": "Grid columns"
     },
     {
       "key": "mvs_items_per_page",
       "group": "display",
-      "type": "int",
+      "type": "integer",
+      "default": 12,
+      "registered_in_option_group": "mvs_settings_display",
+      "section": "mvs_display",
+      "sanitize_callback": "Sanitizers::sanitize_items_per_page",
+      "where": "Admin/Settings/SettingsRegistrar.php:526",
       "controls": "Page size"
     },
     {
       "key": "mvs_thumbnail_style",
       "group": "display",
-      "type": "enum",
+      "type": "string",
+      "default": "square",
+      "registered_in_option_group": "mvs_settings_display",
+      "section": "mvs_display",
+      "sanitize_callback": "Sanitizers::sanitize_thumbnail_style",
+      "where": "Admin/Settings/SettingsRegistrar.php:552",
       "controls": "Card style"
     },
     {
       "key": "mvs_thumbnail_size",
       "group": "display",
-      "type": "enum",
+      "type": "string",
+      "default": "large",
+      "registered_in_option_group": "mvs_settings_display",
+      "section": "mvs_display",
+      "sanitize_callback": "Sanitizers::sanitize_thumbnail_size",
+      "where": "Admin/Settings/SettingsRegistrar.php:577",
       "controls": "Generated size"
     },
     {
       "key": "mvs_lightbox_image_source",
       "group": "display",
-      "type": "enum",
+      "type": "string",
+      "default": "original",
+      "registered_in_option_group": "mvs_settings_display",
+      "section": "mvs_display",
+      "sanitize_callback": "Sanitizers::sanitize_lightbox_image_source",
+      "where": "Admin/Settings/SettingsRegistrar.php:603",
       "controls": "Lightbox source size"
+    },
+    {
+      "key": "mvs_allow_downloads",
+      "group": "display",
+      "type": "boolean",
+      "default": true,
+      "registered_in_option_group": "mvs_settings_display",
+      "section": "mvs_display",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:634",
+      "controls": "Global Allow Downloads toggle. Hides the lightbox Download button + gates the POST /mvs/v1/media/{id}/download REST endpoint (defense-in-depth: hiding the button alone wouldn't stop a determined caller). Per-media `allow_download` meta still applies on top of this."
     },
     {
       "key": "mvs_ai_provider",
       "group": "ai",
-      "type": "enum",
+      "type": "string",
+      "default": "openai",
+      "registered_in_option_group": "mvs_settings_ai",
+      "section": "mvs_ai",
+      "sanitize_callback": "Sanitizers::sanitize_ai_provider",
+      "where": "Admin/Settings/SettingsRegistrar.php:666",
       "controls": "Active AI provider"
     },
     {
       "key": "mvs_openai_api_key",
       "group": "ai",
-      "type": "secret",
+      "type": "string",
+      "default": "",
+      "registered_in_option_group": "mvs_settings_ai",
+      "section": "mvs_ai",
+      "sanitize_callback": "Sanitizers::sanitize_password_option",
+      "where": "Admin/Settings/SettingsRegistrar.php:710",
       "controls": "OpenAI key"
     },
     {
       "key": "mvs_openai_model",
       "group": "ai",
-      "type": "enum",
+      "type": "string",
+      "default": "gpt-4o-mini",
+      "registered_in_option_group": "mvs_settings_ai",
+      "section": "mvs_ai",
+      "sanitize_callback": "Sanitizers::sanitize_openai_model",
+      "where": "Admin/Settings/SettingsRegistrar.php:731",
       "controls": "OpenAI model"
     },
     {
       "key": "mvs_ai_auto_analyze",
       "group": "ai",
-      "type": "bool",
+      "type": "boolean",
+      "default": false,
+      "registered_in_option_group": "mvs_settings_ai",
+      "section": "mvs_ai",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:756",
       "controls": "Auto-analyze on upload"
     },
     {
       "key": "mvs_ai_auto_apply_tags",
       "group": "ai",
-      "type": "bool",
+      "type": "boolean",
+      "default": false,
+      "registered_in_option_group": "mvs_settings_ai",
+      "section": "mvs_ai",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:777",
       "controls": "Apply AI tags"
     },
     {
       "key": "mvs_ai_auto_moderate",
       "group": "ai",
-      "type": "bool",
+      "type": "boolean",
+      "default": false,
+      "registered_in_option_group": "mvs_settings_ai",
+      "section": "mvs_ai",
+      "sanitize_callback": "rest_sanitize_boolean",
+      "where": "Admin/Settings/SettingsRegistrar.php:798",
       "controls": "AI moderation on upload"
     },
     {
       "key": "mvs_ai_monthly_budget",
       "group": "ai",
-      "type": "float",
-      "controls": "Monthly $ cap"
+      "type": "number",
+      "default": 10,
+      "registered_in_option_group": "mvs_settings_ai",
+      "section": "mvs_ai",
+      "sanitize_callback": "floatval",
+      "where": "Admin/Settings/SettingsRegistrar.php:819",
+      "controls": "Monthly $ cap. Conservative default of 10 USD so a fresh install never silently runs an unbounded OpenAI bill. Set to 0 in UI for unlimited spend."
     },
     {
       "key": "mvs_ai_cost_per_call",
       "group": "ai",
-      "type": "float",
+      "type": "number",
+      "default": 0.01,
+      "registered_in_option_group": "mvs_settings_ai",
+      "section": "mvs_ai",
+      "sanitize_callback": "floatval",
+      "where": "Admin/Settings/SettingsRegistrar.php:847",
       "controls": "Per-call cost estimate"
     },
     {
       "key": "mvs_moderation_auto_action",
       "group": "moderation",
-      "type": "enum",
+      "type": "string",
+      "default": "flag",
+      "registered_in_option_group": "mvs_settings_ai",
+      "section": "mvs_moderation",
+      "sanitize_callback": "Sanitizers::sanitize_moderation_auto_action",
+      "where": "Admin/Settings/SettingsRegistrar.php:875",
       "controls": "Auto action for flagged content"
     },
     {
       "key": "mvs_report_auto_hide_threshold",
       "group": "moderation",
-      "type": "int",
-      "controls": "Reports → auto-hide threshold"
-    },
-    {
-      "key": "mvs_dm_access",
-      "group": "messaging",
-      "type": "enum",
-      "controls": "DM access level"
-    },
-    {
-      "key": "mvs_dm_min_age",
-      "group": "messaging",
-      "type": "int",
-      "controls": "Minimum account age (days)"
-    },
-    {
-      "key": "mvs_show_online_status",
-      "group": "messaging",
-      "type": "bool",
-      "controls": "Online presence"
-    },
-    {
-      "key": "mvs_page_dashboard",
-      "group": "pages",
-      "type": "page_id",
-      "controls": "Dashboard page"
-    },
-    {
-      "key": "mvs_page_explore",
-      "group": "pages",
-      "type": "page_id",
-      "controls": "Explore page"
-    },
-    {
-      "key": "mvs_page_upload",
-      "group": "pages",
-      "type": "page_id",
-      "controls": "Upload page"
+      "type": "integer",
+      "default": 3,
+      "registered_in_option_group": "mvs_settings_ai",
+      "section": "mvs_moderation",
+      "sanitize_callback": "absint",
+      "where": "Admin/Settings/SettingsRegistrar.php:902",
+      "controls": "Reports → auto-hide threshold. Set to 0 to disable."
     },
     {
       "key": "mvs_webhooks",
       "group": "webhook",
       "type": "array",
+      "default": [],
+      "registered_in_option_group": "mvs_settings_webhooks",
+      "section": "mvs_webhooks",
+      "sanitize_callback": "Sanitizers::sanitize_webhooks",
+      "where": "Admin/Settings/SettingsRegistrar.php:930",
       "controls": "Outbound webhooks"
     },
     {
-      "key": "mvs_storage_driver",
-      "group": "general",
-      "type": "enum",
-      "default": "local",
-      "controls": "Active storage driver (local/S3/BunnyCDN — Pro-extensible via mvs_storage_driver filter)"
+      "key": "mvs_dm_access",
+      "group": "messaging",
+      "type": "string",
+      "default": "everyone",
+      "registered_in_option_group": "mvs_settings_social",
+      "section": "mvs_messaging",
+      "sanitize_callback": "Sanitizers::sanitize_dm_access",
+      "where": "Admin/Settings/SettingsRegistrar.php:969",
+      "controls": "DM access level"
     },
     {
-      "key": "mvs_comment_edit_window",
-      "group": "general",
-      "type": "int",
-      "default": 900,
-      "controls": "Comment edit window (seconds). 0 disables editing."
+      "key": "mvs_dm_min_age",
+      "group": "messaging",
+      "type": "integer",
+      "default": 0,
+      "registered_in_option_group": "mvs_settings_social",
+      "section": "mvs_messaging",
+      "sanitize_callback": "absint",
+      "where": "Admin/Settings/SettingsRegistrar.php:997",
+      "controls": "Minimum account age (days). Accounts younger than this cannot send DMs. Set 0 to disable."
     },
     {
       "key": "mvs_chat_panel_visibility",
       "group": "messaging",
-      "type": "enum",
+      "type": "string",
       "default": "everywhere",
       "registered_in_option_group": "mvs_settings_social",
       "section": "mvs_messaging",
       "sanitize_callback": "Sanitizers::sanitize_chat_panel_visibility",
+      "where": "Admin/Settings/SettingsRegistrar.php:1021",
       "whitelist": [
         "everywhere",
         "mvs_pages",
@@ -810,14 +1184,48 @@
       "controls": "Where the floating slide-out chat icon appears for logged-in users. Consumed by Plugin::render_chat_panel() (wp_footer). Filterable per-page via mvs_should_render_chat_panel."
     },
     {
-      "key": "mvs_allow_downloads",
-      "group": "display",
-      "type": "bool",
-      "default": true,
-      "registered_in_option_group": "mvs_settings_display",
-      "section": "mvs_display",
-      "sanitize_callback": "rest_sanitize_boolean",
-      "controls": "Global Allow Downloads toggle. Hides the lightbox Download button + gates the POST /mvs/v1/media/{id}/download REST endpoint (defense-in-depth: hiding the button alone wouldn't stop a determined caller). Per-media `allow_download` meta still applies on top of this."
+      "key": "mvs_show_online_status",
+      "group": "messaging",
+      "type": "string",
+      "default": "everyone",
+      "registered_in_option_group": "mvs_settings_social",
+      "section": "mvs_messaging",
+      "sanitize_callback": "Sanitizers::sanitize_show_online_status",
+      "where": "Admin/Settings/SettingsRegistrar.php:1049",
+      "controls": "Online presence visibility (everyone | followers | nobody)"
+    },
+    {
+      "key": "mvs_page_dashboard",
+      "group": "pages",
+      "type": "integer",
+      "default": 0,
+      "registered_in_option_group": "mvs_settings_general",
+      "section": "mvs_pages",
+      "sanitize_callback": "absint",
+      "where": "Admin/Settings/SettingsRegistrar.php:1107",
+      "controls": "Dashboard page (auto-created during setup; reassignable)"
+    },
+    {
+      "key": "mvs_page_explore",
+      "group": "pages",
+      "type": "integer",
+      "default": 0,
+      "registered_in_option_group": "mvs_settings_general",
+      "section": "mvs_pages",
+      "sanitize_callback": "absint",
+      "where": "Admin/Settings/SettingsRegistrar.php:1107",
+      "controls": "Explore page (auto-created during setup; reassignable)"
+    },
+    {
+      "key": "mvs_page_upload",
+      "group": "pages",
+      "type": "integer",
+      "default": 0,
+      "registered_in_option_group": "mvs_settings_general",
+      "section": "mvs_pages",
+      "sanitize_callback": "absint",
+      "where": "Admin/Settings/SettingsRegistrar.php:1107",
+      "controls": "Upload page (auto-created during setup; reassignable)"
     }
   ],
   "shortcodes": [
@@ -1310,6 +1718,11 @@
     {
       "key": "profile",
       "class": "Services/ProfileService.php"
+    },
+    {
+      "key": "image_optimization",
+      "class": "Services/ImageOptimizationService.php",
+      "added": "1.2.2"
     }
   ],
   "hooks_fired": [
@@ -1605,6 +2018,57 @@
       "where": "includes/Core/Plugin.php:1477",
       "purpose": "Per-page override of the slide-out chat panel render decision after the mvs_chat_panel_visibility setting has resolved (e.g. force-hide on WooCommerce checkout, single-product, or specific post IDs / roles). Returning false skips the chat-panel render in wp_footer for the current request.",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_optimize_image",
+      "type": "filter",
+      "args": "$file_path, $context",
+      "args_signature": [
+        "string $file_path",
+        "array $context"
+      ],
+      "where": "Services/ImageOptimizationService.php:90",
+      "purpose": "Single extension point for external compressors (EWWW/Imagify/Smush/ShortPixel). Dispatched at every disk-write moment (original + variants + WebP siblings). Listeners may modify file in place or return replacement path; WP_Error logs failure and keeps original.",
+      "consumed_by": [],
+      "added": "1.2.2"
+    },
+    {
+      "name": "mvs_optimize_jpeg_quality",
+      "type": "filter",
+      "args": "$quality, $context",
+      "args_signature": [
+        "int $quality",
+        "array $context"
+      ],
+      "where": "Services/ImageOptimizationService.php:330",
+      "purpose": "Quality level for the lossless JPEG re-encode pass. Default 92. Set to 100 for near-lossless; lower for more aggressive compression.",
+      "consumed_by": [],
+      "added": "1.2.2"
+    },
+    {
+      "name": "mvs_webp_quality",
+      "type": "filter",
+      "args": "$quality, $context",
+      "args_signature": [
+        "int $quality",
+        "array $context"
+      ],
+      "where": "Services/ImageOptimizationService.php:198",
+      "purpose": "Quality level for WebP sibling generation. Default 82 (matches WP core JPEG default).",
+      "consumed_by": [],
+      "added": "1.2.2"
+    },
+    {
+      "name": "mvs_ffmpeg_binary",
+      "type": "filter",
+      "args": "$binary",
+      "args_signature": [
+        "string $binary"
+      ],
+      "where": "Services/UploadService.php (extract_video_poster_via_ffmpeg)",
+      "purpose": "Path to ffmpeg binary used for the video poster fallback when a video has no embedded cover atom. Default 'ffmpeg' (relies on PATH). Override for Docker / custom-prefix installs.",
+      "consumed_by": [],
+      "added": "1.2.2"
     }
   ],
   "buddypress_integration": {
@@ -1772,7 +2236,82 @@
     {
       "command": "wp mvs",
       "class": "CLI/Commands.php",
-      "purpose": "Router for sub-commands (regenerate-thumbnails, recount-stats, export-user-data)"
+      "purpose": "Router for sub-commands"
+    },
+    {
+      "command": "wp mvs stats",
+      "class": "CLI/Commands.php:27",
+      "purpose": "Show plugin statistics (total media, views, reactions, favorites) — reads through AdminAggregatesService"
+    },
+    {
+      "command": "wp mvs migrate",
+      "class": "CLI/Commands.php:87",
+      "purpose": "Migrate legacy mvs_media CPT rows into mvs_media_index (one-way) — Migrator v6+"
+    },
+    {
+      "command": "wp mvs prune-views",
+      "class": "CLI/Commands.php:130",
+      "purpose": "Manual run of the view-retention cron (drops rows older than mvs_view_retention_days)"
+    },
+    {
+      "command": "wp mvs cleanup-expired",
+      "class": "CLI/Commands.php:167",
+      "purpose": "Drop expired signed_url cache rows"
+    },
+    {
+      "command": "wp mvs reindex",
+      "class": "CLI/Commands.php:189",
+      "purpose": "Rebuild FULLTEXT index on mvs_media_index(title,description)"
+    },
+    {
+      "command": "wp mvs cache-flush",
+      "class": "CLI/Commands.php:262",
+      "purpose": "Flush all WPMediaVerse caches (transients + wp_cache groups)"
+    },
+    {
+      "command": "wp mvs backfill-activity-thumbnails",
+      "class": "CLI/Commands.php:303",
+      "purpose": "BP activity Phase 1: backfill thumbnail HTML into bp_activity.content for legacy uploads"
+    },
+    {
+      "command": "wp mvs generate-video-thumbnails",
+      "class": "CLI/Commands.php:436",
+      "purpose": "Bulk-extract embedded poster atoms from videos and regenerate thumbnail variants"
+    },
+    {
+      "command": "wp mvs moderation-stats",
+      "class": "CLI/Commands.php:544",
+      "purpose": "Show moderation queue statistics (pending count, AI-tagged count, action counters)"
+    },
+    {
+      "command": "wp mvs sync-activity-privacy",
+      "class": "CLI/Commands.php:595",
+      "purpose": "Walk every BP activity tied to mvs media and recompute hide_sitewide based on media+album privacy (Zoho #39974 backfill)"
+    },
+    {
+      "command": "wp mvs migrate-storage",
+      "class": "CLI/Commands.php:794",
+      "purpose": "Move every media file between storage drivers (local <-> s3 <-> bunnycdn). Flags: --from --to [--keep-source] [--include-non-public] [--dry-run]. Idempotent."
+    },
+    {
+      "command": "wp mvs cloud-thumbs-backfill",
+      "class": "CLI/Commands.php:1034",
+      "purpose": "For each image on a cloud driver, download original locally, regenerate 3 thumbnail sizes, upload back. Closes the cloud-thumb gap before /serve is cloud-aware."
+    },
+    {
+      "command": "wp mvs cleanup-local",
+      "class": "CLI/Commands.php:1226",
+      "purpose": "Delete local copies after verifying cloud has the file. Reclaim disk space on cloud-driver installs. Public media only (non-public still routes through /serve which is local-only in 1.2.x)."
+    },
+    {
+      "command": "wp mvs optimize",
+      "class": "CLI/Commands.php:1370",
+      "purpose": "Optimize one media row. Flags: <media_id> [--include-variants] [--force]. Added 1.2.2."
+    },
+    {
+      "command": "wp mvs optimize-bulk",
+      "class": "CLI/Commands.php:1439",
+      "purpose": "Bulk optimize image library with resume support via _mvs_optimized_at sentinel. Flags: [--limit] [--offset] [--mime] [--media-type] [--include-variants] [--dry-run] [--include-failed]. Added 1.2.2."
     }
   ],
   "storage_drivers": [
@@ -1922,6 +2461,72 @@
         ]
       },
       "out_of_scope": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3 outputs) NOT regenerated. audit/derived/ cache untouched. Journeys untouched."
+    },
+    "refreshed_at": "2026-05-17T03:30:00Z",
+    "refresh_2026_05_17": {
+      "scope": "targeted: 1.2.2 image optimization pipeline (services + settings + CLI + filters + video poster ffmpeg fallback + audio waveform + explore feed chronology)",
+      "services_added": [
+        "image_optimization"
+      ],
+      "settings_added": [
+        "mvs_optimize_originals",
+        "mvs_generate_webp"
+      ],
+      "cli_added": [
+        "wp mvs optimize",
+        "wp mvs optimize-bulk"
+      ],
+      "filters_added": [
+        "mvs_optimize_image - single extension point for external compressors",
+        "mvs_optimize_jpeg_quality - default 92 for lossless re-encode",
+        "mvs_webp_quality - default 82 for WebP sibling",
+        "mvs_ffmpeg_binary - default ffmpeg, override for Docker"
+      ],
+      "meta_keys_added": [
+        "original_webp",
+        "thumb_large_webp",
+        "thumb_medium_webp",
+        "thumb_thumb_webp",
+        "_mvs_optimized_at",
+        "_mvs_optimize_failed",
+        "_mvs_bytes_before",
+        "_mvs_bytes_after"
+      ],
+      "files_added": [
+        "includes/Services/ImageOptimizationService.php",
+        "tests/unit/ImageOptimizationServiceTest.php",
+        "docs/architecture/specs/2026-05-17-image-optimization-pipeline.md",
+        "docs/development/COMPRESSION_INTEGRATIONS.md"
+      ],
+      "templates_changed": [
+        "templates/explore.php - albums removed from feed (static containers misrepresented freshness); media-only strict created_at DESC",
+        "templates/media-single.php - uses picture_or_img() so single-media view serves WebP via picture+source when sibling exists"
+      ],
+      "template_helpers_added": [
+        "picture_or_img() - emits picture when WebP sibling exists and JPEG URL is not /serve-gated",
+        "get_webp_variant_url() - central choke point; size mapping + original_webp fallback",
+        "render_audio_waveform_svg() - deterministic 48-bar waveform from media_id for audio cards without album art"
+      ],
+      "upload_service_changes": [
+        "process_upload: optimize runs on temp file BEFORE driver->store so cloud drivers receive optimized bytes",
+        "process_upload: ensure-local-copy fallback before extract_and_store_metadata for cloud-driver installs",
+        "generate_thumbnails: per-variant optimize + emit_webp_sibling; cloud upload of variant WebPs",
+        "extract_and_store_metadata audio case: embedded album art feeds through generate_thumbnails",
+        "generate_video_poster_thumbnails: Path B added - ffmpeg fallback when no embedded cover atom (proc_open with arg array, no shell injection)"
+      ],
+      "admin_changes": [
+        "MediaListPage Optimization column with badges: -X.X% / WebP ready / No lossless gain / Not optimized / Could not optimize",
+        "MediaListPage row actions: Details (?view=details mini-page), Optimize (admin-php nonced trigger)",
+        "MediaListPage::render_detail - read-only mini-page with site-owner-friendly metadata"
+      ],
+      "not_re_enumerated": "REST/AJAX/post_types/taxonomies/tables/capabilities/shortcodes/blocks/cron unchanged",
+      "deferred_to_1_3_0": [
+        "AVIF variant generation",
+        "/serve content negotiation reading Accept header",
+        "Lightbox WebP serving (needs Interactivity state + REST schema + JS build)",
+        "Screen Options column toggles",
+        "Admin bulk-optimize progress UI"
+      ]
     }
   },
   "category_sources": {
@@ -2207,5 +2812,8 @@
       "rationale": "(1) Customer WAFs (Crisp #NZRSBX) flag any 'shell' token in filenames; rename eliminates the trigger. (2) Zoho #39974: media + album privacy now drive a 4-level BP activity privacy model with viewer-side JOIN filter (rtMedia parity) instead of being ignored. (3) 100k-readiness — search FULLTEXT, AdminAggregatesService consolidation, MediaRepository request cache + prefetch kill render N+1, REST per_page caps. (4) Filename refactor (Crisp #NZRSBX) — additive, never rewrites existing media on disk.",
       "out_of_scope": "Full Phase 0–6 onboard run (wppqa baseline, 14 sub-checks, FEATURE_AUDIT regen, derived/ cache rebuild). Defer to a full /wp-plugin-onboard --refresh after Phase 6 release."
     }
+  },
+  "counts": {
+    "wp_cli": 15
   }
 }

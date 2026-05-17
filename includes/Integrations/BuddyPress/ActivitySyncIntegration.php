@@ -55,7 +55,7 @@ class ActivitySyncIntegration {
 		add_action( 'mvs_media_uploaded', array( $this, 'record_upload_activity' ) );
 		add_action( 'mvs_media_deleted', array( $this, 'clean_activities_for_media' ), 10, 2 );
 		add_action( 'mvs_comment_created', array( $this, 'sync_media_comment_to_activity' ), 10, 5 );
-		add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 3 );
+		add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 4 );
 		add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 		add_action( 'mvs_media_privacy_changed', array( $this, 'sync_activity_privacy' ), 10, 3 );
 		add_action( 'bp_register_activity_actions', array( $this, 'register_activity_actions' ) );
@@ -782,10 +782,13 @@ class ActivitySyncIntegration {
 	 * action to force regeneration.
 	 *
 	 * @param int   $album_id  Album post ID.
+	 * @param int   $actor_id  User who added the items (1.2.3+). Unused here —
+	 *                         BP activity is keyed on the owning album, not the
+	 *                         actor — but kept for signature alignment with the hook.
 	 * @param array $media_ids Media post IDs.
 	 * @param int   $added     Number of items added.
 	 */
-	public function update_activity_with_album( int $album_id, array $media_ids, int $added ): void {
+	public function update_activity_with_album( int $album_id, int $actor_id, array $media_ids, int $added ): void {
 		if ( ! function_exists( 'bp_activity_get' ) ) {
 			return;
 		}

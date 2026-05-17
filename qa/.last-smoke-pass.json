@@ -1,0 +1,40 @@
+{
+  "release_version": "1.3.0",
+  "mode": "combo",
+  "ran_at": "2026-05-17T12:25:00Z",
+  "free_version": "1.3.0",
+  "pro_version": "1.3.0",
+  "sections": {
+    "A_fresh_install":     { "pass": 5,  "fail": 0, "skipped": 0 },
+    "B_upgrade":           { "pass": 0,  "fail": 0, "skipped": 3 },
+    "C_core_flows":        { "pass": 17, "fail": 0, "skipped": 0 },
+    "D_regression_guards": { "pass": 18, "fail": 0, "skipped": 0 },
+    "E_pro_smoke":         { "pass": 6,  "fail": 0, "skipped": 8 },
+    "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 4 }
+  },
+  "failures": [],
+  "debug_log_issues": [],
+  "manual_required": [
+    "Firefox Desktop: composer file picker (Playwright MCP is Chromium-only)",
+    "Safari iOS 390px: lightbox swipe + share native sheet",
+    "BP Legacy theme: D.activity-button-icon-only, D.activity-privacy-alignment, D.activity-preview-hero-regression (BP-Nouveau composer gap)",
+    "Mailpit: C.notifications.email round-trip",
+    "Live BunnyCDN: D.cloud-existence-head-vs-range",
+    "Non-AWS S3 (R2 / MinIO / B2): D.s3-key-encoding",
+    "Private signed-URL fixture: /serve WebP/AVIF Accept-header negotiation (1.3.0 focus 8)",
+    "Two authed sessions: C.member.dm-send-receive end-to-end",
+    "Configured AI provider: E.ai-providers",
+    "Configured Whisper provider: E.video-intelligence",
+    "Configured watermark provider: E.watermarking",
+    "Configured quota package: E.quota at-cap path",
+    "Connected Instagram account: E.instagram-feed",
+    "Feature toggle OFF cycle: E.feature-toggle-degradation",
+    "Group media tab: /groups/*/media/ (no BP groups in fixture)",
+    "Migration importer source data: E.migration-importers",
+    "Real upload round-trip during this walk (existing 73 fixture media verified state-only)"
+  ],
+  "notes": {
+    "headline_fix": "F1 (Critical) found + fixed during this pass — FieldRenderer::render_checkbox_field ignored register_setting defaults; would have silently disabled image optimization on first admin Save. Fix in commit 031f326.",
+    "open_follow_up": "F-DRAFT-1 (Lightbox Fullscreen button + F-key toggle) is documented contract drift — never implemented in any released version. Demoted from blocker; decide in 1.4.0 cycle whether to implement or drop from contract."
+  }
+}
