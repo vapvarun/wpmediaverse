@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-17T04:50:36Z",
+  "generated_at": "2026-05-17T04:55:46Z",
   "generator": "bin/cleanup-bridge-inventory.sh",
   "source": "audit/manifests/*.json + audit/derived/cross-plugin-coupling.json",
   "bridges": [
@@ -1098,6 +1098,71 @@
     },
     {
       "type": "wp_cli",
+      "symbol": "wp mvs stats",
+      "provenance": "@subcommand — Show plugin statistics (total media, views, reactions, favorites) — reads through AdminAggregatesService"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs migrate",
+      "provenance": "@subcommand — Migrate legacy mvs_media CPT rows into mvs_media_index (one-way) — Migrator v6+"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs prune-views",
+      "provenance": "@subcommand — Manual run of the view-retention cron (drops rows older than mvs_view_retention_days)"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs cleanup-expired",
+      "provenance": "@subcommand — Drop expired signed_url cache rows"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs reindex",
+      "provenance": "@subcommand — Rebuild FULLTEXT index on mvs_media_index(title,description)"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs cache-flush",
+      "provenance": "@subcommand — Flush all WPMediaVerse caches (transients + wp_cache groups)"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs backfill-activity-thumbnails",
+      "provenance": "@subcommand — BP activity Phase 1: backfill thumbnail HTML into bp_activity.content for legacy uploads"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs generate-video-thumbnails",
+      "provenance": "@subcommand — Bulk-extract embedded poster atoms from videos and regenerate thumbnail variants"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs moderation-stats",
+      "provenance": "@subcommand — Show moderation queue statistics (pending count, AI-tagged count, action counters)"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs sync-activity-privacy",
+      "provenance": "@subcommand — Walk every BP activity tied to mvs media and recompute hide_sitewide based on media+album privacy (Zoho #39974 backfill)"
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs migrate-storage",
+      "provenance": "@subcommand — Move every media file between storage drivers (local <-> s3 <-> bunnycdn). Flags: --from --to [--keep-source] [--include-non-public] [--dry-run]. Idempotent."
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs cloud-thumbs-backfill",
+      "provenance": "@subcommand — For each image on a cloud driver, download original locally, regenerate 3 thumbnail sizes, upload back. Closes the cloud-thumb gap before /serve is cloud-aware."
+    },
+    {
+      "type": "wp_cli",
+      "symbol": "wp mvs cleanup-local",
+      "provenance": "@subcommand — Delete local copies after verifying cloud has the file. Reclaim disk space on cloud-driver installs. Public media only (non-public still routes through /serve which is local-only in 1.2.x)."
+    },
+    {
+      "type": "wp_cli",
       "symbol": "wp mvs optimize",
       "provenance": "@subcommand — Optimize one media row. Flags: <media_id> [--include-variants] [--force]. Added 1.2.2."
     },
@@ -1259,8 +1324,8 @@
     "rest_routes": 53,
     "capabilities": 10,
     "options": 35,
-    "wp_cli": 3,
+    "wp_cli": 16,
     "service_keys": 29,
-    "total": 179
+    "total": 192
   }
 }

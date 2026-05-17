@@ -26,7 +26,7 @@
     "services": 29,
     "hooks_fired": 24,
     "cron": 5,
-    "wp_cli": 15,
+    "wp_cli": 16,
     "hooks_with_args_signature": 24,
     "hooks_no_call_site": 0,
     "admin_pages_baseline": 20,
@@ -65,6 +65,10 @@
         "register_setting": "40 calls vs 35 unique in detail file (drift on multi-register flows)",
         "blocks": "42 block.json files includes build copies; logical block count remains 13"
       }
+    },
+    "refreshed_at": "2026-05-17T04:30:00Z",
+    "refresh_2026_05_17": {
+      "note": "wp_cli detail refreshed manually from @subcommand annotations — 15 documented commands plus the wp mvs router entry"
     }
   }
 }
