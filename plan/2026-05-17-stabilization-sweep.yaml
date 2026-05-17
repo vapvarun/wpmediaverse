@@ -1,0 +1,287 @@
+# Stabilization Sweep — 2026-05-17
+#
+# Target release: 1.2.3 (patch)
+# Sites in production: 50+
+#
+# Principle: every fix is risk-classified. Lows execute today, mediums need
+# feature-flags + 30-day soak, highs are deferred to 1.3.0+. Verification gate
+# runs after EVERY single fix — if anything regresses we stop, rollback,
+# write a follow-up plan.
+
+meta:
+  date: 2026-05-17
+  target_version: 1.2.3
+  branch: 1.2.2  # patch work continues on 1.2.2 branch until tagged
+  sites_in_production: 50
+  framework_version: 1  # cleanup-framework version
+  reviewer_required: true
+
+principles:
+  - id: P1
+    rule: "Never break existing customer behavior in a patch release"
+  - id: P2
+    rule: "Every behavior change goes behind a feature filter, defaults to OLD behavior"
+  - id: P3
+    rule: "Every fix has a verification gate; if any gate fails, rollback and write a follow-up"
+  - id: P4
+    rule: "One fix = one commit. No combined refactors."
+  - id: P5
+    rule: "No public API removal in a patch release. Deprecation only."
+
+verification_gates:
+  # Runs after EVERY fix. ALL must pass to proceed.
+  per_fix:
+    - "phpcs clean on changed files (no new errors)"
+    - "phpstan baseline doesn't grow"
+    - "if the fix touches templates/CSS/JS: browser-smoke the affected surface"
+    - "if the fix touches a category tracked by cleanup framework: re-run the relevant script; counts must not grow"
+    - "git status clean before next fix starts"
+
+# ----------------------------------------------------------------------------
+# RISK BANDS — only LOW items get done today
+# ----------------------------------------------------------------------------
+
+risk_bands:
+  LOW:
+    description: "Pure cleanup or audit/doc work. Zero customer-observable behavior change."
+    today: true
+  MEDIUM:
+    description: "Refactor with same external behavior. Requires feature flag + 30-day soak."
+    today: false
+    schedule: "1.2.4 - 1.2.5"
+  HIGH:
+    description: "Architectural change. Multi-release deprecation cycle."
+    today: false
+    schedule: "1.3.0+"
+
+# ----------------------------------------------------------------------------
+# FIXES — execute in this order
+# ----------------------------------------------------------------------------
+
+fixes:
+
+  # ---- LOW RISK — do today ----
+
+  - id: F1
+    name: "Remove deprecated finfo_close() calls"
+    risk: LOW
+    behavior_change: none
+    files:
+      - includes/Services/UploadService.php
+      - includes/Messaging/MessagingController.php
+      - includes/REST/Controller/MediaController.php
+    reason: |
+      PHP 8.5 deprecated finfo_close(). The resource is GC'd automatically
+      when the finfo handle goes out of scope. Calls are functionally no-ops
+      and they trigger WPCS errors on PHP 8.5+.
+    fix_pattern: "Delete the finfo_close() call lines. Add `// finfo handle GC'd automatically — PHP 8.5+ deprecated finfo_close` comment."
+    verification:
+      - "phpcs --standard=phpcs.xml --warning-severity=0 reports no deprecation errors on these files"
+      - "Upload a JPEG via admin — MIME detection still works"
+    rollback: "Add `finfo_close($finfo);` back at original location"
+    estimated_minutes: 15
+
+  - id: F2
+    name: "Remove deprecated imagedestroy() calls"
+    risk: LOW
+    behavior_change: none
+    files:
+      - includes/Services/UploadService.php
+    reason: |
+      PHP 8.4+ deprecated imagedestroy(). GdImage instances are now first-class
+      objects and GC'd automatically.
+    fix_pattern: "Delete the imagedestroy() call lines."
+    verification:
+      - "phpcs reports no deprecation errors"
+      - "Upload PNG with EXIF — strip + thumbnail generation still works"
+    rollback: "Add calls back"
+    estimated_minutes: 10
+
+  - id: F3
+    name: "Add Production Rules block to CLAUDE.md"
+    risk: LOW
+    behavior_change: none
+    files:
+      - CLAUDE.md
+    reason: |
+      Codify the 9 non-negotiables for 50-site production so future sessions
+      automatically honor them. No PR should remove a public symbol, rename
+      an option, change a default, etc. without going through the rules.
+    fix_pattern: "Append `## Production Rules` section after `## Coding Rules`. Reference plan/.template.cleanup.md."
+    verification:
+      - "git diff CLAUDE.md shows only the new section appended"
+      - "No existing content modified"
+    rollback: "git revert"
+    estimated_minutes: 10
+
+  - id: F4
+    name: "Harden bridge inventory script — fix 5 awk patterns returning 0"
+    risk: LOW
+    behavior_change: none
+    files:
+      - bin/cleanup-bridge-inventory.sh
+    reason: |
+      Initial run returned 0 for overridable_templates, rest_routes,
+      capabilities, options, service_keys. The data IS in the codebase;
+      the awk extraction misfired (regex escapes for bash heredoc context).
+      Without this fix the bridge inventory leaks — future cleanups won't
+      catch theme-overridable templates or REST endpoint removals.
+    fix_pattern: |
+      - locate_template scan: change grep regex to capture the path argument
+        properly (currently caught the call but not the path)
+      - register_rest_route: extract the second arg (route pattern) not the
+        whole call line
+      - add_cap: handle `->add_cap('foo')` AND `add_cap('foo', true)` shapes
+      - register_setting: the current pattern requires `'mvs_'` prefix
+        in the second arg position; verify the regex
+      - container->register: ensure backslash escaping in shell context
+    verification:
+      - "bin/cleanup-bridge-inventory.sh runs without error"
+      - "audit/cleanup/bridges.json shows non-zero counts for the 5 fixed categories"
+      - "Total bridge count is ≥ 80 (current baseline)"
+      - "Diff audit/cleanup/bridges.json — only adds entries, no removes"
+    rollback: "git revert"
+    estimated_minutes: 60
+
+  - id: F5
+    name: "Refresh manifest detail sections — REST endpoints + hooks + wp_cli + admin_pages"
+    risk: LOW
+    behavior_change: none
+    files:
+      - audit/manifests/manifest.json
+      - audit/manifests/manifest.rest.json
+      - audit/manifests/manifest.hooks.json
+      - audit/manifests/manifest.summary.json
+    reason: |
+      Detail sections drift from ground truth: REST 53 vs 85, hooks 24 vs 124,
+      wp_cli 3 vs 15, admin_pages 7 vs 20, register_setting 35 vs 40.
+      This is audit-only (descriptive), not behavior. Updating means future
+      sessions can answer questions from the manifest instead of grepping.
+    fix_pattern: |
+      Run Phase 2 re-enumeration for the drifted categories. For each:
+      1. Generate exhaustive list via grep + AST traversal
+      2. Merge into manifest detail file
+      3. Update summary counts
+      4. Validate jq parse + count consistency
+    verification:
+      - "jq . each manifest file — all valid JSON"
+      - "summary counts === detail file counts === fresh baseline grep"
+      - "Diff the manifest — only ADDs entries, no REMOVEs"
+    rollback: "git revert"
+    estimated_minutes: 90
+
+  - id: F6
+    name: "Add opt-in telemetry stub (DISABLED by default)"
+    risk: LOW
+    behavior_change: "none when toggle is off (default)"
+    files:
+      - includes/Services/TelemetryService.php  # NEW
+      - includes/Core/Plugin.php  # register service
+      - includes/Admin/Settings/SettingsRegistrar.php  # add toggle
+    reason: |
+      Without telemetry every cleanup decision is gambling. With it, we know
+      which hooks fire, which REST endpoints called, which options read.
+      30 days of data → mechanical cleanup decisions for 1.2.4+.
+
+      CRITICAL: this fix only ADDS the infrastructure (service + setting).
+      Default is OFF. No data is captured or transmitted unless admin
+      opts in. Anonymous payload only — never user IDs, never URLs.
+    fix_pattern: |
+      - New service: TelemetryService with capture() that's a no-op when
+        the setting is off
+      - New setting: mvs_telemetry_enabled (bool, default false)
+      - Settings tab: "Help improve WPMediaVerse" with checkbox + explanation
+        of exactly what's captured (counter increments only, anonymous)
+      - No transmission yet — store in mvs_media_meta site-keyed for now
+    verification:
+      - "Setting page renders; checkbox unchecked by default"
+      - "Disabling/enabling the toggle has no effect on any flow when nobody calls capture()"
+      - "wppqa_check_plugin_dev_rules passes — toggle has nonce, cap, escape"
+    rollback: "git revert"
+    estimated_minutes: 120
+
+  - id: F7
+    name: "Wire wppqa baseline into pre-push hook"
+    risk: LOW
+    behavior_change: none
+    files:
+      - bin/git-hooks/pre-push
+      - bin/local-ci.sh (or composer ci script)
+    reason: |
+      Hard rule #6 from wp-plugin-onboard skill says wppqa runs BEFORE
+      manifest analysis. Currently the hook runs phpcs + phpstan only.
+      Adding wppqa catches REST contract drift, silent UI bugs in ~120ms.
+      Without this, the next session repeats the find-bug-fix-bug loop.
+    fix_pattern: |
+      - Add wppqa_check_plugin_dev_rules + check_rest_js_contract +
+        check_wiring_completeness to bin/local-ci.sh as stage 2.4
+      - Pre-push hook calls composer ci:no-journeys which includes this
+      - Failed wppqa run blocks push; SKIP_LOCAL_CI=1 bypass works as before
+    verification:
+      - "composer ci:no-journeys runs wppqa and reports per-check result"
+      - "Pre-push test on a deliberately-broken file fails the gate"
+      - "Bypass via SKIP_LOCAL_CI=1 git push still works"
+    rollback: "git revert hook + ci script"
+    estimated_minutes: 45
+
+  # ---- MEDIUM RISK — schedule for 1.2.4-1.2.5 (NOT today) ----
+
+  - id: M1
+    name: "Refactor template direct \\$wpdb on mvs_* tables → MediaRepository"
+    risk: MEDIUM
+    behavior_change: "external: none; internal: routes through cache + privacy"
+    affected: ["templates/layouts/pinterest/profile.php", "templates/layouts/instagram/profile.php", "templates/user-profile.php"]
+    feature_flag: "mvs_route_template_reads_through_repository"
+    schedule: 1.2.4
+    soak_days: 30
+    deprecation_cycle: "1.2.4 OFF default → 1.2.5 ON default → 2.0 remove old code"
+    today: false
+
+  - id: M2
+    name: "Refactor Pro→Free direct \\$wpdb on mvs_* tables → MediaRepository"
+    risk: MEDIUM
+    behavior_change: same
+    affected_files: 11  # from audit/cleanup/boundary-violations.json
+    feature_flag: "mvs_route_pro_reads_through_repository"
+    schedule: 1.2.5
+    today: false
+
+  - id: M3
+    name: "Consolidate MVS_CSS::generate (1288-token cross-plugin duplicate)"
+    risk: MEDIUM
+    behavior_change: "external: none; internal: Pro calls Free's"
+    feature_flag: "mvs_use_consolidated_css_generator"
+    schedule: 1.2.4 → 1.3.0 → 2.0 (hard remove)
+    today: false
+
+  # ---- HIGH RISK — deferred to 1.3.0+ ----
+
+  - id: H1
+    name: "Cloud-aware /serve with Accept-header WebP negotiation"
+    risk: HIGH
+    schedule: 1.3.0
+    already_on_roadmap: true
+
+  - id: H2
+    name: "AVIF variant generation"
+    risk: HIGH
+    schedule: 1.3.0
+    already_on_roadmap: true
+
+  - id: H3
+    name: "Lightbox WebP via Interactivity API state binding"
+    risk: HIGH
+    schedule: 1.3.0
+    already_on_roadmap: true
+
+# ----------------------------------------------------------------------------
+# Execution log — filled in as we go
+# ----------------------------------------------------------------------------
+
+execution:
+  started_at: null      # set when F1 begins
+  completed:
+    # - { id: F1, finished_at: "...", commit: "..." }
+  current: null
+  blocked: []
+  notes: []
