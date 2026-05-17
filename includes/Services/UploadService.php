@@ -580,19 +580,19 @@ class UploadService {
 		if ( $has_gps && extension_loaded( 'gd' ) ) {
 			$info = getimagesize( $file_path );
 			if ( $info ) {
+				// PHP 8.4+ deprecated imagedestroy — GdImage instances are
+				// first-class objects and GC'd when $img goes out of scope.
 				switch ( $info['mime'] ) {
 					case 'image/jpeg':
 						$img = imagecreatefromjpeg( $file_path );
 						if ( $img ) {
 							imagejpeg( $img, $file_path, 95 );
-							imagedestroy( $img );
 						}
 						break;
 					case 'image/png':
 						$img = imagecreatefrompng( $file_path );
 						if ( $img ) {
 							imagepng( $img, $file_path );
-							imagedestroy( $img );
 						}
 						break;
 				}
