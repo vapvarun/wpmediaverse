@@ -14,22 +14,6 @@ meta:
 
 open:
 
-  - id: M3-REVISIT
-    name: "MVS_CSS consolidation"
-    why: |
-      bin/cleanup-duplicate-detect.php flagged a 1288-token cross-plugin
-      duplicate at includes/Blocks/MVS_CSS.php. The earlier decline
-      doc (now deleted) used wrong reasoning — Pro requires Free per
-      its plugin header + bootstrap check, so Pro can call
-      \WPMediaVerse\Blocks\MVS_CSS directly.
-    scope:
-      - "Delete wpmediaverse-pro/includes/Blocks/MVS_CSS.php (276 lines)"
-      - "Update Pro block render.php files (~10-15 files in build/blocks/*/) to call \\WPMediaVerse\\Blocks\\MVS_CSS::add() instead of \\WPMediaVersePro\\Blocks\\MVS_CSS::add()"
-      - "Smoke: compete page + any block-heavy Pro page renders, single <style id='mvs-block-styles'> on wp_footer carries both Free + Pro block CSS"
-    estimate: "~30 min including verification"
-    risk: low
-    blocker: "Waiting on user go/no-go"
-
   - id: F5-FINISH
     name: "Manifest detail sections — REST/hooks/admin_pages enumeration"
     why: |
