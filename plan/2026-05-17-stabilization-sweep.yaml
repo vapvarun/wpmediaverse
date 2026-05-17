@@ -144,31 +144,33 @@ fixes:
     estimated_minutes: 60
 
   - id: F5
-    name: "Refresh manifest detail sections — REST endpoints + hooks + wp_cli + admin_pages"
+    name: "Refresh manifest detail sections — wp_cli done; REST/hooks/admin_pages deferred"
     risk: LOW
     behavior_change: none
-    files:
-      - audit/manifests/manifest.json
-      - audit/manifests/manifest.rest.json
-      - audit/manifests/manifest.hooks.json
-      - audit/manifests/manifest.summary.json
-    reason: |
-      Detail sections drift from ground truth: REST 53 vs 85, hooks 24 vs 124,
-      wp_cli 3 vs 15, admin_pages 7 vs 20, register_setting 35 vs 40.
-      This is audit-only (descriptive), not behavior. Updating means future
-      sessions can answer questions from the manifest instead of grepping.
-    fix_pattern: |
-      Run Phase 2 re-enumeration for the drifted categories. For each:
-      1. Generate exhaustive list via grep + AST traversal
-      2. Merge into manifest detail file
-      3. Update summary counts
-      4. Validate jq parse + count consistency
-    verification:
-      - "jq . each manifest file — all valid JSON"
-      - "summary counts === detail file counts === fresh baseline grep"
-      - "Diff the manifest — only ADDs entries, no REMOVEs"
-    rollback: "git revert"
-    estimated_minutes: 90
+    status: PARTIAL
+    completed_at: "2026-05-17"
+    completed:
+      - "wp_cli: 3 -> 16 entries (manual @subcommand enumeration; commit a181826)"
+    deferred:
+      - category: "REST endpoints"
+        gap: "53 manifested vs 85 register_rest_route call sites — 32 missing"
+        reason: "Routes are dynamically constructed via '/' . $this->rest_base + regex — needs per-controller reading to extract canonical paths. Each REST controller's register_routes() method must be read to enumerate."
+        effort: "~90 min focused Phase 2 enumeration session"
+      - category: "hooks_fired (do_action + apply_filters)"
+        gap: "24 manifested vs 124 unique callsites — 100+ missing"
+        reason: "Many hooks fire from deeply-nested helper methods; needs parallel Explore agents per the skill's Large-plugin strategy"
+        effort: "~60 min parallel-agent enumeration"
+      - category: "admin_pages"
+        gap: "7 top-level pages manifested vs 20 add_*_page call sites — 13 sub-pages missing"
+        reason: "Settings sub-pages registered conditionally inside SettingsRegistrar; need controlled reading"
+        effort: "~20 min focused enumeration"
+      - category: "register_setting"
+        gap: "35 in detail file vs 40 callsites — 5 missing"
+        reason: "Multi-register flows under different option groups"
+        effort: "~10 min"
+    rationale_for_deferral: |
+      F5 is audit-only — descriptive accuracy improvements, not customer-facing behavior. The bridge inventory script reads from these manifest sections so completeness benefits the cleanup framework, but the framework still works correctly with partial data (it just has a slightly smaller bridge list).
+      Deferring this to a dedicated parallel-agent enumeration session keeps "1.2.3 stabilization" focused on customer-affecting work. The drift is documented in audit/manifests/manifest.summary.json#/generated.baseline_drift so future sessions see it.
 
   - id: F6
     name: "Add opt-in telemetry stub (DISABLED by default)"
