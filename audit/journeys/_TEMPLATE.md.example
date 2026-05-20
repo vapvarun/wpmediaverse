@@ -38,12 +38,23 @@ estimated_runtime_minutes: 5
 
 ### 3. ...
 
+### N. Responsive check — desktop AND mobile (required for any render surface)
+- **Action**: at the surface above, `playwright_resize 1280 800` then screenshot; `playwright_resize 390 844` then screenshot.
+- **Expect (390px)**: `document.documentElement.scrollWidth - window.innerWidth <= 1` (no horizontal scroll); primary actions visible/tappable (>=40px); no clipped/overlapping content; modals + menus usable.
+- **On fail**: responsive CSS for this surface (missing `@media` breakpoint).
+
+### N+1. Translation-readiness check (required for any surface)
+- **Action**: grep the rendering file(s) for this surface; confirm visible strings use `__()/esc_html__()` with the correct text domain and JS strings are localized (not inlined).
+- **Expect**: zero hardcoded user-facing literals; correct domain (`wpmediaverse` / `wpmediaverse-pro`).
+- **On fail**: the template/controller/JS that emits the unwrapped string.
+
 ## Pass criteria
 
 ALL of the following hold:
-1. <Assertion 1>
-2. <Assertion 2>
-3. <Assertion 3>
+1. <Functional assertion>
+2. <Functional assertion>
+3. Renders correctly at 1280x800 AND 390x844 (no horizontal scroll, actions reachable).
+4. All visible strings are translation-ready with the correct text domain.
 
 ## Fail diagnostics
 

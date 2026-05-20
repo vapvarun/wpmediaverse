@@ -58,6 +58,53 @@ Output goes to `audit/journey-runs/{YYYY-MM-DD-HHMM}/{journey-slug}.json`:
 
 When `outcome: FAIL`, include `failure_step`, `expected`, `actual`, and `likely_files`.
 
+## Coverage dimensions every journey must assert
+
+Journeys are written from the **site owner's expectation**: "as the person who
+installed this plugin to run a media community, X must work and look right." A
+journey is not done until it asserts all applicable dimensions below.
+
+### 1. Functional (always)
+The flow produces the correct DB state + REST/DOM result. This is the baseline
+every journey already covers.
+
+### 2. Responsive — desktop AND mobile (every frontend/admin render journey)
+**Target: 100% mobile ready.** Any journey that renders a frontend or admin
+surface MUST run its render/UX assertions at BOTH viewports:
+- **Desktop**: 1280x800 (`playwright_resize 1280 800`)
+- **Mobile**: 390x844 (`playwright_resize 390 844`) — iPhone 12/13/14 width.
+
+At 390px assert: no horizontal scroll (`document.documentElement.scrollWidth <=
+window.innerWidth + 1`), primary actions reachable, tap targets >= 40px, no
+content clipped or overlapping, modals/menus usable. Screenshot both viewports
+into the run dir so UX regressions are reviewable.
+
+### 3. Translation ready (i18n) — every surface
+**Target: 100% translation ready.** For each surface a journey touches, assert
+all visible strings come through `__()/_e()/esc_html__()` with the right text
+domain (`wpmediaverse` / `wpmediaverse-pro`) — no hardcoded user-facing literals
+in PHP or JS; JS strings localized via `wp_set_script_translations()` /
+`wp_localize_script`, not inlined.
+
+### 4. Capability / privacy gate (where relevant)
+The right role sees the surface; the wrong role / anonymous does not. Private
+media never appears to others and is never emitted as a public cloud URL.
+
+## Site-owner expectation map (what the suite must cover)
+
+| Area | Owner expectation | Journey dir |
+|---|---|---|
+| Onboarding | Activation creates pages + wizard; settings save and persist | admin |
+| Storage | Switch local/cloud, migrate, counters; private stays local; nothing breaks | admin |
+| Moderation | Approve/reject works; pending media hidden from feeds | admin |
+| Library | All Media list, bulk actions, optimize, edit | admin |
+| AI | Keys actually call the provider; each AI feature has an owner-controlled toggle | admin |
+| Upload | Public + private upload from desktop and phone | customer |
+| Browse | Explore grid + search/filter + single view + lightbox | customer |
+| Social | Reactions, comments, favorites, follows, DM | customer |
+| Profile | Member media tab + albums/collections | customer |
+| Privacy | Private/members media gated everywhere | security |
+
 ## Directory layout
 
 ```
