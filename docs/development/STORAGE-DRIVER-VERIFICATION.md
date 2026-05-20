@@ -44,9 +44,15 @@ With creds set (prefer `wp-config.php` constants for secrets), run via WP-CLI
   fails on private buckets. Migration *pulling from* a private cloud needs a
   signed GET (follow-up). Upload/exists/delete are signed and work.
 - **Switching the active driver does not move existing media.** Existing media
-  404s under the new service until migrated (`wp mvs migrate-storage --from=<old>
-  --to=<new>` re-uploads). URLs are computed from the *enabled* service. See the
-  admin-control spec in `plan/2026-05-20-storage-service-management.md`.
+  keeps serving from its actual stored location (`mvs_media_index.file_url`),
+  NOT a URL recomputed from the newly-active driver — so enabling a service
+  never breaks un-migrated media. Un-migrated public files serve through the
+  gated `/serve` proxy until `wp mvs migrate-storage --from=<old> --to=<new>`
+  (or the Storage Management admin) re-uploads them and rewrites `file_url` to
+  the destination. Direct-CDN (`mvs_cloud_direct_public_urls`) only emits a
+  cloud URL when the stored `file_url` is already an absolute cloud URL. See
+  `SignedUrlService::maybe_direct_cloud_url()` and the admin-control spec in
+  `plan/2026-05-20-storage-service-management.md`.
 - **`-dev`/pre-release version suffixes** sort below the release in
   `version_compare` — strip them before comparing (lockstep guard).
 
