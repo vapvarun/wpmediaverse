@@ -3,7 +3,7 @@
  * Plugin Name: WPMediaVerse
  * Plugin URI:  https://store.wbcomdesigns.com/wpmediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
- * Version:     1.3.0
+ * Version:     1.4.0-dev
  * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MVS_VERSION', '1.3.0' );
+define( 'MVS_VERSION', '1.4.0-dev' );
 define( 'MVS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MVS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MVS_PLUGIN_FILE', __FILE__ );

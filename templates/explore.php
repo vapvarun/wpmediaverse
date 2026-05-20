@@ -267,98 +267,97 @@ $mvs_archive_url = home_url( '/media/' );
 	</div>
 
 	<?php
-	// --- Query media from mvs_media_index directly ---
-	global $wpdb;
-	$index_table = $wpdb->prefix . 'mvs_media_index';
-	$per_page    = absint( get_option( 'mvs_items_per_page', 12 ) );
-	$paged       = max( 1, absint( get_query_var( 'paged' ) ?: get_query_var( 'page' ) ) );
-	$offset      = ( $paged - 1 ) * $per_page;
+	// --- Query media via MediaRepository (TIER-D query engine) ---
+	$per_page = absint( get_option( 'mvs_items_per_page', 12 ) );
+	$paged    = max( 1, absint( get_query_var( 'paged' ) ?: get_query_var( 'page' ) ) );
+	$offset   = ( $paged - 1 ) * $per_page;
 
-	// Build WHERE clauses.
-	$where  = "WHERE m.status = 'publish' AND m.moderation_status = 'approved'";
-	$params = array();
-
-	// Search filter.
 	$mvs_search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
-	if ( $mvs_search ) {
-		$like     = '%' . $wpdb->esc_like( $mvs_search ) . '%';
-		$where   .= ' AND (m.title LIKE %s OR m.description LIKE %s)';
-		$params[] = $like;
-		$params[] = $like;
+
+	// Privacy scope by viewer: anon -> public only; logged-in non-moderator ->
+	// public + members + own; moderator -> no privacy filter.
+	if ( ! is_user_logged_in() ) {
+		$mvs_privacy   = 'public';
+		$mvs_viewer_id = 0;
+	} elseif ( ! current_user_can( 'moderate_mvs_media' ) ) {
+		$mvs_privacy   = 'visible';
+		$mvs_viewer_id = get_current_user_id();
+	} else {
+		$mvs_privacy   = 'any';
+		$mvs_viewer_id = 0;
 	}
 
-	// Tag filter.
-	$mvs_tag_join           = '';
+	$mvs_query_args = array(
+		'status'                  => 'publish',
+		'moderation_status'       => 'approved',
+		'search'                  => $mvs_search,
+		'privacy'                 => $mvs_privacy,
+		'viewer_id'               => $mvs_viewer_id,
+		'exclude_non_cover_group' => true,
+		'orderby'                 => 'created_at',
+		'order'                   => 'DESC',
+		'limit'                   => $per_page,
+		'offset'                  => $offset,
+	);
+
+	// Profile user filter.
+	if ( $mvs_profile ) {
+		$mvs_query_args['author_id'] = (int) $mvs_profile->ID;
+	}
+
+	// Tag filter: resolve slug to term_taxonomy_id. An unknown slug forces the
+	// empty-state branch (with a "Tag not found" message + Browse-all CTA)
+	// rather than silently returning the unfiltered feed.
 	$mvs_invalid_filter_tag = '';
 	if ( ! empty( $mvs_filter_tag ) ) {
 		$tag_term_obj = get_term_by( 'slug', $mvs_filter_tag, 'mvs_tag' );
 		if ( $tag_term_obj ) {
-			$mvs_tag_join = " INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = m.media_id";
-			$where       .= ' AND tr.term_taxonomy_id = %d';
-			$params[]     = $tag_term_obj->term_taxonomy_id;
+			$mvs_query_args['tag_tt_id'] = (int) $tag_term_obj->term_taxonomy_id;
 		} else {
-			// Tag slug provided but the term doesn't exist. Force zero results
-			// so the empty-state branch fires with a "Tag not found" message +
-			// Browse-all CTA, instead of silently returning the unfiltered feed.
-			$where                 .= ' AND 1 = 0';
 			$mvs_invalid_filter_tag = $mvs_filter_tag;
 		}
 	}
 
-	// Category filter.
-	$mvs_cat_join           = '';
+	// Category filter: same pattern as the tag filter above.
 	$mvs_invalid_filter_cat = '';
 	if ( ! empty( $mvs_filter_cat ) ) {
 		$cat_term_obj = get_term_by( 'slug', $mvs_filter_cat, 'mvs_category' );
 		if ( $cat_term_obj ) {
-			$mvs_cat_join = " INNER JOIN {$wpdb->term_relationships} trc ON trc.object_id = m.media_id";
-			$where       .= ' AND trc.term_taxonomy_id = %d';
-			$params[]     = $cat_term_obj->term_taxonomy_id;
+			$mvs_query_args['category_tt_id'] = (int) $cat_term_obj->term_taxonomy_id;
 		} else {
-			// Same pattern as the tag-not-found case above.
-			$where                 .= ' AND 1 = 0';
 			$mvs_invalid_filter_cat = $mvs_filter_cat;
 		}
 	}
 
-	// Privacy filter: non-logged-in see only public.
-	if ( ! is_user_logged_in() ) {
-		$where .= " AND m.privacy = 'public'";
-	} elseif ( ! current_user_can( 'moderate_mvs_media' ) ) {
-		$where   .= " AND (m.privacy = 'public' OR m.privacy = 'members' OR m.post_author = %d)";
-		$params[] = get_current_user_id();
-	}
+	/**
+	 * Filter the Explore feed query args before they reach MediaRepository.
+	 *
+	 * Escape hatch for sites that need to change what the Explore / profile
+	 * feed shows (e.g. include additional statuses, relax the privacy scope).
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param array        $mvs_query_args MediaRepository::query() args.
+	 * @param \WP_User|null $mvs_profile    Profile user when on a profile feed, else null.
+	 */
+	$mvs_query_args = apply_filters( 'mvs_explore_query_args', $mvs_query_args, $mvs_profile );
 
-	// Profile user filter.
-	if ( $mvs_profile ) {
-		$where   .= ' AND m.post_author = %d';
-		$params[] = $mvs_profile->ID;
-	}
+	$mvs_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-	// Exclude non-cover gallery group items.
-	$meta_table = $wpdb->prefix . 'mvs_media_meta';
-	$where     .= " AND m.media_id NOT IN (
-		SELECT mm1.media_id FROM {$meta_table} mm1
-		INNER JOIN {$meta_table} mm2 ON mm1.media_id = mm2.media_id
-		WHERE mm1.meta_key = 'media_group'
-		AND mm2.meta_key = 'group_position'
-		AND mm2.meta_value != '0'
-	)";
-
-	// Count total.
-	// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
-	$count_sql = "SELECT COUNT(DISTINCT m.media_id) FROM {$index_table} m {$mvs_tag_join} {$mvs_cat_join} {$where}";
-	if ( ! empty( $params ) ) {
-		$count_sql = $wpdb->prepare( $count_sql, ...$params );
+	// An unknown tag/category slug means "no such filter" -> show the empty
+	// state, skip the query entirely.
+	if ( '' !== $mvs_invalid_filter_tag || '' !== $mvs_invalid_filter_cat ) {
+		$total_items = 0;
+		$media_items = array();
+	} else {
+		$total_items = $mvs_repo->query_count( $mvs_query_args );
+		$media_items = $per_page > 0 ? $mvs_repo->query( $mvs_query_args ) : array();
 	}
-	$total_items = (int) $wpdb->get_var( $count_sql );
 
 	// Also count albums (albums are still a CPT).
 	$album_count = 0;
 	if ( ! $mvs_profile && ! $mvs_search && ! $mvs_filter_tag && ! $mvs_filter_cat ) {
-		$album_count = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'mvs_album' AND post_status = 'publish'"
-		);
+		$album_count = (int) wp_count_posts( 'mvs_album' )->publish;
 	}
 
 	$max_pages = $per_page > 0 ? (int) ceil( $total_items / $per_page ) : 1;
@@ -372,14 +371,6 @@ $mvs_archive_url = home_url( '/media/' );
 	// already worked this way; this just removes the album-on-top exception
 	// from page 1.
 	$albums = array(); // no albums in this feed.
-
-	$media_items = array();
-	if ( $per_page > 0 ) {
-		$media_sql   = "SELECT m.* FROM {$index_table} m {$mvs_tag_join} {$mvs_cat_join} {$where} ORDER BY m.created_at DESC LIMIT %d OFFSET %d";
-		$all_params  = array_merge( $params, array( $per_page, $offset ) );
-		$media_items = $wpdb->get_results( $wpdb->prepare( $media_sql, ...$all_params ), ARRAY_A );
-	}
-	// phpcs:enable
 
 	$has_items = ! empty( $media_items );
 	?>
