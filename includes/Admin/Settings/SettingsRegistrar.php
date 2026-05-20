@@ -262,6 +262,8 @@ class SettingsRegistrar {
 						'local'    => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
 						's3'       => __( 'Amazon S3', 'wpmediaverse' ),
 						'bunnycdn' => __( 'BunnyCDN', 'wpmediaverse' ),
+						'r2'       => __( 'Cloudflare R2', 'wpmediaverse' ),
+						'dospaces' => __( 'DigitalOcean Spaces', 'wpmediaverse' ),
 					),
 					'description' => __( 'Where uploaded media files are stored. Cloud drivers require API credentials.', 'wpmediaverse' ),
 				)
@@ -278,6 +280,8 @@ class SettingsRegistrar {
 					'pro'     => array(
 						__( 'Amazon S3', 'wpmediaverse' ),
 						__( 'BunnyCDN', 'wpmediaverse' ),
+						__( 'Cloudflare R2', 'wpmediaverse' ),
+						__( 'DigitalOcean Spaces', 'wpmediaverse' ),
 					),
 				)
 			);
