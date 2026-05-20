@@ -276,6 +276,20 @@ class SignedUrlService {
 			exit;
 		}
 
+		// Restricted media: re-check view access for the REQUESTING session.
+		// The signed token proves integrity + expiry, but for non-public media
+		// that alone would make an owner's time-limited URL a transferable
+		// bearer credential — any other user or anonymous visitor holding it
+		// could view a private member upload. Public media stays bearer-style
+		// (cacheable, shareable); only restricted media is re-gated per request.
+		$privacy = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'privacy' );
+		if ( 'public' !== $privacy && ! $this->privacy->can_view( $media_id, get_current_user_id() ) ) {
+			status_header( 403 );
+			header( 'Content-Type: text/plain' );
+			echo esc_html( 'Access denied.' );
+			exit;
+		}
+
 		// Dispatch thumbnail requests to a dedicated handler.
 		$size = ! empty( $params[ self::PARAM_SIZE ] ) ? sanitize_text_field( $params[ self::PARAM_SIZE ] ) : '';
 		if ( $size ) {
