@@ -519,10 +519,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		 *
 		 * @param string $url Default: plugin-bundled SVG asset URL.
 		 */
-		// `plugins_url()` resolves the static asset URL without needing the
-		// MVS_PLUGIN_URL constant (which static analyzers can't always see
-		// because it's defined in the plugin entry file).
-		$default = plugins_url( 'assets/images/default-video-poster.svg', dirname( __DIR__, 2 ) . '/wpmediaverse.php' );
+		// Resolve via the plugin URL constant (defined in the entry file),
+		// matching how every other asset URL is built across the plugin.
+		$default = MVS_PLUGIN_URL . 'assets/images/default-video-poster.svg';
 		return (string) apply_filters( 'mvs_default_video_poster_url', $default );
 	}
 
