@@ -241,14 +241,20 @@ class AIService {
 			return $output;
 		}
 
-		$analysis = $this->analyze( $media_id );
-		if ( ! is_wp_error( $analysis ) ) {
-			$output['description'] = $analysis['description'];
+		// Per-feature owner control: description and tag generation are each
+		// opt-out (default on) under the auto-analyze master switch.
+		if ( get_option( 'mvs_ai_auto_describe', true ) ) {
+			$analysis = $this->analyze( $media_id );
+			if ( ! is_wp_error( $analysis ) ) {
+				$output['description'] = $analysis['description'];
+			}
 		}
 
-		$tags = $this->auto_tag( $media_id );
-		if ( ! is_wp_error( $tags ) ) {
-			$output['tags'] = $tags;
+		if ( get_option( 'mvs_ai_auto_tag', true ) ) {
+			$tags = $this->auto_tag( $media_id );
+			if ( ! is_wp_error( $tags ) ) {
+				$output['tags'] = $tags;
+			}
 		}
 
 		if ( get_option( 'mvs_ai_auto_moderate', false ) ) {

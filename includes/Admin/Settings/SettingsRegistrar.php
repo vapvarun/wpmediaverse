@@ -767,7 +767,52 @@ class SettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option' => 'mvs_ai_auto_analyze',
-				'label'  => __( 'Automatically analyze media on upload (description + tags).', 'wpmediaverse' ),
+				'label'  => __( 'Automatically run AI on upload (master switch for the two options below).', 'wpmediaverse' ),
+			)
+		);
+
+		// Per-feature control: when auto-analyze is on, the owner can still
+		// choose which AI outputs to generate. Both default on so existing
+		// installs keep their current behavior.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_ai',
+			'mvs_ai_auto_describe',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			'mvs_ai_auto_describe',
+			__( 'Generate Descriptions', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-ai',
+			'mvs_ai',
+			array(
+				'option' => 'mvs_ai_auto_describe',
+				'label'  => __( 'Use AI to generate a description / alt text for each upload.', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_ai',
+			'mvs_ai_auto_tag',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			'mvs_ai_auto_tag',
+			__( 'Generate Tags', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-ai',
+			'mvs_ai',
+			array(
+				'option' => 'mvs_ai_auto_tag',
+				'label'  => __( 'Use AI to generate tags for each upload. Apply them to the taxonomy with the option below.', 'wpmediaverse' ),
 			)
 		);
 
