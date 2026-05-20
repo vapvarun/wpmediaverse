@@ -112,12 +112,15 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 = 1.4.0 - May 2026 =
 
-A blank-poster fix for activity videos, two new cloud storage options, and a centralized media query layer.
+Two new cloud storage options, safer cloud media handling, a blank-poster fix, and a centralized media query layer.
 
 * New     - Cloudflare R2 and DigitalOcean Spaces are now selectable cloud storage drivers from Settings, Storage. The drivers ship in WPMediaVerse Pro; the Storage Driver setting lists them on every install.
+* Improve - Private and restricted media now always stays on your server and is never uploaded to cloud storage. Only public media is eligible for the cloud, so private uploads cannot reach a public bucket.
+* Improve - Public media stored on the cloud is served directly from its CDN automatically, with no extra display setting to enable.
 * Improve - Explore, profile, and feed listings now build their database queries through one shared, centrally tested layer, so privacy and gallery-grouping rules behave identically across every view.
+* Fix     - Enabling a cloud storage service no longer breaks existing media. Each item now displays from where its file actually lives instead of being repointed at the newly selected service.
 * Fix     - Videos in the BuddyPress activity feed now always show a poster image. Cover-less videos previously rendered a blank player in Safari and Bing; they now fall back to the default video poster.
-* Dev     - New mvs_explore_query_args filter to adjust the Explore and profile feed query. Integration event hooks for gamification, activity, and notification consumers are documented in docs/development/INTEGRATION-EVENT-HOOKS.md.
+* Dev     - New filters mvs_serve_public_cloud_direct, mvs_public_cloud_thumbnail_url, and mvs_public_cloud_file_url to control or rewrite direct cloud URLs. New mvs_explore_query_args filter to adjust the Explore and profile feed query. Integration event hooks for gamification, activity, and notification consumers are documented in docs/development/INTEGRATION-EVENT-HOOKS.md.
 * Compat  - Paired with WPMediaVerse Pro 1.4.0. Install both updates together when running Pro.
 
 = 1.3.0 - May 2026 =
