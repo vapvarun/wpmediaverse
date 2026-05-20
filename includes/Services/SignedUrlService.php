@@ -614,17 +614,28 @@ class SignedUrlService {
 			return '';
 		}
 
-		$file_path = (string) $repo->get_raw( $media_id, 'file_path' );
-		if ( '' === $file_path ) {
+		// Serve from the media's ACTUAL stored location, not a URL recomputed
+		// from the active driver. `file_url` is kept accurate per item: written
+		// at upload time and rewritten by CloudOps::migrate_one on a verified
+		// migration. Recomputing from the active driver would point every
+		// public media at the newly-enabled service even when its file has not
+		// been migrated there yet — breaking ALL un-migrated media the instant
+		// the service is switched on (the large-site failure mode). Mirrors the
+		// stored-URL approach already used for thumbnails above.
+		$file_url = (string) $repo->get_raw( $media_id, 'file_url' );
+		if ( '' === $file_url ) {
 			return '';
 		}
 
-		$driver = apply_filters( 'mvs_storage_driver', null, $driver_slug );
-		if ( ! $driver instanceof StorageDriverInterface ) {
+		// Still on local disk (not yet migrated to cloud) — fall through to the
+		// gated /serve proxy, which streams the local file. Never emit a cloud
+		// URL for a file that does not live on the cloud yet.
+		$upload_dir = wp_upload_dir();
+		if ( is_array( $upload_dir ) && ! empty( $upload_dir['baseurl'] ) && 0 === strpos( $file_url, (string) $upload_dir['baseurl'] ) ) {
 			return '';
 		}
 
-		return (string) $driver->url( $file_path );
+		return $file_url;
 	}
 
 	/**
