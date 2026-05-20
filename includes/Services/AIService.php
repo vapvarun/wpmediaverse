@@ -162,6 +162,13 @@ class AIService {
 			return new WP_Error( 'mvs_no_ai_provider', __( 'No AI provider is configured.', 'wpmediaverse' ) );
 		}
 
+		// Moderation is a billable provider call like analyze/auto_tag, so it
+		// must respect the same monthly spend cap — otherwise auto-moderation
+		// runs unbounded against the budget the owner set.
+		if ( ! $this->check_budget() ) {
+			return new WP_Error( 'mvs_ai_budget_exceeded', __( 'Monthly AI budget has been exceeded.', 'wpmediaverse' ) );
+		}
+
 		// External providers fetch the image over HTTP — must be a signed URL.
 		$image_url = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' );
 		if ( ! $image_url ) {
