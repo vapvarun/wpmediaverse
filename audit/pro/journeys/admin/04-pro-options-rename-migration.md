@@ -43,41 +43,56 @@ asserts that:
 - Site: `$SITE_URL`
 - DB: any current state.
 
+> **Why a single `wp eval` per controlled run**: `Migrator::run()` already
+> fires on every Pro bootstrap, so by the time a separate `wp` command runs
+> the `mvs_pro_options_renamed_v1` guard flag is already set — a later
+> `wp eval '…Migrator::run();'` would short-circuit and the migration we
+> want to observe would never execute. Each controlled run therefore
+> resets the flag, seeds the legacy option, AND calls `run()` inside ONE
+> `wp eval '…'` block so the reset is in effect when `run()` is reached.
+
 ## Steps
 
-### 1. Reset migration flag and seed a legacy value
+### 1. Reset flag, seed a legacy value, and run the migration (single eval)
 ```bash
-wp option delete mvs_pro_options_renamed_v1
-wp option delete mvs_pro_boost_cost_per_100
-wp option update mvs_boost_cost_per_100 75
+wp eval '
+delete_option( "mvs_pro_options_renamed_v1" );
+delete_option( "mvs_pro_boost_cost_per_100" );
+update_option( "mvs_boost_cost_per_100", 75 );
+\WPMediaVersePro\Core\Migrator::run();
+'
 ```
 
-### 2. Trigger the migration
-```bash
-wp eval '\WPMediaVersePro\Core\Migrator::run();'
-```
-
-### 3. Confirm value moved
+### 2. Confirm value moved
 ```bash
 wp option get mvs_pro_boost_cost_per_100   # → 75
 wp option get mvs_boost_cost_per_100        # → "Could not get 'mvs_boost_cost_per_100' option. Does it exist?"
 wp option get mvs_pro_options_renamed_v1   # → 1
 ```
 
-### 4. Confirm idempotency — running again does not overwrite a newer value
+### 3. Confirm idempotency — flag short-circuits a re-run (single eval)
+The flag is already `1` from step 1, so seed a fresh new+legacy value and
+call `run()` in one block WITHOUT resetting the flag; `run()` must no-op.
 ```bash
-wp option update mvs_pro_boost_cost_per_100 999   # admin updates new key
-wp option update mvs_boost_cost_per_100 1         # something seeds the old key again
-wp eval '\WPMediaVersePro\Core\Migrator::run();'  # re-run migration
-wp option get mvs_pro_boost_cost_per_100          # → 999 (NOT 1 — flag short-circuits)
+wp eval '
+update_option( "mvs_pro_boost_cost_per_100", 999 );  // admin updates new key
+update_option( "mvs_boost_cost_per_100", 1 );        // something seeds the old key again
+\WPMediaVersePro\Core\Migrator::run();               // re-run migration
+'
+wp option get mvs_pro_boost_cost_per_100   # → 999 (NOT 1 — flag short-circuits)
 ```
 
-### 5. Reset flag and confirm "don't overwrite an existing new value" branch
+### 4. Confirm "don't overwrite an existing new value" branch (single eval)
+Reset the flag so `run()` actually executes, but a newer value already
+exists under the new key — the migration must preserve it and still clean
+the legacy key.
 ```bash
-wp option delete mvs_pro_options_renamed_v1
-wp option update mvs_pro_boost_cost_per_100 999
-wp option update mvs_boost_cost_per_100 1
-wp eval '\WPMediaVersePro\Core\Migrator::run();'
+wp eval '
+delete_option( "mvs_pro_options_renamed_v1" );
+update_option( "mvs_pro_boost_cost_per_100", 999 );
+update_option( "mvs_boost_cost_per_100", 1 );
+\WPMediaVersePro\Core\Migrator::run();
+'
 wp option get mvs_pro_boost_cost_per_100   # → 999 (preserved — admin's intent newer)
 wp option get mvs_boost_cost_per_100        # → not found (legacy still cleaned)
 ```
@@ -86,11 +101,11 @@ wp option get mvs_boost_cost_per_100        # → not found (legacy still cleane
 
 ALL of the following hold:
 
-1. After step 3, `mvs_pro_boost_cost_per_100` equals the legacy value `75`.
-2. After step 3, the legacy `mvs_boost_cost_per_100` is gone.
-3. After step 3, `mvs_pro_options_renamed_v1` equals `1`.
-4. Step 4 leaves `mvs_pro_boost_cost_per_100` at `999` (flag prevents re-run).
-5. Step 5 leaves `mvs_pro_boost_cost_per_100` at `999` AND clears the legacy key
+1. After step 2, `mvs_pro_boost_cost_per_100` equals the legacy value `75`.
+2. After step 2, the legacy `mvs_boost_cost_per_100` is gone.
+3. After step 2, `mvs_pro_options_renamed_v1` equals `1`.
+4. Step 3 leaves `mvs_pro_boost_cost_per_100` at `999` (flag prevents re-run).
+5. Step 4 leaves `mvs_pro_boost_cost_per_100` at `999` AND clears the legacy key
    (the "don't overwrite a newer value" branch fired).
 
 ## Fail diagnostics

@@ -36,11 +36,11 @@ estimated_runtime_minutes: 5
 
 ### 4. Fetch signed URL via /wp-json/mvs/v1/media/$MEDIA_ID/signed-url
 - **Action**: `curl $SITE_URL/wp-json/mvs/v1/media/$MEDIA_ID/signed-url`
-- **Expect**: HTTP 200, JSON contains `url` field with `?token=` param.
+- **Expect**: HTTP 200, JSON contains a `url` field. For PUBLIC media on a cloud driver this is the DIRECT CDN URL (no `?token=` / no `/serve` proxy) per the location-based display model; only restricted/local media returns a signed `/serve?...token=` URL.
 
 ### 5. Open explore page (logged-out)
-- **Action**: `playwright_navigate $SITE_URL/explore`
-- **Expect**: DOM contains `<img>` whose `src` starts with `/?rest_route=/mvs/v1/serve&token=` AND whose `alt`/title matches "Journey Test 1".
+- **Action**: `playwright_navigate $SITE_URL/explore-media/`
+- **Expect**: DOM contains an `<img>` whose `alt`/title matches "Journey Test 1". Because the item is PUBLIC, when a cloud driver is active the `src` is the active CDN URL (e.g. host ends in `b-cdn.net`) and `naturalWidth > 0`; only when `driver=local` is the `src` a signed `/serve?...token=` URL.
 
 ### 6. Verify image actually streams
 - **Action**: `curl -I $SITE_URL/$IMG_SRC`
@@ -51,9 +51,9 @@ estimated_runtime_minutes: 5
 ALL of the following hold:
 1. Upload returns 201 with a media ID.
 2. DB row exists with `privacy='public'`, `status='published'`.
-3. Signed-URL endpoint returns a tokenized URL.
-4. Explore page renders the new media.
-5. The signed serve endpoint streams `image/jpeg` with HTTP 200.
+3. Signed-URL endpoint returns a `url`: the direct CDN URL for public-on-cloud, or a signed `/serve?...token=` URL only for restricted/local media.
+4. Explore page (`/explore-media/`) renders the new media; for public-on-cloud the `<img>` `src` is the CDN host with `naturalWidth > 0`.
+5. The image streams `image/jpeg` with HTTP 200 (direct CDN for public-on-cloud; signed `/serve` for local/restricted).
 
 ## Fail diagnostics
 
