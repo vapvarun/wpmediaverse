@@ -10,6 +10,15 @@
 ( function() {
 	'use strict';
 
+	// i18n bridge — guard in case wp.i18n is unavailable (graceful English fallback).
+	var i18n = ( window.wp && window.wp.i18n ) ? window.wp.i18n : null;
+	var __ = i18n ? i18n.__ : function( s ) { return s; };
+	var sprintf = i18n ? i18n.sprintf : function( fmt ) {
+		var args = Array.prototype.slice.call( arguments, 1 );
+		var i = 0;
+		return String( fmt ).replace( /%[sd]/g, function() { return args[ i++ ]; } );
+	};
+
 	var restUrl = ( typeof mvsActivityMedia !== 'undefined' ) ? mvsActivityMedia.restUrl : '';
 	var bpRestUrl = ( typeof mvsActivityMedia !== 'undefined' ) ? mvsActivityMedia.bpRestUrl : '';
 	var nonce = ( typeof mvsActivityMedia !== 'undefined' ) ? mvsActivityMedia.nonce : '';
@@ -97,7 +106,7 @@
 			} else if ( 'video' === item.mediaType && item.thumbUrl ) {
 				thumb = document.createElement( 'img' );
 				thumb.src = item.thumbUrl;
-				thumb.alt = 'Media preview';
+				thumb.alt = __( 'Media preview', 'wpmediaverse' );
 				thumb.className = 'mvs-activity-media-thumb';
 			} else if ( 'video' === item.mediaType ) {
 				thumb = document.createElement( 'div' );
@@ -109,7 +118,7 @@
 			} else {
 				thumb = document.createElement( 'img' );
 				thumb.src = item.thumbUrl;
-				thumb.alt = 'Media preview';
+				thumb.alt = __( 'Media preview', 'wpmediaverse' );
 				thumb.className = 'mvs-activity-media-thumb';
 			}
 
@@ -117,7 +126,7 @@
 			removeBtn.type = 'button';
 			removeBtn.className = 'mvs-activity-media-remove';
 			removeBtn.textContent = '\u00D7';
-			removeBtn.setAttribute( 'aria-label', 'Remove media' );
+			removeBtn.setAttribute( 'aria-label', __( 'Remove media', 'wpmediaverse' ) );
 			removeBtn.addEventListener( 'click', function() {
 				attachedMedia.splice( idx, 1 );
 				renderPreview();
@@ -276,7 +285,8 @@
 		// Show uploading state.
 		var uploadingText = document.createElement( 'span' );
 		uploadingText.className = 'mvs-activity-media-uploading';
-		uploadingText.textContent = 'Uploading ' + files.length + ' file' + ( files.length > 1 ? 's' : '' ) + '...';
+		/* translators: %d: number of files being uploaded. */
+		uploadingText.textContent = sprintf( __( 'Uploading %d files...', 'wpmediaverse' ), files.length );
 		ensurePreviewPosition( preview );
 		preview.textContent = '';
 		preview.appendChild( uploadingText );
@@ -301,7 +311,7 @@
 		} ).catch( function() {
 			preview.textContent = '';
 			var errText = document.createElement( 'span' );
-			errText.textContent = 'Upload failed. Please try again.';
+			errText.textContent = __( 'Upload failed. Please try again.', 'wpmediaverse' );
 			errText.className = 'mvs-activity-media-error';
 			preview.appendChild( errText );
 			btn.disabled = false;
@@ -476,13 +486,13 @@
 		saveBtn.addEventListener( 'click', function() {
 			var title = titleIn.value.trim();
 			if ( ! title ) {
-				msgEl.textContent = 'Please enter an album name.';
+				msgEl.textContent = __( 'Please enter an album name.', 'wpmediaverse' );
 				msgEl.className = 'mvs-bp-album-msg mvs-bp-album-msg-error';
 				return;
 			}
 
 			saveBtn.disabled = true;
-			saveBtn.textContent = 'Creating...';
+			saveBtn.textContent = __( 'Creating...', 'wpmediaverse' );
 			msgEl.textContent = '';
 
 			var payload = { title: title, description: descIn.value.trim() };
@@ -500,7 +510,7 @@
 			.then( function( r ) { return r.json(); } )
 			.then( function( data ) {
 				saveBtn.disabled = false;
-				saveBtn.textContent = 'Create';
+				saveBtn.textContent = __( 'Create', 'wpmediaverse' );
 
 				if ( data.id ) {
 					// Success — reload to show the new album.
@@ -512,8 +522,8 @@
 			} )
 			.catch( function() {
 				saveBtn.disabled = false;
-				saveBtn.textContent = 'Create';
-				msgEl.textContent = 'Network error. Please try again.';
+				saveBtn.textContent = __( 'Create', 'wpmediaverse' );
+				msgEl.textContent = __( 'Network error. Please try again.', 'wpmediaverse' );
 				msgEl.className = 'mvs-bp-album-msg mvs-bp-album-msg-error';
 			} );
 		} );
@@ -988,10 +998,10 @@
 				var isFav = !! ( data && data.favorited );
 				if ( isFav ) {
 					favBtn.classList.add( 'active' );
-					favBtn.textContent = '\u2665 Favorited';
+					favBtn.textContent = '\u2665 ' + __( 'Favorited', 'wpmediaverse' );
 				} else {
 					favBtn.classList.remove( 'active' );
-					favBtn.textContent = '\u2661 Favorite';
+					favBtn.textContent = '\u2661 ' + __( 'Favorite', 'wpmediaverse' );
 				}
 			} ).catch( function() { /* silent */ } );
 		}
@@ -1115,10 +1125,10 @@
 				var newFav = ! isFav;
 				if ( newFav ) {
 					btn.classList.add( 'active' );
-					btn.textContent = '\u2665 Favorited';
+					btn.textContent = '\u2665 ' + __( 'Favorited', 'wpmediaverse' );
 				} else {
 					btn.classList.remove( 'active' );
-					btn.textContent = '\u2661 Favorite';
+					btn.textContent = '\u2661 ' + __( 'Favorite', 'wpmediaverse' );
 				}
 			} );
 		} );
@@ -1140,7 +1150,7 @@
 			} else if ( navigator.clipboard ) {
 				navigator.clipboard.writeText( url ).then( function() {
 					var original = btn.innerHTML;
-					btn.textContent = '\u2713 Copied!';
+					btn.textContent = '\u2713 ' + __( 'Copied!', 'wpmediaverse' );
 					setTimeout( function() { btn.innerHTML = original; }, 2000 );
 				} );
 			}

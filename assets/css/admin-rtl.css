@@ -1582,12 +1582,61 @@ a.mvs-stat-card:focus {
 .mvs-media-badge--pending { background: var(--mvs-warn); }
 .mvs-media-badge--trash { background: var(--mvs-danger); }
 
+/* Semantic variants used by the optimization column and detail page. */
+.mvs-media-badge--success { background: var(--mvs-success); }
+.mvs-media-badge--danger { background: var(--mvs-danger); }
+.mvs-media-badge--neutral { background: var(--mvs-text-secondary); }
+
 /* ==========================================================================
    Media List — Column widths & Thumb
    ========================================================================== */
 
+.mvs-admin-widget .wp-list-table .check-column {
+	width: 2.2em;
+}
+
+.mvs-col-id {
+	width: 60px;
+}
+
 .mvs-col-thumb {
-	width: 50px;
+	width: 60px;
+}
+
+.mvs-col-optimization {
+	width: 130px;
+}
+
+/* Narrow fixed widths for badge-only columns so the Title column gets the
+   leftover horizontal room. Without this, WP's auto-table layout gives the
+   ID column 10%+ of the table width and the Title column wraps long
+   filenames to three lines. */
+.mvs-admin-widget .wp-list-table thead th:nth-child(5),
+.mvs-admin-widget .wp-list-table tfoot th:nth-child(5) {
+	width: 110px;
+}
+
+.mvs-admin-widget .wp-list-table thead th:nth-child(6),
+.mvs-admin-widget .wp-list-table tfoot th:nth-child(6) {
+	width: 110px;
+}
+
+.mvs-admin-widget .wp-list-table thead th:nth-child(7),
+.mvs-admin-widget .wp-list-table tfoot th:nth-child(7) {
+	width: 110px;
+}
+
+.mvs-admin-widget .wp-list-table thead th:last-child,
+.mvs-admin-widget .wp-list-table tfoot th:last-child {
+	width: 110px;
+}
+
+.mvs-admin-widget .wp-list-table .column-primary {
+	min-width: 220px;
+}
+
+.mvs-admin-widget .wp-list-table td.mvs-col-id {
+	color: var(--mvs-text-secondary);
 }
 
 .mvs-thumb {

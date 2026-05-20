@@ -40,7 +40,7 @@ do_action( 'mvs_before_content' );
 			<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" xmlns="http://www.w3.org/2000/svg">
 				<path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
 			</svg>
-			<p style="margin-top:12px;">Select a conversation or start a new one</p>
+			<p style="margin-top:12px;"><?php esc_html_e( 'Select a conversation or start a new one', 'wpmediaverse' ); ?></p>
 		</div>
 	</div>
 </div>
