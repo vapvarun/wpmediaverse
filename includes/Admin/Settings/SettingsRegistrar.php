@@ -679,9 +679,9 @@ class SettingsRegistrar {
 				array(
 					'option'      => 'mvs_ai_provider',
 					'choices'     => array(
-						'openai'      => __( 'OpenAI (GPT-4 Vision)', 'wpmediaverse' ),
-						'google'      => __( 'Google Vision', 'wpmediaverse' ),
-						'rekognition' => __( 'AWS Rekognition', 'wpmediaverse' ),
+						'openai'        => __( 'OpenAI (GPT-4 Vision)', 'wpmediaverse' ),
+						'google_vision' => __( 'Google Vision', 'wpmediaverse' ),
+						'rekognition'   => __( 'AWS Rekognition', 'wpmediaverse' ),
 					),
 					'description' => __( 'Which AI service to use for image analysis, tagging, and moderation.', 'wpmediaverse' ),
 				)

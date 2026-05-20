@@ -42,6 +42,14 @@ class AIService {
 	public function get_active_provider(): ?AIProviderInterface {
 		$provider_id = get_option( 'mvs_ai_provider', 'openai' );
 
+		// Back-compat: legacy stored value `google` predates the registered
+		// provider id `google_vision`. Without this, an admin who picked Google
+		// Vision silently got the OpenAI fallback below. Saved option values do
+		// not re-run the sanitizer, so normalize on read too.
+		if ( 'google' === $provider_id ) {
+			$provider_id = 'google_vision';
+		}
+
 		if ( isset( $this->providers[ $provider_id ] ) && $this->providers[ $provider_id ]->is_available() ) {
 			return $this->providers[ $provider_id ];
 		}

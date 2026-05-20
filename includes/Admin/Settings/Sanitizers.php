@@ -41,7 +41,7 @@ class Sanitizers {
 		'mvs_lightbox_image_source'  => array( 'original', 'large', 'medium', 'auto' ),
 		'mvs_grid_columns'           => array( 2, 3, 4, 5 ),
 		'mvs_items_per_page'         => array( 12, 24, 48 ),
-		'mvs_ai_provider'            => array( 'openai', 'google', 'rekognition' ),
+		'mvs_ai_provider'            => array( 'openai', 'google_vision', 'rekognition' ),
 		'mvs_openai_model'           => array( 'gpt-4o-mini', 'gpt-4o' ),
 		'mvs_moderation_auto_action' => array( 'flag', 'hide', 'reject' ),
 		'mvs_dm_access'              => array( 'everyone', 'followers', 'mutual', 'nobody' ),
@@ -273,6 +273,12 @@ class Sanitizers {
 	 */
 	public static function sanitize_ai_provider( $value ): string {
 		$value = is_string( $value ) ? $value : '';
+		// Back-compat: the Google Vision provider's id is `google_vision`; an
+		// earlier build stored `google`, which never matched the registered
+		// provider and silently fell back to OpenAI. Normalize the legacy value.
+		if ( 'google' === $value ) {
+			$value = 'google_vision';
+		}
 		return in_array( $value, self::WHITELISTS['mvs_ai_provider'], true ) ? $value : 'openai';
 	}
 
