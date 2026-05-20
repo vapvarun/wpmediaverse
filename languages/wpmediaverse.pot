@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.4.0-dev\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-05-20 18:26:12+00:00\n"
+"POT-Creation-Date: 2026-05-20 19:31:27+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -306,7 +306,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:781
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:300
 #: includes/Admin/MediaListPage.php:218 includes/Admin/MediaListPage.php:265
-#: includes/Admin/MediaListPage.php:1098 includes/Admin/ModerationQueue.php:341
+#: includes/Admin/MediaListPage.php:1098 includes/Admin/ModerationQueue.php:343
 #: includes/Admin/OverviewPage.php:405 includes/Admin/StatsPage.php:398
 #: includes/Admin/TagManagementPage.php:687
 #: includes/Services/GDPRService.php:108 src/blocks/media-stats/render.php:139
@@ -736,7 +736,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:634
 #: includes/Admin/CollectionMetaBox.php:285
 #: includes/Admin/MediaListPage.php:219 includes/Admin/MediaListPage.php:266
-#: includes/Admin/ModerationQueue.php:342 includes/Admin/OverviewPage.php:406
+#: includes/Admin/ModerationQueue.php:344 includes/Admin/OverviewPage.php:406
 #: includes/Admin/Settings/PermissionsManager.php:40
 #: templates/partials/dashboard-content.php:634
 msgid "Author"
@@ -952,7 +952,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Services/GDPRService.php:209
 #: dist/wpmediaverse/includes/Services/GDPRService.php:234
 #: includes/Admin/LogViewerPage.php:197 includes/Admin/MediaListPage.php:224
-#: includes/Admin/MediaListPage.php:271 includes/Admin/ModerationQueue.php:345
+#: includes/Admin/MediaListPage.php:271 includes/Admin/ModerationQueue.php:347
 #: includes/Admin/OverviewPage.php:407 includes/Admin/TagManagementPage.php:689
 #: includes/Services/GDPRService.php:124 includes/Services/GDPRService.php:183
 #: includes/Services/GDPRService.php:209 includes/Services/GDPRService.php:234
@@ -1112,7 +1112,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/MediaListPage.php:264
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:340
 #: includes/Admin/MediaListPage.php:217 includes/Admin/MediaListPage.php:264
-#: includes/Admin/ModerationQueue.php:340
+#: includes/Admin/ModerationQueue.php:342
 msgid "Thumb"
 msgstr ""
 
@@ -1124,7 +1124,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Services/GDPRService.php:179
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:602
 #: includes/Admin/MediaListPage.php:220 includes/Admin/MediaListPage.php:267
-#: includes/Admin/ModerationQueue.php:343
+#: includes/Admin/ModerationQueue.php:345
 #: includes/Admin/TagManagementPage.php:688
 #: includes/Services/GDPRService.php:116 includes/Services/GDPRService.php:179
 #: templates/partials/dashboard-content.php:602
@@ -1593,7 +1593,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:346
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:228
 #: dist/wpmediaverse/includes/Admin/TagManagementPage.php:255
-#: includes/Admin/MediaListPage.php:1267 includes/Admin/ModerationQueue.php:346
+#: includes/Admin/MediaListPage.php:1267 includes/Admin/ModerationQueue.php:348
 #: includes/Admin/TagManagementPage.php:228
 #: includes/Admin/TagManagementPage.php:255
 msgid "Actions"
@@ -1615,7 +1615,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:873
 #: includes/Admin/ModerationQueue.php:51 includes/Admin/ModerationQueue.php:201
 #: includes/Admin/OverviewPage.php:177
-#: includes/Admin/Settings/SettingsRegistrar.php:870
+#: includes/Admin/Settings/SettingsRegistrar.php:915
 msgid "Moderation"
 msgstr ""
 
@@ -1717,28 +1717,28 @@ msgid "%s selected"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:336
-#: includes/Admin/ModerationQueue.php:336
+#: includes/Admin/ModerationQueue.php:338
 msgid "Select All"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:344
-#: includes/Admin/ModerationQueue.php:344
+#: includes/Admin/ModerationQueue.php:346
 msgid "AI Flags"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:477
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:448
-#: includes/Admin/ModerationQueue.php:477 includes/Admin/OverviewPage.php:448
+#: includes/Admin/ModerationQueue.php:480 includes/Admin/OverviewPage.php:448
 msgid "ago"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:487
-#: includes/Admin/ModerationQueue.php:487
+#: includes/Admin/ModerationQueue.php:490
 msgid "Approve"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:495
-#: includes/Admin/ModerationQueue.php:495
+#: includes/Admin/ModerationQueue.php:498
 msgid "Reject"
 msgstr ""
 
@@ -1878,7 +1878,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:321
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1102
 #: includes/Admin/OverviewPage.php:321
-#: includes/Admin/Settings/SettingsRegistrar.php:1099
+#: includes/Admin/Settings/SettingsRegistrar.php:1144
 msgid "Explore Page"
 msgstr ""
 
@@ -2373,7 +2373,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsPage.php:302
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:928
 #: includes/Admin/Settings/SettingsPage.php:302
-#: includes/Admin/Settings/SettingsRegistrar.php:925
+#: includes/Admin/Settings/SettingsRegistrar.php:970
 msgid "Webhooks"
 msgstr ""
 
@@ -2984,37 +2984,36 @@ msgid "Auto-Analyze Uploads"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:773
-#: includes/Admin/Settings/SettingsRegistrar.php:770
 msgid "Automatically analyze media on upload (description + tags)."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:788
-#: includes/Admin/Settings/SettingsRegistrar.php:785
+#: includes/Admin/Settings/SettingsRegistrar.php:830
 msgid "Auto-Apply Tags"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:794
-#: includes/Admin/Settings/SettingsRegistrar.php:791
+#: includes/Admin/Settings/SettingsRegistrar.php:836
 msgid "Automatically assign AI-generated tags to taxonomy."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:809
-#: includes/Admin/Settings/SettingsRegistrar.php:806
+#: includes/Admin/Settings/SettingsRegistrar.php:851
 msgid "Auto-Moderate Uploads"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:815
-#: includes/Admin/Settings/SettingsRegistrar.php:812
+#: includes/Admin/Settings/SettingsRegistrar.php:857
 msgid "Check uploads for policy violations via AI."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:837
-#: includes/Admin/Settings/SettingsRegistrar.php:834
+#: includes/Admin/Settings/SettingsRegistrar.php:879
 msgid "Monthly AI Budget ($)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:843
-#: includes/Admin/Settings/SettingsRegistrar.php:840
+#: includes/Admin/Settings/SettingsRegistrar.php:885
 msgid ""
 "Hard cap on OpenAI spend per calendar month. AI calls stop when this cap is "
 "reached and resume next month. Set to 0 to disable the cap (unlimited "
@@ -3023,136 +3022,136 @@ msgid ""
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:858
-#: includes/Admin/Settings/SettingsRegistrar.php:855
+#: includes/Admin/Settings/SettingsRegistrar.php:900
 msgid "Estimated Cost per Call ($)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:864
-#: includes/Admin/Settings/SettingsRegistrar.php:861
+#: includes/Admin/Settings/SettingsRegistrar.php:906
 msgid "Approximate cost per API call for budget tracking."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:886
-#: includes/Admin/Settings/SettingsRegistrar.php:883
+#: includes/Admin/Settings/SettingsRegistrar.php:928
 msgid "When AI Flags Content"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:893
-#: includes/Admin/Settings/SettingsRegistrar.php:890
+#: includes/Admin/Settings/SettingsRegistrar.php:935
 msgid "Flag for review (keep visible)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:894
-#: includes/Admin/Settings/SettingsRegistrar.php:891
+#: includes/Admin/Settings/SettingsRegistrar.php:936
 msgid "Hide (set to private)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:895
-#: includes/Admin/Settings/SettingsRegistrar.php:892
+#: includes/Admin/Settings/SettingsRegistrar.php:937
 msgid "Reject (move to draft)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:897
-#: includes/Admin/Settings/SettingsRegistrar.php:894
+#: includes/Admin/Settings/SettingsRegistrar.php:939
 msgid ""
 "Action taken automatically when AI detects a policy violation in uploaded "
 "media."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:913
-#: includes/Admin/Settings/SettingsRegistrar.php:910
+#: includes/Admin/Settings/SettingsRegistrar.php:955
 msgid "Auto-Hide Threshold"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:919
-#: includes/Admin/Settings/SettingsRegistrar.php:916
+#: includes/Admin/Settings/SettingsRegistrar.php:961
 msgid "Number of reports before media is automatically hidden. Set to 0 to disable."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:941
-#: includes/Admin/Settings/SettingsRegistrar.php:938
+#: includes/Admin/Settings/SettingsRegistrar.php:983
 msgid "Webhook Configuration"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:958
-#: includes/Admin/Settings/SettingsRegistrar.php:955
+#: includes/Admin/Settings/SettingsRegistrar.php:1000
 msgid "Direct Messages"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:962
-#: includes/Admin/Settings/SettingsRegistrar.php:959
+#: includes/Admin/Settings/SettingsRegistrar.php:1004
 msgid "Configure direct messaging privacy and spam prevention."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:980
-#: includes/Admin/Settings/SettingsRegistrar.php:977
+#: includes/Admin/Settings/SettingsRegistrar.php:1022
 msgid "Who Can Send DMs"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:987
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1067
-#: includes/Admin/Settings/SettingsRegistrar.php:984
-#: includes/Admin/Settings/SettingsRegistrar.php:1064
+#: includes/Admin/Settings/SettingsRegistrar.php:1029
+#: includes/Admin/Settings/SettingsRegistrar.php:1109
 msgid "Everyone"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:988
-#: includes/Admin/Settings/SettingsRegistrar.php:985
+#: includes/Admin/Settings/SettingsRegistrar.php:1030
 msgid "Followers only (others go to Requests)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:989
-#: includes/Admin/Settings/SettingsRegistrar.php:986
+#: includes/Admin/Settings/SettingsRegistrar.php:1031
 msgid "Mutual followers only"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:990
-#: includes/Admin/Settings/SettingsRegistrar.php:987
+#: includes/Admin/Settings/SettingsRegistrar.php:1032
 msgid "Nobody (DMs disabled)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:992
-#: includes/Admin/Settings/SettingsRegistrar.php:989
+#: includes/Admin/Settings/SettingsRegistrar.php:1034
 msgid "Controls who is allowed to send direct messages to other users on the site."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1008
-#: includes/Admin/Settings/SettingsRegistrar.php:1005
+#: includes/Admin/Settings/SettingsRegistrar.php:1050
 msgid "Minimum Account Age (days)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1014
-#: includes/Admin/Settings/SettingsRegistrar.php:1011
+#: includes/Admin/Settings/SettingsRegistrar.php:1056
 msgid "Accounts younger than this cannot send DMs. Set 0 to disable."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1032
-#: includes/Admin/Settings/SettingsRegistrar.php:1029
+#: includes/Admin/Settings/SettingsRegistrar.php:1074
 msgid "Chat Panel Visibility"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1039
-#: includes/Admin/Settings/SettingsRegistrar.php:1036
+#: includes/Admin/Settings/SettingsRegistrar.php:1081
 msgid "Everywhere (default)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1040
-#: includes/Admin/Settings/SettingsRegistrar.php:1037
+#: includes/Admin/Settings/SettingsRegistrar.php:1082
 msgid "WPMediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1041
-#: includes/Admin/Settings/SettingsRegistrar.php:1038
+#: includes/Admin/Settings/SettingsRegistrar.php:1083
 msgid "BuddyPress pages only (member + group)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1042
-#: includes/Admin/Settings/SettingsRegistrar.php:1039
+#: includes/Admin/Settings/SettingsRegistrar.php:1084
 msgid "Never show the slide-out (use only the dedicated /messages/ page)"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1044
-#: includes/Admin/Settings/SettingsRegistrar.php:1041
+#: includes/Admin/Settings/SettingsRegistrar.php:1086
 msgid ""
 "Controls where the floating chat icon appears for logged-in users. Themes "
 "and other plugins can override per-page via the "
@@ -3160,46 +3159,46 @@ msgid ""
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1060
-#: includes/Admin/Settings/SettingsRegistrar.php:1057
+#: includes/Admin/Settings/SettingsRegistrar.php:1102
 msgid "Online Status Visibility"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1068
-#: includes/Admin/Settings/SettingsRegistrar.php:1065
+#: includes/Admin/Settings/SettingsRegistrar.php:1110
 msgid "Followers only"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1069
-#: includes/Admin/Settings/SettingsRegistrar.php:1066
+#: includes/Admin/Settings/SettingsRegistrar.php:1111
 msgid "Nobody"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1071
-#: includes/Admin/Settings/SettingsRegistrar.php:1068
+#: includes/Admin/Settings/SettingsRegistrar.php:1113
 msgid "Who can see when a user is currently online in the messaging interface."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1090
 #: dist/wpmediaverse/includes/Admin/SetupWizard.php:156
-#: includes/Admin/Settings/SettingsRegistrar.php:1087
+#: includes/Admin/Settings/SettingsRegistrar.php:1132
 #: includes/Admin/SetupWizard.php:156
 msgid "Pages"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1094
-#: includes/Admin/Settings/SettingsRegistrar.php:1091
+#: includes/Admin/Settings/SettingsRegistrar.php:1136
 msgid ""
 "Assign pages for plugin features. Pages are auto-created during setup but "
 "can be changed here."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1101
-#: includes/Admin/Settings/SettingsRegistrar.php:1098
+#: includes/Admin/Settings/SettingsRegistrar.php:1143
 msgid "Dashboard Page"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1103
-#: includes/Admin/Settings/SettingsRegistrar.php:1100
+#: includes/Admin/Settings/SettingsRegistrar.php:1145
 msgid "Upload Page"
 msgstr ""
 
@@ -7559,6 +7558,28 @@ msgstr ""
 #: includes/Admin/Settings/SettingsRegistrar.php:284
 #: includes/Services/CloudOps.php:336
 msgid "DigitalOcean Spaces"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:770
+msgid "Automatically run AI on upload (master switch for the two options below)."
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:788
+msgid "Generate Descriptions"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:794
+msgid "Use AI to generate a description / alt text for each upload."
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:809
+msgid "Generate Tags"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:815
+msgid ""
+"Use AI to generate tags for each upload. Apply them to the taxonomy with "
+"the option below."
 msgstr ""
 
 #: includes/Services/CloudOps.php:378
