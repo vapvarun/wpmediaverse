@@ -258,8 +258,27 @@ class UploadService {
 			$avif_local  = $image_opt->emit_avif_sibling( $file['tmp_name'], $opt_context );
 		}
 
-		// Store file.
-		$driver = $this->storage->get_driver();
+		// Privacy — honour the user's choice only when the admin setting allows
+		// it. When mvs_allow_user_privacy is off, every upload is forced to the
+		// configured default, so a client cannot bypass the admin control by
+		// sending a crafted privacy field directly to the REST API. Resolved
+		// BEFORE store() because the destination driver depends on it: private
+		// and other restricted media must never leave the local server.
+		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
+		$default_privacy    = (string) get_option( 'mvs_default_privacy', 'public' );
+		if ( $allow_user_privacy && isset( $args['privacy'] ) ) {
+			$privacy = sanitize_text_field( $args['privacy'] );
+		} else {
+			$privacy = $default_privacy;
+		}
+		// Reject unknown privacy values so a typo or hostile input cannot slip through.
+		if ( ! in_array( $privacy, array( 'public', 'members', 'friends', 'private', 'group', 'custom' ), true ) ) {
+			$privacy = $default_privacy;
+		}
+
+		// Store file. Public media uses the active (possibly cloud) driver;
+		// restricted media stays on local disk.
+		$driver = $this->storage->get_driver_for_privacy( $privacy );
 		$stored = $driver->store( $file['tmp_name'], $dest_path );
 
 		if ( ! $stored ) {
@@ -304,22 +323,6 @@ class UploadService {
 		}
 
 		$file_url = $driver->url( $dest_path );
-
-		// Privacy — honour the user's choice only when the admin setting allows
-		// it. When mvs_allow_user_privacy is off, every upload is forced to the
-		// configured default, so a client cannot bypass the admin control by
-		// sending a crafted privacy field directly to the REST API.
-		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
-		$default_privacy    = (string) get_option( 'mvs_default_privacy', 'public' );
-		if ( $allow_user_privacy && isset( $args['privacy'] ) ) {
-			$privacy = sanitize_text_field( $args['privacy'] );
-		} else {
-			$privacy = $default_privacy;
-		}
-		// Reject unknown privacy values so a typo or hostile input cannot slip through.
-		if ( ! in_array( $privacy, array( 'public', 'members', 'friends', 'private', 'group', 'custom' ), true ) ) {
-			$privacy = $default_privacy;
-		}
 
 		$title = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
 
@@ -832,9 +835,13 @@ class UploadService {
 		// next to the original (`2026/05/foo-large.jpg` etc). The stored
 		// thumb_<size> meta then points at the CDN URL, not the local URL,
 		// so the size-aware direct-CDN read path can short-circuit /serve.
+		// Only PUBLIC media is eligible for cloud thumbnails. Restricted media
+		// keeps every variant on local disk (same policy as the original file),
+		// so private bytes never reach a public CDN.
 		$driver_slug   = (string) get_option( 'mvs_storage_driver', 'local' );
+		$is_public     = ( 'public' === (string) $repo->get_raw( $media_id, 'privacy' ) );
 		$cloud_driver  = null;
-		if ( 'local' !== $driver_slug ) {
+		if ( 'local' !== $driver_slug && $is_public ) {
 			$candidate = apply_filters( 'mvs_storage_driver', null, $driver_slug );
 			if ( $candidate instanceof StorageDriverInterface ) {
 				$cloud_driver = $candidate;

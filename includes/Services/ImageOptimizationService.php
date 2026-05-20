@@ -454,7 +454,7 @@ class ImageOptimizationService {
 		$webp_path = $this->emit_webp_sibling( $abs_path, $context );
 		if ( null !== $webp_path ) {
 			$rel_path     = (string) $repo->get_raw( $media_id, 'file_path' );
-			$published_url = $this->publish_webp_to_active_driver( $webp_path, $rel_path );
+			$published_url = $this->publish_webp_to_active_driver( $webp_path, $rel_path, $media_id );
 			if ( '' !== $published_url ) {
 				$repo->set( $media_id, self::META_ORIGINAL_WEBP, $published_url );
 			}
@@ -465,7 +465,7 @@ class ImageOptimizationService {
 		$avif_path = $this->emit_avif_sibling( $abs_path, $context );
 		if ( null !== $avif_path ) {
 			$rel_path     = (string) $repo->get_raw( $media_id, 'file_path' );
-			$published_url = $this->publish_avif_to_active_driver( $avif_path, $rel_path );
+			$published_url = $this->publish_avif_to_active_driver( $avif_path, $rel_path, $media_id );
 			if ( '' !== $published_url ) {
 				$repo->set( $media_id, self::META_ORIGINAL_AVIF, $published_url );
 			}
@@ -515,7 +515,7 @@ class ImageOptimizationService {
 					// Cloud driver: publish next to the variant on CDN and
 					// drop the local sibling so disk usage stays flat.
 					// Local driver: keep on disk and record its public URL.
-					$published_url    = $this->publish_webp_to_active_driver( $variant_webp, $variant_rel );
+					$published_url    = $this->publish_webp_to_active_driver( $variant_webp, $variant_rel, $media_id );
 					if ( '' !== $published_url ) {
 						$repo->set( $media_id, 'thumb_' . $size . '_webp', $published_url );
 					}
@@ -523,7 +523,7 @@ class ImageOptimizationService {
 
 				$variant_avif = $this->emit_avif_sibling( $variant_local, $variant_ctx );
 				if ( null !== $variant_avif ) {
-					$published_url = $this->publish_avif_to_active_driver( $variant_avif, $variant_rel );
+					$published_url = $this->publish_avif_to_active_driver( $variant_avif, $variant_rel, $media_id );
 					if ( '' !== $published_url ) {
 						$repo->set( $media_id, 'thumb_' . $size . '_avif', $published_url );
 					}
@@ -753,21 +753,22 @@ class ImageOptimizationService {
 	 *
 	 * @return string Public URL of the published WebP, or '' on failure.
 	 */
-	private function publish_webp_to_active_driver( string $local_webp_path, string $source_rel_path ): string {
+	private function publish_webp_to_active_driver( string $local_webp_path, string $source_rel_path, int $media_id ): string {
 		if ( '' === $source_rel_path || ! file_exists( $local_webp_path ) ) {
 			return '';
 		}
 
-		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver();
+		// Route by the media's privacy: restricted media resolves to the local
+		// driver, so its variants never reach a public cloud bucket.
+		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_media( $media_id );
 		if ( ! $driver instanceof StorageDriverInterface ) {
 			return '';
 		}
 
 		$webp_dest = self::sibling_rel_path( $source_rel_path );
-		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
 
-		if ( 'local' === $driver_slug ) {
-			// Local driver — emit_webp_sibling() already wrote next to the
+		if ( $driver instanceof LocalDriver ) {
+			// Local-disk driver — emit_webp_sibling() already wrote next to the
 			// source on disk, so the on-disk file IS the published artifact.
 			// The driver's url() resolves to the same path.
 			return (string) $driver->url( $webp_dest );
@@ -797,20 +798,20 @@ class ImageOptimizationService {
 	 *
 	 * @return string Public URL of the published AVIF, or '' on failure.
 	 */
-	private function publish_avif_to_active_driver( string $local_avif_path, string $source_rel_path ): string {
+	private function publish_avif_to_active_driver( string $local_avif_path, string $source_rel_path, int $media_id ): string {
 		if ( '' === $source_rel_path || ! file_exists( $local_avif_path ) ) {
 			return '';
 		}
 
-		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver();
+		// Route by the media's privacy — see publish_webp_to_active_driver().
+		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_media( $media_id );
 		if ( ! $driver instanceof StorageDriverInterface ) {
 			return '';
 		}
 
-		$avif_dest   = self::avif_rel_sibling_path( $source_rel_path );
-		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		$avif_dest = self::avif_rel_sibling_path( $source_rel_path );
 
-		if ( 'local' === $driver_slug ) {
+		if ( $driver instanceof LocalDriver ) {
 			return (string) $driver->url( $avif_dest );
 		}
 
