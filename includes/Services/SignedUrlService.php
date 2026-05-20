@@ -639,20 +639,35 @@ class SignedUrlService {
 	}
 
 	/**
-	 * Whether a stored URL points at a cloud location (not the local uploads dir).
+	 * Whether a stored URL is a directly-servable PUBLIC cloud location.
 	 *
 	 * The media's stored `file_url` / `thumb_<size>` is the source of truth for
-	 * where the bytes live. An absolute URL outside the local uploads base means
-	 * the file is on cloud and must be served from there; a URL under the local
-	 * uploads base (or a non-absolute value) means the file is local and /serve
-	 * can stream it. Scheme-insensitive so an https stored URL still matches an
-	 * http uploads base (and vice versa) on dev/staging.
+	 * where the bytes live. We only emit it to the browser when it is genuinely
+	 * publicly readable; otherwise the caller falls through to the /serve proxy
+	 * (which streams the local copy). Returns false when the URL is:
+	 *   - empty or not absolute http(s) (treated as local),
+	 *   - under the local uploads base (the file is local — let /serve stream it),
+	 *   - a known NON-public storage API host. R2's S3 API endpoint
+	 *     ({account}.r2.cloudflarestorage.com) is never publicly readable; a
+	 *     correctly-configured R2 stores the r2.dev / custom-domain URL instead.
+	 *     Emitting the raw API host guarantees a broken image, so we decline it
+	 *     and serve the local copy via /serve — never switch a media to a remote
+	 *     URL that does not actually work.
+	 * Scheme-insensitive so an https stored URL still matches an http uploads
+	 * base (and vice versa) on dev/staging.
 	 *
 	 * @param string $url Stored URL.
-	 * @return bool True when the URL is an absolute cloud URL.
+	 * @return bool True when the URL is an absolute, publicly-servable cloud URL.
 	 */
 	private function is_cloud_hosted_url( string $url ): bool {
 		if ( '' === $url || ! preg_match( '#^https?://#i', $url ) ) {
+			return false;
+		}
+
+		// Known non-public storage API hosts — see docblock. The R2 S3 API
+		// endpoint is private by design; without a configured public domain
+		// there is no working remote URL, so fall back to the local /serve copy.
+		if ( preg_match( '#^https?://[^/]*\.r2\.cloudflarestorage\.com/#i', $url ) ) {
 			return false;
 		}
 
