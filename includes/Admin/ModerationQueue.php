@@ -327,6 +327,8 @@ class ModerationQueue {
 								?>
 							</span>
 						</div>
+						</form>
+						<?php // Bulk form closed here. The table's checkboxes join it via the HTML5 form="" attribute, so the per-row Approve/Reject forms below are NOT nested inside it (nested forms are invalid HTML and the browser drops them, which silently killed the per-row buttons). ?>
 
 						<table class="mvs-moderation-table striped">
 							<thead>
@@ -335,7 +337,7 @@ class ModerationQueue {
 										<label class="screen-reader-text" for="mvs-select-all">
 											<?php esc_html_e( 'Select All', 'wpmediaverse' ); ?>
 										</label>
-										<input type="checkbox" id="mvs-select-all" />
+										<input type="checkbox" id="mvs-select-all" form="mvs-moderation-bulk-form" />
 									</td>
 									<th class="column-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
 									<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
@@ -352,7 +354,6 @@ class ModerationQueue {
 								<?php endforeach; ?>
 							</tbody>
 						</table>
-					</form>
 
 					<script>
 					(function() {
@@ -360,28 +361,30 @@ class ModerationQueue {
 						var form = document.getElementById('mvs-moderation-bulk-form');
 						var countWrap = document.getElementById('mvs-bulk-count');
 						var countEl = document.getElementById('mvs-selected-count');
+						// Row checkboxes live in the table OUTSIDE the bulk form (joined
+						// to it via form=""), so query the document, not the form node.
+						function rowBoxes() { return document.querySelectorAll('.mvs-bulk-cb'); }
 
 						function updateCount() {
-							var checked = form.querySelectorAll('.mvs-bulk-cb:checked');
+							var checked = document.querySelectorAll('.mvs-bulk-cb:checked');
 							countEl.textContent = checked.length;
 							countWrap.classList.toggle('mvs-hidden', checked.length === 0);
 						}
 
 						selectAll.addEventListener('change', function() {
-							var boxes = form.querySelectorAll('.mvs-bulk-cb');
-							boxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+							rowBoxes().forEach(function(cb) { cb.checked = selectAll.checked; });
 							updateCount();
 						});
 
-						form.addEventListener('change', function(e) {
-							if (e.target.classList.contains('mvs-bulk-cb')) {
+						document.addEventListener('change', function(e) {
+							if (e.target.classList && e.target.classList.contains('mvs-bulk-cb')) {
 								updateCount();
 							}
 						});
 
 						form.addEventListener('submit', function(e) {
 							var action = document.getElementById('mvs-bulk-action-select').value;
-							var checked = form.querySelectorAll('.mvs-bulk-cb:checked');
+							var checked = document.querySelectorAll('.mvs-bulk-cb:checked');
 							if (!action || checked.length === 0) {
 								e.preventDefault();
 								return;
@@ -441,7 +444,7 @@ class ModerationQueue {
 		?>
 		<tr>
 			<th scope="row" class="check-column">
-				<input type="checkbox" name="mvs_bulk_ids[]" value="<?php echo absint( $media_id ); ?>" class="mvs-bulk-cb" />
+				<input type="checkbox" name="mvs_bulk_ids[]" value="<?php echo absint( $media_id ); ?>" class="mvs-bulk-cb" form="mvs-moderation-bulk-form" />
 			</th>
 			<td>
 				<?php if ( $file_url && strpos( (string) $file_type, 'image/' ) === 0 ) : ?>
