@@ -37,22 +37,45 @@ With creds set (prefer `wp-config.php` constants for secrets), run via WP-CLI
   - audio `readyState >= 1`,
   - each asset HEAD = 200 with the correct content-type from the public domain.
 
+## Display model (location-based, not driver/toggle-based)
+Storage is either local or a single cloud at a time. A media's display URL is
+derived from **where its file actually lives + its privacy**, never from the
+active driver or a global setting:
+- **Public + ungated**, file on cloud (stored `file_url`/`thumb_<size>` is an
+  absolute non-local URL) → served **directly** from that CDN URL. The `/serve`
+  proxy is local-only and 403s a cloud-hosted file, so a direct URL is the only
+  thing that works — this is automatic, no opt-in required.
+- **Public + ungated**, file local → signed `/serve` URL (proxy streams the
+  local file; keeps AVIF/WebP negotiation + download logging).
+- **Restricted / access-gated** → always signed `/serve` so the per-request
+  privacy check fires.
+
+Implemented in `SignedUrlService::public_cloud_direct_allowed()` +
+`is_cloud_hosted_url()`, consumed by `maybe_direct_cloud_thumbnail_url()` and
+`maybe_direct_cloud_url()`. Escape hatch: the `mvs_serve_public_cloud_direct`
+filter forces public media back through `/serve`; `mvs_public_cloud_thumbnail_url`
+/ `mvs_public_cloud_file_url` rewrite the emitted URL. The legacy
+`mvs_cloud_direct_public_urls` option no longer gates display (kept for
+back-compat only; its checkbox was removed).
+
 ## Gotchas this caught (provider-specific)
 - **R2 buckets are private by default** — display needs a public domain; the bare
   `*.r2.cloudflarestorage.com` endpoint is not publicly readable.
 - **`download()` is an unsigned public GET** (inherited from the S3 driver) — it
   fails on private buckets. Migration *pulling from* a private cloud needs a
   signed GET (follow-up). Upload/exists/delete are signed and work.
+- **Private media whose file is cloud-only cannot be served yet.** `/serve` is a
+  local-file proxy; it has no cloud-fetch path, so a private/gated media whose
+  bytes live only on cloud 403s. Keep private media local until a signed-GET
+  cloud fetch lands in `/serve` (follow-up). Public media is unaffected — it
+  serves directly from the CDN.
 - **Switching the active driver does not move existing media.** Existing media
-  keeps serving from its actual stored location (`mvs_media_index.file_url`),
-  NOT a URL recomputed from the newly-active driver — so enabling a service
-  never breaks un-migrated media. Un-migrated public files serve through the
-  gated `/serve` proxy until `wp mvs migrate-storage --from=<old> --to=<new>`
-  (or the Storage Management admin) re-uploads them and rewrites `file_url` to
-  the destination. Direct-CDN (`mvs_cloud_direct_public_urls`) only emits a
-  cloud URL when the stored `file_url` is already an absolute cloud URL. See
-  `SignedUrlService::maybe_direct_cloud_url()` and the admin-control spec in
-  `plan/2026-05-20-storage-service-management.md`.
+  keeps serving from its actual stored location (`mvs_media_index.file_url` /
+  `thumb_<size>`), so enabling a service never breaks un-migrated media. Local
+  files serve through `/serve`; cloud files serve directly. Migrate with
+  `wp mvs migrate-storage --from=<old> --to=<new>` (or the Storage Management
+  admin), which re-uploads and rewrites the stored URLs to the destination. See
+  the admin-control spec in `plan/2026-05-20-storage-service-management.md`.
 - **`-dev`/pre-release version suffixes** sort below the release in
   `version_compare` — strip them before comparing (lockstep guard).
 

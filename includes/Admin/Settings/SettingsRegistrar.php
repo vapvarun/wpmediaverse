@@ -309,11 +309,15 @@ class SettingsRegistrar {
 			)
 		);
 
-		// Direct CDN URLs for public media on cloud drivers. When enabled
-		// AND the active driver is s3/bunnycdn, public-privacy media skip
-		// the gated /serve proxy and emit the CDN edge URL directly.
-		// Restricted media still flows through the gated proxy. Off by
-		// default so upgrades do not silently change URL behavior.
+		// Legacy option, retained for back-compat only. Public media whose file
+		// lives on cloud is now ALWAYS served directly from its CDN URL — the
+		// /serve proxy can only stream local files, so a stored cloud URL has no
+		// working alternative. The display decision is driven by each media's
+		// actual stored location + privacy (SignedUrlService::is_cloud_hosted_url
+		// / public_cloud_direct_allowed), not by this toggle, so the checkbox was
+		// removed. The option key stays registered so existing stored values do
+		// not error; operators who need per-request proxying can use the
+		// `mvs_serve_public_cloud_direct` filter instead.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_storage',
 			'mvs_cloud_direct_public_urls',
@@ -321,17 +325,6 @@ class SettingsRegistrar {
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'default'           => false,
-			)
-		);
-		add_settings_field(
-			'mvs_cloud_direct_public_urls',
-			__( 'Serve public media direct from CDN', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-storage',
-			'mvs_storage',
-			array(
-				'option'      => 'mvs_cloud_direct_public_urls',
-				'description' => __( 'When using a cloud storage driver (S3, BunnyCDN), emit the CDN edge URL directly for public media so browsers fetch from the CDN instead of through WordPress. Restricted media (members-only, friends, private) and media with access rules continue to flow through the gated /serve proxy. <strong>Caveat:</strong> once a public URL is on the CDN edge, anyone who has it can keep viewing — even after you flip the media to private. Leave off if you need WordPress to re-validate privacy on every image request.', 'wpmediaverse' ),
 			)
 		);
 
