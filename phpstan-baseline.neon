@@ -92,7 +92,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
+			count: 2
 			path: includes/Admin/CollectionMetaBox.php
 
 		-

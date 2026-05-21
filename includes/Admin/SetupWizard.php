@@ -22,7 +22,7 @@ class SetupWizard {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_hidden_page' ) );
 		add_action( 'admin_init', array( $this, 'handle_wizard_save' ) );
-		add_action( 'admin_head', array( $this, 'hide_from_menu' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'hide_from_menu' ) );
 	}
 
 	/**
@@ -54,12 +54,13 @@ class SetupWizard {
 	 * user visits the wizard via direct URL. We use CSS instead of
 	 * remove_submenu_page() because the latter drops the entry from
 	 * $submenu, which breaks the capability lookup in recent WordPress.
+	 *
+	 * The rule is attached to the core 'common' admin stylesheet (loaded on
+	 * every admin page) via wp_add_inline_style so no inline <style> is emitted.
 	 */
 	public function hide_from_menu(): void {
-		if ( ! function_exists( 'get_current_screen' ) ) {
-			return;
-		}
-		echo '<style id="mvs-hide-setup-wizard-menu">#toplevel_page_wpmediaverse .wp-submenu a[href$="page=' . esc_attr( self::PAGE_SLUG ) . '"]{display:none!important;}</style>';
+		$css = '#toplevel_page_wpmediaverse .wp-submenu a[href$="page=' . self::PAGE_SLUG . '"]{display:none!important;}';
+		wp_add_inline_style( 'common', $css );
 	}
 
 	/**
