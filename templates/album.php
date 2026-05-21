@@ -219,6 +219,9 @@ $mvs_archive_url = home_url( '/media/' );
 					var dropzone = document.getElementById('mvs-album-dropzone');
 					var fileInput = document.getElementById('mvs-album-file-input');
 					var statusEl = document.getElementById('mvs-album-upload-status');
+					// Translatable status strings — %1$d = current, %2$d = total.
+					var i18nUploadingN    = '<?php echo esc_js( __( 'Uploading %1$d of %2$d...', 'wpmediaverse' ) ); ?>';
+					var i18nAddingToAlbum = '<?php echo esc_js( __( 'Adding to album...', 'wpmediaverse' ) ); ?>';
 					var previewEl = document.getElementById('mvs-album-upload-preview');
 					var cancelBtn = document.getElementById('mvs-album-upload-cancel');
 
@@ -281,13 +284,13 @@ $mvs_archive_url = home_url( '/media/' );
 						statusEl.style.display = 'block';
 						var total = files.length, done = 0;
 						var uploadedIds = [];
-						statusEl.textContent = 'Uploading 1 of ' + total + '...';
+						statusEl.textContent = i18nUploadingN.replace( '%1$d', 1 ).replace( '%2$d', total );
 						statusEl.className = 'mvs-bp-upload-status';
 
 						function next() {
 							if (done >= total) {
 								if (uploadedIds.length) {
-									statusEl.textContent = 'Adding to album...';
+									statusEl.textContent = i18nAddingToAlbum;
 									fetch(restUrl + 'albums/' + albumId + '/items', {
 										method: 'POST',
 										headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
@@ -312,7 +315,7 @@ $mvs_archive_url = home_url( '/media/' );
 							.then(function(data) {
 								if (data.id) uploadedIds.push(data.id);
 								done++;
-								if (done < total) statusEl.textContent = 'Uploading ' + (done + 1) + ' of ' + total + '...';
+								if (done < total) statusEl.textContent = i18nUploadingN.replace( '%1$d', (done + 1) ).replace( '%2$d', total );
 								next();
 							}).catch(function() { done++; next(); });
 						}
