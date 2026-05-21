@@ -286,49 +286,17 @@ $mvs_archive_url = home_url( '/media/' );
 						<?php endforeach; ?>
 					</ol>
 				</div>
-				<script>
-				(function(){
-					var tracks = <?php echo wp_json_encode( $tracks ); ?>;
-					var albumId = <?php echo (int) get_the_ID(); ?>;
-					var audio = document.getElementById('mvs-playlist-audio-' + albumId);
-					var nowEl = document.getElementById('mvs-playlist-now-' + albumId);
-					var trackEls = document.querySelectorAll('#mvs-playlist-' + albumId + ' .mvs-playlist-track');
-					var current = -1;
-
-					function playTrack(idx) {
-						if (idx < 0 || idx >= tracks.length || !tracks[idx].url) return;
-						current = idx;
-						audio.src = tracks[idx].url;
-						audio.type = tracks[idx].type;
-						audio.play();
-						var label = tracks[idx].title;
-						if (tracks[idx].artist) label = tracks[idx].artist + ' — ' + label;
-						nowEl.textContent = label;
-						trackEls.forEach(function(el, i) {
-							el.classList.toggle('mvs-playlist-track--active', i === idx);
-						});
-					}
-
-					audio.addEventListener('ended', function() {
-						if (current + 1 < tracks.length) {
-							playTrack(current + 1);
-						}
-					});
-
-					document.querySelectorAll('#mvs-playlist-' + albumId + ' .mvs-playlist-track-btn').forEach(function(btn) {
-						btn.addEventListener('click', function() {
-							playTrack(parseInt(btn.getAttribute('data-track-index'), 10));
-						});
-					});
-
-					if (tracks.length > 0 && tracks[0].url) {
-						audio.src = tracks[0].url;
-						audio.type = tracks[0].type;
-						nowEl.textContent = (tracks[0].artist ? tracks[0].artist + ' — ' : '') + tracks[0].title;
-						trackEls[0].classList.add('mvs-playlist-track--active');
-					}
-				})();
-				</script>
+				<?php
+				wp_enqueue_script( 'mvs-album-playlist' );
+				wp_localize_script(
+					'mvs-album-playlist',
+					'mvsAlbumPlaylist',
+					array(
+						'tracks'  => $tracks,
+						'albumId' => (int) get_the_ID(),
+					)
+				);
+				?>
 			<?php elseif ( ! empty( $items ) ) : ?>
 				<?php
 				$mvs_grid_cols     = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) );
@@ -372,49 +340,23 @@ $mvs_archive_url = home_url( '/media/' );
 					?>
 				</div>
 				<?php if ( $mvs_is_album_owner ) : ?>
-				<script>
-				(function(){
-					var albumId = <?php echo (int) get_the_ID(); ?>;
-					var restUrl = '<?php echo esc_js( esc_url_raw( rest_url( 'mvs/v1/' ) ) ); ?>';
-					var nonce   = '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>';
-					var savingLabel = '<?php echo esc_js( __( 'Saving…', 'wpmediaverse' ) ); ?>';
-					var defaultLabel = '<?php echo esc_js( __( 'Set as cover', 'wpmediaverse' ) ); ?>';
-					var errorText = '<?php echo esc_js( __( 'Could not set cover', 'wpmediaverse' ) ); ?>';
-					document.querySelectorAll('.mvs-album-set-cover').forEach(function (btn) {
-						var labelEl = btn.querySelector('.mvs-album-set-cover__label');
-						btn.addEventListener('click', function (ev) {
-							ev.preventDefault();
-							ev.stopPropagation();
-							var mediaId = btn.getAttribute('data-media-id');
-							if (!mediaId) return;
-							btn.disabled = true;
-							if (labelEl) { labelEl.textContent = savingLabel; }
-							fetch(restUrl + 'albums/' + albumId + '/cover', {
-								method: 'PUT',
-								headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-								credentials: 'same-origin',
-								body: JSON.stringify({ media_id: parseInt(mediaId, 10) })
-							}).then(function (r) {
-								if (!r.ok) { return r.json().then(function (d) { throw new Error(d && d.message || 'Failed'); }); }
-								return r.json();
-							}).then(function () {
-								window.location.reload();
-							}).catch(function (err) {
-								btn.disabled = false;
-								// Non-blocking error feedback on the button itself
-								// (no native alert dialog). Restores after 3s.
-								var msg = (err && err.message) || errorText;
-								if (labelEl) {
-									labelEl.textContent = msg;
-									setTimeout(function () { labelEl.textContent = defaultLabel; }, 3000);
-								} else {
-									btn.setAttribute('title', msg);
-								}
-							});
-						});
-					});
-				})();
-				</script>
+					<?php
+					wp_enqueue_script( 'mvs-album-cover' );
+					wp_localize_script(
+						'mvs-album-cover',
+						'mvsAlbumCover',
+						array(
+							'albumId' => (int) get_the_ID(),
+							'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+							'nonce'   => wp_create_nonce( 'wp_rest' ),
+							'i18n'    => array(
+								'saving'     => __( 'Saving…', 'wpmediaverse' ),
+								'setAsCover' => __( 'Set as cover', 'wpmediaverse' ),
+								'error'      => __( 'Could not set cover', 'wpmediaverse' ),
+							),
+						)
+					);
+					?>
 				<?php endif; ?>
 			<?php else : ?>
 				<p class="mvs-no-media"><?php esc_html_e( 'This album is empty.', 'wpmediaverse' ); ?></p>
