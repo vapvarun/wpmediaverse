@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.4.0-dev\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-05-21 03:36:41+00:00\n"
+"POT-Creation-Date: 2026-05-21 03:51:31+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -48,7 +48,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/album.php:505
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:202
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:228
-#: src/blocks/album-viewer/render.php:103 templates/album.php:508
+#: src/blocks/album-viewer/render.php:103 templates/album.php:420
 msgid "This album is empty."
 msgstr ""
 
@@ -501,10 +501,9 @@ msgstr ""
 #: dist/wpmediaverse/templates/media-single.php:178
 #: dist/wpmediaverse/templates/partials/profile-actions-js.php:40
 #: dist/wpmediaverse/templates/partials/profile-actions.php:41
-#: includes/Services/GDPRService.php:201
+#: includes/Core/Plugin.php:1059 includes/Services/GDPRService.php:201
 #: src/blocks/member-photos/render.php:202
 #: src/blocks/member-photos/render.php:218 templates/media-single.php:178
-#: templates/partials/profile-actions-js.php:40
 #: templates/partials/profile-actions.php:41
 msgid "Following"
 msgstr ""
@@ -524,9 +523,8 @@ msgstr ""
 #: dist/wpmediaverse/templates/media-single.php:177
 #: dist/wpmediaverse/templates/partials/profile-actions-js.php:45
 #: dist/wpmediaverse/templates/partials/profile-actions.php:41
-#: src/blocks/member-photos/render.php:217 templates/media-single.php:177
-#: templates/partials/profile-actions-js.php:45
-#: templates/partials/profile-actions.php:41
+#: includes/Core/Plugin.php:1060 src/blocks/member-photos/render.php:217
+#: templates/media-single.php:177 templates/partials/profile-actions.php:41
 msgid "Follow"
 msgstr ""
 
@@ -2047,7 +2045,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Services/HealthCheckService.php:172
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:278
 #: includes/Admin/OverviewPage.php:596 includes/Admin/SetupWizard.php:254
-#: includes/Core/Plugin.php:1176 includes/Services/HealthCheckService.php:172
+#: includes/Core/Plugin.php:1215 includes/Services/HealthCheckService.php:172
 #: templates/partials/dashboard-content.php:278
 msgid "My Media"
 msgstr ""
@@ -3887,7 +3885,7 @@ msgstr ""
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:302
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:439
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:640
-#: templates/album.php:183 templates/album.php:208 templates/album.php:560
+#: templates/album.php:183 templates/album.php:227 templates/album.php:472
 #: templates/media-single.php:524 templates/media-single.php:571
 #: templates/media-single.php:621 templates/partials/chat-composer.php:68
 #: templates/partials/dashboard-content.php:229
@@ -4179,14 +4177,14 @@ msgstr[1] ""
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/BaseBPTabIntegration.php:627
 #: dist/wpmediaverse/templates/album.php:194
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:627
-#: templates/album.php:194
+#: templates/album.php:213
 msgid "Add Media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/BaseBPTabIntegration.php:635
 #: dist/wpmediaverse/templates/album.php:203
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:635
-#: templates/album.php:203
+#: templates/album.php:222
 msgid "Drop files here or click to upload into this album"
 msgstr ""
 
@@ -5504,29 +5502,29 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: dist/wpmediaverse/templates/album.php:376 templates/album.php:379
+#: dist/wpmediaverse/templates/album.php:376 templates/album.php:284
 msgid "View details"
 msgstr ""
 
 #: dist/wpmediaverse/templates/album.php:451
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:832
-#: templates/album.php:454 templates/partials/dashboard-content.php:832
+#: templates/album.php:359 templates/partials/dashboard-content.php:832
 msgid "Cover"
 msgstr ""
 
 #: dist/wpmediaverse/templates/album.php:457
-#: dist/wpmediaverse/templates/album.php:473 templates/album.php:460
-#: templates/album.php:476
+#: dist/wpmediaverse/templates/album.php:473 templates/album.php:365
+#: templates/album.php:381
 msgid "Set as cover"
 msgstr ""
 
 #: dist/wpmediaverse/templates/album.php:472
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:358
-#: templates/album.php:475 templates/partials/shared-ui-frame.php:358
+#: templates/album.php:380 templates/partials/shared-ui-frame.php:358
 msgid "Saving…"
 msgstr ""
 
-#: dist/wpmediaverse/templates/album.php:474 templates/album.php:477
+#: dist/wpmediaverse/templates/album.php:474 templates/album.php:382
 msgid "Could not set cover"
 msgstr ""
 
@@ -7586,12 +7584,18 @@ msgstr ""
 msgid "Other / external"
 msgstr ""
 
-#: templates/album.php:223
+#: templates/album.php:199
+#. translators: 1: current file number, 2: total files
 msgid "Uploading %1$d of %2$d..."
 msgstr ""
 
-#: templates/album.php:224
+#: templates/album.php:200
 msgid "Adding to album..."
+msgstr ""
+
+#: templates/album.php:202
+#. translators: %d: number of files added
+msgid "%d file(s) added to album!"
 msgstr ""
 
 #: templates/messages.php:43

@@ -1062,6 +1062,20 @@ class Plugin {
 			)
 		);
 
+		// Album upload (owner-only dropzone). Registered globally; the album
+		// template enqueues it and localizes the page-specific config (album id,
+		// rest url, nonce) + translatable status strings via wp_localize_script.
+		wp_register_script(
+			'mvs-album-upload',
+			MVS_PLUGIN_URL . 'assets/js/frontend/album-upload.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+
 		// BP-integration script — wires up per-item delete/edit actions on
 		// owner-visible grid cards. Declares `mvs-lucide` as a dep so the
 		// `<i data-lucide="trash-2">` icons we emit on action buttons are
