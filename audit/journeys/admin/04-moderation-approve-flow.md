@@ -13,6 +13,16 @@ estimated_runtime_minutes: 3
 
 # Admin approves a pending media item; moderation_status flips to approved
 
+## Setup
+
+The queue is empty on a clean install (all demo media is `approved`). Seed exactly one pending item from existing media so nothing is created or deleted, then restore it at the end:
+
+- **Seed**: pick one approved media id and flip it to pending, capturing the original so it can be restored:
+  ```bash
+  PENDING_ID=$(wp eval 'global $wpdb; $t=$wpdb->prefix."mvs_media_index"; $id=(int)$wpdb->get_var("SELECT media_id FROM $t WHERE moderation_status=\"approved\" ORDER BY media_id ASC LIMIT 1"); $wpdb->update($t,["moderation_status"=>"pending"],["media_id"=>$id]); echo $id;')
+  ```
+- **Cleanup (always run, even on fail)**: `wp eval 'global $wpdb; $wpdb->update($wpdb->prefix."mvs_media_index",["moderation_status"=>"approved"],["media_id"=>'"$PENDING_ID"']);'`
+
 ## Steps
 
 ### 1. Auto-login admin
@@ -28,7 +38,7 @@ estimated_runtime_minutes: 3
 - **Expect**: HTTP 200 from REST, row disappears from queue or shows status "approved".
 
 ### 4. Verify DB
-- **Action**: `mysql_query "SELECT moderation_status FROM wp_mvs_media_index WHERE id=$PENDING_ID"`
+- **Action**: `mysql_query "SELECT moderation_status FROM wp_mvs_media_index WHERE media_id=$PENDING_ID"`
 - **Expect**: `moderation_status='approved'`.
 
 ### 5. Verify counts

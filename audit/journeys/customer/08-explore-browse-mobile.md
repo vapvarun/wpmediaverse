@@ -18,14 +18,16 @@ estimated_runtime_minutes: 8
 
 - Site: `$SITE_URL`
 - Explore page: `$SITE_URL/explore-media/`
-- Test user: `journey_subscriber` (autologin via `?autologin=journey_subscriber`); also run key steps logged-out.
+- Test user: `journey_subscriber` (autologin via `?autologin=journey_subscriber`); also run key steps logged-out. Create the fixture idempotently if missing: `wp user get journey_subscriber || wp user create journey_subscriber journey_subscriber@example.test --role=subscriber --user_pass=journey-pass`.
+- **Run as a subscriber or anonymous — NOT as a moderator/admin.** A `moderate_mvs_media` viewer gets the `privacy=any` Explore scope (`templates/explore.php`), which intentionally surfaces *other users' private* items. Those render only inside that moderator's own session, so the broken-image assertion below is only meaningful for a non-moderator viewer. Running this journey as admin produces false "broken image" failures.
+- **Judge images inside the logged-in browser, never by re-fetching `/serve` out of band.** A private item's signed `/serve` URL correctly returns 403 to any request that does not carry the viewer's session cookie. Assert `naturalWidth` on the rendered `<img>` in the Playwright page (which carries the cookie); do not `curl` the `src` without the session.
 
 ## Steps
 
-### 1. Load Explore (desktop)
-- **Action**: `playwright_resize 1280 800` then `playwright_navigate $SITE_URL/explore-media/`
-- **Expect**: grid renders >= 6 cards; every `<img>` has `naturalWidth > 0` (no broken images); no console errors.
-- **On fail**: `templates/explore.php`, `includes/Repository/MediaRepository.php::query`, `includes/Services/SignedUrlService.php`.
+### 1. Load Explore (desktop, as subscriber)
+- **Action**: `playwright_resize 1280 800` then `playwright_navigate $SITE_URL/explore-media/?autologin=journey_subscriber`
+- **Expect**: grid renders >= 6 cards; every rendered `<img>` (evaluated in the page) has `naturalWidth > 0` (no broken images); no console errors. The subscriber's `privacy=visible` scope shows public + members + own only, so no un-viewable private items appear.
+- **On fail**: `templates/explore.php`, `includes/Repository/MediaRepository.php::query`, `includes/Services/SignedUrlService.php`. (If a single private item shows broken, confirm the run is NOT as a moderator — see Setup.)
 
 ### 2. Search / filter
 - **Action**: type a known title fragment in the Explore search box; click a category/type filter tab.
