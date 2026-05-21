@@ -1076,6 +1076,20 @@ class Plugin {
 			)
 		);
 
+		// Dismissible callouts (logged-out CTA banner, profile prompt). No data
+		// or strings — pure localStorage hide-and-remember. Templates that emit
+		// a dismissible enqueue this handle in place of an inline snippet.
+		wp_register_script(
+			'mvs-dismissible',
+			MVS_PLUGIN_URL . 'assets/js/frontend/dismissible.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+
 		// BP-integration script — wires up per-item delete/edit actions on
 		// owner-visible grid cards. Declares `mvs-lucide` as a dep so the
 		// `<i data-lucide="trash-2">` icons we emit on action buttons are
