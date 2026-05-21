@@ -209,26 +209,18 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 	}
 
 	protected function extra_upload_form_fields(): string {
-		// Group ID hidden input is consumed by extra_upload_formdata_appends
-		// rather than a form field, since the upload IIFE builds FormData
-		// programmatically. Returning empty here is intentional.
+		// The group_id is sent as an extra FormData field (see
+		// extra_upload_fields()), not a hidden input, since the uploader builds
+		// FormData programmatically. Returning empty here is intentional.
 		return '';
 	}
 
-	protected function extra_upload_js_vars(): string {
+	protected function extra_upload_fields(): array {
 		$group = groups_get_current_group();
 		if ( ! $group ) {
-			return '';
+			return array();
 		}
-		return 'var groupId = ' . (int) $group->id . ';';
-	}
-
-	protected function extra_upload_formdata_appends(): string {
-		$group = groups_get_current_group();
-		if ( ! $group ) {
-			return '';
-		}
-		return "fd.append('group_id', groupId);";
+		return array( 'group_id' => (int) $group->id );
 	}
 
 	/**

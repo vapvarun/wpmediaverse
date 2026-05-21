@@ -121,17 +121,13 @@ abstract class BaseBPTabIntegration {
 	abstract protected function extra_upload_form_fields(): string;
 
 	/**
-	 * Extra `var foo = ...;` JS lines to inject into the upload IIFE.
-	 * Group declares `var groupId = N;` and the FormData append picks
-	 * it up via the conditional `extra_upload_formdata_appends()`.
+	 * Extra fields appended to each media-upload FormData. Profile returns an
+	 * empty array; group returns `[ 'group_id' => N ]`. Localized to JS and
+	 * appended client-side, so no JS is injected from PHP.
+	 *
+	 * @return array<string, scalar>
 	 */
-	abstract protected function extra_upload_js_vars(): string;
-
-	/**
-	 * Extra `formData.append(...)` calls injected into the upload IIFE
-	 * (after the `fd.append('file', ...)`). Group appends `group_id`.
-	 */
-	abstract protected function extra_upload_formdata_appends(): string;
+	abstract protected function extra_upload_fields(): array;
 
 	/**
 	 * Render any tab navigation BEFORE the main content. Group renders
@@ -271,18 +267,14 @@ abstract class BaseBPTabIntegration {
 	}
 
 	/**
-	 * Render the "Upload Media" button + dropzone form + inline JS uploader.
+	 * Render the "Upload Media" button + dropzone form.
 	 *
-	 * The IIFE is identical between profile + group except for two extra
-	 * hooks supplied by subclasses: extra_upload_js_vars() (e.g.
-	 * `var groupId = N;`) and extra_upload_formdata_appends() (e.g.
-	 * `fd.append('group_id', groupId);`).
+	 * The behavior lives in assets/js/frontend/bp-tab-upload.js. Context-specific
+	 * FormData fields (e.g. the group's `group_id`) come from the subclass via
+	 * extra_upload_fields() and are localized to JS, not injected as inline JS.
 	 */
 	protected function render_upload_form(): void {
-		$rest_url   = esc_url_raw( rest_url( 'mvs/v1/' ) );
-		$nonce      = wp_create_nonce( 'wp_rest' );
-		$extra_vars = $this->extra_upload_js_vars();
-		$extra_fd   = $this->extra_upload_formdata_appends();
+		$this->enqueue_upload_assets();
 		?>
 		<div class="mvs-bp-profile-actions">
 			<button type="button" id="mvs-bp-upload-btn" class="mvs-btn">
@@ -303,117 +295,39 @@ abstract class BaseBPTabIntegration {
 			</div>
 			<?php echo $this->extra_upload_form_fields(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- subclass returns escaped HTML ?>
 		</div>
-		<script>
-		(function(){
-			var restUrl = '<?php echo esc_js( $rest_url ); ?>';
-			var nonce = '<?php echo esc_js( $nonce ); ?>';
-			<?php echo $extra_vars; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- subclass returns sanitized JS ?>
-			var uploadBtn = document.getElementById('mvs-bp-upload-btn');
-			var uploadWrap = document.getElementById('mvs-bp-upload-wrap');
-			var dropzone = document.getElementById('mvs-bp-dropzone');
-			var fileInput = document.getElementById('mvs-bp-file-input');
-			var statusEl = document.getElementById('mvs-bp-upload-status');
-			var previewEl = document.getElementById('mvs-bp-upload-preview');
-			var cancelBtn = document.getElementById('mvs-bp-upload-cancel');
-
-			uploadBtn.addEventListener('click', function() {
-				uploadWrap.style.display = 'block';
-				uploadBtn.style.display = 'none';
-			});
-			cancelBtn.addEventListener('click', function() {
-				uploadWrap.style.display = 'none';
-				uploadBtn.style.display = '';
-				previewEl.textContent = '';
-				statusEl.style.display = 'none';
-			});
-
-			var clicking = false;
-			dropzone.addEventListener('click', function(e) {
-				e.preventDefault();
-				e.stopPropagation();
-				if (clicking) return;
-				clicking = true;
-				fileInput.click();
-				setTimeout(function() { clicking = false; }, 100);
-			});
-			dropzone.addEventListener('dragover', function(e) {
-				e.preventDefault();
-				dropzone.classList.add('mvs-bp-dropzone--active');
-			});
-			dropzone.addEventListener('dragleave', function() {
-				dropzone.classList.remove('mvs-bp-dropzone--active');
-			});
-			dropzone.addEventListener('drop', function(e) {
-				e.preventDefault();
-				dropzone.classList.remove('mvs-bp-dropzone--active');
-				handleFiles(Array.from(e.dataTransfer.files));
-			});
-			fileInput.addEventListener('change', function() {
-				handleFiles(Array.from(fileInput.files));
-				fileInput.value = '';
-			});
-
-			function handleFiles(files) {
-				if (!files.length) return;
-				files.forEach(function(file) {
-					if (!file.type.match(/^image\//)) return;
-					var reader = new FileReader();
-					reader.onload = function(e) {
-						var thumb = document.createElement('div');
-						thumb.className = 'mvs-bp-upload-thumb';
-						var img = document.createElement('img');
-						img.src = e.target.result;
-						img.alt = file.name;
-						var name = document.createElement('span');
-						name.className = 'mvs-bp-upload-thumb-name';
-						name.textContent = file.name;
-						thumb.appendChild(img);
-						thumb.appendChild(name);
-						previewEl.appendChild(thumb);
-					};
-					reader.readAsDataURL(file);
-				});
-				uploadFiles(files);
-			}
-
-			function uploadFiles(files) {
-				statusEl.style.display = 'block';
-				var total = files.length, done = 0, failed = 0;
-				statusEl.textContent = 'Uploading 1 of ' + total + '...';
-				statusEl.className = 'mvs-bp-upload-status';
-
-				function next() {
-					if (done >= total) {
-						var uploaded = total - failed;
-						statusEl.textContent = uploaded + ' file(s) uploaded!';
-						statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
-						setTimeout(function() { window.location.reload(); }, 800);
-						return;
-					}
-					var fd = new FormData();
-					fd.append('file', files[done]);
-					<?php echo $extra_fd; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- subclass returns sanitized JS ?>
-					fetch(restUrl + 'media', {
-						method: 'POST',
-						headers: { 'X-WP-Nonce': nonce },
-						credentials: 'same-origin',
-						body: fd
-					}).then(function(r) {
-						if (!r.ok) failed++;
-						done++;
-						if (done < total) statusEl.textContent = 'Uploading ' + (done + 1) + ' of ' + total + '...';
-						next();
-					}).catch(function() {
-						failed++;
-						done++;
-						next();
-					});
-				}
-				next();
-			}
-		})();
-		</script>
 		<?php
+	}
+
+	/**
+	 * Enqueue + localize the shared BP tab uploader script. Idempotent (the
+	 * handle dedupes), so calling it from both upload renderers is safe.
+	 */
+	protected function enqueue_upload_assets(): void {
+		wp_enqueue_script(
+			'mvs-bp-tab-upload',
+			MVS_PLUGIN_URL . 'assets/js/frontend/bp-tab-upload.js',
+			array(),
+			MVS_VERSION,
+			array( 'in_footer' => true )
+		);
+		wp_localize_script(
+			'mvs-bp-tab-upload',
+			'mvsBpUpload',
+			array(
+				'restUrl'     => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'       => wp_create_nonce( 'wp_rest' ),
+				'extraFields' => $this->extra_upload_fields(),
+				'i18n'        => array(
+					/* translators: 1: current file number, 2: total files. */
+					'uploading'     => __( 'Uploading %1$d of %2$d...', 'wpmediaverse' ),
+					/* translators: %d: number of files. */
+					'uploaded'      => __( '%d file(s) uploaded!', 'wpmediaverse' ),
+					'addingToAlbum' => __( 'Adding to album...', 'wpmediaverse' ),
+					/* translators: %d: number of files. */
+					'addedToAlbum'  => __( '%d file(s) added to album!', 'wpmediaverse' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -608,19 +522,16 @@ abstract class BaseBPTabIntegration {
 	}
 
 	/**
-	 * Render the album-upload "Add Media" button + hidden dropzone + JS.
+	 * Render the album-upload "Add Media" button + hidden dropzone.
 	 *
-	 * The IIFE is identical between profile + group except for the
-	 * `extra_upload_js_vars()` (group declares `var groupId = N`) and
-	 * `extra_upload_formdata_appends()` (group appends `group_id`).
+	 * The behavior lives in assets/js/frontend/bp-tab-upload.js, which reads the
+	 * album id from the wrap's data-album-id attribute. Context-specific upload
+	 * fields come from extra_upload_fields() (localized, not inline JS).
 	 *
 	 * @param int $album_id Album CPT ID.
 	 */
 	protected function render_album_upload_form( int $album_id ): void {
-		$rest_url   = esc_url_raw( rest_url( 'mvs/v1/' ) );
-		$nonce      = wp_create_nonce( 'wp_rest' );
-		$extra_vars = $this->extra_upload_js_vars();
-		$extra_fd   = $this->extra_upload_formdata_appends();
+		$this->enqueue_upload_assets();
 
 		echo '<div class="mvs-bp-profile-actions">';
 		echo '<button type="button" id="mvs-album-upload-btn" class="mvs-btn">';
@@ -628,7 +539,7 @@ abstract class BaseBPTabIntegration {
 		echo '</button>';
 		echo '</div>';
 
-		echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;">';
+		echo '<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;" data-album-id="' . (int) $album_id . '">';
 		echo '<input type="file" multiple accept="image/*,video/*,audio/*" id="mvs-album-file-input" style="display:none" />';
 		echo '<div class="mvs-bp-dropzone" id="mvs-album-dropzone">';
 		echo '<i data-lucide="upload-cloud" aria-hidden="true"></i>';
@@ -640,114 +551,6 @@ abstract class BaseBPTabIntegration {
 		echo '<button type="button" id="mvs-album-upload-cancel" class="mvs-btn mvs-btn-secondary">' . esc_html__( 'Cancel', 'wpmediaverse' ) . '</button>';
 		echo '</div>';
 		echo '</div>';
-		?>
-		<script>
-		(function(){
-			var albumId = <?php echo (int) $album_id; ?>;
-			var restUrl = '<?php echo esc_js( $rest_url ); ?>';
-			var nonce = '<?php echo esc_js( $nonce ); ?>';
-			<?php echo $extra_vars; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- subclass returns sanitized JS ?>
-			var uploadBtn = document.getElementById('mvs-album-upload-btn');
-			var uploadWrap = document.getElementById('mvs-album-upload-wrap');
-			var dropzone = document.getElementById('mvs-album-dropzone');
-			var fileInput = document.getElementById('mvs-album-file-input');
-			var statusEl = document.getElementById('mvs-album-upload-status');
-			var previewEl = document.getElementById('mvs-album-upload-preview');
-			var cancelBtn = document.getElementById('mvs-album-upload-cancel');
-
-			uploadBtn.addEventListener('click', function() {
-				uploadWrap.style.display = 'block';
-				uploadBtn.style.display = 'none';
-			});
-			cancelBtn.addEventListener('click', function() {
-				uploadWrap.style.display = 'none';
-				uploadBtn.style.display = '';
-				previewEl.textContent = '';
-				statusEl.style.display = 'none';
-			});
-
-			var clicking = false;
-			dropzone.addEventListener('click', function(e) {
-				e.preventDefault(); e.stopPropagation();
-				if (clicking) return;
-				clicking = true;
-				fileInput.click();
-				setTimeout(function() { clicking = false; }, 100);
-			});
-			dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('mvs-bp-dropzone--active'); });
-			dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('mvs-bp-dropzone--active'); });
-			dropzone.addEventListener('drop', function(e) {
-				e.preventDefault(); dropzone.classList.remove('mvs-bp-dropzone--active');
-				handleFiles(Array.from(e.dataTransfer.files));
-			});
-			fileInput.addEventListener('change', function() {
-				handleFiles(Array.from(fileInput.files));
-				fileInput.value = '';
-			});
-
-			function handleFiles(files) {
-				if (!files.length) return;
-				files.forEach(function(file) {
-					if (!file.type.match(/^image\//)) return;
-					var reader = new FileReader();
-					reader.onload = function(e) {
-						var thumb = document.createElement('div');
-						thumb.className = 'mvs-bp-upload-thumb';
-						var img = document.createElement('img');
-						img.src = e.target.result;
-						thumb.appendChild(img);
-						previewEl.appendChild(thumb);
-					};
-					reader.readAsDataURL(file);
-				});
-				uploadAndAddToAlbum(files);
-			}
-
-			function uploadAndAddToAlbum(files) {
-				statusEl.style.display = 'block';
-				var total = files.length, done = 0;
-				var uploadedIds = [];
-				statusEl.textContent = 'Uploading 1 of ' + total + '...';
-				statusEl.className = 'mvs-bp-upload-status';
-
-				function next() {
-					if (done >= total) {
-						if (uploadedIds.length) {
-							statusEl.textContent = 'Adding to album...';
-							fetch(restUrl + 'albums/' + albumId + '/items', {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-								credentials: 'same-origin',
-								body: JSON.stringify({ media_ids: uploadedIds })
-							}).then(function() {
-								statusEl.textContent = uploadedIds.length + ' file(s) added to album!';
-								statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
-								setTimeout(function() { window.location.reload(); }, 800);
-							});
-						}
-						return;
-					}
-					var fd = new FormData();
-					fd.append('file', files[done]);
-					<?php echo $extra_fd; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- subclass returns sanitized JS ?>
-					fetch(restUrl + 'media', {
-						method: 'POST',
-						headers: { 'X-WP-Nonce': nonce },
-						credentials: 'same-origin',
-						body: fd
-					}).then(function(r) { return r.json(); })
-					.then(function(data) {
-						if (data.id) uploadedIds.push(data.id);
-						done++;
-						if (done < total) statusEl.textContent = 'Uploading ' + (done + 1) + ' of ' + total + '...';
-						next();
-					}).catch(function() { done++; next(); });
-				}
-				next();
-			}
-		})();
-		</script>
-		<?php
 	}
 
 	/**

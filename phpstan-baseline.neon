@@ -260,6 +260,11 @@ parameters:
 			path: includes/Core/TemplateLoader.php
 
 		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Integrations/BuddyPress/BaseBPTabIntegration.php
+
+		-
 			message: "#^Access to an undefined property object\\:\\:\\$component\\.$#"
 			count: 4
 			path: includes/Integrations/BuddyPress/ActivityContentIntegration.php
@@ -306,7 +311,7 @@ parameters:
 
 		-
 			message: "#^Function groups_get_current_group not found\\.$#"
-			count: 9
+			count: 8
 			path: includes/Integrations/BuddyPress/GroupTabIntegration.php
 
 		-
