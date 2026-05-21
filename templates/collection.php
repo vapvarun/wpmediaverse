@@ -108,7 +108,7 @@ do_action( 'mvs_before_content' );
 			<!-- Search within collection -->
 			<?php if ( ! empty( $items ) ) : ?>
 			<div class="mvs-explore-search mvs-collection-search">
-				<form onsubmit="return false;">
+				<form class="mvs-collection-search-form">
 					<input type="text" class="mvs-collection-search-input" placeholder="<?php esc_attr_e( 'Search in this collection...', 'wpmediaverse' ); ?>" />
 					<button type="button" class="mvs-collection-search-btn"><?php esc_html_e( 'Search', 'wpmediaverse' ); ?></button>
 				</form>

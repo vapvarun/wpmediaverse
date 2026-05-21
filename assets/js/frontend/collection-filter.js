@@ -30,4 +30,14 @@
 	if ( btn ) {
 		btn.addEventListener( 'click', filterItems );
 	}
+
+	// The search is client-side only; block the form from navigating on Enter
+	// (replaces the inline onsubmit="return false").
+	var form = input.closest( 'form' );
+	if ( form ) {
+		form.addEventListener( 'submit', function ( e ) {
+			e.preventDefault();
+			filterItems();
+		} );
+	}
 } )();
