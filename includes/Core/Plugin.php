@@ -1037,6 +1037,31 @@ class Plugin {
 			)
 		);
 
+		// Profile actions (Follow toggle + Message button). Shared by the
+		// profile templates in place of the inline partials/profile-actions-js.
+		// The follow button carries its own data-* config; only the toggle
+		// labels are localized here.
+		wp_register_script(
+			'mvs-profile-actions',
+			MVS_PLUGIN_URL . 'assets/js/frontend/profile-actions.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			'mvs-profile-actions',
+			'mvsProfileActions',
+			array(
+				'i18n' => array(
+					'following' => __( 'Following', 'wpmediaverse' ),
+					'follow'    => __( 'Follow', 'wpmediaverse' ),
+				),
+			)
+		);
+
 		// BP-integration script — wires up per-item delete/edit actions on
 		// owner-visible grid cards. Declares `mvs-lucide` as a dep so the
 		// `<i data-lucide="trash-2">` icons we emit on action buttons are
