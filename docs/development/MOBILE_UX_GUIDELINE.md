@@ -1,12 +1,12 @@
 # WPMediaVerse Mobile UX Guideline
 
-> **Status:** v1 — long-term design contract for every WPMediaVerse-owned frontend surface.
+> **Status:** v1 - long-term design contract for every WPMediaVerse-owned frontend surface.
 > **Owners:** anyone touching CSS, templates, blocks, or REST-rendered HTML.
 > **Audience:** plugin contributors and Pro extension authors.
 >
 > Every rule in this doc is **enforceable by default**. New PRs must comply on
 > mobile (390 × 844) before they're allowed to land. Use the existing token
-> system in `frontend.css` and `theme.json` — no one-off hex colors, no magic
+> system in `frontend.css` and `theme.json` - no one-off hex colors, no magic
 > pixel values, no per-page breakpoints.
 
 ---
@@ -14,7 +14,7 @@
 ## 1. Why this exists
 
 WPMediaVerse ships a media-rich social platform that needs to feel **native-app
-quality** on phones. The reference bar is iOS Photos / Instagram / Threads —
+quality** on phones. The reference bar is iOS Photos / Instagram / Threads -
 fluid layouts, 44×44 touch targets, predictable back navigation, no horizontal
 scroll, no overlapping FABs.
 
@@ -47,19 +47,19 @@ All sizing, color, and spacing decisions reference the existing token system.
 
 ```css
 :root {
-    /* Touch target floor — Apple HIG + WCAG 2.5.5 */
+    /* Touch target floor - Apple HIG + WCAG 2.5.5 */
     --mvs-touch-min: 44px;
 
     /* Spacing scale (mirror theme.json) */
     --mvs-space-1: 0.25rem;  /*  4px */
     --mvs-space-2: 0.5rem;   /*  8px */
-    --mvs-space-3: 1rem;     /* 16px — base gutter */
+    --mvs-space-3: 1rem;     /* 16px - base gutter */
     --mvs-space-4: 1.5rem;   /* 24px */
     --mvs-space-5: 2rem;     /* 32px */
     --mvs-space-6: 3rem;     /* 48px */
     --mvs-space-7: 4rem;     /* 64px */
 
-    /* Z-index layers — never use bare z-index numbers */
+    /* Z-index layers - never use bare z-index numbers */
     --mvs-z-base: 1;
     --mvs-z-sticky: 50;
     --mvs-z-fab: 100;
@@ -88,7 +88,7 @@ WPMediaVerse uses **two breakpoints, not three**:
 | Range | Audience | Layout posture |
 |---|---|---|
 | 0 – 767px | phones | single column, full-bleed media, icon-only dense rows |
-| 768px – 1023px | tablets / small laptops | hybrid — same as mobile but larger touch area |
+| 768px – 1023px | tablets / small laptops | hybrid - same as mobile but larger touch area |
 | 1024px+ | desktop | multi-column, full text labels |
 
 Media queries must use the tokens **as reference** (CSS doesn't accept custom
@@ -105,11 +105,11 @@ add a `/* var(--mvs-bp-tablet) */` comment for grep-ability):
 ```
 
 **Mobile-first only.** Never write desktop rules and override them with
-`max-width` queries — that defeats the touch-first default.
+`max-width` queries - that defeats the touch-first default.
 
 ---
 
-## 3. Touch targets — 44×44 minimum, no exceptions
+## 3. Touch targets - 44×44 minimum, no exceptions
 
 **Apple HIG** says 44pt × 44pt. **Google Material** says 48dp × 48dp. **WCAG
 2.5.5 (AAA)** says 44px CSS. WPMediaVerse adopts **44×44 as the floor** for
@@ -144,7 +144,7 @@ every interactive element on mobile.
 ### 3.3 Compact-text exemption
 
 When a control is text-only and inside a flowing list (e.g. inline tag pills,
-breadcrumb separators), the **44px floor still applies to the hit area** —
+breadcrumb separators), the **44px floor still applies to the hit area** -
 extend padding rather than enlarging the visible chip.
 
 ```css
@@ -159,19 +159,19 @@ extend padding rather than enlarging the visible chip.
 
 ---
 
-## 4. Button density — icon-only with tooltips on mobile
+## 4. Button density - icon-only with tooltips on mobile
 
 **The pain:** dense action rows (Share / Edit / Delete / Save / Report …) wrap
 to two lines or push the layout horizontally on phones.
 
 **The fix:** at `< 768px`, switch buttons in dense rows to **icon-only with an
-accessible tooltip + `aria-label`**. We already ship Lucide icons — wire them
+accessible tooltip + `aria-label`**. We already ship Lucide icons - wire them
 up here so the pattern is consistent across every surface.
 
 ### 4.1 The rule
 
 ```html
-<!-- Universal pattern — works on all viewports -->
+<!-- Universal pattern - works on all viewports -->
 <button class="mvs-btn mvs-btn--icon-collapse"
         aria-label="Share media"
         data-mvs-tooltip="Share">
@@ -241,23 +241,23 @@ Use **CSS-only tooltips** that show on `:hover` (desktop) and `:focus-visible`
 | Page | Selector | Current density | Recommended icons |
 |---|---|---|---|
 | Single media action row | `.mvs-social-actions` | Share / Edit / Delete | `share-2` / `pencil` / `trash-2` |
-| Reactions row | `.mvs-reactions` | 6 emoji chips | already icons — no change |
+| Reactions row | `.mvs-reactions` | 6 emoji chips | already icons - no change |
 | Album owner actions | `.mvs-collection-card-actions` | Edit Album / Delete Album | `pencil` / `trash-2` |
 | Lightbox top bar | `.mvs-lightbox-top` | close, share, fav, comment, more | `x` / `share-2` / `heart` / `message-circle` / `more-vertical` |
-| Profile edit | `.mvs-profile-edit-actions` | Save / Cancel | keep text — only 2 buttons, no overflow risk |
+| Profile edit | `.mvs-profile-edit-actions` | Save / Cancel | keep text - only 2 buttons, no overflow risk |
 
 **Rule of thumb:** if the row has **3+ destructive/secondary actions**, collapse
 to icons on `< 768px`. Two-button rows can stay text.
 
 ---
 
-## 5. Tab patterns — overflow rules
+## 5. Tab patterns - overflow rules
 
 ### 5.1 The pain (audit finding)
 
 `.mvs-dashboard-tabs` on `/my-media/` has **8 tabs** (Media, Albums, Favorites,
 Collections, Connectors, Challenges, Battles, Tournaments). Container is
-`flex-wrap: nowrap; overflow-x: auto`, so it scrolls — but with no scrollbar
+`flex-wrap: nowrap; overflow-x: auto`, so it scrolls - but with no scrollbar
 on touch, no edge-fade, and no auto-scroll-to-active, **users don't know more
 tabs exist**. At 390px viewport, only 3 tabs are visible (981px content
 overflowing 345px container).
@@ -280,7 +280,7 @@ Every horizontally-scrolling tab strip on mobile must:
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    /* Edge-fade — pseudo-mask shows scrollable affordance */
+    /* Edge-fade - pseudo-mask shows scrollable affordance */
     mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
     -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
 }
@@ -298,7 +298,7 @@ Every horizontally-scrolling tab strip on mobile must:
 ```
 
 ```js
-// One-time auto-scroll on load — runs in dashboard view.js
+// One-time auto-scroll on load - runs in dashboard view.js
 const strip = document.querySelector('.mvs-tabs-strip');
 const active = strip?.querySelector('.is-active');
 active?.scrollIntoView({ inline: 'center', block: 'nearest' });
@@ -320,7 +320,7 @@ Use **distributed flex** so they fill the row instead of clumping left:
 
 ---
 
-## 6. Navigation — every detail page needs a back affordance
+## 6. Navigation - every detail page needs a back affordance
 
 **The pain (audit finding):** From `/media/edit-profile/` there is no way back
 to `/media/@username/` except the browser back button. Same on single media
@@ -330,7 +330,7 @@ pages, album pages, and single challenge pages.
 
 Every WPMediaVerse-owned **detail / edit page** must render a back affordance
 in the page header that links to the parent route. Browser back is not enough
-on mobile — users come from search results, deep links, push notifications.
+on mobile - users come from search results, deep links, push notifications.
 
 ### 6.2 The component
 
@@ -377,7 +377,7 @@ on mobile — users come from search results, deep links, push notifications.
 }
 
 @media (max-width: 767px) {
-    /* Hide the textual label — keep the chevron only */
+    /* Hide the textual label - keep the chevron only */
     .mvs-back-link__label {
         position: absolute;
         clip: rect(0, 0, 0, 0);
@@ -400,11 +400,11 @@ on mobile — users come from search results, deep links, push notifications.
 | `/media/tournaments/{id}/` | `/media/tournaments/` | "Tournaments" |
 
 Templates must compute the parent URL server-side via a helper:
-`mvs_parent_url( $context )` — added in `Core/TemplateHelpers.php`.
+`mvs_parent_url( $context )` - added in `Core/TemplateHelpers.php`.
 
 ---
 
-## 7. FAB and floating elements — never overlap content
+## 7. FAB and floating elements - never overlap content
 
 **The pain (audit finding):** the chat-FAB on `/media/edit-profile/` overlaps
 the `Display Name` input. On single media, the FAB sits over the action row.
@@ -451,7 +451,7 @@ chat above the upload:
 
 ---
 
-## 8. Card and grid layouts — when to collapse
+## 8. Card and grid layouts - when to collapse
 
 ### 8.1 The rule
 
@@ -460,7 +460,7 @@ chat above the upload:
 | Media grid (`.mvs-grid`) | `repeat(2, 1fr)` | `repeat(auto-fill, minmax(240px, 1fr))` |
 | Profile stats row | flex wrap, full row each line | inline flex |
 | Album items | `repeat(2, 1fr)` square thumbs | `repeat(auto-fill, minmax(180px, 1fr))` |
-| **Battle card** (Pro) | **keep `1fr auto 1fr`** with square photos — never collapse to single column | `1fr auto 1fr` with 4/3 photos |
+| **Battle card** (Pro) | **keep `1fr auto 1fr`** with square photos - never collapse to single column | `1fr auto 1fr` with 4/3 photos |
 | Tournament bracket | horizontal scroll with snap | full SVG |
 | Challenge card | single column | `repeat(auto-fill, minmax(400px, 1fr))` |
 
@@ -469,27 +469,27 @@ chat above the upload:
 The audit revealed that `gamification.css:1247` collapsed `.mvs-battle-matchup-full`
 from `1fr auto 1fr` to `1fr` on `< 640px`, stacking the two contender photos
 vertically. **A battle without a side-by-side comparison stops being a battle**
-— it becomes a feed. Fixed in commit `c0bb8f4`. **Never recreate this pattern**
+- it becomes a feed. Fixed in commit `c0bb8f4`. **Never recreate this pattern**
 for any head-to-head UI.
 
 ---
 
-## 9. Audit findings — concrete inventory
+## 9. Audit findings - concrete inventory
 
 Captured at 390 × 844 (iPhone 13/14 width) on a logged-in admin session.
 
 | # | Route | Selector | Issue | Severity | Rule reference |
 |---|---|---|---|---|---|
 | 1 | `/my-media/` | `.mvs-dashboard-tabs` | 8 tabs, 981px wide, scrolls horizontally with no edge-fade or auto-scroll-to-active. Only 3 of 8 tabs visible. | High | §5.2 |
-| 2 | `/media/{slug}/` | `.mvs-social-actions .mvs-btn--edit` | 52×34 — below 44 touch floor | High | §3.2 |
-| 3 | `/media/{slug}/` | `.mvs-social-actions .mvs-btn--delete` | 70×34 — below 44 touch floor | High | §3.2 |
+| 2 | `/media/{slug}/` | `.mvs-social-actions .mvs-btn--edit` | 52×34 - below 44 touch floor | High | §3.2 |
+| 3 | `/media/{slug}/` | `.mvs-social-actions .mvs-btn--delete` | 70×34 - below 44 touch floor | High | §3.2 |
 | 4 | `/media/{slug}/` | `.mvs-social-bar` | overflows viewport by 2px | Low | mask/overflow |
 | 5 | `/media/edit-profile/` | (no element) | No back-to-profile link anywhere on the page | High | §6 |
 | 6 | `/media/edit-profile/` | `.mvs-fab--chat` | Overlaps `#display-name` input on mobile | Medium | §7 |
 | 7 | `/media/{slug}/` | `.mvs-fab` | Overlaps action row | Medium | §7 |
-| 8 | `/media/battles/` | `.mvs-battle-matchup-full` (≤640px) | ✅ FIXED in `c0bb8f4` — was forcing single-column | n/a | §8.2 |
+| 8 | `/media/battles/` | `.mvs-battle-matchup-full` (≤640px) | ✅ FIXED in `c0bb8f4` - was forcing single-column | n/a | §8.2 |
 | 9 | All detail pages | (no element) | No breadcrumb / back nav between detail and parent route | High | §6 |
-| 10 | `/album/{slug}/` | `.mvs-collection-card-actions` | Edit/Delete buttons — height OK but two text labels could collapse to icons on mobile | Medium | §4.3 |
+| 10 | `/album/{slug}/` | `.mvs-collection-card-actions` | Edit/Delete buttons - height OK but two text labels could collapse to icons on mobile | Medium | §4.3 |
 | 11 | `/media/challenges/` | `.mvs-status--voting-open` badge | Wraps to two lines at 390px (badge text "OPEN FOR SUBMISSIONS") | Low | §10 |
 | 12 | All routes | `.mvs-toast` | Close `×` is ~24×24, below 44 floor | Medium | §3.2 |
 
@@ -595,11 +595,11 @@ so the affordance to dismiss is obvious.
 
 | Requirement | How |
 |---|---|
-| Focus-visible ring on every interactive element | `:focus-visible { outline: 2px solid var(--mvs-primary); outline-offset: 2px; }` — shipped in `frontend.css` |
+| Focus-visible ring on every interactive element | `:focus-visible { outline: 2px solid var(--mvs-primary); outline-offset: 2px; }` - shipped in `frontend.css` |
 | Every icon-only button has `aria-label` | required by `.mvs-btn--icon-collapse` pattern |
 | Tooltips show on `:focus-visible`, not just `:hover` | see §4.2 |
 | Reduced motion | wrap animations in `@media (prefers-reduced-motion: no-preference)` |
-| Color contrast | AA minimum (4.5:1 body, 3:1 large) — use only the token palette |
+| Color contrast | AA minimum (4.5:1 body, 3:1 large) - use only the token palette |
 | Keyboard reach for FAB | `tabindex` order matches visual order; `aria-label="Upload media"` |
 
 ---
@@ -614,7 +614,7 @@ so the affordance to dismiss is obvious.
 - [ ] Every detail page has a back affordance (`.mvs-back-link`)
 - [ ] No FAB overlaps a form input or content button
 - [ ] Active tab in any horizontal strip is auto-scrolled into view
-- [ ] All new colors/sizes/spacing reference tokens — no inline hex/px
+- [ ] All new colors/sizes/spacing reference tokens - no inline hex/px
 - [ ] Tooltips work on `:focus-visible`, not just hover
 - [ ] Tested in dark mode (`html.dark-mode`) and light mode
 ```
@@ -625,15 +625,15 @@ so the affordance to dismiss is obvious.
 
 The audit findings ranked by impact for the next refactor sweep:
 
-1. **High** — §6 back nav (affects every detail page, breaks the navigation model)
-2. **High** — §3 touch target floor (Edit/Delete on single media, toast close)
-3. **High** — §5 dashboard tabs auto-scroll + edge-fade
-4. **Medium** — §7 FAB safe-area padding (overlap on edit-profile, single media)
-5. **Medium** — §4 icon-collapse on action rows
-6. **Low** — §10 badge wrap on `/challenges/`
+1. **High** - §6 back nav (affects every detail page, breaks the navigation model)
+2. **High** - §3 touch target floor (Edit/Delete on single media, toast close)
+3. **High** - §5 dashboard tabs auto-scroll + edge-fade
+4. **Medium** - §7 FAB safe-area padding (overlap on edit-profile, single media)
+5. **Medium** - §4 icon-collapse on action rows
+6. **Low** - §10 badge wrap on `/challenges/`
 
 Each item should be a single commit that touches the **base layer**
-(`frontend.css` and a small set of templates) — never a per-page CSS override.
+(`frontend.css` and a small set of templates) - never a per-page CSS override.
 
 ---
 
@@ -659,7 +659,7 @@ What it checks:
 - **44×44 touch target floor** on every `.mvs-btn`, `.mvs-icon-btn`, `.mvs-tab`,
   `.mvs-action-icon`, `.mvs-fab`, `.mvs-back-link`, `.mvs-toast-close`,
   `.mvs-modal-close`, `.mvs-dashboard-tab`
-- **Page navigation** — every route in the audit table loads without a 4xx/5xx
+- **Page navigation** - every route in the audit table loads without a 4xx/5xx
 
 Skips classes namespaced under common themes (`reign-`, `bp-`, `buddyx-`,
 `astra`) so theme overflows on un-MVS pages don't fail the build.

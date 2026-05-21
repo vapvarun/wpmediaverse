@@ -1,15 +1,15 @@
 # Social Features
 
-> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of WPMediaVerse.
 
 
-React, comment, follow, and share — WPMediaVerse turns your media site into a living community where every photo starts a conversation.
+React, comment, follow, and share - WPMediaVerse turns your media site into a living community where every photo starts a conversation.
 
 ## What You Can Do
 
 - React to any photo or video with emoji reactions (like, love, wow, and more)
 - Comment on media and edit your comment within 15 minutes of posting
-- Follow photographers you love — their new uploads appear in your feed
+- Follow photographers you love - their new uploads appear in your feed
 - Save media to your favorites for quick access later
 - @mention other members in comments to notify them directly
 - Share any public media item to social networks or copy a direct link
@@ -20,7 +20,7 @@ React, comment, follow, and share — WPMediaVerse turns your media site into a 
 ### Following Someone
 
 1. Visit any member's profile page
-2. Click **Follow** — their public uploads now appear in your feed
+2. Click **Follow** - their public uploads now appear in your feed
 3. To stop following, click **Unfollow** on their profile
 4. See everyone you follow under **My Media > Following**
 
@@ -28,7 +28,7 @@ React, comment, follow, and share — WPMediaVerse turns your media site into a 
 
 1. Open any media item
 2. Click the reaction bar below the photo
-3. Choose your reaction — like, love, wow, haha, sad, or angry
+3. Choose your reaction - like, love, wow, haha, sad, or angry
 4. Your reaction is shown instantly. Click the same reaction to remove it
 5. Click a different reaction to change yours
 
@@ -38,7 +38,7 @@ React, comment, follow, and share — WPMediaVerse turns your media site into a 
 
 1. Scroll to the comments section below any media item
 2. Type your comment in the text box and press Enter or click **Post**
-3. To @mention someone, type `@` followed by their username — they receive a notification
+3. To @mention someone, type `@` followed by their username - they receive a notification
 4. To edit your comment, click the pencil icon next to it (available within 15 minutes of posting)
 5. To delete your comment, click the trash icon
 
@@ -53,7 +53,7 @@ React, comment, follow, and share — WPMediaVerse turns your media site into a 
 
 1. Open any public media item
 2. Click **Share** to see options: copy the direct link, or share to social networks
-3. The share link respects the media's privacy — private media returns an error for unauthorized viewers
+3. The share link respects the media's privacy - private media returns an error for unauthorized viewers
 
 ## For Site Owners
 
@@ -143,7 +143,7 @@ do_action( 'mvs_mentions_created', $mentioned_user_ids, $comment_id );
 
 ## Sharing
 
-The `ShareService` provides share URL generation for media items. Shareable links respect the media's privacy level — private media returns a 403 when accessed via a share link by an unauthorized user.
+The `ShareService` provides share URL generation for media items. Shareable links respect the media's privacy level - private media returns a 403 when accessed via a share link by an unauthorized user.
 
 ## Reports
 

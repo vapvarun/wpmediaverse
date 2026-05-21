@@ -1,6 +1,6 @@
 # Video Analytics
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -52,7 +52,7 @@ Go to **Media > Settings > Analytics** to change the retention period. A daily W
 
 ### POST /media/{id}/analytics/event
 
-Record a single play event. Authentication is not required — anonymous events are accepted.
+Record a single play event. Authentication is not required - anonymous events are accepted.
 
 **Body:**
 

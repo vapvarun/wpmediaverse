@@ -4,7 +4,7 @@ Editorial-grade marketing assets for **WPMediaVerse · Pro** generated from the 
 
 ## Direction
 
-**Editorial Tech** — deep navy ink (`#0A0E1A`) + warm paper (`#F5F0E6`) + electric blue (`#2B4DF3`) + coral (`#FF6B3D`).
+**Editorial Tech** - deep navy ink (`#0A0E1A`) + warm paper (`#F5F0E6`) + electric blue (`#2B4DF3`) + coral (`#FF6B3D`).
 Typography: **Fraunces** (display, variable serif) + **Manrope** (body) + **JetBrains Mono** (labels).
 
 ## Assets
@@ -18,12 +18,12 @@ Typography: **Fraunces** (display, variable serif) + **Manrope** (body) + **JetB
 ### `feature-cards/`
 | File | Dimensions | Feature |
 |---|---|---|
-| `card-01-my-media.png` | 1200×900 | My Media dashboard — "Every upload, one glance." |
-| `card-02-compete.png` | 1200×900 | Compete hub — "Challenges, brackets, winners." |
-| `card-03-albums.png` | 1200×900 | Albums & collections — "Galleries built for every story." |
-| `card-04-creators.png` | 1200×900 | Creator community — "Follow every creator." |
-| `card-05-media.png` | 1200×900 | Media detail + comments — "Reactions, comments, credit." |
-| `card-06-gamification.png` | 1200×900 | Gamification hub — "Earn it as you go." |
+| `card-01-my-media.png` | 1200×900 | My Media dashboard - "Every upload, one glance." |
+| `card-02-compete.png` | 1200×900 | Compete hub - "Challenges, brackets, winners." |
+| `card-03-albums.png` | 1200×900 | Albums & collections - "Galleries built for every story." |
+| `card-04-creators.png` | 1200×900 | Creator community - "Follow every creator." |
+| `card-05-media.png` | 1200×900 | Media detail + comments - "Reactions, comments, credit." |
+| `card-06-gamification.png` | 1200×900 | Gamification hub - "Earn it as you go." |
 | `compare-tech-1600x900.png` | 1600×900 | Tech comparison: MediaVerse vs SaaS vs legacy WP plugins |
 
 ### `social/`
@@ -51,9 +51,9 @@ Edit + re-screenshot to update any asset.
 
 ## Copy positioning
 
-**Brand**: WPMediaVerse · Pro — A Wbcom Designs product
+**Brand**: WPMediaVerse · Pro - A Wbcom Designs product
 **Headline**: "Your community, their lens."
-**Lede**: "A full social media platform for WordPress creators — albums, collections, photo challenges, tournaments, gamification, direct messages and more, all running on the stack you already own."
+**Lede**: "A full social media platform for WordPress creators - albums, collections, photo challenges, tournaments, gamification, direct messages and more, all running on the stack you already own."
 
 **Stats (hero caption)**:
 - Albums: 8

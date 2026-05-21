@@ -1,16 +1,16 @@
 # Collections
 
-> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of WPMediaVerse.
 
 
-Save and curate media from anyone on your site into personal boards — like Pinterest boards, but for your community's photos and videos.
+Save and curate media from anyone on your site into personal boards - like Pinterest boards, but for your community's photos and videos.
 
 ## What You Can Do
 
 - Save any public media item to a personal collection with one click
 - Create multiple collections for different themes or moods (e.g., "Travel Inspiration", "Black and White")
 - Curate manually by hand-picking individual photos, or let smart rules auto-fill a collection
-- Smart collections stay fresh automatically — tag a rule once and the collection updates itself
+- Smart collections stay fresh automatically - tag a rule once and the collection updates itself
 - Share collections publicly or keep them private
 - Browse your saved collections from your media dashboard
 
@@ -19,7 +19,7 @@ Save and curate media from anyone on your site into personal boards — like Pin
 1. When you find a photo you love, click the **Save** button (bookmark icon) below it
 2. Choose an existing collection from the dropdown, or click **New Collection** to create one
 3. Give your new collection a name and choose a privacy level, then click **Create**
-4. The photo is added instantly — you'll see the bookmark icon turn solid to confirm
+4. The photo is added instantly - you'll see the bookmark icon turn solid to confirm
 5. Find all your collections under **My Media > Collections** in your dashboard
 6. To manage a collection, open it and click **Edit** to rename it, reorder items, or remove ones you no longer want
 7. To share a collection, copy the link from the collection page
@@ -30,7 +30,7 @@ Save and curate media from anyone on your site into personal boards — like Pin
 
 1. Collections are available to all users with upload access once WPMediaVerse is activated
 2. To embed a collection on any page, use `[mvs_collection id="456"]` or the **WPMediaVerse: Collection Viewer** block
-3. Smart collections are especially useful for curated showcase pages — create a smart collection filtered by a tag and embed it on your homepage
+3. Smart collections are especially useful for curated showcase pages - create a smart collection filtered by a tag and embed it on your homepage
 4. Manage all collections from **Media > Collections** in wp-admin
 5. Use the **Collection Settings** meta box on any collection post to switch between manual and smart mode and configure smart rules
 

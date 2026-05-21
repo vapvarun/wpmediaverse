@@ -13,65 +13,65 @@ plugin bootstrap. Every subsystem is instantiated in the order below. Items
 marked *conditional* are gated by a per-feature `get_option()` toggle.
 
 ```
- 1. load_plugin_textdomain   — bundled .mo files in languages/
- 2. Migrator::run()          — runs DB migrations (idempotent, version-checked)
- 3. LicenseManager           — EDD Software Licensing integration
- 4. QuotaService             — enforces upload quotas, tracks usage
- 5. QuotaController          — REST: /mvs-pro/v1/me/quota, /packages, /credits
- 6. UsageWidget              — frontend usage meter
- 7. Membership Adapters      — MemberPressAdapter, PaidMembershipsProAdapter,
+ 1. load_plugin_textdomain   - bundled .mo files in languages/
+ 2. Migrator::run()          - runs DB migrations (idempotent, version-checked)
+ 3. LicenseManager           - EDD Software Licensing integration
+ 4. QuotaService             - enforces upload quotas, tracks usage
+ 5. QuotaController          - REST: /mvs-pro/v1/me/quota, /packages, /credits
+ 6. UsageWidget              - frontend usage meter
+ 7. Membership Adapters      - MemberPressAdapter, PaidMembershipsProAdapter,
                                WooCommerceAdapter (auto-assign packages on
                                membership change)
- 8. LayoutManager            — Instagram, Dribbble, Flickr, Pinterest modes
- 9. PrivacyUIService         — advanced per-item privacy (public/members/friends/
+ 8. LayoutManager            - Instagram, Dribbble, Flickr, Pinterest modes
+ 9. PrivacyUIService         - advanced per-item privacy (public/members/friends/
                                group/private/custom)
-10. PrivacyController        — REST: /media/{id}/privacy, /media/bulk-privacy,
+10. PrivacyController        - REST: /media/{id}/privacy, /media/bulk-privacy,
                                /privacy/presets
-11. ChapterService           — video chapter markers
-12. ResumeService            — per-user resume-playback positions
-13. VideoController          — REST: /media/{id}/chapters, /media/{id}/resume
-14. TranscriptionService     — AI-powered caption generation (Whisper)
+11. ChapterService           - video chapter markers
+12. ResumeService            - per-user resume-playback positions
+13. VideoController          - REST: /media/{id}/chapters, /media/{id}/resume
+14. TranscriptionService     - AI-powered caption generation (Whisper)
     + AS hook:               mvs_pro_transcribe_media
-15. CaptionController        — REST: /media/{id}/captions, /captions/generate,
+15. CaptionController        - REST: /media/{id}/captions, /captions/generate,
                                /captions/status
-16. TranscodeService         — FFmpeg multi-preset transcoding pipeline
+16. TranscodeService         - FFmpeg multi-preset transcoding pipeline
     + AS hook:               mvs_pro_transcode_video
     + WP Cron:               mvs_pro_transcode_cleanup (hourly, remove >24h temp)
-17. TranscodeController      — REST: /media/{id}/transcode(s), /transcode/status,
+17. TranscodeController      - REST: /media/{id}/transcode(s), /transcode/status,
                                /transcode/config
-18. Storage driver filter    — mvs_storage_driver (S3, Backblaze B2, etc.)
-19. Watermark filter         — mvs_watermark_enabled + mvs_generate_watermark
-20. AI providers action      — mvs_ai_providers
-21. ConnectionTester         — admin AJAX for testing S3/API connections
-22. AnalyticsService         — play event recording, heatmaps, retention curves
+18. Storage driver filter    - mvs_storage_driver (S3, Backblaze B2, etc.)
+19. Watermark filter         - mvs_watermark_enabled + mvs_generate_watermark
+20. AI providers action      - mvs_ai_providers
+21. ConnectionTester         - admin AJAX for testing S3/API connections
+22. AnalyticsService         - play event recording, heatmaps, retention curves
     + WP Cron:               mvs_pro_prune_play_events (daily)
-23. AnalyticsController      — REST: /media/{id}/events, /media/{id}/analytics,
+23. AnalyticsController      - REST: /media/{id}/events, /media/{id}/analytics,
                                /analytics/top, /analytics/overview
-24. BattleService            — (conditional: mvs_battles_enabled)
-    + BattleController       — REST: /battles, /battles/{id}, accept/decline/
+24. BattleService            - (conditional: mvs_battles_enabled)
+    + BattleController       - REST: /battles, /battles/{id}, accept/decline/
                                submit/vote
     + AS recurring:          mvs_resolve_expired_battles (hourly)
-25. ChallengeService         — (conditional: mvs_challenges_enabled)
-    + AutopilotService       — weekly auto-creation from theme pool
+25. ChallengeService         - (conditional: mvs_challenges_enabled)
+    + AutopilotService       - weekly auto-creation from theme pool
       + AS recurring:        mvs_autopilot_create_weekly_challenge (weekly)
-    + ChallengeController    — REST: /challenges, /challenges/{id}, entries, vote,
+    + ChallengeController    - REST: /challenges, /challenges/{id}, entries, vote,
                                results, cancel
     + AS recurring (x3):     mvs_activate_scheduled_challenges,
                              mvs_close_challenge_entries,
                              mvs_finalize_expired_challenges (all hourly)
-26. TournamentService        — (conditional: mvs_tournaments_enabled)
-    + TournamentController   — REST: /tournaments, /tournaments/{id}, register,
+26. TournamentService        - (conditional: mvs_tournaments_enabled)
+    + TournamentController   - REST: /tournaments, /tournaments/{id}, register,
                                bracket, participants, matches/submit, matches/vote
     + AS recurring (x2):     mvs_start_registered_tournaments,
                              mvs_resolve_expired_matches (both hourly)
-27. BoostService             — (conditional: mvs_boosts_enabled)
-    + BoostController        — REST: /boosts (list + create)
+27. BoostService             - (conditional: mvs_boosts_enabled)
+    + BoostController        - REST: /boosts (list + create)
     + AS recurring:          mvs_expire_boosts (hourly)
-28. CompeteSummaryController — REST: /competitions/active-summary (public)
-29. StreakService             — upload streak tracking + milestone XP
-30. Streak badge filter      — mvs_user_display_name (appends streak badge)
-31. Activity types filter    — mvs_activity_types (registers 8 gamification types)
-32. GamificationTemplateLoader — frontend pages: /media/battles/, /media/challenges/,
+28. CompeteSummaryController - REST: /competitions/active-summary (public)
+29. StreakService             - upload streak tracking + milestone XP
+30. Streak badge filter      - mvs_user_display_name (appends streak badge)
+31. Activity types filter    - mvs_activity_types (registers 8 gamification types)
+32. GamificationTemplateLoader - frontend pages: /media/battles/, /media/challenges/,
                                 /media/tournaments/
 33. Admin block (is_admin):
       ProSettings, QuotaPage, MigrationPage, ReportManager,
@@ -80,14 +80,14 @@ marked *conditional* are gated by a per-feature `get_option()` toggle.
       CompetitionsDashboard, ThemeLibrary
     + mvs_moderation_tabs filter (adds User Reports tab)
     + mvs_stats_tabs filter (adds Video Analytics tab)
-34. First-run seed           — seeds default theme pool + creates first weekly
+34. First-run seed           - seeds default theme pool + creates first weekly
                                challenge (once, on activation)
-35. admin_enqueue_scripts    — Pro admin CSS/JS
-36. Submenu reorder          — admin_menu priority 999 for logical grouping
-37. Reserved paths filter    — mvs_reserved_media_paths (reserves /compete/)
-38. Explore banner action    — mvs_before_explore_grid (pinned competition card)
-39. Nav menu filter          — wp_nav_menu_items (injects Compete link)
-40. Dashboard tabs           — mvs_dashboard_tabs + mvs_dashboard_panels (My Media
+35. admin_enqueue_scripts    - Pro admin CSS/JS
+36. Submenu reorder          - admin_menu priority 999 for logical grouping
+37. Reserved paths filter    - mvs_reserved_media_paths (reserves /compete/)
+38. Explore banner action    - mvs_before_explore_grid (pinned competition card)
+39. Nav menu filter          - wp_nav_menu_items (injects Compete link)
+40. Dashboard tabs           - mvs_dashboard_tabs + mvs_dashboard_panels (My Media
                                compete panels)
 ```
 

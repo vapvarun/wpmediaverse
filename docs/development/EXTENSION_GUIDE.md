@@ -57,7 +57,7 @@ Your driver must implement four methods:
 ```php
 add_filter( 'mvs_storage_driver', function( $driver, string $driver_name ) {
     if ( 'my-s3-driver' !== $driver_name ) {
-        return $driver; // Pass through — not our driver.
+        return $driver; // Pass through - not our driver.
     }
     return new MyS3Driver();
 }, 10, 2 );
@@ -144,7 +144,7 @@ class MyMediaExtController extends \WP_REST_Controller {
     }
 }
 
-// Register on rest_api_init — never earlier.
+// Register on rest_api_init - never earlier.
 add_action( 'rest_api_init', function() {
     ( new \MyPlugin\REST\MyMediaExtController() )->register_routes();
 } );
@@ -156,7 +156,7 @@ add_action( 'rest_api_init', function() {
 
 ## 5. Extending Admin UI
 
-### Moderation tabs — `mvs_moderation_tabs`
+### Moderation tabs - `mvs_moderation_tabs`
 
 The Moderation Queue page (`Admin\ModerationQueue`) renders its tabs through `apply_filters( 'mvs_moderation_tabs', $tabs )`. Each tab is an associative array with `id`, `label`, and `callback` keys.
 
@@ -177,7 +177,7 @@ function my_plugin_render_reports_tab(): void {
 }
 ```
 
-### Stats tabs — `mvs_stats_tabs`
+### Stats tabs - `mvs_stats_tabs`
 
 The Stats page (`Admin\StatsPage`) uses the same pattern.
 
@@ -238,7 +238,7 @@ add_action( 'mvs_dashboard_panels', function(): void {
 
 ## 7. Activity & Notification Hooks
 
-### Registering custom activity types — `mvs_activity_types`
+### Registering custom activity types - `mvs_activity_types`
 
 `ActivityService` resolves allowed activity types through `apply_filters( 'mvs_activity_types', self::TYPES )`. Add your own type slug to extend the feed.
 
@@ -255,7 +255,7 @@ Once registered, you can insert activity rows via `ActivityService::record()` us
 
 Hook into these actions to run side-effects (points, notifications, webhooks, etc.) when users interact with media.
 
-**`mvs_reaction_added`** — fires when a reaction is successfully added.
+**`mvs_reaction_added`** - fires when a reaction is successfully added.
 
 ```php
 add_action( 'mvs_reaction_added', function( int $media_id, int $user_id, string $reaction_type ): void {
@@ -264,7 +264,7 @@ add_action( 'mvs_reaction_added', function( int $media_id, int $user_id, string 
 }, 10, 3 );
 ```
 
-**`mvs_favorite_toggled`** — fires when a media item is favorited or un-favorited.
+**`mvs_favorite_toggled`** - fires when a media item is favorited or un-favorited.
 
 ```php
 add_action( 'mvs_favorite_toggled', function( int $media_id, int $user_id, string $action ): void {

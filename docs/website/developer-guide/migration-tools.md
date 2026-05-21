@@ -9,7 +9,7 @@ WPMediaVerse Pro includes WP-CLI commands to import media from three popular Wor
 
 Always run with `--dry-run` first to review what will be imported before committing changes.
 
-> **Updated in 1.2.0:** the **Tools > Migration** admin page is now a generic shell that hosts per-platform cards (rtMedia, MediaPress, BuddyBoss). Each platform owns its own detection, batch-run, dedup, and progress logic via a `WPMediaVersePro\Integrations\<Platform>\MigrationAdmin` class. Two pre-existing detection bugs were fixed in the same pass: the **Imported** count was always `0` regardless of actual progress, and the MediaPress dedup query was running against an undefined `$wpdb`. All three CLI importers (`import-rtmedia`, `import-mediapress`, `import-buddyboss`) extend the new `AbstractBatchImporter` base class — same flag set, same batched-fetch loop, same dedup behaviour.
+> **Updated in 1.2.0:** the **Tools > Migration** admin page is now a generic shell that hosts per-platform cards (rtMedia, MediaPress, BuddyBoss). Each platform owns its own detection, batch-run, dedup, and progress logic via a `WPMediaVersePro\Integrations\<Platform>\MigrationAdmin` class. Two pre-existing detection bugs were fixed in the same pass: the **Imported** count was always `0` regardless of actual progress, and the MediaPress dedup query was running against an undefined `$wpdb`. All three CLI importers (`import-rtmedia`, `import-mediapress`, `import-buddyboss`) extend the new `AbstractBatchImporter` base class - same flag set, same batched-fetch loop, same dedup behaviour.
 
 ---
 
@@ -180,5 +180,5 @@ define( 'WP_DEBUG_LOG', true );
 ## Exit Codes
 
 All import commands follow WP-CLI conventions:
-- **0** — completed (including dry-run)
-- **1** — fatal error (source plugin tables not found, Pro license inactive, etc.)
+- **0** - completed (including dry-run)
+- **1** - fatal error (source plugin tables not found, Pro license inactive, etc.)

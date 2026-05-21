@@ -1,10 +1,10 @@
-# Cloud storage — verification plan + known gaps
+# Cloud storage - verification plan + known gaps
 
 > Audience: QA engineers + Pro customers using S3 / BunnyCDN.
 > Status: living document. Last updated 2026-05-07 alongside the
 > `wp mvs migrate-storage` CLI in Free 1.2.2-dev.
 
-## TL;DR — what works today, what doesn't
+## TL;DR - what works today, what doesn't
 
 | Scenario | Status |
 |---|---|
@@ -19,15 +19,15 @@
 | **Cloud download for migration / re-thumbnailing** | ✅ `StorageDriver::download()` added in 1.2.2 (Free interface + Pro implementations) |
 | **No-fallback risk when cloud auth dies** | ⚠️ Upload returns false → media row never inserted → user sees "Failed to store the uploaded file." Not silent, but not graceful. |
 
-## Storage model — single-driver, no replication
+## Storage model - single-driver, no replication
 
 Active driver is selected via the `mvs_storage_driver` option:
-- `local` — stores under `wp-content/uploads/wpmediaverse/{Y/m}/`
-- `s3` (Pro) — uploads to `s3://{bucket}/wpmediaverse/{Y/m}/`
-- `bunnycdn` (Pro) — uploads to BunnyCDN storage zone
+- `local` - stores under `wp-content/uploads/wpmediaverse/{Y/m}/`
+- `s3` (Pro) - uploads to `s3://{bucket}/wpmediaverse/{Y/m}/`
+- `bunnycdn` (Pro) - uploads to BunnyCDN storage zone
 
 **One driver active at a time.** No "store on both" mode, no automatic
-local fallback if cloud fails. This is by design — multi-driver
+local fallback if cloud fails. This is by design - multi-driver
 replication doubles storage cost + duplicates on every upload.
 
 ## Pre-flight before testing on real cloud credentials
@@ -45,7 +45,7 @@ replication doubles storage cost + duplicates on every upload.
 
 ## Verification matrix
 
-### Phase A — fresh upload, single driver
+### Phase A - fresh upload, single driver
 
 For EACH of {`local`, `s3`, `bunnycdn`} as the active driver:
 
@@ -59,7 +59,7 @@ For EACH of {`local`, `s3`, `bunnycdn`} as the active driver:
 | 6. Multi-size thumbnails (`thumb_thumb`, `thumb_medium`, `thumb_large`) in `mvs_media_meta` | for `local`: 3 distinct URLs from `multi_resize`. For `s3` / `bunnycdn`: ALL THREE point to the original full-size `file_url` (Known gap 1) |
 | 7. Activity created for the upload (BP active) | `bp_activity` row with the new `_mvs_activity_privacy_level` meta (1.2.1+) |
 
-### Phase B — delete cleanup
+### Phase B - delete cleanup
 
 | Step | Expected |
 |---|---|
@@ -67,7 +67,7 @@ For EACH of {`local`, `s3`, `bunnycdn`} as the active driver:
 | 2. `$driver->exists($file_path)` after delete | false (cloud or local) |
 | 3. Re-fetch the public URL | 404 (no orphan) |
 
-### Phase C — driver migration (the new 1.2.2 CLI)
+### Phase C - driver migration (the new 1.2.2 CLI)
 
 For each migration direction below:
 
@@ -86,12 +86,12 @@ For each:
 | 1. `--dry-run` | Reports N media files would migrate. No actual transfers. |
 | 2. Real run (without `--keep-source`) | All N files appear on destination + are removed from source. |
 | 3. Real run with `--keep-source` | Files appear on destination AND remain on source (safety copy). |
-| 4. Re-run after a clean migration | `Skipped N (already on destination)` — idempotent. |
+| 4. Re-run after a clean migration | `Skipped N (already on destination)` - idempotent. |
 | 5. Browser GET the file URL after migration but BEFORE flipping `mvs_storage_driver` | 404 (because the active driver is still the source, but file is on destination only). This proves the operator MUST flip the driver as the next step. |
 | 6. `wp option update mvs_storage_driver {to}` then re-fetch | 200 from destination URL pattern. |
 | 7. Migration mid-flight network failure | The specific row is `Failed`. Re-running picks up where it left off (idempotent). |
 
-### Phase D — failure modes
+### Phase D - failure modes
 
 | Scenario | Expected |
 |---|---|
@@ -99,13 +99,13 @@ For each:
 | BunnyCDN API key revoked → user uploads | Upload returns false; same user-facing error. Single attempt (no retry). |
 | Local disk full → user uploads | Standard PHP filesystem error |
 | Network timeout mid-download (migrate-storage) | The specific row marked Failed; partial local temp cleaned via `wp_delete_file` |
-| Cloud bucket policy changes from public-read to private | `download()` in 1.2.2 still uses public URL — would 403 on private-only buckets. Migration would Fail those rows. **Workaround for now: temporarily make bucket public-read for the migration window. Signed-GET fallback is on the 1.3.0 list.** |
+| Cloud bucket policy changes from public-read to private | `download()` in 1.2.2 still uses public URL - would 403 on private-only buckets. Migration would Fail those rows. **Workaround for now: temporarily make bucket public-read for the migration window. Signed-GET fallback is on the 1.3.0 list.** |
 
-## Known gap 1 — multi-size thumbnails on cloud
+## Known gap 1 - multi-size thumbnails on cloud
 
 `generate_thumbnails()` calls `wp_get_image_editor( $file_path )` where
 `$file_path` comes from `$driver->get_full_path()`. For S3 driver,
-`get_full_path()` returns `s3://bucket/wpmediaverse/path` — not a real
+`get_full_path()` returns `s3://bucket/wpmediaverse/path` - not a real
 filesystem path. PHP can't read it without a registered S3 stream
 wrapper, so `wp_get_image_editor()` fails and the function falls
 through to `ensure_fallback_thumbs()` which sets all three thumb
@@ -131,7 +131,7 @@ meta keys to the original full-size `file_url`.
 
 Estimated effort: 1 working day with a S3 bucket for live testing.
 
-## Known gap 2 — no signed-GET path for private S3 buckets
+## Known gap 2 - no signed-GET path for private S3 buckets
 
 `StorageDriver::download()` (added 1.2.2) uses
 `wp_safe_remote_get($source_url)` where `$source_url` is the public
@@ -143,7 +143,7 @@ the migration window, then revert.
 **Fix path (1.3.0):** Add a `download_signed()` variant that signs
 the GET request with the same SigV4 helper used by `put_object`.
 
-## Operator runbook — switching local → s3
+## Operator runbook - switching local → s3
 
 1. **Pre-deploy:** verify Pro is active, S3 credentials are saved in
    Pro Settings → Cloud Storage, "Test connection" returns ✅.
@@ -165,7 +165,7 @@ the GET request with the same SigV4 helper used by `put_object`.
    ```bash
    wp option update mvs_storage_driver s3
    ```
-7. **Smoke-test again.** Same URLs should still work — they now resolve
+7. **Smoke-test again.** Same URLs should still work - they now resolve
    via the s3 driver's `url()` builder.
 8. **After 7 days of clean operation, prune the local copies:**
    ```bash
@@ -187,7 +187,7 @@ WPMediaVerse Bugs column with:
 
 ## Out of scope for this verification
 
-- Performance / throughput at scale (Phase 5 of 1.2.1 — 100k seed)
+- Performance / throughput at scale (Phase 5 of 1.2.1 - 100k seed)
 - WAF / firewall integration (customer-environment specific)
 - IPv6 reachability of S3 + BunnyCDN
 - Cross-region S3 replication (operator's S3 config, not the plugin's)

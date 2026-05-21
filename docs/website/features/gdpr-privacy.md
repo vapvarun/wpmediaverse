@@ -1,6 +1,6 @@
 # GDPR & Privacy Compliance
 
-> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of WPMediaVerse.
 
 
 WPMediaVerse integrates with the WordPress privacy tools built into **Tools > Export Personal Data** and **Tools > Erase Personal Data**. No configuration is required. The integration is active whenever the plugin is active.

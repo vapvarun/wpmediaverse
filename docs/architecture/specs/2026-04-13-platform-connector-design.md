@@ -1,4 +1,4 @@
-# WPMediaVerse Platform Connector Framework — Design Spec
+# WPMediaVerse Platform Connector Framework - Design Spec
 
 **Date:** 2026-04-13
 **Status:** Implemented
@@ -9,7 +9,7 @@
 
 ## 1. Problem
 
-Users want to connect external photo platforms (Flickr, later Unsplash, 500px, Google Photos) to WPMediaVerse — import their existing photos and auto-push new uploads. Currently the Pro plugin has layout skins (Instagram/Flickr/Dribbble CSS themes) but zero external data integration.
+Users want to connect external photo platforms (Flickr, later Unsplash, 500px, Google Photos) to WPMediaVerse - import their existing photos and auto-push new uploads. Currently the Pro plugin has layout skins (Instagram/Flickr/Dribbble CSS themes) but zero external data integration.
 
 ## 2. Approach
 
@@ -128,7 +128,7 @@ wp_usermeta:
 
 ---
 
-## 4. Flickr Connector — Detailed Flow
+## 4. Flickr Connector - Detailed Flow
 
 ### 4.1 Setup Flow (One-Time Per User)
 
@@ -141,7 +141,7 @@ wp_usermeta:
 │  [Connect with Flickr]  ← one click, uses plugin key │
 │                                                       │
 │  ▸ Use your own API key (recommended for heavy usage  │
-│    — get one free at flickr.com/services/apps)        │
+│    - get one free at flickr.com/services/apps)        │
 │    API Key:    [________________________]             │
 │    API Secret: [________________________]             │
 │    [Connect with My Key]                              │
@@ -177,7 +177,7 @@ wp_usermeta:
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  ✓ Flickr — Connected as @username                    │
+│  ✓ Flickr - Connected as @username                    │
 │                                                       │
 │  Using: Plugin key (shared)                           │
 │  ⚠ For heavy usage, use your own key for faster sync  │
@@ -361,7 +361,7 @@ Connected Accounts
 │   │   ├── Default privacy: [Match WPMediaVerse ▼]
 │   │   ├── Default album: [None ▼] (fetched from Flickr on load)
 │   │   └── [Import from Flickr] [Disconnect]
-├── (Future: Unsplash, 500px, Google Photos — greyed out "Coming Soon")
+├── (Future: Unsplash, 500px, Google Photos - greyed out "Coming Soon")
 └── Footer: "This product uses the Flickr API but is not endorsed
     or certified by SmugMug, Inc." (TOS requirement)
 ```
@@ -384,7 +384,7 @@ Import from Flickr [button]
 
 If media has `external_source`:
 ```
-Source: Flickr — View on Flickr [link]
+Source: Flickr - View on Flickr [link]
 Last synced: Apr 13, 2026
 [Sync Now] [Push Updates to Flickr]
 ```
@@ -398,7 +398,7 @@ Last synced: Apr 13, 2026
 | 3,600 req/hr per API key | Shared plugin key = bottleneck at scale | Hybrid: plugin key for easy onboarding, user's own key for heavy usage. Rate limit nudge when shared key is throttled. |
 | Original photo access | User must enable original downloads in Flickr prefs | Fall back to largest available size; show warning if original unavailable |
 | OAuth 1.0a (not 2.0) | More complex signing | OAuthHelper utility class handles signing |
-| Tokens don't expire | Good — no refresh flow needed | Validate with flickr.auth.oauth.checkToken periodically |
+| Tokens don't expire | Good - no refresh flow needed | Validate with flickr.auth.oauth.checkToken periodically |
 | PuSH is Pro-only + experimental | Can't rely on webhooks from Flickr | User-triggered delta sync via flickr.photos.recentlyUpdated |
 | Free Flickr: 1,000 photo limit | User may run out of space | Check flickr.people.getUploadStatus before export; show warning |
 | 30 photos per page in app (TOS) | Display limit | Respect in browse UI; import itself has no limit |
@@ -472,4 +472,4 @@ Each = one new class implementing ConnectorInterface + a platform Client + a Map
 5. **Delta sync test:** Modify title on Flickr → run sync → verify MVS title updated
 6. **Disconnect test:** Disconnect → tokens cleared, auto-export disabled
 7. **Rate limit test:** Verify error handling when 3,600/hr exceeded (mock 429 response)
-8. **Browser test:** Full flow in Playwright — connect, browse, import, verify in dashboard
+8. **Browser test:** Full flow in Playwright - connect, browse, import, verify in dashboard

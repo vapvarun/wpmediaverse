@@ -1,6 +1,6 @@
 # Watermarking
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -10,7 +10,7 @@ WPMediaVerse Pro applies text or logo watermarks to image files using PHP's GD l
 
 ## Requirements
 
-- PHP GD extension enabled (verify with `phpinfo()` — look for the `gd` section)
+- PHP GD extension enabled (verify with `phpinfo()` - look for the `gd` section)
 - For logo watermarks: a PNG file with a transparent background is recommended
 
 ## Enabling Watermarks
@@ -62,7 +62,7 @@ add_filter( 'mvs_pro_watermark_logo_ratio', function( $ratio ) {
 
 ## How Watermarks Are Applied
 
-Watermarks are applied dynamically when a user requests a download. The watermarked image is streamed directly to the browser — it is not cached to disk. The original file in storage is never changed.
+Watermarks are applied dynamically when a user requests a download. The watermarked image is streamed directly to the browser - it is not cached to disk. The original file in storage is never changed.
 
 If you want to apply watermarks to existing media in bulk, use WP-CLI:
 

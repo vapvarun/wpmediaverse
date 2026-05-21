@@ -1,10 +1,10 @@
 # Photo Challenges
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-Run weekly themed photo competitions — your community submits their best shots, votes for their favorites, and the top three photographers win XP prizes.
+Run weekly themed photo competitions - your community submits their best shots, votes for their favorites, and the top three photographers win XP prizes.
 
 ## What You Can Do (as a User)
 
@@ -18,11 +18,11 @@ Run weekly themed photo competitions — your community submits their best shots
 
 1. Go to **Media > Challenges** on your site
 2. Click the **Active** tab to see the current challenge theme (e.g., "Golden Hour Photography")
-3. Click **Enter Challenge** — a media picker opens showing your uploaded photos
+3. Click **Enter Challenge** - a media picker opens showing your uploaded photos
 4. Select one of your photos or upload a new one, add an optional caption, and click **Submit**
 5. Your entry appears in the challenge gallery alongside other participants
 6. When the entry window closes, the challenge moves to the **Voting** tab
-7. Vote for your single favorite entry — you can only vote once per challenge
+7. Vote for your single favorite entry - you can only vote once per challenge
 8. When voting closes, open the **Finalized** tab to see the ranked results
 9. Winner badges (1st, 2nd, 3rd) appear on the top entries and XP is awarded automatically to your account
 
@@ -34,7 +34,7 @@ Run weekly themed photo competitions — your community submits their best shots
 2. Go to **Media > Competitions > Challenge Manager** and click **Add Challenge**
 3. Set a theme title, entry start date, entry end date, and voting end date
 4. Set XP prizes for 1st, 2nd, 3rd place and a participation XP amount for all entrants
-5. Click **Save** — the challenge appears on the frontend when the start date arrives
+5. Click **Save** - the challenge appears on the frontend when the start date arrives
 6. To run challenges on autopilot without manual creation, enable **Autopilot** in the settings (see below)
 
 ![Challenge Manager create form](../images/admin-competitions.png)
@@ -46,9 +46,9 @@ A challenge moves through four stages. All transitions are handled by Action Sch
 | Stage | Description |
 |-------|-------------|
 | **Scheduled** | Challenge is published but the start date has not arrived |
-| **Active** | Entry window is open — users can submit photos |
-| **Voting** | Entry window closed — community can vote on submissions |
-| **Finalized** | Voting closed — winners determined, XP awarded |
+| **Active** | Entry window is open - users can submit photos |
+| **Voting** | Entry window closed - community can vote on submissions |
+| **Finalized** | Voting closed - winners determined, XP awarded |
 
 ## Creating a Challenge
 
@@ -64,10 +64,10 @@ Go to **Media > Competitions > Challenge Manager** and click **Add Challenge**.
 | Entry End | Date and time when submissions close |
 | Voting End | Date and time when voting closes |
 | Max Entries Per User | How many photos one user may submit |
-| XP — 1st Place | XP awarded to the top vote-getter |
-| XP — 2nd Place | XP awarded to the second-highest vote-getter |
-| XP — 3rd Place | XP awarded to the third-highest vote-getter |
-| XP — Participation | XP awarded to all entrants when the challenge finalizes |
+| XP - 1st Place | XP awarded to the top vote-getter |
+| XP - 2nd Place | XP awarded to the second-highest vote-getter |
+| XP - 3rd Place | XP awarded to the third-highest vote-getter |
+| XP - Participation | XP awarded to all entrants when the challenge finalizes |
 
 ## Autopilot
 
@@ -137,9 +137,9 @@ The `/media/challenges/` page displays challenges in three tabs: **Active**, **V
 
 ![Challenges page with tab navigation and challenge cards](../images/challenges-page.png)
 
-- **Active tab** — Shows the entry submission form when the user is logged in and has not yet reached the entry limit
-- **Voting tab** — Shows all entries as a grid with vote buttons; the user's vote is highlighted after casting
-- **Finalized tab** — Shows entries ranked by votes with winner badges for positions 1, 2, and 3
+- **Active tab** - Shows the entry submission form when the user is logged in and has not yet reached the entry limit
+- **Voting tab** - Shows all entries as a grid with vote buttons; the user's vote is highlighted after casting
+- **Finalized tab** - Shows entries ranked by votes with winner badges for positions 1, 2, and 3
 
 The media picker in the entry form lets users select from their existing uploaded media or upload a new photo directly.
 
@@ -149,6 +149,6 @@ The media picker in the entry form lets users select from their existing uploade
 
 | Action Hook | Condition |
 |-------------|-----------|
-| `mvs_activate_challenges` | Runs hourly — sets `Scheduled` challenges to `Active` when start date is past |
-| `mvs_close_challenge_entries` | Runs hourly — sets `Active` challenges to `Voting` when entry deadline is past |
-| `mvs_finalize_challenges` | Runs hourly — sets `Voting` challenges to `Finalized`, tallies votes, awards XP |
+| `mvs_activate_challenges` | Runs hourly - sets `Scheduled` challenges to `Active` when start date is past |
+| `mvs_close_challenge_entries` | Runs hourly - sets `Active` challenges to `Voting` when entry deadline is past |
+| `mvs_finalize_challenges` | Runs hourly - sets `Voting` challenges to `Finalized`, tallies votes, awards XP |

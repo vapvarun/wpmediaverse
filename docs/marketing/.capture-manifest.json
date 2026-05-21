@@ -29,7 +29,7 @@
       "url": "/compete/",
       "viewport": [1440, 900],
       "wait_ms": 1200,
-      "description": "Compete hub — Active Challenge + Tournaments + Battles"
+      "description": "Compete hub - Active Challenge + Tournaments + Battles"
     },
     {
       "id": "card-gamification",
@@ -58,14 +58,14 @@
       "url": "/my-media/#albums",
       "viewport": [1440, 900],
       "wait_ms": 1500,
-      "description": "My Media Albums tab — 8 album cards"
+      "description": "My Media Albums tab - 8 album cards"
     },
     {
       "id": "card-portraits-album",
       "url": "/album/portrait-series/",
       "viewport": [1440, 1200],
       "wait_ms": 1200,
-      "description": "Portrait Series album — 20 diverse portraits"
+      "description": "Portrait Series album - 20 diverse portraits"
     }
   ],
   "hide_chrome": "references/hide-chrome.js",

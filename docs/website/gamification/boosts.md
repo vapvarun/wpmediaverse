@@ -1,10 +1,10 @@
 # Media Boosts
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-Spend your earned points to push a photo to the top of the Explore feed — get more eyes on your best work right when you want it seen.
+Spend your earned points to push a photo to the top of the Explore feed - get more eyes on your best work right when you want it seen.
 
 ## What You Can Do (as a User)
 
@@ -18,9 +18,9 @@ Spend your earned points to push a photo to the top of the Explore feed — get 
 ## How It Works (for Users)
 
 1. Open one of your uploaded photos
-2. Click **Boost** — a panel shows your current point balance and the cost per 100 impressions
+2. Click **Boost** - a panel shows your current point balance and the cost per 100 impressions
 3. Enter your target impression count (e.g., 500 impressions costs 250 points at the default rate)
-4. Click **Confirm Boost** — points are deducted immediately from your balance
+4. Click **Confirm Boost** - points are deducted immediately from your balance
 5. Your photo is now marked as boosted and appears at elevated positions in the Explore feed
 6. Return to the photo page anytime to see a progress bar showing impressions delivered vs. target
 7. When the impression target is reached (or after 30 days), the boost expires automatically and your photo returns to its normal organic rank
@@ -29,7 +29,7 @@ Spend your earned points to push a photo to the top of the Explore feed — get 
 
 ### Where Boosted Content Appears
 
-Boosted photos appear throughout the Explore feed at regular intervals mixed in with organic content — they do not all cluster at the top. This means boosted photos reach a wider audience as visitors scroll, rather than just people who see the top of the page.
+Boosted photos appear throughout the Explore feed at regular intervals mixed in with organic content - they do not all cluster at the top. This means boosted photos reach a wider audience as visitors scroll, rather than just people who see the top of the page.
 
 ## For Site Owners
 
@@ -136,4 +136,4 @@ The hard expiry datetime is set to 30 days after boost creation, regardless of t
 
 | Action Hook | Condition |
 |-------------|-----------|
-| `mvs_expire_boosts` | Runs hourly — sets `status = expired` on boosts where the impression target is reached or `expires_at` has passed |
+| `mvs_expire_boosts` | Runs hourly - sets `status = expired` on boosts where the impression target is reached or `expires_at` has passed |

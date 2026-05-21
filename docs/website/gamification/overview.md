@@ -1,10 +1,10 @@
 # Gamification Overview
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-WPMediaVerse Gamification turns your media community into a competitive platform. Users earn XP, enter photo competitions, challenge each other to battles, and boost their media visibility — all integrated with the wb-gamification plugin's XP and reward engine.
+WPMediaVerse Gamification turns your media community into a competitive platform. Users earn XP, enter photo competitions, challenge each other to battles, and boost their media visibility - all integrated with the wb-gamification plugin's XP and reward engine.
 
 Gamification requires **WPMediaVerse Pro** and the **wb-gamification plugin** (active and configured). All gamification features are disabled by default. Enable each feature individually at **Media > Settings > Gamification**.
 
@@ -78,7 +78,7 @@ The My Media dashboard adds **Challenges**, **Battles**, and **Tournaments** tab
 
 ## Scheduled Actions
 
-All competition lifecycle transitions run via Action Scheduler on an hourly recurrence. No competition state changes happen in real time — transitions occur at the next hourly tick after a deadline passes.
+All competition lifecycle transitions run via Action Scheduler on an hourly recurrence. No competition state changes happen in real time - transitions occur at the next hourly tick after a deadline passes.
 
 | Scheduled Action | Trigger Condition |
 |-----------------|------------------|
@@ -89,6 +89,6 @@ All competition lifecycle transitions run via Action Scheduler on an hourly recu
 | `mvs_start_tournaments` | Tournament registration deadline reached |
 | `mvs_resolve_tournament_matches` | Match vote deadline reached |
 | `mvs_expire_boosts` | Boost impression target or duration reached |
-| `mvs_check_streaks` | Daily at 2 AM — break streaks for missed uploads |
+| `mvs_check_streaks` | Daily at 2 AM - break streaks for missed uploads |
 
 > Action Scheduler must be running for gamification to function. If you use a managed host that blocks WP-Cron, configure Action Scheduler with a server-level cron trigger.

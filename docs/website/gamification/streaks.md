@@ -1,10 +1,10 @@
 # Upload Streaks
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-Upload one photo a day and watch your streak grow — hit milestones to earn XP rewards, and use freeze tokens to protect your streak on days you miss.
+Upload one photo a day and watch your streak grow - hit milestones to earn XP rewards, and use freeze tokens to protect your streak on days you miss.
 
 ## What You Can Do (as a User)
 
@@ -18,7 +18,7 @@ Upload one photo a day and watch your streak grow — hit milestones to earn XP 
 
 ### Building Your Streak
 
-1. Upload any photo or video on your site — that counts as your streak day
+1. Upload any photo or video on your site - that counts as your streak day
 2. Your streak counter increments once per calendar day, no matter how many files you upload
 3. Come back the next day and upload again to keep your streak alive
 4. Your streak count and a flame badge appear on your profile and next to your username in comments
@@ -55,9 +55,9 @@ Once your streak reaches 3 days, a badge showing your streak count appears:
 ## For Site Owners
 
 1. Go to **Media > Settings > Gamification** and enable **Upload Streaks**
-2. Streaks run automatically — no manual management needed
+2. Streaks run automatically - no manual management needed
 3. Grant freeze tokens to specific users from **Users > Edit User > Streak Tokens** in wp-admin
-4. The daily streak check runs at 2 AM site timezone via Action Scheduler — confirm Action Scheduler is processing jobs
+4. The daily streak check runs at 2 AM site timezone via Action Scheduler - confirm Action Scheduler is processing jobs
 
 ## How Streaks Work (Technical)
 
@@ -98,8 +98,8 @@ Freeze tokens are earned through wb-gamification rewards or granted manually by 
 When the `mvs_check_streaks` cron runs and finds a user missed yesterday:
 
 1. Check `_mvs_streak_freezes`
-2. If count is greater than 0 — decrement by 1, leave streak intact
-3. If count is 0 — reset `_mvs_current_streak` to 0
+2. If count is greater than 0 - decrement by 1, leave streak intact
+3. If count is 0 - reset `_mvs_current_streak` to 0
 
 A freeze only protects against a single missed day. Two consecutive missed days break the streak even with a freeze token.
 

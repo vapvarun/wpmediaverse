@@ -1,4 +1,4 @@
-# WPMediaVerse — Interactivity API Architecture
+# WPMediaVerse - Interactivity API Architecture
 
 ## How Script Modules Work in This Plugin
 
@@ -30,7 +30,7 @@ WordPress Interactivity API stores are loaded as **ES modules** (`type="module"`
 
 ### How `shared-ui` Gets Loaded
 
-The shared-ui store is the most critical — it provides the lightbox, toasts, and upload modal used across ALL frontend pages.
+The shared-ui store is the most critical - it provides the lightbox, toasts, and upload modal used across ALL frontend pages.
 
 ```
 Plugin.php::enqueue_frontend_assets()
@@ -104,7 +104,7 @@ Layout is set via `mvs_pro_feed_layout` option. The `LayoutManager.php` in the p
 
 ## Common Pitfalls
 
-1. **Never load from `build/` for Interactivity stores** — IIFE format uses `window.wp.interactivity` which doesn't work as a script module
-2. **`wp_enqueue_script_module` deps format** — must be `array('@wordpress/interactivity')` not `array('wp-interactivity')`
-3. **Streak badge in display names** — `mvs_user_display_name` filter appends `<span>` HTML. Use `wp_kses()` not `esc_html()` when rendering filtered names
-4. **`data-wp-interactive` on cards** — the namespace attribute alone doesn't auto-load the module; it must be explicitly enqueued
+1. **Never load from `build/` for Interactivity stores** - IIFE format uses `window.wp.interactivity` which doesn't work as a script module
+2. **`wp_enqueue_script_module` deps format** - must be `array('@wordpress/interactivity')` not `array('wp-interactivity')`
+3. **Streak badge in display names** - `mvs_user_display_name` filter appends `<span>` HTML. Use `wp_kses()` not `esc_html()` when rendering filtered names
+4. **`data-wp-interactive` on cards** - the namespace attribute alone doesn't auto-load the module; it must be explicitly enqueued

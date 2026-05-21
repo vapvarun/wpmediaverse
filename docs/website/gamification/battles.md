@@ -1,10 +1,10 @@
 # Photo Battles
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-Challenge any photographer on the site to a head-to-head photo duel — your best shot vs. theirs, side by side, with the community deciding the winner.
+Challenge any photographer on the site to a head-to-head photo duel - your best shot vs. theirs, side by side, with the community deciding the winner.
 
 ## What You Can Do (as a User)
 
@@ -27,7 +27,7 @@ Challenge any photographer on the site to a head-to-head photo duel — your bes
 ### After the Challenge is Accepted
 
 1. Both you and your opponent have 48 hours to confirm or change your battle photo
-2. Choose one photo from your uploads — click **Submit My Photo**
+2. Choose one photo from your uploads - click **Submit My Photo**
 3. Once both photos are submitted, the battle opens for community voting
 4. The VS layout shows both photos side by side with a vote button under each
 5. Any logged-in member (except participants) can cast one vote
@@ -42,7 +42,7 @@ Go to **My Media > Battles** to see all your battles with win/loss/pending statu
 ## For Site Owners
 
 1. Go to **Media > Settings > Gamification** and enable **Photo Battles**
-2. Battles are self-service — users challenge each other directly, no admin involvement required
+2. Battles are self-service - users challenge each other directly, no admin involvement required
 3. Submit and vote windows are currently 48 hours each
 4. Monitor all active battles from **Media > Competitions**
 
@@ -50,12 +50,12 @@ Go to **My Media > Battles** to see all your battles with win/loss/pending statu
 
 | Stage | Description |
 |-------|-------------|
-| **Pending** | Challenger sent the invite — waiting for opponent response |
-| **Accepted** | Opponent accepted — both users can now submit their battle photo |
+| **Pending** | Challenger sent the invite - waiting for opponent response |
+| **Accepted** | Opponent accepted - both users can now submit their battle photo |
 | **Submitting** | Both users have 48 hours (default) to submit photos |
-| **Voting** | Both photos submitted — community votes for 48 hours (default) |
-| **Resolved** | Vote deadline passed — winner determined, XP awarded |
-| **Declined** | Opponent declined the challenge — battle closed |
+| **Voting** | Both photos submitted - community votes for 48 hours (default) |
+| **Resolved** | Vote deadline passed - winner determined, XP awarded |
+| **Declined** | Opponent declined the challenge - battle closed |
 | **Expired** | Submit or vote deadline passed with incomplete participation |
 
 ## Starting a Battle
@@ -140,9 +140,9 @@ The `/media/battles/` page shows all battles visible to the logged-in user.
 
 ![Battles browse page showing battle cards with VS layout](../images/battles-page.png)
 
-- **Active battles** — Shows the VS card layout with both photos and vote buttons if the battle is in Voting stage
-- **Pending battles** — Shows a card with the invite status and accept/decline buttons for the opponent
-- **Resolved battles** — Shows final vote counts with a winner badge
+- **Active battles** - Shows the VS card layout with both photos and vote buttons if the battle is in Voting stage
+- **Pending battles** - Shows a card with the invite status and accept/decline buttons for the opponent
+- **Resolved battles** - Shows final vote counts with a winner badge
 
 The **My Media > Battles** tab shows only the user's own battles with win/loss/pending status.
 
@@ -152,4 +152,4 @@ The **My Media > Battles** tab shows only the user's own battles with win/loss/p
 
 | Action Hook | Condition |
 |-------------|-----------|
-| `mvs_resolve_expired_battles` | Runs hourly — resolves battles where the vote deadline has passed; expires battles where the submit deadline passed without both submissions |
+| `mvs_resolve_expired_battles` | Runs hourly - resolves battles where the vote deadline has passed; expires battles where the submit deadline passed without both submissions |

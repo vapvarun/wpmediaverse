@@ -1,10 +1,10 @@
 # Video Transcoding
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-Give your community professional-quality video playback with automatic quality selection — viewers on fast connections get 720p, mobile users on slower connections get 360p, automatically.
+Give your community professional-quality video playback with automatic quality selection - viewers on fast connections get 720p, mobile users on slower connections get 360p, automatically.
 
 ## What Users See
 

@@ -1,26 +1,26 @@
 # Integration Event Hooks (gamification / activity / notifications)
 
 WPMediaVerse fires action hooks for every user-meaningful event so external
-plugins — gamification engines, activity feeds, notification bridges, mobile
-adapters — can react **without coupling to WPMediaVerse internals**. Consumers
+plugins - gamification engines, activity feeds, notification bridges, mobile
+adapters - can react **without coupling to WPMediaVerse internals**. Consumers
 hook these actions; WPMediaVerse owns no integration manifest for any specific
 consumer.
 
-All hooks pass their data as positional parameters — a listener never needs to
+All hooks pass their data as positional parameters - a listener never needs to
 read `$_POST` or re-query. For point-style integrations the "actor" (who did
 it) and, where relevant, the "recipient" (who benefits) are both provided so a
 give/receive rule can award the right user.
 
-## Free — `wpmediaverse`
+## Free - `wpmediaverse`
 
 | Hook | Signature | Actor / Recipient |
 |------|-----------|-------------------|
 | `mvs_media_uploaded` | `( int $media_id, array $file_data, int $user_id, string $media_type )` | actor = `$user_id`. `$file_data['is_first']` flags the user's first-ever upload (first-upload badges). `$file_data['privacy']`, `mime`, `file_size` also included. |
 | `mvs_comment_created` | `( int $media_id, int $user_id, int $comment_id, string $content, string $source )` | actor = commenter `$user_id`; recipient = media author (look up via repository). |
 | `mvs_reaction_added` | `( int $media_id, int $user_id, string $reaction_type )` | actor = `$user_id`; recipient = media author. |
-| `mvs_reaction_removed` | `( int $media_id, int $user_id )` | reversal — deduct if you awarded on add. |
+| `mvs_reaction_removed` | `( int $media_id, int $user_id )` | reversal - deduct if you awarded on add. |
 | `mvs_favorite_added` | `( int $media_id, int $user_id )` | actor = `$user_id`; recipient = media author. |
-| `mvs_favorite_toggled` | `( int $media_id, int $user_id, string $action )` | `$action` is `'added'` or `'removed'` — award/deduct accordingly. |
+| `mvs_favorite_toggled` | `( int $media_id, int $user_id, string $action )` | `$action` is `'added'` or `'removed'` - award/deduct accordingly. |
 | `mvs_user_followed` | `( int $follower_id, int $following_id )` | actor = `$follower_id`; recipient = `$following_id`. |
 | `mvs_user_unfollowed` | `( int $follower_id, int $following_id )` | reversal. |
 | `mvs_media_shared` | `( int $media_id, int $user_id, string $platform )` | actor = sharer `$user_id`. |
@@ -31,12 +31,12 @@ give/receive rule can award the right user.
 | `mvs_report_submitted` | `( int $report_id, int $reporter_id, string $target_type, int $target_id, string $reason )` | actor = `$reporter_id`. |
 | `mvs_media_privacy_changed` | `( int $media_id, string $new_privacy, string $old_privacy )` | lifecycle (e.g. revoke points if media goes private). |
 | `mvs_moderation_changed` | `( int $media_id, string $status, string $old_status, int $user_id )` | gate awards on `approved`. |
-| `mvs_media_deleted` | `( int $media_id, int $author_id )` | reversal — deduct upload points. |
+| `mvs_media_deleted` | `( int $media_id, int $author_id )` | reversal - deduct upload points. |
 
-> Tip: for "recipient = media author", resolve via the published interface —
+> Tip: for "recipient = media author", resolve via the published interface -
 > `\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id )`.
 
-## Pro — `wpmediaverse-pro`
+## Pro - `wpmediaverse-pro`
 
 | Hook | Signature | Notes |
 |------|-----------|-------|
@@ -54,7 +54,7 @@ give/receive rule can award the right user.
 ## Example consumer
 
 ```php
-// In any plugin/manifest — award points for the uploader + the media author.
+// In any plugin/manifest - award points for the uploader + the media author.
 add_action( 'mvs_media_uploaded', function ( $media_id, $file_data, $user_id, $media_type ) {
 	$points = ( 'video' === $media_type ) ? 20 : 10;
 	if ( ! empty( $file_data['is_first'] ) ) {
@@ -76,6 +76,6 @@ add_action( 'mvs_comment_created', function ( $media_id, $user_id, $comment_id )
 
 These are public extension points and follow the plugin's deprecation policy
 (no removal/rename without an alias for >= 2 major versions). New positional
-args are appended, never inserted — listeners registered with a smaller
+args are appended, never inserted - listeners registered with a smaller
 `accepted_args` keep working (as `mvs_media_uploaded` did when `$user_id` +
 `$media_type` were appended in 1.2.3).

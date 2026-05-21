@@ -102,7 +102,7 @@ Generate a time-limited signed URL for a private file. Requires view access to t
 
 ### GET /mvs/v1/serve
 
-Serves the underlying file (full-file or thumbnail) for a validated signed URL. Public endpoint — the HMAC signature on the URL itself is the credential. Drains output buffers + disables `zlib.output_compression` before streaming so byte-counts match `Content-Length` exactly (added in 1.2.0 to fix `ERR_CONTENT_LENGTH_MISMATCH` on hosts with output buffering enabled). Honours `Range:` headers for video/audio streaming with chunked partial responses.
+Serves the underlying file (full-file or thumbnail) for a validated signed URL. Public endpoint - the HMAC signature on the URL itself is the credential. Drains output buffers + disables `zlib.output_compression` before streaming so byte-counts match `Content-Length` exactly (added in 1.2.0 to fix `ERR_CONTENT_LENGTH_MISMATCH` on hosts with output buffering enabled). Honours `Range:` headers for video/audio streaming with chunked partial responses.
 
 | Param | Required | Description |
 |-------|:--------:|-------------|
@@ -532,7 +532,7 @@ Mark all messages in the conversation as read for the current user.
 
 ### POST /conversations/{id}/typing
 
-Send a typing indicator event. Typically called while the user is composing. No persistent storage — triggers a real-time event only.
+Send a typing indicator event. Typically called while the user is composing. No persistent storage - triggers a real-time event only.
 
 ### POST /conversations/{id}/accept
 
@@ -612,7 +612,7 @@ Return the activity feed for the current user.
 
 ### GET /mvs/v1/users/{id}/activity
 
-Return the public activity for a specific user — media uploads, album creations, and reactions.
+Return the public activity for a specific user - media uploads, album creations, and reactions.
 
 ---
 

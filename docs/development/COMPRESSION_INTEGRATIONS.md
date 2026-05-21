@@ -23,7 +23,7 @@ add_filter( 'mvs_optimize_image', function( $file_path, $context ) {
 ```
 
 The filter fires:
-- Once on the original temp file BEFORE `$driver->store()`. Cloud-storage installs benefit from this — the optimized bytes go straight to S3/Bunny.
+- Once on the original temp file BEFORE `$driver->store()`. Cloud-storage installs benefit from this - the optimized bytes go straight to S3/Bunny.
 - Once per thumbnail variant after `multi_resize()` writes it.
 - Once per WebP sibling we generate (so you can optionally re-process those too).
 
@@ -41,7 +41,7 @@ add_filter( 'mvs_optimize_image', function( $file_path, $context ) {
         return $file_path;
     }
     // EWWW operates in place on the absolute path. The 4th arg `true` means
-    // "don't fail if the source can't be backed up" — we already control the
+    // "don't fail if the source can't be backed up" - we already control the
     // file lifecycle.
     ewww_image_optimizer( $file_path, 4, false, true );
     return $file_path;
@@ -98,7 +98,7 @@ add_filter( 'mvs_optimize_image', function( $file_path, $context ) {
 }, 10, 2 );
 ```
 
-Smush operates in place. Free version supports JPEG/PNG/GIF; Pro adds WebP — but we generate WebP siblings ourselves, so the free tier is enough alongside WPMediaVerse.
+Smush operates in place. Free version supports JPEG/PNG/GIF; Pro adds WebP - but we generate WebP siblings ourselves, so the free tier is enough alongside WPMediaVerse.
 
 ## ShortPixel
 
@@ -123,7 +123,7 @@ add_filter( 'mvs_optimize_image', function( $file_path, $context ) {
 }, 10, 2 );
 ```
 
-ShortPixel processes via their API too; account credits apply. Variants (`$context['variant']` !== 'original') are typically not worth API spend — gate the call if you want to skip them:
+ShortPixel processes via their API too; account credits apply. Variants (`$context['variant']` !== 'original') are typically not worth API spend - gate the call if you want to skip them:
 
 ```php
 if ( 'original' !== ( $context['variant'] ?? '' ) ) {
@@ -172,7 +172,7 @@ For any compressor above, run `wp mvs optimize-bulk` after installing the bridge
 wp mvs optimize-bulk --include-variants
 ```
 
-Resume support is built in — the bulk command writes `_mvs_optimized_at` per row and skips already-processed rows on subsequent runs.
+Resume support is built in - the bulk command writes `_mvs_optimized_at` per row and skips already-processed rows on subsequent runs.
 
 ## Disabling the built-in pass
 

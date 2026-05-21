@@ -151,6 +151,16 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_autopilot_no_theme_available` | action | Pro | 1.0 |
 | `mvs_autopilot_pool_reset` | action | Pro | 1.0 |
 | `mvs_streak_milestone` | action | Pro | 1.0 |
+| `mvs_optimize_image` | filter | Free | 1.3.0 |
+| `mvs_optimize_jpeg_quality` | filter | Free | 1.3.0 |
+| `mvs_webp_quality` | filter | Free | 1.3.0 |
+| `mvs_avif_quality` | filter | Free | 1.3.0 |
+| `mvs_ffmpeg_binary` | filter | Free | 1.3.0 |
+| `mvs_default_video_poster_url` | filter | Free | 1.3.0 |
+| `mvs_media_privacy_changed` | action | Free | 1.3.0 |
+| `mvs_serve_public_cloud_direct` | filter | Free | 1.4.0 |
+| `mvs_public_cloud_thumbnail_url` | filter | Free | 1.4.0 |
+| `mvs_public_cloud_file_url` | filter | Free | 1.4.0 |
 
 ---
 
@@ -257,7 +267,7 @@ add_action( 'mvs_ai_providers', function( $ai_service ) {
 
 ### `mvs_media_uploaded`
 
-Fires after a new media post is created, stored, and indexed. This is the primary hook for post-upload processing — use it for gamification, activity feeds, external pipelines, and analytics.
+Fires after a new media post is created, stored, and indexed. This is the primary hook for post-upload processing - use it for gamification, activity feeds, external pipelines, and analytics.
 
 **Parameters:**
 
@@ -268,7 +278,7 @@ Fires after a new media post is created, stored, and indexed. This is the primar
 | `$user_id` | int | Uploader user ID (1.2.3+) |
 | `$media_type` | string | Resolved type: `photo`, `video`, `audio`, `document` (1.2.3+) |
 
-**Backward compatibility:** Listeners registered with `accepted_args=1` or `=2` continue to work unchanged — the new positional args are appended.
+**Backward compatibility:** Listeners registered with `accepted_args=1` or `=2` continue to work unchanged - the new positional args are appended.
 
 ```php
 /**
@@ -1123,6 +1133,217 @@ add_filter( 'mvs_watermark_config', function( array $config ) {
 
 ---
 
+### Image Optimization (1.3.0)
+
+#### `mvs_optimize_image`
+
+Extension point for external optimizers (EWWW, Imagify, Smush, ShortPixel). Fires once per file pass: once for the lossless re-encode, once for each WebP sibling, and once for each AVIF sibling. The filter runs before the built-in pass, so a returning listener can fully replace the result.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$file_path` | string | Absolute path to the file on local disk |
+| `$context` | array | Keys: `media_id` (int), `variant` (string, e.g. `original`, `original-webp`), `mime` (string), `user_id` (int) |
+
+**Returns:** `string|WP_Error` - Return a file path string to replace the result. Return the same `$file_path` for an in-place edit. Return a `WP_Error` to log a warning and keep the original.
+
+```php
+/**
+ * Delegate JPEG optimization to EWWW Image Optimizer.
+ *
+ * @since 1.3.0
+ *
+ * @param string $file_path Absolute path to file.
+ * @param array  $context   { media_id, variant, mime, user_id }.
+ * @return string
+ */
+add_filter( 'mvs_optimize_image', function( string $file_path, array $context ) {
+    if ( 'image/jpeg' !== $context['mime'] ) {
+        return $file_path;
+    }
+    ewww_image_optimizer( $file_path );
+    return $file_path;
+}, 10, 2 );
+```
+
+---
+
+#### `mvs_optimize_jpeg_quality`
+
+Filters the JPEG re-encode quality used by the built-in lossless pass. Range 0-100. Setting to 100 produces a near-lossless re-encode that still strips EXIF.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$quality` | int | Default `92` |
+| `$context` | array | Keys: `media_id`, `variant`, `mime`, `user_id` |
+
+**Returns:** `int`
+
+```php
+add_filter( 'mvs_optimize_jpeg_quality', function( int $quality, array $context ) : int {
+    // Use 85 for thumbnails, 92 for originals.
+    return str_contains( $context['variant'] ?? '', 'thumb' ) ? 85 : $quality;
+}, 10, 2 );
+```
+
+---
+
+#### `mvs_webp_quality`
+
+Filters the WebP encoder quality. Range 0-100.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$quality` | int | Default `82` |
+| `$context` | array | Keys: `media_id`, `variant`, `mime`, `user_id` |
+
+**Returns:** `int`
+
+```php
+add_filter( 'mvs_webp_quality', function( int $quality ) : int {
+    return 75; // Smaller files, still visually lossless for most photos.
+} );
+```
+
+---
+
+#### `mvs_avif_quality`
+
+Filters the AVIF encoder quality. Range 0-100. AVIF encoding is CPU-intensive; only runs when the `mvs_generate_avif` setting is enabled.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$quality` | int | Default `50` |
+| `$context` | array | Keys: `media_id`, `variant`, `mime`, `user_id` |
+
+**Returns:** `int`
+
+```php
+add_filter( 'mvs_avif_quality', function( int $quality ) : int {
+    return 40; // Lower = smaller file; AVIF retains quality well below 50.
+} );
+```
+
+---
+
+### Video Poster (1.3.0)
+
+#### `mvs_ffmpeg_binary`
+
+Filters the ffmpeg binary path used for video poster extraction. The plugin auto-detects common paths (`/opt/homebrew/bin/ffmpeg`, `/usr/local/bin/ffmpeg`, `/usr/bin/ffmpeg`, `/opt/ffmpeg/bin/ffmpeg`). Use this filter on hosts with a non-standard install location.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$binary` | string | Resolved path or `ffmpeg` if auto-detect failed |
+
+**Returns:** `string`
+
+```php
+add_filter( 'mvs_ffmpeg_binary', function( string $binary ) : string {
+    return '/opt/custom/bin/ffmpeg';
+} );
+```
+
+---
+
+#### `mvs_default_video_poster_url`
+
+Filters the fallback poster URL shown when ffmpeg could not generate a frame (e.g. ffmpeg not installed, corrupt video). The URL is used at render time only and is never stored in media meta.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$url` | string | Default: plugin-bundled SVG asset URL |
+
+**Returns:** `string`
+
+```php
+add_filter( 'mvs_default_video_poster_url', function( string $url ) : string {
+    return get_stylesheet_directory_uri() . '/assets/video-placeholder.png';
+} );
+```
+
+---
+
+### Cloud URL Serving (1.4.0)
+
+#### `mvs_serve_public_cloud_direct`
+
+Controls whether public media stored on a cloud driver is served via a direct CDN URL rather than through the plugin's `/serve` proxy. Default is `true` (direct). Set to `false` to force all traffic through the proxy (e.g. for request logging or header injection).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$allowed` | bool | Whether direct cloud serving is permitted. Default `true` |
+| `$media_id` | int | Media ID |
+
+**Returns:** `bool`
+
+```php
+add_filter( 'mvs_serve_public_cloud_direct', function( bool $allowed, int $media_id ) : bool {
+    // Force all media through /serve for audit logging.
+    return false;
+}, 10, 2 );
+```
+
+---
+
+#### `mvs_public_cloud_thumbnail_url`
+
+Filters the direct CDN URL emitted for a cloud-hosted thumbnail. Use this to rewrite the URL to a custom domain (e.g. a CDN pull zone in front of S3) or return an empty string to fall back to the `/serve` proxy.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$thumb_url` | string | Cloud thumbnail URL |
+| `$media_id` | int | Media ID |
+| `$size` | string | Size key (e.g. `thumb_large`, `thumb_medium`) |
+
+**Returns:** `string` - Return empty string to force `/serve` proxy for this thumbnail.
+
+```php
+add_filter( 'mvs_public_cloud_thumbnail_url', function( string $thumb_url, int $media_id, string $size ) : string {
+    // Replace the raw S3 hostname with a CloudFront distribution.
+    return str_replace( 'my-bucket.s3.amazonaws.com', 'cdn.example.com', $thumb_url );
+}, 10, 3 );
+```
+
+---
+
+#### `mvs_public_cloud_file_url`
+
+Filters the direct CDN URL for a public media's original file. Companion to `mvs_public_cloud_thumbnail_url` for full-file reads. Return empty string to fall back to the `/serve` proxy.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$file_url` | string | Cloud file URL |
+| `$media_id` | int | Media ID |
+| `$size` | string | Always empty string for this filter (full-file context) |
+
+**Returns:** `string`
+
+```php
+add_filter( 'mvs_public_cloud_file_url', function( string $file_url, int $media_id, string $size ) : string {
+    return str_replace( 'my-bucket.s3.amazonaws.com', 'cdn.example.com', $file_url );
+}, 10, 3 );
+```
+
+---
+
 ### Additional Storage Hooks
 
 | Hook | Type | Description | Parameters | Since |
@@ -1249,6 +1470,38 @@ add_filter( 'mvs_privacy_can_view', function( $result, int $media_id, int $user_
     }
     return $result;
 }, 10, 4 );
+```
+
+---
+
+### `mvs_media_privacy_changed`
+
+Fires when a media item's privacy level changes. Fires from both `MediaRepository::set()` (single-field update path) and `MediaRepository::update()` (bulk update path). Does not fire when a row is first inserted.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$media_id` | int | Media ID |
+| `$new_privacy` | string | New privacy value (e.g. `public`, `members`, `friends`, `private`) |
+| `$old_privacy` | string | Previous privacy value |
+
+```php
+/**
+ * Sync BuddyPress activity visibility when a media item is made private.
+ *
+ * @since 1.3.0
+ *
+ * @param int    $media_id    Media ID.
+ * @param string $new_privacy New privacy value.
+ * @param string $old_privacy Previous privacy value.
+ */
+add_action( 'mvs_media_privacy_changed', function( int $media_id, string $new_privacy, string $old_privacy ) {
+    if ( 'public' === $old_privacy && 'public' !== $new_privacy ) {
+        // Hide related BuddyPress activity from sitewide stream.
+        my_plugin_hide_bp_activity_for_media( $media_id );
+    }
+}, 10, 3 );
 ```
 
 ---
@@ -1560,7 +1813,7 @@ add_filter( 'mvs_pro_before_quota_check', function( $args, int $user_id ) {
 |------|------|-------------|------------|-------|
 | `mvs_challenge_created` | action | Challenge created | `$competition_id`, `$args`, `$created_by` | 1.0 |
 | `mvs_challenge_entry_submitted` | action | User submits an entry | `$challenge_id`, `$user_id`, `$media_id` | 1.0 |
-| `mvs_challenge_winner_named` | action | Fires once per top-3 rank when a challenge is finalized — fires before `mvs_challenge_finalized` | `$challenge_id`, `$user_id`, `$rank` (1, 2, or 3) | 1.2.3 |
+| `mvs_challenge_winner_named` | action | Fires once per top-3 rank when a challenge is finalized - fires before `mvs_challenge_finalized` | `$challenge_id`, `$user_id`, `$rank` (1, 2, or 3) | 1.2.3 |
 | `mvs_challenge_finalized` | action | Voting ends, winners determined | `$challenge_id`, `$results` | 1.0 |
 
 ```php

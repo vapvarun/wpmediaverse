@@ -1,6 +1,6 @@
 # Integrations
 
-WPMediaVerse connects with 12+ third-party services and plugins out of the box. No custom code, no middleware — configure credentials in settings and the integration activates.
+WPMediaVerse connects with 12+ third-party services and plugins out of the box. No custom code, no middleware - configure credentials in settings and the integration activates.
 
 ## Integration Map
 
@@ -24,7 +24,7 @@ WPMediaVerse connects with 12+ third-party services and plugins out of the box. 
 
 ### BuddyPress
 
-WPMediaVerse is the most complete media solution for BuddyPress communities. The integration activates automatically when BuddyPress is detected — no configuration needed.
+WPMediaVerse is the most complete media solution for BuddyPress communities. The integration activates automatically when BuddyPress is detected - no configuration needed.
 
 **What users get:**
 - A **Media** tab on every member profile showing their uploads in a grid
@@ -34,7 +34,7 @@ WPMediaVerse is the most complete media solution for BuddyPress communities. The
 - One-click media sharing from the lightbox directly into BuddyPress activity
 
 **What admins get:**
-- Zero configuration — activate BuddyPress and the integration works
+- Zero configuration - activate BuddyPress and the integration works
 - Media tab visibility follows BuddyPress privacy settings
 - Activity items follow BuddyPress moderation rules
 - Compatible with BuddyPress 12.0+
@@ -66,7 +66,7 @@ WPMediaVerse Pro registers 14 gamification actions with the wb-gamification plug
 | Win a tournament | Tournament champion | 200 |
 | Reach streak milestone | 7/30/100/365 day streak | 50-5000 |
 
-All XP values are configurable in **Media > Settings > Gamification**. The wb-gamification plugin handles points, badges, leaderboards, and leveling — WPMediaVerse triggers the actions.
+All XP values are configurable in **Media > Settings > Gamification**. The wb-gamification plugin handles points, badges, leaderboards, and leveling - WPMediaVerse triggers the actions.
 
 ## Cloud Storage
 
@@ -115,10 +115,10 @@ See [Custom Storage Drivers](../developer-guide/custom-storage-drivers.md) for t
 
 Built into the free plugin. Uses the OpenAI API for:
 
-- **Content moderation** — Automatically flag inappropriate uploads before they appear on the site
-- **Auto-tagging** — AI suggests relevant tags based on image content
-- **Description generation** — Generate alt text and descriptions for accessibility
-- **Monthly budget cap** — Set a dollar limit to prevent unexpected API costs
+- **Content moderation** - Automatically flag inappropriate uploads before they appear on the site
+- **Auto-tagging** - AI suggests relevant tags based on image content
+- **Description generation** - Generate alt text and descriptions for accessibility
+- **Monthly budget cap** - Set a dollar limit to prevent unexpected API costs
 
 **Setup:** Paste your OpenAI API key into **Media > Settings > AI & Moderation**.
 
@@ -126,9 +126,9 @@ Built into the free plugin. Uses the OpenAI API for:
 
 Adds Google's image analysis capabilities:
 
-- **Label detection** — Identify objects, locations, activities in photos
-- **Safe search** — Detect explicit, violent, or medical content
-- **Text detection** — Extract text from images (OCR)
+- **Label detection** - Identify objects, locations, activities in photos
+- **Safe search** - Detect explicit, violent, or medical content
+- **Text detection** - Extract text from images (OCR)
 - Circuit breaker pattern prevents API hammering on failures
 
 **Setup:** Paste your Google Cloud API key into **Media > Settings > AI & Moderation > Google Vision**.
@@ -137,9 +137,9 @@ Adds Google's image analysis capabilities:
 
 Adds Amazon's image and video analysis:
 
-- **Object and scene detection** — Identify objects with confidence scores
-- **Face detection** — Detect faces with attributes (smile, glasses, age range)
-- **Content moderation** — Flag suggestive, violent, or explicit content
+- **Object and scene detection** - Identify objects with confidence scores
+- **Face detection** - Detect faces with attributes (smile, glasses, age range)
+- **Content moderation** - Flag suggestive, violent, or explicit content
 - Circuit breaker pattern with automatic recovery
 
 **Setup:** Uses the same AWS credentials as S3 storage, or set separate credentials in **Media > Settings > AI & Moderation > AWS Rekognition**.
@@ -212,15 +212,15 @@ See [Webhooks](../settings/webhooks.md) for payload formats and authentication.
 
 WPMediaVerse registers 3 custom tests in **Tools > Site Health**:
 
-- **Database tables** — Verifies all custom tables exist and have the expected schema
-- **Upload directory** — Checks that the wpmediaverse upload directory is writable
-- **Required pages** — Confirms Dashboard, Explore, and Upload pages are assigned
+- **Database tables** - Verifies all custom tables exist and have the expected schema
+- **Upload directory** - Checks that the wpmediaverse upload directory is writable
+- **Required pages** - Confirms Dashboard, Explore, and Upload pages are assigned
 
 ### GDPR / Privacy Tools
 
-- **Export Personal Data** — Exports all user media, comments, reactions, favorites, DMs, and follow relationships
-- **Erase Personal Data** — Removes all of the above when processing an erasure request
-- **Privacy Policy** — Suggests privacy policy text via WordPress's built-in privacy policy tool
+- **Export Personal Data** - Exports all user media, comments, reactions, favorites, DMs, and follow relationships
+- **Erase Personal Data** - Removes all of the above when processing an erasure request
+- **Privacy Policy** - Suggests privacy policy text via WordPress's built-in privacy policy tool
 
 See [GDPR & Privacy Compliance](../features/gdpr-privacy.md).
 
