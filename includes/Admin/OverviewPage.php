@@ -95,6 +95,30 @@ class OverviewPage {
 					'strategy'  => 'defer',
 				)
 			);
+
+			// Styled confirm modal + delegated handler for destructive
+			// [data-mvs-confirm] admin links (replaces native onclick=confirm).
+			wp_enqueue_style( 'mvs-admin-confirm', MVS_PLUGIN_URL . 'assets/css/mvs-confirm.css', array(), MVS_VERSION );
+			wp_enqueue_script(
+				'mvs-admin-confirm',
+				MVS_PLUGIN_URL . 'assets/js/frontend/mvs-confirm.js',
+				array(),
+				MVS_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+			wp_enqueue_script(
+				'mvs-admin-confirm-links',
+				MVS_PLUGIN_URL . 'assets/js/admin/confirm-links.js',
+				array( 'mvs-admin-confirm' ),
+				MVS_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
 		}
 	}
 

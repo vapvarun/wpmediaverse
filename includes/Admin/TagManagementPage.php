@@ -309,7 +309,7 @@ class TagManagementPage {
 			<td class="column-count"><?php echo esc_html( (string) $tag->count ); ?></td>
 			<td class="column-actions">
 				<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></a>
-				<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this tag?', 'wpmediaverse' ) ); ?>');"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></a>
+				<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small button-link-delete" data-mvs-confirm="<?php echo esc_attr__( 'Are you sure you want to delete this tag?', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></a>
 			</td>
 		</tr>
 		<?php
