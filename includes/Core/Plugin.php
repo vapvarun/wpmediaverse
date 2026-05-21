@@ -1008,6 +1008,35 @@ class Plugin {
 			MVS_VERSION
 		);
 
+		// Explore search (media/users tab switch + debounced user search).
+		// Shared by the Free explore template and the Pro feed layouts, which
+		// each enqueue this handle in place of a duplicated inline <script>.
+		// Config + translated strings flow through wp_localize_script.
+		wp_register_script(
+			'mvs-explore-search',
+			MVS_PLUGIN_URL . 'assets/js/frontend/explore-search.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			'mvs-explore-search',
+			'mvsExploreSearch',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/users/search' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'i18n'    => array(
+					'searchUsers' => __( 'Search users...', 'wpmediaverse' ),
+					'searchMedia' => __( 'Search media...', 'wpmediaverse' ),
+					'noUsers'     => __( 'No users found.', 'wpmediaverse' ),
+					'media'       => __( 'media', 'wpmediaverse' ),
+				),
+			)
+		);
+
 		// BP-integration script — wires up per-item delete/edit actions on
 		// owner-visible grid cards. Declares `mvs-lucide` as a dep so the
 		// `<i data-lucide="trash-2">` icons we emit on action buttons are

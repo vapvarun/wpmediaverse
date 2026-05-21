@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.4.0-dev\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-05-21 03:28:47+00:00\n"
+"POT-Creation-Date: 2026-05-21 03:36:41+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -59,8 +59,8 @@ msgstr ""
 #: dist/wpmediaverse/src/blocks/explore-feed/render.php:87
 #: dist/wpmediaverse/templates/explore.php:147
 #: dist/wpmediaverse/templates/explore.php:171
-#: includes/Admin/MediaListPage.php:204 src/blocks/explore-feed/render.php:87
-#: templates/explore.php:147 templates/explore.php:171
+#: includes/Admin/MediaListPage.php:204 includes/Core/Plugin.php:1033
+#: src/blocks/explore-feed/render.php:87 templates/explore.php:147
 msgid "Search media..."
 msgstr ""
 
@@ -81,7 +81,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/explore.php:259
 #: dist/wpmediaverse/templates/partials/chat-list.php:33
 #: includes/Admin/MediaListPage.php:336 src/blocks/explore-feed/render.php:118
-#: templates/explore.php:259 templates/partials/chat-list.php:33
+#: templates/explore.php:172 templates/partials/chat-list.php:33
 msgid "All"
 msgstr ""
 
@@ -133,7 +133,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:432
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:516
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:502
-#: src/blocks/explore-feed/render.php:160 templates/explore.php:459
+#: src/blocks/explore-feed/render.php:160 templates/explore.php:372
 #: templates/partials/dashboard-content.php:432
 #: templates/partials/dashboard-content.php:516
 msgid "Load More"
@@ -2047,7 +2047,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Services/HealthCheckService.php:172
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:278
 #: includes/Admin/OverviewPage.php:596 includes/Admin/SetupWizard.php:254
-#: includes/Core/Plugin.php:1147 includes/Services/HealthCheckService.php:172
+#: includes/Core/Plugin.php:1176 includes/Services/HealthCheckService.php:172
 #: templates/partials/dashboard-content.php:278
 msgid "My Media"
 msgstr ""
@@ -3282,7 +3282,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/explore.php:582
 #: includes/Admin/SetupWizard.php:259 includes/Core/Abilities.php:75
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:289
-#: templates/explore.php:573
+#: templates/explore.php:486
 msgid "Upload Media"
 msgstr ""
 
@@ -4140,7 +4140,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/BaseBPTabIntegration.php:506
 #: dist/wpmediaverse/templates/explore.php:473
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:506
-#: templates/explore.php:464
+#: templates/explore.php:377
 msgid "You're all caught up!"
 msgstr ""
 
@@ -4213,9 +4213,9 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/MediaDisplayHelper.php:121
 #: dist/wpmediaverse/templates/explore.php:125
-#: dist/wpmediaverse/templates/explore.php:232
+#: dist/wpmediaverse/templates/explore.php:232 includes/Core/Plugin.php:1035
 #: includes/Integrations/BuddyPress/MediaDisplayHelper.php:121
-#: templates/explore.php:125 templates/explore.php:232
+#: templates/explore.php:125
 msgid "media"
 msgstr ""
 
@@ -5477,7 +5477,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/404.php:75
 #: dist/wpmediaverse/templates/explore.php:504
 #: dist/wpmediaverse/templates/explore.php:545 templates/404.php:75
-#: templates/explore.php:495 templates/explore.php:536
+#: templates/explore.php:408 templates/explore.php:449
 msgid "Browse all media"
 msgstr ""
 
@@ -5594,42 +5594,42 @@ msgstr ""
 
 #: dist/wpmediaverse/templates/explore.php:170
 #: dist/wpmediaverse/templates/partials/chat-new.php:28
-#: templates/explore.php:170 templates/partials/chat-new.php:28
+#: includes/Core/Plugin.php:1032 templates/partials/chat-new.php:28
 msgid "Search users..."
 msgstr ""
 
-#: dist/wpmediaverse/templates/explore.php:206 templates/explore.php:206
+#: dist/wpmediaverse/templates/explore.php:206 includes/Core/Plugin.php:1034
 msgid "No users found."
 msgstr ""
 
-#: dist/wpmediaverse/templates/explore.php:489 templates/explore.php:480
+#: dist/wpmediaverse/templates/explore.php:489 templates/explore.php:393
 #. translators: %s: tag slug that could not be found.
 msgid "Tag \"%s\" not found"
 msgstr ""
 
-#: dist/wpmediaverse/templates/explore.php:495 templates/explore.php:486
+#: dist/wpmediaverse/templates/explore.php:495 templates/explore.php:399
 #. translators: %s: category slug that could not be found.
 msgid "Category \"%s\" not found"
 msgstr ""
 
-#: dist/wpmediaverse/templates/explore.php:501 templates/explore.php:492
+#: dist/wpmediaverse/templates/explore.php:501 templates/explore.php:405
 msgid "Browse all media, or pick a popular tag below."
 msgstr ""
 
-#: dist/wpmediaverse/templates/explore.php:537 templates/explore.php:528
+#: dist/wpmediaverse/templates/explore.php:537 templates/explore.php:441
 #. translators: %s: search term entered by the user.
 msgid "No results for \"%s\""
 msgstr ""
 
-#: dist/wpmediaverse/templates/explore.php:542 templates/explore.php:533
+#: dist/wpmediaverse/templates/explore.php:542 templates/explore.php:446
 msgid "Try a different keyword or browse by popular tag:"
 msgstr ""
 
-#: dist/wpmediaverse/templates/explore.php:575 templates/explore.php:566
+#: dist/wpmediaverse/templates/explore.php:575 templates/explore.php:479
 msgid "No media has been shared yet"
 msgstr ""
 
-#: dist/wpmediaverse/templates/explore.php:576 templates/explore.php:567
+#: dist/wpmediaverse/templates/explore.php:576 templates/explore.php:480
 msgid "Be the first to share something with the community!"
 msgstr ""
 
