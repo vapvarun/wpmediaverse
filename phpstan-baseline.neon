@@ -6,6 +6,11 @@ parameters:
 			path: includes/Admin/LogViewerPage.php
 
 		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/MediaListPage.php
+
+		-
 			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
 			count: 1
 			path: includes/Admin/MediaListPage.php
@@ -42,7 +47,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 7
+			count: 8
 			path: includes/Admin/OverviewPage.php
 
 		-
@@ -74,6 +79,21 @@ parameters:
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
 			count: 1
 			path: includes/Admin/Settings/SettingsPage.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/ModerationQueue.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/TagManagementPage.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/CollectionMetaBox.php
 
 		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<1, max\\> given\\.$#"

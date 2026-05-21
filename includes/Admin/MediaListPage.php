@@ -27,6 +27,24 @@ class MediaListPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
+		wp_enqueue_script(
+			'mvs-admin-media-list',
+			MVS_PLUGIN_URL . 'assets/js/admin/media-list.js',
+			array( 'mvs-admin-confirm', 'mvs-toast' ),
+			MVS_VERSION,
+			array( 'in_footer' => true )
+		);
+		wp_localize_script(
+			'mvs-admin-media-list',
+			'mvsMediaList',
+			array(
+				'i18n' => array(
+					'noMedia'       => __( 'No media selected.', 'wpmediaverse' ),
+					'confirmDelete' => __( 'Permanently delete the selected media? This cannot be undone.', 'wpmediaverse' ),
+				),
+			)
+		);
+
 		// Detail mini-page — read-only view + per-image actions. Branches
 		// before bulk handling because the detail page has its own redirect
 		// targets that preserve the view=details query param.
@@ -279,40 +297,6 @@ class MediaListPage {
 					</div>
 				</div>
 			</form>
-			<script>
-			// Bulk select-all toggle (header + footer checkboxes both
-			// trigger the same all-toggle on the column-cb row inputs).
-			// Uses event delegation so it works for both thead + tfoot
-			// without binding twice.
-			( function () {
-				var rowSelector = 'input[type="checkbox"][name="media_ids[]"]';
-				document.addEventListener( 'change', function ( event ) {
-					if ( event.target && event.target.classList && event.target.classList.contains( 'mvs-cb-select-all' ) ) {
-						var checked = event.target.checked;
-						document.querySelectorAll( rowSelector ).forEach( function ( cb ) { cb.checked = checked; } );
-						document.querySelectorAll( '.mvs-cb-select-all' ).forEach( function ( cb ) { cb.checked = checked; } );
-					}
-				} );
-
-				// Confirm before bulk delete (permanent).
-				var bulkForm = document.getElementById( 'mvs-do-bulk' );
-				if ( bulkForm ) {
-					bulkForm.closest( 'form' ).addEventListener( 'submit', function ( event ) {
-						var sel = document.getElementById( 'mvs-bulk-action' );
-						if ( ! sel || sel.value !== 'bulk_delete' ) return;
-						var checked = document.querySelectorAll( rowSelector + ':checked' );
-						if ( checked.length === 0 ) {
-							event.preventDefault();
-							alert( '<?php echo esc_js( __( 'No media selected.', 'wpmediaverse' ) ); ?>' );
-							return;
-						}
-						if ( ! confirm( <?php echo wp_json_encode( __( 'Permanently delete the selected media? This cannot be undone.', 'wpmediaverse' ) ); ?> ) ) {
-							event.preventDefault();
-						}
-					} );
-				}
-			} )();
-			</script>
 		</div>
 		<?php
 	}

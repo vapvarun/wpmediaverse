@@ -42,6 +42,14 @@ class TagManagementPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
+		wp_enqueue_script(
+			'mvs-admin-tag-management',
+			MVS_PLUGIN_URL . 'assets/js/admin/tag-management.js',
+			array( 'jquery' ),
+			MVS_VERSION,
+			array( 'in_footer' => true )
+		);
+
 		// Check if we're in edit mode.
 		$edit_mode = isset( $_GET['action'] ) && 'edit' === $_GET['action'] && isset( $_GET['tag_id'] ); // phpcs:ignore WordPress.Security.NonceVerification
 		if ( $edit_mode ) {
@@ -126,16 +134,6 @@ class TagManagementPage {
 				?>
 			</form>
 		</div>
-
-		<script>
-		jQuery( document ).ready( function( $ ) {
-			// Select all checkboxes functionality.
-			$( '#cb-select-all-1, #cb-select-all-2' ).on( 'change', function() {
-				var checked = $( this ).prop( 'checked' );
-				$( 'input[name="tag_ids[]"]' ).prop( 'checked', checked );
-			});
-		});
-		</script>
 		<?php
 	}
 

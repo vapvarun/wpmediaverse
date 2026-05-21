@@ -503,9 +503,6 @@ class SettingsPage {
 				if ( ! $this->is_pro_active() ) {
 					$this->render_pro_upsell( 'general' );
 				}
-				if ( $this->is_pro_active() ) {
-					$this->render_storage_toggle_script();
-				}
 				?>
 			</div>
 		</div>
@@ -634,32 +631,6 @@ class SettingsPage {
 	// -------------------------------------------------------------------------
 	// Settings Panels Renderer (General tab)
 	// -------------------------------------------------------------------------
-
-	/**
-	 * Render inline JS for toggling storage driver panels.
-	 */
-	private function render_storage_toggle_script(): void {
-		?>
-		<script>
-		(function(){
-			var sel = document.querySelector('select[name="mvs_storage_driver"]');
-			if (!sel) return;
-			function toggle() {
-				var panels = document.querySelectorAll('[data-mvs-driver]');
-				for (var i = 0; i < panels.length; i++) {
-					if (panels[i].getAttribute('data-mvs-driver') === sel.value) {
-						panels[i].removeAttribute('hidden');
-					} else {
-						panels[i].setAttribute('hidden', '');
-					}
-				}
-			}
-			sel.addEventListener('change', toggle);
-			toggle();
-		})();
-		</script>
-		<?php
-	}
 
 	/**
 	 * Render the Pro upsell section below settings, tailored to the active tab.

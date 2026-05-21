@@ -123,12 +123,52 @@ class OverviewPage {
 	}
 
 	/**
+	 * Enqueue the overview-page script (demo import/cleanup + welcome dismiss).
+	 *
+	 * The shared mvs-admin-confirm modal handle is registered in
+	 * enqueue_admin_assets() on every mvs screen, so we depend on it here for
+	 * the cleanup confirmation. wp-api-fetch backs the welcome-banner dismiss.
+	 */
+	private function enqueue_overview_script(): void {
+		wp_enqueue_script(
+			'mvs-admin-overview',
+			MVS_PLUGIN_URL . 'assets/js/admin/overview.js',
+			array( 'mvs-admin-confirm', 'wp-api-fetch' ),
+			MVS_VERSION,
+			array( 'in_footer' => true )
+		);
+
+		$explore_page_id = (int) get_option( 'mvs_page_explore', 0 );
+		$explore_url     = $explore_page_id ? get_permalink( $explore_page_id ) : '';
+
+		wp_localize_script(
+			'mvs-admin-overview',
+			'mvsOverview',
+			array(
+				'exploreUrl' => $explore_url ? esc_url_raw( $explore_url ) : '',
+				'i18n'       => array(
+					'importing'             => __( 'Importing...', 'wpmediaverse' ),
+					'importDemoData'        => __( 'Import Demo Data', 'wpmediaverse' ),
+					'importFailedInvalid'   => __( 'Import failed. The server returned an invalid response. Please check wp-content/debug.log.', 'wpmediaverse' ),
+					'redirectingToExplore'  => __( 'Redirecting to Explore page...', 'wpmediaverse' ),
+					'deleting'              => __( 'Deleting...', 'wpmediaverse' ),
+					'deleteDemoData'        => __( 'Delete Demo Data', 'wpmediaverse' ),
+					'cleanupFailedInvalid'  => __( 'Cleanup failed. The server returned an invalid response. Please check wp-content/debug.log.', 'wpmediaverse' ),
+					'cleanupConfirm'        => __( 'Delete all demo users and the media, albums, and collections they own? Your real user data will not be touched. This cannot be undone.', 'wpmediaverse' ),
+				),
+			)
+		);
+	}
+
+	/**
 	 * Render the overview page.
 	 */
 	public function render_page(): void {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
+
+		$this->enqueue_overview_script();
 
 		$stats        = $this->get_stats();
 		$recent_media = $this->get_recent_media();
@@ -226,59 +266,6 @@ class OverviewPage {
 										<div class="mvs-import-progress-bar mvs-progress-bar" id="mvs-import-progress-bar" style="width:0%;"></div>
 									</div>
 								</div>
-								<script>
-								document.getElementById('mvs-import-demo-btn').addEventListener('click', function() {
-									var btn = this;
-									var status = document.getElementById('mvs-import-demo-status');
-									var progress = document.getElementById('mvs-import-progress');
-									var bar = document.getElementById('mvs-import-progress-bar');
-									btn.disabled = true;
-									btn.textContent = '<?php echo esc_js( __( 'Importing...', 'wpmediaverse' ) ); ?>';
-									status.textContent = '';
-									progress.classList.remove('mvs-hidden');
-									bar.style.width = '30%';
-									var xhr = new XMLHttpRequest();
-									xhr.open('POST', ajaxurl);
-									xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-									xhr.onload = function() {
-										bar.style.width = '100%';
-										var data;
-										try {
-											data = JSON.parse(xhr.responseText);
-										} catch (err) {
-											status.textContent = '<?php echo esc_js( __( 'Import failed. The server returned an invalid response. Please check wp-content/debug.log.', 'wpmediaverse' ) ); ?>';
-											status.className = 'mvs-status-inline mvs-btn-text-danger';
-											btn.disabled = false;
-											btn.textContent = '<?php echo esc_js( __( 'Import Demo Data', 'wpmediaverse' ) ); ?>';
-											progress.classList.add('mvs-hidden');
-											console.error('mvs_import_demo_data: invalid JSON response', err, xhr.responseText);
-											return;
-										}
-										if (data.success) {
-											status.textContent = data.data.message;
-											status.className = 'mvs-status-inline mvs-icon-success';
-											<?php
-											$explore_page_id = (int) get_option( 'mvs_page_explore', 0 );
-											$explore_url     = $explore_page_id ? get_permalink( $explore_page_id ) : '';
-											if ( $explore_url ) :
-												?>
-											status.textContent += ' <?php echo esc_js( __( 'Redirecting to Explore page...', 'wpmediaverse' ) ); ?>';
-											setTimeout(function() { window.location.href = '<?php echo esc_url( $explore_url ); ?>'; }, 1500);
-											<?php else : ?>
-											setTimeout(function() { location.reload(); }, 1500);
-											<?php endif; ?>
-										} else {
-											status.textContent = data.data ? data.data.message : 'Import failed.';
-											status.className = 'mvs-status-inline mvs-btn-text-danger';
-											btn.disabled = false;
-											btn.textContent = '<?php echo esc_js( __( 'Import Demo Data', 'wpmediaverse' ) ); ?>';
-											progress.classList.add('mvs-hidden');
-										}
-									};
-									setTimeout(function() { bar.style.width = '60%'; }, 500);
-									xhr.send('action=mvs_import_demo_data&_nonce=' + btn.getAttribute('data-nonce'));
-								});
-								</script>
 							<?php else : ?>
 								<?php if ( current_user_can( 'manage_mvs_settings' ) ) : ?>
 									<div class="mvs-demo-cleanup mvs-section-divider">
@@ -289,45 +276,6 @@ class OverviewPage {
 										</button>
 										<span id="mvs-cleanup-demo-status" class="mvs-status-inline"></span>
 									</div>
-									<script>
-									document.getElementById('mvs-cleanup-demo-btn').addEventListener('click', function() {
-										if (!confirm('<?php echo esc_js( __( 'Delete all demo users and the media, albums, and collections they own? Your real user data will not be touched. This cannot be undone.', 'wpmediaverse' ) ); ?>')) {
-											return;
-										}
-										var btn = this;
-										var status = document.getElementById('mvs-cleanup-demo-status');
-										btn.disabled = true;
-										btn.textContent = '<?php echo esc_js( __( 'Deleting...', 'wpmediaverse' ) ); ?>';
-										status.textContent = '';
-										var xhr = new XMLHttpRequest();
-										xhr.open('POST', ajaxurl);
-										xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-										xhr.onload = function() {
-											var data;
-											try {
-												data = JSON.parse(xhr.responseText);
-											} catch (err) {
-												status.textContent = '<?php echo esc_js( __( 'Cleanup failed. The server returned an invalid response. Please check wp-content/debug.log.', 'wpmediaverse' ) ); ?>';
-												status.className = 'mvs-status-inline mvs-btn-text-danger';
-												btn.disabled = false;
-												btn.textContent = '<?php echo esc_js( __( 'Delete Demo Data', 'wpmediaverse' ) ); ?>';
-												console.error('mvs_cleanup_demo: invalid JSON response', err, xhr.responseText);
-												return;
-											}
-											if (data.success) {
-												status.textContent = data.data.message;
-												status.className = 'mvs-status-inline mvs-icon-success';
-												setTimeout(function() { location.reload(); }, 1500);
-											} else {
-												status.textContent = data.data ? data.data.message : 'Cleanup failed.';
-												status.className = 'mvs-status-inline mvs-btn-text-danger';
-												btn.disabled = false;
-												btn.textContent = '<?php echo esc_js( __( 'Delete Demo Data', 'wpmediaverse' ) ); ?>';
-											}
-										};
-										xhr.send('action=mvs_cleanup_demo_data&_nonce=' + btn.getAttribute('data-nonce'));
-									});
-									</script>
 								<?php endif; ?>
 							<?php endif; ?>
 						</div>
@@ -596,18 +544,6 @@ class OverviewPage {
 				<i data-lucide="x"></i>
 			</button>
 		</div>
-		<script>
-		document.getElementById('mvs-dismiss-welcome').addEventListener('click', function() {
-			var banner = document.getElementById('mvs-welcome-banner');
-			banner.classList.add('mvs-hidden');
-			// Phase 6: REST replaces wp_ajax_mvs_dismiss_welcome. wp.apiFetch
-			// is enqueued on every admin page by core; the wp_rest nonce header
-			// is auto-attached by its middleware.
-			if ( window.wp && wp.apiFetch ) {
-				wp.apiFetch({ path: '/mvs/v1/admin/welcome/dismiss', method: 'POST' });
-			}
-		});
-		</script>
 		<?php
 	}
 
