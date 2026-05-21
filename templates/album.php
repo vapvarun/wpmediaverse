@@ -496,8 +496,15 @@ $mvs_archive_url = home_url( '/media/' );
 								window.location.reload();
 							}).catch(function (err) {
 								btn.disabled = false;
-								if (labelEl) { labelEl.textContent = defaultLabel; }
-								alert((err && err.message) || errorText);
+								// Non-blocking error feedback on the button itself
+								// (no native alert dialog). Restores after 3s.
+								var msg = (err && err.message) || errorText;
+								if (labelEl) {
+									labelEl.textContent = msg;
+									setTimeout(function () { labelEl.textContent = defaultLabel; }, 3000);
+								} else {
+									btn.setAttribute('title', msg);
+								}
 							});
 						});
 					});
