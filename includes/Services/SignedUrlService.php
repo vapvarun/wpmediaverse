@@ -191,6 +191,14 @@ class SignedUrlService {
 	private function has_resolvable_thumbnail( int $media_id ): bool {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
+		// Check _path keys first (1.4.0+ source of truth), then fall back to
+		// the legacy URL keys for pre-migration rows.
+		foreach ( array( 'thumb_large_path', 'thumb_medium_path', 'thumb_thumb_path' ) as $key ) {
+			$value = $repo->get_raw( $media_id, $key );
+			if ( is_string( $value ) && '' !== $value ) {
+				return true;
+			}
+		}
 		foreach ( array( 'thumb_large', 'thumb_medium', 'thumb_thumb' ) as $thumb_key ) {
 			$value = $repo->get_raw( $media_id, $thumb_key );
 			if ( is_string( $value ) && '' !== $value ) {
@@ -202,6 +210,10 @@ class SignedUrlService {
 		// (serving a .mp4 with image headers produces a black poster).
 		$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
 		if ( 0 === strpos( $file_type, 'image/' ) ) {
+			$file_path = $repo->get_raw( $media_id, 'file_path' );
+			if ( is_string( $file_path ) && '' !== $file_path ) {
+				return true;
+			}
 			$file_url = $repo->get_raw( $media_id, 'file_url' );
 			if ( is_string( $file_url ) && '' !== $file_url ) {
 				return true;
@@ -402,6 +414,9 @@ class SignedUrlService {
 	private function serve_thumbnail( int $media_id, string $size ): void {
 		// Internal: signing service serves the underlying file from disk —
 		// must use the raw stored URL, not a signed-URL re-emission.
+		$rel_path  = '';
+		$thumb_url = '';
+
 		if ( 'watermark' === $size ) {
 			$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'watermark_url' );
 		} else {
@@ -413,45 +428,70 @@ class SignedUrlService {
 			$meta_key = $size_map[ $size ] ?? 'thumb_large';
 			$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-			// Fall back through image sizes only. NEVER fall back to file_url —
-			// for videos that's a .mp4 served with image/jpeg headers, which
-			// produces a black <video poster> instead of a 404 the browser
-			// can recover from.
-			$thumb_url = $repo->get_raw( $media_id, $meta_key )
-				?: $repo->get_raw( $media_id, 'thumb_medium' )
-				?: $repo->get_raw( $media_id, 'thumb_thumb' )
+			// Path-meta first (1.4.0+, driver-agnostic). Fall back through
+			// image sizes the same way the URL chain did. NEVER fall back
+			// to file_url for videos — serving a .mp4 with image/jpeg
+			// headers produces a black <video poster> instead of a 404 the
+			// browser can recover from.
+			$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' )
+				?: (string) $repo->get_raw( $media_id, 'thumb_medium_path' )
+				?: (string) $repo->get_raw( $media_id, 'thumb_thumb_path' )
 				?: '';
 
-			// For images, the original IS a valid poster — fall through to file_url.
-			if ( '' === $thumb_url ) {
+			if ( '' === $rel_path ) {
 				$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
 				if ( 0 === strpos( $file_type, 'image/' ) ) {
-					$thumb_url = (string) $repo->get_raw( $media_id, 'file_url' );
+					$rel_path = (string) $repo->get_raw( $media_id, 'file_path' );
+				}
+			}
+
+			// Legacy URL fallback for pre-migration rows.
+			if ( '' === $rel_path ) {
+				$thumb_url = $repo->get_raw( $media_id, $meta_key )
+					?: $repo->get_raw( $media_id, 'thumb_medium' )
+					?: $repo->get_raw( $media_id, 'thumb_thumb' )
+					?: '';
+				if ( '' === $thumb_url ) {
+					$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
+					if ( 0 === strpos( $file_type, 'image/' ) ) {
+						$thumb_url = (string) $repo->get_raw( $media_id, 'file_url' );
+					}
 				}
 			}
 		}
 
-		if ( ! $thumb_url ) {
-			status_header( 404 );
-			header( 'Content-Type: text/plain' );
-			echo esc_html(
-				'watermark' === $size ? 'Watermark not found.' : 'Thumbnail not found.'
-			);
-			exit;
+		$upload_dir = wp_upload_dir();
+		$base_url   = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
+
+		// When we have a clean rel path, derive the on-disk filename from it
+		// directly. This is the new preferred path — it cannot fail the
+		// uploads-base containment check the way a stranded CDN URL did,
+		// because we never trust an absolute URL stored in meta. The
+		// realpath() containment check below still applies.
+		if ( '' !== $rel_path ) {
+			$full_path = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . ltrim( $rel_path, '/' );
+		} else {
+			if ( ! $thumb_url ) {
+				status_header( 404 );
+				header( 'Content-Type: text/plain' );
+				echo esc_html(
+					'watermark' === $size ? 'Watermark not found.' : 'Thumbnail not found.'
+				);
+				exit;
+			}
+
+			$thumb_url_http = set_url_scheme( $thumb_url, 'http' );
+
+			if ( 0 !== strpos( $thumb_url_http, $base_url ) ) {
+				status_header( 403 );
+				header( 'Content-Type: text/plain' );
+				echo esc_html( 'Access denied.' );
+				exit;
+			}
+
+			$full_path = trailingslashit( $upload_dir['basedir'] ) . substr( $thumb_url_http, strlen( $base_url ) );
 		}
 
-		$upload_dir     = wp_upload_dir();
-		$base_url       = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
-		$thumb_url_http = set_url_scheme( $thumb_url, 'http' );
-
-		if ( 0 !== strpos( $thumb_url_http, $base_url ) ) {
-			status_header( 403 );
-			header( 'Content-Type: text/plain' );
-			echo esc_html( 'Access denied.' );
-			exit;
-		}
-
-		$full_path = trailingslashit( $upload_dir['basedir'] ) . substr( $thumb_url_http, strlen( $base_url ) );
 		$real_path = realpath( $full_path );
 		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
 
@@ -561,7 +601,33 @@ class SignedUrlService {
 			return '';
 		}
 
-		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// 1.4.0+ — the meta is a relative path (`2026/05/foo-1024.jpg`).
+		// Resolve via the CURRENTLY-ACTIVE driver so switching CDN/storage
+		// providers does not strand stored URLs (card 9925110293 + the
+		// "service-specific CDN in meta" architectural fix). The legacy
+		// `thumb_*` URL meta is consulted only as a fallback when no _path
+		// is present yet (pre-migration rows).
+		$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' );
+		if ( '' !== $rel_path ) {
+			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
+			$driver  = $storage->get_driver_for_media( $media_id );
+			if ( $driver instanceof LocalDriver ) {
+				// Active driver IS local — let /serve stream it (no direct URL).
+				return '';
+			}
+			$thumb_url = (string) $driver->url( $rel_path );
+			if ( '' === $thumb_url || ! $this->is_cloud_hosted_url( $thumb_url ) ) {
+				return '';
+			}
+			/** This filter is documented below in the legacy branch. */
+			return (string) apply_filters( 'mvs_public_cloud_thumbnail_url', $thumb_url, $media_id, $size );
+		}
+
+		// Legacy fallback — pre-1.4.0 rows have only the URL meta. The
+		// Migrator v14 backfill writes `_path` for these, so this branch
+		// shrinks toward zero as the migration completes.
 		$thumb_url = (string) $repo->get_raw( $media_id, $meta_key );
 
 		if ( ! $this->is_cloud_hosted_url( $thumb_url ) ) {
@@ -604,15 +670,32 @@ class SignedUrlService {
 			return '';
 		}
 
-		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$file_url = (string) $repo->get_raw( $media_id, 'file_url' );
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-		if ( ! $this->is_cloud_hosted_url( $file_url ) ) {
-			// Empty, or still on local disk (not yet migrated) — fall through to
-			// the gated /serve proxy, which streams the local file.
-			return '';
+		// 1.4.0+ — resolve via the CURRENTLY-ACTIVE driver against the
+		// canonical `file_path` column (driver-agnostic). Switching CDNs no
+		// longer requires URL meta rewrites; the active driver knows its
+		// own base URL.
+		$rel_path = (string) $repo->get_raw( $media_id, 'file_path' );
+		if ( '' !== $rel_path ) {
+			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
+			$driver  = $storage->get_driver_for_media( $media_id );
+			if ( $driver instanceof LocalDriver ) {
+				return '';
+			}
+			$file_url = (string) $driver->url( $rel_path );
+			if ( '' === $file_url || ! $this->is_cloud_hosted_url( $file_url ) ) {
+				return '';
+			}
+			/** This filter is documented in maybe_direct_cloud_thumbnail_url(). */
+			return (string) apply_filters( 'mvs_public_cloud_file_url', $file_url, $media_id, '' );
 		}
 
+		// Legacy fallback — rows missing `file_path` (extremely rare).
+		$file_url = (string) $repo->get_raw( $media_id, 'file_url' );
+		if ( ! $this->is_cloud_hosted_url( $file_url ) ) {
+			return '';
+		}
 		/** This filter is documented in maybe_direct_cloud_thumbnail_url(). */
 		return (string) apply_filters( 'mvs_public_cloud_file_url', $file_url, $media_id, '' );
 	}
@@ -833,27 +916,36 @@ class SignedUrlService {
 				return '';
 		}
 
-		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$webp_url = (string) $repo->get_raw( $media_id, $meta_key );
-		if ( '' === $webp_url ) {
-			return '';
-		}
-
 		$upload_dir = wp_upload_dir();
 		if ( ! is_array( $upload_dir ) || empty( $upload_dir['baseurl'] ) || empty( $upload_dir['basedir'] ) ) {
 			return '';
 		}
 
-		// Normalize both sides to a single scheme so HTTPS-vs-HTTP doesn't
-		// break the prefix match.
-		$base_url       = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
-		$webp_url_http  = set_url_scheme( $webp_url, 'http' );
-		if ( 0 !== strpos( $webp_url_http, $base_url ) ) {
-			// Cloud-stored WebP: out of scope for H1. See method docblock.
-			return '';
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// Prefer the rel-path meta (driver-agnostic, 1.4.0+); fall back to URL
+		// parsing for legacy rows the Migrator v14 backfill hasn't reached.
+		$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' );
+		if ( '' !== $rel_path ) {
+			$candidate = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . ltrim( $rel_path, '/' );
+		} else {
+			$webp_url = (string) $repo->get_raw( $media_id, $meta_key );
+			if ( '' === $webp_url ) {
+				return '';
+			}
+
+			// Normalize both sides to a single scheme so HTTPS-vs-HTTP doesn't
+			// break the prefix match.
+			$base_url      = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
+			$webp_url_http = set_url_scheme( $webp_url, 'http' );
+			if ( 0 !== strpos( $webp_url_http, $base_url ) ) {
+				// Cloud-stored WebP: out of scope for H1. See method docblock.
+				return '';
+			}
+
+			$candidate = trailingslashit( $upload_dir['basedir'] ) . substr( $webp_url_http, strlen( $base_url ) );
 		}
 
-		$candidate = trailingslashit( $upload_dir['basedir'] ) . substr( $webp_url_http, strlen( $base_url ) );
 		$real_path = realpath( $candidate );
 		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
 		if ( false === $real_path || false === $real_base ) {
@@ -950,24 +1042,32 @@ class SignedUrlService {
 				return '';
 		}
 
-		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$avif_url = (string) $repo->get_raw( $media_id, $meta_key );
-		if ( '' === $avif_url ) {
-			return '';
-		}
-
 		$upload_dir = wp_upload_dir();
 		if ( ! is_array( $upload_dir ) || empty( $upload_dir['baseurl'] ) || empty( $upload_dir['basedir'] ) ) {
 			return '';
 		}
 
-		$base_url      = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
-		$avif_url_http = set_url_scheme( $avif_url, 'http' );
-		if ( 0 !== strpos( $avif_url_http, $base_url ) ) {
-			return '';
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// Prefer the rel-path meta (1.4.0+); URL parse is the legacy fallback.
+		$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' );
+		if ( '' !== $rel_path ) {
+			$candidate = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . ltrim( $rel_path, '/' );
+		} else {
+			$avif_url = (string) $repo->get_raw( $media_id, $meta_key );
+			if ( '' === $avif_url ) {
+				return '';
+			}
+
+			$base_url      = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
+			$avif_url_http = set_url_scheme( $avif_url, 'http' );
+			if ( 0 !== strpos( $avif_url_http, $base_url ) ) {
+				return '';
+			}
+
+			$candidate = trailingslashit( $upload_dir['basedir'] ) . substr( $avif_url_http, strlen( $base_url ) );
 		}
 
-		$candidate = trailingslashit( $upload_dir['basedir'] ) . substr( $avif_url_http, strlen( $base_url ) );
 		$real_path = realpath( $candidate );
 		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
 		if ( false === $real_path || false === $real_base ) {

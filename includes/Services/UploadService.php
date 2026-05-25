@@ -300,11 +300,14 @@ class UploadService {
 		// Store the WebP sibling, if optimization produced one. Same dir as
 		// the original, same basename, .webp extension. Failure here is non
 		// fatal — original is already stored, we just won't have a WebP URL.
-		$webp_url = '';
+		$webp_url  = '';
+		$webp_dest = '';
 		if ( null !== $webp_local && file_exists( $webp_local ) ) {
 			$webp_dest = dirname( $dest_path ) . '/' . pathinfo( $dest_path, PATHINFO_FILENAME ) . '.webp';
 			if ( $driver->store( $webp_local, $webp_dest ) ) {
 				$webp_url = (string) $driver->url( $webp_dest );
+			} else {
+				$webp_dest = '';
 			}
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 			@unlink( $webp_local );
@@ -312,11 +315,14 @@ class UploadService {
 
 		// AVIF sibling — same pattern, gated on the mvs_generate_avif setting
 		// (default off). Failure is non-fatal.
-		$avif_url = '';
+		$avif_url  = '';
+		$avif_dest = '';
 		if ( null !== $avif_local && file_exists( $avif_local ) ) {
 			$avif_dest = dirname( $dest_path ) . '/' . pathinfo( $dest_path, PATHINFO_FILENAME ) . '.avif';
 			if ( $driver->store( $avif_local, $avif_dest ) ) {
 				$avif_url = (string) $driver->url( $avif_dest );
+			} else {
+				$avif_dest = '';
 			}
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 			@unlink( $avif_local );
@@ -388,11 +394,21 @@ class UploadService {
 		// Persist optimization outcome on the media row. Done here (after the
 		// media insert) because the meta keys need a media_id. The original
 		// optimization itself already ran on the temp file pre-store().
+		// URL meta is the legacy shape (kept populated for ≥2 release
+		// backcompat per the Production Rules deprecation policy); the new
+		// `_path` keys are driver-agnostic and what the read side prefers.
 		if ( '' !== $avif_url ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set(
 				$media_id,
 				\WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF,
 				$avif_url
+			);
+		}
+		if ( '' !== $avif_dest ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set(
+				$media_id,
+				\WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF_PATH,
+				$avif_dest
 			);
 		}
 
@@ -401,6 +417,13 @@ class UploadService {
 				$media_id,
 				\WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP,
 				$webp_url
+			);
+		}
+		if ( '' !== $webp_dest ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set(
+				$media_id,
+				\WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP_PATH,
+				$webp_dest
 			);
 		}
 		if ( 0 === strpos( $mime, 'image/' ) ) {
@@ -859,11 +882,29 @@ class UploadService {
 			$cloud_rel_dir = '';
 		}
 
+		// Path-meta gate. New 1.4.0 `_path` keys are written only when the
+		// media's `file_path` is a clean relative path (the shape that
+		// `UploadService::handle()` writes — `2026/05/foo.jpg`). Legacy
+		// imported records (MediaPress / rtMedia / BuddyBoss importers)
+		// store ABSOLUTE paths in `file_path`; for those, persisting `_path`
+		// would yield bogus values like `/var/www/.../foo-1024.jpg` that
+		// the read side cannot resolve under `wpmediaverse/`. Falling
+		// through to the legacy URL branch keeps imported records working.
+		$path_meta_ok = ( '' !== $media_rel_path )
+			&& ( 0 !== strpos( $media_rel_path, '/' ) )
+			&& ( ! preg_match( '#^[A-Za-z]:[\\\\/]#', $media_rel_path ) ); // not Windows-absolute either
+
 		$image_opt = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
 
 		foreach ( $generated as $size_name => $data ) {
 			$local_thumb_url  = $base_url . '/' . $data['file'];
 			$local_thumb_path = trailingslashit( dirname( $file_path ) ) . $data['file'];
+			// Relative-to-wpmediaverse/ path for this variant. Same key the
+			// active driver uses regardless of where the bytes live — this is
+			// the new source-of-truth for the read side (since 1.4.0). The
+			// URL meta below is kept populated for ≥2 release backcompat per
+			// Production Rule #1.
+			$rel_variant_path = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $data['file'];
 
 			// Per-variant optimization pass — dispatches mvs_optimize_image so
 			// external compressors can process the thumbnail. The internal
@@ -881,8 +922,6 @@ class UploadService {
 			$stored_url = $local_thumb_url;
 
 			if ( $cloud_driver ) {
-				$rel_thumb_path = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $data['file'];
-
 				/**
 				 * Filter the thumbnail URL when on a cloud driver.
 				 *
@@ -915,8 +954,8 @@ class UploadService {
 
 				if ( '' !== $filtered ) {
 					$stored_url = $filtered;
-				} elseif ( $cloud_driver->store( $local_thumb_path, $rel_thumb_path ) ) {
-					$stored_url = (string) $cloud_driver->url( $rel_thumb_path );
+				} elseif ( $cloud_driver->store( $local_thumb_path, $rel_variant_path ) ) {
+					$stored_url = (string) $cloud_driver->url( $rel_variant_path );
 				} else {
 					LoggerService::warning(
 						'upload',
@@ -931,36 +970,51 @@ class UploadService {
 			}
 
 			$repo->set( $media_id, 'thumb_' . $size_name, $stored_url );
+			if ( $path_meta_ok ) {
+				$repo->set( $media_id, 'thumb_' . $size_name . '_path', $rel_variant_path );
+			}
 
 			// WebP sibling for this variant. For cloud drivers we upload it
 			// next to the variant; for local we keep the file on disk and
 			// just record the public URL. Failure is non-fatal.
 			if ( null !== $variant_webp_local && file_exists( $variant_webp_local ) ) {
 				$webp_filename = pathinfo( $data['file'], PATHINFO_FILENAME ) . '.webp';
+				$webp_rel      = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $webp_filename;
+				$wrote_webp    = false;
 				if ( $cloud_driver ) {
-					$webp_rel = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $webp_filename;
 					if ( $cloud_driver->store( $variant_webp_local, $webp_rel ) ) {
 						$repo->set( $media_id, 'thumb_' . $size_name . '_webp', (string) $cloud_driver->url( $webp_rel ) );
+						$wrote_webp = true;
 					}
 					// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 					@unlink( $variant_webp_local );
 				} else {
 					$repo->set( $media_id, 'thumb_' . $size_name . '_webp', $base_url . '/' . $webp_filename );
+					$wrote_webp = true;
+				}
+				if ( $wrote_webp && $path_meta_ok ) {
+					$repo->set( $media_id, 'thumb_' . $size_name . '_webp_path', $webp_rel );
 				}
 			}
 
 			// AVIF sibling — same plumbing as WebP, gated on mvs_generate_avif.
 			if ( null !== $variant_avif_local && file_exists( $variant_avif_local ) ) {
 				$avif_filename = pathinfo( $data['file'], PATHINFO_FILENAME ) . '.avif';
+				$avif_rel      = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $avif_filename;
+				$wrote_avif    = false;
 				if ( $cloud_driver ) {
-					$avif_rel = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $avif_filename;
 					if ( $cloud_driver->store( $variant_avif_local, $avif_rel ) ) {
 						$repo->set( $media_id, 'thumb_' . $size_name . '_avif', (string) $cloud_driver->url( $avif_rel ) );
+						$wrote_avif = true;
 					}
 					// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 					@unlink( $variant_avif_local );
 				} else {
 					$repo->set( $media_id, 'thumb_' . $size_name . '_avif', $base_url . '/' . $avif_filename );
+					$wrote_avif = true;
+				}
+				if ( $wrote_avif && $path_meta_ok ) {
+					$repo->set( $media_id, 'thumb_' . $size_name . '_avif_path', $avif_rel );
 				}
 			}
 		}
@@ -977,6 +1031,11 @@ class UploadService {
 			foreach ( array_keys( $sizes ) as $size_name ) {
 				if ( ! isset( $generated[ $size_name ] ) ) {
 					$repo->set( $media_id, 'thumb_' . $size_name, $file_url );
+					// Drop the original's rel path into the new _path key so the
+					// read side can use the active driver without re-parsing URLs.
+					if ( $path_meta_ok ) {
+						$repo->set( $media_id, 'thumb_' . $size_name . '_path', $media_rel_path );
+					}
 				}
 			}
 		}
@@ -1067,6 +1126,13 @@ class UploadService {
 		}
 
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_large', $file_url );
+		$media_rel = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_path' );
+		// Only persist `_path` when `file_path` is a clean relative shape —
+		// imported records may carry absolute filesystem paths there. See
+		// the `$path_meta_ok` gate in generate_thumbnails() for the rationale.
+		if ( '' !== $media_rel && 0 !== strpos( $media_rel, '/' ) && ! preg_match( '#^[A-Za-z]:[\\\\/]#', $media_rel ) ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'thumb_large_path', $media_rel );
+		}
 		return true;
 	}
 
