@@ -99,10 +99,71 @@
 		uploadAndAddToAlbum( files );
 	}
 
+	// Capture the first usable video frame so the server-side poster pipeline
+	// always has a real image to feed `UploadService::generate_thumbnails()`.
+	// Without this, videos uploaded on hosts without ffmpeg + without an
+	// embedded cover atom render the default-SVG poster in Safari/Bing
+	// (card 9910574354).
+	function generateVideoThumb( file ) {
+		return new Promise( function ( resolve ) {
+			var video = document.createElement( 'video' );
+			var url = URL.createObjectURL( file );
+			video.preload = 'metadata';
+			video.muted = true;
+			video.playsInline = true;
+			video.src = url;
+			video.addEventListener( 'loadeddata', function () {
+				video.currentTime = Math.min( 1, video.duration * 0.1 || 0 );
+			} );
+			video.addEventListener( 'seeked', function () {
+				try {
+					var canvas = document.createElement( 'canvas' );
+					canvas.width = video.videoWidth || 320;
+					canvas.height = video.videoHeight || 180;
+					canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+					URL.revokeObjectURL( url );
+					resolve( canvas.toDataURL( 'image/jpeg', 0.85 ) );
+				} catch ( e ) {
+					URL.revokeObjectURL( url );
+					resolve( '' );
+				}
+			} );
+			video.addEventListener( 'error', function () {
+				URL.revokeObjectURL( url );
+				resolve( '' );
+			} );
+		} );
+	}
+
+	function dataURLtoBlob( dataURL ) {
+		if ( ! dataURL || dataURL.indexOf( 'data:' ) !== 0 ) {
+			return null;
+		}
+		try {
+			var parts = dataURL.split( ',' );
+			var match = parts[ 0 ].match( /:(.*?);/ );
+			var mime = match ? match[ 1 ] : 'image/jpeg';
+			var bin = atob( parts[ 1 ] );
+			var bytes = new Uint8Array( bin.length );
+			for ( var i = 0; i < bin.length; i++ ) {
+				bytes[ i ] = bin.charCodeAt( i );
+			}
+			return new Blob( [ bytes ], { type: mime } );
+		} catch ( e ) {
+			return null;
+		}
+	}
+
 	function uploadAndAddToAlbum( files ) {
 		statusEl.style.display = 'block';
 		var total = files.length, done = 0;
 		var uploadedIds = [];
+		// Mirror the shared-ui modal flag (src/blocks/shared-ui/view.js:878):
+		// for ≥2-file album batches, tag each per-file POST so the server
+		// suppresses per-media BP activities and emits ONE "uploaded N photos
+		// to album X" gallery activity instead. Single-file uploads still
+		// produce a normal per-photo activity (no bundling needed).
+		var uploadUrl = cfg.restUrl + 'media' + ( total > 1 ? '?album_upload=1' : '' );
 		statusEl.textContent = uploadingLabel( 1, total );
 		statusEl.className = 'mvs-bp-upload-status';
 
@@ -125,13 +186,26 @@
 				}
 				return;
 			}
-			var fd = new FormData();
-			fd.append( 'file', files[ done ] );
-			fetch( cfg.restUrl + 'media', {
-				method: 'POST',
-				headers: { 'X-WP-Nonce': cfg.nonce },
-				credentials: 'same-origin',
-				body: fd,
+			var file = files[ done ];
+			var thumbPromise = file.type.indexOf( 'video/' ) === 0
+				? generateVideoThumb( file )
+				: Promise.resolve( '' );
+
+			thumbPromise.then( function ( localThumb ) {
+				var fd = new FormData();
+				fd.append( 'file', file );
+				if ( localThumb ) {
+					var blob = dataURLtoBlob( localThumb );
+					if ( blob ) {
+						fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
+					}
+				}
+				return fetch( uploadUrl, {
+					method: 'POST',
+					headers: { 'X-WP-Nonce': cfg.nonce },
+					credentials: 'same-origin',
+					body: fd,
+				} );
 			} ).then( function ( r ) {
 				return r.json();
 			} ).then( function ( data ) {

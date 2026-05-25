@@ -1349,6 +1349,152 @@ class Commands {
 	}
 
 	/**
+	 * Heal legacy non-public media rows whose `file_url` / `thumb_*` meta still
+	 * point at a cloud bucket.
+	 *
+	 * Background: before 1.4.0, when a public-on-cloud upload (BunnyCDN, S3, R2,
+	 * DigitalOcean Spaces) was later flipped to a restricted privacy level
+	 * (members / friends / private / group / custom) the URL meta was NOT
+	 * relocalized. `SignedUrlService::serve_thumbnail()` then 403s on every
+	 * read because the stored cloud URL fails its `wpmediaverse/` containment
+	 * check. The 1.4.0 listener fixes this going forward; this command heals
+	 * pre-1.4.0 rows (card 9925110293).
+	 *
+	 * Safe to re-run — rows that already have local URLs are skipped.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Report what would change without writing.
+	 *
+	 * [--media-id=<id>]
+	 * : Only inspect this single media row.
+	 *
+	 * [--limit=<n>]
+	 * : Stop after inspecting this many candidate rows.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs relocalize-private --dry-run
+	 *     wp mvs relocalize-private
+	 *     wp mvs relocalize-private --media-id=47
+	 *
+	 * @subcommand relocalize-private
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional CLI args (unused).
+	 * @param array $assoc_args Associative CLI flags.
+	 */
+	public function relocalize_private( $args, $assoc_args ) {
+		unset( $args );
+
+		$dry_run  = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$media_id = (int) Utils\get_flag_value( $assoc_args, 'media-id', 0 );
+		$limit    = (int) Utils\get_flag_value( $assoc_args, 'limit', 0 );
+
+		global $wpdb;
+
+		$where = "privacy <> 'public' AND file_path IS NOT NULL AND file_path <> ''";
+		if ( $media_id > 0 ) {
+			$where .= $wpdb->prepare( ' AND media_id = %d', $media_id );
+		}
+		$limit_sql = $limit > 0 ? $wpdb->prepare( ' LIMIT %d', $limit ) : '';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( "SELECT media_id, privacy, file_path FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY media_id ASC{$limit_sql}" );
+
+		$total = count( $rows );
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No non-public media rows match. Nothing to heal.' );
+			return;
+		}
+
+		WP_CLI::log( sprintf( 'Inspecting %d non-public media row(s)%s.', $total, $dry_run ? ' [DRY-RUN]' : '' ) );
+
+		if ( ! $dry_run ) {
+			WP_CLI::warning( 'This rewrites mvs_media_index.file_url and mvs_media_meta thumb_* values for non-public rows. Take a DB backup before running on production.' );
+			WP_CLI::confirm( 'Proceed?' );
+		}
+
+		$storage  = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
+		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$healed   = 0;
+		$skipped  = 0;
+		$progress = Utils\make_progress_bar( 'Relocalizing URLs', $total );
+
+		foreach ( $rows as $row ) {
+			$mid = (int) $row->media_id;
+
+			if ( $dry_run ) {
+				// Detect whether any URL meta still points at non-local.
+				$needs_heal = $this->detect_cloud_urls( $repo, $mid );
+				if ( $needs_heal ) {
+					++$healed;
+					WP_CLI::log( sprintf( '  - media #%d (privacy=%s) would be relocalized', $mid, $row->privacy ) );
+				} else {
+					++$skipped;
+				}
+				$progress->tick();
+				continue;
+			}
+
+			$changed = $storage->relocalize_media_urls( $mid );
+			if ( $changed ) {
+				++$healed;
+			} else {
+				++$skipped;
+			}
+			$progress->tick();
+		}
+
+		$progress->finish();
+
+		$prefix = $dry_run ? '[dry-run] Would heal' : 'Healed';
+		WP_CLI::success( sprintf( '%s %d row(s). Skipped %d already-clean row(s).', $prefix, $healed, $skipped ) );
+	}
+
+	/**
+	 * Helper for relocalize-private dry-run mode — flags any URL meta still
+	 * pointing outside the uploads dir.
+	 *
+	 * @param \WPMediaVerse\Repository\MediaRepository $repo     Media repo.
+	 * @param int                                      $media_id Media ID.
+	 * @return bool
+	 */
+	private function detect_cloud_urls( $repo, int $media_id ): bool {
+		$upload_dir = wp_upload_dir();
+		$baseurl    = (string) $upload_dir['baseurl'];
+		if ( '' === $baseurl ) {
+			return false;
+		}
+
+		$keys = array(
+			'file_url',
+			'thumb_large',
+			'thumb_medium',
+			'thumb_thumb',
+			'thumb_large_webp',
+			'thumb_medium_webp',
+			'thumb_thumb_webp',
+			'thumb_large_avif',
+			'thumb_medium_avif',
+			'thumb_thumb_avif',
+			'original_webp',
+			'original_avif',
+		);
+		foreach ( $keys as $key ) {
+			$val = (string) $repo->get_raw( $media_id, $key );
+			if ( '' === $val ) {
+				continue;
+			}
+			if ( 0 !== strpos( $val, $baseurl ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Optimize a single media row (re-encode original + emit WebP siblings).
 	 *
 	 * ## OPTIONS

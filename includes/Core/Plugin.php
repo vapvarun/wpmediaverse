@@ -164,6 +164,19 @@ class Plugin {
 		add_action( 'mvs_media_uploaded', array( self::class, 'maybe_queue_ai' ), 10, 1 );
 		add_action( 'mvs_ai_process_media', array( self::class, 'handle_ai_process' ), 10, 1 );
 
+		// Storage re-localization on privacy escalation. When a media row
+		// flips from `public` to any restricted level, cloud-driver URLs in
+		// `file_url` / `thumb_*` must be rewritten to local equivalents or
+		// `SignedUrlService::serve_thumbnail()` rejects them on the next
+		// read (card 9925110293). Priority 5 — runs BEFORE Pro listeners
+		// (Bunny purge, S3 delete) so they see the post-localization state.
+		add_action(
+			'mvs_media_privacy_changed',
+			array( self::$container->get( 'storage' ), 'sync_urls_on_privacy_change' ),
+			5,
+			3
+		);
+
 		// Access rules privacy filter (priority 20 — after default privacy at 10).
 		$access_rules = self::$container->get( 'access_rules' );
 		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );

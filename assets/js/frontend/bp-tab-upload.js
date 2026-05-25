@@ -178,6 +178,12 @@
 		var total = files.length;
 		var done = 0;
 		var uploadedIds = [];
+		// Mirror the shared-ui modal flag (src/blocks/shared-ui/view.js:878):
+		// for ≥2-file album batches, tag each per-file POST so the server
+		// suppresses per-media BP activities and emits ONE "uploaded N photos
+		// to album X" gallery activity instead. Single-file uploads still
+		// produce a normal per-photo activity (no bundling needed).
+		var uploadUrl = restUrl + 'media' + ( total > 1 ? '?album_upload=1' : '' );
 		startStatus( statusEl, total );
 
 		function next() {
@@ -202,7 +208,7 @@
 			var fd = new FormData();
 			fd.append( 'file', files[ done ] );
 			appendExtraFields( fd );
-			fetch( restUrl + 'media', {
+			fetch( uploadUrl, {
 				method: 'POST',
 				headers: { 'X-WP-Nonce': nonce },
 				credentials: 'same-origin',

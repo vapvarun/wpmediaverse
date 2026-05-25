@@ -146,19 +146,30 @@
 			var url   = URL.createObjectURL( file );
 			video.preload = 'metadata';
 			video.muted   = true;
+			video.playsInline = true;
 			video.src     = url;
 			video.addEventListener( 'loadeddata', function() {
 				video.currentTime = Math.min( 1, video.duration * 0.1 || 0 );
 			} );
 			video.addEventListener( 'seeked', function() {
-				var canvas = document.createElement( 'canvas' );
-				var w = video.videoWidth  || 320;
-				var h = video.videoHeight || 180;
-				canvas.width  = 200;
-				canvas.height = Math.round( 200 * h / w ) || 113;
-				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
-				URL.revokeObjectURL( url );
-				resolve( canvas.toDataURL( 'image/jpeg', 0.7 ) );
+				try {
+					var canvas = document.createElement( 'canvas' );
+					var w = video.videoWidth  || 320;
+					var h = video.videoHeight || 180;
+					// Capture at native resolution so the server can resize to
+					// large/medium/thumb. The 200px-wide downscale used pre-1.4.1
+					// produced a blurry "thumb_large" that Safari/Bing then used
+					// as the <video poster> and the result looked broken on the
+					// activity stream (card 9910574354).
+					canvas.width  = w;
+					canvas.height = h;
+					canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+					URL.revokeObjectURL( url );
+					resolve( canvas.toDataURL( 'image/jpeg', 0.85 ) );
+				} catch ( e ) {
+					URL.revokeObjectURL( url );
+					resolve( '' );
+				}
 			} );
 			video.addEventListener( 'error', function() {
 				URL.revokeObjectURL( url );
@@ -167,43 +178,78 @@
 		} );
 	}
 
+	// Convert a data:image/jpeg;base64,... URL to a Blob so it can ride the
+	// multipart upload as the `thumbnail` field. `MediaController::create_item()`
+	// stages this blob into `wpmediaverse/posters/{media_id}.jpg` and feeds it
+	// through `UploadService::generate_thumbnails()` — same pipeline as the
+	// server-side ffmpeg / cover-atom paths. Safari/Bing now always receive a
+	// real `<video poster>` instead of the default-SVG fallback.
+	function dataURLtoBlob( dataURL ) {
+		if ( ! dataURL || dataURL.indexOf( 'data:' ) !== 0 ) {
+			return null;
+		}
+		try {
+			var parts = dataURL.split( ',' );
+			var match = parts[ 0 ].match( /:(.*?);/ );
+			var mime  = match ? match[ 1 ] : 'image/jpeg';
+			var bin   = atob( parts[ 1 ] );
+			var bytes = new Uint8Array( bin.length );
+			for ( var i = 0; i < bin.length; i++ ) {
+				bytes[ i ] = bin.charCodeAt( i );
+			}
+			return new Blob( [ bytes ], { type: mime } );
+		} catch ( e ) {
+			return null;
+		}
+	}
+
 	function uploadFile( file, btn ) {
 		if ( attachedMedia.length >= maxMedia ) { return Promise.resolve(); }
 
 		var isVideo = file.type.indexOf( 'video/' ) === 0;
 		var isAudio = file.type.indexOf( 'audio/' ) === 0;
 
+		// Serialize thumb capture BEFORE the upload starts so the captured
+		// frame can ride the same multipart POST as `thumbnail`. Pre-1.4.1
+		// ran these in parallel and the captured frame was discarded —
+		// videos with no embedded cover and no ffmpeg on the server ended
+		// up with the default-poster SVG instead of a real first frame.
 		var thumbPromise = isVideo ? generateVideoThumb( file ) : Promise.resolve( '' );
 
-		var fd = new FormData();
-		fd.append( 'file', file );
-		fd.append( 'status', 'draft' );
+		return thumbPromise.then( function( localThumb ) {
+			var fd = new FormData();
+			fd.append( 'file', file );
+			fd.append( 'status', 'draft' );
 
-		// Include the user's chosen privacy level when the admin setting
-		// exposes the selector. Backend still enforces `mvs_allow_user_privacy`
-		// so a forged privacy param is overridden server-side.
-		var privacySel = document.getElementById( 'mvs-activity-privacy' );
-		if ( privacySel && privacySel.value ) {
-			fd.append( 'privacy', privacySel.value );
-		}
-
-		var uploadPromise = fetch( restUrl + 'media?context=activity', {
-			method: 'POST',
-			headers: { 'X-WP-Nonce': nonce },
-			credentials: 'same-origin',
-			body: fd
-		} ).then( function( r ) { return r.json(); } );
-
-		return Promise.all( [ thumbPromise, uploadPromise ] ).then( function( results ) {
-			var localThumb = results[ 0 ];
-			var data       = results[ 1 ];
-			if ( data.id ) {
-				attachedMedia.push( {
-					id:        data.id,
-					thumbUrl:  localThumb || data.thumbnail_url || '',
-					mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
-				} );
+			// Include the user's chosen privacy level when the admin setting
+			// exposes the selector. Backend still enforces `mvs_allow_user_privacy`
+			// so a forged privacy param is overridden server-side.
+			var privacySel = document.getElementById( 'mvs-activity-privacy' );
+			if ( privacySel && privacySel.value ) {
+				fd.append( 'privacy', privacySel.value );
 			}
+
+			if ( isVideo && localThumb ) {
+				var blob = dataURLtoBlob( localThumb );
+				if ( blob ) {
+					fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
+				}
+			}
+
+			return fetch( restUrl + 'media?context=activity', {
+				method: 'POST',
+				headers: { 'X-WP-Nonce': nonce },
+				credentials: 'same-origin',
+				body: fd
+			} ).then( function( r ) { return r.json(); } ).then( function( data ) {
+				if ( data.id ) {
+					attachedMedia.push( {
+						id:        data.id,
+						thumbUrl:  localThumb || data.thumbnail_url || '',
+						mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
+					} );
+				}
+			} );
 		} );
 	}
 

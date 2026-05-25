@@ -168,21 +168,40 @@ class ActivityFormIntegration {
 		$max_media = (int) apply_filters( 'mvs_activity_max_media', 6 );
 		$media_ids = array_slice( $media_ids, 0, $max_media );
 
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// Privacy chosen in the activity-form dropdown ("Who can see this post").
+		// Media is uploaded BEFORE the user picks the dropdown, so it lands at
+		// the default privacy (usually public). Without this step the dropdown
+		// is dead UI: the activity stays public regardless of selection and
+		// leaks to logged-out users on the sitewide stream (card 9867136209).
+		$chosen_privacy = $this->resolve_chosen_privacy();
+
 		$thumbnails = '';
 		$valid_ids  = array();
 		foreach ( $media_ids as $media_id ) {
-			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+			if ( ! $repo->exists( $media_id ) ) {
 				continue;
 			}
-			$media_author = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
+			$media_author = $repo->get_author( $media_id );
 			if ( $media_author !== $user_id ) {
 				continue;
 			}
 
 			// Publish draft media now that the activity is being posted.
-			$media_status = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'status' );
+			$media_status = $repo->get( $media_id, 'status' );
 			if ( 'draft' === $media_status ) {
-				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'status', 'publish' );
+				$repo->set( $media_id, 'status', 'publish' );
+			}
+
+			// Apply the user's dropdown selection to the underlying media row.
+			// MediaRepository::set() auto-fires `mvs_media_privacy_changed` so
+			// downstream sync (cache, BunnyCDN purge, etc.) stays consistent.
+			if ( '' !== $chosen_privacy ) {
+				$current_privacy = (string) $repo->get( $media_id, 'privacy' );
+				if ( $current_privacy !== $chosen_privacy ) {
+					$repo->set( $media_id, 'privacy', $chosen_privacy );
+				}
 			}
 
 			$valid_ids[] = $media_id;
@@ -202,12 +221,14 @@ class ActivityFormIntegration {
 		// Store the activity ID on each media post so comments on these media
 		// can be threaded back as activity comments via find_media_upload_activity().
 		foreach ( $valid_ids as $mid ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $mid, 'bp_activity_id', $activity_id );
+			$repo->set( $mid, 'bp_activity_id', $activity_id );
 		}
 
 		// Most-restrictive privacy across attached media (and their parent
 		// albums) — any non-public attachment hides the parent activity
-		// (Zoho #39974, card 9866323691).
+		// (Zoho #39974, card 9866323691). When the user picked an explicit
+		// privacy via the form dropdown, effective_privacy_for_batch() now
+		// reflects it because the loop above synced each media row.
 		$effective_privacy = ActivitySyncIntegration::effective_privacy_for_batch( $valid_ids );
 		$hide_sitewide     = ActivitySyncIntegration::privacy_to_hide_sitewide( $effective_privacy );
 
@@ -253,5 +274,35 @@ class ActivityFormIntegration {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_id', $group_id );
 			}
 		}
+	}
+
+	/**
+	 * Resolve the privacy slug picked in the activity-form dropdown.
+	 *
+	 * Returns '' when the admin disabled per-post privacy, when no value was
+	 * sent, when the value is unknown, or when the friends level is requested
+	 * without the BP friends component active.
+	 *
+	 * @return string Sanitized privacy slug (public|members|friends|private) or ''.
+	 */
+	private function resolve_chosen_privacy(): string {
+		if ( ! (bool) get_option( 'mvs_allow_user_privacy', true ) ) {
+			return '';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( ! isset( $_POST['mvs_activity_privacy'] ) ) {
+			return '';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$chosen = sanitize_key( wp_unslash( $_POST['mvs_activity_privacy'] ) );
+
+		$allowed = array( 'public', 'members', 'private' );
+		if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) {
+			$allowed[] = 'friends';
+		}
+
+		return in_array( $chosen, $allowed, true ) ? $chosen : '';
 	}
 }
