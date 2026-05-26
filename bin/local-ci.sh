@@ -127,6 +127,31 @@ if [ -x vendor/bin/phpunit ] && [ -f tests/unit/SettingsContractTest.php ]; then
   fi
 fi
 
+# ─── 2.5 — ux-audit (ux-foundation drift detection) ──────────────────────────
+# Runs the ux-audit.sh script (vendored from ~/.claude/skills/ux-audit/) to
+# catch design-system drift on every push: inline <style>/<script> in PHP,
+# raw hex outside :root tokens, native window.confirm/alert/prompt, theme
+# sidebar hidden via display:none. Block-severity violations fail the gate.
+# Advisory findings (outline:none without :focus-visible, raw margin-left,
+# dashicons in new code, >3 breakpoints) print but don't fail — they go on
+# the next release's polish list.
+#
+# Why this gate matters: the 1.4.0 release-prep hardening pass surfaced 14
+# Free + 6 Pro accumulated drift items that wppqa caught in milliseconds
+# but had been there for months because nothing enforced them. ux-audit
+# closes that gap — every push reverifies design-system compliance.
+if [ -x bin/ux-audit.sh ] && [ "$MODE" != "quick" ]; then
+  step "2.5" "UX audit (ux-foundation drift)"
+  UX_REPORT="audit/ux-audit-$(date +%Y-%m-%d).md"
+  mkdir -p audit
+  if bash bin/ux-audit.sh "$(pwd)" > "$UX_REPORT" 2>&1; then
+    BLOCK_TAIL="$(grep -E '^\*\*Block-severity violations' "$UX_REPORT" | head -1)"
+    pass "UX audit (ux-foundation drift) — $BLOCK_TAIL → $UX_REPORT"
+  else
+    fail "2.5 UX audit (ux-foundation drift) — block-severity violations found, see $UX_REPORT"
+  fi
+fi
+
 # ─── 2.4 — wppqa baseline freshness ──────────────────────────────────────────
 # wppqa is an MCP bug-finder that catches REST/JS contract drift, silent UI
 # bugs, and admin-rule violations in ~120ms. It's invocable only from
