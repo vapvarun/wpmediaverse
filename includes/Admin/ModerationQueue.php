@@ -155,6 +155,14 @@ class ModerationQueue {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
+		wp_enqueue_script(
+			'mvs-admin-moderation-queue',
+			MVS_PLUGIN_URL . 'assets/js/admin/moderation-queue.js',
+			array(),
+			MVS_VERSION,
+			array( 'in_footer' => true )
+		);
+
 		$counts = $this->moderation->get_counts();
 
 		// Build tabs — Pro can inject "User Reports" via this filter.
@@ -327,6 +335,8 @@ class ModerationQueue {
 								?>
 							</span>
 						</div>
+						</form>
+						<?php // Bulk form closed here. The table's checkboxes join it via the HTML5 form="" attribute, so the per-row Approve/Reject forms below are NOT nested inside it (nested forms are invalid HTML and the browser drops them, which silently killed the per-row buttons). ?>
 
 						<table class="mvs-moderation-table striped">
 							<thead>
@@ -335,7 +345,7 @@ class ModerationQueue {
 										<label class="screen-reader-text" for="mvs-select-all">
 											<?php esc_html_e( 'Select All', 'wpmediaverse' ); ?>
 										</label>
-										<input type="checkbox" id="mvs-select-all" />
+										<input type="checkbox" id="mvs-select-all" form="mvs-moderation-bulk-form" />
 									</td>
 									<th class="column-thumb"><?php esc_html_e( 'Thumb', 'wpmediaverse' ); ?></th>
 									<th><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></th>
@@ -352,43 +362,7 @@ class ModerationQueue {
 								<?php endforeach; ?>
 							</tbody>
 						</table>
-					</form>
 
-					<script>
-					(function() {
-						var selectAll = document.getElementById('mvs-select-all');
-						var form = document.getElementById('mvs-moderation-bulk-form');
-						var countWrap = document.getElementById('mvs-bulk-count');
-						var countEl = document.getElementById('mvs-selected-count');
-
-						function updateCount() {
-							var checked = form.querySelectorAll('.mvs-bulk-cb:checked');
-							countEl.textContent = checked.length;
-							countWrap.classList.toggle('mvs-hidden', checked.length === 0);
-						}
-
-						selectAll.addEventListener('change', function() {
-							var boxes = form.querySelectorAll('.mvs-bulk-cb');
-							boxes.forEach(function(cb) { cb.checked = selectAll.checked; });
-							updateCount();
-						});
-
-						form.addEventListener('change', function(e) {
-							if (e.target.classList.contains('mvs-bulk-cb')) {
-								updateCount();
-							}
-						});
-
-						form.addEventListener('submit', function(e) {
-							var action = document.getElementById('mvs-bulk-action-select').value;
-							var checked = form.querySelectorAll('.mvs-bulk-cb:checked');
-							if (!action || checked.length === 0) {
-								e.preventDefault();
-								return;
-							}
-						});
-					})();
-					</script>
 
 					<?php
 					if ( $result['pages'] > 1 ) {
@@ -441,7 +415,7 @@ class ModerationQueue {
 		?>
 		<tr>
 			<th scope="row" class="check-column">
-				<input type="checkbox" name="mvs_bulk_ids[]" value="<?php echo absint( $media_id ); ?>" class="mvs-bulk-cb" />
+				<input type="checkbox" name="mvs_bulk_ids[]" value="<?php echo absint( $media_id ); ?>" class="mvs-bulk-cb" form="mvs-moderation-bulk-form" />
 			</th>
 			<td>
 				<?php if ( $file_url && strpos( (string) $file_type, 'image/' ) === 0 ) : ?>

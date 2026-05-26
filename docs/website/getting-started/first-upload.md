@@ -1,6 +1,6 @@
 # Your First Upload
 
-Upload your first photo in two minutes — drag, drop, set privacy, done. Here is exactly how it works.
+Upload your first photo in two minutes - drag, drop, set privacy, done. Here is exactly how it works.
 
 ## Option 1: Use the Upload Block or Shortcode
 
@@ -34,7 +34,7 @@ When you upload a file, WPMediaVerse:
 1. **Validates** the MIME type against your allowed file types list.
 2. **Checks the file size** against your configured maximum (default: 100 MB).
 3. **Scans for duplicate files** using SHA-256 hash comparison.
-4. **Strips EXIF GPS data** from images (if enabled — on by default).
+4. **Strips EXIF GPS data** from images (if enabled - on by default).
 5. **Stores the file** using your configured storage driver (local by default).
 6. **Creates an `mvs_media` post** with the title, privacy level, and file metadata.
 7. **Runs AI analysis** if auto-analyze is enabled (requires OpenAI API key).

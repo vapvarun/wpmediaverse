@@ -16,9 +16,14 @@ estimated_runtime_minutes: 5
 
 ## Setup
 
-- Site: `$SITE_URL`
-- User: `journey_subscriber` (autologin via `?autologin=journey_subscriber`)
-- Fixture file: `tests/fixtures/test-image-1.jpg` (≤2MB, real JPEG)
+Bootstrap both fixtures idempotently (the journey owns its prerequisites — neither exists on a clean install):
+
+- **Subscriber user**: `wp user get journey_subscriber || wp user create journey_subscriber journey_subscriber@example.test --role=subscriber --user_pass=journey-pass`
+- **Fixture image** at `tests/fixtures/test-image-1.jpg` — generate a small real JPEG if absent (no binary committed):
+  ```bash
+  wp eval 'if(!file_exists("tests/fixtures/test-image-1.jpg")){ @mkdir("tests/fixtures",0755,true); $im=imagecreatetruecolor(64,64); imagefilledrectangle($im,0,0,64,64,imagecolorallocate($im,80,140,200)); imagejpeg($im,"tests/fixtures/test-image-1.jpg",85); imagedestroy($im); }'
+  ```
+- **Cleanup (optional)**: delete the uploaded `MEDIA_ID` and reassign at end if you want a pristine site; leaving it is harmless for re-runs.
 
 ## Steps
 
@@ -31,16 +36,16 @@ estimated_runtime_minutes: 5
 - **Expect**: HTTP 201, JSON `{id: <int>, url: '<signed-url>', privacy: 'public', title: 'Journey Test 1'}`. Capture `MEDIA_ID`.
 
 ### 3. Verify DB row
-- **Action**: `mysql_query "SELECT id, owner_id, privacy, status FROM wp_mvs_media_index WHERE id=$MEDIA_ID"`
-- **Expect**: row exists, `privacy='public'`, `status='published'`, `owner_id=<journey_subscriber's ID>`.
+- **Action**: `mysql_query "SELECT media_id, post_author, privacy, status FROM wp_mvs_media_index WHERE media_id=$MEDIA_ID"`
+- **Expect**: row exists, `privacy='public'`, `status='publish'`, `post_author=<journey_subscriber's ID>`. (Schema columns are `media_id` and `post_author`; status value is `publish`.)
 
 ### 4. Fetch signed URL via /wp-json/mvs/v1/media/$MEDIA_ID/signed-url
 - **Action**: `curl $SITE_URL/wp-json/mvs/v1/media/$MEDIA_ID/signed-url`
-- **Expect**: HTTP 200, JSON contains `url` field with `?token=` param.
+- **Expect**: HTTP 200, JSON contains a `url` field. For PUBLIC media on a cloud driver this is the DIRECT CDN URL (no `?token=` / no `/serve` proxy) per the location-based display model; only restricted/local media returns a signed `/serve?...token=` URL.
 
 ### 5. Open explore page (logged-out)
-- **Action**: `playwright_navigate $SITE_URL/explore`
-- **Expect**: DOM contains `<img>` whose `src` starts with `/?rest_route=/mvs/v1/serve&token=` AND whose `alt`/title matches "Journey Test 1".
+- **Action**: `playwright_navigate $SITE_URL/explore-media/`
+- **Expect**: DOM contains an `<img>` whose `alt`/title matches "Journey Test 1". Because the item is PUBLIC, when a cloud driver is active the `src` is the active CDN URL (e.g. host ends in `b-cdn.net`) and `naturalWidth > 0`; only when `driver=local` is the `src` a signed `/serve?...token=` URL.
 
 ### 6. Verify image actually streams
 - **Action**: `curl -I $SITE_URL/$IMG_SRC`
@@ -50,10 +55,10 @@ estimated_runtime_minutes: 5
 
 ALL of the following hold:
 1. Upload returns 201 with a media ID.
-2. DB row exists with `privacy='public'`, `status='published'`.
-3. Signed-URL endpoint returns a tokenized URL.
-4. Explore page renders the new media.
-5. The signed serve endpoint streams `image/jpeg` with HTTP 200.
+2. DB row exists with `privacy='public'`, `status='publish'`.
+3. Signed-URL endpoint returns a `url`: the direct CDN URL for public-on-cloud, or a signed `/serve?...token=` URL only for restricted/local media.
+4. Explore page (`/explore-media/`) renders the new media; for public-on-cloud the `<img>` `src` is the CDN host with `naturalWidth > 0`.
+5. The image streams `image/jpeg` with HTTP 200 (direct CDN for public-on-cloud; signed `/serve` for local/restricted).
 
 ## Fail diagnostics
 

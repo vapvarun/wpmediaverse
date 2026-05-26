@@ -147,11 +147,16 @@ class ActivityContentIntegration {
 		}
 
 		$permalink  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
-		$poster     = '';
 		$poster_url = $aci_su ? $aci_su->generate_thumbnail( $media_id, get_current_user_id(), 'large' ) : '';
-		if ( $poster_url ) {
-			$poster = ' poster="' . esc_url( $poster_url ) . '"';
+		// Safari/iOS and Bing do not paint a frame from `preload="metadata"`;
+		// without an explicit poster they render a blank player. When the media
+		// has no resolvable poster (cover-less video → generate_thumbnail()
+		// returns false) fall back to the bundled default poster, mirroring
+		// TemplateHelpers::media_thumbnail(). The <video> always carries poster=.
+		if ( ! $poster_url ) {
+			$poster_url = \WPMediaVerse\Core\TemplateHelpers::default_video_poster_url();
 		}
+		$poster = ' poster="' . esc_url( $poster_url ) . '"';
 
 		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'
 			. '<video controls preload="metadata"' . $poster . ' style="width:100%;max-height:400px;border-radius:8px;display:block;">'

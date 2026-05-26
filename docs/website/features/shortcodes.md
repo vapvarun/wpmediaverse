@@ -1,6 +1,6 @@
 # Shortcodes
 
-> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of WPMediaVerse.
 
 
 WPMediaVerse provides **12** shortcodes for embedding media features in pages, posts, and classic editor content.
@@ -127,7 +127,7 @@ No configurable attributes. The form is powered by the `mvs/profile-edit` Intera
 
 ## [mvs_explore_feed]
 
-Embeds the explore archive — infinite-scroll public media feed with filter chips and the new search autocomplete dropdown. Use this when you want the explore experience on a custom page rather than the dedicated archive route.
+Embeds the explore archive - infinite-scroll public media feed with filter chips and the new search autocomplete dropdown. Use this when you want the explore experience on a custom page rather than the dedicated archive route.
 
 ```
 [mvs_explore_feed]
@@ -149,7 +149,7 @@ Renders a privacy lock overlay for a single media item. If the current user has 
 
 ## [mvs_member_photos]
 
-Renders a member's media grid. Auto-resolves the user — explicit `user_id` attribute first, then the BuddyPress displayed user, then the post author, then the current user — so the same shortcode works on profile pages, member-specific landing pages, and author archives.
+Renders a member's media grid. Auto-resolves the user - explicit `user_id` attribute first, then the BuddyPress displayed user, then the post author, then the current user - so the same shortcode works on profile pages, member-specific landing pages, and author archives.
 
 > Added in 1.2.0.
 

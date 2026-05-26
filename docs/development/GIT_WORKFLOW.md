@@ -8,8 +8,8 @@ Conventions for branching, commits, pull requests, and version bumping across th
 
 | Branch | Purpose | Direct push |
 |--------|---------|-------------|
-| `main` | Stable release — tagged commits only | Locked |
-| `develop` | Integration branch — all feature/fix branches merge here | Maintainers only |
+| `main` | Stable release - tagged commits only | Locked |
+| `develop` | Integration branch - all feature/fix branches merge here | Maintainers only |
 | `feature/<name>` | New features | Author |
 | `fix/<name>` | Bug fixes | Author |
 | `release/<version>` | Release preparation (version bump, changelog, final QA) | Author |
@@ -31,9 +31,9 @@ Conventions for branching, commits, pull requests, and version bumping across th
 <type>(<scope>): <subject>
 ```
 
-- `type` — what kind of change (see table below).
-- `scope` — the module or layer affected (see table below).
-- `subject` — imperative, present tense, ≤72 characters, no trailing period.
+- `type` - what kind of change (see table below).
+- `scope` - the module or layer affected (see table below).
+- `subject` - imperative, present tense, ≤72 characters, no trailing period.
 
 **Types**
 
@@ -71,9 +71,9 @@ chore(security): bump guzzlehttp/guzzle to 7.8.1
 4. **Run static analysis** locally: `composer run phpcs && composer run phpstan`
 5. **Run unit tests** locally: `./vendor/bin/phpunit`
 6. **Open a PR** targeting `develop`. Title must follow the commit message convention above.
-7. **Fill in the PR description** — include: what changed, why, how to test, and any migration notes.
+7. **Fill in the PR description** - include: what changed, why, how to test, and any migration notes.
 8. **Request review** from at least one maintainer. Security-related changes require two reviewers.
-9. **Address review comments** — push additional commits to the branch (do not force-push after review starts).
+9. **Address review comments** - push additional commits to the branch (do not force-push after review starts).
 10. **Squash-merge** once approved and CI is green. The squashed commit message must follow the convention. Delete the branch after merge.
 
 **CI checks that must pass before merge**
@@ -97,10 +97,10 @@ WPMediaVerse follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PA
 
 **Files to update on every version bump** (done in the `release/<version>` branch)
 
-1. `wpmediaverse.php` — `Version:` header and `MVS_VERSION` constant.
-2. `wpmediaverse-pro.php` (Pro repo) — same fields.
-3. `readme.txt` — `Stable tag:` line and changelog entry.
-4. `CHANGELOG.md` — add a new version section.
+1. `wpmediaverse.php` - `Version:` header and `MVS_VERSION` constant.
+2. `wpmediaverse-pro.php` (Pro repo) - same fields.
+3. `readme.txt` - `Stable tag:` line and changelog entry.
+4. `CHANGELOG.md` - add a new version section.
 
 **Tagging**
 

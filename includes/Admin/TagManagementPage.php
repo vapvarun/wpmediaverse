@@ -42,6 +42,14 @@ class TagManagementPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
+		wp_enqueue_script(
+			'mvs-admin-tag-management',
+			MVS_PLUGIN_URL . 'assets/js/admin/tag-management.js',
+			array( 'jquery' ),
+			MVS_VERSION,
+			array( 'in_footer' => true )
+		);
+
 		// Check if we're in edit mode.
 		$edit_mode = isset( $_GET['action'] ) && 'edit' === $_GET['action'] && isset( $_GET['tag_id'] ); // phpcs:ignore WordPress.Security.NonceVerification
 		if ( $edit_mode ) {
@@ -126,16 +134,6 @@ class TagManagementPage {
 				?>
 			</form>
 		</div>
-
-		<script>
-		jQuery( document ).ready( function( $ ) {
-			// Select all checkboxes functionality.
-			$( '#cb-select-all-1, #cb-select-all-2' ).on( 'change', function() {
-				var checked = $( this ).prop( 'checked' );
-				$( 'input[name="tag_ids[]"]' ).prop( 'checked', checked );
-			});
-		});
-		</script>
 		<?php
 	}
 
@@ -309,7 +307,7 @@ class TagManagementPage {
 			<td class="column-count"><?php echo esc_html( (string) $tag->count ); ?></td>
 			<td class="column-actions">
 				<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Edit', 'wpmediaverse' ); ?></a>
-				<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php echo esc_js( __( 'Are you sure you want to delete this tag?', 'wpmediaverse' ) ); ?>');"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></a>
+				<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small button-link-delete" data-mvs-confirm="<?php echo esc_attr__( 'Are you sure you want to delete this tag?', 'wpmediaverse' ); ?>"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></a>
 			</td>
 		</tr>
 		<?php

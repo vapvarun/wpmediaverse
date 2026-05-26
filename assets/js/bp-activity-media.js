@@ -10,6 +10,15 @@
 ( function() {
 	'use strict';
 
+	// i18n bridge — guard in case wp.i18n is unavailable (graceful English fallback).
+	var i18n = ( window.wp && window.wp.i18n ) ? window.wp.i18n : null;
+	var __ = i18n ? i18n.__ : function( s ) { return s; };
+	var sprintf = i18n ? i18n.sprintf : function( fmt ) {
+		var args = Array.prototype.slice.call( arguments, 1 );
+		var i = 0;
+		return String( fmt ).replace( /%[sd]/g, function() { return args[ i++ ]; } );
+	};
+
 	var restUrl = ( typeof mvsActivityMedia !== 'undefined' ) ? mvsActivityMedia.restUrl : '';
 	var bpRestUrl = ( typeof mvsActivityMedia !== 'undefined' ) ? mvsActivityMedia.bpRestUrl : '';
 	var nonce = ( typeof mvsActivityMedia !== 'undefined' ) ? mvsActivityMedia.nonce : '';
@@ -97,7 +106,7 @@
 			} else if ( 'video' === item.mediaType && item.thumbUrl ) {
 				thumb = document.createElement( 'img' );
 				thumb.src = item.thumbUrl;
-				thumb.alt = 'Media preview';
+				thumb.alt = __( 'Media preview', 'wpmediaverse' );
 				thumb.className = 'mvs-activity-media-thumb';
 			} else if ( 'video' === item.mediaType ) {
 				thumb = document.createElement( 'div' );
@@ -109,7 +118,7 @@
 			} else {
 				thumb = document.createElement( 'img' );
 				thumb.src = item.thumbUrl;
-				thumb.alt = 'Media preview';
+				thumb.alt = __( 'Media preview', 'wpmediaverse' );
 				thumb.className = 'mvs-activity-media-thumb';
 			}
 
@@ -117,7 +126,7 @@
 			removeBtn.type = 'button';
 			removeBtn.className = 'mvs-activity-media-remove';
 			removeBtn.textContent = '\u00D7';
-			removeBtn.setAttribute( 'aria-label', 'Remove media' );
+			removeBtn.setAttribute( 'aria-label', __( 'Remove media', 'wpmediaverse' ) );
 			removeBtn.addEventListener( 'click', function() {
 				attachedMedia.splice( idx, 1 );
 				renderPreview();
@@ -137,19 +146,30 @@
 			var url   = URL.createObjectURL( file );
 			video.preload = 'metadata';
 			video.muted   = true;
+			video.playsInline = true;
 			video.src     = url;
 			video.addEventListener( 'loadeddata', function() {
 				video.currentTime = Math.min( 1, video.duration * 0.1 || 0 );
 			} );
 			video.addEventListener( 'seeked', function() {
-				var canvas = document.createElement( 'canvas' );
-				var w = video.videoWidth  || 320;
-				var h = video.videoHeight || 180;
-				canvas.width  = 200;
-				canvas.height = Math.round( 200 * h / w ) || 113;
-				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
-				URL.revokeObjectURL( url );
-				resolve( canvas.toDataURL( 'image/jpeg', 0.7 ) );
+				try {
+					var canvas = document.createElement( 'canvas' );
+					var w = video.videoWidth  || 320;
+					var h = video.videoHeight || 180;
+					// Capture at native resolution so the server can resize to
+					// large/medium/thumb. The 200px-wide downscale used pre-1.4.1
+					// produced a blurry "thumb_large" that Safari/Bing then used
+					// as the <video poster> and the result looked broken on the
+					// activity stream (card 9910574354).
+					canvas.width  = w;
+					canvas.height = h;
+					canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+					URL.revokeObjectURL( url );
+					resolve( canvas.toDataURL( 'image/jpeg', 0.85 ) );
+				} catch ( e ) {
+					URL.revokeObjectURL( url );
+					resolve( '' );
+				}
 			} );
 			video.addEventListener( 'error', function() {
 				URL.revokeObjectURL( url );
@@ -158,43 +178,78 @@
 		} );
 	}
 
+	// Convert a data:image/jpeg;base64,... URL to a Blob so it can ride the
+	// multipart upload as the `thumbnail` field. `MediaController::create_item()`
+	// stages this blob into `wpmediaverse/posters/{media_id}.jpg` and feeds it
+	// through `UploadService::generate_thumbnails()` — same pipeline as the
+	// server-side ffmpeg / cover-atom paths. Safari/Bing now always receive a
+	// real `<video poster>` instead of the default-SVG fallback.
+	function dataURLtoBlob( dataURL ) {
+		if ( ! dataURL || dataURL.indexOf( 'data:' ) !== 0 ) {
+			return null;
+		}
+		try {
+			var parts = dataURL.split( ',' );
+			var match = parts[ 0 ].match( /:(.*?);/ );
+			var mime  = match ? match[ 1 ] : 'image/jpeg';
+			var bin   = atob( parts[ 1 ] );
+			var bytes = new Uint8Array( bin.length );
+			for ( var i = 0; i < bin.length; i++ ) {
+				bytes[ i ] = bin.charCodeAt( i );
+			}
+			return new Blob( [ bytes ], { type: mime } );
+		} catch ( e ) {
+			return null;
+		}
+	}
+
 	function uploadFile( file, btn ) {
 		if ( attachedMedia.length >= maxMedia ) { return Promise.resolve(); }
 
 		var isVideo = file.type.indexOf( 'video/' ) === 0;
 		var isAudio = file.type.indexOf( 'audio/' ) === 0;
 
+		// Serialize thumb capture BEFORE the upload starts so the captured
+		// frame can ride the same multipart POST as `thumbnail`. Pre-1.4.1
+		// ran these in parallel and the captured frame was discarded —
+		// videos with no embedded cover and no ffmpeg on the server ended
+		// up with the default-poster SVG instead of a real first frame.
 		var thumbPromise = isVideo ? generateVideoThumb( file ) : Promise.resolve( '' );
 
-		var fd = new FormData();
-		fd.append( 'file', file );
-		fd.append( 'status', 'draft' );
+		return thumbPromise.then( function( localThumb ) {
+			var fd = new FormData();
+			fd.append( 'file', file );
+			fd.append( 'status', 'draft' );
 
-		// Include the user's chosen privacy level when the admin setting
-		// exposes the selector. Backend still enforces `mvs_allow_user_privacy`
-		// so a forged privacy param is overridden server-side.
-		var privacySel = document.getElementById( 'mvs-activity-privacy' );
-		if ( privacySel && privacySel.value ) {
-			fd.append( 'privacy', privacySel.value );
-		}
-
-		var uploadPromise = fetch( restUrl + 'media?context=activity', {
-			method: 'POST',
-			headers: { 'X-WP-Nonce': nonce },
-			credentials: 'same-origin',
-			body: fd
-		} ).then( function( r ) { return r.json(); } );
-
-		return Promise.all( [ thumbPromise, uploadPromise ] ).then( function( results ) {
-			var localThumb = results[ 0 ];
-			var data       = results[ 1 ];
-			if ( data.id ) {
-				attachedMedia.push( {
-					id:        data.id,
-					thumbUrl:  localThumb || data.thumbnail_url || '',
-					mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
-				} );
+			// Include the user's chosen privacy level when the admin setting
+			// exposes the selector. Backend still enforces `mvs_allow_user_privacy`
+			// so a forged privacy param is overridden server-side.
+			var privacySel = document.getElementById( 'mvs-activity-privacy' );
+			if ( privacySel && privacySel.value ) {
+				fd.append( 'privacy', privacySel.value );
 			}
+
+			if ( isVideo && localThumb ) {
+				var blob = dataURLtoBlob( localThumb );
+				if ( blob ) {
+					fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
+				}
+			}
+
+			return fetch( restUrl + 'media?context=activity', {
+				method: 'POST',
+				headers: { 'X-WP-Nonce': nonce },
+				credentials: 'same-origin',
+				body: fd
+			} ).then( function( r ) { return r.json(); } ).then( function( data ) {
+				if ( data.id ) {
+					attachedMedia.push( {
+						id:        data.id,
+						thumbUrl:  localThumb || data.thumbnail_url || '',
+						mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
+					} );
+				}
+			} );
 		} );
 	}
 
@@ -276,7 +331,8 @@
 		// Show uploading state.
 		var uploadingText = document.createElement( 'span' );
 		uploadingText.className = 'mvs-activity-media-uploading';
-		uploadingText.textContent = 'Uploading ' + files.length + ' file' + ( files.length > 1 ? 's' : '' ) + '...';
+		/* translators: %d: number of files being uploaded. */
+		uploadingText.textContent = sprintf( __( 'Uploading %d files...', 'wpmediaverse' ), files.length );
 		ensurePreviewPosition( preview );
 		preview.textContent = '';
 		preview.appendChild( uploadingText );
@@ -301,7 +357,7 @@
 		} ).catch( function() {
 			preview.textContent = '';
 			var errText = document.createElement( 'span' );
-			errText.textContent = 'Upload failed. Please try again.';
+			errText.textContent = __( 'Upload failed. Please try again.', 'wpmediaverse' );
 			errText.className = 'mvs-activity-media-error';
 			preview.appendChild( errText );
 			btn.disabled = false;
@@ -476,13 +532,13 @@
 		saveBtn.addEventListener( 'click', function() {
 			var title = titleIn.value.trim();
 			if ( ! title ) {
-				msgEl.textContent = 'Please enter an album name.';
+				msgEl.textContent = __( 'Please enter an album name.', 'wpmediaverse' );
 				msgEl.className = 'mvs-bp-album-msg mvs-bp-album-msg-error';
 				return;
 			}
 
 			saveBtn.disabled = true;
-			saveBtn.textContent = 'Creating...';
+			saveBtn.textContent = __( 'Creating...', 'wpmediaverse' );
 			msgEl.textContent = '';
 
 			var payload = { title: title, description: descIn.value.trim() };
@@ -500,7 +556,7 @@
 			.then( function( r ) { return r.json(); } )
 			.then( function( data ) {
 				saveBtn.disabled = false;
-				saveBtn.textContent = 'Create';
+				saveBtn.textContent = __( 'Create', 'wpmediaverse' );
 
 				if ( data.id ) {
 					// Success — reload to show the new album.
@@ -512,8 +568,8 @@
 			} )
 			.catch( function() {
 				saveBtn.disabled = false;
-				saveBtn.textContent = 'Create';
-				msgEl.textContent = 'Network error. Please try again.';
+				saveBtn.textContent = __( 'Create', 'wpmediaverse' );
+				msgEl.textContent = __( 'Network error. Please try again.', 'wpmediaverse' );
 				msgEl.className = 'mvs-bp-album-msg mvs-bp-album-msg-error';
 			} );
 		} );
@@ -988,10 +1044,10 @@
 				var isFav = !! ( data && data.favorited );
 				if ( isFav ) {
 					favBtn.classList.add( 'active' );
-					favBtn.textContent = '\u2665 Favorited';
+					favBtn.textContent = '\u2665 ' + __( 'Favorited', 'wpmediaverse' );
 				} else {
 					favBtn.classList.remove( 'active' );
-					favBtn.textContent = '\u2661 Favorite';
+					favBtn.textContent = '\u2661 ' + __( 'Favorite', 'wpmediaverse' );
 				}
 			} ).catch( function() { /* silent */ } );
 		}
@@ -1115,10 +1171,10 @@
 				var newFav = ! isFav;
 				if ( newFav ) {
 					btn.classList.add( 'active' );
-					btn.textContent = '\u2665 Favorited';
+					btn.textContent = '\u2665 ' + __( 'Favorited', 'wpmediaverse' );
 				} else {
 					btn.classList.remove( 'active' );
-					btn.textContent = '\u2661 Favorite';
+					btn.textContent = '\u2661 ' + __( 'Favorite', 'wpmediaverse' );
 				}
 			} );
 		} );
@@ -1140,7 +1196,7 @@
 			} else if ( navigator.clipboard ) {
 				navigator.clipboard.writeText( url ).then( function() {
 					var original = btn.innerHTML;
-					btn.textContent = '\u2713 Copied!';
+					btn.textContent = '\u2713 ' + __( 'Copied!', 'wpmediaverse' );
 					setTimeout( function() { btn.innerHTML = original; }, 2000 );
 				} );
 			}

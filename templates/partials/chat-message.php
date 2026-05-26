@@ -65,7 +65,7 @@ defined( 'ABSPATH' ) || exit;
 		</div>
 
 		<!-- Deleted message -->
-		<span data-wp-bind--hidden="context.item.notDeleted">This message was deleted</span>
+		<span data-wp-bind--hidden="context.item.notDeleted"><?php esc_html_e( 'This message was deleted', 'wpmediaverse' ); ?></span>
 
 		<!-- Text content (shown for text-only messages AND attachment messages with text) -->
 		<span data-wp-bind--hidden="context.item.noTextContent" data-wp-text="context.item.content"></span>

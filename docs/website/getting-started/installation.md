@@ -1,6 +1,6 @@
 # Installation
 
-Get WPMediaVerse running on your WordPress site in under five minutes — install, activate, and your community is ready to start uploading.
+Get WPMediaVerse running on your WordPress site in under five minutes - install, activate, and your community is ready to start uploading.
 
 ## Requirements
 
@@ -36,7 +36,7 @@ Get WPMediaVerse running on your WordPress site in under five minutes — instal
 
 When you activate WPMediaVerse, the plugin automatically:
 
-- Creates custom database tables for media index, stats, reactions, comments, favorites, follows, conversations, messages, collections, access grants, and webhooks — all separate from wp_posts for maximum performance.
+- Creates custom database tables for media index, stats, reactions, comments, favorites, follows, conversations, messages, collections, access grants, and webhooks - all separate from wp_posts for maximum performance.
 - Registers the `mvs_album` and `mvs_collection` custom post types (media itself uses the custom `mvs_media_index` table, not wp_posts).
 - Registers the `mvs_tag` and `mvs_category` taxonomies.
 - Adds default capabilities to the Administrator, Editor, Author, Contributor, and Subscriber roles.

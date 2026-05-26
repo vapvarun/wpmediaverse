@@ -1,9 +1,9 @@
 # Direct Messages
 
-> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of WPMediaVerse.
 
 
-Send private messages, share photos, record voice notes, and have real conversations — all without leaving your media community.
+Send private messages, share photos, record voice notes, and have real conversations - all without leaving your media community.
 
 ## What You Can Do
 
@@ -21,7 +21,7 @@ Send private messages, share photos, record voice notes, and have real conversat
 ### Starting a Conversation
 
 1. Visit any member's profile page
-2. Click **Message** — the chat panel opens in the bottom-right corner with that conversation ready
+2. Click **Message** - the chat panel opens in the bottom-right corner with that conversation ready
 3. Type your message and press Enter to send
 
 To start a conversation without visiting a profile:
@@ -46,7 +46,7 @@ To start a conversation without visiting a profile:
 
 | Action | How to do it |
 |--------|-------------|
-| Mute | Open the conversation menu and click **Mute** — notifications are suppressed |
+| Mute | Open the conversation menu and click **Mute** - notifications are suppressed |
 | Pin | Click **Pin** to keep the conversation at the top of your list |
 | Archive | Click **Archive** to hide it from the main list. Find archived chats under the Archive tab |
 | Search | Click the search icon in the panel header and type any word or phrase |
@@ -55,8 +55,8 @@ To start a conversation without visiting a profile:
 
 If a member has restricted who can message them to followers only, your message goes to their **Requests** tab rather than their main inbox. They can accept or decline the request.
 
-- **Accept** — Your conversation moves to their main inbox and messaging continues normally
-- **Decline** — The request is removed. You are not notified of the decline
+- **Accept** - Your conversation moves to their main inbox and messaging continues normally
+- **Decline** - The request is removed. You are not notified of the decline
 
 ![Chat panel with message requests](../images/chat-open.png)
 
@@ -66,7 +66,7 @@ If a member has restricted who can message them to followers only, your message 
 2. Set who can send DMs by default: everyone, followers, mutual followers, or nobody
 3. Set a minimum account age (in days) to prevent new accounts from sending DMs
 4. Users can override their own DM access setting from their account settings
-5. The chat panel appears automatically at the bottom of every page for logged-in users — no shortcode needed
+5. The chat panel appears automatically at the bottom of every page for logged-in users - no shortcode needed
 6. To adjust how often the chat checks for new messages, set the polling interval (default: 3 seconds)
 
 ## Database Tables
@@ -82,9 +82,9 @@ If a member has restricted who can message them to followers only, your message 
 
 There are three ways to start or open a conversation:
 
-- **From a profile page** — Click the **Message** button on any user's profile. The chat panel opens with that conversation pre-loaded. No searching required.
-- **From the chat panel** — Click the compose icon inside the chat panel and search by username or display name.
-- **Deep links** — Link directly to a conversation or user using a URL fragment:
+- **From a profile page** - Click the **Message** button on any user's profile. The chat panel opens with that conversation pre-loaded. No searching required.
+- **From the chat panel** - Click the compose icon inside the chat panel and search by username or display name.
+- **Deep links** - Link directly to a conversation or user using a URL fragment:
 
 | Fragment | Opens |
 |----------|-------|

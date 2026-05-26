@@ -268,6 +268,7 @@ body.mvs-page {
     .mvs-page .mvs-modal-close,
     .mvs-page .mvs-back-link,
     .mvs-page .mvs-tag-pill,
+    .mvs-page .mvs-tag-cloud-item,
     .mvs-single-media .mvs-btn,
     .mvs-single-album .mvs-btn,
     .mvs-profile-edit .mvs-btn,
@@ -276,10 +277,16 @@ body.mvs-page {
         min-width: var(--mvs-touch-min);
     }
     /* Small chips/tags expand their hit area via padding instead of growing
-       the visible bubble. */
-    .mvs-page .mvs-tag-pill {
+       the visible bubble. Tag-cloud filter chips were 36px before this floor. */
+    .mvs-page .mvs-tag-pill,
+    .mvs-page .mvs-tag-cloud-item {
         display: inline-flex;
         align-items: center;
+    }
+    /* Upload privacy select sat at 35px — give it the touch-target height
+       without forcing the 44px min-width a full-width control would break on. */
+    .mvs-page .mvs-upload-privacy {
+        min-height: var(--mvs-touch-min);
     }
 }
 
@@ -5062,8 +5069,8 @@ a.mvs-dashboard-card-title:hover {
     background: rgba(0, 0, 0, .5);
     border: none;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     display: flex;
     align-items: center;
@@ -5143,8 +5150,8 @@ a.mvs-dashboard-card-title:hover {
     background: rgba(255, 255, 255, .85);
     border: none;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
     display: flex;
     align-items: center;

@@ -4,12 +4,12 @@
 > Companion to `ARCHITECTURE.md` (lifecycle + schema), `CODING_STANDARDS.md`
 > (style), and Pro's `plan/wpmediaverse-architecture-contract.md` (cross-plugin
 > behavioral invariants). This file answers the structural question: **"I'm
-> adding a new feature — where does each piece go?"**
+> adding a new feature - where does each piece go?"**
 
 > **Skill reference**: the generic Wbcom-wide layered architecture lives at
 > `wp-plugin-development/references/layered-architecture.md` (seven layers,
 > per-file shape cheat sheets, anti-patterns, flowchart). This document is
-> WPMediaVerse's **plugin-specific instance** of that guidance — it adds the
+> WPMediaVerse's **plugin-specific instance** of that guidance - it adds the
 > concrete service-container keys, table names, and incident-driven
 > anti-patterns that motivated each rule.
 
@@ -36,7 +36,7 @@ the code is correct in isolation.
 │   + Social/         Social/*Service.php                               │
 │   + Integrations/   Integrations/<Platform>/*.php                     │
 │                     Business logic. Depends on Repository + other     │
-│                     services. Returns structured data — never HTTP    │
+│                     services. Returns structured data - never HTTP    │
 │                     responses, never echoed HTML.                     │
 ├───────────────────────────────────────────────────────────────────────┤
 │ 5. Surface adapters REST/Controller/*Controller.php                   │
@@ -70,7 +70,7 @@ Services (4) do not echo HTML. Templates (6) do not run SQL.
 | A read/write of media data | `Repository/MediaRepository.php` (instance method) | One method = one query family. Returns scalars/arrays, never HTML. Add to `MediaRepositoryInterface`. |
 | A piece of business logic for a capability | `Services/<Capability>Service.php` (one class per capability) | DI via constructor. Container key registered in `Plugin::register_services`. Public API methods return structured arrays/scalars. |
 | A REST endpoint | `REST/Controller/<Capability>Controller.php` | Extends `WP_REST_Controller`. `register_routes()` declares paths; per-route `permission_callback` is mandatory; handler is ≤30 lines and delegates to a service. |
-| A WP-CLI command | `CLI/Commands.php` (one method per command) | Same shape as REST handler — thin, delegates to a service. |
+| A WP-CLI command | `CLI/Commands.php` (one method per command) | Same shape as REST handler - thin, delegates to a service. |
 | A Gutenberg block | `src/blocks/<slug>/{block.json, render.php, edit.js, view.js}` | `render.php` SSR-first, calls a service or `TemplateHelpers`. No JS-loaded shells. |
 | A shortcode | `Shortcodes/Shortcodes.php` (one method per shortcode) | Wraps the same renderer the block uses (Rule C). |
 | A frontend template | `templates/<slug>.php` or `templates/partials/<slug>.php` | Reads via `Plugin::container()->get('template_helpers')`. Zero direct `MediaRepository` SQL. Theme-overridable. |
@@ -159,12 +159,12 @@ final class DemoSeederService {
     public function cleanup(): array { /* … */ }
 }
 
-// REST/Controller/AdminController.php — thin
+// REST/Controller/AdminController.php - thin
 public function import_demo_data(): WP_REST_Response {
     return rest_ensure_response( $this->seeder->seed() );
 }
 
-// CLI/Commands.php — thin
+// CLI/Commands.php - thin
 public function seed( $args, $assoc_args ): void {
     WP_CLI::log( wp_json_encode( $this->seeder->seed() ) );
 }
@@ -213,14 +213,14 @@ invariants. Structural summary:
   Rule 3). Interface-only imports allowed when Pro IMPLEMENTS the
   interface (`StorageDriverInterface`, `AIProviderInterface`).
 - **Settings**: Pro reads `mvs_*` options through Free service typed
-  accessors (Pro contract A4) — never raw `get_option()` for Free-owned
+  accessors (Pro contract A4) - never raw `get_option()` for Free-owned
   options.
 - **DB writes**: Pro writes Free tables only through `MediaRepository`
   (Pro contract A6).
 
 ---
 
-## 6. Adding new behavior — flowchart
+## 6. Adding new behavior - flowchart
 
 ```
         New behavior request
@@ -260,18 +260,18 @@ invariants. Structural summary:
 
 ## 7. Anti-patterns to refuse on review
 
-1. **Including a plugin-root `*.php` from a controller** — it bypasses
+1. **Including a plugin-root `*.php` from a controller** - it bypasses
    layering and prevents reuse from WP-CLI / unit tests.
 2. **`wp_send_json_*()` outside a REST handler or `admin-ajax`-only
-   handler** — services must return data, not emit it.
-3. **`MediaRepository` SQL from a template** — templates read via
+   handler** - services must return data, not emit it.
+3. **`MediaRepository` SQL from a template** - templates read via
    `TemplateHelpers`. Repository is the only SQL layer.
 4. **A class named `*Service` with public methods that proxy to ≥2
-   other `*Service` classes** — that's a facade (Rule B violation).
-5. **`use WPMediaVerse\<ConcreteClass>;` in Pro source** — interfaces
+   other `*Service` classes** - that's a facade (Rule B violation).
+5. **`use WPMediaVerse\<ConcreteClass>;` in Pro source** - interfaces
    only. CI guard rejects this.
 6. **`add_action('wp_ajax_*', …)` for new code without an allowlist
-   entry** — Rule A's motivation (REST nonces, schema validation,
+   entry** - Rule A's motivation (REST nonces, schema validation,
    rate limiting, single auth model for headless/decoupled clients)
    is real, but doesn't apply to admin-only one-click utilities
    triggered manually by a logged-in admin (connection testers,
@@ -281,15 +281,15 @@ invariants. Structural summary:
    a documented carve-out comment next to the `add_action` line.
    The CI guard tightens to forbid `admin-ajax` everywhere except
    the documented allowlist (mirrors Pro's `__return_true` REST
-   callback allowlist pattern). Phase 6 demonstrated this — Free
+   callback allowlist pattern). Phase 6 demonstrated this - Free
    migrated `mvs_dismiss_welcome` (1-line update_user_meta) and
    allowlisted `mvs_import_demo_data` + `mvs_cleanup_demo_data`
-   (admin manual triggers — refactoring 1,541 lines for zero
+   (admin manual triggers - refactoring 1,541 lines for zero
    structural payoff is over-engineering).
-7. **`current_user_can('mvs/…')` for plugin-defined abilities** —
+7. **`current_user_can('mvs/…')` for plugin-defined abilities** -
    route through `MediaCapabilities` / Pro's Permission_Engine.
 8. **A new top-level directory** that doesn't match the seven layers
-   — propose it in a PR description, not in the diff.
+   - propose it in a PR description, not in the diff.
 
 ---
 
@@ -297,5 +297,5 @@ invariants. Structural summary:
 
 This file describes the *current* architecture. If a real-world feature
 demands a structure outside it, update **this file first** in the same
-PR that introduces the new shape — never silently. The guideline is a
+PR that introduces the new shape - never silently. The guideline is a
 living document; review evolves it.

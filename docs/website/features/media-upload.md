@@ -1,9 +1,9 @@
 # Media Upload
 
-> **Free + Pro** — Core functionality is included free. Features marked with **(Pro)** require WPMediaVerse Pro.
+> **Free + Pro** - Core functionality is included free. Features marked with **(Pro)** require WPMediaVerse Pro.
 
 
-Share photos, videos, and audio with your community — no admin access needed, straight from any page on your site.
+Share photos, videos, and audio with your community - no admin access needed, straight from any page on your site.
 
 ## What You Can Do
 
@@ -20,7 +20,7 @@ Share photos, videos, and audio with your community — no admin access needed, 
 2. Drag your files onto the upload zone, or click **Browse** to pick files from your device
 3. To paste a screenshot or copied image, click inside the upload zone and press Ctrl+V (Cmd+V on Mac)
 4. For each file, enter a title and optional tags. Select a privacy level from the dropdown
-5. Click **Upload** — a progress bar shows each file uploading
+5. Click **Upload** - a progress bar shows each file uploading
 6. When finished, your files appear in your media dashboard and your profile page
 7. Find all your uploads anytime under **My Media** or your profile's Media tab
 
@@ -50,9 +50,9 @@ When uploading multiple files at once into an album, WPMediaVerse now creates **
 
 ## Per-Media Edit Modal (1.2.0)
 
-The settings cog on dashboard cards now opens a prefilled edit modal — change title, description, privacy level, and per-media **Allow Downloads** in place. Save updates the row live without a page reload. The matching `PUT /mvs/v1/media/{id}` REST endpoint accepts an `allow_download` boolean.
+The settings cog on dashboard cards now opens a prefilled edit modal - change title, description, privacy level, and per-media **Allow Downloads** in place. Save updates the row live without a page reload. The matching `PUT /mvs/v1/media/{id}` REST endpoint accepts an `allow_download` boolean.
 
-When you change the title, the URL slug stays stable by default. Tick the new **Update URL slug** checkbox if you want the slug regenerated from the new title — the page redirects to the new URL automatically so existing tabs and bookmarks don't 404.
+When you change the title, the URL slug stays stable by default. Tick the new **Update URL slug** checkbox if you want the slug regenerated from the new title - the page redirects to the new URL automatically so existing tabs and bookmarks don't 404.
 
 ## What Happens After Upload
 
@@ -81,11 +81,11 @@ When you change the title, the URL slug stays stable by default. Tick the new **
 
 Every upload goes through these checks in order:
 
-1. **MIME type check** — file content is inspected (not just the extension) against your allowed types list.
-2. **File size check** — measured server-side against `mvs_max_upload_size` (default 100 MB).
-3. **Extension block list** — blocks PHP, shell, and other executable extensions even if the MIME passes.
-4. **Double extension block** — rejects filenames like `photo.php.jpg`.
-5. **Duplicate detection** — computes a SHA-256 hash and compares against existing uploads. Behavior depends on your **Duplicate Detection** setting (warn, skip, or allow).
+1. **MIME type check** - file content is inspected (not just the extension) against your allowed types list.
+2. **File size check** - measured server-side against `mvs_max_upload_size` (default 100 MB).
+3. **Extension block list** - blocks PHP, shell, and other executable extensions even if the MIME passes.
+4. **Double extension block** - rejects filenames like `photo.php.jpg`.
+5. **Duplicate detection** - computes a SHA-256 hash and compares against existing uploads. Behavior depends on your **Duplicate Detection** setting (warn, skip, or allow).
 
 ## EXIF Stripping
 
@@ -121,15 +121,15 @@ $result = $upload_service->handle(
 if ( is_wp_error( $result ) ) {
     // Handle error.
 } else {
-    $media_id = $result; // int — new mvs_media post ID.
+    $media_id = $result; // int - new mvs_media post ID.
 }
 ```
 
 ## Actions Fired During Upload
 
-- `mvs_before_media_insert` — fires before the `mvs_media` post is created.
-- `mvs_before_upload_form` — fires before the upload form HTML is rendered (used by Pro for quota display).
-- `mvs_media_uploaded` — fires after the post is created and indexed. Passes `$media_id` (int).
+- `mvs_before_media_insert` - fires before the `mvs_media` post is created.
+- `mvs_before_upload_form` - fires before the upload form HTML is rendered (used by Pro for quota display).
+- `mvs_media_uploaded` - fires after the post is created and indexed. Passes `$media_id` (int).
 
 ## Media Post Meta
 

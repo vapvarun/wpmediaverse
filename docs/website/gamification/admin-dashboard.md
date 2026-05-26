@@ -1,6 +1,6 @@
 # Gamification Admin Dashboard
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -16,7 +16,7 @@ The main Competitions page lists every challenge, battle, and tournament in a si
 
 | Column | Description |
 |--------|-------------|
-| Title | Competition name — click to open the detail view |
+| Title | Competition name - click to open the detail view |
 | Type | `Challenge`, `Battle`, or `Tournament` |
 | Status | Current lifecycle stage with a color-coded badge |
 | Entries | Number of participants or entries submitted |
@@ -26,9 +26,9 @@ The main Competitions page lists every challenge, battle, and tournament in a si
 
 **Quick Actions:**
 
-- **View** — Opens the frontend competition page in a new tab
-- **Edit** — Opens the admin edit form for this competition
-- **Finalize** — Manually force a competition to the Finalized/Resolved stage. Use this when the scheduled action has not run yet or to end a competition early.
+- **View** - Opens the frontend competition page in a new tab
+- **Edit** - Opens the admin edit form for this competition
+- **Finalize** - Manually force a competition to the Finalized/Resolved stage. Use this when the scheduled action has not run yet or to end a competition early.
 
 You can filter the table by Type and Status using the dropdowns above the table.
 
@@ -100,7 +100,7 @@ The Battle Monitor table includes every battle that is not in a terminal state (
 | Vote Deadline | When the vote window closes |
 | Actions | Resolve (force resolution) or Delete |
 
-**Resolve disputes** — If a battle is stuck due to a bug or edge case, use the Resolve button to manually set a winner or mark the battle as expired.
+**Resolve disputes** - If a battle is stuck due to a bug or edge case, use the Resolve button to manually set a winner or mark the battle as expired.
 
 ## Gamification Settings Page
 

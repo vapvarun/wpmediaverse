@@ -191,6 +191,14 @@ class SignedUrlService {
 	private function has_resolvable_thumbnail( int $media_id ): bool {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
+		// Check _path keys first (1.4.0+ source of truth), then fall back to
+		// the legacy URL keys for pre-migration rows.
+		foreach ( array( 'thumb_large_path', 'thumb_medium_path', 'thumb_thumb_path' ) as $key ) {
+			$value = $repo->get_raw( $media_id, $key );
+			if ( is_string( $value ) && '' !== $value ) {
+				return true;
+			}
+		}
 		foreach ( array( 'thumb_large', 'thumb_medium', 'thumb_thumb' ) as $thumb_key ) {
 			$value = $repo->get_raw( $media_id, $thumb_key );
 			if ( is_string( $value ) && '' !== $value ) {
@@ -202,6 +210,10 @@ class SignedUrlService {
 		// (serving a .mp4 with image headers produces a black poster).
 		$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
 		if ( 0 === strpos( $file_type, 'image/' ) ) {
+			$file_path = $repo->get_raw( $media_id, 'file_path' );
+			if ( is_string( $file_path ) && '' !== $file_path ) {
+				return true;
+			}
 			$file_url = $repo->get_raw( $media_id, 'file_url' );
 			if ( is_string( $file_url ) && '' !== $file_url ) {
 				return true;
@@ -273,6 +285,20 @@ class SignedUrlService {
 			status_header( 403 );
 			header( 'Content-Type: text/plain' );
 			echo esc_html( 'Invalid or expired signed URL.' );
+			exit;
+		}
+
+		// Restricted media: re-check view access for the REQUESTING session.
+		// The signed token proves integrity + expiry, but for non-public media
+		// that alone would make an owner's time-limited URL a transferable
+		// bearer credential — any other user or anonymous visitor holding it
+		// could view a private member upload. Public media stays bearer-style
+		// (cacheable, shareable); only restricted media is re-gated per request.
+		$privacy = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'privacy' );
+		if ( 'public' !== $privacy && ! $this->privacy->can_view( $media_id, get_current_user_id() ) ) {
+			status_header( 403 );
+			header( 'Content-Type: text/plain' );
+			echo esc_html( 'Access denied.' );
 			exit;
 		}
 
@@ -388,6 +414,9 @@ class SignedUrlService {
 	private function serve_thumbnail( int $media_id, string $size ): void {
 		// Internal: signing service serves the underlying file from disk —
 		// must use the raw stored URL, not a signed-URL re-emission.
+		$rel_path  = '';
+		$thumb_url = '';
+
 		if ( 'watermark' === $size ) {
 			$thumb_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'watermark_url' );
 		} else {
@@ -399,45 +428,70 @@ class SignedUrlService {
 			$meta_key = $size_map[ $size ] ?? 'thumb_large';
 			$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-			// Fall back through image sizes only. NEVER fall back to file_url —
-			// for videos that's a .mp4 served with image/jpeg headers, which
-			// produces a black <video poster> instead of a 404 the browser
-			// can recover from.
-			$thumb_url = $repo->get_raw( $media_id, $meta_key )
-				?: $repo->get_raw( $media_id, 'thumb_medium' )
-				?: $repo->get_raw( $media_id, 'thumb_thumb' )
+			// Path-meta first (1.4.0+, driver-agnostic). Fall back through
+			// image sizes the same way the URL chain did. NEVER fall back
+			// to file_url for videos — serving a .mp4 with image/jpeg
+			// headers produces a black <video poster> instead of a 404 the
+			// browser can recover from.
+			$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' )
+				?: (string) $repo->get_raw( $media_id, 'thumb_medium_path' )
+				?: (string) $repo->get_raw( $media_id, 'thumb_thumb_path' )
 				?: '';
 
-			// For images, the original IS a valid poster — fall through to file_url.
-			if ( '' === $thumb_url ) {
+			if ( '' === $rel_path ) {
 				$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
 				if ( 0 === strpos( $file_type, 'image/' ) ) {
-					$thumb_url = (string) $repo->get_raw( $media_id, 'file_url' );
+					$rel_path = (string) $repo->get_raw( $media_id, 'file_path' );
+				}
+			}
+
+			// Legacy URL fallback for pre-migration rows.
+			if ( '' === $rel_path ) {
+				$thumb_url = $repo->get_raw( $media_id, $meta_key )
+					?: $repo->get_raw( $media_id, 'thumb_medium' )
+					?: $repo->get_raw( $media_id, 'thumb_thumb' )
+					?: '';
+				if ( '' === $thumb_url ) {
+					$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
+					if ( 0 === strpos( $file_type, 'image/' ) ) {
+						$thumb_url = (string) $repo->get_raw( $media_id, 'file_url' );
+					}
 				}
 			}
 		}
 
-		if ( ! $thumb_url ) {
-			status_header( 404 );
-			header( 'Content-Type: text/plain' );
-			echo esc_html(
-				'watermark' === $size ? 'Watermark not found.' : 'Thumbnail not found.'
-			);
-			exit;
+		$upload_dir = wp_upload_dir();
+		$base_url   = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
+
+		// When we have a clean rel path, derive the on-disk filename from it
+		// directly. This is the new preferred path — it cannot fail the
+		// uploads-base containment check the way a stranded CDN URL did,
+		// because we never trust an absolute URL stored in meta. The
+		// realpath() containment check below still applies.
+		if ( '' !== $rel_path ) {
+			$full_path = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . ltrim( $rel_path, '/' );
+		} else {
+			if ( ! $thumb_url ) {
+				status_header( 404 );
+				header( 'Content-Type: text/plain' );
+				echo esc_html(
+					'watermark' === $size ? 'Watermark not found.' : 'Thumbnail not found.'
+				);
+				exit;
+			}
+
+			$thumb_url_http = set_url_scheme( $thumb_url, 'http' );
+
+			if ( 0 !== strpos( $thumb_url_http, $base_url ) ) {
+				status_header( 403 );
+				header( 'Content-Type: text/plain' );
+				echo esc_html( 'Access denied.' );
+				exit;
+			}
+
+			$full_path = trailingslashit( $upload_dir['basedir'] ) . substr( $thumb_url_http, strlen( $base_url ) );
 		}
 
-		$upload_dir     = wp_upload_dir();
-		$base_url       = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
-		$thumb_url_http = set_url_scheme( $thumb_url, 'http' );
-
-		if ( 0 !== strpos( $thumb_url_http, $base_url ) ) {
-			status_header( 403 );
-			header( 'Content-Type: text/plain' );
-			echo esc_html( 'Access denied.' );
-			exit;
-		}
-
-		$full_path = trailingslashit( $upload_dir['basedir'] ) . substr( $thumb_url_http, strlen( $base_url ) );
 		$real_path = realpath( $full_path );
 		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
 
@@ -507,38 +561,33 @@ class SignedUrlService {
 	}
 
 	/**
-	 * Size-aware variant of maybe_direct_cloud_url for thumbnail reads.
+	 * Direct CDN URL for a public media's size-specific thumbnail, if its file
+	 * lives on cloud.
 	 *
-	 * Returns the per-size cloud URL when ALL of:
-	 *   - setting `mvs_cloud_direct_public_urls` = '1'
-	 *   - active driver is non-local
-	 *   - media privacy = 'public'
+	 * Display URLs are derived from where the file ACTUALLY lives, not from the
+	 * active driver or any global toggle. Storage is either local or a single
+	 * cloud at a time, and a media's stored `thumb_<size>` URL is the source of
+	 * truth for its location (set at upload time, rewritten by
+	 * CloudOps::migrate_one on a verified migration). When that stored URL is an
+	 * absolute cloud URL, it is the ONLY working source — the `/serve` proxy can
+	 * only stream local files and 403s a cloud-hosted thumbnail. So we serve it
+	 * directly.
+	 *
+	 * Returns a non-empty URL only when ALL of:
+	 *   - media privacy = 'public' (restricted media must stay on /serve so the
+	 *     per-request access check fires)
 	 *   - no active access rules
-	 *   - the stored `thumb_<size>` meta is on the cloud (not local uploads dir)
+	 *   - the stored `thumb_<size>` URL is cloud-hosted (not under local uploads)
 	 *
-	 * Else returns '' so the caller falls through to either the full-file
-	 * direct-CDN path or the gated /serve proxy.
+	 * Else returns '' so the caller falls through to the full-file direct path
+	 * or the gated /serve proxy (which works for local files).
 	 *
 	 * @param int    $media_id Media ID.
 	 * @param string $size     Size key: large / medium / thumbnail.
 	 * @return string Cloud URL for the size-specific thumbnail or empty string.
 	 */
 	private function maybe_direct_cloud_thumbnail_url( int $media_id, string $size ): string {
-		if ( ! (bool) get_option( 'mvs_cloud_direct_public_urls', false ) ) {
-			return '';
-		}
-
-		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
-		if ( 'local' === $driver_slug ) {
-			return '';
-		}
-
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		if ( 'public' !== (string) $repo->get_raw( $media_id, 'privacy' ) ) {
-			return '';
-		}
-
-		if ( $this->access_rules->has_active_rules( $media_id ) ) {
+		if ( ! $this->public_cloud_direct_allowed( $media_id ) ) {
 			return '';
 		}
 
@@ -552,40 +601,64 @@ class SignedUrlService {
 			return '';
 		}
 
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// 1.4.0+ — the meta is a relative path (`2026/05/foo-1024.jpg`).
+		// Resolve via the CURRENTLY-ACTIVE driver so switching CDN/storage
+		// providers does not strand stored URLs (card 9925110293 + the
+		// "service-specific CDN in meta" architectural fix). The legacy
+		// `thumb_*` URL meta is consulted only as a fallback when no _path
+		// is present yet (pre-migration rows).
+		$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' );
+		if ( '' !== $rel_path ) {
+			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
+			$driver  = $storage->get_driver_for_media( $media_id );
+			if ( $driver instanceof LocalDriver ) {
+				// Active driver IS local — let /serve stream it (no direct URL).
+				return '';
+			}
+			$thumb_url = (string) $driver->url( $rel_path );
+			if ( '' === $thumb_url || ! $this->is_cloud_hosted_url( $thumb_url ) ) {
+				return '';
+			}
+			/** This filter is documented below in the legacy branch. */
+			return (string) apply_filters( 'mvs_public_cloud_thumbnail_url', $thumb_url, $media_id, $size );
+		}
+
+		// Legacy fallback — pre-1.4.0 rows have only the URL meta. The
+		// Migrator v14 backfill writes `_path` for these, so this branch
+		// shrinks toward zero as the migration completes.
 		$thumb_url = (string) $repo->get_raw( $media_id, $meta_key );
-		if ( '' === $thumb_url ) {
+
+		if ( ! $this->is_cloud_hosted_url( $thumb_url ) ) {
+			// Empty, or still on local disk — let /serve stream the local file.
 			return '';
 		}
 
-		// If the stored URL still points at the local uploads directory,
-		// this thumbnail was generated before 1.2.1's cloud-thumb push (or
-		// the cloud upload failed and we fell back to the local URL). Don't
-		// short-circuit — let the gated /serve proxy stream the local file.
-		// The backfill CLI will eventually push these to cloud.
-		$upload_dir = wp_upload_dir();
-		if ( is_array( $upload_dir ) && ! empty( $upload_dir['baseurl'] ) ) {
-			if ( 0 === strpos( $thumb_url, (string) $upload_dir['baseurl'] ) ) {
-				return '';
-			}
-		}
-
-		return $thumb_url;
+		/**
+		 * Filter the direct public URL for a media's cloud-hosted thumbnail.
+		 *
+		 * Lets operators rewrite the emitted URL (e.g. a custom CDN domain) or
+		 * return '' to force the request back through the gated /serve proxy.
+		 *
+		 * @param string $thumb_url Cloud thumbnail URL.
+		 * @param int    $media_id  Media ID.
+		 * @param string $size      Size key.
+		 */
+		return (string) apply_filters( 'mvs_public_cloud_thumbnail_url', $thumb_url, $media_id, $size );
 	}
 
 	/**
-	 * If conditions allow, return the active driver's direct public URL.
+	 * Direct CDN URL for a public media's original file, if it lives on cloud.
 	 *
-	 * Returns a non-empty string only when ALL of:
-	 *   - setting `mvs_cloud_direct_public_urls` = '1' (operator opt-in)
-	 *   - active storage driver is NOT local (`mvs_storage_driver !== 'local'`)
-	 *   - media privacy = 'public'
-	 *   - media has no active access rules
+	 * Companion to maybe_direct_cloud_thumbnail_url for full-file reads. Serves
+	 * from the media's actual stored `file_url` (the source of truth for its
+	 * location) when the file is cloud-hosted and the media is public + ungated.
 	 *
-	 * Else returns '' so the caller falls through to the gated /serve path.
-	 *
-	 * **Privacy caveat:** the direct URL is on the CDN's public pull-zone.
-	 * Anyone with the URL can view, including after the media's privacy is
-	 * later flipped to private. Document this in the setting description.
+	 * **Privacy caveat:** the direct URL is on the CDN's public domain. Anyone
+	 * with the URL can keep viewing, including after the media is later flipped
+	 * to private (until the bucket/object is also restricted). This is inherent
+	 * to public CDN hosting and only applies to media that WAS public.
 	 *
 	 * @since 1.2.1
 	 *
@@ -593,38 +666,118 @@ class SignedUrlService {
 	 * @return string Direct CDN URL or empty string.
 	 */
 	private function maybe_direct_cloud_url( int $media_id ): string {
-		if ( ! (bool) get_option( 'mvs_cloud_direct_public_urls', false ) ) {
+		if ( ! $this->public_cloud_direct_allowed( $media_id ) ) {
 			return '';
 		}
 
-		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
-		if ( 'local' === $driver_slug ) {
-			return '';
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// 1.4.0+ — resolve via the CURRENTLY-ACTIVE driver against the
+		// canonical `file_path` column (driver-agnostic). Switching CDNs no
+		// longer requires URL meta rewrites; the active driver knows its
+		// own base URL.
+		$rel_path = (string) $repo->get_raw( $media_id, 'file_path' );
+		if ( '' !== $rel_path ) {
+			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
+			$driver  = $storage->get_driver_for_media( $media_id );
+			if ( $driver instanceof LocalDriver ) {
+				return '';
+			}
+			$file_url = (string) $driver->url( $rel_path );
+			if ( '' === $file_url || ! $this->is_cloud_hosted_url( $file_url ) ) {
+				return '';
+			}
+			/** This filter is documented in maybe_direct_cloud_thumbnail_url(). */
+			return (string) apply_filters( 'mvs_public_cloud_file_url', $file_url, $media_id, '' );
 		}
 
-		// Public privacy only — anything restricted must stay on the gated
-		// proxy so the privacy check fires per request.
-		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$privacy = (string) $repo->get_raw( $media_id, 'privacy' );
-		if ( 'public' !== $privacy ) {
+		// Legacy fallback — rows missing `file_path` (extremely rare).
+		$file_url = (string) $repo->get_raw( $media_id, 'file_url' );
+		if ( ! $this->is_cloud_hosted_url( $file_url ) ) {
 			return '';
 		}
+		/** This filter is documented in maybe_direct_cloud_thumbnail_url(). */
+		return (string) apply_filters( 'mvs_public_cloud_file_url', $file_url, $media_id, '' );
+	}
 
-		if ( $this->access_rules->has_active_rules( $media_id ) ) {
-			return '';
+	/**
+	 * Whether a media may be served directly from its cloud location.
+	 *
+	 * Gate shared by the thumbnail and full-file resolvers. Only PUBLIC media
+	 * with no active access rules may bypass the gated /serve proxy — restricted
+	 * media must flow through /serve so the per-request privacy check fires. The
+	 * decision is independent of the active storage driver: it depends only on
+	 * the media's privacy and (in the callers) where its file actually lives.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool True when direct cloud serving is permitted for this media.
+	 */
+	private function public_cloud_direct_allowed( int $media_id ): bool {
+		/**
+		 * Escape hatch: return false to force public media back through the
+		 * gated /serve proxy instead of emitting a direct cloud URL. Note that
+		 * /serve can only stream LOCAL files, so forcing it for cloud-only media
+		 * will 404 — intended for sites that keep a local copy and want every
+		 * request proxied (e.g. for access logging).
+		 *
+		 * @param bool $allowed  Whether direct cloud serving is permitted.
+		 * @param int  $media_id Media ID.
+		 */
+		if ( ! (bool) apply_filters( 'mvs_serve_public_cloud_direct', true, $media_id ) ) {
+			return false;
 		}
 
-		$file_path = (string) $repo->get_raw( $media_id, 'file_path' );
-		if ( '' === $file_path ) {
-			return '';
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		if ( 'public' !== (string) $repo->get_raw( $media_id, 'privacy' ) ) {
+			return false;
 		}
 
-		$driver = apply_filters( 'mvs_storage_driver', null, $driver_slug );
-		if ( ! $driver instanceof StorageDriverInterface ) {
-			return '';
+		return ! $this->access_rules->has_active_rules( $media_id );
+	}
+
+	/**
+	 * Whether a stored URL is a directly-servable PUBLIC cloud location.
+	 *
+	 * The media's stored `file_url` / `thumb_<size>` is the source of truth for
+	 * where the bytes live. We only emit it to the browser when it is genuinely
+	 * publicly readable; otherwise the caller falls through to the /serve proxy
+	 * (which streams the local copy). Returns false when the URL is:
+	 *   - empty or not absolute http(s) (treated as local),
+	 *   - under the local uploads base (the file is local — let /serve stream it),
+	 *   - a known NON-public storage API host. R2's S3 API endpoint
+	 *     ({account}.r2.cloudflarestorage.com) is never publicly readable; a
+	 *     correctly-configured R2 stores the r2.dev / custom-domain URL instead.
+	 *     Emitting the raw API host guarantees a broken image, so we decline it
+	 *     and serve the local copy via /serve — never switch a media to a remote
+	 *     URL that does not actually work.
+	 * Scheme-insensitive so an https stored URL still matches an http uploads
+	 * base (and vice versa) on dev/staging.
+	 *
+	 * @param string $url Stored URL.
+	 * @return bool True when the URL is an absolute, publicly-servable cloud URL.
+	 */
+	private function is_cloud_hosted_url( string $url ): bool {
+		if ( '' === $url || ! preg_match( '#^https?://#i', $url ) ) {
+			return false;
 		}
 
-		return (string) $driver->url( $file_path );
+		// Known non-public storage API hosts — see docblock. The R2 S3 API
+		// endpoint is private by design; without a configured public domain
+		// there is no working remote URL, so fall back to the local /serve copy.
+		if ( preg_match( '#^https?://[^/]*\.r2\.cloudflarestorage\.com/#i', $url ) ) {
+			return false;
+		}
+
+		$upload_dir = wp_upload_dir();
+		if ( is_array( $upload_dir ) && ! empty( $upload_dir['baseurl'] ) ) {
+			$base = (string) preg_replace( '#^https?://#i', '', (string) $upload_dir['baseurl'] );
+			$bare = (string) preg_replace( '#^https?://#i', '', $url );
+			if ( '' !== $base && 0 === strpos( $bare, $base ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -763,27 +916,36 @@ class SignedUrlService {
 				return '';
 		}
 
-		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$webp_url = (string) $repo->get_raw( $media_id, $meta_key );
-		if ( '' === $webp_url ) {
-			return '';
-		}
-
 		$upload_dir = wp_upload_dir();
 		if ( ! is_array( $upload_dir ) || empty( $upload_dir['baseurl'] ) || empty( $upload_dir['basedir'] ) ) {
 			return '';
 		}
 
-		// Normalize both sides to a single scheme so HTTPS-vs-HTTP doesn't
-		// break the prefix match.
-		$base_url       = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
-		$webp_url_http  = set_url_scheme( $webp_url, 'http' );
-		if ( 0 !== strpos( $webp_url_http, $base_url ) ) {
-			// Cloud-stored WebP: out of scope for H1. See method docblock.
-			return '';
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// Prefer the rel-path meta (driver-agnostic, 1.4.0+); fall back to URL
+		// parsing for legacy rows the Migrator v14 backfill hasn't reached.
+		$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' );
+		if ( '' !== $rel_path ) {
+			$candidate = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . ltrim( $rel_path, '/' );
+		} else {
+			$webp_url = (string) $repo->get_raw( $media_id, $meta_key );
+			if ( '' === $webp_url ) {
+				return '';
+			}
+
+			// Normalize both sides to a single scheme so HTTPS-vs-HTTP doesn't
+			// break the prefix match.
+			$base_url      = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
+			$webp_url_http = set_url_scheme( $webp_url, 'http' );
+			if ( 0 !== strpos( $webp_url_http, $base_url ) ) {
+				// Cloud-stored WebP: out of scope for H1. See method docblock.
+				return '';
+			}
+
+			$candidate = trailingslashit( $upload_dir['basedir'] ) . substr( $webp_url_http, strlen( $base_url ) );
 		}
 
-		$candidate = trailingslashit( $upload_dir['basedir'] ) . substr( $webp_url_http, strlen( $base_url ) );
 		$real_path = realpath( $candidate );
 		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
 		if ( false === $real_path || false === $real_base ) {
@@ -880,24 +1042,32 @@ class SignedUrlService {
 				return '';
 		}
 
-		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$avif_url = (string) $repo->get_raw( $media_id, $meta_key );
-		if ( '' === $avif_url ) {
-			return '';
-		}
-
 		$upload_dir = wp_upload_dir();
 		if ( ! is_array( $upload_dir ) || empty( $upload_dir['baseurl'] ) || empty( $upload_dir['basedir'] ) ) {
 			return '';
 		}
 
-		$base_url      = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
-		$avif_url_http = set_url_scheme( $avif_url, 'http' );
-		if ( 0 !== strpos( $avif_url_http, $base_url ) ) {
-			return '';
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// Prefer the rel-path meta (1.4.0+); URL parse is the legacy fallback.
+		$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' );
+		if ( '' !== $rel_path ) {
+			$candidate = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . ltrim( $rel_path, '/' );
+		} else {
+			$avif_url = (string) $repo->get_raw( $media_id, $meta_key );
+			if ( '' === $avif_url ) {
+				return '';
+			}
+
+			$base_url      = trailingslashit( set_url_scheme( $upload_dir['baseurl'], 'http' ) );
+			$avif_url_http = set_url_scheme( $avif_url, 'http' );
+			if ( 0 !== strpos( $avif_url_http, $base_url ) ) {
+				return '';
+			}
+
+			$candidate = trailingslashit( $upload_dir['basedir'] ) . substr( $avif_url_http, strlen( $base_url ) );
 		}
 
-		$candidate = trailingslashit( $upload_dir['basedir'] ) . substr( $avif_url_http, strlen( $base_url ) );
 		$real_path = realpath( $candidate );
 		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
 		if ( false === $real_path || false === $real_base ) {

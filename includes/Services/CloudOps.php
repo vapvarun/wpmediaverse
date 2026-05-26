@@ -285,10 +285,102 @@ class CloudOps {
 		$non_public = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy != 'public'" );
 
 		return array(
-			'total'               => $total,
-			'needs_migration'     => $still_local,
-			'non_public_kept'     => $non_public,
+			'total'           => $total,
+			'needs_migration' => $still_local,
+			'non_public_kept' => $non_public,
 		);
+	}
+
+	/**
+	 * Per-service media distribution — how many files (and total bytes) live on
+	 * each storage backend, inferred from the stored `file_url` host. Drives the
+	 * admin Storage Overview so an operator can see where media is before/after
+	 * switching the active driver.
+	 *
+	 * Local is matched by the uploads-dir URL; each cloud service by its
+	 * provider host pattern plus any configured custom/CDN domain. Anything that
+	 * matches none is bucketed as `other` (legacy/imported/external URLs).
+	 *
+	 * @since 1.4.0
+	 *
+	 * @return array<string,array{label:string,count:int,bytes:int}>
+	 */
+	public static function counts_by_service(): array {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_media_index';
+
+		// LIKE patterns per service: provider host(s) + any configured domain.
+		$like = static function ( $needle ) use ( $wpdb ) {
+			return '%' . $wpdb->esc_like( $needle ) . '%';
+		};
+
+		$services = array(
+			'local'    => array(
+				'label'    => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
+				'patterns' => array( '/wp-content/uploads/' ),
+			),
+			's3'       => array(
+				'label'    => __( 'Amazon S3', 'wpmediaverse' ),
+				'patterns' => array_filter( array( '.amazonaws.com/', (string) get_option( 'mvs_pro_s3_cdn_domain', '' ) ) ),
+			),
+			'bunnycdn' => array(
+				'label'    => __( 'BunnyCDN', 'wpmediaverse' ),
+				'patterns' => array_filter( array( '.b-cdn.net/', (string) get_option( 'mvs_pro_bunny_cdn_hostname', '' ) ) ),
+			),
+			'r2'       => array(
+				'label'    => __( 'Cloudflare R2', 'wpmediaverse' ),
+				'patterns' => array_filter( array( '.r2.cloudflarestorage.com/', '.r2.dev/', (string) get_option( 'mvs_pro_r2_cdn_domain', '' ) ) ),
+			),
+			'dospaces' => array(
+				'label'    => __( 'DigitalOcean Spaces', 'wpmediaverse' ),
+				'patterns' => array_filter( array( '.digitaloceanspaces.com/', (string) get_option( 'mvs_pro_do_cdn_domain', '' ) ) ),
+			),
+		);
+
+		$out       = array();
+		$base      = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''";
+		$accounted = array(); // collect non-local patterns to derive `other`.
+
+		foreach ( $services as $slug => $svc ) {
+			// Every service carries at least its provider host literal, so the
+			// filtered pattern list is always non-empty.
+			$patterns = array_values( array_unique( array_filter( $svc['patterns'] ) ) );
+			$clauses  = array();
+			$params  = array();
+			foreach ( $patterns as $p ) {
+				$clauses[] = 'file_url LIKE %s';
+				$params[]  = $like( $p );
+				if ( 'local' !== $slug ) {
+					$accounted[] = $like( $p );
+				}
+			}
+			$where = $base . ' AND (' . implode( ' OR ', $clauses ) . ')';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$row          = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) AS c, COALESCE(SUM(file_size),0) AS b FROM {$table} WHERE {$where}", ...$params ), ARRAY_A );
+			$out[ $slug ] = array(
+				'label' => $svc['label'],
+				'count' => (int) ( $row['c'] ?? 0 ),
+				'bytes' => (int) ( $row['b'] ?? 0 ),
+			);
+		}
+
+		// `other`: has file_path, not local, and matches no known cloud host.
+		$other_where  = $base . ' AND file_url NOT LIKE %s';
+		$other_params = array( $like( '/wp-content/uploads/' ) );
+		foreach ( $accounted as $pat ) {
+			$other_where   .= ' AND file_url NOT LIKE %s';
+			$other_params[] = $pat;
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$other        = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) AS c, COALESCE(SUM(file_size),0) AS b FROM {$table} WHERE {$other_where}", ...$other_params ), ARRAY_A );
+		$out['other'] = array(
+			'label' => __( 'Other / external', 'wpmediaverse' ),
+			'count' => (int) ( $other['c'] ?? 0 ),
+			'bytes' => (int) ( $other['b'] ?? 0 ),
+		);
+
+		return $out;
 	}
 
 	/**
@@ -327,7 +419,7 @@ class CloudOps {
 			'finished_at' => 0,
 			'last_error'  => '',
 		);
-		$saved = get_option( self::STATUS_OPTION, array() );
+		$saved   = get_option( self::STATUS_OPTION, array() );
 		return array_merge( $default, is_array( $saved ) ? $saved : array() );
 	}
 

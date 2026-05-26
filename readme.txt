@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,26 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** — AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.4.0 - May 2026 =
+
+New cloud storage options, driver-agnostic media URLs, four release-blocking bug fixes, and a centralized media query layer.
+
+* New     - Cloudflare R2 and DigitalOcean Spaces are now selectable cloud storage drivers from Settings, Storage. The drivers ship in WPMediaVerse Pro; the Storage Driver setting lists them on every install.
+* New     - Driver-agnostic media URLs. Each item now resolves its display URL from the currently active storage driver every time the page renders, so switching between cloud providers (or back to local) no longer breaks images across the site. Path information is the source of truth; URLs are computed at read time.
+* New     - WP-CLI command wp mvs relocalize-private heals legacy non-public media whose URL meta still points at an old cloud bucket. Idempotent and safe to re-run.
+* Improve - Private and restricted media always stays on your server and is never uploaded to cloud storage. Only public media is eligible for the cloud, so private uploads cannot reach a public bucket.
+* Improve - Public media stored on the cloud is served directly from its CDN automatically, with no extra display setting to enable.
+* Improve - Explore, profile, and feed listings now build their database queries through one shared, centrally tested layer, so privacy and gallery-grouping rules behave identically across every view.
+* Improve - BuddyPress activity uploads now capture and send a real first-frame thumbnail for videos. Safari and Bing show the actual first frame instead of a blank player when a video has no embedded cover.
+* Fix     - BuddyPress activity composer privacy dropdown now actually applies. Picking Members, Friends, or Only Me no longer leaves the activity visible to logged-out viewers on the sitewide stream.
+* Fix     - Non-public uploads no longer 403 their own thumbnails. Members, Friends, Only Me, and Group uploads now serve correctly through the gated endpoint regardless of which storage driver is active.
+* Fix     - Bulk album uploads from the BuddyPress profile and group tabs now produce one grouped activity entry per batch instead of one per file. Matches the existing dashboard album upload behavior.
+* Fix     - Enabling a cloud storage service no longer breaks existing media. Each item displays from where its file actually lives instead of being repointed at the newly selected service.
+* Fix     - Videos in the BuddyPress activity feed always show a poster image. Cover-less videos previously rendered a blank player in Safari and Bing.
+* Dev     - Database migration to version 14 backfills driver-agnostic path meta for every existing media item. Idempotent; safe on partial reruns.
+* Dev     - New filters mvs_serve_public_cloud_direct, mvs_public_cloud_thumbnail_url, and mvs_public_cloud_file_url to control or rewrite direct cloud URLs. New mvs_explore_query_args filter to adjust the Explore and profile feed query. Integration event hooks for gamification, activity, and notification consumers are documented in docs/development/INTEGRATION-EVENT-HOOKS.md.
+* Compat  - Paired with WPMediaVerse Pro 1.4.0. Install both updates together when running Pro.
 
 = 1.3.0 - May 2026 =
 

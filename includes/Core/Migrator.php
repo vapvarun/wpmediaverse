@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 13;
+	const CURRENT_VERSION = 14;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -775,6 +775,146 @@ class Migrator {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$wpdb->query( "ALTER TABLE {$index_table} ADD FULLTEXT KEY media_search_ft (title, description)" );
 		$wpdb->show_errors( $prev_show );
+	}
+
+	/**
+	 * Migration v14 — backfill driver-agnostic relative-path meta from the
+	 * legacy URL meta written by pre-1.4.0 uploads.
+	 *
+	 * Background: pre-1.4.0 we stored the active driver's URL in `file_url` /
+	 * `thumb_<size>` / `thumb_<size>_webp` / `thumb_<size>_avif` /
+	 * `original_webp` / `original_avif`. Switching CDN or escalating privacy
+	 * stranded those URLs. 1.4.0 stores driver-agnostic relative paths in
+	 * `{key}_path` meta and resolves URLs at read time via the currently-
+	 * active driver. This migration backfills the new keys for existing rows
+	 * so the read side stops needing the URL fallback branch.
+	 *
+	 * Idempotent — rows that already carry the `_path` key are skipped, so
+	 * the migration is safe to re-run after a partial completion.
+	 *
+	 * @since 1.4.0
+	 */
+	private function migrate_to_14(): void {
+		global $wpdb;
+
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$meta_table  = $wpdb->prefix . 'mvs_media_meta';
+
+		$upload_dir = wp_upload_dir();
+		if ( ! empty( $upload_dir['error'] ) ) {
+			return;
+		}
+
+		// Map of URL-meta key → corresponding _path key. Order doesn't matter.
+		$keymap = array(
+			'thumb_large'        => 'thumb_large_path',
+			'thumb_medium'       => 'thumb_medium_path',
+			'thumb_thumb'        => 'thumb_thumb_path',
+			'thumb_large_webp'   => 'thumb_large_webp_path',
+			'thumb_medium_webp'  => 'thumb_medium_webp_path',
+			'thumb_thumb_webp'   => 'thumb_thumb_webp_path',
+			'thumb_large_avif'   => 'thumb_large_avif_path',
+			'thumb_medium_avif'  => 'thumb_medium_avif_path',
+			'thumb_thumb_avif'   => 'thumb_thumb_avif_path',
+			'original_webp'      => 'original_webp_path',
+			'original_avif'      => 'original_avif_path',
+		);
+
+		// Walk every media row that has a `file_path` (the authoritative
+		// relative path for the original). Per-row work is small — bounded
+		// to ≤24 meta lookups + ≤11 writes — so a straight cursor is fine
+		// for sites well into 100k media. Larger sites can interrupt and
+		// re-run; this migration is idempotent.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results( "SELECT media_id, file_path FROM {$index_table} WHERE file_path IS NOT NULL AND file_path <> ''" );
+
+		foreach ( (array) $rows as $row ) {
+			$media_id      = (int) $row->media_id;
+			$file_path_rel = (string) $row->file_path;
+
+			// Imported records (MediaPress / rtMedia / BuddyBoss importers)
+			// store ABSOLUTE filesystem paths in `file_path` — same legacy
+			// shape `MediaRepository::get_filesystem_path()` accommodates.
+			// For those, `_path` would resolve to bogus locations under
+			// uploads/wpmediaverse/, so we leave the URL meta authoritative
+			// and skip the backfill. They never lived on cloud anyway, so
+			// no CDN-switch staleness to worry about.
+			if ( 0 === strpos( $file_path_rel, '/' ) || preg_match( '#^[A-Za-z]:[\\\\/]#', $file_path_rel ) ) {
+				continue;
+			}
+
+			$rel_dir    = dirname( $file_path_rel );
+			$rel_prefix = ( '.' === $rel_dir || '' === $rel_dir ) ? '' : trailingslashit( $rel_dir );
+
+			foreach ( $keymap as $url_key => $path_key ) {
+				// Skip if path already populated (idempotent).
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$existing_path = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT meta_value FROM {$meta_table} WHERE media_id = %d AND meta_key = %s",
+						$media_id,
+						$path_key
+					)
+				);
+				if ( is_string( $existing_path ) && '' !== $existing_path ) {
+					continue;
+				}
+
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$url_value = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT meta_value FROM {$meta_table} WHERE media_id = %d AND meta_key = %s",
+						$media_id,
+						$url_key
+					)
+				);
+				if ( ! is_string( $url_value ) || '' === $url_value ) {
+					continue;
+				}
+
+				// Resolve rel path. Three shapes for legacy URLs:
+				// a) Local uploads URL — {baseurl}/wpmediaverse/2026/05/foo.jpg
+				// b) Cloud URL — https://zone.b-cdn.net/wpmediaverse/2026/05/foo.jpg
+				// c) Anything else — derive basename from URL, place under file_path's dir.
+				$rel_path = '';
+				$marker   = '/wpmediaverse/';
+				$pos      = strpos( $url_value, $marker );
+				if ( false !== $pos ) {
+					$rel_path = ltrim( substr( $url_value, $pos + strlen( $marker ) ), '/' );
+				} else {
+					$basename = basename( (string) wp_parse_url( $url_value, PHP_URL_PATH ) );
+					if ( '' !== $basename ) {
+						$rel_path = $rel_prefix . $basename;
+					}
+				}
+
+				if ( '' === $rel_path ) {
+					continue;
+				}
+
+				// Strip query string / fragment if present (CDN URLs sometimes
+				// carry signing params or cache-busters).
+				$qpos = strpos( $rel_path, '?' );
+				if ( false !== $qpos ) {
+					$rel_path = substr( $rel_path, 0, $qpos );
+				}
+				$fpos = strpos( $rel_path, '#' );
+				if ( false !== $fpos ) {
+					$rel_path = substr( $rel_path, 0, $fpos );
+				}
+
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->replace(
+					$meta_table,
+					array(
+						'media_id'   => $media_id,
+						'meta_key'   => $path_key,
+						'meta_value' => $rel_path,
+					),
+					array( '%d', '%s', '%s' )
+				);
+			}
+		}
 	}
 
 	/**

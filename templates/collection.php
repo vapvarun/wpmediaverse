@@ -108,7 +108,7 @@ do_action( 'mvs_before_content' );
 			<!-- Search within collection -->
 			<?php if ( ! empty( $items ) ) : ?>
 			<div class="mvs-explore-search mvs-collection-search">
-				<form onsubmit="return false;">
+				<form class="mvs-collection-search-form">
 					<input type="text" class="mvs-collection-search-input" placeholder="<?php esc_attr_e( 'Search in this collection...', 'wpmediaverse' ); ?>" />
 					<button type="button" class="mvs-collection-search-btn"><?php esc_html_e( 'Search', 'wpmediaverse' ); ?></button>
 				</form>
@@ -154,27 +154,7 @@ do_action( 'mvs_before_content' );
 
 	<?php endwhile; ?>
 </div>
-<script>
-( function() {
-	const input = document.querySelector( '.mvs-collection-search-input' );
-	if ( ! input ) return;
-	const grid = document.querySelector( '.mvs-collection-article .mvs-media-grid' );
-	if ( ! grid ) return;
-	const items = grid.querySelectorAll( '.mvs-grid-item' );
-
-	function filterItems() {
-		const q = input.value.toLowerCase().trim();
-		items.forEach( function( item ) {
-			const title = item.getAttribute( 'data-title' ) || '';
-			item.style.display = ( ! q || title.indexOf( q ) !== -1 ) ? '' : 'none';
-		} );
-	}
-
-	input.addEventListener( 'input', filterItems );
-	const btn = document.querySelector( '.mvs-collection-search-btn' );
-	if ( btn ) btn.addEventListener( 'click', filterItems );
-} )();
-</script>
+<?php wp_enqueue_script( 'mvs-collection-filter' ); ?>
 <?php
 wp_enqueue_style( 'mvs-frontend' );
 do_action( 'mvs_after_content' );

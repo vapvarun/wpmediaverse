@@ -1,4 +1,4 @@
-/* Feature card template — 1200×900 */
+/* Feature card template - 1200×900 */
 html, body { width: 1200px; height: 900px; overflow: hidden; }
 body { background: var(--paper); }
 

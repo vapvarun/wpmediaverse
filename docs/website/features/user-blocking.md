@@ -1,6 +1,6 @@
 # User Blocking & Reporting
 
-> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of WPMediaVerse.
 
 
 WPMediaVerse includes a blocking system that prevents specific users from interacting with you and a reporting system that lets users flag abusive content or accounts for moderator review.
@@ -11,8 +11,8 @@ WPMediaVerse includes a blocking system that prevents specific users from intera
 
 You can block a user from two places:
 
-- **From their profile page** — Open the action menu on the user's profile card and select **Block User**.
-- **From the report flow** — After submitting a report against a user, you are offered the option to also block them.
+- **From their profile page** - Open the action menu on the user's profile card and select **Block User**.
+- **From the report flow** - After submitting a report against a user, you are offered the option to also block them.
 
 ### What Blocking Does
 

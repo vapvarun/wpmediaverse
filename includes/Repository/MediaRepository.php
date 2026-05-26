@@ -1001,30 +1001,15 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return array<int, array> Numerically-indexed list of media rows.
 	 */
 	public function query_recent( int $limit = 20, string $since_datetime = '' ): array {
-		global $wpdb;
-
-		$limit = max( 1, $limit );
-
-		if ( '' === $since_datetime ) {
-			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' ORDER BY created_at DESC LIMIT %d",
-					$limit
-				),
-				ARRAY_A
-			);
-		} else {
-			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s ORDER BY created_at DESC LIMIT %d",
-					$since_datetime,
-					$limit
-				),
-				ARRAY_A
-			);
-		}
-
-		return is_array( $rows ) ? $rows : array();
+		return $this->query(
+			array(
+				'status'  => 'publish',
+				'since'   => $since_datetime,
+				'limit'   => $limit,
+				'offset'  => 0,
+				'privacy' => 'any',
+			)
+		);
 	}
 
 	/**
@@ -1088,8 +1073,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return array<int, array> Numerically-indexed list of media rows.
 	 */
 	public function query_by_author( int $user_id, array $args = array() ): array {
-		global $wpdb;
-
 		$args = wp_parse_args(
 			$args,
 			array(
@@ -1100,30 +1083,269 @@ class MediaRepository implements MediaRepositoryInterface {
 			)
 		);
 
-		$where  = 'post_author = %d';
-		$params = array( $user_id );
+		return $this->query(
+			array(
+				'author_id'         => $user_id,
+				'status'            => (string) $args['status'],
+				'moderation_status' => (string) $args['moderation_status'],
+				'limit'             => (int) $args['limit'],
+				'offset'            => (int) $args['offset'],
+				'privacy'           => 'any',
+			)
+		);
+	}
 
-		if ( '' !== (string) $args['status'] ) {
-			$where   .= ' AND status = %s';
-			$params[] = (string) $args['status'];
-		}
-		if ( '' !== (string) $args['moderation_status'] ) {
-			$where   .= ' AND moderation_status = %s';
-			$params[] = (string) $args['moderation_status'];
-		}
+	/**
+	 * ORDER BY columns query() / query_count() will accept.
+	 *
+	 * This allowlist is the SQL-injection guard: `orderby` is interpolated
+	 * into the statement (it cannot be a prepare placeholder), so any value
+	 * outside this set is rejected and falls back to `created_at`.
+	 *
+	 * @var array<string>
+	 */
+	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title' );
 
+	/**
+	 * General media-index listing query — the single place feed/profile/explore
+	 * listing SQL is built.
+	 *
+	 * Replaces hand-written $wpdb in `templates/explore.php` and the Pro feed /
+	 * profile templates. Returns full `mvs_media_index` rows (same shape as
+	 * `get_batch()`), numerically indexed in `orderby`/`order` sequence.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param array $args Filter set — see {@see normalize_query_args()} for keys
+	 *                    and defaults.
+	 * @return array<int, array> Media rows.
+	 */
+	public function query( array $args = array() ): array {
+		global $wpdb;
+
+		$args  = $this->normalize_query_args( $args );
+		$parts = $this->build_query_parts( $args );
+
+		$orderby = in_array( $args['orderby'], self::QUERY_ORDERBY_ALLOWED, true ) ? $args['orderby'] : 'created_at';
+		$order   = 'ASC' === strtoupper( (string) $args['order'] ) ? 'ASC' : 'DESC';
+
+		$params   = $parts['params'];
 		$params[] = max( 1, (int) $args['limit'] );
 		$params[] = max( 0, (int) $args['offset'] );
 
+		// $parts['join']/['where'] and $orderby/$order are built from internal
+		// allowlists + fixed fragments; all caller values flow through $params.
+		$sql = "SELECT m.* FROM {$wpdb->prefix}mvs_media_index m {$parts['join']} WHERE {$parts['where']} ORDER BY m.{$orderby} {$order} LIMIT %d OFFSET %d";
+
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}mvs_media_index WHERE {$where} ORDER BY created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				...$params
-			),
+			$wpdb->prepare( $sql, ...$params ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			ARRAY_A
 		);
 
 		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Row count for the same filter set as {@see query()}.
+	 *
+	 * Uses COUNT(DISTINCT m.media_id) when a taxonomy join is present (a media
+	 * can match multiple term rows) and COUNT(*) otherwise.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param array $args Same args as query().
+	 * @return int Matching media count.
+	 */
+	public function query_count( array $args = array() ): int {
+		global $wpdb;
+
+		$args  = $this->normalize_query_args( $args );
+		$parts = $this->build_query_parts( $args );
+
+		$count_expr = $parts['distinct'] ? 'COUNT(DISTINCT m.media_id)' : 'COUNT(*)';
+
+		$sql = "SELECT {$count_expr} FROM {$wpdb->prefix}mvs_media_index m {$parts['join']} WHERE {$parts['where']}";
+
+		if ( ! empty( $parts['params'] ) ) {
+			$sql = $wpdb->prepare( $sql, ...$parts['params'] ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $wpdb->get_var( $sql );
+	}
+
+	/**
+	 * Apply defaults to a query()/query_count() args array.
+	 *
+	 * @param array $args Caller args.
+	 * @return array {
+	 *     @type string $status                  Index status. Default 'publish'. '' skips.
+	 *     @type string $moderation_status        Default '' (skip). Pass 'approved' to hide flagged/pending.
+	 *     @type int    $author_id                Default 0 (skip).
+	 *     @type string $search                   LIKE on title/description. Default ''.
+	 *     @type int    $tag_tt_id                term_taxonomy_id for a tag join. Default 0.
+	 *     @type int    $category_tt_id           term_taxonomy_id for a category join. Default 0.
+	 *     @type string $privacy                  'any'|'public'|'visible'. Default 'any'.
+	 *     @type int    $viewer_id                Required when privacy='visible'. Default 0.
+	 *     @type bool   $exclude_non_cover_group  Drop non-cover gallery members. Default false.
+	 *     @type string $since                    created_at >= this datetime. Default ''.
+	 *     @type string $orderby                  Allowlisted column. Default 'created_at'.
+	 *     @type string $order                    'ASC'|'DESC'. Default 'DESC'.
+	 *     @type int    $limit                    Default 20.
+	 *     @type int    $offset                   Default 0.
+	 * }
+	 */
+	private function normalize_query_args( array $args ): array {
+		return wp_parse_args(
+			$args,
+			array(
+				'status'                  => 'publish',
+				'moderation_status'       => '',
+				'author_id'               => 0,
+				'search'                  => '',
+				'tag_tt_id'               => 0,
+				'category_tt_id'          => 0,
+				'privacy'                 => 'any',
+				'viewer_id'               => 0,
+				'exclude_non_cover_group' => false,
+				'since'                   => '',
+				'orderby'                 => 'created_at',
+				'order'                   => 'DESC',
+				'limit'                   => 20,
+				'offset'                  => 0,
+			)
+		);
+	}
+
+	/**
+	 * Assemble the JOIN + WHERE + bound params for query()/query_count().
+	 *
+	 * Pure: builds strings and a params array, runs no query. Every
+	 * caller-supplied value becomes a prepare placeholder; only fixed SQL
+	 * fragments and the privacy literals are interpolated.
+	 *
+	 * @param array $args Normalized args.
+	 * @return array{join:string,where:string,params:array,distinct:bool}
+	 */
+	private function build_query_parts( array $args ): array {
+		global $wpdb;
+
+		$join     = '';
+		$where    = array();
+		$params   = array();
+		$distinct = false;
+
+		if ( '' !== (string) $args['status'] ) {
+			$where[]  = 'm.status = %s';
+			$params[] = (string) $args['status'];
+		}
+
+		if ( '' !== (string) $args['moderation_status'] ) {
+			$where[]  = 'm.moderation_status = %s';
+			$params[] = (string) $args['moderation_status'];
+		}
+
+		if ( (int) $args['author_id'] > 0 ) {
+			$where[]  = 'm.post_author = %d';
+			$params[] = (int) $args['author_id'];
+		}
+
+		$search = trim( (string) $args['search'] );
+		if ( '' !== $search ) {
+			$like     = '%' . $wpdb->esc_like( $search ) . '%';
+			$where[]  = '(m.title LIKE %s OR m.description LIKE %s)';
+			$params[] = $like;
+			$params[] = $like;
+		}
+
+		if ( (int) $args['tag_tt_id'] > 0 ) {
+			$join    .= " INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = m.media_id";
+			$where[]  = 'tr.term_taxonomy_id = %d';
+			$params[] = (int) $args['tag_tt_id'];
+			$distinct = true;
+		}
+
+		if ( (int) $args['category_tt_id'] > 0 ) {
+			$join    .= " INNER JOIN {$wpdb->term_relationships} trc ON trc.object_id = m.media_id";
+			$where[]  = 'trc.term_taxonomy_id = %d';
+			$params[] = (int) $args['category_tt_id'];
+			$distinct = true;
+		}
+
+		list( $privacy_where, $privacy_params ) = $this->build_privacy_where( (string) $args['privacy'], (int) $args['viewer_id'] );
+		if ( '' !== $privacy_where ) {
+			$where[] = $privacy_where;
+			$params  = array_merge( $params, $privacy_params );
+		}
+
+		if ( '' !== (string) $args['since'] ) {
+			$where[]  = 'm.created_at >= %s';
+			$params[] = (string) $args['since'];
+		}
+
+		if ( ! empty( $args['exclude_non_cover_group'] ) ) {
+			$where[] = 'm.media_id NOT IN (' . $this->gallery_exclude_subquery() . ')';
+		}
+
+		if ( empty( $where ) ) {
+			$where[] = '1 = 1';
+		}
+
+		return array(
+			'join'     => $join,
+			'where'    => implode( ' AND ', $where ),
+			'params'   => $params,
+			'distinct' => $distinct,
+		);
+	}
+
+	/**
+	 * The single source of truth for the media-index privacy WHERE fragment.
+	 *
+	 * Previously copy-pasted across explore + 3 Pro feed templates. Centralized
+	 * here so a privacy-policy change happens in exactly one place. Lives in the
+	 * Repository (never up-calls PrivacyService — that would invert the layer
+	 * order).
+	 *
+	 * @param string $mode      'any' (no filter), 'public' (anon), or 'visible'
+	 *                          (logged-in non-moderator: public + members + own).
+	 * @param int    $viewer_id Current viewer, used only by the 'visible' mode.
+	 * @return array{0:string,1:array} [ where-fragment, params ].
+	 */
+	private function build_privacy_where( string $mode, int $viewer_id ): array {
+		switch ( $mode ) {
+			case 'public':
+				return array( "m.privacy = 'public'", array() );
+			case 'visible':
+				return array(
+					"(m.privacy = 'public' OR m.privacy = 'members' OR m.post_author = %d)",
+					array( $viewer_id ),
+				);
+			case 'any':
+			default:
+				return array( '', array() );
+		}
+	}
+
+	/**
+	 * The single source of truth for the "exclude non-cover gallery members"
+	 * subquery (previously copy-pasted verbatim across 6 listing sites).
+	 *
+	 * Returns rows that are gallery members at a non-zero position — the outer
+	 * query wraps this in `m.media_id NOT IN (...)`. Fully static: no params.
+	 *
+	 * @return string Subquery SQL (no surrounding parentheses).
+	 */
+	private function gallery_exclude_subquery(): string {
+		global $wpdb;
+
+		$meta = $wpdb->prefix . 'mvs_media_meta';
+
+		return "SELECT mm1.media_id FROM {$meta} mm1
+			INNER JOIN {$meta} mm2 ON mm1.media_id = mm2.media_id
+			WHERE mm1.meta_key = 'media_group'
+			AND mm2.meta_key = 'group_position'
+			AND mm2.meta_value != '0'";
 	}
 
 	/**
@@ -1232,12 +1454,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return int
 	 */
 	public function count_published(): int {
-		global $wpdb;
-
-		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = %s",
-				'publish'
+		return $this->query_count(
+			array(
+				'status'  => 'publish',
+				'privacy' => 'any',
 			)
 		);
 	}
@@ -1250,24 +1470,12 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return int
 	 */
 	public function count_by_author( int $user_id, string $status = 'publish', string $moderation_status = '' ): int {
-		global $wpdb;
-
-		if ( '' === $moderation_status ) {
-			return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = %s",
-					$user_id,
-					$status
-				)
-			);
-		}
-
-		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = %s AND moderation_status = %s",
-				$user_id,
-				$status,
-				$moderation_status
+		return $this->query_count(
+			array(
+				'author_id'         => $user_id,
+				'status'            => $status,
+				'moderation_status' => $moderation_status,
+				'privacy'           => 'any',
 			)
 		);
 	}

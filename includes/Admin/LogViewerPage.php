@@ -159,7 +159,7 @@ class LogViewerPage {
 				</form>
 
 				<?php if ( $result['total'] > 0 ) : ?>
-					<form method="post" class="mvs-form-inline" onsubmit="return confirm('<?php echo esc_js( __( 'Are you sure you want to clear all logs?', 'wpmediaverse' ) ); ?>');">
+					<form method="post" class="mvs-form-inline" data-mvs-confirm="<?php echo esc_attr__( 'Are you sure you want to clear all logs?', 'wpmediaverse' ); ?>">
 						<?php wp_nonce_field( 'mvs_clear_logs', 'mvs_clear_logs_nonce' ); ?>
 						<input type="hidden" name="mvs_clear_logs" value="1" />
 						<button type="submit" class="mvs-btn mvs-btn--danger">

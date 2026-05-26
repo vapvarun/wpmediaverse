@@ -16,7 +16,7 @@ Ship a small in-plugin image optimization service plus a single filter that exte
 
 The pipeline has three responsibilities:
 
-1. **Lossless re-encode of originals** on write — strip metadata (EXIF is preserved separately in `mvs_media_meta`), progressive JPEG, PNG level 9. Uses `WP_Image_Editor` (Imagick preferred, GD fallback). Default on.
+1. **Lossless re-encode of originals** on write - strip metadata (EXIF is preserved separately in `mvs_media_meta`), progressive JPEG, PNG level 9. Uses `WP_Image_Editor` (Imagick preferred, GD fallback). Default on.
 2. **WebP variant emission** alongside every thumbnail size produced by `multi_resize()`. Stored as `thumb_<size>_webp` meta on `mvs_media_meta`. Default on when the active editor supports `image/webp`. Customers who already serve WebP via server config can disable.
 3. **`mvs_optimize_image` filter dispatch** at every disk-write moment. Returns the same path or a replacement path. External compression plugins (or customers' own mu-plugins) hook this to apply their tooling.
 
@@ -38,7 +38,7 @@ AVIF variants, `Accept:`-header content negotiation in `/serve`, and async dispa
  *
  * @return string|WP_Error  Same path, replacement path, or WP_Error to abort the pass.
  *                           Returning WP_Error logs the failure and keeps the
- *                           original file untouched — the upload is NOT aborted.
+ *                           original file untouched - the upload is NOT aborted.
  */
 $file_path = apply_filters( 'mvs_optimize_image', $file_path, $context );
 ```
@@ -62,9 +62,9 @@ Listeners may:
 | `thumb_medium_webp` | URL | WebP sibling of `thumb_medium` |
 | `thumb_thumb_webp` | URL | WebP sibling of `thumb_thumb` |
 
-WebP siblings are produced for every JPG/PNG/GIF input the active editor can decode. The original keeps its source format and URL untouched — `file_url` in `mvs_media_index` is authoritative. The WebP sibling lives next to it on disk (`foo.jpg` -> `foo.webp`) and is referenced only via the new meta key.
+WebP siblings are produced for every JPG/PNG/GIF input the active editor can decode. The original keeps its source format and URL untouched - `file_url` in `mvs_media_index` is authoritative. The WebP sibling lives next to it on disk (`foo.jpg` -> `foo.webp`) and is referenced only via the new meta key.
 
-Readers may opportunistically prefer the `_webp` variant when the browser sent `Accept: image/webp` (current `/serve` does not do this yet — 1.3.0). Until then, the WebP siblings are stored but unused by the plugin's own renderers. Customers using Cache Enabler or .htaccess rewrite for WebP get the benefit immediately.
+Readers may opportunistically prefer the `_webp` variant when the browser sent `Accept: image/webp` (current `/serve` does not do this yet - 1.3.0). Until then, the WebP siblings are stored but unused by the plugin's own renderers. Customers using Cache Enabler or .htaccess rewrite for WebP get the benefit immediately.
 
 ## Settings added
 
@@ -79,7 +79,7 @@ Both registered via `SettingsRegistrar::register_general_settings()` under optio
 
 | Line (current) | Pass | What gets filtered |
 |----------------|------|--------------------|
-| Just before 237 (`$driver->store()`) | original | `$file['tmp_name']` — temp upload file. Cloud driver receives the optimized bytes. |
+| Just before 237 (`$driver->store()`) | original | `$file['tmp_name']` - temp upload file. Cloud driver receives the optimized bytes. |
 | Just before 237 (`$driver->store()`) | original-webp | WebP sibling produced from the temp file. Stored as `original_webp` meta after `$driver->store()` succeeds for the WebP sibling. |
 | Inside `generate_thumbnails()` per-size loop near 743 | each variant | Local variant path written by `multi_resize()` |
 | Inside per-size loop near 743 | variant-webp | WebP sibling of each variant. Stored as `thumb_<size>_webp` meta. |
@@ -150,10 +150,10 @@ Three additions to the existing admin pages:
 
 1. **Settings toggles** in the Storage section (see Settings table above).
 2. **Notice** next to the toggles: "Already have a media library to optimize? Run `wp mvs optimize-bulk` from WP-CLI to process existing uploads. The optimization pipeline only runs on new uploads automatically."
-3. **Per-image surface on `MediaListPage`** (matches the existing `repair_thumb` admin-php nonced pattern — no JS/REST in 1.2.2):
+3. **Per-image surface on `MediaListPage`** (matches the existing `repair_thumb` admin-php nonced pattern - no JS/REST in 1.2.2):
    - **"Optimization" column** showing one of: `Optimized −14.2%` (savings vs. original), `Not optimized`, `Failed (mime_unsupported)`. Hovering shows the absolute byte savings.
-   - **Row action "Optimize"** — admin-php link with nonce (`action=optimize&media_id=X`) that calls `ImageOptimizationService::optimize_media()` and redirects back with a success/error notice. Same shape as the existing `Repair thumb` action.
-   - **Row action "Details"** — links to a new read-only mini-page (`admin.php?page=mvs-media&view=details&media_id=X`). The mini-page is rendered by a new `MediaListPage::render_detail()` method and shows: file path, dimensions, MIME, file hash, original size, optimized size, savings %, last optimized timestamp, all WebP variant URLs, all thumb_* URLs, all relevant media_meta keys. Inline action buttons: **Re-optimize**, **Repair thumb**, **Trash**. No field editing in 1.2.2 — that lands in 1.3.0 alongside title/description/privacy editing.
+   - **Row action "Optimize"** - admin-php link with nonce (`action=optimize&media_id=X`) that calls `ImageOptimizationService::optimize_media()` and redirects back with a success/error notice. Same shape as the existing `Repair thumb` action.
+   - **Row action "Details"** - links to a new read-only mini-page (`admin.php?page=mvs-media&view=details&media_id=X`). The mini-page is rendered by a new `MediaListPage::render_detail()` method and shows: file path, dimensions, MIME, file hash, original size, optimized size, savings %, last optimized timestamp, all WebP variant URLs, all thumb_* URLs, all relevant media_meta keys. Inline action buttons: **Re-optimize**, **Repair thumb**, **Trash**. No field editing in 1.2.2 - that lands in 1.3.0 alongside title/description/privacy editing.
 
 A REST endpoint for `optimize` is **deferred to 1.3.0** to keep the 1.2.2 surface consistent with existing admin actions. External automation in 1.2.2 uses the CLI command or `optimize_media()` from PHP.
 
@@ -182,13 +182,13 @@ All eight keys live in the existing `mvs_media_meta` table. **No new database ta
 - Per-plugin adapter classes (EWWW, Imagify, etc.). Documented mu-plugin snippets in `docs/development/COMPRESSION_INTEGRATIONS.md` instead. Five years from now we will not be maintaining four adapters whose vendor APIs have all renamed twice.
 - Admin bulk UI with progress (CLI only in 1.2.2; admin UI in 1.3.0).
 - Screen Options for the All Media admin table (toggle which columns are visible). Deferred to 1.3.0 where we add a shared screen-options helper applied uniformly across All Media + Stats + other admin tables, rather than bolting it onto one page. Current table renders custom HTML rather than extending `WP_List_Table`, so the helper has to be custom.
-- Lightbox WebP serving. The lightbox is driven by the Interactivity API and reads image URLs out of `state.lightboxMediaData` (populated from a REST endpoint). To serve WebP here we need to (a) extend the REST media schema to include `original_webp`, (b) add `lightboxImageWebpUrl` / `lightboxHideImageWebp` getters in `src/blocks/shared-ui/view.js`, (c) update the template to `<picture>` with state-bound `<source>`, and (d) rebuild block assets. That's a four-surface change — deferred to 1.3.0 to keep 1.2.2 ship-stable. Until then the lightbox serves the full-size JPEG/PNG. WebP `<picture>` rendering still works everywhere `media_thumbnail()` is the renderer (grids, BP activity, dashboard cards, single-media view).
+- Lightbox WebP serving. The lightbox is driven by the Interactivity API and reads image URLs out of `state.lightboxMediaData` (populated from a REST endpoint). To serve WebP here we need to (a) extend the REST media schema to include `original_webp`, (b) add `lightboxImageWebpUrl` / `lightboxHideImageWebp` getters in `src/blocks/shared-ui/view.js`, (c) update the template to `<picture>` with state-bound `<source>`, and (d) rebuild block assets. That's a four-surface change - deferred to 1.3.0 to keep 1.2.2 ship-stable. Until then the lightbox serves the full-size JPEG/PNG. WebP `<picture>` rendering still works everywhere `media_thumbnail()` is the renderer (grids, BP activity, dashboard cards, single-media view).
 
 ## Migration / backward compatibility
 
 - New installs: optimization on, WebP on.
 - Existing installs: same defaults but no backfill. Existing media keeps its original on-disk format and existing thumb_* URLs. A backfill CLI command (`wp mvs optimize-backfill`) ships in 1.3.0.
-- Pro: no changes. The cloud thumbnail upload path already iterates per size — WebP siblings are uploaded alongside existing variant siblings using the same `$cloud_driver->store()` call.
+- Pro: no changes. The cloud thumbnail upload path already iterates per size - WebP siblings are uploaded alongside existing variant siblings using the same `$cloud_driver->store()` call.
 
 ## Test coverage
 

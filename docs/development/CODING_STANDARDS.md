@@ -1,6 +1,6 @@
 # WPMediaVerse Coding Standards
 
-Target quality: WooCommerce / WordPress core level. Every rule here exists because we already saw what happens when it is ignored — see `Known Debt` in `CLAUDE.md`.
+Target quality: WooCommerce / WordPress core level. Every rule here exists because we already saw what happens when it is ignored - see `Known Debt` in `CLAUDE.md`.
 
 ---
 
@@ -11,7 +11,7 @@ Target quality: WooCommerce / WordPress core level. Every rule here exists becau
 | 1 | File size | One class per file, max 500 lines | 500 lines | Code review + PHPStan (future) |
 | 2 | Method size | Keep methods focused and scannable | 50 lines | Code review |
 | 3 | Database | Always use `$wpdb->prepare()` for interpolated values | No raw interpolation | WPCS `phpcs` |
-| 4 | Admin HTML | Template files only — no inline `echo` in PHP classes | `templates/admin/` | Code review |
+| 4 | Admin HTML | Template files only - no inline `echo` in PHP classes | `templates/admin/` | Code review |
 | 5 | Hooks | Prefix all custom hooks with `mvs_`, snake_case | `mvs_*` | Code review |
 | 6 | REST | Extend `WP_REST_Controller`; every endpoint needs `get_item_schema()` and a `permission_callback` | Required | Code review |
 | 7 | Security | Nonce + capability check on every write operation | Required | WP Plugin QA MCP |
@@ -29,7 +29,7 @@ Target quality: WooCommerce / WordPress core level. Every rule here exists becau
 
 **What it looks like**
 ```php
-// includes/Services/MediaService.php — 1,200 lines
+// includes/Services/MediaService.php - 1,200 lines
 class MediaService {
     public function upload() { ... }
     public function delete() { ... }
@@ -47,10 +47,10 @@ One class that owns everything is impossible to test, impossible to review in a 
 **Correct approach**  
 Split by responsibility. Each class does one thing.
 ```php
-// includes/Services/UploadService.php   — handles file ingestion
-// includes/Services/ModerationService.php — handles AI/manual moderation
-// includes/Social/NotificationService.php — handles notifications
-// includes/Services/StatsService.php   — handles aggregations
+// includes/Services/UploadService.php   - handles file ingestion
+// includes/Services/ModerationService.php - handles AI/manual moderation
+// includes/Social/NotificationService.php - handles notifications
+// includes/Services/StatsService.php   - handles aggregations
 ```
 If you add a method and the file crosses 500 lines, extract first.
 
@@ -125,7 +125,7 @@ class ProUploadService extends UploadService {
 ```
 
 **Why it's bad**  
-This creates a hard compile-time dependency from Pro onto Free's internal structure. If Free refactors `UploadService`, Pro breaks — often silently, with a PHP fatal only visible at runtime.
+This creates a hard compile-time dependency from Pro onto Free's internal structure. If Free refactors `UploadService`, Pro breaks - often silently, with a PHP fatal only visible at runtime.
 
 **Correct approach**  
 Pro hooks into `mvs_loaded` and reads services from the container. It never imports Free namespaces.
@@ -178,7 +178,7 @@ try {
 
 ## Good Patterns (From the Codebase)
 
-### Service Container — Lazy Dependency Resolution
+### Service Container - Lazy Dependency Resolution
 
 Services are registered as factories and resolved on first use. Nothing is instantiated unless it is needed.
 
@@ -213,7 +213,7 @@ public function get( string $key ) {
 }
 ```
 
-**`includes/Core/Plugin.php` — `register_services()`**
+**`includes/Core/Plugin.php` - `register_services()`**
 
 Dependencies are declared in the factory, so the container injects them automatically:
 ```php
@@ -274,9 +274,9 @@ Key points:
 
 ---
 
-### LoggerService — Hook-Driven Automatic Logging
+### LoggerService - Hook-Driven Automatic Logging
 
-`LoggerService::register_hooks()` is called once at boot. After that, any code that fires a documented hook gets structured logging for free — no logging calls scattered through business logic.
+`LoggerService::register_hooks()` is called once at boot. After that, any code that fires a documented hook gets structured logging for free - no logging calls scattered through business logic.
 
 **`includes/Services/LoggerService.php`**
 ```php
@@ -320,15 +320,15 @@ public static function register_hooks(): void {
 }
 ```
 
-When you add a new hook (`do_action( 'mvs_*', ... )`), add the corresponding listener here. Do not call `LoggerService::info()` inline at the call site — fire the hook and let the logger pick it up.
+When you add a new hook (`do_action( 'mvs_*', ... )`), add the corresponding listener here. Do not call `LoggerService::info()` inline at the call site - fire the hook and let the logger pick it up.
 
 ---
 
-### N+1 Prevention — Bulk Fetch Then Map
+### N+1 Prevention - Bulk Fetch Then Map
 
 Loading related data in a loop produces one query per row (N+1). The pattern used throughout this codebase is: fetch all rows first, then fetch all related data in one query, then map in memory.
 
-**`includes/Social/CommentService.php` — reply tree without N+1**
+**`includes/Social/CommentService.php` - reply tree without N+1**
 ```php
 // Fetch ALL replies for this media in one query, then build tree in memory.
 $all_replies = array();
@@ -358,7 +358,7 @@ foreach ( $top_level as $comment ) {
 }
 ```
 
-**`includes/Social/NotificationService.php` — priming WP object cache**
+**`includes/Social/NotificationService.php` - priming WP object cache**
 ```php
 // Prime caches in bulk to avoid N+1 queries.
 $actor_ids = array();
@@ -383,4 +383,4 @@ if ( $media_ids ) {
 }
 ```
 
-If you are iterating a result set and calling `get_user_by()`, `get_post()`, or similar inside the loop — stop. Collect the IDs, prime the cache, then iterate.
+If you are iterating a result set and calling `get_user_by()`, `get_post()`, or similar inside the loop - stop. Collect the IDs, prime the cache, then iterate.

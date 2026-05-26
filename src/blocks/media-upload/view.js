@@ -188,7 +188,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 
 			// Pre-upload quota check (Pro only — endpoint may not exist).
 			try {
-				const quotaCheckUrl = ctx.restUrl.replace( /\/media\/?$/, '' ).replace( /mvs\/v1\/?$/, 'mvs-pro/v1/me/quota/check' );
+				// Anchor on the mvs/v1 namespace so the swap can't match inside
+				// the host (e.g. "//mediaverse.local" contains "/media").
+				const quotaCheckUrl = ctx.restUrl.replace( /mvs\/v1\/.*$/, 'mvs-pro/v1/me/quota/check' );
 				const file = files[ 0 ];
 				const mimeType = file.type || 'image/jpeg';
 				const mediaType = mimeType.startsWith( 'video/' ) ? 'video' : ( mimeType.startsWith( 'audio/' ) ? 'audio' : 'image' );
@@ -286,7 +288,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 		if ( quotaWidget && successCount > 0 ) {
 			try {
 				const quotaResp = await fetch(
-					ctx.restUrl.replace( '/media', '-pro/v1/me/quota/check' ) + '?media_type=image&file_size=0',
+					ctx.restUrl.replace( /mvs\/v1\/.*$/, 'mvs-pro/v1/me/quota/check' ) + '?media_type=image&file_size=0',
 					{
 						headers: { 'X-WP-Nonce': ctx.nonce },
 						credentials: 'same-origin',

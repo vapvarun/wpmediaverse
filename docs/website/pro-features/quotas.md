@@ -1,10 +1,10 @@
 # Quotas
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-Limit free users to 50 photos, give premium members unlimited uploads — quota packages let you build a tiered media community where upgrades have real value.
+Limit free users to 50 photos, give premium members unlimited uploads - quota packages let you build a tiered media community where upgrades have real value.
 
 ## What Users See
 
@@ -25,7 +25,7 @@ When a user goes to upload media, a usage widget appears at the top of the uploa
 3. Set the limits for image count, video count, audio count, and total storage. Use `-1` for unlimited
 4. Click **Save**
 5. Go to the **Assignments** tab to map the package to a membership level or user role
-6. Set a **Default Package** at **Media > Quota Packages > Settings** — this applies to users with no membership
+6. Set a **Default Package** at **Media > Quota Packages > Settings** - this applies to users with no membership
 
 Repeat to create as many packages as your membership tiers require.
 

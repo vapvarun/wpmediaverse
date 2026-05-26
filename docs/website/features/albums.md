@@ -1,9 +1,9 @@
 # Albums
 
-> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of WPMediaVerse.
 
 
-Group your photos into beautiful collections — tell a story, document a trip, or organize your portfolio with a single shareable album.
+Group your photos into beautiful collections - tell a story, document a trip, or organize your portfolio with a single shareable album.
 
 ## What You Can Do
 
@@ -19,9 +19,9 @@ Group your photos into beautiful collections — tell a story, document a trip, 
 1. Go to your media dashboard and click **Create Album**
 2. Give your album a title and optional description
 3. Choose a privacy level: public, members only, friends, or private
-4. Click **Add Media** to pick photos from your uploads — select as many as you like
+4. Click **Add Media** to pick photos from your uploads - select as many as you like
 5. Drag photos in the album to reorder them. Click the star on any photo to set it as the cover
-6. Click **Save Album** — your album is live and appears on your profile
+6. Click **Save Album** - your album is live and appears on your profile
 7. To share your album, copy the album link from the album page and send it to anyone
 
 ![Album creation form with title field and privacy selector](../images/dashboard-media.png)
@@ -29,7 +29,7 @@ Group your photos into beautiful collections — tell a story, document a trip, 
 ## For Site Owners
 
 1. Albums are enabled by default once WPMediaVerse is activated
-2. To embed a specific album on a page, use the **WPMediaVerse: Album Viewer** block in the block editor — select the album from the block sidebar
+2. To embed a specific album on a page, use the **WPMediaVerse: Album Viewer** block in the block editor - select the album from the block sidebar
 3. Or use the shortcode `[mvs_album id="123"]` where `123` is the album's post ID
 4. Users manage their own albums from their media dashboard
 5. Admins can view and delete any album from **Media > Albums** in wp-admin

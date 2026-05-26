@@ -238,12 +238,8 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 		return '';
 	}
 
-	protected function extra_upload_js_vars(): string {
-		return '';
-	}
-
-	protected function extra_upload_formdata_appends(): string {
-		return '';
+	protected function extra_upload_fields(): array {
+		return array();
 	}
 
 	protected function render_sub_tabs( string $active ): void {

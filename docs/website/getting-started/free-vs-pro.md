@@ -6,8 +6,8 @@ WPMediaVerse Free is a full-featured media platform. WPMediaVerse Pro unlocks ad
 
 Both editions ship together at 1.2.0 (May 5, 2026). Highlights:
 
-- **Free** — 2 new Gutenberg blocks (Member Photos, PDF Viewer), 4 new sort options on Media Grid (popularity, views, reactions, random), Lightbox Download + Fullscreen + Share fixes, per-media Edit modal, Open Graph + Twitter Card meta on `/media/{slug}/`, Bulk Actions on the admin All Media screen, and a full WCAG 2.1 AA accessibility pass on every customer-facing surface.
-- **Pro** — every Pro feature is now a first-class Gutenberg block. **12 new Pro blocks**: Tournament, Tournaments List, Challenge, Challenges List, Battle, Battles Active, Instagram Feed, Flickr Feed, Pinterest Feed, Dribbble Feed, Leaderboard, Compete Hub. Each block has a matching `[mvs_pro_*]` shortcode. Layouts can now be mixed per-page instead of being locked to one site-wide setting.
+- **Free** - 2 new Gutenberg blocks (Member Photos, PDF Viewer), 4 new sort options on Media Grid (popularity, views, reactions, random), Lightbox Download + Fullscreen + Share fixes, per-media Edit modal, Open Graph + Twitter Card meta on `/media/{slug}/`, Bulk Actions on the admin All Media screen, and a full WCAG 2.1 AA accessibility pass on every customer-facing surface.
+- **Pro** - every Pro feature is now a first-class Gutenberg block. **12 new Pro blocks**: Tournament, Tournaments List, Challenge, Challenges List, Battle, Battles Active, Instagram Feed, Flickr Feed, Pinterest Feed, Dribbble Feed, Leaderboard, Compete Hub. Each block has a matching `[mvs_pro_*]` shortcode. Layouts can now be mixed per-page instead of being locked to one site-wide setting.
 
 → Full release notes: [What's New in 1.2.0](whats-new-1-2-0.md) · [Pro feature overview](../pro-features/overview.md)
 
@@ -163,18 +163,18 @@ WPMediaVerse Free is not a stripped-down trial. It is a complete media platform 
 
 WPMediaVerse Pro is for sites that need professional-grade features:
 
-- **Visual identity** — Choose from Instagram, Pinterest, Flickr, or Dribbble layouts to match your community's style
-- **Scale** — Offload media to S3 or BunnyCDN for global CDN delivery and unlimited storage
-- **Video intelligence** — Multi-quality transcoding, adaptive streaming, chapters, auto-captions, and engagement analytics
-- **Engagement** — Gamification system with challenges, battles, tournaments, boosts, and streaks that keep users coming back
-- **Monetization** — Quota packages with MemberPress/WooCommerce integration let you sell tiered upload plans
-- **Privacy** — Six privacy levels with album inheritance, presets, and bulk management
-- **AI** — Google Vision and AWS Rekognition for auto-tagging and advanced content moderation
-- **Migration** — Import from rtMedia, MediaPress, or BuddyBoss with one WP-CLI command
+- **Visual identity** - Choose from Instagram, Pinterest, Flickr, or Dribbble layouts to match your community's style
+- **Scale** - Offload media to S3 or BunnyCDN for global CDN delivery and unlimited storage
+- **Video intelligence** - Multi-quality transcoding, adaptive streaming, chapters, auto-captions, and engagement analytics
+- **Engagement** - Gamification system with challenges, battles, tournaments, boosts, and streaks that keep users coming back
+- **Monetization** - Quota packages with MemberPress/WooCommerce integration let you sell tiered upload plans
+- **Privacy** - Six privacy levels with album inheritance, presets, and bulk management
+- **AI** - Google Vision and AWS Rekognition for auto-tagging and advanced content moderation
+- **Migration** - Import from rtMedia, MediaPress, or BuddyBoss with one WP-CLI command
 
 ## Upgrading
 
 1. Purchase a Pro license at [wbcomdesigns.com](https://store.wbcomdesigns.com/wpmediaverse-pro/)
 2. Upload and activate the `wpmediaverse-pro.zip` plugin
 3. Enter your license key at **Media > License**
-4. Pro features activate immediately — no data migration needed, no settings lost
+4. Pro features activate immediately - no data migration needed, no settings lost

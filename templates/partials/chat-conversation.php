@@ -31,8 +31,8 @@ defined( 'ABSPATH' ) || exit;
 	<!-- Load More -->
 	<div class="mvs-chat-messages__load-more" data-wp-bind--hidden="!state.hasMoreMessages">
 		<button data-wp-on--click="actions.loadOlderMessages" type="button">
-			<span data-wp-bind--hidden="state.loadingMessages">Load older messages</span>
-			<span data-wp-bind--hidden="!state.loadingMessages">Loading...</span>
+			<span data-wp-bind--hidden="state.loadingMessages"><?php esc_html_e( 'Load older messages', 'wpmediaverse' ); ?></span>
+			<span data-wp-bind--hidden="!state.loadingMessages"><?php esc_html_e( 'Loading...', 'wpmediaverse' ); ?></span>
 		</button>
 	</div>
 
@@ -44,7 +44,7 @@ defined( 'ABSPATH' ) || exit;
 	<!-- Typing Indicator -->
 	<template data-wp-each="state.typingUsers">
 		<div class="mvs-chat-messages__typing">
-			<span data-wp-text="context.item.name"></span> is typing...
+			<span data-wp-text="context.item.name"></span> <?php esc_html_e( 'is typing...', 'wpmediaverse' ); ?>
 		</div>
 	</template>
 </div>
@@ -52,11 +52,11 @@ defined( 'ABSPATH' ) || exit;
 <!-- Message Request Banner -->
 <div class="mvs-chat-request-banner" data-wp-bind--hidden="!state.isRequest">
 	<div class="mvs-chat-request-banner__text">
-		This user wants to send you a message. Accept or decline the request.
+		<?php esc_html_e( 'This user wants to send you a message. Accept or decline the request.', 'wpmediaverse' ); ?>
 	</div>
 	<div class="mvs-chat-request-banner__actions">
-		<button class="mvs-chat-request-banner__btn mvs-chat-request-banner__btn--accept" data-wp-on--click="actions.acceptRequest" type="button">Accept</button>
-		<button class="mvs-chat-request-banner__btn mvs-chat-request-banner__btn--decline" data-wp-on--click="actions.declineRequest" type="button">Decline</button>
+		<button class="mvs-chat-request-banner__btn mvs-chat-request-banner__btn--accept" data-wp-on--click="actions.acceptRequest" type="button"><?php esc_html_e( 'Accept', 'wpmediaverse' ); ?></button>
+		<button class="mvs-chat-request-banner__btn mvs-chat-request-banner__btn--decline" data-wp-on--click="actions.declineRequest" type="button"><?php esc_html_e( 'Decline', 'wpmediaverse' ); ?></button>
 	</div>
 </div>
 

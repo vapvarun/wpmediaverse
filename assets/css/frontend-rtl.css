@@ -268,6 +268,7 @@ body.mvs-page {
     .mvs-page .mvs-modal-close,
     .mvs-page .mvs-back-link,
     .mvs-page .mvs-tag-pill,
+    .mvs-page .mvs-tag-cloud-item,
     .mvs-single-media .mvs-btn,
     .mvs-single-album .mvs-btn,
     .mvs-profile-edit .mvs-btn,
@@ -276,10 +277,16 @@ body.mvs-page {
         min-width: var(--mvs-touch-min);
     }
     /* Small chips/tags expand their hit area via padding instead of growing
-       the visible bubble. */
-    .mvs-page .mvs-tag-pill {
+       the visible bubble. Tag-cloud filter chips were 36px before this floor. */
+    .mvs-page .mvs-tag-pill,
+    .mvs-page .mvs-tag-cloud-item {
         display: inline-flex;
         align-items: center;
+    }
+    /* Upload privacy select sat at 35px — give it the touch-target height
+       without forcing the 44px min-width a full-width control would break on. */
+    .mvs-page .mvs-upload-privacy {
+        min-height: var(--mvs-touch-min);
     }
 }
 
@@ -2795,6 +2802,71 @@ a.mvs-dashboard-card-title:hover {
     color: #fff;
 }
 
+/* Audio fallback card — used when an audio upload has no embedded album
+   art. Lays out a centered icon, title, and meta line so the cell carries
+   information at-a-glance instead of just a music glyph. */
+.mvs-audio-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 18px;
+    text-align: center;
+    color: #fff;
+}
+
+.mvs-audio-card__waveform {
+    display: block;
+    width: 100%;
+    max-width: 240px;
+    height: 64px;
+    color: rgba(255, 255, 255, 0.85);
+    flex-shrink: 0;
+}
+
+.mvs-audio-card__waveform svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    max-width: none;
+    max-height: none;
+    opacity: 1;
+}
+
+.mvs-audio-card__title {
+    font-weight: 600;
+    line-height: 1.3;
+    max-width: 100%;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+
+.mvs-audio-card__meta {
+    font-size: 0.85em;
+    opacity: 0.85;
+    line-height: 1.3;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .mvs-audio-card {
+        padding: 12px 14px;
+        gap: 6px;
+    }
+    .mvs-audio-card__waveform {
+        height: 44px;
+        max-width: 200px;
+    }
+}
+
 .mvs-grid-item-placeholder--generic {
     background: linear-gradient(-135deg, #2b3544, #1a1f2b);
 }
@@ -4997,8 +5069,8 @@ a.mvs-dashboard-card-title:hover {
     background: rgba(0, 0, 0, .5);
     border: none;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     display: flex;
     align-items: center;
@@ -5078,8 +5150,8 @@ a.mvs-dashboard-card-title:hover {
     background: rgba(255, 255, 255, .85);
     border: none;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
     display: flex;
     align-items: center;

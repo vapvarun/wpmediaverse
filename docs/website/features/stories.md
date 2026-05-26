@@ -1,6 +1,6 @@
 # Stories (Coming Soon)
 
-> **Planned Feature** — Stories infrastructure exists in the codebase but is not yet available as a user-facing feature.
+> **Planned Feature** - Stories infrastructure exists in the codebase but is not yet available as a user-facing feature.
 
 ## Current Status
 
@@ -12,9 +12,9 @@ The backend `StoryService` is built and can mark any media item as a time-limite
 
 ## What Works Today
 
-### Instagram Layout — Recent Uploaders Bar
+### Instagram Layout - Recent Uploaders Bar
 
-When the **Instagram layout** is active (Pro), the explore page shows a horizontal bar of circular avatars above the feed. This displays users who uploaded recently — similar to the Instagram stories tray visual style, but these are links to user profiles, not ephemeral story content.
+When the **Instagram layout** is active (Pro), the explore page shows a horizontal bar of circular avatars above the feed. This displays users who uploaded recently - similar to the Instagram stories tray visual style, but these are links to user profiles, not ephemeral story content.
 
 ![Instagram layout with story-style avatar bar](../images/layout-instagram.png)
 
@@ -22,9 +22,9 @@ When the **Instagram layout** is active (Pro), the explore page shows a horizont
 
 The `StoryService` class provides:
 
-- `create( $media_id, $duration_hours )` — mark media as a story with expiration
-- `is_active( $media_id )` — check if a story is still live
-- `cleanup_expired()` — hourly cron removes expired story flags
+- `create( $media_id, $duration_hours )` - mark media as a story with expiration
+- `is_active( $media_id )` - check if a story is still live
+- `cleanup_expired()` - hourly cron removes expired story flags
 - Default duration: 24 hours
 
 ### Meta Keys

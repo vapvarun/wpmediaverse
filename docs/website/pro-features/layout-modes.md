@@ -1,10 +1,10 @@
 # Layout Modes
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-Transform your media community's look with one click — choose the visual style that fits your audience, from Instagram-style grids to Pinterest masonry boards.
+Transform your media community's look with one click - choose the visual style that fits your audience, from Instagram-style grids to Pinterest masonry boards.
 
 ## What You Can Do
 
@@ -26,7 +26,7 @@ Transform your media community's look with one click — choose the visual style
 
 1. Go to **Media > Settings > Display**
 2. Find the **Feed Layout** option and select your preferred mode
-3. Click **Save Settings** — the explore page, all profile media tabs, and gallery shortcodes update immediately
+3. Click **Save Settings** - the explore page, all profile media tabs, and gallery shortcodes update immediately
 
 The setting is stored in the `mvs_pro_feed_layout` option.
 
@@ -53,7 +53,7 @@ Perfect for photo-sharing communities and daily uploads.
 
 ![Instagram layout with recent uploaders bar and vertical card feed](../images/layout-instagram.png)
 
-The Instagram layout renders a vertical card feed. Each post shows the author avatar, full-width photo, reaction/comment/share buttons, like count, caption, and inline comment box — identical to the Instagram experience.
+The Instagram layout renders a vertical card feed. Each post shows the author avatar, full-width photo, reaction/comment/share buttons, like count, caption, and inline comment box - identical to the Instagram experience.
 
 - Recent uploaders appear as circular avatars above the feed (links to their profiles)
 - Each card has heart, comment, share, and bookmark buttons

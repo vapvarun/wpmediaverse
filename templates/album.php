@@ -185,6 +185,25 @@ $mvs_archive_url = home_url( '/media/' );
 							</div>
 						</div>
 					</div>
+					<?php
+					wp_enqueue_script( 'mvs-album-upload' );
+					wp_localize_script(
+						'mvs-album-upload',
+						'mvsAlbumUpload',
+						array(
+							'albumId' => (int) get_the_ID(),
+							'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+							'nonce'   => wp_create_nonce( 'wp_rest' ),
+							'i18n'    => array(
+								/* translators: 1: current file number, 2: total files */
+								'uploadingN'    => __( 'Uploading %1$d of %2$d...', 'wpmediaverse' ),
+								'addingToAlbum' => __( 'Adding to album...', 'wpmediaverse' ),
+								/* translators: %d: number of files added */
+								'addedToAlbum'  => __( '%d file(s) added to album!', 'wpmediaverse' ),
+							),
+						)
+					);
+					?>
 				<?php endif; ?>
 			</div>
 
@@ -209,117 +228,6 @@ $mvs_archive_url = home_url( '/media/' );
 						</div>
 					</div>
 				</div>
-				<script>
-				(function(){
-					var albumId = <?php echo (int) get_the_ID(); ?>;
-					var restUrl = '<?php echo esc_js( esc_url_raw( rest_url( 'mvs/v1/' ) ) ); ?>';
-					var nonce = '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>';
-					var uploadBtn = document.getElementById('mvs-album-upload-btn');
-					var uploadWrap = document.getElementById('mvs-album-upload-wrap');
-					var dropzone = document.getElementById('mvs-album-dropzone');
-					var fileInput = document.getElementById('mvs-album-file-input');
-					var statusEl = document.getElementById('mvs-album-upload-status');
-					var previewEl = document.getElementById('mvs-album-upload-preview');
-					var cancelBtn = document.getElementById('mvs-album-upload-cancel');
-
-					uploadBtn.addEventListener('click', function() {
-						uploadWrap.style.display = 'block';
-						uploadBtn.style.display = 'none';
-					});
-					cancelBtn.addEventListener('click', function() {
-						uploadWrap.style.display = 'none';
-						uploadBtn.style.display = '';
-						previewEl.textContent = '';
-						statusEl.style.display = 'none';
-					});
-
-					var clicking = false;
-					dropzone.addEventListener('click', function(e) {
-						e.preventDefault(); e.stopPropagation();
-						if (clicking) return;
-						clicking = true;
-						fileInput.click();
-						setTimeout(function() { clicking = false; }, 100);
-					});
-					dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('mvs-bp-dropzone--active'); });
-					dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('mvs-bp-dropzone--active'); });
-					dropzone.addEventListener('drop', function(e) {
-						e.preventDefault(); dropzone.classList.remove('mvs-bp-dropzone--active');
-						handleFiles(Array.from(e.dataTransfer.files));
-					});
-					fileInput.addEventListener('change', function() {
-						handleFiles(Array.from(fileInput.files));
-						fileInput.value = '';
-					});
-
-					function handleFiles(files) {
-						if (!files.length) return;
-						files.forEach(function(file) {
-							if (!file.type.match(/^(image|video|audio)\//)) return;
-							var thumb = document.createElement('div');
-							thumb.className = 'mvs-bp-upload-thumb';
-							if (file.type.match(/^image\//)) {
-								var reader = new FileReader();
-								reader.onload = function(e) {
-									var img = document.createElement('img');
-									img.src = e.target.result;
-									thumb.appendChild(img);
-								};
-								reader.readAsDataURL(file);
-							} else {
-								var label = document.createElement('span');
-								label.className = 'mvs-bp-upload-thumb-label';
-								label.textContent = file.type.match(/^video\//) ? '\u25B6 ' + file.name : '\u266B ' + file.name;
-								thumb.appendChild(label);
-							}
-							previewEl.appendChild(thumb);
-						});
-						uploadAndAddToAlbum(files);
-					}
-
-					function uploadAndAddToAlbum(files) {
-						statusEl.style.display = 'block';
-						var total = files.length, done = 0;
-						var uploadedIds = [];
-						statusEl.textContent = 'Uploading 1 of ' + total + '...';
-						statusEl.className = 'mvs-bp-upload-status';
-
-						function next() {
-							if (done >= total) {
-								if (uploadedIds.length) {
-									statusEl.textContent = 'Adding to album...';
-									fetch(restUrl + 'albums/' + albumId + '/items', {
-										method: 'POST',
-										headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-										credentials: 'same-origin',
-										body: JSON.stringify({ media_ids: uploadedIds })
-									}).then(function() {
-										statusEl.textContent = uploadedIds.length + ' file(s) added to album!';
-										statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
-										setTimeout(function() { window.location.reload(); }, 800);
-									});
-								}
-								return;
-							}
-							var fd = new FormData();
-							fd.append('file', files[done]);
-							fetch(restUrl + 'media', {
-								method: 'POST',
-								headers: { 'X-WP-Nonce': nonce },
-								credentials: 'same-origin',
-								body: fd
-							}).then(function(r) { return r.json(); })
-							.then(function(data) {
-								if (data.id) uploadedIds.push(data.id);
-								done++;
-								if (done < total) statusEl.textContent = 'Uploading ' + (done + 1) + ' of ' + total + '...';
-								next();
-							}).catch(function() { done++; next(); });
-						}
-						next();
-					}
-				})();
-				</script>
 			<?php endif; ?>
 
 			<?php
@@ -378,49 +286,17 @@ $mvs_archive_url = home_url( '/media/' );
 						<?php endforeach; ?>
 					</ol>
 				</div>
-				<script>
-				(function(){
-					var tracks = <?php echo wp_json_encode( $tracks ); ?>;
-					var albumId = <?php echo (int) get_the_ID(); ?>;
-					var audio = document.getElementById('mvs-playlist-audio-' + albumId);
-					var nowEl = document.getElementById('mvs-playlist-now-' + albumId);
-					var trackEls = document.querySelectorAll('#mvs-playlist-' + albumId + ' .mvs-playlist-track');
-					var current = -1;
-
-					function playTrack(idx) {
-						if (idx < 0 || idx >= tracks.length || !tracks[idx].url) return;
-						current = idx;
-						audio.src = tracks[idx].url;
-						audio.type = tracks[idx].type;
-						audio.play();
-						var label = tracks[idx].title;
-						if (tracks[idx].artist) label = tracks[idx].artist + ' — ' + label;
-						nowEl.textContent = label;
-						trackEls.forEach(function(el, i) {
-							el.classList.toggle('mvs-playlist-track--active', i === idx);
-						});
-					}
-
-					audio.addEventListener('ended', function() {
-						if (current + 1 < tracks.length) {
-							playTrack(current + 1);
-						}
-					});
-
-					document.querySelectorAll('#mvs-playlist-' + albumId + ' .mvs-playlist-track-btn').forEach(function(btn) {
-						btn.addEventListener('click', function() {
-							playTrack(parseInt(btn.getAttribute('data-track-index'), 10));
-						});
-					});
-
-					if (tracks.length > 0 && tracks[0].url) {
-						audio.src = tracks[0].url;
-						audio.type = tracks[0].type;
-						nowEl.textContent = (tracks[0].artist ? tracks[0].artist + ' — ' : '') + tracks[0].title;
-						trackEls[0].classList.add('mvs-playlist-track--active');
-					}
-				})();
-				</script>
+				<?php
+				wp_enqueue_script( 'mvs-album-playlist' );
+				wp_localize_script(
+					'mvs-album-playlist',
+					'mvsAlbumPlaylist',
+					array(
+						'tracks'  => $tracks,
+						'albumId' => (int) get_the_ID(),
+					)
+				);
+				?>
 			<?php elseif ( ! empty( $items ) ) : ?>
 				<?php
 				$mvs_grid_cols     = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) );
@@ -464,42 +340,23 @@ $mvs_archive_url = home_url( '/media/' );
 					?>
 				</div>
 				<?php if ( $mvs_is_album_owner ) : ?>
-				<script>
-				(function(){
-					var albumId = <?php echo (int) get_the_ID(); ?>;
-					var restUrl = '<?php echo esc_js( esc_url_raw( rest_url( 'mvs/v1/' ) ) ); ?>';
-					var nonce   = '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>';
-					var savingLabel = '<?php echo esc_js( __( 'Saving…', 'wpmediaverse' ) ); ?>';
-					var defaultLabel = '<?php echo esc_js( __( 'Set as cover', 'wpmediaverse' ) ); ?>';
-					var errorText = '<?php echo esc_js( __( 'Could not set cover', 'wpmediaverse' ) ); ?>';
-					document.querySelectorAll('.mvs-album-set-cover').forEach(function (btn) {
-						var labelEl = btn.querySelector('.mvs-album-set-cover__label');
-						btn.addEventListener('click', function (ev) {
-							ev.preventDefault();
-							ev.stopPropagation();
-							var mediaId = btn.getAttribute('data-media-id');
-							if (!mediaId) return;
-							btn.disabled = true;
-							if (labelEl) { labelEl.textContent = savingLabel; }
-							fetch(restUrl + 'albums/' + albumId + '/cover', {
-								method: 'PUT',
-								headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-								credentials: 'same-origin',
-								body: JSON.stringify({ media_id: parseInt(mediaId, 10) })
-							}).then(function (r) {
-								if (!r.ok) { return r.json().then(function (d) { throw new Error(d && d.message || 'Failed'); }); }
-								return r.json();
-							}).then(function () {
-								window.location.reload();
-							}).catch(function (err) {
-								btn.disabled = false;
-								if (labelEl) { labelEl.textContent = defaultLabel; }
-								alert((err && err.message) || errorText);
-							});
-						});
-					});
-				})();
-				</script>
+					<?php
+					wp_enqueue_script( 'mvs-album-cover' );
+					wp_localize_script(
+						'mvs-album-cover',
+						'mvsAlbumCover',
+						array(
+							'albumId' => (int) get_the_ID(),
+							'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+							'nonce'   => wp_create_nonce( 'wp_rest' ),
+							'i18n'    => array(
+								'saving'     => __( 'Saving…', 'wpmediaverse' ),
+								'setAsCover' => __( 'Set as cover', 'wpmediaverse' ),
+								'error'      => __( 'Could not set cover', 'wpmediaverse' ),
+							),
+						)
+					);
+					?>
 				<?php endif; ?>
 			<?php else : ?>
 				<p class="mvs-no-media"><?php esc_html_e( 'This album is empty.', 'wpmediaverse' ); ?></p>

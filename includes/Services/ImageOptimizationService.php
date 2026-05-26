@@ -39,6 +39,12 @@ class ImageOptimizationService {
 	public const META_BYTES_AFTER     = '_mvs_bytes_after';
 	public const META_ORIGINAL_WEBP   = 'original_webp';
 	public const META_ORIGINAL_AVIF   = 'original_avif';
+	// 1.4.0+ — driver-agnostic relative paths (preferred by the read side).
+	// URL meta above stays populated for ≥2 release backcompat per the
+	// Production Rules deprecation policy. Paths are relative to
+	// `{uploads}/wpmediaverse/`, matching the `file_path` index column shape.
+	public const META_ORIGINAL_WEBP_PATH = 'original_webp_path';
+	public const META_ORIGINAL_AVIF_PATH = 'original_avif_path';
 
 	/**
 	 * MIMEs we know how to re-encode. Other image types pass through
@@ -451,12 +457,15 @@ class ImageOptimizationService {
 		// CDN and the WP server's local disk does not collect WebP copies
 		// (that defeats the point of cloud storage). For local driver we
 		// just keep the on-disk file and record its public URL.
+		// _path meta is the driver-agnostic source-of-truth (since 1.4.0);
+		// the URL meta stays populated for ≥2 release backcompat.
 		$webp_path = $this->emit_webp_sibling( $abs_path, $context );
 		if ( null !== $webp_path ) {
-			$rel_path     = (string) $repo->get_raw( $media_id, 'file_path' );
-			$published_url = $this->publish_webp_to_active_driver( $webp_path, $rel_path );
+			$rel_path      = (string) $repo->get_raw( $media_id, 'file_path' );
+			$published_url = $this->publish_webp_to_active_driver( $webp_path, $rel_path, $media_id );
 			if ( '' !== $published_url ) {
 				$repo->set( $media_id, self::META_ORIGINAL_WEBP, $published_url );
+				$repo->set( $media_id, self::META_ORIGINAL_WEBP_PATH, self::sibling_rel_path( $rel_path ) );
 			}
 		}
 
@@ -464,10 +473,11 @@ class ImageOptimizationService {
 		// separate setting (default off) because AVIF encoding is slow.
 		$avif_path = $this->emit_avif_sibling( $abs_path, $context );
 		if ( null !== $avif_path ) {
-			$rel_path     = (string) $repo->get_raw( $media_id, 'file_path' );
-			$published_url = $this->publish_avif_to_active_driver( $avif_path, $rel_path );
+			$rel_path      = (string) $repo->get_raw( $media_id, 'file_path' );
+			$published_url = $this->publish_avif_to_active_driver( $avif_path, $rel_path, $media_id );
 			if ( '' !== $published_url ) {
 				$repo->set( $media_id, self::META_ORIGINAL_AVIF, $published_url );
+				$repo->set( $media_id, self::META_ORIGINAL_AVIF_PATH, self::avif_rel_sibling_path( $rel_path ) );
 			}
 		}
 
@@ -515,19 +525,25 @@ class ImageOptimizationService {
 					// Cloud driver: publish next to the variant on CDN and
 					// drop the local sibling so disk usage stays flat.
 					// Local driver: keep on disk and record its public URL.
-					$published_url    = $this->publish_webp_to_active_driver( $variant_webp, $variant_rel );
+					$published_url = $this->publish_webp_to_active_driver( $variant_webp, $variant_rel, $media_id );
 					if ( '' !== $published_url ) {
 						$repo->set( $media_id, 'thumb_' . $size . '_webp', $published_url );
+						$repo->set( $media_id, 'thumb_' . $size . '_webp_path', self::sibling_rel_path( $variant_rel ) );
 					}
 				}
 
 				$variant_avif = $this->emit_avif_sibling( $variant_local, $variant_ctx );
 				if ( null !== $variant_avif ) {
-					$published_url = $this->publish_avif_to_active_driver( $variant_avif, $variant_rel );
+					$published_url = $this->publish_avif_to_active_driver( $variant_avif, $variant_rel, $media_id );
 					if ( '' !== $published_url ) {
 						$repo->set( $media_id, 'thumb_' . $size . '_avif', $published_url );
+						$repo->set( $media_id, 'thumb_' . $size . '_avif_path', self::avif_rel_sibling_path( $variant_rel ) );
 					}
 				}
+				// Also persist the JPEG variant's rel path. Variant URL was
+				// computed earlier from the legacy URL meta; the canonical
+				// rel path is `$variant_rel` (e.g. `2026/05/foo-300x225.jpg`).
+				$repo->set( $media_id, 'thumb_' . $size . '_path', $variant_rel );
 				++$result['variants_processed'];
 			}
 		}
@@ -753,21 +769,22 @@ class ImageOptimizationService {
 	 *
 	 * @return string Public URL of the published WebP, or '' on failure.
 	 */
-	private function publish_webp_to_active_driver( string $local_webp_path, string $source_rel_path ): string {
+	private function publish_webp_to_active_driver( string $local_webp_path, string $source_rel_path, int $media_id ): string {
 		if ( '' === $source_rel_path || ! file_exists( $local_webp_path ) ) {
 			return '';
 		}
 
-		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver();
+		// Route by the media's privacy: restricted media resolves to the local
+		// driver, so its variants never reach a public cloud bucket.
+		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_media( $media_id );
 		if ( ! $driver instanceof StorageDriverInterface ) {
 			return '';
 		}
 
 		$webp_dest = self::sibling_rel_path( $source_rel_path );
-		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
 
-		if ( 'local' === $driver_slug ) {
-			// Local driver — emit_webp_sibling() already wrote next to the
+		if ( $driver instanceof LocalDriver ) {
+			// Local-disk driver — emit_webp_sibling() already wrote next to the
 			// source on disk, so the on-disk file IS the published artifact.
 			// The driver's url() resolves to the same path.
 			return (string) $driver->url( $webp_dest );
@@ -797,20 +814,20 @@ class ImageOptimizationService {
 	 *
 	 * @return string Public URL of the published AVIF, or '' on failure.
 	 */
-	private function publish_avif_to_active_driver( string $local_avif_path, string $source_rel_path ): string {
+	private function publish_avif_to_active_driver( string $local_avif_path, string $source_rel_path, int $media_id ): string {
 		if ( '' === $source_rel_path || ! file_exists( $local_avif_path ) ) {
 			return '';
 		}
 
-		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver();
+		// Route by the media's privacy — see publish_webp_to_active_driver().
+		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_media( $media_id );
 		if ( ! $driver instanceof StorageDriverInterface ) {
 			return '';
 		}
 
-		$avif_dest   = self::avif_rel_sibling_path( $source_rel_path );
-		$driver_slug = (string) get_option( 'mvs_storage_driver', 'local' );
+		$avif_dest = self::avif_rel_sibling_path( $source_rel_path );
 
-		if ( 'local' === $driver_slug ) {
+		if ( $driver instanceof LocalDriver ) {
 			return (string) $driver->url( $avif_dest );
 		}
 
@@ -825,7 +842,7 @@ class ImageOptimizationService {
 	/**
 	 * Derive `<dir>/<basename>.webp` from a relative source path.
 	 */
-	private static function sibling_rel_path( string $source_rel_path ): string {
+	public static function sibling_rel_path( string $source_rel_path ): string {
 		$dir  = dirname( $source_rel_path );
 		$base = pathinfo( $source_rel_path, PATHINFO_FILENAME );
 		return ( '' === $dir || '.' === $dir ) ? $base . '.webp' : trailingslashit( $dir ) . $base . '.webp';
@@ -856,7 +873,7 @@ class ImageOptimizationService {
 	 *
 	 * @since 1.3.0
 	 */
-	private static function avif_rel_sibling_path( string $source_rel_path ): string {
+	public static function avif_rel_sibling_path( string $source_rel_path ): string {
 		$dir  = dirname( $source_rel_path );
 		$base = pathinfo( $source_rel_path, PATHINFO_FILENAME );
 		return ( '' === $dir || '.' === $dir ) ? $base . '.avif' : trailingslashit( $dir ) . $base . '.avif';

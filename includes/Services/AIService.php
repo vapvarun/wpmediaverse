@@ -42,6 +42,14 @@ class AIService {
 	public function get_active_provider(): ?AIProviderInterface {
 		$provider_id = get_option( 'mvs_ai_provider', 'openai' );
 
+		// Back-compat: legacy stored value `google` predates the registered
+		// provider id `google_vision`. Without this, an admin who picked Google
+		// Vision silently got the OpenAI fallback below. Saved option values do
+		// not re-run the sanitizer, so normalize on read too.
+		if ( 'google' === $provider_id ) {
+			$provider_id = 'google_vision';
+		}
+
 		if ( isset( $this->providers[ $provider_id ] ) && $this->providers[ $provider_id ]->is_available() ) {
 			return $this->providers[ $provider_id ];
 		}
@@ -154,6 +162,13 @@ class AIService {
 			return new WP_Error( 'mvs_no_ai_provider', __( 'No AI provider is configured.', 'wpmediaverse' ) );
 		}
 
+		// Moderation is a billable provider call like analyze/auto_tag, so it
+		// must respect the same monthly spend cap — otherwise auto-moderation
+		// runs unbounded against the budget the owner set.
+		if ( ! $this->check_budget() ) {
+			return new WP_Error( 'mvs_ai_budget_exceeded', __( 'Monthly AI budget has been exceeded.', 'wpmediaverse' ) );
+		}
+
 		// External providers fetch the image over HTTP — must be a signed URL.
 		$image_url = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' );
 		if ( ! $image_url ) {
@@ -226,14 +241,20 @@ class AIService {
 			return $output;
 		}
 
-		$analysis = $this->analyze( $media_id );
-		if ( ! is_wp_error( $analysis ) ) {
-			$output['description'] = $analysis['description'];
+		// Per-feature owner control: description and tag generation are each
+		// opt-out (default on) under the auto-analyze master switch.
+		if ( get_option( 'mvs_ai_auto_describe', true ) ) {
+			$analysis = $this->analyze( $media_id );
+			if ( ! is_wp_error( $analysis ) ) {
+				$output['description'] = $analysis['description'];
+			}
 		}
 
-		$tags = $this->auto_tag( $media_id );
-		if ( ! is_wp_error( $tags ) ) {
-			$output['tags'] = $tags;
+		if ( get_option( 'mvs_ai_auto_tag', true ) ) {
+			$tags = $this->auto_tag( $media_id );
+			if ( ! is_wp_error( $tags ) ) {
+				$output['tags'] = $tags;
+			}
 		}
 
 		if ( get_option( 'mvs_ai_auto_moderate', false ) ) {

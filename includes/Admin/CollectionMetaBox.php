@@ -65,6 +65,25 @@ class CollectionMetaBox {
 		$collection_type = $this->service->get_type( $post->ID );
 		$rules           = $this->service->get_rules( $post->ID );
 
+		wp_enqueue_style(
+			'mvs-admin-collection-metabox',
+			MVS_PLUGIN_URL . 'assets/css/collection-metabox.css',
+			array(),
+			MVS_VERSION
+		);
+		wp_enqueue_script(
+			'mvs-admin-collection-metabox',
+			MVS_PLUGIN_URL . 'assets/js/admin/collection-metabox.js',
+			array(),
+			MVS_VERSION,
+			array( 'in_footer' => true )
+		);
+		wp_localize_script(
+			'mvs-admin-collection-metabox',
+			'mvsCollectionMetabox',
+			array( 'ruleCount' => count( $rules ) )
+		);
+
 		wp_nonce_field( 'mvs_collection_rules', 'mvs_collection_rules_nonce' );
 
 		// Get tags and categories for dropdowns.
@@ -96,23 +115,6 @@ class CollectionMetaBox {
 			$match_count = $resolved['total'];
 		}
 		?>
-		<style>
-			.mvs-metabox-type-toggle { display: flex; gap: 0; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; width: fit-content; margin-bottom: 16px; }
-			.mvs-metabox-type-toggle label { padding: 8px 20px; cursor: pointer; background: #fff; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-			.mvs-metabox-type-toggle label:not(:last-child) { border-right: 1px solid #ddd; }
-			.mvs-metabox-type-toggle input:checked + span { font-weight: 600; }
-			.mvs-metabox-type-toggle input { margin: 0; }
-			.mvs-metabox-rules-wrap { margin-top: 12px; }
-			.mvs-metabox-rule-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-			.mvs-metabox-rule-row select, .mvs-metabox-rule-row input[type="text"], .mvs-metabox-rule-row input[type="date"], .mvs-metabox-rule-row input[type="number"] { padding: 6px 8px; }
-			.mvs-metabox-rule-key { min-width: 140px; }
-			.mvs-metabox-rule-value { min-width: 160px; flex: 1; }
-			.mvs-metabox-remove-rule { color: #cc0000; border: 1px solid #ddd; background: #fff; padding: 4px 10px; cursor: pointer; border-radius: 3px; }
-			.mvs-metabox-remove-rule:hover { background: #fee; }
-			.mvs-metabox-add-rule { margin-top: 4px; }
-			.mvs-metabox-preview { margin-top: 12px; padding: 8px 12px; background: #e8f5e9; border-radius: 4px; font-size: 13px; color: #2e7d32; }
-			.mvs-metabox-hint { color: #888; font-size: 12px; font-style: italic; margin-top: 4px; }
-		</style>
 
 		<div class="mvs-metabox-type-toggle">
 			<label>
@@ -183,83 +185,6 @@ class CollectionMetaBox {
 				</tr>
 			</tbody>
 		</table>
-
-		<script>
-		(function() {
-			var ruleIndex = <?php echo count( $rules ); ?>;
-			var typeRadios = document.querySelectorAll('input[name="mvs_collection_type"]');
-			var rulesWrap = document.getElementById('mvs-rules-wrap');
-			var manualHint = document.getElementById('mvs-manual-hint');
-			var rulesList = document.getElementById('mvs-rules-list');
-			var addBtn = document.getElementById('mvs-add-rule');
-			var templateWrap = document.getElementById('mvs-rule-template-wrap');
-
-			typeRadios.forEach(function(radio) {
-				radio.addEventListener('change', function() {
-					if (this.value === 'smart') {
-						rulesWrap.style.display = '';
-						manualHint.style.display = 'none';
-					} else {
-						rulesWrap.style.display = 'none';
-						manualHint.style.display = '';
-					}
-				});
-			});
-
-			addBtn.addEventListener('click', function() {
-				var templateRow = templateWrap.querySelector('.mvs-metabox-rule-row');
-				var clone = templateRow.cloneNode(true);
-				// Replace __INDEX__ in name attributes.
-				clone.querySelectorAll('[name]').forEach(function(el) {
-					el.name = el.name.replace(/__INDEX__/g, ruleIndex);
-				});
-				rulesList.appendChild(clone);
-				ruleIndex++;
-				bindRuleRow(clone);
-			});
-
-			// Bind existing rows.
-			rulesList.querySelectorAll('.mvs-metabox-rule-row').forEach(bindRuleRow);
-
-			function bindRuleRow(row) {
-				var keySelect = row.querySelector('.mvs-metabox-rule-key');
-				var removeBtn = row.querySelector('.mvs-metabox-remove-rule');
-
-				if (keySelect) {
-					keySelect.addEventListener('change', function() {
-						updateValueField(row, this.value);
-					});
-					updateValueField(row, keySelect.value);
-				}
-
-				if (removeBtn) {
-					removeBtn.addEventListener('click', function() {
-						row.remove();
-					});
-				}
-			}
-
-			function updateValueField(row, key) {
-				var allValueFields = row.querySelectorAll('.mvs-metabox-rule-value, .mvs-metabox-rule-value-date, .mvs-metabox-rule-value-number');
-				allValueFields.forEach(function(el) {
-					el.style.display = 'none';
-					el.disabled = true;
-				});
-
-				var target = row.querySelector('[data-for-key="' + key + '"]');
-				if (target) {
-					target.style.display = '';
-					target.disabled = false;
-				} else if (key === 'date_after' || key === 'date_before') {
-					var dateInput = row.querySelector('.mvs-metabox-rule-value-date');
-					if (dateInput) { dateInput.style.display = ''; dateInput.disabled = false; }
-				} else if (key === 'author') {
-					var numInput = row.querySelector('.mvs-metabox-rule-value-number');
-					if (numInput) { numInput.style.display = ''; numInput.disabled = false; }
-				}
-			}
-		})();
-		</script>
 		<?php
 	}
 

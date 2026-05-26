@@ -1,16 +1,16 @@
 # Tournaments
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
-Enter a single-elimination bracket competition — submit your best photo, survive each round of community voting, and claim the championship title.
+Enter a single-elimination bracket competition - submit your best photo, survive each round of community voting, and claim the championship title.
 
 ## What You Can Do (as a User)
 
 - Register for an open tournament with one of your photos
 - Watch the bracket fill up as other photographers register
-- Vote in active round matches — any member can vote (except in their own match)
+- Vote in active round matches - any member can vote (except in their own match)
 - Track your bracket position round by round
 - Earn XP for every match you win and a large XP prize if you win the tournament
 
@@ -21,7 +21,7 @@ Enter a single-elimination bracket competition — submit your best photo, survi
 1. Go to **Media > Tournaments** on your site
 2. Find a tournament in the **Registration** stage and click **Register**
 3. Pick one photo from your uploads to represent you in the tournament
-4. Click **Submit Registration** — your photo appears in the participant list
+4. Click **Submit Registration** - your photo appears in the participant list
 5. Once registration closes, the bracket is generated automatically
 
 ### Following the Bracket
@@ -29,7 +29,7 @@ Enter a single-elimination bracket competition — submit your best photo, survi
 1. Open the tournament detail page to see the full bracket visualization
 2. Completed rounds are shown in grey; the active round's matches are highlighted
 3. Each matchup shows two photos side by side with the current vote count
-4. Click **Vote** on the photo you think should advance — you get one vote per match
+4. Click **Vote** on the photo you think should advance - you get one vote per match
 5. You cannot vote in a match where you are a participant
 6. When all matches in a round are resolved, the next round opens automatically
 
@@ -48,7 +48,7 @@ Enter a single-elimination bracket competition — submit your best photo, survi
 2. Go to **Media > Competitions > Tournament Manager** and click **Add Tournament**
 3. Set the title, bracket size (4, 8, 16, 32, or 64 participants), registration window, and match vote duration
 4. Set XP prizes for the winner, runner-up, and each round win
-5. Click **Save** — the tournament appears on the frontend when registration opens
+5. Click **Save** - the tournament appears on the frontend when registration opens
 6. The bracket generates automatically when registration closes
 
 ![Tournament Manager create form](../images/admin-competitions.png)
@@ -65,8 +65,8 @@ Seeding is random at bracket generation time.
 
 | Stage | Description |
 |-------|-------------|
-| **Registration** | Tournament is open — users can register with a photo |
-| **In Progress** | Registration closed — bracket generated, rounds underway |
+| **Registration** | Tournament is open - users can register with a photo |
+| **In Progress** | Registration closed - bracket generated, rounds underway |
 | **Finals** | Only two participants remain |
 | **Complete** | Winner determined, XP awarded to all placers |
 
@@ -83,11 +83,11 @@ Go to **Media > Competitions > Tournament Manager** and click **Add Tournament**
 | Title | Tournament name displayed to users |
 | Bracket Size | Maximum participants: 4, 8, 16, 32, or 64 |
 | Registration Opens | Date and time users can start registering |
-| Registration Closes | Deadline for registrations — bracket generates after this |
+| Registration Closes | Deadline for registrations - bracket generates after this |
 | Match Vote Duration | How long each round's matches are open for votes (in hours) |
-| XP — Winner | XP awarded to the tournament winner |
-| XP — Runner-Up | XP awarded to the finalist who loses |
-| XP — Round Win | XP awarded each time a participant wins a match |
+| XP - Winner | XP awarded to the tournament winner |
+| XP - Runner-Up | XP awarded to the finalist who loses |
+| XP - Round Win | XP awarded each time a participant wins a match |
 
 ## Settings Reference
 
@@ -164,19 +164,19 @@ Clicking a tournament opens the detail page with the bracket visualization. Acti
 
 ![Tournament detail page with bracket](../images/dashboard-tournaments.png)
 
-- **Registration stage** — Shows a Register button and the current participant count relative to bracket size
-- **In Progress** — Shows the bracket with completed rounds greyed out and active round matches highlighted
-- **Complete** — Shows the full bracket with the winner highlighted at the top
+- **Registration stage** - Shows a Register button and the current participant count relative to bracket size
+- **In Progress** - Shows the bracket with completed rounds greyed out and active round matches highlighted
+- **Complete** - Shows the full bracket with the winner highlighted at the top
 
 The **My Media > Tournaments** tab shows tournaments the user is registered in, with their current bracket position.
 
 ## Bye Handling
 
-When registrations do not fill the bracket exactly, byes are assigned before round 1 begins. A bye appears in the bracket as an automatic win — the real participant advances and their slot shows "Bye" for the opposing side. Bye participants do not earn a Round Win XP award.
+When registrations do not fill the bracket exactly, byes are assigned before round 1 begins. A bye appears in the bracket as an automatic win - the real participant advances and their slot shows "Bye" for the opposing side. Bye participants do not earn a Round Win XP award.
 
 ## Scheduled Actions
 
 | Action Hook | Condition |
 |-------------|-----------|
-| `mvs_start_tournaments` | Runs hourly — generates brackets when registration deadline passes |
-| `mvs_resolve_tournament_matches` | Runs hourly — resolves matches where the vote deadline has passed; advances winners to next round; detects when all matches in a round are resolved and opens the next round |
+| `mvs_start_tournaments` | Runs hourly - generates brackets when registration deadline passes |
+| `mvs_resolve_tournament_matches` | Runs hourly - resolves matches where the vote deadline has passed; advances winners to next round; detects when all matches in a round are resolved and opens the next round |

@@ -6,16 +6,30 @@ Access these settings at **Media > Settings > AI & Moderation**.
 
 ## AI Features Section
 
+AI is **opt-in and off by default**. Nothing calls an AI provider until you (1) supply an API key and (2) turn on at least one of the toggles below. There is no separate "enable AI" master switch because a missing key already disables every AI feature - you stay in full control of what runs and what it costs.
+
 | Option | Default | Description |
 |--------|---------|-------------|
-| AI Provider | OpenAI (GPT-4 Vision) | The AI service used for image analysis and moderation. Free version: OpenAI only. Pro adds Google Vision and AWS Rekognition. |
+| AI Provider | OpenAI (GPT-4 Vision) | The AI service used for image analysis, tagging, and moderation. Free version: OpenAI only. Pro adds **Google Vision** and **AWS Rekognition** (selectable from this dropdown). |
 | OpenAI API Key | (empty) | Your OpenAI API key. You can also define `MVS_OPENAI_API_KEY` in `wp-config.php` instead. |
 | OpenAI Model | GPT-4o Mini | Model used for analysis calls. **GPT-4o Mini** is cheaper; **GPT-4o** provides higher quality results. |
-| Auto-Analyze Uploads | Off | When enabled, each new upload is automatically analyzed for a description and suggested tags. |
-| Auto-Apply Tags | Off | When enabled, AI-suggested tags are automatically assigned to the `mvs_tag` taxonomy on new uploads. Requires Auto-Analyze to be on. |
+| Auto-Analyze Uploads | Off | Master switch for the two per-feature toggles below. When off, neither descriptions nor tags are generated on upload. |
+| Generate Descriptions | On | When Auto-Analyze is on, use AI to generate a description / alt text for each upload. Turn off to skip description calls and only generate tags. |
+| Generate Tags | On | When Auto-Analyze is on, use AI to suggest tags for each upload. Turn off to skip tag-suggestion calls. |
+| Auto-Apply Tags | Off | When enabled, AI-suggested tags are automatically assigned to the `mvs_tag` taxonomy. Requires **Generate Tags** to be on. |
 | Auto-Moderate Uploads | Off | When enabled, each new upload is checked for policy violations. The action taken depends on the **When AI Flags Content** setting below. |
-| Monthly AI Budget ($) | 0 (unlimited) | Set a dollar cap on AI API costs per calendar month. When the budget is reached, AI calls stop until the next month. Set to 0 to disable budget limiting. |
+| Monthly AI Budget ($) | $10 | Hard cap on AI spend per calendar month, covering analysis, tagging **and moderation** calls. When the cap is reached, all AI calls stop until the next month. Set to **0** for unlimited spend - recommended only after you configure a billing alert on the provider account itself. |
 | Estimated Cost per Call ($) | $0.01 | Used for budget tracking. Adjust based on your actual API pricing. |
+
+### Choosing exactly which AI features run
+
+Each toggle is independent so a site owner enables only what they want to pay for:
+
+- **Descriptions only** - Auto-Analyze on, Generate Descriptions on, Generate Tags off.
+- **Tags only** - Auto-Analyze on, Generate Descriptions off, Generate Tags on (add Auto-Apply Tags to write them to the taxonomy automatically).
+- **Moderation only** - leave Auto-Analyze off and turn on Auto-Moderate; uploads are scanned for policy violations without generating descriptions or tags.
+
+The budget cap applies to all of the above, so moderation calls also stop once the monthly cap is hit.
 
 ## Setting the API Key via wp-config.php
 
@@ -52,4 +66,4 @@ The AI & moderation activity log is available at **Media > AI Logs**. It shows e
 
 ## Budget Alerts
 
-When monthly AI spend reaches 80% of your budget, WPMediaVerse adds an admin notice. When the budget is fully consumed, AI calls are suspended and a warning appears on the settings page.
+When monthly AI spend reaches 80% of your budget, WPMediaVerse adds an admin notice. When the budget is fully consumed, **all** AI calls - analysis, tagging, and moderation - are suspended and a warning appears on the settings page. Because a fresh install ships with a conservative `$10` default cap, AI never silently runs against an unbounded bill before you have chosen a budget.

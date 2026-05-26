@@ -1,6 +1,6 @@
 # WPMediaVerse Pro
 
-> **Requires WPMediaVerse Pro** — This feature is available exclusively in the Pro version.
+> **Requires WPMediaVerse Pro** - This feature is available exclusively in the Pro version.
 
 
 
@@ -34,7 +34,7 @@ When an update is available, WordPress shows it in the standard **Plugins** scre
 
 ## 1.2.0: All Pro features now Gutenberg blocks
 
-Every Pro feature now ships as a first-class Gutenberg block — drop-in, configurable in the editor, no shortcodes-as-the-only-option. Each block has a matching `[mvs_pro_*]` shortcode for classic editor and template-tag use.
+Every Pro feature now ships as a first-class Gutenberg block - drop-in, configurable in the editor, no shortcodes-as-the-only-option. Each block has a matching `[mvs_pro_*]` shortcode for classic editor and template-tag use.
 
 | Block | Handle | Notes |
 |-------|--------|-------|
@@ -51,7 +51,7 @@ Every Pro feature now ships as a first-class Gutenberg block — drop-in, config
 | Leaderboard | `mvs/pro-leaderboard` | Top performers across competitions. |
 | Compete Hub | `mvs/pro-compete-hub` | Combined challenges + battles + tournaments dashboard. |
 
-**Layout flexibility:** because each layout (Instagram, Flickr, Pinterest, Dribbble) is its own block, admins can mix layouts on different pages — e.g. a Pinterest feed on the home page and an Instagram feed on a member directory — instead of being locked to one site-wide layout setting.
+**Layout flexibility:** because each layout (Instagram, Flickr, Pinterest, Dribbble) is its own block, admins can mix layouts on different pages - e.g. a Pinterest feed on the home page and an Instagram feed on a member directory - instead of being locked to one site-wide layout setting.
 
 ### MigrationPage admin restructure
 

@@ -3,7 +3,7 @@
  * Plugin Name: WPMediaVerse
  * Plugin URI:  https://store.wbcomdesigns.com/wpmediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
- * Version:     1.3.0
+ * Version:     1.4.0
  * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
@@ -18,7 +18,12 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MVS_VERSION', '1.3.0' );
+define( 'MVS_VERSION', '1.4.0' );
+// Minimum Pro version compatible with this free build. Free and Pro release in
+// lockstep; bump this together with MVS_VERSION. Free works standalone, so an
+// older Pro is only warned (not gated) — Pro carries its own hard requirement
+// on the free plugin in the other direction.
+define( 'MVS_MIN_PRO', '1.4.0' );
 define( 'MVS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MVS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MVS_PLUGIN_FILE', __FILE__ );
@@ -45,6 +50,37 @@ add_action(
 				'version' => MVS_VERSION,
 				'file'    => MVS_PLUGIN_FILE,
 				'license' => 'wbcomfree7a9c2e5d1f8b4c6a3e0d9b2f7c1a8e44',
+			)
+		);
+	}
+);
+
+// Lockstep compatibility check: warn when an OLDER WPMediaVerse Pro is active
+// next to this newer free build. Free keeps working; the notice nudges the admin
+// to update Pro so the cross-plugin APIs line up. Pro carries the reciprocal
+// hard requirement on the free plugin (it gates instead of warns).
+add_action(
+	'admin_notices',
+	function () {
+		if ( ! defined( 'MVS_PRO_VERSION' ) ) {
+			return;
+		}
+		// Strip any pre-release suffix (e.g. "1.4.0-dev") so dev builds and patch
+		// releases on the same minor line are treated as compatible.
+		if ( ! version_compare( strtok( MVS_PRO_VERSION, '-' ), MVS_MIN_PRO, '<' ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'update_plugins' ) ) {
+			return;
+		}
+		printf(
+			'<div class="notice notice-warning"><p>%s</p></div>',
+			sprintf(
+				/* translators: 1: free version, 2: Pro version present, 3: required Pro version. */
+				esc_html__( 'WPMediaVerse %1$s works best with WPMediaVerse Pro %3$s or later (you have Pro %2$s). Please update WPMediaVerse Pro for full compatibility.', 'wpmediaverse' ),
+				esc_html( MVS_VERSION ),
+				esc_html( MVS_PRO_VERSION ),
+				esc_html( MVS_MIN_PRO )
 			)
 		);
 	}

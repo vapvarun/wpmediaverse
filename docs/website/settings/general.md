@@ -8,7 +8,7 @@ Access these settings at **Media > Settings > General**.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| Max Upload Size | 100 MB | Maximum file size per upload. Enter value in MB. The plugin reads this setting server-side — WordPress's `upload_max_filesize` PHP ini value also applies. |
+| Max Upload Size | 100 MB | Maximum file size per upload. Enter value in MB. The plugin reads this setting server-side - WordPress's `upload_max_filesize` PHP ini value also applies. |
 | Allowed File Types | image/jpeg, image/png, image/gif, image/webp, video/mp4, video/webm, audio/mpeg, audio/ogg | Comma-separated list of allowed MIME types. |
 | Default Privacy Level | Public | The privacy level assigned to new uploads when the user does not choose one. Options: Public, Members Only, Private. |
 | Duplicate Detection | Warn (allow upload) | What to do when a user uploads a file with a SHA-256 hash matching an existing media item. Options: Warn (allow upload), Skip (reject duplicate), Allow (no check). |

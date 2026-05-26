@@ -130,7 +130,7 @@ The command outputs progress as it processes each batch and shows a final count 
 
 ## wp mvs cache-flush
 
-Flush all WPMediaVerse caches — both object cache groups and plugin-managed transients. Run this after making direct database changes or when stale data is suspected.
+Flush all WPMediaVerse caches - both object cache groups and plugin-managed transients. Run this after making direct database changes or when stale data is suspected.
 
 ```bash
 wp mvs cache-flush
@@ -168,7 +168,7 @@ wp mvs moderation-stats
 
 ## wp mvs generate-video-thumbnails
 
-Generate poster frames for video media items that don't have a `thumb_large` meta entry yet. Uses ffmpeg to extract a frame at the second mark of each video. Idempotent — videos that already have a poster are skipped unless `--force` is passed.
+Generate poster frames for video media items that don't have a `thumb_large` meta entry yet. Uses ffmpeg to extract a frame at the second mark of each video. Idempotent - videos that already have a poster are skipped unless `--force` is passed.
 
 Recommended after upgrading to 1.2.0 to backfill posters for any video uploaded before the fix. Without a poster, video media renders a black frame in the lightbox until playback starts; with a poster, the first frame appears immediately.
 
@@ -222,6 +222,174 @@ wp mvs backfill-activity-thumbnails --dry-run
 
 ---
 
+## wp mvs migrate-storage
+
+Migrate every stored media file from one storage driver to another. Idempotent - re-running skips media already present on the destination. Only public media is migrated by default (non-public media stays local to preserve privacy). The active `mvs_storage_driver` option is NOT flipped automatically; flip it manually via `wp option update` once the run completes cleanly.
+
+Added in 1.3.0.
+
+```bash
+# Dry run: report what would move without touching files.
+wp mvs migrate-storage --from=local --to=s3 --dry-run
+
+# Migrate but keep source copies for a verification window.
+wp mvs migrate-storage --from=local --to=s3 --keep-source
+
+# Full migration.
+wp mvs migrate-storage --from=local --to=s3
+
+# Migrate a single media row for testing.
+wp mvs migrate-storage --from=local --to=s3 --media-id=42
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--from=<driver>` | required | Source driver slug: `local`, `s3`, `bunnycdn` |
+| `--to=<driver>` | required | Destination driver slug. Must differ from `--from` |
+| `--dry-run` | off | Walk the media list and report without transferring files |
+| `--keep-source` | off | Skip post-verify source-side deletion |
+| `--media-id=<id>` | 0 (all) | Migrate one specific media row |
+| `--limit=<n>` | 0 (all) | Stop after this many rows |
+| `--include-non-public` | off | Also migrate non-public media (only when cloud bucket is private) |
+
+**Note:** `s3` and `bunnycdn` drivers require WPMediaVerse Pro.
+
+---
+
+## wp mvs cloud-thumbs-backfill
+
+Push thumbnail variants to the active cloud driver for images uploaded before 1.3.0 (when cloud-side thumbnails landed). Downloads each original from cloud, regenerates three size variants locally, and uploads each variant. Only processes public images whose thumbnail meta still points at a local URL.
+
+Run `wp mvs migrate-storage` first so original files are already on cloud.
+
+Added in 1.3.0.
+
+```bash
+# Dry run.
+wp mvs cloud-thumbs-backfill --dry-run
+
+# Process all eligible images.
+wp mvs cloud-thumbs-backfill
+
+# Limit for testing.
+wp mvs cloud-thumbs-backfill --limit=100
+
+# Single media row.
+wp mvs cloud-thumbs-backfill --media-id=42
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--dry-run` | off | Report what would migrate without downloading or uploading |
+| `--media-id=<id>` | 0 (all) | Process a single media row |
+| `--limit=<n>` | 0 (all) | Stop after this many rows |
+
+**Requirements:** Active driver must not be `local`. Pro plugin required for `s3`/`bunnycdn`.
+
+---
+
+## wp mvs cleanup-local
+
+Delete local copies of media that are verified on the active cloud driver. Use after a `wp mvs migrate-storage --keep-source` run once the cloud driver has been confirmed to serve all media correctly.
+
+**Irreversible.** The command verifies each file exists on cloud before deleting the local copy; a failed verification keeps the local file. Only public media is processed.
+
+Added in 1.3.0.
+
+```bash
+# Preview what would be deleted.
+wp mvs cleanup-local --dry-run
+
+# Delete originals and thumbnail variants.
+wp mvs cleanup-local
+
+# Keep local thumbnail variants; delete originals only.
+wp mvs cleanup-local --keep-thumbs
+
+# Single media row.
+wp mvs cleanup-local --media-id=42
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--dry-run` | off | Walk the candidate list and report without deleting |
+| `--media-id=<id>` | 0 (all) | Process a single media row |
+| `--limit=<n>` | 0 (all) | Stop after this many rows |
+| `--keep-thumbs` | off | Delete only the original file; keep local thumbnail variants |
+
+---
+
+## wp mvs optimize
+
+Optimize a single media row: re-encode the original and emit WebP (and optionally AVIF) siblings. Resume-safe via the `_mvs_optimized_at` meta sentinel - already-optimized media is skipped unless `--force` is passed.
+
+Added in 1.3.0.
+
+```bash
+wp mvs optimize 42
+wp mvs optimize 42 --include-variants --force
+```
+
+**Synopsis:**
+
+```
+wp mvs optimize <media_id> [--include-variants] [--force]
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `<media_id>` | required | Media row ID to optimize |
+| `--include-variants` | off | Also re-process every thumbnail variant |
+| `--force` | off | Re-run even when `_mvs_optimized_at` is already set |
+
+**Output:** Reports bytes before and after, percent saved, and variant count.
+
+---
+
+## wp mvs optimize-bulk
+
+Bulk-optimize every image in the library matching the given filters. Resume-safe: rows already marked with `_mvs_optimized_at` are skipped automatically. Rows that previously failed (marked `_mvs_optimize_failed`) are also skipped unless `--include-failed` is passed.
+
+Added in 1.3.0.
+
+```bash
+# Process all unoptimized images, including variants.
+wp mvs optimize-bulk --include-variants
+
+# JPEG only, dry run.
+wp mvs optimize-bulk --mime=image/jpeg --dry-run
+
+# Cap to first 500 rows.
+wp mvs optimize-bulk --limit=500
+
+# Skip first 200 rows (manual offset resume).
+wp mvs optimize-bulk --offset=200
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--limit=<n>` | 0 (all) | Cap rows processed |
+| `--offset=<n>` | 0 | Skip the first N rows (manual resume) |
+| `--mime=<types>` | all images | Comma-separated MIME types to include (e.g. `image/jpeg,image/png`) |
+| `--media-type=<type>` | all | Restrict to one `media_type` column value (e.g. `photo`) |
+| `--include-variants` | off | Process thumbnail variants alongside the original |
+| `--dry-run` | off | Report what would be processed without writing |
+| `--include-failed` | off | Re-process rows previously marked as failed |
+
+**Output:** Reports processed/skipped/failed counts and total bytes saved.
+
+---
+
 ## Scheduling Maintenance with WP-CLI Cron
 
 Add these commands to your server cron for automated maintenance:
@@ -239,5 +407,5 @@ Add these commands to your server cron for automated maintenance:
 ## Exit Codes
 
 All commands follow WP-CLI conventions:
-- **0** — success
-- **1** — error (WP_CLI::error())
+- **0** - success
+- **1** - error (WP_CLI::error())

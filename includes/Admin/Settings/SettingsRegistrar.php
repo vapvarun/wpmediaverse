@@ -37,7 +37,7 @@ class SettingsRegistrar {
 	public function register_all(): void {
 		$this->register_general_settings();
 		$this->register_display_settings();
-		$this->register_ai_settings();
+		( new AiSettingsRegistrar() )->register();
 		$this->register_moderation_settings();
 		$this->register_webhook_settings();
 		$this->register_messaging_settings();
@@ -262,6 +262,8 @@ class SettingsRegistrar {
 						'local'    => __( 'Local (WordPress uploads)', 'wpmediaverse' ),
 						's3'       => __( 'Amazon S3', 'wpmediaverse' ),
 						'bunnycdn' => __( 'BunnyCDN', 'wpmediaverse' ),
+						'r2'       => __( 'Cloudflare R2', 'wpmediaverse' ),
+						'dospaces' => __( 'DigitalOcean Spaces', 'wpmediaverse' ),
 					),
 					'description' => __( 'Where uploaded media files are stored. Cloud drivers require API credentials.', 'wpmediaverse' ),
 				)
@@ -278,6 +280,8 @@ class SettingsRegistrar {
 					'pro'     => array(
 						__( 'Amazon S3', 'wpmediaverse' ),
 						__( 'BunnyCDN', 'wpmediaverse' ),
+						__( 'Cloudflare R2', 'wpmediaverse' ),
+						__( 'DigitalOcean Spaces', 'wpmediaverse' ),
 					),
 				)
 			);
@@ -305,11 +309,15 @@ class SettingsRegistrar {
 			)
 		);
 
-		// Direct CDN URLs for public media on cloud drivers. When enabled
-		// AND the active driver is s3/bunnycdn, public-privacy media skip
-		// the gated /serve proxy and emit the CDN edge URL directly.
-		// Restricted media still flows through the gated proxy. Off by
-		// default so upgrades do not silently change URL behavior.
+		// Legacy option, retained for back-compat only. Public media whose file
+		// lives on cloud is now ALWAYS served directly from its CDN URL — the
+		// /serve proxy can only stream local files, so a stored cloud URL has no
+		// working alternative. The display decision is driven by each media's
+		// actual stored location + privacy (SignedUrlService::is_cloud_hosted_url
+		// / public_cloud_direct_allowed), not by this toggle, so the checkbox was
+		// removed. The option key stays registered so existing stored values do
+		// not error; operators who need per-request proxying can use the
+		// `mvs_serve_public_cloud_direct` filter instead.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_storage',
 			'mvs_cloud_direct_public_urls',
@@ -317,17 +325,6 @@ class SettingsRegistrar {
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'default'           => false,
-			)
-		);
-		add_settings_field(
-			'mvs_cloud_direct_public_urls',
-			__( 'Serve public media direct from CDN', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-storage',
-			'mvs_storage',
-			array(
-				'option'      => 'mvs_cloud_direct_public_urls',
-				'description' => __( 'When using a cloud storage driver (S3, BunnyCDN), emit the CDN edge URL directly for public media so browsers fetch from the CDN instead of through WordPress. Restricted media (members-only, friends, private) and media with access rules continue to flow through the gated /serve proxy. <strong>Caveat:</strong> once a public URL is on the CDN edge, anyone who has it can keep viewing — even after you flip the media to private. Leave off if you need WordPress to re-validate privacy on every image request.', 'wpmediaverse' ),
 			)
 		);
 
@@ -656,215 +653,6 @@ class SettingsRegistrar {
 	// -------------------------------------------------------------------------
 	// AI & Moderation settings
 	// -------------------------------------------------------------------------
-
-	/**
-	 * Register AI-tab settings.
-	 */
-	private function register_ai_settings(): void {
-		add_settings_section( 'mvs_ai', __( 'AI Features', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-ai' );
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
-			'mvs_ai_provider',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_ai_provider' ),
-				'default'           => 'openai',
-			)
-		);
-		if ( self::is_pro_active() ) {
-			add_settings_field(
-				'mvs_ai_provider',
-				__( 'AI Provider', 'wpmediaverse' ),
-				array( FieldRenderer::class, 'render_select_field' ),
-				SettingsPage::PAGE_SLUG . '-ai',
-				'mvs_ai',
-				array(
-					'option'      => 'mvs_ai_provider',
-					'choices'     => array(
-						'openai'      => __( 'OpenAI (GPT-4 Vision)', 'wpmediaverse' ),
-						'google'      => __( 'Google Vision', 'wpmediaverse' ),
-						'rekognition' => __( 'AWS Rekognition', 'wpmediaverse' ),
-					),
-					'description' => __( 'Which AI service to use for image analysis, tagging, and moderation.', 'wpmediaverse' ),
-				)
-			);
-		} else {
-			add_settings_field(
-				'mvs_ai_provider',
-				__( 'AI Provider', 'wpmediaverse' ),
-				array( FieldRenderer::class, 'render_pro_select_field' ),
-				SettingsPage::PAGE_SLUG . '-ai',
-				'mvs_ai',
-				array(
-					'current' => __( 'OpenAI (GPT-4 Vision)', 'wpmediaverse' ),
-					'pro'     => array(
-						__( 'Google Vision', 'wpmediaverse' ),
-						__( 'AWS Rekognition', 'wpmediaverse' ),
-					),
-				)
-			);
-
-		}
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
-			'mvs_openai_api_key',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_password_option' ),
-				'default'           => '',
-			)
-		);
-		add_settings_field(
-			'mvs_openai_api_key',
-			__( 'OpenAI API Key', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_password_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option'      => 'mvs_openai_api_key',
-				'description' => __( 'Or define MVS_OPENAI_API_KEY constant in wp-config.php.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
-			'mvs_openai_model',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_openai_model' ),
-				'default'           => 'gpt-4o-mini',
-			)
-		);
-		add_settings_field(
-			'mvs_openai_model',
-			__( 'OpenAI Model', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option'      => 'mvs_openai_model',
-				'choices'     => array(
-					'gpt-4o-mini' => __( 'GPT-4o Mini (cheaper)', 'wpmediaverse' ),
-					'gpt-4o'      => __( 'GPT-4o (best quality)', 'wpmediaverse' ),
-				),
-				'description' => __( 'GPT-4o Mini is faster and cheaper. GPT-4o produces more accurate tags and descriptions.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
-			'mvs_ai_auto_analyze',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => false,
-			)
-		);
-		add_settings_field(
-			'mvs_ai_auto_analyze',
-			__( 'Auto-Analyze Uploads', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option' => 'mvs_ai_auto_analyze',
-				'label'  => __( 'Automatically analyze media on upload (description + tags).', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
-			'mvs_ai_auto_apply_tags',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => false,
-			)
-		);
-		add_settings_field(
-			'mvs_ai_auto_apply_tags',
-			__( 'Auto-Apply Tags', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option' => 'mvs_ai_auto_apply_tags',
-				'label'  => __( 'Automatically assign AI-generated tags to taxonomy.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
-			'mvs_ai_auto_moderate',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => false,
-			)
-		);
-		add_settings_field(
-			'mvs_ai_auto_moderate',
-			__( 'Auto-Moderate Uploads', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option' => 'mvs_ai_auto_moderate',
-				'label'  => __( 'Check uploads for policy violations via AI.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
-			'mvs_ai_monthly_budget',
-			array(
-				'type'              => 'number',
-				'sanitize_callback' => 'floatval',
-				// Default of 10 (USD) is a conservative cap so a fresh install
-				// never silently runs against an unbounded OpenAI bill if the
-				// owner enables auto-analyze / auto-tag without first picking
-				// a budget. Set explicitly to 0 in the UI to opt back into
-				// unlimited spend. Existing installs that already have a
-				// stored value are untouched (Activator::set_defaults() and
-				// the v1 budget migration both use add_option).
-				'default'           => 10,
-			)
-		);
-		add_settings_field(
-			'mvs_ai_monthly_budget',
-			__( 'Monthly AI Budget ($)', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_number_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option'      => 'mvs_ai_monthly_budget',
-				'description' => __( 'Hard cap on OpenAI spend per calendar month. AI calls stop when this cap is reached and resume next month. Set to 0 to disable the cap (unlimited spend) — recommended only after you have a billing alert configured on the OpenAI account itself.', 'wpmediaverse' ),
-			)
-		);
-
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
-			'mvs_ai_cost_per_call',
-			array(
-				'type'              => 'number',
-				'sanitize_callback' => 'floatval',
-				'default'           => 0.01,
-			)
-		);
-		add_settings_field(
-			'mvs_ai_cost_per_call',
-			__( 'Estimated Cost per Call ($)', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_number_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option'      => 'mvs_ai_cost_per_call',
-				'description' => __( 'Approximate cost per API call for budget tracking.', 'wpmediaverse' ),
-			)
-		);
-	}
 
 	/**
 	 * Register Moderation-related settings (shown on AI tab).

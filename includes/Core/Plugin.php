@@ -164,6 +164,19 @@ class Plugin {
 		add_action( 'mvs_media_uploaded', array( self::class, 'maybe_queue_ai' ), 10, 1 );
 		add_action( 'mvs_ai_process_media', array( self::class, 'handle_ai_process' ), 10, 1 );
 
+		// Storage re-localization on privacy escalation. When a media row
+		// flips from `public` to any restricted level, cloud-driver URLs in
+		// `file_url` / `thumb_*` must be rewritten to local equivalents or
+		// `SignedUrlService::serve_thumbnail()` rejects them on the next
+		// read (card 9925110293). Priority 5 — runs BEFORE Pro listeners
+		// (Bunny purge, S3 delete) so they see the post-localization state.
+		add_action(
+			'mvs_media_privacy_changed',
+			array( self::$container->get( 'storage' ), 'sync_urls_on_privacy_change' ),
+			5,
+			3
+		);
+
 		// Access rules privacy filter (priority 20 — after default privacy at 10).
 		$access_rules = self::$container->get( 'access_rules' );
 		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );
@@ -1006,6 +1019,135 @@ class Plugin {
 			MVS_PLUGIN_URL . 'assets/css/mvs-confirm.css',
 			array(),
 			MVS_VERSION
+		);
+
+		// Explore search (media/users tab switch + debounced user search).
+		// Shared by the Free explore template and the Pro feed layouts, which
+		// each enqueue this handle in place of a duplicated inline <script>.
+		// Config + translated strings flow through wp_localize_script.
+		wp_register_script(
+			'mvs-explore-search',
+			MVS_PLUGIN_URL . 'assets/js/frontend/explore-search.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			'mvs-explore-search',
+			'mvsExploreSearch',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/users/search' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'i18n'    => array(
+					'searchUsers' => __( 'Search users...', 'wpmediaverse' ),
+					'searchMedia' => __( 'Search media...', 'wpmediaverse' ),
+					'noUsers'     => __( 'No users found.', 'wpmediaverse' ),
+					'media'       => __( 'media', 'wpmediaverse' ),
+				),
+			)
+		);
+
+		// Profile actions (Follow toggle + Message button). Shared by the
+		// profile templates in place of the inline partials/profile-actions-js.
+		// The follow button carries its own data-* config; only the toggle
+		// labels are localized here.
+		wp_register_script(
+			'mvs-profile-actions',
+			MVS_PLUGIN_URL . 'assets/js/frontend/profile-actions.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			'mvs-profile-actions',
+			'mvsProfileActions',
+			array(
+				'i18n' => array(
+					'following' => __( 'Following', 'wpmediaverse' ),
+					'follow'    => __( 'Follow', 'wpmediaverse' ),
+				),
+			)
+		);
+
+		// Album upload (owner-only dropzone). Registered globally; the album
+		// template enqueues it and localizes the page-specific config (album id,
+		// rest url, nonce) + translatable status strings via wp_localize_script.
+		wp_register_script(
+			'mvs-album-upload',
+			MVS_PLUGIN_URL . 'assets/js/frontend/album-upload.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+
+		// Dismissible callouts (logged-out CTA banner, profile prompt). No data
+		// or strings — pure localStorage hide-and-remember. Templates that emit
+		// a dismissible enqueue this handle in place of an inline snippet.
+		wp_register_script(
+			'mvs-dismissible',
+			MVS_PLUGIN_URL . 'assets/js/frontend/dismissible.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+
+		// Messages page scroll-into-view + collection grid filter — small,
+		// config-free behavioral scripts the respective templates enqueue.
+		wp_register_script(
+			'mvs-messages-scroll',
+			MVS_PLUGIN_URL . 'assets/js/frontend/messages-scroll.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_register_script(
+			'mvs-collection-filter',
+			MVS_PLUGIN_URL . 'assets/js/frontend/collection-filter.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+
+		// Album page scripts: audio playlist player + owner-only cover setter.
+		// The album template enqueues each and localizes its page-specific data
+		// (tracks / album id / rest url / nonce / labels) via wp_localize_script.
+		wp_register_script(
+			'mvs-album-playlist',
+			MVS_PLUGIN_URL . 'assets/js/frontend/album-playlist.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_register_script(
+			'mvs-album-cover',
+			MVS_PLUGIN_URL . 'assets/js/frontend/album-cover.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
 		);
 
 		// BP-integration script — wires up per-item delete/edit actions on

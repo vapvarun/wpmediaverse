@@ -1,6 +1,6 @@
 # Gutenberg Blocks
 
-> **Included in Free** — This feature is available in the free version of WPMediaVerse.
+> **Included in Free** - This feature is available in the free version of WPMediaVerse.
 
 
 WPMediaVerse registers **9** Gutenberg blocks under the **WPMediaVerse** block category. All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
@@ -21,7 +21,7 @@ WPMediaVerse registers **9** Gutenberg blocks under the **WPMediaVerse** block c
 | Explore Feed | `mvs/explore-feed` | Infinite-scroll explore feed (all public media) with search autocomplete |
 | Lock Overlay | `mvs/lock-overlay` | Paywall/restriction overlay for any block |
 
-*The Story Viewer block source ships in 1.2.0 but isn't registered yet — full Story create-flow + REST endpoint arrives in 1.2.1.*
+*The Story Viewer block source ships in 1.2.0 but isn't registered yet - full Story create-flow + REST endpoint arrives in 1.2.1.*
 
 ## Interactivity API Architecture
 
@@ -42,7 +42,7 @@ All registered blocks can be used in Full Site Editing (FSE) templates, template
 **Upload modal polish (1.2.0):**
 - Preview tiles show the filename (truncated tastefully) and a per-tile remove (×) button.
 - Audio files render with a dedicated audio fallback icon instead of a broken thumbnail.
-- A row of eight popular tag pills appears below the tags input — click to append, no duplicates.
+- A row of eight popular tag pills appears below the tags input - click to append, no duplicates.
 
 ## Media Grid Block
 
@@ -52,9 +52,9 @@ All registered blocks can be used in Full Site Editing (FSE) templates, template
 - Media Type Filter (image/video/audio/all)
 - Category Filter
 - Tag Filter
-- Sort Order — `date`, `title`, `popular`, `views`, `reactions`, `random`
-- Sort Direction — `asc` / `desc`
-- User ID filter (`userId`) — restrict the grid to a single author
+- Sort Order - `date`, `title`, `popular`, `views`, `reactions`, `random`
+- Sort Direction - `asc` / `desc`
+- User ID filter (`userId`) - restrict the grid to a single author
 - Lightbox (default: on)
 - Show Reactions (default: on)
 
@@ -65,7 +65,7 @@ Grid columns and pagination inherit from **Media > Settings > Display**.
 ## Media Player Block
 
 **Block Settings:**
-- Media ID (required — use the picker to select)
+- Media ID (required - use the picker to select)
 - Autoplay (default: off)
 - Loop (default: off)
 - Show Download Button (default: off)
@@ -92,20 +92,20 @@ The Member Photos block renders a single member's media grid. The block resolves
 4. Current logged-in user
 
 **Block Settings:**
-- User ID (optional — leave empty to auto-detect)
+- User ID (optional - leave empty to auto-detect)
 - Items Per Page
-- Sort Order — same options as Media Grid
+- Sort Order - same options as Media Grid
 
 ## PDF Viewer Block
 
-The PDF Viewer block embeds a PDF using the browser's native viewer via the `#view=FitH` URL fragment — no third-party JS, no licensing concerns.
+The PDF Viewer block embeds a PDF using the browser's native viewer via the `#view=FitH` URL fragment - no third-party JS, no licensing concerns.
 
 **Block Settings:**
-- Media ID (required — pick a PDF media item)
+- Media ID (required - pick a PDF media item)
 - Height (200–1400 px, default 600)
 - Show Toolbar (default: on)
 
-**Empty states:** the block emits five distinct empty states — no media selected, wrong media type, missing file, access denied, and a generic fallback.
+**Empty states:** the block emits five distinct empty states - no media selected, wrong media type, missing file, access denied, and a generic fallback.
 
 ## Media Stats Block
 
@@ -120,7 +120,7 @@ The PDF Viewer block embeds a PDF using the browser's native viewer via the `#vi
 
 The Explore Feed block provides an infinite-scroll feed of all public media. It supports URL-based filtering via `?mvs_tag=slug` and `?s=search-term` query parameters.
 
-**Search autocomplete (1.2.0):** the search input now shows a type-ahead dropdown — top eight title matches, debounced 250 ms, full keyboard navigation (Arrow keys, Enter, Escape) and ARIA combobox semantics for screen reader users.
+**Search autocomplete (1.2.0):** the search input now shows a type-ahead dropdown - top eight title matches, debounced 250 ms, full keyboard navigation (Arrow keys, Enter, Escape) and ARIA combobox semantics for screen reader users.
 
 ## Lock Overlay Block
 

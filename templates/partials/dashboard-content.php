@@ -260,7 +260,7 @@ wp_enqueue_style( 'mvs-frontend' );
 		<button type="button" class="mvs-profile-prompt-close" id="mvs-profile-prompt-close"
 			aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
-	<script>(function(){var pp=document.getElementById('mvs-profile-prompt');var btn=document.getElementById('mvs-profile-prompt-close');if(pp&&localStorage.getItem('mvs_profile_prompt_dismissed')==='1'){pp.style.display='none';}if(btn)btn.addEventListener('click',function(){if(pp)pp.style.display='none';localStorage.setItem('mvs_profile_prompt_dismissed','1');});}());</script>
+	<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
 	<?php endif; ?>
 
 	<?php
