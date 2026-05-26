@@ -2368,7 +2368,7 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-05-07T14:30:00Z",
+    "at": "2026-05-26T03:11:59Z",
     "from": "wp-plugin-onboard skill (1.2.1 cloud + i18n targeted refresh 2026-05-07 PM)",
     "branch": "1.2.1",
     "schema_version": "v2.2",
@@ -2527,7 +2527,8 @@
         "Screen Options column toggles",
         "Admin bulk-optimize progress UI"
       ]
-    }
+    },
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only — inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired — manifest category counts unchanged. Full re-scan deferred to next structural change."
   },
   "category_sources": {
     "rest": [

@@ -1284,7 +1284,7 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-05-07T14:30:00Z",
+    "at": "2026-05-26T03:12:20Z",
     "from": "wp-plugin-onboard skill (1.2.1 cloud admin UI + S3 fix targeted refresh 2026-05-07 PM)",
     "branch": "1.2.1",
     "schema_version": "v2.2",
@@ -1323,7 +1323,8 @@
       "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration. No S3 smoke test run live today — code-review only per user direction."
     },
     "phase_2_rescan_skipped": true,
-    "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred"
+    "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables — manifest category counts unchanged. SafeRender helper not tracked here (not in service container)."
   },
   "category_sources": {
     "rest": [
