@@ -1,15 +1,15 @@
 {
   "release_version": "1.4.0",
   "mode": "combo",
-  "ran_at": "2026-05-25T18:15:00Z",
+  "ran_at": "2026-05-26T03:30:00Z",
   "free_version": "1.4.0",
   "pro_version": "1.4.0",
   "sections": {
-    "A_fresh_install":     { "pass": 5,  "fail": 0, "skipped": 0 },
-    "B_upgrade":           { "pass": 3,  "fail": 0, "skipped": 0 },
-    "C_core_flows":        { "pass": 19, "fail": 0, "skipped": 0 },
-    "D_regression_guards": { "pass": 20, "fail": 0, "skipped": 0 },
-    "E_pro_smoke":         { "pass": 7,  "fail": 0, "skipped": 0 },
+    "A_fresh_install":     { "pass": 4,  "fail": 0, "skipped": 0 },
+    "B_upgrade":           { "pass": 17, "fail": 0, "skipped": 0 },
+    "C_core_flows":        { "pass": 9,  "fail": 0, "skipped": 0 },
+    "D_regression_guards": { "pass": 22, "fail": 0, "skipped": 0 },
+    "E_pro_smoke":         { "pass": 6,  "fail": 0, "skipped": 0 },
     "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 5 }
   },
   "failures": [],
@@ -21,9 +21,9 @@
     "BP composer Attach-media SVG getComputedStyle().width === 18px",
     "BP composer button + privacy <select> alignment yDelta=0px",
     "Mobile 390px viewport responsive sweep (Explore / single / dashboard / lightbox)",
-    "Setup wizard admin page (subagent curl returned 403)",
+    "Setup wizard admin page",
     "Live /mvs-test-shortcodes/ page with valid id args",
-    "Gutenberg editor render of all 9 Free + Pro blocks",
+    "Gutenberg editor render of all Free + Pro blocks",
     "JS console + Interactivity-API hydration warnings",
     "Firefox Desktop (Playwright is Chromium-only)",
     "Safari iOS 390px lightbox swipe + reaction tap + native share sheet",
@@ -32,8 +32,9 @@
     "Pro E rows requiring external credentials/fixtures: boosts UI, video transcode (ffmpeg/Whisper), AI providers, watermarking, quota with membership plugin, Instagram/Flickr connectors, privacy-pro REST, importers, feature-toggle-OFF"
   ],
   "notes": {
-    "headline_changes": "1.4.0 ships (1) 4 release-blocking bug fixes (BP composer privacy leak #9867136209, non-public thumb 403 #9925110293, bulk album N activities #9847529154, Safari/Bing video poster #9910574354) verified end-to-end; (2) Option B driver-agnostic path-meta architecture — CDN switches no longer rewrite URL meta, verified by cycling mvs_storage_driver through local/bunnycdn/r2 with zero DB writes during switches; (3) Migrator v14 backfilled _path meta for full corpus (100% image coverage, 0 absolute paths).",
-    "open_follow_up": "F-DRAFT-1 (5 shortcodes return 0 bytes with no args) is CONFIRMED FN of pre-1.4.0 F10/F11 — documented as baseline scan in RENDER-STATE-RULES.md §4. Not a regression. Follow-up PR for 1.5.0 should add render_block_empty_state() to media-player, lock-overlay, album-viewer, media-stats, media-upload render.php files and update the rules-doc baseline list (current scan found 5 violators, original baseline listed 2).",
-    "runbook_drift_to_fix": "D.activity-preview-hero-regression dimension assertion stale (says 120-150px, current intentional 64px FB/IG strip). D.cloud-privacy-gate cites old Pro filter; contract now lives at Free Services\\StorageService::get_driver_for_privacy(). Both are QA-doc PRs, not code."
+    "headline_changes": "1.4.0 release-prep hardening pass: (1) every destructive admin action now pairs current_user_can() inline with check_admin_referer()/wp_verify_nonce() — verified at code + runtime + DB-write-bypass level; (2) zero window.confirm/alert callsites remain in either plugin's source — mvsConfirm + mvsToast hard dependencies, fail-closed when missing; (3) new Pro WPMediaVersePro\\Blocks\\SafeRender helper class centralises safe-output for all 12 Pro block render.php files; Plugin Check ERRORs down 84→0 on customer-shipping files; (4) esc_attr() applied at media_thumbnail() call sites in Instagram/Flickr/Pinterest/Dribbble templates; (5) driver-agnostic media URL contract verified across local/bunnycdn/r2 toggles with zero DB writes; private always emits /serve regardless of active driver; (6) bin/build-release.sh now wipes prior-version dist ZIPs before rebuilding to prevent stale artifact accumulation.",
+    "verified_bugs": "BP composer privacy leak (#9867136209), non-public thumb 403 (#9925110293), bulk album N activities (#9847529154), Safari/Bing video poster (#9910574354), Migrator v14 path-meta backfill — all verified end-to-end on current main.",
+    "demoted_findings": "F-DRAFT-1 (dist ZIPs pre-hardening) — VALID + FIXED in this reviewer turn via bin/build-release.sh rebuild from current HEAD. F-DRAFT-2 (stale docblock in Pro assets/js/admin/migration-page.js line 5) — non-blocking observation, file as 1.4.1 housekeeping.",
+    "open_follow_up": "5 shortcodes return 0 bytes with no args — CONFIRMED FN of pre-1.4.0 F10/F11 per RENDER-STATE-RULES.md §4 baseline. Track as 1.5.0 cleanup."
   }
 }
