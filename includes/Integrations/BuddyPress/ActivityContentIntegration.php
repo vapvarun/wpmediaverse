@@ -158,8 +158,12 @@ class ActivityContentIntegration {
 		}
 		$poster = ' poster="' . esc_url( $poster_url ) . '"';
 
+		// preload="auto" — Safari/iOS/Bing render a blank frame with
+		// preload="metadata" + the poster image when the poster URL is slow
+		// or fails to load. Letting the browser pull the first frame is the
+		// belt-and-braces fix from Basecamp #9910574354 (Crisp ticket).
 		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'
-			. '<video controls preload="metadata"' . $poster . ' style="width:100%;max-height:400px;border-radius:8px;display:block;">'
+			. '<video controls preload="auto"' . $poster . ' style="width:100%;max-height:400px;border-radius:8px;display:block;">'
 			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' ) ?: 'video/mp4' ) . '">'
 			. '</video>'
 			. '<a href="' . esc_url( $permalink ) . '" class="mvs-activity-media-link" style="display:block;text-align:center;margin-top:4px;font-size:13px;">' . esc_html__( 'View full media', 'wpmediaverse' ) . '</a>'
