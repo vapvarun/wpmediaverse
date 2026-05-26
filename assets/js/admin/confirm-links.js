@@ -1,13 +1,14 @@
 /**
  * Admin: route destructive [data-mvs-confirm] actions through the mvsConfirm
- * modal instead of a native confirm() dialog. Falls back to window.confirm only
- * if the modal helper hasn't loaded. Delegated so it covers dynamically listed
+ * modal. mvsConfirm is a hard dependency — if the helper hasn't loaded the
+ * action fails closed (no native browser confirm fallback, per
+ * admin-ux-rulebook Rule 10). Delegated so it covers dynamically listed
  * rows (All Media, Tags).
  *
  * Handles two surfaces:
  *   - Links (<a data-mvs-confirm="...">): navigate to href on confirm.
  *   - Forms (<form data-mvs-confirm="...">): submit the form on confirm
- *     (replaces inline onsubmit="return confirm(...)").
+ *     (replaces inline onsubmit blocks that used to call native confirm).
  *
  * @package WPMediaVerse
  */
