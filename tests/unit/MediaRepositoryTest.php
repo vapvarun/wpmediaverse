@@ -202,7 +202,7 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	 * endpoint, OR an empty string. Never the raw varchar.
 	 */
 	public function test_get_file_url_returns_signed_or_empty_never_raw(): void {
-		$raw_url  = 'https://example.com/wp-content/uploads/wpmediaverse/2026/05/raw.jpg';
+		$raw_url  = 'https://example.org/wp-content/uploads/wpmediaverse/2026/05/raw.jpg';
 		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Signed-URL Contract',
@@ -238,7 +238,7 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	 * endpoint, OR an empty string. Never the raw varchar.
 	 */
 	public function test_get_thumb_keys_return_signed_or_empty_never_raw(): void {
-		$raw_thumb = 'https://example.com/wp-content/uploads/wpmediaverse/2026/05/thumb-large.jpg';
+		$raw_thumb = 'https://example.org/wp-content/uploads/wpmediaverse/2026/05/thumb-large.jpg';
 		$media_id  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Thumb-URL Contract',
@@ -291,7 +291,7 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 		$this->assertSame( '', (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'watermark_url' ) );
 
 		// Pro's Watermarker writes raw URL into meta after generating the preview.
-		$raw_watermark = 'https://example.com/wp-content/uploads/wpmediaverse/previews/' . $media_id . '-preview.jpg';
+		$raw_watermark = 'https://example.org/wp-content/uploads/wpmediaverse/previews/' . $media_id . '-preview.jpg';
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'watermark_url', $raw_watermark );
 
 		$result = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'watermark_url' );
@@ -315,7 +315,7 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	 * upload pipeline backfilling thumb_large with file_url.
 	 */
 	public function test_get_raw_thumb_keys_return_stored_value(): void {
-		$raw_thumb = 'https://example.com/wp-content/uploads/wpmediaverse/2026/05/raw-thumb.jpg';
+		$raw_thumb = 'https://example.org/wp-content/uploads/wpmediaverse/2026/05/raw-thumb.jpg';
 		$media_id  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Raw-Thumb Internal Read',
@@ -334,7 +334,7 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	 * escape hatch for the signing service itself and filesystem readers.
 	 */
 	public function test_get_raw_file_url_returns_stored_value(): void {
-		$raw_url  = 'https://example.com/wp-content/uploads/wpmediaverse/2026/05/raw.jpg';
+		$raw_url  = 'https://example.org/wp-content/uploads/wpmediaverse/2026/05/raw.jpg';
 		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'Raw-URL Internal Read',
@@ -352,7 +352,7 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	 * Returns 0 for URLs outside the gated uploads dir or unknown to mvs_media_index.
 	 */
 	public function test_find_by_url_reverses_indexed_url(): void {
-		$raw_url  = 'https://example.com/wp-content/uploads/wpmediaverse/2026/05/find-' . wp_generate_password( 8, false ) . '.jpg';
+		$raw_url  = 'https://example.org/wp-content/uploads/wpmediaverse/2026/05/find-' . wp_generate_password( 8, false ) . '.jpg';
 		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
 			array(
 				'title'       => 'find_by_url contract',
@@ -368,13 +368,13 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 		// Unknown URL inside the gated dir → 0 (not in index).
 		$this->assertSame(
 			0,
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->find_by_url( 'https://example.com/wp-content/uploads/wpmediaverse/nope.jpg' )
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->find_by_url( 'https://example.org/wp-content/uploads/wpmediaverse/nope.jpg' )
 		);
 
 		// URL outside the gated dir (avatars, theme images) → 0 pass-through.
 		$this->assertSame(
 			0,
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->find_by_url( 'https://example.com/wp-content/uploads/2026/05/avatar.jpg' )
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->find_by_url( 'https://example.org/wp-content/uploads/2026/05/avatar.jpg' )
 		);
 
 		// Empty URL → 0.
@@ -391,7 +391,7 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 				'title'       => 'broadcast contract',
 				'post_author' => $this->admin_id,
 				'media_type'  => 'image',
-				'file_url'    => 'https://example.com/wp-content/uploads/wpmediaverse/2026/05/broadcast.jpg',
+				'file_url'    => 'https://example.org/wp-content/uploads/wpmediaverse/2026/05/broadcast.jpg',
 			)
 		);
 
