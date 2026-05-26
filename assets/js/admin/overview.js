@@ -124,15 +124,15 @@
 		}
 		btn.addEventListener( 'click', function () {
 			var msg = i18n.cleanupConfirm || '';
-			if ( typeof window.mvsConfirm === 'function' ) {
-				window.mvsConfirm( msg, { tone: 'destructive' } ).then( function ( ok ) {
-					if ( ok ) {
-						runCleanup( btn );
-					}
-				} );
-			} else if ( window.confirm( msg ) ) { // eslint-disable-line no-alert -- fallback when modal helper absent.
-				runCleanup( btn );
+			// mvsConfirm is a hard dependency; fail closed when absent.
+			if ( typeof window.mvsConfirm !== 'function' ) {
+				return;
 			}
+			window.mvsConfirm( msg, { tone: 'destructive' } ).then( function ( ok ) {
+				if ( ok ) {
+					runCleanup( btn );
+				}
+			} );
 		} );
 	}
 

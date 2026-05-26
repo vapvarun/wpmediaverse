@@ -390,11 +390,13 @@ class TagManagementPage {
 			return;
 		}
 
+		// Cap + nonce pair inline. Both checks must succeed for bulk
+		// deletion; the cap check is intentionally re-stated next to the
+		// nonce verification to make authorization explicit at the action
+		// site and to satisfy static analyzers that match per-block.
 		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
 			wp_die( esc_html__( 'You do not have permission to delete tags.', 'wpmediaverse' ) );
 		}
-
-		// Verify nonce for bulk actions.
 		if ( ! isset( $_REQUEST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'bulk-tags' ) ) {
 			return;
 		}
@@ -550,11 +552,11 @@ class TagManagementPage {
 
 		$tag_id = absint( $_GET['tag_id'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
+		// Cap + nonce pair inline (see also bulk handler above for the
+		// rationale). Both must pass to allow deletion.
 		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
 			wp_die( esc_html__( 'You do not have permission to delete tags.', 'wpmediaverse' ) );
 		}
-
-		// Verify nonce.
 		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'delete-tag_' . $tag_id ) ) {
 			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
 		}

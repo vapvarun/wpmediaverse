@@ -75,6 +75,13 @@ class ModerationQueue {
 
 		// Bulk actions.
 		if ( isset( $_POST['mvs_bulk_action'] ) && isset( $_POST['mvs_bulk_ids'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			// Cap + nonce pair inline. handle_actions() entry already gates
+			// on manage_options || moderate_mvs_media (line ~70); the inline
+			// pair documents authorization at the action site and satisfies
+			// static analyzers that match per-block.
+			if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
+				return;
+			}
 			if ( ! check_admin_referer( 'mvs_moderation_bulk', 'mvs_moderation_bulk_nonce' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 				return;
 			}

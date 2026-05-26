@@ -15,15 +15,18 @@
 	'use strict';
 
 	function ask( msg, proceed ) {
-		if ( typeof window.mvsConfirm === 'function' ) {
-			window.mvsConfirm( msg, { tone: 'destructive' } ).then( function ( ok ) {
-				if ( ok ) {
-					proceed();
-				}
-			} );
-		} else if ( window.confirm( msg ) ) { // eslint-disable-line no-alert -- defensive fallback when modal helper absent.
-			proceed();
+		// mvsConfirm is enqueued as a hard dependency wherever this script
+		// runs (admin All Media + Tags surfaces). If it's somehow absent
+		// fail closed — admin-ux-rulebook Rule 10 bans the native confirm
+		// dialog, so we never use it even as a fallback.
+		if ( typeof window.mvsConfirm !== 'function' ) {
+			return;
 		}
+		window.mvsConfirm( msg, { tone: 'destructive' } ).then( function ( ok ) {
+			if ( ok ) {
+				proceed();
+			}
+		} );
 	}
 
 	document.addEventListener( 'click', function ( e ) {

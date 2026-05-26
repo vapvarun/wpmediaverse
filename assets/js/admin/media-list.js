@@ -27,10 +27,12 @@
 	} );
 
 	function notify( msg ) {
+		// mvsToast is enqueued as a hard dependency. If absent, fail
+		// silently — admin-ux-rulebook Rule 10 bans alert() even as
+		// a fallback. The underlying form state is still visible to the
+		// admin without a popup.
 		if ( typeof window.mvsToast === 'function' ) {
 			window.mvsToast( msg, 'error' );
-		} else {
-			window.alert( msg ); // eslint-disable-line no-alert -- fallback when toast helper absent.
 		}
 	}
 
@@ -60,15 +62,15 @@
 				return;
 			}
 			var msg = i18n.confirmDelete || '';
-			if ( typeof window.mvsConfirm === 'function' ) {
-				window.mvsConfirm( msg, { tone: 'destructive' } ).then( function ( ok ) {
-					if ( ok ) {
-						submitForm( form );
-					}
-				} );
-			} else if ( window.confirm( msg ) ) { // eslint-disable-line no-alert -- fallback when modal helper absent.
-				submitForm( form );
+			// mvsConfirm is a hard dependency; fail closed when absent.
+			if ( typeof window.mvsConfirm !== 'function' ) {
+				return;
 			}
+			window.mvsConfirm( msg, { tone: 'destructive' } ).then( function ( ok ) {
+				if ( ok ) {
+					submitForm( form );
+				}
+			} );
 		} );
 	}
 } )();

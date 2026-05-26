@@ -236,6 +236,10 @@ function wp_add_inline_script( ...$a ): bool { return true; }
 function wp_localize_script( ...$a ): bool { return true; }
 function wp_set_script_translations( ...$a ): bool { return true; }
 function wp_create_nonce( string $a = '' ): string { return 'smoke_nonce'; }
+// Stub for the real WP function. Always returns true so nonce-gated test
+// code paths execute without a live WP session. Not a runtime security
+// check; tools/ is excluded from every dist build and never reaches
+// customers — see Gruntfile copy:dist + tests.yml rsync exclude list.
 function wp_verify_nonce( $n, $a = -1 ): bool { return true; }
 function register_block_type( ...$a ) { return true; }
 function register_block_type_from_metadata( ...$a ) { return true; }

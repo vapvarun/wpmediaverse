@@ -127,14 +127,18 @@
 			cancelBtn.addEventListener( 'click', onCancel );
 			dialog.addEventListener( 'close', onCancel );
 
+			// The <dialog> element is universally supported by every
+			// browser in the plugin's compatibility baseline (Chrome 37+,
+			// Safari 15.4+, Firefox 98+). No native-confirm fallback —
+			// admin-ux-rulebook Rule 10 bans confirm() / alert(), and a
+			// browser without <dialog> would be too old to ship admin JS
+			// to anyway. If showModal() is somehow unavailable, fail
+			// closed (resolve false) rather than fall back to a banned UI.
 			if ( typeof dialog.showModal === 'function' ) {
 				dialog.showModal();
 			} else {
-				// Last-resort fallback for browsers without <dialog> support.
-				// Synchronous, but matches the Promise<boolean> contract.
 				cleanup();
-				// eslint-disable-next-line no-alert
-				resolve( window.confirm( message ) );
+				resolve( false );
 			}
 		} );
 	};

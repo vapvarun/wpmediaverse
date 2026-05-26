@@ -31,16 +31,18 @@
 	 * @return {Promise<boolean>}
 	 */
 	function confirmAction( message ) {
-		if ( typeof window.mvsConfirm === 'function' ) {
-			var i18n = window.mvsConfirmI18n || {};
-			return window.mvsConfirm( message, {
-				confirmLabel: i18n.delete || 'Delete',
-				cancelLabel:  i18n.cancel || 'Cancel',
-				tone:         'destructive',
-			} );
+		// mvsConfirm is a hard dependency on every surface this script
+		// runs on. Fail closed when absent — admin-ux-rulebook Rule 10
+		// bans native confirm() even as a fallback.
+		if ( typeof window.mvsConfirm !== 'function' ) {
+			return Promise.resolve( false );
 		}
-		// eslint-disable-next-line no-alert
-		return Promise.resolve( window.confirm( message ) );
+		var i18n = window.mvsConfirmI18n || {};
+		return window.mvsConfirm( message, {
+			confirmLabel: i18n.delete || 'Delete',
+			cancelLabel:  i18n.cancel || 'Cancel',
+			tone:         'destructive',
+		} );
 	}
 
 	function apiDelete( path ) {

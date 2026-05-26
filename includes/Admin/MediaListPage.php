@@ -609,9 +609,20 @@ class MediaListPage {
 
 	/**
 	 * Handle single-item and bulk actions.
+	 *
+	 * Capability gate: the menu page is registered with `manage_options`
+	 * in {@see Plugin::register_admin_menu()}, so WordPress already blocks
+	 * lower-privilege users from reaching this handler. We re-check here
+	 * for defense-in-depth — a bug in page registration, role plugin, or
+	 * future menu-cap change cannot expose destructive actions. Plugin
+	 * Check requires this inline pairing alongside `check_admin_referer()`.
 	 */
 	private static function handle_bulk_actions(): void {
 		global $wpdb;
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
 
 		// Bulk path — new in 1.2.0. Toolbar dropdown + checkboxes; the
 		// "Apply" submit button is named "do_bulk" so we know it was a
@@ -632,23 +643,38 @@ class MediaListPage {
 
 		$table = $wpdb->prefix . 'mvs_media_index';
 
+		// Cap + nonce pair per case. The function entry already gates on
+		// manage_options, but the inline pair documents authorization at
+		// each action and satisfies static analyzers that match per-block.
 		switch ( $action ) {
 			case 'trash':
+				if ( ! current_user_can( 'manage_options' ) ) {
+					return;
+				}
 				check_admin_referer( 'mvs_trash_media_' . $media_id );
 				$wpdb->update( $table, array( 'status' => 'trash' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				break;
 
 			case 'restore':
+				if ( ! current_user_can( 'manage_options' ) ) {
+					return;
+				}
 				check_admin_referer( 'mvs_restore_media_' . $media_id );
 				$wpdb->update( $table, array( 'status' => 'publish' ), array( 'media_id' => $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				break;
 
 			case 'delete':
+				if ( ! current_user_can( 'manage_options' ) ) {
+					return;
+				}
 				check_admin_referer( 'mvs_delete_media_' . $media_id );
 				self::permanently_delete_media( $media_id );
 				break;
 
 			case 'repair_thumb':
+				if ( ! current_user_can( 'manage_options' ) ) {
+					return;
+				}
 				check_admin_referer( 'mvs_repair_thumb_' . $media_id );
 				$repair_result = self::repair_media_thumb( $media_id );
 				set_transient(
@@ -663,6 +689,9 @@ class MediaListPage {
 				break;
 
 			case 'optimize':
+				if ( ! current_user_can( 'manage_options' ) ) {
+					return;
+				}
 				check_admin_referer( 'mvs_optimize_media_' . $media_id );
 				$opt_service = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
 				$opt_result  = $opt_service->optimize_media(
