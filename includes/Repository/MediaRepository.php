@@ -1138,7 +1138,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$sql = "SELECT m.* FROM {$wpdb->prefix}mvs_media_index m {$parts['join']} WHERE {$parts['where']} ORDER BY m.{$orderby} {$order} LIMIT %d OFFSET %d";
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( $sql, ...$params ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( $sql, ...$params ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 
@@ -1167,7 +1167,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$sql = "SELECT {$count_expr} FROM {$wpdb->prefix}mvs_media_index m {$parts['join']} WHERE {$parts['where']}";
 
 		if ( ! empty( $parts['params'] ) ) {
-			$sql = $wpdb->prepare( $sql, ...$parts['params'] ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$sql = $wpdb->prepare( $sql, ...$parts['params'] ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
