@@ -38,9 +38,13 @@ class UserController extends WP_REST_Controller {
 	 */
 	public function register_routes(): void {
 		// GET /users/{id} — public profile.
-		// PUBLIC_OK: returns only already-public WP user data (display name,
-		// bio, avatar, follower/following/public-media counts). Email and
-		// last-login are NOT in the response. Triaged 2026-05-01 (Item 5).
+		// PUBLIC_OK: returns display name, bio, avatar, follower/following/
+		// public-media counts to anonymous viewers. The `username`
+		// (= user_login) and `registered` fields are gated to the viewer
+		// themselves + admins (post-WMV-01 hardening); WP core also withholds
+		// these from anon REST responses. Email and last-login were never in
+		// the payload. Triaged 2026-05-01 (Item 5); username/registered
+		// gating added per WMV-01 (Basecamp #9919403615).
 		register_rest_route(
 			$this->namespace,
 			'/users/(?P<id>[\d]+)',
@@ -125,6 +129,16 @@ class UserController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_profile( $request ) {
+		// Rate-limit the anon path. user_login + user_registered used to be
+		// leaked here, enabling iteration-based enumeration; the fields are now
+		// gated to the viewer themselves (and admins) below, and the request
+		// itself is throttled so a residual enumeration via id-iteration is
+		// expensive. See WMV-01 (Basecamp #9919403615).
+		$rate_check = RateLimiter::check( 'user_profile', 60, 60 );
+		if ( is_wp_error( $rate_check ) ) {
+			return $rate_check;
+		}
+
 		$user_id = $request->get_param( 'id' );
 		$user    = get_userdata( $user_id );
 
@@ -145,18 +159,29 @@ class UserController extends WP_REST_Controller {
 			)
 		);
 
+		// WP core deliberately withholds `user_login` and `user_registered`
+		// from anonymous REST responses (they enable username enumeration +
+		// targeted phishing). We now mirror that policy: the two fields are
+		// exposed only to the user viewing their own profile and to admins
+		// (where they're already available via wp-admin). WMV-01 fix.
+		$is_self_or_admin = ( $current_id === (int) $user_id )
+			|| ( $current_id > 0 && user_can( $current_id, 'list_users' ) );
+
 		$profile = array(
 			'id'           => $user_id,
 			'name'         => $user->display_name,
-			'username'     => $user->user_login,
 			'bio'          => $user->description,
 			'avatar'       => get_avatar_url( $user_id, array( 'size' => 150 ) ),
 			'media_count'  => $media_count,
 			'followers'    => $counts['followers'],
 			'following'    => $counts['following'],
 			'is_following' => $current_id ? $follows->is_following( $current_id, $user_id ) : false,
-			'registered'   => $user->user_registered,
 		);
+
+		if ( $is_self_or_admin ) {
+			$profile['username']   = $user->user_login;
+			$profile['registered'] = $user->user_registered;
+		}
 
 		return rest_ensure_response( $profile );
 	}

@@ -626,15 +626,33 @@ class MessagingController extends WP_REST_Controller {
 		$conv_id  = (int) $request->get_param( 'conversation_id' );
 		$messages = $this->transport->poll( $user_id, $since );
 
-		// If polling for a specific conversation, get typing indicators.
-		$typing = array();
-		if ( $conv_id ) {
-			$typing = $this->service->get_typing_users( $conv_id, $user_id );
-		}
-
-		// Get online status for active conversation participants.
+		// Per-conversation typing + presence requires the viewer to actually
+		// be a participant. Without this gate any logged-in user could iterate
+		// conversation_id values and harvest participant lists, presence, and
+		// live typing for every private conversation (WMV-02, Basecamp
+		// #9919403766). `list_messages()` already gates the same way via
+		// get_conversation(); we mirror that here.
+		$typing       = array();
 		$online_users = array();
 		if ( $conv_id ) {
+			$conversation = $this->service->get_conversation( $conv_id, $user_id );
+			if ( ! $conversation ) {
+				// Either the conversation doesn't exist OR the viewer is not
+				// a participant. Same response shape either way — don't leak
+				// existence via differing 404 vs 403 vs empty.
+				return new WP_REST_Response(
+					array(
+						'messages'     => $messages,
+						'typing'       => array(),
+						'online_users' => array(),
+						'server_time'  => gmdate( 'c' ),
+					),
+					200
+				);
+			}
+
+			$typing = $this->service->get_typing_users( $conv_id, $user_id );
+
 			$participants = $this->service->get_participants( $conv_id );
 			foreach ( $participants as $p ) {
 				if ( $p['id'] !== $user_id ) {
