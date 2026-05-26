@@ -371,7 +371,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param int    $media_id Media ID.
 	 * @param string $size     Thumbnail meta key: 'thumb_large' | 'thumb_medium' | 'thumb_thumb'.
 	 *                         Or the SignedUrlService size: 'large' | 'medium' | 'thumbnail'.
-	 * @return string Signed URL valid for ~1 year, or empty string.
+	 * @return string Signed URL with a short TTL, or empty string.
 	 */
 	public function get_broadcast_thumbnail_url( int $media_id, string $size = 'thumb_large' ): string {
 		if ( $media_id <= 0 ) {
@@ -383,9 +383,29 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 		// Accept either thumb_* meta key or the SignedUrlService size name.
 		$svc_size = self::$thumb_size_map[ $size ] ?? $size;
+		/**
+		 * Filter the broadcast thumbnail TTL (seconds).
+		 *
+		 * Default 1 hour. Used to be YEAR_IN_SECONDS (WMV-05) — a stale
+		 * bearer-token horizon for thumbnails embedded in BP activity,
+		 * notifications, RSS, etc. The serve() path already re-checks
+		 * privacy at request time for non-public media, but minting
+		 * year-long URLs left an unnecessarily long credential lifetime
+		 * after a privacy downgrade. Filter to widen for high-cache sites.
+		 *
+		 * @since 1.4.0
+		 *
+		 * @param int $ttl      TTL in seconds.
+		 * @param int $media_id Media ID.
+		 * @param string $size  Thumbnail size key.
+		 */
+		$ttl = (int) apply_filters( 'mvs_broadcast_thumbnail_ttl', HOUR_IN_SECONDS, $media_id, $size );
+		if ( $ttl <= 0 ) {
+			$ttl = HOUR_IN_SECONDS;
+		}
 		// $skip_privacy_check = false — broadcast emission MUST verify privacy
 		// at sign time so private media never gets a broadcast URL.
-		$url = $signed->generate_thumbnail( $media_id, 0, $svc_size, YEAR_IN_SECONDS, false );
+		$url = $signed->generate_thumbnail( $media_id, 0, $svc_size, $ttl, false );
 		return is_string( $url ) ? $url : '';
 	}
 
