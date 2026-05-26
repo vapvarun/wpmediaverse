@@ -308,8 +308,14 @@ print('RAN_AT=' + ran_at)
 fi
 
 # --- 6. produce the zips via grunt dist ----------------------------------
+# Wipe every prior dist artifact for this plugin slug before re-building,
+# so the dist/ directory only ever contains the CURRENT version's ZIP +
+# extracted tree. Prevents stale 1.X.Y.zip files from accumulating
+# alongside the new 1.A.B.zip (caught by Varun's review of an earlier
+# build: a 1.2.2.zip lingered after the 1.4.0 release and git's rename
+# detection then misreported the relationship between the two ZIPs).
 step "6. grunt dist (Free)"
-( cd "$FREE_ROOT" && rm -rf "dist/$FREE_SLUG" "dist/${FREE_SLUG}-${VERSION}.zip" \
+( cd "$FREE_ROOT" && rm -rf "dist/$FREE_SLUG" "dist/${FREE_SLUG}-"*.zip \
 	&& ./node_modules/.bin/grunt dist > /dev/null 2>&1 ) || { fail "Free grunt dist failed"; exit 21; }
 FREE_ZIP="$FREE_ROOT/dist/${FREE_SLUG}-${VERSION}.zip"
 [ -f "$FREE_ZIP" ] || { fail "Free zip not produced at $FREE_ZIP"; exit 40; }
@@ -317,7 +323,7 @@ ok "Free zip: $FREE_ZIP"
 
 if [ "$FREE_ONLY" -eq 0 ]; then
 	step "6b. grunt dist (Pro)"
-	( cd "$PRO_ROOT" && rm -rf "dist/$PRO_SLUG" "dist/${PRO_SLUG}-${VERSION}.zip" \
+	( cd "$PRO_ROOT" && rm -rf "dist/$PRO_SLUG" "dist/${PRO_SLUG}-"*.zip \
 		&& ./node_modules/.bin/grunt dist > /dev/null 2>&1 ) || { fail "Pro grunt dist failed"; exit 21; }
 	PRO_ZIP="$PRO_ROOT/dist/${PRO_SLUG}-${VERSION}.zip"
 	[ -f "$PRO_ZIP" ] || { fail "Pro zip not produced at $PRO_ZIP"; exit 40; }
