@@ -285,10 +285,12 @@ class CollectionMetaBox {
 	 * @param \WP_Post $post    Post object.
 	 */
 	public function save( int $post_id, \WP_Post $post ): void {
-		if ( ! isset( $_POST['mvs_collection_rules_nonce'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified on the next line.
+		if ( ! isset( $_POST['mvs_collection_rules_nonce'] ) ) {
 			return;
 		}
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mvs_collection_rules_nonce'] ) ), 'mvs_collection_rules' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitize_text_field + wp_unslash applied below.
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mvs_collection_rules_nonce'] ) ), 'mvs_collection_rules' ) ) {
 			return;
 		}
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {

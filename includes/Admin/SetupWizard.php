@@ -67,11 +67,13 @@ class SetupWizard {
 	 * Handle wizard form submission.
 	 */
 	public function handle_wizard_save(): void {
-		if ( ! isset( $_POST['mvs_wizard_step'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer on the next branch.
+		if ( ! isset( $_POST['mvs_wizard_step'] ) ) {
 			return;
 		}
 
-		if ( ! check_admin_referer( 'mvs_setup_wizard', 'mvs_wizard_nonce' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- check_admin_referer pulls the nonce from $_REQUEST and verifies it.
+		if ( ! check_admin_referer( 'mvs_setup_wizard', 'mvs_wizard_nonce' ) ) {
 			return;
 		}
 

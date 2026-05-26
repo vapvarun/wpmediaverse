@@ -869,9 +869,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			)
 		);
 
-		echo '<div class="' . esc_attr( $item_class ) . '"' . $data_str // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<div class="' . esc_attr( $item_class ) . '"' . $data_str // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $data_str is assembled from esc_attr()-wrapped key/value pairs above; the leading space + pre-escaped attrs are safe.
 			. ' data-wp-interactive="mvs/shared-ui" '
-			. $lightbox_ctx // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			. $lightbox_ctx // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() output (encoded + escaped JSON for the data-wp-context attribute).
 			. '>';
 
 		// Owner actions (delete) — rendered only when the caller explicitly

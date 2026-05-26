@@ -56,7 +56,7 @@ class ActivityFormIntegration {
 				// Server-rendered SVG (no JS/Lucide dependency) so the icon is
 				// visible even when BP Nouveau's Backbone re-render races the
 				// Lucide MutationObserver. Card #8.
-				echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_image_plus_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_image_plus_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hardcoded SVG helper returns markup with no user input.
 				?>
 				<span class="mvs-activity-media-btn__label"><?php esc_html_e( 'Attach media', 'wpmediaverse' ); ?></span>
 			</button>
@@ -153,7 +153,7 @@ class ActivityFormIntegration {
 	 * @param int    $activity_id Activity ID.
 	 */
 	public function attach_media_to_activity( $content, $user_id, $activity_id ): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- hooked into bp_activity_posted_update; BuddyPress verifies its own nonce before this callback fires.
 		$raw_ids = isset( $_POST['mvs_activity_media_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['mvs_activity_media_ids'] ) ) : '';
 		if ( ! $raw_ids ) {
 			return;
@@ -290,12 +290,12 @@ class ActivityFormIntegration {
 			return '';
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- this helper is only called from attach_media_to_activity(), hooked into bp_activity_posted_update where BuddyPress has already verified the activity post nonce.
 		if ( ! isset( $_POST['mvs_activity_privacy'] ) ) {
 			return '';
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- same context as the isset check above; sanitize_key() applied to the value before use.
 		$chosen = sanitize_key( wp_unslash( $_POST['mvs_activity_privacy'] ) );
 
 		$allowed = array( 'public', 'members', 'private' );

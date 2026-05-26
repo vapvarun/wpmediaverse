@@ -127,7 +127,7 @@ class Shortcodes {
 		 */
 		do_action( 'mvs_before_upload_form' );
 
-		echo $this->render_block_template( 'media-upload', $block_attrs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo $this->render_block_template( 'media-upload', $block_attrs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_template() returns block-renderer output; each attribute is escaped inside the block render callback.
 
 		return ob_get_clean();
 	}
@@ -690,7 +690,7 @@ class Shortcodes {
 		?>
 		<div class="mvs-profile-edit"
 			data-wp-interactive="mvs/profile-edit"
-			<?php echo wp_interactivity_data_wp_context( $mvs_profile_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+			<?php echo wp_interactivity_data_wp_context( $mvs_profile_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() encodes + escapes the JSON payload itself. ?>>
 
 			<h2><?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?></h2>
 
