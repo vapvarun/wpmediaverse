@@ -157,12 +157,17 @@ class FieldRenderer {
 		printf(
 			'<textarea name="%s_custom" rows="2" class="large-text" placeholder="%s">%s</textarea>',
 			esc_attr( $args['option'] ),
-			esc_attr__( 'e.g. image/svg+xml,video/quicktime', 'wpmediaverse' ),
+			esc_attr__( 'e.g. video/quicktime', 'wpmediaverse' ),
 			esc_textarea( implode( ',', $custom_types ) )
 		);
 		printf(
 			'<p class="description">%s</p>',
 			esc_html__( 'Additional comma-separated MIME types for advanced users.', 'wpmediaverse' )
+		);
+		printf(
+			'<p class="description"><strong>%s</strong> %s</p>',
+			esc_html__( 'Do not enable image/svg+xml uploads:', 'wpmediaverse' ),
+			esc_html__( 'SVG files can carry JavaScript and we do not sanitize them. If you must enable SVG, do so only with a separate sanitizer plugin and never allow non-trusted users to upload them.', 'wpmediaverse' )
 		);
 		echo '</details>';
 	}

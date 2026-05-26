@@ -388,7 +388,18 @@ class SignedUrlService {
 		header( 'Vary: Accept' );
 		header( 'Content-Type: ' . $content_type );
 
-		if ( $is_download ) {
+		// SVG defense in depth (WMV-03, Basecamp #9919403906): force
+		// attachment disposition + restrictive CSP for SVG so an unsanitized
+		// SVG carrying inline <script> cannot execute in the site origin even
+		// if an admin enables image/svg+xml uploads. The proper long-term
+		// fix is integrating a sanitizer on upload; this prevents the worst-
+		// case execution today.
+		$is_svg = ( 'image/svg+xml' === $content_type );
+		if ( $is_svg ) {
+			header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+			header( "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox" );
+			header( 'X-Content-Type-Options: nosniff' );
+		} elseif ( $is_download ) {
 			header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
 		} else {
 			header( 'Content-Disposition: inline; filename="' . $filename . '"' );
