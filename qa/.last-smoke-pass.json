@@ -1,9 +1,9 @@
 {
-  "release_version": "1.4.0-dev",
+  "release_version": "1.4.0",
   "mode": "combo",
   "ran_at": "2026-05-25T18:15:00Z",
-  "free_version": "1.4.0-dev",
-  "pro_version": "1.4.0-dev",
+  "free_version": "1.4.0",
+  "pro_version": "1.4.0",
   "sections": {
     "A_fresh_install":     { "pass": 5,  "fail": 0, "skipped": 0 },
     "B_upgrade":           { "pass": 3,  "fail": 0, "skipped": 0 },
