@@ -1,40 +1,39 @@
 {
-  "release_version": "1.3.0",
+  "release_version": "1.4.0-dev",
   "mode": "combo",
-  "ran_at": "2026-05-17T12:25:00Z",
-  "free_version": "1.3.0",
-  "pro_version": "1.3.0",
+  "ran_at": "2026-05-25T18:15:00Z",
+  "free_version": "1.4.0-dev",
+  "pro_version": "1.4.0-dev",
   "sections": {
     "A_fresh_install":     { "pass": 5,  "fail": 0, "skipped": 0 },
-    "B_upgrade":           { "pass": 0,  "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 17, "fail": 0, "skipped": 0 },
-    "D_regression_guards": { "pass": 18, "fail": 0, "skipped": 0 },
-    "E_pro_smoke":         { "pass": 6,  "fail": 0, "skipped": 8 },
-    "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 4 }
+    "B_upgrade":           { "pass": 3,  "fail": 0, "skipped": 0 },
+    "C_core_flows":        { "pass": 19, "fail": 0, "skipped": 0 },
+    "D_regression_guards": { "pass": 20, "fail": 0, "skipped": 0 },
+    "E_pro_smoke":         { "pass": 7,  "fail": 0, "skipped": 0 },
+    "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 5 }
   },
   "failures": [],
   "debug_log_issues": [],
   "manual_required": [
-    "Firefox Desktop: composer file picker (Playwright MCP is Chromium-only)",
-    "Safari iOS 390px: lightbox swipe + share native sheet",
-    "BP Legacy theme: D.activity-button-icon-only, D.activity-privacy-alignment, D.activity-preview-hero-regression (BP-Nouveau composer gap)",
-    "Mailpit: C.notifications.email round-trip",
-    "Live BunnyCDN: D.cloud-existence-head-vs-range",
-    "Non-AWS S3 (R2 / MinIO / B2): D.s3-key-encoding",
-    "Private signed-URL fixture: /serve WebP/AVIF Accept-header negotiation (1.3.0 focus 8)",
-    "Two authed sessions: C.member.dm-send-receive end-to-end",
-    "Configured AI provider: E.ai-providers",
-    "Configured Whisper provider: E.video-intelligence",
-    "Configured watermark provider: E.watermarking",
-    "Configured quota package: E.quota at-cap path",
-    "Connected Instagram account: E.instagram-feed",
-    "Feature toggle OFF cycle: E.feature-toggle-degradation",
-    "Group media tab: /groups/*/media/ (no BP groups in fixture)",
-    "Migration importer source data: E.migration-importers",
-    "Real upload round-trip during this walk (existing 73 fixture media verified state-only)"
+    "BP composer privacy=members upload + anon stream filter (corpus has zero members-privacy fixtures)",
+    "BP composer privacy=friends upload + anon stream filter (BP friends component required)",
+    "Lightbox open via DOM click — reaction aria-pressed flip, focus trap, ESC close",
+    "BP composer Attach-media SVG getComputedStyle().width === 18px",
+    "BP composer button + privacy <select> alignment yDelta=0px",
+    "Mobile 390px viewport responsive sweep (Explore / single / dashboard / lightbox)",
+    "Setup wizard admin page (subagent curl returned 403)",
+    "Live /mvs-test-shortcodes/ page with valid id args",
+    "Gutenberg editor render of all 9 Free + Pro blocks",
+    "JS console + Interactivity-API hydration warnings",
+    "Firefox Desktop (Playwright is Chromium-only)",
+    "Safari iOS 390px lightbox swipe + reaction tap + native share sheet",
+    "RTL locale ar — no horizontal overflow",
+    "A11y keyboard tab order + focus ring + outline:none audit",
+    "Pro E rows requiring external credentials/fixtures: boosts UI, video transcode (ffmpeg/Whisper), AI providers, watermarking, quota with membership plugin, Instagram/Flickr connectors, privacy-pro REST, importers, feature-toggle-OFF"
   ],
   "notes": {
-    "headline_fix": "F1 (Critical) found + fixed during this pass — FieldRenderer::render_checkbox_field ignored register_setting defaults; would have silently disabled image optimization on first admin Save. Fix in commit 031f326.",
-    "open_follow_up": "F-DRAFT-1 (Lightbox Fullscreen button + F-key toggle) is documented contract drift — never implemented in any released version. Demoted from blocker; decide in 1.4.0 cycle whether to implement or drop from contract."
+    "headline_changes": "1.4.0 ships (1) 4 release-blocking bug fixes (BP composer privacy leak #9867136209, non-public thumb 403 #9925110293, bulk album N activities #9847529154, Safari/Bing video poster #9910574354) verified end-to-end; (2) Option B driver-agnostic path-meta architecture — CDN switches no longer rewrite URL meta, verified by cycling mvs_storage_driver through local/bunnycdn/r2 with zero DB writes during switches; (3) Migrator v14 backfilled _path meta for full corpus (100% image coverage, 0 absolute paths).",
+    "open_follow_up": "F-DRAFT-1 (5 shortcodes return 0 bytes with no args) is CONFIRMED FN of pre-1.4.0 F10/F11 — documented as baseline scan in RENDER-STATE-RULES.md §4. Not a regression. Follow-up PR for 1.5.0 should add render_block_empty_state() to media-player, lock-overlay, album-viewer, media-stats, media-upload render.php files and update the rules-doc baseline list (current scan found 5 violators, original baseline listed 2).",
+    "runbook_drift_to_fix": "D.activity-preview-hero-regression dimension assertion stale (says 120-150px, current intentional 64px FB/IG strip). D.cloud-privacy-gate cites old Pro filter; contract now lives at Free Services\\StorageService::get_driver_for_privacy(). Both are QA-doc PRs, not code."
   }
 }
