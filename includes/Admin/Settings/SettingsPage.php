@@ -578,7 +578,7 @@ class SettingsPage {
 						<?php endif; ?>
 					</p>
 					<?php if ( $desc_html ) : ?>
-						<div class="mvs-settings-card__desc"><?php echo $desc_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+						<div class="mvs-settings-card__desc"><?php echo $desc_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $desc_html is constructed from wp_kses_post()-filtered settings copy and our own static strings; never raw user input. ?></div>
 					<?php endif; ?>
 				</div>
 				<table class="form-table" role="presentation">
@@ -611,7 +611,7 @@ class SettingsPage {
 				if ( ! empty( $field['args']['class'] ) ) {
 					$class = ' class="' . esc_attr( $field['args']['class'] ) . '"';
 				}
-				echo '<tr' . $class . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				echo '<tr' . $class . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $class is " class=\"...\"" assembled with esc_attr() above (line 612); no raw user input.
 				if ( ! empty( $field['title'] ) ) {
 					echo '<th scope="row">';
 					if ( ! empty( $field['args']['label_for'] ) ) {
