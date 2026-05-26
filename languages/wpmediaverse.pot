@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.4.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-05-26 02:04:36+00:00\n"
+"POT-Creation-Date: 2026-05-26 03:37:31+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -178,9 +178,9 @@ msgstr ""
 
 #: build/blocks/media-stats/render.php:139 build/media-stats/render.php:139
 #: includes/Admin/MediaListPage.php:236 includes/Admin/MediaListPage.php:283
-#: includes/Admin/MediaListPage.php:1082 includes/Admin/ModerationQueue.php:351
+#: includes/Admin/MediaListPage.php:1111 includes/Admin/ModerationQueue.php:358
 #: includes/Admin/OverviewPage.php:377 includes/Admin/StatsPage.php:398
-#: includes/Admin/TagManagementPage.php:685
+#: includes/Admin/TagManagementPage.php:687
 #: includes/Services/GDPRService.php:108 src/blocks/media-stats/render.php:139
 #: templates/album.php:155 templates/media-single.php:459
 #: templates/partials/dashboard-content.php:592
@@ -452,7 +452,7 @@ msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:210
 #: includes/Admin/MediaListPage.php:237 includes/Admin/MediaListPage.php:284
-#: includes/Admin/ModerationQueue.php:352 includes/Admin/OverviewPage.php:378
+#: includes/Admin/ModerationQueue.php:359 includes/Admin/OverviewPage.php:378
 #: includes/Admin/Settings/PermissionsManager.php:40
 #: templates/partials/dashboard-content.php:634
 msgid "Author"
@@ -484,7 +484,7 @@ msgid "Media type value"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:221
-#: includes/Admin/MediaListPage.php:1214
+#: includes/Admin/MediaListPage.php:1243
 msgid "Image"
 msgstr ""
 
@@ -536,7 +536,7 @@ msgid "Logs"
 msgstr ""
 
 #: includes/Admin/LogViewerPage.php:80 includes/Admin/MediaListPage.php:27
-#: includes/Admin/ModerationQueue.php:155 includes/Admin/OverviewPage.php:168
+#: includes/Admin/ModerationQueue.php:162 includes/Admin/OverviewPage.php:168
 #: includes/Admin/Settings/SettingsPage.php:381
 #: includes/Admin/SetupWizard.php:119 includes/Admin/StatsPage.php:157
 #: includes/Admin/TagManagementPage.php:42
@@ -602,8 +602,8 @@ msgid "No log entries found."
 msgstr ""
 
 #: includes/Admin/LogViewerPage.php:197 includes/Admin/MediaListPage.php:242
-#: includes/Admin/MediaListPage.php:289 includes/Admin/ModerationQueue.php:355
-#: includes/Admin/OverviewPage.php:379 includes/Admin/TagManagementPage.php:687
+#: includes/Admin/MediaListPage.php:289 includes/Admin/ModerationQueue.php:362
+#: includes/Admin/OverviewPage.php:379 includes/Admin/TagManagementPage.php:689
 #: includes/Services/GDPRService.php:124 includes/Services/GDPRService.php:183
 #: includes/Services/GDPRService.php:209 includes/Services/GDPRService.php:234
 msgid "Date"
@@ -690,11 +690,11 @@ msgstr ""
 msgid "Delete permanently"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:199 includes/Admin/MediaListPage.php:1259
+#: includes/Admin/MediaListPage.php:199 includes/Admin/MediaListPage.php:1288
 msgid "Move to Trash"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:202 includes/Admin/ModerationQueue.php:327
+#: includes/Admin/MediaListPage.php:202 includes/Admin/ModerationQueue.php:334
 #: includes/Admin/TagManagementPage.php:179
 #: includes/Admin/TagManagementPage.php:265
 msgid "Apply"
@@ -720,32 +720,32 @@ msgstr ""
 #: includes/Admin/MediaListPage.php:234 includes/Admin/MediaListPage.php:281
 #: includes/Admin/TagManagementPage.php:190
 #: includes/Admin/TagManagementPage.php:249
-#: includes/Admin/TagManagementPage.php:684
+#: includes/Admin/TagManagementPage.php:686
 msgid "ID"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:235 includes/Admin/MediaListPage.php:282
-#: includes/Admin/ModerationQueue.php:350
+#: includes/Admin/ModerationQueue.php:357
 msgid "Thumb"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:238 includes/Admin/MediaListPage.php:285
-#: includes/Admin/ModerationQueue.php:353
-#: includes/Admin/TagManagementPage.php:686
+#: includes/Admin/ModerationQueue.php:360
+#: includes/Admin/TagManagementPage.php:688
 #: includes/Services/GDPRService.php:116 includes/Services/GDPRService.php:179
 #: templates/partials/dashboard-content.php:602
 msgid "Type"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:240 includes/Admin/MediaListPage.php:287
-#: includes/Admin/MediaListPage.php:1088 includes/Admin/MediaListPage.php:1123
+#: includes/Admin/MediaListPage.php:1117 includes/Admin/MediaListPage.php:1152
 #: vendor/woocommerce/action-scheduler/classes/ActionScheduler_AdminView.php:301
 #: vendor/woocommerce/action-scheduler/classes/ActionScheduler_ListTable.php:97
 msgid "Status"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:241 includes/Admin/MediaListPage.php:288
-#: includes/Admin/MediaListPage.php:1095
+#: includes/Admin/MediaListPage.php:1124
 msgid "Optimization"
 msgstr ""
 
@@ -792,8 +792,8 @@ msgstr ""
 msgid "(no title)"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:390 includes/Admin/MediaListPage.php:1233
-#: includes/Admin/MediaListPage.php:1240
+#: includes/Admin/MediaListPage.php:390 includes/Admin/MediaListPage.php:1262
+#: includes/Admin/MediaListPage.php:1269
 msgid "View"
 msgstr ""
 
@@ -834,7 +834,7 @@ msgstr ""
 msgid "Failed"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:524 includes/Admin/MediaListPage.php:1160
+#: includes/Admin/MediaListPage.php:524 includes/Admin/MediaListPage.php:1189
 msgid "Not optimized"
 msgstr ""
 
@@ -842,7 +842,7 @@ msgstr ""
 msgid "WebP ready"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:548 includes/Admin/MediaListPage.php:1151
+#: includes/Admin/MediaListPage.php:548 includes/Admin/MediaListPage.php:1180
 msgid "No lossless gain"
 msgstr ""
 
@@ -869,18 +869,18 @@ msgid_plural "%s items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Admin/MediaListPage.php:680
+#: includes/Admin/MediaListPage.php:709
 #. translators: 1: media id, 2: error code list
 msgid "Could not optimize media #%1$d: %2$s"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:690
+#: includes/Admin/MediaListPage.php:719
 #. translators: 1: media id, 2: bytes before formatted, 3: bytes after
 #. formatted, 4: savings percentage
 msgid "Optimized media #%1$d: %2$s to %3$s (saved %4$s%%)."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:752
+#: includes/Admin/MediaListPage.php:781
 #: includes/REST/Controller/FavoriteController.php:142
 #: includes/REST/Controller/ModerationController.php:227
 #: includes/REST/Controller/ModerationController.php:245
@@ -890,74 +890,74 @@ msgstr ""
 msgid "Media not found."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:814
+#: includes/Admin/MediaListPage.php:843
 #. translators: 1: media id, 2: count of regenerated thumbs
 msgid "Media #%1$d — regenerated %2$d size variant."
 msgid_plural "Media #%1$d — regenerated %2$d size variants."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Admin/MediaListPage.php:830
+#: includes/Admin/MediaListPage.php:859
 #. translators: %d: media id
 msgid ""
 "Media #%d — no repair path available. Image needs the original on local "
 "disk; video needs WPMediaVerse Pro with FFmpeg."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:882
+#: includes/Admin/MediaListPage.php:911
 msgid "You are not allowed to perform bulk actions."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:982
+#: includes/Admin/MediaListPage.php:1011
 msgid "Media not found"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:983
+#: includes/Admin/MediaListPage.php:1012
 msgid "Back to all media"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1045
+#: includes/Admin/MediaListPage.php:1074
 #. translators: %d: media id
 msgid "Media #%d"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1049
+#: includes/Admin/MediaListPage.php:1078
 msgid "All media"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1079
+#: includes/Admin/MediaListPage.php:1108
 msgid "About this image"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1084
+#: includes/Admin/MediaListPage.php:1113
 msgid "Image size"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1084
+#: includes/Admin/MediaListPage.php:1113
 msgid "pixels"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1086
+#: includes/Admin/MediaListPage.php:1115
 msgid "File size"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1087
+#: includes/Admin/MediaListPage.php:1116
 msgid "Who can see it"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1089
+#: includes/Admin/MediaListPage.php:1118
 msgid "Uploaded"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1090
+#: includes/Admin/MediaListPage.php:1119
 msgid "Preview"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1090
+#: includes/Admin/MediaListPage.php:1119
 msgid "Open the original image"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1115
+#: includes/Admin/MediaListPage.php:1144
 msgid ""
 "Your server is using PHP-GD for image processing. GD is a weaker JPEG and "
 "WebP encoder than ImageMagick, so already-high-quality photos often cannot "
@@ -965,60 +965,60 @@ msgid ""
 "the ImageMagick PHP extension for better savings on large photos."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1128
+#: includes/Admin/MediaListPage.php:1157
 msgid "Could not optimize"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1129
+#: includes/Admin/MediaListPage.php:1158
 msgid ""
 "Try Re-optimize below. If it keeps failing, ask your developer to check the "
 "error logs."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1133
+#: includes/Admin/MediaListPage.php:1162
 msgid "Optimized"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1137 includes/Admin/MediaListPage.php:1146
+#: includes/Admin/MediaListPage.php:1166 includes/Admin/MediaListPage.php:1175
 #. translators: %s: human-readable date and time
 msgid "on %s"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1142
+#: includes/Admin/MediaListPage.php:1171
 msgid "WebP copy created"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1155
+#: includes/Admin/MediaListPage.php:1184
 #. translators: %s: human-readable date and time
 msgid "checked on %s"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1161
+#: includes/Admin/MediaListPage.php:1190
 msgid "Click Re-optimize below to shrink this image."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1168
+#: includes/Admin/MediaListPage.php:1197
 msgid "Original size"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1169
+#: includes/Admin/MediaListPage.php:1198
 msgid "After optimization"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1171
+#: includes/Admin/MediaListPage.php:1200
 msgid "Space saved"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1175
+#: includes/Admin/MediaListPage.php:1204
 #. translators: 1: saved size in human-readable form, 2: saved percentage
 msgid "%1$s smaller (%2$s%% less)"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1181
+#: includes/Admin/MediaListPage.php:1210
 msgid "Result"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1186
+#: includes/Admin/MediaListPage.php:1215
 #. translators: %s: file size in human-readable form
 msgid ""
 "Lossless compression could not shrink this %s image further. A smaller WebP "
@@ -1026,7 +1026,7 @@ msgid ""
 "load."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1189
+#: includes/Admin/MediaListPage.php:1218
 #. translators: %s: file size in human-readable form
 msgid ""
 "This %s image was saved at a high quality level. Lossless compression "
@@ -1036,69 +1036,69 @@ msgid ""
 "before uploading."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1196 includes/Admin/MediaListPage.php:1215
+#: includes/Admin/MediaListPage.php:1225 includes/Admin/MediaListPage.php:1244
 msgid "WebP copy"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1199
+#: includes/Admin/MediaListPage.php:1228
 msgid "Available"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1200
+#: includes/Admin/MediaListPage.php:1229
 msgid "Open WebP copy"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1202
+#: includes/Admin/MediaListPage.php:1231
 msgid "Not created yet"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1209
+#: includes/Admin/MediaListPage.php:1238
 msgid "Thumbnail sizes"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1210
+#: includes/Admin/MediaListPage.php:1239
 msgid "WPMediaVerse keeps three smaller versions of every image so pages load fast."
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1213
+#: includes/Admin/MediaListPage.php:1242
 msgid "Size"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1220
+#: includes/Admin/MediaListPage.php:1249
 msgid "Large"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1221
+#: includes/Admin/MediaListPage.php:1250
 msgid "Medium"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1222
+#: includes/Admin/MediaListPage.php:1251
 msgid "Thumbnail"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1235
+#: includes/Admin/MediaListPage.php:1264
 msgid "Not available"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1242
+#: includes/Admin/MediaListPage.php:1271
 msgid "Not created"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1251 includes/Admin/ModerationQueue.php:356
+#: includes/Admin/MediaListPage.php:1280 includes/Admin/ModerationQueue.php:363
 #: includes/Admin/TagManagementPage.php:226
 #: includes/Admin/TagManagementPage.php:253
 msgid "Actions"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1254
+#: includes/Admin/MediaListPage.php:1283
 msgid "Re-optimize"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:1257
+#: includes/Admin/MediaListPage.php:1286
 msgid "Repair thumbnails"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:51 includes/Admin/ModerationQueue.php:209
+#: includes/Admin/ModerationQueue.php:51 includes/Admin/ModerationQueue.php:216
 #: includes/Admin/OverviewPage.php:241
 #: includes/Admin/Settings/SettingsRegistrar.php:661
 msgid "Moderation"
@@ -1108,96 +1108,96 @@ msgstr ""
 msgid "Media Moderation"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:171
+#: includes/Admin/ModerationQueue.php:178
 msgid "AI Flagged"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:175 includes/Admin/OverviewPage.php:206
+#: includes/Admin/ModerationQueue.php:182 includes/Admin/OverviewPage.php:206
 msgid "Pending Review"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:179
+#: includes/Admin/ModerationQueue.php:186
 msgid "Resolved / Rejected"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:211
+#: includes/Admin/ModerationQueue.php:218
 msgid "Review and manage flagged, pending, and reported media items."
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:224
+#: includes/Admin/ModerationQueue.php:231
 msgid "Media item approved."
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:225
+#: includes/Admin/ModerationQueue.php:232
 msgid "Media item rejected."
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:226
+#: includes/Admin/ModerationQueue.php:233
 msgid "Report marked as resolved."
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:227
+#: includes/Admin/ModerationQueue.php:234
 msgid "Report dismissed."
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:234
+#: includes/Admin/ModerationQueue.php:241
 #. translators: %d: number of items
 msgid "%d item approved."
 msgid_plural "%d items approved."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Admin/ModerationQueue.php:240
+#: includes/Admin/ModerationQueue.php:247
 #. translators: %d: number of items
 msgid "%d item rejected."
 msgid_plural "%d items rejected."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Admin/ModerationQueue.php:314
+#: includes/Admin/ModerationQueue.php:321
 msgid "Queue is Clear"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:315
+#: includes/Admin/ModerationQueue.php:322
 msgid "No items in this queue. All clear!"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:323
+#: includes/Admin/ModerationQueue.php:330
 #: includes/Admin/TagManagementPage.php:176
 #: includes/Admin/TagManagementPage.php:262
 msgid "Bulk Actions"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:324
+#: includes/Admin/ModerationQueue.php:331
 msgid "Approve Selected"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:325
+#: includes/Admin/ModerationQueue.php:332
 msgid "Reject Selected"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:332
+#: includes/Admin/ModerationQueue.php:339
 #. translators: %s: placeholder replaced by JS
 msgid "%s selected"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:346
+#: includes/Admin/ModerationQueue.php:353
 msgid "Select All"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:354
+#: includes/Admin/ModerationQueue.php:361
 msgid "AI Flags"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:451 includes/Admin/OverviewPage.php:420
+#: includes/Admin/ModerationQueue.php:458 includes/Admin/OverviewPage.php:420
 msgid "ago"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:461
+#: includes/Admin/ModerationQueue.php:468
 msgid "Approve"
 msgstr ""
 
-#: includes/Admin/ModerationQueue.php:469
+#: includes/Admin/ModerationQueue.php:476
 msgid "Reject"
 msgstr ""
 
@@ -1698,9 +1698,9 @@ msgid "Permissions saved."
 msgstr ""
 
 #: includes/Admin/Settings/PermissionsManager.php:204
-#: includes/Admin/TagManagementPage.php:459
-#: includes/Admin/TagManagementPage.php:501
-#: includes/Admin/TagManagementPage.php:559
+#: includes/Admin/TagManagementPage.php:461
+#: includes/Admin/TagManagementPage.php:503
+#: includes/Admin/TagManagementPage.php:561
 msgid "Security check failed."
 msgstr ""
 
@@ -2542,8 +2542,8 @@ msgid "Tags"
 msgstr ""
 
 #: includes/Admin/TagManagementPage.php:124
-#: includes/Admin/TagManagementPage.php:735
-#: includes/Admin/TagManagementPage.php:760 includes/Taxonomies/MediaTag.php:29
+#: includes/Admin/TagManagementPage.php:737
+#: includes/Admin/TagManagementPage.php:762 includes/Taxonomies/MediaTag.php:29
 msgid "Add New Tag"
 msgstr ""
 
@@ -2574,21 +2574,21 @@ msgstr ""
 
 #: includes/Admin/TagManagementPage.php:194
 #: includes/Admin/TagManagementPage.php:250
-#: includes/Admin/TagManagementPage.php:651
-#: includes/Admin/TagManagementPage.php:745
+#: includes/Admin/TagManagementPage.php:653
+#: includes/Admin/TagManagementPage.php:747
 msgid "Name"
 msgstr ""
 
 #: includes/Admin/TagManagementPage.php:198
 #: includes/Admin/TagManagementPage.php:251
-#: includes/Admin/TagManagementPage.php:658
-#: includes/Admin/TagManagementPage.php:752
+#: includes/Admin/TagManagementPage.php:660
+#: includes/Admin/TagManagementPage.php:754
 msgid "Slug"
 msgstr ""
 
 #: includes/Admin/TagManagementPage.php:202
 #: includes/Admin/TagManagementPage.php:252
-#: includes/Admin/TagManagementPage.php:665
+#: includes/Admin/TagManagementPage.php:667
 #: vendor/woocommerce/action-scheduler/classes/ActionScheduler_wcSystemStatus.php:123
 msgid "Count"
 msgstr ""
@@ -2614,83 +2614,83 @@ msgstr ""
 msgid "Are you sure you want to delete this tag?"
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:394
-#: includes/Admin/TagManagementPage.php:554
+#: includes/Admin/TagManagementPage.php:398
+#: includes/Admin/TagManagementPage.php:558
 msgid "You do not have permission to delete tags."
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:452
+#: includes/Admin/TagManagementPage.php:454
 msgid "You do not have permission to edit tags."
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:505
+#: includes/Admin/TagManagementPage.php:507
 #: includes/REST/Controller/TagController.php:457
 msgid "You do not have permission to create tags."
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:604
+#: includes/Admin/TagManagementPage.php:606
 #: includes/REST/Controller/TagController.php:330
 #: includes/REST/Controller/TagController.php:360
 msgid "Tag not found."
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:636
+#: includes/Admin/TagManagementPage.php:638
 #. translators: %s: tag name.
 msgid "Edit Tag: %s"
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:641
+#: includes/Admin/TagManagementPage.php:643
 msgid "← Back to Tags"
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:654
-#: includes/Admin/TagManagementPage.php:748
+#: includes/Admin/TagManagementPage.php:656
+#: includes/Admin/TagManagementPage.php:750
 msgid "The tag name as it appears on the site."
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:661
+#: includes/Admin/TagManagementPage.php:663
 msgid "The \"nice\" name for the tag URL. Usually lowercase."
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:672 includes/Taxonomies/MediaTag.php:28
+#: includes/Admin/TagManagementPage.php:674 includes/Taxonomies/MediaTag.php:28
 msgid "Update Tag"
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:677
+#: includes/Admin/TagManagementPage.php:679
 msgid "Linked Media"
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:679
+#: includes/Admin/TagManagementPage.php:681
 msgid "No media items are linked to this tag."
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:717
+#: includes/Admin/TagManagementPage.php:719
 #. translators: %d: number of media items.
 msgid "This tag is linked to %d media item(s)."
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:736
+#: includes/Admin/TagManagementPage.php:738
 msgid "&larr; Back to Tags"
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:755
+#: includes/Admin/TagManagementPage.php:757
 msgid ""
 "The \"nice\" name for the tag URL. Usually lowercase. Leave blank to "
 "auto-generate from name."
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:781
+#: includes/Admin/TagManagementPage.php:783
 #. translators: %d: number of deleted tags.
 msgid "%d tag deleted."
 msgid_plural "%d tags deleted."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Admin/TagManagementPage.php:789
+#: includes/Admin/TagManagementPage.php:791
 msgid "Tag updated successfully."
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:793
+#: includes/Admin/TagManagementPage.php:795
 msgid "Tag created successfully."
 msgstr ""
 
