@@ -66,6 +66,7 @@
 | 1.6.0 | **Server-side first-frame poster extraction.** Customer ask on cover-less videos: render the actual frame, not the default SVG. Needs `wp_read_video_metadata()` at upload time + writing back to `thumb_*`. | follow-up to 9910574354 |
 | 1.6.0 | **Stale-branch hygiene.** Branch-deletion step baked into PR merge so we never accumulate orphan `fix/*` branches again. Use one version-branch per release cycle. | workflow rule |
 | 1.6.0 | **Customer recovery CLI polish.** `wp mvs cloud-thumbs-backfill` already exists but isn't well-known. Doc + admin UI nudge for sites that hit pre-1.5.0 BunnyCDN poster bug. | follow-up to 9882148131 |
+| 1.6.0 | **Align Explore + profile media tab audience filters.** Currently `MediaController::get_items` (Explore) shows only `public + members + own` to logged-in viewers, hiding `friends` / `group` / `custom` even from members of those audiences. `ProfileTabIntegration` (profile media tab) is more permissive — shows all-except-private. A user who's friends with admin can find admin's friends-only items by visiting admin's profile but NOT by browsing Explore. Privacy is honored at `/serve` either way; this is a discovery UX inconsistency. Unify on a shared audience-aware WHERE so a friend can discover friends-only items everywhere they're entitled to. | 1.5.0 audit finding |
 
 ### Code-organization debt (file when next touched)
 
