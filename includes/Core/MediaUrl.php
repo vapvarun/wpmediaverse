@@ -42,10 +42,18 @@ final class MediaUrl {
 	 * @param int|null $user_id      Viewer user ID. null → `get_current_user_id()`.
 	 *                               0 → broadcast surface (long-TTL emails / feeds).
 	 * @param bool     $skip_privacy When true (default), the caller asserts that
-	 *                               their query already filtered by viewer privacy.
-	 *                               Forced to false for broadcast surfaces (uid=0
-	 *                               + ttl ≥ MONTH_IN_SECONDS) so private media
-	 *                               never gets a long-lived shareable URL.
+	 *                               their query already filtered by viewer
+	 *                               privacy. Forced to false when uid resolves
+	 *                               to 0 (no live viewer): non-public media
+	 *                               must never get an anon-bound URL because
+	 *                               the serve-time gate would deny it anyway.
+	 *                               Note: long-TTL broadcast emission (BP
+	 *                               activity, notification emails, RSS) goes
+	 *                               through `MediaRepository::get_broadcast_thumbnail_url()`
+	 *                               which already passes its own
+	 *                               `skip_privacy_check=false` — this
+	 *                               heuristic catches direct uid=0 callers
+	 *                               that don't route through that helper.
 	 * @return string Signed URL, or empty string when the SignedUrlService isn't
 	 *                ready (very early bootstrap) or the caller's identity is
 	 *                rejected by the privacy gate.
@@ -62,7 +70,7 @@ final class MediaUrl {
 			return '';
 		}
 		$uid = $user_id ?? get_current_user_id();
-		if ( 0 === $uid && $ttl >= MONTH_IN_SECONDS ) {
+		if ( 0 === $uid ) {
 			$skip_privacy = false;
 		}
 		return (string) $container->get( 'signed_urls' )->generate_thumbnail( $media_id, $uid, $size, $ttl, $skip_privacy );
