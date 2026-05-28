@@ -230,7 +230,26 @@ class ActivityFormIntegration {
 		// privacy via the form dropdown, effective_privacy_for_batch() now
 		// reflects it because the loop above synced each media row.
 		$effective_privacy = ActivitySyncIntegration::effective_privacy_for_batch( $valid_ids );
-		$hide_sitewide     = ActivitySyncIntegration::privacy_to_hide_sitewide( $effective_privacy );
+
+		// Private uploads leave zero public footprint — delete the activity
+		// BuddyPress already inserted (we can't prevent the insert; we hook
+		// on bp_activity_posted_update which fires AFTER bp_activity_add).
+		// Without this, BP keeps the entry with hide_sitewide=1 + still
+		// surfaces it on the author's profile activity tab to any visitor,
+		// leaking the broken-thumbnail card (Basecamp #9936622656). Other
+		// non-public levels (members/friends/group/custom) keep the
+		// activity and rely on ActivityPrivacyFilter's viewer-aware WHERE.
+		if ( 'private' === $effective_privacy && function_exists( 'bp_activity_delete' ) ) {
+			bp_activity_delete( array( 'id' => $activity_id ) );
+			// Untag the media so subsequent surfaces don't try to backfill
+			// an activity that no longer exists.
+			foreach ( $valid_ids as $mid ) {
+				$repo->delete( $mid, 'bp_activity_id' );
+			}
+			return;
+		}
+
+		$hide_sitewide = ActivitySyncIntegration::privacy_to_hide_sitewide( $effective_privacy );
 
 		$activity = new \BP_Activity_Activity( $activity_id );
 		if ( $activity->id ) {

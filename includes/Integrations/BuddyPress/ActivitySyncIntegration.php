@@ -434,6 +434,18 @@ class ActivitySyncIntegration {
 			return;
 		}
 
+		// Private uploads leave ZERO public footprint — no BP activity entry
+		// at all. hide_sitewide alone isn't enough: BP still surfaces
+		// hide_sitewide=1 entries on the author's profile activity tab to
+		// any visitor, so the broken thumbnail card leaks (Basecamp
+		// #9936622656). Skip the activity insert entirely; other non-public
+		// levels (members/friends/group/custom) keep the activity and rely
+		// on `ActivityPrivacyFilter` for viewer-aware gating.
+		if ( 'private' === self::effective_privacy_for_media( $media_id ) ) {
+			$this->recorded_uploads[ $media_id ] = true;
+			return;
+		}
+
 		$user_id   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 		$thumbnail = MediaDisplayHelper::get_media_thumbnail_html( $media_id, 'large' );
 
@@ -883,6 +895,14 @@ class ActivitySyncIntegration {
 		// (or non-public parent album) hides the entire gallery activity.
 		$album_hidden  = self::privacy_to_hide_sitewide( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' ) );
 		$hide_sitewide = $album_hidden || self::should_hide_for_batch( $media_ids );
+
+		// Private albums / batches leave zero public footprint — skip the
+		// gallery activity insert entirely. See record_upload_activity()
+		// for the rationale (Basecamp #9936622656).
+		$album_privacy = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'privacy' );
+		if ( 'private' === $album_privacy || 'private' === self::effective_privacy_for_batch( $media_ids ) ) {
+			return;
+		}
 
 		$activity_id = bp_activity_add(
 			array(

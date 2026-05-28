@@ -1111,22 +1111,20 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		// Privacy mode selection — closes Basecamp #9936622656 (private media
 		// leak on profile tabs). Previously this helper hardcoded privacy=any,
-		// which exposed every uploader's private items to any visitor to their
-		// profile. The new rules:
-		// - Owner viewing own profile: any (see your own private).
-		// - Caller explicitly opts in: any (CLI / moderation flows).
-		// - Viewer has moderate_mvs_media cap: any (moderators audit all).
-		// - Other logged-in viewer: visible (public + members + own).
-		// - Anonymous viewer: public only.
+		// which exposed private items to anyone visiting another user's
+		// profile. The new rule is "private is owner-only; all other privacy
+		// levels (members/friends/group/custom) stay discoverable by browsing
+		// the profile because that's what those levels are for." Matches the
+		// raw-SQL filter applied to the BuddyPress profile media tab in
+		// ProfileTabIntegration. Owner / admin / explicit-opt-in callers
+		// still see everything.
 		$is_owner_self = ( (int) $user_id === $viewer ) && $viewer > 0;
 		$is_admin      = $viewer > 0 && user_can( $viewer, 'moderate_mvs_media' );
 
 		if ( $is_owner_self || ! empty( $args['include_private'] ) || $is_admin ) {
 			$privacy = 'any';
-		} elseif ( $viewer > 0 ) {
-			$privacy = 'visible';
 		} else {
-			$privacy = 'public';
+			$privacy = 'hide_private';
 		}
 
 		return $this->query(
@@ -1366,6 +1364,18 @@ class MediaRepository implements MediaRepositoryInterface {
 			case 'visible':
 				return array(
 					"(m.privacy = 'public' OR m.privacy = 'members' OR m.post_author = %d)",
+					array( $viewer_id ),
+				);
+			case 'hide_private':
+				// Permissive sibling of 'visible' — only filters out
+				// `private`, leaves members/friends/group/custom alone.
+				// Used by profile-tab style queries where the owner can
+				// publish at members/friends/group/custom and expect those
+				// audiences to discover the items by browsing the profile.
+				// Closes the private-leak case (Basecamp #9936622656)
+				// without over-restricting the other non-public levels.
+				return array(
+					"(m.privacy != 'private' OR m.post_author = %d)",
 					array( $viewer_id ),
 				);
 			case 'any':
