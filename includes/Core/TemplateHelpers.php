@@ -47,32 +47,12 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Thumbnail URL or empty string.
 	 */
 	public function get_thumb_url( int $media_id, string $size = 'large', int $ttl = 0, ?int $user_id = null ): string {
-		// Route through SignedUrlService — direct uploads URLs are blocked by
-		// the .htaccess in wp-content/uploads/wpmediaverse/. The signed-URL
-		// serve endpoint handles size fallback (large → medium → thumbnail →
-		// file_url) and respects per-media privacy. Callers don't need to
-		// know about signing — every consumer of this helper gets a URL that
-		// loads correctly through the gated endpoint.
-		$signed_urls = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-		if ( $signed_urls ) {
-			$resolved_user = ( null === $user_id ) ? get_current_user_id() : $user_id;
-			// $skip_privacy_check = true for the default per-request flow because
-			// the grid query already enforced privacy. For broadcast emission
-			// (user_id=0, ttl=YEAR_IN_SECONDS), the privacy check IS applied so
-			// private media never gets a long-lived broadcast URL.
-			$skip_privacy = ( 0 === $resolved_user && $ttl >= MONTH_IN_SECONDS ) ? false : true;
-			$signed       = $signed_urls->generate_thumbnail( $media_id, $resolved_user, $size, $ttl, $skip_privacy );
-			if ( $signed ) {
-				return $signed;
-			}
-		}
-
-		// Defensive fallback — only reached if the SignedUrlService container
-		// isn't ready (very early in bootstrap, e.g. during plugin activation).
-		// Emitting a raw `/wp-content/uploads/wpmediaverse/` URL here would 403
-		// against the .htaccess gate, so we return an empty string and let the
-		// caller render an empty state instead of a broken image.
-		return '';
+		// Single read-side facade — see `Core\MediaUrl` for the privacy /
+		// skip-privacy / broadcast-surface logic and the choke-point comment
+		// referenced at the top of this method. Direct uploads URLs are
+		// blocked by the .htaccess in wp-content/uploads/wpmediaverse/, so
+		// every consumer of this helper gets a signed `/serve` URL.
+		return \WPMediaVerse\Core\MediaUrl::thumb( $media_id, $size, $ttl, $user_id );
 	}
 
 	/**
@@ -363,8 +343,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// cached on first hit, never written to mvs_media_meta and never
 		// pushed to cloud storage. Mirrors the audio waveform pattern.
 		if ( 'video' === $media_type ) {
-			$th_signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-			$file_url  = $th_signed ? $th_signed->generate( $media_id, get_current_user_id() ) : '';
+			$file_url = \WPMediaVerse\Core\MediaUrl::file( $media_id );
 			$poster_url = '' !== $thumb_url ? $thumb_url : self::default_video_poster_url();
 			if ( $file_url ) {
 				$vid_class   = trim( 'mvs-grid-video-preview ' . $extra_class );

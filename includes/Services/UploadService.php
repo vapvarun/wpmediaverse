@@ -738,7 +738,7 @@ class UploadService {
 					// audio card in grids/feeds gets a real cover image plus
 					// WebP siblings, instead of the music-note placeholder.
 					if ( ! empty( $audio_meta['image']['data'] ) ) {
-						$poster_path = $this->save_video_poster( $media_id, $audio_meta['image'] );
+						$poster_path = \WPMediaVerse\Core\Plugin::container()->get( 'poster' )->stage_bytes( $media_id, $audio_meta['image'] );
 						if ( $poster_path && file_exists( $poster_path ) ) {
 							$this->generate_thumbnails(
 								$media_id,
@@ -882,29 +882,17 @@ class UploadService {
 			$cloud_rel_dir = '';
 		}
 
-		// Path-meta gate. New 1.4.0 `_path` keys are written only when the
-		// media's `file_path` is a clean relative path (the shape that
-		// `UploadService::handle()` writes — `2026/05/foo.jpg`). Legacy
-		// imported records (MediaPress / rtMedia / BuddyBoss importers)
-		// store ABSOLUTE paths in `file_path`; for those, persisting `_path`
-		// would yield bogus values like `/var/www/.../foo-1024.jpg` that
-		// the read side cannot resolve under `wpmediaverse/`. Falling
-		// through to the legacy URL branch keeps imported records working.
-		$path_meta_ok = ( '' !== $media_rel_path )
-			&& ( 0 !== strpos( $media_rel_path, '/' ) )
-			&& ( ! preg_match( '#^[A-Za-z]:[\\\\/]#', $media_rel_path ) ); // not Windows-absolute either
-
+		// Variant write surface — single writer for every thumb_*/_webp/_avif
+		// meta key. See `MediaVariantWriter` for the path-meta gate and
+		// `VariantSpec::compute_rel_path` for the relative-path computation
+		// (previously duplicated at 3 sites in this method).
+		$writer    = \WPMediaVerse\Core\Plugin::container()->get( 'variant_writer' );
 		$image_opt = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
 
 		foreach ( $generated as $size_name => $data ) {
 			$local_thumb_url  = $base_url . '/' . $data['file'];
 			$local_thumb_path = trailingslashit( dirname( $file_path ) ) . $data['file'];
-			// Relative-to-wpmediaverse/ path for this variant. Same key the
-			// active driver uses regardless of where the bytes live — this is
-			// the new source-of-truth for the read side (since 1.4.0). The
-			// URL meta below is kept populated for ≥2 release backcompat per
-			// Production Rule #1.
-			$rel_variant_path = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $data['file'];
+			$rel_variant_path = VariantSpec::compute_rel_path( $rel_dir, $cloud_rel_dir, $data['file'] );
 
 			// Per-variant optimization pass — dispatches mvs_optimize_image so
 			// external compressors can process the thumbnail. The internal
@@ -919,7 +907,8 @@ class UploadService {
 			$variant_webp_local = $image_opt->emit_webp_sibling( $local_thumb_path, $variant_ctx );
 			$variant_avif_local = $image_opt->emit_avif_sibling( $local_thumb_path, $variant_ctx );
 
-			$stored_url = $local_thumb_url;
+			$primary_spec = VariantSpec::for_image_variant( $media_id, $size_name, $rel_variant_path, $local_thumb_path );
+			$stored_url   = $local_thumb_url;
 
 			if ( $cloud_driver ) {
 				/**
@@ -930,19 +919,6 @@ class UploadService {
 				 * meta directly. Use this to delegate resizing to a CDN
 				 * URL-parameter service (BunnyCDN Optimizer, Cloudflare
 				 * Images, CloudFront with Lambda@Edge resize, Imgix, etc.).
-				 *
-				 * The default URL we'd otherwise upload to is computed from
-				 * the active driver's url() against the sibling path —
-				 * e.g. `https://zone.b-cdn.net/wpmediaverse/2026/05/foo-large.jpg`.
-				 *
-				 * Example mu-plugin for BunnyCDN Optimizer customers:
-				 *
-				 *     add_filter( 'mvs_cloud_thumbnail_url', function( $url, $size, $media_id ) {
-				 *         $widths = array( 'large' => 1024, 'medium' => 640, 'thumb' => 240 );
-				 *         // Use the original's URL with width param instead of size-suffixed file.
-				 *         $orig = ( new WPMediaVerse\Repository\MediaRepository() )->get_raw( $media_id, 'file_url' );
-				 *         return $orig . '?width=' . ( $widths[ $size ] ?? 1024 );
-				 *     }, 10, 3 );
 				 *
 				 * @since 1.2.2
 				 *
@@ -969,52 +945,37 @@ class UploadService {
 				}
 			}
 
-			$repo->set( $media_id, 'thumb_' . $size_name, $stored_url );
-			if ( $path_meta_ok ) {
-				$repo->set( $media_id, 'thumb_' . $size_name . '_path', $rel_variant_path );
-			}
+			$writer->record( $primary_spec, $stored_url );
 
-			// WebP sibling for this variant. For cloud drivers we upload it
-			// next to the variant; for local we keep the file on disk and
-			// just record the public URL. Failure is non-fatal.
+			// WebP sibling — same dir + basename, .webp ext. Sibling rel path
+			// is derived from the primary spec so it can never diverge.
+			// Failure to push to cloud is non-fatal.
 			if ( null !== $variant_webp_local && file_exists( $variant_webp_local ) ) {
-				$webp_filename = pathinfo( $data['file'], PATHINFO_FILENAME ) . '.webp';
-				$webp_rel      = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $webp_filename;
-				$wrote_webp    = false;
+				$webp_spec     = VariantSpec::for_webp_sibling( $primary_spec, $variant_webp_local );
+				$webp_filename = basename( $webp_spec->rel_path() );
 				if ( $cloud_driver ) {
-					if ( $cloud_driver->store( $variant_webp_local, $webp_rel ) ) {
-						$repo->set( $media_id, 'thumb_' . $size_name . '_webp', (string) $cloud_driver->url( $webp_rel ) );
-						$wrote_webp = true;
+					if ( $cloud_driver->store( $webp_spec->local_path(), $webp_spec->rel_path() ) ) {
+						$writer->record( $webp_spec, (string) $cloud_driver->url( $webp_spec->rel_path() ) );
 					}
 					// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-					@unlink( $variant_webp_local );
+					@unlink( $webp_spec->local_path() );
 				} else {
-					$repo->set( $media_id, 'thumb_' . $size_name . '_webp', $base_url . '/' . $webp_filename );
-					$wrote_webp = true;
-				}
-				if ( $wrote_webp && $path_meta_ok ) {
-					$repo->set( $media_id, 'thumb_' . $size_name . '_webp_path', $webp_rel );
+					$writer->record( $webp_spec, $base_url . '/' . $webp_filename );
 				}
 			}
 
 			// AVIF sibling — same plumbing as WebP, gated on mvs_generate_avif.
 			if ( null !== $variant_avif_local && file_exists( $variant_avif_local ) ) {
-				$avif_filename = pathinfo( $data['file'], PATHINFO_FILENAME ) . '.avif';
-				$avif_rel      = ( '' === $cloud_rel_dir ? '' : trailingslashit( $cloud_rel_dir ) ) . $avif_filename;
-				$wrote_avif    = false;
+				$avif_spec     = VariantSpec::for_avif_sibling( $primary_spec, $variant_avif_local );
+				$avif_filename = basename( $avif_spec->rel_path() );
 				if ( $cloud_driver ) {
-					if ( $cloud_driver->store( $variant_avif_local, $avif_rel ) ) {
-						$repo->set( $media_id, 'thumb_' . $size_name . '_avif', (string) $cloud_driver->url( $avif_rel ) );
-						$wrote_avif = true;
+					if ( $cloud_driver->store( $avif_spec->local_path(), $avif_spec->rel_path() ) ) {
+						$writer->record( $avif_spec, (string) $cloud_driver->url( $avif_spec->rel_path() ) );
 					}
 					// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-					@unlink( $variant_avif_local );
+					@unlink( $avif_spec->local_path() );
 				} else {
-					$repo->set( $media_id, 'thumb_' . $size_name . '_avif', $base_url . '/' . $avif_filename );
-					$wrote_avif = true;
-				}
-				if ( $wrote_avif && $path_meta_ok ) {
-					$repo->set( $media_id, 'thumb_' . $size_name . '_avif_path', $avif_rel );
+					$writer->record( $avif_spec, $base_url . '/' . $avif_filename );
 				}
 			}
 		}
@@ -1030,12 +991,16 @@ class UploadService {
 		if ( $file_url ) {
 			foreach ( array_keys( $sizes ) as $size_name ) {
 				if ( ! isset( $generated[ $size_name ] ) ) {
-					$repo->set( $media_id, 'thumb_' . $size_name, $file_url );
-					// Drop the original's rel path into the new _path key so the
-					// read side can use the active driver without re-parsing URLs.
-					if ( $path_meta_ok ) {
-						$repo->set( $media_id, 'thumb_' . $size_name . '_path', $media_rel_path );
-					}
+					// Original-URL fallback for an unreachable size. Re-use
+					// the writer so the legacy URL meta + _path meta stay in
+					// lockstep with the rest of the loop above.
+					$fallback_spec = VariantSpec::for_image_variant(
+						$media_id,
+						$size_name,
+						$media_rel_path,
+						$file_path // best on-disk source we have for this size
+					);
+					$writer->record( $fallback_spec, $file_url );
 				}
 			}
 		}
@@ -1167,11 +1132,13 @@ class UploadService {
 			}
 		}
 
+		$poster = \WPMediaVerse\Core\Plugin::container()->get( 'poster' );
+
 		// Path A — video has an embedded cover atom (phone-shot footage
 		// usually does). Save the bytes to disk and feed through the normal
 		// thumbnail pipeline.
 		if ( ! empty( $video_meta['image']['data'] ) ) {
-			$poster_path = $this->save_video_poster( $media_id, $video_meta['image'] );
+			$poster_path = $poster->stage_bytes( $media_id, $video_meta['image'] );
 			if ( $poster_path && file_exists( $poster_path ) ) {
 				return $this->generate_thumbnails(
 					$media_id,
@@ -1187,7 +1154,7 @@ class UploadService {
 		// available on the server; admins on hosts without it keep the
 		// play-icon placeholder and can run the per-row Repair thumbs action
 		// later (which Pro hooks for ffmpeg-equipped backends).
-		$poster_path = $this->extract_video_poster_via_ffmpeg( $media_id, $file_path );
+		$poster_path = $poster->extract_via_ffmpeg( $media_id, $file_path );
 		if ( $poster_path && file_exists( $poster_path ) ) {
 			return $this->generate_thumbnails( $media_id, $poster_path, 'image/jpeg' );
 		}
@@ -1195,237 +1162,10 @@ class UploadService {
 		return false;
 	}
 
-	/**
-	 * Extract a poster frame from a video using ffmpeg, if available.
-	 *
-	 * Tries the 1-second mark first (avoids the all-black opening frame
-	 * common in fade-in intros). Falls back to frame 0 when the video is
-	 * shorter than 1s. Writes the JPEG to the same posters/ directory used
-	 * by save_video_poster so the rest of the pipeline doesn't need to
-	 * special-case it.
-	 *
-	 * @since 1.2.2
-	 *
-	 * @param int    $media_id   Media id (filename anchor).
-	 * @param string $video_path Absolute path to the video on local disk.
-	 *
-	 * @return string|null Absolute poster path or null when ffmpeg is missing / extraction failed.
-	 */
-	private function extract_video_poster_via_ffmpeg( int $media_id, string $video_path ): ?string {
-		/**
-		 * Filter the ffmpeg binary path used for video poster extraction.
-		 *
-		 * Default behavior (1.3.0+): the helper auto-detects common ffmpeg
-		 * install locations (Homebrew, /usr/local, /usr/bin) when bare
-		 * `ffmpeg` isn't on the PATH PHP-FPM inherits. Web SAPI typically
-		 * gets a minimal PATH from the launching service (Local, MAMP, hosting
-		 * panels) that omits Homebrew and other user-mode installs, so a bare
-		 * `ffmpeg` exec returns 127 even when the binary is reachable from a
-		 * shell. Sites with non-standard locations can still override here.
-		 *
-		 * @since 1.2.2
-		 *
-		 * @param string $binary Default 'ffmpeg' (or an auto-resolved absolute
-		 *                       path when the default doesn't resolve).
-		 */
-		$ffmpeg = (string) apply_filters( 'mvs_ffmpeg_binary', self::resolve_ffmpeg_binary() );
-
-		if ( ! function_exists( 'proc_open' ) ) {
-			return null;
-		}
-
-		$upload_dir = wp_upload_dir();
-		if ( ! empty( $upload_dir['error'] ) ) {
-			return null;
-		}
-		$dir = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/posters';
-		if ( ! wp_mkdir_p( $dir ) ) {
-			return null;
-		}
-		$dest = trailingslashit( $dir ) . $media_id . '.jpg';
-
-		// Seek to 1s, take one frame at q=2 (visually lossless JPEG out of
-		// ffmpeg). -y overwrites if a poster already exists.
-		if ( ! $this->run_ffmpeg_extract( $ffmpeg, $video_path, $dest, true ) ) {
-			LoggerService::warning(
-				'upload',
-				sprintf( 'ffmpeg poster extraction failed (binary not found or exec non-zero) for media #%d', $media_id ),
-				array(
-					'media_id' => $media_id,
-					'binary'   => $ffmpeg,
-				)
-			);
-			return null;
-		}
-
-		if ( ! file_exists( $dest ) || filesize( $dest ) < 200 ) {
-			// Some videos are shorter than 1s — retry from frame 0.
-			$this->run_ffmpeg_extract( $ffmpeg, $video_path, $dest, false );
-		}
-
-		if ( ! file_exists( $dest ) || filesize( $dest ) < 200 ) {
-			LoggerService::info(
-				'upload',
-				sprintf( 'ffmpeg poster extraction produced no usable frame for media #%d', $media_id ),
-				array( 'media_id' => $media_id )
-			);
-			return null;
-		}
-
-		return $dest;
-	}
-
-	/**
-	 * Resolve a usable ffmpeg binary path for the current SAPI.
-	 *
-	 * Returns the first match from a short list of canonical install paths
-	 * (Homebrew, /usr/local, /usr/bin, /opt/ffmpeg). Falls back to bare
-	 * `ffmpeg` when none resolve — that preserves the pre-1.3.0 behavior
-	 * for hosts where ffmpeg IS on the inherited PATH.
-	 *
-	 * Cached per-request because callers may invoke this many times in a
-	 * bulk-regenerate path.
-	 *
-	 * @since 1.3.0
-	 *
-	 * @return string Absolute path when one resolved, else 'ffmpeg'.
-	 */
-	private static function resolve_ffmpeg_binary(): string {
-		static $cached = null;
-		if ( null !== $cached ) {
-			return $cached;
-		}
-
-		// Common install locations — first hit wins. Order matters: prefer
-		// Homebrew on macOS (most common dev environment) and standard system
-		// locations everywhere else. Add to this list rather than reorder if a
-		// host's path needs to be supported; consumers who want a different
-		// preference should use the `mvs_ffmpeg_binary` filter.
-		$candidates = array(
-			'/opt/homebrew/bin/ffmpeg',  // macOS Apple Silicon Homebrew
-			'/usr/local/bin/ffmpeg',     // macOS Intel Homebrew + many Linux installs
-			'/usr/bin/ffmpeg',           // Distro packages (apt, dnf)
-			'/opt/ffmpeg/bin/ffmpeg',    // Some shared-hosting layouts
-		);
-
-		foreach ( $candidates as $candidate ) {
-			if ( is_executable( $candidate ) ) {
-				$cached = $candidate;
-				return $cached;
-			}
-		}
-
-		$cached = 'ffmpeg';
-		return $cached;
-	}
-
-	/**
-	 * Invoke ffmpeg via proc_open with an arg array (no shell, no injection
-	 * surface). Mirrors the pattern used in Pro's TranscodeService.
-	 *
-	 * @param string $binary     ffmpeg binary path or name.
-	 * @param string $video_path Source video path.
-	 * @param string $dest       Output JPEG path.
-	 * @param bool   $seek_one_second  When true, pass `-ss 1` to skip opening fades.
-	 * @return bool True when the process exited 0.
-	 */
-	private function run_ffmpeg_extract( string $binary, string $video_path, string $dest, bool $seek_one_second ): bool {
-		$args = array( $binary, '-loglevel', 'error' );
-		if ( $seek_one_second ) {
-			$args[] = '-ss';
-			$args[] = '1';
-		}
-		$args[] = '-i';
-		$args[] = $video_path;
-		$args[] = '-vframes';
-		$args[] = '1';
-		$args[] = '-q:v';
-		$args[] = '2';
-		$args[] = '-y';
-		$args[] = $dest;
-
-		$descriptors = array(
-			0 => array( 'pipe', 'r' ),
-			1 => array( 'pipe', 'w' ),
-			2 => array( 'pipe', 'w' ),
-		);
-
-		// proc_open with array $cmd bypasses shell interpretation on PHP 7.4+
-		// — each argument is passed to execve() directly. No string escaping
-		// concerns even if $video_path / $dest contain shell metacharacters.
-		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open, Generic.PHP.ForbiddenFunctions.Found, WordPress.PHP.NoSilencedErrors.Discouraged
-		$process = @proc_open( $args, $descriptors, $pipes );
-		if ( ! is_resource( $process ) ) {
-			return false;
-		}
-		// Close stdin; drain stdout/stderr so the child can exit.
-		if ( isset( $pipes[0] ) && is_resource( $pipes[0] ) ) {
-			fclose( $pipes[0] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
-		}
-		if ( isset( $pipes[1] ) && is_resource( $pipes[1] ) ) {
-			stream_get_contents( $pipes[1] );
-			fclose( $pipes[1] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
-		}
-		if ( isset( $pipes[2] ) && is_resource( $pipes[2] ) ) {
-			stream_get_contents( $pipes[2] );
-			fclose( $pipes[2] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
-		}
-
-		$status = proc_close( $process );
-		return 0 === $status;
-	}
-
-	/**
-	 * Persist a video's embedded poster frame bytes to disk.
-	 *
-	 * Writes to `uploads/wpmediaverse/posters/<media_id>.<ext>` using WP's
-	 * filesystem helpers. Returns the absolute path for the caller to feed
-	 * back into `generate_thumbnails()`.
-	 *
-	 * @param int   $media_id Media ID.
-	 * @param array $image    The `image` array from wp_read_video_metadata().
-	 * @return string|null Absolute file path on success, null on failure.
-	 */
-	private function save_video_poster( int $media_id, array $image ): ?string {
-		if ( empty( $image['data'] ) || ! is_string( $image['data'] ) ) {
-			return null;
-		}
-
-		$mime = isset( $image['mime'] ) ? (string) $image['mime'] : 'image/jpeg';
-		$ext  = 'image/png' === $mime ? 'png' : ( 'image/webp' === $mime ? 'webp' : 'jpg' );
-
-		$upload_dir = wp_upload_dir();
-		if ( ! empty( $upload_dir['error'] ) ) {
-			return null;
-		}
-
-		$dir = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/posters';
-		if ( ! wp_mkdir_p( $dir ) ) {
-			LoggerService::warning(
-				'upload',
-				sprintf( 'Could not create posters directory for media #%d', $media_id ),
-				array(
-					'media_id' => $media_id,
-					'dir'      => $dir,
-				)
-			);
-			return null;
-		}
-
-		$path  = trailingslashit( $dir ) . $media_id . '.' . $ext;
-		$bytes = file_put_contents( $path, $image['data'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-
-		if ( false === $bytes || 0 === $bytes ) {
-			LoggerService::warning(
-				'upload',
-				sprintf( 'Failed to write video poster for media #%d', $media_id ),
-				array( 'media_id' => $media_id )
-			);
-			return null;
-		}
-
-		return $path;
-	}
+	// Video Path B (ffmpeg), Path A (getID3 cover atom), client frame staging,
+	// and ffmpeg-binary resolution all moved to `Services\PosterService` in
+	// 1.5.0 — there is now one owner of every write to wpmediaverse/posters/.
+	// Callers above resolve `Plugin::container()->get('poster')`.
 
 	/**
 	 * Find existing media by file hash.

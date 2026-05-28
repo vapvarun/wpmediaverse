@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 14;
+	const CURRENT_VERSION = 15;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -910,6 +910,165 @@ class Migrator {
 						'media_id'   => $media_id,
 						'meta_key'   => $path_key,
 						'meta_value' => $rel_path,
+					),
+					array( '%d', '%s', '%s' )
+				);
+			}
+		}
+	}
+
+	/**
+	 * Migration v15 — heal video poster `thumb_*_path` meta that diverges
+	 * from the variant's actual on-disk location.
+	 *
+	 * The bug: pre-1.5.0 `UploadService::generate_thumbnails()` computed the
+	 * variant rel-path from the MEDIA row's `file_path` directory
+	 * (`$cloud_rel_dir`, e.g. `2026/05`) instead of the variant's actual
+	 * on-disk directory. For video posters the variants live at
+	 * `wpmediaverse/posters/<id>-WxH.jpg`, but `_path` meta was written as
+	 * `2026/05/<id>-WxH.jpg` — every read against that path resolved to a
+	 * missing file. The URL meta (`thumb_<size>`) was always correct since
+	 * it was computed from the variant's actual location.
+	 *
+	 * Fix in 1.5.0 lives in `VariantSpec::compute_rel_path()` for new
+	 * uploads. This migration heals legacy rows by re-deriving `_path`
+	 * from the URL meta (authoritative). Idempotent, bounded per-row work,
+	 * scoped to video rows.
+	 *
+	 * @since 1.5.0
+	 */
+	private function migrate_to_15(): void {
+		global $wpdb;
+
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$meta_table  = $wpdb->prefix . 'mvs_media_meta';
+
+		$upload_dir = wp_upload_dir();
+		if ( ! empty( $upload_dir['error'] ) ) {
+			return;
+		}
+		$wpmv_basedir = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/';
+
+		// `_path` keys + their authoritative URL counterparts. Image rows
+		// were never affected by the bug — only videos diverged because
+		// posters land in a different subdir than the source file_path —
+		// but running this against images is harmless because v14 already
+		// wrote the same value we'd derive here, so the idempotency check
+		// below short-circuits.
+		$keymap = array(
+			'thumb_large_path'        => 'thumb_large',
+			'thumb_medium_path'       => 'thumb_medium',
+			'thumb_thumb_path'        => 'thumb_thumb',
+			'thumb_large_webp_path'   => 'thumb_large_webp',
+			'thumb_medium_webp_path'  => 'thumb_medium_webp',
+			'thumb_thumb_webp_path'   => 'thumb_thumb_webp',
+			'thumb_large_avif_path'   => 'thumb_large_avif',
+			'thumb_medium_avif_path'  => 'thumb_medium_avif',
+			'thumb_thumb_avif_path'   => 'thumb_thumb_avif',
+		);
+
+		// Scope to videos for efficiency on large sites — the bug only
+		// affected video poster paths. (Audio ID3 cover variants follow
+		// the same posters-dir convention, so include them too.)
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results(
+			"SELECT media_id, file_path FROM {$index_table} WHERE media_type IN ('video','audio') AND file_path IS NOT NULL AND file_path <> ''"
+		);
+
+		foreach ( (array) $rows as $row ) {
+			$media_id      = (int) $row->media_id;
+			$file_path_rel = (string) $row->file_path;
+
+			// Skip legacy absolute-path imports (same guard as v14).
+			if ( 0 === strpos( $file_path_rel, '/' ) || preg_match( '#^[A-Za-z]:[\\\\/]#', $file_path_rel ) ) {
+				continue;
+			}
+
+			foreach ( $keymap as $path_key => $url_key ) {
+				// Read the URL meta — authoritative source.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$url_value = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT meta_value FROM {$meta_table} WHERE media_id = %d AND meta_key = %s",
+						$media_id,
+						$url_key
+					)
+				);
+				if ( ! is_string( $url_value ) || '' === $url_value ) {
+					continue;
+				}
+
+				// Derive rel_path from URL via /wpmediaverse/ marker.
+				$marker = '/wpmediaverse/';
+				$pos    = strpos( $url_value, $marker );
+				if ( false === $pos ) {
+					continue; // URL doesn't reference uploads dir; can't derive.
+				}
+				$derived_path = ltrim( substr( $url_value, $pos + strlen( $marker ) ), '/' );
+
+				// Strip query string / fragment if present.
+				$qpos = strpos( $derived_path, '?' );
+				if ( false !== $qpos ) {
+					$derived_path = substr( $derived_path, 0, $qpos );
+				}
+				$fpos = strpos( $derived_path, '#' );
+				if ( false !== $fpos ) {
+					$derived_path = substr( $derived_path, 0, $fpos );
+				}
+				if ( '' === $derived_path ) {
+					continue;
+				}
+
+				// Two-step probe to pick the correct rel_path. The URL meta
+				// itself may be wrong on this row (some pre-1.5.0 cloud
+				// pushes recorded the variant under the media's date dir
+				// even though the file landed in posters/). When the
+				// URL-derived path doesn't resolve locally, try the
+				// canonical posters/<basename> location — that's where
+				// the writer for video/audio variants actually puts
+				// bytes in 1.5.0+.
+				$probe_paths = array( $derived_path );
+				$basename    = basename( $derived_path );
+				if ( '' !== $basename ) {
+					$probe_paths[] = 'posters/' . $basename;
+				}
+
+				$resolved_path = '';
+				foreach ( $probe_paths as $probe ) {
+					if ( file_exists( $wpmv_basedir . $probe ) ) {
+						$resolved_path = $probe;
+						break;
+					}
+				}
+
+				// Stranded cloud variants (uploaded then unlinked locally)
+				// leave nothing for us to point at — keep `_path` as-is
+				// so the URL fallback keeps serving from the CDN.
+				if ( '' === $resolved_path ) {
+					continue;
+				}
+
+				// Idempotency: skip if `_path` already matches what we'd
+				// write.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$existing_path = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT meta_value FROM {$meta_table} WHERE media_id = %d AND meta_key = %s",
+						$media_id,
+						$path_key
+					)
+				);
+				if ( is_string( $existing_path ) && $existing_path === $resolved_path ) {
+					continue;
+				}
+
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->replace(
+					$meta_table,
+					array(
+						'media_id'   => $media_id,
+						'meta_key'   => $path_key,
+						'meta_value' => $resolved_path,
 					),
 					array( '%d', '%s', '%s' )
 				);

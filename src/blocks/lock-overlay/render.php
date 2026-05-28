@@ -35,11 +35,11 @@ $privacy     = $container->get( 'privacy' );
 $has_access  = $privacy->can_view( $media_id, $user_id );
 
 $file_type   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
-$lo_signed   = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-// Full signed URL only for users with access; generate() already checks can_view().
-$file_url    = $lo_signed ? $lo_signed->generate( $media_id, $user_id ) : '';
+// Full signed URL only for users with access; MediaUrl::file() already
+// checks can_view() and returns '' when denied.
+$file_url    = \WPMediaVerse\Core\MediaUrl::file( $media_id, $user_id );
 // Blurred preview thumbnail shown to locked users as a teaser (privacy check skipped — intentional).
-$preview_url = $lo_signed ? $lo_signed->generate_thumbnail( $media_id, $user_id, 'large', 0, true ) : '';
+$preview_url = \WPMediaVerse\Core\MediaUrl::thumb( $media_id, 'large', 0, $user_id );
 $is_image    = 0 === strpos( (string) $file_type, 'image/' );
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
 \WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );

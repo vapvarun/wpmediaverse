@@ -24,11 +24,10 @@ $mvs_title     = $mvs_media['title'] ?? '';
 $mvs_desc      = $mvs_media['description'] ?? '';
 $mvs_status    = $mvs_media['status'] ?? 'publish';
 $mvs_privacy   = $mvs_media['privacy'] ?? 'public';
-// Generate signed URL to bypass .htaccess protection on uploads directory.
+// Signed URL via the read-side facade — bypasses the .htaccess deny-all in
+// wp-content/uploads/wpmediaverse/. Returns '' when the privacy gate denies.
 $mvs_file_url_raw = $mvs_media['file_url'] ?? '';
-$mvs_signed_urls  = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-$mvs_signed       = $mvs_signed_urls ? $mvs_signed_urls->generate( (int) $mvs_media['media_id'], get_current_user_id() ) : false;
-$mvs_file_url     = $mvs_signed ?: '';
+$mvs_file_url     = \WPMediaVerse\Core\MediaUrl::file( (int) $mvs_media['media_id'] );
 $mvs_file_type    = $mvs_media['file_type'] ?? '';
 $mvs_media_type   = $mvs_media['media_type'] ?? '';
 $mvs_width        = $mvs_media['width'] ?? '';

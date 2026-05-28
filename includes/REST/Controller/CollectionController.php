@@ -378,14 +378,11 @@ class CollectionController extends WP_REST_Controller {
 	private function prepare_collection_response( $post, bool $include_items = false, int $per_page = 20, int $page = 1 ): array {
 		$collection_type = $this->collections->get_type( $post->ID );
 
-		// Get cover from first media item via signed URL.
+		// Get cover from first media item via the read-side facade.
 		$cover_url      = null;
 		$first_media_id = $this->get_first_collection_media( $post->ID, $collection_type );
 		if ( $first_media_id ) {
-			$coll_su   = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-			$cover_url = $coll_su
-				? $coll_su->generate_thumbnail( $first_media_id, get_current_user_id(), 'large', 0, true )
-				: \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $first_media_id, 'large' );
+			$cover_url = \WPMediaVerse\Core\MediaUrl::thumb( $first_media_id );
 		}
 
 		$data = array(

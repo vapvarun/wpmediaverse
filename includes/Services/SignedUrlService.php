@@ -288,14 +288,19 @@ class SignedUrlService {
 			exit;
 		}
 
-		// Restricted media: re-check view access for the REQUESTING session.
-		// The signed token proves integrity + expiry, but for non-public media
-		// that alone would make an owner's time-limited URL a transferable
-		// bearer credential — any other user or anonymous visitor holding it
-		// could view a private member upload. Public media stays bearer-style
-		// (cacheable, shareable); only restricted media is re-gated per request.
-		$privacy = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'privacy' );
-		if ( 'public' !== $privacy && ! $this->privacy->can_view( $media_id, get_current_user_id() ) ) {
+		// Restricted media: re-check view access for the token's signed viewer.
+		// Browsers fetch <img src> without the X-WP-Nonce header, so
+		// get_current_user_id() returns 0 even for the owner and every non-public
+		// privacy level denies. The HMAC verified in validate() above guarantees
+		// mvs_uid was not tampered with, and the token's expiry bounds the
+		// bearer-style transferability window. Prefer the live session id when
+		// one is present (cookie-authenticated tab fetches), otherwise fall
+		// back to the signed viewer id.
+		$privacy        = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'privacy' );
+		$session_uid    = (int) get_current_user_id();
+		$token_uid      = (int) ( $params[ self::PARAM_USER ] ?? 0 );
+		$viewer_user_id = $session_uid > 0 ? $session_uid : $token_uid;
+		if ( 'public' !== $privacy && ! $this->privacy->can_view( $media_id, $viewer_user_id ) ) {
 			status_header( 403 );
 			header( 'Content-Type: text/plain' );
 			echo esc_html( 'Access denied.' );

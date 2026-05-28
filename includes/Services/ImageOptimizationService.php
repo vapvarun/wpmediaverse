@@ -462,7 +462,7 @@ class ImageOptimizationService {
 		$webp_path = $this->emit_webp_sibling( $abs_path, $context );
 		if ( null !== $webp_path ) {
 			$rel_path      = (string) $repo->get_raw( $media_id, 'file_path' );
-			$published_url = $this->publish_webp_to_active_driver( $webp_path, $rel_path, $media_id );
+			$published_url = $this->publish_sibling_to_active_driver( $webp_path, $rel_path, $media_id, 'webp' );
 			if ( '' !== $published_url ) {
 				$repo->set( $media_id, self::META_ORIGINAL_WEBP, $published_url );
 				$repo->set( $media_id, self::META_ORIGINAL_WEBP_PATH, self::sibling_rel_path( $rel_path ) );
@@ -474,7 +474,7 @@ class ImageOptimizationService {
 		$avif_path = $this->emit_avif_sibling( $abs_path, $context );
 		if ( null !== $avif_path ) {
 			$rel_path      = (string) $repo->get_raw( $media_id, 'file_path' );
-			$published_url = $this->publish_avif_to_active_driver( $avif_path, $rel_path, $media_id );
+			$published_url = $this->publish_sibling_to_active_driver( $avif_path, $rel_path, $media_id, 'avif' );
 			if ( '' !== $published_url ) {
 				$repo->set( $media_id, self::META_ORIGINAL_AVIF, $published_url );
 				$repo->set( $media_id, self::META_ORIGINAL_AVIF_PATH, self::avif_rel_sibling_path( $rel_path ) );
@@ -525,7 +525,7 @@ class ImageOptimizationService {
 					// Cloud driver: publish next to the variant on CDN and
 					// drop the local sibling so disk usage stays flat.
 					// Local driver: keep on disk and record its public URL.
-					$published_url = $this->publish_webp_to_active_driver( $variant_webp, $variant_rel, $media_id );
+					$published_url = $this->publish_sibling_to_active_driver( $variant_webp, $variant_rel, $media_id, 'webp' );
 					if ( '' !== $published_url ) {
 						$repo->set( $media_id, 'thumb_' . $size . '_webp', $published_url );
 						$repo->set( $media_id, 'thumb_' . $size . '_webp_path', self::sibling_rel_path( $variant_rel ) );
@@ -534,7 +534,7 @@ class ImageOptimizationService {
 
 				$variant_avif = $this->emit_avif_sibling( $variant_local, $variant_ctx );
 				if ( null !== $variant_avif ) {
-					$published_url = $this->publish_avif_to_active_driver( $variant_avif, $variant_rel, $media_id );
+					$published_url = $this->publish_sibling_to_active_driver( $variant_avif, $variant_rel, $media_id, 'avif' );
 					if ( '' !== $published_url ) {
 						$repo->set( $media_id, 'thumb_' . $size . '_avif', $published_url );
 						$repo->set( $media_id, 'thumb_' . $size . '_avif_path', self::avif_rel_sibling_path( $variant_rel ) );
@@ -769,8 +769,21 @@ class ImageOptimizationService {
 	 *
 	 * @return string Public URL of the published WebP, or '' on failure.
 	 */
-	private function publish_webp_to_active_driver( string $local_webp_path, string $source_rel_path, int $media_id ): string {
-		if ( '' === $source_rel_path || ! file_exists( $local_webp_path ) ) {
+	/**
+	 * Publish a locally-generated sibling (WebP / AVIF) via the active
+	 * storage driver. Collapses the historic `publish_webp_to_active_driver`
+	 * + `publish_avif_to_active_driver` twins (1.5.0) — only the file
+	 * extension differed.
+	 *
+	 * @param string $local_path      Absolute path of the file just emitted by
+	 *                                `emit_webp_sibling()` / `emit_avif_sibling()`.
+	 * @param string $source_rel_path Relative path of the source file.
+	 * @param int    $media_id        Media ID (drives driver selection).
+	 * @param string $ext             Sibling extension: 'webp' or 'avif'.
+	 * @return string Public URL of the published artifact, or '' on failure.
+	 */
+	private function publish_sibling_to_active_driver( string $local_path, string $source_rel_path, int $media_id, string $ext ): string {
+		if ( '' === $source_rel_path || ! file_exists( $local_path ) ) {
 			return '';
 		}
 
@@ -781,102 +794,69 @@ class ImageOptimizationService {
 			return '';
 		}
 
-		$webp_dest = self::sibling_rel_path( $source_rel_path );
+		$dest = self::compute_sibling_rel_path( $source_rel_path, $ext );
 
 		if ( $driver instanceof LocalDriver ) {
-			// Local-disk driver — emit_webp_sibling() already wrote next to the
+			// Local-disk driver — emit_*_sibling() already wrote next to the
 			// source on disk, so the on-disk file IS the published artifact.
-			// The driver's url() resolves to the same path.
-			return (string) $driver->url( $webp_dest );
+			return (string) $driver->url( $dest );
 		}
 
 		// Cloud driver — push to remote and drop the local copy.
-		if ( ! $driver->store( $local_webp_path, $webp_dest ) ) {
+		if ( ! $driver->store( $local_path, $dest ) ) {
 			return '';
 		}
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-		@unlink( $local_webp_path );
-		return (string) $driver->url( $webp_dest );
+		@unlink( $local_path );
+		return (string) $driver->url( $dest );
 	}
 
 	/**
-	 * Publish a locally-generated AVIF file via the active storage driver.
-	 *
-	 * Mirrors `publish_webp_to_active_driver()` exactly — see that method's
-	 * docblock for the rationale (cloud drivers own every artifact so disk
-	 * usage stays flat; local driver leaves the file on disk and returns its
-	 * public URL).
-	 *
-	 * @since 1.3.0
-	 *
-	 * @param string $local_avif_path Absolute path of the AVIF just emitted by emit_avif_sibling().
-	 * @param string $source_rel_path Relative path of the source file.
-	 *
-	 * @return string Public URL of the published AVIF, or '' on failure.
+	 * Compute `<dir>/<basename>.<ext>` from a source path. Internal helper —
+	 * callers should use `sibling_rel_path()` (.webp) or
+	 * `avif_rel_sibling_path()` (.avif) so the public surface keeps the
+	 * pre-1.5.0 shape.
 	 */
-	private function publish_avif_to_active_driver( string $local_avif_path, string $source_rel_path, int $media_id ): string {
-		if ( '' === $source_rel_path || ! file_exists( $local_avif_path ) ) {
-			return '';
-		}
-
-		// Route by the media's privacy — see publish_webp_to_active_driver().
-		$driver = \WPMediaVerse\Core\Plugin::container()->get( 'storage' )->get_driver_for_media( $media_id );
-		if ( ! $driver instanceof StorageDriverInterface ) {
-			return '';
-		}
-
-		$avif_dest = self::avif_rel_sibling_path( $source_rel_path );
-
-		if ( $driver instanceof LocalDriver ) {
-			return (string) $driver->url( $avif_dest );
-		}
-
-		if ( ! $driver->store( $local_avif_path, $avif_dest ) ) {
-			return '';
-		}
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-		@unlink( $local_avif_path );
-		return (string) $driver->url( $avif_dest );
+	private static function compute_sibling_rel_path( string $source_rel_path, string $ext ): string {
+		$dir  = dirname( $source_rel_path );
+		$base = pathinfo( $source_rel_path, PATHINFO_FILENAME );
+		return ( '' === $dir || '.' === $dir ) ? $base . '.' . $ext : trailingslashit( $dir ) . $base . '.' . $ext;
 	}
 
 	/**
 	 * Derive `<dir>/<basename>.webp` from a relative source path.
+	 *
+	 * Public — kept for backward compatibility (Production Rule #1).
 	 */
 	public static function sibling_rel_path( string $source_rel_path ): string {
-		$dir  = dirname( $source_rel_path );
-		$base = pathinfo( $source_rel_path, PATHINFO_FILENAME );
-		return ( '' === $dir || '.' === $dir ) ? $base . '.webp' : trailingslashit( $dir ) . $base . '.webp';
+		return self::compute_sibling_rel_path( $source_rel_path, 'webp' );
 	}
 
 	/**
-	 * Sibling WebP path for a given image — same dir, same basename, .webp ext.
+	 * Sibling WebP path (absolute on-disk) — same dir + basename, .webp ext.
 	 */
 	private static function webp_sibling_path( string $file_path ): string {
-		$dir  = dirname( $file_path );
-		$base = pathinfo( $file_path, PATHINFO_FILENAME );
-		return trailingslashit( $dir ) . $base . '.webp';
+		return self::compute_sibling_rel_path( $file_path, 'webp' );
 	}
 
 	/**
-	 * Sibling AVIF path for a given image — same dir, same basename, .avif ext.
+	 * Sibling AVIF path (absolute on-disk) — same dir + basename, .avif ext.
 	 *
 	 * @since 1.3.0
 	 */
 	private static function avif_sibling_path( string $file_path ): string {
-		$dir  = dirname( $file_path );
-		$base = pathinfo( $file_path, PATHINFO_FILENAME );
-		return trailingslashit( $dir ) . $base . '.avif';
+		return self::compute_sibling_rel_path( $file_path, 'avif' );
 	}
 
 	/**
 	 * Derive `<dir>/<basename>.avif` from a relative source path.
 	 *
+	 * Public — kept for backward compatibility (Production Rule #1).
+	 *
 	 * @since 1.3.0
 	 */
 	public static function avif_rel_sibling_path( string $source_rel_path ): string {
-		$dir  = dirname( $source_rel_path );
-		$base = pathinfo( $source_rel_path, PATHINFO_FILENAME );
-		return ( '' === $dir || '.' === $dir ) ? $base . '.avif' : trailingslashit( $dir ) . $base . '.avif';
+		return self::compute_sibling_rel_path( $source_rel_path, 'avif' );
 	}
 
 	/**

@@ -631,28 +631,17 @@ class MediaController extends WP_REST_Controller {
 
 		// Client-generated video thumbnail (JS canvas captured first frame).
 		// Used as a last-resort poster when the server-side ffmpeg / cover-atom
-		// paths both failed. 1.3.0 routes the client frame through
-		// `UploadService::generate_thumbnails()` so it gets sized variants +
-		// WebP / AVIF siblings just like every other image input — instead of
-		// the pre-1.3.0 single-unsized `wpmediaverse/thumbs/video-thumb-{id}.jpg`
-		// write that hid behind privacy gates and broke modern-format serving.
+		// paths both failed. Routed through PosterService so every poster write
+		// hits the same dir + filename convention. The staged frame then feeds
+		// `UploadService::generate_thumbnails()` for sized variants + WebP/AVIF
+		// siblings. Failure path is non-fatal; meta stays empty so the frontend
+		// renders the default video poster at template time.
 		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
 			$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
 			if ( ! $existing_thumb ) {
-				// Stage the client frame into the posters dir at the same path
-				// shape the server-side ffmpeg fallback uses. generate_thumbnails
-				// reads it, resizes to large/medium/thumb, pushes to the active
-				// driver, and emits WebP/AVIF siblings per the optimization
-				// settings. Failure path is non-fatal; meta stays empty so the
-				// frontend renders the default video poster at template time.
-				$upload_dir   = wp_upload_dir();
-				$posters_dir  = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/posters';
-				if ( wp_mkdir_p( $posters_dir ) ) {
-					$staged_path = trailingslashit( $posters_dir ) . $media_id . '.jpg';
-					if ( copy( $files['thumbnail']['tmp_name'], $staged_path ) ) {
-						unlink( $files['thumbnail']['tmp_name'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-						$upload_service->generate_thumbnails( $media_id, $staged_path, 'image/jpeg' );
-					}
+				$staged_path = \WPMediaVerse\Core\Plugin::container()->get( 'poster' )->stage_client_frame( $media_id, $files['thumbnail']['tmp_name'] );
+				if ( $staged_path ) {
+					$upload_service->generate_thumbnails( $media_id, $staged_path, 'image/jpeg' );
 				}
 			}
 		}

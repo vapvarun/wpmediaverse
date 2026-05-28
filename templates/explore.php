@@ -296,14 +296,13 @@ $mvs_archive_url = home_url( '/media/' );
 			<?php
 			// Render albums first.
 			foreach ( $albums as $album_post ) :
-				$container_obj  = \WPMediaVerse\Core\Plugin::container();
-				$album_svc      = $container_obj->get( 'albums' );
-				$signed_urls    = $container_obj->get( 'signed_urls' );
+				$album_svc      = \WPMediaVerse\Core\Plugin::container()->get( 'albums' );
 				$item_count     = $album_svc->get_item_count( $album_post->ID );
 				$cover_media_id = $album_svc->get_resolved_cover_media_id( $album_post->ID );
-				// Route album cover through signed URL serve endpoint (bypasses .htaccess protection).
-				$cover_url = $cover_media_id && $signed_urls
-					? $signed_urls->generate_thumbnail( $cover_media_id, get_current_user_id(), 'large', 0, true )
+				// Route album cover through the read-side facade — bypasses
+				// the .htaccess deny-all and uses the unified signed-URL flow.
+				$cover_url = $cover_media_id
+					? \WPMediaVerse\Core\MediaUrl::thumb( $cover_media_id )
 					: $album_svc->get_cover_url( $album_post->ID );
 				?>
 				<div class="mvs-grid-item mvs-grid-item--album">

@@ -235,17 +235,7 @@ parameters:
 			path: includes/Core/TemplateHelpers.php
 
 		-
-			message: "#^If condition is always true\\.$#"
-			count: 1
-			path: includes/Core/TemplateHelpers.php
-
-		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<2, max\\> given\\.$#"
-			count: 1
-			path: includes/Core/TemplateHelpers.php
-
-		-
-			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/Core/TemplateHelpers.php
 
@@ -367,11 +357,6 @@ parameters:
 		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
 			count: 2
-			path: includes/REST/Controller/CollectionController.php
-
-		-
-			message: "#^Ternary operator condition is always true\\.$#"
-			count: 1
 			path: includes/REST/Controller/CollectionController.php
 
 		-
@@ -517,11 +502,6 @@ parameters:
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
 			count: 5
-			path: includes/Shortcodes/Shortcodes.php
-
-		-
-			message: "#^Ternary operator condition is always true\\.$#"
-			count: 1
 			path: includes/Shortcodes/Shortcodes.php
 
 		-

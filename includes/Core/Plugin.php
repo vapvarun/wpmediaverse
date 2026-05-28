@@ -274,6 +274,27 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'storage_router',
+			function ( ServiceContainer $c ) {
+				return new \WPMediaVerse\Services\StorageRouter( $c->get( 'storage' ) );
+			}
+		);
+
+		self::$container->register(
+			'variant_writer',
+			function ( ServiceContainer $c ) {
+				return new \WPMediaVerse\Services\MediaVariantWriter( $c->get( 'media_repository' ) );
+			}
+		);
+
+		self::$container->register(
+			'poster',
+			function () {
+				return new \WPMediaVerse\Services\PosterService();
+			}
+		);
+
+		self::$container->register(
 			'admin.overview',
 			function () {
 				return new OverviewPage();
