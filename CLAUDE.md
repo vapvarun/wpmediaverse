@@ -6,7 +6,7 @@
 
 | Key | Value |
 |-----|-------|
-| Version | 1.4.0-dev |
+| Version | 1.5.0 |
 | PHP | >= 7.4 (header), target 8.1+ |
 | WordPress | >= 6.5 |
 | Namespace | `WPMediaVerse\` |
@@ -248,6 +248,7 @@ All docs (Free + Pro) live in this plugin. Pro is intentionally doc-free.
 
 | Path | Contents |
 |------|----------|
+| `docs/architecture/MASTER_PLAN.md` | **Forward-looking** — current state + 6-month roadmap (Free + Pro). Trim shipped rows each release; do not add a "completed" section. |
 | `docs/architecture/ARCHITECTURE.md` | Free architecture |
 | `docs/architecture/architecture-contract.md` | Free ↔ Pro contract |
 | `docs/architecture/pro/` | Pro architecture + Interactivity-API design |
