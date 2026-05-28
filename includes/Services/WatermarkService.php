@@ -129,8 +129,37 @@ class WatermarkService {
 			return '';
 		}
 
-		// Only watermark gated media.
-		if ( ! $this->access_rules->has_active_rules( $media_id ) ) {
+		// Eligibility — watermark applies when the media has an active
+		// access rule (the original 1.3.0 gate) OR has any non-public
+		// privacy level (1.5.1+). Customers enabling watermarking on a
+		// community site expect uploads marked private / members / friends
+		// / group / custom to carry the watermark when viewed by non-owners;
+		// the original gate made watermarks invisible to that whole flow.
+		// Sites that want the strict 1.3.0 behavior (access-rules only)
+		// can return false from `mvs_watermark_applies`. Production Rule
+		// #3 escape hatch.
+		$repo            = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$privacy         = (string) $repo->get_raw( $media_id, 'privacy' );
+		$has_rules       = $this->access_rules->has_active_rules( $media_id );
+		$privacy_eligible = $has_rules || ( 'public' !== $privacy && '' !== $privacy );
+
+		/**
+		 * Whether the watermark should apply to this media.
+		 *
+		 * Default true when the media has active access rules OR a
+		 * non-public privacy level. Return false to suppress watermark
+		 * generation site-wide for a specific media or class of media.
+		 *
+		 * @since 1.5.1
+		 *
+		 * @param bool   $eligible  Default eligibility decision.
+		 * @param int    $media_id  Media ID.
+		 * @param string $privacy   Privacy level of the media.
+		 * @param bool   $has_rules Whether the media has active access rules.
+		 */
+		$eligible = (bool) apply_filters( 'mvs_watermark_applies', $privacy_eligible, $media_id, $privacy, $has_rules );
+
+		if ( ! $eligible ) {
 			$this->preview_cache[ $media_id ] = '';
 			return '';
 		}

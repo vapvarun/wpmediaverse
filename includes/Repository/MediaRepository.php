@@ -1100,8 +1100,34 @@ class MediaRepository implements MediaRepositoryInterface {
 				'moderation_status' => '',
 				'limit'             => 20,
 				'offset'            => 0,
+				'viewer_id'         => null,  // null => get_current_user_id()
+				'include_private'   => false, // owner/admin opt-in to see ALL
 			)
 		);
+
+		$viewer = null === $args['viewer_id']
+			? get_current_user_id()
+			: (int) $args['viewer_id'];
+
+		// Privacy mode selection — closes Basecamp #9936622656 (private media
+		// leak on profile tabs). Previously this helper hardcoded privacy=any,
+		// which exposed every uploader's private items to any visitor to their
+		// profile. The new rules:
+		// - Owner viewing own profile: any (see your own private).
+		// - Caller explicitly opts in: any (CLI / moderation flows).
+		// - Viewer has moderate_mvs_media cap: any (moderators audit all).
+		// - Other logged-in viewer: visible (public + members + own).
+		// - Anonymous viewer: public only.
+		$is_owner_self = ( (int) $user_id === $viewer ) && $viewer > 0;
+		$is_admin      = $viewer > 0 && user_can( $viewer, 'moderate_mvs_media' );
+
+		if ( $is_owner_self || ! empty( $args['include_private'] ) || $is_admin ) {
+			$privacy = 'any';
+		} elseif ( $viewer > 0 ) {
+			$privacy = 'visible';
+		} else {
+			$privacy = 'public';
+		}
 
 		return $this->query(
 			array(
@@ -1110,7 +1136,8 @@ class MediaRepository implements MediaRepositoryInterface {
 				'moderation_status' => (string) $args['moderation_status'],
 				'limit'             => (int) $args['limit'],
 				'offset'            => (int) $args['offset'],
-				'privacy'           => 'any',
+				'privacy'           => $privacy,
+				'viewer_id'         => $viewer,
 			)
 		);
 	}
