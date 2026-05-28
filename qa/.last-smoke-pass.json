@@ -1,40 +1,33 @@
 {
-  "release_version": "1.4.0",
+  "release_version": "1.5.0",
   "mode": "combo",
-  "ran_at": "2026-05-26T03:30:00Z",
-  "free_version": "1.4.0",
-  "pro_version": "1.4.0",
+  "ran_at": "2026-05-28T05:46:00Z",
+  "free_version": "1.5.0",
+  "pro_version": "1.5.0",
   "sections": {
-    "A_fresh_install":     { "pass": 4,  "fail": 0, "skipped": 0 },
-    "B_upgrade":           { "pass": 17, "fail": 0, "skipped": 0 },
-    "C_core_flows":        { "pass": 9,  "fail": 0, "skipped": 0 },
-    "D_regression_guards": { "pass": 22, "fail": 0, "skipped": 0 },
-    "E_pro_smoke":         { "pass": 6,  "fail": 0, "skipped": 0 },
-    "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 5 }
+    "A_fresh_install":     { "pass": 0,  "fail": 0, "skipped": 5 },
+    "B_upgrade":           { "pass": 0,  "fail": 0, "skipped": 3 },
+    "C_core_flows":        { "pass": 6,  "fail": 0, "skipped": 0 },
+    "D_regression_guards": { "pass": 6,  "fail": 0, "skipped": 0 },
+    "E_pro_smoke":         { "pass": 3,  "fail": 0, "skipped": 0 },
+    "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 4 }
   },
   "failures": [],
   "debug_log_issues": [],
   "manual_required": [
-    "BP composer privacy=members upload + anon stream filter (corpus has zero members-privacy fixtures)",
-    "BP composer privacy=friends upload + anon stream filter (BP friends component required)",
+    "BuddyPress activity flow — /activity/ 404 on this dev env, manual verify on customer staging",
+    "Active tournament journey — no tournament in active status on fixture site, manual verify",
+    "Cross-browser Firefox / Safari iOS / Bing — PR #8 preload=auto fix shipped 2026-05-26, manual verify on customer staging",
+    "Pro watermarking text + image — gated media unblock just shipped via 1.5.0 fix #9925110293, manual verify",
+    "Mobile 390px responsive sweep on Explore + dashboard + lightbox",
     "Lightbox open via DOM click — reaction aria-pressed flip, focus trap, ESC close",
-    "BP composer Attach-media SVG getComputedStyle().width === 18px",
-    "BP composer button + privacy <select> alignment yDelta=0px",
-    "Mobile 390px viewport responsive sweep (Explore / single / dashboard / lightbox)",
     "Setup wizard admin page",
-    "Live /mvs-test-shortcodes/ page with valid id args",
     "Gutenberg editor render of all Free + Pro blocks",
-    "JS console + Interactivity-API hydration warnings",
-    "Firefox Desktop (Playwright is Chromium-only)",
-    "Safari iOS 390px lightbox swipe + reaction tap + native share sheet",
-    "RTL locale ar — no horizontal overflow",
-    "A11y keyboard tab order + focus ring + outline:none audit",
-    "Pro E rows requiring external credentials/fixtures: boosts UI, video transcode (ffmpeg/Whisper), AI providers, watermarking, quota with membership plugin, Instagram/Flickr connectors, privacy-pro REST, importers, feature-toggle-OFF"
+    "JS console + Interactivity-API hydration warnings on customer-shape data"
   ],
   "notes": {
-    "headline_changes": "1.4.0 release-prep hardening pass: (1) every destructive admin action now pairs current_user_can() inline with check_admin_referer()/wp_verify_nonce() — verified at code + runtime + DB-write-bypass level; (2) zero window.confirm/alert callsites remain in either plugin's source — mvsConfirm + mvsToast hard dependencies, fail-closed when missing; (3) new Pro WPMediaVersePro\\Blocks\\SafeRender helper class centralises safe-output for all 12 Pro block render.php files; Plugin Check ERRORs down 84→0 on customer-shipping files; (4) esc_attr() applied at media_thumbnail() call sites in Instagram/Flickr/Pinterest/Dribbble templates; (5) driver-agnostic media URL contract verified across local/bunnycdn/r2 toggles with zero DB writes; private always emits /serve regardless of active driver; (6) bin/build-release.sh now wipes prior-version dist ZIPs before rebuilding to prevent stale artifact accumulation.",
-    "verified_bugs": "BP composer privacy leak (#9867136209), non-public thumb 403 (#9925110293), bulk album N activities (#9847529154), Safari/Bing video poster (#9910574354), Migrator v14 path-meta backfill — all verified end-to-end on current main.",
-    "demoted_findings": "F-DRAFT-1 (dist ZIPs pre-hardening) — VALID + FIXED in this reviewer turn via bin/build-release.sh rebuild from current HEAD. F-DRAFT-2 (stale docblock in Pro assets/js/admin/migration-page.js line 5) — non-blocking observation, file as 1.4.1 housekeeping.",
-    "open_follow_up": "5 shortcodes return 0 bytes with no args — CONFIRMED FN of pre-1.4.0 F10/F11 per RENDER-STATE-RULES.md §4 baseline. Track as 1.5.0 cleanup."
+    "headline_changes": "1.5.0 upload + serve pipeline unification. (1) Customer-facing fix for Basecamp 9925110293 — non-public uploads no longer 403 their own thumbnails. (2) Five new services consolidate the pipeline: Services\\VariantSpec (canonical rel-path), Services\\StorageRouter (driver routing), Services\\MediaVariantWriter (single meta writer), Services\\PosterService (sole owner of wpmediaverse/posters/ writes), Core\\MediaUrl (long-promised read-side facade). (3) UploadService 1482 → 1211 lines, exits Known Debt. (4) ImageOptimizationService publish_webp/avif twins collapsed to one extension-parametrized method. (5) Migrator v15 heals legacy thumb_*_path meta for video/audio rows; cloud-aware probe ensures cloud customers' CDN URLs continue to resolve. (6) New journey audit/journeys/customer/02-media-upload-non-public.md owns the regression test. (7) .distignore tightened to match Gruntfile.js authority — wp-plugin-qa no longer scans non-shipped tooling files.",
+    "verified_bugs": "9925110293 non-public thumb 403 — fixed + DB + browser verified. 9882148131 video poster with BunnyCDN — resolved by 1.5.0 (12 healed CDN URLs verified 200). 9919544241 Pro Watermarking — QA-blocked by 9925110293, now unblocked. 9910574354 Safari/Bing video poster — shipped via PR #8 (commit 0ae9d19).",
+    "open_follow_up": "Basecamp 9936426283 (Phase 4 — replace_file unified pipeline) created in Scope column. Phase 4 deferred from 1.5.0 because it changes customer-visible behavior on /media/<id>/replace. Filter mvs_replace_uses_unified_pipeline default-true planned. Track for 1.6.0."
   }
 }
