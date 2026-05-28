@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "1.3.0",
+    "version": "1.5.0",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -13,26 +13,25 @@
     "extension_hook_fired": "mvs_loaded"
   },
   "counts": {
-    "rest_endpoints": 82,
-    "ajax": 4,
-    "admin_pages": 22,
+    "rest_endpoints": 84,
+    "ajax": 3,
+    "admin_pages": 17,
     "settings": 40,
-    "shortcodes": 13,
-    "blocks": 13,
+    "shortcodes": 12,
+    "blocks": 14,
     "post_types": 2,
     "taxonomies": 2,
-    "tables": 23,
+    "tables": 22,
     "capabilities": 10,
-    "services": 29,
-    "hooks_fired": 154,
-    "cron": 5,
-    "wp_cli": 16,
+    "services": 34,
+    "services_registered": 45,
+    "hooks_fired_unique": 131,
     "hooks_with_args_signature": 24,
     "hooks_no_call_site": 0,
-    "admin_pages_baseline": 20,
-    "hooks_fired_baseline": 124,
-    "services_registered": 41,
-    "settings_registered": 40
+    "cron": 3,
+    "wp_cli": 16,
+    "journeys": 12,
+    "migrator_version": 15
   },
   "detail_files": {
     "rest": "manifest.rest.json",
@@ -40,56 +39,52 @@
     "tables": "manifest.tables.json"
   },
   "static_analysis_summary": {
-    "wppqa_baseline_dir": "wppqa-baseline-2026-05-03",
+    "wppqa_baseline_dir": "audit/runs/2026-05-28-wppqa-baseline-SUMMARY.md",
     "phase_2_5_11_14_skipped": true,
     "phase_2_5_11_14_skip_reason": "ServiceContainer DI (no Adapter pattern)",
-    "args_signature_extraction": "14 of 22 original hooks_fired entries populated; 8 phantom (no call site in source - manifest drift); 4 new hooks added from Core/SettingsHelper (1.2.1); 4 new filters added from ImageOptimizationService + UploadService (1.2.2)."
+    "args_signature_extraction": "Last full pass 2026-05-17. Counts refreshed 2026-05-28; per-entry detail files lag — re-enumerate before next major release."
   },
   "generated": {
-    "at": "2026-05-17T03:45:00Z",
-    "from": "wp-plugin-onboard skill (1.2.2 image optimization + ground-truth baseline 2026-05-17)",
-    "branch": "1.2.2",
+    "at": "2026-05-28T12:30:00Z",
+    "from": "wp-plugin-onboard skill — refresh (counts-only) for 1.5.0 release",
+    "branch": "main",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
-    "php_file_count": 146,
-    "baseline_drift": {
-      "at": "2026-05-17T03:45:00Z",
-      "method": "fresh ground-truth grep across 146 PHP files (excluding vendor/node_modules/tests/dist/build/audit)",
-      "note": "counts.* reflect actual code, but DETAIL SECTIONS (rest.endpoints[], hooks_fired[], wp_cli[], admin_pages[]) still hold the targeted-refresh shape. Full Phase 2 parallel-agent re-enumeration is needed to fill the per-entry detail. Counts are honest; per-entry inventory has drift.",
-      "drift_per_category": {
-        "rest_endpoints": "85 baseline vs 53 in detail file (32 unenumerated)",
-        "hooks_fired_combined": "124 baseline (61 do_action + 63 apply_filters unique) vs 24 in detail file (100+ unenumerated)",
-        "wp_cli": "15 @subcommand vs 3 in detail file (12 unenumerated — bulk of historical commands)",
-        "admin_pages": "20 add_*_page calls vs 7 top-level pages in detail file (13 settings sub-pages not enumerated)",
-        "register_setting": "40 calls vs 35 unique in detail file (drift on multi-register flows)",
-        "blocks": "42 block.json files includes build copies; logical block count remains 13"
-      }
-    },
-    "refreshed_at": "2026-05-17T04:30:00Z",
-    "refresh_2026_05_17": {
-      "note": "wp_cli detail refreshed manually from @subcommand annotations — 15 documented commands plus the wp mvs router entry"
-    }
+    "php_file_count": 141,
+    "previous_full_pass": "2026-05-17T08:50:00Z"
   },
-  "baseline_drift": {
-    "at": "2026-05-17T08:50:00Z",
-    "method": "F5-FINISH parallel-agent enumeration",
-    "status": "CLOSED",
-    "summary": "All four drift categories enumerated to ground truth.",
-    "results": {
-      "rest_endpoints": "82 detail entries (was 53, baseline 85 callsites compressed to 82 unique route+method-group registrations)",
-      "hooks_fired": "154 detail entries (was 24, matches 154 callsite ground truth)",
-      "admin_pages": "22 detail entries (was 7, 9 registration call sites + 7 settings sub-pages + 4 setup-wizard steps + 2 CPT-injected pages)",
-      "settings": "40 detail entries (was 35, matches 40 runtime register_setting invocations after collapsing the foreach loop at line 1107)"
+  "refreshed_at": "2026-05-28T12:30:00Z",
+  "refresh_2026_05_28": {
+    "trigger": "1.5.0 release shipped — upload + serve pipeline unification",
+    "scope": "counts + plugin.version only; detail files (manifest.rest.json, manifest.hooks.json, manifest.tables.json) NOT re-enumerated",
+    "changes_since_2026_05_17": {
+      "plugin_version": "1.3.0 -> 1.5.0 (shipped 1.4.0 + 1.5.0)",
+      "services_added_1_5_0": ["Services\\VariantSpec", "Services\\StorageRouter", "Services\\MediaVariantWriter", "Services\\PosterService", "Core\\MediaUrl"],
+      "services_added_1_4_0": ["Admin\\TagManagementPage", "Admin\\Settings\\AiSettingsRegistrar", "Services\\AdminAggregatesService"],
+      "migrator_version": "13 -> 15 (v14: driver-agnostic _path backfill; v15: legacy video poster _path healing, cloud-aware)",
+      "blocks_added": "1 (lock-overlay; net 13 -> 14)",
+      "journeys_added": ["audit/journeys/customer/02-media-upload-non-public.md"],
+      "no_new_rest_routes": true,
+      "no_new_cpts_or_taxonomies": true,
+      "no_new_capabilities": true
     },
-    "prior_drift": {
-      "rest_endpoints": "85 baseline vs 53 in detail file (32 unenumerated)",
-      "hooks_fired_combined": "124 baseline (61 do_action + 63 apply_filters unique) vs 24 in detail file (100+ unenumerated)",
-      "wp_cli": "15 @subcommand vs 3 in detail file (12 unenumerated)",
-      "admin_pages": "20 add_*_page calls vs 7 top-level pages in detail file (13 settings sub-pages not enumerated)",
-      "register_setting": "40 calls vs 35 unique in detail file (drift on multi-register flows)",
-      "blocks": "42 block.json files includes build copies; logical block count remains 13"
+    "counts_delta_vs_previous": {
+      "rest_endpoints": "82 -> 84 (+2, likely UserController + SignedUrlController route consolidation)",
+      "ajax": "4 -> 3 (-1, ajax handler retired during 1.4.0 hardening)",
+      "admin_pages": "22 -> 17 (-5, settings sub-pages collapsed into FieldRenderer)",
+      "shortcodes": "13 -> 12 (-1)",
+      "blocks": "13 -> 14 (+1 lock-overlay)",
+      "tables": "23 -> 22 (-1)",
+      "services": "29 -> 34 (+5 from 1.5.0 refactor)",
+      "services_registered": "41 -> 45 (+4: storage_router, variant_writer, poster, plus 1.4.0 admin.tags)",
+      "hooks_fired_unique": "154 -> 131 (-23, refactor consolidated duplicate hook emit sites)",
+      "cron": "5 -> 3 (-2)"
+    },
+    "follow_up_required": {
+      "detail_re_enumeration": "Run full Phase 2 parallel-agent re-enumeration before tagging 1.6.0 to refresh manifest.rest.json, manifest.hooks.json, manifest.tables.json with per-entry detail. Trigger: /wp-plugin-onboard --refresh (this skill).",
+      "static_analysis_phase_2_5": "audit/derived/ cache should be rebuilt — input file hashes have changed for most categories.",
+      "feature_audit_md": "audit/reports/FEATURE_AUDIT.md is from 2026-05-11; re-generate from refreshed manifest.json."
     }
-  },
-  "refreshed_at": "2026-05-17T08:50:00Z"
+  }
 }
