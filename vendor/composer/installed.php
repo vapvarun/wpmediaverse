@@ -3,7 +3,7 @@
         'name' => 'wbcomdesigns/wpmediaverse',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '06feb33d908edfa507a5f289ac37d6afdf68caa4',
+        'reference' => 'ef9501ac7785abfe9f388421f07f52bfc4b691d0',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -348,7 +348,7 @@
         'wbcomdesigns/wpmediaverse' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '06feb33d908edfa507a5f289ac37d6afdf68caa4',
+            'reference' => 'ef9501ac7785abfe9f388421f07f52bfc4b691d0',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

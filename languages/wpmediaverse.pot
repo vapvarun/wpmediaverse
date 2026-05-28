@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.5.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-05-28 07:50:36+00:00\n"
+"POT-Creation-Date: 2026-05-28 09:04:50+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -38,7 +38,7 @@ msgstr ""
 
 #: build/album-viewer/render.php:103 build/blocks/album-viewer/render.php:103
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:202
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:228
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:234
 #: src/blocks/album-viewer/render.php:103 templates/album.php:362
 msgid "This album is empty."
 msgstr ""
@@ -1809,7 +1809,7 @@ msgstr ""
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:244
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:49
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:61
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:109
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:112
 #: templates/explore.php:141 templates/partials/dashboard-content.php:316
 #. translators: %s: media count
 msgid "Media"
@@ -2993,7 +2993,7 @@ msgid "%1$s uploaded a new %2$s to album %3$s"
 msgstr ""
 
 #: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:341
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:446
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:458
 #. translators: 1: user link, 2: media type (photo, video, audio file)
 #. translators: 1: user link, 2: media type
 msgid "%1$s uploaded a new %2$s"
@@ -3020,7 +3020,7 @@ msgstr ""
 msgid "%1$s commented on %2$s"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:871
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:883
 #. translators: 1: user link, 2: photo count, 3: album link
 msgid "%1$s uploaded %2$d photo to album %3$s"
 msgid_plural "%1$s uploaded %2$d photos to album %3$s"
@@ -3141,7 +3141,7 @@ msgid "No group albums yet."
 msgstr ""
 
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:198
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:224
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:230
 msgid "This album is empty. Add some media!"
 msgstr ""
 
@@ -3190,19 +3190,19 @@ msgstr ""
 msgid "%s mentioned you"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:208
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:214
 msgid "You haven't uploaded any media yet. Get started!"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:212
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:218
 msgid "This user hasn't uploaded any media yet."
 msgstr ""
 
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:216
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:222
 msgid "You haven't created any albums yet."
 msgstr ""
 
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:220
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:226
 msgid "This user hasn't created any albums yet."
 msgstr ""
 
