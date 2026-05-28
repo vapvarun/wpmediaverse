@@ -1019,31 +1019,61 @@ class Migrator {
 					continue;
 				}
 
-				// Two-step probe to pick the correct rel_path. The URL meta
-				// itself may be wrong on this row (some pre-1.5.0 cloud
-				// pushes recorded the variant under the media's date dir
-				// even though the file landed in posters/). When the
-				// URL-derived path doesn't resolve locally, try the
-				// canonical posters/<basename> location — that's where
-				// the writer for video/audio variants actually puts
-				// bytes in 1.5.0+.
-				$probe_paths = array( $derived_path );
-				$basename    = basename( $derived_path );
-				if ( '' !== $basename ) {
-					$probe_paths[] = 'posters/' . $basename;
-				}
-
-				$resolved_path = '';
-				foreach ( $probe_paths as $probe ) {
-					if ( file_exists( $wpmv_basedir . $probe ) ) {
-						$resolved_path = $probe;
-						break;
+				// Cloud-host check. The URL meta is authoritative for cloud
+				// customers — `_path` resolves via the active driver, so on
+				// a cloud driver `driver->url($_path)` builds the CDN URL.
+				// If the URL meta points at a non-local host (b-cdn.net, S3,
+				// R2 with public domain, etc.), the CDN file is at the
+				// URL-derived path. Probing `posters/<basename>` on local
+				// disk is misleading — the local file may be a copy that
+				// was never re-uploaded to the CDN at the new path.
+				// Mirrors `SignedUrlService::is_cloud_hosted_url`.
+				$is_cloud_url = false;
+				if ( preg_match( '#^https?://#i', $url_value ) ) {
+					// Strip scheme from both URL + baseurl, compare prefix.
+					$url_baseurl = (string) preg_replace( '#^https?://#i', '', (string) $upload_dir['baseurl'] );
+					$url_bare    = (string) preg_replace( '#^https?://#i', '', $url_value );
+					if ( '' !== $url_baseurl && 0 !== strpos( $url_bare, $url_baseurl ) ) {
+						$is_cloud_url = true;
 					}
 				}
 
-				// Stranded cloud variants (uploaded then unlinked locally)
-				// leave nothing for us to point at — keep `_path` as-is
-				// so the URL fallback keeps serving from the CDN.
+				// Two-step probe to pick the correct rel_path. The local
+				// disk-probe to `posters/<basename>` only fires when the
+				// URL meta is LOCAL — there the disk state is authoritative
+				// and a pre-1.5.0 row may have recorded the wrong subdir
+				// even though the file landed under `posters/`. On cloud
+				// rows we trust the URL-derived path (the CDN file lives
+				// there) and skip the posters fallback so we don't write
+				// a `_path` that resolves to a CDN-unreachable location.
+				if ( $is_cloud_url ) {
+					$probe_paths = array( $derived_path );
+				} else {
+					$probe_paths = array( $derived_path );
+					$basename    = basename( $derived_path );
+					if ( '' !== $basename ) {
+						$probe_paths[] = 'posters/' . $basename;
+					}
+				}
+
+				$resolved_path = '';
+				if ( $is_cloud_url ) {
+					// Cloud row — trust the URL-derived path. No disk
+					// probe; the file is on the CDN, not on disk.
+					$resolved_path = $derived_path;
+				} else {
+					foreach ( $probe_paths as $probe ) {
+						if ( file_exists( $wpmv_basedir . $probe ) ) {
+							$resolved_path = $probe;
+							break;
+						}
+					}
+				}
+
+				// Stranded variants (uploaded then unlinked locally on a
+				// driver that later went away) leave nothing for us to
+				// point at — keep `_path` as-is so the URL fallback keeps
+				// serving from wherever the legacy URL meta resolves.
 				if ( '' === $resolved_path ) {
 					continue;
 				}
