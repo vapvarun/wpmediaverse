@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,20 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** — AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.5.0 - May 2026 =
+
+Non-public uploads now render their own thumbnails. Upload and serve pipeline unified so the bug pattern cannot recur. Legacy broken video posters heal automatically on update.
+
+* Fix     - Non-public uploads no longer 403 their own thumbnails after upload. Members, Friends, Only Me, Group, and Custom-access media now serve correctly to the owner and to viewers granted access, on local storage and on every cloud driver.
+* Fix     - Video poster thumbnails for items uploaded before 1.5.0 are healed on update. Database migration v15 re-derives the poster path meta from the on-disk file location for video and audio rows so cards, lightbox, and feed previews render the correct still frame.
+* Improve - One unified read path for media URLs. Theme overrides and shortcode users can call the same Core MediaUrl helper that templates use, so custom integrations no longer have to know about signed URL plumbing.
+* Improve - Upload pipeline produces one consistent file layout for every media type. Image variants, video posters, audio cover art, and WebP and AVIF siblings all flow through the same writer so adding a new format in the future is one extension point, not five.
+* Improve - WebP and AVIF sibling generation collapsed to one shared publisher. Removes a duplicate-write footgun where the WebP and AVIF paths could disagree about the destination directory.
+* Dev     - New services MediaUrl, VariantSpec, StorageRouter, MediaVariantWriter, PosterService consolidate the upload and read pipeline. Existing methods kept as shims for at least two releases per the deprecation policy. UploadService dropped from 1,482 to 1,211 lines.
+* Dev     - Database migration to version 15 backfills thumb_size_path meta for video and audio rows where pre-1.5.0 uploads recorded the wrong subdirectory. Idempotent. Includes a posters fallback probe for sites whose URL meta also diverged.
+* Dev     - New filter mvs_broadcast_thumbnail_ttl controls the TTL for thumbnails embedded in long-lived surfaces like notification emails and RSS. Defaults to one hour. Filter target for sites that cache at the CDN for longer.
+* Compat  - Paired with WPMediaVerse Pro 1.5.0. Install both updates together when running Pro.
 
 = 1.4.0 - May 2026 =
 
