@@ -120,7 +120,7 @@ Non-public uploads now render their own thumbnails. Upload and serve pipeline un
 * Improve - One unified read path for media URLs. Theme overrides and shortcode users can call the same Core MediaUrl helper that templates use, so custom integrations no longer have to know about signed URL plumbing.
 * Improve - Upload pipeline produces one consistent file layout for every media type. Image variants, video posters, audio cover art, and WebP and AVIF siblings all flow through the same writer so adding a new format in the future is one extension point, not five.
 * Improve - WebP and AVIF sibling generation collapsed to one shared publisher. Removes a duplicate-write footgun where the WebP and AVIF paths could disagree about the destination directory.
-* Dev     - New services MediaUrl, VariantSpec, StorageRouter, MediaVariantWriter, PosterService consolidate the upload and read pipeline. Existing methods kept as shims for at least two releases per the deprecation policy. UploadService dropped from 1,482 to 1,211 lines.
+* Dev     - New services MediaUrl, VariantSpec, StorageRouter, MediaVariantWriter, PosterService consolidate the upload and read pipeline. Existing methods kept as shims for at least two releases per the deprecation policy.
 * Dev     - Database migration to version 15 backfills thumb_size_path meta for video and audio rows where pre-1.5.0 uploads recorded the wrong subdirectory. Idempotent. Includes a posters fallback probe for sites whose URL meta also diverged.
 * Dev     - New filter mvs_broadcast_thumbnail_ttl controls the TTL for thumbnails embedded in long-lived surfaces like notification emails and RSS. Defaults to one hour. Filter target for sites that cache at the CDN for longer.
 * Compat  - Paired with WPMediaVerse Pro 1.5.0. Install both updates together when running Pro.
@@ -142,7 +142,7 @@ New cloud storage options, driver-agnostic media URLs, four release-blocking bug
 * Fix     - Enabling a cloud storage service no longer breaks existing media. Each item displays from where its file actually lives instead of being repointed at the newly selected service.
 * Fix     - Videos in the BuddyPress activity feed always show a poster image. Cover-less videos previously rendered a blank player in Safari and Bing.
 * Dev     - Database migration to version 14 backfills driver-agnostic path meta for every existing media item. Idempotent; safe on partial reruns.
-* Dev     - New filters mvs_serve_public_cloud_direct, mvs_public_cloud_thumbnail_url, and mvs_public_cloud_file_url to control or rewrite direct cloud URLs. New mvs_explore_query_args filter to adjust the Explore and profile feed query. Integration event hooks for gamification, activity, and notification consumers are documented in docs/development/INTEGRATION-EVENT-HOOKS.md.
+* Dev     - New filters mvs_serve_public_cloud_direct, mvs_public_cloud_thumbnail_url, and mvs_public_cloud_file_url to control or rewrite direct cloud URLs. New mvs_explore_query_args filter to adjust the Explore and profile feed query. Integration event hooks for gamification, activity, and notification consumers are documented in the developer guide.
 * Compat  - Paired with WPMediaVerse Pro 1.4.0. Install both updates together when running Pro.
 
 = 1.3.0 - May 2026 =
