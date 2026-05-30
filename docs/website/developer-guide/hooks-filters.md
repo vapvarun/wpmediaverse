@@ -12,7 +12,6 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_pro_loaded` | action | Pro | 1.0 |
 | `mvs_ai_providers` | action | Free | 1.0 |
 | `mvs_theme_json` | filter | Free | 1.0 |
-| `mvs_theme_json_transport` | filter | Free | 1.0 |
 | `mvs_before_media_insert` | action | Free | 1.0 |
 | `mvs_media_uploaded` | action | Free | 1.0 (signature extended in 1.2.3) |
 | `mvs_before_upload_form` | action | Free | 1.0 |
@@ -43,8 +42,17 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_album_response` | filter | Free | 1.1 |
 | `mvs_collection_response` | filter | Free | 1.1 |
 | `mvs_rest_pagination_max` | filter | Free | 1.1 |
-| `mvs_rest_polling_intervals` | filter | Free | 1.0 |
+| `mvs_explore_query_args` | filter | Free | 1.0 |
+| `mvs_parent_route` | filter | Free | 1.0 |
 | `mvs_reaction_added` | action | Free | 1.0 |
+| `mvs_reaction_removed` | action | Free | 1.0 |
+| `mvs_favorite_added` | action | Free | 1.0 |
+| `mvs_share_recorded` | action | Free | 1.0 |
+| `mvs_media_group_assigned` | action | Free | 1.0 |
+| `mvs_album_cover_set` | action | Free | 1.0 |
+| `mvs_album_items_added` | action | Free | 1.0 |
+| `mvs_tag_term_count` | filter | Free | 1.0 |
+| `mvs_user_badge_html` | filter | Free | 1.0 |
 | `mvs_reaction_toggled` | action | Free | 1.0 |
 | `mvs_favorite_toggled` | action | Free | 1.0 |
 | `mvs_comment_created` | action | Free | 1.0 |
@@ -60,6 +68,8 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_notification_created` | action | Free | 1.1 |
 | `mvs_should_send_notification` | filter | Free | 1.1 |
 | `mvs_notification_data` | filter | Free | 1.1 |
+| `mvs_notification_types` | filter | Free | 1.0 |
+| `mvs_notification_message` | filter | Free | 1.0 |
 | `mvs_conversation_created` | action | Free | 1.0 |
 | `mvs_message_sent` | action | Free | 1.0 |
 | `mvs_message_request_accepted` | action | Free | 1.0 |
@@ -72,14 +82,25 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_dm_message_rate_limit` | filter | Free | 1.0 |
 | `mvs_dm_convo_rate_limit` | filter | Free | 1.0 |
 | `mvs_message_max_length` | filter | Free | 1.0 |
-| `mvs_allowed_message_types` | filter | Free | 1.0 |
+| `mvs_message_types` | filter | Free | 1.0 |
+| `mvs_dm_allowed_file_types` | filter | Free | 1.0 |
+| `mvs_messaging_poll_intervals` | filter | Free | 1.0 |
+| `mvs_messaging_transport` | filter | Free | 1.0 |
 | `mvs_show_online_status` | filter | Free | 1.0 |
 | `mvs_dm_max_upload_size` | filter | Free | 1.0 |
 | `mvs_settings_sidebar_after` | action | Free | 1.0 |
 | `mvs_settings_before_save` | action | Free | 1.1 |
+| `mvs_settings_render_{renderer}` | action | Free | 1.0 |
 | `mvs_dashboard_widgets` | action | Free | 1.1 |
 | `mvs_settings_sections` | filter | Free | 1.0 |
 | `mvs_settings_group_labels` | filter | Free | 1.0 |
+| `mvs_hide_submenu_slugs` | filter | Free | 1.0 |
+| `mvs_moderation_tabs` | filter | Free | 1.0 |
+| `mvs_stats_tabs` | filter | Free | 1.0 |
+| `mvs_comment_edit_window` | filter | Free | 1.1 |
+| `mvs_should_render_chat_panel` | filter | Free | 1.2 |
+| `mvs_page_id_{slot}` | filter | Free | 1.2 |
+| `mvs_user_data_purged` | action | Free | 1.2 |
 | `mvs_media_flagged` | action | Free | 1.0 |
 | `mvs_moderation_changed` | action | Free | 1.0 |
 | `mvs_should_ai_analyze` | filter | Free | 1.1 |
@@ -93,6 +114,15 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_watermark_enabled` | filter | Free | 1.0 |
 | `mvs_watermark_config` | filter | Free | 1.0 |
 | `mvs_generate_watermark` | filter | Free | 1.0 |
+| `mvs_cloud_thumbnail_url` | filter | Free | 1.3.0 |
+| `mvs_cloudops_allow_non_public_to_cloud` | filter | Free | 1.3.0 |
+| `mvs_filename_strategy` | filter | Free | 1.3.0 |
+| `mvs_thumbnail_sizes` | filter | Free | 1.3.0 |
+| `mvs_thumbnail_size_resolved` | filter | Free | 1.3.0 |
+| `mvs_can_repair_thumb` | filter | Free | 1.2.3 |
+| `mvs_repair_media_thumb` | filter | Free | 1.2.3 |
+| `mvs_watermark_font_path` | filter | Pro | 1.0 |
+| `mvs_webhook_sslverify` | filter | Free | 1.3.0 |
 | `mvs_profile_updated` | action | Free | 1.0 |
 | `mvs_avatar_uploaded` | action | Free | 1.0 |
 | `mvs_avatar_deleted` | action | Free | 1.0 |
@@ -109,8 +139,6 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_story_created` | action | Free | 1.0 |
 | `mvs_story_expired` | action | Free | 1.0 |
 | `mvs_privacy_can_view` | filter | Free | 1.0 |
-| `mvs_bp_upload_activity_recorded` | action | Free | 1.0 |
-| `mvs_bp_comment_activity_recorded` | action | Free | 1.0 |
 | `mvs_buddynext_active` | filter | Free | 1.0 |
 | `mvs_pro_transcode_complete` | action | Pro | 1.0 |
 | `mvs_pro_captions_generated` | action | Pro | 1.0 |
@@ -151,6 +179,31 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_autopilot_no_theme_available` | action | Pro | 1.0 |
 | `mvs_autopilot_pool_reset` | action | Pro | 1.0 |
 | `mvs_streak_milestone` | action | Pro | 1.0 |
+| `mvs_challenge_winner_named` | action | Pro | 1.2.3 |
+| `mvs_challenge_activated` | action | Pro | 1.5.0 |
+| `mvs_challenge_voting_started` | action | Pro | 1.5.0 |
+| `mvs_battle_cancelled` | action | Pro | 1.5.0 |
+| `mvs_tournament_cancelled` | action | Pro | 1.5.0 |
+| `mvs_tournament_updated` | action | Pro | 1.5.0 |
+| `mvs_competition_status_changed` | action | Pro | 1.5.0 |
+| `mvs_competitions_tick_ran` | action | Pro | 1.5.0 |
+| `mvs_activate_scheduled_challenges` | action | Pro | 1.5.0 |
+| `mvs_close_challenge_entries` | action | Pro | 1.5.0 |
+| `mvs_finalize_expired_challenges` | action | Pro | 1.5.0 |
+| `mvs_start_registered_tournaments` | action | Pro | 1.5.0 |
+| `mvs_resolve_expired_matches` | action | Pro | 1.5.0 |
+| `mvs_pro_leaderboard_xp_rows` | filter | Pro | 1.2.0 |
+| `mvs_challenge_email_created_subject` | filter | Pro | 1.5.0 |
+| `mvs_challenge_email_created_body` | filter | Pro | 1.5.0 |
+| `mvs_challenge_email_entry_subject` | filter | Pro | 1.5.0 |
+| `mvs_challenge_email_entry_body` | filter | Pro | 1.5.0 |
+| `mvs_challenge_email_winner_subject` | filter | Pro | 1.5.0 |
+| `mvs_challenge_email_winner_body` | filter | Pro | 1.5.0 |
+| `mvs_challenge_email_participant_subject` | filter | Pro | 1.5.0 |
+| `mvs_challenge_email_participant_body` | filter | Pro | 1.5.0 |
+| `mvs_connectors` | filter | Pro | 1.5.0 |
+| `mvs_media_imported` | action | Pro | 1.5.0 |
+| `mvs_media_exported` | action | Pro | 1.5.0 |
 | `mvs_optimize_image` | filter | Free | 1.3.0 |
 | `mvs_optimize_jpeg_quality` | filter | Free | 1.3.0 |
 | `mvs_webp_quality` | filter | Free | 1.3.0 |
@@ -186,7 +239,8 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 17. [Layout System (Pro)](#17-layout-system-pro)
 18. [Quota System (Pro)](#18-quota-system-pro)
 19. [Competitions (Pro)](#19-competitions-pro)
-20. [Common Recipes](#20-common-recipes)
+20. [Connectors (Pro)](#21-connectors-pro)
+21. [Common Recipes](#22-common-recipes)
 
 ---
 
@@ -260,7 +314,6 @@ add_action( 'mvs_ai_providers', function( $ai_service ) {
 | Filter | Description | Parameters | Returns |
 |--------|-------------|------------|---------|
 | `mvs_theme_json` | Filter theme.json data passed to the frontend JS bundle | `$data` (array) | `array` |
-| `mvs_theme_json_transport` | Filter the transport method used to pass theme data to JS | `$method` (string) | `string` |
 
 ---
 
@@ -293,7 +346,7 @@ Fires after a new media post is created, stored, and indexed. This is the primar
  * @param string $media_type 'photo' | 'video' | 'audio' | 'document'.
  */
 add_action( 'mvs_media_uploaded', function( int $media_id, array $file_data, int $user_id, string $media_type ) {
-    wb_gamification_award( $user_id, 'mvs_upload_photo', 10 );
+    wb_gamification_award( $user_id, 'mvs_media_uploaded', 10 );
 
     if ( ! empty( $file_data['is_first'] ) ) {
         wb_gamification_award_badge( $user_id, 'first_upload' );
@@ -615,7 +668,8 @@ add_filter( 'mvs_media_response', function( array $data, int $media_id ) {
 | `mvs_album_response` | Filter album REST response | `$data` (array), `$album_id` (int) | Raw album data | 1.1 |
 | `mvs_collection_response` | Filter collection REST response | `$data` (array), `$collection_id` (int) | Raw collection data | 1.1 |
 | `mvs_rest_pagination_max` | Max `per_page` for media feed endpoint | `$maximum` (int) | `100` | 1.1 |
-| `mvs_rest_polling_intervals` | Real-time polling intervals in ms | `$intervals` (array) | Plugin defaults | 1.0 |
+| `mvs_explore_query_args` | Filter the `WP_Query` args used by the `/media/` explore template | `$query_args` (array), `$profile` (WP_User\|null) | Template query | 1.0 |
+| `mvs_parent_route` | Filter the resolved parent route slug for a template context | `$parent` (string), `$context` (string), `$args` (array) | Resolved slug | 1.0 |
 
 ---
 
@@ -719,7 +773,14 @@ add_action( 'mvs_user_followed', function( int $follower_id, int $following_id )
 | Hook | Type | Description | Parameters | Since |
 |------|------|-------------|------------|-------|
 | `mvs_reaction_added` | action | Reaction added to media | `$media_id`, `$user_id`, `$reaction_type` | 1.0 |
+| `mvs_reaction_removed` | action | Reaction removed from media | `$media_id`, `$user_id` | 1.0 |
+| `mvs_favorite_added` | action | Favorite added (fires in addition to `mvs_favorite_toggled`) | `$media_id`, `$user_id` | 1.0 |
 | `mvs_favorite_toggled` | action | Favorite added or removed | `$media_id`, `$user_id`, `$action` (`added`/`removed`) | 1.0 |
+| `mvs_share_recorded` | action | Share recorded against a media item | `$media_id`, `$user_id` | 1.0 |
+| `mvs_media_group_assigned` | action | Media assigned to a BuddyPress group after upload | `$media_id`, `$group_id` | 1.0 |
+| `mvs_album_cover_set` | action | Album cover image set | `$album_id`, `$media_id` | 1.0 |
+| `mvs_tag_term_count` | filter | Filter the displayed media count for a tag term | `$count` (int), `$term_taxonomy_id` (int) | 1.0 |
+| `mvs_user_badge_html` | filter | Inject HTML for a user badge next to an author name (Pro streak/verified badges) | `$html` (string), `$user_id` (int) | 1.0 |
 | `mvs_mentions_created` | action | @mentions parsed from a comment | `$media_id`, `$mentioned_ids`, `$context`, `$comment_id` | 1.0 |
 | `mvs_user_unfollowed` | action | Follow relationship removed | `$follower_id`, `$following_id` | 1.0 |
 | `mvs_media_shared` | action | Media shared to external platform | `$media_id`, `$user_id`, `$platform` | 1.0 |
@@ -819,6 +880,8 @@ add_filter( 'mvs_should_send_notification', function( bool $should_send, int $us
 | Filter | Description | Parameters | Since |
 |--------|-------------|------------|-------|
 | `mvs_notification_data` | Filter notification data array before insert | `$data` (array), `$type` (string) | 1.1 |
+| `mvs_notification_types` | Filter the list of allowed notification type slugs | `$types` (array) | 1.0 |
+| `mvs_notification_message` | Override the rendered message label for a notification type. Return a non-null string to replace the default | `$label` (string\|null), `$type` (string), `$actor_name` (string), `$media_title` (string) | 1.0 |
 
 ---
 
@@ -904,7 +967,10 @@ add_action( 'mvs_message_sent', function( int $message_id, int $conversation_id,
 | `mvs_dm_message_rate_limit` | filter | Max messages/minute per user | `$limit` (int), default `20` | 1.0 |
 | `mvs_dm_convo_rate_limit` | filter | Max new conversations/hour | `$limit` (int), default `10` | 1.0 |
 | `mvs_message_max_length` | filter | Max message character length | `$length` (int), default `2000` | 1.0 |
-| `mvs_allowed_message_types` | filter | Allowed message type slugs | `$types` (array) | 1.0 |
+| `mvs_message_types` | filter | Allowed message type slugs | `$types` (array), default `text, media_share, image, video, audio, voice, file, system` | 1.0 |
+| `mvs_dm_allowed_file_types` | filter | Allowed MIME types for DM file attachments | `$types` (array), default image MIME list | 1.0 |
+| `mvs_messaging_poll_intervals` | filter | Polling intervals (ms) for the chat client | `$intervals` (array), keys `active`/`list`/`background` | 1.0 |
+| `mvs_messaging_transport` | filter | Swap the messaging transport object (e.g. WebSocket instead of REST polling) | `$transport` (TransportInterface) | 1.0 |
 | `mvs_show_online_status` | filter | Filter online status visibility | `$show` (bool), `$viewer_id`, `$user_id` | 1.0 |
 | `mvs_dm_max_upload_size` | filter | Max DM attachment size in bytes | `$bytes` (int), default `10 * MB_IN_BYTES` | 1.0 |
 
@@ -962,8 +1028,16 @@ add_action( 'mvs_dashboard_widgets', function() {
 | Hook | Type | Description | Parameters | Since |
 |------|------|-------------|------------|-------|
 | `mvs_settings_sidebar_after` | action | After settings sidebar renders | none | 1.0 |
+| `mvs_settings_render_{renderer}` | action | Renders a custom settings section. The dynamic part is the section's `renderer` key (e.g. `mvs_settings_render_pages`) | `$section` (array) | 1.0 |
 | `mvs_settings_sections` | filter | Register settings sidebar sections | `$sections` (array) | 1.0 |
 | `mvs_settings_group_labels` | filter | Override settings group labels | `$labels` (array) | 1.0 |
+| `mvs_hide_submenu_slugs` | filter | Hide admin submenu slugs under the MVS menu | `$slugs` (array) | 1.0 |
+| `mvs_moderation_tabs` | filter | Filter the tabs shown on the moderation queue page | `$tabs` (array) | 1.0 |
+| `mvs_stats_tabs` | filter | Filter the tabs shown on the stats page | `$tabs` (array) | 1.0 |
+| `mvs_comment_edit_window` | filter | Seconds a user can still edit a comment after posting | `$seconds` (int), default `15 * MINUTE_IN_SECONDS` | 1.1 |
+| `mvs_should_render_chat_panel` | filter | Whether the floating chat panel renders on the current request | `$render` (bool), `$visibility` (string, one of `everywhere`/`logged_in`/`bp_pages`) | 1.2 |
+| `mvs_page_id_{slot}` | filter | Override the resolved page ID for a plugin page slot (e.g. `mvs_page_id_explore`). The dynamic part is the slot slug | `$page_id` (int), `$slot` (string) | 1.2 |
+| `mvs_user_data_purged` | action | Fires after a user's MVS data is erased (GDPR / account deletion) | `$user_id` (int) | 1.2 |
 
 ---
 
@@ -1372,6 +1446,53 @@ add_filter( 'mvs_broadcast_thumbnail_ttl', function( int $ttl, int $media_id, st
 
 ---
 
+### Cloud, Thumbnails & Filenames
+
+#### `mvs_cloudops_allow_non_public_to_cloud`
+
+Controls whether a non-public (private/restricted) media item is allowed to be migrated to a cloud driver during a `CloudOps` migration. Default `false` — only public media is cloud-eligible, so private files stay on local disk. Return `true` to opt a specific item in.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$allow` | bool | Whether to allow the move. Default `false` |
+| `$media_id` | int | Media ID |
+| `$privacy` | string | Current privacy value |
+| `$to` | string | Target driver slug |
+
+**Returns:** `bool`
+
+```php
+add_filter( 'mvs_cloudops_allow_non_public_to_cloud', function( bool $allow, int $media_id, string $privacy, string $to ) : bool {
+    // Allow "members" media to go to cloud, keep "private" local.
+    return 'members' === $privacy ? true : $allow;
+}, 10, 4 );
+```
+
+---
+
+#### `mvs_filename_strategy`
+
+Filters the stored-filename strategy used for new uploads. The built-in strategies are `hashed` (default) and `original`.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$strategy` | string | Resolved strategy slug |
+| `$user_id` | int | Uploading user ID |
+
+**Returns:** `string`
+
+```php
+add_filter( 'mvs_filename_strategy', function( string $strategy, int $user_id ) : string {
+    return user_can( $user_id, 'manage_options' ) ? 'original' : $strategy;
+}, 10, 2 );
+```
+
+---
+
 ### Additional Storage Hooks
 
 | Hook | Type | Description | Parameters | Since |
@@ -1381,6 +1502,13 @@ add_filter( 'mvs_broadcast_thumbnail_ttl', function( int $ttl, int $media_id, st
 | `mvs_watermarks_invalidated_all` | action | All watermark caches cleared | none | 1.0 |
 | `mvs_watermark_enabled` | filter | Enable/disable watermark per media item | `$enabled` (bool), `$media_id` | 1.0 |
 | `mvs_generate_watermark` | filter | Override watermark generation entirely | `$url`, `$media_id`, `$file_path`, `$file_url`, `$config` | 1.0 |
+| `mvs_cloud_thumbnail_url` | filter | Override the cloud URL stored for a generated thumbnail size at upload time. Return non-empty to use a custom URL | `$url` (string, empty), `$size_name` (string), `$media_id` (int) | 1.3.0 |
+| `mvs_thumbnail_sizes` | filter | Filter the size definitions array used for thumbnail generation | `$sizes` (array) | 1.3.0 |
+| `mvs_thumbnail_size_resolved` | filter | Filter the resolved default thumbnail size key | `$size` (string) | 1.3.0 |
+| `mvs_can_repair_thumb` | filter | Whether the "Repair thumbnail" admin row action is offered for a media item | `$can` (bool), `$media_id` (int), `$file_type` (string), `$file_path` (string) | 1.2.3 |
+| `mvs_repair_media_thumb` | filter | Let Pro / third parties regenerate thumbnails during an admin repair. Return the count of regenerated size-variants | `$regenerated` (int), `$media_id` (int), `$context` (array: `file_type`, `file_path`) | 1.2.3 |
+| `mvs_watermark_font_path` **(Pro)** | filter | Path to the TTF font used for text watermarks | `$path` (string, empty), `$config` (array) | 1.0 |
+| `mvs_webhook_sslverify` | filter | Whether outgoing webhook requests verify SSL (default off on local environments) | `$verify` (bool), `$url` (string) | 1.3.0 |
 
 ---
 
@@ -1577,15 +1705,6 @@ add_filter( 'mvs_buddynext_active', function( bool $active ) {
     return defined( 'WP_STAGING' ) ? false : $active;
 } );
 ```
-
----
-
-### Additional BuddyPress Hooks
-
-| Hook | Type | Description | Parameters | Since |
-|------|------|-------------|------------|-------|
-| `mvs_bp_upload_activity_recorded` | action | Upload activity saved to BP activity stream | `$activity_id`, `$media_id` | 1.0 |
-| `mvs_bp_comment_activity_recorded` | action | Comment activity saved to BP activity stream | `$activity_id`, `$comment_id` | 1.0 |
 
 ---
 
@@ -1841,8 +1960,11 @@ add_filter( 'mvs_pro_before_quota_check', function( $args, int $user_id ) {
 |------|------|-------------|------------|-------|
 | `mvs_challenge_created` | action | Challenge created | `$competition_id`, `$args`, `$created_by` | 1.0 |
 | `mvs_challenge_entry_submitted` | action | User submits an entry | `$challenge_id`, `$user_id`, `$media_id` | 1.0 |
+| `mvs_challenge_activated` | action | A scheduled challenge transitions to active | `$challenge_id` | 1.5.0 |
+| `mvs_challenge_voting_started` | action | A challenge closes entries and opens voting | `$challenge_id` | 1.5.0 |
 | `mvs_challenge_winner_named` | action | Fires once per top-3 rank when a challenge is finalized - fires before `mvs_challenge_finalized` | `$challenge_id`, `$user_id`, `$rank` (1, 2, or 3) | 1.2.3 |
 | `mvs_challenge_finalized` | action | Voting ends, winners determined | `$challenge_id`, `$results` | 1.0 |
+| `mvs_competition_status_changed` | action | Any competition (challenge/battle/tournament) changes status | `$competition_id`, `$old_status`, `$new_status` | 1.5.0 |
 
 ```php
 /**
@@ -1871,6 +1993,7 @@ add_action( 'mvs_challenge_winner_named', function( int $challenge_id, int $user
 | `mvs_battle_created` | action | Battle created | `$competition_id`, `$challenger_id`, `$opponent_id` | 1.0 |
 | `mvs_battle_accepted` | action | Opponent accepts battle | `$battle_id`, `$user_id` | 1.0 |
 | `mvs_battle_resolved` | action | Battle voting ends, winner determined | `$battle_id`, `$winner_id`, `$loser_id` | 1.0 |
+| `mvs_battle_cancelled` | action | Battle cancelled | `$battle_id` | 1.5.0 |
 
 ---
 
@@ -1882,6 +2005,8 @@ add_action( 'mvs_challenge_winner_named', function( int $challenge_id, int $user
 | `mvs_tournament_started` | action | Registration closes, bracket generated | `$tournament_id` | 1.0 |
 | `mvs_tournament_match_resolved` | action | Single bracket match resolved | `$match_id`, `$winner_id` | 1.0 |
 | `mvs_tournament_finalized` | action | Tournament ends, champion crowned | `$competition_id`, `$champion_id` | 1.0 |
+| `mvs_tournament_updated` | action | Tournament settings updated | `$tournament_id`, `$args` | 1.5.0 |
+| `mvs_tournament_cancelled` | action | Tournament cancelled | `$tournament_id` | 1.5.0 |
 
 ---
 
@@ -1924,7 +2049,95 @@ add_action( 'mvs_streak_milestone', function( int $user_id, int $days, int $xp_a
 
 ---
 
-## 20. Common Recipes
+### Competition Scheduler
+
+The competitions cron tick (`CompetitionsScheduler`) fires these process-stage actions on each run. They take no per-item parameters - listen to them to run side-effects around the lifecycle batch, or call them directly to force a stage. `mvs_competitions_tick_ran` reports the wall-clock time of the completed tick.
+
+| Hook | Type | Description | Parameters | Since |
+|------|------|-------------|------------|-------|
+| `mvs_activate_scheduled_challenges` | action | Activate challenges whose start time has passed | none | 1.5.0 |
+| `mvs_close_challenge_entries` | action | Close entry submission for challenges that hit the entry deadline | none | 1.5.0 |
+| `mvs_finalize_expired_challenges` | action | Finalize challenges whose voting window has ended | none | 1.5.0 |
+| `mvs_start_registered_tournaments` | action | Start tournaments whose registration window closed | none | 1.5.0 |
+| `mvs_resolve_expired_matches` | action | Resolve battle/tournament matches past their deadline | none | 1.5.0 |
+| `mvs_competitions_tick_ran` | action | Fires at the end of every scheduler tick | `$timestamp` (int, `time()`) | 1.5.0 |
+
+---
+
+### Challenge Email Templates
+
+Each of these filters lets you override the subject or body of a challenge notification email. All are string filters; return the modified string. The trailing parameters give you the context to personalize the copy.
+
+| Filter | Description | Parameters | Since |
+|--------|-------------|------------|-------|
+| `mvs_challenge_email_created_subject` | Subject of the "challenge created" email | `$subject` (string), `$challenge_id` (int), `$args` (array), `$created_by` (int) | 1.5.0 |
+| `mvs_challenge_email_created_body` | Body of the "challenge created" email | `$body` (string), `$challenge_id` (int), `$args` (array), `$created_by` (int) | 1.5.0 |
+| `mvs_challenge_email_entry_subject` | Subject of the "entry received" email | `$subject` (string), `$challenge_id` (int), `$user_id` (int), `$media_id` (int) | 1.5.0 |
+| `mvs_challenge_email_entry_body` | Body of the "entry received" email | `$body` (string), `$challenge_id` (int), `$user_id` (int), `$media_id` (int) | 1.5.0 |
+| `mvs_challenge_email_winner_subject` | Subject of the "you won" email | `$subject` (string), `$challenge_id` (int), `$user_id` (int), `$rank` (int) | 1.5.0 |
+| `mvs_challenge_email_winner_body` | Body of the "you won" email | `$body` (string), `$challenge_id` (int), `$user_id` (int), `$rank` (int) | 1.5.0 |
+| `mvs_challenge_email_participant_subject` | Subject of the "challenge ended" email to non-winning participants | `$subject` (string), `$challenge_id` (int), `$user_id` (int) | 1.5.0 |
+| `mvs_challenge_email_participant_body` | Body of the "challenge ended" participant email | `$body` (string), `$challenge_id` (int), `$user_id` (int) | 1.5.0 |
+
+---
+
+### `mvs_pro_leaderboard_xp_rows` **(Pro)**
+
+Supplies leaderboard rows for the `xp` metric. The Pro leaderboard renderer defers to this filter (it owns no XP store of its own), so a gamification plugin returns the ranked rows here. Return an array of `['user_id' => int, 'score' => int]` rows.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$rows` | array | Default empty array |
+| `$per_page` | int | Row limit |
+| `$window` | string | Time window slug (e.g. `all`, `month`, `week`) |
+
+**Returns:** `array`
+
+```php
+add_filter( 'mvs_pro_leaderboard_xp_rows', function( array $rows, int $per_page, string $window ) : array {
+    return my_gamification_top_xp( $per_page, $window ); // [ ['user_id'=>1,'score'=>500], ... ]
+}, 10, 3 );
+```
+
+---
+
+## 21. Connectors (Pro)
+
+Pro's import/export connectors (e.g. Flickr) register through `mvs_connectors` and fire import/export actions as media moves in and out.
+
+### `mvs_connectors`
+
+Registers connector instances. Return your connector keyed by its slug.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$connectors` | array | Map of `slug => connector instance`. Default empty |
+
+**Returns:** `array`
+
+```php
+add_filter( 'mvs_connectors', function( array $connectors ) : array {
+    $connectors['my_service'] = new My_Service_Connector();
+    return $connectors;
+} );
+```
+
+---
+
+### Additional Connector Hooks
+
+| Hook | Type | Description | Parameters | Since |
+|------|------|-------------|------------|-------|
+| `mvs_media_imported` | action | A media item was imported from a connector | `$media_id` (int), `$connector` (string, e.g. `flickr`), `$remote_id` (string) | 1.5.0 |
+| `mvs_media_exported` | action | A media item was exported to a connector | `$media_id` (int), `$connector` (string), `$remote_id` (string) | 1.5.0 |
+
+---
+
+## 22. Common Recipes
 
 ### Recipe 1: Custom upload size per user role
 

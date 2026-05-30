@@ -62,6 +62,81 @@ TemplateLoader::get_template( 'media-single.php', array(
 $path = TemplateLoader::locate( 'explore.php' );
 ```
 
+## Getting Media URLs in a Template (MediaUrl)
+
+When you write a custom template you almost always need a media URL — a thumbnail for a grid card, or the full file for a lightbox. **Do not hand-build these URLs** from `wp_upload_dir()` and **do not call `SignedUrlService` directly.** A raw upload path breaks the moment a site enables cloud storage or marks media private, and calling the signing service directly means re-implementing the privacy gate.
+
+Since 1.5.0 the read-side facade `WPMediaVerse\Core\MediaUrl` is the single entry point. It resolves the active storage driver, runs the privacy check, and returns either a signed `/serve` URL or a direct CDN URL — whichever is correct for that media's privacy and the current driver.
+
+```php
+use WPMediaVerse\Core\MediaUrl;
+
+// Thumbnail URL for the current viewer (size: large | medium | thumb).
+$thumb = MediaUrl::thumb( $media_id, 'large' );
+
+// Full original file URL for the current viewer.
+$full = MediaUrl::file( $media_id );
+
+if ( $thumb ) {
+    printf(
+        '<img src="%s" alt="%s" loading="lazy" />',
+        esc_url( $thumb ),
+        esc_attr( get_the_title( $media_id ) )
+    );
+}
+```
+
+Both methods return an **empty string** when the service isn't ready (very early bootstrap) or when the viewer's identity is rejected by the privacy gate — always guard the return value before printing, as shown above.
+
+### Public static methods
+
+```php
+namespace WPMediaVerse\Core;
+
+final class MediaUrl {
+
+    // Signed /serve URL for a thumb variant. $size: large|medium|thumb.
+    // $ttl 0 = service default. $user_id null = current user; 0 = broadcast surface.
+    // $skip_privacy is forced to false when the resolved user id is 0.
+    public static function thumb(
+        int $media_id,
+        string $size = 'large',
+        int $ttl = 0,
+        ?int $user_id = null,
+        bool $skip_privacy = true
+    ): string;
+
+    // Signed /serve URL for the full original file.
+    public static function file( int $media_id, ?int $user_id = null ): string;
+
+    // The meta key holding a variant's stored URL.
+    // e.g. ('large') -> 'thumb_large'; ('large','webp') -> 'thumb_large_webp'.
+    public static function variant_meta_key(
+        string $size,
+        string $format = VariantSpec::FORMAT_PRIMARY
+    ): string;
+
+    // The meta key holding a variant's driver-agnostic relative path
+    // (the URL key with a `_path` suffix). e.g. ('large') -> 'thumb_large_path'.
+    public static function variant_path_meta_key(
+        string $size,
+        string $format = VariantSpec::FORMAT_PRIMARY
+    ): string;
+}
+```
+
+The two `*_meta_key()` helpers are the single source of truth for the size+format → meta-key mapping. Use them instead of hardcoding `'thumb_large_webp'`-style strings when you need to read variant meta yourself:
+
+```php
+use WPMediaVerse\Core\MediaUrl;
+use WPMediaVerse\Services\VariantSpec;
+
+$webp_key = MediaUrl::variant_meta_key( 'large', VariantSpec::FORMAT_WEBP ); // 'thumb_large_webp'
+$webp_url = get_post_meta( $media_id, $webp_key, true );
+```
+
+> **Note:** `TemplateHelpers::get_thumb_url()` is now a one-line delegate to `MediaUrl::thumb()`, so existing templates that already use it keep working unchanged — `MediaUrl` is simply the canonical name to reach for in new code.
+
 ## Filtering the Template Path
 
 You can override any template path using the `mvs_locate_template` filter:

@@ -1,13 +1,20 @@
 # REST API Reference
 
-> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
-
+> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro. Everything documented below ships in the free plugin.
 
 **Base URL:** `/wp-json/mvs/v1/`
 
-All write operations require authentication. Pass the `X-WP-Nonce` header with a nonce generated via `wp_create_nonce( 'wp_rest' )`.
+All routes below use the `mvs/v1` namespace (the messaging routes share the same namespace).
 
-The API uses WordPress REST API rate limiting. Excessive requests return `429 Too Many Requests`.
+**Authentication.** Reads of public data are open. Every write — and every `/me/*` route — requires an authenticated user. Pass the `X-WP-Nonce` header with a nonce generated via `wp_create_nonce( 'wp_rest' )` and send cookies with `credentials: 'same-origin'`, or use a WordPress Application Password for non-browser clients.
+
+**Authorization model.** Three levels are used throughout:
+
+- **Public** — no auth; privacy is enforced inside the query so private rows never leak.
+- **Authenticated** — any logged-in user (`is_user_logged_in()`).
+- **Capability** — a specific capability such as `upload_mvs_media`, `moderate_mvs_media`, or `manage_mvs_access`.
+
+**Rate limiting.** Many routes are throttled per user/IP (the limit is noted where it is unusually tight). Exceeding a limit returns `429 Too Many Requests`.
 
 ---
 
@@ -15,21 +22,25 @@ The API uses WordPress REST API rate limiting. Excessive requests return `429 To
 
 ### GET /media
 
-List media items. Respects privacy rules for the authenticated user.
+**Auth:** Public (privacy enforced in query). Rate-limited to 120/min.
+
+List media items. Returns only rows the caller is allowed to see.
 
 **Parameters:**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `page` | int | `1` | Page number |
-| `per_page` | int | `10` | Items per page (max: 100) |
-| `media_type` | string | (all) | Filter by type: `image`, `video`, `audio` |
+| `per_page` | int | `20` | Items per page (max: 100, filterable via `mvs_rest_pagination_max`) |
+| `media_type` | string | (all) | Filter by type: `image`, `video`, `audio`, `document` |
 | `author` | int | (all) | Filter by user ID |
+| `slug` | string | (none) | Fetch a single item by post slug |
 | `tag` | string | (all) | Filter by `mvs_tag` slug |
 | `category` | string | (all) | Filter by `mvs_category` slug |
-| `orderby` | string | `date` | Sort field: `date`, `title`, `views` |
-| `order` | string | `DESC` | Sort direction: `ASC`, `DESC` |
-| `search` | string | (none) | Full-text search |
+| `orderby` | string | `date` | Sort: `date`, `trending`, `popular` (filterable via `mvs_feed_sort_options`) |
+| `scope` | string | `public` | `public` or `all` (owner/privileged callers) |
+| `s` | string | (none) | Full-text search term |
+| `group_covers` | bool | `false` | Collapse gallery groups to a single cover item |
 
 **Response:**
 
@@ -58,7 +69,9 @@ List media items. Respects privacy rules for the authenticated user.
 
 ### POST /media
 
-Upload a new media file. Requires `upload_mvs_media` capability.
+**Auth:** Capability — `upload_mvs_media` (or `manage_options`).
+
+Upload a new media file.
 
 **Body (multipart/form-data):**
 
@@ -76,11 +89,15 @@ Upload a new media file. Requires `upload_mvs_media` capability.
 
 ### GET /media/{id}
 
-Get a single media item. Returns `403 Forbidden` if the user cannot view it.
+**Auth:** Public (privacy check in permission callback). Returns `403` if the caller cannot view it, `404` if it does not exist.
+
+Get a single media item.
 
 ### PUT /media/{id}
 
-Update a media item. Requires ownership or `edit_others_mvs_media`.
+**Auth:** Capability — owner with `edit_mvs_medias`, or `edit_others_mvs_medias`.
+
+Update a media item.
 
 **Body (JSON):**
 
@@ -94,36 +111,77 @@ Update a media item. Requires ownership or `edit_others_mvs_media`.
 
 ### DELETE /media/{id}
 
-Delete a media item and its stored file. Requires ownership or `delete_others_mvs_media`.
+**Auth:** Capability — owner with `delete_mvs_medias`, or `delete_others_mvs_medias`.
 
-### GET /media/{id}/signed-url
+Delete a media item and its stored file.
 
-Generate a time-limited signed URL for a private file. Requires view access to the media. The signed URL points at `/mvs/v1/serve` and carries an HMAC-SHA256 signature that binds the request to a specific user, media id, and expiration timestamp.
+### POST /media/{id}/replace
 
-### GET /mvs/v1/serve
+**Auth:** Capability — same as `PUT /media/{id}` (edit permission).
 
-Serves the underlying file (full-file or thumbnail) for a validated signed URL. Public endpoint - the HMAC signature on the URL itself is the credential. Drains output buffers + disables `zlib.output_compression` before streaming so byte-counts match `Content-Length` exactly (added in 1.2.0 to fix `ERR_CONTENT_LENGTH_MISMATCH` on hosts with output buffering enabled). Honours `Range:` headers for video/audio streaming with chunked partial responses.
+Replace the underlying file of an existing media item while keeping its ID, comments, reactions, and stats. Send the new file as `multipart/form-data` with a `file` field.
 
-| Param | Required | Description |
-|-------|:--------:|-------------|
-| `mvs_id` | yes | Media id |
-| `mvs_uid` | yes | User id the URL was signed for (0 for anonymous public media) |
-| `mvs_exp` | yes | Unix expiration timestamp |
-| `mvs_sig` | yes | HMAC-SHA256 signature |
-| `mvs_size` | no | One of `large` / `medium` / `thumbnail` / `watermark` to serve a thumbnail variant |
-| `mvs_dl` | no | When `1`, sets `Content-Disposition: attachment` and increments the download counter |
+### POST /media/{id}/view
+
+**Auth:** Public.
+
+Record a view for the item. Increments the view counter and writes a row to `mvs_media_views`.
 
 ### POST /media/{id}/download
 
-Records a download event for the media item. Increments `mvs_media_stats.downloads` and writes a row to `mvs_media_views` with `event_type = 'download'`. Refused with 403 when the global **Allow Downloads** toggle is off OR the per-media `allow_download` meta is set to `'0'`. Rate-limited to 30 requests/min/user.
+**Auth:** Public. Rate-limited to 30/min.
 
-Added in 1.2.0.
+Record a download event and increment `mvs_media_stats.downloads`. Refused with `403` when the global **Allow Downloads** toggle is off OR the per-media `allow_download` meta is `'0'`.
 
 ### POST /media/{id}/share
 
-Records a share event for the media item. Increments `mvs_media_stats.shares`. Used by the lightbox Share button after a successful `navigator.share` / clipboard copy. Rate-limited to 60 requests/min/user.
+**Auth:** Public. Rate-limited to 60/min.
 
-Added in 1.2.0.
+Record a share event and increment `mvs_media_stats.shares`. Called by the lightbox Share button after a successful `navigator.share` / clipboard copy.
+
+### GET /media/{id}/access
+
+**Auth:** Public.
+
+Report whether the current user can view the item (resolves privacy rules and any access grants). Returns an access decision, not the file.
+
+### GET /media/{id}/group
+
+**Auth:** Public.
+
+Return every item that belongs to the same gallery/upload group as `{id}` (used to build multi-item lightboxes).
+
+### GET /media/{id}/signed-url
+
+**Auth:** Authenticated with view access to the media.
+
+Generate a time-limited signed URL for a private file. The signed URL points at `/serve` and carries an HMAC-SHA256 signature binding the request to a user, media ID, and expiry.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `download` | bool | `false` | Issue a download (attachment) URL |
+| `ttl` | int | (setting) | Override the signed-URL lifetime, in seconds |
+
+### GET /serve
+
+**Auth:** Public — the HMAC signature on the URL is the credential (analogue of an S3 pre-signed URL). For non-public media the handler also re-checks `can_view` per request.
+
+Stream the underlying file (full file or a thumbnail variant) for a validated signed URL. Drains output buffers and disables `zlib.output_compression` before streaming so byte counts match `Content-Length`. Honours `Range:` headers for video/audio.
+
+| Param | Required | Description |
+|-------|:--------:|-------------|
+| `mvs_id` | yes | Media ID |
+| `mvs_uid` | yes | User ID the URL was signed for (`0` for anonymous public media) |
+| `mvs_exp` | yes | Unix expiration timestamp |
+| `mvs_sig` | yes | HMAC-SHA256 signature |
+| `mvs_size` | no | `large` / `medium` / `thumbnail` / `watermark` to serve a variant |
+| `mvs_dl` | no | When `1`, sets `Content-Disposition: attachment` and increments the download counter |
+
+### GET /me/media
+
+**Auth:** Authenticated.
+
+List the current user's own media, including private and pending items. Accepts the same parameters as `GET /media`.
 
 ---
 
@@ -131,11 +189,15 @@ Added in 1.2.0.
 
 ### GET /albums
 
+**Auth:** Public (privacy enforced in query).
+
 List albums. Supports `page`, `per_page`, `author`, `orderby`, `order`.
 
 ### POST /albums
 
-Create an album. Requires `upload_mvs_media`.
+**Auth:** Authenticated with album-create permission.
+
+Create an album.
 
 ```json
 {
@@ -147,21 +209,35 @@ Create an album. Requires `upload_mvs_media`.
 
 ### GET /albums/{id}
 
+**Auth:** Public (private albums 404 for non-owners).
+
 Get an album with its media list.
 
 ### PUT /albums/{id}
+
+**Auth:** Authenticated — owner / edit permission.
 
 Update an album.
 
 ### DELETE /albums/{id}
 
+**Auth:** Authenticated — owner / delete permission.
+
 Delete an album (does not delete the media items it contains).
 
-### GET /albums/{id}/items
+### PUT /albums/{id}/reorder
 
-List media in an album.
+**Auth:** Authenticated — owner / edit permission.
+
+Reorder the items inside an album.
+
+```json
+{ "order": [103, 101, 102] }
+```
 
 ### POST /albums/{id}/items
+
+**Auth:** Authenticated — owner / edit permission.
 
 Add media to an album.
 
@@ -171,7 +247,19 @@ Add media to an album.
 
 ### DELETE /albums/{id}/items/{media_id}
 
-Remove a media item from an album.
+**Auth:** Authenticated — owner / edit permission.
+
+Remove a single media item from an album.
+
+### PUT /albums/{id}/cover
+
+**Auth:** Authenticated — owner / edit permission.
+
+Set the album cover.
+
+```json
+{ "media_id": 101 }
+```
 
 ---
 
@@ -179,11 +267,13 @@ Remove a media item from an album.
 
 ### GET /collections
 
-List collections.
+**Auth:** Authenticated. Returns the current user's collections.
 
 ### POST /collections
 
-Create a collection.
+**Auth:** Authenticated.
+
+Create a collection (manual or smart).
 
 ```json
 {
@@ -196,33 +286,57 @@ Create a collection.
 
 ### GET /collections/{id}
 
+**Auth:** Public (privacy check in permission callback).
+
 Get a collection with its resolved item list.
 
 ### PUT /collections/{id}
+
+**Auth:** Authenticated — owner only.
 
 Update a collection.
 
 ### DELETE /collections/{id}
 
+**Auth:** Authenticated — owner only.
+
 Delete a collection.
+
+### PUT /collections/{id}/rules
+
+**Auth:** Authenticated — owner only.
+
+Set the smart-collection rules used to resolve its items.
+
+```json
+{ "rules": [ { "field": "tag", "value": "nature" } ] }
+```
 
 ---
 
 ## Reactions
 
+All reaction operations live on a single route that varies by HTTP method.
+
 ### GET /media/{id}/reactions
 
-Get reaction counts grouped by type.
+**Auth:** Public.
+
+Get reaction counts grouped by type. When a logged-in user calls it, the response also indicates that user's own reaction.
 
 ### POST /media/{id}/reactions
 
-Add or change your reaction.
+**Auth:** Authenticated.
+
+Add or change your reaction. Note the field name is `reaction_type`.
 
 ```json
-{ "type": "love" }
+{ "reaction_type": "love" }
 ```
 
 ### DELETE /media/{id}/reactions
+
+**Auth:** Authenticated.
 
 Remove your reaction.
 
@@ -232,58 +346,136 @@ Remove your reaction.
 
 ### GET /media/{id}/comments
 
-List comments. Supports `page`, `per_page`.
+**Auth:** Public (visibility follows the parent media's privacy).
+
+List comments. Supports `page`, `per_page` (max 100).
 
 ### POST /media/{id}/comments
 
-Post a comment. Use `@username` syntax for mentions.
-
-```json
-{ "content": "Great photo @jane!" }
-```
-
-### PUT /media/{id}/comments/{comment_id}
-
-Edit your comment.
-
-### DELETE /media/{id}/comments/{comment_id}
-
-Delete a comment. Requires ownership or `moderate_mvs_media`.
-
----
-
-## Access Control
-
-### POST /media/{id}/access
-
-Grant a user access to private/custom media.
+**Auth:** Authenticated. Use `@username` syntax for mentions.
 
 ```json
 {
-  "user_id": 55,
-  "expires_at": "2026-01-01T00:00:00Z"
+  "content": "Great photo @jane!",
+  "parent": 0,
+  "from_activity": 0
 }
 ```
 
-### DELETE /media/{id}/access/{user_id}
+| Field | Required | Description |
+|-------|----------|-------------|
+| `content` | Yes | Comment text |
+| `parent` | No | Parent comment ID for threaded replies (default `0`) |
+| `from_activity` | No | Source BuddyPress activity ID, when posted from the activity stream |
 
-Revoke access for a user.
+### PUT /media/{id}/comments/{comment_id}
+
+**Auth:** Authenticated — owner (within the edit window) or `moderate_mvs_media`.
+
+Edit a comment.
+
+### DELETE /media/{id}/comments/{comment_id}
+
+**Auth:** Authenticated — owner or `moderate_mvs_media`.
+
+Delete a comment.
 
 ---
 
 ## Favorites
 
+### GET /media/{id}/favorite
+
+**Auth:** Authenticated.
+
+Return whether the current user has favorited the item.
+
 ### POST /media/{id}/favorite
 
-Add media to favorites.
+**Auth:** Authenticated.
+
+Add the item to favorites (toggles on). Optional `collection_id` saves it into a specific collection.
 
 ### DELETE /media/{id}/favorite
 
-Remove from favorites.
+**Auth:** Authenticated.
 
-### GET /favorites
+Remove the item from favorites.
 
-List the current user's favorites.
+### GET /me/favorites
+
+**Auth:** Authenticated.
+
+List the current user's favorites. Supports `collection_id`, `page`, `per_page`.
+
+---
+
+## Access Control & Grants
+
+These routes manage per-media access rules and direct user grants. All require the media owner or the `manage_mvs_access` capability.
+
+### GET /media/{media_id}/rules
+
+**Auth:** Owner or `manage_mvs_access`.
+
+List the access rules attached to a media item.
+
+### POST /media/{media_id}/rules
+
+**Auth:** Owner or `manage_mvs_access`. Rate-limited to 30/min.
+
+Replace the full rule set for a media item.
+
+```json
+{
+  "rules": [
+    { "rule_type": "follower", "rule_value": "1" },
+    { "rule_type": "purchase", "rule_value": "1", "price": 4.99, "currency": "USD" }
+  ]
+}
+```
+
+Each rule's `rule_type` must be one of `AccessRulesService::RULE_TYPES`.
+
+### DELETE /media/{media_id}/rules/{rule_id}
+
+**Auth:** Owner or `manage_mvs_access`.
+
+Delete a single access rule.
+
+### POST /media/{media_id}/grant
+
+**Auth:** Owner or `manage_mvs_access`.
+
+Grant a specific user access to the media.
+
+```json
+{
+  "user_id": 55,
+  "source": "manual",
+  "expires_at": "2026-01-01T00:00:00Z"
+}
+```
+
+`source` defaults to `manual` and must be one of `AccessRulesService::GRANT_SOURCES`.
+
+### DELETE /media/{media_id}/grant/{user_id}
+
+**Auth:** Owner or `manage_mvs_access`.
+
+Revoke a user's grant.
+
+### GET /me/grants
+
+**Auth:** Authenticated.
+
+List the media the current user has been granted access to.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `per_page` | int | `20` | Items per page (max: 100) |
+| `page` | int | `1` | Page number |
+| `active_only` | bool | `true` | Exclude expired grants |
 
 ---
 
@@ -291,29 +483,53 @@ List the current user's favorites.
 
 ### POST /users/{id}/follow
 
+**Auth:** Authenticated. Rate-limited to 30/min.
+
 Follow a user.
 
 ### DELETE /users/{id}/follow
+
+**Auth:** Authenticated.
 
 Unfollow a user.
 
 ### GET /users/{id}/followers
 
-List followers.
+**Auth:** Public.
+
+List a user's followers (display name + avatar).
 
 ### GET /users/{id}/following
 
+**Auth:** Public.
+
 List who a user follows.
+
+### GET /me/following
+
+**Auth:** Authenticated.
+
+List who the current user follows.
+
+### GET /me/followers
+
+**Auth:** Authenticated.
+
+List the current user's followers.
 
 ---
 
 ## User Profile
 
-### GET /profile
+### GET /me/profile
+
+**Auth:** Authenticated.
 
 Get the current user's profile.
 
-### PUT /profile
+### PUT /me/profile
+
+**Auth:** Authenticated.
 
 Update profile fields.
 
@@ -322,74 +538,58 @@ Update profile fields.
   "first_name": "Jane",
   "last_name": "Smith",
   "display_name": "jsmith",
-  "bio": "Photographer"
+  "description": "Photographer"
 }
 ```
 
-### POST /profile/avatar
+### POST /me/avatar
+
+**Auth:** Authenticated.
 
 Upload a new profile avatar (multipart/form-data, `file` field).
 
-### DELETE /profile/avatar
+### DELETE /me/avatar
+
+**Auth:** Authenticated.
 
 Remove the custom avatar and revert to Gravatar.
 
 ---
 
-## Moderation
+## Users
 
-### GET /moderation/queue
+### GET /users/{id}
 
-List flagged media items. Requires `moderate_mvs_media`.
+**Auth:** Public. Rate-limited to 60/min.
 
-### POST /moderation/{id}/approve
+Get a user's public profile: bio, avatar URL, follower/following counts, and public media count. `user_login` / `user_registered` are returned only to the user themselves or to admins (enumeration hardening).
 
-Approve a media item.
+### GET /users/{id}/media
 
-### POST /moderation/{id}/reject
+**Auth:** Public (privacy enforced in query).
 
-Reject a media item (sets post_status to `draft`).
+List a user's visible media. Supports `page`, `per_page`.
 
-### POST /moderation/{id}/analyze
+### GET /users/search
 
-Trigger AI analysis on a media item.
+**Auth:** Public.
 
----
+Search for users by display name or username.
 
-## Bulk Operations
-
-### POST /bulk
-
-Perform bulk operations on multiple media items. Requires appropriate capabilities.
-
-```json
-{
-  "action": "delete",
-  "media_ids": [101, 102, 103]
-}
-```
-
-Supported actions: `delete`, `publish`, `privatize`, `approve`, `reject`.
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `q` | string | (required) | Search term |
+| `per_page` | int | `10` | Results per page (max: 50) |
 
 ---
 
-## Stats
-
-### GET /stats
-
-Get site-wide media statistics.
-
-### GET /stats/media/{id}
-
-Get per-item statistics (views, downloads, reactions).
-
----
-
-## Reports
+## Reports & Blocking
 
 ### POST /media/{id}/report
 
-Submit a content report.
+**Auth:** Authenticated. Rate-limited to 10/min.
+
+Submit a content report against a media item.
 
 ```json
 {
@@ -398,74 +598,235 @@ Submit a content report.
 }
 ```
 
+`reason` must be one of `ReportService::REASONS`.
+
+### POST /users/{id}/report
+
+**Auth:** Authenticated.
+
+Report a user. Same `reason` / `details` body as media reports.
+
+### POST /users/{id}/block
+
+**Auth:** Authenticated.
+
+Block a user.
+
+### DELETE /users/{id}/block
+
+**Auth:** Authenticated.
+
+Unblock a user.
+
+### GET /me/blocked
+
+**Auth:** Authenticated.
+
+List the users the current user has blocked.
+
+---
+
+## Moderation
+
+All moderation routes require the `moderate_mvs_media` capability.
+
+### GET /moderation/queue
+
+List flagged / pending media items. Supports collection params (`page`, `per_page`).
+
+### GET /moderation/counts
+
+Return queue counts (pending, flagged, etc.) for building badges and tabs.
+
+### POST /moderation/{id}/approve
+
+Approve a media item.
+
+### POST /moderation/{id}/reject
+
+Reject a media item. Optional `reason` string is recorded.
+
+### POST /moderation/{id}/analyze
+
+Trigger AI analysis (description / tagging / safety) on a media item.
+
+### GET /ai/usage
+
+Return AI usage / budget figures for the moderation dashboard.
+
+---
+
+## Bulk Operations
+
+### POST /media/bulk
+
+**Auth:** Authenticated with the relevant per-action capability. Rate-limited to 10/min, max 100 IDs per call.
+
+Perform a bulk action on multiple media items.
+
+```json
+{
+  "action": "delete",
+  "media_ids": [101, 102, 103]
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `action` | Yes | One of `delete`, `move_to_album`, `change_privacy` |
+| `media_ids` | Yes | Array of media IDs (max 100) |
+| `album_id` | When `action=move_to_album` | Destination album ID |
+| `privacy` | When `action=change_privacy` | New privacy value |
+
+---
+
+## Stats
+
+### GET /media/{id}/stats
+
+**Auth:** Public for public media; `403` for media the caller cannot view.
+
+Per-item statistics (views, reactions, comments, downloads).
+
+### GET /me/stats
+
+**Auth:** Authenticated.
+
+Aggregate statistics across the current user's own media.
+
 ---
 
 ## Tags
 
 ### GET /tags
 
-List `mvs_tag` terms. Supports `search`, `per_page`.
+**Auth:** Public.
+
+List / autocomplete `mvs_tag` terms.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `search` | string | (none) | Filter by name |
+| `per_page` | int | `20` | Results per page (max: 100) |
+| `orderby` | string | `name` | `name` or `count` |
 
 ### POST /tags
 
-Create a new tag. Requires `moderate_mvs_media`.
+**Auth:** Capability — `create_tag_permissions_check` (any user who can upload media).
+
+Create a new tag. Body: `name` (required), optional `slug`.
 
 ### GET /tags/cloud
 
-Return all tags with usage counts, suitable for rendering a tag cloud.
+**Auth:** Public.
+
+Return top tags with usage counts for a tag cloud. Optional `limit` (default 50, max 200).
 
 ### POST /tags/merge
 
-Merge two tags. Requires `moderate_mvs_media`. All media carrying `source_id` will be re-tagged with `target_id` and `source_id` will be deleted.
+**Auth:** Capability — admin (`moderate_mvs_media`).
+
+Merge one tag into another. All media on `source_id` are re-tagged with `target_id` and `source_id` is deleted.
 
 ```json
-{
-  "source_id": 12,
-  "target_id": 7
-}
+{ "source_id": 12, "target_id": 7 }
 ```
 
 ### PUT /tags/{id}
 
-Rename a tag. Requires `moderate_mvs_media`.
+**Auth:** Capability — admin.
+
+Rename a tag.
 
 ```json
 { "name": "New Tag Name" }
 ```
 
+### DELETE /tags/{id}
+
+**Auth:** Capability — admin.
+
+Delete a tag.
+
 ---
 
 ## Notifications
 
-### GET /notifications
+### GET /me/notifications
 
-List the current user's WPMediaVerse notifications.
+**Auth:** Authenticated.
 
-### PUT /notifications/{id}
+List the current user's notifications.
 
-Mark a notification as read/unread.
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `per_page` | int | `20` | Items per page (max: 100) |
+| `page` | int | `1` | Page number |
+| `filter` | string | `all` | Filter set (e.g. `all`, `unread`) |
 
-### POST /notifications/mark-all-read
+The total count is returned in the `X-WP-Total` header.
 
-Mark all of the current user's notifications as read.
+### GET /me/notifications/count
+
+**Auth:** Authenticated.
+
+Return the current user's unread notification count.
+
+### POST /me/notifications/read
+
+**Auth:** Authenticated.
+
+Mark notifications as read. Pass an `ids` array to mark specific notifications, or omit it to mark all as read.
+
+```json
+{ "ids": [12, 13, 14] }
+```
+
+---
+
+## Admin
+
+### POST /admin/welcome/dismiss
+
+**Auth:** Authenticated (per-user state).
+
+Dismiss the admin welcome banner for the current user.
+
+---
+
+## Activity Feed
+
+### GET /feed
+
+**Auth:** Public (private events never appear; `following` scope is empty for anonymous callers).
+
+Return the activity feed.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `scope` | string | `public` | `public` (all public media) or `following` (followed users) |
+| `per_page` | int | `20` | Items per page (max: 100) |
+| `page` | int | `1` | Page number |
+
+### GET /users/{id}/activity
+
+**Auth:** Public.
+
+Return a user's public activity (uploads, album creations, reactions). Supports `page`, `per_page`.
 
 ---
 
 ## Messaging
 
-**Base path:** `/wp-json/mvs/v1/`
-
-All messaging endpoints require authentication. Message requests (conversations from users you do not follow) land in the **Requests** tab until accepted or declined.
+Direct-messaging routes share the `mvs/v1` namespace. **All require authentication.** Conversations started by users you do not follow land in the **Requests** tab until accepted or declined.
 
 ### GET /me/conversations
 
 List the current user's conversations.
 
-**Parameters:**
-
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `tab` | string | `all` | Filter conversations: `all`, `unread`, `requests` |
+| `tab` | string | `all` | `all`, `unread`, or `requests` |
 | `per_page` | int | `20` | Conversations per page (max: 50) |
 | `page` | int | `1` | Page number |
 
@@ -479,40 +840,13 @@ Start a new conversation.
 
 **Response:** `201 Created` with the new conversation object.
 
-### GET /conversations/{id}/messages
+### GET /conversations/{id}
 
-List messages in a conversation. Returns newest-first.
-
-**Parameters:**
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `per_page` | int | `30` | Messages per page (max: 100) |
-| `before` | int | (none) | Return messages with ID less than this value (cursor pagination) |
-
-### POST /conversations/{id}/messages
-
-Send a message. Requires that the conversation is not in a declined-request state.
-
-```json
-{
-  "content": "Hey, love the photo!",
-  "parent_id": null,
-  "message_type": "text",
-  "media_id": null
-}
-```
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `content` | Yes (if no `media_id`) | Message text (max length controlled by `mvs_message_max_length`) |
-| `parent_id` | No | Reply to this message ID |
-| `message_type` | No | `text` (default) or `media` |
-| `media_id` | No | Attach an existing media post to the message |
+Get a single conversation's metadata and participants.
 
 ### PATCH /conversations/{id}
 
-Update conversation preferences for the current user.
+Update the current user's per-conversation preferences.
 
 ```json
 {
@@ -526,29 +860,62 @@ Update conversation preferences for the current user.
 
 Leave (soft-delete) the conversation for the current user.
 
+### GET /conversations/{id}/messages
+
+List messages in a conversation (newest-first).
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `per_page` | int | `30` | Messages per page (max: 100) |
+| `before` | int | `0` | Return messages with ID less than this (cursor pagination) |
+
+### POST /conversations/{id}/messages
+
+Send a message.
+
+```json
+{
+  "content": "Hey, love the photo!",
+  "message_type": "text",
+  "media_id": null,
+  "attachment_id": null,
+  "parent_id": null,
+  "metadata": {}
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `content` | Yes (unless an attachment/media is sent) | Message text |
+| `message_type` | No | `text` (default) or `media` |
+| `media_id` | No | Attach an existing media post |
+| `attachment_id` | No | Attach a file uploaded via `POST /messages/upload` |
+| `parent_id` | No | Reply to this message ID |
+| `metadata` | No | Arbitrary structured metadata |
+
 ### POST /conversations/{id}/read
 
 Mark all messages in the conversation as read for the current user.
 
 ### POST /conversations/{id}/typing
 
-Send a typing indicator event. Typically called while the user is composing. No persistent storage - triggers a real-time event only.
+Send a typing-indicator event (no persistent storage; fires a real-time event only).
 
 ### POST /conversations/{id}/accept
 
-Accept a message request. Moves the conversation from the **Requests** tab to **All**.
+Accept a message request — moves the conversation from **Requests** to **All**.
 
 ### POST /conversations/{id}/decline
 
-Decline a message request. The conversation is removed from the inbox.
+Decline a message request — removes the conversation from the inbox.
 
 ### DELETE /messages/{id}
 
-Soft-delete a message for the current user. The message content is hidden but the record is retained.
+Soft-delete a message for the current user (content hidden, record retained).
 
 ### DELETE /messages/{id}/unsend
 
-Hard-delete (unsend) a message. Only available within the edit window defined by `mvs_comment_edit_window`. Requires message ownership.
+Hard-delete (unsend) a message. Only available within the edit window and only for the message owner.
 
 ### POST /messages/{id}/reactions
 
@@ -564,11 +931,7 @@ Remove your emoji reaction from a message.
 
 ### POST /messages/upload
 
-Upload an attachment to use in a DM. Returns a temporary media reference ID to pass as `media_id` when sending the message.
-
-**Body:** `multipart/form-data` with a single `file` field. Max size controlled by `mvs_dm_max_upload_size`.
-
-**Response:**
+Upload an attachment for use in a DM. Returns a reference ID to pass as `attachment_id` (or `media_id`) when sending the message. Body: `multipart/form-data` with a single `file` field.
 
 ```json
 { "media_id": 204, "url": "https://example.com/..." }
@@ -578,63 +941,18 @@ Upload an attachment to use in a DM. Returns a temporary media reference ID to p
 
 Return the total unread message count for the current user.
 
-**Response:**
-
 ```json
 { "count": 3 }
 ```
 
 ### GET /messages/poll
 
-Long-poll for new messages since a given message ID. The server holds the connection open (up to 30 seconds) and responds as soon as a new message arrives or the timeout is reached.
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `since` | int | Return messages with ID greater than this value |
-
----
-
-## Activity Feed
-
-### GET /mvs/v1/feed
-
-Return the activity feed for the current user.
-
-**Parameters:**
+Long-poll for new messages. The server holds the connection open and responds as soon as a new message arrives or the timeout is reached.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `scope` | string | `public` | Feed scope: `public` (all public media) or `following` (media from followed users) |
-| `per_page` | int | `20` | Items per page (max: 100) |
-| `page` | int | `1` | Page number |
-
-### GET /mvs/v1/users/{id}/activity
-
-Return the public activity for a specific user - media uploads, album creations, and reactions.
-
----
-
-## Users
-
-### GET /mvs/v1/users/{id}
-
-Get a user's public profile, including bio, avatar URL, follower/following counts, and public media count.
-
-### GET /mvs/v1/users/{id}/media
-
-List a user's public media. Supports `page`, `per_page`, `media_type`, `orderby`, `order`.
-
-### GET /mvs/v1/users/search
-
-Search for users by display name or username.
-
-**Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `q` | string | Search term (minimum 2 characters) |
+| `since` | int | (required) | Return messages with ID greater than this value |
+| `conversation_id` | int | `0` | Scope the poll to a single conversation |
 
 ---
 
@@ -657,7 +975,11 @@ Common error codes:
 | `mvs_invalid_type` | 400 | MIME type not in allowed list |
 | `mvs_file_too_large` | 400 | File exceeds max upload size |
 | `mvs_blocked_extension` | 400 | Dangerous file extension |
+| `mvs_no_ids` | 400 | Bulk request had no media IDs |
 | `mvs_duplicate` | 409 | Duplicate file (when duplicate_action=skip) |
 | `mvs_not_found` | 404 | Resource not found |
-| `rest_forbidden` | 403 | Access denied by privacy rules |
+| `mvs_user_not_found` | 404 | User not found |
+| `mvs_not_logged_in` / `mvs_unauthorized` | 401 | Authentication required |
+| `mvs_forbidden` / `rest_forbidden` | 403 | Access denied by privacy/capability rules |
 | `mvs_storage_failed` | 500 | Storage driver error |
+| (rate limit) | 429 | Too many requests |

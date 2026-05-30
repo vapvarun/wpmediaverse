@@ -54,8 +54,33 @@ interface StorageDriverInterface {
      * @return string Absolute file path.
      */
     public function get_full_path( string $path ): string;
+
+    /**
+     * Download a stored file to a local destination path.
+     *
+     * REQUIRED for two flows:
+     *   1. The `wp mvs migrate-storage` CLI command — copies media between
+     *      drivers without losing files.
+     *   2. Thumbnail generation in cloud mode — images stored on S3/BunnyCDN
+     *      must be pulled to a local temp file before `wp_get_image_editor()`
+     *      can resize them.
+     *
+     * A local driver returns true immediately if `$path` and `$local_dest`
+     * resolve to the same file (no-op). Cloud drivers stream the remote object
+     * into `$local_dest`. Return false on any download failure (the caller is
+     * responsible for retries / cleanup of partial writes).
+     *
+     * @since 1.2.2
+     *
+     * @param string $path       Relative path of the source file.
+     * @param string $local_dest Absolute local filesystem path to write to.
+     * @return bool True on success.
+     */
+    public function download( string $path, string $local_dest ): bool;
 }
 ```
+
+All seven methods are required. A driver that does not implement every method will fail PHP's interface contract at load time.
 
 ## Implementing a Custom Driver
 
@@ -93,21 +118,49 @@ class MyS3CompatibleDriver implements StorageDriverInterface {
         // For remote drivers, this may return the URL or a temp local path.
         return $this->url( $path );
     }
+
+    public function download( string $path, string $local_dest ): bool {
+        // Stream $this->bucket/$path into the local file $local_dest.
+        // Return true on success, false on any failure.
+    }
 }
 ```
 
 ## Registering Your Driver
 
-Use the `mvs_storage_drivers` filter to add your driver to the storage service:
+`StorageService::get_driver()` resolves the active driver by passing the configured driver name through the **singular** `mvs_storage_driver` filter and expecting a driver **instance** back. The filter receives two arguments — the current driver (`null` until something supplies one) and the configured driver name — and your callback returns your driver instance only when the name matches your slug, otherwise it returns `$driver` unchanged:
 
 ```php
-add_filter( 'mvs_storage_drivers', function( array $drivers ): array {
-    $drivers['my_s3_compatible'] = new MyS3CompatibleDriver();
-    return $drivers;
-} );
+add_filter( 'mvs_storage_driver', function( $driver, string $name ) {
+    return 'my_s3_compatible' === $name ? new MyS3CompatibleDriver() : $driver;
+}, 10, 2 );
 ```
 
-Then set `mvs_storage_driver` to `my_s3_compatible` in the database (or add it to the settings page dropdown via a separate filter).
+If no filter returns a `StorageDriverInterface` instance, `StorageService` falls back to the built-in `LocalDriver`.
+
+This is exactly how WPMediaVerse Pro registers its own drivers — its callback `switch`es on `$name` and returns the matching driver (`s3`, `bunnycdn`, `r2`, `dospaces`):
+
+```php
+// Simplified from WPMediaVerse Pro.
+add_filter( 'mvs_storage_driver', function( $driver, string $name ) {
+    switch ( $name ) {
+        case 's3':
+            return new S3StorageDriver();
+        case 'bunnycdn':
+            return new BunnyCDNStorageDriver();
+        default:
+            return $driver;
+    }
+}, 10, 2 );
+```
+
+Then set the active driver to your slug so `StorageService` picks it:
+
+```bash
+wp option update mvs_storage_driver my_s3_compatible
+```
+
+(Or add your slug to the settings-page dropdown via a separate filter so site owners can switch to it from the admin UI.)
 
 ## Local Driver Reference
 
@@ -125,18 +178,34 @@ Files are served from:
 
 `get_full_path()` returns the absolute filesystem path, which is used by services like `WatermarkService` and `AIService` that need to read the file from disk.
 
-## Signed URLs
+## Signed URLs and Private Delivery
 
-If your driver supports private file delivery, implement signed URL generation by integrating with the `SignedUrlService`. The `SignedUrlService` stores tokens in the database and validates them on the signed URL REST endpoint. For local storage, signed URLs append a `?token=` parameter that the plugin validates before serving the file.
+Your driver does **not** generate signed URLs — that is `SignedUrlService`'s job. The flow is:
 
-For cloud drivers, you can generate native presigned URLs (e.g., S3 presigned URLs) and return them instead:
+1. A read-side caller asks `Core\MediaUrl::thumb()` / `::file()` (or `SignedUrlService` directly) for a URL.
+2. `SignedUrlService::generate()` / `::generate_thumbnail()` runs the privacy check (`PrivacyService::can_view()`), then either:
+   - returns a signed `/serve` proxy URL (HMAC-signed query params: media ID, viewer user ID, expiry, signature) for gated/private media, **or**
+   - returns a **direct** driver URL for public media on a cloud driver, so the browser hits the CDN edge instead of WordPress.
+3. When the browser requests a `/serve` URL, `SignedUrlService::serve()` re-validates the signature and re-checks `can_view()` per request, then streams the bytes by reading the file from your driver (via `get_full_path()` / `download()`).
+
+There is **no** `mvs_generate_signed_url` filter. The public extension points that actually exist let a cloud driver substitute its own CDN/presigned URL for the public-media direct path:
+
+| Filter | Args | When it fires |
+|--------|------|---------------|
+| `mvs_serve_public_cloud_direct` | `(bool $enabled, int $media_id)` | Gate the "serve public cloud media directly" behavior on/off per media. |
+| `mvs_public_cloud_thumbnail_url` | `(string $url, int $media_id, string $size)` | Final say on the public thumbnail URL for cloud-hosted media — return a presigned/CDN URL here. |
+| `mvs_public_cloud_file_url` | `(string $url, int $media_id, string $context)` | Final say on the public full-file URL for cloud-hosted media. |
 
 ```php
-add_filter( 'mvs_generate_signed_url', function( string $url, int $media_id, int $ttl ) {
-    if ( 'my_s3_compatible' === get_option( 'mvs_storage_driver' ) ) {
-        $path = get_post_meta( $media_id, '_mvs_file_path', true );
-        return my_generate_presigned_url( $path, $ttl );
+// Substitute a presigned URL for your driver's public thumbnails.
+add_filter( 'mvs_public_cloud_thumbnail_url', function( string $url, int $media_id, string $size ) {
+    if ( 'my_s3_compatible' !== get_option( 'mvs_storage_driver' ) ) {
+        return $url;
     }
-    return $url;
+    // Build the relative variant path and sign it with your SDK.
+    $rel = get_post_meta( $media_id, 'thumb_' . $size . '_path', true );
+    return $rel ? my_generate_presigned_url( $rel, 3600 ) : $url;
 }, 10, 3 );
 ```
+
+Private and restricted media is never eligible for the direct-cloud path — `StorageService::get_driver_for_privacy()` keeps non-public media on local disk, and `/serve` re-checks `can_view()` on every request. So these filters only affect **public** media.

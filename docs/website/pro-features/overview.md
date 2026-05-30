@@ -71,6 +71,18 @@ The migration tool admin page is now a generic shell that hosts per-platform car
 | AI Providers | [ai-providers.md](ai-providers.md) | Google Cloud Vision and AWS Rekognition support |
 | Quotas | [quotas.md](quotas.md) | Per-user storage and count limits with membership integration |
 | Advanced Privacy | [advanced-privacy.md](advanced-privacy.md) | Multi-level privacy, presets, album inheritance, and bulk updates |
+| Connected Accounts | [connected-accounts.md](connected-accounts.md) | Connect Flickr to import/export photos and auto-push new uploads |
+
+## User Reports (Pro Moderation)
+
+Pro adds a **Reports** view that surfaces user-submitted abuse reports on media and members - the complaints your community files, as opposed to the free [Moderation Queue](../features/ai-moderation.md), which is about AI/auto-flagged content awaiting an approve/reject decision.
+
+- **Where:** **MediaVerse > Moderation**, in the **User Reports** tab. (It is also reachable directly at `admin.php?page=mvs-reports`.)
+- **Who:** any user with the `moderate_mvs_media` capability.
+- **What it lists:** every report row - date, reporter, target type (media or user), the target, the reason code, and a details excerpt. A status filter switches between **Pending**, **Resolved**, and **Dismissed**, each with a live count.
+- **Actions:** on a pending report you can **Resolve** (mark handled) or **Dismiss** (no action needed). Both are nonce-protected and capability-checked.
+
+> **Note for the parent agent:** this section documents the Pro Reports admin page inline. If the docs site wants it discoverable on its own, it could later be split into a dedicated `pro-features/reports.md` page - the content above is self-contained and ready to lift out.
 
 ## License Management
 

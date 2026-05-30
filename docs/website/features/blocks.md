@@ -21,7 +21,7 @@ WPMediaVerse registers **9** Gutenberg blocks under the **WPMediaVerse** block c
 | Explore Feed | `mvs/explore-feed` | Infinite-scroll explore feed (all public media) with search autocomplete |
 | Lock Overlay | `mvs/lock-overlay` | Paywall/restriction overlay for any block |
 
-*The Story Viewer block source ships in 1.2.0 but isn't registered yet - full Story create-flow + REST endpoint arrives in 1.2.1.*
+*Story Viewer is not in this list of 9. Its block source ships in the plugin, and the server-side `StoryService` exists, but as of 1.5.0 the block is intentionally **not registered** in the inserter — the Story create-flow UI and the Story REST endpoint have not landed yet, so the block would surface empty for site owners. See [Story Viewer Block](#story-viewer-block-not-yet-registered) below for the current status.*
 
 ## Interactivity API Architecture
 
@@ -77,9 +77,13 @@ Grid columns and pagination inherit from **Media > Settings > Display**.
 - Columns override
 - Show Title / Show Description
 
-## Story Viewer Block (Coming Soon)
+## Story Viewer Block (Not Yet Registered)
 
-Currently displays a horizontal bar of recent uploaders with circular avatars (visible in Instagram layout mode). A full story viewer with tap-to-advance navigation, create flow, and dedicated REST endpoint arrives in 1.2.1.
+**Status at 1.5.0:** the `mvs/story-viewer` block source ships inside the plugin (`src/blocks/story-viewer/`) and the server-side `StoryService` can already create stories and return the active set, but the block is **deliberately left out of the inserter**. It is not one of the 9 registered blocks above, so you will not find it in the block library.
+
+**Why it is held back:** there is no story create-flow in the upload UI and no public Story REST endpoint yet, so registering the viewer would only show site owners an empty block by default. The full experience — a way to mark an upload as a story, tap-to-advance navigation in a circular-avatar carousel, and the REST endpoint that powers it — is still on the roadmap. When that create-flow lands, the block flips on and joins the registered list.
+
+**What the block will do once enabled:** render active stories (`is_story` media that has not passed `story_expires_at`) as a horizontal carousel of circular avatars. Planned attributes are **count** (number of stories, default 10) and **avatar size** (default 64 px).
 
 ## Member Photos Block
 

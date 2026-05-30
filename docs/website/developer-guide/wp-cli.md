@@ -222,6 +222,57 @@ wp mvs backfill-activity-thumbnails --dry-run
 
 ---
 
+## wp mvs sync-activity-privacy
+
+Recompute the BuddyPress activity `hide_sitewide` flag for every existing media activity. Walks each `mvs_media_upload` activity plus every `activity_update` carrying `_mvs_media_ids` meta and recomputes `hide_sitewide` from the linked media's effective privacy (media + parent album, most-restrictive wins). Run once after upgrading to bring legacy activity rows in line with the privacy-sync behaviour. Idempotent - re-runs only touch rows that have actually drifted.
+
+Requires BuddyPress with the Activity component active; the command exits early otherwise.
+
+```bash
+# Preview which activity rows would change.
+wp mvs sync-activity-privacy --dry-run
+
+# Apply the recomputed flags.
+wp mvs sync-activity-privacy
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--dry-run` | off | Show what would change without writing to the database |
+
+---
+
+## wp mvs relocalize-private
+
+Heal pre-1.4.0 non-public media rows whose stored URL meta still points at a prior cloud bucket. When media uploaded to a cloud driver (S3 / BunnyCDN / R2 / DigitalOcean Spaces) was later switched to a restricted privacy level (members / friends / private / group / custom), the URL meta was not relocalized, so `SignedUrlService` 403s on every read because the cloud URL fails its `wpmediaverse/` containment check. The 1.4.0 listener fixes this going forward; this command heals older rows (Basecamp #9925110293).
+
+Safe to re-run - rows that already have local URLs are skipped.
+
+Added in 1.4.0.
+
+```bash
+# Report what would change without writing.
+wp mvs relocalize-private --dry-run
+
+# Heal all affected rows.
+wp mvs relocalize-private
+
+# Inspect a single media row.
+wp mvs relocalize-private --media-id=47
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--dry-run` | off | Report what would change without writing |
+| `--media-id=<id>` | 0 (all) | Only inspect this single media row |
+| `--limit=<n>` | 0 (all) | Stop after inspecting this many candidate rows |
+
+---
+
 ## wp mvs migrate-storage
 
 Migrate every stored media file from one storage driver to another. Idempotent - re-running skips media already present on the destination. Only public media is migrated by default (non-public media stays local to preserve privacy). The active `mvs_storage_driver` option is NOT flipped automatically; flip it manually via `wp option update` once the run completes cleanly.
@@ -387,6 +438,46 @@ wp mvs optimize-bulk --offset=200
 | `--include-failed` | off | Re-process rows previously marked as failed |
 
 **Output:** Reports processed/skipped/failed counts and total bytes saved.
+
+---
+
+## wp mvs competitions tick **(Pro)**
+
+Run one competitions scheduler tick immediately, instead of waiting for the recurring Action Scheduler job. A tick fires every competition transition hook once - activating scheduled challenges, closing challenge entries, finalizing expired challenges, starting registered tournaments, and resolving expired matches - so any challenge or tournament whose deadline has passed advances right away. Useful for debugging on a site where Action Scheduler / WP-Cron is not firing, or to force an immediate state advance after editing competition rows.
+
+Requires WPMediaVerse Pro with a competition feature enabled (challenges, tournaments, or battles).
+
+```bash
+wp mvs competitions tick
+```
+
+This command takes no options or arguments.
+
+**Output:**
+
+```
+Success: Competitions tick executed.
+```
+
+---
+
+## wp mvs competitions recompute **(Pro)**
+
+Force the one-shot competitions catch-up migration to run again. Clears the internal migration flag, re-fires every transition hook once, and re-marks the flag as done. Use this when competition DB rows are edited by hand and you need the scheduler to re-derive their state. Reports how many non-finalized, non-cancelled competitions remain after the pass.
+
+Requires WPMediaVerse Pro with a competition feature enabled.
+
+```bash
+wp mvs competitions recompute
+```
+
+This command takes no options or arguments.
+
+**Output:**
+
+```
+Success: Recomputed 3 competition(s).
+```
 
 ---
 

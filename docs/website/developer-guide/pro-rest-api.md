@@ -1,196 +1,281 @@
 # Pro REST API Reference
 
-> Endpoints and hooks marked **(Pro)** require WPMediaVerse Pro.
-
+> Endpoints marked **(Pro)** require WPMediaVerse Pro 1.5.0+.
 
 **Base URL:** `/wp-json/mvs-pro/v1/`
 
-WPMediaVerse Pro registers its own REST namespace. All endpoints require an active Pro license. Authentication uses the same mechanism as the free API: pass `X-WP-Nonce` with a nonce from `wp_create_nonce( 'wp_rest' )`.
+WPMediaVerse Pro registers its own REST namespace, `mvs-pro/v1`, alongside the free `mvs/v1` namespace. Pro must be active for any of these routes to be registered.
 
-Unless noted, all endpoints require a logged-in user. Admin-level endpoints additionally require the `manage_mvs_settings` capability.
+Authentication uses the same mechanism as the free API: pass an `X-WP-Nonce` header with a nonce from `wp_create_nonce( 'wp_rest' )` and include `credentials: 'same-origin'` so the request is tied to the logged-in user. Application Passwords (WP 5.6+) work for mobile/headless clients.
 
-The API uses WordPress REST API rate limiting. Excessive requests return `429 Too Many Requests`.
+**Permission conventions used below:**
+
+- **Public** — no authentication required (`__return_true` or open read). Some are rate-limited inside the service.
+- **User** — any logged-in user (`is_user_logged_in`).
+- **Owner/Admin** — the media owner or a user who can edit others' media.
+- **Admin** — requires `manage_options` or `manage_mvs_settings` (noted per route).
+- **HMAC** — no WordPress auth; request body is verified against an HMAC-SHA256 signature header.
+
+Some feature areas only register their routes when the matching admin toggle is enabled (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`, `mvs_boosts_enabled`, `mvs_streaks_enabled`, `mvs_connectors_enabled`). When a feature is disabled its routes are not registered.
 
 ---
 
-## Competitions
+## Quota & Credits
 
-### GET /competitions
+User-facing quota summaries plus admin package/credit management and the signed external top-up webhook.
 
-List all active competitions (challenges, battles, and tournaments).
+### GET /me/quota
+
+Return the current user's quota summary (per-type usage and limits for image, video, audio).
+
+**Auth:** User
+
+---
+
+### GET /me/quota/check
+
+Lightweight pre-upload check: can the current user upload a given media type (and optional file size) right now?
 
 **Auth:** User
 
 **Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `type` | string | (all) | Filter by type: `challenge`, `battle`, `tournament` |
-| `status` | string | `active` | Filter by status: `active`, `pending`, `closed` |
-| `per_page` | int | `10` | Items per page (max: 100) |
-| `page` | int | `1` | Page number |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `media_type` | string | Yes | — | One of `image`, `video`, `audio` |
+| `file_size` | int | No | `0` | Size in bytes, for storage-limit checks |
 
 **Response:**
 
 ```json
-{
-  "items": [
-    {
-      "id": 5,
-      "type": "challenge",
-      "title": "Black and White Week",
-      "status": "active",
-      "starts_at": "2025-04-01T00:00:00Z",
-      "ends_at": "2025-04-07T23:59:59Z",
-      "entry_count": 34
-    }
-  ],
-  "total": 3,
-  "pages": 1
-}
+{ "can_upload": true, "reason": "" }
 ```
 
 ---
 
-### GET /competitions/{id}
+### GET /me/credits/history
 
-Get a single competition with full details and leaderboard.
+Return the current user's credit transaction history.
 
 **Auth:** User
 
-**Response includes:** `rules`, `prizes`, `leaderboard` (top 10 entries by vote count), `user_entry` (current user's submitted entry if any).
-
 ---
 
-### POST /competitions/{id}/entries
+### GET /users/{user_id}/quota
 
-Submit a media entry to a competition.
-
-**Auth:** User
-
-**Body:**
-
-```json
-{ "media_id": 123 }
-```
-
-Returns `409 Conflict` if the user has already submitted an entry and the competition does not allow multiple entries.
-
----
-
-### DELETE /competitions/{id}/entries/{entry_id}
-
-Withdraw a competition entry. Only allowed before the competition closes.
-
-**Auth:** User (entry owner only)
-
----
-
-### POST /competitions/{id}/entries/{entry_id}/vote
-
-Vote for a competition entry. One vote per user per competition.
-
-**Auth:** User
-
-**Body:**
-
-```json
-{ "value": 1 }
-```
-
----
-
-### POST /competitions (admin)
-
-Create a new competition.
-
-**Auth:** Admin
-
-**Body:**
-
-```json
-{
-  "type": "challenge",
-  "title": "Spring Photo Challenge",
-  "description": "Share your best spring photos.",
-  "starts_at": "2025-04-01T00:00:00Z",
-  "ends_at": "2025-04-07T23:59:59Z",
-  "voting_method": "public",
-  "max_entries_per_user": 1,
-  "prizes": ["1st: Pro license", "2nd: Free theme"]
-}
-```
-
----
-
-### PUT /competitions/{id} (admin)
-
-Update a competition. Changing `starts_at` or `ends_at` on an active competition triggers a notification to existing entrants.
+Get a specific user's quota summary.
 
 **Auth:** Admin
 
 ---
 
-### DELETE /competitions/{id} (admin)
+### POST /users/{user_id}/package
 
-Delete a competition and all its entries. This action is irreversible.
+Assign a quota package to a user.
+
+**Auth:** Admin
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `package_id` | int | Yes | Package to assign |
+
+---
+
+### POST /users/{user_id}/credits
+
+Grant extra upload credits to a user for a specific media type.
+
+**Auth:** Admin
+
+**Body:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `media_type` | string | Yes | — | One of `image`, `video`, `audio` |
+| `amount` | int | Yes | — | Credits to add (min `1`) |
+| `note` | string | No | `""` | Optional ledger note |
+
+---
+
+### GET /packages
+
+List all quota packages.
 
 **Auth:** Admin
 
 ---
 
-## Media (Pro Extensions)
+### POST /packages
+
+Create a quota package.
+
+**Auth:** Admin
+
+**Body:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | string | Yes | — | Package name |
+| `image_limit` | int | No | `0` | Image upload limit (0 = none) |
+| `video_limit` | int | No | `0` | Video upload limit |
+| `audio_limit` | int | No | `0` | Audio upload limit |
+| `storage_bytes` | int | No | `0` | Storage cap in bytes |
+| `is_default` | bool | No | `false` | Whether this is the default package |
+
+---
+
+### PUT /packages/{id}
+
+Update a quota package.
+
+**Auth:** Admin
+
+---
+
+### DELETE /packages/{id}
+
+Delete a quota package.
+
+**Auth:** Admin
+
+---
+
+### POST /credits/webhook
+
+External credit top-up endpoint. Used by integrations that grant credits from an outside system.
+
+**Auth:** HMAC — the request is **not** cookie/capability authenticated. The handler verifies the `X-MVS-Signature` header against `hash_hmac( 'sha256', $body, $secret )` using `hash_equals()`. Requests with an invalid or missing signature are rejected.
+
+---
+
+## Privacy
+
+Advanced per-item and bulk privacy controls plus reusable per-user privacy presets.
+
+### PUT /media/{id}/privacy
+
+Update the privacy level of a single media item. Pro-only because it supports the advanced levels (e.g. specific-people, album-inherit).
+
+**Auth:** Owner/Admin
+
+**Body:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `privacy` | string | Yes | — | Privacy level (validated against the configured set) |
+| `custom_users` | int[] | No | `[]` | User IDs allowed to view, when privacy is "Specific People" |
+| `inherit_album` | bool | No | `false` | When true, the item follows its album's privacy |
+
+---
+
+### POST /media/bulk-privacy
+
+Apply the same privacy level to many media items at once.
+
+**Auth:** User (per-item ownership is enforced inside the service)
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `media_ids` | int[] | Yes | 1–100 media IDs to update |
+| `privacy` | string | Yes | Privacy level to apply to all selected items |
+
+---
+
+### GET /privacy/presets
+
+List the current user's saved privacy presets.
+
+**Auth:** User
+
+---
+
+### POST /privacy/presets
+
+Save a new privacy preset for reuse.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | string | Yes | — | Preset name (≤100 chars) |
+| `privacy` | string | Yes | — | Privacy level to store |
+| `custom_users` | int[] | No | `[]` | User IDs to include when privacy is "Specific People" |
+
+---
+
+## Video — Transcoding
+
+FFmpeg-backed transcoding actions and admin queue/server inspection.
 
 ### GET /media/{id}/transcodes
 
-List available transcode renditions for a video.
+Retrieve stored transcode renditions and current job status for a video.
 
-**Auth:** User (must have view access to the media)
+**Auth:** Owner/Admin
 
-**Response:**
-
-```json
-{
-  "status": "complete",
-  "renditions": [
-    { "label": "720p", "url": "https://…/video-720p.mp4", "size_bytes": 14200000 },
-    { "label": "480p", "url": "https://…/video-480p.mp4", "size_bytes": 7100000 },
-    { "label": "360p", "url": "https://…/video-360p.mp4", "size_bytes": 3800000 },
-    { "label": "hls",  "url": "https://…/playlist.m3u8",  "size_bytes": null }
-  ]
-}
-```
-
-`status` values: `pending`, `processing`, `complete`, `failed`.
+`status` values: `queued`, `processing`, `failed`, `complete`.
 
 ---
 
-### POST /media/{id}/transcodes
+### POST /media/{id}/transcode
 
-Manually trigger transcoding for a video that was uploaded before transcoding was enabled, or to re-transcode after changing quality settings.
+Trigger a transcode job for a video. Defaults to the configured presets when none are supplied.
+
+**Auth:** Owner/Admin
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `presets` | string[] | No | Specific presets to run (each must be a known preset key) |
+
+---
+
+### DELETE /media/{id}/transcodes
+
+Delete all transcoded files for a video.
+
+**Auth:** Owner/Admin
+
+---
+
+### GET /transcode/status
+
+Admin overview of the transcode job queue.
 
 **Auth:** Admin
 
-**Response:** `202 Accepted`
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | `all` | One of `queued`, `processing`, `failed`, `complete`, `all` |
+| `per_page` | int | `20` | Jobs per page (1–100) |
+| `page` | int | `1` | Page number |
 
 ---
+
+### GET /transcode/config
+
+Report FFmpeg availability and the configured transcode presets.
+
+**Auth:** Admin
+
+---
+
+## Video — Chapters & Resume
 
 ### GET /media/{id}/chapters
 
 List chapter markers for a video.
 
-**Auth:** User (must have view access)
-
-**Response:**
-
-```json
-{
-  "chapters": [
-    { "id": 1, "label": "Introduction", "time_seconds": 0 },
-    { "id": 2, "label": "Main Feature",  "time_seconds": 120 }
-  ]
-}
-```
+**Auth:** User (must be able to read the media)
 
 ---
 
@@ -198,275 +283,661 @@ List chapter markers for a video.
 
 Replace all chapter markers for a video.
 
-**Auth:** User (media owner or `edit_others_mvs_media`)
+**Auth:** Owner/Admin (chapter-edit permission)
 
 **Body:**
 
 ```json
 {
   "chapters": [
-    { "label": "Introduction", "time_seconds": 0 },
-    { "label": "Main Feature",  "time_seconds": 120 }
+    { "time_seconds": 0,   "title": "Introduction" },
+    { "time_seconds": 120, "title": "Main Feature", "thumbnail_url": "https://…/chap.jpg" }
   ]
 }
 ```
+
+Each chapter requires `time_seconds` (int ≥ 0) and `title` (1–200 chars); `thumbnail_url` is optional.
 
 ---
 
 ### GET /media/{id}/resume
 
-Get the current user's resume position for a video.
+Get the current user's saved resume position for a video.
 
 **Auth:** User
-
-**Response:**
-
-```json
-{ "position_seconds": 342 }
-```
 
 ---
 
 ### POST /media/{id}/resume
 
-Save the current playback position. Called automatically by the Pro video player every 10 seconds.
+Save the current playback position. Called periodically by the Pro player.
 
 **Auth:** User
 
 **Body:**
 
-```json
-{ "position_seconds": 342 }
-```
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `position` | number | Yes | Seconds into the video (≥ 0) |
 
 ---
+
+### DELETE /media/{id}/resume
+
+Clear the current user's resume position for a video.
+
+**Auth:** User
+
+---
+
+## Captions
+
+WebVTT caption retrieval, manual upload, Whisper generation, deletion, and job status.
 
 ### GET /media/{id}/captions
 
-List available caption tracks (WebVTT files) for a video.
+Return caption metadata (VTT URL, language, provider, word count, duration, generated-at). Returns `404` when no captions exist.
 
-**Auth:** User (must have view access)
-
-**Response:**
-
-```json
-{
-  "tracks": [
-    { "id": 1, "language": "en", "label": "English", "url": "https://…/captions-en.vtt", "generated": true }
-  ]
-}
-```
+**Auth:** User (must be able to read the media)
 
 ---
 
-### POST /media/{id}/captions
+### PUT /media/{id}/captions
 
-Upload a manual caption track.
+Upload/replace a caption track by sending raw WebVTT content.
 
-**Auth:** User (media owner or `edit_others_mvs_media`)
+**Auth:** Owner/Admin
 
-**Body (multipart/form-data):**
+**Body:**
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `file` | Yes | WebVTT file |
-| `language` | Yes | BCP-47 language code (e.g., `en`, `fr`) |
-| `label` | No | Human-readable label shown in the player |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `vtt_content` | string | Yes | The full WebVTT document |
 
 ---
 
 ### POST /media/{id}/captions/generate
 
-Trigger OpenAI Whisper transcription to auto-generate captions.
+Queue an OpenAI Whisper transcription job to auto-generate captions.
 
-**Auth:** Admin
-
-**Response:** `202 Accepted`
+**Auth:** Owner/Admin
 
 ---
 
-### DELETE /media/{id}/captions/{caption_id}
+### DELETE /media/{id}/captions
 
-Delete a caption track.
+Remove the caption track from a video/audio item.
 
-**Auth:** User (media owner or `edit_others_mvs_media`)
+**Auth:** Owner/Admin
+
+---
+
+### GET /media/{id}/captions/status
+
+Poll the status of a caption generation job.
+
+**Auth:** User (must be able to read the media)
+
+---
+
+## Analytics
+
+Public play-event ingestion plus owner/admin analytics surfaces.
+
+### POST /media/{id}/events
+
+Record a video play/heatmap event. Public and rate-limited inside the service; mirrors the free `/media/{id}/view` route.
+
+**Auth:** Public (rate-limited)
+
+**Body:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `event_type` | string | Yes | — | One of the allowed event types |
+| `position` | number | Yes | — | Playhead position in seconds (≥ 0) |
+| `duration` | number | No | `0` | Segment duration in seconds (≥ 0) |
+| `session_id` | string | Yes | — | Player session identifier (1–64 chars) |
 
 ---
 
 ### GET /media/{id}/analytics
 
-Get play analytics for a single video: total plays, unique viewers, average watch percentage, and a per-day play count for the last 30 days.
+Full analytics for a single media item, including the heatmap buckets.
 
-**Auth:** User (media owner) or Admin
+**Auth:** Owner/Admin
 
 **Parameters:**
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `days` | int | `30` | Number of days of history to return (max: 365) |
+| `bucket_count` | int | `100` | Heatmap resolution (10–500 buckets) |
+
+---
+
+### GET /analytics/top
+
+Top media by engagement.
+
+**Auth:** Admin
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `period` | string | `30d` | One of `today`, `7d`, `30d`, `all` |
+| `limit` | int | `10` | Number of items (1–100) |
+| `sort` | string | `engagement` | One of `engagement`, `plays`, `completion` |
+
+---
+
+### GET /analytics/overview
+
+Site-wide analytics summary.
+
+**Auth:** Admin
+
+---
+
+## Boosts
+
+Spend gamification points to promote a media item's visibility.
+
+### GET /boosts
+
+List the current user's boosts.
+
+**Auth:** User
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | `""` | Filter by boost status |
+| `per_page` | int | `20` | Items per page |
+| `page` | int | `1` | Page number |
+
+`X-WP-Total` is returned in the response header.
+
+---
+
+### POST /boosts
+
+Create a boost for a media item. Returns `201` with the new `boost_id`.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `media_id` | int | Yes | — | Media item to boost |
+| `impressions_target` | int | No | `500` | Target number of impressions |
+
+---
+
+### GET /boosts/balance
+
+Return the current user's point balance and the boost cost/limit settings.
+
+**Auth:** User
+
+**Response:**
+
+```json
+{ "balance": 1200, "cost_per_100": 50, "max_impressions": 5000 }
+```
+
+---
+
+## Streaks
+
+> Requires `mvs_streaks_enabled`.
+
+### POST /streaks/buy-freeze
+
+Purchase a streak-freeze token with gamification points. Fails with a `400` if the gamification plugin is inactive or the user lacks enough points.
+
+**Auth:** User
+
+**Response:**
+
+```json
+{ "freezes": 3, "balance": 1100 }
+```
+
+---
+
+## Challenges
+
+> Requires `mvs_challenges_enabled`. Themed photo challenges with entries, voting, and finalized results.
+
+### GET /challenges
+
+List challenges.
+
+**Auth:** Public
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | `""` | Filter by status |
+| `per_page` | int | `20` | Items per page (max via `mvs_rest_pagination_max`, default 100) |
+| `page` | int | `1` | Page number |
+
+---
+
+### POST /challenges
+
+Create a challenge.
+
+**Auth:** Admin
+
+**Body (key fields):** `title` (required), `description`, `theme`, `cover_media_id`, `start_date` (required), `end_date` (required), `voting_end_date` (required), `max_entries_per_user` (default 1), and XP awards `xp_1st` / `xp_2nd` / `xp_3rd` / `xp_participation`.
+
+---
+
+### GET /challenges/{id}
+
+Get a single challenge.
+
+**Auth:** Public
+
+---
+
+### PUT /challenges/{id}
+
+Update a challenge.
+
+**Auth:** Admin
+
+---
+
+### POST /challenges/{id}/cancel
+
+Cancel a challenge.
+
+**Auth:** Admin
+
+---
+
+### GET /challenges/{id}/entries
+
+List entries for a challenge.
+
+**Auth:** Public
+
+**Parameters:** `per_page` (default 20), `page` (default 1), `orderby` (default `votes`).
+
+---
+
+### POST /challenges/{id}/entries
+
+Submit an entry to a challenge.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `media_id` | int | Yes | Media item to enter |
+
+---
+
+### POST /challenges/{id}/entries/{entry_id}/vote
+
+Vote for a challenge entry.
+
+**Auth:** User
+
+---
+
+### DELETE /challenges/{id}/entries/{entry_id}/vote
+
+Remove the current user's vote from an entry.
+
+**Auth:** User
+
+---
+
+### GET /challenges/{id}/results
+
+Get finalized results for a challenge.
+
+**Auth:** Public
+
+---
+
+## Battles
+
+> Requires `mvs_battles_enabled`. 1v1 photo battles.
+
+### GET /battles
+
+List battles.
+
+**Auth:** Public
+
+**Parameters:** `user_id` (default 0), `status` (default `""`), `per_page` (default 20), `page` (default 1).
+
+---
+
+### POST /battles
+
+Create (challenge a user to) a battle.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `opponent_id` | int | Yes | — | The user being challenged |
+| `theme` | string | No | `""` | Optional battle theme |
+
+---
+
+### GET /battles/{id}
+
+Get a single battle.
+
+**Auth:** Public
+
+---
+
+### POST /battles/{id}/accept
+
+Accept a battle challenge.
+
+**Auth:** User
+
+---
+
+### POST /battles/{id}/decline
+
+Decline a battle challenge.
+
+**Auth:** User
+
+---
+
+### POST /battles/{id}/submit
+
+Submit a media entry for a battle.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `media_id` | int | Yes | Media item to submit |
+
+---
+
+### POST /battles/{id}/vote
+
+Cast a vote in a battle.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `voted_for_id` | int | Yes | The user (battle side) being voted for |
+
+---
+
+## Tournaments
+
+> Requires `mvs_tournaments_enabled`. Single-elimination bracket tournaments.
+
+### GET /tournaments
+
+List tournaments.
+
+**Auth:** Public
+
+**Parameters:** `status` (default `""`), `per_page` (default 20), `page` (default 1).
+
+---
+
+### POST /tournaments
+
+Create a tournament.
+
+**Auth:** Admin
+
+**Body (key fields):** `title` (required), `description`, `theme`, `cover_media_id`, `bracket_size` (default 8), `registration_start` (required), `registration_end` (required), `round_duration_hours` (default 48), `xp_round_win` (default 150), `xp_tournament_win` (default 500).
+
+---
+
+### GET /tournaments/{id}
+
+Get tournament detail.
+
+**Auth:** Public
+
+---
+
+### POST /tournaments/{id}/register
+
+Register the current user for a tournament.
+
+**Auth:** User
+
+---
+
+### DELETE /tournaments/{id}/register
+
+Unregister the current user from a tournament.
+
+**Auth:** User
+
+---
+
+### GET /tournaments/{id}/bracket
+
+Get the tournament bracket.
+
+**Auth:** Public
+
+---
+
+### GET /tournaments/{id}/participants
+
+Get the tournament participants (display name + avatar only).
+
+**Auth:** Public
+
+---
+
+### POST /tournaments/{id}/matches/{match_id}/submit
+
+Submit a media entry for a bracket match.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `media_id` | int | Yes | Media item to submit for the match |
+
+---
+
+### POST /tournaments/{id}/matches/{match_id}/vote
+
+Vote in a bracket match.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `voted_for_id` | int | Yes | The participant being voted for |
+
+---
+
+## Competitions (read-only roll-up)
+
+### GET /competitions/active-summary
+
+A single discovery roll-up combining the active challenge, open tournaments, and the most recent battles. Intentionally public so it can drive landing-page/widget discovery. When the requester is logged in, the response also includes their `my_activity`.
+
+**Auth:** Public
 
 **Response:**
 
 ```json
 {
-  "total_plays": 412,
-  "unique_viewers": 308,
-  "avg_watch_pct": 64,
-  "daily": [
-    { "date": "2025-04-01", "plays": 18 }
-  ]
+  "active_challenge": { "id": 5, "title": "Black and White Week" },
+  "open_tournaments": [],
+  "recent_battles": []
 }
 ```
 
----
-
-### POST /media/{id}/boost
-
-Boost a media item so it appears at the top of the Explore feed for a set duration. Deducts from the user's boost balance.
-
-**Auth:** User (media owner)
-
-**Body:**
-
-```json
-{ "duration_hours": 24 }
-```
+> There is no generic `/competitions` CRUD. Challenges, battles, and tournaments are managed through their own route groups above.
 
 ---
 
-### PUT /media/{id}/privacy
+## Connectors
 
-Update the privacy level of a media item. This is a Pro-only endpoint because it supports the advanced privacy options (`group`, `custom`, `presets`).
+> Requires `mvs_connectors_enabled`. OAuth-based import/export connectors for external platforms (Flickr, etc.). Connector IDs are slugs (e.g. `flickr`).
 
-**Auth:** User (media owner or `edit_others_mvs_media`)
+### GET /connectors
+
+List all registered connectors with each one's connection state.
+
+**Auth:** User
+
+---
+
+### POST /connectors/{id}/connect
+
+Initiate the OAuth flow for a connector.
+
+**Auth:** User
 
 **Body:**
 
-```json
-{
-  "privacy": "custom",
-  "allowed_user_ids": [5, 12, 33],
-  "expires_at": "2026-01-01T00:00:00Z"
-}
-```
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `use_custom` | bool | `false` | Use user-supplied API credentials instead of plugin defaults |
+| `api_key` | string | `""` | Custom API key (when `use_custom` is true) |
+| `api_secret` | string | `""` | Custom API secret (when `use_custom` is true) |
+| `return_url` | string | `""` | Where to redirect after the OAuth callback (defaults to the connectors admin page) |
+
+---
+
+### POST /connectors/{id}/disconnect
+
+Revoke and remove the connection.
+
+**Auth:** User (must be connected to this connector)
+
+---
+
+### GET /connectors/{id}/status
+
+Live validation of the connection.
+
+**Auth:** User (must be connected)
+
+---
+
+### GET /connectors/{id}/photos
+
+Browse the remote platform's photos.
+
+**Auth:** User (must be connected)
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | int | `1` | Page number |
+| `per_page` | int | `20` | Photos per page (1–30) |
+| `album_id` | string | `""` | Restrict to a specific remote album/set |
+
+---
+
+### GET /connectors/{id}/albums
+
+Browse the remote platform's albums.
+
+**Auth:** User (must be connected)
+
+---
+
+### POST /connectors/{id}/import
+
+Import selected remote photos into the media library.
+
+**Auth:** User (must be connected)
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `photo_ids` | string[] | Yes | Remote photo IDs to import |
+
+---
+
+### POST /connectors/{id}/export
+
+Export local media to the remote platform.
+
+**Auth:** User (must be connected)
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `media_ids` | int[] | Yes | Local attachment IDs to export |
+
+---
+
+### POST /connectors/{id}/sync
+
+Run an incremental delta sync of recently changed items.
+
+**Auth:** User (must be connected)
 
 ---
 
 ## Admin
 
-### GET /admin/quotas
+### POST /admin/gamification-welcome/dismiss
 
-List storage and media count quotas for all users or a filtered subset.
+Dismiss the gamification first-run welcome banner (site-wide option).
 
-**Auth:** Admin
-
-**Parameters:**
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `user_id` | int | (all) | Filter to a single user |
-| `exceeded` | bool | (all) | Set to `true` to list only users who have exceeded their quota |
-| `per_page` | int | `20` | Users per page |
-| `page` | int | `1` | Page number |
-
-**Response:**
-
-```json
-{
-  "items": [
-    {
-      "user_id": 42,
-      "display_name": "Jane Smith",
-      "storage_used_bytes": 524288000,
-      "storage_limit_bytes": 1073741824,
-      "media_count": 34,
-      "media_limit": 100
-    }
-  ],
-  "total": 150,
-  "pages": 8
-}
-```
-
----
-
-### PUT /admin/quotas/{user_id}
-
-Override the quota for a specific user. Overrides take precedence over membership-level defaults.
-
-**Auth:** Admin
-
-**Body:**
-
-```json
-{
-  "storage_limit_bytes": 2147483648,
-  "media_limit": 200
-}
-```
-
-Pass `null` for either field to remove the override and revert to the membership-level default.
-
----
-
-### DELETE /admin/quotas/{user_id}
-
-Remove all quota overrides for a user.
-
-**Auth:** Admin
-
----
-
-### GET /admin/analytics
-
-Get site-wide video analytics: total plays, total watch time, top media by plays, and daily play counts.
-
-**Auth:** Admin
-
-**Parameters:**
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `days` | int | `30` | Number of days of history (max: 365) |
-| `top_n` | int | `10` | Number of top media items to include |
-
-**Response:**
-
-```json
-{
-  "total_plays": 9841,
-  "total_watch_seconds": 1843200,
-  "top_media": [
-    { "media_id": 55, "title": "Summer Reel", "plays": 412 }
-  ],
-  "daily": [
-    { "date": "2025-04-01", "plays": 320 }
-  ]
-}
-```
+**Auth:** Admin (`manage_mvs_settings`)
 
 ---
 
 ## Error Responses
 
-Pro endpoints use the same error format as the free API:
+Pro endpoints use the same error envelope as the free API:
 
 ```json
 {
-  "code": "mvs_pro_license_inactive",
-  "message": "WPMediaVerse Pro license is not active.",
+  "code": "mvs_pro_rest_forbidden",
+  "message": "You do not have permission to manage WPMediaVerse Pro settings.",
   "data": { "status": 403 }
 }
 ```
 
-Additional Pro error codes:
+Common Pro error codes:
 
 | Code | Status | Meaning |
 |------|--------|---------|
-| `mvs_pro_license_inactive` | 403 | Pro license not active on this site |
-| `mvs_transcode_unavailable` | 503 | FFmpeg not found or transcoding service unreachable |
-| `mvs_quota_exceeded` | 403 | User has reached their storage or media count limit |
-| `mvs_competition_closed` | 409 | Competition is no longer accepting entries |
-| `mvs_already_entered` | 409 | User has already submitted an entry to this competition |
-| `mvs_boost_insufficient` | 402 | User does not have enough boost balance |
-| `mvs_caption_format` | 400 | Uploaded file is not valid WebVTT |
+| `mvs_pro_rest_forbidden` | 403 | Caller lacks the required Pro capability |
+| `mvs_pro_no_captions` | 404 | No captions exist for the requested media |
+| `mvs_pro_privacy_update_failed` | 400 | Privacy could not be updated (bad level or write failure) |
+| `mvs_gamification_unavailable` | 400 | Gamification plugin not active (streak freeze) |
+| `mvs_insufficient_points` | 400 | Not enough gamification points for the requested action |
