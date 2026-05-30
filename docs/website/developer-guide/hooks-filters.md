@@ -161,6 +161,7 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_serve_public_cloud_direct` | filter | Free | 1.4.0 |
 | `mvs_public_cloud_thumbnail_url` | filter | Free | 1.4.0 |
 | `mvs_public_cloud_file_url` | filter | Free | 1.4.0 |
+| `mvs_broadcast_thumbnail_ttl` | filter | Free | 1.5.0 |
 
 ---
 
@@ -1339,6 +1340,33 @@ Filters the direct CDN URL for a public media's original file. Companion to `mvs
 ```php
 add_filter( 'mvs_public_cloud_file_url', function( string $file_url, int $media_id, string $size ) : string {
     return str_replace( 'my-bucket.s3.amazonaws.com', 'cdn.example.com', $file_url );
+}, 10, 3 );
+```
+
+---
+
+### Broadcast Thumbnail Expiry (1.5.0)
+
+#### `mvs_broadcast_thumbnail_ttl`
+
+Sets how long, in seconds, a broadcast thumbnail access URL stays valid. These URLs are minted by `MediaRepository::get_broadcast_thumbnail_url()` for thumbnails embedded in long-lived surfaces such as notification emails and RSS feeds, where the link may be opened long after it was generated. The default is `HOUR_IN_SECONDS` (3600). The serve-time privacy check still runs on every request, so this filter only controls the link's validity window, not the access decision.
+
+Raise the value on sites that cache those surfaces at the CDN for longer than an hour, but keep it as short as your caching allows.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$ttl` | int | Time-to-live in seconds. Default `HOUR_IN_SECONDS` (3600) |
+| `$media_id` | int | Media ID the thumbnail belongs to |
+| `$size` | string | Size key (e.g. `thumb_large`, `thumb_medium`) |
+
+**Returns:** `int` - The TTL in seconds.
+
+```php
+add_filter( 'mvs_broadcast_thumbnail_ttl', function( int $ttl, int $media_id, string $size ) : int {
+    // Widen to 6 hours on a site that caches notification emails / RSS at the CDN.
+    return 6 * HOUR_IN_SECONDS;
 }, 10, 3 );
 ```
 
