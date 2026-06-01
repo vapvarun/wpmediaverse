@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 15;
+	const CURRENT_VERSION = 16;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -726,6 +726,39 @@ class Migrator {
 				KEY activity_position (activity_id, position)
 			) {$charset};"
 		);
+	}
+
+	/**
+	 * Migration v16 — generalise the media linkage table to any object type.
+	 *
+	 * `mvs_bp_activity_media` began as a BuddyPress activity↔media link, but its
+	 * `activity_id` column is a bare object id. Add an `object_type` discriminator
+	 * (default `'bp_activity'` so every existing row keeps its exact meaning) so the
+	 * same table can link media to ANY object — BuddyNext posts (`bn_post`), spaces,
+	 * etc. — via the provider-neutral `Media\ObjectMediaLinkage` service. The legacy
+	 * BuddyPress save/read path is untouched (its inserts inherit the column default).
+	 * Purely additive.
+	 */
+	private function migrate_to_16(): void {
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_bp_activity_media';
+
+		// Idempotent: add the column only when absent (safe to re-run).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$has_col = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM information_schema.COLUMNS
+				 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = 'object_type'",
+				$table
+			)
+		);
+
+		if ( 0 === $has_col ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN object_type varchar(32) NOT NULL DEFAULT 'bp_activity' AFTER id" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} ADD KEY object_lookup (object_type, activity_id, position)" );
+		}
 	}
 
 	/**

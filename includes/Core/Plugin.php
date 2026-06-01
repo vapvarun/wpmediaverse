@@ -632,6 +632,16 @@ class Plugin {
 			}
 		);
 
+		// Provider-neutral object↔media linkage (1.6.0). Public seam for headless
+		// consumers (e.g. BuddyNext) to attach/read media on their own objects
+		// (bn_post, bn_space, …) without the BuddyPress save path.
+		self::$container->register(
+			'object_media',
+			function () {
+				return new \WPMediaVerse\Media\ObjectMediaLinkage();
+			}
+		);
+
 		self::$container->register(
 			'template_helpers',
 			function () {
