@@ -477,7 +477,7 @@ class MessagingService {
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT user_id, status, last_read_at FROM {$part_table} WHERE conversation_id = %d",
+				"SELECT user_id, role, status, last_read_at FROM {$part_table} WHERE conversation_id = %d",
 				$conversation_id
 			)
 		);
@@ -491,6 +491,7 @@ class MessagingService {
 			}
 			$participants[] = array(
 				'id'           => (int) $row->user_id,
+				'role'         => isset( $row->role ) ? (string) $row->role : 'member',
 				'display_name' => $user->display_name,
 				'avatar_url'   => get_avatar_url( $row->user_id, array( 'size' => 96 ) ),
 				'status'       => $row->status,
@@ -501,6 +502,27 @@ class MessagingService {
 		}
 
 		return $participants;
+	}
+
+	/**
+	 * Get a participant's role in a conversation.
+	 *
+	 * @param int $conversation_id Conversation id.
+	 * @param int $user_id         User id.
+	 * @return string 'admin' | 'member', or '' if not an active participant.
+	 */
+	public function get_participant_role( int $conversation_id, int $user_id ): string {
+		global $wpdb;
+		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$role = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT role FROM {$part_table} WHERE conversation_id = %d AND user_id = %d AND status = 'active'",
+				$conversation_id,
+				$user_id
+			)
+		);
+		return null === $role ? '' : (string) $role;
 	}
 
 	/**
