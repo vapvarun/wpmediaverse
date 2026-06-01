@@ -22,6 +22,7 @@ class MessagingService {
 	const UNSEND_WINDOW_SECONDS = 900; // 15 min.
 	const MAX_PINNED            = 3;
 	const ONLINE_THRESHOLD      = 120; // 2 min.
+	const MAX_GROUP_PARTICIPANTS = 50; // Group conversation hard cap (incl. creator).
 	const COALESCE_SECONDS      = 30;
 
 	// -------------------------------------------------------------------------
@@ -584,6 +585,302 @@ class MessagingService {
 		);
 
 		return false !== $result;
+	}
+
+	/**
+	 * Create a group conversation with an ordered participant roster.
+	 *
+	 * Engine-level primitive (the engine owns the tables). Feature gating —
+	 * whether group DM is offered, the participant cap policy, who may create —
+	 * is the caller's concern (e.g. WPMediaVerse Pro). The creator is added as
+	 * `admin`; everyone else as `member`. Optionally scopes the conversation to a
+	 * container (`bn_space`, `bp_group`, …) for space/group channels.
+	 *
+	 * @param int    $creator_id      Creator (becomes admin).
+	 * @param int[]  $participant_ids Other members to add.
+	 * @param string $title           Group title.
+	 * @param array  $opts            Optional: container_type, container_id.
+	 * @return int New conversation id, or 0 on failure / cap exceeded.
+	 */
+	public function create_group_conversation( int $creator_id, array $participant_ids, string $title = '', array $opts = array() ): int {
+		global $wpdb;
+
+		if ( $creator_id <= 0 ) {
+			return 0;
+		}
+
+		// Unique, valid members (excluding the creator), capped.
+		$members = array();
+		foreach ( $participant_ids as $pid ) {
+			$pid = (int) $pid;
+			if ( $pid > 0 && $pid !== $creator_id ) {
+				$members[ $pid ] = true;
+			}
+		}
+		$members = array_keys( $members );
+		if ( count( $members ) + 1 > self::MAX_GROUP_PARTICIPANTS ) {
+			return 0;
+		}
+
+		$conv_table = $wpdb->prefix . 'mvs_conversations';
+		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
+		$now        = current_time( 'mysql', true );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->insert(
+			$conv_table,
+			array(
+				'type'             => 'group',
+				'container_type'   => isset( $opts['container_type'] ) ? sanitize_key( (string) $opts['container_type'] ) : '',
+				'container_id'     => isset( $opts['container_id'] ) ? (int) $opts['container_id'] : 0,
+				'title'            => sanitize_text_field( $title ),
+				'created_by'       => $creator_id,
+				'last_activity_at' => $now,
+				'created_at'       => $now,
+			),
+			array( '%s', '%s', '%d', '%s', '%d', '%s', '%s' )
+		);
+		$conv_id = (int) $wpdb->insert_id;
+		if ( ! $conv_id ) {
+			return 0;
+		}
+
+		$this->insert_participant( $conv_id, $creator_id, 'admin', $now );
+		foreach ( $members as $pid ) {
+			$this->insert_participant( $conv_id, $pid, 'member', $now );
+		}
+
+		$all_ids = array_merge( array( $creator_id ), $members );
+
+		/** This action is documented in includes/Messaging/MessagingService.php (find_or_create_conversation). */
+		do_action( 'mvs_conversation_created', $conv_id, $creator_id, $all_ids );
+
+		/**
+		 * Fires when a group conversation is created.
+		 *
+		 * @since 1.6.0
+		 *
+		 * @param int    $conv_id    Conversation id.
+		 * @param int    $creator_id Creator (admin).
+		 * @param int[]  $all_ids    All participant ids incl. creator.
+		 * @param array  $opts       Container opts (container_type, container_id).
+		 */
+		do_action( 'mvs_group_conversation_created', $conv_id, $creator_id, $all_ids, $opts );
+
+		return $conv_id;
+	}
+
+	/**
+	 * Get (or lazily create) the single group conversation for a container.
+	 *
+	 * Used for "space channels": one group conversation per container
+	 * (`bn_space:ID`, `bp_group:ID`). Returns the existing channel id if present.
+	 *
+	 * @param string $container_type Container namespace.
+	 * @param int    $container_id   Container id.
+	 * @param int    $creator_id     Creator if the channel must be created.
+	 * @param string $title          Title used on creation.
+	 * @return int Conversation id, or 0 on failure.
+	 */
+	public function get_or_create_channel( string $container_type, int $container_id, int $creator_id, string $title = '' ): int {
+		global $wpdb;
+
+		$container_type = sanitize_key( $container_type );
+		if ( '' === $container_type || $container_id <= 0 ) {
+			return 0;
+		}
+
+		$conv_table = $wpdb->prefix . 'mvs_conversations';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$existing   = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$conv_table} WHERE type = 'group' AND container_type = %s AND container_id = %d LIMIT 1",
+				$container_type,
+				$container_id
+			)
+		);
+		if ( $existing > 0 ) {
+			return $existing;
+		}
+
+		return $this->create_group_conversation(
+			$creator_id,
+			array(),
+			$title,
+			array(
+				'container_type' => $container_type,
+				'container_id'   => $container_id,
+			)
+		);
+	}
+
+	/**
+	 * Add (or reactivate) a participant in a conversation.
+	 *
+	 * @param int    $conversation_id Conversation id.
+	 * @param int    $user_id         User to add.
+	 * @param string $role            'admin' | 'member'. Default 'member'.
+	 * @return bool True on success, false on cap exceeded / failure.
+	 */
+	public function add_participant( int $conversation_id, int $user_id, string $role = 'member' ): bool {
+		global $wpdb;
+
+		if ( $conversation_id <= 0 || $user_id <= 0 ) {
+			return false;
+		}
+
+		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
+		$role       = ( 'admin' === $role ) ? 'admin' : 'member';
+
+		// Already a participant? Reactivate.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$existing = $wpdb->get_var(
+			$wpdb->prepare( "SELECT id FROM {$part_table} WHERE conversation_id = %d AND user_id = %d", $conversation_id, $user_id )
+		);
+		if ( $existing ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->update(
+				$part_table,
+				array( 'status' => 'active' ),
+				array( 'conversation_id' => $conversation_id, 'user_id' => $user_id ),
+				array( '%s' ),
+				array( '%d', '%d' )
+			);
+			return true;
+		}
+
+		// Enforce the group cap on active participants.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$active = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$part_table} WHERE conversation_id = %d AND status = 'active'", $conversation_id )
+		);
+		if ( $active >= self::MAX_GROUP_PARTICIPANTS ) {
+			return false;
+		}
+
+		$ok = $this->insert_participant( $conversation_id, $user_id, $role, current_time( 'mysql', true ) );
+		if ( $ok ) {
+			/**
+			 * Fires when a participant is added to a conversation.
+			 *
+			 * @since 1.6.0
+			 *
+			 * @param int    $conversation_id Conversation id.
+			 * @param int    $user_id         Added user.
+			 * @param string $role            Assigned role.
+			 */
+			do_action( 'mvs_participant_added', $conversation_id, $user_id, $role );
+		}
+		return $ok;
+	}
+
+	/**
+	 * Remove a participant from a conversation (admin action).
+	 *
+	 * @param int $conversation_id Conversation id.
+	 * @param int $user_id         User to remove.
+	 * @return bool
+	 */
+	public function remove_participant( int $conversation_id, int $user_id ): bool {
+		global $wpdb;
+
+		if ( $conversation_id <= 0 || $user_id <= 0 ) {
+			return false;
+		}
+
+		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->update(
+			$part_table,
+			array( 'status' => 'removed' ),
+			array( 'conversation_id' => $conversation_id, 'user_id' => $user_id ),
+			array( '%s' ),
+			array( '%d', '%d' )
+		);
+
+		if ( false !== $result ) {
+			/**
+			 * Fires when a participant is removed from a conversation.
+			 *
+			 * @since 1.6.0
+			 *
+			 * @param int $conversation_id Conversation id.
+			 * @param int $user_id         Removed user.
+			 */
+			do_action( 'mvs_participant_removed', $conversation_id, $user_id );
+		}
+		return false !== $result;
+	}
+
+	/**
+	 * Set a participant's role (admin | member).
+	 *
+	 * @param int    $conversation_id Conversation id.
+	 * @param int    $user_id         User.
+	 * @param string $role            'admin' | 'member'.
+	 * @return bool
+	 */
+	public function set_participant_role( int $conversation_id, int $user_id, string $role ): bool {
+		global $wpdb;
+
+		$role = ( 'admin' === $role ) ? 'admin' : 'member';
+		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->update(
+			$part_table,
+			array( 'role' => $role ),
+			array( 'conversation_id' => $conversation_id, 'user_id' => $user_id ),
+			array( '%s' ),
+			array( '%d', '%d' )
+		);
+		return false !== $result;
+	}
+
+	/**
+	 * Rename a (group) conversation.
+	 *
+	 * @param int    $conversation_id Conversation id.
+	 * @param string $title           New title.
+	 * @return bool
+	 */
+	public function rename_conversation( int $conversation_id, string $title ): bool {
+		global $wpdb;
+		$conv_table = $wpdb->prefix . 'mvs_conversations';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->update(
+			$conv_table,
+			array( 'title' => sanitize_text_field( $title ) ),
+			array( 'id' => $conversation_id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+		return false !== $result;
+	}
+
+	/**
+	 * Insert one participant row (internal helper).
+	 *
+	 * @param int    $conversation_id Conversation id.
+	 * @param int    $user_id         User id.
+	 * @param string $role            Role.
+	 * @param string $now             MySQL UTC datetime.
+	 * @return bool
+	 */
+	private function insert_participant( int $conversation_id, int $user_id, string $role, string $now ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ok = $wpdb->insert(
+			$wpdb->prefix . 'mvs_conversation_participants',
+			array(
+				'conversation_id' => $conversation_id,
+				'user_id'         => $user_id,
+				'role'            => $role,
+				'status'          => 'active',
+				'joined_at'       => $now,
+			),
+			array( '%d', '%d', '%s', '%s', '%s' )
+		);
+		return false !== $ok;
 	}
 
 	/**
