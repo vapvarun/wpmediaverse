@@ -1016,7 +1016,12 @@ const { state, actions } = store( 'mvs/messaging', {
 		// ---- Reply ----
 		setReplyTo() {
 			const ctx = getContext();
-			const msg = state.messages.find( m => String( m.id ) === String( ctx.messageId ) );
+			// Reply is triggered from the message context menu, which records the
+			// target in state.contextMenuMessageId — ctx.messageId is not set on
+			// that path. Use the same fallback as deleteMessage/unsendMessage so
+			// the lookup resolves and replyingTo is actually set.
+			const msgId = ctx.messageId || state.contextMenuMessageId;
+			const msg = state.messages.find( m => String( m.id ) === String( msgId ) );
 			if ( msg ) {
 				state.replyingTo = msg;
 				state.contextMenuMessageId = null;
