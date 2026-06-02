@@ -244,6 +244,12 @@ class Plugin {
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_shared_ui_assets' ) );
 		add_action( 'wp_footer', array( self::class, 'render_shared_ui_frame' ) );
 
+		// Frontend-presence policy — single enforcement point. When BuddyNext
+		// owns the community UX, MediaVerse paints nothing on non-MVS surfaces.
+		// Runs last so it can dequeue every `mvs-` handle (and `@mvs/` module)
+		// regardless of which class enqueued it — free, Pro, or future code.
+		add_action( 'wp_enqueue_scripts', array( self::class, 'enforce_frontend_presence' ), PHP_INT_MAX );
+
 		// Messaging — DM engine.
 		self::init_messaging();
 
@@ -1608,10 +1614,126 @@ JS;
 	}
 
 	/**
+	 * Whether the current front-end request is a MediaVerse-owned surface.
+	 *
+	 * Covers single media, albums, collections, the album archive, MVS
+	 * taxonomies, profile/edit-profile, the media archive, and the mapped
+	 * Explore / Dashboard / Upload pages. Used to decide whether the shared
+	 * UI frame (FAB, upload modal, lightbox) should mount: when BuddyNext is
+	 * active it owns the media UX on its own and all other pages, so the
+	 * engine only keeps its shared UI on these dedicated surfaces.
+	 *
+	 * @return bool True when the request is a MediaVerse-owned page.
+	 */
+	private static function is_mvs_frontend_context(): bool {
+		$post_type = get_post_type();
+		if ( in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true ) ) {
+			return true;
+		}
+
+		if ( is_post_type_archive( 'mvs_album' ) || is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' ) ) {
+			return true;
+		}
+
+		if ( ! empty( $GLOBALS['mvs_current_media'] )
+			|| ! empty( $GLOBALS['mvs_is_media_archive'] )
+			|| (bool) get_query_var( 'mvs_edit_profile' )
+			|| (bool) get_query_var( 'mvs_profile_user' )
+			|| (bool) get_query_var( 'mvs_media_archive' ) ) {
+			return true;
+		}
+
+		$mvs_page_ids = array_filter(
+			array_map(
+				'absint',
+				array(
+					get_option( 'mvs_page_explore', 0 ),
+					get_option( 'mvs_page_dashboard', 0 ),
+					get_option( 'mvs_page_upload', 0 ),
+				)
+			)
+		);
+
+		return ! empty( $mvs_page_ids ) && is_page( $mvs_page_ids );
+	}
+
+	/**
+	 * Whether MediaVerse must NOT paint its own front-end UI on this request.
+	 *
+	 * The single source of truth for the frontend-presence policy. When
+	 * BuddyNext is the active community layer it owns the media UX on its own
+	 * pages and every non-MediaVerse surface (blog, WooCommerce, landing
+	 * pages); MediaVerse keeps its UI only on its own dedicated surfaces
+	 * (see is_mvs_frontend_context()). The `mvs_suppress_frontend_ui` filter
+	 * lets a site or Pro override the decision per request.
+	 *
+	 * @return bool True when MediaVerse front-end assets/markup must stand down.
+	 */
+	public static function frontend_ui_suppressed(): bool {
+		$suppressed = apply_filters( 'mvs_buddynext_active', false )
+			&& ! self::is_mvs_frontend_context();
+
+		return (bool) apply_filters( 'mvs_suppress_frontend_ui', $suppressed );
+	}
+
+	/**
+	 * Enforce the frontend-presence policy at one chokepoint.
+	 *
+	 * Runs on `wp_enqueue_scripts` at PHP_INT_MAX — after every class (free,
+	 * Pro, and any future code) has registered its assets. When the policy
+	 * says stand down, dequeue + deregister every enqueued handle prefixed
+	 * `mvs-` and every script module id prefixed `@mvs/`. Keying on the
+	 * handle-prefix naming contract means new enqueue points are covered
+	 * automatically — no per-call guards to maintain.
+	 *
+	 * @return void
+	 */
+	public static function enforce_frontend_presence(): void {
+		if ( is_admin() || ! self::frontend_ui_suppressed() ) {
+			return;
+		}
+
+		// Classic styles + scripts: dequeue and deregister anything `mvs-*`.
+		foreach ( array( wp_styles(), wp_scripts() ) as $registry ) {
+			if ( ! $registry instanceof \WP_Dependencies ) {
+				continue;
+			}
+			foreach ( (array) $registry->queue as $handle ) {
+				if ( 0 === strpos( (string) $handle, 'mvs-' ) ) {
+					if ( $registry === wp_styles() ) {
+						wp_dequeue_style( $handle );
+						wp_deregister_style( $handle );
+					} else {
+						wp_dequeue_script( $handle );
+						wp_deregister_script( $handle );
+					}
+				}
+			}
+		}
+
+		// Script modules (Interactivity API): `@mvs/...` ids. The modules
+		// registry has no public queue accessor, so dequeue the known module
+		// ids; registration is idempotent and dequeue of an unqueued id is a
+		// no-op, so listing the engine's modules here is safe and complete.
+		if ( function_exists( 'wp_dequeue_script_module' ) ) {
+			foreach ( array( '@mvs/shared-ui', '@mvs/media-social', 'mvs-messaging' ) as $module_id ) {
+				wp_dequeue_script_module( $module_id );
+			}
+		}
+	}
+
+	/**
 	 * Enqueue shared UI shell assets (FAB, upload modal, lightbox).
 	 */
 	public static function enqueue_shared_ui_assets(): void {
 		if ( ! is_user_logged_in() || is_admin() ) {
+			return;
+		}
+
+		// Single policy: stand down on non-MediaVerse surfaces when BuddyNext
+		// owns the UX. The PHP_INT_MAX enforcer is the catch-all; bailing here
+		// too avoids registering assets we would only dequeue moments later.
+		if ( self::frontend_ui_suppressed() ) {
 			return;
 		}
 
@@ -1659,6 +1781,12 @@ JS;
 	 */
 	public static function render_shared_ui_frame(): void {
 		if ( is_admin() ) {
+			return;
+		}
+
+		// Single policy (same predicate as the asset enforcer): do not print
+		// the MediaVerse app shell on non-MVS surfaces when BuddyNext owns UX.
+		if ( self::frontend_ui_suppressed() ) {
 			return;
 		}
 
