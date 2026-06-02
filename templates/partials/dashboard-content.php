@@ -377,6 +377,9 @@ wp_enqueue_style( 'mvs-frontend' );
 					<select class="mvs-upload-meta-privacy" data-wp-on--change="actions.setUploadPrivacy">
 						<option value="public" <?php selected( $mvs_def_priv, 'public' ); ?>><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 						<option value="members" <?php selected( $mvs_def_priv, 'members' ); ?>><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+						<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
+						<option value="friends" <?php selected( $mvs_def_priv, 'friends' ); ?>><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
+						<?php endif; ?>
 						<option value="private" <?php selected( $mvs_def_priv, 'private' ); ?>><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 					</select>
 					<?php endif; ?>
@@ -707,6 +710,9 @@ wp_enqueue_style( 'mvs-frontend' );
 						<select data-wp-on--change="actions.setEditPrivacy">
 							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 							<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+							<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
+							<option value="friends"><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
+							<?php endif; ?>
 							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 						</select>
 					</div>
@@ -792,6 +798,9 @@ wp_enqueue_style( 'mvs-frontend' );
 					<select data-wp-on--change="actions.setAlbumPrivacy">
 						<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 						<option value="members"><?php esc_html_e( 'Members', 'wpmediaverse' ); ?></option>
+						<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
+						<option value="friends"><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
+						<?php endif; ?>
 						<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 					</select>
 				</div>

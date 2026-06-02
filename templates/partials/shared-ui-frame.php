@@ -230,6 +230,9 @@ $mvs_show_fab = $mvs_is_logged_in && (
 							aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
 							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 							<option value="members"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
+							<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
+							<option value="friends"><?php esc_html_e( 'Friends Only', 'wpmediaverse' ); ?></option>
+							<?php endif; ?>
 							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 						</select>
 						<?php endif; ?>
@@ -318,6 +321,9 @@ $mvs_show_fab = $mvs_is_logged_in && (
 								data-wp-bind--value="state.editModalPrivacy">
 								<option value="public"><?php esc_html_e( 'Public — anyone can view', 'wpmediaverse' ); ?></option>
 								<option value="members"><?php esc_html_e( 'Members Only — logged-in users', 'wpmediaverse' ); ?></option>
+								<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
+								<option value="friends"><?php esc_html_e( 'Friends Only — BuddyPress friends', 'wpmediaverse' ); ?></option>
+								<?php endif; ?>
 								<option value="private"><?php esc_html_e( 'Private — only you', 'wpmediaverse' ); ?></option>
 							</select>
 						</div>
