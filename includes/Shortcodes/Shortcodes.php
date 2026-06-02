@@ -580,6 +580,9 @@ class Shortcodes {
 					(int) $atts['per_page']
 				)
 			);
+
+			/** This filter is documented in includes/Social/FavoriteService.php */
+			$media_ids = apply_filters( 'mvs_collection_media_ids', array_map( 'absint', (array) $media_ids ), $collection_id, (int) $atts['per_page'] );
 		}
 
 		if ( empty( $media_ids ) ) {

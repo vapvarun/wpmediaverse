@@ -173,7 +173,23 @@ class FavoriteService {
 			);
 		}
 
-		return array_map( 'absint', (array) $rows );
+		$ids = array_map( 'absint', (array) $rows );
+
+		/**
+		 * Filters the media IDs that belong to a manual collection.
+		 *
+		 * Free returns the IDs stored in `mvs_favorites.collection_id` (the
+		 * single-collection model). Pro hooks this to union in the multi-collection
+		 * memberships stored in `mvs_pro_collection_items` so media added via the
+		 * Pro "Save to" picker actually surfaces when the collection is viewed.
+		 *
+		 * @since 1.6.0
+		 *
+		 * @param int[] $ids           Media IDs (created_at DESC).
+		 * @param int   $collection_id Collection post ID.
+		 * @param int   $limit         Max rows requested (0 = no limit).
+		 */
+		return apply_filters( 'mvs_collection_media_ids', $ids, $collection_id, $limit );
 	}
 
 	/**

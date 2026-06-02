@@ -484,8 +484,11 @@ class CollectionController extends WP_REST_Controller {
 					$collection_id
 				)
 			);
-			if ( $media_id ) {
-				return (int) $media_id;
+
+			/** This filter is documented in includes/Social/FavoriteService.php */
+			$ids = apply_filters( 'mvs_collection_media_ids', $media_id ? array( (int) $media_id ) : array(), $collection_id, 1 );
+			if ( ! empty( $ids ) ) {
+				return (int) $ids[0];
 			}
 		}
 		return null;
