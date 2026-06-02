@@ -987,20 +987,36 @@ class UploadService {
 		// URL — it IS the largest available version of the image.
 		// Storage-internal: must be the raw stored URL — persisting a
 		// signed URL into the meta table would freeze the token.
-		$file_url = $repo->get_raw( $media_id, 'file_url' );
-		if ( $file_url ) {
+		// For videos/audio the media's file_url is the source media file (e.g.
+		// an .mp4), NOT an image — using it as a thumbnail fallback is what wrote
+		// a video URL into thumb_* and broke video thumbnails on My Media and
+		// Activity. When file_url is not an image, fall back to the image source
+		// we actually resized ($file_path — the staged poster frame) instead.
+		// Images keep using file_url so cloud/CDN originals are preserved.
+		$file_url          = $repo->get_raw( $media_id, 'file_url' );
+		$file_url_is_image = is_string( $file_url ) && '' !== $file_url
+			&& preg_match( '#\.(jpe?g|png|gif|webp|avif)(?:[?\#].*)?$#i', $file_url );
+
+		$fallback_url = $file_url_is_image
+			? $file_url
+			: trailingslashit( $base_url ) . basename( $file_path );
+		$fallback_rel = $file_url_is_image
+			? $media_rel_path
+			: VariantSpec::compute_rel_path( $rel_dir, $cloud_rel_dir, basename( $file_path ) );
+
+		if ( $fallback_url ) {
 			foreach ( array_keys( $sizes ) as $size_name ) {
 				if ( ! isset( $generated[ $size_name ] ) ) {
-					// Original-URL fallback for an unreachable size. Re-use
-					// the writer so the legacy URL meta + _path meta stay in
-					// lockstep with the rest of the loop above.
+					// Fallback for an unreachable size. Re-use the writer so the
+					// legacy URL meta + _path meta stay in lockstep with the loop
+					// above.
 					$fallback_spec = VariantSpec::for_image_variant(
 						$media_id,
 						$size_name,
-						$media_rel_path,
+						$fallback_rel,
 						$file_path // best on-disk source we have for this size
 					);
-					$writer->record( $fallback_spec, $file_url );
+					$writer->record( $fallback_spec, $fallback_url );
 				}
 			}
 		}

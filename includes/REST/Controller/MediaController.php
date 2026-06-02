@@ -638,7 +638,17 @@ class MediaController extends WP_REST_Controller {
 		// renders the default video poster at template time.
 		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
 			$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
-			if ( ! $existing_thumb ) {
+
+			// Regenerate when there is no thumb yet OR the stored value is not a
+			// valid image URL. A prior write could have stored the video file URL
+			// itself (the broken video-thumbnail case); skipping on a truthy-but-
+			// invalid value left the thumbnail permanently broken.
+			$needs_thumb = true;
+			if ( is_string( $existing_thumb ) && '' !== $existing_thumb ) {
+				$needs_thumb = ! preg_match( '#\.(jpe?g|png|gif|webp|avif)(?:[?\#].*)?$#i', $existing_thumb );
+			}
+
+			if ( $needs_thumb ) {
 				$staged_path = \WPMediaVerse\Core\Plugin::container()->get( 'poster' )->stage_client_frame( $media_id, $files['thumbnail']['tmp_name'] );
 				if ( $staged_path ) {
 					$upload_service->generate_thumbnails( $media_id, $staged_path, 'image/jpeg' );
