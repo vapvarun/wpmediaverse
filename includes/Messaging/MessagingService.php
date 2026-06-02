@@ -1311,12 +1311,30 @@ class MessagingService {
 			array( '%d', '%d' )
 		);
 
-		if ( false !== $result && $result > 0 ) {
+		if ( false === $result ) {
+			return false;
+		}
+
+		if ( $result > 0 ) {
 			do_action( 'mvs_message_deleted', $message_id, $user_id, false );
 			return true;
 		}
 
-		return false;
+		// Zero rows changed. Make the delete idempotent: re-deleting a message
+		// the sender already soft-deleted is a no-op, not a failure, so report
+		// success instead of letting the controller return HTTP 400. (A
+		// recipient deleting their own copy still needs per-participant deletion,
+		// which is part of the group-conversation work - tracked separately.)
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$already_deleted = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT is_deleted FROM {$msg_table} WHERE id = %d AND sender_id = %d",
+				$message_id,
+				$user_id
+			)
+		);
+
+		return '1' === (string) $already_deleted;
 	}
 
 	/**
