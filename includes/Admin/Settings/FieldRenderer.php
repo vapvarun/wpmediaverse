@@ -104,16 +104,11 @@ class FieldRenderer {
 				'audio/ogg'  => 'OGG',
 			),
 			// Documents group (PDF) removed from the picker in 1.2.3 — see
-			// SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES note. Sites that
-			// previously stored application/pdf still see it in the
-			// "Custom types" row below; the option is still respected end-to-end.
+			// SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES note. The picker is
+			// intentionally limited to the image/video/audio formats WordPress
+			// supports natively; additional MIME types are added in code via the
+			// `mvs_allowed_file_types` filter (see UploadService::get_allowed_types).
 		);
-
-		$known_mimes = array();
-		foreach ( $groups as $mime_map ) {
-			$known_mimes = array_merge( $known_mimes, array_keys( $mime_map ) );
-		}
-		$custom_types = array_diff( $selected, $known_mimes, array( '' ) );
 
 		if ( ! empty( $args['description'] ) ) {
 			printf(
@@ -151,25 +146,9 @@ class FieldRenderer {
 		echo '</div>';
 
 		printf(
-			'<details class="mvs-custom-types"><summary>%s</summary>',
-			esc_html__( 'Custom MIME types', 'wpmediaverse' )
+			'<p class="description">%s <code>mvs_allowed_file_types</code></p>',
+			esc_html__( 'Uploads are limited to the image, video, and audio formats WordPress supports natively. Developers can allow additional MIME types in code with the filter:', 'wpmediaverse' )
 		);
-		printf(
-			'<textarea name="%s_custom" rows="2" class="large-text" placeholder="%s">%s</textarea>',
-			esc_attr( $args['option'] ),
-			esc_attr__( 'e.g. video/quicktime', 'wpmediaverse' ),
-			esc_textarea( implode( ',', $custom_types ) )
-		);
-		printf(
-			'<p class="description">%s</p>',
-			esc_html__( 'Additional comma-separated MIME types for advanced users.', 'wpmediaverse' )
-		);
-		printf(
-			'<p class="description"><strong>%s</strong> %s</p>',
-			esc_html__( 'Do not enable image/svg+xml uploads:', 'wpmediaverse' ),
-			esc_html__( 'SVG files can carry JavaScript and we do not sanitize them. If you must enable SVG, do so only with a separate sanitizer plugin and never allow non-trusted users to upload them.', 'wpmediaverse' )
-		);
-		echo '</details>';
 	}
 
 	/**

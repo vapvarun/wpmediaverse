@@ -100,24 +100,14 @@ class Sanitizers {
 			$types = array_map( 'sanitize_mime_type', $value );
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
-		if ( ! empty( $_POST['mvs_allowed_file_types_custom'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			$custom     = sanitize_text_field( wp_unslash( $_POST['mvs_allowed_file_types_custom'] ) );
-			$custom_arr = array_map( 'trim', explode( ',', $custom ) );
-			$custom_arr = array_map( 'sanitize_mime_type', $custom_arr );
-			$types      = array_merge( $types, $custom_arr );
-		}
-
 		$types = array_unique( array_filter( $types ) );
 
-		// Submitting the form with zero checkboxes checked and no custom types
-		// would otherwise persist '' and overwrite the registered default —
-		// after which the form page renders every checkbox unchecked and uploads
-		// stop working. Treat an empty submission as "no change" by preserving
-		// the current stored value (which is the registered default on fresh
-		// installs). Users who genuinely want to lock everything down can still
-		// enter a single MIME type in the custom textarea.
+		// Submitting the form with zero checkboxes checked would otherwise
+		// persist '' and overwrite the registered default — after which the form
+		// page renders every checkbox unchecked and uploads stop working. Treat
+		// an empty submission as "no change" by preserving the current stored
+		// value (which is the registered default on fresh installs). Developers
+		// who need additional MIME types use the `mvs_allowed_file_types` filter.
 		if ( empty( $types ) ) {
 			return (string) get_option( 'mvs_allowed_file_types', SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES );
 		}

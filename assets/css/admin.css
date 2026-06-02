@@ -652,20 +652,6 @@ a.mvs-stat-card:focus {
 	gap: 4px;
 }
 
-.mvs-custom-types {
-	margin-top: 12px;
-}
-
-.mvs-custom-types summary {
-	cursor: pointer;
-	font-size: 13px;
-	color: var(--mvs-accent);
-}
-
-.mvs-custom-types textarea {
-	margin-top: 8px;
-}
-
 /* ==========================================================================
    Page Header
    ========================================================================== */
