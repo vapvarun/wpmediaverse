@@ -198,6 +198,10 @@ class Plugin {
 		// Initialize user deletion cascade (deleted_user hook — cleans orphaned MVS rows).
 		self::$container->get( 'user_deletion' );
 
+		// Initialize the orphaned-file cleanup cycle (mvs_media_files_orphaned →
+		// async delete of original + variants from local + cloud).
+		self::$container->get( 'storage_cleanup' );
+
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
 		self::$container->get( 'integration.bp_activity_linkage' );
@@ -626,6 +630,15 @@ class Plugin {
 			'user_deletion',
 			function () {
 				$service = new \WPMediaVerse\Services\UserDeletionService();
+				$service->init();
+				return $service;
+			}
+		);
+
+		self::$container->register(
+			'storage_cleanup',
+			function ( $c ) {
+				$service = new \WPMediaVerse\Services\StorageCleanupService( $c->get( 'storage' ) );
 				$service->init();
 				return $service;
 			}

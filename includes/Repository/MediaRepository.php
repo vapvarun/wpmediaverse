@@ -1981,6 +1981,26 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function delete_cascade( int $media_id ): bool {
 		global $wpdb;
 
+		// Capture every stored file path BEFORE the meta/index rows are deleted,
+		// then hand them to the async storage-cleanup cycle. Both delete paths
+		// funnel through here (REST delete + account deletion), so this is the
+		// single point that reclaims the original + every variant (thumbnails,
+		// WebP/AVIF, posters) from local + cloud (Basecamp #9952862992 family).
+		$orphaned_files = $this->get_stored_file_paths( $media_id );
+		if ( ! empty( $orphaned_files ) ) {
+			/**
+			 * Fires with every relative file path owned by a media item that is
+			 * about to be torn down, so a cleanup listener can delete the bytes
+			 * from disk and cloud asynchronously.
+			 *
+			 * @since 1.6.0
+			 *
+			 * @param int      $media_id       Media ID being deleted.
+			 * @param string[] $orphaned_files Relative paths (original + variants).
+			 */
+			do_action( 'mvs_media_files_orphaned', $media_id, $orphaned_files );
+		}
+
 		$where  = array( 'media_id' => $media_id );
 		$format = array( '%d' );
 
@@ -1999,5 +2019,47 @@ class MediaRepository implements MediaRepositoryInterface {
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 		return true;
+	}
+
+	/**
+	 * Every relative file path stored for a media item: the original plus every
+	 * driver-agnostic variant path (thumbnails, WebP/AVIF siblings, video
+	 * posters). Read before a delete so the storage-cleanup cycle can reclaim
+	 * the bytes. Every variant path lives under a `*_path` meta key (1.4.0+).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string[] Unique, non-empty relative paths.
+	 */
+	public function get_stored_file_paths( int $media_id ): array {
+		global $wpdb;
+
+		$paths = array();
+
+		$file_path = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT file_path FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$media_id
+			)
+		);
+		if ( $file_path ) {
+			$paths[] = (string) $file_path;
+		}
+
+		$variant_paths = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$media_id,
+				'%_path'
+			)
+		);
+		foreach ( $variant_paths as $variant_path ) {
+			if ( '' !== (string) $variant_path ) {
+				$paths[] = (string) $variant_path;
+			}
+		}
+
+		return array_values( array_unique( $paths ) );
 	}
 }

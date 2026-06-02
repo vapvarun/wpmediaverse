@@ -921,14 +921,10 @@ class MediaController extends WP_REST_Controller {
 
 		$author_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 
-		// Delete stored file.
-		$file_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
-		if ( $file_path ) {
-			$storage = Plugin::container()->get( 'storage' );
-			$storage->get_driver()->delete( $file_path );
-		}
-
-		// Remove from custom tables.
+		// Remove from custom tables. delete_all() -> delete_cascade() fires
+		// `mvs_media_files_orphaned` first, so StorageCleanupService reclaims the
+		// original AND every variant (thumbnails, WebP/AVIF, posters) from local
+		// + cloud asynchronously. No inline single-driver delete here.
 		global $wpdb;
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
