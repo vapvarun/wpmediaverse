@@ -218,6 +218,17 @@ delete_option( 'mvs_demo_seeded' );
 wp_cache_delete( 'mvs_overview_stats', 'wpmediaverse' );
 wp_cache_delete( 'mvs_overview_recent', 'wpmediaverse' );
 
+// The Import-vs-Delete decision on the Overview page is driven by
+// AdminAggregatesService::total_media(), which caches under its own key set
+// (admin_total_media, ...) - NOT the widget keys above. Without clearing those
+// too, total_media() stays at its pre-cleanup non-zero value and the page keeps
+// showing "Delete Demo Data" instead of "Import Demo Data". Clear them through
+// the canonical invalidator so the key list lives in one place.
+$mvs_cache = \WPMediaVerse\Core\Plugin::container()->get( 'cache' );
+if ( $mvs_cache ) {
+	$mvs_cache->on_admin_aggregate_change();
+}
+
 $message = sprintf(
 	/* translators: 1: media count, 2: album/collection count, 3: user count, 4: term count */
 	__( 'Cleaned %1$d demo media item(s), %2$d album(s)/collection(s), %3$d demo user(s), and %4$d demo tag(s)/category(ies).', 'wpmediaverse' ),
