@@ -319,6 +319,20 @@ a.mvs-stat-card:focus {
 	border-spacing: 0;
 }
 
+/* On narrow admin screens the wide data tables (moderation User Reports,
+   stats, overview, quotas) overflowed the viewport and pushed the whole page
+   sideways. Make the table itself a horizontal scroll container so it scrolls
+   in place instead of breaking the layout. */
+@media ( max-width: 782px ) {
+
+	.mvs-recent-table {
+		display: block;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		white-space: nowrap;
+	}
+}
+
 .mvs-recent-table th {
 	text-align: left;
 	padding: 8px 12px;
