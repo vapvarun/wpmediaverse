@@ -1296,6 +1296,26 @@
       "args": "$source_id, $target_id, $posts",
       "where": "REST/Controller/TagController.php:307",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_media_files_orphaned",
+      "type": "action",
+      "args": "$media_id, $orphaned_files",
+      "where": "Repository/MediaRepository.php:delete_cascade() (fires before rows are torn down with every stored relative path)",
+      "consumed_by": [
+        "Services/StorageCleanupService::enqueue (queues async file deletion across local + cloud)"
+      ],
+      "since": "1.6.0"
+    },
+    {
+      "name": "mvs_cleanup_media_files",
+      "type": "action",
+      "args": "$paths",
+      "where": "Services/StorageCleanupService (Action Scheduler async hook; group wpmediaverse)",
+      "consumed_by": [
+        "Services/StorageCleanupService::process (deletes each path from local + active cloud driver)"
+      ],
+      "since": "1.6.0"
     }
   ]
 }

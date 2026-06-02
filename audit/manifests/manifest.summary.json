@@ -23,12 +23,12 @@
     "taxonomies": 2,
     "tables": 22,
     "capabilities": 10,
-    "services": 34,
-    "services_registered": 45,
-    "hooks_fired_unique": 139,
+    "services": 35,
+    "services_registered": 46,
+    "hooks_fired_unique": 141,
     "hooks_with_args_signature": 25,
     "hooks_no_call_site": 0,
-    "cron": 3,
+    "cron": 4,
     "wp_cli": 16,
     "journeys": 12,
     "migrator_version": 15
@@ -118,5 +118,23 @@
     "hooks_fired_unique_note": "131 (1.5.0) + 8 new 1.6.0 fire-sites = 139. Detail entry added only for the verified mvs_collection_media_ids; the 7 messaging/buddynext hooks exist in-tree but await owner enumeration.",
     "no_new_free_rest_routes": "dm_access + online_status added as args on existing PUT /me/profile - endpoint count unchanged",
     "no_new_free_tables": "mvs_pro_collection_items is a Pro table"
+  },
+  "refresh_2026_06_03": {
+    "trigger": "1.6.0-dev: orphaned-file cleanup cycle (media + account deletion reclaims files from local + cloud)",
+    "added": {
+      "service": "Services\\StorageCleanupService (container key 'storage_cleanup')",
+      "methods": [
+        "StorageService::delete_everywhere",
+        "MediaRepository::get_stored_file_paths"
+      ],
+      "action_hooks_fired": [
+        "mvs_media_files_orphaned (consumed by StorageCleanupService)"
+      ],
+      "action_scheduler_hooks": [
+        "mvs_cleanup_media_files (async cleanup worker)"
+      ]
+    },
+    "no_schema_change": "Action Scheduler owns the queue - no new mvs_* table / Migrator bump",
+    "scope": "targeted refresh for the verified cleanup-cycle feature"
   }
 }
