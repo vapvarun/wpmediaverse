@@ -105,6 +105,13 @@ const { state, actions } = store( 'mvs/media-upload', {
 		get errorMessage() {
 			return getContext().uploadError || '';
 		},
+		get hasPending() {
+			return !! getContext().hasPending;
+		},
+		get pendingLabel() {
+			const n = getContext().pendingCount || 0;
+			return n === 1 ? 'Upload 1 file' : `Upload ${ n } files`;
+		},
 	},
 	actions: {
 		handleClick( event ) {
@@ -140,7 +147,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 				ctx
 			);
 			if ( files.length ) {
-				actions.uploadFiles( files );
+				actions.stageFiles( files );
 			}
 		},
 		handleFileSelect( event ) {
@@ -153,7 +160,38 @@ const { state, actions } = store( 'mvs/media-upload', {
 			// Reset input so re-selecting the same file triggers change again.
 			event.target.value = '';
 			if ( files.length ) {
-				actions.uploadFiles( files );
+				actions.stageFiles( files );
+			}
+		},
+		// Hold selected files and reveal the review step instead of uploading
+		// immediately, so the user can fill in title/description/tags/privacy
+		// before the upload starts. Files are kept on the per-instance context
+		// (not a module variable) so multiple upload blocks don't clobber each
+		// other.
+		stageFiles( files ) {
+			const ctx = getContext();
+			ctx.pendingFiles = files;
+			ctx.pendingCount = files.length;
+			ctx.hasPending = true;
+			ctx.successMessage = '';
+		},
+		confirmUpload() {
+			const ctx = getContext();
+			const files = ctx.pendingFiles || [];
+			if ( ! files.length ) {
+				return;
+			}
+			actions.uploadFiles( files );
+		},
+		cancelPending() {
+			const ctx = getContext();
+			ctx.pendingFiles = [];
+			ctx.pendingCount = 0;
+			ctx.hasPending = false;
+			ctx.uploadError = '';
+			const fileInput = document.querySelector( '.mvs-upload-block input[type="file"]' );
+			if ( fileInput ) {
+				fileInput.value = '';
 			}
 		},
 		setPrivacy( event ) {
@@ -178,6 +216,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 		},
 		async uploadFiles( files ) {
 			const ctx = getContext();
+			// Leave the review step now that the upload is confirmed.
+			ctx.hasPending = false;
+			ctx.pendingFiles = [];
+			ctx.pendingCount = 0;
 			ctx.uploading = true;
 			ctx.successMessage = '';
 			ctx.uploadError = '';
