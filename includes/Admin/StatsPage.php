@@ -89,7 +89,10 @@ class StatsPage {
 		header( 'Content-Disposition: attachment; filename=wpmediaverse-stats-' . gmdate( 'Y-m-d' ) . '.csv' );
 
 		$output = fopen( 'php://output', 'w' );
-		fputcsv( $output, array( 'ID', 'Title', 'Views', 'Reactions', 'Comments', 'Shares' ) );
+		// Pass the $escape argument explicitly: PHP 8.1 deprecated relying on
+		// its implicit default and PHP 8.4 will change it. Empty string keeps
+		// values verbatim (no legacy escape-char rewriting).
+		fputcsv( $output, array( 'ID', 'Title', 'Views', 'Reactions', 'Comments', 'Shares' ), ',', '"', '' );
 
 		foreach ( $top_media as $item ) {
 			fputcsv(
@@ -101,7 +104,10 @@ class StatsPage {
 					$item['reactions'],
 					$item['comments'],
 					$item['shares'],
-				)
+				),
+				',',
+				'"',
+				''
 			);
 		}
 
@@ -474,7 +480,7 @@ class StatsPage {
 					</ul>
 				</div>
 				<div class="mvs-widget-footer">
-					<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-settings&tab=ai' ) ); ?>">
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-settings' ) . '#ai' ); ?>">
 						<?php esc_html_e( 'AI Settings', 'wpmediaverse' ); ?> &rarr;
 					</a>
 				</div>
