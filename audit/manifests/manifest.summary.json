@@ -25,8 +25,8 @@
     "capabilities": 10,
     "services": 34,
     "services_registered": 45,
-    "hooks_fired_unique": 131,
-    "hooks_with_args_signature": 24,
+    "hooks_fired_unique": 139,
+    "hooks_with_args_signature": 25,
     "hooks_no_call_site": 0,
     "cron": 3,
     "wp_cli": 16,
@@ -60,11 +60,23 @@
     "scope": "counts + plugin.version only; detail files (manifest.rest.json, manifest.hooks.json, manifest.tables.json) NOT re-enumerated",
     "changes_since_2026_05_17": {
       "plugin_version": "1.3.0 -> 1.5.0 (shipped 1.4.0 + 1.5.0)",
-      "services_added_1_5_0": ["Services\\VariantSpec", "Services\\StorageRouter", "Services\\MediaVariantWriter", "Services\\PosterService", "Core\\MediaUrl"],
-      "services_added_1_4_0": ["Admin\\TagManagementPage", "Admin\\Settings\\AiSettingsRegistrar", "Services\\AdminAggregatesService"],
+      "services_added_1_5_0": [
+        "Services\\VariantSpec",
+        "Services\\StorageRouter",
+        "Services\\MediaVariantWriter",
+        "Services\\PosterService",
+        "Core\\MediaUrl"
+      ],
+      "services_added_1_4_0": [
+        "Admin\\TagManagementPage",
+        "Admin\\Settings\\AiSettingsRegistrar",
+        "Services\\AdminAggregatesService"
+      ],
       "migrator_version": "13 -> 15 (v14: driver-agnostic _path backfill; v15: legacy video poster _path healing, cloud-aware)",
       "blocks_added": "1 (lock-overlay; net 13 -> 14)",
-      "journeys_added": ["audit/journeys/customer/02-media-upload-non-public.md"],
+      "journeys_added": [
+        "audit/journeys/customer/02-media-upload-non-public.md"
+      ],
       "no_new_rest_routes": true,
       "no_new_cpts_or_taxonomies": true,
       "no_new_capabilities": true
@@ -86,5 +98,25 @@
       "static_analysis_phase_2_5": "audit/derived/ cache should be rebuilt — input file hashes have changed for most categories.",
       "feature_audit_md": "audit/reports/FEATURE_AUDIT.md is from 2026-05-11; re-generate from refreshed manifest.json."
     }
+  },
+  "refresh_2026_06_02": {
+    "trigger": "1.6.0-dev: Pro multi-collection Save-to picker wired into Free collection rendering",
+    "scope": "targeted - records the mvs_collection_media_ids filter (new) and the Pro consumer added to mvs_collection_response. Full Phase-2 re-enumeration of all 1.6.0 hooks still pending before tag.",
+    "free_hooks_added_1_6_0_verified": [
+      "mvs_collection_media_ids (filter; consumed by Pro)"
+    ],
+    "free_hooks_added_1_6_0_pending_detail": [
+      "mvs_buddynext_active",
+      "mvs_suppress_frontend_ui",
+      "mvs_conversation_created",
+      "mvs_group_conversation_created",
+      "mvs_object_media_set",
+      "mvs_participant_added",
+      "mvs_participant_removed"
+    ],
+    "pending_detail_owner": "group-conversation / BuddyNext-integration work (other team) - args signatures + consumers to be enumerated by that team",
+    "hooks_fired_unique_note": "131 (1.5.0) + 8 new 1.6.0 fire-sites = 139. Detail entry added only for the verified mvs_collection_media_ids; the 7 messaging/buddynext hooks exist in-tree but await owner enumeration.",
+    "no_new_free_rest_routes": "dm_access + online_status added as args on existing PUT /me/profile - endpoint count unchanged",
+    "no_new_free_tables": "mvs_pro_collection_items is a Pro table"
   }
 }

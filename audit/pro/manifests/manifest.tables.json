@@ -31,6 +31,10 @@
     {
       "name": "mvs_boosts",
       "purpose": "Media visibility boosts (points spent)"
+    },
+    {
+      "name": "mvs_pro_collection_items",
+      "purpose": "Multi-collection membership (user_id, media_id, collection_id) - which manual collections a media is in beyond Free's single mvs_favorites.collection_id. Migrator v7."
     }
   ]
 }

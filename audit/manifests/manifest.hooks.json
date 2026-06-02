@@ -20,8 +20,16 @@
       "args": "$template, $template_name, $template_path",
       "where": "Core/TemplateLoader.php:609",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Frontend/InstagramFeedService.php:31", "kind": "add_filter_listener"},
-        {"plugin": "wpmediaverse-pro", "where": "includes/Frontend/Layouts/LayoutManager.php:100", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Frontend/InstagramFeedService.php:31",
+          "kind": "add_filter_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Frontend/Layouts/LayoutManager.php:100",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -107,7 +115,11 @@
       "args": "$service",
       "where": "Core/Plugin.php:367",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:243", "kind": "add_action_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:243",
+          "kind": "add_action_listener"
+        }
       ]
     },
     {
@@ -207,7 +219,11 @@
       "args": "$regenerated, $media_id, array( 'file_type' => $file_type, 'file_path' => $file_path )",
       "where": "Admin/MediaListPage.php:815",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Video/TranscodeService.php:106", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Video/TranscodeService.php:106",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -216,7 +232,11 @@
       "args": "$can, $media_id, $file_type, $file_path",
       "where": "Admin/MediaListPage.php:887",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Video/TranscodeService.php:105", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Video/TranscodeService.php:105",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -239,9 +259,21 @@
       "args": "$sections",
       "where": "Admin/Settings/SettingsPage.php:320",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/LicenseManager.php:48", "kind": "add_filter_listener"},
-        {"plugin": "wpmediaverse-pro", "where": "includes/Admin/ProSettings.php:28", "kind": "add_filter_listener"},
-        {"plugin": "wpmediaverse-pro", "where": "includes/Admin/GamificationSettings.php:27", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/LicenseManager.php:48",
+          "kind": "add_filter_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Admin/ProSettings.php:28",
+          "kind": "add_filter_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Admin/GamificationSettings.php:27",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -250,7 +282,11 @@
       "args": "$group_labels",
       "where": "Admin/Settings/SettingsPage.php:355",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Admin/GamificationSettings.php:28", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Admin/GamificationSettings.php:28",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -266,7 +302,11 @@
       "args": "$section",
       "where": "Admin/Settings/SettingsPage.php:482",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/LicenseManager.php:49", "kind": "add_action_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/LicenseManager.php:49",
+          "kind": "add_action_listener"
+        }
       ]
     },
     {
@@ -282,7 +322,11 @@
       "args": "",
       "where": "Shortcodes/Shortcodes.php:128",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Frontend/UsageWidget.php:41", "kind": "add_action_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Frontend/UsageWidget.php:41",
+          "kind": "add_action_listener"
+        }
       ]
     },
     {
@@ -291,7 +335,11 @@
       "args": "null, $from",
       "where": "CLI/Commands.php:820",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:237", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:237",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -300,7 +348,11 @@
       "args": "null, $to",
       "where": "CLI/Commands.php:821",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:237", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:237",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -309,7 +361,11 @@
       "args": "null, $driver_slug",
       "where": "CLI/Commands.php:1052",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:237", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:237",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -318,7 +374,11 @@
       "args": "null, $driver_slug",
       "where": "CLI/Commands.php:1245",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:237", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:237",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -362,7 +422,11 @@
       "args": "self::TYPES",
       "where": "Social/NotificationService.php:93",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Challenges/ChallengeNotificationListener.php:52", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Challenges/ChallengeNotificationListener.php:52",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -392,7 +456,11 @@
       "args": "null, $type, $actor_name, $media_title",
       "where": "Social/NotificationService.php:451",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Challenges/ChallengeNotificationListener.php:53", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Challenges/ChallengeNotificationListener.php:53",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -660,7 +728,11 @@
       "args": "null, $driver_slug",
       "where": "Services/SignedUrlService.php:622",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:237", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:237",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -732,7 +804,11 @@
       "args": "'', $media_id, $file_path, $file_url, $config",
       "where": "Services/WatermarkService.php:172",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:240", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:240",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -804,7 +880,11 @@
       "args": "null, $driver_slug",
       "where": "Services/ImageOptimizationService.php:722",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:237", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:237",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -862,7 +942,11 @@
       "args": "null, $driver_name",
       "where": "Services/StorageService.php:39",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:237", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:237",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -878,7 +962,11 @@
       "args": "array( 'mime' => $mime, 'media_type' => $media_type, 'file_size' => $actual_size, 'file_name' => $file['name'] ), $user_id",
       "where": "Services/UploadService.php:196",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Quota/QuotaService.php:37", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Quota/QuotaService.php:37",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -901,11 +989,31 @@
       "args": "$media_id, $file_data, $user_id, $media_type",
       "where": "Services/UploadService.php:473",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Connectors/ConnectorManager.php:60", "kind": "add_action_listener"},
-        {"plugin": "wpmediaverse-pro", "where": "includes/Captions/TranscriptionService.php:71", "kind": "add_action_listener"},
-        {"plugin": "wpmediaverse-pro", "where": "includes/Video/TranscodeService.php:101", "kind": "add_action_listener"},
-        {"plugin": "wpmediaverse-pro", "where": "includes/Quota/QuotaService.php:40", "kind": "add_action_listener"},
-        {"plugin": "wpmediaverse-pro", "where": "includes/Streaks/StreakService.php:53", "kind": "add_action_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Connectors/ConnectorManager.php:60",
+          "kind": "add_action_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Captions/TranscriptionService.php:71",
+          "kind": "add_action_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Video/TranscodeService.php:101",
+          "kind": "add_action_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Quota/QuotaService.php:40",
+          "kind": "add_action_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Streaks/StreakService.php:53",
+          "kind": "add_action_listener"
+        }
       ]
     },
     {
@@ -935,7 +1043,11 @@
       "args": "null, $driver_slug",
       "where": "Services/UploadService.php:838",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:237", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:237",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -986,7 +1098,11 @@
       "args": "null, $slug",
       "where": "Services/CloudOps.php:301",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Core/Plugin.php:237", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:237",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -995,7 +1111,11 @@
       "args": "null, $media_id, $user_id, $privacy",
       "where": "Services/PrivacyService.php:91",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Privacy/PrivacyUIService.php:79", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Privacy/PrivacyUIService.php:79",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -1003,7 +1123,19 @@
       "type": "filter",
       "args": "$data, $post->ID",
       "where": "REST/Controller/CollectionController.php:432",
-      "consumed_by": []
+      "consumed_by": [
+        "wpmediaverse-pro: Core/Plugin.php:251 (appends mvs_pro_collection_items rows to a manual collection's favorites list)"
+      ]
+    },
+    {
+      "name": "mvs_collection_media_ids",
+      "type": "filter",
+      "args": "$ids, $collection_id, $limit",
+      "where": "Social/FavoriteService.php:192 (canonical); also Shortcodes/Shortcodes.php:585, REST/Controller/CollectionController.php:489 (cover)",
+      "consumed_by": [
+        "wpmediaverse-pro: Core/Plugin.php:231 (unions mvs_pro_collection_items so picker-added media render in the collection)"
+      ],
+      "since": "1.6.0"
     },
     {
       "name": "mvs_rest_pagination_max",
@@ -1018,7 +1150,11 @@
       "args": "$media_id, $author_id",
       "where": "REST/Controller/BulkController.php:152",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Quota/QuotaService.php:41", "kind": "add_action_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Quota/QuotaService.php:41",
+          "kind": "add_action_listener"
+        }
       ]
     },
     {
@@ -1062,7 +1198,11 @@
       "args": "$int_ids, $request",
       "where": "REST/Controller/MediaController.php:498",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Boosts/BoostService.php:38", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Boosts/BoostService.php:38",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {
@@ -1078,7 +1218,11 @@
       "args": "$media_id, $author_id",
       "where": "REST/Controller/MediaController.php:950",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Quota/QuotaService.php:41", "kind": "add_action_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Quota/QuotaService.php:41",
+          "kind": "add_action_listener"
+        }
       ]
     },
     {
@@ -1101,9 +1245,21 @@
       "args": "$data, $media_id",
       "where": "REST/Controller/MediaController.php:1449",
       "consumed_by": [
-        {"plugin": "wpmediaverse-pro", "where": "includes/Captions/TranscriptionService.php:74", "kind": "add_filter_listener"},
-        {"plugin": "wpmediaverse-pro", "where": "includes/Video/ChapterService.php:32", "kind": "add_filter_listener"},
-        {"plugin": "wpmediaverse-pro", "where": "includes/Privacy/PrivacyUIService.php:76", "kind": "add_filter_listener"}
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Captions/TranscriptionService.php:74",
+          "kind": "add_filter_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Video/ChapterService.php:32",
+          "kind": "add_filter_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Privacy/PrivacyUIService.php:76",
+          "kind": "add_filter_listener"
+        }
       ]
     },
     {

@@ -16,15 +16,15 @@
     "license_item_id": 1660828
   },
   "counts": {
-    "rest_endpoints": 58,
+    "rest_endpoints": 60,
     "ajax": 6,
     "admin_pages": 10,
     "settings": 0,
-    "tables": 8,
+    "tables": 9,
     "subsystems": 19,
     "feature_toggles": 7,
     "free_services_consumed": 1,
-    "free_filters_hooked": 17,
+    "free_filters_hooked": 19,
     "extension_patterns": 6,
     "cron": 3,
     "wp_cli": 3,
@@ -85,5 +85,24 @@
   },
   "confirmed_against_free": {
     "refreshed_at": "2026-05-17T03:45:00Z"
+  },
+  "refresh_2026_06_02": {
+    "trigger": "1.6.0-dev: Pro multi-collection Save-to picker",
+    "added": {
+      "table": "mvs_pro_collection_items (Migrator v7)",
+      "rest": "GET+POST /mvs-pro/v1/media/{id}/collections (CollectionItemsController) - +2 endpoints",
+      "free_filters_hooked": [
+        "mvs_collection_media_ids",
+        "mvs_collection_response"
+      ],
+      "free_actions_hooked": [
+        "mvs_media_deleted (purge memberships on media delete)"
+      ],
+      "assets": [
+        "assets/js/collection-picker.js",
+        "assets/css/collection-picker.css"
+      ]
+    },
+    "scope": "targeted refresh for the verified picker feature; full re-enumeration tracks with Free."
   }
 }
