@@ -412,7 +412,7 @@ class FieldRenderer {
 		<fieldset>
 			<p>
 				<label><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
-				<input type="url" name="mvs_webhooks[0][url]" class="regular-text"
+				<input type="url" name="mvs_webhooks[0][url]" id="mvs-webhook-url" class="regular-text"
 					value="<?php echo esc_attr( $webhook['url'] ?? '' ); ?>"
 					placeholder="https://example.com/webhook"
 				/>
@@ -431,7 +431,7 @@ class FieldRenderer {
 					<span class="description"><?php esc_html_e( 'Leave empty to keep the current secret.', 'wpmediaverse' ); ?></span>
 				<?php endif; ?>
 			</p>
-			<p>
+			<p id="mvs-webhook-events" class="mvs-webhook-events">
 				<label><?php esc_html_e( 'Events:', 'wpmediaverse' ); ?></label><br />
 				<?php $selected_events = $webhook['events'] ?? array( '*' ); ?>
 				<label>
@@ -446,6 +446,9 @@ class FieldRenderer {
 						/> <code><?php echo esc_html( $event ); ?></code>
 					</label><br />
 				<?php endforeach; ?>
+			</p>
+			<p class="description mvs-webhook-events-hint">
+				<?php esc_html_e( 'Events are saved only when a destination URL is set above. Without a URL the webhook is removed and the event selection resets to "All events".', 'wpmediaverse' ); ?>
 			</p>
 		</fieldset>
 		<?php

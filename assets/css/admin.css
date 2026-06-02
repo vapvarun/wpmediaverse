@@ -2087,3 +2087,13 @@ a.mvs-stat-card:focus {
 		transition-duration: 0.01ms !important;
 	}
 }
+
+/* Webhook events are gated on a destination URL (settings-nav.js): dim the
+   event list while disabled so the dependency reads clearly. */
+.mvs-webhook-events.is-disabled {
+	opacity: 0.5;
+}
+
+.mvs-webhook-events-hint.is-active {
+	color: #b32d2e;
+}
