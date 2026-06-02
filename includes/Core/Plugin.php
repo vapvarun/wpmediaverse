@@ -760,8 +760,11 @@ class Plugin {
 			array( self::$container->get( 'admin.overview' ), 'render_page' )
 		);
 
-		// All Media — custom listing page.
-		add_submenu_page(
+		// All Media — custom listing page. Run row/bulk actions on the page's
+		// `load-` hook (before any output) so their wp_safe_redirect() calls do
+		// not fire after headers are sent — the optimize row action otherwise
+		// triggered "Cannot modify header information - headers already sent".
+		$media_hook = add_submenu_page(
 			self::ADMIN_SLUG,
 			__( 'All Media', 'wpmediaverse' ),
 			__( 'All Media', 'wpmediaverse' ),
@@ -769,6 +772,9 @@ class Plugin {
 			'mvs-media',
 			array( \WPMediaVerse\Admin\MediaListPage::class, 'render' )
 		);
+		if ( $media_hook ) {
+			add_action( 'load-' . $media_hook, array( \WPMediaVerse\Admin\MediaListPage::class, 'handle_bulk_actions' ) );
+		}
 
 		// Tags — tag management page.
 		add_submenu_page(

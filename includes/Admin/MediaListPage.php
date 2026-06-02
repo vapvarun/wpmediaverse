@@ -45,18 +45,16 @@ class MediaListPage {
 			)
 		);
 
-		// Detail mini-page — read-only view + per-image actions. Branches
-		// before bulk handling because the detail page has its own redirect
-		// targets that preserve the view=details query param.
+		// Row/bulk actions (and their redirects) run on the page's `load-` hook
+		// in Plugin::register_admin_menu(), before any output. render() only
+		// displays here.
+
+		// Detail mini-page — read-only view + per-image actions.
 		$view = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 		if ( 'details' === $view ) {
-			self::handle_bulk_actions(); // honours nonced row actions from the detail page.
 			self::render_detail();
 			return;
 		}
-
-		// Handle bulk actions.
-		self::handle_bulk_actions();
 
 		// Bulk-action success notice (shown after the redirect from
 		// handle_bulk_action_apply()).
@@ -616,8 +614,11 @@ class MediaListPage {
 	 * for defense-in-depth — a bug in page registration, role plugin, or
 	 * future menu-cap change cannot expose destructive actions. Plugin
 	 * Check requires this inline pairing alongside `check_admin_referer()`.
+	 *
+	 * Hooked on the page's `load-` action (see Plugin::register_admin_menu())
+	 * so redirects fire before any output. Public for that callback.
 	 */
-	private static function handle_bulk_actions(): void {
+	public static function handle_bulk_actions(): void {
 		global $wpdb;
 
 		if ( ! current_user_can( 'manage_options' ) ) {
