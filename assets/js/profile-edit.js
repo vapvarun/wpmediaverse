@@ -46,6 +46,18 @@ const { actions } = store( 'mvs/profile-edit', {
 			ctx.bio = ref.value;
 		},
 
+		updateDmAccess() {
+			const ctx = getContext();
+			const { ref } = getElement();
+			ctx.dmAccess = ref.value;
+		},
+
+		updateOnlineStatus() {
+			const ctx = getContext();
+			const { ref } = getElement();
+			ctx.onlineStatus = ref.value;
+		},
+
 		*saveProfile( event ) {
 			if ( event && event.preventDefault ) {
 				event.preventDefault();
@@ -71,6 +83,8 @@ const { actions } = store( 'mvs/profile-edit', {
 						last_name: ctx.lastName,
 						display_name: ctx.displayName,
 						description: ctx.bio,
+						dm_access: ctx.dmAccess,
+						online_status: ctx.onlineStatus,
 					} ),
 				} );
 

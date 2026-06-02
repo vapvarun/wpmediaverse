@@ -79,9 +79,19 @@ class ProfileController extends WP_REST_Controller {
 							'type'              => 'string',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'description'  => array(
+						'description'   => array(
 							'type'              => 'string',
 							'sanitize_callback' => 'sanitize_textarea_field',
+						),
+						'dm_access'     => array(
+							'type'              => 'string',
+							'enum'              => ProfileService::META_VALUES['dm_access'],
+							'sanitize_callback' => 'sanitize_key',
+						),
+						'online_status' => array(
+							'type'              => 'string',
+							'enum'              => ProfileService::META_VALUES['online_status'],
+							'sanitize_callback' => 'sanitize_key',
 						),
 					),
 				),
@@ -145,7 +155,8 @@ class ProfileController extends WP_REST_Controller {
 		$user_id = get_current_user_id();
 		$fields  = array();
 
-		foreach ( ProfileService::ALLOWED_FIELDS as $field ) {
+		$accepted = array_merge( ProfileService::ALLOWED_FIELDS, array_keys( ProfileService::META_FIELDS ) );
+		foreach ( $accepted as $field ) {
 			$value = $request->get_param( $field );
 			if ( null !== $value ) {
 				$fields[ $field ] = $value;

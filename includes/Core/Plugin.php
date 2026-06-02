@@ -1421,17 +1421,23 @@ class Plugin {
 			}
 		);
 
-		// Online status visibility — read from option, respect per-setting.
+		// Online status visibility — the target user's per-user setting wins,
+		// falling back to the site-wide option. Applied with ($show, $viewer_id,
+		// $target_id) by MessagingService.
 		add_filter(
 			'mvs_show_online_status',
-			function ( $show ) {
-				$setting = get_option( 'mvs_show_online_status', 'everyone' );
+			function ( $show, $viewer_id = 0, $target_id = 0 ) {
+				$setting = $target_id ? get_user_meta( $target_id, '_mvs_show_online', true ) : '';
+				if ( '' === $setting || false === $setting ) {
+					$setting = get_option( 'mvs_show_online_status', 'everyone' );
+				}
 				if ( 'nobody' === $setting ) {
 					return false;
 				}
 				return $show;
 			},
-			5
+			5,
+			3
 		);
 
 		// Frontend assets + chat panel (only for logged-in users).
