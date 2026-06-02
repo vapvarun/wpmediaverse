@@ -1162,6 +1162,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		async lightboxToggleFavorite() {
 			const ctx = getContext();
 			if ( ! state.lightboxMediaId ) return;
+			// Extension point (Pro multi-collection picker): cancelable event;
+			// if handled, the picker opens and we skip the plain toggle.
+			const mvsFavEl    = getElement()?.ref;
+			const mvsFavEvent = new CustomEvent( 'mvs-favorite-click', {
+				bubbles: true,
+				cancelable: true,
+				detail: { mediaId: state.lightboxMediaId },
+			} );
+			( mvsFavEl || document.body ).dispatchEvent( mvsFavEvent );
+			if ( mvsFavEvent.defaultPrevented ) {
+				return;
+			}
 			const headers = { 'X-WP-Nonce': ctx.nonce };
 			// Optimistic flip for snappy UI; roll back on error / verify
 			// against server response. Previously the flip was unconditional

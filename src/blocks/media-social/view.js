@@ -10,7 +10,7 @@
  * @package WPMediaVerse
  */
 
-import { store, getContext } from '@wordpress/interactivity';
+import { store, getContext, getElement } from '@wordpress/interactivity';
 
 // i18n: wp-i18n is loaded as a classic script on every WP page; read it
 // from window since @wordpress/i18n is not yet importable in script modules.
@@ -219,6 +219,20 @@ store( 'mvs/media-social', {
 			const ctx = getContext();
 			if ( ! ctx.isLoggedIn ) {
 				sharedUI.actions.showToast( __( 'Please log in to favorite.', 'wpmediaverse' ), 'error' );
+				return;
+			}
+			// Extension point: an add-on (Pro multi-collection picker) may handle
+			// the click by opening a "Save to" picker instead. It listens for this
+			// cancelable event and calls preventDefault; with no add-on the event
+			// is ignored and the plain favorite toggle below runs unchanged.
+			const mvsFavEl    = getElement()?.ref;
+			const mvsFavEvent = new CustomEvent( 'mvs-favorite-click', {
+				bubbles: true,
+				cancelable: true,
+				detail: { mediaId: ctx.mediaId },
+			} );
+			( mvsFavEl || document.body ).dispatchEvent( mvsFavEvent );
+			if ( mvsFavEvent.defaultPrevented ) {
 				return;
 			}
 			// Optimistic UI: flip the state immediately so the heart fills/empties
