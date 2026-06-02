@@ -385,6 +385,23 @@ wp_enqueue_style( 'mvs-frontend' );
 					<?php endif; ?>
 				</div>
 			</div>
+			<div class="mvs-dashboard-upload-review" data-wp-bind--hidden="!state.upload.hasPending">
+				<span class="mvs-dashboard-upload-review-label">
+					<?php esc_html_e( 'Add details above (optional), then upload.', 'wpmediaverse' ); ?>
+				</span>
+				<div class="mvs-dashboard-upload-review-actions">
+					<button class="mvs-btn mvs-btn--small mvs-btn--primary" type="button"
+						data-wp-on--click="actions.confirmUpload">
+						<?php esc_html_e( 'Upload', 'wpmediaverse' ); ?>
+						<span data-wp-text="state.upload.pendingCount"></span>
+						<?php esc_html_e( 'file(s)', 'wpmediaverse' ); ?>
+					</button>
+					<button class="mvs-btn mvs-btn--small mvs-btn--text" type="button"
+						data-wp-on--click="actions.cancelUpload">
+						<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
+					</button>
+				</div>
+			</div>
 			<div class="mvs-dashboard-upload-status" data-wp-bind--hidden="!state.upload.uploading"
 				data-wp-text="state.upload.status"></div>
 		</div>

@@ -2524,6 +2524,42 @@ a.mvs-dashboard-card-title:hover {
     display: none;
 }
 
+/* Staged-upload review step: selecting files reveals this instead of
+   uploading immediately, so metadata can be filled first. */
+.mvs-dashboard-upload-review {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--mvs-bg-subtle, #f6f7f8);
+    border: 1px solid var(--mvs-border, #e0e0e0);
+    border-radius: 6px;
+}
+
+.mvs-dashboard-upload-review-label {
+    font-size: 0.9em;
+    color: var(--mvs-text-muted, #555);
+}
+
+.mvs-dashboard-upload-review-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+    .mvs-dashboard-upload-review {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mvs-dashboard-upload-review-actions {
+        justify-content: flex-end;
+    }
+}
+
 @media (max-width: 600px) {
     .mvs-dashboard-dropzone {
         flex-direction: column;

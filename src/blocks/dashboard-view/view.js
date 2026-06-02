@@ -59,6 +59,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			description: '',
 			tags: '',
 			privacy: '',
+			pendingFiles: [],
+			pendingCount: 0,
+			hasPending: false,
 		},
 		// Edit modal
 		editModal: {
@@ -400,13 +403,38 @@ const { state, actions } = store( 'mvs/dashboard', {
 			event.preventDefault();
 			state.upload.dragOver = false;
 			const files = Array.from( event.dataTransfer.files );
-			if ( files.length ) actions.uploadFiles( files );
+			if ( files.length ) actions.stageUploadFiles( files );
 		},
 
 		handleUploadFileSelect( event ) {
 			const files = Array.from( event.target.files );
-			if ( files.length ) actions.uploadFiles( files );
+			if ( files.length ) actions.stageUploadFiles( files );
 			event.target.value = '';
+		},
+
+		// Hold the selected files and reveal the details step instead of
+		// uploading immediately, so the user can fill in title/description/tags/
+		// privacy before the upload starts (matches the media-upload block).
+		stageUploadFiles( files ) {
+			state.upload.pendingFiles = files;
+			state.upload.pendingCount = files.length;
+			state.upload.hasPending = true;
+			state.upload.showFields = true;
+			state.upload.status = '';
+		},
+
+		confirmUpload() {
+			const files = state.upload.pendingFiles || [];
+			if ( ! files.length ) return;
+			actions.uploadFiles( files );
+		},
+
+		cancelUpload() {
+			state.upload.pendingFiles = [];
+			state.upload.pendingCount = 0;
+			state.upload.hasPending = false;
+			const input = document.querySelector( '.mvs-dashboard-upload input[type="file"]' );
+			if ( input ) input.value = '';
 		},
 
 		toggleUploadFields() {
@@ -420,6 +448,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 		async uploadFiles( files ) {
 			const ctx = getContext();
+
+			// Leave the review step now that the upload is confirmed.
+			state.upload.hasPending = false;
+			state.upload.pendingFiles = [];
+			state.upload.pendingCount = 0;
 
 			// Client-side file type filter.
 			if ( ctx.allowedExtensions ) {
