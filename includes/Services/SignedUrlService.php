@@ -427,6 +427,29 @@ class SignedUrlService {
 	 * @param int    $media_id Validated media ID.
 	 * @param string $size     Requested size (large|medium|thumbnail|watermark).
 	 */
+	/**
+	 * First candidate that points at an image (a valid poster), skipping empties
+	 * and any video/audio variant. Pre-1.6.0 video rows wrote the source .mp4
+	 * into thumb_<size>_path for upscale-skipped sizes; serving that as a
+	 * thumbnail produces a broken poster (Basecamp #9952600334).
+	 *
+	 * @param string[] $candidates Ordered paths or URLs.
+	 * @return string First image candidate, or '' when none qualify.
+	 */
+	private static function first_image_path( array $candidates ): string {
+		foreach ( $candidates as $candidate ) {
+			if ( '' === $candidate ) {
+				continue;
+			}
+			$path = (string) ( wp_parse_url( $candidate, PHP_URL_PATH ) ?: $candidate );
+			$ext  = strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) );
+			if ( in_array( $ext, array( 'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif' ), true ) ) {
+				return $candidate;
+			}
+		}
+		return '';
+	}
+
 	private function serve_thumbnail( int $media_id, string $size ): void {
 		// Internal: signing service serves the underlying file from disk —
 		// must use the raw stored URL, not a signed-URL re-emission.
@@ -448,11 +471,17 @@ class SignedUrlService {
 			// image sizes the same way the URL chain did. NEVER fall back
 			// to file_url for videos — serving a .mp4 with image/jpeg
 			// headers produces a black <video poster> instead of a 404 the
-			// browser can recover from.
-			$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' )
-				?: (string) $repo->get_raw( $media_id, 'thumb_medium_path' )
-				?: (string) $repo->get_raw( $media_id, 'thumb_thumb_path' )
-				?: '';
+			// browser can recover from. Skip any variant that points at a
+			// non-image file: pre-1.6.0 video rows wrote the .mp4 itself into
+			// thumb_large_path for upscale-skipped sizes, so the requested size
+			// must fall through to a real poster (Basecamp #9952600334).
+			$rel_path = self::first_image_path(
+				array(
+					(string) $repo->get_raw( $media_id, $meta_key . '_path' ),
+					(string) $repo->get_raw( $media_id, 'thumb_medium_path' ),
+					(string) $repo->get_raw( $media_id, 'thumb_thumb_path' ),
+				)
+			);
 
 			if ( '' === $rel_path ) {
 				$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
@@ -461,12 +490,17 @@ class SignedUrlService {
 				}
 			}
 
-			// Legacy URL fallback for pre-migration rows.
+			// Legacy URL fallback for pre-migration rows. Same image-only guard:
+			// a video URL stored in thumb_large must not win over the medium /
+			// thumb poster URLs.
 			if ( '' === $rel_path ) {
-				$thumb_url = $repo->get_raw( $media_id, $meta_key )
-					?: $repo->get_raw( $media_id, 'thumb_medium' )
-					?: $repo->get_raw( $media_id, 'thumb_thumb' )
-					?: '';
+				$thumb_url = self::first_image_path(
+					array(
+						(string) $repo->get_raw( $media_id, $meta_key ),
+						(string) $repo->get_raw( $media_id, 'thumb_medium' ),
+						(string) $repo->get_raw( $media_id, 'thumb_thumb' ),
+					)
+				);
 				if ( '' === $thumb_url ) {
 					$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
 					if ( 0 === strpos( $file_type, 'image/' ) ) {
@@ -624,8 +658,17 @@ class SignedUrlService {
 		// providers does not strand stored URLs (card 9925110293 + the
 		// "service-specific CDN in meta" architectural fix). The legacy
 		// `thumb_*` URL meta is consulted only as a fallback when no _path
-		// is present yet (pre-migration rows).
-		$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' );
+		// is present yet (pre-migration rows). Skip non-image variants so a
+		// pre-1.6.0 video row (.mp4 stored in thumb_large_path) falls through
+		// to a real poster instead of emitting the video as a CDN <img src>
+		// (Basecamp #9952600334).
+		$rel_path = self::first_image_path(
+			array(
+				(string) $repo->get_raw( $media_id, $meta_key . '_path' ),
+				(string) $repo->get_raw( $media_id, 'thumb_medium_path' ),
+				(string) $repo->get_raw( $media_id, 'thumb_thumb_path' ),
+			)
+		);
 		if ( '' !== $rel_path ) {
 			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
 			$driver  = $storage->get_driver_for_media( $media_id );
@@ -643,8 +686,15 @@ class SignedUrlService {
 
 		// Legacy fallback — pre-1.4.0 rows have only the URL meta. The
 		// Migrator v14 backfill writes `_path` for these, so this branch
-		// shrinks toward zero as the migration completes.
-		$thumb_url = (string) $repo->get_raw( $media_id, $meta_key );
+		// shrinks toward zero as the migration completes. Image-only guard
+		// (Basecamp #9952600334): skip a video URL stored in thumb_large.
+		$thumb_url = self::first_image_path(
+			array(
+				(string) $repo->get_raw( $media_id, $meta_key ),
+				(string) $repo->get_raw( $media_id, 'thumb_medium' ),
+				(string) $repo->get_raw( $media_id, 'thumb_thumb' ),
+			)
+		);
 
 		if ( ! $this->is_cloud_hosted_url( $thumb_url ) ) {
 			// Empty, or still on local disk — let /serve stream the local file.
