@@ -535,10 +535,18 @@ class MessagingController extends WP_REST_Controller {
 	public function delete_message( WP_REST_Request $request ): WP_REST_Response {
 		$result = $this->service->delete_message( (int) $request['id'], get_current_user_id() );
 
-		return new WP_REST_Response(
-			$result ? array( 'success' => true ) : array( 'error' => 'delete_failed' ),
-			$result ? 200 : 400
+		if ( ! empty( $result['success'] ) ) {
+			return new WP_REST_Response( array( 'success' => true ), 200 );
+		}
+
+		$status_map = array(
+			'not_found'  => 404,
+			'not_sender' => 403,
+			'db_error'   => 500,
 		);
+		$error = isset( $result['error'] ) ? (string) $result['error'] : 'delete_failed';
+
+		return new WP_REST_Response( array( 'error' => $error ), $status_map[ $error ] ?? 400 );
 	}
 
 	/**

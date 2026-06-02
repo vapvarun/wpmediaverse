@@ -1288,16 +1288,51 @@ class MessagingService {
 	}
 
 	/**
-	 * Delete a message (for sender only).
+	 * Delete a message (delete-for-everyone, sender only).
 	 *
 	 * @param int $message_id Message ID.
 	 * @param int $user_id    User requesting deletion.
-	 * @return bool
+	 * @return array{success: bool, error?: string} Result with a status code the
+	 *               controller maps to HTTP (not_found→404, not_sender→403).
 	 */
-	public function delete_message( int $message_id, int $user_id ): bool {
+	public function delete_message( int $message_id, int $user_id ): array {
 		global $wpdb;
 
 		$msg_table = $wpdb->prefix . 'mvs_messages';
+
+		// Look the message up first so the controller can return precise status
+		// codes (404 when it never existed, 403 when the caller isn't the
+		// sender) instead of a blanket 400 Bad Request (Basecamp #9936826065).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT sender_id, is_deleted FROM {$msg_table} WHERE id = %d",
+				$message_id
+			)
+		);
+
+		if ( null === $row ) {
+			return array(
+				'success' => false,
+				'error'   => 'not_found',
+			);
+		}
+
+		// Delete-for-everyone is sender-only. A recipient hiding only their own
+		// copy needs per-participant deletion, which is part of the
+		// group-conversation work (tracked separately) - until then a recipient
+		// gets a clear 403 rather than a confusing 400.
+		if ( (int) $row->sender_id !== $user_id ) {
+			return array(
+				'success' => false,
+				'error'   => 'not_sender',
+			);
+		}
+
+		// Already soft-deleted by the sender — idempotent no-op, report success.
+		if ( 1 === (int) $row->is_deleted ) {
+			return array( 'success' => true );
+		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$result = $wpdb->update(
@@ -1312,29 +1347,17 @@ class MessagingService {
 		);
 
 		if ( false === $result ) {
-			return false;
+			return array(
+				'success' => false,
+				'error'   => 'db_error',
+			);
 		}
 
 		if ( $result > 0 ) {
 			do_action( 'mvs_message_deleted', $message_id, $user_id, false );
-			return true;
 		}
 
-		// Zero rows changed. Make the delete idempotent: re-deleting a message
-		// the sender already soft-deleted is a no-op, not a failure, so report
-		// success instead of letting the controller return HTTP 400. (A
-		// recipient deleting their own copy still needs per-participant deletion,
-		// which is part of the group-conversation work - tracked separately.)
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$already_deleted = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT is_deleted FROM {$msg_table} WHERE id = %d AND sender_id = %d",
-				$message_id,
-				$user_id
-			)
-		);
-
-		return '1' === (string) $already_deleted;
+		return array( 'success' => true );
 	}
 
 	/**
