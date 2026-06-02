@@ -152,6 +152,18 @@ class Sanitizers {
 			return array();
 		}
 
+		// The secret field renders empty with a "leave empty to keep the current
+		// secret" hint (password-field UX). Without preserving it here, every
+		// save would blank the stored HMAC secret and break signature
+		// verification. Map existing secrets by URL so an empty submission keeps
+		// the current value (matching sanitize_password_option's contract).
+		$existing_secrets = array();
+		foreach ( (array) get_option( 'mvs_webhooks', array() ) as $existing ) {
+			if ( ! empty( $existing['url'] ) ) {
+				$existing_secrets[ $existing['url'] ] = $existing['secret'] ?? '';
+			}
+		}
+
 		$sanitized = array();
 		foreach ( $input as $webhook ) {
 			$url = isset( $webhook['url'] ) ? esc_url_raw( $webhook['url'] ) : '';
@@ -163,9 +175,14 @@ class Sanitizers {
 				? array_map( 'sanitize_text_field', $webhook['events'] )
 				: array( '*' );
 
+			$secret = isset( $webhook['secret'] ) ? sanitize_text_field( $webhook['secret'] ) : '';
+			if ( '' === $secret && isset( $existing_secrets[ $url ] ) ) {
+				$secret = $existing_secrets[ $url ];
+			}
+
 			$sanitized[] = array(
 				'url'    => $url,
-				'secret' => isset( $webhook['secret'] ) ? sanitize_text_field( $webhook['secret'] ) : '',
+				'secret' => $secret,
 				'events' => $events,
 			);
 		}
