@@ -15,6 +15,39 @@ defined( 'ABSPATH' ) || exit;
 class Sanitizers {
 
 	/**
+	 * The full universe of MIME types the Allowed File Types picker renders.
+	 *
+	 * Single source of truth shared by FieldRenderer (draws the checkbox grid)
+	 * and sanitize_file_types() (reconciles a submission). Reconcile only touches
+	 * types in THIS universe — MIME types added in code via the
+	 * `mvs_allowed_file_types` filter are outside the picker and are preserved
+	 * across a save, never dropped when a box is unchecked. Keep in lockstep with
+	 * the grid in FieldRenderer::render_file_types_field().
+	 *
+	 * @var array<int, string>
+	 */
+	public const KNOWN_FILE_TYPES = array(
+		'image/jpeg',
+		'image/png',
+		'image/gif',
+		'image/webp',
+		'video/mp4',
+		'video/webm',
+		'audio/mpeg',
+		'audio/ogg',
+	);
+
+	/**
+	 * Hidden sentinel field name proving the Allowed File Types control was on
+	 * the submitted page, so sanitize_file_types() can tell "present but empty =
+	 * remove all" apart from "field absent = preserve current value". FieldRenderer
+	 * always prints this hidden input next to the grid.
+	 *
+	 * @var string
+	 */
+	public const FILE_TYPES_PRESENT_FIELD = 'mvs_allowed_file_types_present';
+
+	/**
 	 * Per-option whitelist registry for fixed-choice (select dropdown) settings.
 	 *
 	 * Keys are option names, values are the array of allowed values that the
@@ -88,31 +121,74 @@ class Sanitizers {
 	}
 
 	/**
-	 * Sanitize file types — merge checkbox values with custom textarea.
+	 * Sanitize the Allowed File Types submission.
 	 *
-	 * @param mixed $value Input (array from checkboxes).
+	 * Unchecked checkboxes send nothing in POST, so a "zero boxes checked"
+	 * submission arrives here as an empty/absent value that looks identical to
+	 * "this field was never on the page". WP's options.php walks EVERY option in
+	 * the group, so this callback runs even for absent fields. We disambiguate
+	 * with a hidden sentinel (FieldRenderer always prints it next to the grid):
+	 *
+	 *   - Sentinel ABSENT  -> the picker was not on the submitted page. Preserve
+	 *     the current stored value (no change). This also guards against future
+	 *     callers that save the group without the file-types UI present.
+	 *
+	 *   - Sentinel PRESENT -> the picker WAS submitted. The submitted checkboxes
+	 *     are the authoritative set of KNOWN types the user wants. We reconcile
+	 *     against self::KNOWN_FILE_TYPES: every known type that was
+	 *     NOT checked is removed, even on the first uncheck. MIME types added in
+	 *     code via the `mvs_allowed_file_types` filter live outside the picker
+	 *     universe, so any currently-stored custom types are preserved.
+	 *
+	 *   - Sentinel PRESENT but ZERO boxes checked -> "remove all" — the value is
+	 *     persisted as an empty string (minus any preserved custom types).
+	 *     Uploads then reject every type until the admin re-enables one.
+	 *
+	 * @param mixed $value Input (array from checkboxes, or empty when none checked).
 	 * @return string Comma-separated MIME types.
 	 */
 	public static function sanitize_file_types( $value ): string {
-		$types = array();
+		$stored = (string) get_option( 'mvs_allowed_file_types', SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES );
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by options.php / the Settings API before this sanitize_callback runs.
+		$field_present = isset( $_POST[ self::FILE_TYPES_PRESENT_FIELD ] );
+
+		// Field not on the submitted page: leave the stored value untouched.
+		if ( ! $field_present ) {
+			return $stored;
+		}
+
+		// Submitted (checked) known types. Normally an array of checkbox values.
+		// But the persistence path (pre_update_option deletes the option so the
+		// new value is INSERTed past WP's update_option->add_option no-op) makes
+		// add_option() re-run this callback on the already-sanitized CSV *string*.
+		// Treat that string as the submitted set so the second pass is idempotent
+		// instead of seeing "not an array" and collapsing a real selection to ''
+		// (which would silently disable every upload type).
+		$submitted = array();
 		if ( is_array( $value ) ) {
-			$types = array_map( 'sanitize_mime_type', $value );
+			$submitted = array_map( 'sanitize_mime_type', $value );
+		} elseif ( is_string( $value ) && '' !== $value ) {
+			$submitted = array_map( 'sanitize_mime_type', array_map( 'trim', explode( ',', $value ) ) );
 		}
+		$submitted = array_filter( $submitted );
 
-		$types = array_unique( array_filter( $types ) );
+		$known = self::KNOWN_FILE_TYPES;
 
-		// Submitting the form with zero checkboxes checked would otherwise
-		// persist '' and overwrite the registered default — after which the form
-		// page renders every checkbox unchecked and uploads stop working. Treat
-		// an empty submission as "no change" by preserving the current stored
-		// value (which is the registered default on fresh installs). Developers
-		// who need additional MIME types use the `mvs_allowed_file_types` filter.
-		if ( empty( $types ) ) {
-			return (string) get_option( 'mvs_allowed_file_types', SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES );
-		}
+		// Keep only submitted types that belong to the picker universe — a
+		// checked known type stays, everything else from the form is ignored.
+		$kept_known = array_values( array_intersect( $known, $submitted ) );
 
-		return implode( ',', $types );
+		// Preserve currently-stored types that are OUTSIDE the picker universe
+		// (added in code via the mvs_allowed_file_types filter). The picker can
+		// never represent them, so unchecking boxes must not wipe them.
+		$stored_types  = array_filter( array_map( 'trim', explode( ',', $stored ) ) );
+		$custom_stored = array_values( array_diff( $stored_types, $known ) );
+
+		$result = array_values( array_unique( array_merge( $custom_stored, $kept_known ) ) );
+
+		// Present-but-empty (and no custom types) = remove all -> ''.
+		return implode( ',', $result );
 	}
 
 	/**

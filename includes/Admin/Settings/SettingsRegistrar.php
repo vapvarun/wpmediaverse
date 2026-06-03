@@ -31,6 +31,10 @@ class SettingsRegistrar {
 	// PDF rows still display + download.
 	public const DEFAULT_ALLOWED_FILE_TYPES = 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg';
 
+	// The Allowed File Types picker universe + presence sentinel live on
+	// Sanitizers (Sanitizers::KNOWN_FILE_TYPES / ::FILE_TYPES_PRESENT_FIELD),
+	// the class that reconciles the submission.
+
 	/**
 	 * Register all settings, sections, and fields.
 	 */
@@ -130,6 +134,30 @@ class SettingsRegistrar {
 				'default'           => self::DEFAULT_ALLOWED_FILE_TYPES,
 			)
 		);
+
+		// Defeat WP's update_option->add_option no-op: when the stored value
+		// equals the registered default, update_option() routes the write through
+		// add_option(), which bails on an existing row — so the FIRST change is
+		// silently dropped. When the value is genuinely changing away from the
+		// default, delete the row first so add_option() INSERTs cleanly. Never
+		// fires on a no-op; never touches the default or the filter, so
+		// fresh-install seeding is preserved. (Sanitizers::sanitize_file_types is
+		// idempotent, so add_option's second sanitize pass on the CSV is safe.)
+		add_filter(
+			'pre_update_option_mvs_allowed_file_types',
+			static function ( $value, $old_value ) {
+				if ( $value === $old_value ) {
+					return $value;
+				}
+				if ( (string) $old_value === self::DEFAULT_ALLOWED_FILE_TYPES ) {
+					delete_option( 'mvs_allowed_file_types' );
+				}
+				return $value;
+			},
+			10,
+			2
+		);
+
 		add_settings_field(
 			'mvs_allowed_file_types',
 			__( 'Allowed File Types', 'wpmediaverse' ),

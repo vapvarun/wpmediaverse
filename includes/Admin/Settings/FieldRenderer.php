@@ -89,17 +89,17 @@ class FieldRenderer {
 		$selected = array_map( 'trim', explode( ',', (string) $current ) );
 
 		$groups = array(
-			__( 'Images', 'wpmediaverse' )    => array(
+			__( 'Images', 'wpmediaverse' ) => array(
 				'image/jpeg' => 'JPEG',
 				'image/png'  => 'PNG',
 				'image/gif'  => 'GIF',
 				'image/webp' => 'WebP',
 			),
-			__( 'Video', 'wpmediaverse' )     => array(
+			__( 'Video', 'wpmediaverse' )  => array(
 				'video/mp4'  => 'MP4',
 				'video/webm' => 'WebM',
 			),
-			__( 'Audio', 'wpmediaverse' )     => array(
+			__( 'Audio', 'wpmediaverse' )  => array(
 				'audio/mpeg' => 'MP3',
 				'audio/ogg'  => 'OGG',
 			),
@@ -128,6 +128,15 @@ class FieldRenderer {
 				)
 			);
 		}
+		// Hidden sentinel: proves this control was on the submitted page so the
+		// sanitizer can tell "unchecked everything" (remove all) apart from
+		// "field absent" (preserve). Without it a first all-unchecked save is
+		// indistinguishable from a save that never touched this field.
+		printf(
+			'<input type="hidden" name="%s" value="1" />',
+			esc_attr( Sanitizers::FILE_TYPES_PRESENT_FIELD )
+		);
+
 		echo '<div class="mvs-file-types-grid">';
 		foreach ( $groups as $group_label => $mimes ) {
 			printf( '<div class="mvs-file-types-group"><strong>%s</strong>', esc_html( $group_label ) );
