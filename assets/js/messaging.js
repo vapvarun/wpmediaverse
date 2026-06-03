@@ -59,6 +59,28 @@ function formatDuration( seconds ) {
 // Temp ID counter for optimistic messages.
 let tempIdCounter = 0;
 
+// Derive the sidebar preview string for a single message, mirroring the
+// server's MessagingService::send_message() preview rules so the frontend
+// recompute (after a delete) matches what the API would have stored.
+function messagePreview( msg ) {
+	if ( ! msg ) return '';
+	const content = ( msg.content || '' ).trim();
+	if ( content ) return content.slice( 0, 100 );
+	switch ( msg.message_type ) {
+		case 'voice':
+		case 'audio':
+			return 'Voice message';
+		case 'media_share':
+			return 'Shared a media';
+		case 'image':
+		case 'video':
+		case 'file':
+			return msg.message_type.charAt( 0 ).toUpperCase() + msg.message_type.slice( 1 );
+		default:
+			return '';
+	}
+}
+
 // Enrich message with pre-computed boolean flags for Interactivity API directives.
 function enrichMessage( msg ) {
 	// Interactivity API does NOT track underscore-prefixed properties on
@@ -626,9 +648,29 @@ const { state, actions } = store( 'mvs/messaging', {
 			const msgId = ctx.messageId || state.contextMenuMessageId;
 			if ( ! msgId ) return;
 
+			// Was this the last message in the thread? If so the sidebar preview
+			// needs to be recomputed from whatever remains after the delete.
+			const wasLast = state.messages.length > 0
+				&& String( state.messages[ state.messages.length - 1 ].id ) === String( msgId );
+
 			try {
 				yield apiFetch( '/messages/' + msgId, { method: 'DELETE' } );
+				// Remove the message entirely from the thread — no greyed tombstone
+				// for a delete-for-me. (Unsend keeps its own "message deleted" state.)
 				state.messages = state.messages.filter( m => String( m.id ) !== String( msgId ) );
+
+				// Recompute the conversation's last-message preview so the sidebar
+				// stops showing the now-deleted message. Frontend state only — the
+				// /messages DELETE route contract is unchanged.
+				if ( wasLast ) {
+					const conv = state.activeConversation;
+					if ( conv ) {
+						const remaining = state.messages.filter( m => m.notDeleted );
+						const last = remaining.length > 0 ? remaining[ remaining.length - 1 ] : null;
+						conv.last_message_preview = last ? messagePreview( last ) : '';
+						conv.last_activity_at = last ? ( last.created_at || conv.last_activity_at ) : conv.last_activity_at;
+					}
+				}
 			} catch ( e ) {
 				actions.showToast( e.message );
 			}
