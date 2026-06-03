@@ -1316,6 +1316,48 @@
         "Services/StorageCleanupService::process (deletes each path from local + active cloud driver)"
       ],
       "since": "1.6.0"
+    },
+    {
+      "name": "mvs_suppress_frontend_ui",
+      "type": "filter",
+      "args": "$suppressed",
+      "where": "Core/Plugin.php:1695",
+      "consumed_by": [
+        "BuddyNext integration (stand MVS frontend UI down on BuddyNext surfaces)"
+      ],
+      "since": "1.6.0"
+    },
+    {
+      "name": "mvs_group_conversation_created",
+      "type": "action",
+      "args": "$conv_id, $creator_id, $all_ids, $opts",
+      "where": "Messaging/MessagingService.php:690",
+      "consumed_by": [],
+      "since": "1.6.0"
+    },
+    {
+      "name": "mvs_object_media_set",
+      "type": "action",
+      "args": "$object_type, $object_id, $media_ids",
+      "where": "Media/ObjectMediaLinkage.php:97",
+      "consumed_by": [],
+      "since": "1.6.0"
+    },
+    {
+      "name": "mvs_participant_added",
+      "type": "action",
+      "args": "$conversation_id, $user_id, $role",
+      "where": "Messaging/MessagingService.php:794",
+      "consumed_by": [],
+      "since": "1.6.0"
+    },
+    {
+      "name": "mvs_participant_removed",
+      "type": "action",
+      "args": "$conversation_id, $user_id",
+      "where": "Messaging/MessagingService.php:832",
+      "consumed_by": [],
+      "since": "1.6.0"
     }
   ]
 }

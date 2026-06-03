@@ -136,5 +136,22 @@
     },
     "no_schema_change": "Action Scheduler owns the queue - no new mvs_* table / Migrator bump",
     "scope": "targeted refresh for the verified cleanup-cycle feature"
+  },
+  "refresh_2026_06_03_hooks": {
+    "trigger": "1.6.0-dev: full hook-detail enumeration + profile DM/online settings",
+    "hooks_now_detailed": "The 7 group-conversation / BuddyNext / object-media hooks counted in hooks_fired_unique are now enumerated with code-verified args in manifest.hooks.json (previously flagged pending owner enumeration): mvs_buddynext_active, mvs_suppress_frontend_ui, mvs_conversation_created, mvs_group_conversation_created, mvs_object_media_set, mvs_participant_added, mvs_participant_removed.",
+    "profile_settings_added_1_6_0": {
+      "options": [
+        "mvs_dm_access (site default DM access)",
+        "mvs_show_online_status (site default online-status visibility)"
+      ],
+      "user_meta": [
+        "_mvs_dm_access (per-user DM access override)",
+        "_mvs_show_online (per-user online-status override)"
+      ],
+      "rest": "dm_access + online_status added as args on existing PUT /me/profile (no new route)",
+      "note": "Stored via ProfileService/ProfileController, not register_setting - so the settings count (register_setting whitelist) is unchanged."
+    },
+    "counts_unchanged": "hooks_fired_unique stays 141 (these 7 were already counted in the collection-picker refresh); this pass only fills in their detail entries."
   }
 }
