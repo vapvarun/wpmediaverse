@@ -83,6 +83,77 @@ class Plugin {
 	private static $container;
 
 	/**
+	 * Force the shared UI frame (lightbox dialog) to render on a non-MVS page.
+	 *
+	 * Set by Pro feed Layout::enqueue_assets() so the lightbox dialog markup
+	 * (and its `@mvs/shared-ui` Interactivity store) reaches ordinary shortcode
+	 * / block pages that host a feed grid whose media tiles use
+	 * `actions.openLightbox`. Without this, the lightbox is dead off MVS pages
+	 * (Basecamp #9961961339 — same surface-miss class as the Load More fix
+	 * #9961961337). Honored in render_shared_ui_frame().
+	 *
+	 * @var bool
+	 */
+	private static $force_shared_ui_frame = false;
+
+	/**
+	 * Mark the shared UI frame (lightbox dialog) to render on the current page.
+	 *
+	 * Public entry point for the Pro feed layouts: their `enqueue_assets()`
+	 * runs on `wp_enqueue_scripts`, before `wp_footer`, so flipping this flag
+	 * there makes `render_shared_ui_frame()` emit the dialog on a plain
+	 * shortcode / block page. Idempotent — the footer renderer guards against
+	 * double-output, so calling this from all four feed layouts on the same
+	 * page prints the frame exactly once.
+	 *
+	 * @return void
+	 */
+	public static function force_shared_ui_frame(): void {
+		self::$force_shared_ui_frame = true;
+	}
+
+	/**
+	 * Enqueue the lightbox store + dialog frame for a Pro feed surface.
+	 *
+	 * Single entry point the Pro feed layouts call from their
+	 * `enqueue_assets()` so the @mvs/shared-ui Interactivity store (which owns
+	 * the lightbox) and its dialog-frame markup reach ordinary shortcode /
+	 * block pages — not just MVS-native pages. Mirrors the Load More
+	 * shared-handle fix: the module + frame CSS are registered globally in
+	 * `enqueue_frontend_assets()`; here we enqueue them by handle and flip the
+	 * frame-render flag. Idempotent — script-module / style handles dedupe and
+	 * `render_shared_ui_frame()` guards against double-output, so calling this
+	 * from all four feed layouts on one page is safe. No-op when the
+	 * frontend-presence policy says MediaVerse must stand down (BuddyNext owns
+	 * the UX) — the PHP_INT_MAX enforcer would dequeue the module anyway.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_shared_ui_for_feed(): void {
+		if ( self::frontend_ui_suppressed() ) {
+			return;
+		}
+
+		// wp-i18n backs the runtime __() shim used by the shared-ui view
+		// script (script modules cannot import @wordpress/i18n yet).
+		wp_enqueue_script( 'wp-i18n' );
+
+		// Lucide powers the <i data-lucide> icons in the lightbox action bar.
+		// Registered globally on `wp_enqueue_scripts@1`.
+		wp_enqueue_script( 'mvs-lucide' );
+
+		// Dialog frame stylesheet (registered globally in enqueue_frontend_assets).
+		wp_enqueue_style( 'mvs-shared-ui-frame' );
+
+		// Lightbox Interactivity store — registered globally (build/) in the
+		// non-MVS branch of enqueue_frontend_assets(); enqueue by id here.
+		wp_enqueue_script_module( '@mvs/shared-ui' );
+
+		// Print the dialog frame in wp_footer.
+		self::force_shared_ui_frame();
+	}
+
+	/**
 	 * Initialize the plugin.
 	 */
 	public static function init(): void {
@@ -1037,6 +1108,40 @@ class Plugin {
 				array(),
 				MVS_VERSION
 			);
+
+			// Lightbox store — registered globally (shared-handle contract,
+			// same pattern as mvs-load-more above) so the Pro feed shortcodes
+			// ([mvs_pro_flickr_feed] etc.) can enqueue it by id from their
+			// Layout::enqueue_assets() on ordinary pages. Without this the
+			// feed tiles' data-wp-on--click="actions.openLightbox" has no
+			// store and the lightbox is dead off MVS pages (Basecamp
+			// #9961961339). Uses build/ (compiled IIFE) — matches the
+			// enqueue_shared_ui_assets() path; register-only here, so it is a
+			// no-op on pages that never enqueue it by handle. The MVS-page
+			// branch above intentionally keeps its own src/ enqueue, so this
+			// global registration never pre-empts native-page behavior.
+			$mvs_shared_ui_asset = file_exists( MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php' )
+				? require MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php'
+				: array(
+					'dependencies' => array( array( 'id' => '@wordpress/interactivity' ) ),
+					'version'      => MVS_VERSION,
+				);
+			wp_register_script_module(
+				'@mvs/shared-ui',
+				MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
+				$mvs_shared_ui_asset['dependencies'],
+				$mvs_shared_ui_asset['version']
+			);
+
+			// Lightbox dialog frame stylesheet — registered so the Pro feed
+			// layouts (or any shortcode that forces the frame) can enqueue it
+			// by handle. Register-only; harmless on pages that never use it.
+			wp_register_style(
+				'mvs-shared-ui-frame',
+				MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
+				array(),
+				MVS_VERSION
+			);
 		}
 
 		// BP-integration stylesheet is always registered (not enqueued) and
@@ -1811,7 +1916,9 @@ JS;
 	 * Render the shared UI frame in wp_footer (FAB, upload modal, lightbox).
 	 */
 	public static function render_shared_ui_frame(): void {
-		if ( is_admin() ) {
+		static $rendered = false;
+
+		if ( is_admin() || $rendered ) {
 			return;
 		}
 
@@ -1842,12 +1949,20 @@ JS;
 		);
 		$is_mvs_frame_page  = ! empty( $mvs_frame_page_ids ) && is_page( $mvs_frame_page_ids );
 
-		if ( ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl && ! $is_mvs_frame_page ) {
+		// Pro feed shortcodes / blocks placed on an ordinary page force the
+		// frame so their lightbox-trigger tiles have a dialog to open
+		// (Basecamp #9961961339). The frame's FAB stays gated to MVS pages
+		// (handled inside the partial); only the lightbox dialog is needed
+		// here.
+		$forced = self::$force_shared_ui_frame;
+
+		if ( ! $forced && ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl && ! $is_mvs_frame_page ) {
 			return;
 		}
 
 		$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-frame.php';
 		if ( file_exists( $template ) ) {
+			$rendered = true;
 			include $template;
 		}
 	}
