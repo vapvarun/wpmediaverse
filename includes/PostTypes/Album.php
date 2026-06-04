@@ -47,5 +47,39 @@ class Album {
 		);
 
 		register_post_type( 'mvs_album', $args );
+
+		add_action( 'before_delete_post', array( self::class, 'on_before_delete' ), 10, 2 );
+	}
+
+	/**
+	 * Clean up an album's custom-table rows when the CPT is permanently
+	 * deleted (admin trash+delete, user deletion, wp_delete_post).
+	 *
+	 * Without this the album's mvs_album_items rows were orphaned forever
+	 * (audit 2026-06-04, #11). Fires mvs_album_deleted so Pro/integrations can
+	 * react. Permanent delete only (before_delete_post), not trash.
+	 *
+	 * @param int           $post_id Post being deleted.
+	 * @param \WP_Post|null $post    Post object (WP 5.5+).
+	 */
+	public static function on_before_delete( int $post_id, $post = null ): void {
+		if ( ! $post instanceof \WP_Post ) {
+			$post = get_post( $post_id );
+		}
+		if ( ! $post || 'mvs_album' !== $post->post_type ) {
+			return;
+		}
+
+		global $wpdb;
+		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'album_id' => $post_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		/**
+		 * Fires after an album's custom-table rows are cleaned on permanent delete.
+		 *
+		 * @since 1.6.0
+		 *
+		 * @param int $album_id Deleted album post ID.
+		 */
+		do_action( 'mvs_album_deleted', $post_id );
 	}
 }

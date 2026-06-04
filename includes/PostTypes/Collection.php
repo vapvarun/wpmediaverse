@@ -47,5 +47,35 @@ class Collection {
 		);
 
 		register_post_type( 'mvs_collection', $args );
+
+		add_action( 'before_delete_post', array( self::class, 'on_before_delete' ), 10, 2 );
+	}
+
+	/**
+	 * Fire mvs_collection_deleted when a collection CPT is permanently deleted
+	 * so Pro can purge its multi-collection membership rows
+	 * (mvs_pro_collection_items) — they were leaked before (audit 2026-06-04,
+	 * #13). The collection's own postmeta (_mvs_collection_rules etc.) is
+	 * removed by WordPress with the post. Permanent delete only.
+	 *
+	 * @param int           $post_id Post being deleted.
+	 * @param \WP_Post|null $post    Post object (WP 5.5+).
+	 */
+	public static function on_before_delete( int $post_id, $post = null ): void {
+		if ( ! $post instanceof \WP_Post ) {
+			$post = get_post( $post_id );
+		}
+		if ( ! $post || 'mvs_collection' !== $post->post_type ) {
+			return;
+		}
+
+		/**
+		 * Fires when a collection is permanently deleted.
+		 *
+		 * @since 1.6.0
+		 *
+		 * @param int $collection_id Deleted collection post ID.
+		 */
+		do_action( 'mvs_collection_deleted', $post_id );
 	}
 }
