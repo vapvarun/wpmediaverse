@@ -207,19 +207,21 @@ class Activator {
 			}
 		}
 
-		// Filename strategy — only set on TRUE fresh installs. Detected by an
-		// empty mvs_media_index table: re-activations of a long-running site
-		// fall through to DEFAULT_UPGRADE so existing on-disk filenames stay
-		// the canonical pattern. Once the option is set, this branch never
-		// runs again (add_option no-ops on existing keys).
+		// Filename strategy — hashed is the default for NEW uploads on every
+		// install since 1.6.0 (fresh AND upgrade). Original client filenames in
+		// the media URL are an info-leak + enumeration vector (audit 2026-06-04,
+		// #9962530792). Existing on-disk files are NEVER renamed; only the
+		// strategy applied to new uploads changes. `add_option` no-ops on
+		// existing keys, so a site that previously persisted
+		// 'original_sanitized' keeps its explicit choice. Sites that want
+		// readable filenames restore the old default with one line:
+		// add_filter( 'mvs_filename_strategy_upgrade_default', fn() => 'original_sanitized' );
+		// or force it for every upload via the 'mvs_filename_strategy' filter.
 		if ( false === get_option( \WPMediaVerse\Services\FilenameStrategy::SETTING ) ) {
-			global $wpdb;
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			$has_media = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index LIMIT 1" );
-			$default   = ( 0 === $has_media )
-				? \WPMediaVerse\Services\FilenameStrategy::DEFAULT_FRESH
-				: \WPMediaVerse\Services\FilenameStrategy::DEFAULT_UPGRADE;
-			add_option( \WPMediaVerse\Services\FilenameStrategy::SETTING, $default );
+			add_option(
+				\WPMediaVerse\Services\FilenameStrategy::SETTING,
+				\WPMediaVerse\Services\FilenameStrategy::effective_default()
+			);
 		}
 	}
 }

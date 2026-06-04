@@ -431,8 +431,9 @@ class Sanitizers {
 	 * dropdown choices in SettingsRegistrar::register_uploads_settings()
 	 * AND the consumer in Services\FilenameStrategy::is_valid_strategy().
 	 *
-	 * Default fallback matches FilenameStrategy::DEFAULT_UPGRADE so existing
-	 * sites preserve prior behaviour when garbage gets posted.
+	 * Default fallback matches FilenameStrategy::effective_default() (hashed
+	 * since 1.6.0, filterable) so garbage input lands on the same default the
+	 * runtime resolver uses (audit 2026-06-04, #9962530792).
 	 *
 	 * @since 1.2.1
 	 *
@@ -441,7 +442,9 @@ class Sanitizers {
 	 */
 	public static function sanitize_filename_strategy( $value ): string {
 		$value = is_string( $value ) ? trim( $value ) : '';
-		return in_array( $value, self::WHITELISTS['mvs_filename_strategy'], true ) ? $value : 'original_sanitized';
+		return in_array( $value, self::WHITELISTS['mvs_filename_strategy'], true )
+			? $value
+			: \WPMediaVerse\Services\FilenameStrategy::effective_default();
 	}
 
 	/**

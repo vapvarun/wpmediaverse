@@ -491,7 +491,11 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_filename_strategy' ),
-				'default'           => \WPMediaVerse\Services\FilenameStrategy::DEFAULT_UPGRADE,
+				// Hashed by default since 1.6.0 (filterable via
+				// mvs_filename_strategy_upgrade_default). Matches the runtime
+				// fallback in FilenameStrategy so REST / programmatic get_option
+				// reads agree with resolve_strategy (audit 2026-06-04, #9962530792).
+				'default'           => \WPMediaVerse\Services\FilenameStrategy::effective_default(),
 			)
 		);
 		add_settings_field(

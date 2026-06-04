@@ -870,13 +870,21 @@ class MediaController extends WP_REST_Controller {
 		}
 
 		// Store new file.
-		$storage   = Plugin::container()->get( 'storage' );
-		$driver    = $storage->get_driver();
-		$dest_sub  = gmdate( 'Y/m' );
-		$filename  = wp_unique_filename(
+		$storage  = Plugin::container()->get( 'storage' );
+		$driver   = $storage->get_driver();
+		$dest_sub = gmdate( 'Y/m' );
+		// Route through FilenameStrategy exactly like the primary upload path
+		// (UploadService::handle) so the configured strategy — hashed by
+		// default since 1.6.0 — applies to replacements too. Before 1.6.0 this
+		// called sanitize_file_name() directly, so replacing a file leaked the
+		// original filename in the URL even on hashed sites (audit 2026-06-04,
+		// #9962530792).
+		$filename_pick = \WPMediaVerse\Services\FilenameStrategy::pick(
+			(string) $file['name'],
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_sub,
-			sanitize_file_name( $file['name'] )
+			get_current_user_id()
 		);
+		$filename  = $filename_pick['stored'];
 		$dest_path = $dest_sub . '/' . $filename;
 
 		if ( ! $driver->store( $file['tmp_name'], $dest_path ) ) {
@@ -906,6 +914,21 @@ class MediaController extends WP_REST_Controller {
 				'media_type' => $media_type,
 			)
 		);
+
+		// Keep original_filename in sync with the replacement: store the new
+		// display name when the strategy hashed the on-disk basename (so
+		// downloads + Content-Disposition stay correct), and clear any stale
+		// value otherwise so a hashed-then-replaced-with-readable file doesn't
+		// keep the old display name. Mirrors UploadService::handle.
+		if ( 'hashed' === $filename_pick['strategy'] && '' !== $filename_pick['original'] ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set(
+				$media_id,
+				'original_filename',
+				$filename_pick['original']
+			);
+		} else {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete( $media_id, 'original_filename' );
+		}
 
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
 	}
