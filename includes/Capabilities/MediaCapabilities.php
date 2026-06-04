@@ -15,6 +15,32 @@ defined( 'ABSPATH' ) || exit;
 class MediaCapabilities {
 
 	/**
+	 * Option holding the admin's Permissions-matrix overrides
+	 * (role => cap => 0|1). Written by PermissionsManager on save,
+	 * re-applied by add_caps() so version-bump re-grants never wipe
+	 * an admin's manual grant/revoke choices (Basecamp #9937811664).
+	 *
+	 * @since 1.6.0
+	 */
+	const OVERRIDES_OPTION = 'mvs_role_caps_overrides';
+
+	/**
+	 * Singular caps with a matching plural CPT cap (edit_mvs_media →
+	 * edit_mvs_medias). Both must stay in sync so MediaController
+	 * permission checks work.
+	 *
+	 * @since 1.6.0 Moved here from PermissionsManager (capabilities own
+	 *              cap relationships); publish added.
+	 */
+	const PLURAL_CAP_MAP = array(
+		'edit_mvs_media'          => 'edit_mvs_medias',
+		'edit_others_mvs_media'   => 'edit_others_mvs_medias',
+		'delete_mvs_media'        => 'delete_mvs_medias',
+		'delete_others_mvs_media' => 'delete_others_mvs_medias',
+		'publish_mvs_media'       => 'publish_mvs_medias',
+	);
+
+	/**
 	 * Capability mapping per role.
 	 *
 	 * @return array<string, string[]>
@@ -115,6 +141,10 @@ class MediaCapabilities {
 	 *
 	 * Named roles get their full cap set from get_role_caps().
 	 * All other roles (custom, BuddyPress, bbPress, etc.) get base member caps.
+	 *
+	 * Admin Permissions-matrix overrides are re-applied LAST, so the
+	 * version-gated re-grant in Plugin::init() / Migrator no longer resets
+	 * an admin's manual revocations on every update (Basecamp #9937811664).
 	 */
 	public static function add_caps(): void {
 		$named = self::get_role_caps();
@@ -142,6 +172,45 @@ class MediaCapabilities {
 			}
 			foreach ( $base_caps as $cap ) {
 				$role->add_cap( $cap );
+			}
+		}
+
+		self::apply_admin_overrides();
+	}
+
+	/**
+	 * Re-apply the admin's saved Permissions-matrix choices on top of the
+	 * default grants.
+	 *
+	 * No-op until the admin saves the matrix at least once (the option is
+	 * absent on existing sites, so default behaviour is unchanged).
+	 *
+	 * @since 1.6.0
+	 */
+	public static function apply_admin_overrides(): void {
+		$overrides = get_option( self::OVERRIDES_OPTION, array() );
+		if ( empty( $overrides ) || ! is_array( $overrides ) ) {
+			return;
+		}
+
+		foreach ( $overrides as $role_slug => $caps ) {
+			$role = get_role( (string) $role_slug );
+			if ( ! $role || ! is_array( $caps ) ) {
+				continue;
+			}
+			foreach ( $caps as $cap => $granted ) {
+				$cap     = (string) $cap;
+				$applies = array( $cap );
+				if ( isset( self::PLURAL_CAP_MAP[ $cap ] ) ) {
+					$applies[] = self::PLURAL_CAP_MAP[ $cap ];
+				}
+				foreach ( $applies as $apply_cap ) {
+					if ( $granted ) {
+						$role->add_cap( $apply_cap );
+					} else {
+						$role->remove_cap( $apply_cap );
+					}
+				}
 			}
 		}
 	}
