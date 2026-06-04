@@ -221,7 +221,13 @@ $mvs_archive_url = home_url( '/media/' );
 						)
 					);
 					?>
-					data-wp-init="actions.trackView"
+					<?php
+					// The view is recorded once by the mvs/media-social wrapper's
+					// callbacks.init below (POST /media/{id}/view), which fires for
+					// every media type. Do NOT add data-wp-init="actions.trackView"
+					// here -- that POSTs a second view for video/audio only, double-
+					// counting them while images count once (#9961961132).
+					?>
 					<?php echo $mvs_video_aspect_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped above. ?>
 				>
 					<video controls preload="metadata"
@@ -248,7 +254,14 @@ $mvs_archive_url = home_url( '/media/' );
 						)
 					);
 					?>
-					data-wp-init="actions.trackView">
+					<?php
+					// The view is recorded once by the mvs/media-social wrapper's
+					// callbacks.init below (POST /media/{id}/view), which fires for
+					// every media type. Do NOT add data-wp-init="actions.trackView"
+					// here -- that POSTs a second view for video/audio only, double-
+					// counting them while images count once (#9961961132).
+					?>
+					>
 					<?php if ( $artist || $album_name ) : ?>
 						<div class="mvs-audio-info">
 							<?php if ( $artist ) : ?>
