@@ -25,11 +25,11 @@
     "capabilities": 10,
     "services": 35,
     "services_registered": 46,
-    "hooks_fired_unique": 141,
-    "hooks_with_args_signature": 25,
+    "hooks_fired_unique": 145,
+    "hooks_with_args_signature": 29,
     "hooks_no_call_site": 0,
     "cron": 4,
-    "wp_cli": 16,
+    "wp_cli": 17,
     "journeys": 12,
     "migrator_version": 15
   },
@@ -45,8 +45,8 @@
     "args_signature_extraction": "Last full pass 2026-05-17. Counts refreshed 2026-05-28; per-entry detail files lag — re-enumerate before next major release."
   },
   "generated": {
-    "at": "2026-05-28T12:30:00Z",
-    "from": "wp-plugin-onboard skill — refresh (counts-only) for 1.5.0 release",
+    "at": "2026-06-04T10:27:09Z",
+    "from": "wp-plugin-onboard skill — refresh (1.6.0 audit session: +4 hooks, +1 CLI)",
     "branch": "main",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
