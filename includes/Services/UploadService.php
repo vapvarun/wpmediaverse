@@ -68,6 +68,31 @@ class UploadService {
 		$allowed = $this->get_allowed_types();
 		$mime    = $this->detect_mime( $file['tmp_name'] );
 
+		// Hard guard: PDF / document uploads are not supported (owner decision,
+		// Basecamp #9962125462). This is the real enforcement — it fires even
+		// when a legacy site still has `application/pdf` in its stored
+		// `mvs_allowed_file_types` option (1.2.3 dropped it from the default but
+		// did not strip it from existing installs) or when the
+		// `mvs_allowed_file_types` filter re-adds it. The read/display side
+		// (pdf-viewer block, 'document' media_type, /serve content-type
+		// whitelist) is intentionally left intact so historical PDF media keeps
+		// rendering. We only block NEW uploads here.
+		if ( 'application/pdf' === $mime || 'document' === $this->get_media_type( $mime ) ) {
+			LoggerService::error(
+				'upload',
+				'PDF/document upload rejected',
+				array(
+					'mime'    => $mime,
+					'user_id' => $user_id,
+				)
+			);
+			return new WP_Error(
+				'mvs_document_not_supported',
+				__( 'PDF uploads are not supported.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
 		if ( ! in_array( $mime, $allowed, true ) ) {
 			LoggerService::error(
 				'upload',
