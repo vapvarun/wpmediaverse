@@ -1189,7 +1189,12 @@ const { state, actions } = store( 'mvs/messaging', {
 						// Only add to current conversation view.
 						if ( String( msg.conversation_id ) === String( state.activeConversationId ) ) {
 							const exists = state.messages.some( m => String( m.id ) === String( msg.id ) );
-							if ( ! exists ) {
+							// Defensive: never re-add a message the user has deleted.
+							// delete-for-me removes the message entirely, and the
+							// server poll now also excludes is_deleted rows, so this
+							// is belt-and-suspenders against a deleted message being
+							// re-added to the DOM (Basecamp #9962618059).
+							if ( ! exists && ! msg.isDeleted ) {
 								state.messages = [ ...state.messages, msg ];
 							}
 						}

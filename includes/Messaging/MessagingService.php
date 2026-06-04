@@ -1096,14 +1096,7 @@ class MessagingService {
 		}
 
 		// Update conversation last_message.
-		$preview = mb_substr( wp_strip_all_tags( $content ), 0, 100 );
-		if ( 'voice' === $message_type ) {
-			$preview = 'Voice message';
-		} elseif ( in_array( $message_type, array( 'image', 'video', 'file' ), true ) && empty( $preview ) ) {
-			$preview = ucfirst( $message_type );
-		} elseif ( 'media_share' === $message_type && empty( $preview ) ) {
-			$preview = 'Shared a media';
-		}
+		$preview = $this->build_message_preview( $content, $message_type );
 
 		$wpdb->update(
 			$conv_table,
@@ -1306,7 +1299,7 @@ class MessagingService {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT sender_id, is_deleted FROM {$msg_table} WHERE id = %d",
+				"SELECT sender_id, is_deleted, conversation_id FROM {$msg_table} WHERE id = %d",
 				$message_id
 			)
 		);
@@ -1354,10 +1347,99 @@ class MessagingService {
 		}
 
 		if ( $result > 0 ) {
+			// Keep the conversation's stored last-message preview honest: if the
+			// just-deleted message was the conversation's last, recompute it from
+			// the newest still-visible message (or clear it). Without this the
+			// sidebar preview stays stale on reload / other devices after a
+			// delete - the client only updated its own state optimistically
+			// (Basecamp #9962618059, symptom B).
+			$this->refresh_conversation_last_message( (int) $row->conversation_id );
+
 			do_action( 'mvs_message_deleted', $message_id, $user_id, false );
 		}
 
 		return array( 'success' => true );
+	}
+
+	/**
+	 * Build the stored conversation preview string for a message. Shared by
+	 * send_message() and refresh_conversation_last_message() so the preview
+	 * format stays identical across the send and delete paths.
+	 *
+	 * @param string $content      Message content.
+	 * @param string $message_type Message type (text|voice|image|video|file|media_share).
+	 * @return string Preview (max 100 chars).
+	 */
+	private function build_message_preview( string $content, string $message_type ): string {
+		$preview = mb_substr( wp_strip_all_tags( $content ), 0, 100 );
+		if ( 'voice' === $message_type ) {
+			$preview = 'Voice message';
+		} elseif ( in_array( $message_type, array( 'image', 'video', 'file' ), true ) && empty( $preview ) ) {
+			$preview = ucfirst( $message_type );
+		} elseif ( 'media_share' === $message_type && empty( $preview ) ) {
+			$preview = 'Shared a media';
+		}
+		return $preview;
+	}
+
+	/**
+	 * Recompute a conversation's stored last_message_id / last_message_preview
+	 * from the newest still-visible message (not is_deleted, not
+	 * deleted_for_all), or clear them when nothing visible remains. Called after
+	 * a message is deleted/unsent so the sidebar preview never shows a removed
+	 * message (Basecamp #9962618059).
+	 *
+	 * @param int $conversation_id Conversation ID.
+	 */
+	private function refresh_conversation_last_message( int $conversation_id ): void {
+		if ( $conversation_id <= 0 ) {
+			return;
+		}
+
+		global $wpdb;
+		$conv_table = $wpdb->prefix . 'mvs_conversations';
+		$msg_table  = $wpdb->prefix . 'mvs_messages';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$last = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT id, content, message_type, created_at
+				FROM {$msg_table}
+				WHERE conversation_id = %d AND is_deleted = 0 AND deleted_for_all = 0
+				ORDER BY created_at DESC, id DESC
+				LIMIT 1",
+				$conversation_id
+			)
+		);
+
+		if ( $last ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update(
+				$conv_table,
+				array(
+					'last_message_id'      => (int) $last->id,
+					'last_message_preview' => $this->build_message_preview( (string) $last->content, (string) $last->message_type ),
+					'last_activity_at'     => $last->created_at,
+				),
+				array( 'id' => $conversation_id ),
+				array( '%d', '%s', '%s' ),
+				array( '%d' )
+			);
+		} else {
+			// Nothing visible left - clear the stored preview so the sidebar
+			// shows an empty conversation rather than a deleted message.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->update(
+				$conv_table,
+				array(
+					'last_message_id'      => null,
+					'last_message_preview' => '',
+				),
+				array( 'id' => $conversation_id ),
+				array( '%d', '%s' ),
+				array( '%d' )
+			);
+		}
 	}
 
 	/**
@@ -1375,7 +1457,7 @@ class MessagingService {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$msg = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT sender_id, created_at FROM {$msg_table} WHERE id = %d",
+				"SELECT sender_id, created_at, conversation_id FROM {$msg_table} WHERE id = %d",
 				$message_id
 			)
 		);
@@ -1414,6 +1496,11 @@ class MessagingService {
 			array( '%d', '%s' ),
 			array( '%d' )
 		);
+
+		// Unsend (delete-for-everyone) also removes the message from every
+		// surface, so refresh the conversation's stored preview the same way
+		// delete_message does (Basecamp #9962618059).
+		$this->refresh_conversation_last_message( (int) $msg->conversation_id );
 
 		do_action( 'mvs_message_deleted', $message_id, $user_id, true );
 
@@ -1798,6 +1885,7 @@ class MessagingService {
 				WHERE p.status IN ('active', 'request_pending')
 				AND m.created_at > %s
 				AND m.deleted_for_all = 0
+				AND m.is_deleted = 0
 				ORDER BY m.created_at ASC
 				LIMIT 100",
 				$user_id,
@@ -1988,6 +2076,16 @@ class MessagingService {
 
 		$msg_table = $wpdb->prefix . 'mvs_messages';
 
+		// Conversations the user has messages in - captured BEFORE the soft-delete
+		// so each one's stored preview can be refreshed afterwards.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$conversation_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT conversation_id FROM {$msg_table} WHERE sender_id = %d",
+				$user_id
+			)
+		);
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$count = $wpdb->query(
 			$wpdb->prepare(
@@ -1995,6 +2093,13 @@ class MessagingService {
 				$user_id
 			)
 		);
+
+		// Refresh each affected conversation's stored last-message preview so the
+		// sidebar never keeps showing an erased message (Basecamp #9962618059 -
+		// same staleness as delete/unsend, caught in the double-verify pass).
+		foreach ( $conversation_ids as $conversation_id ) {
+			$this->refresh_conversation_last_message( (int) $conversation_id );
+		}
 
 		return (int) $count;
 	}
