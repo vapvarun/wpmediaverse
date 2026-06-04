@@ -586,7 +586,7 @@
 					// Success — reload to show the new album.
 					window.location.reload();
 				} else {
-					msgEl.textContent = data.message || 'Failed to create album.';
+					msgEl.textContent = data.message || __( 'Failed to create album.', 'wpmediaverse' );
 					msgEl.className = 'mvs-bp-album-msg mvs-bp-album-msg-error';
 				}
 			} )

@@ -87,8 +87,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 
 		get uploadModalHeading() {
-			const titles = { photo: 'Upload Photo', gallery: 'Create Gallery Post', album: 'Create Album', video: 'Upload Video', audio: 'Upload Audio' };
-			return titles[ state.uploadModalMode ] || 'Upload';
+			const titles = {
+				photo: __( 'Upload Photo', 'wpmediaverse' ),
+				gallery: __( 'Create Gallery Post', 'wpmediaverse' ),
+				album: __( 'Create Album', 'wpmediaverse' ),
+				video: __( 'Upload Video', 'wpmediaverse' ),
+				audio: __( 'Upload Audio', 'wpmediaverse' ),
+			};
+			return titles[ state.uploadModalMode ] || __( 'Upload', 'wpmediaverse' );
 		},
 		get uploadAccept() {
 			const allowed = getContext().allowedTypes || '';
