@@ -1109,23 +1109,14 @@ class MediaRepository implements MediaRepositoryInterface {
 			? get_current_user_id()
 			: (int) $args['viewer_id'];
 
-		// Privacy mode selection — closes Basecamp #9936622656 (private media
-		// leak on profile tabs). Previously this helper hardcoded privacy=any,
-		// which exposed private items to anyone visiting another user's
-		// profile. The new rule is "private is owner-only; all other privacy
-		// levels (members/friends/group/custom) stay discoverable by browsing
-		// the profile because that's what those levels are for." Matches the
-		// raw-SQL filter applied to the BuddyPress profile media tab in
-		// ProfileTabIntegration. Owner / admin / explicit-opt-in callers
-		// still see everything.
-		$is_owner_self = ( (int) $user_id === $viewer ) && $viewer > 0;
-		$is_admin      = $viewer > 0 && user_can( $viewer, 'moderate_mvs_media' );
-
-		if ( $is_owner_self || ! empty( $args['include_private'] ) || $is_admin ) {
-			$privacy = 'any';
-		} else {
-			$privacy = 'hide_private';
-		}
+		// Privacy mode selection. 1.3.0 closed the private-leak case
+		// (Basecamp #9936622656) with 'hide_private'; 1.6.0 tightens it to
+		// the viewer-aware 'profile' mode because members/friends-level items
+		// were still listed to viewers outside those audiences — including
+		// logged-out visitors (Basecamp #9941246549). Owner / admin /
+		// explicit-opt-in callers still see everything; sites can restore the
+		// old discoverability via the `mvs_profile_privacy_levels` filter.
+		$privacy = $this->resolve_profile_privacy_mode( $user_id, $viewer, ! empty( $args['include_private'] ) );
 
 		return $this->query(
 			array(
@@ -1136,6 +1127,52 @@ class MediaRepository implements MediaRepositoryInterface {
 				'offset'            => (int) $args['offset'],
 				'privacy'           => $privacy,
 				'viewer_id'         => $viewer,
+			)
+		);
+	}
+
+	/**
+	 * Pick the privacy mode for a single-author profile listing.
+	 *
+	 * Owner / admin / explicit opt-in see everything; everyone else gets the
+	 * viewer-aware 'profile' gate. Shared by query_by_author() and
+	 * count_visible_by_author() so listing and pagination count always agree.
+	 *
+	 * @param int  $author_id       Listing author.
+	 * @param int  $viewer          Current viewer (0 = anonymous).
+	 * @param bool $include_private Caller opt-in to bypass the gate.
+	 * @return string Privacy mode for query()/query_count().
+	 */
+	private function resolve_profile_privacy_mode( int $author_id, int $viewer, bool $include_private = false ): string {
+		$is_owner_self = ( $author_id === $viewer ) && $viewer > 0;
+		$is_admin      = $viewer > 0 && user_can( $viewer, 'moderate_mvs_media' );
+
+		return ( $is_owner_self || $include_private || $is_admin ) ? 'any' : 'profile';
+	}
+
+	/**
+	 * Count media visible to a viewer on an author's profile listing.
+	 *
+	 * Mirrors query_by_author()'s privacy-mode selection so profile tabs
+	 * count exactly the rows they list (Basecamp #9941246549 — the BP
+	 * profile media tab previously counted/listed members-only items for
+	 * logged-out visitors via its own raw SQL).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param int      $user_id   Author user ID.
+	 * @param int|null $viewer_id Viewer user ID. Null = current user.
+	 * @return int
+	 */
+	public function count_visible_by_author( int $user_id, ?int $viewer_id = null ): int {
+		$viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
+
+		return $this->query_count(
+			array(
+				'author_id' => $user_id,
+				'status'    => 'publish',
+				'privacy'   => $this->resolve_profile_privacy_mode( $user_id, $viewer ),
+				'viewer_id' => $viewer,
 			)
 		);
 	}
@@ -1230,8 +1267,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type string $search                   LIKE on title/description. Default ''.
 	 *     @type int    $tag_tt_id                term_taxonomy_id for a tag join. Default 0.
 	 *     @type int    $category_tt_id           term_taxonomy_id for a category join. Default 0.
-	 *     @type string $privacy                  'any'|'public'|'visible'. Default 'any'.
-	 *     @type int    $viewer_id                Required when privacy='visible'. Default 0.
+	 *     @type string $privacy                  'any'|'public'|'visible'|'profile'. Default 'any'.
+	 *     @type int    $viewer_id                Required when privacy='visible'/'profile'. Default 0.
 	 *     @type bool   $exclude_non_cover_group  Drop non-cover gallery members. Default false.
 	 *     @type string $since                    created_at >= this datetime. Default ''.
 	 *     @type string $orderby                  Allowlisted column. Default 'created_at'.
@@ -1317,7 +1354,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			$distinct = true;
 		}
 
-		list( $privacy_where, $privacy_params ) = $this->build_privacy_where( (string) $args['privacy'], (int) $args['viewer_id'] );
+		list( $privacy_where, $privacy_params ) = $this->build_privacy_where( (string) $args['privacy'], (int) $args['viewer_id'], (int) $args['author_id'] );
 		if ( '' !== $privacy_where ) {
 			$where[] = $privacy_where;
 			$params  = array_merge( $params, $privacy_params );
@@ -1352,12 +1389,14 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * Repository (never up-calls PrivacyService — that would invert the layer
 	 * order).
 	 *
-	 * @param string $mode      'any' (no filter), 'public' (anon), or 'visible'
-	 *                          (logged-in non-moderator: public + members + own).
-	 * @param int    $viewer_id Current viewer, used only by the 'visible' mode.
+	 * @param string $mode      'any' (no filter), 'public' (anon), 'visible'
+	 *                          (logged-in non-moderator: public + members + own),
+	 *                          or 'profile' (single-author listing, per-viewer levels).
+	 * @param int    $viewer_id Current viewer, used by 'visible' and 'profile'.
+	 * @param int    $author_id Listing author, used only by 'profile' (friendship check).
 	 * @return array{0:string,1:array} [ where-fragment, params ].
 	 */
-	private function build_privacy_where( string $mode, int $viewer_id ): array {
+	private function build_privacy_where( string $mode, int $viewer_id, int $author_id = 0 ): array {
 		switch ( $mode ) {
 			case 'public':
 				return array( "m.privacy = 'public'", array() );
@@ -1366,14 +1405,57 @@ class MediaRepository implements MediaRepositoryInterface {
 					"(m.privacy = 'public' OR m.privacy = 'members' OR m.post_author = %d)",
 					array( $viewer_id ),
 				);
+			case 'profile':
+				// Single-author (profile) listing — per-viewer privacy levels.
+				// Members- and friends-level items must NOT be listed for
+				// viewers outside those audiences (Basecamp #9941246549:
+				// members-only media rendered for logged-out visitors).
+				// `group` / `custom` need per-item membership checks, so they
+				// stay owner-only in listings. Owner/admin callers get 'any'
+				// upstream (query_by_author), so this branch is non-owner only.
+				$levels = array( 'public' );
+				if ( $viewer_id > 0 ) {
+					$levels[] = 'members';
+					$levels[] = 'loggedin';
+					if (
+						$author_id > 0
+						&& function_exists( 'friends_check_friendship' )
+						&& friends_check_friendship( $author_id, $viewer_id )
+					) {
+						$levels[] = 'friends';
+					}
+				}
+
+				/**
+				 * Filters the privacy levels a viewer may see in a single-author
+				 * profile listing.
+				 *
+				 * Restore the pre-1.6.0 "everything except private" discoverability:
+				 * add_filter( 'mvs_profile_privacy_levels', function () {
+				 *     return array( 'public', 'members', 'loggedin', 'friends', 'group', 'custom' );
+				 * } );
+				 *
+				 * @since 1.6.0
+				 *
+				 * @param string[] $levels    Allowed privacy slugs.
+				 * @param int      $author_id Profile owner user ID.
+				 * @param int      $viewer_id Current viewer user ID (0 = anonymous).
+				 */
+				$levels = (array) apply_filters( 'mvs_profile_privacy_levels', $levels, $author_id, $viewer_id );
+
+				$placeholders = implode( ',', array_fill( 0, count( $levels ), '%s' ) );
+				if ( $viewer_id > 0 ) {
+					return array(
+						"(m.privacy IN ({$placeholders}) OR m.post_author = %d)",
+						array_merge( array_values( $levels ), array( $viewer_id ) ),
+					);
+				}
+				return array( "m.privacy IN ({$placeholders})", array_values( $levels ) );
 			case 'hide_private':
-				// Permissive sibling of 'visible' — only filters out
-				// `private`, leaves members/friends/group/custom alone.
-				// Used by profile-tab style queries where the owner can
-				// publish at members/friends/group/custom and expect those
-				// audiences to discover the items by browsing the profile.
-				// Closes the private-leak case (Basecamp #9936622656)
-				// without over-restricting the other non-public levels.
+				// DEPRECATED since 1.6.0 — superseded by 'profile' (this mode
+				// listed members/friends items to any visitor, Basecamp
+				// #9941246549). Kept because mode strings reach the public
+				// query()/query_count() args surface (Production Rule #2).
 				return array(
 					"(m.privacy != 'private' OR m.post_author = %d)",
 					array( $viewer_id ),
