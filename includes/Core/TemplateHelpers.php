@@ -299,6 +299,40 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *                        - 'lazy'         bool   Add loading="lazy" on <img> (default true).
 	 * @return string Inner HTML ready for echo.
 	 */
+	/**
+	 * Resolve the best alt text for a media image: prefer the AI-generated
+	 * description, fall back to the title. Pre-escaped (esc_attr) for direct
+	 * use in an alt="" attribute.
+	 *
+	 * This is where the AI auto-describe output finally does its job — it was
+	 * stored as ai_description meta but never surfaced anywhere (audit
+	 * 2026-06-04, #30). Filterable so themes/Pro can override.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string esc_attr-escaped alt text.
+	 */
+	public function resolve_alt_text( int $media_id ): string {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$alt  = (string) $repo->get( $media_id, 'ai_description' );
+		if ( '' === trim( $alt ) ) {
+			$alt = (string) $repo->get( $media_id, 'title' );
+		}
+
+		/**
+		 * Filter the resolved alt text for a media image.
+		 *
+		 * @since 1.6.0
+		 *
+		 * @param string $alt      Resolved alt (AI description or title).
+		 * @param int    $media_id Media ID.
+		 */
+		$alt = (string) apply_filters( 'mvs_media_alt_text', $alt, $media_id );
+
+		return esc_attr( $alt );
+	}
+
 	public function media_thumbnail( int $media_id, array $args = array() ): string {
 		$args = wp_parse_args(
 			$args,
@@ -318,10 +352,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		$media_type = $this->get_media_type( $media_id );
 		$thumb_url  = $this->get_thumb_url( $media_id, $size, (int) $args['ttl'], $args['user_id'] );
-		$alt        = (string) $args['alt'];
-		if ( '' === $alt ) {
-			$alt = esc_attr( (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) );
-		}
+		$alt = '' !== (string) $args['alt'] ? (string) $args['alt'] : $this->resolve_alt_text( $media_id );
 
 		$extra_class = trim( (string) $args['classes'] );
 		$loading     = $args['lazy'] ? ' loading="lazy"' : '';
