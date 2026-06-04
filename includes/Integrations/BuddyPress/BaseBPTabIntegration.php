@@ -229,8 +229,10 @@ abstract class BaseBPTabIntegration {
 		// Privacy gate: a direct album-slug URL must respect album privacy.
 		// album_belongs_to_context() only confirms ownership/context, not whether
 		// the current viewer is allowed to see a private / members-only album.
+		// No null-guard on the service: a missing privacy service must fail
+		// CLOSED (fatal), not skip the gate and leak.
 		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'privacy' );
-		if ( $privacy && ! $privacy->can_view( (int) $album->ID, get_current_user_id() ) ) {
+		if ( ! $privacy->can_view( (int) $album->ID, get_current_user_id() ) ) {
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
 			echo '</div>';
 			return;
@@ -456,7 +458,8 @@ abstract class BaseBPTabIntegration {
 			// members-only album would otherwise leak to logged-out users and
 			// non-members. Album privacy lives in mvs_media_index keyed by the
 			// album post ID (same id space PrivacyService::can_view expects).
-			if ( $privacy && ! $privacy->can_view( $album_id, $viewer_id ) ) {
+			// No null-guard on the service — fail closed, never skip the gate.
+			if ( ! $privacy->can_view( $album_id, $viewer_id ) ) {
 				continue;
 			}
 
