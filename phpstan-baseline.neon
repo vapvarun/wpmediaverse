@@ -1,17 +1,17 @@
 parameters:
 	ignoreErrors:
 		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 2
+			path: includes/Admin/CollectionMetaBox.php
+
+		-
 			message: "#^Parameter \\#1 \\$args of function paginate_links expects array\\{base\\?\\: string, format\\?\\: string, total\\?\\: int, current\\?\\: int, aria_current\\?\\: string, show_all\\?\\: bool, end_size\\?\\: int, mid_size\\?\\: int, \\.\\.\\.\\}, array\\{base\\: string, format\\: '', current\\: int, total\\: float\\} given\\.$#"
 			count: 1
 			path: includes/Admin/LogViewerPage.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
-			path: includes/Admin/MediaListPage.php
-
-		-
-			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
 			count: 1
 			path: includes/Admin/MediaListPage.php
 
@@ -26,9 +26,19 @@ parameters:
 			path: includes/Admin/MediaListPage.php
 
 		-
+			message: "#^Parameter \\#1 \\$text of function esc_attr expects string, int given\\.$#"
+			count: 1
+			path: includes/Admin/MediaListPage.php
+
+		-
 			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/Admin/MediaListPage.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/ModerationQueue.php
 
 		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int given\\.$#"
@@ -81,21 +91,6 @@ parameters:
 			path: includes/Admin/Settings/SettingsPage.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
-			path: includes/Admin/ModerationQueue.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
-			path: includes/Admin/TagManagementPage.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 2
-			path: includes/Admin/CollectionMetaBox.php
-
-		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int\\<1, max\\> given\\.$#"
 			count: 1
 			path: includes/Admin/Settings/SettingsPage.php
@@ -121,6 +116,11 @@ parameters:
 			path: includes/Admin/StatsPage.php
 
 		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Admin/TagManagementPage.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
 			count: 1
 			path: includes/Blocks/BlockRegistrar.php
@@ -142,7 +142,7 @@ parameters:
 
 		-
 			message: "#^Call to static method success\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 24
+			count: 27
 			path: includes/CLI/Commands.php
 
 		-
@@ -157,12 +157,12 @@ parameters:
 
 		-
 			message: "#^Function WP_CLI\\\\Utils\\\\get_flag_value not found\\.$#"
-			count: 36
+			count: 40
 			path: includes/CLI/Commands.php
 
 		-
 			message: "#^Function WP_CLI\\\\Utils\\\\make_progress_bar not found\\.$#"
-			count: 7
+			count: 8
 			path: includes/CLI/Commands.php
 
 		-
@@ -186,27 +186,6 @@ parameters:
 			path: includes/Core/Activator.php
 
 		-
-			# Defensive WP_Error handling for filters declared to return string.
-			# External listeners (e.g. Imagify bridge) may legitimately return
-			# WP_Error per the mvs_optimize_image contract; the runtime check
-			# stays even though the doc type says string.
-			message: "#^Call to function is_wp_error\\(\\) with string will always evaluate to false\\.$#"
-			count: 1
-			path: includes/Services/ImageOptimizationService.php
-
-		-
-			message: "#^is_wp_error\\(string\\) will always evaluate to false\\.$#"
-			count: 1
-			path: includes/Services/ImageOptimizationService.php
-
-		-
-			# WPINC is a WordPress core constant — defined in wp-load.php before
-			# any plugin file loads. WP stubs don't declare it.
-			message: "#^Constant WPINC not found\\.$#"
-			count: 3
-			path: includes/Services/ImageOptimizationService.php
-
-		-
 			message: "#^is_wp_error\\(int\\<1, max\\>\\) will always evaluate to false\\.$#"
 			count: 1
 			path: includes/Core/Activator.php
@@ -227,9 +206,6 @@ parameters:
 			path: includes/Core/Plugin.php
 
 		-
-			# MVS_PLUGIN_URL is define()'d in the plugin entry file before any
-			# class loads; PHPStan can't resolve runtime define() constants.
-			# Same known false positive as the Plugin.php entry above.
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
 			count: 1
 			path: includes/Core/TemplateHelpers.php
@@ -248,11 +224,6 @@ parameters:
 			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/Core/TemplateLoader.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
-			path: includes/Integrations/BuddyPress/BaseBPTabIntegration.php
 
 		-
 			message: "#^Access to an undefined property object\\:\\:\\$component\\.$#"
@@ -298,6 +269,11 @@ parameters:
 			message: "#^Function buddypress not found\\.$#"
 			count: 2
 			path: includes/Integrations/BuddyPress/ActivitySyncIntegration.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 1
+			path: includes/Integrations/BuddyPress/BaseBPTabIntegration.php
 
 		-
 			message: "#^Function groups_get_current_group not found\\.$#"
@@ -453,6 +429,21 @@ parameters:
 			message: "#^Unreachable statement \\- code above always terminates\\.$#"
 			count: 1
 			path: includes/Services/CloudOps.php
+
+		-
+			message: "#^Call to function is_wp_error\\(\\) with string will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/ImageOptimizationService.php
+
+		-
+			message: "#^Constant WPINC not found\\.$#"
+			count: 3
+			path: includes/Services/ImageOptimizationService.php
+
+		-
+			message: "#^is_wp_error\\(string\\) will always evaluate to false\\.$#"
+			count: 1
+			path: includes/Services/ImageOptimizationService.php
 
 		-
 			message: "#^Negated boolean expression is always false\\.$#"
