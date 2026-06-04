@@ -149,6 +149,8 @@ wp_enqueue_style( 'mvs-frontend' );
 					'lastName'        => $mvs_current_user->last_name,
 					'displayName'     => $mvs_current_user->display_name,
 					'bio'             => $mvs_current_user->description,
+					'dmAccess'        => get_user_meta( $mvs_current_user->ID, '_mvs_dm_access', true ) ?: get_option( 'mvs_dm_access', 'everyone' ),
+					'onlineStatus'    => get_user_meta( $mvs_current_user->ID, '_mvs_show_online', true ) ?: get_option( 'mvs_show_online_status', 'everyone' ),
 					'avatarUrl'       => $mvs_avatar_url ?: '',
 					'hasCustomAvatar' => $mvs_has_custom,
 					'uploadingAvatar' => false,
@@ -216,6 +218,28 @@ wp_enqueue_style( 'mvs-frontend' );
 					<textarea rows="3" maxlength="500"
 						data-wp-on--input="actions.updateBio"
 						data-wp-text="context.bio"></textarea>
+				</div>
+				<div class="mvs-profile-field-row">
+					<div class="mvs-profile-field">
+						<label for="mvs-dash-dm-access"><?php esc_html_e( 'Who can message you', 'wpmediaverse' ); ?></label>
+						<select id="mvs-dash-dm-access"
+							data-wp-bind--value="context.dmAccess"
+							data-wp-on--change="actions.updateDmAccess">
+							<option value="everyone"><?php esc_html_e( 'Everyone', 'wpmediaverse' ); ?></option>
+							<option value="followers"><?php esc_html_e( 'People who follow you', 'wpmediaverse' ); ?></option>
+							<option value="mutual"><?php esc_html_e( 'People you follow back', 'wpmediaverse' ); ?></option>
+							<option value="nobody"><?php esc_html_e( 'No one', 'wpmediaverse' ); ?></option>
+						</select>
+					</div>
+					<div class="mvs-profile-field">
+						<label for="mvs-dash-online-status"><?php esc_html_e( 'Show your online status', 'wpmediaverse' ); ?></label>
+						<select id="mvs-dash-online-status"
+							data-wp-bind--value="context.onlineStatus"
+							data-wp-on--change="actions.updateOnlineStatus">
+							<option value="everyone"><?php esc_html_e( 'Yes', 'wpmediaverse' ); ?></option>
+							<option value="nobody"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
+						</select>
+					</div>
 				</div>
 				<div class="mvs-profile-form-actions">
 					<button type="button" class="mvs-btn mvs-btn--primary mvs-btn--small"
