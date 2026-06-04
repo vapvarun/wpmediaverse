@@ -57,6 +57,14 @@ class Activator {
 	 * upload form respectively.
 	 */
 	private static function create_pages(): void {
+		// Menus with "Automatically add new top-level pages" enabled
+		// (nav_menu_options auto_add) grab every published page via
+		// _wp_auto_add_pages_to_menu on transition_post_status. Detach it
+		// while we create OUR pages so activating the plugin never edits the
+		// site's navigation (reported: plugin "added pages directly in menu").
+		// Re-attached after the loop; admins add the pages to menus themselves.
+		$auto_add_detached = remove_action( 'transition_post_status', '_wp_auto_add_pages_to_menu', 10 );
+
 		// Page titles stored in wp_posts.post_title at insert time; admins can
 		// rename freely afterwards. NOT wrapped in __() because the activation
 		// hook fires before `init` and translation lookups at that point trigger
@@ -131,6 +139,10 @@ class Activator {
 			if ( $page_id && ! is_wp_error( $page_id ) ) {
 				update_option( $option_key, $page_id );
 			}
+		}
+
+		if ( $auto_add_detached ) {
+			add_action( 'transition_post_status', '_wp_auto_add_pages_to_menu', 10, 3 );
 		}
 	}
 
