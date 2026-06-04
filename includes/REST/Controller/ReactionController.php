@@ -169,6 +169,11 @@ class ReactionController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// React only to media you can view (permission check is login-only).
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
 		if ( ! in_array( $reaction_type, ReactionService::TYPES, true ) ) {
 			return new WP_Error( 'mvs_invalid_type', __( 'Invalid reaction type.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}

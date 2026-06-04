@@ -218,6 +218,13 @@ class CommentController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// You can only comment on media you can view — the permission check is
+		// login-only, so without this a logged-in user could comment on a
+		// private/members item they can't see (audit 2026-06-04).
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
 		$content = sanitize_textarea_field( $request->get_param( 'content' ) );
 		if ( empty( $content ) ) {
 			return new WP_Error( 'mvs_empty_comment', __( 'Comment content is required.', 'wpmediaverse' ), array( 'status' => 400 ) );

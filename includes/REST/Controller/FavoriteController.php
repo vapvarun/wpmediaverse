@@ -165,6 +165,11 @@ class FavoriteController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Favorite only media you can view (permission check is login-only).
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
 		$collection_id = $request->get_param( 'collection_id' );
 		$result        = $this->favorites->toggle( $media_id, get_current_user_id(), $collection_id ? (int) $collection_id : null );
 
