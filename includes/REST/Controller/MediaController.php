@@ -856,6 +856,15 @@ class MediaController extends WP_REST_Controller {
 		$mime           = finfo_file( $finfo, $file['tmp_name'] );
 		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
+		// PDF/document uploads are not supported. Mirror the hard guard in
+		// UploadService::handle() so a member can't slip a PDF in via the
+		// replace endpoint even if a legacy mvs_allowed_file_types option still
+		// lists application/pdf (audit 2026-06-04, #9962125462 — caught by the
+		// double-verifier as a replace_file bypass of the upload guard).
+		if ( 'application/pdf' === $mime || 'document' === $upload_service->get_media_type_public( $mime ) ) {
+			return new \WP_Error( 'mvs_document_not_supported', __( 'PDF uploads are not supported.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
 		if ( ! in_array( $mime, $allowed, true ) ) {
 			return new \WP_Error( 'mvs_invalid_type', __( 'This file type is not allowed.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}

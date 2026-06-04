@@ -553,6 +553,18 @@ class UploadService {
 	}
 
 	/**
+	 * Resolve the high-level media type for a MIME (public accessor).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param string $mime MIME type.
+	 * @return string 'image' | 'video' | 'audio' | 'document'.
+	 */
+	public function get_media_type_public( string $mime ): string {
+		return $this->get_media_type( $mime );
+	}
+
+	/**
 	 * Get allowed MIME types from settings.
 	 *
 	 * @return string[]
