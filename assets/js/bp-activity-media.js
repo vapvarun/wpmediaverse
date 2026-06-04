@@ -241,14 +241,27 @@
 				headers: { 'X-WP-Nonce': nonce },
 				credentials: 'same-origin',
 				body: fd
-			} ).then( function( r ) { return r.json(); } ).then( function( data ) {
-				if ( data.id ) {
+			} ).then( function( r ) {
+				return r.json().catch( function() { return {}; } ).then( function( data ) {
+					// fetch() does NOT reject on HTTP 4xx/5xx, so an unsupported
+					// type (PDF/document) comes back as a 400 with a WP_Error body
+					// that has no `id`. Pre-1.6.0 the handler only checked data.id,
+					// so the upload failed SILENTLY with no notice. Throw the
+					// server's message so the catch below shows it to the user
+					// (audit 2026-06-04, #9962548621).
+					if ( ! r.ok || ! data || ! data.id ) {
+						throw new Error(
+							( data && data.message )
+								? data.message
+								: __( 'Upload failed. Please try again.', 'wpmediaverse' )
+						);
+					}
 					attachedMedia.push( {
 						id:        data.id,
 						thumbUrl:  localThumb || data.thumbnail_url || '',
 						mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
 					} );
-				}
+				} );
 			} );
 		} );
 	}
@@ -327,6 +340,12 @@
 		if ( privacySel ) {
 			privacySel.style.display = '';
 		}
+		// Reveal the tags field too — applied to the attached media at post
+		// time (audit 2026-06-04, #9962548621).
+		var tagsField = document.getElementById( 'mvs-activity-tags' );
+		if ( tagsField ) {
+			tagsField.style.display = '';
+		}
 
 		// Show uploading state.
 		var uploadingText = document.createElement( 'span' );
@@ -354,10 +373,15 @@
 				btn.style.opacity = '0.5';
 				btn.disabled = true;
 			}
-		} ).catch( function() {
+		} ).catch( function( err ) {
 			preview.textContent = '';
 			var errText = document.createElement( 'span' );
-			errText.textContent = __( 'Upload failed. Please try again.', 'wpmediaverse' );
+			// Show the specific server message (e.g. "PDF uploads are not
+			// supported.") instead of a generic line, so an unsupported-type
+			// upload tells the user WHY (audit 2026-06-04, #9962548621).
+			errText.textContent = ( err && err.message )
+				? err.message
+				: __( 'Upload failed. Please try again.', 'wpmediaverse' );
 			errText.className = 'mvs-activity-media-error';
 			preview.appendChild( errText );
 			btn.disabled = false;
