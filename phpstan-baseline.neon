@@ -11,13 +11,18 @@ parameters:
 			path: includes/Admin/LogViewerPage.php
 
 		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Admin/MediaListPage.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
 			count: 1
 			path: includes/Admin/MediaListPage.php
 
 		-
 			message: "#^Negated boolean expression is always false\\.$#"
-			count: 6
+			count: 2
 			path: includes/Admin/MediaListPage.php
 
 		-
@@ -32,7 +37,7 @@ parameters:
 
 		-
 			message: "#^Ternary operator condition is always true\\.$#"
-			count: 1
+			count: 2
 			path: includes/Admin/MediaListPage.php
 
 		-
