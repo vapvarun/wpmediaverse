@@ -357,15 +357,43 @@ class UploadService {
 
 		$title = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
 
-		// Determine status.
+		// Determine status. MediaVerse is a community/engagement platform: any
+		// logged-in member's upload publishes immediately by default.
 		$status = 'publish';
 		if ( ! empty( $args['status'] ) && in_array( $args['status'], array( 'draft', 'publish' ), true ) ) {
 			$status = $args['status'];
 		}
 
-		// Scheduled publishing — store as 'scheduled' status with future created_at.
+		/**
+		 * Filter: hold ALL new uploads for manual moderation before they go live.
+		 *
+		 * Default false - members publish immediately (the engagement-first
+		 * default for this community platform; the only standing limit on a
+		 * member is their Pro storage/upload quota). A site running a curated
+		 * community returns true to hold every new upload as draft +
+		 * moderation_status=pending, where it appears in the moderation queue for
+		 * an admin/moderator to approve. This is a deliberate, site-wide opt-in,
+		 * NOT the default flow (Basecamp #9962830813). Reactive moderation of
+		 * reported content (community-guideline violations) is separate and
+		 * always available via the reports + moderation queue.
+		 *
+		 * @since 1.6.0
+		 *
+		 * @param bool $hold    Whether to hold uploads for pre-moderation. Default false.
+		 * @param int  $user_id Uploading user ID.
+		 */
+		$held_for_moderation = (bool) apply_filters( 'mvs_hold_uploads_for_moderation', false, $user_id );
+		$moderation_status   = 'approved';
+		if ( $held_for_moderation ) {
+			$status            = 'draft';
+			$moderation_status = 'pending';
+		}
+
+		// Scheduled publishing — store as 'scheduled' status with future
+		// created_at. Skipped when held for moderation so a held upload can't
+		// auto-publish on a schedule and slip past the queue.
 		$created_at = current_time( 'mysql', true );
-		if ( ! empty( $args['publish_at'] ) && 'draft' === $status ) {
+		if ( ! $held_for_moderation && ! empty( $args['publish_at'] ) && 'draft' === $status ) {
 			$publish_time = strtotime( $args['publish_at'] );
 			if ( $publish_time && $publish_time > time() ) {
 				$status     = 'scheduled';
@@ -391,7 +419,7 @@ class UploadService {
 				'status'            => $status,
 				'media_type'        => $media_type,
 				'privacy'           => $privacy,
-				'moderation_status' => 'approved',
+				'moderation_status' => $moderation_status,
 				'file_url'          => $file_url,
 				'file_path'         => $dest_path,
 				'file_type'         => $mime,

@@ -211,6 +211,18 @@ class ActivityFormIntegration {
 				continue;
 			}
 
+			// Skip media held for pre-moderation (the opt-in
+			// mvs_hold_uploads_for_moderation filter). It stays draft +
+			// moderation_status=pending in the moderation queue and is NOT
+			// published or attached to the activity, so held content can never
+			// reach the stream through an activity post (Basecamp #9962830813).
+			// Once a moderator approves it, it shows in the member's media
+			// normally. Default flow (filter off) is unaffected: media is
+			// 'approved' and publishes here as before.
+			if ( 'pending' === (string) $repo->get( $media_id, 'moderation_status' ) ) {
+				continue;
+			}
+
 			// Publish draft media now that the activity is being posted.
 			$media_status = $repo->get( $media_id, 'status' );
 			if ( 'draft' === $media_status ) {

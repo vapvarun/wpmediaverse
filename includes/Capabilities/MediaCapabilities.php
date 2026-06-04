@@ -108,14 +108,28 @@ class MediaCapabilities {
 				'edit_mvs_media',
 				'delete_mvs_media',
 				'read_mvs_media',
+				// Community platform, not a blog: contributor publishes too
+				// (no WP submit-for-review semantics here). See subscriber note.
+				'publish_mvs_media',
 				'edit_mvs_medias',
 				'delete_mvs_medias',
+				'publish_mvs_medias',
 			),
 			'subscriber'    => array(
 				'upload_mvs_media',
 				'read_mvs_media',
+				// MediaVerse is a community/social platform, NOT a blog/CMS:
+				// any logged-in member uploads media and it publishes
+				// immediately (Instagram/Facebook model) - there is no
+				// submit-for-review or pre-moderation step. publish_mvs_media is
+				// granted to every member role (here + contributor + base) so the
+				// Settings -> Permissions matrix matches the actual behaviour and
+				// there is no upload-can-but-publish-cannot mismatch
+				// (Basecamp #9962830813).
+				'publish_mvs_media',
 				'edit_mvs_medias',
 				'delete_mvs_medias',
+				'publish_mvs_medias',
 			),
 		);
 	}
@@ -131,8 +145,13 @@ class MediaCapabilities {
 			'edit_mvs_media',
 			'delete_mvs_media',
 			'read_mvs_media',
+			// Every member role publishes by default (community platform).
+			// Pre-moderation is opt-in site-wide via the
+			// mvs_hold_uploads_for_moderation filter, not per-role.
+			'publish_mvs_media',
 			'edit_mvs_medias',
 			'delete_mvs_medias',
+			'publish_mvs_medias',
 		);
 	}
 
