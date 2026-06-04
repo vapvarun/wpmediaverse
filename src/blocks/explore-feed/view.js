@@ -6,6 +6,69 @@
 
 import { store, getContext } from '@wordpress/interactivity';
 
+/**
+ * Build the thumbnail node(s) for a Load More media item.
+ *
+ * Prefers the canonical shared builder (window.mvsCardBuilders.buildThumbnail,
+ * the JS mirror of PHP TemplateHelpers::media_thumbnail) so every JS-rendered
+ * card — image, video, audio — renders identical markup to the server-rendered
+ * grid and always uses thumbnail_url instead of the full-resolution file_url.
+ *
+ * The explore-feed block can be placed on any page, where mvsCardBuilders is
+ * not guaranteed to be enqueued. When it's absent we fall back to a minimal
+ * inline mirror that still (a) renders all media types and (b) prefers the
+ * thumbnail over the full-res file.
+ *
+ * @param {Object} item  REST API media object.
+ * @return {Array<HTMLElement>} Nodes to append to the link wrapper.
+ */
+function buildThumbnailNodes( item ) {
+	const builders = window.mvsCardBuilders;
+	if ( builders && typeof builders.buildThumbnail === 'function' ) {
+		return builders.buildThumbnail( item, { alt: item.title || '' } );
+	}
+
+	// Fallback mirror of TemplateHelpers::media_thumbnail() type handling.
+	const mediaType = item.media_type || '';
+	const thumbUrl = item.thumbnail_url || '';
+	const fileUrl = item.file_url || '';
+	const alt = item.title || '';
+	const nodes = [];
+
+	if ( thumbUrl ) {
+		const img = document.createElement( 'img' );
+		img.className = 'mvs-media-thumb';
+		img.src = thumbUrl;
+		img.alt = alt;
+		img.loading = 'lazy';
+		nodes.push( img );
+		return nodes;
+	}
+
+	if ( 'video' === mediaType && fileUrl ) {
+		const video = document.createElement( 'video' );
+		video.className = 'mvs-grid-video-preview';
+		video.src = fileUrl + '#t=0.1';
+		video.preload = 'metadata';
+		video.muted = true;
+		video.setAttribute( 'playsinline', 'playsinline' );
+		video.setAttribute( 'aria-hidden', 'true' );
+		nodes.push( video );
+		return nodes;
+	}
+
+	const placeholderClass =
+		'audio' === mediaType
+			? 'mvs-grid-item-placeholder mvs-grid-item-placeholder--audio'
+			: 'video' === mediaType
+				? 'mvs-grid-item-placeholder mvs-grid-item-placeholder--video'
+				: 'mvs-grid-item-placeholder mvs-grid-item-placeholder--generic';
+	const placeholder = document.createElement( 'div' );
+	placeholder.className = placeholderClass;
+	nodes.push( placeholder );
+	return nodes;
+}
+
 // Debounce-state map keyed by IA context so concurrent block instances
 // on a single page don't share a timer.
 const searchTimers = new WeakMap();
@@ -166,30 +229,37 @@ store( 'mvs/explore-feed', {
 				const total = parseInt( res.headers.get( 'X-WP-TotalPages' ) || '1', 10 );
 				ctx.hasMore = ctx.page < total;
 
-				// Append items to the grid using safe DOM methods.
+				// Append items to the grid using safe DOM methods. Mirrors the
+				// server-rendered card in render.php exactly: a typed grid item
+				// wrapping a permalink anchor (with a media-type-aware thumbnail)
+				// plus a title overlay. Every media type — image, video, audio —
+				// renders here; previously only image/* items were appended so
+				// video and audio results from the REST page were silently
+				// dropped. Thumbnails come from buildThumbnailNodes (thumbnail_url),
+				// never the full-resolution file_url.
 				const grid = document.querySelector( '.mvs-explore-feed-block .mvs-media-grid' );
 				if ( grid && data.length ) {
 					data.forEach( ( item ) => {
 						const div = document.createElement( 'div' );
 						div.className = 'mvs-grid-item';
-						const fileUrl = item.file_url || item.meta?._mvs_file_url || '';
-						const fileType = item.file_type || item.meta?._mvs_file_type || '';
-
-						if ( fileUrl && fileType.startsWith( 'image/' ) ) {
-							const img = document.createElement( 'img' );
-							img.src = fileUrl;
-							img.alt = item.title?.rendered || item.title || '';
-							img.loading = 'lazy';
-							div.appendChild( img );
-
-							const overlay = document.createElement( 'div' );
-							overlay.className = 'mvs-grid-item-overlay';
-							const title = document.createElement( 'span' );
-							title.className = 'mvs-grid-item-title';
-							title.textContent = item.title?.rendered || item.title || '';
-							overlay.appendChild( title );
-							div.appendChild( overlay );
+						if ( item.media_type ) {
+							div.setAttribute( 'data-media-type', item.media_type );
 						}
+
+						const anchor = document.createElement( 'a' );
+						anchor.href = item.link || '#';
+						buildThumbnailNodes( item ).forEach( ( node ) => {
+							anchor.appendChild( node );
+						} );
+						div.appendChild( anchor );
+
+						const overlay = document.createElement( 'div' );
+						overlay.className = 'mvs-grid-item-overlay';
+						const title = document.createElement( 'span' );
+						title.className = 'mvs-grid-item-title';
+						title.textContent = item.title || '';
+						overlay.appendChild( title );
+						div.appendChild( overlay );
 
 						grid.appendChild( div );
 					} );
