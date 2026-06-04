@@ -6,7 +6,7 @@
 
 WPMediaVerse Gamification turns your media community into a competitive platform. Users earn XP, enter photo competitions, challenge each other to battles, and boost their media visibility - all integrated with the wb-gamification plugin's XP and reward engine.
 
-Gamification requires **WPMediaVerse Pro** and the **wb-gamification plugin** (active and configured). All gamification features are disabled by default. Enable each feature individually at **Media > Settings > Gamification**.
+Gamification requires **WPMediaVerse Pro** and the **wb-gamification plugin** (active and configured). All gamification features are disabled by default. Enable each feature individually at **WPMediaVerse > Settings > Gamification**.
 
 ![Gamification overview in WPMediaVerse admin settings](../images/admin-settings-gamification.png)
 
@@ -57,11 +57,13 @@ The `mvs_competitions.type` column distinguishes between `challenge`, `battle`, 
 
 ## XP Integration
 
-WPMediaVerse registers 14 gamification actions with the wb-gamification manifest. These actions fire automatically as users interact with competitions.
+XP and points are not awarded by WPMediaVerse itself - the separate free **wb-gamification** plugin is the points engine. WPMediaVerse ships an integration manifest that registers 15 gamification actions (photo upload, album creation, likes/comments/follows/favorites received and given, bookmarks, battle win, challenge participation, challenge placing, tournament round win, tournament win, and streak milestones).
 
 ![wb-gamification manifest showing WPMediaVerse actions and XP values](../images/admin-settings-gamification.png)
 
-XP is awarded via `do_action( 'wbgam_award_xp', $user_id, $action_slug, $reference_id )`. The manifest file ships with the plugin and can be filtered using `mvs_gamification_manifest`.
+As members interact with the site and competitions, WPMediaVerse fires the matching action hooks - for example `mvs_media_uploaded`, `mvs_battle_resolved`, `mvs_challenge_winner_named`, `mvs_tournament_finalized`, and `mvs_streak_milestone` - and wb-gamification awards the points configured for each action. The per-competition XP prizes you set on a challenge or tournament are honored through the `wb_gam_points_for_action` filter, so the points a member earns match the prize shown in the UI.
+
+> Without the wb-gamification plugin active, competitions still run end to end - members enter, vote, and win - but no points are earned or spent. Install and activate wb-gamification to enable the XP and rewards layer.
 
 ## Frontend Pages
 
@@ -82,13 +84,13 @@ All competition lifecycle transitions run via Action Scheduler on an hourly recu
 
 | Scheduled Action | Trigger Condition |
 |-----------------|------------------|
-| `mvs_activate_challenges` | Challenge start date reached |
+| `mvs_activate_scheduled_challenges` | Challenge start date reached |
 | `mvs_close_challenge_entries` | Entry deadline reached |
-| `mvs_finalize_challenges` | Voting deadline reached |
+| `mvs_finalize_expired_challenges` | Voting deadline reached |
 | `mvs_resolve_expired_battles` | Battle vote deadline reached |
-| `mvs_start_tournaments` | Tournament registration deadline reached |
-| `mvs_resolve_tournament_matches` | Match vote deadline reached |
+| `mvs_start_registered_tournaments` | Tournament registration deadline reached |
+| `mvs_resolve_expired_matches` | Match vote deadline reached |
 | `mvs_expire_boosts` | Boost impression target or duration reached |
-| `mvs_check_streaks` | Daily at 2 AM - break streaks for missed uploads |
+| `mvs_daily_streak_check` | Daily at 2 AM - break streaks for missed uploads |
 
 > Action Scheduler must be running for gamification to function. If you use a managed host that blocks WP-Cron, configure Action Scheduler with a server-level cron trigger.

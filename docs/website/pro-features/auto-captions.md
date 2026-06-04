@@ -20,7 +20,10 @@ Go to **Media > Settings > Video** and configure the following options.
 | Option | Option Key | Default | Description |
 |--------|-----------|---------|-------------|
 | Auto-Generate Captions | `mvs_pro_captions_auto` | `0` | Automatically transcribe each uploaded video or audio file |
-| Whisper API Key | `mvs_pro_whisper_api_key` | (empty) | Your OpenAI API key |
+| Caption Language | `mvs_pro_captions_language` | (auto) | Optional source-language hint passed to the provider |
+| Caption Provider | `mvs_pro_captions_provider` | `whisper` | Transcription provider |
+
+The OpenAI API key is read from the free plugin's existing **OpenAI API Key** setting (the `mvs_openai_api_key` option, configured under **Media > Settings > AI & Moderation**). There is no separate Pro Whisper key field - captions reuse the same key as the rest of the AI features.
 
 ![Auto-captions settings section with API key field](../images/admin-settings-video.png)
 
@@ -31,7 +34,7 @@ When **Auto-Generate Captions** is on, WPMediaVerse Pro queues a transcription j
 WebVTT files are stored at:
 
 ```
-/wp-content/uploads/mvs-captions/{media_id}/captions.vtt
+/wp-content/uploads/mvs-captions/{media_id}.vtt
 ```
 
 If cloud storage is active, the VTT file is also uploaded alongside the media file.
@@ -50,32 +53,29 @@ Retrieve the caption file content and metadata for a media item.
 {
   "status": "complete",
   "language": "en",
-  "vtt_url": "https://example.com/wp-content/uploads/mvs-captions/123/captions.vtt",
+  "vtt_url": "https://example.com/wp-content/uploads/mvs-captions/123.vtt",
   "generated_at": "2025-03-28T10:00:00Z"
 }
 ```
 
 `status` can be `none`, `pending`, `complete`, or `failed`.
 
-### POST /media/{id}/captions
+### POST /media/{id}/captions/generate
 
-Trigger Whisper transcription manually, or upload a custom VTT file.
-
-**To trigger automatic transcription (no body required):**
+Queue Whisper transcription for the media item. Requires ownership or admin (`manage_mvs_settings`). No body is required.
 
 ```bash
-curl -X POST https://yoursite.com/wp-json/mvs-pro/v1/media/123/captions \
+curl -X POST https://yoursite.com/wp-json/mvs-pro/v1/media/123/captions/generate \
   -H "X-WP-Nonce: NONCE"
 ```
 
-**To upload your own VTT file (multipart/form-data):**
+**Response:** `202 Accepted` with the current status object.
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `file` | Yes | A `.vtt` file |
-| `language` | No | BCP 47 language code, e.g. `en`, `fr`, `de` |
+### GET /media/{id}/captions/status
 
-**Response:** `202 Accepted` when queuing transcription, `201 Created` when uploading a custom file.
+Poll the transcription job status for a media item.
+
+**Response:** `200 OK` with `{ "status": "pending" | "complete" | "failed" | "none" }`.
 
 ### PUT /media/{id}/captions
 
@@ -100,7 +100,7 @@ Remove the caption file and reset the caption status to `none`.
 
 ## WebVTT Format
 
-WPMediaVerse Pro always stores captions in WebVTT format. If you upload an SRT file, it is automatically converted to VTT before saving.
+WPMediaVerse Pro always stores captions in WebVTT format. Caption content you submit through the API must begin with the `WEBVTT` header - content that does not start with that header is rejected. There is no automatic SRT-to-VTT conversion; convert SRT to WebVTT before uploading.
 
 Example VTT file:
 
@@ -114,11 +114,6 @@ Hello and welcome to this video.
 Today we are covering the main topic.
 ```
 
-## Editing Captions in WP Admin
+## Editing Captions
 
-1. Open the media item in **Media > All Media**.
-2. Scroll to the **Captions** meta box.
-3. The VTT content is displayed in an editable text area.
-4. Make your corrections and click **Update**.
-
-![Captions meta box in the media edit screen](../images/admin-media-list.png)
+To correct a transcription, replace the stored VTT through the REST API with `PUT /media/{id}/captions`, passing the edited WebVTT content in the `content` field (see the REST API section above). The content must begin with the `WEBVTT` header.

@@ -8,7 +8,7 @@ WPMediaVerse connects with 12+ third-party services and plugins out of the box. 
 |-------------|--------|-------------|:----:|:---:|
 | **BuddyPress** | Free | Profile media tabs, group media, activity stream, notifications | Yes | Yes |
 | **BuddyNext** | Free | Enhanced member directory and profile blocks | Yes | Yes |
-| **wb-gamification** | Pro | XP points, badges, leaderboards for all competitions | -- | Yes |
+| **WB Gamification** | Free (separate plugin) | XP points, badges, leaderboards for competitions (optional - competitions run without it, only points need it) | -- | Yes |
 | **Amazon S3** | Pro | Store all media files on S3 with CDN delivery | -- | Yes |
 | **BunnyCDN** | Pro | Store and deliver media via BunnyCDN edge network | -- | Yes |
 | **OpenAI** | Free | AI content moderation, auto-tagging, description generation | Yes | Yes |
@@ -47,26 +47,23 @@ If you use the BuddyNext theme, WPMediaVerse detects it automatically and enhanc
 
 ### wb-gamification **(Pro)**
 
-WPMediaVerse Pro registers 14 gamification actions with the wb-gamification plugin:
+**This integration requires the separate, free WB Gamification plugin.** Points (XP) are only earned or spent when WB Gamification is installed and active. Without it, the competition features still run fully - members can create and enter Challenges, Battles, and Tournaments, vote, and see winners - but no points are awarded for wins or streaks, and the point-spending controls (such as Media Boosts) stay hidden. Every MediaVerse award/spend path is guarded, so Pro works correctly whether or not WB Gamification is present.
+
+When WB Gamification is active, WPMediaVerse Pro feeds it points for these competition outcomes via the `wb_gam_points_for_action` filter:
 
 | Action | When | Default XP |
 |--------|------|-----------|
-| Upload a photo | User uploads media | 10 |
-| Receive a like | Someone reacts to your media | 5 |
-| Receive a comment | Someone comments on your media | 5 |
-| Follow a user | User follows someone | 2 |
-| Enter a challenge | User submits to a challenge | 10 |
-| Win a challenge (1st) | First place in challenge | 100 |
-| Win a challenge (2nd) | Second place | 50 |
-| Win a challenge (3rd) | Third place | 25 |
-| Create a battle | User starts a 1v1 battle | 5 |
-| Win a battle | Win a head-to-head battle | 50 |
-| Register for tournament | User joins a tournament | 10 |
-| Win a tournament match | Advance one round | 25 |
-| Win a tournament | Tournament champion | 200 |
-| Reach streak milestone | 7/30/100/365 day streak | 50-5000 |
+| Win a challenge (1st) | First place in a challenge | 200 |
+| Win a challenge (2nd) | Second place | 100 |
+| Win a challenge (3rd) | Third place | 50 |
+| Enter a challenge | Submit an entry that meets the rules | 10 |
+| Win a tournament round | Advance one bracket round | configurable |
+| Win a tournament | Tournament champion | configurable |
+| Reach a streak milestone | Hit a daily-upload streak threshold | configurable |
 
-All XP values are configurable in **Media > Settings > Gamification**. The wb-gamification plugin handles points, badges, leaderboards, and leveling - WPMediaVerse triggers the actions.
+Challenge XP values are configured **per competition** when you create a Challenge (1st / 2nd / 3rd / participation), not as a single global table. WB Gamification handles the points ledger, badges, leaderboards, and leveling - WPMediaVerse Pro only tells it which competition outcome occurred.
+
+Get the free plugin: [WB Gamification](https://wbcomdesigns.com/downloads/wordpress-gamification-plugin/).
 
 ## Cloud Storage
 
@@ -232,7 +229,7 @@ See [REST API Reference](../developer-guide/rest-api.md) and [Pro REST API Refer
 
 ### WP-CLI
 
-8 CLI commands for automation, migration, and maintenance:
+CLI commands for automation, migration, and maintenance:
 
 ```
 wp mvs stats              # Show media stats
@@ -242,7 +239,8 @@ wp mvs cache-flush        # Flush all caches
 wp mvs prune-views        # Clean old view records
 wp mvs cleanup-expired    # Remove expired stories/tokens
 wp mvs moderation-stats   # Show moderation queue stats
-wp mvs import-rtmedia     # Import from rtMedia (Pro)
+wp mvs optimize           # Losslessly optimize an image
+wp mvs migrate-storage    # Migrate files between storage drivers
 ```
 
 See [WP-CLI Commands](../developer-guide/wp-cli.md).
@@ -270,6 +268,6 @@ For classic editor and page builders:
 | `[mvs_gallery]` | Media grid with filtering |
 | `[mvs_upload]` | Upload form |
 | `[mvs_dashboard]` | User's media dashboard |
-| `[mvs_profile]` | User profile card |
+| `[mvs_profile_edit]` | Inline profile editing form |
 
 See [Shortcodes](../features/shortcodes.md).

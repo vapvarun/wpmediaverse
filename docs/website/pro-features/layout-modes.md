@@ -10,8 +10,8 @@ Transform your media community's look with one click - choose the visual style t
 
 - Switch between four distinct visual layouts without touching code
 - Match your community's purpose: photo sharing, discovery, portfolios, or design showcases
-- Override the global layout for any individual gallery using a shortcode attribute
-- Conditionally switch layouts by page context using the `mvs_pro_feed_layout` filter
+- Drop a specific layout on any page with its dedicated block or shortcode (Instagram, Flickr, Pinterest, Dribbble feed)
+- Conditionally switch the active layout by page context using the `mvs_active_layout` filter
 
 ## The Four Layouts at a Glance
 
@@ -26,7 +26,7 @@ Transform your media community's look with one click - choose the visual style t
 
 1. Go to **Media > Settings > Display**
 2. Find the **Feed Layout** option and select your preferred mode
-3. Click **Save Settings** - the explore page, all profile media tabs, and gallery shortcodes update immediately
+3. Click **Save Settings** - the explore page and all profile media tabs update immediately
 
 The setting is stored in the `mvs_pro_feed_layout` option.
 
@@ -43,7 +43,7 @@ The setting is stored in the `mvs_pro_feed_layout` option.
 
 ## Choosing a Layout Mode
 
-The selected mode applies to the explore archive, user profile media tab, and any `[mvs_gallery]` shortcode or Media Grid block that does not override it with a `layout` attribute.
+The selected mode applies to the explore archive and the user profile media tab. For a specific layout on a specific page, use that layout's own block (e.g. **Instagram Feed**) or shortcode (e.g. `[mvs_pro_instagram_feed]`) instead of relying on the global setting.
 
 ---
 
@@ -60,8 +60,8 @@ The Instagram layout renders a vertical card feed. Each post shows the author av
 - Clicking "Expand" opens the lightbox with the full media detail view
 - Other users' posts show a "Following" button in the card header
 
-**Feed template:** `templates/feed/instagram.php`
-**Profile template:** `templates/profile/instagram.php`
+**Feed template:** `templates/layouts/instagram/feed.php`
+**Profile template:** `templates/layouts/instagram/profile.php`
 
 ---
 
@@ -77,8 +77,8 @@ The Pinterest layout uses a masonry algorithm that preserves each image's origin
 - Hovering a card reveals a save-to-collection button
 - Infinite scroll loads the next page of results automatically
 
-**Feed template:** `templates/feed/pinterest.php`
-**Profile template:** `templates/profile/pinterest.php`
+**Feed template:** `templates/layouts/pinterest/feed.php`
+**Profile template:** `templates/layouts/pinterest/profile.php`
 
 ---
 
@@ -88,24 +88,15 @@ Best for photography portfolios, camera clubs, and image-quality-focused communi
 
 ![Flickr justified gallery layout with full-width rows](../images/layout-flickr.png)
 
-The Flickr layout uses a justified gallery algorithm: images in each row are resized to fill the full container width while maintaining a consistent row height. The default row height is 200px and is configurable per shortcode.
+The Flickr layout uses a justified gallery algorithm: images in each row are resized to fill the full container width while maintaining a consistent row height.
 
 - Clicking an image opens the lightbox with EXIF data displayed in the sidebar
 - Profile page shows a filmstrip-style contact sheet view
 
-**Feed template:** `templates/feed/flickr.php`
-**Profile template:** `templates/profile/flickr.php`
+**Feed template:** `templates/layouts/flickr/feed.php`
+**Profile template:** `templates/layouts/flickr/profile.php`
 
-**Shortcode override:**
-
-```
-[mvs_gallery layout="flickr" row_height="240"]
-```
-
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `layout` | (site setting) | Force a specific layout for this shortcode instance |
-| `row_height` | `200` | Target row height in pixels (Flickr mode only) |
+Drop the Flickr layout on a specific page with the **Flickr Feed** block or the `[mvs_pro_flickr_feed]` shortcode.
 
 ---
 
@@ -120,28 +111,29 @@ The Dribbble layout presents media as large portfolio shots in a 2-column grid. 
 - Animated GIFs play on hover
 - Profile page shows featured work prominently at the top before the full grid
 
-**Feed template:** `templates/feed/dribbble.php`
-**Profile template:** `templates/profile/dribbble.php`
+**Feed template:** `templates/layouts/dribbble/feed.php`
+**Profile template:** `templates/layouts/dribbble/profile.php`
 
 ---
 
-## Overriding the Layout Per Shortcode
+## Putting a Specific Layout on a Specific Page
 
-You can force any layout mode on a per-shortcode basis without changing the global setting:
+Each layout ships as its own block and shortcode, so you can mix layouts across pages without changing the global setting:
 
-```
-[mvs_gallery layout="pinterest"]
-[mvs_gallery layout="flickr" row_height="180"]
-[mvs_gallery layout="dribbble"]
-```
+| Layout | Block | Shortcode |
+|--------|-------|-----------|
+| Instagram | Instagram Feed | `[mvs_pro_instagram_feed]` |
+| Flickr | Flickr Feed | `[mvs_pro_flickr_feed]` |
+| Pinterest | Pinterest Feed | `[mvs_pro_pinterest_feed]` |
+| Dribbble | Dribbble Feed | `[mvs_pro_dribbble_feed]` |
 
-The `layout` attribute accepts: `instagram`, `pinterest`, `flickr`, `dribbble`.
+## Overriding the Active Layout in Code
 
-## Overriding the Layout in Code
+The global active-layout slug (read from the `mvs_pro_feed_layout` option) passes through the `mvs_active_layout` filter, so you can switch it by context:
 
 ```php
-add_filter( 'mvs_pro_feed_layout', function( $layout ) {
-    // Force Flickr layout on archive pages.
+add_filter( 'mvs_active_layout', function( $layout ) {
+    // Force the Flickr layout on archive pages.
     if ( is_post_type_archive( 'mvs_media' ) ) {
         return 'flickr';
     }

@@ -69,30 +69,15 @@ Only one provider is active at a time. Select it under **Media > Settings > AI &
 
 ## Circuit Breaker
 
-WPMediaVerse Pro implements a circuit breaker for all AI providers. If a provider returns 5 consecutive errors (network timeout, invalid API key, rate limit), the circuit opens and no further API calls are made for 5 minutes. This prevents quota exhaustion during outages.
+WPMediaVerse Pro implements a circuit breaker for all AI providers. If a provider records 5 consecutive failures (network timeout, invalid API key, rate limit), the circuit opens and no further API calls are made to that provider for a cooldown period of 1 hour. This prevents quota exhaustion during outages.
 
-When the circuit is open:
-- New uploads skip AI analysis and are marked with `_mvs_ai_status = skipped`
-- The circuit half-opens after 5 minutes and retries a single request
-- If the retry succeeds, the circuit closes and normal operation resumes
-- If the retry fails, the circuit stays open for another 5 minutes
-
-You can reset the circuit manually from WP Admin at **Media > Settings > AI & Moderation > Reset Circuit Breaker**, or via WP-CLI:
-
-```bash
-wp mvs ai reset-circuit
-```
+While the circuit is open, calls to that provider are skipped. The failure counter is stored in a transient that expires after the cooldown, and a successful call resets the counter immediately. There is no separate half-open/retry phase or manual reset command.
 
 ---
 
 ## Auto-Tagging Behaviour
 
-All providers map their returned labels to `mvs_tag` taxonomy terms. Terms are created if they do not exist. Confidence thresholds control which labels are applied:
-
-| Setting | Option Key | Default | Description |
-|---------|-----------|---------|-------------|
-| Min Tag Confidence | `mvs_pro_ai_tag_confidence` | `70` | Minimum provider confidence score (0–100) to apply a tag |
-| Max Tags Per Item | `mvs_pro_ai_max_tags` | `10` | Cap on the number of tags applied per media item |
+All providers map their returned labels to `mvs_tag` taxonomy terms. Terms are created if they do not exist. Auto-tagging and the confidence/threshold controls that govern it are configured through the free plugin's AI settings (Auto-Apply Tags and the moderation thresholds under **Media > Settings > AI & Moderation**) - the Pro providers feed into that same pipeline rather than adding their own tag-confidence option keys.
 
 ---
 

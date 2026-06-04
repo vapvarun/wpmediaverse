@@ -12,8 +12,7 @@ Spend your earned points to push a photo to the top of the Explore feed - get mo
 - Choose how many impressions you want to buy (e.g., 500 views)
 - See a live point cost preview before committing
 - Track how many impressions your boost has delivered so far
-- Cancel an active boost at any time (points are not refunded)
-- Run boosts on multiple photos simultaneously
+- Run boosts on multiple photos simultaneously (a boost runs until its impression target or 30-day expiry; it cannot be cancelled early)
 
 ## How It Works (for Users)
 
@@ -33,7 +32,7 @@ Boosted photos appear throughout the Explore feed at regular intervals mixed in 
 
 ## For Site Owners
 
-1. Go to **Media > Settings > Gamification** and enable **Media Boosts**
+1. Go to **WPMediaVerse > Settings > Gamification** and enable **Media Boosts**
 2. Set the **Max Impressions Per Boost** (default: 5,000) to control how large a boost can be
 3. Set the **Cost Per 100 Impressions** (default: 50 points) to match your community's point economy
 4. Users must earn points through other gamification activities (uploads, challenges, streaks) before they can boost
@@ -85,37 +84,36 @@ The point deduction fires via wb-gamification's point spend API at the moment th
 
 ## REST API
 
-**Base URL:** `/wp-json/mvs-pro/v1/media/{id}/boost`
+**Base URL:** `/wp-json/mvs-pro/v1`
+
+All boost endpoints require an authenticated user. Boosts are created and listed against the current user - there is no per-media boost route and no cancel endpoint; a boost runs until its impression target is met or its 30-day expiry passes.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/media/{id}/boost` | Create a boost for a media item |
-| `GET` | `/media/{id}/boost` | Get the active boost status for a media item |
-| `DELETE` | `/media/{id}/boost` | Cancel an active boost. Points are not refunded. |
+| `GET` | `/boosts` | List the current user's boosts (optional `status`, `page`, `per_page`) |
+| `POST` | `/boosts` | Create a boost for one of your media items |
+| `GET` | `/boosts/balance` | Get the current user's gamification point balance |
 
-### POST /media/{id}/boost
-
-```json
-{
-  "target_impressions": 500
-}
-```
-
-Returns `400 Bad Request` if `target_impressions` exceeds `mvs_boost_max_impressions`. Returns `402 Payment Required` if the user does not have enough points. Returns `409 Conflict` if the media item already has an active boost.
-
-### GET /media/{id}/boost
+### POST /boosts
 
 ```json
 {
-  "active": true,
-  "target_impressions": 500,
-  "current_impressions": 143,
-  "points_spent": 250,
-  "expires_at": "2026-04-07T09:00:00Z"
+  "media_id": 456,
+  "impressions_target": 500
 }
 ```
 
-Returns `{ "active": false }` if no active boost exists.
+Returns `400 Bad Request` if `impressions_target` is below 100 or exceeds `mvs_boost_max_impressions`, if the media is not yours, or if you do not have enough points. Returns `409 Conflict` if the media item already has an active boost. Returns `503 Service Unavailable` if the wb-gamification points backend is not active.
+
+### GET /boosts/balance
+
+```json
+{
+  "balance": 1240
+}
+```
+
+Returns `{ "balance": 0 }` when the wb-gamification backend is not active.
 
 ## Explore Feed Injection
 

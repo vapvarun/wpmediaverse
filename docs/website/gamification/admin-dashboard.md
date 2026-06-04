@@ -4,7 +4,7 @@
 
 
 
-The Gamification admin area is accessible at **Media > Competitions**. It provides a unified view of all active and pending competitions, plus dedicated managers for challenges, tournaments, and battles.
+The Gamification admin area is accessible at **Competitions**. It provides a unified view of all active and pending competitions, plus dedicated managers for challenges, tournaments, and battles.
 
 Gamification admin screens only appear when at least one gamification feature is enabled in Settings.
 
@@ -36,7 +36,7 @@ You can filter the table by Type and Status using the dropdowns above the table.
 
 ## Challenge Manager
 
-Go to **Media > Competitions > Challenge Manager** to create and edit photo challenges.
+Go to **Competitions > Challenge Manager** to create and edit photo challenges.
 
 ![Challenge Manager list view](../images/admin-competitions.png)
 
@@ -52,7 +52,7 @@ From the edit form you can:
 
 ### Theme Library
 
-Click **Media > Competitions > Theme Library** to manage the pool of challenge themes used by Autopilot.
+Click **Competitions > Theme Library** to manage the pool of challenge themes used by Autopilot.
 
 ![Theme Library admin page with category filter](../images/admin-competitions.png)
 
@@ -67,7 +67,7 @@ Add a custom theme by clicking **Add Theme**. Set the name, category, and option
 
 ## Tournament Manager
 
-Go to **Media > Competitions > Tournament Manager** to create and manage tournaments.
+Go to **Competitions > Tournament Manager** to create and manage tournaments.
 
 ![Tournament Manager showing tournament list](../images/admin-competitions.png)
 
@@ -84,7 +84,7 @@ Clicking a tournament title opens the admin bracket view, which mirrors the fron
 
 ## Battle Monitor
 
-Go to **Media > Competitions > Battle Monitor** to oversee all active battles.
+Go to **Competitions > Battle Monitor** to oversee all active battles.
 
 ![Battle Monitor table showing active battles](../images/admin-competitions.png)
 
@@ -104,7 +104,7 @@ The Battle Monitor table includes every battle that is not in a terminal state (
 
 ## Gamification Settings Page
 
-Go to **Media > Settings > Gamification** to configure all gamification features.
+Go to **WPMediaVerse > Settings > Gamification** to configure all gamification features.
 
 ![Gamification settings page showing feature toggles](../images/admin-settings-gamification.png)
 
@@ -123,7 +123,7 @@ Go to **Media > Settings > Gamification** to configure all gamification features
 | Setting | Key | Default |
 |---------|-----|---------|
 | Enable Autopilot | `mvs_autopilot_enabled` | Off |
-| Autopilot Day | `mvs_autopilot_day` | `1` (Monday) |
+| Autopilot Day | `mvs_autopilot_day` | `monday` |
 | Autopilot Hour | `mvs_autopilot_hour` | `9` |
 
 ### XP Reward Amounts

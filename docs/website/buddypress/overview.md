@@ -22,7 +22,7 @@ WPMediaVerse integrates with BuddyPress to add media features directly into the 
 
 ## Activation Check
 
-The integration loads via `BuddyPressIntegration::init()`, which is called on `plugins_loaded`. Every feature check begins with:
+The integration loads via `BuddyPressManager::init()`, which is called on `plugins_loaded`. Every feature check begins with:
 
 ```php
 if ( ! function_exists( 'buddypress' ) ) {

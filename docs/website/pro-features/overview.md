@@ -10,9 +10,9 @@ WPMediaVerse Pro extends the free plugin with advanced layout modes, cloud stora
 
 ## Requirements
 
-- WPMediaVerse (free) 1.0.0 or higher installed and activated
+- WPMediaVerse (free) 1.5.0 or higher installed and activated (Pro halts with an admin notice on older Free)
 - WordPress 6.5+
-- PHP 8.0+
+- PHP 7.4+
 - MySQL 5.7+ or MariaDB 10.4+
 
 ## Installation
@@ -26,11 +26,11 @@ WPMediaVerse Pro extends the free plugin with advanced layout modes, cloud stora
 
 ![Media License settings page with activation status](../images/admin-overview.png)
 
-Pro features activate immediately after a valid license is confirmed. No site reload is required.
+All Pro features run as soon as the plugin is activated. The license key is used only to unlock automatic updates - it does not gate any feature, so every Pro capability works regardless of license state.
 
 ## Updating Pro
 
-When an update is available, WordPress shows it in the standard **Plugins** screen. The updater requires a valid active license. If your license has expired, download the latest ZIP from your account at [wbcomdesigns.com](https://wbcomdesigns.com/my-account/) and upload it manually.
+When an update is available, WordPress shows it in the standard **Plugins** screen. The updater requires a valid active license. If your license has expired, your installed Pro features keep working - only automatic updates are paused. Download the latest ZIP from your account at [wbcomdesigns.com](https://wbcomdesigns.com/my-account/) and upload it manually.
 
 ## 1.2.0: All Pro features now Gutenberg blocks
 

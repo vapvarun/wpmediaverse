@@ -21,9 +21,8 @@ These appear in the BuddyPress activity filter dropdown.
 
 | Event | Action Hook | Activity Recorded |
 |-------|-------------|-------------------|
-| Media uploaded via UploadService | `mvs_media_uploaded` | "Username uploaded [media title]" with thumbnail |
-| Media published via admin/WP-CLI | `publish_mvs_media` | Fallback activity without thumbnail |
-| Comment posted on media | `mvs_comment_created` | "Username commented on [media title]" |
+| Media uploaded via UploadService | `mvs_media_uploaded` | "Username uploaded a new [type]" with thumbnail |
+| Comment posted on media | `mvs_comment_created` | "Username commented on [media title]" (synced as an activity comment) |
 | Media added to an album | `mvs_album_items_added` | Updates existing upload activity to reference the album |
 | Media assigned to a group | `mvs_media_group_assigned` | Reassigns activity to the group component |
 | Bulk album upload | `mvs_album_items_added` | One grouped activity for all files in the same upload action - see below |
@@ -41,10 +40,13 @@ The mechanism: the upload modal sends `?album_upload=1` with each per-file `POST
 ![BuddyPress activity item showing a media upload](../images/bp-activity-stream.jpg)
 
 Upload activities use the format:
-> **Username** uploaded a **[type]** - [media title]
+> **Username** uploaded a new **[type]**
+
+When the media belongs to an album:
+> **Username** uploaded a new **[type]** to album **[Album Name]**
 
 For group uploads:
-> **Username** uploaded a **photo** in the group **[Group Name]** - [media title]
+> **Username** uploaded a new **[type]** in the group **[Group Name]**
 
 ## Thumbnail Injection
 

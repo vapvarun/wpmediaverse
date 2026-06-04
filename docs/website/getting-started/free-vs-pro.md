@@ -123,7 +123,7 @@ Both editions ship together at 1.2.0 (May 5, 2026). Highlights:
 | 33 action hooks + 16 filter hooks | Yes | Yes |
 | Template override system | Yes | Yes |
 | Custom storage driver API | Yes | Yes |
-| WP-CLI commands (8 commands) | Yes | Yes |
+| WP-CLI commands (17 commands) | Yes | Yes |
 | `wp mvs generate-video-thumbnails` (poster backfill) | Yes | Yes |
 | Migration tools (rtMedia, MediaPress, BuddyBoss) | -- | Yes |
 | MigrationPage admin (per-platform cards) | -- | Yes |

@@ -200,14 +200,14 @@ Added in 1.2.0.
 
 ## wp mvs backfill-activity-thumbnails
 
-Backfill BuddyPress activity thumbnails for media items that were imported without them (e.g., bulk imports or migrations from another plugin). Processes items in batches to avoid memory exhaustion.
+Backfill BuddyPress activity thumbnails for media items that were imported without them (e.g., bulk imports or migrations from another plugin). Modifies the `bp_activity` table directly, so take a database backup before running without `--dry-run`. Requires the BuddyPress Activity component to be active; the command exits early otherwise.
 
 ```bash
-# Backfill with default batch size.
+# Backfill every migrated source.
 wp mvs backfill-activity-thumbnails
 
-# Use a smaller batch on memory-constrained hosts.
-wp mvs backfill-activity-thumbnails --batch-size=25
+# Only backfill activities imported from rtMedia.
+wp mvs backfill-activity-thumbnails --source=rtmedia
 
 # Preview what would be updated without writing to the database.
 wp mvs backfill-activity-thumbnails --dry-run
@@ -217,7 +217,7 @@ wp mvs backfill-activity-thumbnails --dry-run
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--batch-size=<size>` | `50` | Number of activity records to process per batch |
+| `--source=<source>` | `all` | Only backfill activities from a specific migration source: `rtmedia`, `mediapress`, `buddyboss`, or `all` |
 | `--dry-run` | off | Count eligible records without updating them |
 
 ---

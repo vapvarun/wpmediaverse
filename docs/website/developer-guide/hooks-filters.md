@@ -336,7 +336,7 @@ Fires after a new media post is created, stored, and indexed. This is the primar
 
 ```php
 /**
- * Award gamification points on every upload, plus a one-time "first upload" badge.
+ * Run post-upload side effects, e.g. push to an external pipeline or analytics.
  *
  * @since 1.2.3
  *
@@ -346,13 +346,15 @@ Fires after a new media post is created, stored, and indexed. This is the primar
  * @param string $media_type 'photo' | 'video' | 'audio' | 'document'.
  */
 add_action( 'mvs_media_uploaded', function( int $media_id, array $file_data, int $user_id, string $media_type ) {
-    wb_gamification_award( $user_id, 'mvs_media_uploaded', 10 );
+    my_external_pipeline_notify( $media_id, $user_id );
 
     if ( ! empty( $file_data['is_first'] ) ) {
-        wb_gamification_award_badge( $user_id, 'first_upload' );
+        my_flag_first_upload( $user_id );
     }
 }, 10, 4 );
 ```
+
+> **Gamification note:** XP for uploads is **not** awarded by calling a function inside this hook. The separate WB Gamification plugin already consumes `mvs_media_uploaded` (and other `mvs_*` actions) through its WPMediaVerse integration, and the per-action point value is resolved through the `wb_gam_points_for_action` filter. To change upload XP, filter `wb_gam_points_for_action` rather than calling an award function here.
 
 ---
 
@@ -1152,28 +1154,30 @@ add_filter( 'mvs_openai_api_key', function( string $key ) {
 
 ### `mvs_storage_driver`
 
-Filters the active storage driver slug. Use this to switch drivers per environment without changing the database setting.
+Resolves the storage driver **instance** for a given driver slug. This is the registration point for custom drivers: the filter receives the current driver (`null` until something supplies one) and the configured driver name, and your callback returns a `StorageDriverInterface` instance only when the name matches your slug — otherwise it returns the incoming `$driver` unchanged. If no listener returns an instance, `StorageService` falls back to the built-in `LocalDriver`. See [Custom Storage Drivers](custom-storage-drivers.md) for the full contract.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `$driver_slug` | string | Current driver slug (e.g., `local`, `s3`, `b2`) |
+| `$driver` | `StorageDriverInterface\|null` | The driver resolved so far (`null` until a listener supplies one) |
+| `$name` | string | Configured driver slug (e.g., `local`, `s3`, `bunnycdn`) |
 
-**Returns:** `string`
+**Returns:** `StorageDriverInterface|null`
 
 ```php
 /**
- * Override the storage driver from a wp-config.php constant.
+ * Register a custom storage driver for the `my_s3_compatible` slug.
  *
  * @since 1.0
  *
- * @param string $driver Current driver slug.
- * @return string
+ * @param StorageDriverInterface|null $driver Driver resolved so far.
+ * @param string                      $name   Configured driver slug.
+ * @return StorageDriverInterface|null
  */
-add_filter( 'mvs_storage_driver', function( string $driver ) {
-    return defined( 'MVS_STORAGE_DRIVER' ) ? MVS_STORAGE_DRIVER : $driver;
-} );
+add_filter( 'mvs_storage_driver', function( $driver, string $name ) {
+    return 'my_s3_compatible' === $name ? new MyS3CompatibleDriver() : $driver;
+}, 10, 2 );
 ```
 
 ---

@@ -125,17 +125,21 @@ Each user controls their DM privacy from their account settings. Admins set the 
 |--------|-----|--------|
 | Who can message me | `mvs_dm_access` | `everyone`, `followers`, `mutual`, `nobody` |
 | Minimum account age | `mvs_dm_min_age` | Integer (days). Prevents newly registered accounts from sending DMs. |
-| Show online status | `mvs_show_online_status` | `1` (visible) or `0` (hidden) |
+| Show online status | `mvs_show_online_status` | `everyone`, `followers`, or `nobody` |
 
 When `mvs_dm_access` is set to `nobody`, the **Message** button is hidden on that user's profile.
 
 ## Transport
 
-The chat panel polls the REST API on a configurable interval to fetch new messages. The polling interval is set in milliseconds via the `mvs_dm_poll_interval` option (default: `3000`). Define it as a constant to prevent admin overrides:
+The chat panel polls the REST API to fetch new messages. There are three intervals (in milliseconds), chosen by context: an open conversation polls fastest, the conversation list slower, and a closed panel slowest. The defaults are `active` 3000, `list` 10000, and `background` 30000.
+
+Filter the intervals with `mvs_messaging_poll_intervals`:
 
 ```php
-// wp-config.php
-define( 'MVS_DM_POLL_INTERVAL', 2000 );
+add_filter( 'mvs_messaging_poll_intervals', function( $intervals ) {
+    $intervals['active'] = 2000; // Poll the open conversation every 2 seconds.
+    return $intervals;
+} );
 ```
 
 ## REST API
@@ -151,7 +155,7 @@ Start a new conversation.
 **Body:**
 
 ```json
-{ "participant_id": 42 }
+{ "recipient_id": 42 }
 ```
 
 **Response:** `201 Created` with the new conversation object, or `200 OK` with the existing conversation if one already exists between the two users.
@@ -181,7 +185,7 @@ List messages in a conversation. The current user must be a participant.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `per_page` | int | `30` | Messages per page |
-| `before` | int | (none) | Return messages with ID lower than this value (for pagination) |
+| `before` | int | `0` | Return messages with ID lower than this value (for pagination). `0` means no cursor. |
 
 ---
 
@@ -193,11 +197,12 @@ Send a message. The current user must be a participant and must satisfy the reci
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `content` | No | Text content |
-| `type` | No | Message type: `text` (default), `file`, `media`, `voice` |
-| `media_id` | No | WPMediaVerse media ID when `type=media` |
-| `file` | No | File upload when `type=file` or `type=voice` |
+| `content` | No | Text content. Defaults to empty string. |
+| `message_type` | No | Message type: `text` (default), `media_share`, `image`, `video`, `audio`, `voice`, `file`, `system`. Unknown values fall back to `text`. |
+| `media_id` | No | WPMediaVerse media ID when `message_type=media_share` |
+| `attachment_id` | No | WordPress attachment ID from a prior `POST /messages/upload`, used for `image`/`video`/`audio`/`voice`/`file` messages |
 | `parent_id` | No | Message ID to reply to. Creates a threaded reply visible under the parent message. |
+| `metadata` | No | Object of extra data (e.g. `{ "duration": 12 }` for voice messages). |
 
 **Response:** `201 Created` with the new message object.
 
@@ -205,14 +210,14 @@ Send a message. The current user must be a participant and must satisfy the reci
 
 ### POST /messages/upload
 
-Upload a file to use as a DM attachment. Returns an attachment token to pass as `file` in a subsequent `POST /conversations/{id}/messages` call.
+Upload a file to use as a DM attachment. Returns the WordPress attachment ID to pass as `attachment_id` in a subsequent `POST /conversations/{id}/messages` call.
 
 **Body:** `multipart/form-data` with a `file` field.
 
 **Response:** `200 OK`
 
 ```json
-{ "attachment_token": "att_abc123", "url": "https://yoursite.com/...", "mime_type": "image/jpeg" }
+{ "id": 123, "source_url": "https://yoursite.com/...", "thumbnail": "https://yoursite.com/..." }
 ```
 
 ---
@@ -225,9 +230,9 @@ Update conversation state for the current user.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `muted` | bool | Set to `true` to mute, `false` to unmute |
-| `pinned` | bool | Set to `true` to pin, `false` to unpin |
-| `archived` | bool | Set to `true` to archive, `false` to restore |
+| `is_muted` | bool | Set to `true` to mute, `false` to unmute |
+| `is_pinned` | bool | Set to `true` to pin, `false` to unpin |
+| `is_archived` | bool | Set to `true` to archive, `false` to restore |
 
 **Response:** `200 OK` with the updated conversation object.
 
@@ -262,7 +267,7 @@ Return the total number of unread messages across all conversations for the curr
 **Response:**
 
 ```json
-{ "unread_count": 4 }
+{ "unread": 4 }
 ```
 
 ---
@@ -275,36 +280,32 @@ Add or change a reaction on a message.
 { "emoji": "❤️" }
 ```
 
-To remove a reaction, call this endpoint again with the same emoji.
+To remove a reaction, call `DELETE /messages/{id}/reactions`.
 
 ---
 
 ## Actions and Filters
 
-### `mvs_dm_before_send`
-
-Fires before a message is saved. Use this to validate, block, or transform message content.
-
-```php
-add_action( 'mvs_dm_before_send', function( $message_data, $conversation_id, $sender_id ) {
-    // Inspect or modify $message_data before it is written.
-}, 10, 3 );
-```
-
-### `mvs_dm_message_sent`
+### `mvs_message_sent`
 
 Fires after a message is successfully saved.
 
 ```php
-do_action( 'mvs_dm_message_sent', $message_id, $conversation_id, $sender_id );
+add_action( 'mvs_message_sent', function( $message_id, $conversation_id, $sender_id, $recipient_ids ) {
+    // React to the new message.
+}, 10, 4 );
 ```
 
-### `mvs_dm_poll_interval`
+### `mvs_message_types`
 
-Filter the polling interval in milliseconds delivered to the front end.
+Filter the list of allowed message types accepted by the send endpoint.
 
 ```php
-add_filter( 'mvs_dm_poll_interval', function( $ms ) {
-    return 5000; // Poll every 5 seconds.
+add_filter( 'mvs_message_types', function( $types ) {
+    return $types; // Default: text, media_share, image, video, audio, voice, file, system.
 } );
 ```
+
+### `mvs_messaging_poll_intervals`
+
+Filter the client-side polling intervals (in milliseconds) delivered to the front end. See the Transport section above.

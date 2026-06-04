@@ -1,6 +1,6 @@
 # Display Settings
 
-Access these settings at **Media > Settings > Display**.
+Access these settings at **WPMediaVerse > Settings > Display**.
 
 ![Display settings tab showing grid and thumbnail options](../images/admin-settings-display.png)
 
@@ -8,7 +8,7 @@ Access these settings at **Media > Settings > Display**.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| Grid Columns | 3 | Number of columns in the media grid. Applies to `[mvs_gallery]`, the Media Grid block, and the explore archive. Options: 2, 3, 4 columns. |
+| Grid Columns | 3 | Number of columns in the media grid. Applies to `[mvs_gallery]`, the Media Grid block, and the explore archive. Options: 2, 3, 4, 5 columns. |
 | Items Per Page | 12 | Number of media items loaded per page. Options: 12, 24, 48. |
 | Thumbnail Style | Square (cropped) | Controls the aspect ratio of grid thumbnails. **Square** crops images to a 1:1 ratio. **Original proportions** preserves the file's native aspect ratio. |
 | Allow Downloads | On | Master toggle for the lightbox **Download** button. When off, the button is hidden site-wide and the `/mvs/v1/media/{id}/download` REST endpoint refuses requests. Per-media Allow Downloads (set in the per-media Edit modal) is still honoured when this master toggle is on. |
@@ -45,4 +45,4 @@ For video files, a placeholder thumbnail is displayed.
 
 ## WPMediaVerse Pro: Additional Display Options
 
-WPMediaVerse Pro adds a **Watermark** section to this tab, allowing you to overlay a text or image watermark on downloaded media files. The free version includes a basic watermark option under the General tab.
+WPMediaVerse Pro adds a **Watermark** section, allowing you to overlay a text or image watermark on media files. The free version does not include any watermark settings.
