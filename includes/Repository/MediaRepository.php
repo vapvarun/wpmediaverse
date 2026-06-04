@@ -2124,6 +2124,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function delete_cascade( int $media_id ): bool {
 		global $wpdb;
 
+		// Author captured before the index row is deleted, so the
+		// mvs_media_deleted hook (fired at the end) carries it.
+		$author_id = (int) $this->get_author( $media_id );
+
 		// Capture every stored file path BEFORE the meta/index rows are deleted,
 		// then hand them to the async storage-cleanup cycle. Both delete paths
 		// funnel through here (REST delete + account deletion), so this is the
@@ -2160,6 +2164,23 @@ class MediaRepository implements MediaRepositoryInterface {
 		$wpdb->delete( $wpdb->prefix . 'mvs_access_grants', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = 'mvs_comment'", $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		/**
+		 * Fires after a media item has been permanently deleted. delete_cascade
+		 * is the single funnel for EVERY delete path (REST single + bulk, admin
+		 * MediaListPage, GDPR erase, account deletion), so firing here — rather
+		 * than in each caller — guarantees Pro listeners (quota decrement,
+		 * collection-membership purge, competition-entry cleanup) run no matter
+		 * how the media was deleted. Previously only the two REST paths fired
+		 * it, so admin/GDPR/user-deletion left those rows orphaned
+		 * (audit 2026-06-04, #39 follow-up; verified by the cascade double-check).
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int $media_id  The deleted media ID.
+		 * @param int $author_id The author user ID.
+		 */
+		do_action( 'mvs_media_deleted', $media_id, $author_id );
 
 		return true;
 	}

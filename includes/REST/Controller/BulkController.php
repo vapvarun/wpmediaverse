@@ -132,7 +132,6 @@ class BulkController extends WP_REST_Controller {
 		$deleted = 0;
 
 		foreach ( $media_ids as $media_id ) {
-			$author_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 			$file_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
 
 			// Delete stored file.
@@ -149,7 +148,8 @@ class BulkController extends WP_REST_Controller {
 			$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 			++$deleted;
-			do_action( 'mvs_media_deleted', $media_id, $author_id );
+			// mvs_media_deleted is fired inside delete_cascade() (the single
+			// funnel) — not fired here to avoid a double-fire (audit 2026-06-04).
 		}
 
 		return rest_ensure_response(

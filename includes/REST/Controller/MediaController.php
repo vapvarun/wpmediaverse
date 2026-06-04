@@ -932,17 +932,9 @@ class MediaController extends WP_REST_Controller {
 		// Remove taxonomy relationships.
 		wp_delete_object_term_relationships( $media_id, array( 'mvs_tag', 'mvs_category' ) );
 
-		/**
-		 * Fires after a media item has been permanently deleted.
-		 *
-		 * Pro uses this to decrement quota usage counters.
-		 *
-		 * @since 1.1.0
-		 *
-		 * @param int $media_id  The deleted media ID.
-		 * @param int $author_id The author user ID.
-		 */
-		do_action( 'mvs_media_deleted', $media_id, $author_id );
+		// mvs_media_deleted is now fired inside MediaRepository::delete_cascade()
+		// (the single funnel for every delete path), so it is NOT fired here —
+		// doing so would double-fire it on the REST path (audit 2026-06-04).
 
 		return new WP_REST_Response( null, 204 );
 	}
