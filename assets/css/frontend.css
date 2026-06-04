@@ -1089,6 +1089,35 @@ body.dark-mode .mvs-skeleton::after {
     text-overflow: ellipsis;
 }
 
+/* Avatar + name link to the uploader's profile (card #9962508646). Reset the
+   default link chrome so it reads like the prior plain text; the name
+   underlines + tints on hover/focus as the affordance. min-width:0 keeps the
+   inner ellipsis working inside the flex link. */
+.mvs-grid-item-author-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    text-decoration: none;
+    color: inherit;
+}
+
+.mvs-grid-item-author-link:visited {
+    color: inherit;
+}
+
+.mvs-grid-item-author-link:hover .mvs-grid-item-author,
+.mvs-grid-item-author-link:focus-visible .mvs-grid-item-author {
+    color: var(--mvs-primary, var(--mvs-text));
+    text-decoration: underline;
+}
+
+.mvs-grid-item-author-link:focus-visible {
+    outline: 2px solid var(--mvs-primary, currentColor);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
 /* -- Album badge (carousel indicator) in feed */
 .mvs-album-badge {
     position: absolute;

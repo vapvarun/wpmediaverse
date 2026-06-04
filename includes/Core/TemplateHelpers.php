@@ -931,9 +931,23 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		if ( $show_author && $author_id ) {
 			// Plain name only — badges belong on author-focused surfaces
 			// (single-media header, lightbox), not on every grid thumbnail.
+			// The avatar + name link to the uploader's profile (BuddyPress, or
+			// the /media/@user fallback) so visitors can reach the poster from
+			// the grid, matching the single-media header (card #9962508646).
+			// This block is OUTSIDE the media permalink <a> above, so the
+			// profile link does not nest.
+			$author_url  = $this->get_user_profile_url( $author_id );
+			$author_name = $this->get_display_name_plain( $author_id );
 			echo '<div class="mvs-grid-item-info">';
-			echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
-			echo '<span class="mvs-grid-item-author">' . esc_html( $this->get_display_name_plain( $author_id ) ) . '</span>';
+			if ( '' !== $author_url ) {
+				echo '<a class="mvs-grid-item-author-link" href="' . esc_url( $author_url ) . '">';
+				echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
+				echo '<span class="mvs-grid-item-author">' . esc_html( $author_name ) . '</span>';
+				echo '</a>';
+			} else {
+				echo get_avatar( $author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) );
+				echo '<span class="mvs-grid-item-author">' . esc_html( $author_name ) . '</span>';
+			}
 			echo '</div>';
 		}
 

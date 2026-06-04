@@ -423,6 +423,16 @@
 		if ( author.name ) {
 			var info = el( 'div', 'mvs-grid-item-info' );
 
+			// Avatar + name link to the uploader's profile so Load More items
+			// stay clickable, matching the server-rendered grid in
+			// TemplateHelpers::render_grid_item (card #9962508646). Falls back
+			// to a plain row when the REST payload carries no profile_url.
+			var authorTarget = info;
+			if ( author.profile_url ) {
+				authorTarget = el( 'a', 'mvs-grid-item-author-link', { href: author.profile_url } );
+				info.appendChild( authorTarget );
+			}
+
 			if ( author.avatar ) {
 				var avatar = el( 'img', 'mvs-grid-avatar', {
 					src: author.avatar,
@@ -430,12 +440,12 @@
 					width: '24',
 					height: '24',
 				} );
-				info.appendChild( avatar );
+				authorTarget.appendChild( avatar );
 			}
 
 			var authorSpan = el( 'span', 'mvs-grid-item-author' );
 			authorSpan.textContent = author.name;
-			info.appendChild( authorSpan );
+			authorTarget.appendChild( authorSpan );
 
 			root.appendChild( info );
 		}
