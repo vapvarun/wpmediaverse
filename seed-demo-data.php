@@ -64,7 +64,7 @@ $demo_users = array(
 );
 
 // ---------------------------------------------------------------------------
-// 50 Media Items (stacked from 15 base images).
+// 60 Media Items (50 stacked from 15 base images + 10 fresh stock, 1.6.0).
 // ---------------------------------------------------------------------------
 
 $images = array(
@@ -578,6 +578,107 @@ $images = array(
 		'tags'        => array( 'abstract', 'generative', 'texture', 'art' ),
 		'category'    => 'Technology',
 		'user'        => 'oliver_brooks',
+	),
+	// ── 1.6.0 fresh stock refresh (10 vetted, non-people images) ────────────
+	array(
+		'file'        => 'alpine-valley-dawn.jpg',
+		'title'       => 'Sunburst Over the Range',
+		'description' => 'The first sunburst of the day clears a distant ridge, washing layered mountain silhouettes in soft amber haze.',
+		'type'        => 'image',
+		'privacy'     => 'public',
+		'tags'        => array( 'nature', 'mountain', 'sunrise', 'landscape' ),
+		'category'    => 'Nature',
+		'user'        => 'oliver_brooks',
+	),
+	array(
+		'file'        => 'emerald-lake.jpg',
+		'title'       => 'Emerald Mountain Lake',
+		'description' => 'Wooden rowboats drift across a glassy emerald lake ringed by sheer dolomite cliffs and dense pine forest.',
+		'type'        => 'image',
+		'privacy'     => 'public',
+		'tags'        => array( 'nature', 'lake', 'mountain', 'travel' ),
+		'category'    => 'Travel',
+		'user'        => 'mina_aoki',
+	),
+	array(
+		'file'        => 'highland-ridge-sunrise.jpg',
+		'title'       => 'Highland Ridge at Sunrise',
+		'description' => 'Low cloud spills over a green highland ridge as a winding road traces the valley toward a breaking sunrise.',
+		'type'        => 'image',
+		'privacy'     => 'public',
+		'tags'        => array( 'nature', 'landscape', 'hills', 'fog' ),
+		'category'    => 'Nature',
+		'user'        => 'priya_sharma',
+	),
+	array(
+		'file'        => 'turquoise-shore.jpg',
+		'title'       => 'Turquoise Shoreline',
+		'description' => 'Gentle surf folds over pale sand at golden hour, the water fading from clear shallows to deep turquoise.',
+		'type'        => 'image',
+		'privacy'     => 'public',
+		'tags'        => array( 'travel', 'beach', 'ocean', 'tropical' ),
+		'category'    => 'Travel',
+		'user'        => 'liam_oconnor',
+	),
+	array(
+		'file'        => 'sunlit-forest-trail.jpg',
+		'title'       => 'Sunlit Forest Trail',
+		'description' => 'A quiet dirt trail winds between tall conifers as late-afternoon light filters through the canopy.',
+		'type'        => 'image',
+		'privacy'     => 'public',
+		'tags'        => array( 'nature', 'forest', 'trees', 'path' ),
+		'category'    => 'Nature',
+		'user'        => 'emma_williams',
+	),
+	array(
+		'file'        => 'tasting-plates.jpg',
+		'title'       => "Chef's Tasting Plates",
+		'description' => 'An overhead spread of plated tasting courses dressed with fresh herbs, chili, and toasted cashews.',
+		'type'        => 'image',
+		'privacy'     => 'public',
+		'tags'        => array( 'food', 'gourmet', 'plating' ),
+		'category'    => 'Food',
+		'user'        => 'mina_aoki',
+	),
+	array(
+		'file'        => 'coffee-cheers.jpg',
+		'title'       => 'Coffee Cheers',
+		'description' => 'Three friends bring their cups together over a cafe table - two latte-art flat whites and an iced brew.',
+		'type'        => 'image',
+		'privacy'     => 'public',
+		'tags'        => array( 'food', 'coffee', 'cafe' ),
+		'category'    => 'Food',
+		'user'        => 'priya_sharma',
+	),
+	array(
+		'file'        => 'angular-glass-facade.jpg',
+		'title'       => 'Angular Glass Facade',
+		'description' => 'A cantilevered museum wing of white panels and angled glass cuts a bold silhouette against a bright sky.',
+		'type'        => 'image',
+		'privacy'     => 'public',
+		'tags'        => array( 'architecture', 'modern', 'glass', 'urban' ),
+		'category'    => 'Architecture',
+		'user'        => 'liam_oconnor',
+	),
+	array(
+		'file'        => 'developer-workspace.jpg',
+		'title'       => 'Developer Workspace',
+		'description' => 'A tidy desk with a laptop and external display showing a code editor, beside a coffee mug and headphones.',
+		'type'        => 'image',
+		'privacy'     => 'public',
+		'tags'        => array( 'technology', 'workspace', 'code' ),
+		'category'    => 'Technology',
+		'user'        => 'oliver_brooks',
+	),
+	array(
+		'file'        => 'spectrum-gradient.jpg',
+		'title'       => 'Spectrum Gradient',
+		'description' => 'A soft, defocused wash of color blends blue, magenta, and warm amber into a smooth abstract gradient.',
+		'type'        => 'image',
+		'privacy'     => 'public',
+		'tags'        => array( 'abstract', 'color', 'gradient' ),
+		'category'    => 'Technology',
+		'user'        => 'emma_williams',
 	),
 );
 
