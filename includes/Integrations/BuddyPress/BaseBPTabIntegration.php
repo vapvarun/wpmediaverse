@@ -265,6 +265,12 @@ abstract class BaseBPTabIntegration {
 	protected function enqueue_assets(): void {
 		wp_enqueue_style( 'mvs-frontend' );
 		wp_enqueue_style( 'mvs-bp-integration' );
+		// render_load_more_button() emits .mvs-load-more-btn, whose only
+		// handler is load-more.js — registered globally by Plugin but only
+		// enqueued on MVS-native pages, which BP profile/group screens are
+		// not (Basecamp #9941413137 bug class).
+		wp_enqueue_style( 'mvs-load-more' );
+		wp_enqueue_script( 'mvs-load-more' );
 		wp_enqueue_script( 'mvs-bp-actions' );
 		wp_localize_script(
 			'mvs-bp-actions',

@@ -891,6 +891,53 @@ class Plugin {
 	 * Enqueue frontend styles and scripts on MVS pages.
 	 */
 	public static function enqueue_frontend_assets(): void {
+		// Card builders + Load More are registered globally (enqueued by
+		// handle below on MVS pages) because the Pro feed shortcodes
+		// ([mvs_pro_flickr_feed] etc.) render the same grid + Load More
+		// button on ordinary pages and enqueue these handles from their
+		// Layout::enqueue_assets() (Basecamp #9941413137 — Load More was
+		// dead on shortcode pages because these were enqueue-only inside
+		// the MVS-page branch). Same shared-handle contract as
+		// mvs-explore-search.
+		wp_register_script(
+			'mvs-card-builders',
+			MVS_PLUGIN_URL . 'assets/js/frontend/card-builders.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			'mvs-card-builders',
+			'mvsCardBuildersI18n',
+			array(
+				'deleteMedia' => __( 'Delete media', 'wpmediaverse' ),
+				'video'       => __( 'Video', 'wpmediaverse' ),
+				'viewMedia'   => __( 'View media', 'wpmediaverse' ),
+				'stats'       => __( 'Stats', 'wpmediaverse' ),
+				'likes'       => __( 'Likes', 'wpmediaverse' ),
+				'views'       => __( 'Views', 'wpmediaverse' ),
+			)
+		);
+		wp_register_script(
+			'mvs-load-more',
+			MVS_PLUGIN_URL . 'assets/js/frontend/load-more.js',
+			array( 'mvs-card-builders' ),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_register_style(
+			'mvs-load-more',
+			MVS_PLUGIN_URL . 'assets/css/frontend/load-more.css',
+			array(),
+			MVS_VERSION
+		);
+
 		$post_type  = get_post_type();
 		$is_mvs     = in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true );
 		$is_archive = is_post_type_archive( 'mvs_album' );
@@ -923,12 +970,7 @@ class Plugin {
 				MVS_VERSION
 			);
 
-			wp_enqueue_style(
-				'mvs-load-more',
-				MVS_PLUGIN_URL . 'assets/css/frontend/load-more.css',
-				array(),
-				MVS_VERSION
-			);
+			wp_enqueue_style( 'mvs-load-more' );
 
 			// Lucide icon set — required by templates that use <i data-lucide>.
 			// Self-contained on the frontend so we don't depend on the active theme
@@ -958,39 +1000,9 @@ class Plugin {
 			// English fallback toasts on a German site."
 			wp_enqueue_script( 'wp-i18n' );
 
-			wp_enqueue_script(
-				'mvs-card-builders',
-				MVS_PLUGIN_URL . 'assets/js/frontend/card-builders.js',
-				array(),
-				MVS_VERSION,
-				array(
-					'in_footer' => true,
-					'strategy'  => 'defer',
-				)
-			);
-			wp_localize_script(
-				'mvs-card-builders',
-				'mvsCardBuildersI18n',
-				array(
-					'deleteMedia' => __( 'Delete media', 'wpmediaverse' ),
-					'video'       => __( 'Video', 'wpmediaverse' ),
-					'viewMedia'   => __( 'View media', 'wpmediaverse' ),
-					'stats'       => __( 'Stats', 'wpmediaverse' ),
-					'likes'       => __( 'Likes', 'wpmediaverse' ),
-					'views'       => __( 'Views', 'wpmediaverse' ),
-				)
-			);
-
-			wp_enqueue_script(
-				'mvs-load-more',
-				MVS_PLUGIN_URL . 'assets/js/frontend/load-more.js',
-				array( 'mvs-card-builders' ),
-				MVS_VERSION,
-				array(
-					'in_footer' => true,
-					'strategy'  => 'defer',
-				)
-			);
+			// Registered (with mvsCardBuildersI18n) at the top of this method —
+			// shared with the Pro feed shortcodes.
+			wp_enqueue_script( 'mvs-load-more' );
 
 			// Lightbox + shared UI store — needed on all MVS pages (logged in or out).
 			// Use src/ (ESM source) not build/ (IIFE) — matches explore-view pattern.
