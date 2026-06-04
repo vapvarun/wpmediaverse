@@ -190,11 +190,12 @@ class ReactionController extends WP_REST_Controller {
 		 */
 		do_action( 'mvs_reaction_toggled', $media_id, get_current_user_id(), $reaction_type, $result['action'] );
 
-		// Fire specific hooks for integrations (BuddyPress, webhooks).
-		if ( 'added' === $result['action'] || 'updated' === $result['action'] ) {
-			/** This action is documented in includes/Integrations/BuddyPress/ActivitySyncIntegration.php */
-			do_action( 'mvs_reaction_added', $media_id, get_current_user_id(), $reaction_type );
-		}
+		// NOTE: `mvs_reaction_added` is fired by ReactionService::toggle() (the
+		// canonical owner, for every caller) on a genuinely new reaction only.
+		// This controller used to fire it a SECOND time — and also on 'updated'
+		// — producing duplicate notifications/activity/webhooks and a spurious
+		// notification when a user merely changed their reaction type
+		// (audit 2026-06-04). Removed; the service owns the hook.
 
 		$counts = $this->reactions->get_counts( $media_id );
 
