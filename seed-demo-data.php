@@ -1104,12 +1104,12 @@ foreach ( $collections_config as $col_cfg ) {
 mvs_seed_log( '' );
 mvs_seed_log( 'Adding social interactions...' );
 
-$all_user_ids    = array_values( $demo_user_ids );
-$reaction_types  = array( 'like', 'love', 'haha', 'wow' );
-$reaction_count  = 0;
-$comment_count   = 0;
-$favorite_count  = 0;
-$follow_count    = 0;
+$all_user_ids   = array_values( $demo_user_ids );
+$reaction_types = array( 'like', 'love', 'haha', 'wow' );
+$reaction_count = 0;
+$comment_count  = 0;
+$favorite_count = 0;
+$follow_count   = 0;
 
 // --- 100+ reactions (randomized, no self-likes) ---
 foreach ( $created_media as $media ) {
@@ -1118,10 +1118,13 @@ foreach ( $created_media as $media ) {
 
 	// Each media gets 2-4 reactions from OTHER users.
 	$num_reactions = wp_rand( 2, 4 );
-	$eligible      = array_filter( $all_user_ids, function ( $uid ) use ( $media_author ) {
-		return $uid !== $media_author;
-	} );
-	$eligible = array_values( $eligible );
+	$eligible      = array_filter(
+		$all_user_ids,
+		function ( $uid ) use ( $media_author ) {
+			return $uid !== $media_author;
+		}
+	);
+	$eligible      = array_values( $eligible );
 
 	if ( empty( $eligible ) ) {
 		continue;
@@ -1203,9 +1206,12 @@ foreach ( $media_for_comments as $ci => $media ) {
 	$media_author = $media['author'];
 
 	// Pick a commenter who is NOT the media author.
-	$eligible = array_filter( $all_user_ids, function ( $uid ) use ( $media_author ) {
-		return $uid !== $media_author;
-	} );
+	$eligible = array_filter(
+		$all_user_ids,
+		function ( $uid ) use ( $media_author ) {
+			return $uid !== $media_author;
+		}
+	);
 	$eligible = array_values( $eligible );
 	if ( empty( $eligible ) ) {
 		continue;
@@ -1250,9 +1256,12 @@ foreach ( $media_for_favs as $media ) {
 	$media_id     = $media['media_id'];
 	$media_author = $media['author'];
 
-	$eligible = array_filter( $all_user_ids, function ( $uid ) use ( $media_author ) {
-		return $uid !== $media_author;
-	} );
+	$eligible = array_filter(
+		$all_user_ids,
+		function ( $uid ) use ( $media_author ) {
+			return $uid !== $media_author;
+		}
+	);
 	$eligible = array_values( $eligible );
 	if ( empty( $eligible ) ) {
 		continue;
@@ -1315,9 +1324,12 @@ $competition_counts = array(
 	'tournaments' => 0,
 );
 
-$created_media_ids = array_map( function( $m ) {
-	return $m['media_id'];
-}, $created_media );
+$created_media_ids = array_map(
+	function ( $m ) {
+		return $m['media_id'];
+	},
+	$created_media
+);
 
 if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $created_media_ids ) >= 5 ) {
 	mvs_seed_log( '' );
@@ -1335,9 +1347,14 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 	$battle_service    = new \WPMediaVersePro\Battles\BattleService();
 
 	// Get test users (use the authors from created media).
-	$test_users = array_unique( array_map( function( $id ) {
-		return (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $id );
-	}, $created_media_ids ) );
+	$test_users = array_unique(
+		array_map(
+			function ( $id ) {
+				return (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $id );
+			},
+			$created_media_ids
+		)
+	);
 
 	// --- Challenge 1: Active challenge (accepting entries) ---
 	$ch1 = $challenge_service->create(
@@ -1356,7 +1373,8 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 		++$competition_counts['challenges'];
 		mvs_seed_log( '  Challenge: Golden Hour Photography (active)' );
 		// Submit 3 entries from demo media.
-		for ( $i = 0; $i < min( 3, count( $created_media_ids ) ); $i++ ) {
+		$ch1_entry_limit = min( 3, count( $created_media_ids ) );
+		for ( $i = 0; $i < $ch1_entry_limit; $i++ ) {
 			$author = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $created_media_ids[ $i ] );
 			if ( $author > 0 ) {
 				$challenge_service->submit_entry( $ch1, $author, $created_media_ids[ $i ] );
@@ -1387,12 +1405,18 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 		if ( ! is_wp_error( $b1 ) ) {
 			$battle_service->accept( $b1, $test_users[1] );
 			// Submit media from each user.
-			$user1_media = array_filter( $created_media_ids, function( $id ) use ( $test_users ) {
-				return (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $id ) === $test_users[0];
-			} );
-			$user2_media = array_filter( $created_media_ids, function( $id ) use ( $test_users ) {
-				return (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $id ) === $test_users[1];
-			} );
+			$user1_media = array_filter(
+				$created_media_ids,
+				function ( $id ) use ( $test_users ) {
+					return (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $id ) === $test_users[0];
+				}
+			);
+			$user2_media = array_filter(
+				$created_media_ids,
+				function ( $id ) use ( $test_users ) {
+					return (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $id ) === $test_users[1];
+				}
+			);
 			if ( ! empty( $user1_media ) ) {
 				$battle_service->submit_media( $b1, $test_users[0], reset( $user1_media ) );
 			}
@@ -1407,14 +1431,14 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 	// --- Tournament: Open for registration ---
 	if ( class_exists( '\WPMediaVersePro\Tournaments\TournamentService' ) && count( $test_users ) >= 4 ) {
 		$tournament_service = new \WPMediaVersePro\Tournaments\TournamentService();
-		$t1 = $tournament_service->create(
+		$t1                 = $tournament_service->create(
 			array(
-				'title'              => 'Spring Photography Championship',
-				'description'        => 'A 16-bracket single-elimination tournament. Upload your best photo each round and let the community vote!',
-				'theme'              => 'Best Shot',
-				'bracket_size'       => 16,
-				'registration_start' => gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ),
-				'registration_end'   => gmdate( 'Y-m-d H:i:s', time() + ( 7 * DAY_IN_SECONDS ) ),
+				'title'                => 'Spring Photography Championship',
+				'description'          => 'A 16-bracket single-elimination tournament. Upload your best photo each round and let the community vote!',
+				'theme'                => 'Best Shot',
+				'bracket_size'         => 16,
+				'registration_start'   => gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ),
+				'registration_end'     => gmdate( 'Y-m-d H:i:s', time() + ( 7 * DAY_IN_SECONDS ) ),
 				'round_duration_hours' => 48,
 			),
 			1
@@ -1433,7 +1457,7 @@ if ( class_exists( '\WPMediaVersePro\Challenges\ChallengeService' ) && count( $c
 	// --- Seed autopilot theme pool ---
 	if ( class_exists( '\WPMediaVersePro\Challenges\AutopilotService' ) ) {
 		$autopilot = new \WPMediaVersePro\Challenges\AutopilotService( $challenge_service );
-		$pool = $autopilot->get_pool();
+		$pool      = $autopilot->get_pool();
 		if ( empty( $pool ) ) {
 			$autopilot->seed_default_pool();
 			mvs_seed_log( '  Seeded 52 autopilot themes.' );
@@ -1453,11 +1477,31 @@ if ( class_exists( '\WPMediaVersePro\Streaks\StreakService' ) && ! empty( $demo_
 
 	// Give each demo user a varied streak so the badge shows on profiles.
 	$streak_data = array(
-		0 => array( 'current' => 23, 'longest' => 45, 'freezes' => 2 ),
-		1 => array( 'current' => 7,  'longest' => 14, 'freezes' => 1 ),
-		2 => array( 'current' => 42, 'longest' => 42, 'freezes' => 0 ),
-		3 => array( 'current' => 3,  'longest' => 30, 'freezes' => 2 ),
-		4 => array( 'current' => 100, 'longest' => 100, 'freezes' => 1 ),
+		0 => array(
+			'current' => 23,
+			'longest' => 45,
+			'freezes' => 2,
+		),
+		1 => array(
+			'current' => 7,
+			'longest' => 14,
+			'freezes' => 1,
+		),
+		2 => array(
+			'current' => 42,
+			'longest' => 42,
+			'freezes' => 0,
+		),
+		3 => array(
+			'current' => 3,
+			'longest' => 30,
+			'freezes' => 2,
+		),
+		4 => array(
+			'current' => 100,
+			'longest' => 100,
+			'freezes' => 1,
+		),
 	);
 
 	$today = wp_date( 'Y-m-d' );
@@ -1514,9 +1558,14 @@ if ( $reports_exist && count( $created_media ) >= 5 && count( $all_user_ids ) >=
 		$target_media = $created_media[ wp_rand( 0, count( $created_media ) - 1 ) ];
 		$media_author = $target_media['author'];
 
-		$eligible_reporters = array_values( array_filter( $all_user_ids, function ( $uid ) use ( $media_author ) {
-			return $uid !== $media_author;
-		} ) );
+		$eligible_reporters = array_values(
+			array_filter(
+				$all_user_ids,
+				function ( $uid ) use ( $media_author ) {
+					return $uid !== $media_author;
+				}
+			)
+		);
 
 		if ( empty( $eligible_reporters ) ) {
 			continue;
