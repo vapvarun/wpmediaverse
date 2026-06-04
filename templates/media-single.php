@@ -435,6 +435,27 @@ $mvs_archive_url = home_url( '/media/' );
 						<i data-lucide="share-2" aria-hidden="true"></i>
 						<span class="mvs-btn__label" data-wp-text="context.shareLabel"><?php esc_html_e( 'Share', 'wpmediaverse' ); ?></span>
 					</button>
+					<?php
+					/**
+					 * Whether abuse reporting (Report button + report write path) is available.
+					 *
+					 * Reporting is a Pro feature: Free has no queue/UI to read or resolve
+					 * reports, so Free must neither show the Report control nor collect
+					 * reports. Defaults to false (hidden) in Free. Pro flips it true by
+					 * hooking this filter; a site can do the same with a one-line
+					 * `add_filter( 'mvs_reports_enabled', '__return_true' )` in a mu-plugin.
+					 *
+					 * Gates: Report buttons in templates/media-single.php and
+					 * templates/partials/shared-ui-frame.php (lightbox), plus the REST
+					 * write path (ReportController::report_media / report_user) and the
+					 * service chokepoint (Social\ReportService::report).
+					 *
+					 * @since 1.6.0
+					 *
+					 * @param bool $enabled Whether reporting is enabled. Default false.
+					 */
+					$mvs_reports_enabled = (bool) apply_filters( 'mvs_reports_enabled', false );
+					?>
 					<?php if ( $mvs_is_owner ) : ?>
 						<button class="mvs-btn mvs-btn--small mvs-btn--icon-collapse" type="button"
 							data-wp-on--click="actions.toggleEdit"
@@ -450,7 +471,7 @@ $mvs_archive_url = home_url( '/media/' );
 							<i data-lucide="trash-2" aria-hidden="true"></i>
 							<span class="mvs-btn__label"><?php esc_html_e( 'Delete', 'wpmediaverse' ); ?></span>
 						</button>
-					<?php elseif ( is_user_logged_in() ) : ?>
+					<?php elseif ( is_user_logged_in() && $mvs_reports_enabled ) : ?>
 						<button class="mvs-btn mvs-btn--small mvs-btn--icon-collapse" type="button"
 							data-wp-on--click="actions.reportMedia"
 							data-wp-bind--hidden="context.reported"
