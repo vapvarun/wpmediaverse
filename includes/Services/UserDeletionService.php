@@ -72,6 +72,7 @@ class UserDeletionService {
 			'mvs_blocks'                    => 'blocker_id',
 			'mvs_reports'                   => 'reporter_id',
 			'mvs_messages'                  => 'sender_id',
+			'mvs_message_reactions'         => 'user_id', // audit 2026-06-04 — was orphaned.
 		);
 		foreach ( $user_scoped_tables as $table => $column ) {
 			$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -102,6 +103,14 @@ class UserDeletionService {
 			),
 			array( '%s', '%d' )
 		);
+
+		// Custom profile avatar — delete the attachment + its file. Without
+		// this the _mvs_custom_avatar attachment (and the uploaded image on
+		// disk) was orphaned on user deletion (audit 2026-06-04).
+		$mvs_container = \WPMediaVerse\Core\Plugin::container();
+		if ( $mvs_container->has( 'profile' ) ) {
+			$mvs_container->get( 'profile' )->delete_avatar( $user_id );
+		}
 
 		/**
 		 * Fires after a user's wpmediaverse data has been purged.
