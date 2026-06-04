@@ -125,6 +125,13 @@ class ReactionController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Privacy gate — the aggregate reaction tally on a members-only/private
+		// item must not be world-readable via this public route (audit
+		// 2026-06-04). Mirror the single-media page: non-viewer gets a 404.
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
 		$counts        = $this->reactions->get_counts( $media_id );
 		$total         = array_sum( $counts );
 		$user_reaction = null;

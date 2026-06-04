@@ -43,6 +43,14 @@ $where  = "WHERE m.status = 'publish'";
 $joins  = '';
 $params = array();
 
+// Viewer-scoped privacy gate (anon: public only; member: public + members +
+// own; moderator: all). Without this the grid rendered every private/members
+// item to everyone (audit 2026-06-04). Same rule as the REST /media feed.
+$mvs_grid_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+list( $mvs_priv_sql, $mvs_priv_params ) = $mvs_grid_repo->explore_privacy_clause( 'm', get_current_user_id() );
+$where  .= ' AND ' . $mvs_priv_sql;
+$params  = array_merge( $params, $mvs_priv_params );
+
 if ( $mvs_user_id > 0 ) {
 	$where   .= ' AND m.post_author = %d';
 	$params[] = $mvs_user_id;

@@ -19,22 +19,24 @@ $show_filters = ! empty( $attributes['showFilters'] );
 $show_search  = ! empty( $attributes['showSearch'] );
 $columns      = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : 3;
 
-global $wpdb;
-$index_table = $wpdb->prefix . 'mvs_media_index';
-
-// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-$media_items = $wpdb->get_results(
-	$wpdb->prepare(
-		"SELECT * FROM {$index_table} WHERE status = 'publish' ORDER BY created_at DESC LIMIT %d",
-		$mvs_per_page
-	),
-	ARRAY_A
+// Gated, viewer-scoped listing — matches the REST /media feed + its Load More
+// exactly (anon: public only; member: public + members + own; moderator: all),
+// approved-only. Replaces a raw `WHERE status='publish'` query that leaked
+// private/members and pending/rejected media to everyone (audit 2026-06-04).
+$mvs_repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+$mvs_viewer_id  = get_current_user_id();
+$mvs_query_args = array(
+	'status'            => 'publish',
+	'moderation_status' => 'approved',
+	'privacy'           => $mvs_repo->resolve_explore_privacy_mode( $mvs_viewer_id ),
+	'viewer_id'         => $mvs_viewer_id,
+	'limit'             => $mvs_per_page,
+	'offset'            => 0,
+	'orderby'           => 'created_at',
+	'order'             => 'DESC',
 );
-
-$total_count = (int) $wpdb->get_var(
-	"SELECT COUNT(*) FROM {$index_table} WHERE status = 'publish'"
-);
-// phpcs:enable
+$media_items = $mvs_repo->query( $mvs_query_args );
+$total_count = $mvs_repo->query_count( $mvs_query_args );
 
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $total_count / $mvs_per_page ) : 1;
 

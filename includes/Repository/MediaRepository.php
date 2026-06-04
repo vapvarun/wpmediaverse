@@ -1467,6 +1467,67 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Resolve the privacy mode for a SITE-WIDE explore listing, matching the
+	 * canonical gate in MediaController::get_items (the REST /media endpoint):
+	 * anonymous → public only; logged-in non-moderator → public + members +
+	 * own; moderator → everything. Callers pass the result as the `privacy`
+	 * arg to query()/query_count() (plus `moderation_status => 'approved'`),
+	 * so server-rendered explore surfaces show exactly what the REST feed and
+	 * its Load More return — no SSR-vs-REST divergence that leaks private or
+	 * unmoderated media (audit 2026-06-04).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param int $viewer_id Current viewer (0 = anonymous).
+	 * @return string 'public' | 'visible' | 'any'
+	 */
+	public function resolve_explore_privacy_mode( int $viewer_id ): string {
+		if ( ! $viewer_id ) {
+			return 'public';
+		}
+		if ( user_can( $viewer_id, 'moderate_mvs_media' ) ) {
+			return 'any';
+		}
+		return 'visible';
+	}
+
+	/**
+	 * The same explore gate as resolve_explore_privacy_mode(), but as a raw
+	 * SQL fragment for callers that can't route through query() because they
+	 * join extra tables (story meta, Pro feed layouts). Returns
+	 * [ where_fragment, params ] using the supplied column alias.
+	 *
+	 * Mirrors build_privacy_where()'s 'public'/'visible' cases; kept in lockstep
+	 * with resolve_explore_privacy_mode() so every explore surface honours one
+	 * rule. `moderation_status = 'approved'` is the caller's responsibility
+	 * (it varies by table alias).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param string $alias     Table alias holding the privacy + post_author columns (e.g. 'idx').
+	 * @param int    $viewer_id Current viewer (0 = anonymous).
+	 * @return array{0:string,1:array} [ SQL fragment (no leading AND), bound params ].
+	 */
+	public function explore_privacy_clause( string $alias, int $viewer_id ): array {
+		// Alias is caller-supplied code, never user input; still constrain it.
+		// Empty alias → bare column names (callers that query a single table
+		// without an alias, e.g. the Pro feed layouts).
+		$alias  = preg_replace( '/[^a-zA-Z0-9_]/', '', $alias );
+		$prefix = '' !== $alias ? $alias . '.' : '';
+
+		if ( ! $viewer_id ) {
+			return array( "{$prefix}privacy = 'public'", array() );
+		}
+		if ( user_can( $viewer_id, 'moderate_mvs_media' ) ) {
+			return array( '1 = 1', array() );
+		}
+		return array(
+			"({$prefix}privacy = 'public' OR {$prefix}privacy = 'members' OR {$prefix}post_author = %d)",
+			array( $viewer_id ),
+		);
+	}
+
+	/**
 	 * The single source of truth for the "exclude non-cover gallery members"
 	 * subquery (previously copy-pasted verbatim across 6 listing sites).
 	 *

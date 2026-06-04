@@ -24,12 +24,28 @@ $mvs_archive_url = home_url( '/media/' );
 	while ( have_posts() ) :
 		the_post();
 
+		// Privacy gate for the whole album. Single media is 404'd by
+		// TemplateLoader::can_view_media before its template loads, but albums
+		// had no equivalent gate — a members/private album's title, item count,
+		// and every item title+link rendered to anyone, logged out included
+		// (audit 2026-06-04). Mirror the single-media behaviour: a viewer who
+		// can't see the album gets the branded 404, nothing else.
+		$mvs_album_id = (int) get_the_ID();
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $mvs_album_id, get_current_user_id() ) ) {
+			status_header( 404 );
+			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
+			echo '</div>';
+			do_action( 'mvs_after_content' );
+			get_footer();
+			return;
+		}
+
 		// Media items in album order, status=publish only. Routes through
 		// AlbumService + MediaRepository::get_batch so the request-scope
 		// cache + privacy invariants apply uniformly.
 		$items = \WPMediaVerse\Core\Plugin::container()
 			->get( 'albums' )
-			->get_items_with_data( (int) get_the_ID(), 'publish' );
+			->get_items_with_data( $mvs_album_id, 'publish' );
 
 		$item_ids = array_column( $items, 'media_id' );
 		?>
