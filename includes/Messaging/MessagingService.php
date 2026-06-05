@@ -16,14 +16,14 @@ class MessagingService {
 	/**
 	 * Rate limit constants.
 	 */
-	const RATE_MESSAGES_PER_MIN = 30;
-	const RATE_CONVOS_PER_HOUR  = 10;
-	const MAX_MESSAGE_LENGTH    = 2000;
-	const UNSEND_WINDOW_SECONDS = 900; // 15 min.
-	const MAX_PINNED            = 3;
-	const ONLINE_THRESHOLD      = 120; // 2 min.
+	const RATE_MESSAGES_PER_MIN  = 30;
+	const RATE_CONVOS_PER_HOUR   = 10;
+	const MAX_MESSAGE_LENGTH     = 2000;
+	const UNSEND_WINDOW_SECONDS  = 900; // 15 min.
+	const MAX_PINNED             = 3;
+	const ONLINE_THRESHOLD       = 120; // 2 min.
 	const MAX_GROUP_PARTICIPANTS = 50; // Group conversation hard cap (incl. creator).
-	const COALESCE_SECONDS      = 30;
+	const COALESCE_SECONDS       = 30;
 
 	// -------------------------------------------------------------------------
 	// Privacy & Access
@@ -714,7 +714,7 @@ class MessagingService {
 
 		$conv_table = $wpdb->prefix . 'mvs_conversations';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$existing   = (int) $wpdb->get_var(
+		$existing = (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT id FROM {$conv_table} WHERE type = 'group' AND container_type = %s AND container_id = %d LIMIT 1",
 				$container_type,
@@ -764,7 +764,10 @@ class MessagingService {
 			$wpdb->update(
 				$part_table,
 				array( 'status' => 'active' ),
-				array( 'conversation_id' => $conversation_id, 'user_id' => $user_id ),
+				array(
+					'conversation_id' => $conversation_id,
+					'user_id'         => $user_id,
+				),
 				array( '%s' ),
 				array( '%d', '%d' )
 			);
@@ -815,7 +818,10 @@ class MessagingService {
 		$result = $wpdb->update(
 			$part_table,
 			array( 'status' => 'removed' ),
-			array( 'conversation_id' => $conversation_id, 'user_id' => $user_id ),
+			array(
+				'conversation_id' => $conversation_id,
+				'user_id'         => $user_id,
+			),
 			array( '%s' ),
 			array( '%d', '%d' )
 		);
@@ -845,13 +851,16 @@ class MessagingService {
 	public function set_participant_role( int $conversation_id, int $user_id, string $role ): bool {
 		global $wpdb;
 
-		$role = ( 'admin' === $role ) ? 'admin' : 'member';
+		$role       = ( 'admin' === $role ) ? 'admin' : 'member';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$result = $wpdb->update(
 			$part_table,
 			array( 'role' => $role ),
-			array( 'conversation_id' => $conversation_id, 'user_id' => $user_id ),
+			array(
+				'conversation_id' => $conversation_id,
+				'user_id'         => $user_id,
+			),
 			array( '%s' ),
 			array( '%d', '%d' )
 		);
@@ -1876,6 +1885,17 @@ class MessagingService {
 
 		$since_gmt = gmdate( 'Y-m-d H:i:s', strtotime( $since ) );
 
+		// Unsent (deleted_for_all) messages must still be POLLED so other
+		// participants' open chats learn about the unsend without a refresh
+		// (Basecamp #9962618059 follow-up: excluding them left the original
+		// bubble in every other client until a hard reload). There is no
+		// updated_at column to scope "unsent since the last poll", but unsend
+		// is only allowed within UNSEND_WINDOW_SECONDS of created_at — so any
+		// row that just flipped is younger than the window (+1 min clock
+		// slack). The client merge is idempotent, so re-serving an unsent row
+		// for a few polls is harmless.
+		$unsend_window_start = gmdate( 'Y-m-d H:i:s', time() - self::UNSEND_WINDOW_SECONDS - MINUTE_IN_SECONDS );
+
 		// Get new messages across all user's conversations.
 		$new_messages = $wpdb->get_results(
 			$wpdb->prepare(
@@ -1883,13 +1903,16 @@ class MessagingService {
 				FROM {$msg_table} m
 				INNER JOIN {$part_table} p ON p.conversation_id = m.conversation_id AND p.user_id = %d
 				WHERE p.status IN ('active', 'request_pending')
-				AND m.created_at > %s
-				AND m.deleted_for_all = 0
 				AND m.is_deleted = 0
+				AND (
+					( m.deleted_for_all = 0 AND m.created_at > %s )
+					OR ( m.deleted_for_all = 1 AND m.created_at > %s )
+				)
 				ORDER BY m.created_at ASC
 				LIMIT 100",
 				$user_id,
-				$since_gmt
+				$since_gmt,
+				$unsend_window_start
 			)
 		);
 
@@ -1897,6 +1920,12 @@ class MessagingService {
 
 		// Enrich messages.
 		foreach ( $new_messages as &$msg ) {
+			// Same blanking as get_messages(): an unsent message must never
+			// ship its original content/metadata to other participants.
+			if ( $msg->deleted_for_all ) {
+				$msg->content  = '';
+				$msg->metadata = null;
+			}
 			$sender = get_userdata( (int) $msg->sender_id );
 			if ( $sender ) {
 				$msg->sender_name   = $sender->display_name;
@@ -1906,10 +1935,11 @@ class MessagingService {
 				$msg->metadata = json_decode( $msg->metadata, true );
 			}
 			$msg->reactions = $this->get_message_reactions( (int) $msg->id );
-			if ( $msg->attachment_id ) {
+			// Don't ship attachment/media data for unsent messages either.
+			if ( $msg->attachment_id && ! $msg->deleted_for_all ) {
 				$msg->attachment = $this->get_attachment_data( (int) $msg->attachment_id );
 			}
-			if ( $msg->media_id ) {
+			if ( $msg->media_id && ! $msg->deleted_for_all ) {
 				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id );
 			}
 			if ( $msg->parent_id ) {

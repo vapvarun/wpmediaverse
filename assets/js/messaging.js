@@ -81,6 +81,12 @@ function messagePreview( msg ) {
 	}
 }
 
+// Unsent-message ids the poll handler has already reacted to. The poll
+// re-serves an unsent row for the whole unsend window (mvs_messages has no
+// updated_at to scope "unsent since last poll"), so without this the client
+// would re-render and reload the sidebar on every poll tick.
+const seenUnsendIds = new Set();
+
 // Enrich message with pre-computed boolean flags for Interactivity API directives.
 function enrichMessage( msg ) {
 	// Interactivity API does NOT track underscore-prefixed properties on
@@ -1184,25 +1190,57 @@ const { state, actions } = store( 'mvs/messaging', {
 
 				// New messages.
 				if ( data.messages && data.messages.length > 0 ) {
+					let appended = false;
+					let changed  = false;
 					for ( const rawMsg of data.messages ) {
-						const msg = enrichMessage( rawMsg );
-						// Only add to current conversation view.
-						if ( String( msg.conversation_id ) === String( state.activeConversationId ) ) {
-							const exists = state.messages.some( m => String( m.id ) === String( msg.id ) );
-							// Defensive: never re-add a message the user has deleted.
-							// delete-for-me removes the message entirely, and the
-							// server poll now also excludes is_deleted rows, so this
-							// is belt-and-suspenders against a deleted message being
-							// re-added to the DOM (Basecamp #9962618059).
-							if ( ! exists && ! msg.isDeleted ) {
-								state.messages = [ ...state.messages, msg ];
+						const msg      = enrichMessage( rawMsg );
+						const inActive = String( msg.conversation_id ) === String( state.activeConversationId );
+
+						if ( msg.isDeleted ) {
+							// Unsent message. The poll re-serves it for the whole
+							// unsend window (no updated_at column to scope it), so
+							// dedupe via seenUnsendIds: react to each unsend ONCE
+							// (Basecamp #9962618059 — "Unsend for everyone" must
+							// reach other participants without a refresh).
+							if ( ! seenUnsendIds.has( String( msg.id ) ) ) {
+								seenUnsendIds.add( String( msg.id ) );
+								changed = true;
 							}
+							if ( inActive ) {
+								const existing = state.messages.find( m => String( m.id ) === String( msg.id ) );
+								// Update the rendered bubble in place — same shape
+								// as the local unsendMessage() transform. Never ADD
+								// a deleted message that isn't in the DOM.
+								if ( existing && existing.notDeleted ) {
+									state.messages = state.messages.map( m =>
+										String( m.id ) === String( msg.id )
+											? enrichMessage( { ...rawMsg, content: '', message_type: 'text', metadata: null } )
+											: m
+									);
+								}
+							}
+						} else if ( inActive ) {
+							const exists = state.messages.some( m => String( m.id ) === String( msg.id ) );
+							if ( ! exists ) {
+								state.messages = [ ...state.messages, msg ];
+								appended = true;
+								changed  = true;
+							}
+						} else {
+							// New message in another conversation — refresh the
+							// sidebar so its preview/unread state updates.
+							changed = true;
 						}
 					}
-					actions.scrollToBottom();
+					if ( appended ) {
+						actions.scrollToBottom();
+					}
 
-					// Refresh conversation list.
-					yield actions.loadConversations();
+					// Refresh conversation list — but not for the re-served
+					// unsent rows the poll repeats for the unsend window.
+					if ( changed ) {
+						yield actions.loadConversations();
+					}
 				}
 
 				// Typing indicators.

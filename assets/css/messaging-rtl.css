@@ -567,6 +567,11 @@ body.dark-mode {
 }
 
 .mvs-chat-msg--deleted .mvs-chat-msg__bubble {
+	/* Neutralize the sent/received bubble fill — without this an unsent
+	 * message kept the sender-blue background and read as an "empty blue
+	 * div" (Basecamp #9962618059). */
+	background: transparent;
+	color: var(--mvs-chat-text-secondary);
 	opacity: 0.5;
 	font-style: italic;
 }
