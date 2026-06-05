@@ -353,7 +353,22 @@ class NotificationService {
 	 */
 	public function on_mentions( int $media_id, array $mentioned_ids, string $context, int $comment_id ): void {
 		$actor = get_current_user_id();
+
+		// For comment mentions, the media owner already receives a
+		// media_comment row from on_comment() for the SAME comment — sending
+		// a media_mention too means two notifications for one action (QA
+		// 2026-06-05, card 9962124853). Same one-owner-per-path rule as the
+		// DM fix above: on_comment() owns the media owner; on_mentions()
+		// owns everyone else.
+		$owner = 0;
+		if ( 'comment' === $context ) {
+			$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+		}
+
 		foreach ( $mentioned_ids as $uid ) {
+			if ( $owner && (int) $uid === $owner ) {
+				continue;
+			}
 			$this->create( (int) $uid, 'media_mention', $actor, $media_id, $comment_id );
 		}
 	}
