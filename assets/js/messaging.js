@@ -94,8 +94,20 @@ function enrichMessage( msg ) {
 	msg.isSent     = msg.sender_id === ME.id || String( msg.sender_id ) === String( ME.id );
 	msg.isReceived = ! msg.isSent && msg.message_type !== 'system';
 	msg.isSystem   = msg.message_type === 'system';
-	msg.isDeleted  = Number( msg.deleted_for_all ) === 1;
+	// Deleted covers BOTH server flags: deleted_for_all (unsend) and
+	// is_deleted (delete-for-me — get_messages still returns the row to the
+	// sender, blanked). Only checking deleted_for_all left the sender's
+	// reopened chat rendering a blue empty bubble (Basecamp #9962618059).
+	msg.isDeleted  = Number( msg.deleted_for_all ) === 1 || Number( msg.is_deleted ) === 1;
 	msg.notDeleted = ! msg.isDeleted;
+	// Normalize a deleted message before the type flags below: text type
+	// (hides image/video/voice/file/media-share sections), no content, no
+	// metadata — same shape the local unsend/delete transforms produce.
+	if ( msg.isDeleted ) {
+		msg.content      = '';
+		msg.message_type = 'text';
+		msg.metadata     = null;
+	}
 	msg.showMenu   = false;
 	msg.noMenu     = true;
 	msg.hasReply   = !! msg.parent_id && msg.parent_id !== '0';

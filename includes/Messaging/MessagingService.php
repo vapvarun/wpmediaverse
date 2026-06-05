@@ -1204,11 +1204,12 @@ class MessagingService {
 
 		// Enrich messages.
 		foreach ( $messages as &$msg ) {
-			// Hide content for deleted messages.
-			if ( $msg->deleted_for_all ) {
-				$msg->content  = '';
-				$msg->metadata = null;
-			} elseif ( $msg->is_deleted && (int) $msg->sender_id === $user_id ) {
+			// Hide content for deleted messages (unsent for everyone, or
+			// soft-deleted rows still served to their sender).
+			$is_hidden = $msg->deleted_for_all
+				|| ( $msg->is_deleted && (int) $msg->sender_id === $user_id );
+
+			if ( $is_hidden ) {
 				$msg->content  = '';
 				$msg->metadata = null;
 			}
@@ -1233,13 +1234,13 @@ class MessagingService {
 				$msg->sender_avatar = get_avatar_url( $msg->sender_id, array( 'size' => 64 ) );
 			}
 
-			// Attachment info.
-			if ( $msg->attachment_id ) {
+			// Attachment / media-share payloads are never shipped for deleted
+			// messages — same contract as poll() (Basecamp #9962618059).
+			if ( $msg->attachment_id && ! $is_hidden ) {
 				$msg->attachment = $this->get_attachment_data( (int) $msg->attachment_id );
 			}
 
-			// Media share info.
-			if ( $msg->media_id ) {
+			if ( $msg->media_id && ! $is_hidden ) {
 				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id );
 			}
 		}
