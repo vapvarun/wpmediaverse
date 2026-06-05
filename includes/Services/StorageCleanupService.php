@@ -15,6 +15,11 @@
  * variants and cloud-resident files) and account deletion deleted no files at
  * all, leaving orphaned bytes on disk and the CDN.
  *
+ * Async-first is deliberate: a bulk delete can orphan hundreds of paths and
+ * each cloud-resident path costs an HTTP DELETE — running those inline would
+ * time out the admin request that triggered them. Reliability comes from the
+ * retry cycle in process(), not from deleting inline (Basecamp #9966546394).
+ *
  * @package WPMediaVerse
  * @since   1.6.0
  */
@@ -39,6 +44,11 @@ class StorageCleanupService {
 	const AS_GROUP = 'wpmediaverse';
 
 	/**
+	 * Maximum delete attempts per path batch before giving up with an error log.
+	 */
+	const MAX_ATTEMPTS = 5;
+
+	/**
 	 * Storage service (driver factory).
 	 *
 	 * @var StorageService
@@ -59,7 +69,7 @@ class StorageCleanupService {
 	 */
 	public function init(): void {
 		add_action( 'mvs_media_files_orphaned', array( $this, 'enqueue' ), 10, 2 );
-		add_action( self::CLEANUP_HOOK, array( $this, 'process' ), 10, 1 );
+		add_action( self::CLEANUP_HOOK, array( $this, 'process' ), 10, 2 );
 	}
 
 	/**
@@ -81,7 +91,7 @@ class StorageCleanupService {
 		}
 
 		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( self::CLEANUP_HOOK, array( $paths ), self::AS_GROUP );
+			as_enqueue_async_action( self::CLEANUP_HOOK, array( $paths, 1 ), self::AS_GROUP );
 			return;
 		}
 
@@ -92,11 +102,50 @@ class StorageCleanupService {
 	/**
 	 * Delete each queued path from every configured driver (local + cloud).
 	 *
-	 * @param string[] $paths Relative file paths.
+	 * Failed paths (driver returned false — network error, bad credentials,
+	 * non-2xx from the cloud API) are re-queued with a growing backoff instead
+	 * of being silently dropped. Before this, a single failed R2/S3/BunnyCDN
+	 * call orphaned the file permanently with no log and no retry (Basecamp
+	 * #9966546394). After MAX_ATTEMPTS the batch is abandoned with an error
+	 * log so the orphan is at least visible in MediaVerse → Logs.
+	 *
+	 * @param string[] $paths   Relative file paths.
+	 * @param int      $attempt Delete attempt number for this batch (1-based).
 	 */
-	public function process( array $paths ): void {
+	public function process( array $paths, int $attempt = 1 ): void {
+		$failed = array();
+
 		foreach ( (array) $paths as $path ) {
-			$this->storage->delete_everywhere( (string) $path );
+			if ( ! $this->storage->delete_everywhere( (string) $path ) ) {
+				$failed[] = (string) $path;
+			}
 		}
+
+		if ( empty( $failed ) ) {
+			return;
+		}
+
+		if ( $attempt < self::MAX_ATTEMPTS && function_exists( 'as_schedule_single_action' ) ) {
+			as_schedule_single_action(
+				time() + ( 5 * MINUTE_IN_SECONDS * $attempt ),
+				self::CLEANUP_HOOK,
+				array( $failed, $attempt + 1 ),
+				self::AS_GROUP
+			);
+
+			LoggerService::warning(
+				'storage_cleanup',
+				sprintf( 'Failed to delete %d orphaned file(s) (attempt %d/%d) — retry scheduled.', count( $failed ), $attempt, self::MAX_ATTEMPTS ),
+				array( 'paths' => $failed )
+			);
+
+			return;
+		}
+
+		LoggerService::error(
+			'storage_cleanup',
+			sprintf( 'Giving up on %d orphaned file(s) after %d attempts — manual cleanup needed.', count( $failed ), $attempt ),
+			array( 'paths' => $failed )
+		);
 	}
 }
