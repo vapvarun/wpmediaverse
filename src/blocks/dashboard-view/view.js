@@ -322,26 +322,26 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ! rule ) return [];
 			if ( rule.key === 'media_type' ) {
 				return [
-					{ value: '', label: '-- Select --' },
-					{ value: 'image', label: 'Image' },
-					{ value: 'video', label: 'Video' },
-					{ value: 'audio', label: 'Audio' },
-					{ value: 'document', label: 'Document' },
+					{ value: '', label: __( '-- Select --', 'wpmediaverse' ) },
+					{ value: 'image', label: __( 'Image', 'wpmediaverse' ) },
+					{ value: 'video', label: __( 'Video', 'wpmediaverse' ) },
+					{ value: 'audio', label: __( 'Audio', 'wpmediaverse' ) },
+					{ value: 'document', label: __( 'Document', 'wpmediaverse' ) },
 				];
 			}
 			if ( rule.key === 'privacy' ) {
 				return [
-					{ value: '', label: '-- Select --' },
-					{ value: 'public', label: 'Public' },
-					{ value: 'members', label: 'Members' },
-					{ value: 'private', label: 'Private' },
+					{ value: '', label: __( '-- Select --', 'wpmediaverse' ) },
+					{ value: 'public', label: __( 'Public', 'wpmediaverse' ) },
+					{ value: 'members', label: __( 'Members', 'wpmediaverse' ) },
+					{ value: 'private', label: __( 'Private', 'wpmediaverse' ) },
 				];
 			}
 			if ( rule.key === 'tag' ) {
-				return [ { value: '', label: '-- Select --' }, ...state.collectionModal.tags ];
+				return [ { value: '', label: __( '-- Select --', 'wpmediaverse' ) }, ...state.collectionModal.tags ];
 			}
 			if ( rule.key === 'category' ) {
-				return [ { value: '', label: '-- Select --' }, ...state.collectionModal.categories ];
+				return [ { value: '', label: __( '-- Select --', 'wpmediaverse' ) }, ...state.collectionModal.categories ];
 			}
 			return [];
 		},
@@ -790,7 +790,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			const id = ctx.item?.id;
 			if ( ! id ) return;
-			sharedUI.actions.showConfirm( 'Delete this media item? This cannot be undone.', async () => {
+			sharedUI.actions.showConfirm( __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' ), async () => {
 				try {
 					const res = await apiFetch( ctx, 'media/' + id, {
 						method: 'DELETE',
@@ -995,7 +995,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			const id = ctx.item?.id;
 			if ( ! id ) return;
-			sharedUI.actions.showConfirm( 'Delete this album? Media items will not be deleted.', async () => {
+			sharedUI.actions.showConfirm( __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' ), async () => {
 				try {
 					const res = await apiFetch( ctx, 'albums/' + id, {
 						method: 'DELETE',
@@ -1325,7 +1325,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			const id = ctx.item?.id;
 			if ( ! id ) return;
-			sharedUI.actions.showConfirm( 'Delete this collection? Media items will not be deleted.', async () => {
+			sharedUI.actions.showConfirm( __( 'Delete this collection? Media items will not be deleted.', 'wpmediaverse' ), async () => {
 				try {
 					const res = await apiFetch( ctx, 'collections/' + id, {
 						method: 'DELETE',

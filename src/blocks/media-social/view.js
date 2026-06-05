@@ -333,7 +333,7 @@ store( 'mvs/media-social', {
 			const comment = ctx.item;
 			if ( ! comment ) return;
 
-			sharedUI.actions.showConfirm( 'Delete this comment?', async () => {
+			sharedUI.actions.showConfirm( __( 'Delete this comment?', 'wpmediaverse' ), async () => {
 				const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
 					method: 'DELETE',
 					headers: apiHeaders( ctx.nonce ),
@@ -567,8 +567,8 @@ store( 'mvs/media-social', {
 		confirmDelete() {
 			const ctx = getContext();
 			const msg = ctx.type === 'album'
-				? 'Delete this album? Media items will not be deleted.'
-				: 'Delete this media item? This cannot be undone.';
+				? __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' )
+				: __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' );
 			sharedUI.actions.showConfirm( msg, async () => {
 				const ep = endpoint( ctx );
 				const res = await fetch( ctx.restUrl + ep + ctx.mediaId, {
@@ -592,13 +592,13 @@ store( 'mvs/media-social', {
 
 			// Build a reason selector dropdown.
 			const reasons = [
-				{ value: 'spam', label: 'Spam' },
-				{ value: 'harassment', label: 'Harassment' },
-				{ value: 'nudity', label: 'Nudity or sexual content' },
-				{ value: 'violence', label: 'Violence or dangerous acts' },
-				{ value: 'copyright', label: 'Copyright infringement' },
-				{ value: 'misinformation', label: 'Misinformation' },
-				{ value: 'other', label: 'Other' },
+				{ value: 'spam', label: __( 'Spam', 'wpmediaverse' ) },
+				{ value: 'harassment', label: __( 'Harassment', 'wpmediaverse' ) },
+				{ value: 'nudity', label: __( 'Nudity or sexual content', 'wpmediaverse' ) },
+				{ value: 'violence', label: __( 'Violence or dangerous acts', 'wpmediaverse' ) },
+				{ value: 'copyright', label: __( 'Copyright infringement', 'wpmediaverse' ) },
+				{ value: 'misinformation', label: __( 'Misinformation', 'wpmediaverse' ) },
+				{ value: 'other', label: __( 'Other', 'wpmediaverse' ) },
 			];
 
 			// Create a temporary select element in the DOM.
