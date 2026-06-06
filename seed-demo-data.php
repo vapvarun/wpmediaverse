@@ -1091,8 +1091,10 @@ foreach ( $collections_config as $col_cfg ) {
 	// Collections use wp_postmeta (still a CPT).
 	update_post_meta( $col_id, '_mvs_collection_type', $col_cfg['type'] ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 
-	// Save rules — tag values stored as plain strings now (no taxonomy term IDs).
-	update_post_meta( $col_id, '_mvs_collection_rules', $col_cfg['rules'] ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+	// Save smart rules through the service so tag/category names normalize to term IDs.
+	if ( 'smart' === $col_cfg['type'] && ! empty( $col_cfg['rules'] ) ) {
+		( new \WPMediaVerse\Services\CollectionService() )->save_rules( $col_id, $col_cfg['rules'] );
+	}
 
 	mvs_seed_log( "Created collection #{$col_id}: {$col_cfg['title']} ({$col_cfg['type']})", 'success' );
 }

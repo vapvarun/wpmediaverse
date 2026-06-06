@@ -430,32 +430,39 @@ class CollectionController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Enrich a rule with a human-readable value label.
+	 * Enrich a rule with a human-readable label.
+	 *
+	 * The stored 'value' (term/user ID) is preserved so clients can round-trip
+	 * rules through the edit modal without corrupting them; the readable name
+	 * is exposed separately as 'label'. Before 1.6.0 this method overwrote
+	 * 'value' with the name, which the dashboard edit modal then saved back —
+	 * permanently breaking the collection's rules.
 	 *
 	 * @param array $rule Rule array with 'key' and 'value'.
-	 * @return array Enriched rule with readable 'value'.
+	 * @return array Rule with original 'value' plus readable 'label'.
 	 */
 	private function enrich_rule( array $rule ): array {
-		$key   = $rule['key'] ?? '';
-		$value = $rule['value'] ?? '';
+		$key           = $rule['key'] ?? '';
+		$value         = $rule['value'] ?? '';
+		$rule['label'] = (string) $value;
 
 		switch ( $key ) {
 			case 'tag':
 				$term = get_term( (int) $value, 'mvs_tag' );
 				if ( $term && ! is_wp_error( $term ) ) {
-					$rule['value'] = $term->name;
+					$rule['label'] = $term->name;
 				}
 				break;
 			case 'category':
 				$term = get_term( (int) $value, 'mvs_category' );
 				if ( $term && ! is_wp_error( $term ) ) {
-					$rule['value'] = $term->name;
+					$rule['label'] = $term->name;
 				}
 				break;
 			case 'author':
 				$user = get_userdata( (int) $value );
 				if ( $user ) {
-					$rule['value'] = $user->display_name;
+					$rule['label'] = $user->display_name;
 				}
 				break;
 		}

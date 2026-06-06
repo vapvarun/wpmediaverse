@@ -262,7 +262,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		get rulePillText() {
 			const rule = getContext().rule;
-			return rule ? rule.key + ': ' + rule.value : '';
+			// Prefer the REST-provided label (term/user name); value holds the raw ID.
+			return rule ? rule.key + ': ' + ( rule.label || rule.value ) : '';
 		},
 		get isSmartCollection() {
 			return getContext().item?.type === 'smart';
