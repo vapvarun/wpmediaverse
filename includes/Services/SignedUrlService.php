@@ -230,6 +230,28 @@ class SignedUrlService {
 	 * @return int|false Media ID if valid, false otherwise.
 	 */
 	public function validate( array $params ) {
+		$expired = false;
+		$result  = $this->validate_signature( $params, $expired );
+
+		return ( false === $result || $expired ) ? false : $result;
+	}
+
+	/**
+	 * Verify a signed URL's HMAC and report expiry separately.
+	 *
+	 * Signature verification and expiry are distinct concerns: a correct HMAC
+	 * proves the URL was minted by this site for exactly these params; expiry
+	 * only bounds how long a non-public URL works as a bearer token. serve()
+	 * needs them apart so public media behind a full-page cache (whose cached
+	 * HTML outlives the TTL) keeps rendering — the privacy gate, not the
+	 * clock, is what protects public files.
+	 *
+	 * @param array $params  URL query parameters.
+	 * @param bool  $expired Set to true when the HMAC is valid but past expiry.
+	 * @return int|false Media ID when the HMAC verifies, false otherwise.
+	 */
+	private function validate_signature( array $params, bool &$expired ) {
+		$expired  = false;
 		$required = array( self::PARAM_MEDIA_ID, self::PARAM_USER, self::PARAM_EXPIRES, self::PARAM_SIGNATURE );
 
 		foreach ( $required as $key ) {
@@ -243,11 +265,6 @@ class SignedUrlService {
 		$user_id   = (int) $params[ self::PARAM_USER ];
 		$expires   = (int) $params[ self::PARAM_EXPIRES ];
 		$signature = $params[ self::PARAM_SIGNATURE ];
-
-		// Check expiration.
-		if ( time() > $expires ) {
-			return false;
-		}
 
 		// Rebuild params without signature for verification.
 		$verify_params = array(
@@ -270,6 +287,8 @@ class SignedUrlService {
 			return false;
 		}
 
+		$expired = time() > $expires;
+
 		return $media_id;
 	}
 
@@ -279,7 +298,8 @@ class SignedUrlService {
 	 * @param array $params Validated URL parameters.
 	 */
 	public function serve( array $params ): void {
-		$media_id = $this->validate( $params );
+		$expired  = false;
+		$media_id = $this->validate_signature( $params, $expired );
 
 		if ( ! $media_id ) {
 			status_header( 403 );
@@ -291,15 +311,34 @@ class SignedUrlService {
 		// Restricted media: re-check view access for the token's signed viewer.
 		// Browsers fetch <img src> without the X-WP-Nonce header, so
 		// get_current_user_id() returns 0 even for the owner and every non-public
-		// privacy level denies. The HMAC verified in validate() above guarantees
-		// mvs_uid was not tampered with, and the token's expiry bounds the
-		// bearer-style transferability window. Prefer the live session id when
-		// one is present (cookie-authenticated tab fetches), otherwise fall
+		// privacy level denies. The HMAC verified in validate_signature() above
+		// guarantees mvs_uid was not tampered with, and the token's expiry bounds
+		// the bearer-style transferability window. Prefer the live session id
+		// when one is present (cookie-authenticated tab fetches), otherwise fall
 		// back to the signed viewer id.
 		$privacy        = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'privacy' );
 		$session_uid    = (int) get_current_user_id();
 		$token_uid      = (int) ( $params[ self::PARAM_USER ] ?? 0 );
 		$viewer_user_id = $session_uid > 0 ? $session_uid : $token_uid;
+
+		if ( $expired ) {
+			// An expired-but-correctly-signed URL is only a problem for
+			// non-public media, where expiry bounds the bearer window. Public
+			// media is protected by the privacy gate, not the clock — and
+			// full-page caches (Batcache, CDN page caches) routinely serve
+			// HTML older than the signed-URL TTL, which 403'd every thumbnail
+			// for anonymous visitors on page-cached hosts. Disable via
+			// add_filter( 'mvs_serve_expired_public_urls', '__return_false' ).
+			$serve_expired_public = apply_filters( 'mvs_serve_expired_public_urls', true, $media_id );
+
+			if ( 'public' !== $privacy || ! $serve_expired_public ) {
+				status_header( 403 );
+				header( 'Content-Type: text/plain' );
+				echo esc_html( 'Invalid or expired signed URL.' );
+				exit;
+			}
+		}
+
 		if ( 'public' !== $privacy && ! $this->privacy->can_view( $media_id, $viewer_user_id ) ) {
 			status_header( 403 );
 			header( 'Content-Type: text/plain' );
@@ -533,19 +572,46 @@ class SignedUrlService {
 			$thumb_url_http = set_url_scheme( $thumb_url, 'http' );
 
 			if ( 0 !== strpos( $thumb_url_http, $base_url ) ) {
-				status_header( 403 );
-				header( 'Content-Type: text/plain' );
-				echo esc_html( 'Access denied.' );
-				exit;
+				// Stored thumb URL points at a different host/path (staging
+				// URL after a migration, retired CDN). We never serve the
+				// foreign URL — leave $full_path empty so the realpath
+				// missing-file fallback below degrades to the original file.
+				$full_path = '';
+			} else {
+				$full_path = trailingslashit( $upload_dir['basedir'] ) . substr( $thumb_url_http, strlen( $base_url ) );
 			}
-
-			$full_path = trailingslashit( $upload_dir['basedir'] ) . substr( $thumb_url_http, strlen( $base_url ) );
 		}
 
 		$real_path = realpath( $full_path );
 		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
 
-		if ( false === $real_path || false === $real_base || 0 !== strpos( $real_path, $real_base . DIRECTORY_SEPARATOR ) ) {
+		// Variant file missing on disk (meta points at a file that was never
+		// generated or was lost, or only a stale foreign-host URL is stored):
+		// for image media, degrade to the original file instead of breaking
+		// the grid — a full-size image beats a broken thumbnail on every
+		// surface. Distinct from the containment check below, which guards
+		// traversal on files that DO exist.
+		if ( ( false === $real_path || ! is_file( $real_path ) ) && 'watermark' !== $size ) {
+			$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
+			if ( 0 === strpos( $file_type, 'image/' ) ) {
+				$original_path = (string) $repo->get_filesystem_path( $media_id );
+				$original_real = '' !== $original_path ? realpath( $original_path ) : false;
+				if ( false !== $original_real && is_file( $original_real ) ) {
+					$real_path = $original_real;
+					$full_path = $original_path;
+				}
+			}
+		}
+
+		if ( false === $real_path || false === $real_base || ! is_file( $real_path ) ) {
+			status_header( 404 );
+			header( 'Content-Type: text/plain' );
+			echo esc_html( 'Thumbnail not found.' );
+			exit;
+		}
+
+		if ( 0 !== strpos( $real_path, $real_base . DIRECTORY_SEPARATOR ) ) {
 			status_header( 403 );
 			header( 'Content-Type: text/plain' );
 			echo esc_html( 'Access denied.' );

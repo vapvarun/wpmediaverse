@@ -64,15 +64,13 @@ class UserDeletionService {
 		// #12). wp_delete_post fires the before_delete_post handlers in
 		// PostTypes\Album / PostTypes\Collection, which do the custom-table
 		// cleanup + fire mvs_album_deleted / mvs_collection_deleted.
-		$cpt_ids = get_posts(
-			array(
-				'post_type'        => array( 'mvs_album', 'mvs_collection' ),
-				'author'           => $user_id,
-				'post_status'      => 'any',
-				'posts_per_page'   => -1,
-				'fields'           => 'ids',
-				'no_found_rows'    => true,
-				'suppress_filters' => true,
+		// Direct query on purpose: data-erasure must see every row regardless
+		// of query filters (multilingual or visibility plugins must not hide
+		// posts from the cleanup), matching the other queries in this service.
+		$cpt_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE post_type IN ( 'mvs_album', 'mvs_collection' ) AND post_author = %d",
+				$user_id
 			)
 		);
 		foreach ( $cpt_ids as $cpt_id ) {

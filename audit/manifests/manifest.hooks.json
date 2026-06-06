@@ -1,1426 +1,1433 @@
 {
-  "hooks_fired": [
-    {
-      "name": "mvs_reserved_media_paths",
-      "type": "filter",
-      "args": "array( 'battles', 'challenges', 'tournaments', 'leaderboard', 'edit-profile', 'page' )",
-      "where": "Core/TemplateLoader.php:101",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_body_classes",
-      "type": "filter",
-      "args": "array( 'mvs-page', 'no-sidebar' )",
-      "where": "Core/TemplateLoader.php:510",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_locate_template",
-      "type": "filter",
-      "args": "$template, $template_name, $template_path",
-      "where": "Core/TemplateLoader.php:609",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Frontend/InstagramFeedService.php:31",
-          "kind": "add_filter_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Frontend/Layouts/LayoutManager.php:100",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_template_variables",
-      "type": "filter",
-      "args": "$args, $template_name",
-      "where": "Core/TemplateLoader.php:633",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_before_template_render",
-      "type": "action",
-      "args": "$template_name, $args",
-      "where": "Core/TemplateLoader.php:647",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_after_template_render",
-      "type": "action",
-      "args": "$template_name, $args",
-      "where": "Core/TemplateLoader.php:659",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_privacy_changed",
-      "type": "action",
-      "args": "$media_id, (string) $value, (string) $old_privacy",
-      "where": "Repository/MediaRepository.php:602",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_privacy_changed",
-      "type": "action",
-      "args": "$media_id, (string) $index_data['privacy'], (string) $old_privacy",
-      "where": "Repository/MediaRepository.php:685",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_profile_url",
-      "type": "filter",
-      "args": "$url, $user_id",
-      "where": "Core/TemplateHelpers.php:245",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_display_name",
-      "type": "filter",
-      "args": "$name, $user_id",
-      "where": "Core/TemplateHelpers.php:268",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_default_video_poster_url",
-      "type": "filter",
-      "args": "$default",
-      "where": "Core/TemplateHelpers.php:526",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_parent_route",
-      "type": "filter",
-      "args": "$parent, $context, $args",
-      "where": "Core/TemplateHelpers.php:1052",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_moderation_tabs",
-      "type": "filter",
-      "args": "$tabs",
-      "where": "Admin/ModerationQueue.php:184",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_loaded",
-      "type": "action",
-      "args": "self::$container",
-      "where": "Core/Plugin.php:242",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ai_providers",
-      "type": "action",
-      "args": "$service",
-      "where": "Core/Plugin.php:367",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:243",
-          "kind": "add_action_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_theme_json",
-      "type": "filter",
-      "args": "$plugin_data",
-      "where": "Core/Plugin.php:1204",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_messaging_transport",
-      "type": "filter",
-      "args": "new RestPollingTransport()",
-      "where": "Core/Plugin.php:1220",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_buddynext_active",
-      "type": "filter",
-      "args": "false",
-      "where": "Core/Plugin.php:1268",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_buddynext_active",
-      "type": "filter",
-      "args": "false",
-      "where": "Core/Plugin.php:1304",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_messaging_transport",
-      "type": "filter",
-      "args": "new RestPollingTransport()",
-      "where": "Core/Plugin.php:1317",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_buddynext_active",
-      "type": "filter",
-      "args": "false",
-      "where": "Core/Plugin.php:1550",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_should_render_chat_panel",
-      "type": "filter",
-      "args": "true, $visibility",
-      "where": "Core/Plugin.php:1591",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_buddynext_active",
-      "type": "filter",
-      "args": "false",
-      "where": "Core/Plugin.php:1683",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dashboard_widgets",
-      "type": "action",
-      "args": "",
-      "where": "Admin/OverviewPage.php:519",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_page_id_{$slot}",
-      "type": "filter",
-      "args": "$page_id, $slot",
-      "where": "Core/SettingsHelper.php:66",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_thumbnail_size_resolved",
-      "type": "filter",
-      "args": "$size",
-      "where": "Core/SettingsHelper.php:112",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_openai_api_key",
-      "type": "filter",
-      "args": "$key",
-      "where": "Core/SettingsHelper.php:144",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_stats_tabs",
-      "type": "filter",
-      "args": "$tabs",
-      "where": "Admin/StatsPage.php:175",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_repair_media_thumb",
-      "type": "filter",
-      "args": "$regenerated, $media_id, array( 'file_type' => $file_type, 'file_path' => $file_path )",
-      "where": "Admin/MediaListPage.php:815",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Video/TranscodeService.php:106",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_can_repair_thumb",
-      "type": "filter",
-      "args": "$can, $media_id, $file_type, $file_path",
-      "where": "Admin/MediaListPage.php:887",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Video/TranscodeService.php:105",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_hide_submenu_slugs",
-      "type": "filter",
-      "args": "array()",
-      "where": "Admin/Settings/SettingsPage.php:73",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_settings_before_save",
-      "type": "action",
-      "args": "$option_page",
-      "where": "Admin/Settings/SettingsPage.php:118",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_settings_sections",
-      "type": "filter",
-      "args": "$sections",
-      "where": "Admin/Settings/SettingsPage.php:320",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/LicenseManager.php:48",
-          "kind": "add_filter_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Admin/ProSettings.php:28",
-          "kind": "add_filter_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Admin/GamificationSettings.php:27",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_settings_group_labels",
-      "type": "filter",
-      "args": "$group_labels",
-      "where": "Admin/Settings/SettingsPage.php:355",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Admin/GamificationSettings.php:28",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_settings_sidebar_after",
-      "type": "action",
-      "args": "",
-      "where": "Admin/Settings/SettingsPage.php:450",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_settings_render_{$section['renderer']}",
-      "type": "action",
-      "args": "$section",
-      "where": "Admin/Settings/SettingsPage.php:482",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/LicenseManager.php:49",
-          "kind": "add_action_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_webhook_sslverify",
-      "type": "filter",
-      "args": "! ( function_exists( 'wp_is_local_environment' ) && wp_is_local_environment() ), $url",
-      "where": "Integrations/WebhookService.php:196",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_before_upload_form",
-      "type": "action",
-      "args": "",
-      "where": "Shortcodes/Shortcodes.php:128",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Frontend/UsageWidget.php:41",
-          "kind": "add_action_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args": "null, $from",
-      "where": "CLI/Commands.php:820",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:237",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args": "null, $to",
-      "where": "CLI/Commands.php:821",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:237",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args": "null, $driver_slug",
-      "where": "CLI/Commands.php:1052",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:237",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args": "null, $driver_slug",
-      "where": "CLI/Commands.php:1245",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:237",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_activity_media_ids",
-      "type": "filter",
-      "args": "$ids, $activity_id, $activity",
-      "where": "Integrations/BuddyPress/ActivityMediaLinkage.php:220",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_activity_max_media",
-      "type": "filter",
-      "args": "6",
-      "where": "Integrations/BuddyPress/ActivityFormIntegration.php:142",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_activity_max_media",
-      "type": "filter",
-      "args": "6",
-      "where": "Integrations/BuddyPress/ActivityFormIntegration.php:167",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_reaction_added",
-      "type": "action",
-      "args": "$media_id, $user_id, $reaction_type",
-      "where": "Social/ReactionService.php:100",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_reaction_removed",
-      "type": "action",
-      "args": "$media_id, $user_id",
-      "where": "Social/ReactionService.php:139",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_notification_types",
-      "type": "filter",
-      "args": "self::TYPES",
-      "where": "Social/NotificationService.php:93",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Challenges/ChallengeNotificationListener.php:52",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_should_send_notification",
-      "type": "filter",
-      "args": "true, $user_id, $type, $actor_id, $media_id",
-      "where": "Social/NotificationService.php:112",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_notification_data",
-      "type": "filter",
-      "args": "array( 'user_id' => $user_id, 'type' => $type, 'actor_id' => $actor_id, 'media_id' => $media_id, 'comment_id' => $comment_id, 'created_at' => current_time( 'mysql', true ) ), $type",
-      "where": "Social/NotificationService.php:124",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_notification_created",
-      "type": "action",
-      "args": "$wpdb->insert_id, $user_id, $type, $actor_id, $media_id",
-      "where": "Social/NotificationService.php:159",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_notification_message",
-      "type": "filter",
-      "args": "null, $type, $actor_name, $media_title",
-      "where": "Social/NotificationService.php:451",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Challenges/ChallengeNotificationListener.php:53",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_comment_created",
-      "type": "action",
-      "args": "$media_id, $user_id, $comment_id, $content, $source",
-      "where": "Social/CommentService.php:79",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_activity_types",
-      "type": "filter",
-      "args": "self::TYPES",
-      "where": "Social/ActivityService.php:61",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_mentions_created",
-      "type": "action",
-      "args": "$media_id, $mentioned_ids, $context, $comment_id",
-      "where": "Social/MentionService.php:58",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_favorite_added",
-      "type": "action",
-      "args": "$media_id, $user_id",
-      "where": "Social/FavoriteService.php:68",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_shared",
-      "type": "action",
-      "args": "$media_id, $user_id, $platform",
-      "where": "Social/ShareService.php:48",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_followed",
-      "type": "action",
-      "args": "$follower_id, $following_id",
-      "where": "Social/FollowService.php:76",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_unfollowed",
-      "type": "action",
-      "args": "$follower_id, $following_id",
-      "where": "Social/FollowService.php:115",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_allowed_file_types",
-      "type": "filter",
-      "args": "array( 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/ogg', 'video/mp4', 'video/webm', 'application/pdf' )",
-      "where": "Messaging/MessagingController.php:723",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_max_upload_size",
-      "type": "filter",
-      "args": "10 * MB_IN_BYTES",
-      "where": "Messaging/MessagingController.php:749",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_buddynext_active",
-      "type": "filter",
-      "args": "false",
-      "where": "Messaging/NotificationListener.php:71",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_can_send_message",
-      "type": "filter",
-      "args": "true, $sender_id, $recipient_id",
-      "where": "Messaging/MessagingService.php:58",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_access_level",
-      "type": "filter",
-      "args": "$access, $sender_id, $recipient_id",
-      "where": "Messaging/MessagingService.php:90",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_message_rate_limit",
-      "type": "filter",
-      "args": "self::RATE_MESSAGES_PER_MIN",
-      "where": "Messaging/MessagingService.php:154",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_dm_convo_rate_limit",
-      "type": "filter",
-      "args": "self::RATE_CONVOS_PER_HOUR",
-      "where": "Messaging/MessagingService.php:173",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_conversation_created",
-      "type": "action",
-      "args": "$conv_id, $user_a, array( $user_a, $user_b )",
-      "where": "Messaging/MessagingService.php:346",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_sent",
-      "type": "action",
-      "args": "0, $conv_id, $user_a, array( $user_b )",
-      "where": "Messaging/MessagingService.php:350",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_request_accepted",
-      "type": "action",
-      "args": "$conversation_id, $user_id",
-      "where": "Messaging/MessagingService.php:615",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_max_length",
-      "type": "filter",
-      "args": "self::MAX_MESSAGE_LENGTH",
-      "where": "Messaging/MessagingService.php:700",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_types",
-      "type": "filter",
-      "args": "array( 'text', 'media_share', 'image', 'video', 'audio', 'voice', 'file', 'system' )",
-      "where": "Messaging/MessagingService.php:729",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_sent",
-      "type": "action",
-      "args": "$message_id, $conversation_id, $sender_id, $recipient_ids",
-      "where": "Messaging/MessagingService.php:832",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_voice_message_sent",
-      "type": "action",
-      "args": "$message_id, $conversation_id, $duration",
-      "where": "Messaging/MessagingService.php:839",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_deleted",
-      "type": "action",
-      "args": "$message_id, $user_id, false",
-      "where": "Messaging/MessagingService.php:996",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_deleted",
-      "type": "action",
-      "args": "$message_id, $user_id, true",
-      "where": "Messaging/MessagingService.php:1058",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_conversation_read",
-      "type": "action",
-      "args": "$conversation_id, $user_id",
-      "where": "Messaging/MessagingService.php:1092",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_message_reaction_added",
-      "type": "action",
-      "args": "$message_id, $user_id, $emoji",
-      "where": "Messaging/MessagingService.php:1207",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_show_online_status",
-      "type": "filter",
-      "args": "true, get_current_user_id(), $user_id",
-      "where": "Messaging/MessagingService.php:1292",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_show_online_status",
-      "type": "filter",
-      "args": "true, get_current_user_id(), $user_id",
-      "where": "Messaging/MessagingService.php:1308",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_report_submitted",
-      "type": "action",
-      "args": "$report_id, $reporter_id, $target_type, $target_id, $reason",
-      "where": "Social/ReportService.php:112",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_blocked",
-      "type": "action",
-      "args": "$blocker_id, $blocked_id",
-      "where": "Social/ReportService.php:243",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_story_created",
-      "type": "action",
-      "args": "$media_id, $user_id, $expires_at",
-      "where": "Services/StoryService.php:80",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_story_expired",
-      "type": "action",
-      "args": "$media_id",
-      "where": "Services/StoryService.php:220",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_messaging_poll_intervals",
-      "type": "filter",
-      "args": "array( 'active' => 3000, 'list' => 10000, 'background' => 30000 )",
-      "where": "Messaging/RestPollingTransport.php:44",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_tag_term_count",
-      "type": "filter",
-      "args": "$count, $term_taxonomy_id",
-      "where": "Taxonomies/MediaTag.php:87",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ai_moderation_result",
-      "type": "filter",
-      "args": "$result, $media_id",
-      "where": "Services/AIService.php:183",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_flagged",
-      "type": "action",
-      "args": "$media_id, $result",
-      "where": "Services/AIService.php:194",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_should_ai_analyze",
-      "type": "filter",
-      "args": "true, $media_id",
-      "where": "Services/AIService.php:225",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ai_result",
-      "type": "filter",
-      "args": "$output, $media_id",
-      "where": "Services/AIService.php:256",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args": "null, $driver_slug",
-      "where": "Services/SignedUrlService.php:622",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:237",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_access_rule_created",
-      "type": "action",
-      "args": "$rule_id, $media_id, $rule_type, $rule_value",
-      "where": "Services/AccessRulesService.php:91",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_rule_deleted",
-      "type": "action",
-      "args": "$rule_id, (int) $rule['media_id'], $rule['rule_type']",
-      "where": "Services/AccessRulesService.php:169",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_granted",
-      "type": "action",
-      "args": "$grant_id, $media_id, $user_id, $source",
-      "where": "Services/AccessRulesService.php:308",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_access_revoked",
-      "type": "action",
-      "args": "$media_id, $user_id",
-      "where": "Services/AccessRulesService.php:344",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_moderation_changed",
-      "type": "action",
-      "args": "$media_id, $status, $old_status, $user_id",
-      "where": "Services/ModerationService.php:92",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_album_items_added",
-      "type": "action",
-      "args": "$album_id, $actor_id, $media_ids, $added",
-      "where": "Services/AlbumService.php:244",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_album_cover_set",
-      "type": "action",
-      "args": "$album_id, $media_id",
-      "where": "Services/AlbumService.php:360",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_watermark_enabled",
-      "type": "filter",
-      "args": "$enabled",
-      "where": "Services/WatermarkService.php:87",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_watermark_config",
-      "type": "filter",
-      "args": "$defaults",
-      "where": "Services/WatermarkService.php:111",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_generate_watermark",
-      "type": "filter",
-      "args": "'', $media_id, $file_path, $file_url, $config",
-      "where": "Services/WatermarkService.php:172",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:240",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_watermark_invalidated",
-      "type": "action",
-      "args": "$media_id",
-      "where": "Services/WatermarkService.php:205",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_watermarks_invalidated_all",
-      "type": "action",
-      "args": "",
-      "where": "Services/WatermarkService.php:218",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_filename_strategy",
-      "type": "filter",
-      "args": "$strategy, $user_id",
-      "where": "Services/FilenameStrategy.php:95",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_optimize_image",
-      "type": "filter",
-      "args": "$file_path, $context",
-      "where": "Services/ImageOptimizationService.php:107",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_webp_quality",
-      "type": "filter",
-      "args": "82, $context",
-      "where": "Services/ImageOptimizationService.php:215",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_optimize_image",
-      "type": "filter",
-      "args": "$absolute, $webp_context",
-      "where": "Services/ImageOptimizationService.php:269",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_avif_quality",
-      "type": "filter",
-      "args": "50, $context",
-      "where": "Services/ImageOptimizationService.php:331",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_optimize_image",
-      "type": "filter",
-      "args": "$absolute, $avif_context",
-      "where": "Services/ImageOptimizationService.php:379",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_optimize_jpeg_quality",
-      "type": "filter",
-      "args": "92, $context",
-      "where": "Services/ImageOptimizationService.php:628",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args": "null, $driver_slug",
-      "where": "Services/ImageOptimizationService.php:722",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:237",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_profile_data",
-      "type": "filter",
-      "args": "$profile, $user_id",
-      "where": "Services/ProfileService.php:86",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_profile_update_fields",
-      "type": "filter",
-      "args": "$fields, $user_id",
-      "where": "Services/ProfileService.php:107",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_profile_updated",
-      "type": "action",
-      "args": "$user_id, $fields",
-      "where": "Services/ProfileService.php:141",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_avatar_allowed_types",
-      "type": "filter",
-      "args": "$allowed_types, $user_id",
-      "where": "Services/ProfileService.php:167",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_avatar_max_size",
-      "type": "filter",
-      "args": "2 * MB_IN_BYTES, $user_id",
-      "where": "Services/ProfileService.php:179",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_avatar_uploaded",
-      "type": "action",
-      "args": "$user_id, $attachment_id",
-      "where": "Services/ProfileService.php:238",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_avatar_deleted",
-      "type": "action",
-      "args": "$user_id",
-      "where": "Services/ProfileService.php:268",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args": "null, $driver_name",
-      "where": "Services/StorageService.php:39",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:237",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_max_upload_size",
-      "type": "filter",
-      "args": "$max_size, $user_id",
-      "where": "Services/UploadService.php:98",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_upload_args",
-      "type": "filter",
-      "args": "array( 'mime' => $mime, 'media_type' => $media_type, 'file_size' => $actual_size, 'file_name' => $file['name'] ), $user_id",
-      "where": "Services/UploadService.php:196",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Quota/QuotaService.php:37",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_upload_directory",
-      "type": "filter",
-      "args": "gmdate( 'Y/m' ), $user_id, $media_type",
-      "where": "Services/UploadService.php:221",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_before_media_insert",
-      "type": "action",
-      "args": "",
-      "where": "Services/UploadService.php:349",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_uploaded",
-      "type": "action",
-      "args": "$media_id, $file_data, $user_id, $media_type",
-      "where": "Services/UploadService.php:473",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Connectors/ConnectorManager.php:60",
-          "kind": "add_action_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Captions/TranscriptionService.php:71",
-          "kind": "add_action_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Video/TranscodeService.php:101",
-          "kind": "add_action_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Quota/QuotaService.php:40",
-          "kind": "add_action_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Streaks/StreakService.php:53",
-          "kind": "add_action_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_allowed_file_types",
-      "type": "filter",
-      "args": "array_map( 'trim', explode( ',', $types ) )",
-      "where": "Services/UploadService.php:521",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_metadata",
-      "type": "filter",
-      "args": "$metadata, $file_path, $media_id",
-      "where": "Services/UploadService.php:750",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_before_thumbnail_generation",
-      "type": "action",
-      "args": "$media_id, $file_path, $sizes",
-      "where": "Services/UploadService.php:811",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args": "null, $driver_slug",
-      "where": "Services/UploadService.php:838",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:237",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_cloud_thumbnail_url",
-      "type": "filter",
-      "args": "'', $size_name, $media_id",
-      "where": "Services/UploadService.php:907",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_after_thumbnail_generation",
-      "type": "action",
-      "args": "$media_id, $generated, $file_path",
-      "where": "Services/UploadService.php:986",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_thumbnail_sizes",
-      "type": "filter",
-      "args": "$sizes",
-      "where": "Services/UploadService.php:1028",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_ffmpeg_binary",
-      "type": "filter",
-      "args": "self::resolve_ffmpeg_binary()",
-      "where": "Services/UploadService.php:1158",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_data_purged",
-      "type": "action",
-      "args": "$user_id",
-      "where": "Services/UserDeletionService.php:111",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_cloudops_allow_non_public_to_cloud",
-      "type": "filter",
-      "args": "false, $media_id, (string) $row->privacy, $to",
-      "where": "Services/CloudOps.php:68",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_storage_driver",
-      "type": "filter",
-      "args": "null, $slug",
-      "where": "Services/CloudOps.php:301",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:237",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_privacy_can_view",
-      "type": "filter",
-      "args": "null, $media_id, $user_id, $privacy",
-      "where": "Services/PrivacyService.php:91",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Privacy/PrivacyUIService.php:79",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_collection_response",
-      "type": "filter",
-      "args": "$data, $post->ID",
-      "where": "REST/Controller/CollectionController.php:432",
-      "consumed_by": [
-        "wpmediaverse-pro: Core/Plugin.php:251 (appends mvs_pro_collection_items rows to a manual collection's favorites list)"
-      ]
-    },
-    {
-      "name": "mvs_collection_media_ids",
-      "type": "filter",
-      "args": "$ids, $collection_id, $limit",
-      "where": "Social/FavoriteService.php:192 (canonical); also Shortcodes/Shortcodes.php:585, REST/Controller/CollectionController.php:489 (cover)",
-      "consumed_by": [
-        "wpmediaverse-pro: Core/Plugin.php:231 (unions mvs_pro_collection_items so picker-added media render in the collection)"
-      ],
-      "since": "1.6.0"
-    },
-    {
-      "name": "mvs_rest_pagination_max",
-      "type": "filter",
-      "args": "self::DEFAULT_MAX",
-      "where": "REST/Pagination.php:55",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_deleted",
-      "type": "action",
-      "args": "$media_id, $author_id",
-      "where": "Repository/MediaRepository.php:2183 (delete_cascade — every delete path)",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Quota/QuotaService.php:41",
-          "kind": "add_action_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:243",
-          "kind": "add_action_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:261",
-          "kind": "add_action_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_album_response",
-      "type": "filter",
-      "args": "$data, $album_id",
-      "where": "REST/Controller/AlbumController.php:611",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_comment_edit_window",
-      "type": "filter",
-      "args": "(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )",
-      "where": "REST/Controller/CommentController.php:293",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_rest_pagination_max",
-      "type": "filter",
-      "args": "100",
-      "where": "REST/Controller/AccessController.php:194",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_favorite_toggled",
-      "type": "action",
-      "args": "$media_id, get_current_user_id(), $result['action']",
-      "where": "REST/Controller/FavoriteController.php:178",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_feed_query_args",
-      "type": "filter",
-      "args": "array( 'where' => $where, 'params' => $params, 'orderby' => $request->get_param( 'orderby' ), 'per_page' => $per_page, 'offset' => $offset ), $request",
-      "where": "REST/Controller/MediaController.php:429",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_feed_media_ids",
-      "type": "filter",
-      "args": "$int_ids, $request",
-      "where": "REST/Controller/MediaController.php:498",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Boosts/BoostService.php:38",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_media_group_assigned",
-      "type": "action",
-      "args": "$media_id, $group_id",
-      "where": "REST/Controller/MediaController.php:707",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_deleted",
-      "type": "action",
-      "args": "$media_id, $author_id",
-      "where": "Repository/MediaRepository.php:2183 (delete_cascade — every delete path)",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Quota/QuotaService.php:41",
-          "kind": "add_action_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:243",
-          "kind": "add_action_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:261",
-          "kind": "add_action_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_share_recorded",
-      "type": "action",
-      "args": "$media_id, $user_id",
-      "where": "REST/Controller/MediaController.php:1131",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_user_badge_html",
-      "type": "filter",
-      "args": "'', (int) $author_id",
-      "where": "REST/Controller/MediaController.php:1384",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_response",
-      "type": "filter",
-      "args": "$data, $media_id",
-      "where": "REST/Controller/MediaController.php:1449",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Captions/TranscriptionService.php:74",
-          "kind": "add_filter_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Video/ChapterService.php:32",
-          "kind": "add_filter_listener"
-        },
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Privacy/PrivacyUIService.php:76",
-          "kind": "add_filter_listener"
-        }
-      ]
-    },
-    {
-      "name": "mvs_rest_pagination_max",
-      "type": "filter",
-      "args": "100",
-      "where": "REST/Controller/MediaController.php:1470",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_feed_sort_options",
-      "type": "filter",
-      "args": "array( 'date', 'trending', 'popular' )",
-      "where": "REST/Controller/MediaController.php:1502",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_reaction_toggled",
-      "type": "action",
-      "args": "$media_id, get_current_user_id(), $reaction_type, $result['action']",
-      "where": "REST/Controller/ReactionController.php:179",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_reaction_added",
-      "type": "action",
-      "args": "$media_id, get_current_user_id(), $reaction_type",
-      "where": "REST/Controller/ReactionController.php:184",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_tags_merged",
-      "type": "action",
-      "args": "$source_id, $target_id, $posts",
-      "where": "REST/Controller/TagController.php:307",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_media_files_orphaned",
-      "type": "action",
-      "args": "$media_id, $orphaned_files",
-      "where": "Repository/MediaRepository.php:delete_cascade() (fires before rows are torn down with every stored relative path)",
-      "consumed_by": [
-        "Services/StorageCleanupService::enqueue (queues async file deletion across local + cloud)"
-      ],
-      "since": "1.6.0"
-    },
-    {
-      "name": "mvs_cleanup_media_files",
-      "type": "action",
-      "args": "$paths",
-      "where": "Services/StorageCleanupService (Action Scheduler async hook; group wpmediaverse)",
-      "consumed_by": [
-        "Services/StorageCleanupService::process (deletes each path from local + active cloud driver)"
-      ],
-      "since": "1.6.0"
-    },
-    {
-      "name": "mvs_suppress_frontend_ui",
-      "type": "filter",
-      "args": "$suppressed",
-      "where": "Core/Plugin.php:1695",
-      "consumed_by": [
-        "BuddyNext integration (stand MVS frontend UI down on BuddyNext surfaces)"
-      ],
-      "since": "1.6.0"
-    },
-    {
-      "name": "mvs_group_conversation_created",
-      "type": "action",
-      "args": "$conv_id, $creator_id, $all_ids, $opts",
-      "where": "Messaging/MessagingService.php:690",
-      "consumed_by": [],
-      "since": "1.6.0"
-    },
-    {
-      "name": "mvs_object_media_set",
-      "type": "action",
-      "args": "$object_type, $object_id, $media_ids",
-      "where": "Media/ObjectMediaLinkage.php:97",
-      "consumed_by": [],
-      "since": "1.6.0"
-    },
-    {
-      "name": "mvs_participant_added",
-      "type": "action",
-      "args": "$conversation_id, $user_id, $role",
-      "where": "Messaging/MessagingService.php:794",
-      "consumed_by": [],
-      "since": "1.6.0"
-    },
-    {
-      "name": "mvs_participant_removed",
-      "type": "action",
-      "args": "$conversation_id, $user_id",
-      "where": "Messaging/MessagingService.php:832",
-      "consumed_by": [],
-      "since": "1.6.0"
-    },
-    {
-      "name": "mvs_profile_privacy_levels",
-      "type": "filter",
-      "args": "$levels, $author_id, $viewer_id",
-      "where": "Repository/MediaRepository.php (build_privacy_where 'profile' mode)",
-      "consumed_by": [],
-      "since": "1.6.0",
-      "note": "Privacy levels a viewer may see in a single-author profile listing; escape hatch for pre-1.6.0 discoverability (Basecamp #9941246549)."
-    },
-    {
-      "name": "mvs_media_alt_text",
-      "type": "filter",
-      "args": "$alt, $media_id",
-      "where": "Core/TemplateHelpers.php:331",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_reports_enabled",
-      "type": "filter",
-      "args": "false (default)",
-      "where": "Social/ReportService.php:55; REST/Controller/ReportController.php:170; templates/media-single.php:457; templates/partials/shared-ui-frame.php:499",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_album_deleted",
-      "type": "action",
-      "args": "$post_id",
-      "where": "PostTypes/Album.php:83",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_collection_deleted",
-      "type": "action",
-      "args": "$collection_id",
-      "where": "PostTypes/Collection.php:79",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:251",
-          "kind": "add_action_listener"
-        }
-      ]
+ "hooks_fired": [
+  {
+   "name": "mvs_reserved_media_paths",
+   "type": "filter",
+   "args": "array( 'battles', 'challenges', 'tournaments', 'leaderboard', 'edit-profile', 'page' )",
+   "where": "Core/TemplateLoader.php:101",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_body_classes",
+   "type": "filter",
+   "args": "array( 'mvs-page', 'no-sidebar' )",
+   "where": "Core/TemplateLoader.php:510",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_locate_template",
+   "type": "filter",
+   "args": "$template, $template_name, $template_path",
+   "where": "Core/TemplateLoader.php:609",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Frontend/InstagramFeedService.php:31",
+     "kind": "add_filter_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Frontend/Layouts/LayoutManager.php:100",
+     "kind": "add_filter_listener"
     }
-  ]
+   ]
+  },
+  {
+   "name": "mvs_template_variables",
+   "type": "filter",
+   "args": "$args, $template_name",
+   "where": "Core/TemplateLoader.php:633",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_before_template_render",
+   "type": "action",
+   "args": "$template_name, $args",
+   "where": "Core/TemplateLoader.php:647",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_after_template_render",
+   "type": "action",
+   "args": "$template_name, $args",
+   "where": "Core/TemplateLoader.php:659",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_media_privacy_changed",
+   "type": "action",
+   "args": "$media_id, (string) $value, (string) $old_privacy",
+   "where": "Repository/MediaRepository.php:602",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_media_privacy_changed",
+   "type": "action",
+   "args": "$media_id, (string) $index_data['privacy'], (string) $old_privacy",
+   "where": "Repository/MediaRepository.php:685",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_user_profile_url",
+   "type": "filter",
+   "args": "$url, $user_id",
+   "where": "Core/TemplateHelpers.php:245",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_user_display_name",
+   "type": "filter",
+   "args": "$name, $user_id",
+   "where": "Core/TemplateHelpers.php:268",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_default_video_poster_url",
+   "type": "filter",
+   "args": "$default",
+   "where": "Core/TemplateHelpers.php:526",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_parent_route",
+   "type": "filter",
+   "args": "$parent, $context, $args",
+   "where": "Core/TemplateHelpers.php:1052",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_moderation_tabs",
+   "type": "filter",
+   "args": "$tabs",
+   "where": "Admin/ModerationQueue.php:184",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_loaded",
+   "type": "action",
+   "args": "self::$container",
+   "where": "Core/Plugin.php:242",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_ai_providers",
+   "type": "action",
+   "args": "$service",
+   "where": "Core/Plugin.php:367",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:243",
+     "kind": "add_action_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_theme_json",
+   "type": "filter",
+   "args": "$plugin_data",
+   "where": "Core/Plugin.php:1204",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_messaging_transport",
+   "type": "filter",
+   "args": "new RestPollingTransport()",
+   "where": "Core/Plugin.php:1220",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_buddynext_active",
+   "type": "filter",
+   "args": "false",
+   "where": "Core/Plugin.php:1268",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_buddynext_active",
+   "type": "filter",
+   "args": "false",
+   "where": "Core/Plugin.php:1304",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_messaging_transport",
+   "type": "filter",
+   "args": "new RestPollingTransport()",
+   "where": "Core/Plugin.php:1317",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_buddynext_active",
+   "type": "filter",
+   "args": "false",
+   "where": "Core/Plugin.php:1550",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_should_render_chat_panel",
+   "type": "filter",
+   "args": "true, $visibility",
+   "where": "Core/Plugin.php:1591",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_buddynext_active",
+   "type": "filter",
+   "args": "false",
+   "where": "Core/Plugin.php:1683",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_dashboard_widgets",
+   "type": "action",
+   "args": "",
+   "where": "Admin/OverviewPage.php:519",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_page_id_{$slot}",
+   "type": "filter",
+   "args": "$page_id, $slot",
+   "where": "Core/SettingsHelper.php:66",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_thumbnail_size_resolved",
+   "type": "filter",
+   "args": "$size",
+   "where": "Core/SettingsHelper.php:112",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_openai_api_key",
+   "type": "filter",
+   "args": "$key",
+   "where": "Core/SettingsHelper.php:144",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_stats_tabs",
+   "type": "filter",
+   "args": "$tabs",
+   "where": "Admin/StatsPage.php:175",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_repair_media_thumb",
+   "type": "filter",
+   "args": "$regenerated, $media_id, array( 'file_type' => $file_type, 'file_path' => $file_path )",
+   "where": "Admin/MediaListPage.php:815",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Video/TranscodeService.php:106",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_can_repair_thumb",
+   "type": "filter",
+   "args": "$can, $media_id, $file_type, $file_path",
+   "where": "Admin/MediaListPage.php:887",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Video/TranscodeService.php:105",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_hide_submenu_slugs",
+   "type": "filter",
+   "args": "array()",
+   "where": "Admin/Settings/SettingsPage.php:73",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_settings_before_save",
+   "type": "action",
+   "args": "$option_page",
+   "where": "Admin/Settings/SettingsPage.php:118",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_settings_sections",
+   "type": "filter",
+   "args": "$sections",
+   "where": "Admin/Settings/SettingsPage.php:320",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/LicenseManager.php:48",
+     "kind": "add_filter_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Admin/ProSettings.php:28",
+     "kind": "add_filter_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Admin/GamificationSettings.php:27",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_settings_group_labels",
+   "type": "filter",
+   "args": "$group_labels",
+   "where": "Admin/Settings/SettingsPage.php:355",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Admin/GamificationSettings.php:28",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_settings_sidebar_after",
+   "type": "action",
+   "args": "",
+   "where": "Admin/Settings/SettingsPage.php:450",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_settings_render_{$section['renderer']}",
+   "type": "action",
+   "args": "$section",
+   "where": "Admin/Settings/SettingsPage.php:482",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/LicenseManager.php:49",
+     "kind": "add_action_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_webhook_sslverify",
+   "type": "filter",
+   "args": "! ( function_exists( 'wp_is_local_environment' ) && wp_is_local_environment() ), $url",
+   "where": "Integrations/WebhookService.php:196",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_before_upload_form",
+   "type": "action",
+   "args": "",
+   "where": "Shortcodes/Shortcodes.php:128",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Frontend/UsageWidget.php:41",
+     "kind": "add_action_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_storage_driver",
+   "type": "filter",
+   "args": "null, $from",
+   "where": "CLI/Commands.php:820",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:237",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_storage_driver",
+   "type": "filter",
+   "args": "null, $to",
+   "where": "CLI/Commands.php:821",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:237",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_storage_driver",
+   "type": "filter",
+   "args": "null, $driver_slug",
+   "where": "CLI/Commands.php:1052",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:237",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_storage_driver",
+   "type": "filter",
+   "args": "null, $driver_slug",
+   "where": "CLI/Commands.php:1245",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:237",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_activity_media_ids",
+   "type": "filter",
+   "args": "$ids, $activity_id, $activity",
+   "where": "Integrations/BuddyPress/ActivityMediaLinkage.php:220",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_activity_max_media",
+   "type": "filter",
+   "args": "6",
+   "where": "Integrations/BuddyPress/ActivityFormIntegration.php:142",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_activity_max_media",
+   "type": "filter",
+   "args": "6",
+   "where": "Integrations/BuddyPress/ActivityFormIntegration.php:167",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_reaction_added",
+   "type": "action",
+   "args": "$media_id, $user_id, $reaction_type",
+   "where": "Social/ReactionService.php:100",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_reaction_removed",
+   "type": "action",
+   "args": "$media_id, $user_id",
+   "where": "Social/ReactionService.php:139",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_notification_types",
+   "type": "filter",
+   "args": "self::TYPES",
+   "where": "Social/NotificationService.php:93",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Challenges/ChallengeNotificationListener.php:52",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_should_send_notification",
+   "type": "filter",
+   "args": "true, $user_id, $type, $actor_id, $media_id",
+   "where": "Social/NotificationService.php:112",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_notification_data",
+   "type": "filter",
+   "args": "array( 'user_id' => $user_id, 'type' => $type, 'actor_id' => $actor_id, 'media_id' => $media_id, 'comment_id' => $comment_id, 'created_at' => current_time( 'mysql', true ) ), $type",
+   "where": "Social/NotificationService.php:124",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_notification_created",
+   "type": "action",
+   "args": "$wpdb->insert_id, $user_id, $type, $actor_id, $media_id",
+   "where": "Social/NotificationService.php:159",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_notification_message",
+   "type": "filter",
+   "args": "null, $type, $actor_name, $media_title",
+   "where": "Social/NotificationService.php:451",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Challenges/ChallengeNotificationListener.php:53",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_comment_created",
+   "type": "action",
+   "args": "$media_id, $user_id, $comment_id, $content, $source",
+   "where": "Social/CommentService.php:79",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_activity_types",
+   "type": "filter",
+   "args": "self::TYPES",
+   "where": "Social/ActivityService.php:61",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_mentions_created",
+   "type": "action",
+   "args": "$media_id, $mentioned_ids, $context, $comment_id",
+   "where": "Social/MentionService.php:58",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_favorite_added",
+   "type": "action",
+   "args": "$media_id, $user_id",
+   "where": "Social/FavoriteService.php:68",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_media_shared",
+   "type": "action",
+   "args": "$media_id, $user_id, $platform",
+   "where": "Social/ShareService.php:48",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_user_followed",
+   "type": "action",
+   "args": "$follower_id, $following_id",
+   "where": "Social/FollowService.php:76",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_user_unfollowed",
+   "type": "action",
+   "args": "$follower_id, $following_id",
+   "where": "Social/FollowService.php:115",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_dm_allowed_file_types",
+   "type": "filter",
+   "args": "array( 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/ogg', 'video/mp4', 'video/webm', 'application/pdf' )",
+   "where": "Messaging/MessagingController.php:723",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_dm_max_upload_size",
+   "type": "filter",
+   "args": "10 * MB_IN_BYTES",
+   "where": "Messaging/MessagingController.php:749",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_buddynext_active",
+   "type": "filter",
+   "args": "false",
+   "where": "Messaging/NotificationListener.php:71",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_can_send_message",
+   "type": "filter",
+   "args": "true, $sender_id, $recipient_id",
+   "where": "Messaging/MessagingService.php:58",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_dm_access_level",
+   "type": "filter",
+   "args": "$access, $sender_id, $recipient_id",
+   "where": "Messaging/MessagingService.php:90",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_dm_message_rate_limit",
+   "type": "filter",
+   "args": "self::RATE_MESSAGES_PER_MIN",
+   "where": "Messaging/MessagingService.php:154",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_dm_convo_rate_limit",
+   "type": "filter",
+   "args": "self::RATE_CONVOS_PER_HOUR",
+   "where": "Messaging/MessagingService.php:173",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_conversation_created",
+   "type": "action",
+   "args": "$conv_id, $user_a, array( $user_a, $user_b )",
+   "where": "Messaging/MessagingService.php:346",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_message_sent",
+   "type": "action",
+   "args": "0, $conv_id, $user_a, array( $user_b )",
+   "where": "Messaging/MessagingService.php:350",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_message_request_accepted",
+   "type": "action",
+   "args": "$conversation_id, $user_id",
+   "where": "Messaging/MessagingService.php:615",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_message_max_length",
+   "type": "filter",
+   "args": "self::MAX_MESSAGE_LENGTH",
+   "where": "Messaging/MessagingService.php:700",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_message_types",
+   "type": "filter",
+   "args": "array( 'text', 'media_share', 'image', 'video', 'audio', 'voice', 'file', 'system' )",
+   "where": "Messaging/MessagingService.php:729",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_message_sent",
+   "type": "action",
+   "args": "$message_id, $conversation_id, $sender_id, $recipient_ids",
+   "where": "Messaging/MessagingService.php:832",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_voice_message_sent",
+   "type": "action",
+   "args": "$message_id, $conversation_id, $duration",
+   "where": "Messaging/MessagingService.php:839",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_message_deleted",
+   "type": "action",
+   "args": "$message_id, $user_id, false",
+   "where": "Messaging/MessagingService.php:996",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_message_deleted",
+   "type": "action",
+   "args": "$message_id, $user_id, true",
+   "where": "Messaging/MessagingService.php:1058",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_conversation_read",
+   "type": "action",
+   "args": "$conversation_id, $user_id",
+   "where": "Messaging/MessagingService.php:1092",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_message_reaction_added",
+   "type": "action",
+   "args": "$message_id, $user_id, $emoji",
+   "where": "Messaging/MessagingService.php:1207",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_show_online_status",
+   "type": "filter",
+   "args": "true, get_current_user_id(), $user_id",
+   "where": "Messaging/MessagingService.php:1292",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_show_online_status",
+   "type": "filter",
+   "args": "true, get_current_user_id(), $user_id",
+   "where": "Messaging/MessagingService.php:1308",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_report_submitted",
+   "type": "action",
+   "args": "$report_id, $reporter_id, $target_type, $target_id, $reason",
+   "where": "Social/ReportService.php:112",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_user_blocked",
+   "type": "action",
+   "args": "$blocker_id, $blocked_id",
+   "where": "Social/ReportService.php:243",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_story_created",
+   "type": "action",
+   "args": "$media_id, $user_id, $expires_at",
+   "where": "Services/StoryService.php:80",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_story_expired",
+   "type": "action",
+   "args": "$media_id",
+   "where": "Services/StoryService.php:220",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_messaging_poll_intervals",
+   "type": "filter",
+   "args": "array( 'active' => 3000, 'list' => 10000, 'background' => 30000 )",
+   "where": "Messaging/RestPollingTransport.php:44",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_tag_term_count",
+   "type": "filter",
+   "args": "$count, $term_taxonomy_id",
+   "where": "Taxonomies/MediaTag.php:87",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_ai_moderation_result",
+   "type": "filter",
+   "args": "$result, $media_id",
+   "where": "Services/AIService.php:183",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_media_flagged",
+   "type": "action",
+   "args": "$media_id, $result",
+   "where": "Services/AIService.php:194",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_should_ai_analyze",
+   "type": "filter",
+   "args": "true, $media_id",
+   "where": "Services/AIService.php:225",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_ai_result",
+   "type": "filter",
+   "args": "$output, $media_id",
+   "where": "Services/AIService.php:256",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_storage_driver",
+   "type": "filter",
+   "args": "null, $driver_slug",
+   "where": "Services/SignedUrlService.php:622",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:237",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_access_rule_created",
+   "type": "action",
+   "args": "$rule_id, $media_id, $rule_type, $rule_value",
+   "where": "Services/AccessRulesService.php:91",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_access_rule_deleted",
+   "type": "action",
+   "args": "$rule_id, (int) $rule['media_id'], $rule['rule_type']",
+   "where": "Services/AccessRulesService.php:169",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_access_granted",
+   "type": "action",
+   "args": "$grant_id, $media_id, $user_id, $source",
+   "where": "Services/AccessRulesService.php:308",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_access_revoked",
+   "type": "action",
+   "args": "$media_id, $user_id",
+   "where": "Services/AccessRulesService.php:344",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_moderation_changed",
+   "type": "action",
+   "args": "$media_id, $status, $old_status, $user_id",
+   "where": "Services/ModerationService.php:92",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_album_items_added",
+   "type": "action",
+   "args": "$album_id, $actor_id, $media_ids, $added",
+   "where": "Services/AlbumService.php:244",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_album_cover_set",
+   "type": "action",
+   "args": "$album_id, $media_id",
+   "where": "Services/AlbumService.php:360",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_watermark_enabled",
+   "type": "filter",
+   "args": "$enabled",
+   "where": "Services/WatermarkService.php:87",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_watermark_config",
+   "type": "filter",
+   "args": "$defaults",
+   "where": "Services/WatermarkService.php:111",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_generate_watermark",
+   "type": "filter",
+   "args": "'', $media_id, $file_path, $file_url, $config",
+   "where": "Services/WatermarkService.php:172",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:240",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_watermark_invalidated",
+   "type": "action",
+   "args": "$media_id",
+   "where": "Services/WatermarkService.php:205",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_watermarks_invalidated_all",
+   "type": "action",
+   "args": "",
+   "where": "Services/WatermarkService.php:218",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_filename_strategy",
+   "type": "filter",
+   "args": "$strategy, $user_id",
+   "where": "Services/FilenameStrategy.php:95",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_optimize_image",
+   "type": "filter",
+   "args": "$file_path, $context",
+   "where": "Services/ImageOptimizationService.php:107",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_webp_quality",
+   "type": "filter",
+   "args": "82, $context",
+   "where": "Services/ImageOptimizationService.php:215",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_optimize_image",
+   "type": "filter",
+   "args": "$absolute, $webp_context",
+   "where": "Services/ImageOptimizationService.php:269",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_avif_quality",
+   "type": "filter",
+   "args": "50, $context",
+   "where": "Services/ImageOptimizationService.php:331",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_optimize_image",
+   "type": "filter",
+   "args": "$absolute, $avif_context",
+   "where": "Services/ImageOptimizationService.php:379",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_optimize_jpeg_quality",
+   "type": "filter",
+   "args": "92, $context",
+   "where": "Services/ImageOptimizationService.php:628",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_storage_driver",
+   "type": "filter",
+   "args": "null, $driver_slug",
+   "where": "Services/ImageOptimizationService.php:722",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:237",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_profile_data",
+   "type": "filter",
+   "args": "$profile, $user_id",
+   "where": "Services/ProfileService.php:86",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_profile_update_fields",
+   "type": "filter",
+   "args": "$fields, $user_id",
+   "where": "Services/ProfileService.php:107",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_profile_updated",
+   "type": "action",
+   "args": "$user_id, $fields",
+   "where": "Services/ProfileService.php:141",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_avatar_allowed_types",
+   "type": "filter",
+   "args": "$allowed_types, $user_id",
+   "where": "Services/ProfileService.php:167",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_avatar_max_size",
+   "type": "filter",
+   "args": "2 * MB_IN_BYTES, $user_id",
+   "where": "Services/ProfileService.php:179",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_avatar_uploaded",
+   "type": "action",
+   "args": "$user_id, $attachment_id",
+   "where": "Services/ProfileService.php:238",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_avatar_deleted",
+   "type": "action",
+   "args": "$user_id",
+   "where": "Services/ProfileService.php:268",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_storage_driver",
+   "type": "filter",
+   "args": "null, $driver_name",
+   "where": "Services/StorageService.php:39",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:237",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_max_upload_size",
+   "type": "filter",
+   "args": "$max_size, $user_id",
+   "where": "Services/UploadService.php:98",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_upload_args",
+   "type": "filter",
+   "args": "array( 'mime' => $mime, 'media_type' => $media_type, 'file_size' => $actual_size, 'file_name' => $file['name'] ), $user_id",
+   "where": "Services/UploadService.php:196",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Quota/QuotaService.php:37",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_upload_directory",
+   "type": "filter",
+   "args": "gmdate( 'Y/m' ), $user_id, $media_type",
+   "where": "Services/UploadService.php:221",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_before_media_insert",
+   "type": "action",
+   "args": "",
+   "where": "Services/UploadService.php:349",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_media_uploaded",
+   "type": "action",
+   "args": "$media_id, $file_data, $user_id, $media_type",
+   "where": "Services/UploadService.php:473",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Connectors/ConnectorManager.php:60",
+     "kind": "add_action_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Captions/TranscriptionService.php:71",
+     "kind": "add_action_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Video/TranscodeService.php:101",
+     "kind": "add_action_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Quota/QuotaService.php:40",
+     "kind": "add_action_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Streaks/StreakService.php:53",
+     "kind": "add_action_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_allowed_file_types",
+   "type": "filter",
+   "args": "array_map( 'trim', explode( ',', $types ) )",
+   "where": "Services/UploadService.php:521",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_media_metadata",
+   "type": "filter",
+   "args": "$metadata, $file_path, $media_id",
+   "where": "Services/UploadService.php:750",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_before_thumbnail_generation",
+   "type": "action",
+   "args": "$media_id, $file_path, $sizes",
+   "where": "Services/UploadService.php:811",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_storage_driver",
+   "type": "filter",
+   "args": "null, $driver_slug",
+   "where": "Services/UploadService.php:838",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:237",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_cloud_thumbnail_url",
+   "type": "filter",
+   "args": "'', $size_name, $media_id",
+   "where": "Services/UploadService.php:907",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_after_thumbnail_generation",
+   "type": "action",
+   "args": "$media_id, $generated, $file_path",
+   "where": "Services/UploadService.php:986",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_thumbnail_sizes",
+   "type": "filter",
+   "args": "$sizes",
+   "where": "Services/UploadService.php:1028",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_ffmpeg_binary",
+   "type": "filter",
+   "args": "self::resolve_ffmpeg_binary()",
+   "where": "Services/UploadService.php:1158",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_user_data_purged",
+   "type": "action",
+   "args": "$user_id",
+   "where": "Services/UserDeletionService.php:111",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_cloudops_allow_non_public_to_cloud",
+   "type": "filter",
+   "args": "false, $media_id, (string) $row->privacy, $to",
+   "where": "Services/CloudOps.php:68",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_storage_driver",
+   "type": "filter",
+   "args": "null, $slug",
+   "where": "Services/CloudOps.php:301",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:237",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_privacy_can_view",
+   "type": "filter",
+   "args": "null, $media_id, $user_id, $privacy",
+   "where": "Services/PrivacyService.php:91",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Privacy/PrivacyUIService.php:79",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_collection_response",
+   "type": "filter",
+   "args": "$data, $post->ID",
+   "where": "REST/Controller/CollectionController.php:432",
+   "consumed_by": [
+    "wpmediaverse-pro: Core/Plugin.php:251 (appends mvs_pro_collection_items rows to a manual collection's favorites list)"
+   ]
+  },
+  {
+   "name": "mvs_collection_media_ids",
+   "type": "filter",
+   "args": "$ids, $collection_id, $limit",
+   "where": "Social/FavoriteService.php:192 (canonical); also Shortcodes/Shortcodes.php:585, REST/Controller/CollectionController.php:489 (cover)",
+   "consumed_by": [
+    "wpmediaverse-pro: Core/Plugin.php:231 (unions mvs_pro_collection_items so picker-added media render in the collection)"
+   ],
+   "since": "1.6.0"
+  },
+  {
+   "name": "mvs_rest_pagination_max",
+   "type": "filter",
+   "args": "self::DEFAULT_MAX",
+   "where": "REST/Pagination.php:55",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_media_deleted",
+   "type": "action",
+   "args": "$media_id, $author_id",
+   "where": "Repository/MediaRepository.php:2183 (delete_cascade \u2014 every delete path)",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Quota/QuotaService.php:41",
+     "kind": "add_action_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:243",
+     "kind": "add_action_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:261",
+     "kind": "add_action_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_album_response",
+   "type": "filter",
+   "args": "$data, $album_id",
+   "where": "REST/Controller/AlbumController.php:611",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_comment_edit_window",
+   "type": "filter",
+   "args": "(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )",
+   "where": "REST/Controller/CommentController.php:293",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_rest_pagination_max",
+   "type": "filter",
+   "args": "100",
+   "where": "REST/Controller/AccessController.php:194",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_favorite_toggled",
+   "type": "action",
+   "args": "$media_id, get_current_user_id(), $result['action']",
+   "where": "REST/Controller/FavoriteController.php:178",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_feed_query_args",
+   "type": "filter",
+   "args": "array( 'where' => $where, 'params' => $params, 'orderby' => $request->get_param( 'orderby' ), 'per_page' => $per_page, 'offset' => $offset ), $request",
+   "where": "REST/Controller/MediaController.php:429",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_feed_media_ids",
+   "type": "filter",
+   "args": "$int_ids, $request",
+   "where": "REST/Controller/MediaController.php:498",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Boosts/BoostService.php:38",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_media_group_assigned",
+   "type": "action",
+   "args": "$media_id, $group_id",
+   "where": "REST/Controller/MediaController.php:707",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_media_deleted",
+   "type": "action",
+   "args": "$media_id, $author_id",
+   "where": "Repository/MediaRepository.php:2183 (delete_cascade \u2014 every delete path)",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Quota/QuotaService.php:41",
+     "kind": "add_action_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:243",
+     "kind": "add_action_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:261",
+     "kind": "add_action_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_share_recorded",
+   "type": "action",
+   "args": "$media_id, $user_id",
+   "where": "REST/Controller/MediaController.php:1131",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_user_badge_html",
+   "type": "filter",
+   "args": "'', (int) $author_id",
+   "where": "REST/Controller/MediaController.php:1384",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_media_response",
+   "type": "filter",
+   "args": "$data, $media_id",
+   "where": "REST/Controller/MediaController.php:1449",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Captions/TranscriptionService.php:74",
+     "kind": "add_filter_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Video/ChapterService.php:32",
+     "kind": "add_filter_listener"
+    },
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Privacy/PrivacyUIService.php:76",
+     "kind": "add_filter_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_rest_pagination_max",
+   "type": "filter",
+   "args": "100",
+   "where": "REST/Controller/MediaController.php:1470",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_feed_sort_options",
+   "type": "filter",
+   "args": "array( 'date', 'trending', 'popular' )",
+   "where": "REST/Controller/MediaController.php:1502",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_reaction_toggled",
+   "type": "action",
+   "args": "$media_id, get_current_user_id(), $reaction_type, $result['action']",
+   "where": "REST/Controller/ReactionController.php:179",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_reaction_added",
+   "type": "action",
+   "args": "$media_id, get_current_user_id(), $reaction_type",
+   "where": "REST/Controller/ReactionController.php:184",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_tags_merged",
+   "type": "action",
+   "args": "$source_id, $target_id, $posts",
+   "where": "REST/Controller/TagController.php:307",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_media_files_orphaned",
+   "type": "action",
+   "args": "$media_id, $orphaned_files",
+   "where": "Repository/MediaRepository.php:delete_cascade() (fires before rows are torn down with every stored relative path)",
+   "consumed_by": [
+    "Services/StorageCleanupService::enqueue (queues async file deletion across local + cloud)"
+   ],
+   "since": "1.6.0"
+  },
+  {
+   "name": "mvs_cleanup_media_files",
+   "type": "action",
+   "args": "$paths",
+   "where": "Services/StorageCleanupService (Action Scheduler async hook; group wpmediaverse)",
+   "consumed_by": [
+    "Services/StorageCleanupService::process (deletes each path from local + active cloud driver)"
+   ],
+   "since": "1.6.0"
+  },
+  {
+   "name": "mvs_suppress_frontend_ui",
+   "type": "filter",
+   "args": "$suppressed",
+   "where": "Core/Plugin.php:1695",
+   "consumed_by": [
+    "BuddyNext integration (stand MVS frontend UI down on BuddyNext surfaces)"
+   ],
+   "since": "1.6.0"
+  },
+  {
+   "name": "mvs_group_conversation_created",
+   "type": "action",
+   "args": "$conv_id, $creator_id, $all_ids, $opts",
+   "where": "Messaging/MessagingService.php:690",
+   "consumed_by": [],
+   "since": "1.6.0"
+  },
+  {
+   "name": "mvs_object_media_set",
+   "type": "action",
+   "args": "$object_type, $object_id, $media_ids",
+   "where": "Media/ObjectMediaLinkage.php:97",
+   "consumed_by": [],
+   "since": "1.6.0"
+  },
+  {
+   "name": "mvs_participant_added",
+   "type": "action",
+   "args": "$conversation_id, $user_id, $role",
+   "where": "Messaging/MessagingService.php:794",
+   "consumed_by": [],
+   "since": "1.6.0"
+  },
+  {
+   "name": "mvs_participant_removed",
+   "type": "action",
+   "args": "$conversation_id, $user_id",
+   "where": "Messaging/MessagingService.php:832",
+   "consumed_by": [],
+   "since": "1.6.0"
+  },
+  {
+   "name": "mvs_profile_privacy_levels",
+   "type": "filter",
+   "args": "$levels, $author_id, $viewer_id",
+   "where": "Repository/MediaRepository.php (build_privacy_where 'profile' mode)",
+   "consumed_by": [],
+   "since": "1.6.0",
+   "note": "Privacy levels a viewer may see in a single-author profile listing; escape hatch for pre-1.6.0 discoverability (Basecamp #9941246549)."
+  },
+  {
+   "name": "mvs_media_alt_text",
+   "type": "filter",
+   "args": "$alt, $media_id",
+   "where": "Core/TemplateHelpers.php:331",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_reports_enabled",
+   "type": "filter",
+   "args": "false (default)",
+   "where": "Social/ReportService.php:55; REST/Controller/ReportController.php:170; templates/media-single.php:457; templates/partials/shared-ui-frame.php:499",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_album_deleted",
+   "type": "action",
+   "args": "$post_id",
+   "where": "PostTypes/Album.php:83",
+   "consumed_by": []
+  },
+  {
+   "name": "mvs_collection_deleted",
+   "type": "action",
+   "args": "$collection_id",
+   "where": "PostTypes/Collection.php:79",
+   "consumed_by": [
+    {
+     "plugin": "wpmediaverse-pro",
+     "where": "includes/Core/Plugin.php:251",
+     "kind": "add_action_listener"
+    }
+   ]
+  },
+  {
+   "name": "mvs_serve_expired_public_urls",
+   "type": "filter",
+   "args": "true, $media_id",
+   "where": "Services/SignedUrlService.php:332",
+   "consumed_by": []
+  }
+ ]
 }
