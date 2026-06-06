@@ -572,38 +572,39 @@ class SignedUrlService {
 			$thumb_url_http = set_url_scheme( $thumb_url, 'http' );
 
 			if ( 0 !== strpos( $thumb_url_http, $base_url ) ) {
-				status_header( 403 );
-				header( 'Content-Type: text/plain' );
-				echo esc_html( 'Access denied.' );
-				exit;
+				// Stored thumb URL points at a different host/path (staging
+				// URL after a migration, retired CDN). We never serve the
+				// foreign URL — leave $full_path empty so the realpath
+				// missing-file fallback below degrades to the original file.
+				$full_path = '';
+			} else {
+				$full_path = trailingslashit( $upload_dir['basedir'] ) . substr( $thumb_url_http, strlen( $base_url ) );
 			}
-
-			$full_path = trailingslashit( $upload_dir['basedir'] ) . substr( $thumb_url_http, strlen( $base_url ) );
 		}
 
 		$real_path = realpath( $full_path );
 		$real_base = realpath( trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse' );
 
 		// Variant file missing on disk (meta points at a file that was never
-		// generated or was lost): for image media, degrade to the original
-		// file instead of breaking the grid — a full-size image beats a
-		// broken thumbnail on every surface. Distinct from the containment
-		// check below, which guards traversal on files that DO exist.
-		if ( false === $real_path && 'watermark' !== $size ) {
+		// generated or was lost, or only a stale foreign-host URL is stored):
+		// for image media, degrade to the original file instead of breaking
+		// the grid — a full-size image beats a broken thumbnail on every
+		// surface. Distinct from the containment check below, which guards
+		// traversal on files that DO exist.
+		if ( ( false === $real_path || ! is_file( $real_path ) ) && 'watermark' !== $size ) {
 			$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 			$file_type = (string) $repo->get_raw( $media_id, 'file_type' );
 			if ( 0 === strpos( $file_type, 'image/' ) ) {
 				$original_path = (string) $repo->get_filesystem_path( $media_id );
-				if ( '' !== $original_path ) {
-					$real_path = realpath( $original_path );
-					if ( false !== $real_path ) {
-						$full_path = $original_path;
-					}
+				$original_real = '' !== $original_path ? realpath( $original_path ) : false;
+				if ( false !== $original_real && is_file( $original_real ) ) {
+					$real_path = $original_real;
+					$full_path = $original_path;
 				}
 			}
 		}
 
-		if ( false === $real_path || false === $real_base ) {
+		if ( false === $real_path || false === $real_base || ! is_file( $real_path ) ) {
 			status_header( 404 );
 			header( 'Content-Type: text/plain' );
 			echo esc_html( 'Thumbnail not found.' );

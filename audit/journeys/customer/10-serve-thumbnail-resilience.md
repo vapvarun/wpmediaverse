@@ -35,3 +35,7 @@ estimated_runtime_minutes: 4
 ### 5. Tampered signature always blocks
 - **Action**: replace `mvs_sig` with 64 zeros on the public-media URL; curl.
 - **Expect**: HTTP 403 — expiry tolerance must never bypass HMAC verification.
+
+### 6. Stale foreign-host thumb URL falls back to the original (migration case)
+- **Action**: on a fixture media, clear `thumb_*_path` metas and set `thumb_medium` to `https://oldsite.wpcomstaging.com/...` (keep `file_path` intact); curl a fresh signed medium URL; restore metas after.
+- **Expect**: HTTP 200 with the original file's bytes — the foreign URL is never served and never 403s the card. With `file_path` ALSO empty, expect 404 "Thumbnail not found." (never a traversal 403: `get_filesystem_path()` resolving to the wpmediaverse directory itself must not reach the containment check — both 404 paths require `is_file`).
