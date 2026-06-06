@@ -139,8 +139,10 @@ Privacy hardening across every surface, a large messaging upgrade with group-con
 * Fix      - Video poster metadata no longer writes the video URL as a thumbnail, and posters render at the large size.
 * Fix      - Album creation slug collisions no longer drop privacy and album type.
 * Fix      - Page creation on activation never edits site navigation menus.
+* Fix      - Missing thumbnail files no longer break media grids. When a resized variant is absent on disk, the original image is served instead of an error.
+* Fix      - Public media now displays correctly on page-cached hosts. Expired-but-authentic image URLs in cached HTML still serve public files; non-public media keeps the strict expiry window. Disable via the mvs_serve_expired_public_urls filter.
 * Security - PDF-upload bypass through the media replace endpoint is closed, and replace honors the same type allowlist as upload.
-* Dev      - New filters mvs_collection_media_ids, mvs_reports_enabled, mvs_media_alt_text, mvs_hold_uploads_for_moderation, and mvs_profile_privacy_levels; new actions mvs_album_deleted and mvs_collection_deleted; mvs_media_deleted now fires once from the delete cascade.
+* Dev      - New filters mvs_collection_media_ids, mvs_reports_enabled, mvs_media_alt_text, mvs_hold_uploads_for_moderation, mvs_profile_privacy_levels, and mvs_serve_expired_public_urls; new actions mvs_album_deleted and mvs_collection_deleted; mvs_media_deleted now fires once from the delete cascade.
 * Compat   - Aligned with WPMediaVerse Pro 1.6.0. Install both updates together.
 
 = 1.5.0 - May 2026 =
