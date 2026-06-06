@@ -1775,11 +1775,21 @@
       "name": "mvs_media_deleted",
       "type": "action",
       "args": "$media_id, $user_id",
-      "where": "includes/REST/Controller/BulkController.php:153",
+      "where": "Repository/MediaRepository.php:2183 (delete_cascade — every delete path)",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
-          "where": "includes/Quota/QuotaService.php:43",
+          "where": "includes/Quota/QuotaService.php:41",
+          "kind": "add_action_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:243",
+          "kind": "add_action_listener"
+        },
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:261",
           "kind": "add_action_listener"
         }
       ],
@@ -2069,6 +2079,57 @@
       "purpose": "Path to ffmpeg binary used for the video poster fallback when a video has no embedded cover atom. Default 'ffmpeg' (relies on PATH). Override for Docker / custom-prefix installs.",
       "consumed_by": [],
       "added": "1.2.2"
+    },
+    {
+      "name": "mvs_album_deleted",
+      "type": "action",
+      "args": "$post_id",
+      "where": "PostTypes/Album.php:83",
+      "consumed_by": [],
+      "args_signature": [
+        "int $post_id"
+      ],
+      "args_count": 1
+    },
+    {
+      "name": "mvs_collection_deleted",
+      "type": "action",
+      "args": "$collection_id",
+      "where": "PostTypes/Collection.php:79",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:251",
+          "kind": "add_action_listener"
+        }
+      ],
+      "args_signature": [
+        "int $collection_id"
+      ],
+      "args_count": 1
+    },
+    {
+      "name": "mvs_reports_enabled",
+      "type": "filter",
+      "args": "false (default)",
+      "where": "Social/ReportService.php:55; REST/Controller/ReportController.php:170; templates/media-single.php:457; templates/partials/shared-ui-frame.php:499",
+      "consumed_by": [],
+      "args_signature": [
+        "bool $enabled=false"
+      ],
+      "args_count": 1
+    },
+    {
+      "name": "mvs_media_alt_text",
+      "type": "filter",
+      "args": "$alt, $media_id",
+      "where": "Core/TemplateHelpers.php:331",
+      "consumed_by": [],
+      "args_signature": [
+        "string $alt",
+        "int $media_id"
+      ],
+      "args_count": 2
     }
   ],
   "buddypress_integration": {
@@ -2312,6 +2373,11 @@
       "command": "wp mvs optimize-bulk",
       "class": "CLI/Commands.php:1439",
       "purpose": "Bulk optimize image library with resume support via _mvs_optimized_at sentinel. Flags: [--limit] [--offset] [--mime] [--media-type] [--include-variants] [--dry-run] [--include-failed]. Added 1.2.2."
+    },
+    {
+      "command": "wp mvs backfill_ai",
+      "class": "CLI/Commands.php:1722",
+      "purpose": "Run AI describe/tags on media uploaded before AI was enabled — idempotent on ai_status; flags --limit, --dry-run, --sync, --force"
     }
   ],
   "storage_drivers": [

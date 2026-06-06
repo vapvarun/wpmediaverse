@@ -1,0 +1,170 @@
+[
+ {
+  "id": 9936816170,
+  "title": "When a user uploads media before entering media details, the upload starts immediately instead of pausing for required metadata input.",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "Expected Behavior: Before the media upload begins, the system should pause and prompt the user to complete media details such as: Title Description Tags Privacy settings Any other required metadata The upload should only proceed after these details are reviewed and submitted. Current Behavior: If the user selects/upload media first, the file uploads directly without showing the media details step. Affected Areas: My Media page Upload Media page Impact: Users can unintentionally upload media without proper titles, descriptions, tags, or privacy configurations, which may lead to incomplete metad"
+ },
+ {
+  "id": 9936826065,
+  "title": "Bad Request  (400) on deleting messages",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "DELETE http://mediaverse.local/wp-json/mvs/v1/messages/2 400 (Bad Request) messaging.js?ver=1.5.0:25"
+ },
+ {
+  "id": 9936829191,
+  "title": "Reply to a specific message functionality not working",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "Reply to a specific message functionality not working."
+ },
+ {
+  "id": 9936976275,
+  "title": "Unable to optimize image",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "Unable to optimize image Warning : Cannot modify header information - headers already sent by (output started at /home/wbcomteam/Local Sites/mediaverse/app/public/wp-includes/script-loader.php:2447) in&nbsp; /home/wbcomteam/Local Sites/mediaverse/app/public/wp-includes/pluggable.php &nbsp;on line&nbsp; 1535 Warning : Cannot modify header information - headers already sent by (output started at /home/wbcomteam/Local Sites/mediaverse/app/public/wp-includes/script-loader.php:2447) in&nbsp; /home/wbcomteam/Local Sites/mediaverse/app/public/wp-includes/pluggable.php &nbsp;on line&nbsp; 1538"
+ },
+ {
+  "id": 9937212197,
+  "title": "Notifications header on My Media page should be sticky on scroll",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "Notifications header on My Media page should be sticky on scroll. Class - 'mvs-notification-dropdown-header'"
+ },
+ {
+  "id": 9937280163,
+  "title": "Who can send DMs and Online status visibility settings should be on user level instead of admin settings",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "Who can send DMs and Online status visibility settings should be on user level instead of admin settings. These should be managed by users in their profile settings."
+ },
+ {
+  "id": 9937288527,
+  "title": "Users unable to create albums",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "Database error when user tries to create albums. WordPress database error: [Duplicate entry '' for key 'wp_mvs_media_index.slug'] INSERT INTO `wp_mvs_media_index`(`media_id`, `privacy`, `created_at`)VALUES('54', 'public', '2026-05-28 10: 44: 57') {\"id\":54,\"title\":\"My album\",\"description\":\"My album\",\"author\":1,\"date\":\"2026-05-28 10:44:57\",\"link\":\"http:\\/\\/mediaverse.local\\/album\\/my-album-3\\/\",\"privacy\":\"public\",\"album_type\":\"default\",\"media_count\":0,\"cover_url\":null,\"cover_media_id\":0,\"categories\":[]}"
+ },
+ {
+  "id": 9937408893,
+  "title": "Unable to add media to manual collections",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "According to the description the favorite media should be added into manual collections but that functionality is not working. But technically this approach is incomplete or wrong. Case Scenario - If there are multiple collections configured as manual then on adding media to favorites there must be option to select which collection to add that media. ( Just like adding videos to Youtube Playlist ) Or We Can manually pick from My Media and favorites or overall public media."
+ },
+ {
+  "id": 9937707118,
+  "title": "Flagged/Reported media are not rendering into the Moderation queue",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "Flagged/Reported media are not rendering into the Moderation queue."
+ },
+ {
+  "id": 9937811664,
+  "title": "Permissions Settings are not working",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "Permissions settings are not working. Granting/Revoking permissions to the user roles are not making any effect."
+ },
+ {
+  "id": 9937856491,
+  "title": "On admin backend we have additional privacy filters ( friends and groups ) that are missing in frontend",
+  "created": "2026-05-28",
+  "comments": 0,
+  "body": "On admin backend we have additional privacy filters ( friends and groups ) that are missing in frontend while uploading media on My Media page and groups on Upload media page."
+ },
+ {
+  "id": 9941178994,
+  "title": "Cannot unselect the allowed file types in the settings.",
+  "created": "2026-05-29",
+  "comments": 0,
+  "body": "Cannot unselect the allowed file types in the settings."
+ },
+ {
+  "id": 9941182668,
+  "title": "Cannot select/unselect the Webhook events in the Webhooks settings",
+  "created": "2026-05-29",
+  "comments": 0,
+  "body": "Cannot select/unselect the Webhook events other than default selection (All Events ) in the Webhooks settings."
+ },
+ {
+  "id": 9941190178,
+  "title": "Incorrect redirection of AI settings link in the stats section of the plugin settings",
+  "created": "2026-05-29",
+  "comments": 0,
+  "body": "Incorrect redirection of AI settings link in the stats section of the plugin settings. That should redirect to the AI&amp;Moderation tab of the settings page."
+ },
+ {
+  "id": 9941246549,
+  "title": "Members Only media should not be rendered for logged out users",
+  "created": "2026-05-29",
+  "comments": 0,
+  "body": "Members Only media should not be rendered for logged out users."
+ },
+ {
+  "id": 9941259516,
+  "title": "Privacy settings are not working for Albums as well.",
+  "created": "2026-05-29",
+  "comments": 0,
+  "body": "Privacy settings are not working for Albums as well. If Albums are created as private then that albums should not be available to other members, logged out users as well as admin. If Albums are created as members only then that should only be accesible/available to site members only."
+ },
+ {
+  "id": 9941320629,
+  "title": "[PRO] Issue with Quotas & Credits functionality",
+  "created": "2026-05-29",
+  "comments": 0,
+  "body": "Issue 1 - When creating a package and marking it as the default package, the system should assign it only to newly created users. However, the default package is also getting assigned to existing users, which is not the expected behavior."
+ },
+ {
+  "id": 9941334783,
+  "title": "Deprecation warning on exporting csv of media stats",
+  "created": "2026-05-29",
+  "comments": 0,
+  "body": "Deprecation warning on exporting csv of media stats &lt;b&gt;Deprecated&lt;/b&gt;: fputcsv(): the $escape parameter must be provided as its default value will change in &lt;b&gt;/home/wbcomteam/Local Sites/mediaverse/app/public/wp-content/plugins/wpmediaverse/includes/Admin/StatsPage.php"
+ },
+ {
+  "id": 9941413137,
+  "title": "[PRO] The scripts and styles are not getting enqueued on shortcode pages",
+  "created": "2026-05-29",
+  "comments": 0,
+  "body": "The scripts and styles are not getting enqueued on shortcode pages. Shortcode - 'mvs_pro_flickr_feed', 'mvs_pro_instagram_feed', 'mvs_pro_pinterest_feed', 'mvs_pro_dribbble_feed', 'mvs_pro_leaderboard'"
+ },
+ {
+  "id": 9941630153,
+  "title": "[PRO] Issue with Quotas & Credits functionality",
+  "created": "2026-05-29",
+  "comments": 0,
+  "body": "MemberPress memberships are not rendering for mapping in the membership mappings section. The root cause of the MemberPress issue was a post-type slug mismatch in the plugin's detection logic. Technical Details: Hardcoded Slug: The plugin was specifically searching for the post type 'memberships' to retrieve your membership levels. MemberPress Standard: While intuitive, the official internal slug used by MemberPress for membership levels is actually memberpressproduct. The Result: Because your database stores levels under memberpressproduct, the plugin's query for memberships returned zero res"
+ },
+ {
+  "id": 9941822952,
+  "title": "UI issue moderation tab in mobile view",
+  "created": "2026-05-29",
+  "comments": 0,
+  "body": "UI issue moderation tab in mobile view"
+ },
+ {
+  "id": 9945274050,
+  "title": "[Pro][1.6.0] Flickr connector \u2014 site-default app key is saved as mvs_pro_connector_flickr_* but read as mvs_connector_flickr_* (one-click connect broken)",
+  "created": "2026-05-30",
+  "comments": 0,
+  "body": "Target: WPMediaVerse Pro 1.6.0 \u00b7 Type: Functional bug \u00b7 Severity: Medium \u00b7 Area: Connectors (Flickr) Summary The site-wide (plugin-level) Flickr API key/secret entered in MediaVerse &gt; Settings &gt; Connected Accounts is written to one option name but read from a different one. As a result the \"connect with the site's Flickr key\" path silently has no credentials: has_default_credentials() returns false and get_api_credentials() returns empty strings for the default key, so members can't use the one-click connect \u2014 only members who paste their own Flickr key/secret (stored in user meta) can c"
+ },
+ {
+  "id": 9948789971,
+  "title": "After deleting demo data there should be option to import demo data instead of delete demo data again",
+  "created": "2026-06-01",
+  "comments": 0,
+  "body": "After deleting demo data there should be option to import demo data instead of delete demo data again."
+ },
+ {
+  "id": 9948845919,
+  "title": "Allowed file types settings gets blank after adding and saving custom MIME type in the allowed file types",
+  "created": "2026-06-01",
+  "comments": 0,
+  "body": "Allowed file types settings gets blank after adding and saving custom MIME type in the allowed file types."
+ }
+]

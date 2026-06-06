@@ -283,6 +283,7 @@ class GDPRService {
 			'mvs_access_grants'             => 'user_id',
 			'mvs_conversation_participants' => 'user_id',
 			'mvs_messages'                  => 'sender_id',
+			'mvs_message_reactions'         => 'user_id', // audit 2026-06-04 — drifted from UserDeletionService.
 		);
 
 		foreach ( $tables as $table => $column ) {
@@ -299,6 +300,16 @@ class GDPRService {
 		$removed += (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->prefix}mvs_follows WHERE following_id = %d",
+				$user->ID
+			)
+		);
+
+		// Also remove as block target (reverse side). UserDeletionService
+		// already cleaned both sides; this path only cleaned blocker_id, so
+		// the two erase routines had drifted (audit 2026-06-04).
+		$removed += (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->prefix}mvs_blocks WHERE blocked_id = %d",
 				$user->ID
 			)
 		);

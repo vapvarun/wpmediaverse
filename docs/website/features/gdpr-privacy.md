@@ -53,28 +53,32 @@ You are not required to use the suggested text verbatim. Review it and incorpora
 
 ## Developer Notes
 
+WPMediaVerse registers its exporters and erasers through the standard WordPress privacy hooks. It does not add its own wrapper filters - extend the export/erase flow with the WordPress-core filters directly.
+
 ### Adding Custom Data to the Export
 
-Use the `mvs_privacy_export_data` filter to add plugin-extension data to the exporter:
+Register your own exporter via WordPress core's `wp_privacy_personal_data_exporters` filter:
 
 ```php
-add_filter( 'mvs_privacy_export_data', function( $data, $user ) {
-    $data['my_extension'] = [
-        'group_id'    => 'my-extension-data',
-        'group_label' => __( 'My Extension Data', 'my-extension' ),
-        'items'       => get_my_extension_data_for_user( $user->ID ),
+add_filter( 'wp_privacy_personal_data_exporters', function( $exporters ) {
+    $exporters['my-extension'] = [
+        'exporter_friendly_name' => __( 'My Extension Data', 'my-extension' ),
+        'callback'               => 'my_extension_export_callback',
     ];
-    return $data;
-}, 10, 2 );
+    return $exporters;
+} );
 ```
 
 ### Hooking into Erasure
 
-Use the `mvs_privacy_before_erase` action to perform additional cleanup before WPMediaVerse deletes user data:
+Register your own eraser via WordPress core's `wp_privacy_personal_data_erasers` filter:
 
 ```php
-add_action( 'mvs_privacy_before_erase', function( $user_id ) {
-    // Remove any extension data for this user.
-    delete_user_meta( $user_id, 'my_extension_meta' );
+add_filter( 'wp_privacy_personal_data_erasers', function( $erasers ) {
+    $erasers['my-extension'] = [
+        'eraser_friendly_name' => __( 'My Extension Data', 'my-extension' ),
+        'callback'             => 'my_extension_erase_callback',
+    ];
+    return $erasers;
 } );
 ```

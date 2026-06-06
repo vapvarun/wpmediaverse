@@ -115,10 +115,40 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 		$index_table = $wpdb->prefix . 'mvs_media_index';
 		$meta_table  = $wpdb->prefix . 'mvs_media_meta';
 
+		// Viewer-scoped privacy gate, built in SQL so pagination stays honest.
+		// The group tab previously listed EVERY item with this group_id
+		// regardless of privacy — members/friends/private/group items leaked
+		// to non-members and logged-out visitors (audit 2026-06-04). ProfileTab
+		// is saved by query_by_author's pre-filter; this tab had none.
+		$viewer_id       = get_current_user_id();
+		$is_group_member = $viewer_id > 0
+			&& function_exists( 'groups_is_user_member' )
+			&& groups_is_user_member( $viewer_id, (int) $group->id );
+
+		$priv_params = array();
+		if ( $viewer_id > 0 && user_can( $viewer_id, 'moderate_mvs_media' ) ) {
+			$priv_sql = '1 = 1';
+		} else {
+			$clauses = array( "mi.privacy = 'public'" );
+			if ( $viewer_id > 0 ) {
+				$clauses[]     = "mi.privacy = 'members'";
+				$clauses[]     = 'mi.post_author = %d';
+				$priv_params[] = $viewer_id;
+			}
+			if ( $is_group_member ) {
+				// Group-level items are visible to members of THIS group.
+				$clauses[] = "mi.privacy = 'group'";
+			}
+			$priv_sql = '( ' . implode( ' OR ', $clauses ) . ' )';
+		}
+
+		$base_where  = "mm.meta_key = 'group_id' AND mm.meta_value = %s AND mi.status = 'publish' AND {$priv_sql}";
+		$base_params = array_merge( array( (string) $group->id ), $priv_params );
+
 		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$meta_table} mm INNER JOIN {$index_table} mi ON mm.media_id = mi.media_id WHERE mm.meta_key = 'group_id' AND mm.meta_value = %s AND mi.status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				(string) $group->id
+				"SELECT COUNT(*) FROM {$meta_table} mm INNER JOIN {$index_table} mi ON mm.media_id = mi.media_id WHERE {$base_where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$base_params
 			)
 		);
 
@@ -131,10 +161,8 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 
 		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT mi.media_id FROM {$meta_table} mm INNER JOIN {$index_table} mi ON mm.media_id = mi.media_id WHERE mm.meta_key = 'group_id' AND mm.meta_value = %s AND mi.status = 'publish' ORDER BY mi.created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				(string) $group->id,
-				$per_page,
-				$offset
+				"SELECT mi.media_id FROM {$meta_table} mm INNER JOIN {$index_table} mi ON mm.media_id = mi.media_id WHERE {$base_where} ORDER BY mi.created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...array_merge( $base_params, array( $per_page, $offset ) )
 			)
 		);
 

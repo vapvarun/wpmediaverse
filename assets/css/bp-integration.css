@@ -973,6 +973,77 @@
     background-size: 12px 12px;
 }
 
+/* Tags input — same control vocabulary as the attach button and privacy
+ * select. Without this the input falls back to raw theme defaults: ~48px
+ * tall next to 36px siblings and a rigid ~200px width that truncates its
+ * own placeholder (QA card 9962548621, screenshot 1). Flexes between 150
+ * and 280px so the placeholder fits where there's room and the control
+ * shrinks instead of colliding where there isn't. */
+#buddypress #whats-new-form #whats-new-options #mvs-activity-tags.mvs-activity-tags {
+    box-sizing: border-box;
+    height: auto;
+    min-height: 36px;
+    margin: 0;
+    padding: 6px 14px;
+    border: 1px solid var(--mvs-border);
+    border-radius: 4px;
+    background-color: var(--mvs-bg);
+    color: var(--mvs-text);
+    font-size: 13px;
+    font-family: inherit;
+    line-height: 1.4;
+    box-shadow: none;
+    flex: 1 1 200px;
+    min-width: 150px;
+    max-width: 280px;
+}
+
+#buddypress #whats-new-form #whats-new-options #mvs-activity-tags.mvs-activity-tags:focus {
+    border-color: var(--mvs-text-muted);
+    outline: none;
+}
+
+/* The composer options row hosts BP's own controls (the JS-injected
+ * "Post in" box and the submit group) PLUS the three controls this plugin
+ * injects into it. Themes that lay the row out with floats or rigid
+ * widths let BP's "Post in" box touch or overlap our attach button /
+ * tags input (QA card 9962548621, both screenshots). Since we add
+ * elements to this row, we own a sane defensive layout for it: flex with
+ * wrap and a gap, submit pinned right. Scoped to #buddypress + IDs so it
+ * beats theme float/width rules without !important. */
+#buddypress #whats-new-form #whats-new-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+#buddypress #whats-new-form #whats-new-options #whats-new-submit {
+    margin-left: auto;
+}
+
+/* The wrap grows into the row's free space (otherwise its content-sized
+ * flex basis forces the tags input onto a second line while the submit
+ * group's auto margin hoards the leftover width) and may shrink below
+ * its content size on narrow rows. */
+#buddypress #whats-new-form #whats-new-options .mvs-activity-media-btn-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+}
+
+@media screen and (max-width: 640px) {
+    #buddypress #whats-new-form #whats-new-options #mvs-activity-tags.mvs-activity-tags {
+        flex-basis: 100%;
+        max-width: none;
+    }
+
+    #buddypress #whats-new-form #whats-new-options #whats-new-submit {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
 
 /* =============================================================================
  *  Activity form — preview grid for attached media before posting

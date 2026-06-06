@@ -52,7 +52,7 @@ curl -X PUT https://yoursite.com/wp-json/mvs/v1/media/123 \
 For `custom` privacy, grant access to specific users:
 
 ```bash
-curl -X POST https://yoursite.com/wp-json/mvs/v1/media/123/access \
+curl -X POST https://yoursite.com/wp-json/mvs/v1/media/123/grant \
   -H "X-WP-Nonce: NONCE" \
   -H "Content-Type: application/json" \
   -d '{
@@ -80,7 +80,7 @@ Response:
 }
 ```
 
-The signed URL TTL defaults to 3600 seconds (1 hour) and is configurable in **Media > Settings > General > Signed URL Expiry**.
+The signed URL TTL defaults to 3600 seconds (1 hour) and is configurable in **Media > Settings > Storage > Signed URL Expiry (seconds)**.
 
 ## Filtering Privacy Access in Code
 
@@ -100,7 +100,7 @@ Return `null` to let the built-in logic run. Return `true` or `false` to overrid
 
 ## Explore Archive Privacy Filtering
 
-On the explore archive (`/media/`), WPMediaVerse applies automatic privacy filtering via a `posts_where` filter:
+On the explore archive (`/media/`), WPMediaVerse applies automatic privacy filtering through a SQL clause on its own `mvs_media_index` table (a `privacy IN (...) OR post_author = current` gate shared by every explore surface), not a WordPress `posts_where` filter:
 
 - **Logged-out users** see only `public` media.
 - **Logged-in non-moderators** see `public`, `members` media, and their own media (any privacy level).

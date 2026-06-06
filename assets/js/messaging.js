@@ -59,6 +59,34 @@ function formatDuration( seconds ) {
 // Temp ID counter for optimistic messages.
 let tempIdCounter = 0;
 
+// Derive the sidebar preview string for a single message, mirroring the
+// server's MessagingService::send_message() preview rules so the frontend
+// recompute (after a delete) matches what the API would have stored.
+function messagePreview( msg ) {
+	if ( ! msg ) return '';
+	const content = ( msg.content || '' ).trim();
+	if ( content ) return content.slice( 0, 100 );
+	switch ( msg.message_type ) {
+		case 'voice':
+		case 'audio':
+			return 'Voice message';
+		case 'media_share':
+			return 'Shared a media';
+		case 'image':
+		case 'video':
+		case 'file':
+			return msg.message_type.charAt( 0 ).toUpperCase() + msg.message_type.slice( 1 );
+		default:
+			return '';
+	}
+}
+
+// Unsent-message ids the poll handler has already reacted to. The poll
+// re-serves an unsent row for the whole unsend window (mvs_messages has no
+// updated_at to scope "unsent since last poll"), so without this the client
+// would re-render and reload the sidebar on every poll tick.
+const seenUnsendIds = new Set();
+
 // Enrich message with pre-computed boolean flags for Interactivity API directives.
 function enrichMessage( msg ) {
 	// Interactivity API does NOT track underscore-prefixed properties on
@@ -66,8 +94,20 @@ function enrichMessage( msg ) {
 	msg.isSent     = msg.sender_id === ME.id || String( msg.sender_id ) === String( ME.id );
 	msg.isReceived = ! msg.isSent && msg.message_type !== 'system';
 	msg.isSystem   = msg.message_type === 'system';
-	msg.isDeleted  = Number( msg.deleted_for_all ) === 1;
+	// Deleted covers BOTH server flags: deleted_for_all (unsend) and
+	// is_deleted (delete-for-me — get_messages still returns the row to the
+	// sender, blanked). Only checking deleted_for_all left the sender's
+	// reopened chat rendering a blue empty bubble (Basecamp #9962618059).
+	msg.isDeleted  = Number( msg.deleted_for_all ) === 1 || Number( msg.is_deleted ) === 1;
 	msg.notDeleted = ! msg.isDeleted;
+	// Normalize a deleted message before the type flags below: text type
+	// (hides image/video/voice/file/media-share sections), no content, no
+	// metadata — same shape the local unsend/delete transforms produce.
+	if ( msg.isDeleted ) {
+		msg.content      = '';
+		msg.message_type = 'text';
+		msg.metadata     = null;
+	}
 	msg.showMenu   = false;
 	msg.noMenu     = true;
 	msg.hasReply   = !! msg.parent_id && msg.parent_id !== '0';
@@ -626,9 +666,29 @@ const { state, actions } = store( 'mvs/messaging', {
 			const msgId = ctx.messageId || state.contextMenuMessageId;
 			if ( ! msgId ) return;
 
+			// Was this the last message in the thread? If so the sidebar preview
+			// needs to be recomputed from whatever remains after the delete.
+			const wasLast = state.messages.length > 0
+				&& String( state.messages[ state.messages.length - 1 ].id ) === String( msgId );
+
 			try {
 				yield apiFetch( '/messages/' + msgId, { method: 'DELETE' } );
+				// Remove the message entirely from the thread — no greyed tombstone
+				// for a delete-for-me. (Unsend keeps its own "message deleted" state.)
 				state.messages = state.messages.filter( m => String( m.id ) !== String( msgId ) );
+
+				// Recompute the conversation's last-message preview so the sidebar
+				// stops showing the now-deleted message. Frontend state only — the
+				// /messages DELETE route contract is unchanged.
+				if ( wasLast ) {
+					const conv = state.activeConversation;
+					if ( conv ) {
+						const remaining = state.messages.filter( m => m.notDeleted );
+						const last = remaining.length > 0 ? remaining[ remaining.length - 1 ] : null;
+						conv.last_message_preview = last ? messagePreview( last ) : '';
+						conv.last_activity_at = last ? ( last.created_at || conv.last_activity_at ) : conv.last_activity_at;
+					}
+				}
 			} catch ( e ) {
 				actions.showToast( e.message );
 			}
@@ -1016,7 +1076,12 @@ const { state, actions } = store( 'mvs/messaging', {
 		// ---- Reply ----
 		setReplyTo() {
 			const ctx = getContext();
-			const msg = state.messages.find( m => String( m.id ) === String( ctx.messageId ) );
+			// Reply is triggered from the message context menu, which records the
+			// target in state.contextMenuMessageId — ctx.messageId is not set on
+			// that path. Use the same fallback as deleteMessage/unsendMessage so
+			// the lookup resolves and replyingTo is actually set.
+			const msgId = ctx.messageId || state.contextMenuMessageId;
+			const msg = state.messages.find( m => String( m.id ) === String( msgId ) );
 			if ( msg ) {
 				state.replyingTo = msg;
 				state.contextMenuMessageId = null;
@@ -1137,20 +1202,57 @@ const { state, actions } = store( 'mvs/messaging', {
 
 				// New messages.
 				if ( data.messages && data.messages.length > 0 ) {
+					let appended = false;
+					let changed  = false;
 					for ( const rawMsg of data.messages ) {
-						const msg = enrichMessage( rawMsg );
-						// Only add to current conversation view.
-						if ( String( msg.conversation_id ) === String( state.activeConversationId ) ) {
+						const msg      = enrichMessage( rawMsg );
+						const inActive = String( msg.conversation_id ) === String( state.activeConversationId );
+
+						if ( msg.isDeleted ) {
+							// Unsent message. The poll re-serves it for the whole
+							// unsend window (no updated_at column to scope it), so
+							// dedupe via seenUnsendIds: react to each unsend ONCE
+							// (Basecamp #9962618059 — "Unsend for everyone" must
+							// reach other participants without a refresh).
+							if ( ! seenUnsendIds.has( String( msg.id ) ) ) {
+								seenUnsendIds.add( String( msg.id ) );
+								changed = true;
+							}
+							if ( inActive ) {
+								const existing = state.messages.find( m => String( m.id ) === String( msg.id ) );
+								// Update the rendered bubble in place — same shape
+								// as the local unsendMessage() transform. Never ADD
+								// a deleted message that isn't in the DOM.
+								if ( existing && existing.notDeleted ) {
+									state.messages = state.messages.map( m =>
+										String( m.id ) === String( msg.id )
+											? enrichMessage( { ...rawMsg, content: '', message_type: 'text', metadata: null } )
+											: m
+									);
+								}
+							}
+						} else if ( inActive ) {
 							const exists = state.messages.some( m => String( m.id ) === String( msg.id ) );
 							if ( ! exists ) {
 								state.messages = [ ...state.messages, msg ];
+								appended = true;
+								changed  = true;
 							}
+						} else {
+							// New message in another conversation — refresh the
+							// sidebar so its preview/unread state updates.
+							changed = true;
 						}
 					}
-					actions.scrollToBottom();
+					if ( appended ) {
+						actions.scrollToBottom();
+					}
 
-					// Refresh conversation list.
-					yield actions.loadConversations();
+					// Refresh conversation list — but not for the re-served
+					// unsent rows the poll repeats for the unsend window.
+					if ( changed ) {
+						yield actions.loadConversations();
+					}
 				}
 
 				// Typing indicators.

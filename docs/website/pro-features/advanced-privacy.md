@@ -51,24 +51,9 @@ curl -X PUT https://yoursite.com/wp-json/mvs/v1/albums/55 \
 
 **Base URL:** `/wp-json/mvs-pro/v1/`
 
-### GET /media/{id}/privacy
-
-Get the current privacy settings for a media item.
-
-**Response:**
-
-```json
-{
-  "media_id": 123,
-  "privacy": "friends",
-  "inherited_from_album": false,
-  "album_id": null
-}
-```
-
 ### PUT /media/{id}/privacy
 
-Update the privacy level for a single media item. Requires ownership or `edit_others_mvs_media`.
+Update the privacy level for a single media item. Requires ownership or the `moderate_mvs_media` capability.
 
 **Body:**
 
@@ -83,9 +68,9 @@ Update the privacy level for a single media item. Requires ownership or `edit_ot
 
 **Response:** `200 OK` with the updated privacy object.
 
-### PUT /media/privacy/bulk
+### POST /media/bulk-privacy
 
-Update privacy for multiple media items in one request. Requires ownership of all items or `edit_others_mvs_media`.
+Update privacy for multiple media items in one request. Requires the user to be logged in; items the user does not own are skipped. Accepts up to 100 media IDs per request.
 
 **Body:**
 
@@ -157,7 +142,7 @@ Site administrators can update privacy in bulk from **Media > All Media**:
 
 ![Media list table with bulk actions dropdown](../images/admin-media-list.png)
 
-This uses the same `PUT /media/privacy/bulk` endpoint internally and respects the same ownership rules.
+This uses the same `POST /media/bulk-privacy` endpoint internally and respects the same ownership rules.
 
 ---
 

@@ -47,6 +47,15 @@ class ReportService {
 	 * @return int|false Report ID or false.
 	 */
 	public function report( int $reporter_id, string $target_type, int $target_id, string $reason, string $details = '' ) {
+		// Reporting is a Pro feature: Free has no queue/UI to read or resolve
+		// reports, so it must not collect them. Defaults to false in Free; Pro
+		// (or a site) opts in via the `mvs_reports_enabled` filter. This guards
+		// every caller, not just REST, so reports can never pile up unread.
+		// This filter is documented in templates/media-single.php.
+		if ( ! apply_filters( 'mvs_reports_enabled', false ) ) {
+			return false;
+		}
+
 		if ( ! in_array( $target_type, array( 'media', 'user' ), true ) ) {
 			return false;
 		}

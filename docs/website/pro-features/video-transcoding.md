@@ -81,7 +81,7 @@ If cloud storage is configured, the transcoded files are uploaded to the same bu
 
 | Meta Key | Values | Description |
 |----------|--------|-------------|
-| `_mvs_transcode_status` | `pending`, `processing`, `complete`, `failed` | Current transcoding job status |
+| `_mvs_transcode_status` | `queued`, `processing`, `complete`, `failed` | Current transcoding job status |
 | `_mvs_transcodes` | serialized array | URLs to each transcoded file and the HLS playlist |
 
 ## REST API
@@ -106,15 +106,23 @@ Get the transcoding status and file URLs for a media item.
 }
 ```
 
-### POST /media/{id}/transcodes
+### DELETE /media/{id}/transcodes
 
-Trigger transcoding manually. Requires ownership or `edit_others_mvs_media`. Use this to re-transcode a file after correcting the FFmpeg path.
+Delete all transcoded files for a media item. Requires ownership or admin (`manage_mvs_settings`).
+
+**Response:** `200 OK`.
+
+### POST /media/{id}/transcode
+
+Trigger transcoding manually (note the singular `transcode`). Requires ownership or admin (`manage_mvs_settings`). Use this to re-transcode a file after correcting the FFmpeg path.
 
 **Response:** `202 Accepted` with the current status object.
 
+There are also two admin-only diagnostic routes: `GET /transcode/status` (overview of pending/processing jobs) and `GET /transcode/config` (FFmpeg availability and configured presets). Both require `manage_mvs_settings`.
+
 ## Transcoding Queue
 
-Action Scheduler processes the transcoding queue in the background. You can monitor jobs at **Tools > Scheduled Actions** (if WooCommerce is active) or at the Action Scheduler standalone admin page. Filter by the `mvs_pro_transcode` hook to see only transcoding jobs.
+Action Scheduler processes the transcoding queue in the background. You can monitor jobs at **Tools > Scheduled Actions** (if WooCommerce is active) or at the Action Scheduler standalone admin page. Filter by the `mvs_pro_transcode_video` hook to see only transcoding jobs.
 
 ## Troubleshooting
 

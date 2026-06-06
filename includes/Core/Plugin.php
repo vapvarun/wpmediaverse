@@ -83,6 +83,77 @@ class Plugin {
 	private static $container;
 
 	/**
+	 * Force the shared UI frame (lightbox dialog) to render on a non-MVS page.
+	 *
+	 * Set by Pro feed Layout::enqueue_assets() so the lightbox dialog markup
+	 * (and its `@mvs/shared-ui` Interactivity store) reaches ordinary shortcode
+	 * / block pages that host a feed grid whose media tiles use
+	 * `actions.openLightbox`. Without this, the lightbox is dead off MVS pages
+	 * (Basecamp #9961961339 — same surface-miss class as the Load More fix
+	 * #9961961337). Honored in render_shared_ui_frame().
+	 *
+	 * @var bool
+	 */
+	private static $force_shared_ui_frame = false;
+
+	/**
+	 * Mark the shared UI frame (lightbox dialog) to render on the current page.
+	 *
+	 * Public entry point for the Pro feed layouts: their `enqueue_assets()`
+	 * runs on `wp_enqueue_scripts`, before `wp_footer`, so flipping this flag
+	 * there makes `render_shared_ui_frame()` emit the dialog on a plain
+	 * shortcode / block page. Idempotent — the footer renderer guards against
+	 * double-output, so calling this from all four feed layouts on the same
+	 * page prints the frame exactly once.
+	 *
+	 * @return void
+	 */
+	public static function force_shared_ui_frame(): void {
+		self::$force_shared_ui_frame = true;
+	}
+
+	/**
+	 * Enqueue the lightbox store + dialog frame for a Pro feed surface.
+	 *
+	 * Single entry point the Pro feed layouts call from their
+	 * `enqueue_assets()` so the @mvs/shared-ui Interactivity store (which owns
+	 * the lightbox) and its dialog-frame markup reach ordinary shortcode /
+	 * block pages — not just MVS-native pages. Mirrors the Load More
+	 * shared-handle fix: the module + frame CSS are registered globally in
+	 * `enqueue_frontend_assets()`; here we enqueue them by handle and flip the
+	 * frame-render flag. Idempotent — script-module / style handles dedupe and
+	 * `render_shared_ui_frame()` guards against double-output, so calling this
+	 * from all four feed layouts on one page is safe. No-op when the
+	 * frontend-presence policy says MediaVerse must stand down (BuddyNext owns
+	 * the UX) — the PHP_INT_MAX enforcer would dequeue the module anyway.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_shared_ui_for_feed(): void {
+		if ( self::frontend_ui_suppressed() ) {
+			return;
+		}
+
+		// wp-i18n backs the runtime __() shim used by the shared-ui view
+		// script (script modules cannot import @wordpress/i18n yet).
+		wp_enqueue_script( 'wp-i18n' );
+
+		// Lucide powers the <i data-lucide> icons in the lightbox action bar.
+		// Registered globally on `wp_enqueue_scripts@1`.
+		wp_enqueue_script( 'mvs-lucide' );
+
+		// Dialog frame stylesheet (registered globally in enqueue_frontend_assets).
+		wp_enqueue_style( 'mvs-shared-ui-frame' );
+
+		// Lightbox Interactivity store — registered globally (build/) in the
+		// non-MVS branch of enqueue_frontend_assets(); enqueue by id here.
+		wp_enqueue_script_module( '@mvs/shared-ui' );
+
+		// Print the dialog frame in wp_footer.
+		self::force_shared_ui_frame();
+	}
+
+	/**
 	 * Initialize the plugin.
 	 */
 	public static function init(): void {
@@ -198,6 +269,10 @@ class Plugin {
 		// Initialize user deletion cascade (deleted_user hook — cleans orphaned MVS rows).
 		self::$container->get( 'user_deletion' );
 
+		// Initialize the orphaned-file cleanup cycle (mvs_media_files_orphaned →
+		// async delete of original + variants from local + cloud).
+		self::$container->get( 'storage_cleanup' );
+
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
 		self::$container->get( 'integration.bp_activity_linkage' );
@@ -243,6 +318,12 @@ class Plugin {
 		// Shared UI frame — FAB, upload modal, lightbox (all frontend pages).
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_shared_ui_assets' ) );
 		add_action( 'wp_footer', array( self::class, 'render_shared_ui_frame' ) );
+
+		// Frontend-presence policy — single enforcement point. When BuddyNext
+		// owns the community UX, MediaVerse paints nothing on non-MVS surfaces.
+		// Runs last so it can dequeue every `mvs-` handle (and `@mvs/` module)
+		// regardless of which class enqueued it — free, Pro, or future code.
+		add_action( 'wp_enqueue_scripts', array( self::class, 'enforce_frontend_presence' ), PHP_INT_MAX );
 
 		// Messaging — DM engine.
 		self::init_messaging();
@@ -626,9 +707,28 @@ class Plugin {
 		);
 
 		self::$container->register(
+			'storage_cleanup',
+			function ( $c ) {
+				$service = new \WPMediaVerse\Services\StorageCleanupService( $c->get( 'storage' ) );
+				$service->init();
+				return $service;
+			}
+		);
+
+		self::$container->register(
 			'media_repository',
 			function () {
 				return new MediaRepository();
+			}
+		);
+
+		// Provider-neutral object↔media linkage (1.6.0). Public seam for headless
+		// consumers (e.g. BuddyNext) to attach/read media on their own objects
+		// (bn_post, bn_space, …) without the BuddyPress save path.
+		self::$container->register(
+			'object_media',
+			function () {
+				return new \WPMediaVerse\Media\ObjectMediaLinkage();
 			}
 		);
 
@@ -750,8 +850,11 @@ class Plugin {
 			array( self::$container->get( 'admin.overview' ), 'render_page' )
 		);
 
-		// All Media — custom listing page.
-		add_submenu_page(
+		// All Media — custom listing page. Run row/bulk actions on the page's
+		// `load-` hook (before any output) so their wp_safe_redirect() calls do
+		// not fire after headers are sent — the optimize row action otherwise
+		// triggered "Cannot modify header information - headers already sent".
+		$media_hook = add_submenu_page(
 			self::ADMIN_SLUG,
 			__( 'All Media', 'wpmediaverse' ),
 			__( 'All Media', 'wpmediaverse' ),
@@ -759,6 +862,9 @@ class Plugin {
 			'mvs-media',
 			array( \WPMediaVerse\Admin\MediaListPage::class, 'render' )
 		);
+		if ( $media_hook ) {
+			add_action( 'load-' . $media_hook, array( \WPMediaVerse\Admin\MediaListPage::class, 'handle_bulk_actions' ) );
+		}
 
 		// Tags — tag management page.
 		add_submenu_page(
@@ -856,6 +962,53 @@ class Plugin {
 	 * Enqueue frontend styles and scripts on MVS pages.
 	 */
 	public static function enqueue_frontend_assets(): void {
+		// Card builders + Load More are registered globally (enqueued by
+		// handle below on MVS pages) because the Pro feed shortcodes
+		// ([mvs_pro_flickr_feed] etc.) render the same grid + Load More
+		// button on ordinary pages and enqueue these handles from their
+		// Layout::enqueue_assets() (Basecamp #9941413137 — Load More was
+		// dead on shortcode pages because these were enqueue-only inside
+		// the MVS-page branch). Same shared-handle contract as
+		// mvs-explore-search.
+		wp_register_script(
+			'mvs-card-builders',
+			MVS_PLUGIN_URL . 'assets/js/frontend/card-builders.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			'mvs-card-builders',
+			'mvsCardBuildersI18n',
+			array(
+				'deleteMedia' => __( 'Delete media', 'wpmediaverse' ),
+				'video'       => __( 'Video', 'wpmediaverse' ),
+				'viewMedia'   => __( 'View media', 'wpmediaverse' ),
+				'stats'       => __( 'Stats', 'wpmediaverse' ),
+				'likes'       => __( 'Likes', 'wpmediaverse' ),
+				'views'       => __( 'Views', 'wpmediaverse' ),
+			)
+		);
+		wp_register_script(
+			'mvs-load-more',
+			MVS_PLUGIN_URL . 'assets/js/frontend/load-more.js',
+			array( 'mvs-card-builders' ),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_register_style(
+			'mvs-load-more',
+			MVS_PLUGIN_URL . 'assets/css/frontend/load-more.css',
+			array(),
+			MVS_VERSION
+		);
+
 		$post_type  = get_post_type();
 		$is_mvs     = in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true );
 		$is_archive = is_post_type_archive( 'mvs_album' );
@@ -888,12 +1041,7 @@ class Plugin {
 				MVS_VERSION
 			);
 
-			wp_enqueue_style(
-				'mvs-load-more',
-				MVS_PLUGIN_URL . 'assets/css/frontend/load-more.css',
-				array(),
-				MVS_VERSION
-			);
+			wp_enqueue_style( 'mvs-load-more' );
 
 			// Lucide icon set — required by templates that use <i data-lucide>.
 			// Self-contained on the frontend so we don't depend on the active theme
@@ -923,39 +1071,9 @@ class Plugin {
 			// English fallback toasts on a German site."
 			wp_enqueue_script( 'wp-i18n' );
 
-			wp_enqueue_script(
-				'mvs-card-builders',
-				MVS_PLUGIN_URL . 'assets/js/frontend/card-builders.js',
-				array(),
-				MVS_VERSION,
-				array(
-					'in_footer' => true,
-					'strategy'  => 'defer',
-				)
-			);
-			wp_localize_script(
-				'mvs-card-builders',
-				'mvsCardBuildersI18n',
-				array(
-					'deleteMedia' => __( 'Delete media', 'wpmediaverse' ),
-					'video'       => __( 'Video', 'wpmediaverse' ),
-					'viewMedia'   => __( 'View media', 'wpmediaverse' ),
-					'stats'       => __( 'Stats', 'wpmediaverse' ),
-					'likes'       => __( 'Likes', 'wpmediaverse' ),
-					'views'       => __( 'Views', 'wpmediaverse' ),
-				)
-			);
-
-			wp_enqueue_script(
-				'mvs-load-more',
-				MVS_PLUGIN_URL . 'assets/js/frontend/load-more.js',
-				array( 'mvs-card-builders' ),
-				MVS_VERSION,
-				array(
-					'in_footer' => true,
-					'strategy'  => 'defer',
-				)
-			);
+			// Registered (with mvsCardBuildersI18n) at the top of this method —
+			// shared with the Pro feed shortcodes.
+			wp_enqueue_script( 'mvs-load-more' );
 
 			// Lightbox + shared UI store — needed on all MVS pages (logged in or out).
 			// Use src/ (ESM source) not build/ (IIFE) — matches explore-view pattern.
@@ -987,6 +1105,40 @@ class Plugin {
 			wp_register_style(
 				'mvs-frontend',
 				MVS_PLUGIN_URL . 'assets/css/frontend.css',
+				array(),
+				MVS_VERSION
+			);
+
+			// Lightbox store — registered globally (shared-handle contract,
+			// same pattern as mvs-load-more above) so the Pro feed shortcodes
+			// ([mvs_pro_flickr_feed] etc.) can enqueue it by id from their
+			// Layout::enqueue_assets() on ordinary pages. Without this the
+			// feed tiles' data-wp-on--click="actions.openLightbox" has no
+			// store and the lightbox is dead off MVS pages (Basecamp
+			// #9961961339). Uses build/ (compiled IIFE) — matches the
+			// enqueue_shared_ui_assets() path; register-only here, so it is a
+			// no-op on pages that never enqueue it by handle. The MVS-page
+			// branch above intentionally keeps its own src/ enqueue, so this
+			// global registration never pre-empts native-page behavior.
+			$mvs_shared_ui_asset = file_exists( MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php' )
+				? require MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php'
+				: array(
+					'dependencies' => array( array( 'id' => '@wordpress/interactivity' ) ),
+					'version'      => MVS_VERSION,
+				);
+			wp_register_script_module(
+				'@mvs/shared-ui',
+				MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
+				$mvs_shared_ui_asset['dependencies'],
+				$mvs_shared_ui_asset['version']
+			);
+
+			// Lightbox dialog frame stylesheet — registered so the Pro feed
+			// layouts (or any shortcode that forces the frame) can enqueue it
+			// by handle. Register-only; harmless on pages that never use it.
+			wp_register_style(
+				'mvs-shared-ui-frame',
+				MVS_PLUGIN_URL . 'assets/css/shared-ui-frame.css',
 				array(),
 				MVS_VERSION
 			);
@@ -1399,17 +1551,23 @@ class Plugin {
 			}
 		);
 
-		// Online status visibility — read from option, respect per-setting.
+		// Online status visibility — the target user's per-user setting wins,
+		// falling back to the site-wide option. Applied with ($show, $viewer_id,
+		// $target_id) by MessagingService.
 		add_filter(
 			'mvs_show_online_status',
-			function ( $show ) {
-				$setting = get_option( 'mvs_show_online_status', 'everyone' );
+			function ( $show, $viewer_id = 0, $target_id = 0 ) {
+				$setting = $target_id ? get_user_meta( $target_id, '_mvs_show_online', true ) : '';
+				if ( '' === $setting || false === $setting ) {
+					$setting = get_option( 'mvs_show_online_status', 'everyone' );
+				}
 				if ( 'nobody' === $setting ) {
 					return false;
 				}
 				return $show;
 			},
-			5
+			5,
+			3
 		);
 
 		// Frontend assets + chat panel (only for logged-in users).
@@ -1592,10 +1750,126 @@ JS;
 	}
 
 	/**
+	 * Whether the current front-end request is a MediaVerse-owned surface.
+	 *
+	 * Covers single media, albums, collections, the album archive, MVS
+	 * taxonomies, profile/edit-profile, the media archive, and the mapped
+	 * Explore / Dashboard / Upload pages. Used to decide whether the shared
+	 * UI frame (FAB, upload modal, lightbox) should mount: when BuddyNext is
+	 * active it owns the media UX on its own and all other pages, so the
+	 * engine only keeps its shared UI on these dedicated surfaces.
+	 *
+	 * @return bool True when the request is a MediaVerse-owned page.
+	 */
+	private static function is_mvs_frontend_context(): bool {
+		$post_type = get_post_type();
+		if ( in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true ) ) {
+			return true;
+		}
+
+		if ( is_post_type_archive( 'mvs_album' ) || is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' ) ) {
+			return true;
+		}
+
+		if ( ! empty( $GLOBALS['mvs_current_media'] )
+			|| ! empty( $GLOBALS['mvs_is_media_archive'] )
+			|| (bool) get_query_var( 'mvs_edit_profile' )
+			|| (bool) get_query_var( 'mvs_profile_user' )
+			|| (bool) get_query_var( 'mvs_media_archive' ) ) {
+			return true;
+		}
+
+		$mvs_page_ids = array_filter(
+			array_map(
+				'absint',
+				array(
+					get_option( 'mvs_page_explore', 0 ),
+					get_option( 'mvs_page_dashboard', 0 ),
+					get_option( 'mvs_page_upload', 0 ),
+				)
+			)
+		);
+
+		return ! empty( $mvs_page_ids ) && is_page( $mvs_page_ids );
+	}
+
+	/**
+	 * Whether MediaVerse must NOT paint its own front-end UI on this request.
+	 *
+	 * The single source of truth for the frontend-presence policy. When
+	 * BuddyNext is the active community layer it owns the media UX on its own
+	 * pages and every non-MediaVerse surface (blog, WooCommerce, landing
+	 * pages); MediaVerse keeps its UI only on its own dedicated surfaces
+	 * (see is_mvs_frontend_context()). The `mvs_suppress_frontend_ui` filter
+	 * lets a site or Pro override the decision per request.
+	 *
+	 * @return bool True when MediaVerse front-end assets/markup must stand down.
+	 */
+	public static function frontend_ui_suppressed(): bool {
+		$suppressed = apply_filters( 'mvs_buddynext_active', false )
+			&& ! self::is_mvs_frontend_context();
+
+		return (bool) apply_filters( 'mvs_suppress_frontend_ui', $suppressed );
+	}
+
+	/**
+	 * Enforce the frontend-presence policy at one chokepoint.
+	 *
+	 * Runs on `wp_enqueue_scripts` at PHP_INT_MAX — after every class (free,
+	 * Pro, and any future code) has registered its assets. When the policy
+	 * says stand down, dequeue + deregister every enqueued handle prefixed
+	 * `mvs-` and every script module id prefixed `@mvs/`. Keying on the
+	 * handle-prefix naming contract means new enqueue points are covered
+	 * automatically — no per-call guards to maintain.
+	 *
+	 * @return void
+	 */
+	public static function enforce_frontend_presence(): void {
+		if ( is_admin() || ! self::frontend_ui_suppressed() ) {
+			return;
+		}
+
+		// Classic styles + scripts: dequeue and deregister anything `mvs-*`.
+		foreach ( array( wp_styles(), wp_scripts() ) as $registry ) {
+			if ( ! $registry instanceof \WP_Dependencies ) {
+				continue;
+			}
+			foreach ( (array) $registry->queue as $handle ) {
+				if ( 0 === strpos( (string) $handle, 'mvs-' ) ) {
+					if ( $registry === wp_styles() ) {
+						wp_dequeue_style( $handle );
+						wp_deregister_style( $handle );
+					} else {
+						wp_dequeue_script( $handle );
+						wp_deregister_script( $handle );
+					}
+				}
+			}
+		}
+
+		// Script modules (Interactivity API): `@mvs/...` ids. The modules
+		// registry has no public queue accessor, so dequeue the known module
+		// ids; registration is idempotent and dequeue of an unqueued id is a
+		// no-op, so listing the engine's modules here is safe and complete.
+		if ( function_exists( 'wp_dequeue_script_module' ) ) {
+			foreach ( array( '@mvs/shared-ui', '@mvs/media-social', 'mvs-messaging' ) as $module_id ) {
+				wp_dequeue_script_module( $module_id );
+			}
+		}
+	}
+
+	/**
 	 * Enqueue shared UI shell assets (FAB, upload modal, lightbox).
 	 */
 	public static function enqueue_shared_ui_assets(): void {
 		if ( ! is_user_logged_in() || is_admin() ) {
+			return;
+		}
+
+		// Single policy: stand down on non-MediaVerse surfaces when BuddyNext
+		// owns the UX. The PHP_INT_MAX enforcer is the catch-all; bailing here
+		// too avoids registering assets we would only dequeue moments later.
+		if ( self::frontend_ui_suppressed() ) {
 			return;
 		}
 
@@ -1642,7 +1916,15 @@ JS;
 	 * Render the shared UI frame in wp_footer (FAB, upload modal, lightbox).
 	 */
 	public static function render_shared_ui_frame(): void {
-		if ( is_admin() ) {
+		static $rendered = false;
+
+		if ( is_admin() || $rendered ) {
+			return;
+		}
+
+		// Single policy (same predicate as the asset enforcer): do not print
+		// the MediaVerse app shell on non-MVS surfaces when BuddyNext owns UX.
+		if ( self::frontend_ui_suppressed() ) {
 			return;
 		}
 
@@ -1667,12 +1949,20 @@ JS;
 		);
 		$is_mvs_frame_page  = ! empty( $mvs_frame_page_ids ) && is_page( $mvs_frame_page_ids );
 
-		if ( ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl && ! $is_mvs_frame_page ) {
+		// Pro feed shortcodes / blocks placed on an ordinary page force the
+		// frame so their lightbox-trigger tiles have a dialog to open
+		// (Basecamp #9961961339). The frame's FAB stays gated to MVS pages
+		// (handled inside the partial); only the lightbox dialog is needed
+		// here.
+		$forced = self::$force_shared_ui_frame;
+
+		if ( ! $forced && ! is_user_logged_in() && ! $is_mvs && ! $is_archive && ! $is_mvs_tax && ! $is_mvs_tpl && ! $is_mvs_frame_page ) {
 			return;
 		}
 
 		$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-frame.php';
 		if ( file_exists( $template ) ) {
+			$rendered = true;
 			include $template;
 		}
 	}

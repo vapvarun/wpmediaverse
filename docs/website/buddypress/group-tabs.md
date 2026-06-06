@@ -37,7 +37,7 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/media \
   -F "group_id=42"
 ```
 
-This stores `_mvs_privacy=group` and `_mvs_group_id=42` on the media post.
+This sets the media row's `privacy` to `group` (a column in `mvs_media_index`) and stores `group_id=42` (in `mvs_media_meta`). Media is tracked in WPMediaVerse's custom tables, not as a WordPress post.
 
 ## Group Activity Integration
 

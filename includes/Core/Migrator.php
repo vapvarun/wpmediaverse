@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 15;
+	const CURRENT_VERSION = 17;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -726,6 +726,80 @@ class Migrator {
 				KEY activity_position (activity_id, position)
 			) {$charset};"
 		);
+	}
+
+	/**
+	 * Migration v16 — generalise the media linkage table to any object type.
+	 *
+	 * `mvs_bp_activity_media` began as a BuddyPress activity↔media link, but its
+	 * `activity_id` column is a bare object id. Add an `object_type` discriminator
+	 * (default `'bp_activity'` so every existing row keeps its exact meaning) so the
+	 * same table can link media to ANY object — BuddyNext posts (`bn_post`), spaces,
+	 * etc. — via the provider-neutral `Media\ObjectMediaLinkage` service. The legacy
+	 * BuddyPress save/read path is untouched (its inserts inherit the column default).
+	 * Purely additive.
+	 */
+	private function migrate_to_16(): void {
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_bp_activity_media';
+
+		// Idempotent: add the column only when absent (safe to re-run).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$has_col = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM information_schema.COLUMNS
+				 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = 'object_type'",
+				$table
+			)
+		);
+
+		if ( 0 === $has_col ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} ADD COLUMN object_type varchar(32) NOT NULL DEFAULT 'bp_activity' AFTER id" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( "ALTER TABLE {$table} ADD KEY object_lookup (object_type, activity_id, position)" );
+		}
+	}
+
+	/**
+	 * Migration v17 — group-conversation support (admin role + container scope).
+	 *
+	 * Schema was group-ready (`mvs_conversations.type` supports 'group') but lacked
+	 * two columns the group lifecycle needs. Both additive, both back-compat:
+	 *   - `mvs_conversation_participants.role` (default 'member') — admin/member for
+	 *     group management; every existing 1:1 participant stays 'member'.
+	 *   - `mvs_conversations.container_type` (default '') + `container_id` (default 0)
+	 *     — optionally scope a group conversation to a container (a BuddyNext space
+	 *     `bn_space`, a BuddyPress/BuddyBoss group `bp_group`, …) so "space channels"
+	 *     are unambiguous and a BP→BN migration can remap the container cleanly.
+	 */
+	private function migrate_to_17(): void {
+		global $wpdb;
+		$part = $wpdb->prefix . 'mvs_conversation_participants';
+		$conv = $wpdb->prefix . 'mvs_conversations';
+
+		$has = function ( string $table, string $column ) use ( $wpdb ): bool {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			return (int) $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT COUNT(*) FROM information_schema.COLUMNS
+					 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s',
+					$table,
+					$column
+				)
+			) > 0;
+		};
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		if ( ! $has( $part, 'role' ) ) {
+			$wpdb->query( "ALTER TABLE {$part} ADD COLUMN role varchar(20) NOT NULL DEFAULT 'member' AFTER user_id" );
+		}
+		if ( ! $has( $conv, 'container_type' ) ) {
+			$wpdb->query( "ALTER TABLE {$conv} ADD COLUMN container_type varchar(32) NOT NULL DEFAULT '' AFTER type" );
+			$wpdb->query( "ALTER TABLE {$conv} ADD COLUMN container_id bigint(20) unsigned NOT NULL DEFAULT 0 AFTER container_type" );
+			$wpdb->query( "ALTER TABLE {$conv} ADD KEY container (container_type, container_id)" );
+		}
+		// phpcs:enable
 	}
 
 	/**

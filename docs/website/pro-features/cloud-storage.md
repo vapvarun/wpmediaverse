@@ -91,7 +91,9 @@ Go to **Media > Settings > Storage** and set the **Storage Driver** option. The 
 |-------|--------|
 | `local` | Default WordPress uploads directory (no Pro required) |
 | `s3` | Amazon S3 |
-| `bunny` | BunnyCDN |
+| `bunnycdn` | BunnyCDN |
+| `r2` | Cloudflare R2 |
+| `dospaces` | DigitalOcean Spaces |
 
 Only one driver is active at a time. Switching drivers does not migrate existing files - previously uploaded files remain at their original URLs and continue to serve from their original location.
 

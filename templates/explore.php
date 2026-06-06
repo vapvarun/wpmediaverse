@@ -325,14 +325,26 @@ $mvs_archive_url = home_url( '/media/' );
 							</div>
 						</div>
 					</a>
+					<?php
+					// Plain name only — keep badge decoration for the
+					// single-media / lightbox surfaces, not on every grid
+					// thumbnail. Avatar + name link to the album owner's
+					// profile, matching the media grid (card #9962508646).
+					$mvs_album_author_id  = (int) $album_post->post_author;
+					$mvs_tpl_helpers      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+					$mvs_album_author_url = $mvs_tpl_helpers->get_user_profile_url( $mvs_album_author_id );
+					$mvs_album_author      = $mvs_tpl_helpers->get_display_name_plain( $mvs_album_author_id );
+					?>
 					<div class="mvs-grid-item-info">
-						<?php echo get_avatar( (int) $album_post->post_author, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) ); ?>
-						<?php
-						// Plain name only — keep badge decoration for the
-						// single-media / lightbox surfaces, not on every
-						// grid thumbnail.
-						?>
-						<span class="mvs-grid-item-author"><?php echo esc_html( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_display_name_plain( (int) $album_post->post_author ) ); ?></span>
+						<?php if ( '' !== $mvs_album_author_url ) : ?>
+							<a class="mvs-grid-item-author-link" href="<?php echo esc_url( $mvs_album_author_url ); ?>">
+								<?php echo get_avatar( $mvs_album_author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) ); ?>
+								<span class="mvs-grid-item-author"><?php echo esc_html( $mvs_album_author ); ?></span>
+							</a>
+						<?php else : ?>
+							<?php echo get_avatar( $mvs_album_author_id, 24, '', '', array( 'class' => 'mvs-grid-avatar' ) ); ?>
+							<span class="mvs-grid-item-author"><?php echo esc_html( $mvs_album_author ); ?></span>
+						<?php endif; ?>
 					</div>
 				</div>
 			<?php endforeach; ?>

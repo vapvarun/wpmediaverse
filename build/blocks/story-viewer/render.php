@@ -21,6 +21,12 @@ global $wpdb;
 $index_table = $wpdb->prefix . 'mvs_media_index';
 $meta_table  = $wpdb->prefix . 'mvs_media_meta';
 
+// Viewer-scoped privacy gate (anon: public only; member: public + members +
+// own; moderator: all). Without it, private/members stories rendered to
+// everyone (audit 2026-06-04).
+$mvs_story_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+list( $mvs_story_priv_sql, $mvs_story_priv_params ) = $mvs_story_repo->explore_privacy_clause( 'idx', get_current_user_id() );
+
 // phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 $stories = $wpdb->get_results(
 	$wpdb->prepare(
@@ -31,10 +37,11 @@ $stories = $wpdb->get_results(
 		WHERE m1.meta_key = 'is_story' AND m1.meta_value = '1'
 		AND m2.meta_key = 'story_expires_at' AND m2.meta_value > %s
 		AND idx.status = 'publish'
+		AND {$mvs_story_priv_sql}
 		ORDER BY idx.created_at DESC
 		LIMIT %d",
 		current_time( 'mysql', true ),
-		$count
+		...array_merge( $mvs_story_priv_params, array( $count ) )
 	),
 	ARRAY_A
 );

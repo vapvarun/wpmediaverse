@@ -17,7 +17,7 @@ Always run with `--dry-run` first to review what will be imported before committ
 
 Import media from [rtMedia](https://rtmedia.io/).
 
-The command reads `rtm_media` table records and their associated meta, creates `mvs_media` posts with matching post dates and authors, and inserts index rows.
+The command reads `rt_rtm_media` table records and their associated meta, creates `mvs_media` posts with matching post dates and authors, and inserts index rows.
 
 ```bash
 # Preview the import without making any changes.
@@ -35,9 +35,9 @@ wp mvs import-rtmedia --batch-size=50
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--dry-run` | off | Preview counts and field mapping; do not write any data |
-| `--batch-size=<n>` | `100` | Number of rtMedia records to process per batch |
-| `--skip-existing` | on | Skip media whose original attachment ID has already been imported |
-| `--album-map` | on | Recreate rtMedia albums as WPMediaVerse albums and re-associate media |
+| `--batch-size=<n>` | `50` | Number of rtMedia records to process per batch |
+| `--skip-albums` | off | Skip rtMedia album import (albums are recreated as WPMediaVerse albums by default) |
+| `--offset=<n>` | `0` | Start from a specific offset (for resuming) |
 
 **What is mapped:**
 
@@ -65,7 +65,7 @@ Run without --dry-run to execute.
 
 Import media from [MediaPress](https://buddydev.com/mediapress/).
 
-The command queries `mpp_media` custom posts and their gallery associations, then creates matching `mvs_media` posts and index rows.
+The command queries `mpp-media` custom posts (falling back to attachments carrying `_mpp_is_mpp_media` meta on older installs) and their gallery associations, then creates matching `mvs_media` posts and index rows.
 
 ```bash
 # Preview the import.
@@ -74,8 +74,8 @@ wp mvs import-mediapress --dry-run
 # Run the full import.
 wp mvs import-mediapress
 
-# Limit to a specific MediaPress gallery.
-wp mvs import-mediapress --gallery-id=12
+# Resume from a specific offset on a large site.
+wp mvs import-mediapress --offset=200
 ```
 
 **Options:**
@@ -83,9 +83,9 @@ wp mvs import-mediapress --gallery-id=12
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--dry-run` | off | Preview counts; do not write any data |
-| `--batch-size=<n>` | `100` | Number of MediaPress media posts to process per batch |
-| `--gallery-id=<id>` | (all) | Import only media belonging to this MediaPress gallery |
-| `--skip-existing` | on | Skip media whose `mpp_media` post ID has already been imported |
+| `--batch-size=<n>` | `50` | Number of MediaPress media posts to process per batch |
+| `--skip-albums` | off | Skip gallery/album import |
+| `--offset=<n>` | `0` | Start from a specific offset (for resuming) |
 
 **What is mapped:**
 
@@ -113,8 +113,8 @@ wp mvs import-buddyboss --dry-run
 # Run the full import.
 wp mvs import-buddyboss
 
-# Import only a specific media type.
-wp mvs import-buddyboss --type=video
+# Import only from a specific BuddyBoss source table.
+wp mvs import-buddyboss --source=video
 ```
 
 **Options:**
@@ -122,10 +122,10 @@ wp mvs import-buddyboss --type=video
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--dry-run` | off | Preview counts; do not write any data |
-| `--batch-size=<n>` | `100` | Number of BuddyBoss media posts to process per batch |
-| `--type=<type>` | (all) | Limit import to `photo`, `video`, or `document` |
-| `--skip-existing` | on | Skip media whose BuddyBoss post ID has already been imported |
-| `--include-albums` | on | Re-create BuddyBoss albums as WPMediaVerse albums |
+| `--batch-size=<n>` | `50` | Number of BuddyBoss media posts to process per batch |
+| `--source=<source>` | `all` | Which table to import from: `media`, `document`, `video`, or `all` |
+| `--skip-albums` | off | Skip album import (BuddyBoss albums are recreated as WPMediaVerse albums by default) |
+| `--offset=<n>` | `0` | Start from a specific offset (for resuming) |
 
 **What is mapped:**
 

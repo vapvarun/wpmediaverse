@@ -21,7 +21,6 @@ WPMediaVerse stores all media in dedicated custom tables, completely separate fr
 | `mvs_media_meta` | Sparse key-value metadata (thumbnails, EXIF, groups) |
 | `mvs_media_stats` | Views, reactions, comments, favorites - one row per media |
 | `mvs_reactions` | Individual emoji reactions with user attribution |
-| `mvs_comments` | Threaded comment system separate from wp_comments |
 | `mvs_favorites` | User favorites / saved items |
 | `mvs_follows` | User follow relationships |
 | `mvs_conversations` | Direct message conversations |
@@ -97,7 +96,7 @@ Add a rich media layer to any BuddyPress social network. Members get media tabs 
 No. WPMediaVerse media is managed through its own admin pages (**Media > All Media**) and frontend dashboard (**My Media**). This is intentional - it keeps the WordPress Media Library clean for your theme images, post attachments, and other site assets.
 
 ### Can I use WPMediaVerse without BuddyPress?
-Yes. WPMediaVerse is a standalone plugin. It creates its own pages (/media/, /my-media/, /upload-media/) and works on any WordPress site. BuddyPress integration activates automatically when BuddyPress is installed but is completely optional.
+Yes. WPMediaVerse is a standalone plugin. It creates its own pages (/explore-media/, /my-media/, /upload-media/) and works on any WordPress site. BuddyPress integration activates automatically when BuddyPress is installed but is completely optional.
 
 ### What happens to my data if I deactivate the plugin?
 Deactivation stops all plugin functionality but your data stays intact in the database. Reactivating restores everything. Deleting the plugin (uninstall) removes all custom tables and data permanently.

@@ -638,7 +638,17 @@ class MediaController extends WP_REST_Controller {
 		// renders the default video poster at template time.
 		if ( ! empty( $files['thumbnail'] ) && ! $files['thumbnail']['error'] ) {
 			$existing_thumb = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'thumb_large' );
-			if ( ! $existing_thumb ) {
+
+			// Regenerate when there is no thumb yet OR the stored value is not a
+			// valid image URL. A prior write could have stored the video file URL
+			// itself (the broken video-thumbnail case); skipping on a truthy-but-
+			// invalid value left the thumbnail permanently broken.
+			$needs_thumb = true;
+			if ( is_string( $existing_thumb ) && '' !== $existing_thumb ) {
+				$needs_thumb = ! preg_match( '#\.(jpe?g|png|gif|webp|avif)(?:[?\#].*)?$#i', $existing_thumb );
+			}
+
+			if ( $needs_thumb ) {
 				$staged_path = \WPMediaVerse\Core\Plugin::container()->get( 'poster' )->stage_client_frame( $media_id, $files['thumbnail']['tmp_name'] );
 				if ( $staged_path ) {
 					$upload_service->generate_thumbnails( $media_id, $staged_path, 'image/jpeg' );
@@ -846,18 +856,35 @@ class MediaController extends WP_REST_Controller {
 		$mime           = finfo_file( $finfo, $file['tmp_name'] );
 		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
 
+		// PDF/document uploads are not supported. Mirror the hard guard in
+		// UploadService::handle() so a member can't slip a PDF in via the
+		// replace endpoint even if a legacy mvs_allowed_file_types option still
+		// lists application/pdf (audit 2026-06-04, #9962125462 — caught by the
+		// double-verifier as a replace_file bypass of the upload guard).
+		if ( 'application/pdf' === $mime || 'document' === $upload_service->get_media_type_public( $mime ) ) {
+			return new \WP_Error( 'mvs_document_not_supported', __( 'PDF uploads are not supported.', 'wpmediaverse' ), array( 'status' => 400 ) );
+		}
+
 		if ( ! in_array( $mime, $allowed, true ) ) {
 			return new \WP_Error( 'mvs_invalid_type', __( 'This file type is not allowed.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
 		// Store new file.
-		$storage   = Plugin::container()->get( 'storage' );
-		$driver    = $storage->get_driver();
-		$dest_sub  = gmdate( 'Y/m' );
-		$filename  = wp_unique_filename(
+		$storage  = Plugin::container()->get( 'storage' );
+		$driver   = $storage->get_driver();
+		$dest_sub = gmdate( 'Y/m' );
+		// Route through FilenameStrategy exactly like the primary upload path
+		// (UploadService::handle) so the configured strategy — hashed by
+		// default since 1.6.0 — applies to replacements too. Before 1.6.0 this
+		// called sanitize_file_name() directly, so replacing a file leaked the
+		// original filename in the URL even on hashed sites (audit 2026-06-04,
+		// #9962530792).
+		$filename_pick = \WPMediaVerse\Services\FilenameStrategy::pick(
+			(string) $file['name'],
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_sub,
-			sanitize_file_name( $file['name'] )
+			get_current_user_id()
 		);
+		$filename  = $filename_pick['stored'];
 		$dest_path = $dest_sub . '/' . $filename;
 
 		if ( ! $driver->store( $file['tmp_name'], $dest_path ) ) {
@@ -888,6 +915,21 @@ class MediaController extends WP_REST_Controller {
 			)
 		);
 
+		// Keep original_filename in sync with the replacement: store the new
+		// display name when the strategy hashed the on-disk basename (so
+		// downloads + Content-Disposition stay correct), and clear any stale
+		// value otherwise so a hashed-then-replaced-with-readable file doesn't
+		// keep the old display name. Mirrors UploadService::handle.
+		if ( 'hashed' === $filename_pick['strategy'] && '' !== $filename_pick['original'] ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set(
+				$media_id,
+				'original_filename',
+				$filename_pick['original']
+			);
+		} else {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete( $media_id, 'original_filename' );
+		}
+
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
 	}
 
@@ -911,14 +953,10 @@ class MediaController extends WP_REST_Controller {
 
 		$author_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 
-		// Delete stored file.
-		$file_path = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_path' );
-		if ( $file_path ) {
-			$storage = Plugin::container()->get( 'storage' );
-			$storage->get_driver()->delete( $file_path );
-		}
-
-		// Remove from custom tables.
+		// Remove from custom tables. delete_all() -> delete_cascade() fires
+		// `mvs_media_files_orphaned` first, so StorageCleanupService reclaims the
+		// original AND every variant (thumbnails, WebP/AVIF, posters) from local
+		// + cloud asynchronously. No inline single-driver delete here.
 		global $wpdb;
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -926,17 +964,9 @@ class MediaController extends WP_REST_Controller {
 		// Remove taxonomy relationships.
 		wp_delete_object_term_relationships( $media_id, array( 'mvs_tag', 'mvs_category' ) );
 
-		/**
-		 * Fires after a media item has been permanently deleted.
-		 *
-		 * Pro uses this to decrement quota usage counters.
-		 *
-		 * @since 1.1.0
-		 *
-		 * @param int $media_id  The deleted media ID.
-		 * @param int $author_id The author user ID.
-		 */
-		do_action( 'mvs_media_deleted', $media_id, $author_id );
+		// mvs_media_deleted is now fired inside MediaRepository::delete_cascade()
+		// (the single funnel for every delete path), so it is NOT fired here —
+		// doing so would double-fire it on the REST path (audit 2026-06-04).
 
 		return new WP_REST_Response( null, 204 );
 	}

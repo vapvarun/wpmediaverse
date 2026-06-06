@@ -38,17 +38,21 @@ Go to **Account Settings > Blocked Users** to see your full block list and remov
 
 Reporting a user notifies the site moderators. It does not automatically take any action on the reported account.
 
-To report a user, open the action menu on their profile card and select **Report User**. Choose a reason from the dropdown and optionally add a note.
+To report a user, open the action menu on their profile card and select **Report User**. Choose a reason from the dropdown and optionally add details.
 
 ### Report Reasons
 
-| Value | Label |
-|-------|-------|
-| `spam` | Spam or fake account |
-| `inappropriate` | Inappropriate behavior |
-| `harassment` | Harassment or bullying |
-| `impersonation` | Impersonating someone |
-| `other` | Other |
+The same reason whitelist applies to both user and media reports:
+
+| Value |
+|-------|
+| `spam` |
+| `harassment` |
+| `nudity` |
+| `violence` |
+| `copyright` |
+| `misinformation` |
+| `other` |
 
 Reports appear in **Media > Moderation Queue** under the Users tab. Moderators with the `moderate_mvs_media` capability can review, dismiss, or act on reports.
 
@@ -58,13 +62,7 @@ Any logged-in user can report a media item from the media card or the media deta
 
 ### Report Reasons
 
-| Value | Label |
-|-------|-------|
-| `spam` | Spam or misleading |
-| `inappropriate` | Sexually inappropriate |
-| `copyright` | Copyright violation |
-| `harassment` | Harassment or hate speech |
-| `other` | Other |
+Media reports use the same whitelist as user reports: `spam`, `harassment`, `nudity`, `violence`, `copyright`, `misinformation`, `other`.
 
 When a media item accumulates reports equal to the **Auto-Hide Threshold** set in **Media > Settings > AI & Moderation**, it is automatically hidden and added to the moderation queue.
 
@@ -123,13 +121,13 @@ Report a user account.
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `reason` | Yes | One of: `spam`, `inappropriate`, `harassment`, `impersonation`, `other` |
-| `note` | No | Optional free-text note visible to moderators (max 500 characters) |
+| `reason` | Yes | One of: `spam`, `harassment`, `nudity`, `violence`, `copyright`, `misinformation`, `other` |
+| `details` | No | Optional free-text note visible to moderators |
 
-**Response:** `201 Created`
+**Response:** `200 OK`
 
 ```json
-{ "report_id": 17, "status": "pending" }
+{ "reported": true }
 ```
 
 ---
@@ -142,13 +140,13 @@ Report a media item.
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `reason` | Yes | One of: `spam`, `inappropriate`, `copyright`, `harassment`, `other` |
-| `note` | No | Optional free-text note (max 500 characters) |
+| `reason` | Yes | One of: `spam`, `harassment`, `nudity`, `violence`, `copyright`, `misinformation`, `other` |
+| `details` | No | Optional free-text note |
 
-**Response:** `201 Created`
+**Response:** `200 OK`
 
 ```json
-{ "report_id": 24, "status": "pending" }
+{ "reported": true }
 ```
 
 ---
@@ -165,33 +163,12 @@ add_action( 'mvs_user_blocked', function( $blocker_id, $blocked_id ) {
 }, 10, 2 );
 ```
 
-### `mvs_user_reported`
+### `mvs_report_submitted`
 
-Fires after a user report is submitted.
+Fires after a report (user or media) is submitted. The `$target_type` is `user` or `media`.
 
 ```php
-add_action( 'mvs_user_reported', function( $report_id, $reported_user_id, $reporter_id, $reason ) {
+add_action( 'mvs_report_submitted', function( $report_id, $reporter_id, $target_type, $target_id, $reason ) {
     // Notify a Slack channel, send to an external moderation service, etc.
-}, 10, 4 );
-```
-
-### `mvs_media_reported`
-
-Fires after a media report is submitted.
-
-```php
-add_action( 'mvs_media_reported', function( $report_id, $media_id, $reporter_id, $reason ) {
-    // Custom post-report logic.
-}, 10, 4 );
-```
-
-### `mvs_block_query_args`
-
-Filter the WP_Query arguments used to exclude blocked-user content from browse pages.
-
-```php
-add_filter( 'mvs_block_query_args', function( $args, $viewer_id ) {
-    // Adjust how blocked content is filtered.
-    return $args;
-}, 10, 2 );
+}, 10, 5 );
 ```

@@ -1089,6 +1089,35 @@ body.dark-mode .mvs-skeleton::after {
     text-overflow: ellipsis;
 }
 
+/* Avatar + name link to the uploader's profile (card #9962508646). Reset the
+   default link chrome so it reads like the prior plain text; the name
+   underlines + tints on hover/focus as the affordance. min-width:0 keeps the
+   inner ellipsis working inside the flex link. */
+.mvs-grid-item-author-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    text-decoration: none;
+    color: inherit;
+}
+
+.mvs-grid-item-author-link:visited {
+    color: inherit;
+}
+
+.mvs-grid-item-author-link:hover .mvs-grid-item-author,
+.mvs-grid-item-author-link:focus-visible .mvs-grid-item-author {
+    color: var(--mvs-primary, var(--mvs-text));
+    text-decoration: underline;
+}
+
+.mvs-grid-item-author-link:focus-visible {
+    outline: 2px solid var(--mvs-primary, currentColor);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
 /* -- Album badge (carousel indicator) in feed */
 .mvs-album-badge {
     position: absolute;
@@ -2524,6 +2553,42 @@ a.mvs-dashboard-card-title:hover {
     display: none;
 }
 
+/* Staged-upload review step: selecting files reveals this instead of
+   uploading immediately, so metadata can be filled first. */
+.mvs-dashboard-upload-review {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--mvs-bg-subtle, #f6f7f8);
+    border: 1px solid var(--mvs-border, #e0e0e0);
+    border-radius: 6px;
+}
+
+.mvs-dashboard-upload-review-label {
+    font-size: 0.9em;
+    color: var(--mvs-text-muted, #555);
+}
+
+.mvs-dashboard-upload-review-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+    .mvs-dashboard-upload-review {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mvs-dashboard-upload-review-actions {
+        justify-content: flex-end;
+    }
+}
+
 @media (max-width: 600px) {
     .mvs-dashboard-dropzone {
         flex-direction: column;
@@ -3465,6 +3530,12 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     padding: 12px 16px;
     border-bottom: 1px solid var(--mvs-border-light);
+    /* Pin the header while the notification list scrolls (the parent
+       .mvs-notification-dropdown is the overflow-y:auto scroll container). */
+    position: sticky;
+    top: 0;
+    background: var(--mvs-bg, #fff);
+    z-index: 1;
 }
 
 .mvs-notification-list {

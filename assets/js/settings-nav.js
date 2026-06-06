@@ -45,7 +45,39 @@
 		return hash || '';
 	}
 
+	/**
+	 * Webhook events depend on a destination URL: the sanitizer drops any
+	 * webhook row with an empty URL, so toggling events without a URL silently
+	 * resets the selection to "All events". Disable the event checkboxes until a
+	 * URL is present so the dependency is obvious rather than confusing.
+	 */
+	function initWebhookEvents() {
+		const url = document.getElementById( 'mvs-webhook-url' );
+		const events = document.getElementById( 'mvs-webhook-events' );
+		if ( ! url || ! events ) {
+			return;
+		}
+		const boxes = events.querySelectorAll( 'input[type="checkbox"]' );
+		const hint = document.querySelector( '.mvs-webhook-events-hint' );
+
+		function sync() {
+			const hasUrl = url.value.trim() !== '';
+			boxes.forEach( ( box ) => {
+				box.disabled = ! hasUrl;
+			} );
+			events.classList.toggle( 'is-disabled', ! hasUrl );
+			if ( hint ) {
+				hint.classList.toggle( 'is-active', ! hasUrl );
+			}
+		}
+
+		url.addEventListener( 'input', sync );
+		sync();
+	}
+
 	function init() {
+		initWebhookEvents();
+
 		// Click handler for sidebar nav items.
 		document.querySelectorAll( NAV_SELECTOR ).forEach( ( item ) => {
 			item.addEventListener( 'click', ( e ) => {

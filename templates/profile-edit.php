@@ -40,6 +40,8 @@ $mvs_profile_ctx = array(
 	'lastName'        => $mvs_user->last_name,
 	'displayName'     => $mvs_user->display_name,
 	'bio'             => $mvs_user->description,
+	'dmAccess'        => get_user_meta( $mvs_user_id, '_mvs_dm_access', true ) ?: get_option( 'mvs_dm_access', 'everyone' ),
+	'onlineStatus'    => get_user_meta( $mvs_user_id, '_mvs_show_online', true ) ?: get_option( 'mvs_show_online_status', 'everyone' ),
 	'avatarUrl'       => $mvs_avatar_url,
 	'hasCustomAvatar' => $mvs_has_custom,
 	'saving'          => false,
@@ -148,6 +150,28 @@ wp_enqueue_script_module(
 			<textarea id="mvs-bio" rows="4" maxlength="500"
 				data-wp-on--input="actions.updateBio"
 				data-wp-text="context.bio"></textarea>
+		</div>
+
+		<div class="mvs-profile-field">
+			<label for="mvs-dm-access"><?php esc_html_e( 'Who can message you', 'wpmediaverse' ); ?></label>
+			<select id="mvs-dm-access"
+				data-wp-bind--value="context.dmAccess"
+				data-wp-on--change="actions.updateDmAccess">
+				<option value="everyone"><?php esc_html_e( 'Everyone', 'wpmediaverse' ); ?></option>
+				<option value="followers"><?php esc_html_e( 'People who follow you', 'wpmediaverse' ); ?></option>
+				<option value="mutual"><?php esc_html_e( 'People you follow back', 'wpmediaverse' ); ?></option>
+				<option value="nobody"><?php esc_html_e( 'No one', 'wpmediaverse' ); ?></option>
+			</select>
+		</div>
+
+		<div class="mvs-profile-field">
+			<label for="mvs-online-status"><?php esc_html_e( 'Show your online status', 'wpmediaverse' ); ?></label>
+			<select id="mvs-online-status"
+				data-wp-bind--value="context.onlineStatus"
+				data-wp-on--change="actions.updateOnlineStatus">
+				<option value="everyone"><?php esc_html_e( 'Yes', 'wpmediaverse' ); ?></option>
+				<option value="nobody"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
+			</select>
 		</div>
 
 		<div class="mvs-profile-actions">

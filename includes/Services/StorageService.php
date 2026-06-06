@@ -56,6 +56,41 @@ class StorageService {
 	}
 
 	/**
+	 * Delete a relative path from BOTH local disk and the active cloud driver.
+	 *
+	 * Location-based storage routes public bytes to cloud and private bytes to
+	 * local, and migrations move files between them, so a delete that only hit
+	 * the active driver could strand the file on the other tier. Deleting from
+	 * both (each driver's delete() no-ops when the file is absent) guarantees
+	 * the bytes are reclaimed wherever they actually live.
+	 *
+	 * Drivers report failure by returning false (the interface never throws),
+	 * so the result is returned to the caller — StorageCleanupService re-queues
+	 * failed paths for retry instead of silently orphaning them (Basecamp
+	 * #9966546394: a swallowed cloud failure left the file on R2 forever).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param string $rel_path Driver-agnostic relative path.
+	 * @return bool True when every tier deleted (or had nothing to delete).
+	 */
+	public function delete_everywhere( string $rel_path ): bool {
+		$rel_path = ltrim( (string) $rel_path, '/' );
+		if ( '' === $rel_path ) {
+			return true;
+		}
+
+		$ok = $this->get_local_driver()->delete( $rel_path );
+
+		$active = $this->get_driver();
+		if ( ! $active instanceof LocalDriver ) {
+			$ok = $active->delete( $rel_path ) && $ok;
+		}
+
+		return $ok;
+	}
+
+	/**
 	 * The driver that should STORE a media of the given privacy.
 	 *
 	 * Private/restricted media never leaves the local server — only public

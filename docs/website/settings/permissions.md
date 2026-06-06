@@ -1,6 +1,6 @@
 # Permissions
 
-Access these settings at **Media > Settings > Permissions**.
+Access these settings at **WPMediaVerse > Settings > Permissions**.
 
 ![Permissions tab showing role-capability matrix](../images/admin-settings-general.png)
 
@@ -16,7 +16,7 @@ WPMediaVerse registers the following custom WordPress capabilities:
 | `delete_mvs_media` | Delete own media posts |
 | `delete_others_mvs_media` | Delete media posts created by other users |
 | `moderate_mvs_media` | Access the moderation queue and approve/reject media |
-| `manage_mvs_settings` | Access the WPMediaVerse settings page |
+| `manage_mvs_settings` | Manage WPMediaVerse settings (finer-grained grant checked by settings actions; the admin menu itself gates on core `manage_options`) |
 | `manage_mvs_access` | Manage custom access grants for private media |
 | `read_mvs_media` | View media (used for private media visibility checks) |
 | `publish_mvs_media` | Publish media posts immediately (without pending review) |
@@ -28,8 +28,8 @@ WPMediaVerse registers the following custom WordPress capabilities:
 | Administrator | Yes | Yes | Yes | Yes | Yes |
 | Editor | Yes | Yes | Yes | Yes | No |
 | Author | Yes | Yes | Yes | No | No |
-| Contributor | No | No | No | No | No |
-| Subscriber | Yes | Yes | Yes | No | No |
+| Contributor | Yes | Yes | Yes | No | No |
+| Subscriber | Yes | No | No | No | No |
 
 ## Changing Permissions
 
@@ -55,5 +55,5 @@ if ( $role ) {
 ## Important Notes
 
 - The `moderate_mvs_media` capability grants access to the moderation queue and the ability to see all media regardless of privacy level.
-- The `manage_mvs_settings` capability is required to access any WPMediaVerse admin page.
+- The WPMediaVerse admin menu pages (Settings, Moderation, Logs, etc.) are registered against the core `manage_options` capability. The `manage_mvs_settings` capability is a finer-grained grant some settings actions and dashboard links check, so it can be assigned to non-administrator roles that should manage WPMediaVerse without full `manage_options` access.
 - Capabilities are stored in the WordPress `wp_user_roles` option and persist after plugin deactivation.

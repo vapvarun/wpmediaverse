@@ -7,11 +7,13 @@ When BuddyPress Notifications is active, WPMediaVerse sends in-app notifications
 
 ## Notification Types
 
-| Event | Action Hook | Who Gets Notified |
-|-------|-------------|-------------------|
-| Someone reacts to your media | `mvs_reaction_added` | Media owner |
-| Someone comments on your media | `mvs_comment_created` | Media owner |
-| Someone @mentions you in a comment | `mvs_mentions_created` | Each mentioned user |
+| Event | NotificationService Type | BP Component Action | Who Gets Notified |
+|-------|--------------------------|---------------------|-------------------|
+| Someone reacts to your media | `media_reaction` | `mvs_new_reaction` | Media owner |
+| Someone comments on your media | `media_comment` | `mvs_new_comment` | Media owner |
+| Someone @mentions you in a comment | `media_mention` | `mvs_new_mention` | Each mentioned user |
+
+`NotificationIntegration` subscribes to the single `mvs_notification_created` signal emitted by `NotificationService::create()` and mirrors these three types into BuddyPress via `bp_notifications_add_notification()`. It does not listen on raw plugin hooks (which previously caused duplicate notifications).
 
 ## Notification Registration
 
@@ -29,9 +31,9 @@ Notifications appear in the BuddyPress notification bell with these formats:
 
 | Type | Format |
 |------|--------|
-| Reaction | **Username** reacted to your photo **[media title]** |
-| Comment | **Username** commented on your media **[media title]** |
-| Mention | **Username** mentioned you in a comment on **[media title]** |
+| Reaction | **Username** reacted to your media |
+| Comment | **Username** commented on your media |
+| Mention | **Username** mentioned you |
 
 ![BuddyPress notification dropdown showing WPMediaVerse notifications](../images/bp-profile-media.jpg)
 
@@ -42,7 +44,7 @@ In BuddyPress Nouveau, notification filter links are registered via `bp_nouveau_
 ## Reading Notifications via REST API
 
 ```bash
-curl https://yoursite.com/wp-json/mvs/v1/notifications \
+curl https://yoursite.com/wp-json/mvs/v1/me/notifications \
   -H "X-WP-Nonce: NONCE"
 ```
 
@@ -51,15 +53,15 @@ This returns WPMediaVerse-specific notifications. For the full BuddyPress notifi
 ## Marking Notifications as Read
 
 ```bash
-curl -X PUT https://yoursite.com/wp-json/mvs/v1/notifications/123 \
+curl -X POST https://yoursite.com/wp-json/mvs/v1/me/notifications/read \
   -H "X-WP-Nonce: NONCE" \
   -H "Content-Type: application/json" \
-  -d '{"is_new": false}'
+  -d '{"ids": [123]}'
 ```
 
-## Real-Time Notification Polling
+## Notification Count
 
-WPMediaVerse includes a REST polling transport (`RestPollingTransport`) that the frontend uses to poll `/mvs/v1/notifications` for new notifications without requiring WebSockets.
+The frontend reads the unread count from `GET /mvs/v1/me/notifications/count`, which returns `{"count": N}` for the current user, without requiring WebSockets.
 
 ## 1.2.0 update - single notification surface
 

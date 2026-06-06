@@ -44,8 +44,8 @@ Enter a single-elimination bracket competition - submit your best photo, survive
 
 ## For Site Owners
 
-1. Go to **Media > Settings > Gamification** and enable **Tournaments**
-2. Go to **Media > Competitions > Tournament Manager** and click **Add Tournament**
+1. Go to **WPMediaVerse > Settings > Gamification** and enable **Tournaments**
+2. Go to **Competitions > Tournament Manager** and click **Add Tournament**
 3. Set the title, bracket size (4, 8, 16, 32, or 64 participants), registration window, and match vote duration
 4. Set XP prizes for the winner, runner-up, and each round win
 5. Click **Save** - the tournament appears on the frontend when registration opens
@@ -74,7 +74,7 @@ The system generates the bracket when the registration deadline passes (hourly A
 
 ## Creating a Tournament
 
-Go to **Media > Competitions > Tournament Manager** and click **Add Tournament**.
+Go to **Competitions > Tournament Manager** and click **Add Tournament**.
 
 ![Tournament Manager create form](../images/admin-competitions.png)
 
@@ -101,7 +101,7 @@ Go to **Media > Competitions > Tournament Manager** and click **Add Tournament**
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/tournaments` | Create a tournament. Requires `manage_options`. |
+| `POST` | `/tournaments` | Create a tournament. Requires the `manage_mvs_settings` capability. |
 | `GET` | `/tournaments/{id}` | Get tournament details, stage, and participant count |
 | `POST` | `/tournaments/{id}/register` | Register for a tournament with a photo |
 | `GET` | `/tournaments/{id}/bracket` | Get the full bracket structure with all matches and results |
@@ -178,5 +178,5 @@ When registrations do not fill the bracket exactly, byes are assigned before rou
 
 | Action Hook | Condition |
 |-------------|-----------|
-| `mvs_start_tournaments` | Runs hourly - generates brackets when registration deadline passes |
-| `mvs_resolve_tournament_matches` | Runs hourly - resolves matches where the vote deadline has passed; advances winners to next round; detects when all matches in a round are resolved and opens the next round |
+| `mvs_start_registered_tournaments` | Runs hourly - generates brackets when registration deadline passes |
+| `mvs_resolve_expired_matches` | Runs hourly - resolves matches where the vote deadline has passed; advances winners to next round; detects when all matches in a round are resolved and opens the next round |

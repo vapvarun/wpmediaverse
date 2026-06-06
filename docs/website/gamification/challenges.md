@@ -30,8 +30,8 @@ Run weekly themed photo competitions - your community submits their best shots, 
 
 ## For Site Owners
 
-1. Go to **Media > Settings > Gamification** and enable **Photo Challenges**
-2. Go to **Media > Competitions > Challenge Manager** and click **Add Challenge**
+1. Go to **WPMediaVerse > Settings > Gamification** and enable **Photo Challenges**
+2. Go to **Competitions > Challenge Manager** and click **Add Challenge**
 3. Set a theme title, entry start date, entry end date, and voting end date
 4. Set XP prizes for 1st, 2nd, 3rd place and a participation XP amount for all entrants
 5. Click **Save** - the challenge appears on the frontend when the start date arrives
@@ -52,7 +52,7 @@ A challenge moves through four stages. All transitions are handled by Action Sch
 
 ## Creating a Challenge
 
-Go to **Media > Competitions > Challenge Manager** and click **Add Challenge**.
+Go to **Competitions > Challenge Manager** and click **Add Challenge**.
 
 ![Challenge Manager create form](../images/admin-competitions.png)
 
@@ -76,14 +76,14 @@ Autopilot creates and schedules challenges automatically so you do not need to c
 | Setting | Key | Description |
 |---------|-----|-------------|
 | Enable Autopilot | `mvs_autopilot_enabled` | Automatically create a new challenge when the current one enters Voting stage |
-| Autopilot Day | `mvs_autopilot_day` | Day of the week to start each new challenge (`0` = Sunday, `6` = Saturday) |
+| Autopilot Day | `mvs_autopilot_day` | Day of the week to start each new challenge - a lowercase day name (`monday` through `sunday`) |
 | Autopilot Hour | `mvs_autopilot_hour` | Hour of day (0–23, site timezone) to open entries |
 
 When autopilot runs, it picks the next unused theme from the Theme Library. Once all themes are used, it cycles back to the first theme.
 
 ## Theme Library
 
-The Theme Library ships with 25+ pre-built challenge themes. Go to **Media > Competitions > Theme Library** to browse, add, edit, or disable themes.
+The Theme Library ships with 25+ pre-built challenge themes. Go to **Competitions > Theme Library** to browse, add, edit, or disable themes.
 
 ![Theme Library grid showing theme cards with categories](../images/admin-competitions.png)
 
@@ -95,7 +95,7 @@ Themes are categorized (Nature, Urban, Portrait, Abstract, etc.). You can add cu
 |---------|-----|---------|
 | Enable Photo Challenges | `mvs_challenges_enabled` | Off |
 | Enable Autopilot | `mvs_autopilot_enabled` | Off |
-| Autopilot Day | `mvs_autopilot_day` | `1` (Monday) |
+| Autopilot Day | `mvs_autopilot_day` | `monday` |
 | Autopilot Hour | `mvs_autopilot_hour` | `9` |
 
 ## REST API
@@ -104,7 +104,7 @@ Themes are categorized (Nature, Urban, Portrait, Abstract, etc.). You can add cu
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/challenges` | Create a new challenge. Requires `manage_options`. |
+| `POST` | `/challenges` | Create a new challenge. Requires the `manage_mvs_settings` capability. |
 | `GET` | `/challenges/{id}` | Get challenge details including stage, entry count, and dates |
 | `POST` | `/challenges/{id}/enter` | Submit a photo entry. Requires authentication. |
 | `GET` | `/challenges/{id}/entries` | List submitted entries with vote counts |
@@ -149,6 +149,6 @@ The media picker in the entry form lets users select from their existing uploade
 
 | Action Hook | Condition |
 |-------------|-----------|
-| `mvs_activate_challenges` | Runs hourly - sets `Scheduled` challenges to `Active` when start date is past |
+| `mvs_activate_scheduled_challenges` | Runs hourly - sets `Scheduled` challenges to `Active` when start date is past |
 | `mvs_close_challenge_entries` | Runs hourly - sets `Active` challenges to `Voting` when entry deadline is past |
-| `mvs_finalize_challenges` | Runs hourly - sets `Voting` challenges to `Finalized`, tallies votes, awards XP |
+| `mvs_finalize_expired_challenges` | Runs hourly - sets `Voting` challenges to `Finalized`, tallies votes, awards XP |

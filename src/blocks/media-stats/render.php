@@ -30,6 +30,13 @@ global $wpdb;
 $stats_table = $wpdb->prefix . 'mvs_media_stats';
 $index_table = $wpdb->prefix . 'mvs_media_index';
 
+// Viewer-scoped privacy gate so a public stats block only aggregates media the
+// viewer is allowed to see: owner/moderator → all; member → public + members +
+// own; anon → public only. Previously every total summed the author's PRIVATE
+// media too, exposing private view/reaction volume publicly (audit 2026-06-04).
+$mvs_stats_repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+list( $mvs_stats_priv_sql, $mvs_stats_priv_params ) = $mvs_stats_repo->explore_privacy_clause( 'idx', get_current_user_id() );
+
 // phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 $mvs_totals = $wpdb->get_row(
 	$wpdb->prepare(
@@ -40,8 +47,8 @@ $mvs_totals = $wpdb->get_row(
 			COALESCE(SUM(s.comments), 0) AS total_comments
 		FROM {$stats_table} s
 		INNER JOIN {$index_table} idx ON idx.media_id = s.media_id
-		WHERE idx.post_author = %d AND idx.status = 'publish'",
-		$user_id
+		WHERE idx.post_author = %d AND idx.status = 'publish' AND {$mvs_stats_priv_sql}",
+		...array_merge( array( $user_id ), $mvs_stats_priv_params )
 	),
 	ARRAY_A
 );
@@ -56,14 +63,15 @@ if ( ! $mvs_totals ) {
 	);
 }
 
-// Count user's published media from index table.
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+// Count user's published media the viewer can see (same gate as the totals).
+// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 $user_count = (int) $wpdb->get_var(
 	$wpdb->prepare(
-		"SELECT COUNT(*) FROM {$index_table} WHERE post_author = %d AND status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$user_id
+		"SELECT COUNT(*) FROM {$index_table} idx WHERE idx.post_author = %d AND idx.status = 'publish' AND {$mvs_stats_priv_sql}",
+		...array_merge( array( $user_id ), $mvs_stats_priv_params )
 	)
 );
+// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
 if ( empty( $mvs_shortcode_context ) ) {

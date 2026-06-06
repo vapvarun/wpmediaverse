@@ -47,8 +47,8 @@ When you activate WPMediaVerse, the plugin automatically:
 **Deactivation** stops all plugin functionality but keeps your data intact.
 
 **Uninstall** (deleting the plugin) removes all plugin data including:
-- All `mvs_media`, `mvs_album`, and `mvs_collection` posts
-- All custom database tables
+- All `mvs_album` and `mvs_collection` posts
+- All custom database tables (including the `mvs_media_index` media records)
 - All plugin options and transients
 
 To preserve data after uninstalling, export your media library first.

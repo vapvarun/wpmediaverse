@@ -1,6 +1,6 @@
 # General Settings
 
-Access these settings at **Media > Settings > General**.
+Access these settings at **WPMediaVerse > Settings > General**.
 
 ![General settings tab](../images/admin-settings-general.png)
 

@@ -70,29 +70,34 @@ class ActivityPrivacyFilter {
 	/**
 	 * Append our meta JOIN to the structured `bp_activity_get_join_sql` filter.
 	 *
+	 * NEVER skip on $r['show_hidden']: BP's profile-stream scopes ('just-me'
+	 * et al, bp_activity_filter_just_me_scope) override show_hidden=true for
+	 * EVERY viewer — including logged-out ones — so it is a hide_sitewide
+	 * widening flag, not a moderation/trust signal. Skipping on it disabled
+	 * MVS privacy gating on all member-profile activity streams and leaked
+	 * members-only media to anonymous visitors (Basecamp #9941246549).
+	 * Admin/owner visibility is granted inside build_where_clause() instead.
+	 *
 	 * @param string $join_sql Existing JOIN clause.
-	 * @param array  $r        Query args (used to skip when show_hidden=true).
+	 * @param array  $r        Query args (unused).
 	 */
 	public function append_meta_join( $join_sql, $r ): string {
-		$join_sql = (string) $join_sql;
-		if ( is_array( $r ) && ! empty( $r['show_hidden'] ) ) {
-			return $join_sql;
-		}
-		return $join_sql . ' ' . $this->build_join_sql();
+		unset( $r );
+		return (string) $join_sql . ' ' . $this->build_join_sql();
 	}
 
 	/**
 	 * Append our privacy conditions to the structured WHERE-conditions array.
 	 *
+	 * No show_hidden skip — see append_meta_join() for why.
+	 *
 	 * @param array $where_conditions Current conditions array.
-	 * @param array $r                Query args (used to skip when show_hidden=true).
+	 * @param array $r                Query args (unused).
 	 */
 	public function append_privacy_where( $where_conditions, $r ): array {
+		unset( $r );
 		if ( ! is_array( $where_conditions ) ) {
 			$where_conditions = array();
-		}
-		if ( is_array( $r ) && ! empty( $r['show_hidden'] ) ) {
-			return $where_conditions;
 		}
 		// MUST wrap in `(...)`. BP joins the conditions array with ` AND `
 		// (line 669 of class-bp-activity-activity.php). Our body contains
@@ -188,8 +193,14 @@ class ActivityPrivacyFilter {
 	private function build_where_clause(): string {
 		global $wpdb;
 
-		$viewer_id   = get_current_user_id();
-		$is_admin    = $viewer_id > 0 && user_can( $viewer_id, 'manage_options' );
+		$viewer_id = get_current_user_id();
+		// manage_options mirrors PrivacyService::can_view; bp_moderate keeps
+		// BP moderators / the wp-admin activity list table fully sighted now
+		// that the show_hidden skip is gone (it used to be their bypass).
+		$is_admin    = $viewer_id > 0 && (
+			user_can( $viewer_id, 'manage_options' )
+			|| user_can( $viewer_id, 'bp_moderate' )
+		);
 		$friend_list = $this->get_friend_ids( $viewer_id );
 
 		$conditions = array();

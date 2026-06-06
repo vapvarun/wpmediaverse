@@ -1,6 +1,6 @@
 # AI & Moderation Settings
 
-Access these settings at **Media > Settings > AI & Moderation**.
+Access these settings at **WPMediaVerse > Settings > AI & Moderation**.
 
 ![AI and Moderation settings tab](../images/admin-settings-general.png)
 
@@ -49,7 +49,7 @@ When this constant is defined, the settings page field is disabled and shows a n
 
 ## Moderation Queue
 
-Administrators with the `moderate_mvs_media` capability can review flagged media at **Media > Moderation Queue**.
+Administrators with the `moderate_mvs_media` capability can review flagged media at **WPMediaVerse > Moderation**.
 
 ![Moderation queue with pending media items](../images/admin-moderation.jpg)
 
@@ -60,7 +60,7 @@ The queue shows:
 
 ## Log Viewer
 
-The AI & moderation activity log is available at **Media > AI Logs**. It shows each AI call, the result, estimated cost, and any action taken.
+The AI & moderation activity log is available at **WPMediaVerse > Logs**. It shows each AI call, the result, estimated cost, and any action taken.
 
 ![AI log viewer showing analysis results](../images/admin-stats.png)
 

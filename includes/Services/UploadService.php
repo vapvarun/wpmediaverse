@@ -68,6 +68,31 @@ class UploadService {
 		$allowed = $this->get_allowed_types();
 		$mime    = $this->detect_mime( $file['tmp_name'] );
 
+		// Hard guard: PDF / document uploads are not supported (owner decision,
+		// Basecamp #9962125462). This is the real enforcement — it fires even
+		// when a legacy site still has `application/pdf` in its stored
+		// `mvs_allowed_file_types` option (1.2.3 dropped it from the default but
+		// did not strip it from existing installs) or when the
+		// `mvs_allowed_file_types` filter re-adds it. The read/display side
+		// (pdf-viewer block, 'document' media_type, /serve content-type
+		// whitelist) is intentionally left intact so historical PDF media keeps
+		// rendering. We only block NEW uploads here.
+		if ( 'application/pdf' === $mime || 'document' === $this->get_media_type( $mime ) ) {
+			LoggerService::error(
+				'upload',
+				'PDF/document upload rejected',
+				array(
+					'mime'    => $mime,
+					'user_id' => $user_id,
+				)
+			);
+			return new WP_Error(
+				'mvs_document_not_supported',
+				__( 'PDF uploads are not supported.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
 		if ( ! in_array( $mime, $allowed, true ) ) {
 			LoggerService::error(
 				'upload',
@@ -332,15 +357,43 @@ class UploadService {
 
 		$title = ! empty( $args['title'] ) ? sanitize_text_field( $args['title'] ) : sanitize_file_name( pathinfo( $file['name'], PATHINFO_FILENAME ) );
 
-		// Determine status.
+		// Determine status. MediaVerse is a community/engagement platform: any
+		// logged-in member's upload publishes immediately by default.
 		$status = 'publish';
 		if ( ! empty( $args['status'] ) && in_array( $args['status'], array( 'draft', 'publish' ), true ) ) {
 			$status = $args['status'];
 		}
 
-		// Scheduled publishing — store as 'scheduled' status with future created_at.
+		/**
+		 * Filter: hold ALL new uploads for manual moderation before they go live.
+		 *
+		 * Default false - members publish immediately (the engagement-first
+		 * default for this community platform; the only standing limit on a
+		 * member is their Pro storage/upload quota). A site running a curated
+		 * community returns true to hold every new upload as draft +
+		 * moderation_status=pending, where it appears in the moderation queue for
+		 * an admin/moderator to approve. This is a deliberate, site-wide opt-in,
+		 * NOT the default flow (Basecamp #9962830813). Reactive moderation of
+		 * reported content (community-guideline violations) is separate and
+		 * always available via the reports + moderation queue.
+		 *
+		 * @since 1.6.0
+		 *
+		 * @param bool $hold    Whether to hold uploads for pre-moderation. Default false.
+		 * @param int  $user_id Uploading user ID.
+		 */
+		$held_for_moderation = (bool) apply_filters( 'mvs_hold_uploads_for_moderation', false, $user_id );
+		$moderation_status   = 'approved';
+		if ( $held_for_moderation ) {
+			$status            = 'draft';
+			$moderation_status = 'pending';
+		}
+
+		// Scheduled publishing — store as 'scheduled' status with future
+		// created_at. Skipped when held for moderation so a held upload can't
+		// auto-publish on a schedule and slip past the queue.
 		$created_at = current_time( 'mysql', true );
-		if ( ! empty( $args['publish_at'] ) && 'draft' === $status ) {
+		if ( ! $held_for_moderation && ! empty( $args['publish_at'] ) && 'draft' === $status ) {
 			$publish_time = strtotime( $args['publish_at'] );
 			if ( $publish_time && $publish_time > time() ) {
 				$status     = 'scheduled';
@@ -366,7 +419,7 @@ class UploadService {
 				'status'            => $status,
 				'media_type'        => $media_type,
 				'privacy'           => $privacy,
-				'moderation_status' => 'approved',
+				'moderation_status' => $moderation_status,
 				'file_url'          => $file_url,
 				'file_path'         => $dest_path,
 				'file_type'         => $mime,
@@ -525,6 +578,18 @@ class UploadService {
 	 */
 	public function get_allowed_types_public(): array {
 		return $this->get_allowed_types();
+	}
+
+	/**
+	 * Resolve the high-level media type for a MIME (public accessor).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param string $mime MIME type.
+	 * @return string 'image' | 'video' | 'audio' | 'document'.
+	 */
+	public function get_media_type_public( string $mime ): string {
+		return $this->get_media_type( $mime );
 	}
 
 	/**
@@ -987,20 +1052,36 @@ class UploadService {
 		// URL — it IS the largest available version of the image.
 		// Storage-internal: must be the raw stored URL — persisting a
 		// signed URL into the meta table would freeze the token.
-		$file_url = $repo->get_raw( $media_id, 'file_url' );
-		if ( $file_url ) {
+		// For videos/audio the media's file_url is the source media file (e.g.
+		// an .mp4), NOT an image — using it as a thumbnail fallback is what wrote
+		// a video URL into thumb_* and broke video thumbnails on My Media and
+		// Activity. When file_url is not an image, fall back to the image source
+		// we actually resized ($file_path — the staged poster frame) instead.
+		// Images keep using file_url so cloud/CDN originals are preserved.
+		$file_url          = $repo->get_raw( $media_id, 'file_url' );
+		$file_url_is_image = is_string( $file_url ) && '' !== $file_url
+			&& preg_match( '#\.(jpe?g|png|gif|webp|avif)(?:[?\#].*)?$#i', $file_url );
+
+		$fallback_url = $file_url_is_image
+			? $file_url
+			: trailingslashit( $base_url ) . basename( $file_path );
+		$fallback_rel = $file_url_is_image
+			? $media_rel_path
+			: VariantSpec::compute_rel_path( $rel_dir, $cloud_rel_dir, basename( $file_path ) );
+
+		if ( $fallback_url ) {
 			foreach ( array_keys( $sizes ) as $size_name ) {
 				if ( ! isset( $generated[ $size_name ] ) ) {
-					// Original-URL fallback for an unreachable size. Re-use
-					// the writer so the legacy URL meta + _path meta stay in
-					// lockstep with the rest of the loop above.
+					// Fallback for an unreachable size. Re-use the writer so the
+					// legacy URL meta + _path meta stay in lockstep with the loop
+					// above.
 					$fallback_spec = VariantSpec::for_image_variant(
 						$media_id,
 						$size_name,
-						$media_rel_path,
+						$fallback_rel,
 						$file_path // best on-disk source we have for this size
 					);
-					$writer->record( $fallback_spec, $file_url );
+					$writer->record( $fallback_spec, $fallback_url );
 				}
 			}
 		}

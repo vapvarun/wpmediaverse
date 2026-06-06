@@ -38,7 +38,7 @@ The `StoryService` class provides:
 
 | Hook | When | Parameters |
 |------|------|------------|
-| `mvs_story_created` | Media marked as story | `$media_id`, `$expires_at` |
+| `mvs_story_created` | Media marked as story | `$media_id`, `$user_id`, `$expires_at` |
 | `mvs_story_expired` | Story auto-expired by cleanup cron | `$media_id` |
 
 ## Planned Features

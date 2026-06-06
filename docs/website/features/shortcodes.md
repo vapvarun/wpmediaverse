@@ -131,21 +131,32 @@ Embeds the explore archive - infinite-scroll public media feed with filter chips
 
 ```
 [mvs_explore_feed]
+[mvs_explore_feed layout="grid" columns="3" per_page="12" filters="true" search="true"]
 ```
 
-No configurable attributes. Display options inherit from **Media > Settings > Display**.
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `layout` | `grid` | Feed layout. |
+| `columns` | `3` | Grid columns. |
+| `per_page` | `12` | Items per page. |
+| `filters` | `true` | Show the filter chips. |
+| `search` | `true` | Show the search input with autocomplete. |
 
 ## [mvs_lock_overlay]
 
 Renders a privacy lock overlay for a single media item. If the current user has access, the overlay falls through and renders the player or image inline. If they do not, the overlay shows the configured restriction message.
 
 ```
-[mvs_lock_overlay media_id="456"]
+[mvs_lock_overlay id="456"]
+[mvs_lock_overlay id="456" blur="20" overlay_opacity="60" unlock_label="Restricted Content"]
 ```
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
-| `media_id` | (required) | Media post ID to evaluate access against. |
+| `id` | (required) | Media post ID to evaluate access against. |
+| `blur` | `20` | Blur amount applied to the locked preview. |
+| `overlay_opacity` | `60` | Overlay opacity (0–100). |
+| `unlock_label` | (empty) | Custom restriction label. |
 
 ## [mvs_member_photos]
 
@@ -155,12 +166,17 @@ Renders a member's media grid. Auto-resolves the user - explicit `user_id` attri
 
 ```
 [mvs_member_photos]
-[mvs_member_photos user_id="42"]
+[mvs_member_photos user_id="42" columns="3" per_page="12" type="image" show_header="true" actions="true"]
 ```
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
 | `user_id` | (auto-detect) | Force a specific user. Leave empty to use the four-step resolution chain. |
+| `columns` | `3` | Grid columns. |
+| `per_page` | `12` | Items per page. |
+| `type` | (all types) | Filter by media type: `image`, `video`, or `audio`. |
+| `show_header` | `true` | Show the member header above the grid. |
+| `actions` | `true` | Show per-item action controls. |
 
 ## [mvs_pdf_viewer]
 
@@ -170,11 +186,11 @@ Embeds a PDF using the browser-native viewer (the `#view=FitH` URL fragment). No
 
 ```
 [mvs_pdf_viewer id="123"]
-[mvs_pdf_viewer id="123" height="800" show_toolbar="0"]
+[mvs_pdf_viewer id="123" height="800" toolbar="false"]
 ```
 
 | Attribute | Default | Description |
 |-----------|---------|-------------|
 | `id` | (required) | Media ID of the PDF. |
 | `height` | `600` | Viewer height in pixels. Range: 200–1400. |
-| `show_toolbar` | `1` | Show or hide the browser PDF toolbar. `1` to show, `0` to hide. |
+| `toolbar` | `true` | Show or hide the browser PDF toolbar. `true` to show, `false` to hide. |

@@ -53,7 +53,11 @@ class NotificationService {
 		add_action( 'mvs_comment_created', array( $this, 'on_comment' ), 10, 3 );
 		add_action( 'mvs_mentions_created', array( $this, 'on_mentions' ), 10, 4 );
 		add_action( 'mvs_favorite_added', array( $this, 'on_favorite' ), 10, 2 );
-		add_action( 'mvs_message_sent', array( $this, 'on_message' ), 10, 4 );
+		// `mvs_message_sent` is handled by Messaging\NotificationListener (mute,
+		// coalescing, BuddyNext routing, unread-cache). This service used to
+		// ALSO hook it via on_message(), producing a second, un-muted,
+		// un-coalesced notification for every DM (audit 2026-06-04). Listener
+		// owns it; on_message() removed.
 	}
 
 	/**
@@ -349,7 +353,22 @@ class NotificationService {
 	 */
 	public function on_mentions( int $media_id, array $mentioned_ids, string $context, int $comment_id ): void {
 		$actor = get_current_user_id();
+
+		// For comment mentions, the media owner already receives a
+		// media_comment row from on_comment() for the SAME comment — sending
+		// a media_mention too means two notifications for one action (QA
+		// 2026-06-05, card 9962124853). Same one-owner-per-path rule as the
+		// DM fix above: on_comment() owns the media owner; on_mentions()
+		// owns everyone else.
+		$owner = 0;
+		if ( 'comment' === $context ) {
+			$owner = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+		}
+
 		foreach ( $mentioned_ids as $uid ) {
+			if ( $owner && (int) $uid === $owner ) {
+				continue;
+			}
 			$this->create( (int) $uid, 'media_mention', $actor, $media_id, $comment_id );
 		}
 	}
@@ -373,12 +392,6 @@ class NotificationService {
 	 * @param int   $sender_id       Sender user ID.
 	 * @param int[] $recipient_ids   Recipient user IDs.
 	 */
-	public function on_message( int $message_id, int $conversation_id, int $sender_id, array $recipient_ids ): void {
-		foreach ( $recipient_ids as $recipient_id ) {
-			$this->create( (int) $recipient_id, 'new_message', $sender_id );
-		}
-	}
-
 	/**
 	 * Format a notification row for REST output.
 	 *

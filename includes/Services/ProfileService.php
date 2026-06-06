@@ -40,6 +40,28 @@ class ProfileService {
 	);
 
 	/**
+	 * User-level privacy settings: request field => user-meta key. Stored as
+	 * user meta so each member controls them in their own profile rather than
+	 * the site-wide admin option.
+	 *
+	 * @var array<string,string>
+	 */
+	const META_FIELDS = array(
+		'dm_access'     => '_mvs_dm_access',
+		'online_status' => '_mvs_show_online',
+	);
+
+	/**
+	 * Allowed values per meta field (first entry is the default).
+	 *
+	 * @var array<string,string[]>
+	 */
+	const META_VALUES = array(
+		'dm_access'     => array( 'everyone', 'followers', 'mutual', 'nobody' ),
+		'online_status' => array( 'everyone', 'nobody' ),
+	);
+
+	/**
 	 * Initialize hooks.
 	 *
 	 * @since 1.1.0
@@ -74,6 +96,17 @@ class ProfileService {
 			'avatar'            => get_avatar_url( $user_id, array( 'size' => 150 ) ),
 			'has_custom_avatar' => $this->has_custom_avatar( $user_id ),
 		);
+
+		// User-level privacy settings (fall back to the site-wide option, then
+		// the documented default) so the profile UI can render the current value.
+		foreach ( self::META_FIELDS as $field => $meta_key ) {
+			$stored = get_user_meta( $user_id, $meta_key, true );
+			if ( '' === $stored || false === $stored ) {
+				$option_key = 'online_status' === $field ? 'mvs_show_online_status' : 'mvs_dm_access';
+				$stored     = get_option( $option_key, self::META_VALUES[ $field ][0] );
+			}
+			$profile[ $field ] = $stored;
+		}
 
 		/**
 		 * Filters the profile data returned by the profile service.
@@ -120,7 +153,26 @@ class ProfileService {
 			$userdata['description'] = sanitize_textarea_field( $fields['description'] );
 		}
 
+		// User-level privacy settings (DM access, online-status visibility) are
+		// stored as user meta, validated against the allowed value set.
+		$meta_updated = false;
+		foreach ( self::META_FIELDS as $field => $meta_key ) {
+			if ( ! isset( $fields[ $field ] ) ) {
+				continue;
+			}
+			$value = sanitize_key( (string) $fields[ $field ] );
+			if ( ! in_array( $value, self::META_VALUES[ $field ], true ) ) {
+				continue;
+			}
+			update_user_meta( $user_id, $meta_key, $value );
+			$meta_updated = true;
+		}
+
 		if ( count( $userdata ) <= 1 ) {
+			// Nothing for wp_update_user — but a meta-only update still succeeded.
+			if ( $meta_updated ) {
+				return true;
+			}
 			return new \WP_Error( 'mvs_no_fields', __( 'No valid fields to update.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 

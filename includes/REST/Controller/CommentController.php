@@ -179,6 +179,15 @@ class CommentController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Privacy gate. The route is public (comments inherit the media's
+		// visibility), but get_for_media() is a plain get_comments() with NO
+		// privacy join — so without this an anonymous caller could read every
+		// comment on a members-only/private item (audit 2026-06-04). Mirror the
+		// single-media page: a viewer who can't see the media gets a 404.
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
 		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
 		$page     = (int) $request->get_param( 'page' );
 
@@ -206,6 +215,13 @@ class CommentController extends WP_REST_Controller {
 		$media_id = $request->get_param( 'media_id' );
 
 		if ( ! $this->media_exists( $media_id ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		// You can only comment on media you can view — the permission check is
+		// login-only, so without this a logged-in user could comment on a
+		// private/members item they can't see (audit 2026-06-04).
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 

@@ -9,13 +9,15 @@
  *
  * Two strategies:
  *
- *   `original_sanitized` (legacy / upgrade default)
+ *   `original_sanitized` (legacy — opt-in since 1.6.0)
  *     `wp_unique_filename( sanitize_file_name(...) )` clamped to a
- *     hard 100-char cap. Existing behavior on every site that didn't
- *     opt in. Pre-1.2.1 sites continue here so existing on-disk names
- *     stay valid (no migration, no rewrites, no broken URLs).
+ *     hard 100-char cap. Was the upgrade-install default pre-1.6.0;
+ *     now opt-in via the `mvs_filename_strategy_upgrade_default` filter
+ *     because the original filename in the URL is an info-leak vector.
+ *     Existing on-disk names stay valid either way (no rename, no
+ *     migration, no broken URLs).
  *
- *   `hashed` (recommended / fresh-install default)
+ *   `hashed` (recommended — default for ALL installs since 1.6.0)
  *     16-char random hex + sanitized extension. Unpredictable, OS-safe,
  *     S3-safe, no enumeration vector. The original filename is preserved
  *     in `mvs_media_meta.original_filename` for display + Content-
@@ -71,6 +73,37 @@ final class FilenameStrategy {
 	public const MAX_BASENAME_LENGTH = 100;
 
 	/**
+	 * The effective default strategy for any site that has NOT explicitly
+	 * persisted one.
+	 *
+	 * Hashed since 1.6.0 (was `original_sanitized` for upgrade installs
+	 * pre-1.6.0) — exposing the original client filename in the media URL is
+	 * an information-leak and enumeration vector (audit 2026-06-04, card
+	 * #9962530792). Only NEW uploads are affected; existing on-disk files are
+	 * never renamed and their stored URLs never change.
+	 *
+	 * Escape hatch (Production Rule #3) — a site that depends on readable
+	 * filenames in URLs restores the pre-1.6.0 default with one line:
+	 *   add_filter( 'mvs_filename_strategy_upgrade_default', fn() => 'original_sanitized' );
+	 * or forces it for every upload regardless of setting via the
+	 * `mvs_filename_strategy` filter below.
+	 *
+	 * @since 1.6.0
+	 */
+	public static function effective_default(): string {
+		/**
+		 * Filter the default filename strategy applied when a site has not
+		 * explicitly chosen one. Defaults to 'hashed' since 1.6.0.
+		 *
+		 * @since 1.6.0
+		 *
+		 * @param string $default One of 'hashed' | 'original_sanitized'.
+		 */
+		$default = (string) apply_filters( 'mvs_filename_strategy_upgrade_default', self::DEFAULT_FRESH );
+		return self::is_valid_strategy( $default ) ? $default : self::DEFAULT_FRESH;
+	}
+
+	/**
 	 * Resolve the active strategy slug. Filterable per-upload so
 	 * specialized callers (CLI imports, batch tools) can force a strategy.
 	 *
@@ -79,7 +112,7 @@ final class FilenameStrategy {
 	 * @param int $user_id Uploading user ID (for filter context).
 	 */
 	public static function resolve_strategy( int $user_id = 0 ): string {
-		$strategy = (string) get_option( self::SETTING, self::DEFAULT_UPGRADE );
+		$strategy = (string) get_option( self::SETTING, self::effective_default() );
 
 		/**
 		 * Filter the active filename strategy.
@@ -94,7 +127,7 @@ final class FilenameStrategy {
 		 */
 		$strategy = (string) apply_filters( 'mvs_filename_strategy', $strategy, $user_id );
 
-		return self::is_valid_strategy( $strategy ) ? $strategy : self::DEFAULT_UPGRADE;
+		return self::is_valid_strategy( $strategy ) ? $strategy : self::effective_default();
 	}
 
 	/**
@@ -109,7 +142,7 @@ final class FilenameStrategy {
 	 */
 	public static function sanitize_setting( $value ): string {
 		$value = is_string( $value ) ? trim( $value ) : '';
-		return self::is_valid_strategy( $value ) ? $value : self::DEFAULT_UPGRADE;
+		return self::is_valid_strategy( $value ) ? $value : self::effective_default();
 	}
 
 	/**

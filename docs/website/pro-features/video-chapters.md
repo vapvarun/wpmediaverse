@@ -40,7 +40,7 @@ Retrieve the chapter list for a media item.
 
 ### PUT /media/{id}/chapters
 
-Replace the chapter list for a media item. Requires ownership or `edit_others_mvs_media`.
+Replace the chapter list for a media item. Requires ownership or the `edit_mvs_media` capability.
 
 **Body:**
 
@@ -105,22 +105,6 @@ Clear the resume position for the current user. This is called when the user wat
 
 ---
 
-## Adding Chapters via WP Admin
+## How Chapters Are Stored
 
-1. Go to **Media > All Media** and open the media item you want to edit.
-2. Scroll to the **Chapters** meta box.
-3. Click **Add Chapter**, enter the timestamp (in `M:SS` or `H:MM:SS` format) and a title.
-4. Repeat for each chapter.
-5. Click **Update**.
-
-![Chapters meta box in the media edit screen](../images/admin-media-list.png)
-
-## Importing Chapters from a File
-
-You can import chapters from a plain text file using the WP-CLI command:
-
-```bash
-wp mvs chapters import --media_id=123 --file=/path/to/chapters.txt
-```
-
-The file format is one chapter per line: `HH:MM:SS Chapter Title`. Lines starting with `#` are ignored.
+Chapters are managed through the REST API (`PUT /media/{id}/chapters`) and stored per media item as JSON in the `_mvs_chapters` post meta. They are returned with the media REST response and rendered into the player on page load. Each entry is an object with a `time` (seconds from the start) and a `title`.

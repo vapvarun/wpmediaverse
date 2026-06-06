@@ -45,18 +45,22 @@ class MediaListPage {
 			)
 		);
 
-		// Detail mini-page — read-only view + per-image actions. Branches
-		// before bulk handling because the detail page has its own redirect
-		// targets that preserve the view=details query param.
+		// Row/bulk actions (and their redirects) run on the page's `load-` hook
+		// in Plugin::register_admin_menu(), before any output. render() only
+		// displays here.
+
+		// Detail mini-page — read-only view + per-image actions.
 		$view = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 		if ( 'details' === $view ) {
-			self::handle_bulk_actions(); // honours nonced row actions from the detail page.
 			self::render_detail();
 			return;
 		}
 
-		// Handle bulk actions.
-		self::handle_bulk_actions();
+		// AI Review mini-page — view/edit/accept/reject/re-run AI results.
+		if ( 'ai-review' === $view ) {
+			self::render_ai_review();
+			return;
+		}
 
 		// Bulk-action success notice (shown after the redirect from
 		// handle_bulk_action_apply()).
@@ -239,6 +243,7 @@ class MediaListPage {
 									<th class="manage-column"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
 									<th class="manage-column mvs-col-optimization"><?php esc_html_e( 'Optimization', 'wpmediaverse' ); ?></th>
+									<th class="manage-column mvs-col-ai"><?php esc_html_e( 'AI', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
 								</tr>
 							</thead>
@@ -249,7 +254,7 @@ class MediaListPage {
 									$base_url           = admin_url( 'admin.php?page=mvs-media' );
 									?>
 									<tr>
-										<td colspan="9">
+										<td colspan="10">
 											<div class="mvs-empty-state-admin">
 												<i data-lucide="images"></i>
 												<?php if ( $has_active_filters ) : ?>
@@ -286,6 +291,7 @@ class MediaListPage {
 									<th class="manage-column"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th>
 									<th class="manage-column mvs-col-optimization"><?php esc_html_e( 'Optimization', 'wpmediaverse' ); ?></th>
+									<th class="manage-column mvs-col-ai"><?php esc_html_e( 'AI', 'wpmediaverse' ); ?></th>
 									<th class="manage-column"><?php esc_html_e( 'Date', 'wpmediaverse' ); ?></th>
 								</tr>
 							</tfoot>
@@ -399,6 +405,17 @@ class MediaListPage {
 					);
 					?>
 					| <span class="details"><a href="<?php echo esc_url( $details_url ); ?>"><?php esc_html_e( 'Details', 'wpmediaverse' ); ?></a></span>
+					<?php
+					$ai_review_url = add_query_arg(
+						array(
+							'page'     => 'mvs-media',
+							'view'     => 'ai-review',
+							'media_id' => $media_id,
+						),
+						admin_url( 'admin.php' )
+					);
+					?>
+					| <span class="ai-review"><a href="<?php echo esc_url( $ai_review_url ); ?>"><?php esc_html_e( 'AI Review', 'wpmediaverse' ); ?></a></span>
 					<?php if ( 'trash' !== $status && 0 === strpos( (string) ( $item['file_type'] ?? '' ), 'image/' ) ) : ?>
 						| <span class="optimize"><a href="
 						<?php
@@ -493,6 +510,7 @@ class MediaListPage {
 			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $privacy ); ?>"><?php echo esc_html( ucfirst( $privacy ) ); ?></span></td>
 			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $status ); ?>"><?php echo esc_html( ucfirst( $status ) ); ?></span></td>
 			<td><?php self::render_optimization_cell( $media_id, (string) ( $item['file_type'] ?? '' ) ); ?></td>
+			<td class="mvs-col-ai"><?php self::render_ai_cell( $media_id ); ?></td>
 			<td><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $item['created_at'] ) ) ); ?></td>
 		</tr>
 		<?php
@@ -565,6 +583,195 @@ class MediaListPage {
 	}
 
 	/**
+	 * Map a raw ai_status meta value to a human label + badge class.
+	 *
+	 * Shared by the AI column cell and the AI Review mini-page so the two
+	 * surfaces never drift. Unknown / empty status renders as a neutral dash.
+	 *
+	 * @param string $ai_status Raw ai_status meta value.
+	 * @return array{label: string, class: string}
+	 */
+	private static function ai_status_badge( string $ai_status ): array {
+		switch ( $ai_status ) {
+			case 'processing':
+				return array(
+					'label' => __( 'Processing', 'wpmediaverse' ),
+					'class' => 'mvs-media-badge--warning',
+				);
+			case 'complete':
+				return array(
+					'label' => __( 'Complete', 'wpmediaverse' ),
+					'class' => 'mvs-media-badge--success',
+				);
+			case 'accepted':
+				return array(
+					'label' => __( 'Accepted', 'wpmediaverse' ),
+					'class' => 'mvs-media-badge--success',
+				);
+			case 'rejected':
+				return array(
+					'label' => __( 'Rejected', 'wpmediaverse' ),
+					'class' => 'mvs-media-badge--neutral',
+				);
+			case 'failed':
+				return array(
+					'label' => __( 'Failed', 'wpmediaverse' ),
+					'class' => 'mvs-media-badge--danger',
+				);
+			case 'pending':
+				return array(
+					'label' => __( 'Pending', 'wpmediaverse' ),
+					'class' => 'mvs-media-badge--draft',
+				);
+			default:
+				return array(
+					'label' => '—',
+					'class' => 'mvs-media-badge--neutral',
+				);
+		}
+	}
+
+	/**
+	 * Decode the stored ai_tags meta into a flat string array.
+	 *
+	 * The ai_tags value is written by AIService::auto_tag() as a JSON-encoded
+	 * array, but may also be a legacy plain string. Returns an empty array
+	 * when absent.
+	 *
+	 * @param mixed $raw Raw ai_tags meta value.
+	 * @return string[]
+	 */
+	private static function decode_ai_tags( $raw ): array {
+		if ( is_array( $raw ) ) {
+			return array_values( array_filter( array_map( 'strval', $raw ) ) );
+		}
+		$raw = (string) $raw;
+		if ( '' === $raw ) {
+			return array();
+		}
+		$decoded = json_decode( $raw, true );
+		if ( is_array( $decoded ) ) {
+			return array_values( array_filter( array_map( 'strval', $decoded ) ) );
+		}
+		// Legacy / comma-separated fallback.
+		return array_values( array_filter( array_map( 'trim', explode( ',', $raw ) ) ) );
+	}
+
+	/**
+	 * Render the AI column cell for one media row.
+	 *
+	 * Shows the ai_status badge and, when a description exists, a truncated
+	 * preview so an admin can scan results without opening each item.
+	 *
+	 * @param int $media_id Media ID.
+	 */
+	private static function render_ai_cell( int $media_id ): void {
+		$repo        = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$ai_status   = (string) $repo->get_raw( $media_id, 'ai_status' );
+		$description = (string) $repo->get_raw( $media_id, 'ai_description' );
+		$badge       = self::ai_status_badge( $ai_status );
+
+		printf(
+			'<span class="mvs-media-badge %s">%s</span>',
+			esc_attr( $badge['class'] ),
+			esc_html( $badge['label'] )
+		);
+
+		if ( '' !== $description ) {
+			$preview = wp_trim_words( $description, 12, '…' );
+			printf(
+				'<span class="mvs-ai-preview" title="%s"><br />%s</span>',
+				esc_attr( $description ),
+				esc_html( $preview )
+			);
+		}
+	}
+
+	/**
+	 * Render the AI Review mini-page for a single media item.
+	 *
+	 * Reachable via ?page=mvs-media&view=ai-review&media_id=X. Prepares and
+	 * escapes all data, then hands off to templates/admin/ai-review.php for
+	 * the markup (Coding Rule #4: Admin HTML lives in template files).
+	 *
+	 * Write actions (Accept / Reject / Re-run) are submitted from the template
+	 * and processed in handle_bulk_actions(); each carries its own nonce and is
+	 * gated by an inline capability check there.
+	 */
+	private static function render_ai_review(): void {
+		$media_id = isset( $_GET['media_id'] ) ? (int) $_GET['media_id'] : 0; // phpcs:ignore WordPress.Security.NonceVerification
+		if ( $media_id <= 0 ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=mvs-media' ) );
+			exit;
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		if ( ! $repo || ! $repo->exists( $media_id ) ) {
+			?>
+			<div class="wrap wpmediaverse-admin">
+				<h1><?php esc_html_e( 'Media not found', 'wpmediaverse' ); ?></h1>
+				<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>"><?php esc_html_e( 'Back to all media', 'wpmediaverse' ); ?></a></p>
+			</div>
+			<?php
+			return;
+		}
+
+		$ai_status   = (string) $repo->get_raw( $media_id, 'ai_status' );
+		$description  = (string) $repo->get_raw( $media_id, 'ai_description' );
+		$confidence   = (float) $repo->get_raw( $media_id, 'ai_confidence' );
+		$tags         = self::decode_ai_tags( $repo->get_raw( $media_id, 'ai_tags' ) );
+		$badge        = self::ai_status_badge( $ai_status );
+		$reviewed     = in_array( $ai_status, array( 'accepted', 'rejected' ), true );
+
+		$su        = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		$thumb_url = $su ? (string) $su->generate_thumbnail( $media_id, get_current_user_id(), 'thumbnail', 0, true ) : '';
+
+		// Template variables (consumed by templates/admin/ai-review.php).
+		$title        = (string) $repo->get( $media_id, 'title' );
+		$tags_text    = implode( ', ', $tags );
+		$status_label = $badge['label'];
+		$status_class = $badge['class'];
+		$list_url     = admin_url( 'admin.php?page=mvs-media' );
+
+		$accept_url   = add_query_arg(
+			array(
+				'page'     => 'mvs-media',
+				'view'     => 'ai-review',
+				'action'   => 'ai_accept',
+				'media_id' => $media_id,
+			),
+			admin_url( 'admin.php' )
+		);
+		$reject_url   = wp_nonce_url(
+			add_query_arg(
+				array(
+					'page'     => 'mvs-media',
+					'view'     => 'ai-review',
+					'action'   => 'ai_reject',
+					'media_id' => $media_id,
+				),
+				admin_url( 'admin.php' )
+			),
+			'mvs_ai_reject_' . $media_id
+		);
+		$rerun_url    = wp_nonce_url(
+			add_query_arg(
+				array(
+					'page'     => 'mvs-media',
+					'view'     => 'ai-review',
+					'action'   => 'ai_rerun',
+					'media_id' => $media_id,
+				),
+				admin_url( 'admin.php' )
+			),
+			'mvs_ai_rerun_' . $media_id
+		);
+		$accept_nonce = wp_nonce_field( 'mvs_ai_accept_' . $media_id, '_wpnonce', true, false );
+
+		require MVS_PLUGIN_DIR . 'templates/admin/ai-review.php';
+	}
+
+	/**
 	 * Render pagination controls.
 	 *
 	 * @param int $total       Total items.
@@ -616,11 +823,20 @@ class MediaListPage {
 	 * for defense-in-depth — a bug in page registration, role plugin, or
 	 * future menu-cap change cannot expose destructive actions. Plugin
 	 * Check requires this inline pairing alongside `check_admin_referer()`.
+	 *
+	 * Hooked on the page's `load-` action (see Plugin::register_admin_menu())
+	 * so redirects fire before any output. Public for that callback.
 	 */
-	private static function handle_bulk_actions(): void {
+	public static function handle_bulk_actions(): void {
 		global $wpdb;
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		// Entry gate: media moderators (moderate_mvs_media) reach this handler
+		// for the AI-review actions; full admins (manage_options) reach every
+		// action. Each case below ALSO re-checks the capability it requires
+		// inline next to its nonce — the destructive non-AI actions still hard
+		// require manage_options there, so relaxing this entry gate does not
+		// widen access to trash/delete/optimize.
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
 			return;
 		}
 
@@ -727,17 +943,42 @@ class MediaListPage {
 				$notice['media_id'] = $media_id;
 				set_transient( 'mvs_optimize_notice', $notice, 60 );
 				break;
+
+			case 'ai_accept':
+				if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
+					return;
+				}
+				check_admin_referer( 'mvs_ai_accept_' . $media_id );
+				self::handle_ai_accept( $media_id );
+				break;
+
+			case 'ai_reject':
+				if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
+					return;
+				}
+				check_admin_referer( 'mvs_ai_reject_' . $media_id );
+				self::handle_ai_reject( $media_id );
+				break;
+
+			case 'ai_rerun':
+				if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'moderate_mvs_media' ) ) {
+					return;
+				}
+				check_admin_referer( 'mvs_ai_rerun_' . $media_id );
+				self::handle_ai_rerun( $media_id );
+				break;
 		}
 
-		// Preserve view=details so the action redirects back to the detail
-		// page when triggered from there. Everywhere else goes to the list.
+		// Preserve view=details / view=ai-review so the action redirects back
+		// to the mini-page it was triggered from. Everywhere else goes to the
+		// list.
 		$view = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
-		if ( 'details' === $view && $media_id > 0 ) {
+		if ( in_array( $view, array( 'details', 'ai-review' ), true ) && $media_id > 0 ) {
 			wp_safe_redirect(
 				add_query_arg(
 					array(
 						'page'     => 'mvs-media',
-						'view'     => 'details',
+						'view'     => $view,
 						'media_id' => $media_id,
 					),
 					admin_url( 'admin.php' )
@@ -964,6 +1205,145 @@ class MediaListPage {
 		);
 		wp_safe_redirect( $redirect );
 		exit;
+	}
+
+	/**
+	 * Accept the AI result for a media item.
+	 *
+	 * Reads the (possibly edited) description + tags from the submitted form,
+	 * copies the description into the media's own `description` field, applies
+	 * the tags to the mvs_tag taxonomy, mirrors them onto the media's `tags`
+	 * field, stores the edited ai_description/ai_tags back, and marks the
+	 * result reviewed via ai_status='accepted'.
+	 *
+	 * Capability + nonce are already verified by the ai_accept case in
+	 * handle_bulk_actions() before this runs.
+	 *
+	 * @param int $media_id Media ID.
+	 */
+	private static function handle_ai_accept( int $media_id ): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// Edited values come from the AI Review form POST. Nonce already checked.
+		$description = isset( $_POST['ai_description'] ) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			? sanitize_textarea_field( wp_unslash( $_POST['ai_description'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			: (string) $repo->get_raw( $media_id, 'ai_description' );
+
+		$tags_raw = isset( $_POST['ai_tags'] ) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			? sanitize_text_field( wp_unslash( $_POST['ai_tags'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			: '';
+		$tags     = '' !== $tags_raw
+			? array_values( array_filter( array_map( 'trim', explode( ',', $tags_raw ) ) ) )
+			: self::decode_ai_tags( $repo->get_raw( $media_id, 'ai_tags' ) );
+
+		// Persist any edits back to the AI fields so they stay in sync.
+		$repo->set( $media_id, 'ai_description', $description );
+		$repo->set( $media_id, 'ai_tags', $tags );
+
+		// Copy the description into the media's own field (used as alt text).
+		$repo->set( $media_id, 'description', $description );
+
+		// Apply tags to the taxonomy and mirror onto the media's tags field.
+		if ( ! empty( $tags ) ) {
+			wp_set_object_terms( $media_id, $tags, 'mvs_tag', true );
+			$all_terms = get_the_terms( $media_id, 'mvs_tag' );
+			if ( $all_terms && ! is_wp_error( $all_terms ) ) {
+				$repo->set( $media_id, 'tags', wp_json_encode( array_values( wp_list_pluck( $all_terms, 'name' ) ) ) );
+			}
+		}
+
+		// Mark reviewed so the admin can tell it was accepted.
+		$repo->set( $media_id, 'ai_status', 'accepted' );
+		$repo->set( $media_id, 'ai_reviewed', current_time( 'mysql', true ) );
+
+		set_transient(
+			'mvs_ai_review_notice',
+			array(
+				'type'    => 'success',
+				'message' => sprintf(
+					/* translators: %d: media id */
+					__( 'AI result accepted for media #%d. The description was applied and tags were saved.', 'wpmediaverse' ),
+					$media_id
+				),
+			),
+			60
+		);
+	}
+
+	/**
+	 * Reject the AI result for a media item.
+	 *
+	 * Clears ai_description and ai_tags so the result is never used as alt
+	 * text, and marks ai_status='rejected'. Does not touch the media's own
+	 * description/tags.
+	 *
+	 * Capability + nonce are already verified by the ai_reject case in
+	 * handle_bulk_actions() before this runs.
+	 *
+	 * @param int $media_id Media ID.
+	 */
+	private static function handle_ai_reject( int $media_id ): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		$repo->set( $media_id, 'ai_description', '' );
+		$repo->set( $media_id, 'ai_tags', array() );
+		$repo->set( $media_id, 'ai_status', 'rejected' );
+		$repo->set( $media_id, 'ai_reviewed', current_time( 'mysql', true ) );
+
+		set_transient(
+			'mvs_ai_review_notice',
+			array(
+				'type'    => 'success',
+				'message' => sprintf(
+					/* translators: %d: media id */
+					__( 'AI result rejected for media #%d. The AI description and tags were cleared.', 'wpmediaverse' ),
+					$media_id
+				),
+			),
+			60
+		);
+	}
+
+	/**
+	 * Re-run the AI pipeline for a media item.
+	 *
+	 * Re-queues the async mvs_ai_process_media Action Scheduler job, falling
+	 * back to a synchronous AIService::process() when Action Scheduler is not
+	 * available. Resets ai_status to 'processing' for immediate UI feedback.
+	 *
+	 * Capability + nonce are already verified by the ai_rerun case in
+	 * handle_bulk_actions() before this runs.
+	 *
+	 * @param int $media_id Media ID.
+	 */
+	private static function handle_ai_rerun( int $media_id ): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->set( $media_id, 'ai_status', 'processing' );
+
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			as_enqueue_async_action( 'mvs_ai_process_media', array( $media_id ), 'wpmediaverse' );
+			$message = sprintf(
+				/* translators: %d: media id */
+				__( 'AI re-run queued for media #%d. Reload this page in a moment to see the new result.', 'wpmediaverse' ),
+				$media_id
+			);
+		} else {
+			\WPMediaVerse\Core\Plugin::container()->get( 'ai' )->process( $media_id );
+			$message = sprintf(
+				/* translators: %d: media id */
+				__( 'AI re-run completed for media #%d.', 'wpmediaverse' ),
+				$media_id
+			);
+		}
+
+		set_transient(
+			'mvs_ai_review_notice',
+			array(
+				'type'    => 'success',
+				'message' => $message,
+			),
+			60
+		);
 	}
 
 	/**

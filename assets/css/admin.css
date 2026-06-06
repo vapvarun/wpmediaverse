@@ -319,6 +319,20 @@ a.mvs-stat-card:focus {
 	border-spacing: 0;
 }
 
+/* On narrow admin screens the wide data tables (moderation User Reports,
+   stats, overview, quotas) overflowed the viewport and pushed the whole page
+   sideways. Make the table itself a horizontal scroll container so it scrolls
+   in place instead of breaking the layout. */
+@media ( max-width: 782px ) {
+
+	.mvs-recent-table {
+		display: block;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		white-space: nowrap;
+	}
+}
+
 .mvs-recent-table th {
 	text-align: left;
 	padding: 8px 12px;
@@ -650,20 +664,6 @@ a.mvs-stat-card:focus {
 	display: flex;
 	align-items: center;
 	gap: 4px;
-}
-
-.mvs-custom-types {
-	margin-top: 12px;
-}
-
-.mvs-custom-types summary {
-	cursor: pointer;
-	font-size: 13px;
-	color: var(--mvs-accent);
-}
-
-.mvs-custom-types textarea {
-	margin-top: 8px;
 }
 
 /* ==========================================================================
@@ -2086,4 +2086,14 @@ a.mvs-stat-card:focus {
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
 	}
+}
+
+/* Webhook events are gated on a destination URL (settings-nav.js): dim the
+   event list while disabled so the dependency reads clearly. */
+.mvs-webhook-events.is-disabled {
+	opacity: 0.5;
+}
+
+.mvs-webhook-events-hint.is-active {
+	color: #b32d2e;
 }

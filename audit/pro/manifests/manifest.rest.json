@@ -340,6 +340,16 @@
         "handler": "REST/CompeteSummaryController::get_summary",
         "permission": "logged-in",
         "purpose": "Competition dashboard summary"
+      },
+      {
+        "route": "/media/{id}/collections",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "Collections/CollectionItemsController::get_collections / set_collection",
+        "permission": "logged-in (ownership + manual-type guarded on write)",
+        "purpose": "Read which collections a media is in (Favorites from Free + manual collections) and toggle Pro multi-collection membership"
       }
     ]
   }

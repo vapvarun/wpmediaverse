@@ -78,6 +78,19 @@ class CommentService {
 		 */
 		do_action( 'mvs_comment_created', $media_id, $user_id, $comment_id, $content, $source );
 
+		// Parse @mentions in the comment so mentioned users get notified. The
+		// whole mention pipeline (MentionService -> mvs_mentions_created ->
+		// NotificationService) was wired but parse_and_store had no caller, so
+		// @mentions never fired (audit 2026-06-04, #19). Skip BP-sourced
+		// comments — BuddyPress runs its own @mention handling on the activity
+		// comment, so parsing here too would double-notify.
+		if ( 'bp_activity' !== $source ) {
+			$mvs_container = \WPMediaVerse\Core\Plugin::container();
+			if ( $mvs_container->has( 'mentions' ) ) {
+				$mvs_container->get( 'mentions' )->parse_and_store( $content, $media_id, 'comment', (int) $comment_id );
+			}
+		}
+
 		return $comment_id;
 	}
 

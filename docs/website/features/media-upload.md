@@ -129,19 +129,19 @@ if ( is_wp_error( $result ) ) {
 
 - `mvs_before_media_insert` - fires before the `mvs_media` post is created.
 - `mvs_before_upload_form` - fires before the upload form HTML is rendered (used by Pro for quota display).
-- `mvs_media_uploaded` - fires after the post is created and indexed. Passes `$media_id` (int).
+- `mvs_media_uploaded` - fires after the post is created and indexed. Passes `$media_id` (int), an array of file metadata (`file_url`, `file_path`, `file_size`, `file_type`, `file_hash`, `media_type`, `privacy`, etc.), `$user_id` (int), and `$media_type` (string).
 
-## Media Post Meta
+## Media Metadata
 
-Each `mvs_media` post stores:
+Media metadata is stored in WPMediaVerse's own `mvs_media_meta` table (keyed by media ID), not in WordPress post meta. Access it through the `MediaRepository` (`->get( $media_id, $key )`). Common keys:
 
 | Meta Key | Type | Description |
 |----------|------|-------------|
-| `_mvs_file_url` | string | Public URL of the stored file |
-| `_mvs_file_path` | string | Relative storage path |
-| `_mvs_media_type` | string | `image`, `video`, or `audio` |
-| `_mvs_file_type` | string | Full MIME type (e.g., `image/jpeg`) |
-| `_mvs_file_size` | int | File size in bytes |
-| `_mvs_privacy` | string | Privacy level (see Privacy & Access Control) |
-| `_mvs_sha256` | string | SHA-256 hash for duplicate detection |
-| `_mvs_group_id` | int | BuddyPress group ID (for group privacy) |
+| `file_url` | string | Public URL of the stored file |
+| `file_path` | string | Relative storage path |
+| `media_type` | string | `image`, `video`, `audio`, or `document` |
+| `file_type` | string | Full MIME type (e.g., `image/jpeg`) |
+| `file_size` | int | File size in bytes |
+| `privacy` | string | Privacy level (see Privacy & Access Control) |
+| `file_hash` | string | SHA-256 hash for duplicate detection |
+| `group_id` | int | BuddyPress group ID (for group privacy) |

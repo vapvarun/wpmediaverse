@@ -89,31 +89,26 @@ class FieldRenderer {
 		$selected = array_map( 'trim', explode( ',', (string) $current ) );
 
 		$groups = array(
-			__( 'Images', 'wpmediaverse' )    => array(
+			__( 'Images', 'wpmediaverse' ) => array(
 				'image/jpeg' => 'JPEG',
 				'image/png'  => 'PNG',
 				'image/gif'  => 'GIF',
 				'image/webp' => 'WebP',
 			),
-			__( 'Video', 'wpmediaverse' )     => array(
+			__( 'Video', 'wpmediaverse' )  => array(
 				'video/mp4'  => 'MP4',
 				'video/webm' => 'WebM',
 			),
-			__( 'Audio', 'wpmediaverse' )     => array(
+			__( 'Audio', 'wpmediaverse' )  => array(
 				'audio/mpeg' => 'MP3',
 				'audio/ogg'  => 'OGG',
 			),
 			// Documents group (PDF) removed from the picker in 1.2.3 — see
-			// SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES note. Sites that
-			// previously stored application/pdf still see it in the
-			// "Custom types" row below; the option is still respected end-to-end.
+			// SettingsRegistrar::DEFAULT_ALLOWED_FILE_TYPES note. The picker is
+			// intentionally limited to the image/video/audio formats WordPress
+			// supports natively; additional MIME types are added in code via the
+			// `mvs_allowed_file_types` filter (see UploadService::get_allowed_types).
 		);
-
-		$known_mimes = array();
-		foreach ( $groups as $mime_map ) {
-			$known_mimes = array_merge( $known_mimes, array_keys( $mime_map ) );
-		}
-		$custom_types = array_diff( $selected, $known_mimes, array( '' ) );
 
 		if ( ! empty( $args['description'] ) ) {
 			printf(
@@ -133,6 +128,15 @@ class FieldRenderer {
 				)
 			);
 		}
+		// Hidden sentinel: proves this control was on the submitted page so the
+		// sanitizer can tell "unchecked everything" (remove all) apart from
+		// "field absent" (preserve). Without it a first all-unchecked save is
+		// indistinguishable from a save that never touched this field.
+		printf(
+			'<input type="hidden" name="%s" value="1" />',
+			esc_attr( Sanitizers::FILE_TYPES_PRESENT_FIELD )
+		);
+
 		echo '<div class="mvs-file-types-grid">';
 		foreach ( $groups as $group_label => $mimes ) {
 			printf( '<div class="mvs-file-types-group"><strong>%s</strong>', esc_html( $group_label ) );
@@ -151,25 +155,9 @@ class FieldRenderer {
 		echo '</div>';
 
 		printf(
-			'<details class="mvs-custom-types"><summary>%s</summary>',
-			esc_html__( 'Custom MIME types', 'wpmediaverse' )
+			'<p class="description">%s <code>mvs_allowed_file_types</code></p>',
+			esc_html__( 'Uploads are limited to the image, video, and audio formats WordPress supports natively. Developers can allow additional MIME types in code with the filter:', 'wpmediaverse' )
 		);
-		printf(
-			'<textarea name="%s_custom" rows="2" class="large-text" placeholder="%s">%s</textarea>',
-			esc_attr( $args['option'] ),
-			esc_attr__( 'e.g. video/quicktime', 'wpmediaverse' ),
-			esc_textarea( implode( ',', $custom_types ) )
-		);
-		printf(
-			'<p class="description">%s</p>',
-			esc_html__( 'Additional comma-separated MIME types for advanced users.', 'wpmediaverse' )
-		);
-		printf(
-			'<p class="description"><strong>%s</strong> %s</p>',
-			esc_html__( 'Do not enable image/svg+xml uploads:', 'wpmediaverse' ),
-			esc_html__( 'SVG files can carry JavaScript and we do not sanitize them. If you must enable SVG, do so only with a separate sanitizer plugin and never allow non-trusted users to upload them.', 'wpmediaverse' )
-		);
-		echo '</details>';
 	}
 
 	/**
@@ -433,7 +421,7 @@ class FieldRenderer {
 		<fieldset>
 			<p>
 				<label><?php esc_html_e( 'URL:', 'wpmediaverse' ); ?></label><br />
-				<input type="url" name="mvs_webhooks[0][url]" class="regular-text"
+				<input type="url" name="mvs_webhooks[0][url]" id="mvs-webhook-url" class="regular-text"
 					value="<?php echo esc_attr( $webhook['url'] ?? '' ); ?>"
 					placeholder="https://example.com/webhook"
 				/>
@@ -452,7 +440,7 @@ class FieldRenderer {
 					<span class="description"><?php esc_html_e( 'Leave empty to keep the current secret.', 'wpmediaverse' ); ?></span>
 				<?php endif; ?>
 			</p>
-			<p>
+			<p id="mvs-webhook-events" class="mvs-webhook-events">
 				<label><?php esc_html_e( 'Events:', 'wpmediaverse' ); ?></label><br />
 				<?php $selected_events = $webhook['events'] ?? array( '*' ); ?>
 				<label>
@@ -467,6 +455,9 @@ class FieldRenderer {
 						/> <code><?php echo esc_html( $event ); ?></code>
 					</label><br />
 				<?php endforeach; ?>
+			</p>
+			<p class="description mvs-webhook-events-hint">
+				<?php esc_html_e( 'Events are saved only when a destination URL is set above. Without a URL the webhook is removed and the event selection resets to "All events".', 'wpmediaverse' ); ?>
 			</p>
 		</fieldset>
 		<?php

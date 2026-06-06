@@ -1,33 +1,44 @@
 {
-  "release_version": "1.5.0",
+  "release_version": "1.6.0",
   "mode": "combo",
-  "ran_at": "2026-05-28T05:46:00Z",
-  "free_version": "1.5.0",
-  "pro_version": "1.5.0",
+  "ran_at": "2026-06-06T10:02:20Z",
+  "reverified_at": "2026-06-06T10:30:00Z",
+  "free_version": "1.6.0",
+  "pro_version": "1.6.0",
   "sections": {
-    "A_fresh_install":     { "pass": 0,  "fail": 0, "skipped": 5 },
-    "B_upgrade":           { "pass": 0,  "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 6,  "fail": 0, "skipped": 0 },
-    "D_regression_guards": { "pass": 6,  "fail": 0, "skipped": 0 },
-    "E_pro_smoke":         { "pass": 3,  "fail": 0, "skipped": 0 },
-    "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 4 }
+    "A_fresh_install":     { "pass": 5, "fail": 0, "skipped": 0 },
+    "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
+    "C_core_flows":        { "pass": 18, "fail": 0, "skipped": 4 },
+    "D_regression_guards": { "pass": 19, "fail": 0, "skipped": 2 },
+    "E_pro_smoke":         { "pass": 7, "fail": 0, "skipped": 5 },
+    "F_cross_browser":     { "pass": 1, "fail": 0, "skipped": 2 }
   },
   "failures": [],
-  "debug_log_issues": [],
+  "debug_log_issues": [
+    {
+      "section": "A_fresh_install",
+      "level": "deprecated",
+      "origin": "for",
+      "line": "PHP Deprecated: Creation of dynamic property BP_Verified_Member_Meta_Box::$meta_keys is deprecated (bp-verified-member plugin, repeated on admin pages).",
+      "file": "wp-content/plugins/bp-verified-member/admin/meta-box/class-bp-verified-member-meta-box.php:30"
+    }
+  ],
   "manual_required": [
-    "BuddyPress activity flow — /activity/ 404 on this dev env, manual verify on customer staging",
-    "Active tournament journey — no tournament in active status on fixture site, manual verify",
-    "Cross-browser Firefox / Safari iOS / Bing — PR #8 preload=auto fix shipped 2026-05-26, manual verify on customer staging",
-    "Pro watermarking text + image — gated media unblock just shipped via 1.5.0 fix #9925110293, manual verify",
-    "Mobile 390px responsive sweep on Explore + dashboard + lightbox",
-    "Lightbox open via DOM click — reaction aria-pressed flip, focus trap, ESC close",
-    "Setup wizard admin page",
-    "Gutenberg editor render of all Free + Pro blocks",
-    "JS console + Interactivity-API hydration warnings on customer-shape data"
+    "Firefox Desktop: Full C section smoke — lightbox, reactions, DM send/receive, upload flow",
+    "Safari iOS 390px: Upload modal responsiveness, lightbox touch gestures, DM keyboard handling",
+    "C.member.upload-public: Actual browser file upload not tested this run (drop zone and privacy selector verified present; REST PDF-reject verified); needs real drag-and-drop test",
+    "C.admin.moderation-flow: Flag-approve-trash-spam workflow requires flagging test data setup",
+    "E.watermarking: Watermark-on-upload not tested — requires Pro watermark setting configured",
+    "E.instagram-feed: No Instagram account connected on local site — only empty-state renders verified",
+    "E.migration-importers: Import dry-run not tested this run",
+    "D.cloud-existence-head-vs-range: BunnyCDN not connected to local site — skipped",
+    "D.s3-key-encoding: S3 not configured on local site — skipped",
+    "C.member.follow-mention: @mention notification flow not browser-verified this run",
+    "C.notifications: Notification bell count and email digest not tested end-to-end"
   ],
   "notes": {
-    "headline_changes": "1.5.0 upload + serve pipeline unification. (1) Customer-facing fix for Basecamp 9925110293 — non-public uploads no longer 403 their own thumbnails. (2) Five new services consolidate the pipeline: Services\\VariantSpec (canonical rel-path), Services\\StorageRouter (driver routing), Services\\MediaVariantWriter (single meta writer), Services\\PosterService (sole owner of wpmediaverse/posters/ writes), Core\\MediaUrl (long-promised read-side facade). (3) UploadService 1482 → 1211 lines, exits Known Debt. (4) ImageOptimizationService publish_webp/avif twins collapsed to one extension-parametrized method. (5) Migrator v15 heals legacy thumb_*_path meta for video/audio rows; cloud-aware probe ensures cloud customers' CDN URLs continue to resolve. (6) New journey audit/journeys/customer/02-media-upload-non-public.md owns the regression test. (7) .distignore tightened to match Gruntfile.js authority — wp-plugin-qa no longer scans non-shipped tooling files.",
-    "verified_bugs": "9925110293 non-public thumb 403 — fixed + DB + browser verified. 9882148131 video poster with BunnyCDN — resolved by 1.5.0 (12 healed CDN URLs verified 200). 9919544241 Pro Watermarking — QA-blocked by 9925110293, now unblocked. 9910574354 Safari/Bing video poster — shipped via PR #8 (commit 0ae9d19).",
-    "open_follow_up": "Basecamp 9936426283 (Phase 4 — replace_file unified pipeline) created in Scope column. Phase 4 deferred from 1.5.0 because it changes customer-visible behavior on /media/<id>/replace. Filter mvs_replace_uses_unified_pipeline default-true planned. Track for 1.6.0."
+    "headline_changes": "1.6.0 group-conversation engine + privacy hardening + AI alt text + smart-collection rules fix. Key verified items: MVS_VERSION=1.6.0 === MVS_PRO_VERSION=1.6.0 (combo OK). All 25 Free tables + all Pro tables present. mvs_db_version=17, mvs_pro_db_version=7. Signed URL secret set (64 chars). PDF upload hard-blocked at UploadService. Privacy filter confirmed (anon REST returns public only). Messaging unsend verified DB (deleted_for_all=1, content=''). Smart collections: Nature Highlights 7 items + real CDN cover PASS; Public Gallery 71 items + real CDN cover PASS (post-fix). Lightbox reactions aria-pressed PASS. ESC close PASS. Share no prompt-fallback PASS. Activity composer Attach media PASS. Activity preview 64px PASS. Admin all pages (Free + Pro) load without PHP fatal/error.",
+    "verified_bugs": "D.smart-collections-cover (the run's single failure): Opus re-verified — media 165-171 were file-less QA fixture shells from the 2026-06-04 audit session ('Test Media <ts>' / 'BP Media <ts>'); the newest one became Public Gallery's cover pick and MediaUrl::thumb() returned ''. Fixed in Free commit c23fc9b (get_collection_cover_url scans first 5 items for a renderable thumb) and the 7 fixture shells were deleted via MediaRepository::delete_cascade. Post-fix browser+REST verification: collection 77 cover_url = real CDN poster URL, total corrected 78->71. Console warnings triage: data-wp-on--click.stop malformed directive (12x) was a real Pro template defect — fixed in Pro commit 238ca75 (reuses mvs/shared-ui actions.handleModalClick), verified gone; the mvs-pro/instagram-feed data-wp-context warning no longer reproduces after that fix; the Interactivity SSR div-vs-template hydration mismatch reproduces ONLY on the internal mvs-test-blocks fixture page (21 stacked block instances) and on no customer surface (Explore, My Media, single media all clean) — tracked as non-blocking follow-up below.",
+    "open_follow_up": "Interactivity API SSR hydration mismatch (div vs template) on the internal mvs-test-blocks page only — identify which block emits a <template> during SSR that hydrates as <div>; no customer surface affected. Low priority."
   }
 }

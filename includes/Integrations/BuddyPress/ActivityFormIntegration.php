@@ -83,6 +83,26 @@ class ActivityFormIntegration {
 					<option value="private" <?php selected( $default_privacy, 'private' ); ?>><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
 				</select>
 			<?php endif; ?>
+			<?php
+			// Tags for the attached media. Hidden until files are chosen (the JS
+			// reveals it alongside the privacy selector). Applied to each media
+			// at post time in attach_media_to_activity() — the upload fires the
+			// moment files are picked, before the user can type, so tagging can't
+			// happen at upload time (same constraint as the privacy dropdown).
+			// Card #9962548621: previously there was no way to tag media added
+			// from the activity form.
+			?>
+			<input
+				type="text"
+				id="mvs-activity-tags"
+				class="mvs-activity-tags"
+				name="mvs_activity_media_tags"
+				value=""
+				style="display:none"
+				autocomplete="off"
+				placeholder="<?php esc_attr_e( 'Add tags (comma separated)', 'wpmediaverse' ); ?>"
+				aria-label="<?php esc_attr_e( 'Tags for the attached media', 'wpmediaverse' ); ?>"
+			/>
 		</div>
 		<?php
 	}
@@ -177,6 +197,9 @@ class ActivityFormIntegration {
 		// leaks to logged-out users on the sitewide stream (card 9867136209).
 		$chosen_privacy = $this->resolve_chosen_privacy();
 
+		// Tags typed in the activity-form tags field, applied per media below.
+		$chosen_tags = $this->resolve_chosen_tags();
+
 		$thumbnails = '';
 		$valid_ids  = array();
 		foreach ( $media_ids as $media_id ) {
@@ -185,6 +208,18 @@ class ActivityFormIntegration {
 			}
 			$media_author = $repo->get_author( $media_id );
 			if ( $media_author !== $user_id ) {
+				continue;
+			}
+
+			// Skip media held for pre-moderation (the opt-in
+			// mvs_hold_uploads_for_moderation filter). It stays draft +
+			// moderation_status=pending in the moderation queue and is NOT
+			// published or attached to the activity, so held content can never
+			// reach the stream through an activity post (Basecamp #9962830813).
+			// Once a moderator approves it, it shows in the member's media
+			// normally. Default flow (filter off) is unaffected: media is
+			// 'approved' and publishes here as before.
+			if ( 'pending' === (string) $repo->get( $media_id, 'moderation_status' ) ) {
 				continue;
 			}
 
@@ -202,6 +237,14 @@ class ActivityFormIntegration {
 				if ( $current_privacy !== $chosen_privacy ) {
 					$repo->set( $media_id, 'privacy', $chosen_privacy );
 				}
+			}
+
+			// Apply the tags typed in the activity form. Mirrors the tag handling
+			// in MediaController::create_item — set the mvs_tag terms and cache the
+			// JSON list on the media row (audit 2026-06-04, #9962548621).
+			if ( ! empty( $chosen_tags ) ) {
+				wp_set_object_terms( $media_id, $chosen_tags, 'mvs_tag' );
+				$repo->set( $media_id, 'tags', wp_json_encode( array_values( $chosen_tags ) ) );
 			}
 
 			$valid_ids[] = $media_id;
@@ -323,5 +366,34 @@ class ActivityFormIntegration {
 		}
 
 		return in_array( $chosen, $allowed, true ) ? $chosen : '';
+	}
+
+	/**
+	 * Resolve and sanitize the tags typed in the activity-form tags field.
+	 *
+	 * Returns a de-duplicated list of sanitized tag names (capped to a sane
+	 * count so a pasted blob can't spawn hundreds of terms), or an empty array
+	 * when none were sent. Applied at post time in attach_media_to_activity()
+	 * because the media is uploaded before the user can type — the same reason
+	 * privacy is resolved here rather than at upload (card #9962548621).
+	 *
+	 * @return string[]
+	 */
+	private function resolve_chosen_tags(): array {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- only called from attach_media_to_activity(), hooked into bp_activity_posted_update where BuddyPress has already verified the activity post nonce.
+		if ( empty( $_POST['mvs_activity_media_tags'] ) ) {
+			return array();
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- same context as the empty() check above; each tag sanitized below.
+		$raw  = sanitize_text_field( wp_unslash( $_POST['mvs_activity_media_tags'] ) );
+		$tags = array_filter( array_map( 'trim', explode( ',', $raw ) ) );
+		$tags = array_map( 'sanitize_text_field', $tags );
+		$tags = array_values( array_unique( $tags ) );
+
+		/** Filter: max tags applied to media from one activity post. Default 15. */
+		$max_tags = (int) apply_filters( 'mvs_activity_max_tags', 15 );
+
+		return array_slice( $tags, 0, max( 1, $max_tags ) );
 	}
 }

@@ -1687,4 +1687,112 @@ class Commands {
 			)
 		);
 	}
+
+	/**
+	 * Backfill AI description + tags on media uploaded before AI was enabled.
+	 *
+	 * Only image media with no ai_description yet are processed. By default
+	 * each one is queued to the same async Action Scheduler job that runs on
+	 * upload (mvs_ai_process_media); pass --sync to process inline.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--limit=<n>]
+	 * : Max media to process. Default 0 (all).
+	 *
+	 * [--sync]
+	 * : Process inline instead of queueing the async job. Slower; respects the
+	 *   AI budget cap per item.
+	 *
+	 * [--dry-run]
+	 * : List how many media would be processed without doing it.
+	 *
+	 * [--force]
+	 * : Reprocess ALL image media, including ones already attempted.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs backfill_ai --dry-run
+	 *     wp mvs backfill_ai --limit=200
+	 *     wp mvs backfill_ai --sync
+	 *
+	 * @param array $args       Positional args (unused).
+	 * @param array $assoc_args Flags.
+	 */
+	public function backfill_ai( $args, $assoc_args ) {
+		unset( $args );
+		global $wpdb;
+
+		$limit   = (int) Utils\get_flag_value( $assoc_args, 'limit', 0 );
+		$sync    = (bool) Utils\get_flag_value( $assoc_args, 'sync', false );
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$force   = (bool) Utils\get_flag_value( $assoc_args, 'force', false );
+
+		// Image media that have never been through AI (ai_status unset). Using
+		// ai_status as the marker — not ai_description — keeps the backfill
+		// idempotent: a media that completed (even with an empty description)
+		// or failed is not retried on the next run. --force reprocesses
+		// everything regardless.
+		$meta = $wpdb->prefix . 'mvs_media_meta';
+		$sql  = "SELECT m.media_id FROM {$wpdb->prefix}mvs_media_index m
+			LEFT JOIN {$meta} s ON s.media_id = m.media_id AND s.meta_key = 'ai_status'
+			WHERE m.media_type = 'image' AND m.status = 'publish'";
+		if ( ! $force ) {
+			$sql .= " AND ( s.meta_value IS NULL OR s.meta_value = '' )";
+		}
+		$sql .= ' ORDER BY m.media_id ASC';
+		if ( $limit > 0 ) {
+			$sql .= $wpdb->prepare( ' LIMIT %d', $limit );
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$ids = array_map( 'intval', (array) $wpdb->get_col( $sql ) );
+
+		if ( empty( $ids ) ) {
+			WP_CLI::success( 'No media need AI backfill.' );
+			return;
+		}
+
+		if ( $dry_run ) {
+			WP_CLI::success( sprintf( '%d media would be processed (dry run).', count( $ids ) ) );
+			return;
+		}
+
+		$ai        = \WPMediaVerse\Core\Plugin::container()->get( 'ai' );
+		$queued    = 0;
+		$processed = 0;
+		$failed    = 0;
+		$progress  = \WP_CLI\Utils\make_progress_bar( 'Backfilling AI', count( $ids ) );
+
+		foreach ( $ids as $media_id ) {
+			if ( $sync ) {
+				$result = $ai->process( $media_id );
+				if ( is_wp_error( $result ) ) {
+					++$failed;
+				} else {
+					++$processed;
+				}
+			} elseif ( function_exists( 'as_enqueue_async_action' ) ) {
+				as_enqueue_async_action( 'mvs_ai_process_media', array( $media_id ), 'wpmediaverse' );
+				++$queued;
+			} else {
+				$result = $ai->process( $media_id );
+				if ( is_wp_error( $result ) ) {
+					++$failed;
+				} else {
+					++$processed;
+				}
+			}
+			$progress->tick();
+		}
+		$progress->finish();
+
+		WP_CLI::success(
+			sprintf(
+				'AI backfill done. Queued: %d, processed inline: %d, failed: %d.',
+				$queued,
+				$processed,
+				$failed
+			)
+		);
+	}
 }

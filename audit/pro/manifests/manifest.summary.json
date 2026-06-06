@@ -16,15 +16,15 @@
     "license_item_id": 1660828
   },
   "counts": {
-    "rest_endpoints": 58,
+    "rest_endpoints": 60,
     "ajax": 6,
     "admin_pages": 10,
     "settings": 0,
-    "tables": 8,
+    "tables": 9,
     "subsystems": 19,
     "feature_toggles": 7,
     "free_services_consumed": 1,
-    "free_filters_hooked": 17,
+    "free_filters_hooked": 19,
     "extension_patterns": 6,
     "cron": 3,
     "wp_cli": 3,
@@ -81,9 +81,50 @@
         "admin_pages": "28 add_*_page calls vs 10 top-level pages in detail file (18 sub-pages not enumerated)",
         "blocks": "24 block.json files includes build copies; logical block count remains 12 from the existing detail file"
       }
+    },
+    "refresh_1_6_0": {
+      "at": "2026-06-04T10:28:18Z",
+      "from": "wp-plugin-onboard refresh — 1.6.0 audit session (Pro delta)",
+      "pro_changes": [
+        "New Free-hook consumption: Pro now listens to mvs_collection_deleted (Core/Plugin.php:251 → CollectionItemsService::purge_collection) and adds a 2nd mvs_media_deleted listener (Core/Plugin.php:261 → purge mvs_competition_entries + null competition cover_media_id). Authoritative coupling recorded Free-side in hooks_fired[].consumed_by.",
+        "wb-gamification integration fix: Boosts + Streaks now call the real backend API wb_gam_get_user_points() (balance) and \\WBGam\\Engine\\PointsEngine::debit() (spend) — the prior wbgam_* calls were no-ops (points never deducted). New guard Core\\Plugin::points_backend_available() gates boost/streak UI + REST; admin notice links the free WB Gamification plugin when absent.",
+        "License model reaffirmed: is_valid() gates UPDATES only, never feature registration (CLAUDE.md §7). Audit finding #43 closed won-t-fix."
+      ],
+      "external_dependency_added": {
+        "plugin": "wb-gamification (free, https://github.com/vapvarun/wb-gamification)",
+        "functions": [
+          "wb_gam_get_user_points($user_id)",
+          "\\WBGam\\Engine\\PointsEngine::debit($user_id,$amount,$action_id)"
+        ],
+        "consumed_in": [
+          "includes/Boosts/BoostService.php",
+          "includes/Boosts/BoostController.php",
+          "includes/Streaks/StreakController.php"
+        ],
+        "guard": "Core\\Plugin::points_backend_available()"
+      }
     }
   },
   "confirmed_against_free": {
     "refreshed_at": "2026-05-17T03:45:00Z"
+  },
+  "refresh_2026_06_02": {
+    "trigger": "1.6.0-dev: Pro multi-collection Save-to picker",
+    "added": {
+      "table": "mvs_pro_collection_items (Migrator v7)",
+      "rest": "GET+POST /mvs-pro/v1/media/{id}/collections (CollectionItemsController) - +2 endpoints",
+      "free_filters_hooked": [
+        "mvs_collection_media_ids",
+        "mvs_collection_response"
+      ],
+      "free_actions_hooked": [
+        "mvs_media_deleted (purge memberships on media delete)"
+      ],
+      "assets": [
+        "assets/js/collection-picker.js",
+        "assets/css/collection-picker.css"
+      ]
+    },
+    "scope": "targeted refresh for the verified picker feature; full re-enumeration tracks with Free."
   }
 }

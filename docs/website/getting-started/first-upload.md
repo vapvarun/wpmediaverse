@@ -36,7 +36,7 @@ When you upload a file, WPMediaVerse:
 3. **Scans for duplicate files** using SHA-256 hash comparison.
 4. **Strips EXIF GPS data** from images (if enabled - on by default).
 5. **Stores the file** using your configured storage driver (local by default).
-6. **Creates an `mvs_media` post** with the title, privacy level, and file metadata.
+6. **Creates a record in the `mvs_media_index` table** with the title, privacy level, and file metadata (media is not stored as a WordPress post).
 7. **Runs AI analysis** if auto-analyze is enabled (requires OpenAI API key).
 8. **Runs AI moderation** if auto-moderate is enabled.
 9. **Records BuddyPress activity** if BuddyPress is active.
@@ -72,6 +72,6 @@ The default privacy level is set in **Media > Settings > General > Default Priva
 
 Your uploaded media appears:
 - On the media archive page (`/wp-json/mvs/v1/media` in the API)
-- In the **Media** post type list in your admin dashboard
+- In the **Media > All Media** list in your admin dashboard
 - In the **Media** tab on your BuddyPress profile (if BuddyPress is active)
 - In your media dashboard (use `[mvs_dashboard]` shortcode)

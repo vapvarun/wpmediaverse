@@ -80,7 +80,7 @@ interface StorageDriverInterface {
 }
 ```
 
-All seven methods are required. A driver that does not implement every method will fail PHP's interface contract at load time.
+All six methods are required. A driver that does not implement every method will fail PHP's interface contract at load time.
 
 ## Implementing a Custom Driver
 

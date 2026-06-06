@@ -42,11 +42,11 @@ Each milestone is awarded only once. If your streak breaks and you rebuild to 7 
 
 If you miss a day, a freeze token automatically protects your streak. One token covers one missed day. If you have no tokens and miss a day, your streak resets to zero (your all-time best is never reset).
 
-Freeze tokens are earned through other gamification rewards on the site. Admins can also grant them manually.
+When the site owner enables **Allow Streak Freezes** (and the wb-gamification points backend is active), you can buy freeze tokens with your points directly from the streak widget. Admins can also grant tokens manually. Freezes are off by default - if the owner has not enabled them, a missed day always resets your streak.
 
 ### Where Your Streak Badge Appears
 
-Once your streak reaches 3 days, a badge showing your streak count appears:
+Once your streak reaches 1 day, a badge showing your streak count appears:
 - Next to your username on every media card you post
 - Next to your name in comments
 - On your profile page
@@ -54,7 +54,7 @@ Once your streak reaches 3 days, a badge showing your streak count appears:
 
 ## For Site Owners
 
-1. Go to **Media > Settings > Gamification** and enable **Upload Streaks**
+1. Go to **WPMediaVerse > Settings > Gamification** and enable **Upload Streaks**
 2. Streaks run automatically - no manual management needed
 3. Grant freeze tokens to specific users from **Users > Edit User > Streak Tokens** in wp-admin
 4. The daily streak check runs at 2 AM site timezone via Action Scheduler - confirm Action Scheduler is processing jobs
@@ -63,7 +63,7 @@ Once your streak reaches 3 days, a badge showing your streak count appears:
 
 A streak increments by 1 when a user uploads at least one media item on a calendar day (site timezone). If the user uploads multiple times on the same day, the streak still only increments once.
 
-If a user misses a day with no upload, the `mvs_check_streaks` cron job (runs daily at 2 AM, site timezone) resets their current streak to 0. The longest streak value is never reset.
+If a user misses a day with no upload, the `mvs_daily_streak_check` cron job (runs daily at 2 AM, site timezone) resets their current streak to 0. The longest streak value is never reset.
 
 A streak freeze token skips one missed day. If the user has a freeze token and misses a day, the cron job consumes one token and does not reset the streak.
 
@@ -93,9 +93,9 @@ Milestone awards are tracked via a separate user meta key to prevent duplicate p
 
 ## Streak Freeze Tokens
 
-Freeze tokens are earned through wb-gamification rewards or granted manually by an admin. Users cannot purchase them directly with points.
+When the **Allow Streak Freezes** setting is enabled (and the wb-gamification points backend is active), members can buy freeze tokens with their points from the streak widget - the cost is set by **Freeze Cost (Points)** (`mvs_pro_streak_freeze_cost`, default 100). Admins can also grant tokens manually. The whole freeze feature is off by default; with it disabled, a missed day always resets the streak.
 
-When the `mvs_check_streaks` cron runs and finds a user missed yesterday:
+When the `mvs_daily_streak_check` cron runs and finds a user missed yesterday:
 
 1. Check `_mvs_streak_freezes`
 2. If count is greater than 0 - decrement by 1, leave streak intact
@@ -105,7 +105,7 @@ A freeze only protects against a single missed day. Two consecutive missed days 
 
 ## Streak Badge
 
-A streak badge displays next to the username in media cards, comments, and the member directory when the user has an active streak of 3 days or more. The badge shows the current streak count.
+A streak badge displays next to the username in media cards, comments, and the member directory when the user has an active streak of 1 day or more. The badge shows the current streak count.
 
 ![Media card showing username with streak badge](../images/explore-feed.png)
 
@@ -121,6 +121,6 @@ The badge is suppressed if the user's streak is 0 or if the streaks feature is d
 
 | Action Hook | Schedule | Description |
 |-------------|----------|-------------|
-| `mvs_check_streaks` | Daily at 2 AM (site timezone) | Compares `_mvs_last_upload_date` to yesterday for every user with a streak greater than 0. Applies freezes or resets streaks. Awards XP for newly reached milestones. |
+| `mvs_daily_streak_check` | Daily at 2 AM (site timezone) | Compares `_mvs_last_upload_date` to yesterday for every user with a streak greater than 0. Applies freezes or resets streaks. Awards XP for newly reached milestones. |
 
 > The daily streak check runs via Action Scheduler, not WP-Cron. If Action Scheduler is not processing jobs, streaks will not break or award XP on time.

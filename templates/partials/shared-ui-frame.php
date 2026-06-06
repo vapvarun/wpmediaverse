@@ -230,6 +230,9 @@ $mvs_show_fab = $mvs_is_logged_in && (
 							aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
 							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
 							<option value="members"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
+							<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
+							<option value="friends"><?php esc_html_e( 'Friends Only', 'wpmediaverse' ); ?></option>
+							<?php endif; ?>
 							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
 						</select>
 						<?php endif; ?>
@@ -318,6 +321,9 @@ $mvs_show_fab = $mvs_is_logged_in && (
 								data-wp-bind--value="state.editModalPrivacy">
 								<option value="public"><?php esc_html_e( 'Public — anyone can view', 'wpmediaverse' ); ?></option>
 								<option value="members"><?php esc_html_e( 'Members Only — logged-in users', 'wpmediaverse' ); ?></option>
+								<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
+								<option value="friends"><?php esc_html_e( 'Friends Only — BuddyPress friends', 'wpmediaverse' ); ?></option>
+								<?php endif; ?>
 								<option value="private"><?php esc_html_e( 'Private — only you', 'wpmediaverse' ); ?></option>
 							</select>
 						</div>
@@ -488,7 +494,9 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						<i data-lucide="external-link" aria-hidden="true"></i>
 						<?php esc_html_e( 'Open', 'wpmediaverse' ); ?>
 					</a>
-					<?php if ( $mvs_is_logged_in ) : ?>
+					<?php // Reporting is a Pro feature: Free has no queue/UI to read or resolve reports. ?>
+					<?php // Hidden by default; Pro (or a site) opts in via the `mvs_reports_enabled` filter. ?>
+					<?php if ( $mvs_is_logged_in && apply_filters( 'mvs_reports_enabled', false ) ) : ?>
 						<button class="mvs-lightbox-action mvs-lightbox-action--report" data-wp-on--click="actions.lightboxReport"
 							data-wp-bind--hidden="state.lightboxIsOwner" aria-label="<?php esc_attr_e( 'Report this media for review', 'wpmediaverse' ); ?>">
 							<i data-lucide="flag" aria-hidden="true"></i>

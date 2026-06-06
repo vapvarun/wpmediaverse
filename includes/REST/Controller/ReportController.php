@@ -153,12 +153,43 @@ class ReportController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Guard the report write path behind the `mvs_reports_enabled` filter.
+	 *
+	 * Reporting is a Pro feature: Free has no queue/UI to read or resolve
+	 * reports, so Free must not collect them. The filter defaults to false in
+	 * Free; Pro (or a site) opts in by returning true. When disabled, even a
+	 * hand-crafted POST is refused with a clear, distinct error instead of
+	 * piling up unreadable reports.
+	 *
+	 * @since 1.6.0
+	 *
+	 * @return WP_Error|null WP_Error when reporting is disabled, null otherwise.
+	 */
+	private function reports_disabled() {
+		/** This filter is documented in templates/media-single.php */
+		if ( apply_filters( 'mvs_reports_enabled', false ) ) {
+			return null;
+		}
+
+		return new WP_Error(
+			'mvs_reports_disabled',
+			__( 'Reporting is not available on this site.', 'wpmediaverse' ),
+			array( 'status' => 403 )
+		);
+	}
+
+	/**
 	 * Report a media item.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function report_media( $request ) {
+		$disabled = $this->reports_disabled();
+		if ( is_wp_error( $disabled ) ) {
+			return $disabled;
+		}
+
 		$rate_check = RateLimiter::check( 'report', 10, 60 );
 		if ( is_wp_error( $rate_check ) ) {
 			return $rate_check;
@@ -192,6 +223,11 @@ class ReportController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function report_user( $request ) {
+		$disabled = $this->reports_disabled();
+		if ( is_wp_error( $disabled ) ) {
+			return $disabled;
+		}
+
 		$rate_check = RateLimiter::check( 'report', 10, 60 );
 		if ( is_wp_error( $rate_check ) ) {
 			return $rate_check;

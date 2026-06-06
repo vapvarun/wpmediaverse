@@ -15,7 +15,7 @@ When **Auto-Analyze Uploads** is enabled, WPMediaVerse sends each uploaded image
 - Suggested tags (comma-separated keywords)
 - Safety categories with confidence scores (adult content, violence, etc.)
 
-The description is saved to the `mvs_media` post's content. If **Auto-Apply Tags** is enabled, the suggested tags are assigned to the `mvs_tag` taxonomy.
+The description is saved to the `ai_description` media metadata key. If **Auto-Apply Tags** is enabled, the suggested tags are assigned to the `mvs_tag` taxonomy.
 
 ## How AI Moderation Works
 
@@ -24,10 +24,10 @@ When **Auto-Moderate Uploads** is enabled, WPMediaVerse checks the AI safety sco
 | Action | What Happens |
 |--------|-------------|
 | Flag for review | Media stays published but appears in the moderation queue |
-| Hide | Media's `_mvs_privacy` is set to `private` |
+| Hide | Media's `privacy` is set to `private` |
 | Reject | Media's `post_status` is set to `draft` |
 
-All moderation actions fire the `mvs_media_moderated` action hook.
+Moderation status changes fire the `mvs_moderation_changed` action hook (`$media_id`, `$status`, `$old_status`, `$user_id`).
 
 ## Triggering Analysis Manually
 
@@ -78,16 +78,18 @@ class MyCustomProvider implements AIProviderInterface {
     }
 }
 
-add_action( 'mvs_register_ai_providers', function( $ai_service ) {
+add_action( 'mvs_ai_providers', function( $ai_service ) {
     $ai_service->register_provider( new MyCustomProvider() );
 } );
 ```
 
-## Moderation Status Meta
+## Moderation & AI Metadata
+
+These keys live in WPMediaVerse's `mvs_media_meta` table (accessed via the `MediaRepository`), not in WordPress post meta. `moderation_status` is also a column on the `mvs_media_index` table.
 
 | Meta Key | Values | Description |
 |----------|--------|-------------|
-| `_mvs_moderation_status` | `approved`, `pending`, `flagged`, `rejected` | Current moderation status |
-| `_mvs_ai_description` | string | AI-generated description |
-| `_mvs_ai_tags` | string | Comma-separated AI-suggested tags |
-| `_mvs_ai_flags` | serialized array | Safety categories with scores |
+| `moderation_status` | `approved`, `pending`, `flagged`, `rejected` | Current moderation status |
+| `ai_description` | string | AI-generated description |
+| `ai_tags` | string[] | AI-suggested tags |
+| `ai_confidence` | float | Confidence score for the AI analysis |

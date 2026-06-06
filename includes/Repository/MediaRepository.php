@@ -1109,23 +1109,14 @@ class MediaRepository implements MediaRepositoryInterface {
 			? get_current_user_id()
 			: (int) $args['viewer_id'];
 
-		// Privacy mode selection — closes Basecamp #9936622656 (private media
-		// leak on profile tabs). Previously this helper hardcoded privacy=any,
-		// which exposed private items to anyone visiting another user's
-		// profile. The new rule is "private is owner-only; all other privacy
-		// levels (members/friends/group/custom) stay discoverable by browsing
-		// the profile because that's what those levels are for." Matches the
-		// raw-SQL filter applied to the BuddyPress profile media tab in
-		// ProfileTabIntegration. Owner / admin / explicit-opt-in callers
-		// still see everything.
-		$is_owner_self = ( (int) $user_id === $viewer ) && $viewer > 0;
-		$is_admin      = $viewer > 0 && user_can( $viewer, 'moderate_mvs_media' );
-
-		if ( $is_owner_self || ! empty( $args['include_private'] ) || $is_admin ) {
-			$privacy = 'any';
-		} else {
-			$privacy = 'hide_private';
-		}
+		// Privacy mode selection. 1.3.0 closed the private-leak case
+		// (Basecamp #9936622656) with 'hide_private'; 1.6.0 tightens it to
+		// the viewer-aware 'profile' mode because members/friends-level items
+		// were still listed to viewers outside those audiences — including
+		// logged-out visitors (Basecamp #9941246549). Owner / admin /
+		// explicit-opt-in callers still see everything; sites can restore the
+		// old discoverability via the `mvs_profile_privacy_levels` filter.
+		$privacy = $this->resolve_profile_privacy_mode( $user_id, $viewer, ! empty( $args['include_private'] ) );
 
 		return $this->query(
 			array(
@@ -1136,6 +1127,52 @@ class MediaRepository implements MediaRepositoryInterface {
 				'offset'            => (int) $args['offset'],
 				'privacy'           => $privacy,
 				'viewer_id'         => $viewer,
+			)
+		);
+	}
+
+	/**
+	 * Pick the privacy mode for a single-author profile listing.
+	 *
+	 * Owner / admin / explicit opt-in see everything; everyone else gets the
+	 * viewer-aware 'profile' gate. Shared by query_by_author() and
+	 * count_visible_by_author() so listing and pagination count always agree.
+	 *
+	 * @param int  $author_id       Listing author.
+	 * @param int  $viewer          Current viewer (0 = anonymous).
+	 * @param bool $include_private Caller opt-in to bypass the gate.
+	 * @return string Privacy mode for query()/query_count().
+	 */
+	private function resolve_profile_privacy_mode( int $author_id, int $viewer, bool $include_private = false ): string {
+		$is_owner_self = ( $author_id === $viewer ) && $viewer > 0;
+		$is_admin      = $viewer > 0 && user_can( $viewer, 'moderate_mvs_media' );
+
+		return ( $is_owner_self || $include_private || $is_admin ) ? 'any' : 'profile';
+	}
+
+	/**
+	 * Count media visible to a viewer on an author's profile listing.
+	 *
+	 * Mirrors query_by_author()'s privacy-mode selection so profile tabs
+	 * count exactly the rows they list (Basecamp #9941246549 — the BP
+	 * profile media tab previously counted/listed members-only items for
+	 * logged-out visitors via its own raw SQL).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param int      $user_id   Author user ID.
+	 * @param int|null $viewer_id Viewer user ID. Null = current user.
+	 * @return int
+	 */
+	public function count_visible_by_author( int $user_id, ?int $viewer_id = null ): int {
+		$viewer = null === $viewer_id ? get_current_user_id() : (int) $viewer_id;
+
+		return $this->query_count(
+			array(
+				'author_id' => $user_id,
+				'status'    => 'publish',
+				'privacy'   => $this->resolve_profile_privacy_mode( $user_id, $viewer ),
+				'viewer_id' => $viewer,
 			)
 		);
 	}
@@ -1230,8 +1267,8 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type string $search                   LIKE on title/description. Default ''.
 	 *     @type int    $tag_tt_id                term_taxonomy_id for a tag join. Default 0.
 	 *     @type int    $category_tt_id           term_taxonomy_id for a category join. Default 0.
-	 *     @type string $privacy                  'any'|'public'|'visible'. Default 'any'.
-	 *     @type int    $viewer_id                Required when privacy='visible'. Default 0.
+	 *     @type string $privacy                  'any'|'public'|'visible'|'profile'. Default 'any'.
+	 *     @type int    $viewer_id                Required when privacy='visible'/'profile'. Default 0.
 	 *     @type bool   $exclude_non_cover_group  Drop non-cover gallery members. Default false.
 	 *     @type string $since                    created_at >= this datetime. Default ''.
 	 *     @type string $orderby                  Allowlisted column. Default 'created_at'.
@@ -1317,7 +1354,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			$distinct = true;
 		}
 
-		list( $privacy_where, $privacy_params ) = $this->build_privacy_where( (string) $args['privacy'], (int) $args['viewer_id'] );
+		list( $privacy_where, $privacy_params ) = $this->build_privacy_where( (string) $args['privacy'], (int) $args['viewer_id'], (int) $args['author_id'] );
 		if ( '' !== $privacy_where ) {
 			$where[] = $privacy_where;
 			$params  = array_merge( $params, $privacy_params );
@@ -1352,12 +1389,14 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * Repository (never up-calls PrivacyService — that would invert the layer
 	 * order).
 	 *
-	 * @param string $mode      'any' (no filter), 'public' (anon), or 'visible'
-	 *                          (logged-in non-moderator: public + members + own).
-	 * @param int    $viewer_id Current viewer, used only by the 'visible' mode.
+	 * @param string $mode      'any' (no filter), 'public' (anon), 'visible'
+	 *                          (logged-in non-moderator: public + members + own),
+	 *                          or 'profile' (single-author listing, per-viewer levels).
+	 * @param int    $viewer_id Current viewer, used by 'visible' and 'profile'.
+	 * @param int    $author_id Listing author, used only by 'profile' (friendship check).
 	 * @return array{0:string,1:array} [ where-fragment, params ].
 	 */
-	private function build_privacy_where( string $mode, int $viewer_id ): array {
+	private function build_privacy_where( string $mode, int $viewer_id, int $author_id = 0 ): array {
 		switch ( $mode ) {
 			case 'public':
 				return array( "m.privacy = 'public'", array() );
@@ -1366,14 +1405,57 @@ class MediaRepository implements MediaRepositoryInterface {
 					"(m.privacy = 'public' OR m.privacy = 'members' OR m.post_author = %d)",
 					array( $viewer_id ),
 				);
+			case 'profile':
+				// Single-author (profile) listing — per-viewer privacy levels.
+				// Members- and friends-level items must NOT be listed for
+				// viewers outside those audiences (Basecamp #9941246549:
+				// members-only media rendered for logged-out visitors).
+				// `group` / `custom` need per-item membership checks, so they
+				// stay owner-only in listings. Owner/admin callers get 'any'
+				// upstream (query_by_author), so this branch is non-owner only.
+				$levels = array( 'public' );
+				if ( $viewer_id > 0 ) {
+					$levels[] = 'members';
+					$levels[] = 'loggedin';
+					if (
+						$author_id > 0
+						&& function_exists( 'friends_check_friendship' )
+						&& friends_check_friendship( $author_id, $viewer_id )
+					) {
+						$levels[] = 'friends';
+					}
+				}
+
+				/**
+				 * Filters the privacy levels a viewer may see in a single-author
+				 * profile listing.
+				 *
+				 * Restore the pre-1.6.0 "everything except private" discoverability:
+				 * add_filter( 'mvs_profile_privacy_levels', function () {
+				 *     return array( 'public', 'members', 'loggedin', 'friends', 'group', 'custom' );
+				 * } );
+				 *
+				 * @since 1.6.0
+				 *
+				 * @param string[] $levels    Allowed privacy slugs.
+				 * @param int      $author_id Profile owner user ID.
+				 * @param int      $viewer_id Current viewer user ID (0 = anonymous).
+				 */
+				$levels = (array) apply_filters( 'mvs_profile_privacy_levels', $levels, $author_id, $viewer_id );
+
+				$placeholders = implode( ',', array_fill( 0, count( $levels ), '%s' ) );
+				if ( $viewer_id > 0 ) {
+					return array(
+						"(m.privacy IN ({$placeholders}) OR m.post_author = %d)",
+						array_merge( array_values( $levels ), array( $viewer_id ) ),
+					);
+				}
+				return array( "m.privacy IN ({$placeholders})", array_values( $levels ) );
 			case 'hide_private':
-				// Permissive sibling of 'visible' — only filters out
-				// `private`, leaves members/friends/group/custom alone.
-				// Used by profile-tab style queries where the owner can
-				// publish at members/friends/group/custom and expect those
-				// audiences to discover the items by browsing the profile.
-				// Closes the private-leak case (Basecamp #9936622656)
-				// without over-restricting the other non-public levels.
+				// DEPRECATED since 1.6.0 — superseded by 'profile' (this mode
+				// listed members/friends items to any visitor, Basecamp
+				// #9941246549). Kept because mode strings reach the public
+				// query()/query_count() args surface (Production Rule #2).
 				return array(
 					"(m.privacy != 'private' OR m.post_author = %d)",
 					array( $viewer_id ),
@@ -1382,6 +1464,67 @@ class MediaRepository implements MediaRepositoryInterface {
 			default:
 				return array( '', array() );
 		}
+	}
+
+	/**
+	 * Resolve the privacy mode for a SITE-WIDE explore listing, matching the
+	 * canonical gate in MediaController::get_items (the REST /media endpoint):
+	 * anonymous → public only; logged-in non-moderator → public + members +
+	 * own; moderator → everything. Callers pass the result as the `privacy`
+	 * arg to query()/query_count() (plus `moderation_status => 'approved'`),
+	 * so server-rendered explore surfaces show exactly what the REST feed and
+	 * its Load More return — no SSR-vs-REST divergence that leaks private or
+	 * unmoderated media (audit 2026-06-04).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param int $viewer_id Current viewer (0 = anonymous).
+	 * @return string 'public' | 'visible' | 'any'
+	 */
+	public function resolve_explore_privacy_mode( int $viewer_id ): string {
+		if ( ! $viewer_id ) {
+			return 'public';
+		}
+		if ( user_can( $viewer_id, 'moderate_mvs_media' ) ) {
+			return 'any';
+		}
+		return 'visible';
+	}
+
+	/**
+	 * The same explore gate as resolve_explore_privacy_mode(), but as a raw
+	 * SQL fragment for callers that can't route through query() because they
+	 * join extra tables (story meta, Pro feed layouts). Returns
+	 * [ where_fragment, params ] using the supplied column alias.
+	 *
+	 * Mirrors build_privacy_where()'s 'public'/'visible' cases; kept in lockstep
+	 * with resolve_explore_privacy_mode() so every explore surface honours one
+	 * rule. `moderation_status = 'approved'` is the caller's responsibility
+	 * (it varies by table alias).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param string $alias     Table alias holding the privacy + post_author columns (e.g. 'idx').
+	 * @param int    $viewer_id Current viewer (0 = anonymous).
+	 * @return array{0:string,1:array} [ SQL fragment (no leading AND), bound params ].
+	 */
+	public function explore_privacy_clause( string $alias, int $viewer_id ): array {
+		// Alias is caller-supplied code, never user input; still constrain it.
+		// Empty alias → bare column names (callers that query a single table
+		// without an alias, e.g. the Pro feed layouts).
+		$alias  = preg_replace( '/[^a-zA-Z0-9_]/', '', $alias );
+		$prefix = '' !== $alias ? $alias . '.' : '';
+
+		if ( ! $viewer_id ) {
+			return array( "{$prefix}privacy = 'public'", array() );
+		}
+		if ( user_can( $viewer_id, 'moderate_mvs_media' ) ) {
+			return array( '1 = 1', array() );
+		}
+		return array(
+			"({$prefix}privacy = 'public' OR {$prefix}privacy = 'members' OR {$prefix}post_author = %d)",
+			array( $viewer_id ),
+		);
 	}
 
 	/**
@@ -1981,6 +2124,30 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function delete_cascade( int $media_id ): bool {
 		global $wpdb;
 
+		// Author captured before the index row is deleted, so the
+		// mvs_media_deleted hook (fired at the end) carries it.
+		$author_id = (int) $this->get_author( $media_id );
+
+		// Capture every stored file path BEFORE the meta/index rows are deleted,
+		// then hand them to the async storage-cleanup cycle. Both delete paths
+		// funnel through here (REST delete + account deletion), so this is the
+		// single point that reclaims the original + every variant (thumbnails,
+		// WebP/AVIF, posters) from local + cloud (Basecamp #9952862992 family).
+		$orphaned_files = $this->get_stored_file_paths( $media_id );
+		if ( ! empty( $orphaned_files ) ) {
+			/**
+			 * Fires with every relative file path owned by a media item that is
+			 * about to be torn down, so a cleanup listener can delete the bytes
+			 * from disk and cloud asynchronously.
+			 *
+			 * @since 1.6.0
+			 *
+			 * @param int      $media_id       Media ID being deleted.
+			 * @param string[] $orphaned_files Relative paths (original + variants).
+			 */
+			do_action( 'mvs_media_files_orphaned', $media_id, $orphaned_files );
+		}
+
 		$where  = array( 'media_id' => $media_id );
 		$format = array( '%d' );
 
@@ -1998,6 +2165,65 @@ class MediaRepository implements MediaRepositoryInterface {
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = 'mvs_comment'", $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
+		/**
+		 * Fires after a media item has been permanently deleted. delete_cascade
+		 * is the single funnel for EVERY delete path (REST single + bulk, admin
+		 * MediaListPage, GDPR erase, account deletion), so firing here — rather
+		 * than in each caller — guarantees Pro listeners (quota decrement,
+		 * collection-membership purge, competition-entry cleanup) run no matter
+		 * how the media was deleted. Previously only the two REST paths fired
+		 * it, so admin/GDPR/user-deletion left those rows orphaned
+		 * (audit 2026-06-04, #39 follow-up; verified by the cascade double-check).
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int $media_id  The deleted media ID.
+		 * @param int $author_id The author user ID.
+		 */
+		do_action( 'mvs_media_deleted', $media_id, $author_id );
+
 		return true;
+	}
+
+	/**
+	 * Every relative file path stored for a media item: the original plus every
+	 * driver-agnostic variant path (thumbnails, WebP/AVIF siblings, video
+	 * posters). Read before a delete so the storage-cleanup cycle can reclaim
+	 * the bytes. Every variant path lives under a `*_path` meta key (1.4.0+).
+	 *
+	 * @since 1.6.0
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string[] Unique, non-empty relative paths.
+	 */
+	public function get_stored_file_paths( int $media_id ): array {
+		global $wpdb;
+
+		$paths = array();
+
+		$file_path = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT file_path FROM {$wpdb->prefix}mvs_media_index WHERE media_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$media_id
+			)
+		);
+		if ( $file_path ) {
+			$paths[] = (string) $file_path;
+		}
+
+		$variant_paths = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$media_id,
+				'%_path'
+			)
+		);
+		foreach ( $variant_paths as $variant_path ) {
+			if ( '' !== (string) $variant_path ) {
+				$paths[] = (string) $variant_path;
+			}
+		}
+
+		return array_values( array_unique( $paths ) );
 	}
 }

@@ -10,7 +10,7 @@
  * @package WPMediaVerse
  */
 
-import { store, getContext } from '@wordpress/interactivity';
+import { store, getContext, getElement } from '@wordpress/interactivity';
 
 // i18n: wp-i18n is loaded as a classic script on every WP page; read it
 // from window since @wordpress/i18n is not yet importable in script modules.
@@ -221,6 +221,20 @@ store( 'mvs/media-social', {
 				sharedUI.actions.showToast( __( 'Please log in to favorite.', 'wpmediaverse' ), 'error' );
 				return;
 			}
+			// Extension point: an add-on (Pro multi-collection picker) may handle
+			// the click by opening a "Save to" picker instead. It listens for this
+			// cancelable event and calls preventDefault; with no add-on the event
+			// is ignored and the plain favorite toggle below runs unchanged.
+			const mvsFavEl    = getElement()?.ref;
+			const mvsFavEvent = new CustomEvent( 'mvs-favorite-click', {
+				bubbles: true,
+				cancelable: true,
+				detail: { mediaId: ctx.mediaId },
+			} );
+			( mvsFavEl || document.body ).dispatchEvent( mvsFavEvent );
+			if ( mvsFavEvent.defaultPrevented ) {
+				return;
+			}
 			// Optimistic UI: flip the state immediately so the heart fills/empties
 			// before the REST round-trip. Roll back on error.
 			const previous = !! ctx.isFavorite;
@@ -319,7 +333,7 @@ store( 'mvs/media-social', {
 			const comment = ctx.item;
 			if ( ! comment ) return;
 
-			sharedUI.actions.showConfirm( 'Delete this comment?', async () => {
+			sharedUI.actions.showConfirm( __( 'Delete this comment?', 'wpmediaverse' ), async () => {
 				const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
 					method: 'DELETE',
 					headers: apiHeaders( ctx.nonce ),
@@ -553,8 +567,8 @@ store( 'mvs/media-social', {
 		confirmDelete() {
 			const ctx = getContext();
 			const msg = ctx.type === 'album'
-				? 'Delete this album? Media items will not be deleted.'
-				: 'Delete this media item? This cannot be undone.';
+				? __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' )
+				: __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' );
 			sharedUI.actions.showConfirm( msg, async () => {
 				const ep = endpoint( ctx );
 				const res = await fetch( ctx.restUrl + ep + ctx.mediaId, {
@@ -578,13 +592,13 @@ store( 'mvs/media-social', {
 
 			// Build a reason selector dropdown.
 			const reasons = [
-				{ value: 'spam', label: 'Spam' },
-				{ value: 'harassment', label: 'Harassment' },
-				{ value: 'nudity', label: 'Nudity or sexual content' },
-				{ value: 'violence', label: 'Violence or dangerous acts' },
-				{ value: 'copyright', label: 'Copyright infringement' },
-				{ value: 'misinformation', label: 'Misinformation' },
-				{ value: 'other', label: 'Other' },
+				{ value: 'spam', label: __( 'Spam', 'wpmediaverse' ) },
+				{ value: 'harassment', label: __( 'Harassment', 'wpmediaverse' ) },
+				{ value: 'nudity', label: __( 'Nudity or sexual content', 'wpmediaverse' ) },
+				{ value: 'violence', label: __( 'Violence or dangerous acts', 'wpmediaverse' ) },
+				{ value: 'copyright', label: __( 'Copyright infringement', 'wpmediaverse' ) },
+				{ value: 'misinformation', label: __( 'Misinformation', 'wpmediaverse' ) },
+				{ value: 'other', label: __( 'Other', 'wpmediaverse' ) },
 			];
 
 			// Create a temporary select element in the DOM.

@@ -8,7 +8,7 @@
     {
       "filter": "mvs_generate_watermark",
       "where": "Core/Plugin.php:214",
-      "behavior": "Watermarker::generate() \u2014 uses $file_path filesystem read; outputs preview to /uploads/wpmediaverse/previews/"
+      "behavior": "Watermarker::generate() — uses $file_path filesystem read; outputs preview to /uploads/wpmediaverse/previews/"
     },
     {
       "filter": "mvs_stats_tabs",
@@ -108,6 +108,34 @@
       "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
       "fired_by": "wpmediaverse",
       "kind": "add_action_listener"
+    },
+    {
+      "filter": "mvs_collection_media_ids",
+      "kind": "filter",
+      "fired_by": "wpmediaverse (Free)",
+      "where": "Core/Plugin.php",
+      "behavior": "Unions mvs_pro_collection_items media IDs into a manual collection's list so picker-added media render (shortcode + cover paths)"
+    },
+    {
+      "filter": "mvs_collection_response",
+      "kind": "filter",
+      "fired_by": "wpmediaverse (Free)",
+      "where": "Core/Plugin.php",
+      "behavior": "Appends Pro multi-collection items (with created_at) to the REST collection detail's favorites list, sorted newest-first"
+    },
+    {
+      "action": "mvs_media_deleted",
+      "kind": "action",
+      "fired_by": "wpmediaverse (Free)",
+      "where": "Core/Plugin.php:220",
+      "behavior": "Purges all mvs_pro_collection_items rows for a deleted media item"
+    },
+    {
+      "filter": "mvs_pro_quota_default_applies_to_unassigned",
+      "kind": "filter",
+      "fired_by": "wpmediaverse-pro (Pro-internal extension point)",
+      "where": "Quota/QuotaService.php:251",
+      "behavior": "Lets a site opt the default quota into applying to users with no explicit plan (default false)"
     }
   ]
 }

@@ -52,6 +52,8 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 			'uploading'      => false,
 			'uploadError'    => '',
 			'successMessage' => '',
+			'hasPending'     => false,
+			'pendingCount'   => 0,
 			'files'          => array(),
 			'privacy'        => $show_privacy ? get_option( 'mvs_default_privacy', 'public' ) : '',
 			'allowedTypes'   => array_map( 'trim', explode( ',', $allowed_types ) ),
@@ -114,6 +116,15 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 			placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 			aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setTags" />
+	</div>
+	<!-- Review step: shown after files are selected so the user can fill the
+	     details above before the upload starts. -->
+	<div class="mvs-upload-review" data-wp-bind--hidden="!state.hasPending" hidden>
+		<p class="mvs-upload-review-hint"><?php esc_html_e( 'Add details above (optional), then upload.', 'wpmediaverse' ); ?></p>
+		<div class="mvs-upload-review-actions">
+			<button type="button" class="mvs-upload-confirm" data-wp-on--click="actions.confirmUpload" data-wp-text="state.pendingLabel"></button>
+			<button type="button" class="mvs-upload-cancel" data-wp-on--click="actions.cancelPending"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
+		</div>
 	</div>
 	<div class="mvs-upload-error" data-wp-bind--hidden="!state.hasError" hidden>
 		<p data-wp-text="state.errorMessage" style="margin:0;flex:1;"></p>

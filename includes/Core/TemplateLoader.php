@@ -378,29 +378,19 @@ class TemplateLoader {
 	 * @return bool
 	 */
 	private function can_view_media( array $media ): bool {
-		$privacy = $media['privacy'] ?? 'public';
-
-		if ( 'public' === $privacy ) {
-			return true;
+		$media_id = (int) ( $media['media_id'] ?? 0 );
+		if ( ! $media_id ) {
+			return false;
 		}
 
-		$current_user_id = get_current_user_id();
-
-		// Owner can always view.
-		if ( $current_user_id && (int) $media['post_author'] === $current_user_id ) {
-			return true;
-		}
-
-		// Admins/moderators can view everything.
-		if ( current_user_can( 'moderate_mvs_media' ) ) {
-			return true;
-		}
-
-		if ( 'members' === $privacy && $current_user_id ) {
-			return true;
-		}
-
-		return false;
+		// Delegate to the single canonical gate. This local check previously
+		// handled only public/owner/moderator/members and returned false for
+		// friends/group/custom — so a legitimate friend or group member was
+		// wrongly 404'd on a friends-only/group media page (audit 2026-06-04),
+		// and it was one of several privacy reimplementations. PrivacyService
+		// covers every level (friends via friendship, group via membership,
+		// custom via grants) in one place.
+		return \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $media_id, get_current_user_id() );
 	}
 
 	/**

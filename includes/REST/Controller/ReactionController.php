@@ -125,6 +125,13 @@ class ReactionController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// Privacy gate — the aggregate reaction tally on a members-only/private
+		// item must not be world-readable via this public route (audit
+		// 2026-06-04). Mirror the single-media page: non-viewer gets a 404.
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
 		$counts        = $this->reactions->get_counts( $media_id );
 		$total         = array_sum( $counts );
 		$user_reaction = null;
@@ -162,6 +169,11 @@ class ReactionController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
+		// React only to media you can view (permission check is login-only).
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $media_id, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_not_found', __( 'Media item not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
 		if ( ! in_array( $reaction_type, ReactionService::TYPES, true ) ) {
 			return new WP_Error( 'mvs_invalid_type', __( 'Invalid reaction type.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
@@ -178,11 +190,12 @@ class ReactionController extends WP_REST_Controller {
 		 */
 		do_action( 'mvs_reaction_toggled', $media_id, get_current_user_id(), $reaction_type, $result['action'] );
 
-		// Fire specific hooks for integrations (BuddyPress, webhooks).
-		if ( 'added' === $result['action'] || 'updated' === $result['action'] ) {
-			/** This action is documented in includes/Integrations/BuddyPress/ActivitySyncIntegration.php */
-			do_action( 'mvs_reaction_added', $media_id, get_current_user_id(), $reaction_type );
-		}
+		// NOTE: `mvs_reaction_added` is fired by ReactionService::toggle() (the
+		// canonical owner, for every caller) on a genuinely new reaction only.
+		// This controller used to fire it a SECOND time — and also on 'updated'
+		// — producing duplicate notifications/activity/webhooks and a spurious
+		// notification when a user merely changed their reaction type
+		// (audit 2026-06-04). Removed; the service owns the hook.
 
 		$counts = $this->reactions->get_counts( $media_id );
 

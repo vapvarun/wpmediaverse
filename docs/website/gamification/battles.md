@@ -41,10 +41,10 @@ Go to **My Media > Battles** to see all your battles with win/loss/pending statu
 
 ## For Site Owners
 
-1. Go to **Media > Settings > Gamification** and enable **Photo Battles**
+1. Go to **WPMediaVerse > Settings > Gamification** and enable **Photo Battles**
 2. Battles are self-service - users challenge each other directly, no admin involvement required
 3. Submit and vote windows are currently 48 hours each
-4. Monitor all active battles from **Media > Competitions**
+4. Monitor all active battles from **Competitions**
 
 ## Lifecycle
 

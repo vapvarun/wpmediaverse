@@ -28,6 +28,13 @@ if ( ! $album || 'mvs_album' !== $album->post_type ) {
 	return;
 }
 
+// Privacy gate: a members/private album embedded via this block (or the
+// [mvs_album] shortcode that shares this render) must not expose its contents
+// to viewers who can't see it (audit 2026-06-04). A non-viewer gets nothing.
+if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $album_id, get_current_user_id() ) ) {
+	return;
+}
+
 // Get album items joined with mvs_media_index for full media data.
 global $wpdb;
 $album_items_table = $wpdb->prefix . 'mvs_album_items';

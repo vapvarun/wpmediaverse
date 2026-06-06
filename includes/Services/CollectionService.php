@@ -17,14 +17,82 @@ defined( 'ABSPATH' ) || exit;
 class CollectionService {
 
 	/**
+	 * Rule keys accepted by save_rules() / resolve().
+	 *
+	 * @var string[]
+	 */
+	private const RULE_KEYS = array( 'media_type', 'tag', 'category', 'author', 'date_after', 'date_before', 'privacy' );
+
+	/**
 	 * Save smart collection rules.
+	 *
+	 * Rules are normalized before storage: keys are whitelisted, and
+	 * tag/category/author values are coerced to IDs (a tag/category name or
+	 * slug is resolved to its term ID) so resolve() always operates on IDs.
 	 *
 	 * @param int   $collection_id Collection post ID.
 	 * @param array $rules         Array of rule definitions.
 	 */
 	public function save_rules( int $collection_id, array $rules ): void {
+		$clean = array();
+
+		foreach ( $rules as $rule ) {
+			if ( ! is_array( $rule ) || empty( $rule['key'] ) || ! isset( $rule['value'] ) ) {
+				continue;
+			}
+
+			$key   = sanitize_key( $rule['key'] );
+			$value = sanitize_text_field( (string) $rule['value'] );
+
+			if ( ! in_array( $key, self::RULE_KEYS, true ) || '' === $value ) {
+				continue;
+			}
+
+			if ( 'tag' === $key || 'category' === $key ) {
+				$term_id = $this->resolve_term_id( $value, 'tag' === $key ? 'mvs_tag' : 'mvs_category' );
+				if ( 0 === $term_id ) {
+					continue;
+				}
+				$value = (string) $term_id;
+			} elseif ( 'author' === $key ) {
+				$value = (string) absint( $value );
+				if ( '0' === $value ) {
+					continue;
+				}
+			}
+
+			$clean[] = array(
+				'key'   => $key,
+				'value' => $value,
+			);
+		}
+
 		update_post_meta( $collection_id, '_mvs_collection_type', 'smart' );
-		update_post_meta( $collection_id, '_mvs_collection_rules', $rules );
+		update_post_meta( $collection_id, '_mvs_collection_rules', $clean );
+	}
+
+	/**
+	 * Resolve a tag/category rule value to a term ID.
+	 *
+	 * Accepts a numeric term ID, a slug, or a name. Legacy rules (seeded demo
+	 * data and rows saved before 1.6.0 by the edit modal) stored names instead
+	 * of IDs; resolving here heals them without a migration.
+	 *
+	 * @param string $value    Raw rule value.
+	 * @param string $taxonomy Taxonomy name (mvs_tag or mvs_category).
+	 * @return int Term ID, or 0 when unresolvable.
+	 */
+	private function resolve_term_id( string $value, string $taxonomy ): int {
+		if ( is_numeric( $value ) ) {
+			return absint( $value );
+		}
+
+		$term = get_term_by( 'slug', $value, $taxonomy );
+		if ( ! $term ) {
+			$term = get_term_by( 'name', $value, $taxonomy );
+		}
+
+		return $term instanceof \WP_Term ? (int) $term->term_id : 0;
 	}
 
 	/**
@@ -78,11 +146,16 @@ class CollectionService {
 
 		global $wpdb;
 
-		$index_table = $wpdb->prefix . 'mvs_media_index';
-		$joins       = array();
-		$wheres      = array( "idx.status = 'publish'" );
-		$params      = array();
-		$join_idx    = 0;
+		// JOIN placeholders appear before WHERE placeholders in the final SQL,
+		// so their params are collected separately and merged join-first.
+		// A single rule-ordered array misaligned every value when a WHERE-type
+		// rule (media_type/privacy/...) preceded a tag/category rule.
+		$index_table  = $wpdb->prefix . 'mvs_media_index';
+		$joins        = array();
+		$wheres       = array( "idx.status = 'publish'" );
+		$join_params  = array();
+		$where_params = array();
+		$join_idx     = 0;
 
 		foreach ( $rules as $rule ) {
 			if ( empty( $rule['key'] ) || ! isset( $rule['value'] ) ) {
@@ -91,44 +164,53 @@ class CollectionService {
 
 			switch ( $rule['key'] ) {
 				case 'media_type':
-					$wheres[] = 'idx.file_type LIKE %s';
-					$params[] = '%' . $wpdb->esc_like( sanitize_text_field( $rule['value'] ) ) . '%';
+					$wheres[]       = 'idx.file_type LIKE %s';
+					$where_params[] = '%' . $wpdb->esc_like( sanitize_text_field( $rule['value'] ) ) . '%';
 					break;
 
 				case 'tag':
 				case 'category':
 					$taxonomy = 'tag' === $rule['key'] ? 'mvs_tag' : 'mvs_category';
-					$alias_tr = 'tr' . $join_idx;
-					$alias_tt = 'tt' . $join_idx;
-					$joins[]  = "INNER JOIN {$wpdb->term_relationships} AS {$alias_tr} ON {$alias_tr}.object_id = idx.media_id";
-					$joins[]  = "INNER JOIN {$wpdb->term_taxonomy} AS {$alias_tt} ON {$alias_tt}.term_taxonomy_id = {$alias_tr}.term_taxonomy_id AND {$alias_tt}.taxonomy = %s AND {$alias_tt}.term_id = %d";
-					$params[] = $taxonomy;
-					$params[] = (int) $rule['value'];
+					$term_id  = $this->resolve_term_id( sanitize_text_field( (string) $rule['value'] ), $taxonomy );
+					if ( 0 === $term_id ) {
+						// Unresolvable term can never match anything.
+						return array(
+							'items' => array(),
+							'total' => 0,
+						);
+					}
+					$alias_tr      = 'tr' . $join_idx;
+					$alias_tt      = 'tt' . $join_idx;
+					$joins[]       = "INNER JOIN {$wpdb->term_relationships} AS {$alias_tr} ON {$alias_tr}.object_id = idx.media_id";
+					$joins[]       = "INNER JOIN {$wpdb->term_taxonomy} AS {$alias_tt} ON {$alias_tt}.term_taxonomy_id = {$alias_tr}.term_taxonomy_id AND {$alias_tt}.taxonomy = %s AND {$alias_tt}.term_id = %d";
+					$join_params[] = $taxonomy;
+					$join_params[] = $term_id;
 					++$join_idx;
 					break;
 
 				case 'author':
-					$wheres[] = 'idx.post_author = %d';
-					$params[] = (int) $rule['value'];
+					$wheres[]       = 'idx.post_author = %d';
+					$where_params[] = (int) $rule['value'];
 					break;
 
 				case 'date_after':
-					$wheres[] = 'idx.created_at >= %s';
-					$params[] = sanitize_text_field( $rule['value'] ) . ' 00:00:00';
+					$wheres[]       = 'idx.created_at >= %s';
+					$where_params[] = sanitize_text_field( $rule['value'] ) . ' 00:00:00';
 					break;
 
 				case 'date_before':
-					$wheres[] = 'idx.created_at <= %s';
-					$params[] = sanitize_text_field( $rule['value'] ) . ' 23:59:59';
+					$wheres[]       = 'idx.created_at <= %s';
+					$where_params[] = sanitize_text_field( $rule['value'] ) . ' 23:59:59';
 					break;
 
 				case 'privacy':
-					$wheres[] = 'idx.privacy = %s';
-					$params[] = sanitize_text_field( $rule['value'] );
+					$wheres[]       = 'idx.privacy = %s';
+					$where_params[] = sanitize_text_field( $rule['value'] );
 					break;
 			}
 		}
 
+		$params    = array_merge( $join_params, $where_params );
 		$join_sql  = implode( ' ', $joins );
 		$where_sql = implode( ' AND ', $wheres );
 		$offset    = ( $page - 1 ) * $per_page;

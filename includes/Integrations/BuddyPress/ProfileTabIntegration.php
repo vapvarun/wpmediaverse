@@ -95,16 +95,11 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 			return;
 		}
 
-		$viewer_id = get_current_user_id();
-
-		global $wpdb;
-		$media_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = 'publish' AND (privacy != 'private' OR post_author = %d)", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$displayed_user_id,
-				$viewer_id
-			)
-		);
+		// Viewer-aware count via the repository privacy gate — members/friends
+		// items no longer counted for viewers outside those audiences
+		// (Basecamp #9941246549).
+		$media_count = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )
+			->count_visible_by_author( $displayed_user_id );
 
 		if ( $media_count > 0 ) {
 			$nav_name = sprintf(
@@ -153,19 +148,13 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 	}
 
 	protected function fetch_media_ids( int $per_page, int $offset ): array {
-		$user_id   = (int) bp_displayed_user_id();
-		$viewer_id = get_current_user_id();
+		$user_id = (int) bp_displayed_user_id();
+		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-		global $wpdb;
-		$table = $wpdb->prefix . 'mvs_media_index';
-
-		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table} WHERE post_author = %d AND status = 'publish' AND (privacy != 'private' OR post_author = %d)", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$user_id,
-				$viewer_id
-			)
-		);
+		// Viewer-aware repository gate — replaces raw SQL that listed
+		// members/friends-level media to any visitor, including logged-out
+		// ones (Basecamp #9941246549).
+		$total = $repo->count_visible_by_author( $user_id );
 
 		if ( ! $total ) {
 			return array(
@@ -174,18 +163,16 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 			);
 		}
 
-		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$table} WHERE post_author = %d AND status = 'publish' AND (privacy != 'private' OR post_author = %d) ORDER BY created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$user_id,
-				$viewer_id,
-				$per_page,
-				$offset
+		$rows = $repo->query_by_author(
+			$user_id,
+			array(
+				'limit'  => $per_page,
+				'offset' => $offset,
 			)
 		);
 
 		return array(
-			'ids'   => array_map( 'intval', $ids ?: array() ),
+			'ids'   => array_map( 'intval', array_column( $rows, 'media_id' ) ),
 			'total' => $total,
 		);
 	}

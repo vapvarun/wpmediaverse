@@ -101,7 +101,7 @@ WPMediaVerse uses a custom comments system stored in a dedicated table, separate
 ### Action: `mvs_comment_created`
 
 ```php
-do_action( 'mvs_comment_created', $comment_id, $media_id, $user_id );
+do_action( 'mvs_comment_created', $media_id, $user_id, $comment_id, $content, $source );
 ```
 
 BuddyPress integration uses this to record activity and send notifications.
@@ -116,7 +116,7 @@ Users can save media items to their favorites or to a named collection.
 |--------|----------|-------------|
 | `POST` | `/mvs/v1/media/{id}/favorite` | Add to favorites |
 | `DELETE` | `/mvs/v1/media/{id}/favorite` | Remove from favorites |
-| `GET` | `/mvs/v1/favorites` | List the current user's favorites |
+| `GET` | `/mvs/v1/me/favorites` | List the current user's favorites |
 
 ## Follows
 
@@ -138,7 +138,7 @@ Users can @mention each other in comments. Mentioned users receive a notificatio
 ### Action: `mvs_mentions_created`
 
 ```php
-do_action( 'mvs_mentions_created', $mentioned_user_ids, $comment_id );
+do_action( 'mvs_mentions_created', $media_id, $mentioned_user_ids, $context, $comment_id );
 ```
 
 ## Sharing

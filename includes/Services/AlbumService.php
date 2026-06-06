@@ -72,8 +72,19 @@ class AlbumService {
 		$privacy    = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : 'public';
 		$album_type = isset( $args['album_type'] ) ? sanitize_text_field( $args['album_type'] ) : 'default';
 
-		$repo->set( $album_id, 'privacy', $privacy );
-		$repo->set( $album_id, 'album_type', $album_type );
+		// Create the index row with a unique slug in the first write. Calling
+		// set() per-key would INSERT a row with slug left at its DEFAULT '' —
+		// and mvs_media_index has a UNIQUE KEY on slug, so the first album would
+		// take slug='' and every subsequent album would collide on that key and
+		// silently fail, losing privacy/album_type (read back as public/default).
+		$repo->set_many(
+			$album_id,
+			array(
+				'slug'       => $repo->generate_unique_slug( $title ),
+				'privacy'    => $privacy,
+				'album_type' => $album_type,
+			)
+		);
 
 		// Group association — only honour when the author is actually a member.
 		$group_id = isset( $args['group_id'] ) ? absint( $args['group_id'] ) : 0;

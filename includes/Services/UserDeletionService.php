@@ -58,6 +58,38 @@ class UserDeletionService {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( (int) $media_id );
 		}
 
+		// Phase 1b — delete the user's albums and collections (CPTs). These were
+		// never removed, orphaning the album's mvs_album_items rows and (for
+		// collections) Pro's mvs_pro_collection_items rows (audit 2026-06-04,
+		// #12). wp_delete_post fires the before_delete_post handlers in
+		// PostTypes\Album / PostTypes\Collection, which do the custom-table
+		// cleanup + fire mvs_album_deleted / mvs_collection_deleted.
+		$cpt_ids = get_posts(
+			array(
+				'post_type'        => array( 'mvs_album', 'mvs_collection' ),
+				'author'           => $user_id,
+				'post_status'      => 'any',
+				'posts_per_page'   => -1,
+				'fields'           => 'ids',
+				'no_found_rows'    => true,
+				'suppress_filters' => true,
+			)
+		);
+		foreach ( $cpt_ids as $cpt_id ) {
+			wp_delete_post( (int) $cpt_id, true );
+		}
+
+		// Capture the media this user VIEWED (on other people's media) before we
+		// delete those view rows, so we can recompute the affected aggregates
+		// afterwards — otherwise mvs_media_stats.views stays inflated by the
+		// deleted user forever (audit 2026-06-04, #28).
+		$viewed_media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT DISTINCT media_id FROM {$wpdb->prefix}mvs_media_views WHERE user_id = %d",
+				$user_id
+			)
+		);
+
 		// Phase 2 — purge per-user rows across all user-scoped tables.
 		$user_scoped_tables = array(
 			'mvs_media_views'               => 'user_id',
@@ -72,6 +104,7 @@ class UserDeletionService {
 			'mvs_blocks'                    => 'blocker_id',
 			'mvs_reports'                   => 'reporter_id',
 			'mvs_messages'                  => 'sender_id',
+			'mvs_message_reactions'         => 'user_id', // audit 2026-06-04 — was orphaned.
 		);
 		foreach ( $user_scoped_tables as $table => $column ) {
 			$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -102,6 +135,30 @@ class UserDeletionService {
 			),
 			array( '%s', '%d' )
 		);
+
+		// Recompute view aggregates for media the deleted user had viewed, now
+		// that their raw mvs_media_views rows are gone — otherwise the public
+		// view count stays inflated by the deleted user (audit 2026-06-04, #28).
+		// The media itself belongs to OTHER (still-existing) users.
+		foreach ( $viewed_media_ids as $viewed_media_id ) {
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_media_stats
+					SET views = ( SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_views WHERE media_id = %d )
+					WHERE media_id = %d",
+					(int) $viewed_media_id,
+					(int) $viewed_media_id
+				)
+			);
+		}
+
+		// Custom profile avatar — delete the attachment + its file. Without
+		// this the _mvs_custom_avatar attachment (and the uploaded image on
+		// disk) was orphaned on user deletion (audit 2026-06-04).
+		$mvs_container = \WPMediaVerse\Core\Plugin::container();
+		if ( $mvs_container->has( 'profile' ) ) {
+			$mvs_container->get( 'profile' )->delete_avatar( $user_id );
+		}
 
 		/**
 		 * Fires after a user's wpmediaverse data has been purged.
