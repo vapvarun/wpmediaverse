@@ -378,12 +378,8 @@ class CollectionController extends WP_REST_Controller {
 	private function prepare_collection_response( $post, bool $include_items = false, int $per_page = 20, int $page = 1 ): array {
 		$collection_type = $this->collections->get_type( $post->ID );
 
-		// Get cover from first media item via the read-side facade.
-		$cover_url      = null;
-		$first_media_id = $this->get_first_collection_media( $post->ID, $collection_type );
-		if ( $first_media_id ) {
-			$cover_url = \WPMediaVerse\Core\MediaUrl::thumb( $first_media_id );
-		}
+		// Get cover from the first media item with a renderable thumbnail.
+		$cover_url = $this->get_collection_cover_url( $post->ID, $collection_type );
 
 		$data = array(
 			'id'          => $post->ID,
@@ -471,33 +467,45 @@ class CollectionController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Get the first media ID from a collection for cover image.
+	 * Get the cover thumbnail URL for a collection.
+	 *
+	 * Scans the first few collection items and returns the first one with a
+	 * renderable thumbnail. An item can legitimately lack a thumb (audio
+	 * without cover art mid-processing, import shells), so picking item #1
+	 * blindly produced empty covers when the newest item had no file.
 	 *
 	 * @param int    $collection_id Collection post ID.
 	 * @param string $type          Collection type (smart or manual).
-	 * @return int|null
+	 * @return string|null Thumbnail URL, or null when no item has one.
 	 */
-	private function get_first_collection_media( int $collection_id, string $type ): ?int {
+	private function get_collection_cover_url( int $collection_id, string $type ): ?string {
+		$candidates = array();
+
 		if ( 'smart' === $type ) {
-			$resolved = $this->collections->resolve( $collection_id, 1, 1 );
-			if ( ! empty( $resolved['items'] ) ) {
-				return (int) $resolved['items'][0]['media_id'];
+			$resolved = $this->collections->resolve( $collection_id, 5, 1 );
+			foreach ( $resolved['items'] as $item ) {
+				$candidates[] = (int) $item['media_id'];
 			}
 		} else {
 			global $wpdb;
-			$media_id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					"SELECT media_id FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC LIMIT 5", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					$collection_id
 				)
 			);
 
 			/** This filter is documented in includes/Social/FavoriteService.php */
-			$ids = apply_filters( 'mvs_collection_media_ids', $media_id ? array( (int) $media_id ) : array(), $collection_id, 1 );
-			if ( ! empty( $ids ) ) {
-				return (int) $ids[0];
+			$candidates = apply_filters( 'mvs_collection_media_ids', array_map( 'intval', $ids ), $collection_id, 5 );
+		}
+
+		foreach ( $candidates as $media_id ) {
+			$thumb = \WPMediaVerse\Core\MediaUrl::thumb( (int) $media_id );
+			if ( '' !== $thumb ) {
+				return $thumb;
 			}
 		}
+
 		return null;
 	}
 
