@@ -199,8 +199,12 @@ jobs:
         run: |
           RESULT=$(wp plugin check wpmediaverse --format=table 2>&1)
           echo "$RESULT"
-          # Count real code errors (skip test files, build artifacts, dev files)
-          NOISE='compressed_files|hidden_files|application_detected|missing_direct_file_access_protection|outdated_tested_upto_header|trademarks'
+          # Count real code errors (skip test files, build artifacts, dev files).
+          # wp_function_not_compatible_with_requires_wp is allowlisted because the
+          # check is purely static and ignores guards: every newer-WP call we ship
+          # is behind function_exists() (Abilities::init, Plugin.php script-module
+          # translations), so older WP never reaches them.
+          NOISE='compressed_files|hidden_files|application_detected|missing_direct_file_access_protection|outdated_tested_upto_header|trademarks|wp_function_not_compatible_with_requires_wp'
           CODE_ERRORS=$(echo "$RESULT" | awk -v noise="$NOISE" '
             /^FILE:/ { file=$2 }
             /\tERROR\t/ {
