@@ -186,6 +186,14 @@ class ActivityService {
 	 * @param array $file_data File data.
 	 */
 	public function on_upload( int $media_id, array $file_data ): void {
+		// Private media never generates an activity record. The feed already
+		// hides private items at read time; skipping the write keeps DM
+		// attachments (uploaded as private media) entirely out of the activity
+		// stream rather than relying on the read-side gate alone.
+		if ( isset( $file_data['privacy'] ) && 'private' === $file_data['privacy'] ) {
+			return;
+		}
+
 		$author = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 		if ( $author ) {
 			$this->record( $author, 'media_upload', $media_id );
