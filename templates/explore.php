@@ -333,7 +333,7 @@ $mvs_archive_url = home_url( '/media/' );
 					$mvs_album_author_id  = (int) $album_post->post_author;
 					$mvs_tpl_helpers      = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
 					$mvs_album_author_url = $mvs_tpl_helpers->get_user_profile_url( $mvs_album_author_id );
-					$mvs_album_author      = $mvs_tpl_helpers->get_display_name_plain( $mvs_album_author_id );
+					$mvs_album_author     = $mvs_tpl_helpers->get_display_name_plain( $mvs_album_author_id );
 					?>
 					<div class="mvs-grid-item-info">
 						<?php if ( '' !== $mvs_album_author_url ) : ?>
@@ -351,8 +351,14 @@ $mvs_archive_url = home_url( '/media/' );
 
 			<?php
 			// Render media items from index table.
-			$media_ids_for_stats = array_column( $media_items, 'media_id' );
-			$stats_data          = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( array_map( 'intval', $media_ids_for_stats ) );
+			$media_ids_for_stats = array_map( 'intval', array_column( $media_items, 'media_id' ) );
+			// Batch-load index + all meta for the whole page in 2 queries so each
+			// tile renders from the request cache instead of ~14 queries/tile. (1.7.0)
+			$mvs_repo->prefetch( $media_ids_for_stats );
+			// Prime the access-rules presence cache too (else can_view() COUNTs the
+			// rules table once per tile). (1.7.0)
+			\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $media_ids_for_stats );
+			$stats_data = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( $media_ids_for_stats );
 
 			foreach ( $media_items as $item ) :
 				$item_id  = (int) $item['media_id'];

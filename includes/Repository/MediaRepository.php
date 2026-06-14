@@ -162,6 +162,17 @@ class MediaRepository implements MediaRepositoryInterface {
 			return self::$row_cache[ $media_id ][ $key ];
 		}
 
+		// Tier 1b: prefetch()/get_all() loaded ALL meta for this media, so a
+		// meta key absent from the cache is confirmed-absent — return null with
+		// no query. Without this, absent-key reads (e.g. has_resolvable_thumbnail
+		// probing thumb_*_path sizes that were never generated) re-query once per
+		// key per tile and defeat the prefetch. Index columns are excluded: they
+		// are fully covered by the cached index row, so a missing index key means
+		// the row genuinely isn't cached yet and must fall through to the query.
+		if ( isset( self::$meta_fully_loaded[ $media_id ] ) && ! in_array( $key, self::$index_columns, true ) ) {
+			return null;
+		}
+
 		global $wpdb;
 
 		if ( in_array( $key, self::$index_columns, true ) ) {
@@ -752,6 +763,13 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return array All fields as key-value pairs.
 	 */
 	public function get_all( int $media_id ): array {
+		// Serve from the per-request cache when prefetch() (or a prior get_all())
+		// already loaded this media's full row. This is what lets a page call
+		// prefetch() once and then render N tiles with zero per-tile queries.
+		if ( isset( self::$row_cache[ $media_id ] ) && isset( self::$meta_fully_loaded[ $media_id ] ) ) {
+			return self::$row_cache[ $media_id ];
+		}
+
 		global $wpdb;
 
 		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -775,6 +793,21 @@ class MediaRepository implements MediaRepositoryInterface {
 			$data[ $meta->meta_key ] = $meta->meta_value;
 		}
 
+		// Prime the per-request cache so subsequent get()/get_raw() on this media
+		// — within this tile and across the page — are free, and mark meta fully
+		// loaded so absent-key reads short-circuit (see get_raw Tier 1b). Only
+		// when the row actually exists; absent media stays uncached so a later
+		// insert under the same id isn't masked.
+		if ( ! empty( $data ) ) {
+			if ( ! isset( self::$row_cache[ $media_id ] ) ) {
+				self::$row_cache[ $media_id ] = array();
+			}
+			foreach ( $data as $col => $val ) {
+				self::$row_cache[ $media_id ][ $col ] = $val;
+			}
+			self::$meta_fully_loaded[ $media_id ] = true;
+		}
+
 		return $data;
 	}
 
@@ -785,6 +818,13 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @return bool
 	 */
 	public function exists( int $media_id ): bool {
+		// A prefetched/cached index row means the media exists — skip the query.
+		// can_view() calls exists() once per tile; without this, a prefetched
+		// grid still fires one existence query per tile. (1.7.0)
+		if ( isset( self::$row_cache[ $media_id ]['media_id'] ) ) {
+			return true;
+		}
+
 		global $wpdb;
 
 		return (bool) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

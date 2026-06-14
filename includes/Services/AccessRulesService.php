@@ -45,6 +45,19 @@ class AccessRulesService {
 	private $access_cache = array();
 
 	/**
+	 * Per-request cache of which media IDs have active access rules.
+	 *
+	 * Grid/feed renders check has_active_rules() several times per tile (the
+	 * privacy filter + the direct-serve gate), which without a cache is 3+
+	 * COUNT queries per tile against mvs_access_rules. Primed in bulk by
+	 * prefetch_active_rules(). Static so the singleton's cache survives across
+	 * the request; cleared on any rule write. (1.7.0)
+	 *
+	 * @var array<int, bool>
+	 */
+	private static $rules_presence_cache = array();
+
+	/**
 	 * Add an access rule to a media item.
 	 *
 	 * @param int         $media_id   Media post ID.
@@ -77,6 +90,8 @@ class AccessRulesService {
 		if ( ! $inserted ) {
 			return false;
 		}
+
+		self::flush_rules_presence_cache();
 
 		$rule_id = (int) $wpdb->insert_id;
 
@@ -159,6 +174,7 @@ class AccessRulesService {
 		$deleted = $wpdb->delete( $table, array( 'id' => $rule_id ), array( '%d' ) );
 
 		if ( $deleted ) {
+			self::flush_rules_presence_cache();
 			/**
 			 * Fires after an access rule is deleted.
 			 *
@@ -186,6 +202,7 @@ class AccessRulesService {
 		// Delete existing rules.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->delete( $table, array( 'media_id' => $media_id ), array( '%d' ) );
+		self::flush_rules_presence_cache();
 
 		$count = 0;
 		foreach ( $rules as $rule ) {
@@ -211,6 +228,10 @@ class AccessRulesService {
 	 * @return bool
 	 */
 	public function has_active_rules( int $media_id ): bool {
+		if ( isset( self::$rules_presence_cache[ $media_id ] ) ) {
+			return self::$rules_presence_cache[ $media_id ];
+		}
+
 		global $wpdb;
 		$table = $wpdb->prefix . 'mvs_access_rules';
 
@@ -223,7 +244,60 @@ class AccessRulesService {
 			)
 		);
 
-		return $count > 0;
+		self::$rules_presence_cache[ $media_id ] = $count > 0;
+		return self::$rules_presence_cache[ $media_id ];
+	}
+
+	/**
+	 * Prime the has_active_rules() cache for many media IDs in one query.
+	 *
+	 * Grids check has_active_rules() multiple times per tile; this collapses
+	 * the whole page to a single DISTINCT query. Idempotent — already-cached
+	 * IDs are skipped. (1.7.0)
+	 *
+	 * @param int[] $media_ids Media IDs.
+	 */
+	public function prefetch_active_rules( array $media_ids ): void {
+		$ids = array();
+		foreach ( $media_ids as $id ) {
+			$id = (int) $id;
+			if ( $id > 0 && ! isset( self::$rules_presence_cache[ $id ] ) ) {
+				$ids[ $id ] = true;
+			}
+		}
+		if ( empty( $ids ) ) {
+			return;
+		}
+		$id_list = array_keys( $ids );
+
+		// Default every requested ID to "no rules", then flip the ones found.
+		foreach ( $id_list as $id ) {
+			self::$rules_presence_cache[ $id ] = false;
+		}
+
+		global $wpdb;
+		$table        = $wpdb->prefix . 'mvs_access_rules';
+		$placeholders = implode( ',', array_fill( 0, count( $id_list ), '%d' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$with_rules = $wpdb->get_col(
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT DISTINCT media_id FROM {$table} WHERE media_id IN ({$placeholders})",
+				...$id_list
+			)
+		);
+		foreach ( $with_rules as $id ) {
+			self::$rules_presence_cache[ (int) $id ] = true;
+		}
+	}
+
+	/**
+	 * Clear the has_active_rules() presence cache (call after any rule write).
+	 *
+	 * @since 1.7.0
+	 */
+	private static function flush_rules_presence_cache(): void {
+		self::$rules_presence_cache = array();
 	}
 
 	/**
@@ -495,7 +569,21 @@ class AccessRulesService {
 			return $result;
 		}
 
-		// Owner and admin always have access — don't let rules block them.
+		// No rules = passthrough to default privacy logic. Checked FIRST and
+		// from the request cache (prefetch_active_rules) so the overwhelmingly
+		// common rule-less media skips the owner lookup (get_post) entirely —
+		// that lookup fired once per grid tile before this reorder. Owner/admin
+		// access is already granted upstream in PrivacyService::check_access()
+		// (before this filter runs), so returning null here is equivalent to the
+		// old owner-true path for rule-less media. (1.7.0)
+		if ( ! $this->has_active_rules( $media_id ) ) {
+			return null;
+		}
+
+		// Rule-bearing media: owner and admin always have access — don't let
+		// rules block them. (Redundant with check_access()'s own owner gate, but
+		// kept as defense in depth for any caller that invokes this filter
+		// directly.)
 		$author_id = 0;
 		$post      = get_post( $media_id );
 		if ( $post ) {
@@ -507,11 +595,6 @@ class AccessRulesService {
 		}
 		if ( $user_id && ( $author_id === $user_id || user_can( $user_id, 'moderate_mvs_media' ) ) ) {
 			return true;
-		}
-
-		// No rules = passthrough to default privacy logic.
-		if ( ! $this->has_active_rules( $media_id ) ) {
-			return null;
 		}
 
 		// Check explicit grant first.

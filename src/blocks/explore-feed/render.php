@@ -37,6 +37,12 @@ $mvs_query_args = array(
 );
 $media_items = $mvs_repo->query( $mvs_query_args );
 $total_count = $mvs_repo->query_count( $mvs_query_args );
+// Batch-load index + all meta for the page in 2 queries so each tile renders
+// from the request cache instead of ~14 queries/tile, and prime the access-rules
+// presence cache so can_view() doesn't COUNT once per tile. (1.7.0)
+$mvs_page_ids = array_map( 'intval', array_column( $media_items, 'media_id' ) );
+$mvs_repo->prefetch( $mvs_page_ids );
+\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $mvs_page_ids );
 
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $total_count / $mvs_per_page ) : 1;
 
@@ -145,7 +151,7 @@ $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 				?>
 				<div class="mvs-grid-item" data-media-type="<?php echo esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $item_id ) ); ?>">
 					<a href="<?php echo esc_url( $permalink ); ?>">
-						<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, 'large', $item_title ); ?>
+						<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, '', $item_title ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
 					</a>
 					<div class="mvs-grid-item-overlay">
 						<span class="mvs-grid-item-title"><?php echo esc_html( $item_title ); ?></span>

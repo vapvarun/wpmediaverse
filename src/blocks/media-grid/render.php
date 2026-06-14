@@ -139,6 +139,13 @@ $all_params   = array_merge( $params, array( $mvs_per_page, $offset ) );
 $media_items  = $wpdb->get_results( $wpdb->prepare( $items_sql, ...$all_params ), ARRAY_A );
 // phpcs:enable
 
+// Batch-load index + all meta for the page in 2 queries so each tile renders
+// from the request cache instead of ~14 queries/tile, and prime the access-rules
+// presence cache so can_view() doesn't COUNT once per tile. (1.7.0)
+$mvs_page_ids = array_map( 'intval', array_column( $media_items, 'media_id' ) );
+\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_page_ids );
+\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $mvs_page_ids );
+
 $max_num_pages = $mvs_per_page > 0 ? (int) ceil( $found_posts / $mvs_per_page ) : 1;
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
 if ( empty( $mvs_shortcode_context ) ) {
@@ -215,7 +222,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 					data-media-json="<?php echo esc_attr( wp_json_encode( $mvs_grid_lightbox ) ); ?>"
 				>
 					<a href="<?php echo esc_url( $item_permalink ); ?>" class="mvs-grid-item-link">
-					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, 'large', $item_title ); ?>
+					<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_grid_thumbnail( $item_id, '', $item_title ); // '' = admin-configured grid size + responsive srcset (1.7.0). ?>
 					<?php if ( $mvs_grid_group && $mvs_grid_group_cnt > 1 ) : ?>
 						<span class="mvs-gallery-badge" title="<?php echo esc_attr( sprintf( '%d photos', $mvs_grid_group_cnt ) ); ?>">
 							<span class="dashicons dashicons-images-alt2"></span> <?php echo esc_html( $mvs_grid_group_cnt ); ?>

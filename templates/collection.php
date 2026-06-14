@@ -117,7 +117,12 @@ do_action( 'mvs_before_content' );
 
 			<!-- Media Grid -->
 			<?php if ( ! empty( $items ) ) : ?>
-				<?php $stats_map = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( array_map( 'intval', $items ) ); ?>
+				<?php
+				$mvs_ids = array_map( 'intval', $items );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $mvs_ids );
+				\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $mvs_ids );
+				/* Batch index+meta for the page (1.7.0). */ $stats_map = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->bulk_get_stats( $mvs_ids );
+				?>
 				<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
 				<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed">
 					<?php
