@@ -96,9 +96,11 @@ class SettingsHelper {
 	 * @return string One of 'medium', 'large', 'full'.
 	 */
 	public static function get_thumbnail_size(): string {
-		$size = (string) get_option( 'mvs_thumbnail_size', 'large' );
+		// Default 'medium' to match the registered setting default — grid/feed
+		// tiles render at ~150-300px, so 'large' (1024px) was wasted bytes. (1.7.0)
+		$size = (string) get_option( 'mvs_thumbnail_size', 'medium' );
 		if ( ! in_array( $size, self::ALLOWED_THUMBNAIL_SIZES, true ) ) {
-			$size = 'large';
+			$size = 'medium';
 		}
 
 		/**
@@ -111,10 +113,30 @@ class SettingsHelper {
 		 */
 		$size = (string) apply_filters( 'mvs_thumbnail_size_resolved', $size );
 		if ( ! in_array( $size, self::ALLOWED_THUMBNAIL_SIZES, true ) ) {
-			$size = 'large';
+			$size = 'medium';
 		}
 
 		return $size;
+	}
+
+	/**
+	 * Resolve the configured grid/feed size to a /serve thumbnail size key.
+	 *
+	 * The get_thumbnail_size() enum is medium|large|full, but the signed-URL +
+	 * serve_thumbnail vocabulary is medium|large|thumbnail. 'full'
+	 * (the original file) is not a thumbnail rung and is wasteful inside a tile,
+	 * so it maps to 'large'. Every grid/feed thumbnail URL builder routes
+	 * through this so the mvs_thumbnail_size setting actually takes effect — it
+	 * previously did not, because grids hardcoded 'large' and never called
+	 * get_thumbnail_size() at all.
+	 *
+	 * @since 1.7.0
+	 *
+	 * @return string One of 'medium', 'large'.
+	 */
+	public static function get_grid_thumb_size_key(): string {
+		$configured = self::get_thumbnail_size();
+		return ( 'full' === $configured ) ? 'large' : $configured;
 	}
 
 	/**

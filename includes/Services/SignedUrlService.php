@@ -89,7 +89,7 @@ class SignedUrlService {
 			$ttl = $this->get_ttl();
 		}
 
-		$expires = time() + $ttl;
+		$expires = $this->resolve_expiry( $media_id, $ttl );
 
 		$params = array(
 			self::PARAM_MEDIA_ID => $media_id,
@@ -158,7 +158,7 @@ class SignedUrlService {
 			return false;
 		}
 
-		$expires = time() + ( $ttl ?: $this->get_ttl() );
+		$expires = $this->resolve_expiry( $media_id, $ttl ?: $this->get_ttl() );
 
 		$params = array(
 			self::PARAM_MEDIA_ID => $media_id,
@@ -349,7 +349,7 @@ class SignedUrlService {
 		// Dispatch thumbnail requests to a dedicated handler.
 		$size = ! empty( $params[ self::PARAM_SIZE ] ) ? sanitize_text_field( $params[ self::PARAM_SIZE ] ) : '';
 		if ( $size ) {
-			$this->serve_thumbnail( $media_id, $size );
+			$this->serve_thumbnail( $media_id, $size, $privacy );
 			return;
 		}
 
@@ -427,8 +427,9 @@ class SignedUrlService {
 		// for HTML5 <video> range requests.
 		$this->prepare_binary_stream();
 
-		// Send appropriate headers.
-		nocache_headers();
+		// Send appropriate headers. Public media is cacheable (privacy gate, not
+		// the clock, protects it); private/restricted stays no-store. (1.7.0)
+		$this->emit_cache_headers( $privacy );
 		header( 'Vary: Accept' );
 		header( 'Content-Type: ' . $content_type );
 
@@ -489,7 +490,7 @@ class SignedUrlService {
 		return '';
 	}
 
-	private function serve_thumbnail( int $media_id, string $size ): void {
+	private function serve_thumbnail( int $media_id, string $size, string $privacy = '' ): void {
 		// Internal: signing service serves the underlying file from disk —
 		// must use the raw stored URL, not a signed-URL re-emission.
 		$rel_path  = '';
@@ -657,11 +658,91 @@ class SignedUrlService {
 
 		$this->prepare_binary_stream();
 
-		nocache_headers();
+		// Public thumbnails are cacheable; private/restricted stay no-store. The
+		// privacy level is resolved once in serve() and passed down. (1.7.0)
+		$this->emit_cache_headers( $privacy );
 		header( 'Vary: Accept' );
 		header( 'Content-Type: ' . $mime_type );
 		header( 'Content-Disposition: inline; filename="' . $filename . '"' );
 		$this->handle_range_request( $full_path );
+	}
+
+	/**
+	 * Resolve the `mvs_exp` value for a signed URL.
+	 *
+	 * Private/restricted media gets a rolling `now + ttl` bearer window. PUBLIC
+	 * media instead gets a coarse, render-STABLE far-future value so the signed
+	 * URL (and therefore its browser/CDN cache key) is identical across renders.
+	 * Without this every render mints a unique `mvs_exp`/`mvs_sig`, so no client
+	 * can ever cache a public image and each request pays a full WP bootstrap.
+	 * Public access is gated by privacy, not this clock (see validate_signature()
+	 * + serve()), so a long stable expiry is safe. Opt out per-site with
+	 * add_filter( 'mvs_stable_public_urls', '__return_false' ).
+	 *
+	 * @since 1.7.0
+	 *
+	 * @param int $media_id Media ID.
+	 * @param int $ttl      Rolling TTL (seconds) for non-public media.
+	 * @return int Unix timestamp for the mvs_exp param.
+	 */
+	private function resolve_expiry( int $media_id, int $ttl ): int {
+		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$is_public = ( 'public' === (string) $repo->get_raw( $media_id, 'privacy' ) );
+
+		/**
+		 * Whether public media gets a render-stable (cacheable) signed URL.
+		 *
+		 * @since 1.7.0
+		 *
+		 * @param bool $stable   Default true.
+		 * @param int  $media_id Media ID.
+		 */
+		if ( $is_public && (bool) apply_filters( 'mvs_stable_public_urls', true, $media_id ) ) {
+			// Bucket to the start of the current month so the value is stable for
+			// roughly a month (real caching) then rotates; + 1 year keeps it
+			// comfortably in the future so it never trips the expiry branch in
+			// serve(). MONTH/YEAR constants are WordPress core.
+			$bucket = (int) ( time() / MONTH_IN_SECONDS ) * MONTH_IN_SECONDS;
+			return $bucket + YEAR_IN_SECONDS;
+		}
+
+		return time() + $ttl;
+	}
+
+	/**
+	 * Emit cache-control headers for a /serve response based on privacy.
+	 *
+	 * Public media is protected by the privacy gate, not the signed-URL clock,
+	 * so the historical unconditional nocache_headers() was pure overhead — it
+	 * forced a full WP bootstrap per image and blocked browser/CDN caching even
+	 * on scroll-back or repeat visits. Public media now gets a long, cacheable
+	 * max-age (paired with the render-stable URL from resolve_expiry());
+	 * private/restricted media keeps the no-store bearer-token behaviour.
+	 *
+	 * @since 1.7.0
+	 *
+	 * @param string $privacy Stored privacy level for the media.
+	 */
+	private function emit_cache_headers( string $privacy ): void {
+		if ( 'public' === $privacy ) {
+			/**
+			 * Cache lifetime (seconds) for public media served through /serve.
+			 * Return 0 to keep public media on no-store too.
+			 *
+			 * @since 1.7.0
+			 *
+			 * @param int    $max_age Default one week.
+			 * @param string $privacy Media privacy level.
+			 */
+			$max_age = (int) apply_filters( 'mvs_public_media_max_age', WEEK_IN_SECONDS, $privacy );
+			if ( $max_age > 0 ) {
+				header( 'Cache-Control: public, max-age=' . $max_age );
+				header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + $max_age ) . ' GMT' );
+				return;
+			}
+		}
+
+		nocache_headers();
 	}
 
 	/**
@@ -739,8 +820,14 @@ class SignedUrlService {
 			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
 			$driver  = $storage->get_driver_for_media( $media_id );
 			if ( $driver instanceof LocalDriver ) {
-				// Active driver IS local — let /serve stream it (no direct URL).
-				return '';
+				// Active driver IS local. By default /serve streams it, but let
+				// operators route public, ungated local-storage thumbnails to a
+				// cacheable static/CDN URL (e.g. a reverse proxy in front of
+				// wp-content/uploads) WITHOUT a cloud driver — the cloud filters
+				// above can't help on local storage because we'd otherwise return
+				// '' first. Return a non-empty URL to bypass the signed /serve
+				// proxy; default '' keeps current behaviour. (1.7.0)
+				return (string) apply_filters( 'mvs_public_local_thumbnail_url', '', $media_id, $size, $rel_path );
 			}
 			$thumb_url = (string) $driver->url( $rel_path );
 			if ( '' === $thumb_url || ! $this->is_cloud_hosted_url( $thumb_url ) ) {
@@ -813,7 +900,11 @@ class SignedUrlService {
 			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
 			$driver  = $storage->get_driver_for_media( $media_id );
 			if ( $driver instanceof LocalDriver ) {
-				return '';
+				// See maybe_direct_cloud_thumbnail_url(): same local-storage
+				// public-URL escape hatch for the full file. Default '' keeps the
+				// gated /serve path; a non-empty return routes public local media
+				// to a cacheable static/CDN URL without a cloud driver. (1.7.0)
+				return (string) apply_filters( 'mvs_public_local_file_url', '', $media_id, $rel_path );
 			}
 			$file_url = (string) $driver->url( $rel_path );
 			if ( '' === $file_url || ! $this->is_cloud_hosted_url( $file_url ) ) {

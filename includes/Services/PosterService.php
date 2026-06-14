@@ -218,6 +218,53 @@ class PosterService {
 	}
 
 	/**
+	 * Whether ffmpeg is usable for poster extraction in the current SAPI.
+	 *
+	 * Surfaced by Site Health: when ffmpeg is missing, cover-less videos get no
+	 * generated poster and fall back to the bundled default SVG (the upload
+	 * still succeeds — this is a quality, not a failure, condition). Mirrors the
+	 * resolution extract_via_ffmpeg() uses: proc_open must exist and the
+	 * filtered binary must be executable (absolute path) or resolve on PATH.
+	 *
+	 * @since 1.7.0
+	 *
+	 * @return bool
+	 */
+	public function is_ffmpeg_available(): bool {
+		if ( ! function_exists( 'proc_open' ) ) {
+			return false;
+		}
+
+		$ffmpeg = (string) apply_filters( 'mvs_ffmpeg_binary', self::resolve_ffmpeg_binary() );
+		if ( '' === $ffmpeg ) {
+			return false;
+		}
+
+		// Absolute path → a direct executable check is authoritative and cheap.
+		if ( false !== strpos( $ffmpeg, '/' ) ) {
+			return is_executable( $ffmpeg );
+		}
+
+		// Bare 'ffmpeg' → confirm it resolves on PATH with a fast version probe.
+		$descriptors = array(
+			0 => array( 'pipe', 'r' ),
+			1 => array( 'pipe', 'w' ),
+			2 => array( 'pipe', 'w' ),
+		);
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open, Generic.PHP.ForbiddenFunctions.Found, WordPress.PHP.NoSilencedErrors.Discouraged
+		$process = @proc_open( array( $ffmpeg, '-version' ), $descriptors, $pipes );
+		if ( ! is_resource( $process ) ) {
+			return false;
+		}
+		foreach ( $pipes as $pipe ) {
+			if ( is_resource( $pipe ) ) {
+				fclose( $pipe );
+			}
+		}
+		return 0 === proc_close( $process );
+	}
+
+	/**
 	 * Invoke ffmpeg via proc_open with an arg array (no shell, no injection
 	 * surface). Mirrors the pattern used in Pro's TranscodeService.
 	 *

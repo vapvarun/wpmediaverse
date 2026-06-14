@@ -116,11 +116,50 @@ class MediaController extends WP_REST_Controller {
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_item' ),
 					'permission_callback' => array( $this, 'update_item_permissions_check' ),
+					// Declare every editable field so OPTIONS documents the real
+					// contract (the planned mobile app + BuddyNext rely on the
+					// schema) and REST validates types. None are required:
+					// update_item treats an omitted key as "leave unchanged" and
+					// still sanitizes each value itself — these are the schema
+					// layer, not a replacement for that. `privacy` is left as a
+					// free string (no enum) because the privacy set is extensible
+					// via the mvs_privacy_can_view filter; a hard enum would
+					// reject Pro/extension-added levels.
 					'args'                => array(
-						'id' => array(
+						'id'             => array(
 							'type'              => 'integer',
 							'required'          => true,
 							'sanitize_callback' => 'absint',
+						),
+						'title'          => array(
+							'type'        => 'string',
+							'description' => __( 'Media title.', 'wpmediaverse' ),
+						),
+						'description'    => array(
+							'type'        => 'string',
+							'description' => __( 'Media description (post HTML allowed).', 'wpmediaverse' ),
+						),
+						'slug'           => array(
+							'type'        => 'string',
+							'description' => __( 'Explicit URL slug. Omit to keep the current slug.', 'wpmediaverse' ),
+						),
+						'privacy'        => array(
+							'type'        => 'string',
+							'description' => __( 'Privacy level (public, members, loggedin, friends, group, private, custom, or an extension-added level).', 'wpmediaverse' ),
+						),
+						'allow_download' => array(
+							'type'        => 'boolean',
+							'description' => __( 'Whether viewers may download the original file.', 'wpmediaverse' ),
+						),
+						'tags'           => array(
+							'type'        => 'array',
+							'items'       => array( 'type' => 'string' ),
+							'description' => __( 'Tag names. Send [] to clear.', 'wpmediaverse' ),
+						),
+						'categories'     => array(
+							'type'        => 'array',
+							'items'       => array( 'type' => 'integer' ),
+							'description' => __( 'Category term IDs. Send [] to clear.', 'wpmediaverse' ),
 						),
 					),
 				),
@@ -807,14 +846,39 @@ class MediaController extends WP_REST_Controller {
 		if ( array_key_exists( 'categories', $json_params ) ) {
 			$categories = $request->get_param( 'categories' );
 			if ( is_array( $categories ) ) {
-				wp_set_object_terms( $media_id, array_map( 'absint', $categories ), 'mvs_category' );
-				$cat_terms = get_the_terms( $media_id, 'mvs_category' );
-				if ( $cat_terms && ! is_wp_error( $cat_terms ) ) {
-					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'category', wp_json_encode( array_values( wp_list_pluck( $cat_terms, 'name' ) ) ) );
-				} else {
-					// Empty array sent → user cleared categories, so clear the cached list too.
-					\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'category', wp_json_encode( array() ) );
+				$category_ids = array_values( array_unique( array_filter( array_map( 'absint', $categories ) ) ) );
+
+				$set_result = wp_set_object_terms( $media_id, $category_ids, 'mvs_category' );
+				if ( is_wp_error( $set_result ) ) {
+					// Surface the failure instead of returning a silent HTTP 200
+					// that didn't persist (the "saved but not applied" contract bug).
+					return new WP_Error(
+						'mvs_categories_not_saved',
+						__( 'Could not save categories for this media item.', 'wpmediaverse' ),
+						array( 'status' => 500 )
+					);
 				}
+
+				// Derive the cached name list straight from the IDs we just
+				// wrote — NOT from a get_the_terms() re-read. On sites with a
+				// persistent object cache the relationship cache can momentarily
+				// miss right after wp_set_object_terms(), which previously sent
+				// this code down a destructive else-branch that wiped the saved
+				// category list to [] even though the taxonomy assignment
+				// succeeded. That is exactly the reported bug: categories
+				// vanished on read-back for a subset of items (HTTP 200, not
+				// applied). Resolving names from the submitted IDs keeps the
+				// cached meta in lockstep with the relationship table for every
+				// item, and an empty array still correctly clears the list.
+				$category_names = array();
+				foreach ( $category_ids as $term_id ) {
+					$term = get_term( $term_id, 'mvs_category' );
+					if ( $term instanceof \WP_Term ) {
+						$category_names[] = $term->name;
+					}
+				}
+
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'category', wp_json_encode( array_values( $category_names ) ) );
 			}
 		}
 
@@ -1310,9 +1374,12 @@ class MediaController extends WP_REST_Controller {
 		$file_url      = ! empty( $all['file_url'] )
 			? (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' )
 			: '';
-		$thumbnail_url = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'thumb_large' );
+		// Grid/feed tile: use the admin-configured size (default medium), not a
+		// hardcoded 'large'. Lightbox below keeps the original. (1.7.0)
+		$grid_size     = \WPMediaVerse\Core\SettingsHelper::get_grid_thumb_size_key();
+		$thumbnail_url = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'thumb_' . $grid_size );
 		if ( '' === $thumbnail_url ) {
-			$thumbnail_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, 'large' );
+			$thumbnail_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, $grid_size );
 		}
 
 		// Lightbox URL respects the admin-chosen image source.
@@ -1321,6 +1388,15 @@ class MediaController extends WP_REST_Controller {
 		$lightbox_avif_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_lightbox_avif_url( $media_id, $lightbox_url );
 
 		$media_type_value = ! empty( $all['media_type'] ) ? $all['media_type'] : '';
+
+		// Card #1: a video with no generated poster must not ship an empty
+		// thumbnail_url — it renders as a blank/black tile in grids. Fall back to
+		// the bundled default video poster, the same asset the server-rendered
+		// grid uses via media_thumbnail(). (1.7.0)
+		if ( '' === $thumbnail_url && 'video' === $media_type_value ) {
+			$thumbnail_url = \WPMediaVerse\Core\TemplateHelpers::default_video_poster_url();
+		}
+
 		$privacy_value    = ! empty( $all['privacy'] ) ? $all['privacy'] : 'public';
 		$moderation_value = ! empty( $all['moderation_status'] ) ? $all['moderation_status'] : 'approved';
 

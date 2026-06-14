@@ -153,14 +153,23 @@ class NotificationService {
 			 * Fires after a notification is created.
 			 *
 			 * @since 1.1.0
+			 * @since 1.7.0 Added $message and $link (appended, backward-compatible)
+			 *              so consumers such as BuddyNext's central notification
+			 *              center can mirror the exact notification 1:1 without
+			 *              re-deriving it from IDs (which drifts from our wording).
 			 *
 			 * @param int    $notification_id New notification ID.
 			 * @param int    $user_id         Recipient user ID.
 			 * @param string $type            Notification type.
 			 * @param int    $actor_id        User who triggered it.
 			 * @param int    $media_id        Related media ID.
+			 * @param string $message         Rendered notification text — identical to
+			 *                                the plugin's own notifications menu.
+			 * @param string $link            Deep link to the media / conversation /
+			 *                                profile the notification points at.
 			 */
-			do_action( 'mvs_notification_created', $wpdb->insert_id, $user_id, $type, $actor_id, $media_id );
+			$rendered = $this->build_message_and_link( $type, $actor_id, $media_id );
+			do_action( 'mvs_notification_created', $wpdb->insert_id, $user_id, $type, $actor_id, $media_id, $rendered['message'], $rendered['link'] );
 
 			return $wpdb->insert_id;
 		}
@@ -399,35 +408,18 @@ class NotificationService {
 	 * @return array
 	 */
 	private function format_notification( object $row ): array {
-		$actor       = get_userdata( (int) $row->actor_id );
-		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
-		$media_title = '';
-		if ( $row->media_id ) {
-			$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( (int) $row->media_id, 'title' ) ?: '';
-		}
+		$actor      = get_userdata( (int) $row->actor_id );
+		$actor_name = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
 
-		$message = $this->build_notification_message( $row->type, $actor_name, $media_title );
-
-		$url = '';
-		if ( $row->media_id ) {
-			$url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $row->media_id );
-		} elseif ( 'new_follower' === $row->type ) {
-			// Route to the canonical author-profile URL — BP profile when BP
-			// is active, plugin's /media/@user/ otherwise. NEVER hard-code
-			// `/media/@` here: when the notification text is rendered into a
-			// BP content path, `bp_activity_at_name_filter` rewrites the
-			// `@user` substring into mention HTML and corrupts the URL.
-			$tpl = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
-			$url = ( (int) $row->actor_id > 0 ) ? $tpl->get_user_profile_url( (int) $row->actor_id ) : '';
-		} elseif ( 'new_message' === $row->type ) {
-			$url = home_url( '/messages/' );
-		}
+		// Message + deep link come from the single shared builder so REST
+		// output and the mvs_notification_created hook never drift apart.
+		$rendered = $this->build_message_and_link( (string) $row->type, (int) $row->actor_id, (int) $row->media_id );
 
 		return array(
 			'id'         => (int) $row->id,
 			'type'       => $row->type,
-			'message'    => $message,
-			'url'        => $url,
+			'message'    => $rendered['message'],
+			'url'        => $rendered['link'],
 			'actor'      => array(
 				'id'     => (int) $row->actor_id,
 				'name'   => $actor_name,
@@ -437,6 +429,52 @@ class NotificationService {
 			'comment_id' => (int) $row->comment_id,
 			'is_read'    => ! empty( $row->read_at ),
 			'created_at' => $row->created_at,
+		);
+	}
+
+	/**
+	 * Build the rendered message + deep link for a notification.
+	 *
+	 * Single source of truth shared by format_notification() (REST output)
+	 * and the mvs_notification_created hook, so the plugin's own notifications
+	 * menu and any external consumer (e.g. BuddyNext's central notification
+	 * center) always show identical wording + destination.
+	 *
+	 * @since 1.7.0
+	 *
+	 * @param string $type     Notification type.
+	 * @param int    $actor_id User who triggered it.
+	 * @param int    $media_id Related media ID (0 if none).
+	 * @return array{message:string,link:string}
+	 */
+	private function build_message_and_link( string $type, int $actor_id, int $media_id ): array {
+		$actor       = get_userdata( $actor_id );
+		$actor_name  = $actor ? $actor->display_name : __( 'Someone', 'wpmediaverse' );
+		$media_title = '';
+		if ( $media_id ) {
+			$media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ) ?: '';
+		}
+
+		$message = $this->build_notification_message( $type, $actor_name, $media_title );
+
+		$link = '';
+		if ( $media_id ) {
+			$link = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
+		} elseif ( 'new_follower' === $type ) {
+			// Route to the canonical author-profile URL — BP profile when BP
+			// is active, plugin's /media/@user/ otherwise. NEVER hard-code
+			// `/media/@` here: when the notification text is rendered into a
+			// BP content path, `bp_activity_at_name_filter` rewrites the
+			// `@user` substring into mention HTML and corrupts the URL.
+			$tpl  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+			$link = ( $actor_id > 0 ) ? $tpl->get_user_profile_url( $actor_id ) : '';
+		} elseif ( 'new_message' === $type ) {
+			$link = home_url( '/messages/' );
+		}
+
+		return array(
+			'message' => $message,
+			'link'    => $link,
 		);
 	}
 

@@ -221,7 +221,8 @@ class FavoriteController extends WP_REST_Controller {
 				'media_id'      => $media_id,
 				'title'         => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ),
 				'link'          => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ),
-				'thumbnail_url' => (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'thumb_large' ),
+				// Configured grid size (default medium), not a hardcoded 'large'. (1.7.0)
+				'thumbnail_url' => (string) \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, \WPMediaVerse\Core\SettingsHelper::get_grid_thumb_size_key() ),
 				'file_url'      => (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' ),
 				'media_type'    => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' ),
 				'created_at'    => $item['created_at'],

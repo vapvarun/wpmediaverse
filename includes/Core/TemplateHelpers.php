@@ -337,7 +337,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$args = wp_parse_args(
 			$args,
 			array(
-				'size'      => 'large',
+				// Default to the admin-configured grid size (medium) instead of a
+				// hardcoded 'large' — see SettingsHelper::get_grid_thumb_size_key().
+				'size'      => \WPMediaVerse\Core\SettingsHelper::get_grid_thumb_size_key(),
 				'alt'       => '',
 				'classes'   => '',
 				'show_play' => true,
@@ -788,9 +790,14 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @param string $size     WP image size.
 	 * @param string $alt      Alt text.
 	 */
-	public function render_grid_thumbnail( int $media_id, string $size = 'large', string $alt = '' ): void {
+	public function render_grid_thumbnail( int $media_id, string $size = '', string $alt = '' ): void {
+		// Empty size → fall back to the admin-configured grid size (1.7.0). Was a
+		// hardcoded 'large', which ignored the mvs_thumbnail_size setting.
+		if ( '' === $size ) {
+			$size = \WPMediaVerse\Core\SettingsHelper::get_grid_thumb_size_key();
+		}
 		$valid_sizes = array_merge( get_intermediate_image_sizes(), array( 'full' ) );
-		$safe_size   = in_array( $size, $valid_sizes, true ) ? $size : 'large';
+		$safe_size   = in_array( $size, $valid_sizes, true ) ? $size : \WPMediaVerse\Core\SettingsHelper::get_grid_thumb_size_key();
 		echo $this->media_thumbnail( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns markup with all attribute values already escaped (size whitelisted + esc_attr'd, alt pre-escaped here).
 			$media_id,
 			array(
@@ -818,7 +825,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$show_overlay = $options['show_overlay'] ?? true;
 		$show_actions = $options['show_actions'] ?? false;
 		$data_attrs   = $options['data_attrs'] ?? array();
-		$size         = $options['size'] ?? get_option( 'mvs_thumbnail_size', 'large' );
+		$size         = $options['size'] ?? \WPMediaVerse\Core\SettingsHelper::get_grid_thumb_size_key();
 
 		// Read core fields from mvs_media_index.
 		$media_row = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );

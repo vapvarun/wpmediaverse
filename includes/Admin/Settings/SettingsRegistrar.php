@@ -609,7 +609,11 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_size' ),
-				'default'           => 'large',
+				// Default 'medium' (300px): grid/feed tiles render at ~150-300px,
+				// so shipping the 1024px 'large' on every tile was 5-10x the bytes
+				// for no visible gain. Owners who want retina-crisp grids can pick
+				// 'large'/'full'; the lightbox always uses the original. (1.7.0)
+				'default'           => 'medium',
 			)
 		);
 		add_settings_field(
