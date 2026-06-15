@@ -49,6 +49,7 @@ When you add a feature, add a line here. When the AI finishes a pass, it should 
 | Single-media OG + Twitter Card meta | `og:title`/`og:image`/`og:description`/`twitter:card` injected on `wp_head` priority 5 | absent on non-media pages |
 | Frontend chat-panel | renders or not per `mvs_chat_panel_visibility` (`everywhere` / `mvs_pages` / `bp_pages` / `disabled`) | `disabled` mode → no `.mvs-chat-panel` markup at all |
 | BP notification surface (BP active) | only the BP nav bell renders MVS notifications | dashboard-content `.mvs-notification-bell` suppressed (no double-render) |
+| Site Health → `wpmediaverse_video_posters` test | appears in WP Site Health; reports ffmpeg availability (via `PosterService::is_ffmpeg_available()`) and whether posterless videos fall back to the bundled default SVG | meaningful status string, never a blank/fatal test row |
 
 Render rule (standing): every row above must produce visible output in both populated and empty branches. No bare `return;` in render paths. This includes all 9 registered Gutenberg blocks (`mvs/*`) and all 12 shortcodes (`[mvs_*]`).
 
@@ -76,7 +77,9 @@ Render rule (standing): every row above must produce visible output in both popu
 
 | Action | Expected state changes | Expected signals |
 |--------|------------------------|------------------|
-| Upload photo | row in `mvs_media_index` + `mvs_media_meta` (all 3 thumb sizes, back-filled for small sources) | `mvs_media_uploaded` fires once |
+| Upload photo | row in `mvs_media_index` + `mvs_media_meta` (all 3 thumb sizes, back-filled for small sources) + an `mvs_activity` row at EVERY privacy level incl. `private` (1.7.0 fc31bf0) | `mvs_media_uploaded` fires once |
+| Upload posterless video | row + meta; REST `thumbnail_url` falls back to the bundled default poster SVG (never `''`); grid tile renders an `<img>` (no blank/black tile) | `mvs_media_uploaded` fires once |
+| Edit media categories (REST `PUT`) | `wp_set_object_terms()` + `category` cache meta derived from submitted term IDs; persists across a persistent-object-cache miss; only an empty array clears | none; `wp_set_object_terms()` error → 500 `mvs_categories_not_saved` |
 | Upload gallery (2-6 images) | one index row + meta group, all thumbs | same action once |
 | Upload oversize/disallowed file | no DB row, specific error message | none |
 | Delete own media | rows removed from index + meta + stats | `mvs_media_deleted` fires, file removed from disk |
@@ -135,10 +138,11 @@ For each: saving it should change what users see or what the system allows.
 | `mvs_default_privacy` | new uploads inherit it |
 | `mvs_duplicate_action` | warn / skip / allow behavior honored |
 | `mvs_strip_exif` | EXIF removed from uploaded files |
-| `mvs_signed_url_ttl` | signed URLs expire after that many seconds |
+| `mvs_signed_url_ttl` | signed URLs expire after that many seconds (private media). PUBLIC media on the local driver gets a render-stable signed URL + `Cache-Control: public, max-age` instead — filters `mvs_stable_public_urls` (opt out → rolling expiry), `mvs_public_media_max_age` (default 604800), `mvs_public_local_file_url`, `mvs_public_local_thumbnail_url`. Private stays `no-store`. Cloud drivers serve public via direct CDN and bypass `/serve`. |
 | `mvs_grid_columns` | `/media/` renders with correct column count |
 | `mvs_items_per_page` | feed pagination window matches |
 | `mvs_thumbnail_style` | square vs original thumbnail shape |
+| `mvs_thumbnail_size` | grid/feed thumbnail variant served (routed via `SettingsHelper::get_grid_thumb_size_key()` across MediaController, FavoriteController, media-grid + explore-feed render.php, TemplateHelpers). **Default changed `large` → `medium` in 1.7.0.** Lightbox still loads full/large regardless. |
 | `mvs_page_explore` / `mvs_page_upload` / `mvs_page_dashboard` | plugin links target those pages |
 | `mvs_ai_provider` + `mvs_openai_api_key` | AI moderation uses that provider |
 | `mvs_ai_auto_moderate` | uploads trigger moderation automatically |
@@ -150,6 +154,8 @@ For each: saving it should change what users see or what the system allows.
 | `mvs_comment_edit_window` | edit window enforced |
 | `mvs_pro_feed_layout` (Pro) | `/media/` renders with selected layout template |
 | `mvs_battles_enabled` / `..._challenges_` / `..._tournaments_` / `..._boosts_` / `..._streaks_` | frontend pages for that feature present when on, absent when off |
+| `mvs_pro_battle_win_xp` (Pro) | XP the battle winner earns (default 100; Gamification settings). Snapshotted as `xp_win` on battle creation; `CompetePointsBridge` `mvs_battle_win` case awards this, not the WB Gamification flat default. |
+| `mvs_pro_streak_freeze_cost` (Pro) | points debited (atomically, via `PointsEngine::debit()`) when a member buys a streak freeze via `POST /streaks/buy-freeze` |
 | `mvs_pro_ffmpeg_path` (Pro) | transcoding uses that binary |
 | `mvs_pro_s3_*` / `mvs_pro_bunny_*` (Pro) | storage driver uses those credentials |
 | `mvs_pro_google_vision_key` / `mvs_pro_aws_*` (Pro) | AI vision provider reachable |
@@ -170,7 +176,7 @@ Every key must have at least one reader in `templates/` or `includes/**/Service.
 | `mvs_favorites` | `FavoriteService::toggle()` | favorites tab, heart icon state |
 | `mvs_follows` | `FollowService::follow()` | profile counts, "Follows you" badge |
 | `mvs_notifications` | every service that fires a notification | notification bell + list |
-| `mvs_activity` | `ActivityService::log()` | feed sort "Following", profile activity stream |
+| `mvs_activity` | `ActivityService::log()` — fires for ALL upload privacy levels incl. `private` (1.7.0 fc31bf0: private uploads DO write an `mvs_activity` row; only the BP sitewide stream mirror is gated by privacy) | feed sort "Following", profile activity stream |
 | `mvs_reports` | `ReportService::submit()` | admin moderation tab |
 | `mvs_access_rules` + `mvs_access_grants` | admin + `AccessRulesService` | `PrivacyService::can_view()` |
 | `mvs_conversations` + `_participants` + `_messages` | `MessagingService::send()` | messages UI, unread counts |

@@ -1,44 +1,33 @@
 {
-  "release_version": "1.6.0",
+  "release_version": "1.7.0",
   "mode": "combo",
-  "ran_at": "2026-06-06T10:02:20Z",
-  "reverified_at": "2026-06-06T10:30:00Z",
-  "free_version": "1.6.0",
-  "pro_version": "1.6.0",
+  "ran_at": "2026-06-15T08:50:53Z",
+  "reverified_at": "2026-06-15T08:50:53Z",
+  "free_version": "1.7.0",
+  "pro_version": "1.7.0",
   "sections": {
-    "A_fresh_install":     { "pass": 5, "fail": 0, "skipped": 0 },
-    "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 18, "fail": 0, "skipped": 4 },
-    "D_regression_guards": { "pass": 19, "fail": 0, "skipped": 2 },
-    "E_pro_smoke":         { "pass": 7, "fail": 0, "skipped": 5 },
-    "F_cross_browser":     { "pass": 1, "fail": 0, "skipped": 2 }
+    "A_fresh_install":     { "pass": 5,  "fail": 0, "skipped": 0 },
+    "B_upgrade":           { "pass": 0,  "fail": 0, "skipped": 3 },
+    "C_core_flows":        { "pass": 19, "fail": 0, "skipped": 2 },
+    "D_regression_guards": { "pass": 10, "fail": 0, "skipped": 1 },
+    "E_pro_smoke":         { "pass": 9,  "fail": 0, "skipped": 2 },
+    "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 7 }
   },
   "failures": [],
-  "debug_log_issues": [
-    {
-      "section": "A_fresh_install",
-      "level": "deprecated",
-      "origin": "for",
-      "line": "PHP Deprecated: Creation of dynamic property BP_Verified_Member_Meta_Box::$meta_keys is deprecated (bp-verified-member plugin, repeated on admin pages).",
-      "file": "wp-content/plugins/bp-verified-member/admin/meta-box/class-bp-verified-member-meta-box.php:30"
-    }
-  ],
+  "debug_log_issues": [],
   "manual_required": [
-    "Firefox Desktop: Full C section smoke — lightbox, reactions, DM send/receive, upload flow",
-    "Safari iOS 390px: Upload modal responsiveness, lightbox touch gestures, DM keyboard handling",
-    "C.member.upload-public: Actual browser file upload not tested this run (drop zone and privacy selector verified present; REST PDF-reject verified); needs real drag-and-drop test",
-    "C.admin.moderation-flow: Flag-approve-trash-spam workflow requires flagging test data setup",
-    "E.watermarking: Watermark-on-upload not tested — requires Pro watermark setting configured",
-    "E.instagram-feed: No Instagram account connected on local site — only empty-state renders verified",
-    "E.migration-importers: Import dry-run not tested this run",
-    "D.cloud-existence-head-vs-range: BunnyCDN not connected to local site — skipped",
-    "D.s3-key-encoding: S3 not configured on local site — skipped",
-    "C.member.follow-mention: @mention notification flow not browser-verified this run",
-    "C.notifications: Notification bell count and email digest not tested end-to-end"
+    "D.private-media-activity-row: fc31bf0 fix applies to NEW private uploads; pre-1.7.0 seeded rows not back-filled. Verify with a fresh private upload (code-confirmed + journey 16 covers it).",
+    "D.streak-badge-aria: no seeded user has _mvs_current_streak > 0; streak badge only renders when streak > 0.",
+    "E.group-dm: routes registered (WP-CLI confirmed) but live authenticated POST flow not exercised (no DB writes this run).",
+    "E.multi-collection-save: UNIQUE KEY user_media_collection confirmed in schema; live multi-save POST not exercised.",
+    "C.anon.album-collection: album items navigate to single pages; full album-to-lightbox chain needs manual verify.",
+    "B.gamification-admin: /wp-admin/admin.php?page=mvs-gamification returns 403 by design (no standalone page; settings live in Pro Settings > Competitions). Confirm by-design, not a missing page.",
+    "F.firefox / F.safari / F.rtl / F.a11y-screen-reader: Playwright is Chromium-only; cross-browser + RTL + screen-reader need a separate environment.",
+    "G.390px-explore / G.390px-lightbox / G.390px-activity: mobile 390px viewport visual checks not run this session."
   ],
   "notes": {
-    "headline_changes": "1.6.0 group-conversation engine + privacy hardening + AI alt text + smart-collection rules fix. Key verified items: MVS_VERSION=1.6.0 === MVS_PRO_VERSION=1.6.0 (combo OK). All 25 Free tables + all Pro tables present. mvs_db_version=17, mvs_pro_db_version=7. Signed URL secret set (64 chars). PDF upload hard-blocked at UploadService. Privacy filter confirmed (anon REST returns public only). Messaging unsend verified DB (deleted_for_all=1, content=''). Smart collections: Nature Highlights 7 items + real CDN cover PASS; Public Gallery 71 items + real CDN cover PASS (post-fix). Lightbox reactions aria-pressed PASS. ESC close PASS. Share no prompt-fallback PASS. Activity composer Attach media PASS. Activity preview 64px PASS. Admin all pages (Free + Pro) load without PHP fatal/error.",
-    "verified_bugs": "D.smart-collections-cover (the run's single failure): Opus re-verified — media 165-171 were file-less QA fixture shells from the 2026-06-04 audit session ('Test Media <ts>' / 'BP Media <ts>'); the newest one became Public Gallery's cover pick and MediaUrl::thumb() returned ''. Fixed in Free commit c23fc9b (get_collection_cover_url scans first 5 items for a renderable thumb) and the 7 fixture shells were deleted via MediaRepository::delete_cascade. Post-fix browser+REST verification: collection 77 cover_url = real CDN poster URL, total corrected 78->71. Console warnings triage: data-wp-on--click.stop malformed directive (12x) was a real Pro template defect — fixed in Pro commit 238ca75 (reuses mvs/shared-ui actions.handleModalClick), verified gone; the mvs-pro/instagram-feed data-wp-context warning no longer reproduces after that fix; the Interactivity SSR div-vs-template hydration mismatch reproduces ONLY on the internal mvs-test-blocks fixture page (21 stacked block instances) and on no customer surface (Explore, My Media, single media all clean) — tracked as non-blocking follow-up below.",
-    "open_follow_up": "Interactivity API SSR hydration mismatch (div vs template) on the internal mvs-test-blocks page only — identify which block emits a <template> during SSR that hydrates as <div>; no customer surface affected. Low priority."
+    "headline_changes": "1.7.0 = media-grid N+1 reduction (~170 -> ~6 queries/page) + 7 Free QA fixes (categories persist, grid thumb size default large->medium, video poster SVG fallback, public media cacheable on local driver, mvs_notification_created message+link, private-media activity row) + Pro competition reliability (tournament sparse-bracket, streak freeze proportional cost, bounded competition crons) + two fixes landed this session: configurable Battle Win XP (mvs_pro_battle_win_xp option + xp_win snapshot + CompetePointsBridge mvs_battle_win case) and bounded StreakService::daily_check (keyset paging DAILY_BATCH_SIZE=100 / DAILY_MAX_PER_RUN=2000 + async continuation). Combo verified: MVS_VERSION === MVS_PRO_VERSION === 1.7.0. All 32 mvs_* tables present. No debug.log file; zero from-origin PHP errors. 5 console errors all external (self-signed SSL, expired nonce, wrong test URLs, auth-required GET).",
+    "verified_bugs": "None. Worker draft (qa/runs/drafts/2026-06-15-combo-draft.md) reported 0 FAIL across 44 PASS (34 browser/DB-verified + 10 code-confirmed). Opus reviewer gate: independently re-verified version equality at HEAD and all five Battle-XP edit sites (GamificationSettings field, BattleService create-snapshot + xp_for_win resolver, CompetePointsBridge ctor+case, Plugin.php wiring at line 529) plus the streak keyset fix. B.gamification-admin 403 demoted to by-design observation (no standalone page exists; not a bug).",
+    "open_follow_up": "Rule-18/architecture gaps captured in audit/reports/RULE-18-FOLLOWUP-2026-06-15.md, scoped to 1.8.0 (NOT 1.7.0): Free mvs_activity write-only, mvs_mentions no REST/admin, mvs_transactions dead weight, access-rules no admin, DM moderation blind; Pro mvs_credit_log no member REST, leaderboard no REST, mvs_pro_collection_items / mvs_boosts / mvs_competition_votes admin blind spots. Reviewer pre-existing-branch cleanups this session: phpcbf fixed 10 WPCS array-spacing errors in Plugin.php + Groups/GroupController.php; removed a stale phpstan-baseline.neon entry for Frontend/GamificationTemplateLoader.php. WPCS + PHPStan + coding-rules + arch-checks green on both plugins."
   }
 }

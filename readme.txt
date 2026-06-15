@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,20 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.7.0 - June 2026 =
+
+Performance and reliability pass: a large media-grid query reduction plus seven QA-driven fixes. No database schema change.
+
+* Improve  - Media grid render cut from about 170 database queries per page to about 6 by prefetching media meta and access rules before the grid loop.
+* Improve  - Grid and feed thumbnails now honor the configured thumbnail size, and the default is now medium instead of large.
+* Fix      - Updating a media item's categories no longer silently drops them on a persistent object cache miss; the editable media REST route now declares its real fields.
+* Fix      - Posterless videos now show the bundled default poster in grids and REST responses instead of a blank tile.
+* Fix      - Private media now records an activity row so it appears in the owner's own activity, still privacy gated for everyone else.
+* Improve  - Public media served from the local driver now sends a stable URL with Cache-Control public headers so browsers and CDNs can cache it; private media stays no-store.
+* Dev      - The mvs_notification_created action now passes the rendered message and link, keeping BuddyNext and other listeners in sync.
+* Dev      - New filters mvs_stable_public_urls, mvs_public_media_max_age, mvs_public_local_file_url, mvs_public_local_thumbnail_url. New Site Health test for missing video posters. The mvs_thumbnail_size default changes from large to medium.
+* Compat   - Pairs with WPMediaVerse Pro 1.7.0. Install both updates together.
 
 = 1.6.0 - June 2026 =
 
