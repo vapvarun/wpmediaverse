@@ -15,7 +15,13 @@ estimated_runtime_minutes: 4
 
 **Why this journey exists**: On the local driver, ALL media — including public — went through the signed `/serve` proxy with `nocache_headers()` and a per-render expiry, so every public image was uncacheable and paid a full WP bootstrap on every request (~2.5s/image on shared hosts). 1.7.0 gives PUBLIC media a render-stable signed URL (`resolve_expiry`, behind `mvs_stable_public_urls`) and `Cache-Control: public, max-age=…` (`mvs_public_media_max_age`, default 1 week), while private/restricted media keeps the no-store bearer behaviour. (Basecamp card: "Public media is uncacheable on the local storage driver".)
 
-> Run this only with `local` storage active. On a cloud driver, public media returns a direct CDN URL and never reaches `/serve`, so steps 2-4 don't apply.
+> Run this only with `local` storage active. On a cloud driver, public media returns a direct CDN URL and never reaches `/serve`, so steps 2-4 don't apply. Local is the default and must always work; cloud is the owner's opt-in choice.
+
+> **Verified 2026-06-14** on this install by temporarily setting `mvs_storage_driver=local` (then restoring `bunnycdn`). Real `curl -I` results:
+> - Public file `/serve` → `200`, `Cache-Control: public, max-age=604800`, far-future `Expires`.
+> - Public thumbnail `/serve` → same cacheable headers (confirms `serve_thumbnail` privacy passthrough).
+> - Public URL identical across two renders (`mvs_exp` = fixed far-future bucket) → cacheable.
+> - Private `/serve` → `Cache-Control: no-store, …, private`, `Expires: 1984` (unchanged).
 
 ## Steps
 
