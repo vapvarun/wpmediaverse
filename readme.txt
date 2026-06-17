@@ -115,6 +115,7 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 Bug fix: the dead BuddyPress-link menu cleanup no longer removes a site owner's working navigation. No database schema change.
 
 * Fix      - The BuddyPress component-link cleanup (active only when BuddyPress is inactive) deleted any menu item whose URL contained /members/, /groups/, or /activity/, even when those were live pages owned by another community plugin. It is now off by default and never removes a link that resolves to a real page.
+* Fix      - Lightbox action + close buttons no longer flash a theme accent fill on click/focus. Their hover/focus/active states are locked to the lightbox's own styling (the dedicated class outranks a theme's generic button:focus), and the previously-missing :active state is covered. The keyboard focus ring is preserved.
 * Dev      - New filter mvs_strip_dead_bp_links (default false) opts a site back into the cleanup; mvs_dead_bp_link_patterns customizes the matched fragments. The cleanup also bails when mvs_buddynext_active is true.
 * Compat   - Pairs with WPMediaVerse Pro 1.7.1. Install both updates together.
 
