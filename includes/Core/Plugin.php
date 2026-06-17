@@ -301,8 +301,12 @@ class Plugin {
 		add_action( 'wp_enqueue_scripts', array( self::class, 'auto_enqueue_confirm_style' ), 100 );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'auto_enqueue_confirm_style' ), 100 );
 
-		// Fix nav menu items when BuddyPress is not active.
-		if ( ! function_exists( 'buddypress' ) ) {
+		// Optional cleanup of dead BuddyPress component links when BuddyPress is
+		// inactive. OFF by default: WPMediaVerse must never modify a site owner's
+		// authored navigation (Coding Rule #17) — removing or rewriting menu items
+		// the owner added is their call, not the plugin's. Opt in per site with:
+		// add_filter( 'mvs_strip_dead_bp_links', '__return_true' );
+		if ( ! function_exists( 'buddypress' ) && apply_filters( 'mvs_strip_dead_bp_links', false ) ) {
 			add_filter( 'wp_nav_menu_objects', array( self::class, 'filter_nav_menu_objects' ), 10 );
 		}
 
@@ -1425,17 +1429,45 @@ class Plugin {
 	}
 
 	/**
-	 * Filter nav menu items when BuddyPress is not active.
+	 * Clean up dead BuddyPress component links when BuddyPress is not active.
 	 *
-	 * Hides BP-only items (Groups, Members, Activity) and rewrites
-	 * "My Profile" (/members/me/) to the dashboard page.
+	 * Only runs when BuddyPress is inactive (see the registration guard). Its job
+	 * is to drop menu items that point at BP component archives (/members/,
+	 * /groups/, /activity/) which would 404 once BuddyPress is gone, and to
+	 * rewrite "My Profile" (/members/me/) to the media dashboard.
+	 *
+	 * Per Coding Rule #17 the plugin must never delete a site owner's authored,
+	 * working navigation. So this never removes an item that resolves to a real
+	 * published page, and it bails entirely when another community plugin (e.g.
+	 * BuddyNext) owns these routes as live pages. Both the cleanup itself and the
+	 * pattern list are filterable so any behavior can be restored (Production
+	 * Rule #3).
+	 *
+	 * @since 1.0.0
+	 * @since 1.7.1 No longer removes items that resolve to a real page or when a
+	 *              sibling community plugin is active; added escape-hatch filters.
 	 *
 	 * @param array $items Sorted menu items.
 	 * @return array Filtered menu items.
 	 */
 	public static function filter_nav_menu_objects( array $items ): array {
-		// BP-only URL patterns to remove entirely.
-		$bp_patterns = array( '/members/', '/groups/', '/activity/' );
+		// Defensive: even when explicitly opted in, never touch the menu while a
+		// sibling community plugin (e.g. BuddyNext) owns /activity/ + /members/
+		// as live pages — removing those would delete working navigation.
+		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			return $items;
+		}
+
+		/**
+		 * URL fragments treated as dead BuddyPress component links when BP is off.
+		 *
+		 * @since 1.7.1
+		 * @param string[] $patterns Default members/groups/activity archives.
+		 */
+		$bp_patterns = (array) apply_filters(
+			'mvs_dead_bp_link_patterns',
+			array( '/members/', '/groups/', '/activity/' )
+		);
 
 		$dashboard_url = '';
 		$dashboard_id  = (int) get_option( 'mvs_page_dashboard' );
@@ -1445,31 +1477,32 @@ class Plugin {
 
 		$filtered = array();
 		foreach ( $items as $item ) {
-			$url = $item->url;
+			$url = isset( $item->url ) ? (string) $item->url : '';
 
-			// Check if this is a BP-only link.
 			$is_bp_link = false;
 			foreach ( $bp_patterns as $pattern ) {
-				if ( false !== strpos( $url, $pattern ) ) {
+				if ( '' !== $pattern && false !== strpos( $url, $pattern ) ) {
 					$is_bp_link = true;
 					break;
 				}
 			}
 
-			// "My Profile" (/members/me/) — rewrite to dashboard if available.
-			if ( $is_bp_link && false !== strpos( $url, '/members/me' ) && $dashboard_url ) {
+			// Keep non-BP links and any BP-pattern link that resolves to a real
+			// published page (a live page is the owner's content, never dead).
+			if ( ! $is_bp_link || 0 !== url_to_postid( $url ) ) {
+				$filtered[] = $item;
+				continue;
+			}
+
+			// "My Profile" (/members/me/) — rewrite to the dashboard if set.
+			if ( false !== strpos( $url, '/members/me' ) && '' !== $dashboard_url ) {
 				$item->url   = $dashboard_url;
 				$item->title = __( 'My Media', 'wpmediaverse' );
 				$filtered[]  = $item;
 				continue;
 			}
 
-			// Skip other BP-only links.
-			if ( $is_bp_link ) {
-				continue;
-			}
-
-			$filtered[] = $item;
+			// Genuinely dead BP component link — drop it.
 		}
 
 		return $filtered;

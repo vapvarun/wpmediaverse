@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,14 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.7.1 - June 2026 =
+
+Bug fix: the dead BuddyPress-link menu cleanup no longer removes a site owner's working navigation. No database schema change.
+
+* Fix      - The BuddyPress component-link cleanup (active only when BuddyPress is inactive) deleted any menu item whose URL contained /members/, /groups/, or /activity/, even when those were live pages owned by another community plugin. It is now off by default and never removes a link that resolves to a real page.
+* Dev      - New filter mvs_strip_dead_bp_links (default false) opts a site back into the cleanup; mvs_dead_bp_link_patterns customizes the matched fragments. The cleanup also bails when mvs_buddynext_active is true.
+* Compat   - Pairs with WPMediaVerse Pro 1.7.1. Install both updates together.
 
 = 1.7.0 - June 2026 =
 
