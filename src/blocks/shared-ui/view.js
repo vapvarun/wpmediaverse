@@ -1259,16 +1259,38 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					await navigator.share( { title: state.lightboxTitle, url } );
 					shared = true;
 				} catch { /* user cancelled — silent */ }
-			} else if ( navigator.clipboard?.writeText ) {
-				try {
-					await navigator.clipboard.writeText( url );
-					actions.showToast( __( 'Link copied!', 'wpmediaverse' ), 'success' );
-					shared = true;
-				} catch {
-					actions.showToast( __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ), 'error' );
-				}
 			} else {
-				actions.showToast( __( 'Sharing is not supported in this browser. Use the Open button to view this media in a new tab.', 'wpmediaverse' ), 'error' );
+				// navigator.clipboard exists only in a secure context (HTTPS /
+				// localhost); on plain http it is undefined, which left Share
+				// dead with a "not supported" toast. Try the async clipboard
+				// first, then fall back to a temp-textarea execCommand('copy')
+				// so Share copies the link on http too.
+				if ( navigator.clipboard?.writeText && window.isSecureContext ) {
+					try {
+						await navigator.clipboard.writeText( url );
+						shared = true;
+					} catch { /* fall through to execCommand */ }
+				}
+				if ( ! shared ) {
+					try {
+						const ta = document.createElement( 'textarea' );
+						ta.value = url;
+						ta.setAttribute( 'readonly', '' );
+						ta.style.position = 'fixed';
+						ta.style.top = '-1000px';
+						ta.style.opacity = '0';
+						document.body.appendChild( ta );
+						ta.select();
+						shared = document.execCommand( 'copy' );
+						document.body.removeChild( ta );
+					} catch { shared = false; }
+				}
+				actions.showToast(
+					shared
+						? __( 'Link copied!', 'wpmediaverse' )
+						: __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
+					shared ? 'success' : 'error'
+				);
 			}
 
 			// Best-effort stat increment — non-blocking. Only counts as a
