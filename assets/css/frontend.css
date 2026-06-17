@@ -5155,15 +5155,8 @@ a.mvs-dashboard-card-title:hover {
     color: #fff;
 }
 
-/* Scoped under .mvs-lightbox so the hover/focus/active states cleanly outrank a
-   theme's generic `button:focus`/`button:active` (e.g. Reign's accent fill) —
-   the close stays a dark circle instead of flashing the theme colour. */
-.mvs-lightbox .mvs-lightbox-close:hover,
-.mvs-lightbox .mvs-lightbox-close:focus,
-.mvs-lightbox .mvs-lightbox-close:active {
+.mvs-lightbox-close:hover {
     background: rgba(0, 0, 0, .7);
-    color: #fff;
-    border: none;
 }
 
 .mvs-lightbox-close svg {
@@ -5371,15 +5364,8 @@ a.mvs-dashboard-card-title:hover {
     text-overflow: ellipsis;
 }
 
-/* The dedicated .mvs-lightbox-action class (0,1,0) + state pseudo outranks a
-   theme's generic `button:focus`/`button:active` (e.g. Reign's
-   `button:focus { background:<accent>; color:#fff }`), so these lightbox
-   actions keep their own styling and never flash the theme accent fill. The
-   :active state is covered too (was missing — a mousedown/keypress fell through
-   to the theme). The :focus-visible ring below is preserved for keyboard a11y. */
 .mvs-lightbox-action:hover,
-.mvs-lightbox-action:focus,
-.mvs-lightbox-action:active {
+.mvs-lightbox-action:focus {
     background: var(--mvs-surface-2);
     color: var(--mvs-text);
     border: none;
@@ -5387,7 +5373,6 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-action.active {
     color: var(--mvs-danger);
-    background: none;
 }
 
 .mvs-lightbox-action [data-lucide],
