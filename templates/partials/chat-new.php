@@ -28,7 +28,6 @@ defined( 'ABSPATH' ) || exit;
 			placeholder="<?php esc_attr_e( 'Search users...', 'wpmediaverse' ); ?>"
 			data-wp-on--input="actions.updateSearchQuery"
 			data-wp-bind--value="state.searchQuery"
-			autofocus
 		/>
 	</div>
 

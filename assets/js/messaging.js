@@ -369,6 +369,16 @@ const { state, actions } = store( 'mvs/messaging', {
 			state.chatView = 'new';
 			state.searchQuery = '';
 			state.searchResults = [];
+			// Focus the recipient search once the 'new' view renders. Replaces
+			// the input's autofocus attribute, which fired on every page load
+			// (the chat panel ships in the DOM site-wide) and scrolled the page
+			// down to the still-hidden panel before hydration.
+			setTimeout( () => {
+				const input = document.querySelector( '.mvs-chat-search__input' );
+				if ( input ) {
+					input.focus();
+				}
+			}, 50 );
 		},
 
 		// ---- Tabs ----
