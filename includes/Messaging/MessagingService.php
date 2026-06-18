@@ -593,6 +593,47 @@ class MessagingService {
 	}
 
 	/**
+	 * Whether a user is an active participant of a conversation the given media
+	 * was shared into (as a message media_id or attachment_id).
+	 *
+	 * Lets the privacy layer grant DM recipients access to media shared with
+	 * them — the conversation membership already gates who can read the message,
+	 * so the attachment must be viewable to the same set. Owner/admin are
+	 * handled earlier in the privacy check; this only covers the recipient side.
+	 *
+	 * @param int $user_id  Viewer user id.
+	 * @param int $media_id Media id shared in a message.
+	 * @return bool
+	 */
+	public function user_received_media( int $user_id, int $media_id ): bool {
+		if ( $user_id <= 0 || $media_id <= 0 ) {
+			return false;
+		}
+
+		global $wpdb;
+		$msg_table  = $wpdb->prefix . 'mvs_messages';
+		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$found = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT 1
+				   FROM {$msg_table} m
+				   INNER JOIN {$part_table} p ON p.conversation_id = m.conversation_id
+				  WHERE ( m.media_id = %d OR m.attachment_id = %d )
+				    AND p.user_id = %d
+				    AND p.status = 'active'
+				  LIMIT 1",
+				$media_id,
+				$media_id,
+				$user_id
+			)
+		);
+
+		return null !== $found;
+	}
+
+	/**
 	 * Update conversation participant settings (mute, pin, archive).
 	 *
 	 * @param int   $conversation_id Conversation ID.
