@@ -58,9 +58,23 @@ class MessagingService {
 		// BuddyNext integration hook — allows external block lists.
 		$allowed = apply_filters( 'mvs_can_send_message', true, $sender_id, $recipient_id );
 		if ( ! $allowed ) {
+			/**
+			 * Filters the denial reason when the mvs_can_send_message gate blocks a send.
+			 *
+			 * The gate itself is boolean, so an integrator that denies for more than
+			 * one cause (e.g. a hard block vs a "who can DM me" privacy preference) can
+			 * report the specific reason here, letting clients show an accurate notice
+			 * instead of a generic "blocked". Defaults to 'blocked'. The value should be
+			 * one of the codes denial_message() understands.
+			 *
+			 * @param string $reason       Default 'blocked'.
+			 * @param int    $sender_id    Sender user ID.
+			 * @param int    $recipient_id Recipient user ID.
+			 */
+			$reason = (string) apply_filters( 'mvs_dm_denial_reason', 'blocked', $sender_id, $recipient_id );
 			return array(
 				'allowed'    => false,
-				'reason'     => 'blocked',
+				'reason'     => $reason,
 				'is_request' => false,
 			);
 		}
@@ -159,6 +173,7 @@ class MessagingService {
 			'blocked'                => __( 'You can no longer message this member.', 'wpmediaverse' ),
 			'dms_disabled'           => __( 'This member isn’t accepting messages right now.', 'wpmediaverse' ),
 			'mutual_follow_required' => __( 'This member only accepts messages from people they are connected with.', 'wpmediaverse' ),
+			'connections_only'       => __( 'This member only accepts messages from their connections.', 'wpmediaverse' ),
 			'account_too_new'        => __( 'Your account is too new to message this member yet.', 'wpmediaverse' ),
 			'cannot_message_self'    => __( 'You can’t send a message to yourself.', 'wpmediaverse' ),
 			'rate_limited'           => __( 'You’re sending messages too quickly. Please wait a moment and try again.', 'wpmediaverse' ),
