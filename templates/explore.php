@@ -519,6 +519,12 @@ $mvs_archive_url = home_url( '/media/' );
 	?>
 </div>
 <?php
+// Close the router region here — the visible content ends with the
+// .mvs-explore-page div above. Everything below (script enqueues, the
+// mvs_after_content hook, profile-actions enqueue) emits no markup, so it
+// belongs outside the swappable region, consistent with the other templates.
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+
 // Enqueue Interactivity API stores.
 wp_enqueue_script_module(
 	'@mvs/explore-view',
@@ -534,7 +540,5 @@ if ( $mvs_profile ) {
 	$mvs_is_own_profile = is_user_logged_in() && get_current_user_id() === $mvs_profile->ID;
 	include MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php';
 }
-
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 get_footer();
