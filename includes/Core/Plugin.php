@@ -66,6 +66,7 @@ use WPMediaVerse\REST\Controller\UserController;
 use WPMediaVerse\REST\Controller\ReportController;
 use WPMediaVerse\REST\Controller\ActivityController;
 use WPMediaVerse\REST\Controller\ProfileController;
+use WPMediaVerse\REST\Controller\AuthController;
 use WPMediaVerse\Services\ProfileService;
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
@@ -788,6 +789,7 @@ class Plugin {
 			new ActivityController( $activity ),
 			new ProfileController( $profile ),
 			new AdminController(),
+			new AuthController(),
 		);
 
 		foreach ( $controllers as $controller ) {
@@ -966,6 +968,29 @@ class Plugin {
 	 * Enqueue frontend styles and scripts on MVS pages.
 	 */
 	public static function enqueue_frontend_assets(): void {
+		// Shared REST client — registered globally so any surface (Pro feed
+		// shortcodes, BP tabs, explore, dashboard) can enqueue by handle.
+		// Localized with restBase + a fresh nonce so window.mvsRest is ready
+		// before any consumer script fires. Consumers add 'mvs-rest' to their
+		// deps array to guarantee load order.
+		wp_register_script(
+			'mvs-rest',
+			MVS_PLUGIN_URL . 'assets/js/frontend/mvs-rest.js',
+			array(),
+			filemtime( MVS_PLUGIN_DIR . 'assets/js/frontend/mvs-rest.js' ),
+			array(
+				'in_footer' => false,
+			)
+		);
+		wp_localize_script(
+			'mvs-rest',
+			'mvsRestConfig',
+			array(
+				'restBase' => esc_url_raw( rest_url( 'mvs/v1' ) ),
+				'nonce'    => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
 		// Card builders + Load More are registered globally (enqueued by
 		// handle below on MVS pages) because the Pro feed shortcodes
 		// ([mvs_pro_flickr_feed] etc.) render the same grid + Load More
@@ -1038,6 +1063,9 @@ class Plugin {
 
 		// Always enqueue on MVS pages or pages with dashboard shortcode.
 		if ( $is_mvs || $is_archive || $is_mvs_tax || $is_mvs_tpl || $is_mvs_page ) {
+			// Shared REST client — must load before any consumer script.
+			wp_enqueue_script( 'mvs-rest' );
+
 			wp_enqueue_style(
 				'mvs-frontend',
 				MVS_PLUGIN_URL . 'assets/css/frontend.css',
