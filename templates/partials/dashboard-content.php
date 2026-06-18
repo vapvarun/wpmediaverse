@@ -902,13 +902,7 @@ wp_enqueue_style( 'mvs-frontend' );
 		</div>
 	</div>
 
-	<!-- Toast (shared-ui) -->
-	<div class="mvs-toast" hidden
-		data-wp-interactive="mvs/shared-ui"
-		data-wp-bind--hidden="!state.toastVisible"
-		data-wp-text="state.toastMessage"
-		data-wp-class--mvs-toast--success="state.isToastSuccess"
-		data-wp-class--mvs-toast--error="state.isToastError"></div>
+	<!-- Toast is provided globally by shared-ui-frame.php in wp_footer. -->
 
 	<!-- Confirm Dialog (shared-ui) -->
 	<div class="mvs-confirm-overlay" hidden

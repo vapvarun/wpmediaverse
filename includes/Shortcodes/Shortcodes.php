@@ -461,7 +461,9 @@ class Shortcodes {
 		);
 
 		ob_start();
+		include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 		include MVS_PLUGIN_DIR . 'templates/partials/dashboard-content.php';
+		include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 		return ob_get_clean();
 	}
 

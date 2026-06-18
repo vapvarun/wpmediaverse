@@ -15,6 +15,8 @@ get_header();
 
 do_action( 'mvs_before_content' );
 
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+
 // Archive URL (base media page).
 $mvs_archive_url = home_url( '/media/' );
 ?>
@@ -532,5 +534,7 @@ if ( $mvs_profile ) {
 	$mvs_is_own_profile = is_user_logged_in() && get_current_user_id() === $mvs_profile->ID;
 	include MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php';
 }
+
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 get_footer();

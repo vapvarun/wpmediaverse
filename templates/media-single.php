@@ -64,6 +64,8 @@ get_header();
 
 do_action( 'mvs_before_content' );
 
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+
 // Resolve media type flags.
 $is_image = 'image' === $mvs_media_type;
 $is_video = 'video' === $mvs_media_type;
@@ -635,15 +637,9 @@ $mvs_archive_url = home_url( '/media/' );
 	</article>
 </div>
 <?php
-// Shared UI: Toast + Confirm Dialog (required for delete/share actions).
+// Shared UI: Confirm Dialog (required for delete/share actions).
+// Toast is provided globally by shared-ui-frame.php in wp_footer.
 ?>
-<div class="mvs-toast" hidden
-	data-wp-interactive="mvs/shared-ui"
-	data-wp-bind--hidden="!state.toastVisible"
-	data-wp-text="state.toastMessage"
-	data-wp-class--mvs-toast--success="state.isToastSuccess"
-	data-wp-class--mvs-toast--error="state.isToastError"></div>
-
 <div class="mvs-confirm-overlay" hidden
 	data-wp-interactive="mvs/shared-ui"
 	data-wp-bind--hidden="!state.confirmVisible">
@@ -658,6 +654,8 @@ $mvs_archive_url = home_url( '/media/' );
 	</div>
 </div>
 <?php
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+
 do_action( 'mvs_after_content' );
 
 get_footer();
