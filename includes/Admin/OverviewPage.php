@@ -147,14 +147,14 @@ class OverviewPage {
 			array(
 				'exploreUrl' => $explore_url ? esc_url_raw( $explore_url ) : '',
 				'i18n'       => array(
-					'importing'             => __( 'Importing...', 'wpmediaverse' ),
-					'importDemoData'        => __( 'Import Demo Data', 'wpmediaverse' ),
-					'importFailedInvalid'   => __( 'Import failed. The server returned an invalid response. Please check wp-content/debug.log.', 'wpmediaverse' ),
-					'redirectingToExplore'  => __( 'Redirecting to Explore page...', 'wpmediaverse' ),
-					'deleting'              => __( 'Deleting...', 'wpmediaverse' ),
-					'deleteDemoData'        => __( 'Delete Demo Data', 'wpmediaverse' ),
-					'cleanupFailedInvalid'  => __( 'Cleanup failed. The server returned an invalid response. Please check wp-content/debug.log.', 'wpmediaverse' ),
-					'cleanupConfirm'        => __( 'Delete all demo users and the media, albums, and collections they own? Your real user data will not be touched. This cannot be undone.', 'wpmediaverse' ),
+					'importing'            => __( 'Importing...', 'wpmediaverse' ),
+					'importDemoData'       => __( 'Import Demo Data', 'wpmediaverse' ),
+					'importFailedInvalid'  => __( 'Import failed. The server returned an invalid response. Please check wp-content/debug.log.', 'wpmediaverse' ),
+					'redirectingToExplore' => __( 'Redirecting to Explore page...', 'wpmediaverse' ),
+					'deleting'             => __( 'Deleting...', 'wpmediaverse' ),
+					'deleteDemoData'       => __( 'Delete Demo Data', 'wpmediaverse' ),
+					'cleanupFailedInvalid' => __( 'Cleanup failed. The server returned an invalid response. Please check wp-content/debug.log.', 'wpmediaverse' ),
+					'cleanupConfirm'       => __( 'Delete all demo users and the media, albums, and collections they own? Your real user data will not be touched. This cannot be undone.', 'wpmediaverse' ),
 				),
 			)
 		);

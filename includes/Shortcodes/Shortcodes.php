@@ -605,7 +605,7 @@ class Shortcodes {
 			$title      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' );
 			$media_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' ) ?: 'image';
 			$permalink  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id );
-			$thumb_url = \WPMediaVerse\Core\MediaUrl::thumb( $media_id, 'large' );
+			$thumb_url  = \WPMediaVerse\Core\MediaUrl::thumb( $media_id, 'large' );
 
 			$output .= '<div class="mvs-grid-item">';
 			$output .= '<a href="' . esc_url( $permalink ) . '" class="mvs-grid-item-link">';

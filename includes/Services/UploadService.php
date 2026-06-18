@@ -926,9 +926,9 @@ class UploadService {
 		// Only PUBLIC media is eligible for cloud thumbnails. Restricted media
 		// keeps every variant on local disk (same policy as the original file),
 		// so private bytes never reach a public CDN.
-		$driver_slug   = (string) get_option( 'mvs_storage_driver', 'local' );
-		$is_public     = ( 'public' === (string) $repo->get_raw( $media_id, 'privacy' ) );
-		$cloud_driver  = null;
+		$driver_slug  = (string) get_option( 'mvs_storage_driver', 'local' );
+		$is_public    = ( 'public' === (string) $repo->get_raw( $media_id, 'privacy' ) );
+		$cloud_driver = null;
 		if ( 'local' !== $driver_slug && $is_public ) {
 			$candidate = apply_filters( 'mvs_storage_driver', null, $driver_slug );
 			if ( $candidate instanceof StorageDriverInterface ) {

@@ -845,7 +845,7 @@ class Commands {
 		// a private cloud bucket and accept the responsibility for serving
 		// it themselves (e.g. via CloudFront with origin access identity).
 		$include_non_public = (bool) Utils\get_flag_value( $assoc_args, 'include-non-public', false );
-		$where = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''";
+		$where              = "status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != ''";
 		if ( ! $include_non_public ) {
 			$where .= " AND privacy = 'public'";
 		}

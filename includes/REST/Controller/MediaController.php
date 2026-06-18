@@ -948,8 +948,8 @@ class MediaController extends WP_REST_Controller {
 			wp_upload_dir()['basedir'] . '/wpmediaverse/' . $dest_sub,
 			get_current_user_id()
 		);
-		$filename  = $filename_pick['stored'];
-		$dest_path = $dest_sub . '/' . $filename;
+		$filename      = $filename_pick['stored'];
+		$dest_path     = $dest_sub . '/' . $filename;
 
 		if ( ! $driver->store( $file['tmp_name'], $dest_path ) ) {
 			return new \WP_Error( 'mvs_storage_failed', __( 'Failed to store the file.', 'wpmediaverse' ), array( 'status' => 500 ) );
@@ -1371,7 +1371,7 @@ class MediaController extends WP_REST_Controller {
 
 		// Always-signed via MediaRepository — Phase 0a item 5 consolidated
 		// signing into the data layer; this controller is now a thin emitter.
-		$file_url      = ! empty( $all['file_url'] )
+		$file_url = ! empty( $all['file_url'] )
 			? (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' )
 			: '';
 		// Grid/feed tile: use the admin-configured size (default medium), not a
@@ -1457,11 +1457,11 @@ class MediaController extends WP_REST_Controller {
 		// the lightbox payload we strip tags so `author_data.name` is plain
 		// text safe to bind via `data-wp-text`, and surface decorations
 		// separately through `author_data.badge_html`.
-		$author_id             = $data['author'];
-		$author_name           = get_the_author_meta( 'display_name', $author_id );
-		$author_name_plain     = wp_strip_all_tags( (string) $author_name );
-		$author_avatar         = get_avatar_url( $author_id, array( 'size' => 64 ) );
-		$author_url            = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $author_id );
+		$author_id         = $data['author'];
+		$author_name       = get_the_author_meta( 'display_name', $author_id );
+		$author_name_plain = wp_strip_all_tags( (string) $author_name );
+		$author_avatar     = get_avatar_url( $author_id, array( 'size' => 64 ) );
+		$author_url        = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $author_id );
 
 		/**
 		 * Accumulated badge HTML for a user. Listeners append their own

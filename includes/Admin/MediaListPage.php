@@ -717,11 +717,11 @@ class MediaListPage {
 		}
 
 		$ai_status   = (string) $repo->get_raw( $media_id, 'ai_status' );
-		$description  = (string) $repo->get_raw( $media_id, 'ai_description' );
-		$confidence   = (float) $repo->get_raw( $media_id, 'ai_confidence' );
-		$tags         = self::decode_ai_tags( $repo->get_raw( $media_id, 'ai_tags' ) );
-		$badge        = self::ai_status_badge( $ai_status );
-		$reviewed     = in_array( $ai_status, array( 'accepted', 'rejected' ), true );
+		$description = (string) $repo->get_raw( $media_id, 'ai_description' );
+		$confidence  = (float) $repo->get_raw( $media_id, 'ai_confidence' );
+		$tags        = self::decode_ai_tags( $repo->get_raw( $media_id, 'ai_tags' ) );
+		$badge       = self::ai_status_badge( $ai_status );
+		$reviewed    = in_array( $ai_status, array( 'accepted', 'rejected' ), true );
 
 		$su        = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 		$thumb_url = $su ? (string) $su->generate_thumbnail( $media_id, get_current_user_id(), 'thumbnail', 0, true ) : '';

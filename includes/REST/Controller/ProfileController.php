@@ -67,15 +67,15 @@ class ProfileController extends WP_REST_Controller {
 					'callback'            => array( $this, 'update_profile' ),
 					'permission_callback' => array( $this, 'check_logged_in' ),
 					'args'                => array(
-						'first_name'   => array(
+						'first_name'    => array(
 							'type'              => 'string',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'last_name'    => array(
+						'last_name'     => array(
 							'type'              => 'string',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
-						'display_name' => array(
+						'display_name'  => array(
 							'type'              => 'string',
 							'sanitize_callback' => 'sanitize_text_field',
 						),

@@ -881,17 +881,17 @@ class Migrator {
 
 		// Map of URL-meta key → corresponding _path key. Order doesn't matter.
 		$keymap = array(
-			'thumb_large'        => 'thumb_large_path',
-			'thumb_medium'       => 'thumb_medium_path',
-			'thumb_thumb'        => 'thumb_thumb_path',
-			'thumb_large_webp'   => 'thumb_large_webp_path',
-			'thumb_medium_webp'  => 'thumb_medium_webp_path',
-			'thumb_thumb_webp'   => 'thumb_thumb_webp_path',
-			'thumb_large_avif'   => 'thumb_large_avif_path',
-			'thumb_medium_avif'  => 'thumb_medium_avif_path',
-			'thumb_thumb_avif'   => 'thumb_thumb_avif_path',
-			'original_webp'      => 'original_webp_path',
-			'original_avif'      => 'original_avif_path',
+			'thumb_large'       => 'thumb_large_path',
+			'thumb_medium'      => 'thumb_medium_path',
+			'thumb_thumb'       => 'thumb_thumb_path',
+			'thumb_large_webp'  => 'thumb_large_webp_path',
+			'thumb_medium_webp' => 'thumb_medium_webp_path',
+			'thumb_thumb_webp'  => 'thumb_thumb_webp_path',
+			'thumb_large_avif'  => 'thumb_large_avif_path',
+			'thumb_medium_avif' => 'thumb_medium_avif_path',
+			'thumb_thumb_avif'  => 'thumb_thumb_avif_path',
+			'original_webp'     => 'original_webp_path',
+			'original_avif'     => 'original_avif_path',
 		);
 
 		// Walk every media row that has a `file_path` (the authoritative
@@ -1030,15 +1030,15 @@ class Migrator {
 		// wrote the same value we'd derive here, so the idempotency check
 		// below short-circuits.
 		$keymap = array(
-			'thumb_large_path'        => 'thumb_large',
-			'thumb_medium_path'       => 'thumb_medium',
-			'thumb_thumb_path'        => 'thumb_thumb',
-			'thumb_large_webp_path'   => 'thumb_large_webp',
-			'thumb_medium_webp_path'  => 'thumb_medium_webp',
-			'thumb_thumb_webp_path'   => 'thumb_thumb_webp',
-			'thumb_large_avif_path'   => 'thumb_large_avif',
-			'thumb_medium_avif_path'  => 'thumb_medium_avif',
-			'thumb_thumb_avif_path'   => 'thumb_thumb_avif',
+			'thumb_large_path'       => 'thumb_large',
+			'thumb_medium_path'      => 'thumb_medium',
+			'thumb_thumb_path'       => 'thumb_thumb',
+			'thumb_large_webp_path'  => 'thumb_large_webp',
+			'thumb_medium_webp_path' => 'thumb_medium_webp',
+			'thumb_thumb_webp_path'  => 'thumb_thumb_webp',
+			'thumb_large_avif_path'  => 'thumb_large_avif',
+			'thumb_medium_avif_path' => 'thumb_medium_avif',
+			'thumb_thumb_avif_path'  => 'thumb_thumb_avif',
 		);
 
 		// Scope to videos for efficiency on large sites — the bug only

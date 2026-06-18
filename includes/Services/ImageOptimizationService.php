@@ -433,7 +433,7 @@ class ImageOptimizationService {
 			return $result;
 		}
 
-		$user_id              = (int) $repo->get_raw( $media_id, 'post_author' );
+		$user_id                = (int) $repo->get_raw( $media_id, 'post_author' );
 		$result['bytes_before'] = (int) filesize( $abs_path );
 
 		if ( $dry_run ) {
@@ -549,7 +549,7 @@ class ImageOptimizationService {
 		}
 
 		if ( $result['bytes_before'] > 0 ) {
-			$saved              = max( 0, $result['bytes_before'] - $result['bytes_after'] );
+			$saved               = max( 0, $result['bytes_before'] - $result['bytes_after'] );
 			$result['saved_pct'] = round( $saved / $result['bytes_before'] * 100, 2 );
 		}
 
@@ -719,8 +719,8 @@ class ImageOptimizationService {
 	 * @return string Absolute path on local disk or '' on failure.
 	 */
 	private function resolve_local_path( int $media_id ): string {
-		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$rel_path  = (string) $repo->get_raw( $media_id, 'file_path' );
+		$repo     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$rel_path = (string) $repo->get_raw( $media_id, 'file_path' );
 		if ( '' === $rel_path ) {
 			return '';
 		}
