@@ -114,8 +114,10 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 Bug fix: the dead BuddyPress-link menu cleanup no longer removes a site owner's working navigation. No database schema change.
 
+* New      - REST POST /conversations accepts an as_request flag to open a conversation as a pending message request the recipient accepts or declines, so native apps can start message requests through mvs/v1 alone.
 * Fix      - The BuddyPress component-link cleanup (active only when BuddyPress is inactive) deleted any menu item whose URL contained /members/, /groups/, or /activity/, even when those were live pages owned by another community plugin. It is now off by default and never removes a link that resolves to a real page.
 * Dev      - New filter mvs_strip_dead_bp_links (default false) opts a site back into the cleanup; mvs_dead_bp_link_patterns customizes the matched fragments. The cleanup also bails when mvs_buddynext_active is true.
+* Dev      - MessagingService::find_or_create_conversation() gains a force_request option for first-contact flows (a connection-request note delivered to the recipient as a DM request). New denial_message() helper plus mvs_dm_denial_message filter, and DM-denial REST responses now include a human-readable message beside the error code so clients can show a reason-aware notice.
 * Fix      - Lightbox Share did nothing (showed "Sharing is not supported") on non-HTTPS sites because the Web Share / async Clipboard APIs are unavailable outside a secure context. It now falls back to a temporary-textarea copy so Share copies the media link on http too.
 * Compat   - Pairs with WPMediaVerse Pro 1.7.1. Install both updates together.
 

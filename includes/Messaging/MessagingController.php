@@ -91,6 +91,12 @@ class MessagingController extends WP_REST_Controller {
 						'type'     => 'integer',
 						'required' => true,
 					),
+					'as_request'   => array(
+						'type'        => 'boolean',
+						'required'    => false,
+						'default'     => false,
+						'description' => 'Create the conversation as a pending message request (recipient must accept) instead of an active thread.',
+					),
 				),
 			)
 		);
@@ -352,9 +358,16 @@ class MessagingController extends WP_REST_Controller {
 	public function create_conversation( WP_REST_Request $request ): WP_REST_Response {
 		$user_id      = get_current_user_id();
 		$recipient_id = (int) $request->get_param( 'recipient_id' );
+		$as_request   = (bool) $request->get_param( 'as_request' );
 
 		if ( ! get_userdata( $recipient_id ) ) {
-			return new WP_REST_Response( array( 'error' => 'invalid_recipient' ), 400 );
+			return new WP_REST_Response(
+				array(
+					'error'   => 'invalid_recipient',
+					'message' => $this->service->denial_message( 'invalid_recipient' ),
+				),
+				400
+			);
 		}
 
 		// Block check: prevent DM if either user has blocked the other.
@@ -362,15 +375,31 @@ class MessagingController extends WP_REST_Controller {
 		if ( $container->has( 'reports' ) ) {
 			$report_svc = $container->get( 'reports' );
 			if ( $report_svc->is_blocked_either_way( $user_id, $recipient_id ) ) {
-				return new WP_REST_Response( array( 'error' => 'blocked' ), 403 );
+				return new WP_REST_Response(
+					array(
+						'error'   => 'blocked',
+						'message' => $this->service->denial_message( 'blocked' ),
+					),
+					403
+				);
 			}
 		}
 
-		$result = $this->service->find_or_create_conversation( $user_id, $recipient_id );
+		$result = $this->service->find_or_create_conversation(
+			$user_id,
+			$recipient_id,
+			array( 'force_request' => $as_request )
+		);
 
 		if ( ! $result['conversation_id'] ) {
 			$status = 'rate_limited' === $result['status'] ? 429 : 403;
-			return new WP_REST_Response( array( 'error' => $result['status'] ), $status );
+			return new WP_REST_Response(
+				array(
+					'error'   => $result['status'],
+					'message' => $this->service->denial_message( $result['status'] ),
+				),
+				$status
+			);
 		}
 
 		// Return full conversation data.
@@ -495,7 +524,13 @@ class MessagingController extends WP_REST_Controller {
 			foreach ( $participants as $p ) {
 				$pid = (int) ( $p['id'] ?? $p['user_id'] ?? 0 );
 				if ( $pid && $pid !== $user_id && $report_svc->is_blocked_either_way( $user_id, $pid ) ) {
-					return new WP_REST_Response( array( 'error' => 'blocked' ), 403 );
+					return new WP_REST_Response(
+						array(
+							'error'   => 'blocked',
+							'message' => $this->service->denial_message( 'blocked' ),
+						),
+						403
+					);
 				}
 			}
 		}
@@ -519,7 +554,13 @@ class MessagingController extends WP_REST_Controller {
 				'rate_limited'    => 429,
 			);
 			$status     = $status_map[ $result['error'] ] ?? 400;
-			return new WP_REST_Response( array( 'error' => $result['error'] ), $status );
+			return new WP_REST_Response(
+				array(
+					'error'   => $result['error'],
+					'message' => $this->service->denial_message( $result['error'] ),
+				),
+				$status
+			);
 		}
 
 		// Return the full message.
@@ -544,7 +585,7 @@ class MessagingController extends WP_REST_Controller {
 			'not_sender' => 403,
 			'db_error'   => 500,
 		);
-		$error = isset( $result['error'] ) ? (string) $result['error'] : 'delete_failed';
+		$error      = isset( $result['error'] ) ? (string) $result['error'] : 'delete_failed';
 
 		return new WP_REST_Response( array( 'error' => $error ), $status_map[ $error ] ?? 400 );
 	}

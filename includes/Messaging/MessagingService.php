@@ -141,6 +141,44 @@ class MessagingService {
 		);
 	}
 
+	/**
+	 * Human-readable message for a DM denial reason code.
+	 *
+	 * Maps the stable reason codes returned by can_message(), find_or_create_conversation(),
+	 * and send_message() (blocked, dms_disabled, mutual_follow_required, account_too_new,
+	 * rate_limited, not_participant, content_too_long, …) to a default sentence, so REST
+	 * responses are self-describing for native-app clients that consume mvs/v1 directly.
+	 * Apps may localize from the code instead; the string is filterable via
+	 * `mvs_dm_denial_message` for per-site / per-locale overrides.
+	 *
+	 * @param string $reason Reason code.
+	 * @return string Default human-readable message.
+	 */
+	public function denial_message( string $reason ): string {
+		$messages = array(
+			'blocked'                => __( 'You can no longer message this member.', 'wpmediaverse' ),
+			'dms_disabled'           => __( 'This member isn’t accepting messages right now.', 'wpmediaverse' ),
+			'mutual_follow_required' => __( 'This member only accepts messages from people they are connected with.', 'wpmediaverse' ),
+			'account_too_new'        => __( 'Your account is too new to message this member yet.', 'wpmediaverse' ),
+			'cannot_message_self'    => __( 'You can’t send a message to yourself.', 'wpmediaverse' ),
+			'rate_limited'           => __( 'You’re sending messages too quickly. Please wait a moment and try again.', 'wpmediaverse' ),
+			'not_participant'        => __( 'You can no longer post to this conversation.', 'wpmediaverse' ),
+			'content_too_long'       => __( 'That message is too long to send.', 'wpmediaverse' ),
+			'empty_content'          => __( 'Your message is empty.', 'wpmediaverse' ),
+			'invalid_recipient'      => __( 'That member could not be found.', 'wpmediaverse' ),
+		);
+
+		$message = $messages[ $reason ] ?? __( 'This message could not be delivered.', 'wpmediaverse' );
+
+		/**
+		 * Filters the human-readable message for a DM denial reason code.
+		 *
+		 * @param string $message Default message.
+		 * @param string $reason  Reason code.
+		 */
+		return (string) apply_filters( 'mvs_dm_denial_message', $message, $reason );
+	}
+
 	// -------------------------------------------------------------------------
 	// Rate Limiting
 	// -------------------------------------------------------------------------
@@ -210,11 +248,21 @@ class MessagingService {
 	/**
 	 * Find or create a 1:1 conversation.
 	 *
-	 * @param int $user_a First user.
-	 * @param int $user_b Second user.
+	 * @param int   $user_a First user (the initiator).
+	 * @param int   $user_b Second user (the recipient).
+	 * @param array $args   Optional. When $args['force_request'] is true, a newly
+	 *                      created conversation marks the recipient as a pending
+	 *                      request even when their DM access would otherwise allow
+	 *                      an active thread, for first-contact flows such as a
+	 *                      connection request that carries a note (the recipient
+	 *                      accepts or declines before the thread opens). Every
+	 *                      denial — hard block, DMs-disabled, self, too-new,
+	 *                      mutual-follow-required, rate limit — is still enforced
+	 *                      first; the flag applies only once the send is already
+	 *                      permitted. Default empty array.
 	 * @return array{conversation_id: int, created: bool, status: string}
 	 */
-	public function find_or_create_conversation( int $user_a, int $user_b ): array {
+	public function find_or_create_conversation( int $user_a, int $user_b, array $args = array() ): array {
 		global $wpdb;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
@@ -321,8 +369,12 @@ class MessagingService {
 			array( '%d', '%d', '%s', '%s' )
 		);
 
-		// Add recipient — check if this is a request.
-		$recipient_status = $access['is_request'] ? 'request_pending' : 'active';
+		// Add recipient — pending request when the DM access requires one, or when
+		// the caller explicitly forces a request (first-contact flows). Reached
+		// only after can_message() allowed the send and the rate limit passed, so
+		// forcing a request can never bypass a block, a disabled inbox, or a limit.
+		$force_request    = ! empty( $args['force_request'] );
+		$recipient_status = ( $access['is_request'] || $force_request ) ? 'request_pending' : 'active';
 
 		$wpdb->insert(
 			$part_table,
