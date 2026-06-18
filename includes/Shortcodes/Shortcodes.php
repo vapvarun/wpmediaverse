@@ -433,15 +433,11 @@ class Shortcodes {
 		wp_enqueue_style( 'mvs-frontend' );
 
 		// Enqueue Interactivity API stores.
-		wp_enqueue_script_module(
-			'@mvs/shared-ui',
+		// Plugin::register_shared_ui_module() owns the canonical dep list
+		// (includes @wordpress/interactivity-router as dynamic dep).
+		\WPMediaVerse\Core\Plugin::register_shared_ui_module(
+			true,
 			MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js',
-			array(
-				array(
-					'id'     => '@wordpress/interactivity',
-					'import' => 'static',
-				),
-			),
 			MVS_VERSION
 		);
 

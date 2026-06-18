@@ -1109,12 +1109,10 @@ class Plugin {
 
 			// Lightbox + shared UI store — needed on all MVS pages (logged in or out).
 			// Use src/ (ESM source) not build/ (IIFE) — matches explore-view pattern.
-			wp_enqueue_script_module(
-				'@mvs/shared-ui',
-				MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js',
-				array( array( 'id' => '@wordpress/interactivity' ) ),
-				MVS_VERSION
-			);
+			// register_shared_ui_module() owns the canonical dep list (includes the
+			// interactivity-router dynamic dep); src/ is passed explicitly so the
+			// first-registration wins with the ESM entry point on MVS pages.
+			self::register_shared_ui_module( true, MVS_PLUGIN_URL . 'src/blocks/shared-ui/view.js', MVS_VERSION );
 
 			// Media social store — reactions, comments, favorites, follow, report on single media/album pages.
 			wp_enqueue_script_module(
@@ -1152,17 +1150,16 @@ class Plugin {
 			// no-op on pages that never enqueue it by handle. The MVS-page
 			// branch above intentionally keeps its own src/ enqueue, so this
 			// global registration never pre-empts native-page behavior.
+			// register_shared_ui_module() owns the canonical dep list (includes
+			// the interactivity-router dynamic dep). build/ src and version are
+			// read from view.asset.php so the compiled hash is honoured.
 			$mvs_shared_ui_asset = file_exists( MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php' )
 				? require MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php'
-				: array(
-					'dependencies' => array( array( 'id' => '@wordpress/interactivity' ) ),
-					'version'      => MVS_VERSION,
-				);
-			wp_register_script_module(
-				'@mvs/shared-ui',
+				: array( 'version' => MVS_VERSION );
+			self::register_shared_ui_module(
+				false,
 				MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
-				$mvs_shared_ui_asset['dependencies'],
-				$mvs_shared_ui_asset['version']
+				$mvs_shared_ui_asset['version'] ?? MVS_VERSION
 			);
 
 			// Lightbox dialog frame stylesheet — registered so the Pro feed
@@ -1811,6 +1808,51 @@ JS;
 	}
 
 	/**
+	 * Register (or enqueue) the @mvs/shared-ui script module with the canonical
+	 * dependency array, including @wordpress/interactivity-router as a dynamic dep
+	 * so the navigate action's dynamic import() is declared at module-registry time.
+	 *
+	 * This is the single source of truth for the dep list. All callers that
+	 * previously registered/enqueued the module directly now go through here.
+	 * Mirrors the register_lucide_script() consolidation pattern.
+	 *
+	 * @param bool   $enqueue  True to enqueue immediately; false to register only.
+	 * @param string $src      URL to the compiled view.js. Defaults to build/.
+	 * @param mixed  $version  Script version string or hash. Defaults to MVS_VERSION.
+	 */
+	public static function register_shared_ui_module( bool $enqueue = false, string $src = '', $version = MVS_VERSION ): void {
+		if ( '' === $src ) {
+			$src = MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js';
+		}
+
+		$deps = array(
+			array( 'id' => '@wordpress/interactivity' ),
+			array(
+				'id'     => '@wordpress/interactivity-router',
+				'import' => 'dynamic',
+			),
+		);
+
+		// wp_register_script_module is idempotent (no-op if already registered
+		// with the same handle). Re-registering with a different src/version is
+		// a no-op too — first registration wins. Callers that need a specific
+		// src (e.g. the MVS-page branch that intentionally uses src/ ESM) must
+		// call wp_register_script_module directly before this helper runs, or
+		// pass the src explicitly so the first-registration wins with the
+		// correct URL.
+		wp_register_script_module(
+			'@mvs/shared-ui',
+			$src,
+			$deps,
+			$version
+		);
+
+		if ( $enqueue ) {
+			wp_enqueue_script_module( '@mvs/shared-ui' );
+		}
+	}
+
+	/**
 	 * Whether the current front-end request is a MediaVerse-owned surface.
 	 *
 	 * Covers single media, albums, collections, the album archive, MVS
@@ -1961,15 +2003,13 @@ JS;
 
 		$mvs_shared_ui_asset = file_exists( MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php' )
 			? require MVS_PLUGIN_DIR . 'build/blocks/shared-ui/view.asset.php'
-			: array(
-				'dependencies' => array(),
-				'version'      => MVS_VERSION,
-			);
-		wp_enqueue_script_module(
-			'@mvs/shared-ui',
+			: array( 'version' => MVS_VERSION );
+		// register_shared_ui_module() owns the canonical dep list (includes
+		// the interactivity-router dynamic dep); enqueue = true here.
+		self::register_shared_ui_module(
+			true,
 			MVS_PLUGIN_URL . 'build/blocks/shared-ui/view.js',
-			$mvs_shared_ui_asset['dependencies'],
-			$mvs_shared_ui_asset['version']
+			$mvs_shared_ui_asset['version'] ?? MVS_VERSION
 		);
 	}
 

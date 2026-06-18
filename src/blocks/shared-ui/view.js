@@ -1466,6 +1466,56 @@ window.mvsOpenLightbox = function ( mediaId ) {
 	actions.openLightboxById( mediaId );
 };
 
+/**
+ * MVS router store — client-side navigation via @wordpress/interactivity-router.
+ *
+ * `state.clientNav` and `state.denyPaths` are seeded server-side by
+ * templates/partials/router-region-open.php via wp_interactivity_state().
+ * Do not define JS defaults here — the server seed is the source of truth.
+ *
+ * The navigate action is attached to the router-region wrapper via
+ * data-wp-on--click="actions.navigate" so it delegates all internal link
+ * clicks from a single persistent element and survives router swaps.
+ */
+const { state: mvsState } = store( 'mvs', {
+	actions: {
+		*navigate( event ) {
+			const link = event.target?.closest?.( 'a' );
+			const href = link?.href;
+			if ( ! href ) return;
+			if ( event.defaultPrevented ) return;
+			const rawHref = link.getAttribute( 'href' );
+			if ( ! rawHref || '#' === rawHref.charAt( 0 ) ) return;
+			if ( event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||
+				event.button !== 0 || link.hasAttribute( 'download' ) ||
+				( link.target && link.target !== '_self' ) ||
+				link.origin !== window.location.origin ) return;
+			// Feature flag (server-seeded). Disabled => native full-load.
+			if ( ! mvsState.clientNav ) return;
+			// Deny-list: routes that must full-load. mvsState.denyPaths is an array of
+			// path-prefix strings seeded server-side (Task 6 populates it; treat an
+			// empty/absent array as "deny nothing").
+			const path = link.pathname || '';
+			const deny = Array.isArray( mvsState.denyPaths ) ? mvsState.denyPaths : [];
+			if ( deny.some( ( p ) => p && ( path === p || path.indexOf( p ) === 0 ) ) ) return;
+			event.preventDefault();
+			try {
+				const router = yield import( '@wordpress/interactivity-router' );
+				yield router.actions.navigate( href );
+				document.dispatchEvent( new CustomEvent( 'mvs:navigated', { detail: { href } } ) );
+				const region = document.querySelector( '[data-wp-router-region="mvs/main"]' );
+				if ( region ) {
+					if ( ! region.hasAttribute( 'tabindex' ) ) region.setAttribute( 'tabindex', '-1' );
+					region.focus( { preventScroll: true } );
+				}
+				window.scrollTo( 0, 0 );
+			} catch ( e ) {
+				window.location.href = href; // never strand the user
+			}
+		},
+	},
+} );
+
 // Bridge: expose openEditModal to vanilla JS (used by bp-actions.js
 // delegated click handler on .mvs-media-edit-btn).
 window.mvsOpenEditModal = function ( mediaId ) {
