@@ -87,6 +87,13 @@ function messagePreview( msg ) {
 // would re-render and reload the sidebar on every poll tick.
 const seenUnsendIds = new Set();
 
+// onInit idempotency guards.
+// openConversationBound: ensures the mvs-open-conversation listener is added at
+// most once across the page lifetime (the slide-out persists in wp_footer and
+// its store is never re-mounted, but onInit can be called again by the
+// Interactivity API on partial hydration).
+let openConversationBound = false;
+
 // Enrich message with pre-computed boolean flags for Interactivity API directives.
 function enrichMessage( msg ) {
 	// Interactivity API does NOT track underscore-prefixed properties on
@@ -1352,19 +1359,25 @@ const { state, actions } = store( 'mvs/messaging', {
 			}
 
 			// Listen for message-user events from non-Interactivity templates.
-			document.addEventListener( 'mvs-open-conversation', ( e ) => {
-				if ( e.detail?.userId ) {
-					actions.openWithRecipient( e.detail.userId );
-				} else if ( e.detail?.conversationId ) {
-					state.chatPanelOpen = true;
-					state.activeConversationId = e.detail.conversationId;
-					state.chatView = 'conversation';
-					state.messages = [];
-					state.hasMoreMessages = true;
-					actions.loadMessages();
-					actions.startPolling();
-				}
-			} );
+			// Guard: bind at most once per page — the slide-out lives in wp_footer
+			// and persists across client-side navigations, so re-running onInit
+			// must not stack duplicate listeners.
+			if ( ! openConversationBound ) {
+				openConversationBound = true;
+				document.addEventListener( 'mvs-open-conversation', ( e ) => {
+					if ( e.detail?.userId ) {
+						actions.openWithRecipient( e.detail.userId );
+					} else if ( e.detail?.conversationId ) {
+						state.chatPanelOpen = true;
+						state.activeConversationId = e.detail.conversationId;
+						state.chatView = 'conversation';
+						state.messages = [];
+						state.hasMoreMessages = true;
+						actions.loadMessages();
+						actions.startPolling();
+					}
+				} );
+			}
 
 			// Full /messages/ page: auto-load conversations and start polling.
 			if ( document.querySelector( '.mvs-messages-page' ) ) {
@@ -1374,8 +1387,25 @@ const { state, actions } = store( 'mvs/messaging', {
 			}
 
 			// Start background unread polling for all logged-in pages.
+			// Guard: never stack a second timer if one is already running. Without
+			// this guard, a second onInit call (e.g. partial re-hydration) would
+			// launch a duplicate setInterval and double the polling rate.
 			actions.refreshUnreadCount();
-			state.unreadTimer = setInterval( () => actions.refreshUnreadCount(), TRANSPORT.intervals.background );
+			if ( ! state.unreadTimer ) {
+				state.unreadTimer = setInterval( () => actions.refreshUnreadCount(), TRANSPORT.intervals.background );
+			}
+
+			// Teardown: stop the active chat polling timer when the user navigates
+			// away (mvs:navigated fires after every client-side swap). This prevents
+			// the high-frequency active/list poll from leaking after the user leaves
+			// the messages page. The background unreadTimer is kept alive so the
+			// unread-count badge continues to update while browsing.
+			document.addEventListener( 'mvs:navigated', () => {
+				if ( state.pollingTimer ) {
+					clearInterval( state.pollingTimer );
+					state.pollingTimer = null;
+				}
+			}, { once: true } );
 		},
 	},
 } );

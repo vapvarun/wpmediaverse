@@ -1076,23 +1076,11 @@ class Plugin {
 			wp_enqueue_style( 'mvs-load-more' );
 
 			// Lucide icon set — required by templates that use <i data-lucide>.
-			// Self-contained on the frontend so we don't depend on the active theme
-			// (Reign, BuddyX) loading lucide. Re-running createIcons() after page
-			// load picks up icons added by every template helper.
-			wp_enqueue_script(
-				'mvs-lucide',
-				MVS_PLUGIN_URL . 'assets/js/vendor/lucide.min.js',
-				array(),
-				MVS_VERSION,
-				array(
-					'in_footer' => true,
-					'strategy'  => 'defer',
-				)
-			);
-			wp_add_inline_script(
-				'mvs-lucide',
-				'document.addEventListener("DOMContentLoaded",function(){if(window.lucide&&typeof window.lucide.createIcons==="function"){window.lucide.createIcons();}});'
-			);
+			// register_lucide_script() handles registration once and attaches a
+			// MutationObserver that re-hydrates <i data-lucide> on any DOM insertion,
+			// including after client-side navigation swaps.
+			self::register_lucide_script();
+			wp_enqueue_script( 'mvs-lucide' );
 
 			// wp-i18n exposes window.wp.i18n.__ which our Interactivity-API
 			// view scripts (media-social, dashboard-view, shared-ui) call

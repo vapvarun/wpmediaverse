@@ -6,6 +6,10 @@
  * maps a container id + its close-button id to a localStorage key; a missing
  * element is skipped, so the one script is safe to enqueue on any page.
  *
+ * Nav-aware: init() is idempotent via [data-mvs-wired] on each dismiss button
+ * and re-runs on mvs:navigated so freshly-swapped banners are wired after
+ * client-side navigation.
+ *
  * @package WPMediaVerse
  */
 ( function () {
@@ -30,20 +34,31 @@
 		} catch ( e ) {}
 	}
 
-	items.forEach( function ( item ) {
-		var el = document.getElementById( item.el );
-		if ( ! el ) {
-			return;
-		}
-		if ( stored( item.key ) ) {
-			el.style.display = 'none';
-		}
-		var btn = document.getElementById( item.btn );
-		if ( btn ) {
-			btn.addEventListener( 'click', function () {
+	function init() {
+		items.forEach( function ( item ) {
+			var el = document.getElementById( item.el );
+			if ( ! el ) {
+				return;
+			}
+			if ( stored( item.key ) ) {
 				el.style.display = 'none';
-				remember( item.key );
-			} );
-		}
-	} );
+			}
+			var btn = document.getElementById( item.btn );
+			// Guard: wire the dismiss button only once (data-mvs-wired on the btn).
+			if ( btn && ! btn.hasAttribute( 'data-mvs-wired' ) ) {
+				btn.setAttribute( 'data-mvs-wired', '' );
+				btn.addEventListener( 'click', function () {
+					el.style.display = 'none';
+					remember( item.key );
+				} );
+			}
+		} );
+	}
+
+	if ( document.readyState === 'loading' ) {
+		document.addEventListener( 'DOMContentLoaded', init );
+	} else {
+		init();
+	}
+	document.addEventListener( 'mvs:navigated', init );
 } )();
