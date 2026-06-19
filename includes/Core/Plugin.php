@@ -46,6 +46,7 @@ use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Admin\LogViewerPage;
 use WPMediaVerse\Admin\SetupWizard;
 use WPMediaVerse\Admin\CollectionMetaBox;
+use WPMediaVerse\Admin\IntegrationsPage;
 use WPMediaVerse\Social\ReactionService;
 use WPMediaVerse\Social\CommentService;
 use WPMediaVerse\Social\FavoriteService;
@@ -209,6 +210,7 @@ class Plugin {
 			self::$container->get( 'admin.logs' );
 			self::$container->get( 'admin.setup_wizard' );
 			self::$container->get( 'admin.collection_metabox' );
+			self::$container->get( 'admin.integrations' );
 
 			// Reorder submenu so Overview is first, then separator, then content, then tools.
 			add_action( 'admin_menu', array( self::class, 'reorder_submenu' ), 999 );
@@ -533,6 +535,13 @@ class Plugin {
 				$metabox = new CollectionMetaBox( $c->get( 'collections' ) );
 				$metabox->init();
 				return $metabox;
+			}
+		);
+
+		self::$container->register(
+			'admin.integrations',
+			function () {
+				return new IntegrationsPage();
 			}
 		);
 
@@ -1424,11 +1433,12 @@ class Plugin {
 		}
 
 		$order_map = array(
-			self::ADMIN_SLUG => 1,
-			'mvs-media'      => 5,
-			'mvs-settings'   => 50,
-			'mvs-moderation' => 51,
-			'mvs-stats'      => 52,
+			self::ADMIN_SLUG      => 1,
+			'mvs-media'           => 5,
+			'mvs-settings'        => 50,
+			'mvs-moderation'      => 51,
+			'mvs-stats'           => 52,
+			'mvs-integrations'    => 53,
 		);
 
 		usort(
