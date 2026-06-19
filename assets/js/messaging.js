@@ -1395,17 +1395,20 @@ const { state, actions } = store( 'mvs/messaging', {
 				state.unreadTimer = setInterval( () => actions.refreshUnreadCount(), TRANSPORT.intervals.background );
 			}
 
-			// Teardown: stop the active chat polling timer when the user navigates
-			// away (mvs:navigated fires after every client-side swap). This prevents
-			// the high-frequency active/list poll from leaking after the user leaves
-			// the messages page. The background unreadTimer is kept alive so the
-			// unread-count badge continues to update while browsing.
-			document.addEventListener( 'mvs:navigated', () => {
-				if ( state.pollingTimer ) {
-					clearInterval( state.pollingTimer );
-					state.pollingTimer = null;
-				}
-			}, { once: true } );
 		},
 	},
+} );
+
+// Teardown: stop the active chat polling timer on every client-side navigation
+// (mvs:navigated fires after each swap). Registered at module level — NOT inside
+// onInit — so it persists for the page lifetime and fires on EVERY navigation, not
+// just the first. A conversation opened on a later client-nav page (which starts a
+// fresh pollingTimer) is therefore still cleaned up even if the slide-out stays
+// open. The background unreadTimer is intentionally kept alive so the unread badge
+// keeps updating while browsing.
+document.addEventListener( 'mvs:navigated', () => {
+	if ( state.pollingTimer ) {
+		clearInterval( state.pollingTimer );
+		state.pollingTimer = null;
+	}
 } );
