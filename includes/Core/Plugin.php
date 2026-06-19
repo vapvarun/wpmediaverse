@@ -1920,13 +1920,21 @@ JS;
 			return;
 		}
 
+		// Utility handles that are NOT front-end UI and may be depended on by
+		// Pro frontend modules even when MediaVerse's own UI stands down — e.g.
+		// the shared REST client `mvs-rest`, which the Pro competition stores
+		// (battles/challenges/tournaments/compete) call via window.mvsRest.
+		// Stripping it here would leave those stores unable to load. Filterable
+		// so future shared utilities can opt out of the UI-suppression sweep.
+		$keep_handles = (array) apply_filters( 'mvs_frontend_presence_keep_handles', array( 'mvs-rest' ) );
+
 		// Classic styles + scripts: dequeue and deregister anything `mvs-*`.
 		foreach ( array( wp_styles(), wp_scripts() ) as $registry ) {
 			if ( ! $registry instanceof \WP_Dependencies ) {
 				continue;
 			}
 			foreach ( (array) $registry->queue as $handle ) {
-				if ( 0 === strpos( (string) $handle, 'mvs-' ) ) {
+				if ( 0 === strpos( (string) $handle, 'mvs-' ) && ! in_array( $handle, $keep_handles, true ) ) {
 					if ( $registry === wp_styles() ) {
 						wp_dequeue_style( $handle );
 						wp_deregister_style( $handle );
