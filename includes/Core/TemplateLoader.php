@@ -49,6 +49,61 @@ class TemplateLoader {
 
 		// Body class signal for BuddyX and other themes.
 		add_action( 'wp', array( $this, 'maybe_add_mvs_body_class' ) );
+
+		// Populate the client-nav deny-list with routes that require a full-load.
+		add_filter( 'wpmediaverse_client_nav_deny_paths', array( $this, 'add_deny_paths' ), 10, 1 );
+	}
+
+	/**
+	 * Append Free plugin routes to the client-nav deny-list.
+	 *
+	 * These are URL path prefixes. The navigate action prefix-matches
+	 * `link.pathname` against this list and falls back to a full browser
+	 * navigation for matched paths (needed for routes that use polling,
+	 * typeahead, or file-upload on first load).
+	 *
+	 * Merged into the incoming $paths array; never overwrites it.
+	 * Pro appends competition routes on top via a higher-priority callback.
+	 *
+	 * @param string[] $paths Existing deny-path prefixes.
+	 * @return string[]
+	 */
+	public function add_deny_paths( array $paths ): array {
+		// Fixed rewrite-based routes that must always full-load.
+		$fixed = array(
+			'/messages/',       // Messaging: polling, typeahead, file-upload.
+			'/media/edit-profile/', // Profile-edit composer form.
+			'/album/',          // Album CPT single (rewrite slug = 'album').
+		);
+
+		// Mapped-page routes: resolve the WP page permalink to a path so
+		// admin-renamed slugs stay correct without touching the deny-list.
+		$mapped_options = array(
+			'mvs_page_upload',
+			'mvs_page_dashboard',
+		);
+
+		$mapped = array();
+		foreach ( $mapped_options as $option ) {
+			$page_id = (int) get_option( $option, 0 );
+			if ( $page_id <= 0 ) {
+				continue;
+			}
+			$permalink = get_permalink( $page_id );
+			if ( ! $permalink ) {
+				continue;
+			}
+			$path = wp_parse_url( $permalink, PHP_URL_PATH );
+			if ( $path && '/' !== $path ) {
+				$mapped[] = $path;
+			}
+		}
+
+		$merged = array_merge( $paths, $fixed, $mapped );
+		// Deduplicate and remove empties.
+		$merged = array_values( array_unique( array_filter( $merged ) ) );
+
+		return $merged;
 	}
 
 	/**
