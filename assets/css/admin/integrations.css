@@ -1,0 +1,162 @@
+/**
+ * WPMediaVerse - Integrations (Wbcom family) screen.
+ * Wbcom family header + companion card grid + per-card logos + status badges.
+ * Scoped to .mvs-integrations-page. Uses mvs-* tokens from assets/css/admin.css.
+ * Desktop + iPad admin screen only (no 390px phone breakpoint needed here).
+ */
+
+/* ── Family header / showcase band ─────────────────────────────────────── */
+.mvs-fam-header {
+	display: flex;
+	align-items: center;
+	gap: 18px;
+	padding: 20px 22px;
+	margin: 0 0 20px;
+	border: 1px solid var(--mvs-border, #dcdcde);
+	border-radius: var(--mvs-radius-lg, 8px);
+	background: var(--mvs-surface, #fff);
+	box-shadow: var(--mvs-shadow-sm, 0 1px 2px rgba(0, 0, 0, .04));
+}
+
+.mvs-fam-header__mark {
+	flex: 0 0 auto;
+	width: 52px;
+	height: 52px;
+	object-fit: contain;
+}
+
+.mvs-fam-header__body { flex: 1; min-width: 0; }
+
+.mvs-fam-header__title {
+	margin: 0 0 4px;
+	font-size: 17px;
+	font-weight: 700;
+	color: var(--mvs-text, #1d2327);
+}
+
+.mvs-fam-header__desc {
+	margin: 0 0 10px;
+	color: var(--mvs-text-muted, #646970);
+	max-width: 72ch;
+	line-height: 1.6;
+}
+
+.mvs-fam-header__link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-weight: 600;
+	font-size: 13px;
+	text-decoration: none;
+	color: var(--mvs-accent, #d63638);
+}
+.mvs-fam-header__link:hover { text-decoration: underline; }
+.mvs-fam-header__link [data-lucide] { width: 14px; height: 14px; }
+
+/* ── Companion card grid ────────────────────────────────────────────────── */
+.mvs-integrations-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap: 16px;
+	margin: 0 0 20px;
+}
+
+.mvs-integration-card {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 18px;
+	border: 1px solid var(--mvs-border, #dcdcde);
+	border-radius: var(--mvs-radius-lg, 8px);
+	background: var(--mvs-surface, #fff);
+	box-shadow: var(--mvs-shadow-sm, 0 1px 2px rgba(0, 0, 0, .04));
+}
+
+.mvs-integration-card__head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+/* Per-card companion logo */
+.mvs-companion-logo {
+	flex: 0 0 auto;
+	width: 40px;
+	height: 40px;
+	object-fit: contain;
+	border-radius: var(--mvs-radius-sm, 4px);
+}
+
+.mvs-integration-card__title {
+	flex: 1;
+	margin: 0;
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--mvs-text, #1d2327);
+}
+
+.mvs-integration-card__why {
+	margin: 0;
+	color: var(--mvs-text-muted, #646970);
+	line-height: 1.5;
+}
+
+.mvs-integration-card__unlocks {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	font-size: 13px;
+	color: var(--mvs-success, #00a32a);
+}
+.mvs-integration-card__unlocks [data-lucide] { width: 16px; height: 16px; }
+
+.mvs-integration-card__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-top: auto;
+	padding-top: 4px;
+}
+.mvs-integration-card__actions form { margin: 0; }
+
+/* ── Status badges ──────────────────────────────────────────────────────── */
+.mvs-status-badge {
+	flex: 0 0 auto;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.6;
+	white-space: nowrap;
+}
+.mvs-status-badge--success { background: #e6f4ea; color: var(--mvs-success, #00a32a); }
+.mvs-status-badge--warning { background: #fef9e7; color: var(--mvs-warn, #dba617); }
+.mvs-status-badge--muted   { background: var(--mvs-surface-alt, #f6f7f7); color: var(--mvs-text-muted, #646970); }
+
+/* ── Connected state ghost button ──────────────────────────────────────── */
+.mvs-btn--ghost {
+	background: transparent;
+	border: 1px solid var(--mvs-border, #dcdcde);
+	color: var(--mvs-text-muted, #646970);
+	box-shadow: none;
+	cursor: default;
+}
+.mvs-btn--ghost:hover {
+	background: transparent;
+	border-color: var(--mvs-border, #dcdcde);
+	color: var(--mvs-text-muted, #646970);
+	box-shadow: none;
+}
+
+/* ── Footer note ────────────────────────────────────────────────────────── */
+.mvs-integrations-footnote {
+	margin-top: 8px;
+	color: var(--mvs-text-muted, #646970);
+}
+
+@media (max-width: 782px) {
+	.mvs-fam-header { flex-wrap: wrap; }
+	.mvs-integrations-grid { grid-template-columns: 1fr; }
+}

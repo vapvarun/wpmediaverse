@@ -4,7 +4,7 @@
  *
  * A single declarative, filterable catalog of the Wbcom plugins WPMediaVerse
  * integrates with (BuddyNext, Jetonomy, WB Gamification, …). Each entry is
- * DATA, not code — Pro and third parties extend the list via the
+ * DATA, not code - Pro and third parties extend the list via the
  * `wpmediaverse_companions` filter. Every UI + integration decision keys off
  * `status()` / `is_active()` (a runtime capability probe), never a hardcoded
  * plugin path, so "works standalone" and "no duplication" both hold:
@@ -48,7 +48,7 @@ final class CompanionRegistry {
 			array(
 				'buddynext'       => array(
 					'label'     => __( 'BuddyNext', 'wpmediaverse' ),
-					'why'       => __( 'Community engine — profiles, activity feeds, and member spaces.', 'wpmediaverse' ),
+					'why'       => __( 'Community engine - profiles, activity feeds, and member spaces.', 'wpmediaverse' ),
 					'detect'    => static fn() => defined( 'BUDDYNEXT_VERSION' ),
 					'free'      => array(
 						'item_id'  => 1664401,
@@ -84,7 +84,7 @@ final class CompanionRegistry {
 				),
 				'learnomy'        => array(
 					'label'     => __( 'Learnomy', 'wpmediaverse' ),
-					'why'       => __( 'Full LMS — courses, lessons, quizzes, and certificates.', 'wpmediaverse' ),
+					'why'       => __( 'Full LMS - courses, lessons, quizzes, and certificates.', 'wpmediaverse' ),
 					'detect'    => static fn() => defined( 'LEARNOMY_VERSION' ) || class_exists( '\\Learnomy\\Learnomy' ),
 					'free'      => array(
 						'item_id'  => 1662698,
@@ -152,7 +152,7 @@ final class CompanionRegistry {
 			return 'active';
 		}
 
-		// Capability absent — is the free plugin at least on disk (so we offer
+		// Capability absent - is the free plugin at least on disk (so we offer
 		// "Activate" instead of "Install")?
 		$basename = (string) ( $entry['free']['basename'] ?? '' );
 		if ( '' !== $basename && self::plugin_file_exists( $basename ) ) {

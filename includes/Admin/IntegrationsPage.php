@@ -1,6 +1,6 @@
 <?php
 /**
- * Integrations admin page — WPMediaVerse companion stack.
+ * Integrations admin page - WPMediaVerse companion stack.
  *
  * Registers the "Integrations" submenu under the WPMediaVerse top-level menu,
  * enqueues no extra assets (the shared mvs-admin stylesheet registered by
@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 class IntegrationsPage {
 
 	/**
-	 * Page slug — used as the ?page= value and for screen-id matching.
+	 * Page slug - used as the ?page= value and for screen-id matching.
 	 */
 	const PAGE_SLUG = 'mvs-integrations';
 
@@ -29,7 +29,27 @@ class IntegrationsPage {
 	 */
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_submenu' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_integrations_assets' ) );
 		add_action( 'admin_post_wpmediaverse_install_companion', array( $this, 'handle_install_companion' ) );
+	}
+
+	/**
+	 * Enqueue the integrations-specific stylesheet, scoped to this page only.
+	 *
+	 * @param string $hook_suffix Current admin page hook suffix.
+	 */
+	public function enqueue_integrations_assets( string $hook_suffix ): void {
+		$screen = get_current_screen();
+		if ( ! $screen || false === strpos( $screen->id, self::PAGE_SLUG ) ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'mvs-admin-integrations',
+			MVS_PLUGIN_URL . 'assets/css/admin/integrations.css',
+			array( 'mvs-admin' ),
+			MVS_VERSION
+		);
 	}
 
 	/**
@@ -54,7 +74,9 @@ class IntegrationsPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
-		$companions = CompanionRegistry::all();
+		$companions   = CompanionRegistry::all();
+		$logo_base    = MVS_PLUGIN_URL . 'assets/img/companions/';
+		$logo_dir     = MVS_PLUGIN_DIR . 'assets/img/companions/';
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only redirect-back status flags, no state change.
 		$install_state = isset( $_GET['mvs_install'] ) ? sanitize_key( wp_unslash( $_GET['mvs_install'] ) ) : '';
@@ -70,7 +92,7 @@ class IntegrationsPage {
 						<?php esc_html_e( 'Integrations', 'wpmediaverse' ); ?>
 					</h1>
 					<p class="mvs-page-header__desc">
-						<?php esc_html_e( 'Extend WPMediaVerse with the Wbcom stack. Each plugin works on its own — installing one here does not tie it to WPMediaVerse.', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'Extend WPMediaVerse with the Wbcom stack. Each plugin works on its own - installing one here does not tie it to WPMediaVerse.', 'wpmediaverse' ); ?>
 					</p>
 				</div>
 			</div>
@@ -86,15 +108,45 @@ class IntegrationsPage {
 				</div>
 			<?php endif; ?>
 
+			<div class="mvs-fam-header">
+				<img
+					class="mvs-fam-header__mark"
+					src="<?php echo esc_url( $logo_base . 'wbcom.svg' ); ?>"
+					alt="<?php esc_attr_e( 'Wbcom', 'wpmediaverse' ); ?>"
+					width="52"
+					height="52"
+				/>
+				<div class="mvs-fam-header__body">
+					<h2 class="mvs-fam-header__title"><?php esc_html_e( 'Part of the Wbcom family', 'wpmediaverse' ); ?></h2>
+					<p class="mvs-fam-header__desc">
+						<?php esc_html_e( 'MediaVerse is part of the Wbcom community stack: gamification, discussions, courses, listings, jobs, and more. Every plugin works on its own, and you can add any of them below in one click. The family keeps growing, so check back for new releases.', 'wpmediaverse' ); ?>
+					</p>
+					<a
+						class="mvs-fam-header__link"
+						href="https://wbcomdesigns.com/downloads/"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<?php esc_html_e( 'Explore the full Wbcom family', 'wpmediaverse' ); ?>
+						<i data-lucide="arrow-right" aria-hidden="true"></i>
+					</a>
+				</div>
+			</div>
+
 			<div class="mvs-integrations-grid">
 				<?php foreach ( $companions as $slug => $companion ) : ?>
 					<?php
-					$status      = CompanionRegistry::status( $slug );
-					$label       = (string) ( $companion['label'] ?? $slug );
-					$why         = (string) ( $companion['why'] ?? '' );
-					$unlocks     = (string) ( $companion['unlocks'] ?? '' );
-					$store_url   = (string) ( $companion['store_url'] ?? '' );
-					$has_pro     = ! empty( $companion['pro']['item_id'] );
+					$status    = CompanionRegistry::status( $slug );
+					$label     = (string) ( $companion['label'] ?? $slug );
+					$why       = (string) ( $companion['why'] ?? '' );
+					$unlocks   = (string) ( $companion['unlocks'] ?? '' );
+					$store_url = (string) ( $companion['store_url'] ?? '' );
+
+					// Resolve logo: only emit the <img> if the file is present on disk.
+					$logo_file = sanitize_file_name( $slug ) . '.svg';
+					$logo_url  = file_exists( $logo_dir . $logo_file )
+						? $logo_base . $logo_file
+						: '';
 
 					// Status badge variant + label.
 					if ( 'active' === $status ) {
@@ -110,6 +162,16 @@ class IntegrationsPage {
 					?>
 					<div class="mvs-integration-card">
 						<div class="mvs-integration-card__head">
+							<?php if ( '' !== $logo_url ) : ?>
+								<img
+									class="mvs-companion-logo"
+									src="<?php echo esc_url( $logo_url ); ?>"
+									alt="<?php echo esc_attr( $label ); ?>"
+									width="40"
+									height="40"
+									loading="lazy"
+								/>
+							<?php endif; ?>
 							<h2 class="mvs-integration-card__title"><?php echo esc_html( $label ); ?></h2>
 							<span class="<?php echo esc_attr( $badge_class ); ?>"><?php echo esc_html( $badge_label ); ?></span>
 						</div>
@@ -127,8 +189,9 @@ class IntegrationsPage {
 
 						<div class="mvs-integration-card__actions">
 							<?php if ( 'active' === $status ) : ?>
-								<span class="mvs-btn" aria-disabled="true">
-									<i data-lucide="check" aria-hidden="true"></i> <?php esc_html_e( 'Connected', 'wpmediaverse' ); ?>
+								<span class="mvs-btn mvs-btn--ghost" aria-disabled="true">
+									<i data-lucide="check" aria-hidden="true"></i>
+									<?php esc_html_e( 'Connected', 'wpmediaverse' ); ?>
 								</span>
 							<?php else : ?>
 								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -146,9 +209,14 @@ class IntegrationsPage {
 								</form>
 							<?php endif; ?>
 
-							<?php if ( $has_pro && '' !== $store_url ) : ?>
-								<a href="<?php echo esc_url( $store_url ); ?>" target="_blank" rel="noopener noreferrer" class="mvs-btn">
-									<?php esc_html_e( 'Upgrade to Pro', 'wpmediaverse' ); ?>
+							<?php if ( '' !== $store_url ) : ?>
+								<a
+									href="<?php echo esc_url( $store_url ); ?>"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="mvs-btn"
+								>
+									<?php esc_html_e( 'Learn more', 'wpmediaverse' ); ?>
 								</a>
 							<?php endif; ?>
 						</div>
