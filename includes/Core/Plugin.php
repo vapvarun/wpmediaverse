@@ -1040,7 +1040,7 @@ class Plugin {
 
 		$post_type  = get_post_type();
 		$is_mvs     = in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true );
-		$is_archive = is_post_type_archive( 'mvs_album' );
+		$is_archive = is_post_type_archive( 'mvs_album' ) || is_post_type_archive( 'mvs_collection' );
 		$is_mvs_tax = is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' );
 		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] )
 			|| ! empty( $GLOBALS['mvs_is_media_archive'] )
@@ -1858,7 +1858,7 @@ JS;
 			return true;
 		}
 
-		if ( is_post_type_archive( 'mvs_album' ) || is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' ) ) {
+		if ( is_post_type_archive( 'mvs_album' ) || is_post_type_archive( 'mvs_collection' ) || is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' ) ) {
 			return true;
 		}
 
@@ -2029,7 +2029,7 @@ JS;
 		// The template itself handles hiding upload FAB for logged-out users.
 		$post_type  = get_post_type();
 		$is_mvs     = in_array( $post_type, array( 'mvs_album', 'mvs_collection' ), true );
-		$is_archive = is_post_type_archive( 'mvs_album' );
+		$is_archive = is_post_type_archive( 'mvs_album' ) || is_post_type_archive( 'mvs_collection' );
 		$is_mvs_tax = is_tax( 'mvs_tag' ) || is_tax( 'mvs_category' );
 		$is_mvs_tpl = ! empty( $GLOBALS['mvs_current_media'] ) || ! empty( $GLOBALS['mvs_is_media_archive'] );
 

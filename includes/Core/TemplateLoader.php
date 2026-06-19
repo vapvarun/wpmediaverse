@@ -473,16 +473,28 @@ class TemplateLoader {
 	}
 
 	/**
-	 * Load archive template for Album CPT.
+	 * Load archive template for Album and Collection CPTs.
+	 *
+	 * Both CPTs share the dedicated cpt-archive.php template which queries
+	 * the correct post_type, paginates, and renders CPT-specific cards.
+	 * explore.php remains the /media/ feed and is no longer used for archives.
 	 *
 	 * @param string $template Current template path.
 	 * @return string
 	 */
 	public function load_archive_template( string $template ): string {
-		if ( is_post_type_archive( 'mvs_album' ) ) {
-			$found = self::locate( 'explore.php' );
-			if ( $found ) {
-				return $found;
+		$map = array(
+			'mvs_album'      => 'cpt-archive.php',
+			'mvs_collection' => 'cpt-archive.php',
+		);
+
+		foreach ( $map as $post_type => $tpl_file ) {
+			if ( is_post_type_archive( $post_type ) ) {
+				$found = self::locate( $tpl_file );
+				if ( $found ) {
+					return $found;
+				}
+				break;
 			}
 		}
 
@@ -513,6 +525,7 @@ class TemplateLoader {
 		$is_mvs_page = (
 			is_singular( array( 'mvs_album', 'mvs_collection' ) )
 			|| is_post_type_archive( 'mvs_album' )
+			|| is_post_type_archive( 'mvs_collection' )
 			|| is_tax( 'mvs_tag' )
 			|| is_tax( 'mvs_category' )
 			|| (bool) get_query_var( 'mvs_edit_profile' )

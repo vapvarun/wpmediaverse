@@ -25,6 +25,7 @@ class Deactivator {
 		// plugins if the plugin re-activates briefly during the day).
 		wp_clear_scheduled_hook( 'mvs_prune_logs' );
 		wp_clear_scheduled_hook( 'mvs_purge_old_views' );
+		wp_clear_scheduled_hook( 'mvs_story_cleanup' );
 
 		// Clean transients.
 		global $wpdb;

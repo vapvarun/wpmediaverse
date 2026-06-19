@@ -309,7 +309,7 @@ class Sanitizers {
 	 */
 	public static function sanitize_thumbnail_size( $value ): string {
 		$value = is_string( $value ) ? $value : '';
-		return in_array( $value, self::WHITELISTS['mvs_thumbnail_size'], true ) ? $value : 'large';
+		return in_array( $value, self::WHITELISTS['mvs_thumbnail_size'], true ) ? $value : self::WHITELISTS['mvs_thumbnail_size'][0];
 	}
 
 	/**
