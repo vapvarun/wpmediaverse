@@ -225,9 +225,7 @@ store( 'mvs/explore-feed', {
 
 				const res = await window.mvsRest.restFetch( url.toString() );
 				const data = res.data;
-				// NOTE: window.mvsRest.restFetch does not expose response headers.
-				// X-WP-TotalPages unavailable; hasMore stays server-rendered on first load.
-				// Requires a client update or server-embedded totalPages in the body.
+				// X-WP-TotalPages drives infinite scroll; restFetch exposes it via res.headers.
 				const total = parseInt( ( res.headers && res.headers.get && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
 				ctx.hasMore = ctx.page < total;
 

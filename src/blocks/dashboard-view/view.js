@@ -536,10 +536,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			try {
 				const res = await apiFetch( ctx, 'me/media?per_page=20&page=' + page );
-				// NOTE: window.mvsRest.restFetch does not expose response headers.
-				// X-WP-TotalPages is unavailable; pagination defaults to 1 page.
-				// Requires a client update or server-embedded totalPages in the body.
-				state.media.totalPages = 1;
+				// X-WP-TotalPages drives Load More; restFetch exposes it via res.headers.
+				state.media.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
 				const data = res.data;
 
 				if ( page === 1 ) {
@@ -1001,10 +999,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			try {
 				const res = await apiFetch( ctx, 'me/favorites?per_page=20&page=' + page );
-				// NOTE: window.mvsRest.restFetch does not expose response headers.
-				// X-WP-TotalPages is unavailable; pagination defaults to 1 page.
-				// Requires a client update or server-embedded totalPages in the body.
-				state.favorites.totalPages = 1;
+				// X-WP-TotalPages drives Load More; restFetch exposes it via res.headers.
+				state.favorites.totalPages = parseInt( ( res.headers && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
 				const data = res.data;
 
 				if ( page === 1 ) {
