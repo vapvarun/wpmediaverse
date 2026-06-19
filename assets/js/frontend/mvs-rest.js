@@ -181,7 +181,7 @@
 	 * @param {string}  path
 	 * @param {Object}  opts      - method, headers, body, signal passthrough.
 	 * @param {boolean} isRetry   - true when called from the refresh path.
-	 * @return {Promise<{ok: boolean, status: number, data: *, error?: string}>}
+	 * @return {Promise<{ok: boolean, status: number, data: *, headers?: Headers, error?: string}>}
 	 */
 	function performRequest( path, opts, isRetry ) {
 		opts = opts || {};
@@ -233,7 +233,15 @@
 				var result = {
 					ok: response.ok,
 					status: response.status,
-					data: data
+					data: data,
+					// Expose the response Headers object so callers can read
+					// pagination / state headers the REST API sets but does not
+					// duplicate in the JSON body (e.g. X-WP-Total,
+					// X-WP-TotalPages, X-MVS-Voted-Entries). Use
+					// result.headers.get('X-WP-Total'). On a network failure the
+					// catch branch below omits headers, so guard with
+					// `result.headers && result.headers.get(...)`.
+					headers: response.headers
 				};
 
 				// 403 + stale nonce → refresh once and retry.
@@ -271,7 +279,7 @@
 	 *
 	 * @param {string} path  Relative path ('me/profile') or absolute URL.
 	 * @param {Object} [opts] fetch-compatible options: method, headers, body, signal.
-	 * @return {Promise<{ok: boolean, status: number, data: *, error?: string}>}
+	 * @return {Promise<{ok: boolean, status: number, data: *, headers?: Headers, error?: string}>}
 	 */
 	function restFetch( path, opts ) {
 		return performRequest( path, opts || {}, false );

@@ -118,21 +118,13 @@
 				if ( config.author ) url.searchParams.set( 'author', config.author );
 				if ( config.groupCovers ) url.searchParams.set( 'group_covers', '1' );
 
-				var headers = {};
-				if ( config.nonce ) {
-					headers[ 'X-WP-Nonce' ] = config.nonce;
-				}
-
-				fetch( url.toString(), {
-					credentials: 'same-origin',
-					headers: headers,
-				} )
+				window.mvsRest.restFetch( url.toString() )
 					.then( function ( response ) {
 						if ( ! response.ok ) {
 							showEnd();
 							return [];
 						}
-						return response.json();
+						return response.data;
 					} )
 					.then( function ( items ) {
 						if ( ! items || ! items.length ) {

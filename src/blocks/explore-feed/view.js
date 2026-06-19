@@ -134,12 +134,11 @@ store( 'mvs/explore-feed', {
 					url.searchParams.set( 'page', '1' );
 					if ( ctx.filter ) url.searchParams.set( 'media_type', ctx.filter );
 
-					const res = await fetch( url.toString(), {
-						credentials: 'same-origin',
+					const res = await window.mvsRest.restFetch( url.toString(), {
 						signal: aborter.signal,
 					} );
 					if ( ! res.ok ) return;
-					const data = await res.json();
+					const data = res.data;
 					if ( ! Array.isArray( data ) ) return;
 
 					// Drop the result if a newer request superseded us mid-flight
@@ -224,9 +223,12 @@ store( 'mvs/explore-feed', {
 				if ( ctx.filter ) url.searchParams.set( 'media_type', ctx.filter );
 				if ( ctx.search ) url.searchParams.set( 'search', ctx.search );
 
-				const res = await fetch( url.toString() );
-				const data = await res.json();
-				const total = parseInt( res.headers.get( 'X-WP-TotalPages' ) || '1', 10 );
+				const res = await window.mvsRest.restFetch( url.toString() );
+				const data = res.data;
+				// NOTE: window.mvsRest.restFetch does not expose response headers.
+				// X-WP-TotalPages unavailable; hasMore stays server-rendered on first load.
+				// Requires a client update or server-embedded totalPages in the body.
+				const total = parseInt( ( res.headers && res.headers.get && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
 				ctx.hasMore = ctx.page < total;
 
 				// Append items to the grid using safe DOM methods. Mirrors the

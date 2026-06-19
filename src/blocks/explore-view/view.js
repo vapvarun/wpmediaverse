@@ -22,11 +22,10 @@ store( 'mvs/explore', {
 				return;
 			}
 			try {
-				const res = await fetch(
-					ctx.restUrl + 'tags/cloud?limit=20',
-					{ credentials: 'same-origin' }
+				const res = await window.mvsRest.restFetch(
+					ctx.restUrl + 'tags/cloud?limit=20'
 				);
-				const data = await res.json();
+				const data = res.data;
 				if ( Array.isArray( data ) ) {
 					ctx.tags = data.map( ( tag ) => ( {
 						name: tag.name || '',

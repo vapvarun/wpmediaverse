@@ -22,19 +22,11 @@ const TRANSPORT = config.transport || { type: 'polling', intervals: { active: 30
 // Helper: REST fetch with auth.
 async function apiFetch( path, options = {} ) {
 	const url = path.startsWith( 'http' ) ? path : REST + path;
-	const res = await fetch( url, {
-		credentials: 'same-origin',
-		...options,
-		headers: {
-			'Content-Type': 'application/json',
-			'X-WP-Nonce': NONCE,
-			...( options.headers || {} ),
-		},
-	} );
+	const res = await window.mvsRest.restFetch( url, options );
 
 	if ( res.status === 204 ) return null;
-	const data = await res.json();
-	if ( ! res.ok ) throw new Error( data.error || data.message || __( 'Request failed', 'wpmediaverse' ) );
+	const data = res.data;
+	if ( ! res.ok ) throw new Error( ( data && ( data.error || data.message ) ) || __( 'Request failed', 'wpmediaverse' ) );
 	return data;
 }
 
@@ -780,15 +772,13 @@ const { state, actions } = store( 'mvs/messaging', {
 			formData.append( 'file', file );
 
 			try {
-				const res = yield fetch( REST + '/messages/upload', {
+				const res = yield window.mvsRest.restFetch( REST + '/messages/upload', {
 					method: 'POST',
-					credentials: 'same-origin',
-					headers: { 'X-WP-Nonce': NONCE },
 					body: formData,
 				} );
-				const data = yield res.json();
+				const data = res.data;
 
-				if ( ! res.ok ) throw new Error( data.message || __( 'Upload failed', 'wpmediaverse' ) );
+				if ( ! res.ok ) throw new Error( ( data && data.message ) || __( 'Upload failed', 'wpmediaverse' ) );
 
 				state.selectedAttachment = {
 					id: data.id,
@@ -887,14 +877,12 @@ const { state, actions } = store( 'mvs/messaging', {
 			formData.append( 'file', file );
 
 			try {
-				const res = yield fetch( REST + '/messages/upload', {
+				const res = yield window.mvsRest.restFetch( REST + '/messages/upload', {
 					method: 'POST',
-					credentials: 'same-origin',
-					headers: { 'X-WP-Nonce': NONCE },
 					body: formData,
 				} );
-				const data = yield res.json();
-				if ( ! res.ok ) throw new Error( data.message || __( 'Upload failed', 'wpmediaverse' ) );
+				const data = res.data;
+				if ( ! res.ok ) throw new Error( ( data && data.message ) || __( 'Upload failed', 'wpmediaverse' ) );
 
 				// Send message.
 				const msg = yield apiFetch(

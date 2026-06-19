@@ -28,13 +28,11 @@
 				var restUrl = fbtn.getAttribute( 'data-rest-url' );
 				var nonce = fbtn.getAttribute( 'data-nonce' );
 				fbtn.disabled = true;
-				fetch( restUrl + 'users/' + userId + '/follow', {
+				window.mvsRest.restFetch( restUrl + 'users/' + userId + '/follow', {
 					method: isFollowing ? 'DELETE' : 'POST',
-					headers: { 'X-WP-Nonce': nonce, 'Content-Type': 'application/json' },
-					credentials: 'same-origin',
 				} )
 					.then( function ( r ) {
-						return r.json();
+						return r.data;
 					} )
 					.then( function ( data ) {
 						fbtn.disabled = false;

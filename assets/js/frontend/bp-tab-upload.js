@@ -150,10 +150,8 @@
 			var fd = new FormData();
 			fd.append( 'file', files[ done ] );
 			appendExtraFields( fd );
-			fetch( restUrl + 'media', {
+			window.mvsRest.restFetch( restUrl + 'media', {
 				method: 'POST',
-				headers: { 'X-WP-Nonce': nonce },
-				credentials: 'same-origin',
 				body: fd
 			} ).then( function ( r ) {
 				if ( ! r.ok ) {
@@ -190,11 +188,9 @@
 			if ( done >= total ) {
 				if ( uploadedIds.length ) {
 					statusEl.textContent = i18n.addingToAlbum || '';
-					fetch( restUrl + 'albums/' + albumId + '/items', {
+					window.mvsRest.restFetch( restUrl + 'albums/' + albumId + '/items', {
 						method: 'POST',
-						headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-						credentials: 'same-origin',
-						body: JSON.stringify( { media_ids: uploadedIds } )
+						body: { media_ids: uploadedIds },
 					} ).then( function () {
 						statusEl.textContent = format( i18n.addedToAlbum, { '%d': uploadedIds.length } );
 						statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
@@ -208,15 +204,13 @@
 			var fd = new FormData();
 			fd.append( 'file', files[ done ] );
 			appendExtraFields( fd );
-			fetch( uploadUrl, {
+			window.mvsRest.restFetch( uploadUrl, {
 				method: 'POST',
-				headers: { 'X-WP-Nonce': nonce },
-				credentials: 'same-origin',
 				body: fd
 			} ).then( function ( r ) {
-				return r.json();
+				return r.data;
 			} ).then( function ( data ) {
-				if ( data.id ) {
+				if ( data && data.id ) {
 					uploadedIds.push( data.id );
 				}
 				done++;

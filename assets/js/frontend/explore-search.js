@@ -83,12 +83,9 @@
 			if ( ! q || ! cfg.restUrl ) {
 				return;
 			}
-			fetch( cfg.restUrl + '?q=' + encodeURIComponent( q ), {
-				credentials: 'same-origin',
-				headers: { 'X-WP-Nonce': cfg.nonce || '' },
-			} )
+			window.mvsRest.restFetch( cfg.restUrl + '?q=' + encodeURIComponent( q ) )
 				.then( function ( r ) {
-					return r.json();
+					return r.data;
 				} )
 				.then( function ( users ) {
 					clearResults();

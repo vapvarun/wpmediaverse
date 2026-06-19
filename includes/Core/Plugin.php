@@ -1024,7 +1024,7 @@ class Plugin {
 		wp_register_script(
 			'mvs-load-more',
 			MVS_PLUGIN_URL . 'assets/js/frontend/load-more.js',
-			array( 'mvs-card-builders' ),
+			array( 'mvs-rest', 'mvs-card-builders' ),
 			MVS_VERSION,
 			array(
 				'in_footer' => true,
@@ -1218,7 +1218,7 @@ class Plugin {
 		wp_register_script(
 			'mvs-explore-search',
 			MVS_PLUGIN_URL . 'assets/js/frontend/explore-search.js',
-			array(),
+			array( 'mvs-rest' ),
 			MVS_VERSION,
 			array(
 				'in_footer' => true,
@@ -1247,7 +1247,7 @@ class Plugin {
 		wp_register_script(
 			'mvs-profile-actions',
 			MVS_PLUGIN_URL . 'assets/js/frontend/profile-actions.js',
-			array(),
+			array( 'mvs-rest' ),
 			MVS_VERSION,
 			array(
 				'in_footer' => true,
@@ -1271,7 +1271,7 @@ class Plugin {
 		wp_register_script(
 			'mvs-album-upload',
 			MVS_PLUGIN_URL . 'assets/js/frontend/album-upload.js',
-			array(),
+			array( 'mvs-rest' ),
 			MVS_VERSION,
 			array(
 				'in_footer' => true,
@@ -1332,7 +1332,7 @@ class Plugin {
 		wp_register_script(
 			'mvs-album-cover',
 			MVS_PLUGIN_URL . 'assets/js/frontend/album-cover.js',
-			array(),
+			array( 'mvs-rest' ),
 			MVS_VERSION,
 			array(
 				'in_footer' => true,
@@ -1350,7 +1350,7 @@ class Plugin {
 		wp_register_script(
 			'mvs-bp-actions',
 			MVS_PLUGIN_URL . 'assets/js/frontend/bp-actions.js',
-			array( 'mvs-lucide', 'mvs-confirm' ),
+			array( 'mvs-rest', 'mvs-lucide', 'mvs-confirm' ),
 			MVS_VERSION,
 			array(
 				'in_footer' => true,

@@ -171,11 +171,9 @@
 			if ( done >= total ) {
 				if ( uploadedIds.length ) {
 					statusEl.textContent = i18n.addingToAlbum || '';
-					fetch( cfg.restUrl + 'albums/' + cfg.albumId + '/items', {
+					window.mvsRest.restFetch( cfg.restUrl + 'albums/' + cfg.albumId + '/items', {
 						method: 'POST',
-						headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': cfg.nonce },
-						credentials: 'same-origin',
-						body: JSON.stringify( { media_ids: uploadedIds } ),
+						body: { media_ids: uploadedIds },
 					} ).then( function () {
 						statusEl.textContent = ( i18n.addedToAlbum || '' ).replace( '%d', uploadedIds.length );
 						statusEl.className = 'mvs-bp-upload-status mvs-bp-upload-status--success';
@@ -200,16 +198,13 @@
 						fd.append( 'thumbnail', blob, 'video-thumb.jpg' );
 					}
 				}
-				return fetch( uploadUrl, {
+				return window.mvsRest.restFetch( uploadUrl, {
 					method: 'POST',
-					headers: { 'X-WP-Nonce': cfg.nonce },
-					credentials: 'same-origin',
 					body: fd,
 				} );
 			} ).then( function ( r ) {
-				return r.json();
-			} ).then( function ( data ) {
-				if ( data.id ) {
+				var data = r.data;
+				if ( data && data.id ) {
 					uploadedIds.push( data.id );
 				}
 				done++;

@@ -13,30 +13,25 @@ import { store, getContext } from '@wordpress/interactivity';
 const __ = ( str, domain ) => ( window.wp && window.wp.i18n && window.wp.i18n.__ ) ? window.wp.i18n.__( str, domain || 'wpmediaverse' ) : str;
 const sharedUI = store( 'mvs/shared-ui' );
 
-function apiHeaders( nonce ) {
-	return {
-		'Content-Type': 'application/json',
-		'X-WP-Nonce': nonce,
-	};
-}
-
 function apiFetch( ctx, path, opts = {} ) {
-	opts.credentials = 'same-origin';
-	if ( ! opts.headers ) {
-		opts.headers = apiHeaders( ctx.nonce );
+	if ( opts.body && typeof opts.body === 'string' ) {
+		try { opts.body = JSON.parse( opts.body ); } catch { /* leave as-is */ }
 	}
-	return fetch( ctx.restUrl + path, opts );
+	// Strip headers key — window.mvsRest.restFetch handles nonce + Content-Type.
+	delete opts.headers;
+	return window.mvsRest.restFetch( ctx.restUrl + path, opts );
 }
 
 function proApiFetch( ctx, path, opts = {} ) {
 	// Pro REST endpoints live at /wp-json/mvs-pro/v1/ — derive from ctx.restUrl
 	// which is /wp-json/mvs/v1/ by replacing the namespace.
 	const proUrl = ctx.restUrl.replace( 'mvs/v1/', 'mvs-pro/v1/' );
-	opts.credentials = 'same-origin';
-	if ( ! opts.headers ) {
-		opts.headers = apiHeaders( ctx.nonce );
+	if ( opts.body && typeof opts.body === 'string' ) {
+		try { opts.body = JSON.parse( opts.body ); } catch { /* leave as-is */ }
 	}
-	return fetch( proUrl + path, opts );
+	// Strip headers key — window.mvsRest.restFetch handles nonce + Content-Type.
+	delete opts.headers;
+	return window.mvsRest.restFetch( proUrl + path, opts );
 }
 
 const { state, actions } = store( 'mvs/dashboard', {
@@ -495,19 +490,15 @@ const { state, actions } = store( 'mvs/dashboard', {
 						.forEach( ( tag ) => formData.append( 'tags[]', tag ) );
 				}
 				try {
-					const res = await fetch( ctx.restUrl + 'media', {
+					const res = await window.mvsRest.restFetch( ctx.restUrl + 'media', {
 						method: 'POST',
-						headers: { 'X-WP-Nonce': ctx.nonce },
-						credentials: 'same-origin',
 						body: formData,
 					} );
 					if ( res.ok ) {
 						uploaded++;
 					} else {
-						try {
-							const errData = await res.json();
-							lastError = errData.message || 'Upload failed.';
-						} catch { /* ignore parse error */ }
+						const errData = res.data || {};
+						lastError = errData.message || 'Upload failed.';
 					}
 				} catch {
 					// Continue with remaining.
@@ -545,8 +536,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			try {
 				const res = await apiFetch( ctx, 'me/media?per_page=20&page=' + page );
-				state.media.totalPages = parseInt( res.headers.get( 'X-WP-TotalPages' ) || '1', 10 );
-				const data = await res.json();
+				// NOTE: window.mvsRest.restFetch does not expose response headers.
+				// X-WP-TotalPages is unavailable; pagination defaults to 1 page.
+				// Requires a client update or server-embedded totalPages in the body.
+				state.media.totalPages = 1;
+				const data = res.data;
 
 				if ( page === 1 ) {
 					state.media.items = data;
@@ -574,14 +568,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 			sharedState.lightboxCurrentIndex = 0;
 			document.body.style.overflow = 'hidden';
 			// Fetch media data via shared-ui openLightbox pattern.
-			fetch( ctx.restUrl + 'media/' + item.id, {
-				credentials: 'same-origin',
-				headers: { 'X-WP-Nonce': ctx.nonce },
-			} ).then( ( r ) => r.json() ).then( ( data ) => {
-				sharedState.lightboxMediaData = data;
+			window.mvsRest.restFetch( ctx.restUrl + 'media/' + item.id ).then( ( r ) => {
+				sharedState.lightboxMediaData = r.data;
 				sharedState.lightboxLoading = false;
 				// Load social data.
-				sharedUI.actions.lightboxLoadSocial( ctx, item.id, { 'X-WP-Nonce': ctx.nonce } );
+				sharedUI.actions.lightboxLoadSocial( ctx, item.id, {} );
 			} ).catch( () => {
 				sharedState.lightboxLoading = false;
 			} );
@@ -599,13 +590,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 			sharedState.lightboxGroupItems = [];
 			sharedState.lightboxCurrentIndex = 0;
 			document.body.style.overflow = 'hidden';
-			fetch( ctx.restUrl + 'media/' + item.media_id, {
-				credentials: 'same-origin',
-				headers: { 'X-WP-Nonce': ctx.nonce },
-			} ).then( ( r ) => r.json() ).then( ( data ) => {
-				sharedState.lightboxMediaData = data;
+			window.mvsRest.restFetch( ctx.restUrl + 'media/' + item.media_id ).then( ( r ) => {
+				sharedState.lightboxMediaData = r.data;
 				sharedState.lightboxLoading = false;
-				sharedUI.actions.lightboxLoadSocial( ctx, item.media_id, { 'X-WP-Nonce': ctx.nonce } );
+				sharedUI.actions.lightboxLoadSocial( ctx, item.media_id, {} );
 			} ).catch( () => {
 				sharedState.lightboxLoading = false;
 			} );
@@ -703,21 +691,19 @@ const { state, actions } = store( 'mvs/dashboard', {
 			formData.append( 'file', file );
 
 			try {
-				const res = await fetch( ctx.restUrl + 'media/' + mediaId + '/replace', {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/replace', {
 					method: 'POST',
-					headers: { 'X-WP-Nonce': ctx.nonce },
-					credentials: 'same-origin',
 					body: formData,
 				} );
 				if ( res.ok ) {
-					const updated = await res.json();
+					const updated = res.data;
 					const idx = state.media.items.findIndex( ( m ) => m.id === mediaId );
 					if ( idx !== -1 ) {
 						state.media.items[ idx ] = { ...state.media.items[ idx ], ...updated };
 					}
 					sharedUI.actions.showToast( __( 'File replaced!', 'wpmediaverse' ), 'success' );
 				} else {
-					const err = await res.json().catch( () => ( {} ) );
+					const err = res.data || {};
 					sharedUI.actions.showToast( err.message || 'Replace failed.', 'error' );
 				}
 			} catch {
@@ -757,10 +743,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			try {
 				const res = await apiFetch( ctx, 'media/' + state.editModal.itemId, {
 					method: 'PUT',
-					headers: apiHeaders( ctx.nonce ),
-					body: JSON.stringify( payload ),
+					body: payload,
 				} );
-				const updated = await res.json();
+				const updated = res.data;
 				state.editModal.saving = false;
 				state.editModal.visible = false;
 
@@ -795,7 +780,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 				try {
 					const res = await apiFetch( ctx, 'media/' + id, {
 						method: 'DELETE',
-						headers: apiHeaders( ctx.nonce ),
 					} );
 					if ( res.ok ) {
 						state.media.items = state.media.items.filter( ( m ) => m.id !== id );
@@ -817,7 +801,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albums.loading = true;
 			try {
 				const res = await apiFetch( ctx, 'albums?author=' + ctx.userId );
-				const data = await res.json();
+				const data = res.data;
 				state.albums.items = data;
 			} catch {
 				// Ignore.
@@ -873,7 +857,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.albumModal.pickerLoading = true;
 			try {
 				const res = await apiFetch( ctx, 'me/media?per_page=100' );
-				const data = await res.json();
+				const data = res.data;
 				state.albumModal.pickerItems = data;
 			} catch {
 				state.albumModal.pickerItems = [];
@@ -937,8 +921,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				if ( state.albumModal.isEdit ) {
 					await apiFetch( ctx, 'albums/' + albumId, {
 						method: 'PUT',
-						headers: apiHeaders( ctx.nonce ),
-						body: JSON.stringify( payload ),
+						body: payload,
 					} );
 					// Sync album items: add new, remove deselected.
 					const currentItems = state.albumModal.originalItems || [];
@@ -948,29 +931,25 @@ const { state, actions } = store( 'mvs/dashboard', {
 					if ( toAdd.length ) {
 						await apiFetch( ctx, 'albums/' + albumId + '/items', {
 							method: 'POST',
-							headers: apiHeaders( ctx.nonce ),
-							body: JSON.stringify( { media_ids: toAdd } ),
+							body: { media_ids: toAdd },
 						} );
 					}
 					for ( const removeId of toRemove ) {
 						await apiFetch( ctx, 'albums/' + albumId + '/items/' + removeId, {
 							method: 'DELETE',
-							headers: apiHeaders( ctx.nonce ),
 						} );
 					}
 				} else {
 					const res = await apiFetch( ctx, 'albums', {
 						method: 'POST',
-						headers: apiHeaders( ctx.nonce ),
-						body: JSON.stringify( payload ),
+						body: payload,
 					} );
-					const created = await res.json();
+					const created = res.data;
 					albumId = created.id;
 					if ( state.albumModal.selectedIds.length && albumId ) {
 						await apiFetch( ctx, 'albums/' + albumId + '/items', {
 							method: 'POST',
-							headers: apiHeaders( ctx.nonce ),
-							body: JSON.stringify( { media_ids: state.albumModal.selectedIds } ),
+							body: { media_ids: state.albumModal.selectedIds },
 						} );
 					}
 				}
@@ -978,8 +957,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				if ( state.albumModal.coverId && albumId ) {
 					await apiFetch( ctx, 'albums/' + albumId + '/cover', {
 						method: 'PUT',
-						headers: apiHeaders( ctx.nonce ),
-						body: JSON.stringify( { media_id: state.albumModal.coverId } ),
+						body: { media_id: state.albumModal.coverId },
 					} );
 				}
 				state.albumModal.visible = false;
@@ -1000,7 +978,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 				try {
 					const res = await apiFetch( ctx, 'albums/' + id, {
 						method: 'DELETE',
-						headers: apiHeaders( ctx.nonce ),
 					} );
 					if ( res.ok ) {
 						state.albums.items = state.albums.items.filter( ( a ) => a.id !== id );
@@ -1024,8 +1001,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			try {
 				const res = await apiFetch( ctx, 'me/favorites?per_page=20&page=' + page );
-				state.favorites.totalPages = parseInt( res.headers.get( 'X-WP-TotalPages' ) || '1', 10 );
-				const data = await res.json();
+				// NOTE: window.mvsRest.restFetch does not expose response headers.
+				// X-WP-TotalPages is unavailable; pagination defaults to 1 page.
+				// Requires a client update or server-embedded totalPages in the body.
+				state.favorites.totalPages = 1;
+				const data = res.data;
 
 				if ( page === 1 ) {
 					state.favorites.items = data;
@@ -1048,7 +1028,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			const res = await apiFetch( ctx, 'media/' + mediaId + '/favorite', {
 				method: 'DELETE',
-				headers: apiHeaders( ctx.nonce ),
 			} );
 			if ( res.ok ) {
 				state.favorites.items = state.favorites.items.filter( ( f ) => f.media_id !== mediaId );
@@ -1064,14 +1043,14 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.collections.loading = true;
 			try {
 				const res = await apiFetch( ctx, 'collections' );
-				const data = await res.json();
+				const data = res.data;
 				// Enrich with match counts for smart collections.
 				for ( const item of data ) {
 					item.link = '/?p=' + item.id;
 					if ( item.type === 'smart' ) {
 						try {
 							const detail = await apiFetch( ctx, 'collections/' + item.id + '?per_page=1' );
-							const dData = await detail.json();
+							const dData = detail.data;
 							item.matchCount = dData.total || 0;
 						} catch {
 							item.matchCount = 0;
@@ -1096,9 +1075,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.challenges.loading = true;
 			try {
 				const res = await proApiFetch( ctx, 'challenges?participant=' + ctx.userId + '&per_page=20' );
-				state.challenges.items = await res.json();
+				state.challenges.items = res.data;
 				const activeRes = await proApiFetch( ctx, 'challenges?status=active&per_page=1' );
-				const activeData = await activeRes.json();
+				const activeData = activeRes.data;
 				state.challenges.activeChallenge = activeData.length > 0 ? activeData[ 0 ] : null;
 			} catch {
 				state.challenges.items = [];
@@ -1112,7 +1091,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.battles.loading = true;
 			try {
 				const res = await proApiFetch( ctx, 'battles?participant=' + ctx.userId + '&per_page=20' );
-				state.battles.items = await res.json();
+				state.battles.items = res.data;
 			} catch {
 				state.battles.items = [];
 			}
@@ -1125,9 +1104,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.tournaments.loading = true;
 			try {
 				const res = await proApiFetch( ctx, 'tournaments?participant=' + ctx.userId + '&per_page=20' );
-				state.tournaments.items = await res.json();
+				state.tournaments.items = res.data;
 				const openRes = await proApiFetch( ctx, 'tournaments?status=registration&per_page=1' );
-				const openData = await openRes.json();
+				const openData = openRes.data;
 				state.tournaments.openTournament = openData.length > 0 ? openData[ 0 ] : null;
 			} catch {
 				state.tournaments.items = [];
@@ -1182,18 +1161,16 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// Load tags.
 			try {
 				const res = await apiFetch( ctx, 'tags?per_page=100' );
-				const data = await res.json();
+				const data = res.data;
 				state.collectionModal.tags = data.map( ( t ) => ( { value: String( t.id ), label: t.name } ) );
 			} catch {
 				state.collectionModal.tags = [];
 			}
 			// Load categories.
 			try {
-				const catRes = await fetch( ctx.restUrl.replace( 'mvs/v1/', '' ) + 'wp/v2/mvs_category?per_page=100', {
-					credentials: 'same-origin',
-					headers: apiHeaders( ctx.nonce ),
-				} );
-				const catData = await catRes.json();
+				const catUrl = ctx.restUrl.replace( 'mvs/v1/', '' ) + 'wp/v2/mvs_category?per_page=100';
+				const catRes = await window.mvsRest.restFetch( catUrl );
+				const catData = catRes.data;
 				state.collectionModal.categories = catData.map( ( c ) => ( { value: String( c.id ), label: c.name } ) );
 			} catch {
 				state.collectionModal.categories = [];
@@ -1260,11 +1237,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 				try {
 					await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId + '/rules', {
 						method: 'PUT',
-						headers: apiHeaders( ctx.nonce ),
-						body: JSON.stringify( { rules: validRules.map( ( { key, value } ) => ( { key, value } ) ) } ),
+						body: { rules: validRules.map( ( { key, value } ) => ( { key, value } ) ) },
 					} );
 					const res = await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId + '?per_page=1' );
-					const data = await res.json();
+					const data = res.data;
 					state.collectionModal.previewCount = data.total || 0;
 				} catch {
 					// Ignore preview errors.
@@ -1293,23 +1269,20 @@ const { state, actions } = store( 'mvs/dashboard', {
 				if ( state.collectionModal.isEdit ) {
 					await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId, {
 						method: 'PUT',
-						headers: apiHeaders( ctx.nonce ),
-						body: JSON.stringify( payload ),
+						body: payload,
 					} );
 					// Update rules separately if smart.
 					if ( state.collectionModal.collectionType === 'smart' && validRules.length ) {
 						await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId + '/rules', {
 							method: 'PUT',
-							headers: apiHeaders( ctx.nonce ),
-							body: JSON.stringify( { rules: validRules } ),
+							body: { rules: validRules },
 						} );
 					}
 					sharedUI.actions.showToast( __( 'Collection updated!', 'wpmediaverse' ), 'success' );
 				} else {
 					await apiFetch( ctx, 'collections', {
 						method: 'POST',
-						headers: apiHeaders( ctx.nonce ),
-						body: JSON.stringify( payload ),
+						body: payload,
 					} );
 					sharedUI.actions.showToast( __( 'Collection created!', 'wpmediaverse' ), 'success' );
 				}
@@ -1330,7 +1303,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 				try {
 					const res = await apiFetch( ctx, 'collections/' + id, {
 						method: 'DELETE',
-						headers: apiHeaders( ctx.nonce ),
 					} );
 					if ( res.ok ) {
 						state.collections.items = state.collections.items.filter( ( c ) => c.id !== id );
@@ -1354,7 +1326,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( state.notifications.visible && state.notifications.items.length === 0 ) {
 				try {
 					const res = await apiFetch( ctx, 'me/notifications?per_page=20' );
-					const data = await res.json();
+					const data = res.data;
 					state.notifications.items = Array.isArray( data )
 						? data.map( ( n ) => ( {
 							id: n.id,
@@ -1376,7 +1348,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 			try {
 				await apiFetch( ctx, 'me/notifications/read', {
 					method: 'POST',
-					headers: apiHeaders( ctx.nonce ),
 				} );
 				state.notifications.count = 0;
 				state.notifications.items = state.notifications.items.map( ( n ) => ( { ...n, read: true } ) );
@@ -1405,8 +1376,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			try {
 				await apiFetch( ctx, 'me/notifications/read', {
 					method: 'POST',
-					headers: apiHeaders( ctx.nonce ),
-					body: JSON.stringify( { ids: [ clicked.id ] } ),
+					body: { ids: [ clicked.id ] },
 				} );
 			} catch ( err ) {
 				// Roll back the optimistic update so the user can try again.
@@ -1420,7 +1390,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 		async loadNotificationCount( ctx ) {
 			try {
 				const res = await apiFetch( ctx, 'me/notifications/count' );
-				const data = await res.json();
+				const data = res.data;
 				state.notifications.count = data.count || 0;
 			} catch {
 				// Ignore.

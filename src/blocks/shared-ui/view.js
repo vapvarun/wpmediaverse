@@ -392,11 +392,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			clearTimeout( tagSearchTimer );
 			tagSearchTimer = setTimeout( async () => {
 				try {
-					const res = await fetch(
-						restUrl + 'tags?search=' + encodeURIComponent( query ) + '&per_page=8',
-						{ credentials: 'same-origin' }
+					const res = await window.mvsRest.restFetch(
+						restUrl + 'tags?search=' + encodeURIComponent( query ) + '&per_page=8'
 					);
-					const data = await res.json();
+					const data = res.data;
 					state.tagResults = data.map( ( t ) => t.name || t );
 					state.tagVisible = state.tagResults.length > 0;
 				} catch {
@@ -459,12 +458,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			try {
 				const restUrl = window.mvsBpActions?.restUrl
 					|| ( window.location.origin + '/wp-json/mvs/v1/' );
-				const res = await fetch( `${ restUrl }tags/cloud?limit=8`, {
+				const res = await window.mvsRest.restFetch( `${ restUrl }tags/cloud?limit=8`, {
 					headers: { Accept: 'application/json' },
-					credentials: 'same-origin',
 				} );
 				if ( ! res.ok ) return;
-				const data = await res.json();
+				const data = res.data;
 				state.popularTags = Array.isArray( data )
 					? data.map( ( t ) => ( { name: t.name || t.slug || '', slug: t.slug || '' } ) ).filter( ( t ) => !! t.name )
 					: [];
@@ -497,13 +495,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			try {
 				const restUrl = window.mvsBpActions?.restUrl
 					|| ( window.location.origin + '/wp-json/mvs/v1/' );
-				const nonce = window.mvsBpActions?.nonce || '';
-				const res = await fetch( `${ restUrl }media/${ id }`, {
-					headers: { 'X-WP-Nonce': nonce },
-					credentials: 'same-origin',
-				} );
+				const res = await window.mvsRest.restFetch( `${ restUrl }media/${ id }` );
 				if ( ! res.ok ) throw new Error( 'fetch_failed' );
-				const data = await res.json();
+				const data = res.data;
 				state.editModalTitle = data.title || '';
 				state.editModalDescription = data.description || '';
 				state.editModalPrivacy = data.privacy || 'public';
@@ -548,7 +542,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			try {
 				const restUrl = window.mvsBpActions?.restUrl
 					|| ( window.location.origin + '/wp-json/mvs/v1/' );
-				const nonce = window.mvsBpActions?.nonce || '';
 				const body = {
 					title: state.editModalTitle,
 					description: state.editModalDescription,
@@ -571,20 +564,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						.replace( /\s+/g, '-' )
 						.replace( /-+/g, '-' );
 				}
-				const res = await fetch( `${ restUrl }media/${ state.editModalMediaId }`, {
+				const res = await window.mvsRest.restFetch( `${ restUrl }media/${ state.editModalMediaId }`, {
 					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': nonce,
-					},
-					credentials: 'same-origin',
-					body: JSON.stringify( body ),
+					body,
 				} );
 				if ( ! res.ok ) {
-					const err = await res.json().catch( () => ({}) );
+					const err = res.data || {};
 					throw new Error( err.message || 'save_failed' );
 				}
-				const updated = await res.json().catch( () => ({}) );
+				const updated = res.data || {};
 
 				// When the user opted into a slug change AND they're CURRENTLY
 				// on the media's single page (`/media/{old-slug}/`), the page
@@ -801,17 +789,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					return;
 				}
 				try {
-					const albumRes = await fetch( restUrl + 'albums', {
+					const albumRes = await window.mvsRest.restFetch( restUrl + 'albums', {
 						method: 'POST',
-						headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-						credentials: 'same-origin',
-						body: JSON.stringify( {
+						body: {
 							title: state.uploadModalAlbumTitle.trim(),
 							description: state.uploadModalAlbumDescription.trim(),
 							privacy: state.uploadModalPrivacy,
-						} ),
+						},
 					} );
-					const albumData = await albumRes.json();
+					const albumData = albumRes.data;
 					if ( albumData.id ) {
 						state._pendingAlbumId = albumData.id;
 						actions.showToast( __( 'Album "', 'wpmediaverse' ) + albumData.title + '" created!' );
@@ -884,27 +870,25 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					( isAlbum && files.length > 1 ? '?album_upload=1' : '' );
 
 				try {
-					const res = await fetch( uploadUrl, {
+					const res = await window.mvsRest.restFetch( uploadUrl, {
 						method: 'POST',
-						headers: { 'X-WP-Nonce': nonce },
-						credentials: 'same-origin',
 						body: fd,
 					} );
 					if ( res.ok ) {
-						try {
-							const mediaData = await res.json();
-							if ( mediaData.id ) uploadedMediaIds.push( mediaData.id );
-							if ( mediaData.duplicate_warning ) {
-								state.uploadModalDuplicates++;
-								state.uploadModalLastDuplicateId = mediaData.existing_media_id || 0;
-							}
-						} catch { /* ignore */ }
+						const mediaData = res.data;
+						if ( mediaData && mediaData.id ) uploadedMediaIds.push( mediaData.id );
+						if ( mediaData && mediaData.duplicate_warning ) {
+							state.uploadModalDuplicates++;
+							state.uploadModalLastDuplicateId = mediaData.existing_media_id || 0;
+						}
 					} else {
 						state.uploadModalFailed++;
-						try {
-							const errData = await res.json();
-							state.uploadModalLastError = errData.message || 'Upload failed.';
-						} catch { /* ignore parse error */ }
+						const errData = res.data;
+						if ( errData && errData.message ) {
+							state.uploadModalLastError = errData.message;
+						} else {
+							state.uploadModalLastError = 'Upload failed.';
+						}
 					}
 				} catch {
 					state.uploadModalFailed++;
@@ -918,11 +902,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// so this is a single PUT. Non-fatal if cover setting fails.
 			if ( state._pendingAlbumId && uploadedMediaIds.length ) {
 				try {
-					await fetch( restUrl + 'albums/' + state._pendingAlbumId + '/items', {
+					await window.mvsRest.restFetch( restUrl + 'albums/' + state._pendingAlbumId + '/items', {
 						method: 'POST',
-						headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-						credentials: 'same-origin',
-						body: JSON.stringify( { media_ids: uploadedMediaIds } ),
+						body: { media_ids: uploadedMediaIds },
 					} );
 				} catch { /* linking failed — media still uploaded */ }
 				const firstImageId = uploadedMediaIds.find( ( id, idx ) => {
@@ -931,11 +913,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				} );
 				if ( firstImageId ) {
 					try {
-						await fetch( restUrl + 'albums/' + state._pendingAlbumId + '/cover', {
+						await window.mvsRest.restFetch( restUrl + 'albums/' + state._pendingAlbumId + '/cover', {
 							method: 'PUT',
-							headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-							credentials: 'same-origin',
-							body: JSON.stringify( { media_id: firstImageId } ),
+							body: { media_id: firstImageId },
 						} );
 					} catch { /* cover failed — user can set it later from album edit */ }
 				}
@@ -984,26 +964,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			document.body.style.overflow = 'hidden';
 
 			try {
-				const headers = {};
-				if ( ctx.nonce ) {
-					headers[ 'X-WP-Nonce' ] = ctx.nonce;
-				}
-				const res = await fetch(
-					ctx.restUrl + 'media/' + mediaId,
-					{ credentials: 'same-origin', headers }
+				const res = await window.mvsRest.restFetch(
+					ctx.restUrl + 'media/' + mediaId
 				);
-				const data = await res.json();
+				const data = res.data;
 				state.lightboxMediaData = data;
 				state.lightboxLoading = false;
 				loadLightboxMedia();
 
 				// If this item is part of a gallery group, fetch all group members.
 				if ( data.media_group && data.group_count > 1 ) {
-					const groupRes = await fetch(
-						ctx.restUrl + 'media/' + mediaId + '/group',
-						{ credentials: 'same-origin', headers }
+					const groupRes = await window.mvsRest.restFetch(
+						ctx.restUrl + 'media/' + mediaId + '/group'
 					);
-					const groupData = await groupRes.json();
+					const groupData = groupRes.data;
 					if ( Array.isArray( groupData ) && groupData.length > 1 ) {
 						state.lightboxGroupItems = groupData;
 						// Set current index to 0 (cover image).
@@ -1014,7 +988,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					}
 				}
 			// Fetch social data in parallel.
-				actions.lightboxLoadSocial( ctx, mediaId, headers );
+				actions.lightboxLoadSocial( ctx, mediaId );
 			} catch {
 				state.lightboxLoading = false;
 				actions.showToast( __( 'Failed to load media.', 'wpmediaverse' ), 'error' );
@@ -1056,19 +1030,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 
 			try {
-				const headers = {};
-				if ( nonce ) headers[ 'X-WP-Nonce' ] = nonce;
 				let data;
 
 				if ( embeddedData ) {
 					// Use embedded data — instant, no network request.
 					data = embeddedData;
 				} else {
-					const res = await fetch( restUrl + 'media/' + mediaId, {
-						credentials: 'same-origin',
-						headers,
-					} );
-					data = await res.json();
+					const res = await window.mvsRest.restFetch( restUrl + 'media/' + mediaId );
+					data = res.data;
 				}
 
 				state.lightboxMediaData = data;
@@ -1076,11 +1045,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				loadLightboxMedia();
 
 				if ( data.media_group && data.group_count > 1 ) {
-					const groupRes = await fetch( restUrl + 'media/' + mediaId + '/group', {
-						credentials: 'same-origin',
-						headers,
-					} );
-					const groupData = await groupRes.json();
+					const groupRes = await window.mvsRest.restFetch( restUrl + 'media/' + mediaId + '/group' );
+					const groupData = groupRes.data;
 					if ( Array.isArray( groupData ) && groupData.length > 1 ) {
 						state.lightboxGroupItems = groupData;
 						state.lightboxCurrentIndex = 0;
@@ -1089,33 +1055,33 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					}
 				}
 
-				actions.lightboxLoadSocial( { restUrl, nonce, isLoggedIn }, mediaId, headers );
+				actions.lightboxLoadSocial( { restUrl, nonce, isLoggedIn }, mediaId );
 			} catch {
 				state.lightboxLoading = false;
 				actions.showToast( __( 'Failed to load media.', 'wpmediaverse' ), 'error' );
 			}
 		},
 		noop() {},
-		async lightboxLoadSocial( ctx, mediaId, headers ) {
-			const opts = { credentials: 'same-origin', headers };
+		async lightboxLoadSocial( ctx, mediaId ) {
 			// Reactions.
 			try {
-				const r = await fetch( ctx.restUrl + 'media/' + mediaId + '/reactions', opts );
-				const rd = await r.json();
+				const r = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/reactions' );
+				const rd = r.data;
 				state.lightboxReactions = rd.counts || {};
 				state.lightboxUserReaction = rd.user_reaction || '';
 			} catch { /* ignore */ }
-			// Comments (latest 20, total from header).
+			// Comments (latest 20, total from the X-WP-Total response header,
+			// which restFetch now exposes via result.headers).
 			try {
-				const c = await fetch( ctx.restUrl + 'media/' + mediaId + '/comments?per_page=20', opts );
-				state.lightboxTotalComments = parseInt( c.headers.get( 'X-WP-Total' ) || '0', 10 );
-				const cd = await c.json();
+				const c = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/comments?per_page=20' );
+				state.lightboxTotalComments = parseInt( ( c.headers && c.headers.get( 'X-WP-Total' ) ) || '0', 10 );
+				const cd = c.data;
 				state.lightboxComments = Array.isArray( cd ) ? cd : [];
 			} catch { state.lightboxComments = []; state.lightboxTotalComments = 0; }
 			// Stats.
 			try {
-				const s = await fetch( ctx.restUrl + 'media/' + mediaId + '/stats', opts );
-				state.lightboxStats = await s.json();
+				const s = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/stats' );
+				state.lightboxStats = s.data;
 			} catch { state.lightboxStats = {}; }
 			// Favorite status. Attempt unconditionally — the REST endpoint
 			// enforces its own auth, returning 401 for guests which lands in
@@ -1128,10 +1094,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// lightbox always boots with lightboxIsFavorited=false because
 			// the GET was skipped.
 			try {
-				const f = await fetch( ctx.restUrl + 'media/' + mediaId + '/favorite', opts );
+				const f = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + mediaId + '/favorite' );
 				if ( f.ok ) {
-					const fd = await f.json();
-					state.lightboxIsFavorited = !! fd.favorited;
+					state.lightboxIsFavorited = !! f.data.favorited;
 				} else {
 					state.lightboxIsFavorited = false;
 				}
@@ -1141,14 +1106,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const ctx = getContext();
 			const type = event.target.closest( '[data-reaction]' )?.dataset.reaction;
 			if ( ! type || ! state.lightboxMediaId ) return;
-			const headers = { 'X-WP-Nonce': ctx.nonce, 'Content-Type': 'application/json' };
 			const isActive = state.lightboxUserReaction === type;
 			try {
-				await fetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/reactions', {
+				await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/reactions', {
 					method: isActive ? 'DELETE' : 'POST',
-					credentials: 'same-origin',
-					headers,
-					body: JSON.stringify( { reaction_type: type } ),
+					body: { reaction_type: type },
 				} );
 				if ( isActive ) {
 					state.lightboxUserReaction = '';
@@ -1180,7 +1142,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( mvsFavEvent.defaultPrevented ) {
 				return;
 			}
-			const headers = { 'X-WP-Nonce': ctx.nonce };
 			// Optimistic flip for snappy UI; roll back on error / verify
 			// against server response. Previously the flip was unconditional
 			// and the catch was silent — a 4xx response (rate-limit, auth
@@ -1189,19 +1150,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const previous = !! state.lightboxIsFavorited;
 			state.lightboxIsFavorited = ! previous;
 			try {
-				const res = await fetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/favorite', {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/favorite', {
 					method: previous ? 'DELETE' : 'POST',
-					credentials: 'same-origin',
-					headers,
 				} );
 				if ( res.ok ) {
 					// Trust server-authoritative value if present in body.
-					try {
-						const body = await res.json();
-						if ( body && typeof body.favorited === 'boolean' ) {
-							state.lightboxIsFavorited = body.favorited;
-						}
-					} catch { /* keep optimistic flip */ }
+					const body = res.data;
+					if ( body && typeof body.favorited === 'boolean' ) {
+						state.lightboxIsFavorited = body.favorited;
+					}
 				} else {
 					state.lightboxIsFavorited = previous;
 				}
@@ -1221,16 +1178,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const ctx = getContext();
 			const text = state.lightboxCommentText.trim();
 			if ( ! text || ! state.lightboxMediaId ) return;
-			const headers = { 'X-WP-Nonce': ctx.nonce, 'Content-Type': 'application/json' };
 			try {
-				const r = await fetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments', {
+				const r = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments', {
 					method: 'POST',
-					credentials: 'same-origin',
-					headers,
-					body: JSON.stringify( { content: text } ),
+					body: { content: text },
 				} );
-				const comment = await r.json();
-				if ( comment.id ) {
+				const comment = r.data;
+				if ( comment && comment.id ) {
 					state.lightboxComments = [ ...state.lightboxComments, comment ];
 					state.lightboxCommentText = '';
 				}
@@ -1300,11 +1254,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				try {
 					const restUrl = window.mvsBpActions?.restUrl
 						|| ( window.location.origin + '/wp-json/mvs/v1/' );
-					const nonce = window.mvsBpActions?.nonce || '';
-					await fetch( `${ restUrl }media/${ data.id }/share`, {
+					await window.mvsRest.restFetch( `${ restUrl }media/${ data.id }/share`, {
 						method: 'POST',
-						headers: { 'X-WP-Nonce': nonce },
-						credentials: 'same-origin',
 					} );
 				} catch {
 					// Stat increment failure is non-blocking.
@@ -1345,11 +1296,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			try {
 				const restUrl = window.mvsBpActions?.restUrl
 					|| ( window.location.origin + '/wp-json/mvs/v1/' );
-				const nonce = window.mvsBpActions?.nonce || '';
-				await fetch( `${ restUrl }media/${ data.id }/download`, {
+				await window.mvsRest.restFetch( `${ restUrl }media/${ data.id }/download`, {
 					method: 'POST',
-					headers: { 'X-WP-Nonce': nonce },
-					credentials: 'same-origin',
 				} );
 			} catch {
 				// Stat increment failure is non-blocking — the download still happened.

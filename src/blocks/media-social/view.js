@@ -26,13 +26,6 @@ const REACTION_TYPES = {
 
 const sharedUI = store( 'mvs/shared-ui' );
 
-function apiHeaders( nonce ) {
-	return {
-		'Content-Type': 'application/json',
-		'X-WP-Nonce': nonce,
-	};
-}
-
 function endpoint( ctx ) {
 	return ctx.type === 'album' ? 'albums/' : 'media/';
 }
@@ -42,11 +35,8 @@ function endpoint( ctx ) {
 async function fetchReactions( ctx ) {
 	if ( ctx.type === 'album' ) return;
 	try {
-		const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
-			headers: apiHeaders( ctx.nonce ),
-			credentials: 'same-origin',
-		} );
-		const data = await res.json();
+		const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions' );
+		const data = res.data;
 		ctx.userReaction = data.user_reaction || '';
 		ctx.reactions = Object.keys( REACTION_TYPES ).map( ( type ) => ( {
 			type,
@@ -62,11 +52,10 @@ async function fetchReactions( ctx ) {
 async function fetchComments( ctx ) {
 	if ( ctx.type === 'album' ) return;
 	try {
-		const res = await fetch(
-			ctx.restUrl + 'media/' + ctx.mediaId + '/comments?per_page=20',
-			{ headers: apiHeaders( ctx.nonce ), credentials: 'same-origin' }
+		const res = await window.mvsRest.restFetch(
+			ctx.restUrl + 'media/' + ctx.mediaId + '/comments?per_page=20'
 		);
-		const data = await res.json();
+		const data = res.data;
 		const now = Date.now();
 		const editWindow = 15 * 60 * 1000; // 15 minutes in ms.
 		ctx.comments = Array.isArray( data )
@@ -98,11 +87,8 @@ async function fetchComments( ctx ) {
 async function fetchStats( ctx ) {
 	if ( ctx.type === 'album' ) return;
 	try {
-		const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/stats', {
-			headers: apiHeaders( ctx.nonce ),
-			credentials: 'same-origin',
-		} );
-		const data = await res.json();
+		const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/stats' );
+		const data = res.data;
 		if ( data?.views !== undefined ) {
 			ctx.viewCount = data.views + ' views';
 		}
@@ -114,11 +100,8 @@ async function fetchStats( ctx ) {
 async function fetchFavorite( ctx ) {
 	if ( ! ctx.isLoggedIn ) return;
 	try {
-		const res = await fetch( ctx.restUrl + 'me/favorites?per_page=100', {
-			headers: apiHeaders( ctx.nonce ),
-			credentials: 'same-origin',
-		} );
-		const data = await res.json();
+		const res = await window.mvsRest.restFetch( ctx.restUrl + 'me/favorites?per_page=100' );
+		const data = res.data;
 		ctx.isFavorite = Array.isArray( data ) && data.some( ( f ) => f.media_id === ctx.mediaId );
 	} catch {
 		// Ignore.
@@ -160,7 +143,6 @@ store( 'mvs/media-social', {
 			const type = event.target.closest( '[data-reaction-type]' )?.dataset.reactionType;
 			if ( ! type ) return;
 
-			const headers = apiHeaders( ctx.nonce );
 			const previousReaction = ctx.userReaction;
 			const previousReactions = ctx.reactions.map( ( r ) => ( { ...r } ) );
 			const wasActive = previousReaction === type;
@@ -187,16 +169,12 @@ store( 'mvs/media-social', {
 
 			try {
 				const res = wasActive
-					? await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
+					? await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
 						method: 'DELETE',
-						headers,
-						credentials: 'same-origin',
 					} )
-					: await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
+					: await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/reactions', {
 						method: 'POST',
-						headers,
-						credentials: 'same-origin',
-						body: JSON.stringify( { reaction_type: type } ),
+						body: { reaction_type: type },
 					} );
 				if ( ! res.ok ) {
 					// Roll back the optimistic update.
@@ -241,10 +219,8 @@ store( 'mvs/media-social', {
 			ctx.isFavorite = ! previous;
 			const method = previous ? 'DELETE' : 'POST';
 			try {
-				const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/favorite', {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/favorite', {
 					method,
-					headers: apiHeaders( ctx.nonce ),
-					credentials: 'same-origin',
 				} );
 				if ( ! res.ok ) {
 					ctx.isFavorite = previous;
@@ -267,11 +243,9 @@ store( 'mvs/media-social', {
 			const ctx = getContext();
 			if ( ! ctx.commentText.trim() ) return;
 
-			await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments', {
+			await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments', {
 				method: 'POST',
-				headers: apiHeaders( ctx.nonce ),
-				credentials: 'same-origin',
-				body: JSON.stringify( { content: ctx.commentText.trim() } ),
+				body: { content: ctx.commentText.trim() },
 			} );
 			ctx.commentText = '';
 			await fetchComments( ctx );
@@ -299,20 +273,18 @@ store( 'mvs/media-social', {
 			if ( ! comment || ! comment.editText.trim() ) return;
 
 			try {
-				const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
 					method: 'PUT',
-					headers: apiHeaders( ctx.nonce ),
-					credentials: 'same-origin',
-					body: JSON.stringify( { content: comment.editText.trim() } ),
+					body: { content: comment.editText.trim() },
 				} );
 				if ( res.ok ) {
-					const updated = await res.json();
+					const updated = res.data;
 					comment.content = updated.content;
 					comment.editing = false;
 					comment.editText = '';
 					sharedUI.actions.showToast( __( 'Comment updated.', 'wpmediaverse' ), 'success' );
 				} else {
-					const err = await res.json();
+					const err = res.data;
 					sharedUI.actions.showToast( err.message || 'Edit failed.', 'error' );
 				}
 			} catch {
@@ -334,10 +306,8 @@ store( 'mvs/media-social', {
 			if ( ! comment ) return;
 
 			sharedUI.actions.showConfirm( __( 'Delete this comment?', 'wpmediaverse' ), async () => {
-				const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
 					method: 'DELETE',
-					headers: apiHeaders( ctx.nonce ),
-					credentials: 'same-origin',
 				} );
 				if ( res.ok ) {
 					await fetchComments( ctx );
@@ -376,7 +346,7 @@ store( 'mvs/media-social', {
 					document.execCommand( 'copy' );
 					document.body.removeChild( ta );
 				}
-				ctx.shareLabel = '\u2713 Copied!';
+				ctx.shareLabel = '✓ Copied!';
 				sharedUI.actions.showToast( __( 'Link copied to clipboard!', 'wpmediaverse' ), 'success' );
 				setTimeout( () => {
 					ctx.shareLabel = '\u{1F517} Share';
@@ -396,10 +366,8 @@ store( 'mvs/media-social', {
 			ctx.isFollowing = ! previous;
 			const method = previous ? 'DELETE' : 'POST';
 			try {
-				const res = await fetch( ctx.restUrl + 'users/' + authorId + '/follow', {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'users/' + authorId + '/follow', {
 					method,
-					headers: apiHeaders( ctx.nonce ),
-					credentials: 'same-origin',
 				} );
 				if ( ! res.ok ) {
 					ctx.isFollowing = previous;
@@ -512,13 +480,11 @@ store( 'mvs/media-social', {
 			}
 
 			try {
-				const res = await fetch( ctx.restUrl + ep + ctx.mediaId, {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + ep + ctx.mediaId, {
 					method: 'PUT',
-					headers: apiHeaders( ctx.nonce ),
-					credentials: 'same-origin',
-					body: JSON.stringify( payload ),
+					body: payload,
 				} );
-				const updated = await res.json();
+				const updated = res.data;
 				ctx.saving = false;
 				ctx.editVisible = false;
 
@@ -571,10 +537,8 @@ store( 'mvs/media-social', {
 				: __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' );
 			sharedUI.actions.showConfirm( msg, async () => {
 				const ep = endpoint( ctx );
-				const res = await fetch( ctx.restUrl + ep + ctx.mediaId, {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + ep + ctx.mediaId, {
 					method: 'DELETE',
-					headers: apiHeaders( ctx.nonce ),
-					credentials: 'same-origin',
 				} );
 				if ( res.ok ) {
 					window.location.href = ctx.archiveUrl || '/';
@@ -616,17 +580,15 @@ store( 'mvs/media-social', {
 				'Why are you reporting this media?',
 				async () => {
 					const reason = select.value || 'other';
-					const res = await fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/report', {
+					const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/report', {
 						method: 'POST',
-						headers: apiHeaders( ctx.nonce ),
-						credentials: 'same-origin',
-						body: JSON.stringify( { reason, details: 'Reported via media page' } ),
+						body: { reason, details: 'Reported via media page' },
 					} );
 					if ( res.ok ) {
 						sharedUI.actions.showToast( __( 'Report submitted. Thank you.', 'wpmediaverse' ), 'success' );
 						ctx.reported = true;
 					} else {
-						const data = await res.json().catch( () => ( {} ) );
+						const data = res.data || {};
 						sharedUI.actions.showToast( data.message || 'Already reported or error occurred.', 'error' );
 					}
 				},
@@ -667,10 +629,8 @@ store( 'mvs/media-social', {
 				promises.push( fetchComments( ctx ) );
 				promises.push( fetchStats( ctx ) );
 				// Fire-and-forget view recording.
-				fetch( ctx.restUrl + 'media/' + ctx.mediaId + '/view', {
+				window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/view', {
 					method: 'POST',
-					headers: apiHeaders( ctx.nonce ),
-					credentials: 'same-origin',
 				} );
 			}
 			if ( ctx.isLoggedIn ) {
@@ -679,11 +639,8 @@ store( 'mvs/media-social', {
 				if ( ctx.authorId && ! ctx.isOwner ) {
 					promises.push( ( async () => {
 						try {
-							const res = await fetch( ctx.restUrl + 'me/following', {
-								headers: apiHeaders( ctx.nonce ),
-								credentials: 'same-origin',
-							} );
-							const data = await res.json();
+							const res = await window.mvsRest.restFetch( ctx.restUrl + 'me/following' );
+							const data = res.data;
 							ctx.isFollowing = Array.isArray( data ) && data.some( ( f ) => f.user_id === ctx.authorId || f.id === ctx.authorId );
 						} catch {
 							// Ignore.
@@ -698,11 +655,8 @@ store( 'mvs/media-social', {
 			const ctx = getContext();
 			if ( ! ctx.followAuthorId ) return;
 			try {
-				const res = await fetch( ctx.restUrl + 'me/following', {
-					headers: apiHeaders( ctx.nonce ),
-					credentials: 'same-origin',
-				} );
-				const data = await res.json();
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'me/following' );
+				const data = res.data;
 				ctx.isFollowing = Array.isArray( data ) && data.some( ( f ) => f.user_id === ctx.followAuthorId || f.id === ctx.followAuthorId );
 			} catch {
 				// Ignore.
