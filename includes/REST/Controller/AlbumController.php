@@ -110,6 +110,18 @@ class AlbumController extends WP_REST_Controller {
 					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_item' ),
 					'permission_callback' => array( $this, 'update_item_permissions_check' ),
+					'args'                => array(
+						'id'             => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						'cover_media_id' => array(
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+							'minimum'           => 0,
+						),
+					),
 				),
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
@@ -368,6 +380,18 @@ class AlbumController extends WP_REST_Controller {
 			$categories = $request->get_param( 'categories' );
 			if ( is_array( $categories ) ) {
 				wp_set_object_terms( $album_id, array_map( 'absint', array_filter( $categories ) ), 'mvs_category' );
+			}
+		}
+
+		// Cover image — only act when the caller explicitly sends cover_media_id
+		// (0 = clear the pinned cover; >0 = set to that media item).
+		// Delegates to AlbumService::set_cover() which validates post type, file
+		// type, and atomically adds the item when it's not already in the album.
+		if ( array_key_exists( 'cover_media_id', $json_params ) ) {
+			$cover_media_id = (int) $request->get_param( 'cover_media_id' );
+			$cover_result   = $this->albums->set_cover( $album_id, $cover_media_id );
+			if ( is_wp_error( $cover_result ) ) {
+				return $cover_result;
 			}
 		}
 

@@ -20,7 +20,11 @@ class FieldRenderer {
 	 * @param array $args Field arguments.
 	 */
 	public static function render_number_field( array $args ): void {
-		$value = get_option( $args['option'], '' );
+		$registered = get_registered_settings();
+		$default    = isset( $registered[ $args['option'] ]['default'] )
+			? $registered[ $args['option'] ]['default']
+			: '';
+		$value      = get_option( $args['option'], $default );
 		printf(
 			'<input type="number" name="%s" value="%s" class="regular-text" min="0" />',
 			esc_attr( $args['option'] ),
@@ -198,8 +202,12 @@ class FieldRenderer {
 	 * @param array $args Field arguments.
 	 */
 	public static function render_select_field( array $args ): void {
-		$value   = get_option( $args['option'], '' );
-		$choices = $args['choices'] ?? array();
+		$registered = get_registered_settings();
+		$default    = isset( $registered[ $args['option'] ]['default'] )
+			? $registered[ $args['option'] ]['default']
+			: '';
+		$value      = get_option( $args['option'], $default );
+		$choices    = $args['choices'] ?? array();
 
 		printf( '<select name="%s">', esc_attr( $args['option'] ) );
 		foreach ( $choices as $key => $label ) {

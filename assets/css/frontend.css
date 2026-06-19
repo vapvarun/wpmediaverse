@@ -150,22 +150,25 @@ body.dark-mode {
     --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.18);
 }
 
-.dark-mode .mvs-album-badge,
-[data-bx-mode="dark"] .mvs-album-badge,
+[data-theme="dark"] .mvs-album-badge,
 [data-bn-theme="dark"] .mvs-album-badge,
-.dark-mode .mvs-album-badge .dashicons,
-[data-bx-mode="dark"] .mvs-album-badge .dashicons,
+[data-bx-mode="dark"] .mvs-album-badge,
+.dark-mode .mvs-album-badge,
+[data-theme="dark"] .mvs-album-badge .dashicons,
 [data-bn-theme="dark"] .mvs-album-badge .dashicons,
-.dark-mode .mvs-grid-item-overlay,
+[data-bx-mode="dark"] .mvs-album-badge .dashicons,
+.dark-mode .mvs-album-badge .dashicons,
+[data-theme="dark"] .mvs-grid-item-overlay,
+[data-bn-theme="dark"] .mvs-grid-item-overlay,
 [data-bx-mode="dark"] .mvs-grid-item-overlay,
-[data-bn-theme="dark"] .mvs-grid-item-overlay {
+.dark-mode .mvs-grid-item-overlay {
     color: var(--mvs-text);
 }
 
-.dark-mode .mvs-empty-state .dashicons,
 [data-theme="dark"] .mvs-empty-state .dashicons,
+[data-bn-theme="dark"] .mvs-empty-state .dashicons,
 [data-bx-mode="dark"] .mvs-empty-state .dashicons,
-[data-bn-theme="dark"] .mvs-empty-state .dashicons {
+.dark-mode .mvs-empty-state .dashicons {
     color: var(--mvs-text-muted, #6c7781);
 }
 
@@ -464,6 +467,7 @@ body.mvs-page {
 }
 
 [data-theme="dark"] .mvs-skeleton::after,
+[data-bx-mode="dark"] .mvs-skeleton::after,
 html.dark-mode .mvs-skeleton::after,
 body.dark-mode .mvs-skeleton::after {
     background: linear-gradient(
@@ -2263,6 +2267,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-modal-overlay[hidden],
 .mvs-confirm-overlay[hidden],
+.mvs-lightbox-overlay[hidden], /* display:flex on .mvs-lightbox-overlay beats HTML [hidden] */
 .mvs-toast[hidden],
 .mvs-inline-edit[hidden],
 .mvs-dashboard-upload-fields[hidden],
@@ -5958,6 +5963,7 @@ a.mvs-dashboard-card-title:hover {
    defined at the top of the file so any theme that flips dark mode via
    class also flips this card. */
 [data-theme="dark"] .mvs-auth-gate__card,
+[data-bx-mode="dark"] .mvs-auth-gate__card,
 html.dark-mode .mvs-auth-gate__card,
 body.dark-mode .mvs-auth-gate__card {
     background: var(--mvs-surface, #1e1e1e);

@@ -516,14 +516,13 @@ class UploadService {
 			@copy( $file['tmp_name'], $local_source );
 		}
 
-		// Extract and store media metadata (duration, dimensions, etc.).
-		// Prefer the guaranteed local copy over $driver->get_full_path() —
-		// the latter returns the cloud-prefixed path on non-local drivers
-		// which WP_Image_Editor can't open.
-		$meta_source_path = file_exists( $local_source ) ? $local_source : $driver->get_full_path( $dest_path );
-		$this->extract_and_store_metadata( $media_id, $meta_source_path, $media_type, $mime );
+		// Run the shared post-store processing pipeline: metadata extraction,
+		// thumbnail generation (+ video poster / audio cover art), and WebP/AVIF
+		// variant production. Delegated to process_stored_file() so the replace
+		// endpoint can reuse the identical pipeline without duplicating logic.
+		$this->process_stored_file( $media_id, $dest_path, $media_type, $mime );
 
-		// Initialize stats row.
+		// Initialize stats row — fresh upload only; replace must NOT reset counts.
 		$this->init_stats( $media_id );
 
 		// is_first is computed once per upload — cheap COUNT, gates "first upload" badges
@@ -569,6 +568,63 @@ class UploadService {
 		);
 
 		return $media_id;
+	}
+
+	/**
+	 * Run the post-store processing pipeline for a stored media file.
+	 *
+	 * This is the shared tail that runs identically for a fresh upload
+	 * (handle()) and for a file replacement (MediaController::replace_file()).
+	 * It covers:
+	 *   - Local-source guarantee for cloud drivers (so WP_Image_Editor can open
+	 *     the file regardless of which storage driver is active).
+	 *   - Metadata extraction: dimensions / duration / codec via
+	 *     extract_and_store_metadata(), which internally calls generate_thumbnails()
+	 *     for images and generate_video_poster_thumbnails() for video/audio.
+	 *
+	 * What is intentionally EXCLUDED here (caller's responsibility):
+	 *   - Image optimization + WebP/AVIF variant emit — those run on the temp
+	 *     file BEFORE store(), so they must stay in handle() / replace_file().
+	 *   - init_stats() — must only fire on a fresh upload, never on replace.
+	 *   - mvs_media_uploaded / mvs_media_replaced — callers fire their own hook
+	 *     so each context carries the right semantic (quota increment vs. regen).
+	 *
+	 * @since 1.7.1
+	 *
+	 * @param int    $media_id   Media ID (must already exist in mvs_media_index).
+	 * @param string $dest_path  Relative storage path (e.g. "2026/06/abc.jpg"),
+	 *                           as stored in the file_path column.
+	 * @param string $media_type High-level type: 'image' | 'video' | 'audio' | 'document'.
+	 * @param string $mime       Detected MIME type (e.g. "image/jpeg").
+	 */
+	public function process_stored_file( int $media_id, string $dest_path, string $media_type, string $mime ): void {
+		$driver = $this->storage->get_driver_for_privacy(
+			(string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'privacy' ) ?: 'public'
+		);
+
+		// Ensure a local working copy exists so metadata extraction and thumbnail
+		// generation can open the file via WP_Image_Editor / wp_read_video_metadata,
+		// neither of which supports remote URIs. Cloud drivers push bytes to the CDN
+		// during store() and do not keep a local copy; this guard compensates.
+		$upload_dir   = wp_upload_dir();
+		$local_source = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . $dest_path;
+		if ( ! file_exists( $local_source ) ) {
+			$remote_path = $driver->get_full_path( $dest_path );
+			if ( $remote_path && file_exists( $remote_path ) ) {
+				wp_mkdir_p( dirname( $local_source ) );
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy
+				@copy( $remote_path, $local_source );
+			}
+		}
+
+		// Prefer the guaranteed local copy; fall back to whatever the driver
+		// considers its full path (works on local-only installs).
+		$meta_source_path = file_exists( $local_source ) ? $local_source : $driver->get_full_path( $dest_path );
+
+		// Extract dimensions / duration / codec and run the thumbnail pipeline
+		// (images → generate_thumbnails(); video → generate_video_poster_thumbnails();
+		// audio → embedded-art thumbnail).
+		$this->extract_and_store_metadata( $media_id, $meta_source_path, $media_type, $mime );
 	}
 
 	/**

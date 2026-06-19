@@ -994,6 +994,124 @@ class MediaController extends WP_REST_Controller {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete( $media_id, 'original_filename' );
 		}
 
+		// Clear stale thumbnail, variant, and media-metadata rows so the
+		// pipeline below writes fresh values rather than leaving old paths
+		// (pointing at now-deleted files) mixed with new ones.
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		foreach ( array( 'large', 'medium', 'thumb' ) as $size ) {
+			foreach ( array( '', '_path', '_webp', '_webp_path', '_avif', '_avif_path' ) as $suffix ) {
+				$repo->delete( $media_id, 'thumb_' . $size . $suffix );
+			}
+		}
+		foreach ( array(
+			'original_webp',
+			'original_webp_path',
+			'original_avif',
+			'original_avif_path',
+			\WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZED_AT,
+			\WPMediaVerse\Services\ImageOptimizationService::META_BYTES_BEFORE,
+			\WPMediaVerse\Services\ImageOptimizationService::META_BYTES_AFTER,
+			'width',
+			'height',
+			'duration',
+			'bitrate',
+			'codec',
+			'artist',
+			'album_name',
+		) as $meta_key ) {
+			$repo->delete( $media_id, $meta_key );
+		}
+
+		// Run image optimization + WebP/AVIF emit on the temp file BEFORE
+		// process_stored_file() so cloud drivers receive the optimized bytes
+		// (mirrors the order in UploadService::handle). Only applies to images.
+		if ( 0 === strpos( $mime, 'image/' ) ) {
+			$image_opt   = Plugin::container()->get( 'image_optimization' );
+			$user_id     = get_current_user_id();
+			$opt_context = array(
+				'media_id' => $media_id,
+				'variant'  => 'original',
+				'mime'     => $mime,
+				'user_id'  => $user_id,
+			);
+			$image_opt->optimize( $file['tmp_name'], $opt_context );
+			clearstatcache( true, $file['tmp_name'] );
+			$opt_size = (int) filesize( $file['tmp_name'] );
+			if ( $opt_size > 0 ) {
+				// Update the already-persisted file_size to the post-optimization value.
+				$repo->set( $media_id, 'file_size', $opt_size );
+			}
+
+			// Emit WebP / AVIF siblings from the optimized temp file and push
+			// them to the same driver used for the replacement file.
+			$webp_local = $image_opt->emit_webp_sibling( $file['tmp_name'], $opt_context );
+			$avif_local = $image_opt->emit_avif_sibling( $file['tmp_name'], $opt_context );
+			$dest_dir   = dirname( $dest_path );
+
+			if ( null !== $webp_local && file_exists( $webp_local ) ) {
+				$webp_dest = $dest_dir . '/' . pathinfo( $dest_path, PATHINFO_FILENAME ) . '.webp';
+				if ( $driver->store( $webp_local, $webp_dest ) ) {
+					$repo->set( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP, (string) $driver->url( $webp_dest ) );
+					$repo->set( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP_PATH, $webp_dest );
+				}
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+				@unlink( $webp_local );
+			}
+			if ( null !== $avif_local && file_exists( $avif_local ) ) {
+				$avif_dest = $dest_dir . '/' . pathinfo( $dest_path, PATHINFO_FILENAME ) . '.avif';
+				if ( $driver->store( $avif_local, $avif_dest ) ) {
+					$repo->set( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF, (string) $driver->url( $avif_dest ) );
+					$repo->set( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF_PATH, $avif_dest );
+				}
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+				@unlink( $avif_local );
+			}
+
+			$repo->set( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_OPTIMIZED_AT, time() );
+		}
+
+		// Seed a local working copy from the still-available temp file so
+		// process_stored_file() can open the optimized bytes via WP_Image_Editor
+		// without having to re-download from the cloud driver.
+		$upload_dir   = wp_upload_dir();
+		$local_source = trailingslashit( $upload_dir['basedir'] ) . 'wpmediaverse/' . $dest_path;
+		if ( ! file_exists( $local_source ) && file_exists( $file['tmp_name'] ) ) {
+			wp_mkdir_p( dirname( $local_source ) );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy
+			@copy( $file['tmp_name'], $local_source );
+		}
+
+		// Run the shared post-store pipeline: extract dimensions / duration /
+		// codec and regenerate thumbnails (+ video poster / audio cover art).
+		$upload_service = Plugin::container()->get( 'upload' );
+		$upload_service->process_stored_file( $media_id, $dest_path, $media_type, $mime );
+
+		$file_data = array(
+			'file_url'   => $driver->url( $dest_path ),
+			'file_path'  => $dest_path,
+			'file_type'  => $mime,
+			'media_type' => $media_type,
+		);
+
+		/**
+		 * Fires after a file replacement has been fully processed.
+		 *
+		 * Use this hook (not mvs_media_uploaded) for replace-specific reactions
+		 * such as re-queuing transcoding or re-generating captions. Deliberately
+		 * NOT mvs_media_uploaded to avoid double-counting Pro quota (the item's
+		 * count was already incremented on the original upload and must not be
+		 * incremented again; only a genuinely new upload should do that).
+		 *
+		 * @since 1.7.1
+		 *
+		 * @param int    $media_id  The media ID whose file was replaced.
+		 * @param array  $file_data File metadata. Keys: file_url, file_path,
+		 *                          file_type, media_type.
+		 * @param int    $user_id   The user who performed the replacement.
+		 * @param string $media_type Resolved media type ('image' | 'video' | 'audio' | 'document').
+		 */
+		do_action( 'mvs_media_replaced', $media_id, $file_data, get_current_user_id(), $media_type );
+
 		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
 	}
 
