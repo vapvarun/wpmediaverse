@@ -1432,6 +1432,15 @@ const { state: mvsState } = store( 'mvs', {
 			const href = link?.href;
 			if ( ! href ) return;
 			if ( event.defaultPrevented ) return;
+			// Grid-tile media links are owned by the lightbox handler
+			// (assets/js/frontend/load-more.js): clicking a tile opens the
+			// in-page lightbox and keeps the user on the current grid. Do NOT
+			// client-navigate those — otherwise both handlers fire and the
+			// lightbox stacks over an already-navigated single-media page
+			// (the "close reveals the wrong page" / "overlay blocks clicks"
+			// regression). Author and other links inside a card are not
+			// .mvs-grid-item-link, so they still client-navigate normally.
+			if ( link.classList.contains( 'mvs-grid-item-link' ) ) return;
 			const rawHref = link.getAttribute( 'href' );
 			if ( ! rawHref || '#' === rawHref.charAt( 0 ) ) return;
 			if ( event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||

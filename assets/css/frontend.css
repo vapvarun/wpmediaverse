@@ -2246,6 +2246,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-modal-overlay[hidden],
 .mvs-confirm-overlay[hidden],
+.mvs-lightbox-overlay[hidden], /* display:flex on .mvs-lightbox-overlay beats HTML [hidden] */
 .mvs-toast[hidden],
 .mvs-inline-edit[hidden],
 .mvs-dashboard-upload-fields[hidden],

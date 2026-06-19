@@ -40,6 +40,15 @@
 
 	// --- Delegated lightbox open: any [data-media-id] click inside a grid. ---
 	document.addEventListener( 'click', function ( e ) {
+		// If the IAPI navigate action on #mvs-app already claimed this click
+		// (client-nav is enabled and the link targets an internal route), it will
+		// have called event.preventDefault() before bubbling reaches document.
+		// Stand down — the page is already navigating; opening the lightbox on
+		// top of a navigation would stack the overlay on the wrong page.
+		if ( e.defaultPrevented ) {
+			return;
+		}
+
 		var card = e.target.closest( '[data-media-id]' );
 		if ( ! card ) {
 			return;
