@@ -1239,6 +1239,27 @@ class MessagingService {
 			array( '%d', '%d' )
 		);
 
+		// Delivery semantics: a new message resurrects the thread for any
+		// participant who had deleted it (status 'left'). Without this the
+		// recipient stays 'left', get_conversations()/poll() filter the
+		// conversation out for them, and the message is stored but never seen.
+		// 'request_pending' is intentionally left untouched so the message-request
+		// gate still holds; the sender was already verified active/request_pending
+		// above, so this only reactivates recipients.
+		$wpdb->update(
+			$part_table,
+			array(
+				'status'      => 'active',
+				'is_archived' => 0,
+			),
+			array(
+				'conversation_id' => $conversation_id,
+				'status'          => 'left',
+			),
+			array( '%s', '%d' ),
+			array( '%d', '%s' )
+		);
+
 		// phpcs:enable
 
 		// Get recipient IDs.
