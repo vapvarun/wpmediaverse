@@ -1370,7 +1370,7 @@ class MessagingService {
 			}
 
 			if ( $msg->media_id && ! $is_hidden ) {
-				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id );
+				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id, $user_id );
 			}
 		}
 
@@ -2070,7 +2070,7 @@ class MessagingService {
 				$msg->attachment = $this->get_attachment_data( (int) $msg->attachment_id );
 			}
 			if ( $msg->media_id && ! $msg->deleted_for_all ) {
-				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id );
+				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id, $user_id );
 			}
 			if ( $msg->parent_id ) {
 				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id );
@@ -2147,26 +2147,42 @@ class MessagingService {
 	}
 
 	/**
-	 * Get media share data for an mvs_media post.
+	 * Get media share data for an mvs_media post, scoped to a specific viewer.
 	 *
-	 * @param int $media_id mvs_media post ID.
+	 * All URLs are signed for the explicit conversation viewer (NOT the ambient
+	 * current user — message formatting can run outside the viewer's auth
+	 * context, e.g. background poll enrichment, which is why the thumbnail used
+	 * to come back empty) and routed through the access-controlled mvs serve
+	 * endpoint. That makes conversation-scoped ('dm'-privacy) attachments
+	 * viewable AND downloadable by the conversation's participants while staying
+	 * inaccessible to everyone else. The public /media/{slug}/ permalink is
+	 * intentionally NOT exposed — DM media must only be reachable via the signed
+	 * serve URL.
+	 *
+	 * @param int $media_id  mvs_media post ID.
+	 * @param int $viewer_id User the URLs are signed for (the message viewer).
 	 * @return array|null
 	 */
-	private function get_media_share_data( int $media_id ) {
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+	private function get_media_share_data( int $media_id, int $viewer_id ) {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		if ( ! $repo->exists( $media_id ) ) {
 			return null;
 		}
 
 		$data = array(
-			'id'        => $media_id,
-			'title'     => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ),
-			'permalink' => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ),
-			'type'      => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' ) ?: 'image',
+			'id'    => $media_id,
+			'title' => $repo->get( $media_id, 'title' ),
+			'type'  => $repo->get( $media_id, 'media_type' ) ?: 'image',
 		);
 
-		$msg_su = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-		if ( $msg_su ) {
-			$data['thumbnail'] = $msg_su->generate_thumbnail( $media_id, get_current_user_id() ) ?: '';
+		$su = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		if ( $su ) {
+			$thumb            = $su->generate_thumbnail( $media_id, $viewer_id );
+			$view             = $su->generate( $media_id, $viewer_id );
+			$download         = $su->generate( $media_id, $viewer_id, 0, true );
+			$data['thumbnail']    = is_string( $thumb ) ? $thumb : '';
+			$data['url']          = is_string( $view ) ? $view : '';
+			$data['download_url'] = is_string( $download ) ? $download : '';
 		}
 
 		return $data;

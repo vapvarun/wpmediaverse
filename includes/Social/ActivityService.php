@@ -186,11 +186,15 @@ class ActivityService {
 	 * @param array $file_data File data.
 	 */
 	public function on_upload( int $media_id, array $file_data ): void {
-		// Private media never generates an activity record. The feed already
-		// hides private items at read time; skipping the write keeps DM
-		// attachments (uploaded as private media) entirely out of the activity
-		// stream rather than relying on the read-side gate alone.
-		if ( isset( $file_data['privacy'] ) && 'private' === $file_data['privacy'] ) {
+		// Private and conversation-scoped ('dm') media never generate an activity
+		// record. 'dm' attachments are DM uploads and must stay entirely out of
+		// the activity stream / wall. Resolve the privacy from the upload args,
+		// falling back to the stored value so the gate holds even when callers
+		// omit it from $file_data.
+		$privacy = isset( $file_data['privacy'] )
+			? (string) $file_data['privacy']
+			: (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
+		if ( in_array( $privacy, array( 'private', 'dm' ), true ) ) {
 			return;
 		}
 

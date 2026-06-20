@@ -291,13 +291,23 @@ class UploadService {
 		// and other restricted media must never leave the local server.
 		$allow_user_privacy = (bool) get_option( 'mvs_allow_user_privacy', true );
 		$default_privacy    = (string) get_option( 'mvs_default_privacy', 'public' );
-		if ( $allow_user_privacy && isset( $args['privacy'] ) ) {
-			$privacy = sanitize_text_field( $args['privacy'] );
+		$requested_privacy  = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : '';
+
+		// 'dm' is conversation-scoped media (DM attachments) — a system-level
+		// scope set by the messaging flow, not a user privacy preference. It must
+		// be honoured even when mvs_allow_user_privacy is off; otherwise DM
+		// uploads would be forced to the public default and become viewable by
+		// anyone. It is the most restrictive level (participants + owner only),
+		// so honouring it can never widen access.
+		if ( 'dm' === $requested_privacy ) {
+			$privacy = 'dm';
+		} elseif ( $allow_user_privacy && '' !== $requested_privacy ) {
+			$privacy = $requested_privacy;
 		} else {
 			$privacy = $default_privacy;
 		}
 		// Reject unknown privacy values so a typo or hostile input cannot slip through.
-		if ( ! in_array( $privacy, array( 'public', 'members', 'friends', 'private', 'group', 'custom' ), true ) ) {
+		if ( ! in_array( $privacy, array( 'public', 'members', 'friends', 'private', 'group', 'custom', 'dm' ), true ) ) {
 			$privacy = $default_privacy;
 		}
 
