@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 1.7.1
+Stable tag: 1.8.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -110,17 +110,26 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Changelog ==
 
-= 1.7.1 - June 2026 =
+= 1.8.0 - June 2026 =
 
-Bug fix: the dead BuddyPress-link menu cleanup no longer removes a site owner's working navigation. No database schema change.
+Wbcom-family Integrations page, an image-watermark fix, conversation-scoped DM media, and faster client-side navigation. No database schema change.
 
+* New      - Integrations page lists the Wbcom plugin family with product logos, store links, and a one-click companion installer.
 * New      - REST POST /conversations accepts an as_request flag to open a conversation as a pending message request the recipient accepts or declines, so native apps can start message requests through mvs/v1 alone.
-* Fix      - The BuddyPress component-link cleanup (active only when BuddyPress is inactive) deleted any menu item whose URL contained /members/, /groups/, or /activity/, even when those were live pages owned by another community plugin. It is now off by default and never removes a link that resolves to a real page.
-* Dev      - New filter mvs_strip_dead_bp_links (default false) opts a site back into the cleanup; mvs_dead_bp_link_patterns customizes the matched fragments. The cleanup also bails when mvs_buddynext_active is true.
-* Dev      - MessagingService::find_or_create_conversation() gains a force_request option for first-contact flows (a connection-request note delivered to the recipient as a DM request). New denial_message() helper plus mvs_dm_denial_message filter, and DM-denial REST responses now include a human-readable message beside the error code so clients can show a reason-aware notice.
-* Dev      - New mvs_dm_denial_reason filter lets a boolean mvs_can_send_message integrator report the specific cause (e.g. a privacy preference vs a hard block) instead of a generic "blocked", and a connections_only reason string was added so connection-restricted inboxes read accurately.
-* Fix      - Lightbox Share did nothing (showed "Sharing is not supported") on non-HTTPS sites because the Web Share / async Clipboard APIs are unavailable outside a secure context. It now falls back to a temporary-textarea copy so Share copies the media link on http too.
-* Compat   - Pairs with WPMediaVerse Pro 1.7.1. Install both updates together.
+* Improve  - The Explore lightbox now opens in place instead of stacking over the previous screen.
+* Improve  - Explore and the dashboard share one REST client with document-level event delegation, so Load More and other actions keep working after client-side navigation.
+* Improve  - Dark mode now follows the active BuddyX/Reign theme toggle (data-bx-mode) and uses shared elevation tokens.
+* Fix      - Selecting Watermark Type "Image" now applies the configured logo; the chosen attachment is passed to the watermark renderer instead of being dropped.
+* Fix      - Direct-message attachments are scoped to their conversation so only participants can view them.
+* Fix      - A new message is delivered again after both members had deleted the conversation.
+* Fix      - The BuddyPress component-link cleanup no longer removes live navigation owned by another community plugin; it is off by default and never deletes a link that resolves to a real page.
+* Fix      - Lightbox Share now works on non-HTTPS sites by falling back to a temporary-textarea copy.
+* Fix      - The new-chat search no longer autofocuses on load, which was causing a page scroll-jump.
+* Fix      - Media replace reprocesses variants, custom post type archives render, and settings defaults apply correctly.
+* Fix      - Paginated Explore and member profile pages (page 2 and beyond) now return HTTP 200 instead of a soft 404, so search engines keep them indexed and page caches serve them.
+* Dev      - New filters mvs_strip_dead_bp_links, mvs_dead_bp_link_patterns, mvs_dm_denial_message, and mvs_dm_denial_reason; MessagingService::find_or_create_conversation() gains a force_request option; WatermarkService::get_config() now exposes image_id for the Pro renderer.
+* Dev      - The frontend was refactored onto a shared window.mvsRest client plus a router store and region partials for client-side navigation.
+* Compat   - Pairs with WPMediaVerse Pro 1.8.0. Install both updates together.
 
 = 1.7.0 - June 2026 =
 

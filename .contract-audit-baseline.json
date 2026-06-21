@@ -1,0 +1,62 @@
+{
+    "generated": "2026-06-21",
+    "note": "Hand-triaged for the 1.8.0 release gate (Free+Pro paired run). Each suppression was individually verified; nothing was bulk-baselined. False positives are scanner limits (dynamic hook/key resolution); graceful-gap items read with sane defaults and are tracked as 'add admin field' enhancements, not runtime breaks.",
+    "suppressions": [
+        {
+            "id": "ajax-action-no-handler:mvs_media_upload",
+            "reason": "False positive. 'mvs_media_upload' is a BuddyPress ACTIVITY TYPE string (bp_activity_set_action / activity 'type' + 'action' args in ActivitySyncIntegration), not an admin-ajax action. There is no JS posting it as an AJAX action; no wp_ajax_ handler is required."
+        },
+        {
+            "id": "hook-consumed-never-fired:mvs_cleanup_media_files",
+            "reason": "False positive. Fired via Action Scheduler using the class constant StorageCleanupService::CLEANUP_HOOK (as_enqueue_async_action(self::CLEANUP_HOOK,...)). Static scan only resolves the literal at the add_action site, not the constant at the enqueue site."
+        },
+        {
+            "id": "hook-consumed-never-fired:mvs_daily_streak_check",
+            "reason": "False positive. Fired via Action Scheduler / wp_schedule_single_event using StreakService::AS_DAILY_HOOK (as_schedule_cron_action / as_enqueue_async_action with the constant). Scanner cannot resolve self::AS_DAILY_HOOK to the literal."
+        },
+        {
+            "id": "hook-consumed-never-fired:mvs_autopilot_create_weekly_challenge",
+            "reason": "False positive. Fired via Action Scheduler recurring action using AutopilotService::AS_HOOK (as_schedule_recurring_action(...self::AS_HOOK...)). Scanner cannot resolve the constant at the schedule site."
+        },
+        {
+            "id": "hook-consumed-never-fired:mvs_pro_transcode_video",
+            "reason": "False positive. Scheduled via as_schedule_single_action using TranscodeService::AS_HOOK and bound in Plugin.php with add_action(TranscodeService::AS_HOOK, ...). Scanner cannot resolve the constant to the literal."
+        },
+        {
+            "id": "hook-consumed-never-fired:mvs_pro_transcribe_media",
+            "reason": "False positive. Scheduled via Action Scheduler using TranscriptionService::AS_HOOK and bound in Plugin.php with add_action(TranscriptionService::AS_HOOK, ...). Scanner cannot resolve the constant."
+        },
+        {
+            "id": "user_meta-read-never-written:_mvs_extra_image_credits",
+            "reason": "False positive. Written in QuotaService::add_credits()/deduct_credit() via the interpolated key $meta_key = '_mvs_extra_' . $media_type . '_credits'; update_user_meta($user_id, $meta_key, ...). Scanner matches only literal reads, not the interpolated write."
+        },
+        {
+            "id": "user_meta-read-never-written:_mvs_extra_video_credits",
+            "reason": "False positive. Written via the interpolated key '_mvs_extra_' . $media_type . '_credits' in QuotaService::add_credits()/deduct_credit(). Scanner matches only literal reads."
+        },
+        {
+            "id": "user_meta-read-never-written:_mvs_extra_audio_credits",
+            "reason": "False positive. Written via the interpolated key '_mvs_extra_' . $media_type . '_credits' in QuotaService::add_credits()/deduct_credit(). Scanner matches only literal reads."
+        },
+        {
+            "id": "option-read-never-written:mvs_autopilot_xp_1st",
+            "reason": "Graceful gap (enhancement, not a break). AutopilotService reads with default 200 and the autopilot weekly-challenge feature works on defaults; there is no admin field to override it yet. Tracked as a 'add Autopilot XP settings' enhancement for a later release."
+        },
+        {
+            "id": "option-read-never-written:mvs_autopilot_xp_2nd",
+            "reason": "Graceful gap (enhancement, not a break). Read with default 100; autopilot works on defaults, no admin field yet. Tracked as the same Autopilot XP settings enhancement."
+        },
+        {
+            "id": "option-read-never-written:mvs_autopilot_xp_3rd",
+            "reason": "Graceful gap (enhancement, not a break). Read with default 50; autopilot works on defaults, no admin field yet. Tracked as the same Autopilot XP settings enhancement."
+        },
+        {
+            "id": "option-read-never-written:mvs_autopilot_xp_participation",
+            "reason": "Graceful gap (enhancement, not a break). Read with default 10; autopilot works on defaults, no admin field yet. Tracked as the same Autopilot XP settings enhancement."
+        },
+        {
+            "id": "option-read-never-written:mvs_pro_quota_woo_map",
+            "reason": "Graceful gap (enhancement, not a break). WooCommerce/MemberPress/PMP QuotaAdapters read get_option(self::OPTION_KEY, array()) and degrade to 'no mapping' when unset; the Woo product->quota-package mapping admin writer is not wired yet. Tracked as a 'wire Woo quota-map admin UI' enhancement."
+        }
+    ]
+}

@@ -244,6 +244,26 @@ class TemplateLoader {
 	}
 
 	/**
+	 * Render a full MVS virtual page and stop.
+	 *
+	 * Our virtual pages (explore archive, profile, single media, profile edit)
+	 * render real content, so they must return HTTP 200 even when WordPress's
+	 * main query is empty - e.g. /media/page/2/ where paged > 1 leaves the core
+	 * query with no posts and WP would otherwise emit a soft-404. A soft-404
+	 * deindexes paginated archives and makes page caches / CDNs skip the page.
+	 *
+	 * @param string $template Absolute path to the located template file.
+	 */
+	private function render_template( string $template ): void {
+		status_header( 200 );
+		if ( isset( $GLOBALS['wp_query'] ) && $GLOBALS['wp_query'] instanceof \WP_Query ) {
+			$GLOBALS['wp_query']->is_404 = false;
+		}
+		include $template;
+		exit;
+	}
+
+	/**
 	 * Serve a single media item page.
 	 *
 	 * @param string $slug Media slug (or numeric ID).
@@ -349,8 +369,7 @@ class TemplateLoader {
 
 		$template = self::locate( 'media-single.php' );
 		if ( $template ) {
-			include $template;
-			exit;
+			$this->render_template( $template );
 		}
 	}
 
@@ -370,8 +389,7 @@ class TemplateLoader {
 
 		$template = self::locate( 'explore.php' );
 		if ( $template ) {
-			include $template;
-			exit;
+			$this->render_template( $template );
 		}
 	}
 
@@ -405,8 +423,7 @@ class TemplateLoader {
 			$template = self::locate( 'explore.php' );
 		}
 		if ( $template ) {
-			include $template;
-			exit;
+			$this->render_template( $template );
 		}
 	}
 
@@ -421,8 +438,7 @@ class TemplateLoader {
 
 		$template = self::locate( 'profile-edit.php' );
 		if ( $template ) {
-			include $template;
-			exit;
+			$this->render_template( $template );
 		}
 	}
 

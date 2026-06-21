@@ -6,7 +6,7 @@
 
 | Key | Value |
 |-----|-------|
-| Version | 1.7.1 |
+| Version | 1.8.0 |
 | PHP | >= 7.4 (header), target 8.1+ |
 | WordPress | >= 6.5 |
 | Namespace | `WPMediaVerse\` |
