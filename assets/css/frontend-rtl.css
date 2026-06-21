@@ -63,9 +63,12 @@
     /* Borders & Shadows — BuddyX Pro → BuddyNext → fallback */
     --mvs-border: var(--global-border-color, var(--border, #dcdcde));
     --mvs-border-light: var(--border-soft, #e9e9ea);
-    --mvs-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.10);
-    --mvs-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.14);
-    --mvs-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.18);
+    /* Elevation — BuddyNext-first (soft, layered --bn-shadow-*), with a matching
+       standalone fallback. Shared Wbcom Community-OS standard: components pick a
+       token, never a literal box-shadow, so elevation is uniform across the suite. */
+    --mvs-shadow-sm: var(--bn-shadow-sm, 0 1px 2px rgba(16, 24, 40, 0.04), 0 2px 4px rgba(16, 24, 40, 0.04));
+    --mvs-shadow-md: var(--bn-shadow-md, 0 2px 4px rgba(16, 24, 40, 0.04), 0 8px 16px rgba(16, 24, 40, 0.06));
+    --mvs-shadow-lg: var(--bn-shadow-lg, 0 8px 16px rgba(16, 24, 40, 0.06), 0 24px 48px rgba(16, 24, 40, 0.08));
 
     /* Radii — BuddyNext first, then hardcoded fallback */
     --mvs-radius-sm: var(--r-sm, 6px);
@@ -115,15 +118,16 @@
 }
 
 /* Dark mode: theme-controlled only (no prefers-color-scheme).
-   Supports every dark signal our themes emit:
-   - [data-theme="dark"] on <html> (BuddyNext, generic themes)
-   - [data-bx-mode="dark"] on <html> (BuddyX / BuddyX Pro / Reign 8+ —
-     the shared BuddyX Color_Mode_Toggle component)
-   - .dark-mode on <html> or <body> (legacy BuddyX / classic Reign)
-   When the parent theme is active its own --color-* vars cascade through
-   the :root mapping above, so we only set hardcoded values for sites
+   Honors every Wbcom Community-OS dark signal:
+   - [data-theme="dark"] on <html> (generic themes)
+   - [data-bn-theme="dark"] on <html> (BuddyNext)
+   - [data-bx-mode="dark"] on <html> (Reign / BuddyX / BuddyX Pro 5.1+)
+   - .dark-mode on <html> or <body> (legacy BuddyX)
+   When a parent theme is active its own --color-* vars cascade through the
+   :root mapping above, so we only set hardcoded values for sites
    without a dark-mode-aware parent theme. */
 [data-theme="dark"],
+[data-bn-theme="dark"],
 [data-bx-mode="dark"],
 html.dark-mode,
 body.dark-mode {
@@ -146,15 +150,23 @@ body.dark-mode {
     --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.18);
 }
 
+[data-theme="dark"] .mvs-album-badge,
+[data-bn-theme="dark"] .mvs-album-badge,
 [data-bx-mode="dark"] .mvs-album-badge,
-[data-bx-mode="dark"] .mvs-album-badge .dashicons,
-[data-bx-mode="dark"] .mvs-grid-item-overlay,
 .dark-mode .mvs-album-badge,
+[data-theme="dark"] .mvs-album-badge .dashicons,
+[data-bn-theme="dark"] .mvs-album-badge .dashicons,
+[data-bx-mode="dark"] .mvs-album-badge .dashicons,
 .dark-mode .mvs-album-badge .dashicons,
+[data-theme="dark"] .mvs-grid-item-overlay,
+[data-bn-theme="dark"] .mvs-grid-item-overlay,
+[data-bx-mode="dark"] .mvs-grid-item-overlay,
 .dark-mode .mvs-grid-item-overlay {
     color: var(--mvs-text);
 }
 
+[data-theme="dark"] .mvs-empty-state .dashicons,
+[data-bn-theme="dark"] .mvs-empty-state .dashicons,
 [data-bx-mode="dark"] .mvs-empty-state .dashicons,
 .dark-mode .mvs-empty-state .dashicons {
     color: var(--mvs-text-muted, #6c7781);
@@ -884,6 +896,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-explore-header h1 {
     margin: 0;
     font-size: 1.75em;
+    color: var(--mvs-text);
 }
 
 /* ==========================================================================

@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'wbcomdesigns/wpmediaverse',
-        'pretty_version' => '1.7.0.x-dev',
-        'version' => '1.7.0.9999999-dev',
-        'reference' => 'ca229266ba95c2d312f08a1f7e72c16d143aa940',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => '9e63a6f8b5b6e633b0e07c5a464985a8e79d9977',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -346,9 +346,9 @@
             'dev_requirement' => true,
         ),
         'wbcomdesigns/wpmediaverse' => array(
-            'pretty_version' => '1.7.0.x-dev',
-            'version' => '1.7.0.9999999-dev',
-            'reference' => 'ca229266ba95c2d312f08a1f7e72c16d143aa940',
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '9e63a6f8b5b6e633b0e07c5a464985a8e79d9977',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
