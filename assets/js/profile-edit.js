@@ -71,24 +71,19 @@ const { actions } = store( 'mvs/profile-edit', {
 			ctx.errorMessage = '';
 
 			try {
-				const res = yield fetch( ctx.restUrl + 'me/profile', {
+				const res = yield window.mvsRest.restFetch( ctx.restUrl + 'me/profile', {
 					method: 'PUT',
-					credentials: 'same-origin',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': ctx.nonce,
-					},
-					body: JSON.stringify( {
+					body: {
 						first_name: ctx.firstName,
 						last_name: ctx.lastName,
 						display_name: ctx.displayName,
 						description: ctx.bio,
 						dm_access: ctx.dmAccess,
 						online_status: ctx.onlineStatus,
-					} ),
+					},
 				} );
 
-				const data = yield res.json();
+				const data = res.data;
 
 				if ( ! res.ok ) {
 					const msg = data.message || 'Failed to save profile.';
@@ -141,16 +136,12 @@ const { actions } = store( 'mvs/profile-edit', {
 				const formData = new FormData();
 				formData.append( 'avatar', file );
 
-				const res = yield fetch( ctx.restUrl + 'me/avatar', {
+				const res = yield window.mvsRest.restFetch( ctx.restUrl + 'me/avatar', {
 					method: 'POST',
-					credentials: 'same-origin',
-					headers: {
-						'X-WP-Nonce': ctx.nonce,
-					},
 					body: formData,
 				} );
 
-				const data = yield res.json();
+				const data = res.data;
 
 				if ( ! res.ok ) {
 					const msg = data.message || 'Failed to upload avatar.';
@@ -183,15 +174,11 @@ const { actions } = store( 'mvs/profile-edit', {
 			ctx.errorMessage = '';
 
 			try {
-				const res = yield fetch( ctx.restUrl + 'me/avatar', {
+				const res = yield window.mvsRest.restFetch( ctx.restUrl + 'me/avatar', {
 					method: 'DELETE',
-					credentials: 'same-origin',
-					headers: {
-						'X-WP-Nonce': ctx.nonce,
-					},
 				} );
 
-				const data = yield res.json();
+				const data = res.data;
 
 				if ( ! res.ok ) {
 					const msg = data.message || 'Failed to remove avatar.';

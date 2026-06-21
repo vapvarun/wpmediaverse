@@ -46,24 +46,14 @@
 	}
 
 	function apiDelete( path ) {
-		return fetch( cfg.restUrl + path, {
+		return window.mvsRest.restFetch( cfg.restUrl + path, {
 			method: 'DELETE',
-			credentials: 'include',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-WP-Nonce': cfg.nonce,
-			},
 		} ).then( function ( res ) {
 			if ( res.status === 204 || res.ok ) {
 				return { ok: true };
 			}
-			return res.json().then( function ( body ) {
-				return { ok: false, error: body && body.message ? body.message : 'Delete failed.' };
-			}, function () {
-				return { ok: false, error: 'Delete failed.' };
-			} );
-		}, function () {
-			return { ok: false, error: 'Network error.' };
+			var body = res.data;
+			return { ok: false, error: body && body.message ? body.message : 'Delete failed.' };
 		} );
 	}
 

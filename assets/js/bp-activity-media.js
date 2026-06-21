@@ -236,31 +236,28 @@
 				}
 			}
 
-			return fetch( restUrl + 'media?context=activity', {
+			return window.mvsRest.restFetch( restUrl + 'media?context=activity', {
 				method: 'POST',
-				headers: { 'X-WP-Nonce': nonce },
-				credentials: 'same-origin',
 				body: fd
 			} ).then( function( r ) {
-				return r.json().catch( function() { return {}; } ).then( function( data ) {
-					// fetch() does NOT reject on HTTP 4xx/5xx, so an unsupported
-					// type (PDF/document) comes back as a 400 with a WP_Error body
-					// that has no `id`. Pre-1.6.0 the handler only checked data.id,
-					// so the upload failed SILENTLY with no notice. Throw the
-					// server's message so the catch below shows it to the user
-					// (audit 2026-06-04, #9962548621).
-					if ( ! r.ok || ! data || ! data.id ) {
-						throw new Error(
-							( data && data.message )
-								? data.message
-								: __( 'Upload failed. Please try again.', 'wpmediaverse' )
-						);
-					}
-					attachedMedia.push( {
-						id:        data.id,
-						thumbUrl:  localThumb || data.thumbnail_url || '',
-						mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
-					} );
+				var data = r.data || {};
+				// restFetch does NOT throw on HTTP 4xx/5xx, so an unsupported
+				// type (PDF/document) comes back as a 400 with a WP_Error body
+				// that has no `id`. Pre-1.6.0 the handler only checked data.id,
+				// so the upload failed SILENTLY with no notice. Throw the
+				// server's message so the catch below shows it to the user
+				// (audit 2026-06-04, #9962548621).
+				if ( ! r.ok || ! data || ! data.id ) {
+					throw new Error(
+						( data && data.message )
+							? data.message
+							: __( 'Upload failed. Please try again.', 'wpmediaverse' )
+					);
+				}
+				attachedMedia.push( {
+					id:        data.id,
+					thumbUrl:  localThumb || data.thumbnail_url || '',
+					mediaType: data.media_type || ( isVideo ? 'video' : isAudio ? 'audio' : 'image' )
 				} );
 			} );
 		} );
@@ -571,13 +568,11 @@
 				payload.group_id = parseInt( groupIdEl.value, 10 );
 			}
 
-			fetch( restUrl + 'albums', {
+			window.mvsRest.restFetch( restUrl + 'albums', {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
-				credentials: 'same-origin',
-				body: JSON.stringify( payload )
+				body: payload,
 			} )
-			.then( function( r ) { return r.json(); } )
+			.then( function( r ) { return r.data; } )
 			.then( function( data ) {
 				saveBtn.disabled = false;
 				saveBtn.textContent = __( 'Create', 'wpmediaverse' );
@@ -610,27 +605,21 @@
 
 	// ── REST API helpers (shared by lightbox driver) ──
 	function apiGet( path ) {
-		return fetch( restUrl + path, {
-			credentials: 'same-origin',
-			headers: { 'X-WP-Nonce': nonce }
-		} ).then( function( r ) { return r.json(); } );
+		return window.mvsRest.restFetch( restUrl + path )
+			.then( function( r ) { return r.data; } );
 	}
 
 	function apiPost( path, body ) {
-		return fetch( restUrl + path, {
+		return window.mvsRest.restFetch( restUrl + path, {
 			method: 'POST',
-			credentials: 'same-origin',
-			headers: { 'X-WP-Nonce': nonce, 'Content-Type': 'application/json' },
-			body: JSON.stringify( body || {} )
-		} ).then( function( r ) { return r.json(); } );
+			body: body || {},
+		} ).then( function( r ) { return r.data; } );
 	}
 
 	function apiDelete( path ) {
-		return fetch( restUrl + path, {
+		return window.mvsRest.restFetch( restUrl + path, {
 			method: 'DELETE',
-			credentials: 'same-origin',
-			headers: { 'X-WP-Nonce': nonce }
-		} ).then( function( r ) { return r.json(); } );
+		} ).then( function( r ) { return r.data; } );
 	}
 
 	// ── Shared-UI Lightbox Driver for BuddyPress Pages ──────────────
@@ -785,10 +774,8 @@
 				loadSharedFavorite( overlay, mediaId );
 
 				// Record view.
-				fetch( restUrl + 'media/' + mediaId + '/view', {
+				window.mvsRest.restFetch( restUrl + 'media/' + mediaId + '/view', {
 					method: 'POST',
-					headers: { 'X-WP-Nonce': nonce },
-					credentials: 'same-origin'
 				} );
 			} ).catch( function() {
 				closeSharedLightbox();
@@ -967,10 +954,8 @@
 				loadSharedStats( overlay, item.mediaId );
 				loadSharedFavorite( overlay, item.mediaId );
 
-				fetch( restUrl + 'media/' + item.mediaId + '/view', {
+				window.mvsRest.restFetch( restUrl + 'media/' + item.mediaId + '/view', {
 					method: 'POST',
-					headers: { 'X-WP-Nonce': nonce },
-					credentials: 'same-origin'
 				} );
 			} );
 		}

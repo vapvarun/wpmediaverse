@@ -15,6 +15,8 @@ get_header();
 
 do_action( 'mvs_before_content' );
 
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+
 // Archive URL (base media page).
 $mvs_archive_url = home_url( '/media/' );
 ?>
@@ -517,6 +519,12 @@ $mvs_archive_url = home_url( '/media/' );
 	?>
 </div>
 <?php
+// Close the router region here — the visible content ends with the
+// .mvs-explore-page div above. Everything below (script enqueues, the
+// mvs_after_content hook, profile-actions enqueue) emits no markup, so it
+// belongs outside the swappable region, consistent with the other templates.
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+
 // Enqueue Interactivity API stores.
 wp_enqueue_script_module(
 	'@mvs/explore-view',

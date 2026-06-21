@@ -84,7 +84,8 @@ check_unauthenticated_rest_allowlist() {
         # No allowlist defined — only flag if there are any __return_true uses.
         local hits
         hits=$(grep -rEn "['\"]__return_true['\"]" "$PLUGIN_DIR/includes/" 2>/dev/null \
-                | grep -vE "/tests/|class-abilities\\.php" || true)
+                | grep -vE "/tests/|class-abilities\\.php" \
+                | grep -vE ':[0-9]+:[[:space:]]*(//|#|\*)' || true)
         if [ -n "$hits" ]; then
             violation "Rule 2 — __return_true permission_callback found, no allowlist defined yet:"
             echo "$hits" | sed 's/^/    /'
@@ -102,6 +103,7 @@ check_unauthenticated_rest_allowlist() {
     local hits
     hits=$(grep -rEn "['\"]__return_true['\"]" "$PLUGIN_DIR/includes/" 2>/dev/null \
             | grep -vE "$exclude_pattern" \
+            | grep -vE ':[0-9]+:[[:space:]]*(//|#|\*)' \
             || true)
 
     if [ -n "$hits" ]; then

@@ -13,6 +13,8 @@ defined( 'ABSPATH' ) || exit;
 get_header();
 
 do_action( 'mvs_before_content' );
+
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 ?>
 <div class="mvs-single-collection">
 	<?php
@@ -162,6 +164,9 @@ do_action( 'mvs_before_content' );
 <?php wp_enqueue_script( 'mvs-collection-filter' ); ?>
 <?php
 wp_enqueue_style( 'mvs-frontend' );
+
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+
 do_action( 'mvs_after_content' );
 
 get_footer();

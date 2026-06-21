@@ -6,22 +6,28 @@
  * Appends cards built by window.mvsCardBuilders[layout].
  * Maintains window.mvsGridRegistry for lightbox prev/next.
  *
+ * Nav-safe by DOCUMENT-LEVEL DELEGATION: both the grid lightbox click and the
+ * Load More click are bound once on `document`, so they survive client-side
+ * region swaps with zero re-wiring. An earlier version re-wired per-element on
+ * `mvs:navigated` guarded by a `data-mvs-wired` attribute — but the iAPI router
+ * morphs/reuses region nodes, leaving that attribute and the click listener in
+ * an inconsistent state (race: sometimes the swapped button was left dead,
+ * sometimes double-bound). Delegation removes the element-identity dependency
+ * entirely. Per-button state (page cursor, loading) lives on the button's own
+ * dataset/class so a freshly-swapped button starts clean from its server values.
+ *
  * @package WPMediaVerse
  */
 
 ( function () {
 	'use strict';
 
-	var gridContainer = document.querySelector( '[data-mvs-grid-container]' );
-	var loadMoreBtn = document.querySelector( '.mvs-load-more-btn' );
-	var loadMoreWrap = loadMoreBtn ? loadMoreBtn.closest( '.mvs-load-more' ) : null;
-	var endMessage = document.querySelector( '.mvs-load-more-end' );
-
-	if ( ! gridContainer ) return;
-
-	// --- Registry: flat array of all visible media IDs ---
-
-	function rebuildRegistry() {
+	// Rebuild the flat media-id registry the lightbox uses for prev/next from
+	// whatever grid container is on the page right now (current or swapped-in).
+	function rebuildRegistry( gridContainer ) {
+		if ( ! gridContainer ) {
+			return;
+		}
 		var ids = [];
 		gridContainer.querySelectorAll( '[data-media-id]' ).forEach( function ( el ) {
 			var id = parseInt( el.dataset.mediaId, 10 );
@@ -32,21 +38,30 @@
 		window.mvsGridRegistry = ids;
 	}
 
-	// Build initial registry from server-rendered items.
-	rebuildRegistry();
+	// --- Delegated lightbox open: any [data-media-id] click inside a grid. ---
+	document.addEventListener( 'click', function ( e ) {
+		// If the IAPI navigate action on #mvs-app already claimed this click
+		// (client-nav is enabled and the link targets an internal route), it will
+		// have called event.preventDefault() before bubbling reaches document.
+		// Stand down — the page is already navigating; opening the lightbox on
+		// top of a navigation would stack the overlay on the wrong page.
+		if ( e.defaultPrevented ) {
+			return;
+		}
 
-	// --- Delegated click handler: any [data-media-id] click opens lightbox ---
-
-	gridContainer.addEventListener( 'click', function ( e ) {
 		var card = e.target.closest( '[data-media-id]' );
-		if ( ! card ) return;
+		if ( ! card ) {
+			return;
+		}
+		var gridContainer = card.closest( '[data-mvs-grid-container]' );
+		if ( ! gridContainer ) {
+			return;
+		}
 
-		// Don't intercept clicks on links that should navigate (author links, etc.)
-		// Only intercept clicks on the card itself or its primary media link.
+		// Don't intercept clicks on links that should navigate (author links,
+		// etc.). Only intercept the card itself or its primary media link.
 		var clickedLink = e.target.closest( 'a' );
 		if ( clickedLink && clickedLink !== card ) {
-			// Check if this is a media link (grid-item-link, flickr-item__link, dribbble-card__image)
-			// or a navigation link (author link, etc.)
 			var mediaLinkClasses = [
 				'mvs-grid-item-link',
 				'mvs-flickr-item__link',
@@ -56,51 +71,76 @@
 				return clickedLink.classList.contains( cls );
 			} );
 			if ( ! isMediaLink ) {
-				// This is an author link or other navigation — let it through.
-				return;
+				return; // author / navigation link — let it through.
 			}
 		}
 
 		e.preventDefault();
 
 		var mediaId = parseInt( card.dataset.mediaId, 10 );
-		if ( ! mediaId ) return;
+		if ( ! mediaId ) {
+			return;
+		}
 
-		// Bridge to Interactivity API lightbox via global function exposed by shared-ui store.
+		// Registry reflects the CURRENT grid (handles appended + swapped items).
+		rebuildRegistry( gridContainer );
+
+		// Bridge to the Interactivity API lightbox via the global exposed by the
+		// shared-ui store.
 		if ( window.mvsOpenLightbox ) {
 			window.mvsOpenLightbox( mediaId );
 		}
 	} );
 
-	// --- Load More button handler ---
+	// --- Delegated Load More: any .mvs-load-more-btn click. ---
+	document.addEventListener( 'click', function ( e ) {
+		var loadMoreBtn = e.target.closest( '.mvs-load-more-btn' );
+		if ( ! loadMoreBtn ) {
+			return;
+		}
+		if ( loadMoreBtn.classList.contains( 'is-loading' ) ) {
+			return;
+		}
 
-	if ( ! loadMoreBtn ) return;
+		var loadMoreWrap = loadMoreBtn.closest( '.mvs-load-more' );
+		var endMessage   = document.querySelector( '.mvs-load-more-end' );
 
-	var config = {
-		restUrl: loadMoreBtn.dataset.restUrl || '/wp-json/mvs/v1/',
-		nonce: loadMoreBtn.dataset.nonce || '',
-		page: parseInt( loadMoreBtn.dataset.page, 10 ) || 1,
-		perPage: parseInt( loadMoreBtn.dataset.perPage, 10 ) || 12,
-		endpoint: loadMoreBtn.dataset.endpoint || 'media',
-		layout: loadMoreBtn.dataset.layout || 'grid',
-		tag: loadMoreBtn.dataset.tag || '',
-		category: loadMoreBtn.dataset.category || '',
-		search: loadMoreBtn.dataset.search || '',
-		scope: loadMoreBtn.dataset.scope || '',
-		author: loadMoreBtn.dataset.author || '',
-		groupCovers: loadMoreBtn.dataset.groupCovers === 'true',
-	};
-	var loading = false;
+		var config = {
+			restUrl: loadMoreBtn.dataset.restUrl || '/wp-json/mvs/v1/',
+			perPage: parseInt( loadMoreBtn.dataset.perPage, 10 ) || 12,
+			endpoint: loadMoreBtn.dataset.endpoint || 'media',
+			layout: loadMoreBtn.dataset.layout || 'grid',
+			tag: loadMoreBtn.dataset.tag || '',
+			category: loadMoreBtn.dataset.category || '',
+			search: loadMoreBtn.dataset.search || '',
+			scope: loadMoreBtn.dataset.scope || '',
+			author: loadMoreBtn.dataset.author || '',
+			groupCovers: loadMoreBtn.dataset.groupCovers === 'true',
+		};
 
-	loadMoreBtn.addEventListener( 'click', function () {
-		if ( loading ) return;
-		loading = true;
-		config.page += 1;
+		// Page cursor lives on the button's dataset so it persists across clicks
+		// AND a freshly-swapped button (which carries only its server data-page)
+		// resumes correctly. dataset.currentPage tracks our running position.
+		var page = parseInt( loadMoreBtn.dataset.currentPage || loadMoreBtn.dataset.page, 10 ) || 1;
+		page += 1;
+		loadMoreBtn.dataset.currentPage = String( page );
 
 		loadMoreBtn.classList.add( 'is-loading' );
 
+		function showEnd() {
+			if ( loadMoreWrap ) {
+				loadMoreWrap.style.display = 'none';
+			}
+			if ( endMessage ) {
+				endMessage.removeAttribute( 'hidden' );
+			}
+			loadMoreBtn.classList.remove( 'is-loading' );
+		}
+
+		var gridContainer = document.querySelector( '[data-mvs-grid-container]' );
+
 		var url = new URL( config.restUrl + config.endpoint, window.location.origin );
-		url.searchParams.set( 'page', config.page );
+		url.searchParams.set( 'page', page );
 		url.searchParams.set( 'per_page', config.perPage );
 		if ( config.tag ) url.searchParams.set( 'tag', config.tag );
 		if ( config.category ) url.searchParams.set( 'category', config.category );
@@ -109,21 +149,13 @@
 		if ( config.author ) url.searchParams.set( 'author', config.author );
 		if ( config.groupCovers ) url.searchParams.set( 'group_covers', '1' );
 
-		var headers = {};
-		if ( config.nonce ) {
-			headers[ 'X-WP-Nonce' ] = config.nonce;
-		}
-
-		fetch( url.toString(), {
-			credentials: 'same-origin',
-			headers: headers,
-		} )
+		window.mvsRest.restFetch( url.toString() )
 			.then( function ( response ) {
 				if ( ! response.ok ) {
 					showEnd();
 					return [];
 				}
-				return response.json();
+				return response.data;
 			} )
 			.then( function ( items ) {
 				if ( ! items || ! items.length ) {
@@ -136,7 +168,7 @@
 					builder = window.mvsCardBuilders && window.mvsCardBuilders.grid;
 				}
 
-				if ( builder ) {
+				if ( builder && gridContainer ) {
 					items.forEach( function ( item ) {
 						var node = builder( item, gridContainer );
 						if ( node ) {
@@ -145,29 +177,22 @@
 					} );
 				}
 
-				// Re-render any Lucide placeholders added by builder (i[data-lucide]).
+				// Re-render any Lucide placeholders the builder added.
 				if ( window.lucide && typeof window.lucide.createIcons === 'function' ) {
 					window.lucide.createIcons();
 				}
 
-				rebuildRegistry();
+				// Keep the lightbox prev/next registry current.
+				rebuildRegistry( gridContainer );
 
 				if ( items.length < config.perPage ) {
 					showEnd();
 				}
 
-				loading = false;
 				loadMoreBtn.classList.remove( 'is-loading' );
 			} )
 			.catch( function () {
 				showEnd();
 			} );
 	} );
-
-	function showEnd() {
-		loading = false;
-		if ( loadMoreWrap ) loadMoreWrap.style.display = 'none';
-		if ( endMessage ) endMessage.removeAttribute( 'hidden' );
-		loadMoreBtn.classList.remove( 'is-loading' );
-	}
-} )();
+}() );

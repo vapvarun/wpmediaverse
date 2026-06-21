@@ -2,42 +2,60 @@
  * Collection page — client-side title filter for the collection grid.
  * Extracted from the inline <script> in templates/collection.php.
  *
+ * Nav-safe by DOCUMENT-LEVEL DELEGATION: input, click (search button), and
+ * submit events are bound once on `document` at module eval time — immune to
+ * iAPI router DOM morphs and region swaps. Grid items are re-queried from the
+ * current DOM on EVERY keystroke (stateless), which also fixes the stale-
+ * NodeList bug from the previous init() closure that captured items once at
+ * wire time and never refreshed after load-more appended new cards.
+ *
  * @package WPMediaVerse
  */
 ( function () {
 	'use strict';
 
-	var input = document.querySelector( '.mvs-collection-search-input' );
-	if ( ! input ) {
-		return;
-	}
-	var grid = document.querySelector( '.mvs-collection-article .mvs-media-grid' );
-	if ( ! grid ) {
-		return;
-	}
-	var items = grid.querySelectorAll( '.mvs-grid-item' );
-
-	function filterItems() {
+	// Filter items re-queried live each call — no stale NodeList.
+	function filterItems( input ) {
+		var grid = document.querySelector( '.mvs-collection-article .mvs-media-grid' );
+		if ( ! grid || ! input ) {
+			return;
+		}
 		var q = input.value.toLowerCase().trim();
-		items.forEach( function ( item ) {
+		grid.querySelectorAll( '.mvs-grid-item' ).forEach( function ( item ) {
 			var title = ( item.getAttribute( 'data-title' ) || '' ).toLowerCase();
 			item.style.display = ( ! q || title.indexOf( q ) !== -1 ) ? '' : 'none';
 		} );
 	}
 
-	input.addEventListener( 'input', filterItems );
-	var btn = document.querySelector( '.mvs-collection-search-btn' );
-	if ( btn ) {
-		btn.addEventListener( 'click', filterItems );
-	}
+	// --- Delegated input: .mvs-collection-search-input typing. ---
+	document.addEventListener( 'input', function ( e ) {
+		var input = e.target.closest( '.mvs-collection-search-input' );
+		if ( ! input ) {
+			return;
+		}
+		filterItems( input );
+	} );
 
-	// The search is client-side only; block the form from navigating on Enter
-	// (replaces the inline onsubmit="return false").
-	var form = input.closest( 'form' );
-	if ( form ) {
-		form.addEventListener( 'submit', function ( e ) {
-			e.preventDefault();
-			filterItems();
-		} );
-	}
-} )();
+	// --- Delegated click: .mvs-collection-search-btn button. ---
+	document.addEventListener( 'click', function ( e ) {
+		var btn = e.target.closest( '.mvs-collection-search-btn' );
+		if ( ! btn ) {
+			return;
+		}
+		var form = btn.closest( 'form' );
+		var input = form ? form.querySelector( '.mvs-collection-search-input' ) : document.querySelector( '.mvs-collection-search-input' );
+		filterItems( input );
+	} );
+
+	// --- Delegated submit: block form navigation on Enter key. ---
+	document.addEventListener( 'submit', function ( e ) {
+		var form = e.target;
+		var input = form.querySelector( '.mvs-collection-search-input' );
+		if ( ! input ) {
+			return;
+		}
+		// This form is client-side only; prevent page navigation.
+		e.preventDefault();
+		filterItems( input );
+	} );
+}() );

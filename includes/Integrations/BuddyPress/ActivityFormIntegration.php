@@ -145,7 +145,7 @@ class ActivityFormIntegration {
 		wp_enqueue_script(
 			'mvs-bp-activity-media',
 			MVS_PLUGIN_URL . 'assets/js/bp-activity-media.js',
-			array( 'jquery', 'mvs-lucide', 'wp-i18n' ),
+			array( 'mvs-rest', 'jquery', 'mvs-lucide', 'wp-i18n' ),
 			filemtime( $js_path ),
 			array(
 				'in_footer' => true,

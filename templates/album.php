@@ -16,6 +16,8 @@ get_header();
 
 do_action( 'mvs_before_content' );
 
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+
 // Archive URL (base media page).
 $mvs_archive_url = home_url( '/media/' );
 ?>
@@ -35,6 +37,7 @@ $mvs_archive_url = home_url( '/media/' );
 			status_header( 404 );
 			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Album not found.', 'wpmediaverse' ) . '</p></div>';
 			echo '</div>';
+			include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 			do_action( 'mvs_after_content' );
 			get_footer();
 			return;
@@ -415,15 +418,9 @@ if ( is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_us
 	);
 endif;
 
-// Shared UI: Toast + Confirm Dialog (required for delete action).
+// Shared UI: Confirm Dialog (required for delete action).
+// Toast is provided globally by shared-ui-frame.php in wp_footer.
 ?>
-<div class="mvs-toast" hidden
-	data-wp-interactive="mvs/shared-ui"
-	data-wp-bind--hidden="!state.toastVisible"
-	data-wp-text="state.toastMessage"
-	data-wp-class--mvs-toast--success="state.isToastSuccess"
-	data-wp-class--mvs-toast--error="state.isToastError"></div>
-
 <div class="mvs-confirm-overlay" hidden
 	data-wp-interactive="mvs/shared-ui"
 	data-wp-bind--hidden="!state.confirmVisible">
@@ -438,6 +435,8 @@ endif;
 	</div>
 </div>
 <?php
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+
 do_action( 'mvs_after_content' );
 
 get_footer();

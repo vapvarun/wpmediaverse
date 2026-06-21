@@ -351,7 +351,7 @@ class CloudOps {
 			// filtered pattern list is always non-empty.
 			$patterns = array_values( array_unique( array_filter( $svc['patterns'] ) ) );
 			$clauses  = array();
-			$params  = array();
+			$params   = array();
 			foreach ( $patterns as $p ) {
 				$clauses[] = 'file_url LIKE %s';
 				$params[]  = $like( $p );

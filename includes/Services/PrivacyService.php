@@ -93,6 +93,22 @@ class PrivacyService {
 			return (bool) $filtered;
 		}
 
+		// DM grant: media shared into a direct-message conversation must be
+		// viewable by that conversation's participants regardless of the media's
+		// own privacy — otherwise the recipient's thumbnail AND download both
+		// fail ("We couldn't find that media"). Consulted only for restrictive
+		// levels (public/members/loggedin already resolve below) and only when
+		// the messaging engine is loaded. Owner/admin were granted earlier.
+		if ( $user_id > 0 && in_array( $privacy, array( 'private', 'dm', 'friends', 'group', 'custom' ), true ) ) {
+			$container = \WPMediaVerse\Core\Plugin::container();
+			if ( $container->has( 'messaging' ) ) {
+				$messaging = $container->get( 'messaging' );
+				if ( method_exists( $messaging, 'user_received_media' ) && $messaging->user_received_media( $user_id, $media_id ) ) {
+					return true;
+				}
+			}
+		}
+
 		switch ( $privacy ) {
 			case 'public':
 				return true;
@@ -109,6 +125,13 @@ class PrivacyService {
 
 			case 'private':
 				// Owner/admin already handled above.
+				return false;
+
+			case 'dm':
+				// Conversation-scoped media (DM attachments). Owner/admin were
+				// granted above; the DM grant above admits the conversation's
+				// participants. Everyone else is denied — these never appear on
+				// any public surface, activity feed, or wall.
 				return false;
 
 			case 'custom':

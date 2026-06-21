@@ -50,3 +50,6 @@ audit/journey-runs/
 playwright-report/
 test-results/
 .playwright-mcp/
+
+# Transient pre-release smoke debug-log archives (evidence only, not shipped)
+qa/.debug-log-*.txt

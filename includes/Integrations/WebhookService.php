@@ -50,6 +50,11 @@ class WebhookService {
 	 * @param int $media_id Media post ID.
 	 */
 	public function on_media_uploaded( int $media_id ): void {
+		// Conversation-scoped ('dm') attachments are private DM content and must
+		// never be dispatched to external webhooks.
+		if ( 'dm' === (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' ) ) {
+			return;
+		}
 		$this->dispatch( 'media.uploaded', $this->build_media_payload( $media_id ) );
 	}
 

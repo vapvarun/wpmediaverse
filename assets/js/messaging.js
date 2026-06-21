@@ -22,19 +22,11 @@ const TRANSPORT = config.transport || { type: 'polling', intervals: { active: 30
 // Helper: REST fetch with auth.
 async function apiFetch( path, options = {} ) {
 	const url = path.startsWith( 'http' ) ? path : REST + path;
-	const res = await fetch( url, {
-		credentials: 'same-origin',
-		...options,
-		headers: {
-			'Content-Type': 'application/json',
-			'X-WP-Nonce': NONCE,
-			...( options.headers || {} ),
-		},
-	} );
+	const res = await window.mvsRest.restFetch( url, options );
 
 	if ( res.status === 204 ) return null;
-	const data = await res.json();
-	if ( ! res.ok ) throw new Error( data.error || data.message || __( 'Request failed', 'wpmediaverse' ) );
+	const data = res.data;
+	if ( ! res.ok ) throw new Error( ( data && ( data.error || data.message ) ) || __( 'Request failed', 'wpmediaverse' ) );
 	return data;
 }
 
@@ -86,6 +78,13 @@ function messagePreview( msg ) {
 // updated_at to scope "unsent since last poll"), so without this the client
 // would re-render and reload the sidebar on every poll tick.
 const seenUnsendIds = new Set();
+
+// onInit idempotency guards.
+// openConversationBound: ensures the mvs-open-conversation listener is added at
+// most once across the page lifetime (the slide-out persists in wp_footer and
+// its store is never re-mounted, but onInit can be called again by the
+// Interactivity API on partial hydration).
+let openConversationBound = false;
 
 // Enrich message with pre-computed boolean flags for Interactivity API directives.
 function enrichMessage( msg ) {
@@ -369,6 +368,16 @@ const { state, actions } = store( 'mvs/messaging', {
 			state.chatView = 'new';
 			state.searchQuery = '';
 			state.searchResults = [];
+			// Focus the recipient search once the 'new' view renders. Replaces
+			// the input's autofocus attribute, which fired on every page load
+			// (the chat panel ships in the DOM site-wide) and scrolled the page
+			// down to the still-hidden panel before hydration.
+			setTimeout( () => {
+				const input = document.querySelector( '.mvs-chat-search__input' );
+				if ( input ) {
+					input.focus();
+				}
+			}, 50 );
 		},
 
 		// ---- Tabs ----
@@ -763,15 +772,13 @@ const { state, actions } = store( 'mvs/messaging', {
 			formData.append( 'file', file );
 
 			try {
-				const res = yield fetch( REST + '/messages/upload', {
+				const res = yield window.mvsRest.restFetch( REST + '/messages/upload', {
 					method: 'POST',
-					credentials: 'same-origin',
-					headers: { 'X-WP-Nonce': NONCE },
 					body: formData,
 				} );
-				const data = yield res.json();
+				const data = res.data;
 
-				if ( ! res.ok ) throw new Error( data.message || __( 'Upload failed', 'wpmediaverse' ) );
+				if ( ! res.ok ) throw new Error( ( data && data.message ) || __( 'Upload failed', 'wpmediaverse' ) );
 
 				state.selectedAttachment = {
 					id: data.id,
@@ -870,14 +877,12 @@ const { state, actions } = store( 'mvs/messaging', {
 			formData.append( 'file', file );
 
 			try {
-				const res = yield fetch( REST + '/messages/upload', {
+				const res = yield window.mvsRest.restFetch( REST + '/messages/upload', {
 					method: 'POST',
-					credentials: 'same-origin',
-					headers: { 'X-WP-Nonce': NONCE },
 					body: formData,
 				} );
-				const data = yield res.json();
-				if ( ! res.ok ) throw new Error( data.message || __( 'Upload failed', 'wpmediaverse' ) );
+				const data = res.data;
+				if ( ! res.ok ) throw new Error( ( data && data.message ) || __( 'Upload failed', 'wpmediaverse' ) );
 
 				// Send message.
 				const msg = yield apiFetch(
@@ -1342,19 +1347,25 @@ const { state, actions } = store( 'mvs/messaging', {
 			}
 
 			// Listen for message-user events from non-Interactivity templates.
-			document.addEventListener( 'mvs-open-conversation', ( e ) => {
-				if ( e.detail?.userId ) {
-					actions.openWithRecipient( e.detail.userId );
-				} else if ( e.detail?.conversationId ) {
-					state.chatPanelOpen = true;
-					state.activeConversationId = e.detail.conversationId;
-					state.chatView = 'conversation';
-					state.messages = [];
-					state.hasMoreMessages = true;
-					actions.loadMessages();
-					actions.startPolling();
-				}
-			} );
+			// Guard: bind at most once per page — the slide-out lives in wp_footer
+			// and persists across client-side navigations, so re-running onInit
+			// must not stack duplicate listeners.
+			if ( ! openConversationBound ) {
+				openConversationBound = true;
+				document.addEventListener( 'mvs-open-conversation', ( e ) => {
+					if ( e.detail?.userId ) {
+						actions.openWithRecipient( e.detail.userId );
+					} else if ( e.detail?.conversationId ) {
+						state.chatPanelOpen = true;
+						state.activeConversationId = e.detail.conversationId;
+						state.chatView = 'conversation';
+						state.messages = [];
+						state.hasMoreMessages = true;
+						actions.loadMessages();
+						actions.startPolling();
+					}
+				} );
+			}
 
 			// Full /messages/ page: auto-load conversations and start polling.
 			if ( document.querySelector( '.mvs-messages-page' ) ) {
@@ -1364,8 +1375,28 @@ const { state, actions } = store( 'mvs/messaging', {
 			}
 
 			// Start background unread polling for all logged-in pages.
+			// Guard: never stack a second timer if one is already running. Without
+			// this guard, a second onInit call (e.g. partial re-hydration) would
+			// launch a duplicate setInterval and double the polling rate.
 			actions.refreshUnreadCount();
-			state.unreadTimer = setInterval( () => actions.refreshUnreadCount(), TRANSPORT.intervals.background );
+			if ( ! state.unreadTimer ) {
+				state.unreadTimer = setInterval( () => actions.refreshUnreadCount(), TRANSPORT.intervals.background );
+			}
+
 		},
 	},
+} );
+
+// Teardown: stop the active chat polling timer on every client-side navigation
+// (mvs:navigated fires after each swap). Registered at module level — NOT inside
+// onInit — so it persists for the page lifetime and fires on EVERY navigation, not
+// just the first. A conversation opened on a later client-nav page (which starts a
+// fresh pollingTimer) is therefore still cleaned up even if the slide-out stays
+// open. The background unreadTimer is intentionally kept alive so the unread badge
+// keeps updating while browsing.
+document.addEventListener( 'mvs:navigated', () => {
+	if ( state.pollingTimer ) {
+		clearInterval( state.pollingTimer );
+		state.pollingTimer = null;
+	}
 } );

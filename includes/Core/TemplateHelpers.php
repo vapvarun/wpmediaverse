@@ -354,7 +354,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		$media_type = $this->get_media_type( $media_id );
 		$thumb_url  = $this->get_thumb_url( $media_id, $size, (int) $args['ttl'], $args['user_id'] );
-		$alt = '' !== (string) $args['alt'] ? (string) $args['alt'] : $this->resolve_alt_text( $media_id );
+		$alt        = '' !== (string) $args['alt'] ? (string) $args['alt'] : $this->resolve_alt_text( $media_id );
 
 		$extra_class = trim( (string) $args['classes'] );
 		$loading     = $args['lazy'] ? ' loading="lazy"' : '';
@@ -376,7 +376,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// cached on first hit, never written to mvs_media_meta and never
 		// pushed to cloud storage. Mirrors the audio waveform pattern.
 		if ( 'video' === $media_type ) {
-			$file_url = \WPMediaVerse\Core\MediaUrl::file( $media_id );
+			$file_url   = \WPMediaVerse\Core\MediaUrl::file( $media_id );
 			$poster_url = '' !== $thumb_url ? $thumb_url : self::default_video_poster_url();
 			if ( $file_url ) {
 				$vid_class   = trim( 'mvs-grid-video-preview ' . $extra_class );
@@ -479,11 +479,11 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			// Two hex digits → 0..255 → normalize to 12..56px (preserves a
 			// floor of presence so bars never disappear, keeps a peak
 			// headroom for visual breathing room at the card edges).
-			$pair    = hexdec( $seed[ ( $i * 2 ) % $len ] . $seed[ ( $i * 2 + 1 ) % $len ] );
-			$bar_h   = 12 + (int) round( $pair / 255 * 44 );
-			$y       = (int) round( ( $height - $bar_h ) / 2 );
-			$x       = (int) round( $i * ( $bar_w + $gap ) );
-			$rects  .= sprintf(
+			$pair   = hexdec( $seed[ ( $i * 2 ) % $len ] . $seed[ ( $i * 2 + 1 ) % $len ] );
+			$bar_h  = 12 + (int) round( $pair / 255 * 44 );
+			$y      = (int) round( ( $height - $bar_h ) / 2 );
+			$x      = (int) round( $i * ( $bar_w + $gap ) );
+			$rects .= sprintf(
 				'<rect x="%d" y="%d" width="%s" height="%d" rx="1" />',
 				$x,
 				$y,

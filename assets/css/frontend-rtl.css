@@ -115,13 +115,16 @@
 }
 
 /* Dark mode: theme-controlled only (no prefers-color-scheme).
-   Supports both signals:
+   Supports every dark signal our themes emit:
    - [data-theme="dark"] on <html> (BuddyNext, generic themes)
-   - .dark-mode on <html> or <body> (BuddyX / BuddyX Pro)
-   When BuddyX is active its own --color-* vars cascade through the
-   :root mapping above, so we only set hardcoded values for sites
+   - [data-bx-mode="dark"] on <html> (BuddyX / BuddyX Pro / Reign 8+ —
+     the shared BuddyX Color_Mode_Toggle component)
+   - .dark-mode on <html> or <body> (legacy BuddyX / classic Reign)
+   When the parent theme is active its own --color-* vars cascade through
+   the :root mapping above, so we only set hardcoded values for sites
    without a dark-mode-aware parent theme. */
 [data-theme="dark"],
+[data-bx-mode="dark"],
 html.dark-mode,
 body.dark-mode {
     --mvs-bg: var(--color-theme-white-box, #121212);
@@ -143,12 +146,16 @@ body.dark-mode {
     --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.18);
 }
 
+[data-bx-mode="dark"] .mvs-album-badge,
+[data-bx-mode="dark"] .mvs-album-badge .dashicons,
+[data-bx-mode="dark"] .mvs-grid-item-overlay,
 .dark-mode .mvs-album-badge,
 .dark-mode .mvs-album-badge .dashicons,
 .dark-mode .mvs-grid-item-overlay {
     color: var(--mvs-text);
 }
 
+[data-bx-mode="dark"] .mvs-empty-state .dashicons,
 .dark-mode .mvs-empty-state .dashicons {
     color: var(--mvs-text-muted, #6c7781);
 }
@@ -448,6 +455,7 @@ body.mvs-page {
 }
 
 [data-theme="dark"] .mvs-skeleton::after,
+[data-bx-mode="dark"] .mvs-skeleton::after,
 html.dark-mode .mvs-skeleton::after,
 body.dark-mode .mvs-skeleton::after {
     background: linear-gradient(
@@ -2246,6 +2254,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-modal-overlay[hidden],
 .mvs-confirm-overlay[hidden],
+.mvs-lightbox-overlay[hidden], /* display:flex on .mvs-lightbox-overlay beats HTML [hidden] */
 .mvs-toast[hidden],
 .mvs-inline-edit[hidden],
 .mvs-dashboard-upload-fields[hidden],
@@ -5941,6 +5950,7 @@ a.mvs-dashboard-card-title:hover {
    defined at the top of the file so any theme that flips dark mode via
    class also flips this card. */
 [data-theme="dark"] .mvs-auth-gate__card,
+[data-bx-mode="dark"] .mvs-auth-gate__card,
 html.dark-mode .mvs-auth-gate__card,
 body.dark-mode .mvs-auth-gate__card {
     background: var(--mvs-surface, #1e1e1e);

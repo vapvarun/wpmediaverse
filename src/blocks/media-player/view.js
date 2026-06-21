@@ -27,19 +27,14 @@ function postAnalyticsEvent( ctx, eventType, domEvent ) {
 	const position = media && isFinite( media.currentTime ) ? media.currentTime : 0;
 	const duration = media && isFinite( media.duration ) ? media.duration : 0;
 	try {
-		fetch( ctx.analyticsUrl, {
+		window.mvsRest.restFetch( ctx.analyticsUrl, {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-WP-Nonce': ctx.nonce,
-			},
-			credentials: 'same-origin',
-			body: JSON.stringify( {
+			body: {
 				event_type: eventType,
 				position,
 				duration,
 				session_id: ctx.sessionId,
-			} ),
+			},
 		} ).catch( () => {} );
 	} catch ( err ) {
 		// Non-critical — analytics must never throw into playback.
@@ -68,12 +63,8 @@ store( 'mvs/media-player', {
 			const ctx = getContext();
 			if ( ! ctx.restUrl ) return;
 			try {
-				await fetch( ctx.restUrl, {
+				await window.mvsRest.restFetch( ctx.restUrl, {
 					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': ctx.nonce,
-					},
 				} );
 			} catch ( err ) {
 				// Non-critical — silently ignore.

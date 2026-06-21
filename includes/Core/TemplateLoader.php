@@ -49,6 +49,61 @@ class TemplateLoader {
 
 		// Body class signal for BuddyX and other themes.
 		add_action( 'wp', array( $this, 'maybe_add_mvs_body_class' ) );
+
+		// Populate the client-nav deny-list with routes that require a full-load.
+		add_filter( 'wpmediaverse_client_nav_deny_paths', array( $this, 'add_deny_paths' ), 10, 1 );
+	}
+
+	/**
+	 * Append Free plugin routes to the client-nav deny-list.
+	 *
+	 * These are URL path prefixes. The navigate action prefix-matches
+	 * `link.pathname` against this list and falls back to a full browser
+	 * navigation for matched paths (needed for routes that use polling,
+	 * typeahead, or file-upload on first load).
+	 *
+	 * Merged into the incoming $paths array; never overwrites it.
+	 * Pro appends competition routes on top via a higher-priority callback.
+	 *
+	 * @param string[] $paths Existing deny-path prefixes.
+	 * @return string[]
+	 */
+	public function add_deny_paths( array $paths ): array {
+		// Fixed rewrite-based routes that must always full-load.
+		$fixed = array(
+			'/messages/',       // Messaging: polling, typeahead, file-upload.
+			'/media/edit-profile/', // Profile-edit composer form.
+			'/album/',          // Album CPT single (rewrite slug = 'album').
+		);
+
+		// Mapped-page routes: resolve the WP page permalink to a path so
+		// admin-renamed slugs stay correct without touching the deny-list.
+		$mapped_options = array(
+			'mvs_page_upload',
+			'mvs_page_dashboard',
+		);
+
+		$mapped = array();
+		foreach ( $mapped_options as $option ) {
+			$page_id = (int) get_option( $option, 0 );
+			if ( $page_id <= 0 ) {
+				continue;
+			}
+			$permalink = get_permalink( $page_id );
+			if ( ! $permalink ) {
+				continue;
+			}
+			$path = wp_parse_url( $permalink, PHP_URL_PATH );
+			if ( $path && '/' !== $path ) {
+				$mapped[] = $path;
+			}
+		}
+
+		$merged = array_merge( $paths, $fixed, $mapped );
+		// Deduplicate and remove empties.
+		$merged = array_values( array_unique( array_filter( $merged ) ) );
+
+		return $merged;
 	}
 
 	/**
@@ -189,6 +244,26 @@ class TemplateLoader {
 	}
 
 	/**
+	 * Render a full MVS virtual page and stop.
+	 *
+	 * Our virtual pages (explore archive, profile, single media, profile edit)
+	 * render real content, so they must return HTTP 200 even when WordPress's
+	 * main query is empty - e.g. /media/page/2/ where paged > 1 leaves the core
+	 * query with no posts and WP would otherwise emit a soft-404. A soft-404
+	 * deindexes paginated archives and makes page caches / CDNs skip the page.
+	 *
+	 * @param string $template Absolute path to the located template file.
+	 */
+	private function render_template( string $template ): void {
+		status_header( 200 );
+		if ( isset( $GLOBALS['wp_query'] ) && $GLOBALS['wp_query'] instanceof \WP_Query ) {
+			$GLOBALS['wp_query']->is_404 = false;
+		}
+		include $template;
+		exit;
+	}
+
+	/**
 	 * Serve a single media item page.
 	 *
 	 * @param string $slug Media slug (or numeric ID).
@@ -294,8 +369,7 @@ class TemplateLoader {
 
 		$template = self::locate( 'media-single.php' );
 		if ( $template ) {
-			include $template;
-			exit;
+			$this->render_template( $template );
 		}
 	}
 
@@ -315,8 +389,7 @@ class TemplateLoader {
 
 		$template = self::locate( 'explore.php' );
 		if ( $template ) {
-			include $template;
-			exit;
+			$this->render_template( $template );
 		}
 	}
 
@@ -350,8 +423,7 @@ class TemplateLoader {
 			$template = self::locate( 'explore.php' );
 		}
 		if ( $template ) {
-			include $template;
-			exit;
+			$this->render_template( $template );
 		}
 	}
 
@@ -366,8 +438,7 @@ class TemplateLoader {
 
 		$template = self::locate( 'profile-edit.php' );
 		if ( $template ) {
-			include $template;
-			exit;
+			$this->render_template( $template );
 		}
 	}
 
@@ -418,16 +489,28 @@ class TemplateLoader {
 	}
 
 	/**
-	 * Load archive template for Album CPT.
+	 * Load archive template for Album and Collection CPTs.
+	 *
+	 * Both CPTs share the dedicated cpt-archive.php template which queries
+	 * the correct post_type, paginates, and renders CPT-specific cards.
+	 * explore.php remains the /media/ feed and is no longer used for archives.
 	 *
 	 * @param string $template Current template path.
 	 * @return string
 	 */
 	public function load_archive_template( string $template ): string {
-		if ( is_post_type_archive( 'mvs_album' ) ) {
-			$found = self::locate( 'explore.php' );
-			if ( $found ) {
-				return $found;
+		$map = array(
+			'mvs_album'      => 'cpt-archive.php',
+			'mvs_collection' => 'cpt-archive.php',
+		);
+
+		foreach ( $map as $post_type => $tpl_file ) {
+			if ( is_post_type_archive( $post_type ) ) {
+				$found = self::locate( $tpl_file );
+				if ( $found ) {
+					return $found;
+				}
+				break;
 			}
 		}
 
@@ -458,6 +541,7 @@ class TemplateLoader {
 		$is_mvs_page = (
 			is_singular( array( 'mvs_album', 'mvs_collection' ) )
 			|| is_post_type_archive( 'mvs_album' )
+			|| is_post_type_archive( 'mvs_collection' )
 			|| is_tax( 'mvs_tag' )
 			|| is_tax( 'mvs_category' )
 			|| (bool) get_query_var( 'mvs_edit_profile' )

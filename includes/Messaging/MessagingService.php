@@ -58,9 +58,23 @@ class MessagingService {
 		// BuddyNext integration hook — allows external block lists.
 		$allowed = apply_filters( 'mvs_can_send_message', true, $sender_id, $recipient_id );
 		if ( ! $allowed ) {
+			/**
+			 * Filters the denial reason when the mvs_can_send_message gate blocks a send.
+			 *
+			 * The gate itself is boolean, so an integrator that denies for more than
+			 * one cause (e.g. a hard block vs a "who can DM me" privacy preference) can
+			 * report the specific reason here, letting clients show an accurate notice
+			 * instead of a generic "blocked". Defaults to 'blocked'. The value should be
+			 * one of the codes denial_message() understands.
+			 *
+			 * @param string $reason       Default 'blocked'.
+			 * @param int    $sender_id    Sender user ID.
+			 * @param int    $recipient_id Recipient user ID.
+			 */
+			$reason = (string) apply_filters( 'mvs_dm_denial_reason', 'blocked', $sender_id, $recipient_id );
 			return array(
 				'allowed'    => false,
-				'reason'     => 'blocked',
+				'reason'     => $reason,
 				'is_request' => false,
 			);
 		}
@@ -141,6 +155,45 @@ class MessagingService {
 		);
 	}
 
+	/**
+	 * Human-readable message for a DM denial reason code.
+	 *
+	 * Maps the stable reason codes returned by can_message(), find_or_create_conversation(),
+	 * and send_message() (blocked, dms_disabled, mutual_follow_required, account_too_new,
+	 * rate_limited, not_participant, content_too_long, …) to a default sentence, so REST
+	 * responses are self-describing for native-app clients that consume mvs/v1 directly.
+	 * Apps may localize from the code instead; the string is filterable via
+	 * `mvs_dm_denial_message` for per-site / per-locale overrides.
+	 *
+	 * @param string $reason Reason code.
+	 * @return string Default human-readable message.
+	 */
+	public function denial_message( string $reason ): string {
+		$messages = array(
+			'blocked'                => __( 'You can no longer message this member.', 'wpmediaverse' ),
+			'dms_disabled'           => __( 'This member isn’t accepting messages right now.', 'wpmediaverse' ),
+			'mutual_follow_required' => __( 'This member only accepts messages from people they are connected with.', 'wpmediaverse' ),
+			'connections_only'       => __( 'This member only accepts messages from their connections.', 'wpmediaverse' ),
+			'account_too_new'        => __( 'Your account is too new to message this member yet.', 'wpmediaverse' ),
+			'cannot_message_self'    => __( 'You can’t send a message to yourself.', 'wpmediaverse' ),
+			'rate_limited'           => __( 'You’re sending messages too quickly. Please wait a moment and try again.', 'wpmediaverse' ),
+			'not_participant'        => __( 'You can no longer post to this conversation.', 'wpmediaverse' ),
+			'content_too_long'       => __( 'That message is too long to send.', 'wpmediaverse' ),
+			'empty_content'          => __( 'Your message is empty.', 'wpmediaverse' ),
+			'invalid_recipient'      => __( 'That member could not be found.', 'wpmediaverse' ),
+		);
+
+		$message = $messages[ $reason ] ?? __( 'This message could not be delivered.', 'wpmediaverse' );
+
+		/**
+		 * Filters the human-readable message for a DM denial reason code.
+		 *
+		 * @param string $message Default message.
+		 * @param string $reason  Reason code.
+		 */
+		return (string) apply_filters( 'mvs_dm_denial_message', $message, $reason );
+	}
+
 	// -------------------------------------------------------------------------
 	// Rate Limiting
 	// -------------------------------------------------------------------------
@@ -210,11 +263,21 @@ class MessagingService {
 	/**
 	 * Find or create a 1:1 conversation.
 	 *
-	 * @param int $user_a First user.
-	 * @param int $user_b Second user.
+	 * @param int   $user_a First user (the initiator).
+	 * @param int   $user_b Second user (the recipient).
+	 * @param array $args   Optional. When $args['force_request'] is true, a newly
+	 *                      created conversation marks the recipient as a pending
+	 *                      request even when their DM access would otherwise allow
+	 *                      an active thread, for first-contact flows such as a
+	 *                      connection request that carries a note (the recipient
+	 *                      accepts or declines before the thread opens). Every
+	 *                      denial — hard block, DMs-disabled, self, too-new,
+	 *                      mutual-follow-required, rate limit — is still enforced
+	 *                      first; the flag applies only once the send is already
+	 *                      permitted. Default empty array.
 	 * @return array{conversation_id: int, created: bool, status: string}
 	 */
-	public function find_or_create_conversation( int $user_a, int $user_b ): array {
+	public function find_or_create_conversation( int $user_a, int $user_b, array $args = array() ): array {
 		global $wpdb;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
@@ -321,8 +384,12 @@ class MessagingService {
 			array( '%d', '%d', '%s', '%s' )
 		);
 
-		// Add recipient — check if this is a request.
-		$recipient_status = $access['is_request'] ? 'request_pending' : 'active';
+		// Add recipient — pending request when the DM access requires one, or when
+		// the caller explicitly forces a request (first-contact flows). Reached
+		// only after can_message() allowed the send and the rate limit passed, so
+		// forcing a request can never bypass a block, a disabled inbox, or a limit.
+		$force_request    = ! empty( $args['force_request'] );
+		$recipient_status = ( $access['is_request'] || $force_request ) ? 'request_pending' : 'active';
 
 		$wpdb->insert(
 			$part_table,
@@ -523,6 +590,47 @@ class MessagingService {
 			)
 		);
 		return null === $role ? '' : (string) $role;
+	}
+
+	/**
+	 * Whether a user is an active participant of a conversation the given media
+	 * was shared into (as a message media_id or attachment_id).
+	 *
+	 * Lets the privacy layer grant DM recipients access to media shared with
+	 * them — the conversation membership already gates who can read the message,
+	 * so the attachment must be viewable to the same set. Owner/admin are
+	 * handled earlier in the privacy check; this only covers the recipient side.
+	 *
+	 * @param int $user_id  Viewer user id.
+	 * @param int $media_id Media id shared in a message.
+	 * @return bool
+	 */
+	public function user_received_media( int $user_id, int $media_id ): bool {
+		if ( $user_id <= 0 || $media_id <= 0 ) {
+			return false;
+		}
+
+		global $wpdb;
+		$msg_table  = $wpdb->prefix . 'mvs_messages';
+		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$found = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT 1
+				   FROM {$msg_table} m
+				   INNER JOIN {$part_table} p ON p.conversation_id = m.conversation_id
+				  WHERE ( m.media_id = %d OR m.attachment_id = %d )
+				    AND p.user_id = %d
+				    AND p.status = 'active'
+				  LIMIT 1",
+				$media_id,
+				$media_id,
+				$user_id
+			)
+		);
+
+		return null !== $found;
 	}
 
 	/**
@@ -1131,6 +1239,27 @@ class MessagingService {
 			array( '%d', '%d' )
 		);
 
+		// Delivery semantics: a new message resurrects the thread for any
+		// participant who had deleted it (status 'left'). Without this the
+		// recipient stays 'left', get_conversations()/poll() filter the
+		// conversation out for them, and the message is stored but never seen.
+		// 'request_pending' is intentionally left untouched so the message-request
+		// gate still holds; the sender was already verified active/request_pending
+		// above, so this only reactivates recipients.
+		$wpdb->update(
+			$part_table,
+			array(
+				'status'      => 'active',
+				'is_archived' => 0,
+			),
+			array(
+				'conversation_id' => $conversation_id,
+				'status'          => 'left',
+			),
+			array( '%s', '%d' ),
+			array( '%d', '%s' )
+		);
+
 		// phpcs:enable
 
 		// Get recipient IDs.
@@ -1241,7 +1370,7 @@ class MessagingService {
 			}
 
 			if ( $msg->media_id && ! $is_hidden ) {
-				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id );
+				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id, $user_id );
 			}
 		}
 
@@ -1941,7 +2070,7 @@ class MessagingService {
 				$msg->attachment = $this->get_attachment_data( (int) $msg->attachment_id );
 			}
 			if ( $msg->media_id && ! $msg->deleted_for_all ) {
-				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id );
+				$msg->media_share = $this->get_media_share_data( (int) $msg->media_id, $user_id );
 			}
 			if ( $msg->parent_id ) {
 				$msg->parent_preview = $this->get_message_preview( (int) $msg->parent_id );
@@ -2018,26 +2147,42 @@ class MessagingService {
 	}
 
 	/**
-	 * Get media share data for an mvs_media post.
+	 * Get media share data for an mvs_media post, scoped to a specific viewer.
 	 *
-	 * @param int $media_id mvs_media post ID.
+	 * All URLs are signed for the explicit conversation viewer (NOT the ambient
+	 * current user — message formatting can run outside the viewer's auth
+	 * context, e.g. background poll enrichment, which is why the thumbnail used
+	 * to come back empty) and routed through the access-controlled mvs serve
+	 * endpoint. That makes conversation-scoped ('dm'-privacy) attachments
+	 * viewable AND downloadable by the conversation's participants while staying
+	 * inaccessible to everyone else. The public /media/{slug}/ permalink is
+	 * intentionally NOT exposed — DM media must only be reachable via the signed
+	 * serve URL.
+	 *
+	 * @param int $media_id  mvs_media post ID.
+	 * @param int $viewer_id User the URLs are signed for (the message viewer).
 	 * @return array|null
 	 */
-	private function get_media_share_data( int $media_id ) {
-		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+	private function get_media_share_data( int $media_id, int $viewer_id ) {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		if ( ! $repo->exists( $media_id ) ) {
 			return null;
 		}
 
 		$data = array(
-			'id'        => $media_id,
-			'title'     => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ),
-			'permalink' => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ),
-			'type'      => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' ) ?: 'image',
+			'id'    => $media_id,
+			'title' => $repo->get( $media_id, 'title' ),
+			'type'  => $repo->get( $media_id, 'media_type' ) ?: 'image',
 		);
 
-		$msg_su = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-		if ( $msg_su ) {
-			$data['thumbnail'] = $msg_su->generate_thumbnail( $media_id, get_current_user_id() ) ?: '';
+		$su = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+		if ( $su ) {
+			$thumb            = $su->generate_thumbnail( $media_id, $viewer_id );
+			$view             = $su->generate( $media_id, $viewer_id );
+			$download         = $su->generate( $media_id, $viewer_id, 0, true );
+			$data['thumbnail']    = is_string( $thumb ) ? $thumb : '';
+			$data['url']          = is_string( $view ) ? $view : '';
+			$data['download_url'] = is_string( $download ) ? $download : '';
 		}
 
 		return $data;

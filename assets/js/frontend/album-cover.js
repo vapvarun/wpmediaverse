@@ -25,18 +25,14 @@
 			if ( labelEl ) {
 				labelEl.textContent = i18n.saving || '';
 			}
-			fetch( cfg.restUrl + 'albums/' + cfg.albumId + '/cover', {
+			window.mvsRest.restFetch( cfg.restUrl + 'albums/' + cfg.albumId + '/cover', {
 				method: 'PUT',
-				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': cfg.nonce },
-				credentials: 'same-origin',
-				body: JSON.stringify( { media_id: parseInt( mediaId, 10 ) } ),
+				body: { media_id: parseInt( mediaId, 10 ) },
 			} ).then( function ( r ) {
 				if ( ! r.ok ) {
-					return r.json().then( function ( d ) {
-						throw new Error( ( d && d.message ) || ( i18n.error || '' ) );
-					} );
+					throw new Error( ( r.data && r.data.message ) || ( i18n.error || '' ) );
 				}
-				return r.json();
+				return r.data;
 			} ).then( function () {
 				window.location.reload();
 			} ).catch( function ( err ) {

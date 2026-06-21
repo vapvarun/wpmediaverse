@@ -420,6 +420,15 @@ class ActivitySyncIntegration {
 			return;
 		}
 
+		// Skip conversation-scoped ('dm') attachments. DM uploads are private
+		// message content and must never produce an activity / wall entry — this
+		// matters in the MediaVerse + BuddyPress standalone deployment where this
+		// integration is active (on BuddyNext, BuddyPress is always disabled so
+		// this integration never runs at all).
+		if ( 'dm' === (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' ) ) {
+			return;
+		}
+
 		// Skip if this media was uploaded via the BP activity form.
 		if ( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'activity_upload' ) ) {
 			return;

@@ -143,11 +143,11 @@ class ActivityService {
 		// can't see that media (audit 2026-06-04). Non-media activities
 		// (media_id = 0, e.g. follows) always pass. LEFT JOIN so a since-deleted
 		// media's orphan activity is hidden rather than erroring.
-		$index_table = $wpdb->prefix . 'mvs_media_index';
+		$index_table                                    = $wpdb->prefix . 'mvs_media_index';
 		list( $mvs_act_priv_sql, $mvs_act_priv_params ) = \WPMediaVerse\Core\Plugin::container()
 			->get( 'media_repository' )->explore_privacy_clause( 'mi', $viewer_id );
-		$privacy_join  = " LEFT JOIN {$index_table} mi ON mi.media_id = a.media_id";
-		$privacy_where = " AND ( a.media_id = 0 OR a.media_id IS NULL OR {$mvs_act_priv_sql} )";
+		$privacy_join                                   = " LEFT JOIN {$index_table} mi ON mi.media_id = a.media_id";
+		$privacy_where                                  = " AND ( a.media_id = 0 OR a.media_id IS NULL OR {$mvs_act_priv_sql} )";
 
 		$count_params = array_merge( $params, $mvs_act_priv_params );
 		$total        = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -186,11 +186,15 @@ class ActivityService {
 	 * @param array $file_data File data.
 	 */
 	public function on_upload( int $media_id, array $file_data ): void {
-		// Private media never generates an activity record. The feed already
-		// hides private items at read time; skipping the write keeps DM
-		// attachments (uploaded as private media) entirely out of the activity
-		// stream rather than relying on the read-side gate alone.
-		if ( isset( $file_data['privacy'] ) && 'private' === $file_data['privacy'] ) {
+		// Private and conversation-scoped ('dm') media never generate an activity
+		// record. 'dm' attachments are DM uploads and must stay entirely out of
+		// the activity stream / wall. Resolve the privacy from the upload args,
+		// falling back to the stored value so the gate holds even when callers
+		// omit it from $file_data.
+		$privacy = isset( $file_data['privacy'] )
+			? (string) $file_data['privacy']
+			: (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
+		if ( in_array( $privacy, array( 'private', 'dm' ), true ) ) {
 			return;
 		}
 

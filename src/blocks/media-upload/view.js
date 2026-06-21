@@ -236,15 +236,11 @@ const { state, actions } = store( 'mvs/media-upload', {
 				const file = files[ 0 ];
 				const mimeType = file.type || 'image/jpeg';
 				const mediaType = mimeType.startsWith( 'video/' ) ? 'video' : ( mimeType.startsWith( 'audio/' ) ? 'audio' : 'image' );
-				const checkResp = await fetch(
-					quotaCheckUrl + `?media_type=${ mediaType }&file_size=${ file.size }`,
-					{
-						headers: { 'X-WP-Nonce': ctx.nonce },
-						credentials: 'same-origin',
-					}
+				const checkResp = await window.mvsRest.restFetch(
+					quotaCheckUrl + `?media_type=${ mediaType }&file_size=${ file.size }`
 				);
 				if ( checkResp.ok ) {
-					const checkData = await checkResp.json();
+					const checkData = checkResp.data;
 					if ( checkData.can_upload === false ) {
 						ctx.uploading = false;
 						ctx.uploadMessage = '';
@@ -276,25 +272,19 @@ const { state, actions } = store( 'mvs/media-upload', {
 				}
 
 				try {
-					const resp = await fetch( ctx.restUrl, {
+					const resp = await window.mvsRest.restFetch( ctx.restUrl, {
 						method: 'POST',
-						headers: { 'X-WP-Nonce': ctx.nonce },
-						credentials: 'same-origin',
 						body: formData,
 					} );
 					if ( resp.ok ) {
 						successCount++;
-						try {
-							const mediaData = await resp.json();
-							if ( mediaData && mediaData.duplicate_warning ) {
-								duplicateCount++;
-								lastDuplicateId = mediaData.existing_media_id || 0;
-							}
-						} catch {
-							// Response parsing is non-critical for success path.
+						const mediaData = resp.data;
+						if ( mediaData && mediaData.duplicate_warning ) {
+							duplicateCount++;
+							lastDuplicateId = mediaData.existing_media_id || 0;
 						}
 					} else {
-						const err = await resp.json().catch( () => ( {} ) );
+						const err = resp.data || {};
 						ctx.uploadError = err.message || `Upload failed for ${ files[ i ].name }.`;
 					}
 				} catch ( err ) {
@@ -329,15 +319,11 @@ const { state, actions } = store( 'mvs/media-upload', {
 		const quotaWidget = document.querySelector( '.mvs-quota-widget' );
 		if ( quotaWidget && successCount > 0 ) {
 			try {
-				const quotaResp = await fetch(
-					ctx.restUrl.replace( /mvs\/v1\/.*$/, 'mvs-pro/v1/me/quota/check' ) + '?media_type=image&file_size=0',
-					{
-						headers: { 'X-WP-Nonce': ctx.nonce },
-						credentials: 'same-origin',
-					}
+				const quotaResp = await window.mvsRest.restFetch(
+					ctx.restUrl.replace( /mvs\/v1\/.*$/, 'mvs-pro/v1/me/quota/check' ) + '?media_type=image&file_size=0'
 				);
 				if ( quotaResp.ok ) {
-					const quotaData = await quotaResp.json();
+					const quotaData = quotaResp.data;
 					const summary = quotaData.summary;
 					if ( summary ) {
 						const rows = quotaWidget.querySelectorAll( '.mvs-quota-row' );

@@ -25,11 +25,15 @@
 	--mvs-chat-sidebar-width: 320px;
 }
 
-/* Dark mode: theme-controlled. Supports both signals:
-   - [data-theme="dark"] on <html> (BuddyNext, generic themes)
-   - .dark-mode on <html> or <body> (BuddyX / BuddyX Pro)
+/* Dark mode: theme-controlled. Honors every Wbcom Community-OS dark signal:
+   - [data-theme="dark"] on <html> (generic themes)
+   - [data-bn-theme="dark"] on <html> (BuddyNext)
+   - [data-bx-mode="dark"] on <html> (Reign / BuddyX / BuddyX Pro 5.1+)
+   - .dark-mode on <html> or <body> (legacy BuddyX)
    Inherits theme --color-* vars when present, else uses Instagram-style fallbacks. */
 [data-theme="dark"],
+[data-bn-theme="dark"],
+[data-bx-mode="dark"],
 html.dark-mode,
 body.dark-mode {
 	--mvs-chat-bg: var(--color-theme-body, #000);

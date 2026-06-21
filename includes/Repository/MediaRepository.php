@@ -1441,8 +1441,10 @@ class MediaRepository implements MediaRepositoryInterface {
 			case 'public':
 				return array( "m.privacy = 'public'", array() );
 			case 'visible':
+				// Owner sees their own media EXCEPT conversation-scoped 'dm'
+				// attachments, which never belong in any library/grid listing.
 				return array(
-					"(m.privacy = 'public' OR m.privacy = 'members' OR m.post_author = %d)",
+					"(m.privacy = 'public' OR m.privacy = 'members' OR ( m.post_author = %d AND m.privacy != 'dm' ))",
 					array( $viewer_id ),
 				);
 			case 'profile':
@@ -1486,7 +1488,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				$placeholders = implode( ',', array_fill( 0, count( $levels ), '%s' ) );
 				if ( $viewer_id > 0 ) {
 					return array(
-						"(m.privacy IN ({$placeholders}) OR m.post_author = %d)",
+						"(m.privacy IN ({$placeholders}) OR ( m.post_author = %d AND m.privacy != 'dm' ))",
 						array_merge( array_values( $levels ), array( $viewer_id ) ),
 					);
 				}
@@ -1497,12 +1499,15 @@ class MediaRepository implements MediaRepositoryInterface {
 				// #9941246549). Kept because mode strings reach the public
 				// query()/query_count() args surface (Production Rule #2).
 				return array(
-					"(m.privacy != 'private' OR m.post_author = %d)",
+					"((m.privacy != 'private' OR m.post_author = %d) AND m.privacy != 'dm')",
 					array( $viewer_id ),
 				);
 			case 'any':
 			default:
-				return array( '', array() );
+				// 'any' applies no audience filter (owner-self profile, admin /
+				// moderation grids), but conversation-scoped 'dm' attachments are
+				// never library media and must stay out of every listing.
+				return array( "m.privacy != 'dm'", array() );
 		}
 	}
 

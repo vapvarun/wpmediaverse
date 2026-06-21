@@ -90,13 +90,21 @@ class WatermarkService {
 	/**
 	 * Get the watermark configuration.
 	 *
-	 * @return array{type: string, text: string, image_url: string, position: string, opacity: int}
+	 * The image watermark is stored by the admin UI as a Media Library
+	 * attachment ID under `mvs_watermark_image_id`. Pro's Watermarker consumes
+	 * `image_id`; `image_url` is resolved from the same attachment for any
+	 * third-party consumer of that key (empty string when no image is set).
+	 *
+	 * @return array{type: string, text: string, image_id: int, image_url: string, position: string, opacity: int, font_size: int, color: string}
 	 */
 	public function get_config(): array {
+		$image_id = (int) get_option( 'mvs_watermark_image_id', 0 );
+
 		$defaults = array(
 			'type'      => get_option( 'mvs_watermark_type', 'text' ),
 			'text'      => get_option( 'mvs_watermark_text', get_bloginfo( 'name' ) ),
-			'image_url' => get_option( 'mvs_watermark_image', '' ),
+			'image_id'  => $image_id,
+			'image_url' => $image_id > 0 ? (string) wp_get_attachment_url( $image_id ) : '',
 			'position'  => get_option( 'mvs_watermark_position', self::POSITION_CENTER ),
 			'opacity'   => (int) get_option( 'mvs_watermark_opacity', 40 ),
 			'font_size' => (int) get_option( 'mvs_watermark_font_size', 24 ),
