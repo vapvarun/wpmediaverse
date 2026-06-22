@@ -113,6 +113,13 @@ if [ -x bin/css-token-contract.sh ]; then
   run_stage "1.4" "CSS token-contract" bash bin/css-token-contract.sh
 fi
 
+# 1.5 — Duplication gate (no NEW copy-pasted method bodies vs the frozen
+# baseline). Stops "reinventing the same section again" — reuse a shared
+# helper/partial or re-bless. See bin/duplication-gate.sh.
+if [ -x bin/duplication-gate.sh ]; then
+  run_stage "1.5" "Duplication gate (no new copy-paste)" bash bin/duplication-gate.sh
+fi
+
 # ─── 2.x — Security + Architecture (always cheap) ────────────────────────────
 
 if [ -x bin/coding-rules-check.sh ]; then
