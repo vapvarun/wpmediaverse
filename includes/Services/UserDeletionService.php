@@ -134,6 +134,30 @@ class UserDeletionService {
 			array( '%s', '%d' )
 		);
 
+		// Conversations that just lost their last participant are dead shells:
+		// remove them and any residual messages. The per-user purge above clears
+		// participants + messages but never the thread row, so deleting every
+		// member of a conversation previously left an orphaned mvs_conversations
+		// row behind. This sweeps any now-empty thread (cheap; cleanup path only).
+		$empty_conversation_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			"SELECT c.id FROM {$wpdb->prefix}mvs_conversations c
+			 LEFT JOIN {$wpdb->prefix}mvs_conversation_participants p ON p.conversation_id = c.id
+			 WHERE p.conversation_id IS NULL" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+		foreach ( $empty_conversation_ids as $conversation_id ) {
+			$conversation_id = (int) $conversation_id;
+			$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prefix . 'mvs_messages',
+				array( 'conversation_id' => $conversation_id ),
+				array( '%d' )
+			);
+			$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prefix . 'mvs_conversations',
+				array( 'id' => $conversation_id ),
+				array( '%d' )
+			);
+		}
+
 		// Recompute view aggregates for media the deleted user had viewed, now
 		// that their raw mvs_media_views rows are gone — otherwise the public
 		// view count stays inflated by the deleted user (audit 2026-06-04, #28).
