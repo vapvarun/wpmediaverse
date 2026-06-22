@@ -107,6 +107,14 @@ $wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array
 			<?php endforeach; ?>
 		</div>
 	<?php else : ?>
-		<p class="mvs-no-media"><?php esc_html_e( 'This album is empty.', 'wpmediaverse' ); ?></p>
+		<?php
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'image',
+				'title'   => __( 'Empty album', 'wpmediaverse' ),
+				'message' => __( 'This album is empty.', 'wpmediaverse' ),
+			)
+		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns pre-escaped HTML.
+		?>
 	<?php endif; ?>
 </div>

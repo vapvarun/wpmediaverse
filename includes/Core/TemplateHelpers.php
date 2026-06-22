@@ -1104,4 +1104,84 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			esc_html( $label )
 		);
 	}
+
+	/**
+	 * Render a frontend / block empty-state panel (Coding Rule #11).
+	 *
+	 * One canonical empty state for every front-end "nothing here yet" surface,
+	 * replacing the ~5 hand-rolled variants (`.mvs-no-media`, ad-hoc
+	 * `.mvs-empty-state-frontend` blocks, etc.). Token-driven + dark-mode-safe
+	 * via the shared `.mvs-empty-state-frontend` styles.
+	 *
+	 * @param array $args {
+	 *     @type string $icon    Lucide icon name. Default 'image'.
+	 *     @type string $title   Heading (optional).
+	 *     @type string $message Body line (optional).
+	 *     @type array  $actions List of [ 'url' => , 'label' => , 'variant' => ] buttons.
+	 *     @type string $class   Extra wrapper class(es).
+	 * }
+	 * @return string Escaped HTML.
+	 */
+	public function render_block_empty_state( array $args = array() ): string {
+		$icon    = isset( $args['icon'] ) ? (string) $args['icon'] : 'image';
+		$title   = isset( $args['title'] ) ? (string) $args['title'] : '';
+		$message = isset( $args['message'] ) ? (string) $args['message'] : '';
+		$actions = ( isset( $args['actions'] ) && is_array( $args['actions'] ) ) ? $args['actions'] : array();
+		$extra   = isset( $args['class'] ) ? ' ' . (string) $args['class'] : '';
+
+		$html  = '<div class="mvs-empty-state-frontend' . esc_attr( $extra ) . '" role="status">';
+		$html .= '<span class="mvs-empty-state-icon" aria-hidden="true"><i data-lucide="' . esc_attr( $icon ) . '"></i></span>';
+		if ( '' !== $title ) {
+			$html .= '<h3 class="mvs-empty-state-title">' . esc_html( $title ) . '</h3>';
+		}
+		if ( '' !== $message ) {
+			$html .= '<p class="mvs-empty-state-message">' . esc_html( $message ) . '</p>';
+		}
+		if ( ! empty( $actions ) ) {
+			$html .= '<div class="mvs-empty-state-actions">';
+			foreach ( $actions as $action ) {
+				if ( empty( $action['url'] ) || empty( $action['label'] ) ) {
+					continue;
+				}
+				$variant = isset( $action['variant'] ) ? (string) $action['variant'] : 'primary';
+				$html   .= sprintf(
+					'<a href="%1$s" class="mvs-btn mvs-btn--%2$s">%3$s</a>',
+					esc_url( $action['url'] ),
+					esc_attr( $variant ),
+					esc_html( $action['label'] )
+				);
+			}
+			$html .= '</div>';
+		}
+		$html .= '</div>';
+
+		return $html;
+	}
+
+	/**
+	 * Render an admin-screen empty-state panel (Coding Rule #11).
+	 *
+	 * Companion to render_block_empty_state() for wp-admin list tables and
+	 * dashboard panels, using the `.mvs-empty-state-admin` styles.
+	 *
+	 * @param array $args { @type string $icon, @type string $title, @type string $message }
+	 * @return string Escaped HTML.
+	 */
+	public function render_admin_empty_state( array $args = array() ): string {
+		$icon    = isset( $args['icon'] ) ? (string) $args['icon'] : 'inbox';
+		$title   = isset( $args['title'] ) ? (string) $args['title'] : '';
+		$message = isset( $args['message'] ) ? (string) $args['message'] : '';
+
+		$html  = '<div class="mvs-empty-state-admin" role="status">';
+		$html .= '<span class="mvs-empty-state-icon" aria-hidden="true"><i data-lucide="' . esc_attr( $icon ) . '"></i></span>';
+		if ( '' !== $title ) {
+			$html .= '<p class="mvs-empty-state-admin__title">' . esc_html( $title ) . '</p>';
+		}
+		if ( '' !== $message ) {
+			$html .= '<p class="mvs-empty-state-admin__message">' . esc_html( $message ) . '</p>';
+		}
+		$html .= '</div>';
+
+		return $html;
+	}
 }

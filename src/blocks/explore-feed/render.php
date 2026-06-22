@@ -169,6 +169,14 @@ $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
 			<span data-wp-bind--hidden="!context.loading"><?php esc_html_e( 'Loading...', 'wpmediaverse' ); ?></span>
 		</button>
 	<?php else : ?>
-		<p class="mvs-no-media"><?php esc_html_e( 'No media items found.', 'wpmediaverse' ); ?></p>
+		<?php
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'image',
+				'title'   => __( 'No media yet', 'wpmediaverse' ),
+				'message' => __( 'No media items found.', 'wpmediaverse' ),
+			)
+		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns pre-escaped HTML.
+		?>
 	<?php endif; ?>
 </div>

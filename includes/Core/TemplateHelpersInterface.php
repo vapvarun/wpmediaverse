@@ -133,4 +133,20 @@ interface TemplateHelpersInterface {
 	 * @param array  $args    Context-specific args.
 	 */
 	public function render_back_link( string $context, array $args = array() ): void;
+
+	/**
+	 * Return a canonical frontend/block empty-state panel (Coding Rule #11).
+	 *
+	 * @param array $args { icon, title, message, actions[], class }
+	 * @return string Escaped HTML.
+	 */
+	public function render_block_empty_state( array $args = array() ): string;
+
+	/**
+	 * Return a canonical admin empty-state panel (Coding Rule #11).
+	 *
+	 * @param array $args { icon, title, message }
+	 * @return string Escaped HTML.
+	 */
+	public function render_admin_empty_state( array $args = array() ): string;
 }

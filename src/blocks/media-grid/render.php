@@ -264,6 +264,14 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 			</div>
 		<?php endif; ?>
 	<?php else : ?>
-		<p class="mvs-no-media"><?php esc_html_e( 'No media items found.', 'wpmediaverse' ); ?></p>
+		<?php
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'image',
+				'title'   => __( 'No media yet', 'wpmediaverse' ),
+				'message' => __( 'No media items found.', 'wpmediaverse' ),
+			)
+		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns pre-escaped HTML.
+		?>
 	<?php endif; ?>
 </div>
