@@ -31,6 +31,33 @@ class ProfileTabIntegration extends BaseBPTabIntegration {
 
 		add_action( 'bp_setup_nav', array( $this, 'add_profile_tab' ), 100 );
 		add_action( 'bp_template_redirect', array( $this, 'update_media_tab_count' ) );
+
+		// Resolve member profile URLs to the BP member page. Lives here so core
+		// (TemplateHelpers::get_user_profile_url) stays standalone — it defaults
+		// to the plugin's own /media/@login/ route and BP/BuddyNext override via
+		// this filter. No bp_* calls in core templates or helpers.
+		add_filter( 'mvs_user_profile_url', array( $this, 'filter_user_profile_url' ), 10, 2 );
+	}
+
+	/**
+	 * Resolve a member's profile URL to their BuddyPress member page.
+	 *
+	 * Covers BuddyNext as well, since it exposes the same bp_* functions.
+	 *
+	 * @param string $url     Standalone default URL (passed through if BP can't resolve).
+	 * @param int    $user_id User ID.
+	 * @return string
+	 */
+	public function filter_user_profile_url( string $url, int $user_id ): string {
+		if ( function_exists( 'bp_members_get_user_url' ) ) {
+			$bp_url = (string) bp_members_get_user_url( $user_id );
+		} elseif ( function_exists( 'bp_core_get_user_domain' ) ) {
+			$bp_url = (string) bp_core_get_user_domain( $user_id );
+		} else {
+			return $url;
+		}
+
+		return '' !== $bp_url ? $bp_url : $url;
 	}
 
 	/**

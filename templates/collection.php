@@ -69,15 +69,9 @@ include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 					<span class="mvs-collection-meta-author">
 						<?php echo get_avatar( get_the_author_meta( 'ID' ), 24, '', '', array( 'class' => 'mvs-collection-avatar' ) ); ?>
 						<?php
-						$mvs_author_id  = get_the_author_meta( 'ID' );
-						$mvs_author_url = '';
-						if ( function_exists( 'bp_members_get_user_url' ) ) {
-							$mvs_author_url = bp_members_get_user_url( $mvs_author_id );
-						} elseif ( function_exists( 'bp_core_get_user_domain' ) ) {
-							$mvs_author_url = bp_core_get_user_domain( $mvs_author_id );
-						} else {
-							$mvs_author_url = home_url( '/media/@' . get_the_author_meta( 'user_login', $mvs_author_id ) . '/' );
-						}
+						$mvs_author_id  = (int) get_the_author_meta( 'ID' );
+						// Platform-agnostic profile URL (BP / BuddyNext override via filter).
+						$mvs_author_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $mvs_author_id );
 
 						if ( $mvs_author_url ) :
 							?>

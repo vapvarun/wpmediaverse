@@ -125,14 +125,8 @@ $mvs_archive_url = home_url( '/media/' );
 					<?php echo get_avatar( $mvs_author_id, 40, '', '', array( 'class' => 'mvs-media-author-avatar' ) ); ?>
 					<div class="mvs-media-author-text">
 						<?php
-						$mvs_author_url = '';
-						if ( function_exists( 'bp_members_get_user_url' ) ) {
-							$mvs_author_url = bp_members_get_user_url( $mvs_author_id );
-						} elseif ( function_exists( 'bp_core_get_user_domain' ) ) {
-							$mvs_author_url = bp_core_get_user_domain( $mvs_author_id );
-						} else {
-							$mvs_author_url = home_url( '/media/@' . $mvs_author_login . '/' );
-						}
+						// Platform-agnostic profile URL (BP / BuddyNext override via filter).
+						$mvs_author_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_author_id );
 
 						if ( $mvs_author_url ) :
 							?>

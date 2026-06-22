@@ -206,20 +206,18 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Profile URL.
 	 */
 	public function get_user_profile_url( int $user_id ): string {
-		// BuddyPress: use bp_members_get_user_url() if available.
-		if ( function_exists( 'bp_members_get_user_url' ) ) {
-			$url = bp_members_get_user_url( $user_id );
-		} elseif ( function_exists( 'bp_core_get_user_domain' ) ) {
-			$url = bp_core_get_user_domain( $user_id );
-		} else {
-			$user_login = get_the_author_meta( 'user_login', $user_id );
-			$url        = home_url( '/media/@' . $user_login . '/' );
-		}
+		// Standalone default: the plugin's own @username profile route. Core is
+		// platform-agnostic — no bp_* calls here. Social platforms (BuddyPress,
+		// BuddyNext) override this via the filter below; the BuddyPress
+		// integration's ProfileTabIntegration::filter_user_profile_url() returns
+		// the BP member URL when BP is active.
+		$user_login = get_the_author_meta( 'user_login', $user_id );
+		$url        = home_url( '/media/@' . $user_login . '/' );
 
 		/**
 		 * Filter the user profile URL.
 		 *
-		 * @param string $url     Profile URL.
+		 * @param string $url     Profile URL (standalone default).
 		 * @param int    $user_id User ID.
 		 */
 		return (string) apply_filters( 'mvs_user_profile_url', $url, $user_id );
