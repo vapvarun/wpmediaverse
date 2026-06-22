@@ -1010,13 +1010,35 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @param array  $args    Optional context-specific args (e.g. media_id).
 	 * @return array{url: string, label: string}|null
 	 */
+	/**
+	 * Resolve the canonical Explore page URL.
+	 *
+	 * Prefers the configured `mvs_page_explore` page permalink (matching
+	 * OverviewPage / SetupWizard), falling back to the /media/ rewrite only when
+	 * no explore page exists. The back-link previously hardcoded /media/, which
+	 * sent users to the rewrite instead of the real page on sites whose explore
+	 * page has a different slug (e.g. /explore-media/).
+	 *
+	 * @return string
+	 */
+	private function resolve_explore_url(): string {
+		$explore_id = (int) get_option( 'mvs_page_explore', 0 );
+		if ( $explore_id ) {
+			$url = get_permalink( $explore_id );
+			if ( $url ) {
+				return $url;
+			}
+		}
+		return home_url( '/media/' );
+	}
+
 	public function get_parent_route( string $context, array $args = array() ): ?array {
 		$parent = null;
 
 		switch ( $context ) {
 			case 'single-media':
 				$parent = array(
-					'url'   => home_url( '/media/' ),
+					'url'   => $this->resolve_explore_url(),
 					'label' => __( 'Explore', 'wpmediaverse' ),
 				);
 				break;
@@ -1030,7 +1052,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					);
 				} else {
 					$parent = array(
-						'url'   => home_url( '/media/' ),
+						'url'   => $this->resolve_explore_url(),
 						'label' => __( 'Explore', 'wpmediaverse' ),
 					);
 				}
