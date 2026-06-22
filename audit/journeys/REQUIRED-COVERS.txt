@@ -1,0 +1,16 @@
+# Required journey coverage — critical features that must ALWAYS have an
+# executable journey. One `covers:` tag per line. The gate (bin/journey-coverage.sh,
+# local-CI stage 1.6) fails if any tag here is not claimed by a journey's
+# `covers:` frontmatter, across Free (audit/journeys) and Pro (audit/pro/journeys).
+#
+# This is the coverage half of the regression defense: gates 1.4/1.5 stop bad code
+# landing; this stops a critical feature shipping — or being silently dropped — with
+# no end-to-end journey to catch a regression (the 2026-06-22 boost-drop class).
+#
+# Add a tag here when a feature becomes release-critical. Lines starting with # and
+# blank lines are ignored.
+
+boost-feed-promotion
+dm-access-bug
+battles
+ai-feature-toggles

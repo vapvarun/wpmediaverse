@@ -45,6 +45,7 @@
         "css-tokens": "bash bin/css-token-contract.sh",
         "dup-gate": "bash bin/duplication-gate.sh",
         "dup-gate:bless": "bash bin/duplication-gate.sh --bless",
+        "journey-coverage": "bash bin/journey-coverage.sh",
         "arch-checks": "bash bin/architecture-checks.sh",
         "phpcs": "vendor/bin/phpcs --standard=phpcs.xml -p --warning-severity=0",
         "phpcs:fix": "vendor/bin/phpcbf --standard=phpcs.xml",

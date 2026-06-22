@@ -120,6 +120,14 @@ if [ -x bin/duplication-gate.sh ]; then
   run_stage "1.5" "Duplication gate (no new copy-paste)" bash bin/duplication-gate.sh
 fi
 
+# 1.6 — Journey coverage: every release-critical feature must have an executable
+# journey (audit/journeys/REQUIRED-COVERS.txt). Stops a feature shipping — or
+# being silently dropped — with no end-to-end test (the boost-drop class). The
+# journeys themselves run at stage 4.1; this asserts the critical ones exist.
+if [ -x bin/journey-coverage.sh ]; then
+  run_stage "1.6" "Journey coverage (critical features have a journey)" bash bin/journey-coverage.sh
+fi
+
 # ─── 2.x — Security + Architecture (always cheap) ────────────────────────────
 
 if [ -x bin/coding-rules-check.sh ]; then
