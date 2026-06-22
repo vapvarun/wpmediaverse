@@ -95,6 +95,8 @@
    move to a low-alpha white so the dialog edge stays visible against the
    dark backdrop. */
 [data-theme="dark"] .mvs-frontend-confirm-dialog,
+[data-bn-theme="dark"] .mvs-frontend-confirm-dialog,
+[data-bx-mode="dark"] .mvs-frontend-confirm-dialog,
 html.dark-mode .mvs-frontend-confirm-dialog,
 body.dark-mode .mvs-frontend-confirm-dialog {
 	background: #1f2128;
@@ -103,12 +105,16 @@ body.dark-mode .mvs-frontend-confirm-dialog {
 }
 
 [data-theme="dark"] .mvs-frontend-confirm-dialog::backdrop,
+[data-bn-theme="dark"] .mvs-frontend-confirm-dialog::backdrop,
+[data-bx-mode="dark"] .mvs-frontend-confirm-dialog::backdrop,
 html.dark-mode .mvs-frontend-confirm-dialog::backdrop,
 body.dark-mode .mvs-frontend-confirm-dialog::backdrop {
 	background: rgba( 0, 0, 0, 0.65 );
 }
 
 [data-theme="dark"] .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel,
+[data-bn-theme="dark"] .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel,
+[data-bx-mode="dark"] .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel,
 html.dark-mode .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel,
 body.dark-mode .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel {
 	background: rgba( 255, 255, 255, 0.06 );
@@ -117,6 +123,8 @@ body.dark-mode .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel {
 }
 
 [data-theme="dark"] .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel:hover,
+[data-bn-theme="dark"] .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel:hover,
+[data-bx-mode="dark"] .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel:hover,
 html.dark-mode .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel:hover,
 body.dark-mode .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel:hover {
 	background: rgba( 255, 255, 255, 0.12 );

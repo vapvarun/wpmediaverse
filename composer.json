@@ -42,6 +42,7 @@
         "journeys:critical": "bash bin/run-journeys.sh --priority critical",
         "journeys:dry-run": "bash bin/run-journeys.sh --dry-run",
         "coding-rules": "bash bin/coding-rules-check.sh",
+        "css-tokens": "bash bin/css-token-contract.sh",
         "arch-checks": "bash bin/architecture-checks.sh",
         "phpcs": "vendor/bin/phpcs --standard=phpcs.xml -p --warning-severity=0",
         "phpcs:fix": "vendor/bin/phpcbf --standard=phpcs.xml",

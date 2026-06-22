@@ -106,6 +106,13 @@ else
   fi
 fi
 
+# 1.4 — CSS token-contract (phantom tokens + dead dark-mode selectors). Static,
+# fast, always runs (incl. --quick). Catches the dark-mode CSS bug class that
+# journeys / WPCS / PHPStan are blind to — see bin/css-token-contract.sh.
+if [ -x bin/css-token-contract.sh ]; then
+  run_stage "1.4" "CSS token-contract" bash bin/css-token-contract.sh
+fi
+
 # ─── 2.x — Security + Architecture (always cheap) ────────────────────────────
 
 if [ -x bin/coding-rules-check.sh ]; then
