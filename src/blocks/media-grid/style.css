@@ -34,7 +34,7 @@
 	right: 0;
 	padding: 8px;
 	background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
-	color: var(--mvs-surface);
+	color: #fff; /* caption on a dark thumbnail gradient in both modes */
 	font-size: 12px;
 	opacity: 0;
 	transition: opacity 0.2s ease;

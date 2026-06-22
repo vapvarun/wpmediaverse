@@ -705,7 +705,7 @@ body.dark-mode {
 
 .mvs-chat-msg__context-btn--delete,
 .mvs-chat-msg__context-btn--unsend {
-	color: var(--mvs-chat-muted);
+	color: var(--mvs-text-muted);
 }
 
 .mvs-chat-msg__context-btn--delete:hover {

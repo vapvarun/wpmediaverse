@@ -29,9 +29,9 @@
        buttons — visibly off-palette next to native theme buttons.
        --mvs-on-primary picks up the theme's button text color via the
        same chain. */
-    --mvs-primary: var(--button-background-color, var(--bb-primary-button-background, var(--color-theme-primary, var(--brand, #0073aa))));
-    --mvs-primary-hover: var(--button-background-hover-color, var(--bb-primary-button-background-regular-hover, var(--color-theme-primary, var(--brand-hover, #005a87))));
-    --mvs-on-primary: var(--button-text-color, var(--bb-primary-button-text-regular, #ffffff));
+    --mvs-primary: var(--reign-site-button-bg-color, var(--button-background-color, var(--bb-primary-button-background, var(--color-theme-primary, var(--brand, #0073aa)))));
+    --mvs-primary-hover: var(--reign-site-button-bg-hover-color, var(--button-background-hover-color, var(--bb-primary-button-background-regular-hover, var(--color-theme-primary, var(--brand-hover, #005a87)))));
+    --mvs-on-primary: var(--reign-site-button-text-color, var(--button-text-color, var(--bb-primary-button-text-regular, #ffffff)));
     --mvs-primary-rgb: 0, 115, 170;
     --mvs-danger: var(--red, #d63638);
     --mvs-danger-rgb: 214, 54, 56;
@@ -48,20 +48,40 @@
     --mvs-warning-bg: rgba(var(--mvs-warning-rgb), 0.12);
     --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.10);
 
-    /* Surfaces — BuddyX Pro → BuddyNext → fallback */
-    --mvs-bg: var(--color-theme-white-box, var(--bg, #ffffff));
-    --mvs-surface: var(--global-body-lightcolor, var(--bg-subtle, #f6f7f7));
-    --mvs-surface-2: var(--global-body-lightcolor, var(--bg-hover, #eeeeee));
+    /* Extended semantic tokens — promoted from former PHANTOM uses (used via
+       var() across the plugin but never defined, so they silently froze on a
+       light hardcoded fallback and broke in dark mode). Defined here = single
+       source of truth, dark-mode-safe. */
+    --mvs-bg-subtle: var(--mvs-surface-2);     /* subtle panel fill */
+    --mvs-on-danger: #ffffff;                  /* text on danger (red both modes) */
+    --mvs-border-strong: var(--mvs-border);    /* emphasized divider */
+    --mvs-accent: #6366f1;                      /* indigo accent (boosts/highlights) */
+    --mvs-accent-soft: rgba(99, 102, 241, 0.12); /* translucent → works light + dark */
+
+    /* ── Theme palette mapping (THE single source of truth) ──────────────────
+       Each --mvs-* token inherits from the active theme's own variable so the
+       plugin matches the theme in BOTH light and dark mode (the theme flips its
+       own vars). Chain order = Reign → BuddyX / BuddyX Pro (--global-* /
+       --color-theme-*) → BuddyNext (--text-* / --bg-*) → hardcoded fallback.
+       Only the active theme's var resolves; the rest are absent. To support a
+       new theme, add its var name to these chains here — nowhere else. The dark
+       block below repeats the SAME chains with dark hardcoded fallbacks (only
+       hit by generic themes that signal dark but don't theme their own vars). */
+
+    /* Surfaces */
+    --mvs-bg: var(--reign-site-body-bg-color, var(--color-theme-white-box, var(--bg, #ffffff)));
+    --mvs-surface: var(--reign-site-body-bg-color, var(--global-body-lightcolor, var(--bg-subtle, #f6f7f7)));
+    --mvs-surface-2: var(--reign-site-body-bg-color, var(--global-body-lightcolor, var(--bg-hover, #eeeeee)));
     --mvs-overlay: rgba(0, 0, 0, 0.72);
-    --mvs-bg-muted: var(--global-body-lightcolor, #f9fafb);
+    --mvs-bg-muted: var(--reign-site-body-bg-color, var(--global-body-lightcolor, #f9fafb));
 
-    /* Text — BuddyX Pro → BuddyNext → fallback */
-    --mvs-text: var(--global-title-color, var(--text-1, #1e1e1e));
-    --mvs-text-secondary: var(--global-font-color, var(--text-2, #646970));
-    --mvs-text-muted: var(--color-meta, var(--text-3, #a7aaad));
+    /* Text */
+    --mvs-text: var(--reign-site-body-text-color, var(--global-title-color, var(--text-1, #1e1e1e)));
+    --mvs-text-secondary: var(--reign-site-alternate-text-color, var(--global-font-color, var(--text-2, #646970)));
+    --mvs-text-muted: var(--reign-site-alternate-text-color, var(--color-meta, var(--text-3, #a7aaad)));
 
-    /* Borders & Shadows — BuddyX Pro → BuddyNext → fallback */
-    --mvs-border: var(--global-border-color, var(--border, #dcdcde));
+    /* Borders & Shadows */
+    --mvs-border: var(--reign-site-border-color, var(--global-border-color, var(--border, #dcdcde)));
     --mvs-border-light: var(--border-soft, #e9e9ea);
     /* Elevation — BuddyNext-first (soft, layered --bn-shadow-*), with a matching
        standalone fallback. Shared Wbcom Community-OS standard: components pick a
@@ -131,13 +151,18 @@
 [data-bx-mode="dark"],
 html.dark-mode,
 body.dark-mode {
-    --mvs-bg: var(--color-theme-white-box, #121212);
-    --mvs-surface: var(--global-body-lightcolor, #1e1e1e);
-    --mvs-surface-2: var(--global-body-lightcolor, #2a2a2a);
-    --mvs-text: var(--global-title-color, #f0f0f0);
-    --mvs-text-secondary: var(--global-font-color, #b0b0b0);
-    --mvs-text-muted: var(--color-meta, #888888);
-    --mvs-border: var(--global-border-color, #363636);
+    /* Same theme chains as :root, but with DARK hardcoded fallbacks. Theming
+       themes (Reign/BuddyX/Pro) flip their own vars, so those resolve here and
+       the plugin tracks the theme's real dark palette; the hardcoded values are
+       only hit by generic themes that signal dark without theming their vars. */
+    --mvs-bg: var(--reign-site-body-bg-color, var(--color-theme-white-box, #121212));
+    --mvs-surface: var(--reign-site-body-bg-color, var(--global-body-lightcolor, #1e1e1e));
+    --mvs-surface-2: var(--reign-site-body-bg-color, var(--global-body-lightcolor, #2a2a2a));
+    --mvs-bg-muted: var(--reign-site-body-bg-color, var(--global-body-lightcolor, #2a2a2a));
+    --mvs-text: var(--reign-site-body-text-color, var(--global-title-color, #f0f0f0));
+    --mvs-text-secondary: var(--reign-site-alternate-text-color, var(--global-font-color, #b0b0b0));
+    --mvs-text-muted: var(--reign-site-alternate-text-color, var(--color-meta, #888888));
+    --mvs-border: var(--reign-site-border-color, var(--global-border-color, #363636));
     --mvs-border-light: #2e2e2e;
     --mvs-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
     --mvs-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
@@ -594,6 +619,9 @@ body.dark-mode .mvs-skeleton::after {
     margin: 0;
     font-size: 1.5rem;
     font-weight: 700;
+    /* No color → inherits theme heading color, washes out on the dark surface
+       card in dark mode (same bug class as the compete-hub headings). */
+    color: var(--mvs-text);
 }
 
 .mvs-follow-toggle {
@@ -4156,7 +4184,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-profile-avatar-hint {
     font-size: 0.75rem;
-    color: #6c757d;
+    color: var(--mvs-text-muted);
     margin: 0;
 }
 
@@ -4514,7 +4542,9 @@ a.mvs-dashboard-card-title:hover {
     justify-content: space-between;
     gap: 16px;
     background: linear-gradient(-135deg, #667eea 0%, #764ba2 100%);
-    color: var(--mvs-bg);
+    /* Fixed purple gradient in both modes — was var(--mvs-bg), which flips to
+       near-black in dark mode (dark text on purple). Keep it white. */
+    color: #fff;
     padding: 14px 24px;
     border-radius: 8px;
     margin: 0 auto 20px;
@@ -4542,7 +4572,9 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-logged-out-banner__actions .mvs-btn--primary {
-    background: var(--mvs-bg);
+    /* White button on the purple banner in both modes — was var(--mvs-bg),
+       which flips dark in dark mode and breaks the intended white pill. */
+    background: #fff;
     color: #667eea;
     border: none;
 }
@@ -5680,7 +5712,10 @@ a.mvs-dashboard-card-title:hover {
     gap: 0;
     border-top: 1px solid var(--mvs-border-light, #e5e7eb);
     padding: 0;
-    background: #fff;
+    /* Was #fff — the lightbox sidebar is var(--mvs-surface) (dark in dark mode)
+       and the input text is var(--mvs-text) (light), so a white bar made the
+       typed text invisible. Match the sidebar surface. */
+    background: var(--mvs-surface);
 }
 
 .mvs-lightbox-comment-input {

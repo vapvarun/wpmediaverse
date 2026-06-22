@@ -23,7 +23,7 @@
 }
 
 .mvs-player-audio-title {
-	color: var(--mvs-surface);
+	color: #fff; /* on the fixed #1a1a2e audio stage in both modes */
 	font-size: 1.1em;
 	margin-bottom: 16px;
 }

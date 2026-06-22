@@ -22,6 +22,21 @@ const TRANSPORT = config.transport || { type: 'polling', intervals: { active: 30
 // Helper: REST fetch with auth.
 async function apiFetch( path, options = {} ) {
 	const url = path.startsWith( 'http' ) ? path : REST + path;
+
+	// Call sites pre-stringify JSON bodies, so restFetch() (which only
+	// auto-sets Content-Type for plain-object bodies) leaves the header off.
+	// Without it WordPress REST never parses the JSON body and required
+	// params 400. Set it here for every string body — the single chokepoint
+	// all messaging POST/PATCH calls flow through. FormData uploads bypass
+	// apiFetch and must keep the browser's multipart boundary, so they are
+	// unaffected.
+	if ( typeof options.body === 'string' ) {
+		options.headers = Object.assign(
+			{ 'Content-Type': 'application/json' },
+			options.headers
+		);
+	}
+
 	const res = await window.mvsRest.restFetch( url, options );
 
 	if ( res.status === 204 ) return null;
