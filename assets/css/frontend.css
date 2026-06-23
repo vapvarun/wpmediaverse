@@ -4306,21 +4306,22 @@ a.mvs-dashboard-card-title:hover {
     cursor: not-allowed;
 }
 
-/* Secondary buttons inherit theme button tokens.
-   BuddyX Pro / BuddyX expose dedicated button vars that flip per mode:
-   --button-background-color, --button-text-color, --button-border-color
-   (and matching :hover variants). We use those directly — no hardcoding. */
+/* Secondary buttons are a NEUTRAL surface, deliberately distinct from the red
+   primary. Do NOT borrow the theme's --button-* tokens here: BuddyX/Reign set
+   --button-background-color to their PRIMARY button color (often red), which
+   made the secondary button render identical to primary with mismatched text.
+   The plugin's own --mvs-* surface/text tokens already flip for dark mode. */
 .mvs-btn.mvs-btn--secondary {
-    background: var(--button-background-color, var(--mvs-surface-2));
-    color: var(--button-text-color, var(--mvs-text));
-    border: 1px solid var(--button-border-color, var(--mvs-border));
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text);
+    border: 1px solid var(--mvs-border);
 }
 
 .mvs-btn.mvs-btn--secondary:hover,
 .mvs-btn.mvs-btn--secondary:focus {
-    background: var(--button-background-hover-color, var(--mvs-border));
-    color: var(--button-text-hover-color, var(--mvs-text));
-    border-color: var(--button-border-hover-color, var(--mvs-border));
+    background: var(--mvs-border-light);
+    color: var(--mvs-text);
+    border-color: var(--mvs-border);
 }
 
 /* Secondary button icons keep a neutral, theme-agnostic color — some themes

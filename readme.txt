@@ -127,6 +127,7 @@ Wbcom-family Integrations page, an image-watermark fix, conversation-scoped DM m
 * Fix      - The new-chat search no longer autofocuses on load, which was causing a page scroll-jump.
 * Fix      - Media replace reprocesses variants, custom post type archives render, and settings defaults apply correctly.
 * Fix      - Paginated Explore and member profile pages (page 2 and beyond) now return HTTP 200 instead of a soft 404, so search engines keep them indexed and page caches serve them.
+* Fix      - Secondary buttons such as View Entries and Browse no longer borrow the active theme's primary button color, so the label stays readable instead of low-contrast text on a colored fill.
 * Dev      - New filters mvs_strip_dead_bp_links, mvs_dead_bp_link_patterns, mvs_dm_denial_message, and mvs_dm_denial_reason; MessagingService::find_or_create_conversation() gains a force_request option; WatermarkService::get_config() now exposes image_id for the Pro renderer.
 * Dev      - The frontend was refactored onto a shared window.mvsRest client plus a router store and region partials for client-side navigation.
 * Dev      - Inline styles in blocks, BuddyPress activity renderers, and frontend templates were moved to tokenized stylesheet classes, so theme and child-theme CSS can target them.
