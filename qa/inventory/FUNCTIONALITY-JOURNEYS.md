@@ -248,11 +248,11 @@ Functionalities whose status is `GAP — none` or `SURFACE-ONLY`. These are the 
 | M34 | Report media — reporter-side feedback | `SURFACE-ONLY` |
 | M35 | Block another user (block + content-hidden + DM-blocked) | `GAP — none` |
 | M36 | "Follows you" badge and follower count accuracy | `SURFACE-ONLY` |
-| M37 | Create an album | `GAP — none` |
-| M38 | Add items to an album | `GAP — none` |
-| M39 | Reorder album items | `GAP — none` |
-| M40 | Set album cover | `GAP — none` |
-| M41 | Set album privacy (member-side action) | `SURFACE-ONLY` |
+| M37 | Create an album | COVERED — `C.member.albums-lifecycle` |
+| M38 | Add items to an album | COVERED — `C.member.albums-lifecycle` |
+| M39 | Reorder album items | COVERED — `C.member.albums-lifecycle` |
+| M40 | Set album cover | COVERED — `C.member.albums-lifecycle` |
+| M41 | Set album privacy (member-side action) | COVERED — `C.member.albums-lifecycle` |
 | M42 | View own collections (Collections tab) | COVERED — `E.collections-lifecycle` |
 | M43 | Create a manual collection | COVERED — `E.collections-lifecycle` |
 | M45 | Grant access to private media | `GAP — none` |

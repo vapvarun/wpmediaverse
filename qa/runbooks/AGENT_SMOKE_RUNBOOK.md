@@ -239,6 +239,30 @@ Each step is a contract, not a script. When you verify it, exercise the UI as a 
 ### C.member.bulk-trash-restore-delete
 **What to verify:** on `/my-media/` (or admin All Media for admins), bulk-select multiple media, choose Move to Trash → rows flip to `status=trashed`; switch the filter to Trashed → Restore brings them back; Delete permanently removes rows + meta + stats AND deletes the file. Bulk submit with zero selected shows a friendly error, not a destructive call.
 
+### C.member.albums-lifecycle
+**Covers:** M37 (create album), M38 (add items), M39 (reorder), M40 (set cover), M41 (privacy). Full
+journey, walked as a member end to end — not a per-endpoint contract. Albums are an `mvs_album` CPT
+with an `mvs_album_items` (album_id, media_id, position) join table and a first-party REST API
+(`/mvs/v1/albums`, `.../items`, `.../reorder`, `.../cover`).
+1. **Create.** My Media -> Albums -> Create album (name + privacy). The new album appears in the
+   Albums tab. The create action shows feedback (gate: no silent action). Server: an `mvs_album`
+   post exists, owned by the member.
+2. **Add items + SEE it (gate: no dead-end).** Open the album, add 2-3 media. The added media render
+   inside the album AND the album card on the Albums tab shows the **correct item count and a cover
+   thumbnail** (not 0 / not a flat placeholder). Server: `mvs_album_items` rows with positions.
+   This is the collections-class trap — confirm the count/cover surface reflects the adds.
+3. **Reorder.** Reorder items; the new order persists after reload (positions updated, not reset).
+4. **Set cover.** Pick a specific item as cover; the album card + single-album page show that media's
+   thumb. Removing the cover media later falls back to another item, not a broken image.
+5. **Privacy (M41).** Set the album private; a logged-out visitor and a non-owner member cannot open
+   it (single-album page 403/hidden, not listed); set public -> visible again. Privacy is enforced by
+   `PrivacyService::can_view` on both the list and single endpoints.
+6. **Remove item / delete album.** Remove one media -> count + cover update. Delete the album -> it
+   leaves the Albums tab, its `mvs_album_items` rows are purged (Album on-delete), and the member's
+   media themselves are NOT deleted (they remain in My Media -> Media).
+7. **States.** Empty album shows an empty state (not a blank panel); Albums tab with no albums shows
+   its empty state; each async step shows loading. 390px + a11y (focus, labels) hold.
+
 ### C.member.lightbox
 **What to verify:** clicking a thumbnail opens the lightbox; the 6-reaction bar (Like/Love/Haha/Wow/Sad/Angry) toggles per reaction with `aria-pressed` flips; `aria-label` on each is sentence-form; toolbar buttons (Share / Open / Favorite / Report / Download / Fullscreen) carry `aria-label`; ESC closes the lightbox (see D.esc-close-lightbox); F toggles Fullscreen; share never falls through to `window.prompt` (see D.share-no-prompt-fallback).
 
