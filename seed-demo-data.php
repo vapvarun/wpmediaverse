@@ -1072,20 +1072,42 @@ mvs_seed_log( '' );
 mvs_seed_log( 'Creating smart collections...' );
 
 foreach ( $collections_config as $col_cfg ) {
-	$col_id = wp_insert_post(
+	// Idempotency guard: re-running the seeder must NOT stack duplicate
+	// same-named collections for this author. Without this, each run created a
+	// fresh "Public Gallery"/"Nature Highlights", so repeated seeding produced
+	// 2x, 3x... copies. Reuse an existing one when present.
+	$existing_col = get_posts(
 		array(
-			'post_type'    => 'mvs_collection',
-			'post_title'   => $col_cfg['title'],
-			'post_content' => $col_cfg['description'],
-			'post_status'  => 'publish',
-			'post_author'  => $fallback_user_id,
-		),
-		true
+			'post_type'        => 'mvs_collection',
+			'post_status'      => 'any',
+			'author'           => $fallback_user_id,
+			'title'            => $col_cfg['title'],
+			'posts_per_page'   => 1,
+			'fields'           => 'ids',
+			'no_found_rows'    => true,
+			'suppress_filters' => true,
+		)
 	);
 
-	if ( is_wp_error( $col_id ) ) {
-		mvs_seed_log( 'Failed to create collection: ' . $col_id->get_error_message(), 'warning' );
-		continue;
+	if ( ! empty( $existing_col ) ) {
+		$col_id = (int) $existing_col[0];
+		mvs_seed_log( "  Collection already exists, reusing: {$col_cfg['title']} (#{$col_id})" );
+	} else {
+		$col_id = wp_insert_post(
+			array(
+				'post_type'    => 'mvs_collection',
+				'post_title'   => $col_cfg['title'],
+				'post_content' => $col_cfg['description'],
+				'post_status'  => 'publish',
+				'post_author'  => $fallback_user_id,
+			),
+			true
+		);
+
+		if ( is_wp_error( $col_id ) ) {
+			mvs_seed_log( 'Failed to create collection: ' . $col_id->get_error_message(), 'warning' );
+			continue;
+		}
 	}
 
 	// Collections use wp_postmeta (still a CPT).
