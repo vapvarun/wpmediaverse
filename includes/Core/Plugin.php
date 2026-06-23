@@ -431,6 +431,16 @@ class Plugin {
 			}
 		);
 
+		// Usage ledger (mvs_transactions). init() attaches the upload hook.
+		self::$container->register(
+			'transactions',
+			function () {
+				$service = new \WPMediaVerse\Services\TransactionService();
+				$service->init();
+				return $service;
+			}
+		);
+
 		self::$container->register(
 			'mentions',
 			function () {
@@ -669,6 +679,10 @@ class Plugin {
 		// Site Health checks.
 		$health = new \WPMediaVerse\Services\HealthCheckService();
 		$health->init();
+
+		// Usage ledger — boot so its mvs_media_uploaded hook attaches on every
+		// request path (REST upload, CLI import, admin), not just rest_api_init.
+		self::$container->get( 'transactions' );
 
 		self::$container->register(
 			'follows',
