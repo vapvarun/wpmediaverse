@@ -120,11 +120,11 @@
   "skipped": [
     {
       "id": "F.cross-browser",
-      "reason": "manual_required — Firefox/Safari need human tester"
+      "reason": "manual_required \u2014 Firefox/Safari need human tester"
     },
     {
       "id": "F.rtl",
-      "reason": "manual_required — RTL layout check needs human tester"
+      "reason": "manual_required \u2014 RTL layout check needs human tester"
     },
     {
       "id": "D.bp-thumbnail-leak",
@@ -164,5 +164,7 @@
     "group_dm_conversation_5": "deleted (test artifact)",
     "dm_message_14": "deleted (test artifact)",
     "collection_item_media49_in_collection173": "cleaned in pre-flight"
-  }
+  },
+  "release_version": "1.8.0",
+  "debug_log_issues": []
 }
