@@ -33,6 +33,7 @@ class Shortcodes {
 		add_shortcode( 'mvs_lock_overlay', array( $this, 'render_lock_overlay' ) );
 		add_shortcode( 'mvs_member_photos', array( $this, 'render_member_photos' ) );
 		add_shortcode( 'mvs_pdf_viewer', array( $this, 'render_pdf_viewer' ) );
+		add_shortcode( 'mvs_usage_history', array( $this, 'render_usage_history' ) );
 		// [mvs_story_viewer] intentionally NOT registered — the story
 		// create-flow (upload-form toggle + REST endpoint + expiry cron)
 		// lands in 1.2.1; until then a story-viewer shortcode would
@@ -793,5 +794,29 @@ class Shortcodes {
 		</div>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * Render the [mvs_usage_history] shortcode — the member's upload usage ledger.
+	 *
+	 * Usage: [mvs_usage_history limit="20"]
+	 *
+	 * @param array|string $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_usage_history( $atts ): string {
+		if ( ! is_user_logged_in() ) {
+			return '';
+		}
+
+		$atts           = shortcode_atts( array( 'limit' => 20 ), $atts, 'mvs_usage_history' );
+		$mvs_uh_limit   = (int) $atts['limit'];
+		$mvs_uh_user_id = get_current_user_id();
+
+		wp_enqueue_style( 'mvs-frontend' );
+
+		ob_start();
+		require MVS_PLUGIN_DIR . 'templates/partials/usage-history.php';
+		return (string) ob_get_clean();
 	}
 }
