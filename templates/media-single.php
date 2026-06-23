@@ -210,10 +210,16 @@ $mvs_archive_url = home_url( '/media/' );
 					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 					echo wp_interactivity_data_wp_context(
 						array(
-							'mediaId' => $mvs_media_id,
-							'restUrl' => esc_url_raw( rest_url( 'mvs/v1/media/' . $mvs_media_id . '/view' ) ),
-							'nonce'   => wp_create_nonce( 'wp_rest' ),
-							'playing' => false,
+							'mediaId'      => $mvs_media_id,
+							'restUrl'      => esc_url_raw( rest_url( 'mvs/v1/media/' . $mvs_media_id . '/view' ) ),
+							'nonce'        => wp_create_nonce( 'wp_rest' ),
+							'playing'      => false,
+							// Pro analytics — mirror the media-player block so the
+							// primary media page also records play/pause/seek/complete
+							// events. The shared mvs/media-player store short-circuits
+							// on empty analyticsUrl when Pro is inactive.
+							'analyticsUrl' => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/media/' . $mvs_media_id . '/events' ) ) : '',
+							'sessionId'    => defined( 'MVS_PRO_VERSION' ) ? substr( wp_generate_uuid4(), 0, 32 ) : '',
 						)
 					);
 					?>
@@ -243,10 +249,16 @@ $mvs_archive_url = home_url( '/media/' );
 					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
 					echo wp_interactivity_data_wp_context(
 						array(
-							'mediaId' => $mvs_media_id,
-							'restUrl' => esc_url_raw( rest_url( 'mvs/v1/media/' . $mvs_media_id . '/view' ) ),
-							'nonce'   => wp_create_nonce( 'wp_rest' ),
-							'playing' => false,
+							'mediaId'      => $mvs_media_id,
+							'restUrl'      => esc_url_raw( rest_url( 'mvs/v1/media/' . $mvs_media_id . '/view' ) ),
+							'nonce'        => wp_create_nonce( 'wp_rest' ),
+							'playing'      => false,
+							// Pro analytics — mirror the media-player block so the
+							// primary media page also records play/pause/seek/complete
+							// events. The shared mvs/media-player store short-circuits
+							// on empty analyticsUrl when Pro is inactive.
+							'analyticsUrl' => defined( 'MVS_PRO_VERSION' ) ? esc_url_raw( rest_url( 'mvs-pro/v1/media/' . $mvs_media_id . '/events' ) ) : '',
+							'sessionId'    => defined( 'MVS_PRO_VERSION' ) ? substr( wp_generate_uuid4(), 0, 32 ) : '',
 						)
 					);
 					?>

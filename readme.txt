@@ -129,6 +129,8 @@ Wbcom-family Integrations page, an image-watermark fix, conversation-scoped DM m
 * Fix      - Paginated Explore and member profile pages (page 2 and beyond) now return HTTP 200 instead of a soft 404, so search engines keep them indexed and page caches serve them.
 * Fix      - Secondary buttons such as View Entries and Browse no longer borrow the active theme's primary button color, so the label stays readable instead of low-contrast text on a colored fill.
 * Fix      - The demo-data importer reuses an existing same-named collection instead of stacking duplicate copies when it is run more than once.
+* Fix      - "Followers only" online-status visibility now hides presence from non-followers; previously the option behaved like "Everyone".
+* Fix      - Video and audio play analytics record from the main media page, not only the media-player block (the player wires the Pro events endpoint when Pro is active).
 * Dev      - New filters mvs_strip_dead_bp_links, mvs_dead_bp_link_patterns, mvs_dm_denial_message, and mvs_dm_denial_reason; MessagingService::find_or_create_conversation() gains a force_request option; WatermarkService::get_config() now exposes image_id for the Pro renderer.
 * Dev      - The frontend was refactored onto a shared window.mvsRest client plus a router store and region partials for client-side navigation.
 * Dev      - New mvs_collections_enabled filter lets a collections backend render a "Save to collection" control next to the favorite heart; the lightbox exposes the actions.lightboxOpenCollections action and dispatches an mvs-collections-click event carrying the current media id.
