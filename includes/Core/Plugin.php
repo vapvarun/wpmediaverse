@@ -67,6 +67,7 @@ use WPMediaVerse\REST\Controller\UserController;
 use WPMediaVerse\REST\Controller\ReportController;
 use WPMediaVerse\REST\Controller\ActivityController;
 use WPMediaVerse\REST\Controller\ProfileController;
+use WPMediaVerse\REST\Controller\TransactionController;
 use WPMediaVerse\REST\Controller\AuthController;
 use WPMediaVerse\Services\ProfileService;
 use WPMediaVerse\Core\TemplateHelpers;
@@ -807,6 +808,7 @@ class Plugin {
 			new SignedUrlController( $signed_urls, $privacy ),
 			new FollowController( $follows ),
 			new NotificationController( $notifications ),
+			new TransactionController( self::$container->get( 'transactions' ) ),
 			new UserController(),
 			new ReportController( $reports ),
 			new ActivityController( $activity ),
