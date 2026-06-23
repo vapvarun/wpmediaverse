@@ -11,7 +11,27 @@
 
 defined( 'ABSPATH' ) || exit;
 
-if ( ! is_user_logged_in() || ! current_user_can( 'upload_mvs_media' ) ) {
+// Logged-out: show a "Log in to upload" CTA instead of a blank gap on the page.
+if ( ! is_user_logged_in() ) {
+	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+		array(
+			'icon'    => 'upload',
+			'title'   => __( 'Log in to upload', 'wpmediaverse' ),
+			'message' => __( 'You need an account to share media.', 'wpmediaverse' ),
+			'actions' => array(
+				array(
+					'url'     => wp_login_url( get_permalink() ),
+					'label'   => __( 'Log in', 'wpmediaverse' ),
+					'variant' => 'primary',
+				),
+			),
+		)
+	); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns pre-escaped HTML.
+	return;
+}
+
+// Logged-in without the upload capability: stay silent (no broken affordance).
+if ( ! current_user_can( 'upload_mvs_media' ) ) {
 	return;
 }
 
