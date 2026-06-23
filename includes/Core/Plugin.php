@@ -1284,8 +1284,12 @@ class Plugin {
 			'mvsProfileActions',
 			array(
 				'i18n' => array(
-					'following' => __( 'Following', 'wpmediaverse' ),
-					'follow'    => __( 'Follow', 'wpmediaverse' ),
+					'following'   => __( 'Following', 'wpmediaverse' ),
+					'follow'      => __( 'Follow', 'wpmediaverse' ),
+					'block'       => __( 'Block', 'wpmediaverse' ),
+					'unblock'     => __( 'Unblock', 'wpmediaverse' ),
+					'blockAria'   => __( 'Block this member', 'wpmediaverse' ),
+					'unblockAria' => __( 'Unblock this member', 'wpmediaverse' ),
 				),
 			)
 		);

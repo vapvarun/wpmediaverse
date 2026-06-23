@@ -77,6 +77,52 @@
 			} );
 	} );
 
+	// --- Delegated Block toggle: any .mvs-block-toggle click. ---
+	// Block/unblock is reachable from the profile; unblocking is one click on
+	// the same control, so an accidental block needs no separate undo path.
+	document.addEventListener( 'click', function ( e ) {
+		var bbtn = e.target.closest( '.mvs-block-toggle' );
+		if ( ! bbtn ) {
+			return;
+		}
+		if ( bbtn.classList.contains( 'is-loading' ) ) {
+			return;
+		}
+
+		var userId = bbtn.getAttribute( 'data-user-id' );
+		var isBlocked = bbtn.getAttribute( 'data-blocked' ) === '1';
+		var restUrl = bbtn.getAttribute( 'data-rest-url' );
+
+		bbtn.classList.add( 'is-loading' );
+		bbtn.disabled = true;
+
+		window.mvsRest.restFetch( restUrl + 'users/' + userId + '/block', {
+			method: isBlocked ? 'DELETE' : 'POST',
+		} )
+			.then( function ( r ) {
+				return r.data;
+			} )
+			.then( function ( data ) {
+				bbtn.classList.remove( 'is-loading' );
+				bbtn.disabled = false;
+				if ( data && data.blocked ) {
+					bbtn.setAttribute( 'data-blocked', '1' );
+					bbtn.textContent = i18n.unblock || 'Unblock';
+					bbtn.classList.add( 'mvs-block-toggle--blocked' );
+					bbtn.setAttribute( 'aria-label', i18n.unblockAria || '' );
+				} else {
+					bbtn.setAttribute( 'data-blocked', '0' );
+					bbtn.textContent = i18n.block || 'Block';
+					bbtn.classList.remove( 'mvs-block-toggle--blocked' );
+					bbtn.setAttribute( 'aria-label', i18n.blockAria || '' );
+				}
+			} )
+			.catch( function () {
+				bbtn.classList.remove( 'is-loading' );
+				bbtn.disabled = false;
+			} );
+	} );
+
 	// --- Delegated Message button: any .mvs-message-btn click. ---
 	document.addEventListener( 'click', function ( e ) {
 		var mbtn = e.target.closest( '.mvs-message-btn' );

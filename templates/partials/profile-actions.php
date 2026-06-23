@@ -17,12 +17,16 @@ if ( ! isset( $mvs_profile_id ) || $mvs_is_own_profile || ! is_user_logged_in() 
 	return;
 }
 
-// Follow state.
+// Follow + block state.
 $mvs_is_following = false;
+$mvs_is_blocked   = false;
 if ( class_exists( '\WPMediaVerse\Core\Plugin' ) ) {
 	$mvs_c = \WPMediaVerse\Core\Plugin::container();
 	if ( $mvs_c->has( 'follows' ) ) {
 		$mvs_is_following = $mvs_c->get( 'follows' )->is_following( get_current_user_id(), $mvs_profile_id );
+	}
+	if ( $mvs_c->has( 'reports' ) ) {
+		$mvs_is_blocked = $mvs_c->get( 'reports' )->is_blocked( get_current_user_id(), $mvs_profile_id );
 	}
 }
 
@@ -48,3 +52,10 @@ $mvs_messaging_on = ( 'nobody' !== $mvs_dm_access );
 		<?php esc_html_e( 'Message', 'wpmediaverse' ); ?>
 	</button>
 <?php endif; ?>
+<button type="button" class="mvs-btn mvs-btn--text mvs-btn--small mvs-block-toggle<?php echo $mvs_is_blocked ? ' mvs-block-toggle--blocked' : ''; ?>"
+	data-user-id="<?php echo esc_attr( $mvs_profile_id ); ?>"
+	data-blocked="<?php echo $mvs_is_blocked ? '1' : '0'; ?>"
+	data-rest-url="<?php echo esc_url( rest_url( 'mvs/v1/' ) ); ?>"
+	aria-label="<?php echo $mvs_is_blocked ? esc_attr__( 'Unblock this member', 'wpmediaverse' ) : esc_attr__( 'Block this member', 'wpmediaverse' ); ?>">
+	<?php echo $mvs_is_blocked ? esc_html__( 'Unblock', 'wpmediaverse' ) : esc_html__( 'Block', 'wpmediaverse' ); ?>
+</button>

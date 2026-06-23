@@ -4354,6 +4354,18 @@ a.mvs-dashboard-card-title:hover {
     border: none;
 }
 
+/* Block/unblock toggle: de-emphasized next to Follow/Message; danger tint when
+   active or hovered so the destructive action reads clearly. */
+.mvs-block-toggle {
+    color: var(--mvs-text-secondary);
+}
+
+.mvs-block-toggle:hover,
+.mvs-block-toggle:focus,
+.mvs-block-toggle--blocked {
+    color: var(--mvs-danger);
+}
+
 /* Mobile */
 @media (max-width: 480px) {
     .mvs-profile-avatar-section {
