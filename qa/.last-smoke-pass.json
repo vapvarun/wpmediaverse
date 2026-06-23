@@ -1,57 +1,41 @@
 {
   "release_version": "1.8.0",
   "mode": "combo",
-  "ran_at": "2026-06-21T07:16:05Z",
-  "reverified_at": "2026-06-21T07:22:10Z",
+  "ran_at": "2026-06-23T09:43:28Z",
   "free_version": "1.8.0",
   "pro_version": "1.8.0",
+  "walk_type": "focused post-release re-verification (REST contracts + privacy + admin render + front-end + regression guards + static gates + boot smoke + debug.log). Validates the actual 1.8.0 released code incl. the inline-CSS audit commit, which postdated the 2026-06-21 full agent walk.",
   "sections": {
     "A_fresh_install":     { "pass": 0,  "fail": 0, "skipped": 5 },
     "B_upgrade":           { "pass": 0,  "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 19, "fail": 0, "skipped": 6 },
-    "D_regression_guards": { "pass": 11, "fail": 0, "skipped": 2 },
-    "E_pro_smoke":         { "pass": 9,  "fail": 0, "skipped": 8 },
-    "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 6 }
+    "C_core_flows":        { "pass": 13, "fail": 0, "skipped": 14 },
+    "D_regression_guards": { "pass": 6,  "fail": 0, "skipped": 18 },
+    "E_pro_smoke":         { "pass": 12, "fail": 0, "skipped": 6 },
+    "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 2 }
   },
+  "verified": [
+    "C.anon.explore-feed: /media/ 200, mvs-frontend enqueued, thumbnail_url is a signed uploads URL (not page-URL; D.bp-thumbnail-leak)",
+    "C.anon.privacy: anon REST sees exactly the 48 public items; private id 47 not leaked",
+    "C.anon.single-media: og:image + og:title + twitter:card present; 200",
+    "C.anon.user-profile: /media/@varundubey/ 200, no user_email/pass leak",
+    "C.anon.dashboard-gate (D.dashboard-anon-gate): /my-media/ anon shows mvs-btn--primary Log in + redirect_to",
+    "C.anon.search-empty-state (D.search-empty-state): Browse all media + mvs-tag chips + search term",
+    "C.member.edit-categories-persist (D.categories-cache-miss-drop): JSON PUT applies, GET reflects, clear works, OPTIONS declares categories/tags/title/description/slug/privacy/allow_download",
+    "C.member.grid-thumbnail-size (D.grid-thumb-size-default): default resolves to medium via SettingsHelper::get_grid_thumb_size_key()",
+    "C.member.public-media-cacheable: two SignedUrlService::generate(id,0) return identical stable URLs",
+    "C.admin.plugin-pages: all 16 Free+Pro admin pages return HTTP 200, zero fatals, zero from-origin debug.log notices",
+    "pagination guard: /media/page/2/ returns 200 (not soft-404)",
+    "static gates: template-style + css-token + duplication + coding-rules green (Free+Pro); boot smoke green (Free+Pro)",
+    "inline-CSS audit surfaces (1.8.0): leaderboard, chat-header, privacy-blocked tokens, 6 Pro admin classes all resolve correctly in-browser; zero console errors"
+  ],
   "failures": [],
-  "visual_pass_addendum": {
-    "by": "calling Opus session (Playwright MCP resolved here even though the smoke sub-agent could not reach it)",
-    "at": "2026-06-21T07:26:00Z",
-    "verified": [
-      "Explore archive page 1 renders (grid + tag chips + active-challenge banner + Media/People search), 0 console errors/warnings.",
-      "Explore lightbox opens IN PLACE as an overlay on the same /media/ URL (not a navigation) - the open-in-place fix; right panel shows author, 6-reaction bar, Favorite/Share/Download/Open, comments empty state. ESC closes it.",
-      "Paginated archive /media/page/2/ renders the full grid with real photos + hover stats and returns HTTP 200 (the pagination-404 fix), title 'Explore Media - Page 2'.",
-      "Dark mode: clicking the BuddyX [data-bx-mode] toggle switches the entire MediaVerse Explore surface to dark (background, search, chips, banner) - the 'honor Wbcom dark signals' fix.",
-      "New Integrations admin page (mvs-integrations) renders the Wbcom-family card grid with status badges (WB Gamification CONNECTED, others NOT INSTALLED) and Install free / Learn more actions.",
-      "Zero from-origin console errors or warnings across the entire visual pass."
-    ],
-    "still_not_visually_exercised": "Upload composer UI flow, BP activity composer attach/preview alignment, mobile 390px viewport, Firefox/Safari/RTL/screen-reader, DM media participant matrix on real data (no fixtures). These remain in manual_required but are lower-risk than the headline 1.8.0 frontend changes, which are now visually confirmed."
-  },
-  "resolved_this_session": [
-    {
-      "id": "C.anon.archive-profile-pagination-404",
-      "origin": "from",
-      "fix": "Added TemplateLoader::render_template() which calls status_header(200) and clears WP_Query::is_404 before include+exit; routed all four serve_* virtual-page paths (single media, explore archive, user profile, profile edit) through it. Also consolidates the previously-duplicated 'include $template; exit;' blocks into one helper.",
-      "reverified": "curl -o /dev/null -w '%{http_code}' confirms 200 after the fix: /media/page/2/ = 200, /media/page/3/ = 200, /media/@varundubey/page/2/ = 200 (page 1 still 200). php -l + WPCS (project ruleset) clean on TemplateLoader.php.",
-      "reverified_at": "2026-06-21T07:22:10Z"
-    }
+  "debug_log_issues": [
+    { "section": "C.admin.plugin-pages", "level": "deprecated", "origin": "for", "line": "preg_replace(): Passing null to parameter #3 is deprecated", "file": "wp-includes/kses.php:1935 (WP core; informational)" }
   ],
-  "debug_log_issues": [],
   "manual_required": [
-    "Playwright MCP server was NOT available this session (neither mcp__plugin_playwright_playwright__* nor mcp__playwright__* tools resolved). All browser-DOM / visual / CSS-alignment / ARIA / lightbox / fullscreen / swipe assertions could not be exercised live and must be human- or browser-agent-verified: C.member.lightbox (6-reaction bar aria-pressed, ESC close, F fullscreen, share toast), C.member.lightbox-edit-modal, D.esc-close-lightbox, D.lightbox-reactions-a11y, D.activity-button-icon-only (18px image-plus icon + label), D.activity-privacy-alignment (yDelta 0px under Reign), D.activity-preview-hero-regression (120-150px tile), C.member.activity-composer-attach, C.member.activity-preview, D.streak-badge-aria (DOM aria-label).",
-    "Section A (fresh install) skipped on this live dev site, as the prior 1.7.0 run did.",
-    "Section F (Firefox/Safari/RTL/a11y): Playwright is Chromium-only AND unavailable this session; spot-check upload modal file picker (Firefox), lightbox swipe + reaction tap (Safari iOS 390px), activity privacy <select> native UI (Safari iOS), navigator.share (Safari iOS) / clipboard.writeText (Firefox), and RTL (ar) on Explore/single/profile/dashboard/lightbox for horizontal overflow + icon mirroring.",
-    "C.member.upload-public / upload-privacy-matrix / upload-rejections / delete-own / bulk-trash-restore-delete: full UI upload flow needs the dashboard/activity composer in a browser; not exercised live. Media Library is empty (0 attachments) and there is no on-disk source corpus to drive a headless UploadService::handle() cleanly.",
-    "C.member.public-media-cacheable / D.public-media-cacheable-local: site runs the BunnyCDN cloud driver (mvs_storage_driver=bunnycdn); public media serves direct from CDN (verified streaming 200 image/jpeg), which the contract explicitly EXEMPTS from the local-driver /serve Cache-Control: public, max-age=604800 path. The local-driver cache-header assertion needs a local-driver environment.",
-    "DM conversation-scoped media participant gate (headline change): PrivacyService gate confirmed at code level (participants admitted, non-participants + anon denied, PrivacyService.php L96-133), but no DM messages with media attachments exist in the fixture, so the participant/non-participant/anon can_view() matrix could not be exercised on real data.",
-    "E.battles / E.challenges / E.tournaments full lifecycle (create -> notify -> submit -> resolve -> winner XP), E.boosts, E.streaks freeze purchase debit, E.video-intelligence, E.cloud-storage upload-to-bucket, E.ai-providers, E.quota cap block, E.instagram-feed, E.privacy-pro-ui, E.migration-importers, E.group-dm send/read, E.multi-collection-save: REST routes confirmed registered (full mvs-pro/v1 surface present) and code-level guards verified, but the end-to-end member flows need browser + multi-actor fixtures."
-  ],
-  "notes": {
-    "headline_changes": "Verified server-side: (1) New Wbcom-family Integrations admin page (mvs-integrations) renders HTTP 200 with plugin cards + one-click installer wiring, zero PHP errors. (2) Full conversation-scoped DM media REST surface registered including new /mvs/v1/messages/upload; participants-only gate present in PrivacyService L96-133. (3) Explore/grid thumbnails default to MEDIUM variant (300x200 / 300x225 served, get_grid_thumb_size_key()=medium) confirming the large->medium default flip. (4) Media-grid N+1 fix holds: prefetch for 24 tiles = 3 queries (target <=12, was ~170). (5) Client-side-nav refactor surfaces (mvsRest, REST namespace) reachable - mvs/v1 + mvs-pro/v1 both fully registered. Dark-mode under [data-bx-mode], Explore lightbox open-in-place, and the no-autofocus-scroll-jump messaging fix are DOM/visual and require the browser (manual_required - Playwright unavailable).",
-    "verified_bugs": "D.notification-hook-message-link PASS (hook fires 7 args, non-empty message 'alice reacted to Sunrise' + valid link, 5-arg legacy listener no warning). D.private-media-activity-row PASS (all private media have 1 mvs_activity row). D.blank-video-poster PASS (video 159 thumbnail_url = non-empty default-video-poster.svg, not ''). D.grid-thumb-size-default PASS (medium default). D.dashboard-anon-gate PASS (styled mvs-btn--primary + redirect_to round-trip). D.search-empty-state PASS (Browse-all link + 5 tag chips + search term). D.categories-cache-miss-drop OPTIONS PASS (all 7 editable args declared); note: no persistent object cache active on this site so the cache-miss branch itself was not the destructive path here. D.shared-ui-shell-rename PASS (shared-ui-shell.css does NOT exist; frame.css does; the mvs-shared-ui-shell HANDLE is an intentional Production-Rule-#2 deprecation alias pointing at frame.css). D.bp-css-ownership + D.share-no-prompt-fallback: the lone grep hits are inside CSS/JS comments, not live selectors/calls - PASS. E.tournaments.sparse-bracket PASS via live runs (bracket_size 16 w/ 3 entries -> 1 real + 1 bye + 0 both-null, status=active; bracket_size 64 w/ 2 entries -> 1 real + 0 both-null; no fatal). E.streaks.daily-check-bounded, E.competitions.cron-bounded (LIMIT 50 x5), E.battles.win-xp-configured all verified at code level.",
-    "watermark_check": "PASS - confirmed end to end. Created a real PNG watermark attachment (id 170), set mvs_watermark_type=image + mvs_watermark_image_id=170. Free WatermarkService::get_config() now correctly exposes image_id=170 and resolves image_url (the fix). Drove Pro Watermarker::generate('', media_id, source, url, config) directly against a real on-disk JPEG: it took the 'image' branch (config['image_id']=170 > 0), called apply_image_watermark(), and wrote a NON-EMPTY watermarked preview (4490 bytes) under wpmediaverse/previews/ with NO PHP error and ZERO from-origin debug.log entries. Before the fix, image_id was absent from get_config() so config['image_id'] ?? 0 was always 0 and the image watermark silently rendered nothing. Could NOT exercise the full access-rule -> WatermarkService::get_preview_url() path live because no media has active access rules and the Media Library was empty (no attachments) - but the watermark settings saved cleanly and the actual Watermarker image path was proven. Test attachment + options restored to original (type=text) after the check.",
-    "from_origin_debug_log": "ZERO from-origin (wpmediaverse / wpmediaverse-pro) PHP Fatal/Warning/Notice/Deprecated entries across the entire walk. The 708 new debug.log lines are all from the third-party bp-verified-member plugin (dynamic-property deprecations, for-origin noise) plus 2 lines from my own wp-cli eval harness (calling a static method as instance, and Pro Plugin::container() which doesn't exist - both my test errors, not plugin code; no debug.log entry was written into a real plugin request path). Debug diff archived to qa/.debug-log-1.8.0-2026-06-21T07-14-49Z.txt.",
-    "environment": "Free MVS_VERSION = Pro MVS_PRO_VERSION = 1.8.0 (confirmed equal). Both plugins ACTIVE. WP_DEBUG=true, WP_DEBUG_LOG=true, WP_DEBUG_DISPLAY=false. 31 mvs_* tables, mvs_db_version=17. Storage driver = bunnycdn (cloud). Fixture cleanup ran clean (no schema drift). Pro toggles ON: battles/challenges/tournaments/boosts/streaks; connectors OFF. Persistent object cache NOT active.",
-    "release_signal": "No from-origin debug.log issues. The one from-origin functional failure found during the walk (paginated Explore-archive + profile pages returning HTTP 404; SEO soft-404 + CDN-cache-bypass) was FIXED and re-verified this session - see resolved_this_session; all paginated pages now return 200. Watermark headline fix verified working. REMAINING CAVEAT: Sections A and F skipped by design, and large portions of C/E browser/visual coverage are manual_required because the Playwright MCP server was unavailable this session - this run is NOT a full green browser pass. The frontend-heavy 1.8.0 changes (client-side-nav refactor, Explore lightbox open-in-place, dark mode under [data-bx-mode], router regions, no-autofocus messaging) are verified at the code/REST level only, not visually."
-  }
+    "Firefox Desktop + Safari iOS 390px (F cross-browser)",
+    "Write-heavy flows not exercised in this focused walk: UI file upload, delete-own, bulk trash/restore/delete, DM send/receive, reactions/favorites toggle, follow/mention",
+    "BuddyPress flows N/A on this site (BP inactive): activity composer/preview, audio card, /members/ + /groups/ media, D.bp-* / D.activity-* rows",
+    "C.member.video-poster-fallback: no video media present to exercise"
+  ]
 }
