@@ -424,6 +424,20 @@ $mvs_archive_url = home_url( '/media/' );
 							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
 						</a>
 					<?php endif; ?>
+					<?php
+					// "Save to collection" is separate from the heart (a like). Rendered
+					// only when a collections backend (Pro) enables it via the filter.
+					if ( is_user_logged_in() && apply_filters( 'mvs_collections_enabled', false ) ) :
+						?>
+						<button class="mvs-collect-btn mvs-btn--icon-collapse" type="button"
+							data-mvs-collections-trigger
+							data-media-id="<?php echo esc_attr( $mvs_media_id ); ?>"
+							data-mvs-tooltip="<?php esc_attr_e( 'Save to a collection', 'wpmediaverse' ); ?>"
+							aria-label="<?php esc_attr_e( 'Save to a collection', 'wpmediaverse' ); ?>">
+							<i data-lucide="bookmark" aria-hidden="true"></i>
+							<span class="mvs-btn__label"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
+						</button>
+					<?php endif; ?>
 					<button class="mvs-share-btn mvs-btn--icon-collapse" type="button"
 						data-wp-on--click="actions.handleShare"
 						data-mvs-tooltip="<?php esc_attr_e( 'Share', 'wpmediaverse' ); ?>"

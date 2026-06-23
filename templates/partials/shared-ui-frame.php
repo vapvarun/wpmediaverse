@@ -480,6 +480,13 @@ $mvs_show_fab = $mvs_is_logged_in && (
 							<span data-wp-text="state.lightboxFavoriteLabel"></span>
 						</button>
 					<?php endif; ?>
+					<?php // "Save to collection" is separate from the heart; shown only when a collections backend (Pro) enables it. ?>
+					<?php if ( $mvs_is_logged_in && apply_filters( 'mvs_collections_enabled', false ) ) : ?>
+						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
+							<i data-lucide="bookmark" aria-hidden="true"></i>
+							<?php esc_html_e( 'Save', 'wpmediaverse' ); ?>
+						</button>
+					<?php endif; ?>
 					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxShare" aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>">
 						<i data-lucide="share-2" aria-hidden="true"></i>
 						<?php esc_html_e( 'Share', 'wpmediaverse' ); ?>

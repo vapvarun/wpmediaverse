@@ -1166,6 +1166,21 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxIsFavorited = previous;
 			}
 		},
+		// Open the Pro "Save to collection" picker for the current lightbox item.
+		// Favoriting (the heart) and saving to a collection are deliberately
+		// separate actions; this only announces the media id so the Pro picker
+		// can open. No-op if Pro is not present.
+		lightboxOpenCollections() {
+			if ( ! state.lightboxMediaId ) return;
+			const ref = getElement()?.ref;
+			( ref || document.body ).dispatchEvent(
+				new CustomEvent( 'mvs-collections-click', {
+					bubbles: true,
+					cancelable: false,
+					detail: { mediaId: state.lightboxMediaId },
+				} )
+			);
+		},
 		lightboxUpdateComment( event ) {
 			state.lightboxCommentText = event.target.value;
 		},
