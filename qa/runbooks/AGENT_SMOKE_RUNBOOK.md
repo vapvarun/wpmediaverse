@@ -12,6 +12,35 @@ D rows (regression guards) stay specific: they are repros of past customer incid
 
 Infrastructure sections (preconditions, output contract, debug-log protocol, fixture cleanup, failure protocol) stay specific because they are the stable machinery the walk rides on.
 
+## Functional journeys are the spine of this runbook
+
+We test **complete per-feature journeys**, not isolated surfaces or REST contracts. A feature is
+only "working" when a real user can go end to end:
+
+> **discover -> create / configure -> use -> SEE the result -> edit -> remove**
+
+and every step holds up. Checking that a button exists, a route returns 200, or a DB row was
+written is necessary but **not sufficient** — those passed green while manual collections still
+showed "0 items", the Save picker gave no feedback, and there was no screen to view what you saved.
+A server-contract pass is **not** a journey pass.
+
+**Two universal gates apply to every interactive step of every journey:**
+
+1. **No silent action.** Every toggle / submit / save shows pending, then success or error. If an
+   action changes state with no visible indicator, that is a defect — even if the write succeeded.
+2. **No dead-end.** Anything a user creates, saves, or configures must have a reachable place to
+   **view** it, and the count / preview / list there must reflect the change. "Saved" with nowhere
+   to see it is a defect.
+
+Also verify, per journey, the states a real user hits: loading, empty, error (with recovery),
+and the cross-cutting concerns (a11y focus + labels, 390px mobile, the active state survives
+client-side navigation).
+
+**This runbook is a living document.** Adding a new feature or changing an existing one REQUIRES
+adding or updating that feature's journey here, in the same change. The journey list is expected to
+grow with the product — if a customer can hit a flow, there is a journey for it. When a bug escapes
+to a customer, the first fix is the code; the second is the journey that should have caught it.
+
 ## Source-of-truth crosslinks
 
 These are the inventories the runbook contracts are derived from. If a check is missing from the runbook but listed below, propose adding it to the runbook first — don't invent contracts inline.
@@ -20,6 +49,7 @@ These are the inventories the runbook contracts are derived from. If a check is 
 - Free render contract: [`wpmediaverse/qa/RENDER-STATE-RULES.md`](../../qa/RENDER-STATE-RULES.md)
 - Free manual UX walkthrough (procedural): [`wpmediaverse/qa/MANUAL-UX-QA.md`](../../qa/MANUAL-UX-QA.md)
 - Free findings history: [`wpmediaverse/qa/runs/FINDINGS-HISTORY.md`](../../qa/runs/FINDINGS-HISTORY.md)
+- **Functionality -> journey coverage ledger** (every customer-reachable feature, by actor, mapped to its journey, with gaps flagged): [`wpmediaverse/qa/inventory/FUNCTIONALITY-JOURNEYS.md`](../../qa/inventory/FUNCTIONALITY-JOURNEYS.md). This is the backbone of the runbook: any row marked `GAP - none` (no journey) or `SURFACE-ONLY` (contract checked, journey not) is unprotected and is the standing journey backlog. Keep it in sync when adding or changing a feature.
 - Pro manual UX walkthrough: [`wpmediaverse-pro/qa/MANUAL-UX-QA.md`](../../../wpmediaverse-pro/qa/MANUAL-UX-QA.md)
 - Free CLAUDE.md (module map, hooks, tables): [`wpmediaverse/CLAUDE.md`](../../CLAUDE.md)
 - Pro CLAUDE.md: [`wpmediaverse-pro/CLAUDE.md`](../../../wpmediaverse-pro/CLAUDE.md)
@@ -406,8 +436,36 @@ Each Pro feature gets a contract here. Each contract covers the customer-visible
 ### E.group-dm
 **What to verify:** group DM create/send/read works and non-members are blocked. `POST /mvs-pro/v1/groups` `{members:[id1,id2,id3], title:"..."}` as creator → 200, a group conversation in Free's `mvs_conversations` + 4 `mvs_conversation_participants` rows (creator + 3). `GET /mvs-pro/v1/groups/{id}/messages` → 200 empty array; `POST` a message → persisted; `GET` again → message appears. A non-member calling `GET /mvs-pro/v1/groups/{id}/messages` → HTTP 403.
 
-### E.multi-collection-save
-**What to verify:** a member can save one media into multiple collections with add/remove and UNIQUE-key dedupe. Create 3 Free collections. `POST /mvs-pro/v1/media/{id}/collections` `{collection_id:1, member:true}` → 200, row in `mvs_pro_collection_items`; repeat for collection 2 → second row. `GET /mvs-pro/v1/media/{id}/collections` → both returned. `POST {collection_id:1, member:false}` → membership removed (row deleted); `GET` → only collection 2 remains. A duplicate insert is deduped by UNIQUE KEY `user_media_collection` (no duplicate row).
+### E.collections-lifecycle
+**Covers:** M42 (view own collections), M43 (create manual collection), and the multi-collection
+save. This is a full journey, not a REST round-trip — walk it as a member end to end. It exists
+because every step below shipped broken at least once while the REST contract still passed green.
+
+**What to verify (discover -> create -> use -> SEE -> edit -> remove):**
+1. **Create.** Open a media in the lightbox, click the dedicated **Save** control (a separate
+   bookmark, NOT the heart). Picker opens titled "Save to a collection" with a "Changes save
+   automatically" hint. Type a name -> Create. The new collection appears in the picker as a row.
+2. **Heart stays decoupled.** Click the heart -> it toggles favorite instantly with NO picker
+   popover (favorite and collections are separate actions). Favoriting must not open the picker.
+3. **Save + feedback (gate: no silent action).** Tick the new collection's checkbox. The row shows
+   `Saving...` then `Saved`. A failed write rolls the checkbox back AND shows an error. Server side:
+   a row exists in `mvs_pro_collection_items`.
+4. **See the result (gate: no dead-end).** Use the picker's "View your collections" link, OR go to
+   My Media -> Collections. The collection card shows the **correct item count (1, not 0) and the
+   saved media's cover thumbnail** (not a flat color placeholder). This is the check that catches
+   the Free/Pro count/cover bridge breaking (`mvs_collection_media_ids` + `mvs_collection_response`).
+5. **Multi-membership.** Save the same media into a second collection -> both show it; the picker
+   shows both ticked; each card count reflects it. Dedupe holds (UNIQUE `user_media_collection`,
+   no duplicate row on re-save).
+6. **Remove.** Untick in the picker (or remove via the collection) -> `Saving...`/removed feedback,
+   row deleted, and the card count/cover update on the Collections tab.
+7. **States.** Empty: a member with no manual collections sees the picker's "No collections yet"
+   and the Collections tab empty state (not a blank panel). Author scoping: a different member never
+   sees this member's collections (`GET /mvs/v1/collections` as another user returns none).
+
+**Smart vs manual:** smart collections are rule-curated and must NOT be addable from the picker
+(picker lists manual only); their count/cover come from the rules. Verify a smart collection still
+shows its rule-matched count + cover unchanged by this journey.
 
 ### E.feature-toggle-degradation
 **What to verify:** flipping each `mvs_*_enabled` toggle OFF removes the corresponding admin menu item, frontend page, and scheduled action without breaking the surfaces around it. Flipping back ON restores cleanly.
