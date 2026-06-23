@@ -221,6 +221,13 @@ Sources: `qa/inventory/WHAT-TO-CHECK.md`, `audit/manifests/manifest.summary.json
 
 Functionalities whose status is `GAP — none` or `SURFACE-ONLY`. These are the flows where customers will hit undetected regressions. Listed by actor; each entry names the row number above.
 
+> **Burn-down progress (2026-06):** all 19 `GAP — none` items now have journeys. Promoted into
+> `AGENT_SMOKE_RUNBOOK.md`: M37-M41 (`C.member.albums-lifecycle`), M42-M43 (`E.collections-lifecycle`).
+> Drafted in `JOURNEY-BACKLOG-AND-FINDINGS.md` (ready to promote): M19, M35, M45, M67, M68, M69, M78,
+> M80, M81, M82, O23, O25, O26, O40. The burn-down produced **2 confirmed bugs** — F1 followers
+> online-status leak (FIXED) and F2 block-user has no frontend UI (open) — plus a 6-item VERIFY
+> backlog (F3-F8). M45 reclassified Free->Pro. SURFACE-ONLY upgrades are the next batch.
+
 ### Anonymous Visitor — Gaps
 
 | # | Functionality | Status |

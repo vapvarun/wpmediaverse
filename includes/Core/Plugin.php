@@ -1636,6 +1636,17 @@ class Plugin {
 				if ( 'nobody' === $setting ) {
 					return false;
 				}
+				if ( 'followers' === $setting ) {
+					// Show only to people who follow the target. This branch was
+					// missing, so "Followers only" fell through to `return $show`
+					// and behaved exactly like "Everyone" — the privacy choice
+					// did nothing (online status leaked to non-followers).
+					if ( ! $viewer_id || ! $target_id ) {
+						return false;
+					}
+					$mvs_follows = self::$container->get( 'follows' );
+					return $show && $mvs_follows && $mvs_follows->is_following( (int) $viewer_id, (int) $target_id );
+				}
 				return $show;
 			},
 			5,
