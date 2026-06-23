@@ -193,5 +193,26 @@ Before committing a CSS change, the author should be able to answer all of these
 - [ ] Does the file have a banner, and does this rule fit inside that banner's "scope" line? (§6)
 - [ ] If the rule is inside a section, does the section header number continue the file's sequence? (§7)
 - [ ] None of the §8 anti-patterns apply?
+- [ ] Is the styling in a stylesheet, NOT an inline `style="…"` in markup? (§11)
 
 If any answer is "no", the rule isn't ready to merge.
+
+---
+
+## 11. No inline cosmetic CSS in markup (canonical: CLAUDE.md Coding Rule #19)
+
+Templates, block `render.php`, and HTML-echoing PHP (`includes/**`) must NOT carry cosmetic `style="…"` attributes or hardcoded hex. The CSS gates in §1–§10 only scan `.css` files — they are structurally blind to inline `style=` and hardcoded hex inside markup, which is exactly why inline cosmetic CSS accumulated undetected until the 1.8.0 audit (68 violations across ~30 files).
+
+**A `style="…"` is a violation when it sets cosmetic CSS** — `color`, `background`, `margin`/`padding` (incl. longhands), `font*`, `border*`, `box-shadow`, `text-align`, `gap`, `display:flex` mixed with other props — or contains a literal hex outside a `var()` fallback. Move it to the stylesheet that owns the surface (§1 matrix) as a tokenized `var(--mvs-*)` class.
+
+**Reuse before you add.** Most 1.8.0 leaks were renderers re-inlining styling a tokenized class already provided — `.mvs-stat-value`/`.mvs-stat-label` (media-stats), `.mvs-activity-audio-icon`/`-title` (BP audio card, duplicated across two renderers), `.mvs-story-avatar` (story-viewer). The fix was to use the existing class, not add CSS. The media-stats block even carried dead `ol`/`li` selectors while rendering a `<table>` — markup and CSS had diverged (§5). Check the stylesheet first; never duplicate; never diverge.
+
+**Allowed inline (NOT violations):**
+- Pure visibility toggles — `style="display:none"` / `display:block` and nothing else (a behavioral JS / Interactivity-API initial state, not appearance).
+- Custom-property fallbacks — `var(--mvs-token, #fallback)`. Token first, literal only as last resort; this is the tokenized pattern, not a hardcoded color.
+- Instance custom properties set inline — `style="--mvs-story-avatar-size:<?php echo $n; ?>px"` — a per-instance knob the stylesheet consumes (add the token to the css-token-contract `ALLOW` list so it isn't flagged as phantom).
+- A dynamic value the server computes — `style="width:<?php echo $pct; ?>%"` (progress bars). The computed part is allowed; a literal hex baked into a dynamic style is still flagged.
+
+**Admin warning callouts** with no dark-mode variant (e.g. amber FFmpeg-missing box) may use literal hex in the `.css` file with a comment, but never inline in markup.
+
+**Enforcement:** `bin/template-style-check.sh`, wired as local-CI **stage 1.7** (Free and Pro) + `composer template-styles`. It flags static cosmetic inline styles and bare hex, allowing the four cases above. Add the same gate to any sibling plugin.
