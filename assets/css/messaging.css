@@ -628,6 +628,29 @@ body.dark-mode {
 	color: var(--mvs-chat-primary);
 }
 
+/* Optimistic send status — sending spinner + failed/retry control. */
+.mvs-chat-msg__sending {
+	font-size: 11px;
+	opacity: 0.7;
+}
+
+.mvs-chat-msg__retry {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--mvs-danger);
+	font-size: 11px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.mvs-chat-msg__retry:hover {
+	text-decoration: underline;
+}
+
 /* Reactions */
 .mvs-chat-msg__reactions {
 	display: flex;

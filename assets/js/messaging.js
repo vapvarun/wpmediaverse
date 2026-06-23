@@ -108,6 +108,16 @@ function enrichMessage( msg ) {
 	msg.isSent     = msg.sender_id === ME.id || String( msg.sender_id ) === String( ME.id );
 	msg.isReceived = ! msg.isSent && msg.message_type !== 'system';
 	msg.isSystem   = msg.message_type === 'system';
+	// Optimistic send lifecycle. Plain camelCase so Interactivity tracks them
+	// inside data-wp-each (underscore-prefixed props silently don't track), and
+	// so a failed send shows an error + retry instead of looking delivered.
+	msg.isSending  = !! msg._sending;
+	msg.isFailed   = !! msg._failed;
+	msg.notSending = ! msg.isSending;
+	msg.notFailed  = ! msg.isFailed;
+	// Hide the delivered double-check while the message is still in flight or
+	// failed (Interactivity directives can't OR, so derive it here).
+	msg.hideCheck  = msg.isReceived || msg.isSending || msg.isFailed;
 	// Deleted covers BOTH server flags: deleted_for_all (unsend) and
 	// is_deleted (delete-for-me — get_messages still returns the row to the
 	// sender, blanked). Only checking deleted_for_all left the sender's
@@ -677,12 +687,38 @@ const { state, actions } = store( 'mvs/messaging', {
 					conv.last_activity_at = new Date().toISOString();
 				}
 			} catch ( e ) {
-				// Mark as failed.
-				state.messages = state.messages.map( m => m.id === tempId ? { ...m, _failed: true, _sending: false } : m );
+				// Mark as failed — re-enrich so isFailed/notSending recompute and
+				// the bubble shows an error + retry instead of looking delivered.
+				state.messages = state.messages.map( m => m.id === tempId ? enrichMessage( { ...m, _failed: true, _sending: false } ) : m );
 				actions.showToast( e.message );
 			}
 
 			state.sendingMessage = false;
+		},
+
+		// Retry a failed optimistic send (re-uses the failed bubble's content).
+		*retrySend() {
+			const ctx = getContext();
+			const msgId = ctx.item?.id || ctx.messageId;
+			const failed = state.messages.find( m => String( m.id ) === String( msgId ) && m.isFailed );
+			if ( ! failed ) return;
+
+			state.messages = state.messages.map( m => String( m.id ) === String( msgId ) ? enrichMessage( { ...m, _failed: false, _sending: true } ) : m );
+
+			const body = { content: failed.content || '', message_type: failed.message_type || 'text' };
+			if ( failed.parent_id && failed.parent_id !== '0' ) body.parent_id = failed.parent_id;
+			if ( failed.attachment && failed.attachment.id ) body.attachment_id = failed.attachment.id;
+
+			try {
+				const realMsg = yield apiFetch(
+					'/conversations/' + state.activeConversationId + '/messages',
+					{ method: 'POST', body: JSON.stringify( body ) }
+				);
+				state.messages = state.messages.map( m => String( m.id ) === String( msgId ) ? enrichMessage( { ...realMsg, _sending: false } ) : m );
+			} catch ( e ) {
+				state.messages = state.messages.map( m => String( m.id ) === String( msgId ) ? enrichMessage( { ...m, _failed: true, _sending: false } ) : m );
+				actions.showToast( e.message );
+			}
 		},
 
 		*deleteMessage() {
