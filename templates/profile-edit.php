@@ -151,7 +151,7 @@ wp_enqueue_script_module(
 			<label for="mvs-bio"><?php esc_html_e( 'Bio', 'wpmediaverse' ); ?></label>
 			<textarea id="mvs-bio" rows="4" maxlength="500"
 				data-wp-on--input="actions.updateBio"
-				data-wp-text="context.bio"></textarea>
+				data-wp-bind--value="context.bio"></textarea>
 		</div>
 
 		<div class="mvs-profile-field">
