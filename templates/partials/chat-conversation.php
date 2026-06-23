@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
 		<img data-wp-bind--src="state.otherAvatar" data-wp-bind--hidden="!state.otherAvatar" alt="" width="36" height="36" />
 		<span class="mvs-online-dot" data-wp-bind--hidden="!state.otherIsOnline"></span>
 	</div>
-	<div style="flex:1;min-width:0;">
+	<div class="mvs-chat-header__info">
 		<div class="mvs-chat-header__title" data-wp-text="state.otherName"></div>
 		<div class="mvs-chat-header__subtitle" data-wp-text="state.otherLastActive"></div>
 	</div>

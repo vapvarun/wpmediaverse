@@ -61,7 +61,7 @@ class MediaDisplayHelper {
 				$seconds = (int) $duration % 60;
 				$sub    .= ( $sub ? ' &middot; ' : '' ) . sprintf( '%d:%02d', $minutes, $seconds );
 			}
-			return '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . ' style="border-radius:12px;"><a href="' . esc_url( $href ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;"><span class="mvs-activity-audio-icon" style="font-size:1.5em;flex-shrink:0;">&#9835;</span><span class="mvs-activity-audio-info" style="min-width:0;"><span class="mvs-activity-audio-title" style="display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . esc_html( $title ) . '</span>' . ( $sub ? '<span class="mvs-activity-audio-meta" style="display:block;font-size:.8em;color:#666;">' . $sub . '</span>' : '' ) . '</span></a></div>';
+			return '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . '><a href="' . esc_url( $href ) . '"><span class="mvs-activity-audio-icon">&#9835;</span><span class="mvs-activity-audio-info"><span class="mvs-activity-audio-title">' . esc_html( $title ) . '</span>' . ( $sub ? '<span class="mvs-activity-audio-meta">' . $sub . '</span>' : '' ) . '</span></a></div>';
 		}
 
 		// Images + videos: delegate to the canonical helper so BP activity, the

@@ -119,7 +119,7 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 	?>
 	'
 >
-	<div class="mvs-stories-bar" style="display:flex;gap:12px;overflow-x:auto;padding:8px 0;">
+	<div class="mvs-stories-bar">
 		<?php foreach ( $by_author as $author_id => $author_stories ) : ?>
 			<?php
 			$user       = get_userdata( $author_id );
@@ -129,8 +129,8 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 			$sv_su      = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 			$file_url   = $sv_mid && $sv_su ? $sv_su->generate( $sv_mid, get_current_user_id() ) : '';
 			?>
-			<div class="mvs-story-avatar"
-				style="text-align:center;flex-shrink:0;cursor:pointer;"
+			<div class="mvs-story"
+				style="--mvs-story-avatar-size:<?php echo absint( $avatar_size ); ?>px;"
 				data-wp-on--click="actions.openStory"
 				data-wp-context='
 				<?php
@@ -144,28 +144,21 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 				?>
 									'
 			>
-				<img src="<?php echo esc_url( $avatar_url ); ?>"
-					alt="<?php echo $user ? esc_attr( $user->display_name ) : ''; ?>"
-					style="width:<?php echo absint( $avatar_size ); ?>px;height:<?php echo absint( $avatar_size ); ?>px;border-radius:50%;border:3px solid #0073aa;object-fit:cover;"
-				/>
-				<div style="font-size:11px;color:#666;margin-top:4px;max-width:<?php echo absint( $avatar_size ); ?>px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+				<span class="mvs-story-avatar">
+					<img src="<?php echo esc_url( $avatar_url ); ?>"
+						alt="<?php echo $user ? esc_attr( $user->display_name ) : ''; ?>" />
+				</span>
+				<span class="mvs-story-name">
 					<?php echo $user ? esc_html( $user->display_name ) : ''; ?>
-				</div>
+				</span>
 			</div>
 		<?php endforeach; ?>
 	</div>
 
-	<div class="mvs-story-fullscreen"
-		data-wp-bind--hidden="!context.viewing"
-		style="position:fixed;inset:0;z-index:100000;background:#000;display:flex;align-items:center;justify-content:center;"
-	>
-		<button class="mvs-story-close"
-			data-wp-on--click="actions.closeStory"
-			style="position:absolute;top:20px;right:20px;color:#fff;font-size:32px;background:none;border:none;cursor:pointer;"
-		>&times;</button>
+	<div class="mvs-story-fullscreen" data-wp-bind--hidden="!context.viewing">
+		<button class="mvs-story-close" data-wp-on--click="actions.closeStory">&times;</button>
 		<img class="mvs-story-image"
 			data-wp-bind--src="context.storyUrl"
-			style="max-width:100%;max-height:100%;object-fit:contain;"
 			alt="" data-wp-bind--alt="context.authorName"
 		/>
 	</div>

@@ -163,10 +163,10 @@ class ActivityContentIntegration {
 		// or fails to load. Letting the browser pull the first frame is the
 		// belt-and-braces fix from Basecamp #9910574354 (Crisp ticket).
 		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'
-			. '<video controls preload="auto"' . $poster . ' style="width:100%;max-height:400px;border-radius:8px;display:block;">'
+			. '<video controls preload="auto"' . $poster . '>'
 			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' ) ?: 'video/mp4' ) . '">'
 			. '</video>'
-			. '<a href="' . esc_url( $permalink ) . '" class="mvs-activity-media-link" style="display:block;text-align:center;margin-top:4px;font-size:13px;">' . esc_html__( 'View full media', 'wpmediaverse' ) . '</a>'
+			. '<a href="' . esc_url( $permalink ) . '" class="mvs-activity-media-link">' . esc_html__( 'View full media', 'wpmediaverse' ) . '</a>'
 			. '</div>';
 
 		// Replace the existing thumbnail/placeholder with the video player.
@@ -489,10 +489,10 @@ class ActivityContentIntegration {
 						. ' data-wp-on--click="actions.openLightbox"';
 				}
 
-				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . $data_src . ' style="border-radius:12px;">'
-							. '<a href="' . esc_url( $link ) . '" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;"' . $lightbox_attrs . '>'
-							. '<span style="flex-shrink:0;display:inline-flex;">' . \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg() . '</span>'
-							. '<span style="min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' . $title . '</span>'
+				$media_html .= '<div class="mvs-activity-media mvs-activity-media--audio"' . $data_mid . $data_src . '>'
+							. '<a href="' . esc_url( $link ) . '"' . $lightbox_attrs . '>'
+							. '<span class="mvs-activity-audio-icon">' . \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_music_svg() . '</span>'
+							. '<span class="mvs-activity-audio-info"><span class="mvs-activity-audio-title">' . $title . '</span></span>'
 							. '</a></div>';
 
 			} else {

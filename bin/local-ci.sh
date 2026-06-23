@@ -128,6 +128,16 @@ if [ -x bin/journey-coverage.sh ]; then
   run_stage "1.6" "Journey coverage (critical features have a journey)" bash bin/journey-coverage.sh
 fi
 
+# 1.7 — Template-style check: no STATIC inline styles / hardcoded hex in markup
+# (templates, block render.php, HTML-echoing includes). Closes the hole the CSS
+# token-contract gate can't see — it scans .css files, not inline style="…"
+# attributes. Pure visibility toggles (display:none) and var(--token,#fallback)
+# are allowed; cosmetic inline color/spacing/font/border is not. See
+# bin/template-style-check.sh.
+if [ -x bin/template-style-check.sh ]; then
+  run_stage "1.7" "Template-style check (no inline cosmetic CSS)" bash bin/template-style-check.sh
+fi
+
 # ─── 2.x — Security + Architecture (always cheap) ────────────────────────────
 
 if [ -x bin/coding-rules-check.sh ]; then

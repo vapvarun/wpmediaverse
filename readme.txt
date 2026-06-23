@@ -129,6 +129,7 @@ Wbcom-family Integrations page, an image-watermark fix, conversation-scoped DM m
 * Fix      - Paginated Explore and member profile pages (page 2 and beyond) now return HTTP 200 instead of a soft 404, so search engines keep them indexed and page caches serve them.
 * Dev      - New filters mvs_strip_dead_bp_links, mvs_dead_bp_link_patterns, mvs_dm_denial_message, and mvs_dm_denial_reason; MessagingService::find_or_create_conversation() gains a force_request option; WatermarkService::get_config() now exposes image_id for the Pro renderer.
 * Dev      - The frontend was refactored onto a shared window.mvsRest client plus a router store and region partials for client-side navigation.
+* Dev      - Inline styles in blocks, BuddyPress activity renderers, and frontend templates were moved to tokenized stylesheet classes, so theme and child-theme CSS can target them.
 * Compat   - Pairs with WPMediaVerse Pro 1.8.0. Install both updates together.
 
 = 1.7.0 - June 2026 =

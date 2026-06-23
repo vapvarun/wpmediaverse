@@ -43,6 +43,7 @@
         "journeys:dry-run": "bash bin/run-journeys.sh --dry-run",
         "coding-rules": "bash bin/coding-rules-check.sh",
         "css-tokens": "bash bin/css-token-contract.sh",
+        "template-styles": "bash bin/template-style-check.sh",
         "dup-gate": "bash bin/duplication-gate.sh",
         "dup-gate:bless": "bash bin/duplication-gate.sh --bless",
         "journey-coverage": "bash bin/journey-coverage.sh",

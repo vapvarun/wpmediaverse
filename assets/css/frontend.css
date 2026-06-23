@@ -225,6 +225,16 @@ body.mvs-page {
     color: var(--mvs-text);
 }
 
+/* Private-media gate shown when the viewer can't see the requested media. */
+.mvs-privacy-blocked {
+    text-align: center;
+    padding: var(--mvs-space-7) var(--mvs-space-4);
+}
+
+.mvs-privacy-blocked__icon {
+    font-size: 48px;
+}
+
 /* Heading reset within any MVS template — uses display font for headings */
 .mvs-single-media h1,
 .mvs-single-album h1,

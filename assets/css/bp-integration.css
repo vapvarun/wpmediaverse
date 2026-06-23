@@ -510,6 +510,25 @@
     background: rgba(0, 0, 0, 0.8);
 }
 
+/* Inline <video> player (poster + controls) on an activity item. */
+#buddypress .mvs-activity-media--video video,
+.activity-list .mvs-activity-media--video video {
+    display: block;
+    width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+}
+
+/* "View full media" caption link under the player. Scoped under --video so
+ * it overrides the generic .mvs-activity-media--video a block above. */
+#buddypress .mvs-activity-media--video .mvs-activity-media-link,
+.activity-list .mvs-activity-media--video .mvs-activity-media-link {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    text-align: center;
+}
+
 /* Placeholder tile — when the video has no thumbnail yet. 16:9 card
  * with a dark gradient. */
 #buddypress .mvs-activity-media--placeholder,

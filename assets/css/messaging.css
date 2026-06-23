@@ -202,6 +202,12 @@ body.dark-mode {
 	height: 24px;
 }
 
+/* Title + subtitle column between the avatar and the menu button. */
+.mvs-chat-header__info {
+	flex: 1;
+	min-width: 0;
+}
+
 .mvs-chat-header__title {
 	flex: 1;
 	font-size: 16px;
@@ -1214,6 +1220,14 @@ body.dark-mode {
 	justify-content: center;
 	color: var(--mvs-chat-text-secondary);
 	font-size: 15px;
+}
+
+.mvs-messages-main--empty .mvs-messages-empty {
+	text-align: center;
+}
+
+.mvs-messages-main--empty .mvs-messages-empty p {
+	margin-top: 12px;
 }
 
 /* Respect the HTML [hidden] attribute (set by data-wp-bind--hidden on both

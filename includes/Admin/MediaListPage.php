@@ -1520,7 +1520,7 @@ class MediaListPage {
 						}
 						if ( $show_gd_hint ) :
 							?>
-							<p class="description" style="margin: 0 0 12px;">
+							<p class="description mvs-admin-hint">
 								<?php esc_html_e( 'Your server is using PHP-GD for image processing. GD is a weaker JPEG and WebP encoder than ImageMagick, so already-high-quality photos often cannot be shrunk further without losing visible quality. Ask your host to enable the ImageMagick PHP extension for better savings on large photos.', 'wpmediaverse' ); ?>
 							</p>
 							<?php

@@ -65,6 +65,21 @@
 	gap: 8px;
 }
 
+.mvs-upload-error p {
+	margin: 0;
+	flex: 1;
+}
+
+.mvs-upload-error__dismiss {
+	background: none;
+	border: 0;
+	color: var(--mvs-danger);
+	cursor: pointer;
+	font-size: 18px;
+	line-height: 1;
+	padding: 0 4px;
+}
+
 .mvs-upload-progress {
 	margin-top: 16px;
 }
@@ -77,6 +92,10 @@
 	border-radius: 4px;
 	border-left: 4px solid var(--mvs-success);
 	font-size: 0.95em;
+}
+
+.mvs-upload-success p {
+	margin: 0;
 }
 
 .mvs-upload-dropzone__hint {

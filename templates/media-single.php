@@ -50,8 +50,8 @@ if ( 'public' !== $mvs_privacy ) {
 
 	if ( ! $mvs_can_view ) {
 		get_header();
-		echo '<div class="mvs-single-media"><div class="mvs-privacy-blocked" style="text-align:center;padding:60px 20px;">';
-		echo '<span style="font-size:48px;">&#128274;</span>';
+		echo '<div class="mvs-single-media"><div class="mvs-privacy-blocked">';
+		echo '<span class="mvs-privacy-blocked__icon">&#128274;</span>';
 		echo '<h2>' . esc_html__( 'This media is private', 'wpmediaverse' ) . '</h2>';
 		echo '<p>' . esc_html__( 'You do not have permission to view this content.', 'wpmediaverse' ) . '</p>';
 		echo '</div></div>';

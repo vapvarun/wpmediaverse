@@ -31,10 +31,11 @@
 }
 
 .mvs-stat-card {
-	background: var(--mvs-surface);
-	border-radius: 8px;
-	padding: 20px;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	background: var(--mvs-surface-2, var(--mvs-surface));
+	border: 1px solid var(--mvs-border-light);
+	border-radius: var(--mvs-radius-md, 8px);
+	padding: var(--mvs-space-3, 16px);
+	box-shadow: var(--mvs-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
 	text-align: center;
 }
 
@@ -56,32 +57,43 @@
 }
 
 .mvs-top-media {
-	margin-top: 24px;
+	margin-top: var(--mvs-space-4, 24px);
 	min-width: 0;
 	overflow: hidden;
 }
 
-.mvs-top-media li {
+.mvs-top-media h4 {
+	font-size: 1.1em;
+	margin: 0 0 var(--mvs-space-2, 8px);
+}
+
+/* Top-media leaderboard table (title / views / reactions). */
+.mvs-stats-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.mvs-stats-table th,
+.mvs-stats-table td {
+	padding: var(--mvs-space-2, 8px);
+	text-align: start;
+}
+
+.mvs-stats-table thead tr {
+	border-bottom: 2px solid var(--mvs-border-light);
+}
+
+.mvs-stats-table tbody tr {
+	border-bottom: 1px solid var(--mvs-border-light);
+}
+
+.mvs-stats-table tbody tr:last-child {
+	border-bottom: none;
+}
+
+.mvs-stats-table td:first-child {
+	max-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-}
-
-.mvs-top-media h3 {
-	font-size: 1.1em;
-	margin: 0 0 12px;
-}
-
-.mvs-top-media ol {
-	margin: 0;
-	padding-left: 20px;
-}
-
-.mvs-top-media li {
-	padding: 6px 0;
-	border-bottom: 1px solid var(--mvs-surface-2);
-}
-
-.mvs-top-media li:last-child {
-	border-bottom: none;
 }

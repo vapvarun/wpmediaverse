@@ -1876,7 +1876,19 @@ a.mvs-stat-card:focus {
 .mvs-icon-success { color: var(--mvs-success); }
 .mvs-status-inline { margin-left: 8px; }
 .mvs-progress-container { margin-top: 8px; }
-.mvs-progress-bar { height: 4px; background: var(--mvs-accent); border-radius: 2px; transition: width 0.3s; }
+.mvs-progress-bar { width: 0; height: 4px; background: var(--mvs-accent); border-radius: 2px; transition: width 0.3s; }
+
+/* Intro/hint paragraph above an admin section (was inline margin). */
+.mvs-admin-hint { margin: 0 0 12px; }
+
+/* Larger inline preview thumbnail on the AI review row (distinct from the
+   40x40 .mvs-thumb grid thumbnail used in list tables). */
+.mvs-ai-review-thumb {
+	max-width: 120px;
+	height: auto;
+	vertical-align: middle;
+	margin-inline-end: 10px;
+}
 .mvs-bulleted-list { list-style: disc; margin: 4px 0 0 1.5em; }
 .mvs-link-plain { text-decoration: none; }
 .mvs-notice-mt { margin-top: 12px; }

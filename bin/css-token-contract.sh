@@ -53,7 +53,7 @@ done
 # Intentional override-knob tokens: legitimately undefined in CSS because they
 # are set inline by the block editor / JS (they always carry a fallback). Any
 # OTHER used-but-undefined token is a bug.
-ALLOW='^--mvs-(grid-gap|blur|overlay-opacity|container-width|pro-(padding|margin)-(tablet|mobile))$'
+ALLOW='^--mvs-(grid-gap|blur|overlay-opacity|container-width|story-avatar-size|pro-(padding|margin)-(tablet|mobile))$'
 
 fail=0
 

@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-06-22T13:53:37Z",
+    "generated_at": "2026-06-23T08:48:35Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -15,31 +15,12 @@
         ]
     },
     "counts": {
-        "cross_plugin_duplicates": 10,
+        "cross_plugin_duplicates": 9,
         "within_plugin_duplicates": 38,
-        "free_files_scanned": 164,
+        "free_files_scanned": 167,
         "pro_files_scanned": 161
     },
     "cross_plugin_duplicates": [
-        {
-            "hash": "fc114849dc3a31aa1e4015b3f383a100ad28fdc1",
-            "instances": 2,
-            "token_count": 144,
-            "sites": [
-                {
-                    "plugin": "free",
-                    "file": "includes/Shortcodes/Shortcodes.php",
-                    "lines": "23-23",
-                    "method": "Shortcodes::init"
-                },
-                {
-                    "plugin": "pro",
-                    "file": "includes/Blocks/Shortcodes.php",
-                    "lines": "40-40",
-                    "method": "Shortcodes::init"
-                }
-            ]
-        },
         {
             "hash": "351f1bb9a791607cc4b74bdfb1dc804bc1d9bc2a",
             "instances": 2,

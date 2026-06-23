@@ -263,7 +263,7 @@ class OverviewPage {
 									</button>
 									<span id="mvs-import-demo-status" class="mvs-status-inline"></span>
 									<div class="mvs-import-progress mvs-progress-container mvs-hidden" id="mvs-import-progress">
-										<div class="mvs-import-progress-bar mvs-progress-bar" id="mvs-import-progress-bar" style="width:0%;"></div>
+										<div class="mvs-import-progress-bar mvs-progress-bar" id="mvs-import-progress-bar"></div>
 									</div>
 								</div>
 							<?php else : ?>

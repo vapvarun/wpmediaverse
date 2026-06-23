@@ -147,13 +147,13 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 		</div>
 	</div>
 	<div class="mvs-upload-error" data-wp-bind--hidden="!state.hasError" hidden>
-		<p data-wp-text="state.errorMessage" style="margin:0;flex:1;"></p>
-		<button type="button" data-wp-on--click="actions.dismissError" style="background:none;border:none;color:#d63638;cursor:pointer;font-size:18px;padding:0 4px;line-height:1;" aria-label="<?php esc_attr_e( 'Dismiss error', 'wpmediaverse' ); ?>">&times;</button>
+		<p data-wp-text="state.errorMessage"></p>
+		<button type="button" class="mvs-upload-error__dismiss" data-wp-on--click="actions.dismissError" aria-label="<?php esc_attr_e( 'Dismiss error', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
 	<div class="mvs-upload-progress" data-wp-bind--hidden="!state.isUploading" hidden>
 		<p data-wp-text="state.uploadStatus"></p>
 	</div>
 	<div class="mvs-upload-success" data-wp-bind--hidden="!state.hasSuccess" hidden>
-		<p data-wp-text="state.successText" style="color:#00a32a;margin:0;"></p>
+		<p data-wp-text="state.successText"></p>
 	</div>
 </div>

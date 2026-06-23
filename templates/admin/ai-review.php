@@ -69,7 +69,7 @@ defined( 'ABSPATH' ) || exit;
 						<th><?php esc_html_e( 'Media', 'wpmediaverse' ); ?></th>
 						<td>
 							<?php if ( '' !== $thumb_url ) : ?>
-								<img src="<?php echo esc_url( $thumb_url ); ?>" alt="" class="mvs-thumb" style="max-width:120px;height:auto;vertical-align:middle;margin-right:10px;" />
+								<img src="<?php echo esc_url( $thumb_url ); ?>" alt="" class="mvs-ai-review-thumb" />
 							<?php endif; ?>
 							<strong><?php echo esc_html( '' !== $title ? $title : __( '(no title)', 'wpmediaverse' ) ); ?></strong>
 						</td>

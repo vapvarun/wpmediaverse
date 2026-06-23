@@ -225,6 +225,16 @@ body.mvs-page {
     color: var(--mvs-text);
 }
 
+/* Private-media gate shown when the viewer can't see the requested media. */
+.mvs-privacy-blocked {
+    text-align: center;
+    padding: var(--mvs-space-7) var(--mvs-space-4);
+}
+
+.mvs-privacy-blocked__icon {
+    font-size: 48px;
+}
+
 /* Heading reset within any MVS template — uses display font for headings */
 .mvs-single-media h1,
 .mvs-single-album h1,
@@ -6117,3 +6127,78 @@ body.dark-mode .mvs-auth-gate__card {
         font-size: 10px;
     }
 }
+
+/* ==========================================================================
+   Usage history (mvs_transactions ledger — [mvs_usage_history] / dashboard)
+   ========================================================================== */
+
+.mvs-usage-history {
+    background: var(--mvs-surface);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-lg);
+    padding: var(--mvs-space-4);
+    color: var(--mvs-text);
+}
+
+.mvs-usage-history__title {
+    margin: 0 0 var(--mvs-space-3);
+    font-size: 1.125rem;
+    color: var(--mvs-text);
+}
+
+.mvs-usage-history__empty {
+    text-align: center;
+    padding: var(--mvs-space-5) var(--mvs-space-3);
+    color: var(--mvs-text-muted);
+}
+
+.mvs-usage-history__empty p {
+    margin: 0 0 var(--mvs-space-1);
+}
+
+.mvs-usage-history__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+}
+
+.mvs-usage-history__table th,
+.mvs-usage-history__table td {
+    text-align: start;
+    padding: var(--mvs-space-2) var(--mvs-space-3);
+    border-bottom: 1px solid var(--mvs-border-light);
+}
+
+.mvs-usage-history__table th {
+    color: var(--mvs-text-secondary);
+    font-weight: 600;
+}
+
+.mvs-usage-history__type {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: var(--mvs-radius-pill);
+    font-size: 0.8125rem;
+    background: var(--mvs-info-bg);
+    color: var(--mvs-text);
+}
+
+.mvs-usage-history__delta {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.mvs-usage-history__delta--up {
+    color: var(--mvs-success);
+}
+
+.mvs-usage-history__delta--down {
+    color: var(--mvs-danger);
+}
+
+.mvs-usage-history__more {
+    margin: var(--mvs-space-3) 0 0;
+    color: var(--mvs-text-muted);
+    font-size: 0.8125rem;
+}
+
