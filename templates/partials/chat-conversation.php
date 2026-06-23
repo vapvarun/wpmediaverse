@@ -41,6 +41,12 @@ defined( 'ABSPATH' ) || exit;
 		<?php require __DIR__ . '/chat-message.php'; ?>
 	</template>
 
+	<!-- Empty thread: a brand-new conversation with no messages yet -->
+	<div class="mvs-chat-messages__empty" data-wp-bind--hidden="!state.showThreadEmpty">
+		<p><?php esc_html_e( 'No messages yet', 'wpmediaverse' ); ?></p>
+		<p><?php esc_html_e( 'Say hello to start the conversation.', 'wpmediaverse' ); ?></p>
+	</div>
+
 	<!-- Typing Indicator -->
 	<template data-wp-each="state.typingUsers">
 		<div class="mvs-chat-messages__typing">

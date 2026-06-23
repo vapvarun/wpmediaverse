@@ -296,6 +296,11 @@ const { state, actions } = store( 'mvs/messaging', {
 		// Empty state.
 		get hasConversations() { return state.conversations.length > 0; },
 		get noConversations() { return state.conversations.length === 0; },
+		// Distinct from noConversations: only show the "no conversations" empty
+		// state once loading has finished, so a slow load shows a spinner instead
+		// of falsely reading "no conversations". Likewise for an empty thread.
+		get showListEmpty() { return ! state.loadingConversations && state.conversations.length === 0; },
+		get showThreadEmpty() { return ! state.loadingMessages && state.messages.length === 0; },
 
 		// Reply preview.
 		get replyToName() { return state.replyingTo?.sender_name || ''; },

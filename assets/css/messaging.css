@@ -365,11 +365,18 @@ body.dark-mode {
 	overscroll-behavior: contain;
 }
 
-.mvs-chat-list__empty {
+.mvs-chat-list__empty,
+.mvs-chat-list__loading,
+.mvs-chat-messages__empty {
 	padding: 40px 20px;
 	text-align: center;
 	color: var(--mvs-chat-text-secondary);
 	font-size: 14px;
+}
+
+.mvs-chat-list__empty p,
+.mvs-chat-messages__empty p {
+	margin: 0 0 4px;
 }
 
 .mvs-chat-conv-item {

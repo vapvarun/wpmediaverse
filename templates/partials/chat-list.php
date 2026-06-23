@@ -91,7 +91,11 @@ defined( 'ABSPATH' ) || exit;
 		</button>
 	</template>
 
-	<div class="mvs-chat-list__empty" data-wp-bind--hidden="state.hasConversations">
+	<div class="mvs-chat-list__loading" data-wp-bind--hidden="!state.loadingConversations" role="status">
+		<p><?php esc_html_e( 'Loading conversations…', 'wpmediaverse' ); ?></p>
+	</div>
+
+	<div class="mvs-chat-list__empty" data-wp-bind--hidden="!state.showListEmpty">
 		<p><?php esc_html_e( 'No conversations yet', 'wpmediaverse' ); ?></p>
 		<p><?php esc_html_e( 'Start a new conversation to begin messaging.', 'wpmediaverse' ); ?></p>
 	</div>
