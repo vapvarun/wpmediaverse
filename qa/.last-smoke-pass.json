@@ -1,17 +1,41 @@
 {
   "release_version": "1.8.0",
   "mode": "combo",
-  "ran_at": "2026-06-23T09:43:28Z",
+  "ran_at": "2026-06-23T10:03:58Z",
   "free_version": "1.8.0",
   "pro_version": "1.8.0",
-  "walk_type": "focused post-release re-verification (REST contracts + privacy + admin render + front-end + regression guards + static gates + boot smoke + debug.log). Validates the actual 1.8.0 released code incl. the inline-CSS audit commit, which postdated the 2026-06-21 full agent walk.",
+  "walk_type": "Two-environment smoke for 1.8.0. (1) Local wb-media (BuddyX-Pro, BP inactive): REST/privacy/admin/front-end/regression guards. (2) Isolated Docker docker-smoke-mvs (WP 7.0 + Reign 8.0 + BuddyPress 14.4, fresh install): full A-section + BP renderers + write flow + Reign light/dark tokens, WP_DEBUG on. Validates the actual 1.8.0 code incl. the inline-CSS audit commit.",
   "sections": {
-    "A_fresh_install":     { "pass": 0,  "fail": 0, "skipped": 5 },
-    "B_upgrade":           { "pass": 0,  "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 13, "fail": 0, "skipped": 14 },
-    "D_regression_guards": { "pass": 6,  "fail": 0, "skipped": 18 },
-    "E_pro_smoke":         { "pass": 12, "fail": 0, "skipped": 6 },
-    "F_cross_browser":     { "pass": 0,  "fail": 0, "skipped": 2 }
+    "A_fresh_install": {
+      "pass": 5,
+      "fail": 0,
+      "skipped": 0
+    },
+    "B_upgrade": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 3
+    },
+    "C_core_flows": {
+      "pass": 18,
+      "fail": 0,
+      "skipped": 9
+    },
+    "D_regression_guards": {
+      "pass": 8,
+      "fail": 0,
+      "skipped": 14
+    },
+    "E_pro_smoke": {
+      "pass": 14,
+      "fail": 0,
+      "skipped": 4
+    },
+    "F_cross_browser": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 2
+    }
   },
   "verified": [
     "C.anon.explore-feed: /media/ 200, mvs-frontend enqueued, thumbnail_url is a signed uploads URL (not page-URL; D.bp-thumbnail-leak)",
@@ -26,16 +50,37 @@
     "C.admin.plugin-pages: all 16 Free+Pro admin pages return HTTP 200, zero fatals, zero from-origin debug.log notices",
     "pagination guard: /media/page/2/ returns 200 (not soft-404)",
     "static gates: template-style + css-token + duplication + coding-rules green (Free+Pro); boot smoke green (Free+Pro)",
-    "inline-CSS audit surfaces (1.8.0): leaderboard, chat-header, privacy-blocked tokens, 6 Pro admin classes all resolve correctly in-browser; zero console errors"
+    "inline-CSS audit surfaces (1.8.0): leaderboard, chat-header, privacy-blocked tokens, 6 Pro admin classes all resolve correctly in-browser; zero console errors",
+    "DOCKER+REIGN+BP A.fresh-install: Free+Pro 1.8.0 activate clean on WP 7.0 + Reign 8.0 + BuddyPress 14.4; 31 mvs tables; pages auto-created; zero activation errors",
+    "DOCKER write-flow: UploadService.handle() upload -> indexed + thumb_medium generated + mvs_media_uploaded fired; REST DELETE -> 204, row removed, mvs_media_deleted fired",
+    "DOCKER BP renderers (only runnable with BP active): MediaDisplayHelper image + audio cards render with ZERO inline cosmetic styles, audio card uses .mvs-activity-audio-icon/-title/-info classes, no #666 (the exact 1.8.0 audit change)",
+    "DOCKER Reign tokens: all 6 core --mvs-* tokens resolve to Reign palette in LIGHT (#1d76da primary) and FLIP to dark via data-bx-mode=dark (#97c0ee) - 6/6 flipped",
+    "DOCKER admin: 16/16 Free+Pro pages HTTP 200 on fresh Reign install; REST privacy 0-leak; categories round-trip; thumb=medium",
+    "DOCKER debug.log: WP_DEBUG genuinely ON, re-ran all flows -> ZERO from-origin Fatal/Warning/Notice/Deprecated"
   ],
   "failures": [],
   "debug_log_issues": [
-    { "section": "C.admin.plugin-pages", "level": "deprecated", "origin": "for", "line": "preg_replace(): Passing null to parameter #3 is deprecated", "file": "wp-includes/kses.php:1935 (WP core; informational)" }
+    {
+      "section": "C.admin.plugin-pages",
+      "level": "deprecated",
+      "origin": "for",
+      "line": "preg_replace(): Passing null to parameter #3 is deprecated",
+      "file": "wp-includes/kses.php:1935 (WP core; informational)"
+    }
   ],
   "manual_required": [
     "Firefox Desktop + Safari iOS 390px (F cross-browser)",
     "Write-heavy flows not exercised in this focused walk: UI file upload, delete-own, bulk trash/restore/delete, DM send/receive, reactions/favorites toggle, follow/mention",
     "BuddyPress flows N/A on this site (BP inactive): activity composer/preview, audio card, /members/ + /groups/ media, D.bp-* / D.activity-* rows",
     "C.member.video-poster-fallback: no video media present to exercise"
+  ],
+  "findings": [
+    {
+      "id": "explore-search-url-404-on-reign",
+      "origin": "from",
+      "severity": "medium",
+      "regression_of_1.8.0": false,
+      "detail": "Server-rendered explore search via /explore-media/?s=<term> returns 404 on Reign (works on BuddyX). Plugin reads the reserved `s` query var (explore.php:190) on a page URL; WP core turns ?s=nonempty into is_search() which 404s with the page+search combo on this theme. REST search (GET /mvs/v1/media?search=) works 200 - the mandatory app path is unaffected. Pre-existing, not introduced by the 1.8.0 CSS audit. Fix: use a non-reserved query var (mvs_s) or pre_get_posts guard."
+    }
   ]
 }
