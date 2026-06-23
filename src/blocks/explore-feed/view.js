@@ -224,6 +224,10 @@ store( 'mvs/explore-feed', {
 				if ( ctx.search ) url.searchParams.set( 'search', ctx.search );
 
 				const res = await window.mvsRest.restFetch( url.toString() );
+				if ( ! res.ok ) {
+					// Throw so the catch surfaces a retry toast instead of swallowing.
+					throw new Error( 'mvs-explore-feed-failed' );
+				}
 				const data = res.data;
 				// X-WP-TotalPages drives infinite scroll; restFetch exposes it via res.headers.
 				const total = parseInt( ( res.headers && res.headers.get && res.headers.get( 'X-WP-TotalPages' ) ) || '1', 10 );
@@ -265,7 +269,11 @@ store( 'mvs/explore-feed', {
 					} );
 				}
 			} catch ( err ) {
-				// Ignore fetch errors.
+				// Surface the failure instead of swallowing it — keep ctx.hasMore so
+				// the member can retry rather than seeing a silently dead feed.
+				try {
+					store( 'mvs/shared-ui' ).actions.showToast( 'Couldn’t load more. Tap to retry.', 'error' );
+				} catch ( e ) {}
 			}
 
 			ctx.loading = false;

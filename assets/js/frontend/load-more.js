@@ -137,6 +137,19 @@
 			loadMoreBtn.classList.remove( 'is-loading' );
 		}
 
+		// A network/server error is NOT end-of-feed. Keep the button visible and
+		// clickable (clicking retries the same page) and tell the user — never
+		// call showEnd() on error, which would falsely read "You're all caught up".
+		function showError() {
+			loadMoreBtn.classList.remove( 'is-loading' );
+			var msg = ( window.wp && window.wp.i18n )
+				? window.wp.i18n.__( 'Couldn’t load more. Tap to retry.', 'wpmediaverse' )
+				: 'Couldn’t load more. Tap to retry.';
+			if ( typeof window.mvsToast === 'function' ) {
+				window.mvsToast( msg, 'error' );
+			}
+		}
+
 		var gridContainer = document.querySelector( '[data-mvs-grid-container]' );
 
 		var url = new URL( config.restUrl + config.endpoint, window.location.origin );
@@ -152,8 +165,9 @@
 		window.mvsRest.restFetch( url.toString() )
 			.then( function ( response ) {
 				if ( ! response.ok ) {
-					showEnd();
-					return [];
+					// Throw so the .catch below shows the retry state — returning
+					// [] here would fall through to showEnd() = false "all caught up".
+					throw new Error( 'mvs-load-more-failed' );
 				}
 				return response.data;
 			} )
@@ -192,7 +206,7 @@
 				loadMoreBtn.classList.remove( 'is-loading' );
 			} )
 			.catch( function () {
-				showEnd();
+				showError();
 			} );
 	} );
 }() );

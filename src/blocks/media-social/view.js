@@ -241,14 +241,31 @@ store( 'mvs/media-social', {
 		async submitComment( event ) {
 			event.preventDefault();
 			const ctx = getContext();
-			if ( ! ctx.commentText.trim() ) return;
+			if ( ! ctx.isLoggedIn ) {
+				sharedUI.actions.showToast( __( 'Please log in to comment.', 'wpmediaverse' ), 'error' );
+				return;
+			}
+			const text = ctx.commentText.trim();
+			if ( ! text || ctx.submittingComment ) return;
 
-			await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments', {
-				method: 'POST',
-				body: { content: ctx.commentText.trim() },
-			} );
-			ctx.commentText = '';
-			await fetchComments( ctx );
+			ctx.submittingComment = true;
+			try {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments', {
+					method: 'POST',
+					body: { content: text },
+				} );
+				if ( ! res.ok ) {
+					// Keep the typed text so the user can retry — do NOT clear.
+					sharedUI.actions.showToast( ( res.data && ( res.data.message || res.data.error ) ) || __( 'Could not post comment.', 'wpmediaverse' ), 'error' );
+					return;
+				}
+				ctx.commentText = '';
+				await fetchComments( ctx );
+			} catch ( e ) {
+				sharedUI.actions.showToast( __( 'Network error.', 'wpmediaverse' ), 'error' );
+			} finally {
+				ctx.submittingComment = false;
+			}
 		},
 
 		/* --- Comment Edit/Delete --- */
