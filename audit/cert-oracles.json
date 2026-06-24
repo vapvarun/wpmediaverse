@@ -1,0 +1,32 @@
+{
+  "_comment": "Hand-authored oracle list for `wp mvs cert contract`. Each oracle flips its gating option OFF then ON and dispatches the guarded REST route both times. It passes only when the OFF dispatch emits `off_code` AND the ON dispatch does not — proving the toggle actually enforces behaviour (no dead toggles). `kind` is 'option' (a standalone WP option, written as string '1'/'0') or 'feature' (a slug inside the aggregate `feature_store` option).",
+  "_uncovered_by_design": "Most WPMediaVerse gates cannot use the flip-and-dispatch pattern and are covered by journey runbooks instead: (1) Privacy/visibility (mvs_default_privacy, mvs_allow_user_privacy, mvs_dm_access, mvs_show_online_status) is enforced inside the SQL/query layer and returns filtered result sets, not a distinct disabled error code — see audit/journeys/customer/02-media-upload-non-public.md and 05-dm-access-setting-persists.md. (2) Media-optimization toggles (mvs_optimize_originals, mvs_generate_webp, mvs_generate_avif) act during the upload pipeline, not on a GET route. (3) AI auto-* toggles (mvs_ai_auto_analyze, mvs_ai_auto_apply_tags, mvs_ai_auto_moderate) gate background processing — see audit/journeys/admin/09-ai-features-owner-control.md. (4) Pro gamification toggles are registration-gated (the route deregisters when off) and live in the Pro cert. These appear below in `toggles` and surface as tracked HOLES, not failures.",
+  "feature_store": "mvs_features",
+  "namespaces": [ "mvs/v1" ],
+  "contract": [
+    {
+      "id": "mvs_allow_downloads",
+      "kind": "option",
+      "route": "/mvs/v1/media/1/download",
+      "method": "POST",
+      "params": {},
+      "off_code": "mvs_downloads_disabled"
+    }
+  ],
+  "toggles": [
+    "mvs_allow_downloads",
+    "mvs_default_privacy",
+    "mvs_allow_user_privacy",
+    "mvs_dm_access",
+    "mvs_show_online_status",
+    "mvs_chat_panel_visibility",
+    "mvs_optimize_originals",
+    "mvs_generate_webp",
+    "mvs_generate_avif",
+    "mvs_ai_auto_analyze",
+    "mvs_ai_auto_apply_tags",
+    "mvs_ai_auto_moderate",
+    "mvs_telemetry_enabled",
+    "mvs_webhooks"
+  ]
+}

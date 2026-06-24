@@ -142,4 +142,5 @@ add_action( 'plugins_loaded', array( 'WPMediaVerse\\Core\\Plugin', 'init' ) );
 // WP-CLI commands.
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	WP_CLI::add_command( 'mvs', 'WPMediaVerse\\CLI\\Commands' );
+	WP_CLI::add_command( 'mvs cert', new \WPMediaVerse\Cert\CertCommand() );
 }
