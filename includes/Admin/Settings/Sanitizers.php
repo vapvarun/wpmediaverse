@@ -405,6 +405,37 @@ class Sanitizers {
 	}
 
 	/**
+	 * Sanitize owner-defined custom AI flag terms.
+	 *
+	 * Free text the site owner adds beyond the built-in categories (e.g.
+	 * "weapons, political content, competitor logos"). Accepts comma- or
+	 * newline-separated input; returns a clean comma-separated string. Capped at
+	 * 30 terms / 60 chars each so the prompt stays bounded.
+	 *
+	 * @param mixed $value Submitted value.
+	 * @return string Comma-separated sanitized terms.
+	 */
+	public static function sanitize_ai_moderation_custom_terms( $value ): string {
+		$value = is_string( $value ) ? $value : '';
+		$parts = preg_split( '/[\r\n,]+/', $value );
+		$clean = array();
+		foreach ( (array) $parts as $part ) {
+			$term = sanitize_text_field( trim( $part ) );
+			if ( '' === $term ) {
+				continue;
+			}
+			if ( mb_strlen( $term ) > 60 ) {
+				$term = mb_substr( $term, 0, 60 );
+			}
+			$clean[ strtolower( $term ) ] = $term; // Dedupe case-insensitively.
+			if ( count( $clean ) >= 30 ) {
+				break;
+			}
+		}
+		return implode( ', ', array_values( $clean ) );
+	}
+
+	/**
 	 * Sanitize DM access level. Whitelist must stay in lockstep with the
 	 * dropdown choices in SettingsRegistrar::register_messaging_settings()
 	 * AND the consumer switch in MessagingService::check_can_message().

@@ -755,6 +755,31 @@ class SettingsRegistrar {
 			)
 		);
 
+		// Owner-defined extra flag terms — anything beyond the built-in
+		// categories the community does not want (e.g. weapons, political
+		// content, competitor logos). Narrated to the AI alongside the
+		// categories above.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_ai',
+			'mvs_ai_moderation_custom_terms',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_ai_moderation_custom_terms' ),
+				'default'           => '',
+			)
+		);
+		add_settings_field(
+			'mvs_ai_moderation_custom_terms',
+			__( 'Custom Flag Terms', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_textarea_field' ),
+			SettingsPage::PAGE_SLUG . '-ai',
+			'mvs_moderation',
+			array(
+				'option'      => 'mvs_ai_moderation_custom_terms',
+				'description' => __( 'Optional. Comma-separated terms the AI should also flag, in addition to the categories above — e.g. weapons, gambling, political content, competitor logos. Leave blank to use only the built-in categories.', 'wpmediaverse' ),
+			)
+		);
+
 		// Report auto-hide threshold.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_ai',

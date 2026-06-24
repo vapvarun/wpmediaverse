@@ -45,6 +45,30 @@ class AIService {
 	}
 
 	/**
+	 * The full list of terms narrated to the AI as "what this community does not
+	 * allow": the enabled built-in categories plus the site owner's custom terms
+	 * (mvs_ai_moderation_custom_terms). Used to build the moderation prompt.
+	 *
+	 * Exposed to non-Free providers via the `mvs_ai_moderation_terms` filter so
+	 * the Pro Anthropic provider can read it without touching Free options.
+	 *
+	 * @return string[]
+	 */
+	public static function get_moderation_terms(): array {
+		$terms  = self::get_enabled_moderation_categories();
+		$custom = (string) get_option( 'mvs_ai_moderation_custom_terms', '' );
+		if ( '' !== $custom ) {
+			foreach ( preg_split( '/\s*,\s*/', $custom ) as $term ) {
+				$term = trim( (string) $term );
+				if ( '' !== $term ) {
+					$terms[] = $term;
+				}
+			}
+		}
+		return array_values( array_unique( $terms ) );
+	}
+
+	/**
 	 * Suggestive keyword aliases per canonical category.
 	 *
 	 * The categories are guidance the admin gives the AI about what they don't
@@ -276,23 +300,26 @@ class AIService {
 		// is never under-flagged.
 		$enabled_categories = self::get_enabled_moderation_categories();
 		$reported_flags     = ( isset( $result['flags'] ) && is_array( $result['flags'] ) ) ? $result['flags'] : array();
-		$matched_categories = array();
-		foreach ( $reported_flags as $reported_flag ) {
-			$category = self::match_moderation_category( (string) $reported_flag );
-			if ( null !== $category ) {
-				$matched_categories[] = $category;
-			}
-		}
-		$matched_categories = array_unique( $matched_categories );
 
 		if ( $result['safe'] ) {
 			$should_flag = false;
-		} elseif ( empty( $matched_categories ) ) {
-			// Unsafe, but nothing mapped to a known category — trust the verdict.
+		} elseif ( empty( $reported_flags ) ) {
+			// Unsafe with no specific flag — trust the provider's verdict.
 			$should_flag = true;
 		} else {
-			// Flag only when a matched category is one the admin enabled.
-			$should_flag = ! empty( array_intersect( $matched_categories, $enabled_categories ) );
+			// A reported flag counts when it maps (suggestively) to an ENABLED
+			// built-in category, OR to no built-in category at all — that covers
+			// owner custom terms and any other concern the provider surfaces. We
+			// only suppress when EVERY flag maps to a built-in category the owner
+			// has disabled.
+			$should_flag = false;
+			foreach ( $reported_flags as $reported_flag ) {
+				$category = self::match_moderation_category( (string) $reported_flag );
+				if ( null === $category || in_array( $category, $enabled_categories, true ) ) {
+					$should_flag = true;
+					break;
+				}
+			}
 		}
 
 		if ( $should_flag ) {

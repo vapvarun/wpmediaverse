@@ -492,6 +492,11 @@ class Plugin {
 				$service = new AIService();
 				$service->register_provider( new OpenAIProvider() );
 
+				// Expose the moderation terms (enabled categories + owner custom
+				// terms) to external providers (e.g. Pro's Anthropic provider) so
+				// they can build the prompt without reading Free options directly.
+				add_filter( 'mvs_ai_moderation_terms', array( AIService::class, 'get_moderation_terms' ) );
+
 				/**
 				 * Fires after the AI service is created so additional providers can be registered.
 				 *

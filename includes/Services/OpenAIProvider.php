@@ -99,7 +99,7 @@ class OpenAIProvider implements AIProviderInterface {
 		// "here is what this community does not allow, check the image against
 		// it." Disabling a category in the UI removes it from the narration, so
 		// the model is never asked to look for it.
-		$categories = AIService::get_enabled_moderation_categories();
+		$categories = AIService::get_moderation_terms();
 		$prompt     = 'You are moderating an image uploaded to an online community. ';
 		$prompt    .= 'The community does NOT allow content in these categories: ' . implode( ', ', $categories ) . '. ';
 		$prompt    .= 'Check the image against that guidance and respond ONLY with a JSON object: {"safe": true/false, "flags": ["category", ...], "confidence": 0.0-1.0}. ';
