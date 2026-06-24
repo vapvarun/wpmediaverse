@@ -422,8 +422,21 @@ class AIService {
 			++$usage[ $month ]['failed'];
 		}
 
-		// Estimated cost per call (configurable per provider).
-		$cost_per_call = (float) get_option( 'mvs_ai_cost_per_call', 0.01 );
+		// Estimated cost per call — plugin-defaulted (no settings field). Devs can
+		// override per provider/model via the filter; budget tracking uses it.
+		/**
+		 * Filter the estimated per-call AI cost used for budget tracking.
+		 *
+		 * @since 1.8.0
+		 *
+		 * @param float  $cost_per_call Estimated USD cost per AI call.
+		 * @param string $provider_id   Active provider id (e.g. openai, anthropic).
+		 */
+		$cost_per_call = (float) apply_filters(
+			'mvs_ai_cost_per_call',
+			(float) get_option( 'mvs_ai_cost_per_call', 0.01 ),
+			$provider_id
+		);
 		if ( $success ) {
 			$usage[ $month ]['cost'] += $cost_per_call;
 		}

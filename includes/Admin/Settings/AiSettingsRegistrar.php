@@ -260,6 +260,11 @@ class AiSettingsRegistrar {
 			)
 		);
 
+		// Per-call cost is a technical estimate used only for budget tracking —
+		// the plugin defaults it (and devs can override via the
+		// `mvs_ai_cost_per_call` filter), so it is intentionally NOT a settings
+		// field. Site owners only set the monthly budget cap above; they should
+		// not have to know or enter a per-call price.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_ai',
 			'mvs_ai_cost_per_call',
@@ -267,17 +272,6 @@ class AiSettingsRegistrar {
 				'type'              => 'number',
 				'sanitize_callback' => 'floatval',
 				'default'           => 0.01,
-			)
-		);
-		add_settings_field(
-			'mvs_ai_cost_per_call',
-			__( 'Estimated Cost per Call ($)', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_number_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
-			'mvs_ai',
-			array(
-				'option'      => 'mvs_ai_cost_per_call',
-				'description' => __( 'Approximate cost per API call for budget tracking.', 'wpmediaverse' ),
 			)
 		);
 	}
