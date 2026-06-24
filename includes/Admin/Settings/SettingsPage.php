@@ -394,6 +394,19 @@ class SettingsPage {
 				'strategy'  => 'defer',
 			)
 		);
+
+		// Progressive disclosure for AI provider credentials (show only the
+		// selected provider's key/model).
+		wp_enqueue_script(
+			'mvs-ai-provider-fields',
+			MVS_PLUGIN_URL . 'assets/js/admin/ai-provider-fields.js',
+			array(),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
 		?>
 		<div class="wrap wpmediaverse-admin">
 			<!-- Page Header -->
@@ -531,7 +544,7 @@ class SettingsPage {
 		if ( count( $ids ) <= 1 ) {
 			// Single card: use the sidebar item's label as card header.
 			?>
-			<div class="mvs-settings-card">
+			<div class="mvs-settings-card" data-section="<?php echo esc_attr( $ids[0] ?? '' ); ?>">
 				<div class="mvs-settings-card__head">
 					<p class="mvs-settings-card__title">
 						<?php echo esc_html( strtoupper( $section['label'] ) ); ?>
@@ -569,7 +582,7 @@ class SettingsPage {
 				$desc_html = '<p>' . esc_html( $section['description'] ) . '</p>';
 			}
 			?>
-			<div class="mvs-settings-card">
+			<div class="mvs-settings-card" data-section="<?php echo esc_attr( $sid ); ?>">
 				<div class="mvs-settings-card__head">
 					<p class="mvs-settings-card__title">
 						<?php echo esc_html( strtoupper( $title ) ); ?>

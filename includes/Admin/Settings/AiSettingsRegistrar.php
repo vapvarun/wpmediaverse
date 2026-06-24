@@ -89,6 +89,7 @@ class AiSettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_openai_api_key',
+				'class'       => 'mvs-ai-openai-field',
 				'description' => sprintf(
 					/* translators: %s: link to the OpenAI API keys page. */
 					__( 'Get a key from %s (sign in, create a secret key, and make sure billing is enabled on the account). Or define the MVS_OPENAI_API_KEY constant in wp-config.php.', 'wpmediaverse' ),
@@ -114,6 +115,7 @@ class AiSettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_openai_model',
+				'class'       => 'mvs-ai-openai-field',
 				'choices'     => array(
 					'gpt-4o-mini' => __( 'GPT-4o Mini (cheaper)', 'wpmediaverse' ),
 					'gpt-4o'      => __( 'GPT-4o (best quality)', 'wpmediaverse' ),
