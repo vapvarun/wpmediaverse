@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 1.8.1
+Stable tag: 1.8.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,13 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.8.2 - June 2026 =
+
+Extends the 1.8.1 video-thumbnail fix to the Pinterest, Flickr, Dribbble, and Instagram layout grids. No database schema change.
+
+* Fix      - Posterless videos now show their first frame instead of the generic placeholder when loading more pages in the Pinterest, Flickr, Dribbble, and Instagram layouts, matching the first page and the Explore grid. The load-more card builders were still rendering a static poster image; they now follow the same video-first contract as the server-side templates.
+* Compat   - Pairs with WPMediaVerse Pro 1.8.2. Install both updates together.
 
 = 1.8.1 - June 2026 =
 
