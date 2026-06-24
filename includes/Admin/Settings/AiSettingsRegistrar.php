@@ -87,7 +87,11 @@ class AiSettingsRegistrar {
 			'mvs_ai',
 			array(
 				'option'      => 'mvs_openai_api_key',
-				'description' => __( 'Or define MVS_OPENAI_API_KEY constant in wp-config.php.', 'wpmediaverse' ),
+				'description' => sprintf(
+					/* translators: %s: link to the OpenAI API keys page. */
+					__( 'Get a key from %s (sign in, create a secret key, and make sure billing is enabled on the account). Or define the MVS_OPENAI_API_KEY constant in wp-config.php.', 'wpmediaverse' ),
+					'<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com/api-keys</a>'
+				),
 			)
 		);
 
