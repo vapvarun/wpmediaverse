@@ -28,9 +28,7 @@ class ActivityService {
 		'media_upload',
 		'media_reaction',
 		'media_comment',
-		'media_favorite',
 		'user_follow',
-		'album_created',
 	);
 
 	/**

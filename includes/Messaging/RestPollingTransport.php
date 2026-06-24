@@ -20,7 +20,11 @@ class RestPollingTransport implements TransportInterface {
 	 * @return array
 	 */
 	public function poll( int $user_id, string $since ): array {
-		$service = new MessagingService();
+		// Resolve the registered MessagingService from the container instead of
+		// constructing a new one, so the transport shares the same instance the
+		// rest of the plugin uses (the service is stateless today, but this keeps
+		// it on the DI path other services follow).
+		$service = \WPMediaVerse\Core\Plugin::container()->get( 'messaging' );
 		return $service->poll( $user_id, $since );
 	}
 

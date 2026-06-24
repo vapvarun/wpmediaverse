@@ -1071,7 +1071,17 @@ class Plugin {
 			|| ! empty( $GLOBALS['mvs_is_media_archive'] )
 			|| (bool) get_query_var( 'mvs_edit_profile' )
 			|| (bool) get_query_var( 'mvs_profile_user' )
-			|| (bool) get_query_var( 'mvs_media_archive' );
+			|| (bool) get_query_var( 'mvs_media_archive' )
+			// Standalone /messages/ virtual page: messaging.js hard-depends on
+			// window.mvsRest, so the shared REST client must load here too —
+			// otherwise the full-page conversation list silently fails to fetch
+			// while the slide-out panel (on mapped MVS pages) works. Skip when
+			// BuddyNext is active: it owns the /messages/ page and renders its
+			// own DM UI (MediaVerse already defers the page template + chat
+			// panel via the mvs_buddynext_active handoffs), so loading MVS's
+			// messaging assets there would collide with BuddyNext.
+			|| ( (bool) get_query_var( 'mvs_messages_page' )
+				&& ! apply_filters( 'mvs_buddynext_active', false ) );
 
 		// Detect mapped MVS pages (explore, dashboard, upload) — globals aren't set yet at enqueue time.
 		$mvs_page_ids = array_filter(

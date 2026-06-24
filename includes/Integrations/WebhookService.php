@@ -23,7 +23,6 @@ class WebhookService {
 	 */
 	const EVENTS = array(
 		'media.uploaded',
-		'media.updated',
 		'media.deleted',
 		'media.moderated',
 		'media.reaction',
