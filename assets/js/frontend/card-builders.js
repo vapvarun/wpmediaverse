@@ -164,30 +164,39 @@
 		var fileUrl   = item.file_url || '';
 		var nodes     = [];
 
-		if ( thumbUrl ) {
-			nodes.push( el( 'img', 'mvs-media-thumb', {
-				src: thumbUrl,
-				alt: alt,
-				loading: 'lazy',
-			} ) );
-			if ( 'video' === mediaType && showPlay ) {
-				nodes.push( iconPlay() );
-			}
-			return nodes;
-		}
-
+		// Video-first, mirroring PHP TemplateHelpers::media_thumbnail(): a
+		// streamable video ALWAYS renders as a <video> first-frame preview with
+		// thumbUrl as the <video poster> fallback. thumbUrl for a posterless
+		// video is the bundled default-poster SVG (REST 1.7.0), so gating the
+		// <video> on an empty thumbUrl — as this used to — made every posterless
+		// upload show the generic placeholder instead of its real first frame.
 		if ( 'video' === mediaType && fileUrl ) {
-			nodes.push( el( 'video', 'mvs-grid-video-preview', {
+			var vidAttrs = {
 				src: fileUrl + '#t=0.1',
 				preload: 'metadata',
 				muted: 'muted',
 				playsinline: 'playsinline',
 				disablepictureinpicture: 'disablepictureinpicture',
 				'aria-hidden': 'true',
-			} ) );
+			};
+			if ( thumbUrl ) {
+				vidAttrs.poster = thumbUrl;
+			}
+			nodes.push( el( 'video', 'mvs-grid-video-preview', vidAttrs ) );
 			if ( showPlay ) {
 				nodes.push( iconPlay() );
 			}
+			return nodes;
+		}
+
+		// Static <img> path — images (and audio with embedded art). Videos are
+		// handled above (or fall through to the placeholder when not streamable).
+		if ( thumbUrl ) {
+			nodes.push( el( 'img', 'mvs-media-thumb', {
+				src: thumbUrl,
+				alt: alt,
+				loading: 'lazy',
+			} ) );
 			return nodes;
 		}
 

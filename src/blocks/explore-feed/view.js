@@ -35,16 +35,10 @@ function buildThumbnailNodes( item ) {
 	const alt = item.title || '';
 	const nodes = [];
 
-	if ( thumbUrl ) {
-		const img = document.createElement( 'img' );
-		img.className = 'mvs-media-thumb';
-		img.src = thumbUrl;
-		img.alt = alt;
-		img.loading = 'lazy';
-		nodes.push( img );
-		return nodes;
-	}
-
+	// Video-first, mirroring PHP media_thumbnail() / card-builders
+	// buildMediaThumbnail: a streamable video ALWAYS renders as a <video>
+	// first-frame preview (poster = thumbUrl fallback), so a posterless upload
+	// shows its real first frame instead of the default-poster placeholder.
 	if ( 'video' === mediaType && fileUrl ) {
 		const video = document.createElement( 'video' );
 		video.className = 'mvs-grid-video-preview';
@@ -53,7 +47,21 @@ function buildThumbnailNodes( item ) {
 		video.muted = true;
 		video.setAttribute( 'playsinline', 'playsinline' );
 		video.setAttribute( 'aria-hidden', 'true' );
+		if ( thumbUrl ) {
+			video.poster = thumbUrl;
+		}
 		nodes.push( video );
+		return nodes;
+	}
+
+	// Static <img> — images (and audio with embedded art). Videos handled above.
+	if ( thumbUrl ) {
+		const img = document.createElement( 'img' );
+		img.className = 'mvs-media-thumb';
+		img.src = thumbUrl;
+		img.alt = alt;
+		img.loading = 'lazy';
+		nodes.push( img );
 		return nodes;
 	}
 

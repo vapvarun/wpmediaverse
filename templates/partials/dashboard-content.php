@@ -436,9 +436,10 @@ wp_enqueue_style( 'mvs-frontend' );
 				<div class="mvs-dashboard-card" data-wp-bind--data-media-id="context.item.id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
 						data-wp-on--click="actions.openMediaLightbox">
-						<img data-wp-bind--hidden="!state.mediaThumbUrl" data-wp-bind--src="state.mediaThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
+						<img data-wp-bind--hidden="!state.showMediaImage" data-wp-bind--src="state.mediaThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
 						<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 							data-wp-bind--hidden="!state.showMediaVideoPreview"
+							data-wp-bind--poster="state.mediaThumbUrl"
 							data-wp-bind--src="state.mediaVideoPreviewUrl"></video>
 						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showMediaPlayIcon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hardcoded SVG helper returns markup with no user input. ?></span>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
@@ -520,9 +521,10 @@ wp_enqueue_style( 'mvs-frontend' );
 				<div class="mvs-dashboard-card" data-wp-bind--data-fav-id="context.item.media_id">
 					<a class="mvs-dashboard-card-thumb" data-wp-bind--href="context.item.link"
 						data-wp-on--click="actions.openFavLightbox">
-						<img data-wp-bind--hidden="!state.favThumbUrl" data-wp-bind--src="state.favThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
+						<img data-wp-bind--hidden="!state.showFavImage" data-wp-bind--src="state.favThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
 						<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 							data-wp-bind--hidden="!state.showFavVideoPreview"
+							data-wp-bind--poster="state.favThumbUrl"
 							data-wp-bind--src="state.favVideoPreviewUrl"></video>
 						<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showFavPlayIcon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hardcoded SVG helper returns markup with no user input. ?></span>
 						<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"
@@ -860,9 +862,10 @@ wp_enqueue_style( 'mvs-frontend' );
 								data-wp-bind--data-picker-id="context.item.id"
 								data-wp-class--mvs-media-picker-cover="state.isPickerCover"
 								data-wp-on--click="actions.togglePickerItem">
-								<img data-wp-bind--hidden="!state.pickerThumbUrl" data-wp-bind--src="state.pickerThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
+								<img data-wp-bind--hidden="!state.showPickerImage" data-wp-bind--src="state.pickerThumbUrl" alt="" data-wp-bind--alt="context.item.title" loading="lazy" />
 								<video class="mvs-grid-video-preview" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"
 									data-wp-bind--hidden="!state.showPickerVideoPreview"
+									data-wp-bind--poster="state.pickerThumbUrl"
 									data-wp-bind--src="state.pickerVideoPreviewUrl"></video>
 								<span class="mvs-grid-play-icon" data-wp-bind--hidden="!state.showPickerPlayIcon"><?php echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->icon_play_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hardcoded SVG helper returns markup with no user input. ?></span>
 								<div class="mvs-grid-item-placeholder mvs-grid-item-placeholder--video"

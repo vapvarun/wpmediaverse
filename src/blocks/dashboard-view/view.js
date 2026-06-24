@@ -164,27 +164,39 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return '';
 		},
 		get mediaVideoPreviewUrl() {
+			// Mirror PHP TemplateHelpers::media_thumbnail(): a streamable video
+			// ALWAYS renders as a <video> first-frame preview (with mediaThumbUrl
+			// as the <video poster> fallback). This makes a posterless upload show
+			// its real first frame instead of the bundled default-poster image
+			// REST now supplies as thumbnail_url. Do NOT gate on mediaThumbUrl —
+			// that gate was what made My Media diverge from Explore.
 			const item = getContext().item;
 			if ( ! item || item.media_type !== 'video' ) return '';
-			if ( state.mediaThumbUrl ) return '';
 			return item.file_url ? item.file_url + '#t=0.1' : '';
 		},
 		get showMediaVideoPreview() {
 			return !! state.mediaVideoPreviewUrl;
 		},
+		get showMediaImage() {
+			// Static <img> path is image-only. Videos render via <video> (or the
+			// dark placeholder when no streamable file); audio uses its own card.
+			const item = getContext().item;
+			if ( ! item || item.media_type === 'video' ) return false;
+			return !! state.mediaThumbUrl;
+		},
 		get showMediaVideoPlaceholder() {
-			return ! state.mediaThumbUrl && ! state.showMediaVideoPreview && getContext().item?.media_type === 'video';
+			// Video with no streamable file_url (e.g. access-rule locked).
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return false;
+			return ! state.showMediaVideoPreview;
 		},
 		get showMediaAudioPlaceholder() {
 			return ! state.mediaThumbUrl && getContext().item?.media_type === 'audio';
 		},
 		get showMediaPlayIcon() {
-			// Overlay the play icon when we are rendering a video thumb or a
-			// native preview (matches PHP media_thumbnail() behavior). The
-			// dark-placeholder branch carries its own icon markup.
-			const item = getContext().item;
-			if ( ! item || item.media_type !== 'video' ) return false;
-			return !! state.mediaThumbUrl || state.showMediaVideoPreview;
+			// Play overlay sits on the streamable <video> preview. The dark
+			// placeholder branch carries its own play icon markup.
+			return state.showMediaVideoPreview;
 		},
 		get favThumbUrl() {
 			const item = getContext().item;
@@ -194,24 +206,29 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return '';
 		},
 		get favVideoPreviewUrl() {
+			// See mediaVideoPreviewUrl — a streamable video always previews.
 			const item = getContext().item;
 			if ( ! item || item.media_type !== 'video' ) return '';
-			if ( state.favThumbUrl ) return '';
 			return item.file_url ? item.file_url + '#t=0.1' : '';
 		},
 		get showFavVideoPreview() {
 			return !! state.favVideoPreviewUrl;
 		},
+		get showFavImage() {
+			const item = getContext().item;
+			if ( ! item || item.media_type === 'video' ) return false;
+			return !! state.favThumbUrl;
+		},
 		get showFavVideoPlaceholder() {
-			return ! state.favThumbUrl && ! state.showFavVideoPreview && getContext().item?.media_type === 'video';
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return false;
+			return ! state.showFavVideoPreview;
 		},
 		get showFavAudioPlaceholder() {
 			return ! state.favThumbUrl && getContext().item?.media_type === 'audio';
 		},
 		get showFavPlayIcon() {
-			const item = getContext().item;
-			if ( ! item || item.media_type !== 'video' ) return false;
-			return !! state.favThumbUrl || state.showFavVideoPreview;
+			return state.showFavVideoPreview;
 		},
 		get pickerThumbUrl() {
 			const item = getContext().item;
@@ -221,24 +238,29 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return '';
 		},
 		get pickerVideoPreviewUrl() {
+			// See mediaVideoPreviewUrl — a streamable video always previews.
 			const item = getContext().item;
 			if ( ! item || item.media_type !== 'video' ) return '';
-			if ( state.pickerThumbUrl ) return '';
 			return item.file_url ? item.file_url + '#t=0.1' : '';
 		},
 		get showPickerVideoPreview() {
 			return !! state.pickerVideoPreviewUrl;
 		},
+		get showPickerImage() {
+			const item = getContext().item;
+			if ( ! item || item.media_type === 'video' ) return false;
+			return !! state.pickerThumbUrl;
+		},
 		get showPickerVideoPlaceholder() {
-			return ! state.pickerThumbUrl && ! state.showPickerVideoPreview && getContext().item?.media_type === 'video';
+			const item = getContext().item;
+			if ( ! item || item.media_type !== 'video' ) return false;
+			return ! state.showPickerVideoPreview;
 		},
 		get showPickerAudioPlaceholder() {
 			return ! state.pickerThumbUrl && getContext().item?.media_type === 'audio';
 		},
 		get showPickerPlayIcon() {
-			const item = getContext().item;
-			if ( ! item || item.media_type !== 'video' ) return false;
-			return !! state.pickerThumbUrl || state.showPickerVideoPreview;
+			return state.showPickerVideoPreview;
 		},
 		get hasAlbumCover() {
 			return !! getContext().item?.cover_url;
