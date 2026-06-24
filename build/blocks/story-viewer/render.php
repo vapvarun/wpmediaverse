@@ -114,6 +114,8 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 			'viewing'       => false,
 			'currentAuthor' => 0,
 			'currentIndex'  => 0,
+			'storyUrl'      => '',
+			'storyType'     => '',
 		)
 	);
 	?>
@@ -128,6 +130,9 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 			$sv_mid     = (int) ( $first['media_id'] ?? 0 );
 			$sv_su      = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 			$file_url   = $sv_mid && $sv_su ? $sv_su->generate( $sv_mid, get_current_user_id() ) : '';
+			// Stories accept any media type (is_story meta, no type filter), so the
+			// fullscreen viewer must handle video and audio, not just images.
+			$sv_type    = $sv_mid ? \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_media_type( $sv_mid ) : 'image';
 			?>
 			<div class="mvs-story"
 				style="--mvs-story-avatar-size:<?php echo absint( $avatar_size ); ?>px;"
@@ -139,6 +144,7 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 						'authorId'    => $author_id,
 						'authorName'  => $user ? $user->display_name : '',
 						'storyUrl'    => $file_url,
+						'storyType'   => $sv_type,
 					)
 				);
 				?>
@@ -158,8 +164,15 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 	<div class="mvs-story-fullscreen" data-wp-bind--hidden="!context.viewing">
 		<button class="mvs-story-close" data-wp-on--click="actions.closeStory">&times;</button>
 		<img class="mvs-story-image"
-			data-wp-bind--src="context.storyUrl"
+			data-wp-bind--hidden="!state.storyIsImage"
+			data-wp-bind--src="state.storyImageSrc"
 			alt="" data-wp-bind--alt="context.authorName"
 		/>
+		<video class="mvs-story-video" controls autoplay playsinline
+			data-wp-bind--hidden="!state.storyIsVideo"
+			data-wp-bind--src="state.storyVideoSrc"></video>
+		<audio class="mvs-story-audio" controls autoplay
+			data-wp-bind--hidden="!state.storyIsAudio"
+			data-wp-bind--src="state.storyAudioSrc"></audio>
 	</div>
 </div>

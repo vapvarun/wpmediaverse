@@ -81,10 +81,15 @@
 	justify-content: center;
 }
 
-.mvs-story-fullscreen .mvs-story-image {
+.mvs-story-fullscreen .mvs-story-image,
+.mvs-story-fullscreen .mvs-story-video {
 	max-width: 100%;
 	max-height: 100%;
 	object-fit: contain;
+}
+
+.mvs-story-fullscreen .mvs-story-audio {
+	width: min(90%, 480px);
 }
 
 .mvs-story-close {
