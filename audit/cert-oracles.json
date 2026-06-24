@@ -14,19 +14,19 @@
     }
   ],
   "toggles": [
-    "mvs_allow_downloads",
-    "mvs_default_privacy",
-    "mvs_allow_user_privacy",
-    "mvs_dm_access",
-    "mvs_show_online_status",
-    "mvs_chat_panel_visibility",
-    "mvs_optimize_originals",
-    "mvs_generate_webp",
-    "mvs_generate_avif",
-    "mvs_ai_auto_analyze",
-    "mvs_ai_auto_apply_tags",
-    "mvs_ai_auto_moderate",
-    "mvs_telemetry_enabled",
-    "mvs_webhooks"
+    { "id": "mvs_allow_downloads" },
+    { "id": "mvs_default_privacy", "journey": "audit/journeys/customer/02-media-upload-non-public.md" },
+    { "id": "mvs_allow_user_privacy", "journey": "audit/journeys/customer/02-media-upload-non-public.md" },
+    { "id": "mvs_dm_access", "journey": "audit/journeys/customer/05-dm-access-setting-persists.md" },
+    { "id": "mvs_show_online_status", "journey": "audit/journeys/customer/05-dm-access-setting-persists.md" },
+    { "id": "mvs_chat_panel_visibility", "journey": "audit/journeys/admin/11-outbound-and-display-toggles.md" },
+    { "id": "mvs_optimize_originals", "journey": "audit/journeys/admin/10-media-optimization-toggles.md" },
+    { "id": "mvs_generate_webp", "journey": "audit/journeys/admin/10-media-optimization-toggles.md" },
+    { "id": "mvs_generate_avif", "journey": "audit/journeys/admin/10-media-optimization-toggles.md" },
+    { "id": "mvs_ai_auto_analyze", "journey": "audit/journeys/admin/09-ai-features-owner-control.md" },
+    { "id": "mvs_ai_auto_apply_tags", "journey": "audit/journeys/admin/09-ai-features-owner-control.md" },
+    { "id": "mvs_ai_auto_moderate", "journey": "audit/journeys/admin/09-ai-features-owner-control.md" },
+    { "id": "mvs_telemetry_enabled", "journey": "audit/journeys/admin/11-outbound-and-display-toggles.md" },
+    { "id": "mvs_webhooks", "journey": "audit/journeys/admin/11-outbound-and-display-toggles.md" }
   ]
 }

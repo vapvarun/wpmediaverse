@@ -81,7 +81,7 @@ class CertRunner {
 	 */
 	public function run( array $checks = array() ): array {
 		if ( empty( $checks ) ) {
-			$checks = array( 'contract', 'boot' );
+			$checks = array( 'contract', 'coverage', 'boot' );
 		}
 
 		// Authenticate as the primary admin so permission_callback gates pass
@@ -95,6 +95,9 @@ class CertRunner {
 		$rows = array();
 		if ( in_array( 'contract', $checks, true ) ) {
 			$rows = array_merge( $rows, $this->contract() );
+		}
+		if ( in_array( 'coverage', $checks, true ) ) {
+			$rows = array_merge( $rows, $this->coverage() );
 		}
 		if ( in_array( 'boot', $checks, true ) ) {
 			$rows = array_merge( $rows, $this->boot() );
@@ -137,7 +140,6 @@ class CertRunner {
 	private function contract(): array {
 		$rows    = array();
 		$oracles = isset( $this->oracles['contract'] ) && is_array( $this->oracles['contract'] ) ? $this->oracles['contract'] : array();
-		$covered = array();
 
 		foreach ( $oracles as $oracle ) {
 			$id       = (string) ( $oracle['id'] ?? '' );
@@ -150,7 +152,6 @@ class CertRunner {
 			if ( '' === $id || '' === $route || '' === $off_code ) {
 				continue;
 			}
-			$covered[ $id ] = true;
 
 			$snapshot = $this->snapshot( $id, $kind );
 			$this->set_state( $id, $kind, false );
@@ -178,18 +179,57 @@ class CertRunner {
 			);
 		}
 
-		// Honesty: every declared toggle WITHOUT an oracle is a tracked hole.
+		return $rows;
+	}
+
+	/**
+	 * Coverage check (enforces 100%): every declared feature toggle must be
+	 * accounted for by EITHER a proven oracle OR a journey runbook file that
+	 * exists on disk. A toggle with neither is an outright FAILURE, so the
+	 * gate cannot go green while a feature's enforcement is undocumented.
+	 *
+	 * @return array<int,array<string,string>>
+	 */
+	private function coverage(): array {
+		$rows       = array();
+		$oracle_ids = array();
+		foreach ( ( isset( $this->oracles['contract'] ) && is_array( $this->oracles['contract'] ) ? $this->oracles['contract'] : array() ) as $oracle ) {
+			$oid = (string) ( $oracle['id'] ?? '' );
+			if ( '' !== $oid ) {
+				$oracle_ids[ $oid ] = true;
+			}
+		}
+
 		$toggles = isset( $this->oracles['toggles'] ) && is_array( $this->oracles['toggles'] ) ? $this->oracles['toggles'] : array();
 		foreach ( $toggles as $toggle ) {
-			$slug = is_array( $toggle ) ? (string) ( $toggle['id'] ?? '' ) : (string) $toggle;
-			if ( '' === $slug || isset( $covered[ $slug ] ) ) {
+			$id      = is_array( $toggle ) ? (string) ( $toggle['id'] ?? '' ) : (string) $toggle;
+			$journey = is_array( $toggle ) ? (string) ( $toggle['journey'] ?? '' ) : '';
+			if ( '' === $id ) {
 				continue;
 			}
+
+			$has_oracle  = isset( $oracle_ids[ $id ] );
+			$has_journey = '' !== $journey && is_readable( $this->dir . $journey );
+
+			if ( $has_oracle ) {
+				$status = 'pass';
+				$detail = 'oracle (enforcement proven)';
+			} elseif ( $has_journey ) {
+				$status = 'pass';
+				$detail = 'journey: ' . $journey;
+			} elseif ( '' !== $journey ) {
+				$status = 'fail';
+				$detail = 'journey file missing: ' . $journey;
+			} else {
+				$status = 'fail';
+				$detail = 'UNCOVERED — no oracle and no journey';
+			}
+
 			$rows[] = array(
-				'check'  => 'contract',
-				'entity' => $slug,
-				'status' => 'hole',
-				'detail' => 'no oracle — enforcement unproven (covered by journey or by design)',
+				'check'  => 'coverage',
+				'entity' => $id,
+				'status' => $status,
+				'detail' => $detail,
 			);
 		}
 
