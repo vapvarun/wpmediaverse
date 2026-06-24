@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 1.8.0
+Stable tag: 1.8.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,14 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 1.8.1 - June 2026 =
+
+Fixes posterless videos showing a generic placeholder on the My Media dashboard. No database schema change.
+
+* Fix      - Video tiles on My Media now show the video's first frame instead of the generic placeholder, matching the Explore grid. The dashboard and the explore-feed block were rendering a static poster image whenever one was set, which suppressed the video preview after the 1.8.0 default-poster fallback always supplied one for posterless videos.
+* Dev      - All client-side thumbnail renderers (dashboard, explore-feed block, shared card-builders) now follow the same video-first contract as the server-side media_thumbnail(): a streamable video always renders a video first-frame preview with the poster as a fallback.
+* Compat   - Pairs with WPMediaVerse Pro 1.8.1. Install both updates together.
 
 = 1.8.0 - June 2026 =
 
