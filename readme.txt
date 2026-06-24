@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 1.8.2
+Stable tag: 1.8.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -110,21 +110,6 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Changelog ==
 
-= 1.8.2 - June 2026 =
-
-Extends the 1.8.1 video-thumbnail fix to the Pinterest, Flickr, Dribbble, and Instagram layout grids. No database schema change.
-
-* Fix      - Posterless videos now show their first frame instead of the generic placeholder when loading more pages in the Pinterest, Flickr, Dribbble, and Instagram layouts, matching the first page and the Explore grid. The load-more card builders were still rendering a static poster image; they now follow the same video-first contract as the server-side templates.
-* Compat   - Pairs with WPMediaVerse Pro 1.8.2. Install both updates together.
-
-= 1.8.1 - June 2026 =
-
-Fixes posterless videos showing a generic placeholder on the My Media dashboard. No database schema change.
-
-* Fix      - Video tiles on My Media now show the video's first frame instead of the generic placeholder, matching the Explore grid. The dashboard and the explore-feed block were rendering a static poster image whenever one was set, which suppressed the video preview after the 1.8.0 default-poster fallback always supplied one for posterless videos.
-* Dev      - All client-side thumbnail renderers (dashboard, explore-feed block, shared card-builders) now follow the same video-first contract as the server-side media_thumbnail(): a streamable video always renders a video first-frame preview with the poster as a fallback.
-* Compat   - Pairs with WPMediaVerse Pro 1.8.1. Install both updates together.
-
 = 1.8.0 - June 2026 =
 
 Wbcom-family Integrations page, an image-watermark fix, conversation-scoped DM media, and faster client-side navigation. No database schema change.
@@ -147,6 +132,8 @@ Wbcom-family Integrations page, an image-watermark fix, conversation-scoped DM m
 * Fix      - "Followers only" online-status visibility now hides presence from non-followers; previously the option behaved like "Everyone".
 * Fix      - Video and audio play analytics record from the main media page, not only the media-player block (the player wires the Pro events endpoint when Pro is active).
 * New      - Members can block or unblock another member from their profile (Block toggle next to Follow and Message); blocking already hid that member's media from the feed and refused follows and direct messages, but there was previously no way to do it from the frontend.
+* Fix      - Video tiles show the video's first frame instead of a generic placeholder on My Media, the explore-feed block, and the Pinterest/Flickr/Dribbble/Instagram layout grids (including Load More), matching the Explore grid. All client-side thumbnail renderers now follow the same video-first contract as the server.
+* Fix      - The story viewer plays video and audio stories instead of showing a broken image; it renders the correct element per media type.
 * Dev      - New filters mvs_strip_dead_bp_links, mvs_dead_bp_link_patterns, mvs_dm_denial_message, and mvs_dm_denial_reason; MessagingService::find_or_create_conversation() gains a force_request option; WatermarkService::get_config() now exposes image_id for the Pro renderer.
 * Dev      - The frontend was refactored onto a shared window.mvsRest client plus a router store and region partials for client-side navigation.
 * Dev      - New mvs_collections_enabled filter lets a collections backend render a "Save to collection" control next to the favorite heart; the lightbox exposes the actions.lightboxOpenCollections action and dispatches an mvs-collections-click event carrying the current media id.
