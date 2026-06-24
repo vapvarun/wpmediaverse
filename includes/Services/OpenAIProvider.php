@@ -95,12 +95,15 @@ class OpenAIProvider implements AIProviderInterface {
 	 * @return array{safe: bool, flags: string[], confidence: float}
 	 */
 	public function moderate_content( string $image_url ): array {
-		// The flag categories come from the admin's rule setting (defaults to all
-		// categories), so disabling a category in the UI stops the model from
-		// being asked to look for it.
+		// The admin's enabled categories ARE the guidance narrated to the model —
+		// "here is what this community does not allow, check the image against
+		// it." Disabling a category in the UI removes it from the narration, so
+		// the model is never asked to look for it.
 		$categories = AIService::get_enabled_moderation_categories();
-		$prompt     = 'Analyze this image for content policy violations. Respond with a JSON object: {"safe": true/false, "flags": ["category1", "category2"], "confidence": 0.0-1.0}. ';
-		$prompt    .= 'Flag categories: ' . implode( ', ', $categories ) . '. Only include applicable flags.';
+		$prompt     = 'You are moderating an image uploaded to an online community. ';
+		$prompt    .= 'The community does NOT allow content in these categories: ' . implode( ', ', $categories ) . '. ';
+		$prompt    .= 'Check the image against that guidance and respond ONLY with a JSON object: {"safe": true/false, "flags": ["category", ...], "confidence": 0.0-1.0}. ';
+		$prompt    .= 'Set safe=false if the image matches any listed category, and list the matching category names in flags. Use only category names from the list.';
 
 		$response = $this->call_vision_api( $prompt, $image_url );
 

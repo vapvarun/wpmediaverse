@@ -45,6 +45,50 @@ class AIService {
 	}
 
 	/**
+	 * Suggestive keyword aliases per canonical category.
+	 *
+	 * The categories are guidance the admin gives the AI about what they don't
+	 * want in their community, so matching a provider-reported flag to a category
+	 * is intentionally fuzzy (case-insensitive substring), NOT an exact key
+	 * match. This lets every provider vocabulary resolve to the same category the
+	 * admin toggles — OpenAI "nudity", Google "adult"/"racy", Rekognition
+	 * "Explicit Nudity" all map to `nudity`.
+	 *
+	 * @var array<string, string[]>
+	 */
+	const MODERATION_CATEGORY_ALIASES = array(
+		'nudity'    => array( 'nudity', 'nude', 'adult', 'sexual', 'sex', 'racy', 'explicit', 'porn', 'nsfw', 'suggestive', 'erotic', 'lewd' ),
+		'violence'  => array( 'violence', 'violent', 'gore', 'gory', 'blood', 'graphic', 'weapon', 'gun', 'fighting', 'disturbing', 'death', 'injury' ),
+		'hate'      => array( 'hate', 'hateful', 'harass', 'racis', 'discrimin', 'offensive', 'slur', 'extremis', 'nazi', 'bully' ),
+		'self-harm' => array( 'self-harm', 'self harm', 'selfharm', 'self-injur', 'self injur', 'suicide', 'cutting' ),
+		'drugs'     => array( 'drug', 'narcotic', 'substance', 'alcohol', 'tobacco', 'smoking', 'cannabis', 'cocaine', 'marijuana' ),
+		'spam'      => array( 'spam', 'scam', 'advertis', 'promotional', 'phishing', 'gambling', 'spoof', 'clickbait' ),
+	);
+
+	/**
+	 * Resolve a provider-reported flag to a canonical category by suggestive
+	 * (case-insensitive substring) matching. Returns null when the flag matches
+	 * no known category.
+	 *
+	 * @param string $flag Provider-reported flag label.
+	 * @return string|null Canonical category key, or null.
+	 */
+	public static function match_moderation_category( string $flag ): ?string {
+		$flag = strtolower( trim( $flag ) );
+		if ( '' === $flag ) {
+			return null;
+		}
+		foreach ( self::MODERATION_CATEGORY_ALIASES as $category => $aliases ) {
+			foreach ( $aliases as $alias ) {
+				if ( false !== strpos( $flag, $alias ) ) {
+					return $category;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Registered AI providers.
 	 *
 	 * @var AIProviderInterface[]
@@ -223,27 +267,32 @@ class AIService {
 		 */
 		$result = apply_filters( 'mvs_ai_moderation_result', $result, $media_id );
 
-		// Apply the admin's flag-criteria rule, but only where it can be applied.
-		// OpenAI reports flags in OUR category vocabulary, so the rule filters
-		// them: an unsafe verdict whose only categories are disabled is ignored.
-		// Cloud providers (Pro Google Vision: adult/racy/spoof/medical;
-		// Rekognition: its own labels) speak a different vocabulary the rule
-		// can't map — there we trust the provider's safe/unsafe verdict and never
-		// under-flag it. An unsafe verdict with no named category is also trusted.
+		// Apply the admin's flag-criteria rule with suggestive matching. Each
+		// provider-reported flag is fuzzily resolved to a canonical category
+		// (OpenAI "nudity", Google "adult"/"racy", Rekognition "Explicit Nudity"
+		// all map to `nudity`), then we flag only when a matched category is one
+		// the admin still wants enforced. An unsafe verdict whose flags map to no
+		// known category (or names none at all) is trusted as-is, so a provider
+		// is never under-flagged.
 		$enabled_categories = self::get_enabled_moderation_categories();
 		$reported_flags     = ( isset( $result['flags'] ) && is_array( $result['flags'] ) ) ? $result['flags'] : array();
-		$known_reported     = array_intersect( $reported_flags, self::MODERATION_CATEGORIES );
-		$relevant_flags     = array_intersect( $reported_flags, $enabled_categories );
+		$matched_categories = array();
+		foreach ( $reported_flags as $reported_flag ) {
+			$category = self::match_moderation_category( (string) $reported_flag );
+			if ( null !== $category ) {
+				$matched_categories[] = $category;
+			}
+		}
+		$matched_categories = array_unique( $matched_categories );
 
 		if ( $result['safe'] ) {
 			$should_flag = false;
-		} elseif ( empty( $known_reported ) ) {
-			// No flags, or a provider vocabulary we don't recognise — trust the
-			// unsafe verdict so cloud providers keep their pre-rule behaviour.
+		} elseif ( empty( $matched_categories ) ) {
+			// Unsafe, but nothing mapped to a known category — trust the verdict.
 			$should_flag = true;
 		} else {
-			// OpenAI vocabulary — honour the admin's category rule.
-			$should_flag = ! empty( $relevant_flags );
+			// Flag only when a matched category is one the admin enabled.
+			$should_flag = ! empty( array_intersect( $matched_categories, $enabled_categories ) );
 		}
 
 		if ( $should_flag ) {
