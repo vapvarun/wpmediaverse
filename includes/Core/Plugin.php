@@ -939,7 +939,11 @@ class Plugin {
 	 * @param int $media_id Media post ID.
 	 */
 	public static function maybe_queue_ai( int $media_id ): void {
-		if ( ! get_option( 'mvs_ai_auto_analyze', false ) ) {
+		// Queue AI processing when EITHER auto-analyze (describe/tag) OR
+		// auto-moderate is enabled. process() gates each feature internally, so
+		// an owner who turns on only moderation must still get the job queued —
+		// gating solely on auto-analyze silently disabled moderation-only setups.
+		if ( ! get_option( 'mvs_ai_auto_analyze', false ) && ! get_option( 'mvs_ai_auto_moderate', false ) ) {
 			return;
 		}
 
