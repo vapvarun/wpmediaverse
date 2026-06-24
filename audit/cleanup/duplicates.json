@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-06-23T08:48:35Z",
+    "generated_at": "2026-06-24T11:38:50Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -15,12 +15,31 @@
         ]
     },
     "counts": {
-        "cross_plugin_duplicates": 9,
+        "cross_plugin_duplicates": 11,
         "within_plugin_duplicates": 38,
         "free_files_scanned": 167,
-        "pro_files_scanned": 161
+        "pro_files_scanned": 162
     },
     "cross_plugin_duplicates": [
+        {
+            "hash": "ce33684d7ccaeb07621eebd731d2abce39aba354",
+            "instances": 2,
+            "token_count": 78,
+            "sites": [
+                {
+                    "plugin": "free",
+                    "file": "includes/Services/OpenAIProvider.php",
+                    "lines": "71-71",
+                    "method": "OpenAIProvider::generate_tags"
+                },
+                {
+                    "plugin": "pro",
+                    "file": "includes/Integrations/Anthropic/AIProvider.php",
+                    "lines": "128-128",
+                    "method": "AIProvider::generate_tags"
+                }
+            ]
+        },
         {
             "hash": "351f1bb9a791607cc4b74bdfb1dc804bc1d9bc2a",
             "instances": 2,
@@ -112,6 +131,25 @@
                     "file": "includes/Quota/QuotaService.php",
                     "lines": "720-720",
                     "method": "get_credit_log"
+                }
+            ]
+        },
+        {
+            "hash": "1cc740df3dce642dd2b96cb42646fe7e40a648f2",
+            "instances": 2,
+            "token_count": 34,
+            "sites": [
+                {
+                    "plugin": "free",
+                    "file": "includes/Services/OpenAIProvider.php",
+                    "lines": "48-48",
+                    "method": "OpenAIProvider::analyze_image"
+                },
+                {
+                    "plugin": "pro",
+                    "file": "includes/Integrations/Anthropic/AIProvider.php",
+                    "lines": "105-105",
+                    "method": "AIProvider::analyze_image"
                 }
             ]
         },
@@ -331,19 +369,19 @@
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "398-398",
+                    "lines": "415-415",
                     "method": "Sanitizers::sanitize_dm_access"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "411-411",
+                    "lines": "428-428",
                     "method": "Sanitizers::sanitize_show_online_status"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "424-424",
+                    "lines": "441-441",
                     "method": "Sanitizers::sanitize_chat_panel_visibility"
                 },
                 {
@@ -573,12 +611,12 @@
             "sites": [
                 {
                     "file": "includes/Admin/Settings/FieldRenderer.php",
-                    "lines": "330-330",
+                    "lines": "379-379",
                     "method": "FieldRenderer::render_text_field"
                 },
                 {
                     "file": "includes/Admin/Settings/FieldRenderer.php",
-                    "lines": "362-362",
+                    "lines": "411-411",
                     "method": "FieldRenderer::render_color_field"
                 }
             ]

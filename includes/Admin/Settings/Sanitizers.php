@@ -74,7 +74,7 @@ class Sanitizers {
 		'mvs_lightbox_image_source'  => array( 'original', 'large', 'medium', 'auto' ),
 		'mvs_grid_columns'           => array( 2, 3, 4, 5 ),
 		'mvs_items_per_page'         => array( 12, 24, 48 ),
-		'mvs_ai_provider'            => array( 'openai', 'google_vision', 'rekognition' ),
+		'mvs_ai_provider'            => array( 'openai', 'google_vision', 'rekognition', 'anthropic' ),
 		'mvs_openai_model'           => array( 'gpt-4o-mini', 'gpt-4o' ),
 		'mvs_moderation_auto_action' => array( 'flag', 'hide', 'reject', 'delete' ),
 		'mvs_dm_access'              => array( 'everyone', 'followers', 'mutual', 'nobody' ),

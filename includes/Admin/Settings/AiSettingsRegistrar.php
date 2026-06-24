@@ -48,6 +48,7 @@ class AiSettingsRegistrar {
 						'openai'        => __( 'OpenAI (GPT-4 Vision)', 'wpmediaverse' ),
 						'google_vision' => __( 'Google Vision', 'wpmediaverse' ),
 						'rekognition'   => __( 'AWS Rekognition', 'wpmediaverse' ),
+						'anthropic'     => __( 'Claude (Anthropic)', 'wpmediaverse' ),
 					),
 					'description' => __( 'Which AI service to use for image analysis, tagging, and moderation.', 'wpmediaverse' ),
 				)
@@ -64,6 +65,7 @@ class AiSettingsRegistrar {
 					'pro'     => array(
 						__( 'Google Vision', 'wpmediaverse' ),
 						__( 'AWS Rekognition', 'wpmediaverse' ),
+						__( 'Claude (Anthropic)', 'wpmediaverse' ),
 					),
 				)
 			);
