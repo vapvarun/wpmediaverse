@@ -2,9 +2,9 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: WPMediaVerse 1.8.2\n"
+"Project-Id-Version: WPMediaVerse 1.8.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-06-24 09:51:33+00:00\n"
+"POT-Creation-Date: 2026-06-24 10:32:04+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -49,7 +49,7 @@ msgid "This album is empty."
 msgstr ""
 
 #: build/blocks/explore-feed/render.php:95 includes/Admin/MediaListPage.php:226
-#: includes/Core/Plugin.php:1261 src/blocks/explore-feed/render.php:95
+#: includes/Core/Plugin.php:1271 src/blocks/explore-feed/render.php:95
 #: templates/explore.php:149
 msgid "Search media..."
 msgstr ""
@@ -287,7 +287,7 @@ msgstr ""
 msgid "Add details above (optional), then upload."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:146 includes/Core/Plugin.php:1228
+#: build/blocks/media-upload/render.php:146 includes/Core/Plugin.php:1238
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:312
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:371
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:582
@@ -342,7 +342,7 @@ msgstr ""
 
 #: build/blocks/member-photos/render.php:202
 #: build/blocks/member-photos/render.php:218 build/member-photos/render.php:202
-#: build/member-photos/render.php:218 includes/Core/Plugin.php:1287
+#: build/member-photos/render.php:218 includes/Core/Plugin.php:1297
 #: includes/Services/GDPRService.php:201
 #: src/blocks/member-photos/render.php:202
 #: src/blocks/member-photos/render.php:218 templates/media-single.php:173
@@ -356,7 +356,7 @@ msgid "View profile"
 msgstr ""
 
 #: build/blocks/member-photos/render.php:217 build/member-photos/render.php:217
-#: includes/Core/Plugin.php:1288 src/blocks/member-photos/render.php:217
+#: includes/Core/Plugin.php:1298 src/blocks/member-photos/render.php:217
 #: templates/media-single.php:172 templates/partials/profile-actions.php:45
 msgid "Follow"
 msgstr ""
@@ -1583,7 +1583,7 @@ msgid "Explore Media"
 msgstr ""
 
 #: includes/Admin/OverviewPage.php:556 includes/Admin/SetupWizard.php:257
-#: includes/Core/Plugin.php:1543 includes/Services/HealthCheckService.php:177
+#: includes/Core/Plugin.php:1553 includes/Services/HealthCheckService.php:177
 #: templates/partials/dashboard-content.php:302
 msgid "My Media"
 msgstr ""
@@ -2721,7 +2721,7 @@ msgstr ""
 
 #: includes/Admin/TagManagementPage.php:177
 #: includes/Admin/TagManagementPage.php:263
-#: includes/Admin/TagManagementPage.php:310 includes/Core/Plugin.php:1229
+#: includes/Admin/TagManagementPage.php:310 includes/Core/Plugin.php:1239
 #: templates/media-single.php:491 templates/media-single.php:494
 #: templates/media-single.php:633 templates/partials/dashboard-content.php:464
 #: templates/partials/dashboard-content.php:504
@@ -3002,41 +3002,41 @@ msgstr ""
 msgid "Likes"
 msgstr ""
 
-#: includes/Core/Plugin.php:1226
+#: includes/Core/Plugin.php:1236
 msgid "Are you sure?"
 msgstr ""
 
-#: includes/Core/Plugin.php:1227
+#: includes/Core/Plugin.php:1237
 msgid "Confirm"
 msgstr ""
 
-#: includes/Core/Plugin.php:1260 templates/partials/chat-new.php:28
+#: includes/Core/Plugin.php:1270 templates/partials/chat-new.php:28
 msgid "Search users..."
 msgstr ""
 
-#: includes/Core/Plugin.php:1262
+#: includes/Core/Plugin.php:1272
 msgid "No users found."
 msgstr ""
 
-#: includes/Core/Plugin.php:1263
+#: includes/Core/Plugin.php:1273
 #: includes/Integrations/BuddyPress/MediaDisplayHelper.php:121
 #: templates/explore.php:127
 msgid "media"
 msgstr ""
 
-#: includes/Core/Plugin.php:1289 templates/partials/profile-actions.php:60
+#: includes/Core/Plugin.php:1299 templates/partials/profile-actions.php:60
 msgid "Block"
 msgstr ""
 
-#: includes/Core/Plugin.php:1290 templates/partials/profile-actions.php:60
+#: includes/Core/Plugin.php:1300 templates/partials/profile-actions.php:60
 msgid "Unblock"
 msgstr ""
 
-#: includes/Core/Plugin.php:1291 templates/partials/profile-actions.php:59
+#: includes/Core/Plugin.php:1301 templates/partials/profile-actions.php:59
 msgid "Block this member"
 msgstr ""
 
-#: includes/Core/Plugin.php:1292 templates/partials/profile-actions.php:59
+#: includes/Core/Plugin.php:1302 templates/partials/profile-actions.php:59
 msgid "Unblock this member"
 msgstr ""
 
