@@ -702,7 +702,7 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_moderation_auto_action' ),
-				'default'           => 'flag',
+				'default'           => 'delete',
 			)
 		);
 		add_settings_field(
@@ -717,8 +717,41 @@ class SettingsRegistrar {
 					'flag'   => __( 'Flag for review (keep visible)', 'wpmediaverse' ),
 					'hide'   => __( 'Hide (set to private)', 'wpmediaverse' ),
 					'reject' => __( 'Reject (move to draft)', 'wpmediaverse' ),
+					'delete' => __( 'Delete permanently (removes file from storage/cloud)', 'wpmediaverse' ),
 				),
-				'description' => __( 'Action taken automatically when AI detects a policy violation in uploaded media.', 'wpmediaverse' ),
+				'description' => __( 'Action taken automatically when AI detects a policy violation in uploaded media. "Delete permanently" removes the media and its files from local and cloud storage and cannot be undone.', 'wpmediaverse' ),
+			)
+		);
+
+		// AI flag-criteria rule — which content categories the AI flags. Stored
+		// as an array of category keys; every category is enabled by default so
+		// the rule is never blank.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_ai',
+			'mvs_ai_moderation_categories',
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_ai_moderation_categories' ),
+				'default'           => \WPMediaVerse\Services\AIService::MODERATION_CATEGORIES,
+			)
+		);
+		add_settings_field(
+			'mvs_ai_moderation_categories',
+			__( 'AI Flag Criteria', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_group_field' ),
+			SettingsPage::PAGE_SLUG . '-ai',
+			'mvs_moderation',
+			array(
+				'option'      => 'mvs_ai_moderation_categories',
+				'choices'     => array(
+					'nudity'    => __( 'Nudity / sexual content', 'wpmediaverse' ),
+					'violence'  => __( 'Violence / gore', 'wpmediaverse' ),
+					'hate'      => __( 'Hate / harassment', 'wpmediaverse' ),
+					'self-harm' => __( 'Self-harm', 'wpmediaverse' ),
+					'drugs'     => __( 'Drugs', 'wpmediaverse' ),
+					'spam'      => __( 'Spam', 'wpmediaverse' ),
+				),
+				'description' => __( 'Which content categories the AI flags. At least one stays enabled — unchecking all restores every category.', 'wpmediaverse' ),
 			)
 		);
 

@@ -95,8 +95,12 @@ class OpenAIProvider implements AIProviderInterface {
 	 * @return array{safe: bool, flags: string[], confidence: float}
 	 */
 	public function moderate_content( string $image_url ): array {
-		$prompt  = 'Analyze this image for content policy violations. Respond with a JSON object: {"safe": true/false, "flags": ["category1", "category2"], "confidence": 0.0-1.0}. ';
-		$prompt .= 'Flag categories: nudity, violence, hate, self-harm, drugs, spam. Only include applicable flags.';
+		// The flag categories come from the admin's rule setting (defaults to all
+		// categories), so disabling a category in the UI stops the model from
+		// being asked to look for it.
+		$categories = AIService::get_enabled_moderation_categories();
+		$prompt     = 'Analyze this image for content policy violations. Respond with a JSON object: {"safe": true/false, "flags": ["category1", "category2"], "confidence": 0.0-1.0}. ';
+		$prompt    .= 'Flag categories: ' . implode( ', ', $categories ) . '. Only include applicable flags.';
 
 		$response = $this->call_vision_api( $prompt, $image_url );
 

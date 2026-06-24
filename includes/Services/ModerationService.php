@@ -104,6 +104,14 @@ class ModerationService {
 		$auto_action = get_option( 'mvs_moderation_auto_action', 'flag' );
 
 		switch ( $auto_action ) {
+			case 'delete':
+				// Hard removal: purge the record AND every stored file (original
+				// + variants) from local and the active cloud driver via the
+				// shared delete funnel, so AI-flagged content cannot linger on
+				// BunnyCDN/S3/R2. Irreversible by design.
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_cascade( $media_id );
+				break;
+
 			case 'reject':
 				$this->set_status( $media_id, self::STATUS_REJECTED );
 				wp_update_post(

@@ -19,6 +19,32 @@ use WP_Error;
 class AIService {
 
 	/**
+	 * Canonical content-safety categories the AI moderation can flag. These are
+	 * the keys the model returns in `flags` and the keys the admin enables via
+	 * the `mvs_ai_moderation_categories` rule setting (all enabled by default).
+	 *
+	 * @var string[]
+	 */
+	const MODERATION_CATEGORIES = array( 'nudity', 'violence', 'hate', 'self-harm', 'drugs', 'spam' );
+
+	/**
+	 * The moderation categories currently enabled by the admin (the "rule").
+	 *
+	 * Falls back to every category so the rule is never blank — an empty setting
+	 * would otherwise silently disable all flagging.
+	 *
+	 * @return string[]
+	 */
+	public static function get_enabled_moderation_categories(): array {
+		$enabled = get_option( 'mvs_ai_moderation_categories', self::MODERATION_CATEGORIES );
+		if ( ! is_array( $enabled ) || empty( $enabled ) ) {
+			return self::MODERATION_CATEGORIES;
+		}
+		$enabled = array_values( array_intersect( $enabled, self::MODERATION_CATEGORIES ) );
+		return empty( $enabled ) ? self::MODERATION_CATEGORIES : $enabled;
+	}
+
+	/**
 	 * Registered AI providers.
 	 *
 	 * @var AIProviderInterface[]
@@ -197,7 +223,30 @@ class AIService {
 		 */
 		$result = apply_filters( 'mvs_ai_moderation_result', $result, $media_id );
 
-		if ( ! $result['safe'] ) {
+		// Apply the admin's flag-criteria rule, but only where it can be applied.
+		// OpenAI reports flags in OUR category vocabulary, so the rule filters
+		// them: an unsafe verdict whose only categories are disabled is ignored.
+		// Cloud providers (Pro Google Vision: adult/racy/spoof/medical;
+		// Rekognition: its own labels) speak a different vocabulary the rule
+		// can't map — there we trust the provider's safe/unsafe verdict and never
+		// under-flag it. An unsafe verdict with no named category is also trusted.
+		$enabled_categories = self::get_enabled_moderation_categories();
+		$reported_flags     = ( isset( $result['flags'] ) && is_array( $result['flags'] ) ) ? $result['flags'] : array();
+		$known_reported     = array_intersect( $reported_flags, self::MODERATION_CATEGORIES );
+		$relevant_flags     = array_intersect( $reported_flags, $enabled_categories );
+
+		if ( $result['safe'] ) {
+			$should_flag = false;
+		} elseif ( empty( $known_reported ) ) {
+			// No flags, or a provider vocabulary we don't recognise — trust the
+			// unsafe verdict so cloud providers keep their pre-rule behaviour.
+			$should_flag = true;
+		} else {
+			// OpenAI vocabulary — honour the admin's category rule.
+			$should_flag = ! empty( $relevant_flags );
+		}
+
+		if ( $should_flag ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'moderation_status', 'flagged' );
 
 			/**

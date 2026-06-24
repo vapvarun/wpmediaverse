@@ -323,6 +323,55 @@ class FieldRenderer {
 	}
 
 	/**
+	 * Render a group of checkboxes bound to one array-valued option.
+	 *
+	 * Used for multi-select rules such as the AI moderation flag-criteria. The
+	 * value is stored as an array of the checked choice keys; the option's
+	 * register_setting `default` supplies the initial checked state.
+	 *
+	 * @param array $args Field arguments (option, choices, description).
+	 */
+	public static function render_checkbox_group_field( array $args ): void {
+		$registered = get_registered_settings();
+		$default    = isset( $registered[ $args['option'] ]['default'] ) && is_array( $registered[ $args['option'] ]['default'] )
+			? $registered[ $args['option'] ]['default']
+			: array();
+		$value      = get_option( $args['option'], $default );
+		$value      = is_array( $value ) ? array_map( 'strval', $value ) : array();
+		$choices    = $args['choices'] ?? array();
+
+		echo '<fieldset>';
+		foreach ( $choices as $key => $label ) {
+			printf(
+				'<label><input type="checkbox" name="%1$s[]" value="%2$s" %3$s /> %4$s</label><br />',
+				esc_attr( $args['option'] ),
+				esc_attr( $key ),
+				checked( in_array( (string) $key, $value, true ), true, false ),
+				esc_html( $label )
+			);
+		}
+		echo '</fieldset>';
+		if ( ! empty( $args['description'] ) ) {
+			printf(
+				'<p class="description">%s</p>',
+				wp_kses(
+					$args['description'],
+					array(
+						'code'   => array(),
+						'strong' => array(),
+						'em'     => array(),
+						'a'      => array(
+							'href'   => array(),
+							'target' => array(),
+							'rel'    => array(),
+						),
+					)
+				)
+			);
+		}
+	}
+
+	/**
 	 * Render a text input field.
 	 *
 	 * @param array $args Field arguments.

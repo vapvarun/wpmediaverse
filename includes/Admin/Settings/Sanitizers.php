@@ -76,7 +76,7 @@ class Sanitizers {
 		'mvs_items_per_page'         => array( 12, 24, 48 ),
 		'mvs_ai_provider'            => array( 'openai', 'google_vision', 'rekognition' ),
 		'mvs_openai_model'           => array( 'gpt-4o-mini', 'gpt-4o' ),
-		'mvs_moderation_auto_action' => array( 'flag', 'hide', 'reject' ),
+		'mvs_moderation_auto_action' => array( 'flag', 'hide', 'reject', 'delete' ),
 		'mvs_dm_access'              => array( 'everyone', 'followers', 'mutual', 'nobody' ),
 		'mvs_show_online_status'     => array( 'everyone', 'followers', 'nobody' ),
 		'mvs_chat_panel_visibility'  => array( 'everywhere', 'mvs_pages', 'bp_pages', 'disabled' ),
@@ -385,6 +385,23 @@ class Sanitizers {
 	public static function sanitize_moderation_auto_action( $value ): string {
 		$value = is_string( $value ) ? $value : '';
 		return in_array( $value, self::WHITELISTS['mvs_moderation_auto_action'], true ) ? $value : 'flag';
+	}
+
+	/**
+	 * Sanitize the AI moderation flag-criteria rule.
+	 *
+	 * Keeps only known categories and never returns an empty set — an empty rule
+	 * would silently disable all AI flagging, so unchecking everything falls
+	 * back to every category (matching the register_setting default).
+	 *
+	 * @param mixed $value Submitted value (array of category keys).
+	 * @return string[] Sanitized category keys.
+	 */
+	public static function sanitize_ai_moderation_categories( $value ): array {
+		$allowed = \WPMediaVerse\Services\AIService::MODERATION_CATEGORIES;
+		$value   = is_array( $value ) ? $value : array();
+		$clean   = array_values( array_intersect( array_map( 'sanitize_text_field', $value ), $allowed ) );
+		return empty( $clean ) ? $allowed : $clean;
 	}
 
 	/**
