@@ -491,7 +491,6 @@
 		var mediaId  = getId( item );
 		var title    = item.title || '';
 		var desc     = item.description || '';
-		var thumbUrl = item.thumbnail_url || '';
 		var stats    = item.stats || {};
 		var author   = item.author_data || {};
 
@@ -502,23 +501,15 @@
 			'aria-label': title,
 		} );
 
-		// Image wrap.
-		if ( thumbUrl ) {
-			var imgWrap = el( 'div', 'mvs-pinterest-card__img-wrap' );
-			var img = el( 'img', '', {
-				src: thumbUrl,
-				alt: title,
-				loading: 'lazy',
-			} );
-			imgWrap.appendChild( img );
-			root.appendChild( imgWrap );
-		} else {
-			var placeholder = el( 'div', 'mvs-pinterest-card__img-wrap mvs-pinterest-card__img-placeholder' );
-			var camSpan = el( 'span', '', { 'aria-hidden': 'true' } );
-			camSpan.textContent = '\uD83D\uDCF7';
-			placeholder.appendChild( camSpan );
-			root.appendChild( placeholder );
-		}
+		// Image wrap \u2014 delegate to the canonical thumbnail builder so a video
+		// renders a first-frame <video> preview (poster fallback) exactly like
+		// the server-side pinterest/feed-body.php (media_thumbnail). This keeps
+		// page 1 and load-more pages identical for poster-less videos.
+		var imgWrap = el( 'div', 'mvs-pinterest-card__img-wrap' );
+		buildMediaThumbnail( item, { alt: title } ).forEach( function ( node ) {
+			imgWrap.appendChild( node );
+		} );
+		root.appendChild( imgWrap );
 
 		// Body.
 		var body = el( 'div', 'mvs-pinterest-card__body' );
@@ -594,7 +585,7 @@
 	 *
 	 * Structure:
 	 *   div.mvs-flickr-item[data-media-id][style="flex-grow: ratio"]
-	 *     img  (or div.mvs-flickr-item__placeholder)
+	 *     <media thumbnail via buildMediaThumbnail — img or <video> preview>
 	 *     span.mvs-flickr-item__video-badge  (if video)
 	 *     div.mvs-flickr-item__overlay
 	 *     div.mvs-flickr-item__info
@@ -610,7 +601,6 @@
 	function flickr( item ) {
 		var mediaId   = getId( item );
 		var title     = item.title || '';
-		var thumbUrl  = item.thumbnail_url || '';
 		var link      = item.link || '#';
 		var mediaType = item.media_type || 'image';
 		var stats     = item.stats || {};
@@ -626,18 +616,14 @@
 		} );
 		root.style.flexGrow = ratio;
 
-		// Image.
-		if ( thumbUrl ) {
-			var img = el( 'img', '', {
-				src: thumbUrl,
-				alt: title,
-				loading: 'lazy',
-				decoding: 'async',
-			} );
-			root.appendChild( img );
-		} else {
-			root.appendChild( el( 'div', 'mvs-flickr-item__placeholder' ) );
-		}
+		// Image — delegate to the canonical thumbnail builder (showPlay:false;
+		// this layout has its own video badge below). A video renders a
+		// first-frame <video> preview, matching flickr/feed-body.php
+		// (media_thumbnail), so load-more pages match page 1 for poster-less
+		// videos.
+		buildMediaThumbnail( item, { alt: title, showPlay: false } ).forEach( function ( node ) {
+			root.appendChild( node );
+		} );
 
 		// Video badge.
 		if ( isVideo ) {
@@ -698,8 +684,7 @@
 	 * Structure:
 	 *   article.mvs-dribbble-card[data-media-id]
 	 *     a.mvs-dribbble-card__image
-	 *       img  (or div.mvs-dribbble-card__placeholder)
-	 *       span.mvs-dribbble-card__play-badge  (if video)
+	 *       <media thumbnail via buildMediaThumbnail — img or <video> preview>
 	 *       div.mvs-dribbble-card__overlay
 	 *         p.mvs-dribbble-card__overlay-title
 	 *     footer.mvs-dribbble-card__footer
@@ -716,9 +701,7 @@
 	function dribbble( item ) {
 		var mediaId   = getId( item );
 		var title     = item.title || '';
-		var thumbUrl  = item.thumbnail_url || '';
 		var link      = item.link || '#';
-		var mediaType = item.media_type || 'image';
 		var stats     = item.stats || {};
 		var author    = item.author_data || {};
 
@@ -732,36 +715,13 @@
 			'aria-label': title,
 		} );
 
-		if ( thumbUrl ) {
-			var img = el( 'img', '', {
-				src: thumbUrl,
-				alt: title,
-				loading: 'lazy',
-			} );
-			imageLink.appendChild( img );
-
-			if ( mediaType === 'video' ) {
-				var playBadge = el( 'span', 'mvs-dribbble-card__play-badge', {
-					'aria-hidden': 'true',
-				} );
-				playBadge.textContent = '\u25B6';
-				imageLink.appendChild( playBadge );
-			}
-		} else {
-			var placeholder = el( 'div', 'mvs-dribbble-card__placeholder', {
-				'aria-hidden': 'true',
-			} );
-			var icon = el( 'span' );
-			if ( mediaType === 'video' ) {
-				icon.textContent = '\u25B6';
-			} else if ( mediaType === 'audio' ) {
-				icon.textContent = '\u266B';
-			} else {
-				icon.className = 'dashicons dashicons-media-default';
-			}
-			placeholder.appendChild( icon );
-			imageLink.appendChild( placeholder );
-		}
+		// Delegate to the canonical thumbnail builder so a video renders a
+		// first-frame <video> preview (with the play icon the builder adds),
+		// matching dribbble/feed-body.php (media_thumbnail). Load-more pages now
+		// match page 1 for poster-less videos.
+		buildMediaThumbnail( item, { alt: title } ).forEach( function ( node ) {
+			imageLink.appendChild( node );
+		} );
 
 		// Overlay.
 		var overlay = el( 'div', 'mvs-dribbble-card__overlay', { 'aria-hidden': 'true' } );
@@ -901,11 +861,30 @@
 		root.appendChild( header );
 
 		// ── Media area ──────────────────────────────────────────────────
+		// Video-first (matching the server-side instagram feed-card.php): a
+		// streamable video renders an inline <video> first-frame preview with
+		// the poster as a fallback, so a poster-less video shows its real frame
+		// instead of the injected default-poster image. The #t=0.1 fragment
+		// makes the browser paint the first frame even when the poster is the
+		// generic placeholder. Layout-specific classes (mvs-ig-video /
+		// mvs-ig-card-img) are kept so the Instagram CSS still applies.
 		var mediaWrap = el( 'div', 'mvs-ig-card-media' );
+		var fileUrl   = item.file_url || '';
 
-		if ( thumbUrl ) {
+		if ( item.media_type === 'video' && fileUrl ) {
+			var video = el( 'video', 'mvs-ig-video', {
+				src: fileUrl + '#t=0.1',
+				muted: 'muted',
+				playsinline: 'playsinline',
+				preload: 'metadata',
+			} );
+			if ( thumbUrl ) {
+				video.poster = thumbUrl;
+			}
+			mediaWrap.appendChild( video );
+		} else if ( thumbUrl || fileUrl ) {
 			var img = el( 'img', 'mvs-ig-card-img', {
-				src: thumbUrl,
+				src: thumbUrl || fileUrl,
 				alt: title,
 				loading: 'lazy',
 			} );
