@@ -105,7 +105,7 @@ class WatermarkService {
 			'text'      => get_option( 'mvs_watermark_text', get_bloginfo( 'name' ) ),
 			'image_id'  => $image_id,
 			'image_url' => $image_id > 0 ? (string) wp_get_attachment_url( $image_id ) : '',
-			'position'  => get_option( 'mvs_watermark_position', self::POSITION_CENTER ),
+			'position'  => get_option( 'mvs_watermark_position', self::POSITION_BOTTOM_RIGHT ),
 			'opacity'   => (int) get_option( 'mvs_watermark_opacity', 40 ),
 			'font_size' => (int) get_option( 'mvs_watermark_font_size', 24 ),
 			'color'     => get_option( 'mvs_watermark_color', '#ffffff' ),

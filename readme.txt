@@ -120,6 +120,8 @@ Wbcom-family Integrations page, configurable AI moderation with a new Claude pro
 * Improve  - Explore and the dashboard share one REST client with document-level event delegation, so Load More and other actions keep working after client-side navigation.
 * Improve  - Dark mode now follows the active BuddyX/Reign theme toggle (data-bx-mode) and uses shared elevation tokens.
 * Fix      - Selecting Watermark Type "Image" now applies the configured logo; the chosen attachment is passed to the watermark renderer instead of being dropped.
+* Fix      - Restricted (gated) images now display the watermarked preview to visitors without access, instead of the plain blurred thumbnail that was shown before. Watermarking applies to images only, never video or audio.
+* Dev      - New mvs_apply_watermark_preview filter to skip the watermark for specific uploaders or roles; the default watermark position is now bottom-right.
 * Fix      - Direct-message attachments are scoped to their conversation so only participants can view them.
 * Fix      - A new message is delivered again after both members had deleted the conversation.
 * Fix      - The BuddyPress component-link cleanup no longer removes live navigation owned by another community plugin; it is off by default and never deletes a link that resolves to a real page.
