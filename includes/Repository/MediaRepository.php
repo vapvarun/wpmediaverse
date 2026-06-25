@@ -2210,6 +2210,13 @@ class MediaRepository implements MediaRepositoryInterface {
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = 'mvs_comment'", $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
+		// 1.7.0 cache layer: row_cache still holds the now-deleted index row, and
+		// exists() short-circuits to true when row_cache[$id]['media_id'] is set.
+		// Without this invalidation exists()/get_raw() report the media as still
+		// present after delete (caught by MediaRepositoryTest::test_delete_all and
+		// MediaRepositoryCoverageTest::test_delete_cascade_removes_index_row).
+		self::invalidate_row_cache( $media_id );
+
 		/**
 		 * Fires after a media item has been permanently deleted. delete_cascade
 		 * is the single funnel for EVERY delete path (REST single + bulk, admin
