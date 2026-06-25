@@ -6,6 +6,16 @@ parameters:
 			path: includes/Admin/CollectionMetaBox.php
 
 		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Admin/IntegrationsPage.php
+
+		-
+			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
+			count: 2
+			path: includes/Admin/IntegrationsPage.php
+
+		-
 			message: "#^Parameter \\#1 \\$args of function paginate_links expects array\\{base\\?\\: string, format\\?\\: string, total\\?\\: int, current\\?\\: int, aria_current\\?\\: string, show_all\\?\\: bool, end_size\\?\\: int, mid_size\\?\\: int, \\.\\.\\.\\}, array\\{base\\: string, format\\: '', current\\: int, total\\: float\\} given\\.$#"
 			count: 1
 			path: includes/Admin/LogViewerPage.php
@@ -92,7 +102,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
+			count: 2
 			path: includes/Admin/Settings/SettingsPage.php
 
 		-
@@ -142,12 +152,12 @@ parameters:
 
 		-
 			message: "#^Call to static method log\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 18
+			count: 20
 			path: includes/CLI/Commands.php
 
 		-
 			message: "#^Call to static method success\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 27
+			count: 30
 			path: includes/CLI/Commands.php
 
 		-
@@ -162,7 +172,7 @@ parameters:
 
 		-
 			message: "#^Function WP_CLI\\\\Utils\\\\get_flag_value not found\\.$#"
-			count: 40
+			count: 41
 			path: includes/CLI/Commands.php
 
 		-
@@ -202,12 +212,17 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 9
+			count: 10
 			path: includes/Core/Plugin.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 29
+			count: 30
+			path: includes/Core/Plugin.php
+
+		-
+			message: "#^Right side of && is always true\\.$#"
+			count: 1
 			path: includes/Core/Plugin.php
 
 		-
@@ -294,6 +309,16 @@ parameters:
 			message: "#^Function buddypress not found\\.$#"
 			count: 2
 			path: includes/Integrations/BuddyPress/ProfileTabIntegration.php
+
+		-
+			message: "#^Parameter \\#4 \\$context of function request_filesystem_credentials expects string, false given\\.$#"
+			count: 1
+			path: includes/Integrations/Companions/CompanionInstaller.php
+
+		-
+			message: "#^is_wp_error\\(WP_Error\\) will always evaluate to true\\.$#"
+			count: 1
+			path: includes/Integrations/Companions/CompanionInstaller.php
 
 		-
 			message: "#^Call to function is_wp_error\\(\\) with int\\<0, max\\> will always evaluate to false\\.$#"
@@ -421,12 +446,22 @@ parameters:
 			path: includes/Services/AlbumService.php
 
 		-
+			message: "#^Left side of && is always true\\.$#"
+			count: 1
+			path: includes/Services/CloudOps.php
+
+		-
 			message: "#^Negated boolean expression is always true\\.$#"
 			count: 1
 			path: includes/Services/CloudOps.php
 
 		-
 			message: "#^Offset 'basedir' on array\\{path\\: string, url\\: string, subdir\\: string, basedir\\: string, baseurl\\: string, error\\: string\\|false\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: includes/Services/CloudOps.php
+
+		-
+			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/Services/CloudOps.php
 
@@ -471,6 +506,11 @@ parameters:
 			path: includes/Services/ProfileService.php
 
 		-
+			message: "#^Property WPMediaVerse\\\\Services\\\\StorageRepairService\\:\\:\\$storage is never read, only written\\.$#"
+			count: 1
+			path: includes/Services/StorageRepairService.php
+
+		-
 			message: "#^Action callback returns int but should not return anything\\.$#"
 			count: 1
 			path: includes/Services/StoryService.php
@@ -486,13 +526,18 @@ parameters:
 			path: includes/Services/UploadService.php
 
 		-
+			message: "#^Offset 'basedir' on array\\{path\\: string, url\\: string, subdir\\: string, basedir\\: string, baseurl\\: string, error\\: string\\|false\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: includes/Services/UploadService.php
+
+		-
 			message: "#^is_wp_error\\(array\\) will always evaluate to false\\.$#"
 			count: 1
 			path: includes/Services/UploadService.php
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 7
+			count: 10
 			path: includes/Shortcodes/Shortcodes.php
 
 		-
