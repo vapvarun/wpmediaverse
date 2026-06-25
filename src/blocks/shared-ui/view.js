@@ -1474,12 +1474,20 @@ const { state: mvsState } = store( 'mvs', {
 			try {
 				const router = yield import( '@wordpress/interactivity-router' );
 				yield router.actions.navigate( href );
-				document.dispatchEvent( new CustomEvent( 'mvs:navigated', { detail: { href } } ) );
+				// The router swaps in the fetched page's matching region. If the
+				// target page has no [data-wp-router-region="mvs/main"] wrapper
+				// (e.g. a Pro non-grid Explore layout whose template omits it),
+				// the swap yields EMPTY content instead of throwing, leaving a
+				// blank page. Detect the empty swap and fall back to a full load
+				// so the user never sees a blank screen. (#10033416011)
 				const region = document.querySelector( '[data-wp-router-region="mvs/main"]' );
-				if ( region ) {
-					if ( ! region.hasAttribute( 'tabindex' ) ) region.setAttribute( 'tabindex', '-1' );
-					region.focus( { preventScroll: true } );
+				if ( ! region || region.children.length === 0 ) {
+					window.location.href = href;
+					return;
 				}
+				document.dispatchEvent( new CustomEvent( 'mvs:navigated', { detail: { href } } ) );
+				if ( ! region.hasAttribute( 'tabindex' ) ) region.setAttribute( 'tabindex', '-1' );
+				region.focus( { preventScroll: true } );
 				window.scrollTo( 0, 0 );
 			} catch ( e ) {
 				window.location.href = href; // never strand the user
