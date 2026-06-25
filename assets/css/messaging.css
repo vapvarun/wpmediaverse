@@ -325,6 +325,26 @@ body.dark-mode {
 	border-radius: 0;
 }
 
+/* Theme defense: BuddyX / Reign restyle every bare <button> with a filled
+   accent background and white text, turning these flat chat tabs into chunky
+   buttons and making the label invisible once the fill is removed. Re-assert
+   the flat, readable tab look. Bug #10019404777. */
+.mvs-chat-tabs .mvs-chat-tabs__tab {
+	background: none !important;
+	border: 0 !important;
+	border-bottom: 2px solid transparent !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	color: var(--mvs-chat-text-secondary) !important;
+}
+
+.mvs-chat-tabs .mvs-chat-tabs__tab:hover,
+.mvs-chat-tabs .mvs-chat-tabs__tab:focus,
+.mvs-chat-tabs .mvs-chat-tabs__tab[data-active="true"] {
+	color: var(--mvs-chat-primary) !important;
+	border-bottom-color: var(--mvs-chat-primary) !important;
+}
+
 .mvs-chat-tabs__badge {
 	display: inline-block;
 	min-width: 18px;

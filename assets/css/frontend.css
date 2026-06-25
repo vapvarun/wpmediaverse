@@ -1785,6 +1785,9 @@ body.dark-mode .mvs-skeleton::after {
     border-bottom: 2px solid transparent !important;
     border-radius: 0 !important;
     box-shadow: none !important;
+    /* The theme also forces button text white; without re-asserting the text
+       color the label turns white-on-light = invisible once the fill is gone. */
+    color: var(--mvs-text) !important;
 }
 
 .mvs-dashboard-tabs .mvs-dashboard-tab:hover,
@@ -1792,6 +1795,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-dashboard-tabs .mvs-dashboard-tab.active {
     background: none !important;
     border-bottom-color: var(--mvs-primary) !important;
+    color: var(--mvs-primary) !important;
 }
 
 .mvs-dashboard-panel {
@@ -5506,11 +5510,13 @@ a.mvs-dashboard-card-title:hover {
     border: 0 !important;
     border-radius: 6px !important;
     box-shadow: none !important;
+    color: var(--mvs-text) !important;
 }
 
 .mvs-lightbox-action:hover,
 .mvs-lightbox-action:focus {
     background: var(--mvs-surface-2) !important;
+    color: var(--mvs-text) !important;
 }
 
 /* Fullscreen — when the lightbox enters browser fullscreen via the

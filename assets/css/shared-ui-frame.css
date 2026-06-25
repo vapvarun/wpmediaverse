@@ -144,6 +144,26 @@
 	border-bottom-color: var(--mvs-primary);
 }
 
+/* Theme defense: BuddyX / Reign restyle every bare <button> with a filled
+   accent background and white text, turning these flat modal tabs into chunky
+   buttons and making the label invisible once the fill is removed. Re-assert
+   the flat, readable tab look. Bug #10019404777. */
+.mvs-modal-tabs .mvs-modal-tab {
+	background: none !important;
+	border: 0 !important;
+	border-bottom: 2px solid transparent !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	color: var(--mvs-text-secondary) !important;
+}
+
+.mvs-modal-tabs .mvs-modal-tab:hover,
+.mvs-modal-tabs .mvs-modal-tab:focus,
+.mvs-modal-tabs .mvs-modal-tab.active {
+	color: var(--mvs-primary) !important;
+	border-bottom-color: var(--mvs-primary) !important;
+}
+
 .mvs-modal-tab svg {
 	pointer-events: none;
 	flex-shrink: 0;

@@ -75,13 +75,15 @@
 			}
 		}
 
-		// Interactive controls inside a card (like, comment, bookmark, share,
-		// mute, follow, carousel, expand, etc.) carry their own Interactivity
-		// click action. Don't let the generic lightbox-open swallow those clicks
-		// — they self-handle, and the expand button even opens the lightbox via
-		// its own action. Without this, every Instagram-layout action button just
-		// popped the lightbox instead of running. (Bugs #10014549774.)
-		if ( e.target.closest( '[data-wp-on--click], [data-wp-on-async--click]' ) ) {
+		// Interactive control BUTTONS inside a card (like, comment, bookmark,
+		// share, mute, follow, carousel, expand, etc.) run their own action — the
+		// generic lightbox-open must not swallow their clicks (the expand button
+		// even opens the lightbox via its own action). Match only <button>, NOT
+		// any [data-wp-on--click] ancestor: the whole app is wrapped in
+		// #mvs-app[data-wp-on--click="actions.navigate"] (client-nav), so matching
+		// that ancestor bailed on every click and the lightbox never opened.
+		// (Bugs #10014549774; regression guard #10019404777.)
+		if ( e.target.closest( 'button' ) ) {
 			return;
 		}
 
