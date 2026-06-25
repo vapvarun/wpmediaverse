@@ -1042,6 +1042,76 @@ body.dark-mode .mvs-skeleton::after {
     object-fit: contain;
 }
 
+/* Original mode = true masonry (Pinterest / Unsplash): every image keeps its
+   native aspect ratio (no square crop) and tiles pack with no gaps. CSS
+   multi-column is a no-JS masonry — it works with Load More (appended cards
+   flow into the columns) and preserves DOM order so the lightbox prev/next
+   stays correct. This overrides .mvs-media-grid's `display:grid`, whose uniform
+   rows left large gaps under short/wide images. (Aspect-ratio request.) */
+.mvs-media-grid.mvs-grid--original {
+    display: block;
+    column-gap: 16px;
+}
+
+.mvs-grid--original.mvs-cols-2 {
+    column-count: 2;
+}
+
+.mvs-grid--original.mvs-cols-3 {
+    column-count: 3;
+}
+
+.mvs-grid--original.mvs-cols-4 {
+    column-count: 4;
+}
+
+.mvs-grid--original.mvs-cols-5 {
+    column-count: 5;
+}
+
+.mvs-grid--original .mvs-grid-item {
+    -webkit-column-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 16px;
+    width: 100%;
+}
+
+/* The card's <a> wrapper is forced square by `.mvs-feed .mvs-grid-item-link`
+   (a later, equal-specificity rule). In masonry that square wrapper re-introduces
+   the gap even though the <img> is natural height. Beat it with a compound
+   selector so the link hugs the image and the card hugs the link. */
+.mvs-media-grid.mvs-grid--original .mvs-grid-item-link,
+.mvs-media-grid.mvs-grid--original .mvs-grid-item a {
+    aspect-ratio: auto;
+    height: auto;
+}
+
+@media (max-width: 1024px) {
+
+    .mvs-grid--original.mvs-cols-5 {
+        column-count: 4;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .mvs-grid--original.mvs-cols-3,
+    .mvs-grid--original.mvs-cols-4,
+    .mvs-grid--original.mvs-cols-5 {
+        column-count: 2;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .mvs-grid--original.mvs-cols-2,
+    .mvs-grid--original.mvs-cols-3,
+    .mvs-grid--original.mvs-cols-4,
+    .mvs-grid--original.mvs-cols-5 {
+        column-count: 1;
+    }
+}
+
 .mvs-grid-item-placeholder {
     display: flex;
     align-items: center;
