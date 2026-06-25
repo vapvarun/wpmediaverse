@@ -277,6 +277,11 @@ class Plugin {
 		// async delete of original + variants from local + cloud).
 		self::$container->get( 'storage_cleanup' );
 
+		// Initialize the one-time storage-path repair (heals pre-1.8.0 absolute
+		// file_path imports + stranded cloud thumbnails in bounded AS batches;
+		// the Migrator marks it pending on update, this listens for AS-ready).
+		self::$container->get( 'storage_repair' );
+
 		// Integrations (conditionally loaded).
 		self::$container->get( 'integration.buddypress' );
 		self::$container->get( 'integration.bp_activity_linkage' );
@@ -744,6 +749,15 @@ class Plugin {
 			'storage_cleanup',
 			function ( $c ) {
 				$service = new \WPMediaVerse\Services\StorageCleanupService( $c->get( 'storage' ) );
+				$service->init();
+				return $service;
+			}
+		);
+
+		self::$container->register(
+			'storage_repair',
+			function ( $c ) {
+				$service = new \WPMediaVerse\Services\StorageRepairService( $c->get( 'storage' ), $c->get( 'upload' ) );
 				$service->init();
 				return $service;
 			}

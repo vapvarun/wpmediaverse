@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 17;
+	const CURRENT_VERSION = 18;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -800,6 +800,21 @@ class Migrator {
 			$wpdb->query( "ALTER TABLE {$conv} ADD KEY container (container_type, container_id)" );
 		}
 		// phpcs:enable
+	}
+
+	/**
+	 * Migration v18 — schedule the one-time storage-path repair.
+	 *
+	 * No schema change and no heavy work inline: this only marks the repair
+	 * 'pending'. StorageRepairService::maybe_autostart() then runs cheap
+	 * detection once Action Scheduler is ready and, only if affected rows exist,
+	 * heals them in bounded async batches (pre-1.8.0 absolute-path imports +
+	 * stranded cloud thumbnails). Clean sites schedule nothing.
+	 *
+	 * @since 1.8.0
+	 */
+	private function migrate_to_18(): void {
+		\WPMediaVerse\Services\StorageRepairService::mark_pending();
 	}
 
 	/**

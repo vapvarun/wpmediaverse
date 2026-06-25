@@ -638,6 +638,88 @@ class UploadService {
 	}
 
 	/**
+	 * Pull an external source file into the WPMediaVerse library as a RELATIVE
+	 * path and run the canonical variant pipeline — the single entry point for
+	 * bringing outside files (plugin-migration imports, storage repair) into MVS
+	 * storage so they serve, migrate, and clean up exactly like an upload.
+	 *
+	 * Every row in `mvs_media_index` MUST reference its file by a path relative
+	 * to `uploads/wpmediaverse/`; the local driver resolves `base_dir . file_path`
+	 * and the migrate/cleanup flows assume relative paths. An absolute path (what
+	 * `get_attached_file()` returns) resolves nowhere and 404s.
+	 *
+	 * Routing: the file is stored on the SAME driver an upload of this privacy
+	 * would use (`get_driver_for_privacy()` — public + active cloud → cloud;
+	 * private/restricted, or local driver → local). The variant pipeline follows
+	 * the identical routing, so the original AND every variant land together and
+	 * `get_driver_for_location()` resolves them all from one place (no split).
+	 *
+	 * Placement: a source already under `uploads/wpmediaverse/` keeps its
+	 * existing relative location; anything else is copied under
+	 * `imported/YYYY/MM/`. The source file is only ever read (copied), never
+	 * moved or deleted — the caller's original (e.g. a WP attachment owned by
+	 * another plugin) is left intact.
+	 *
+	 * @since 1.8.0
+	 *
+	 * @param int    $media_id    Media id (the row must already exist).
+	 * @param string $source_path Absolute path to the source file on disk.
+	 * @param string $media_type  High-level type: image|video|audio|document.
+	 * @param string $mime        Detected MIME type.
+	 * @return string Relative dest path on success, '' on failure.
+	 */
+	public function sideload_external_file( int $media_id, string $source_path, string $media_type, string $mime ): string {
+		if ( '' === $source_path || ! file_exists( $source_path ) ) {
+			return '';
+		}
+
+		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$wpmv_base = trailingslashit( (string) ( wp_upload_dir()['basedir'] ?? '' ) ) . 'wpmediaverse/';
+		$privacy   = (string) $repo->get_raw( $media_id, 'privacy' );
+		$privacy   = '' !== $privacy ? $privacy : 'public';
+		$driver    = $this->storage->get_driver_for_privacy( $privacy );
+
+		// Reuse the existing relative location when the source already lives
+		// under wpmediaverse/ (e.g. a row whose file_path was stored absolute but
+		// points inside the library); otherwise place it under imported/YYYY/MM/.
+		$real_src  = realpath( $source_path );
+		$real_base = realpath( $wpmv_base );
+		if ( $real_src && $real_base && 0 === strpos( $real_src, trailingslashit( $real_base ) ) ) {
+			$dest_path = ltrim( substr( $real_src, strlen( trailingslashit( $real_base ) ) ), '/' );
+		} else {
+			$subdir = 'imported/' . gmdate( 'Y/m' );
+			if ( ! wp_mkdir_p( $wpmv_base . $subdir ) ) {
+				return '';
+			}
+			$dest_path = $subdir . '/' . $media_id . '-' . sanitize_file_name( basename( $source_path ) );
+		}
+
+		$local_full = $wpmv_base . $dest_path;
+
+		// Store to the privacy-routed driver. Skip ONLY a local copy-onto-self
+		// (source already IS the local dest) — copying a file onto itself can
+		// truncate it. A cloud driver always uploads (source local, dest remote).
+		$skip_store = ( $driver instanceof LocalDriver ) && $real_src && ( $real_src === realpath( $local_full ) );
+		if ( ! $skip_store && ! $driver->store( $source_path, $dest_path ) ) {
+			return '';
+		}
+
+		// Cloud store() keeps no local copy, but variant/metadata generation must
+		// read the file locally. Stage a working copy from the source we hold.
+		if ( ! file_exists( $local_full ) ) {
+			wp_mkdir_p( dirname( $local_full ) );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- staging a local working copy for metadata extraction; WP_Filesystem isn't initialized in this CLI/admin-batch path.
+			@copy( $source_path, $local_full );
+		}
+
+		$repo->set( $media_id, 'file_path', $dest_path );
+		$repo->set( $media_id, 'file_url', $driver->url( $dest_path ) );
+		$this->process_stored_file( $media_id, $dest_path, $media_type, $mime );
+
+		return $dest_path;
+	}
+
+	/**
 	 * Get allowed MIME types (public accessor for other controllers).
 	 *
 	 * @return string[]

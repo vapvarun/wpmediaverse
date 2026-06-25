@@ -1795,4 +1795,75 @@ class Commands {
 			)
 		);
 	}
+
+	/**
+	 * Repair media storage paths left inconsistent by pre-1.8.0 behavior.
+	 *
+	 * Heals two pre-existing states (it does not create them):
+	 *   - Absolute file_path from old plugin-migration imports (rtMedia /
+	 *     MediaPress / BuddyBoss) — the full-size image 404s. Re-sideloaded into
+	 *     uploads/wpmediaverse/ as a relative path.
+	 *   - Stranded thumbnails — old "Migrate all" moved the original to cloud but
+	 *     left thumbnails on local disk, so they 404 at the cloud URL. Pushed to
+	 *     the active cloud driver.
+	 *
+	 * Idempotent and safe to re-run. The source file is only ever copied, never
+	 * moved or deleted. On the admin side this runs automatically in the
+	 * background after update; this command is for headless / on-demand use.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--dry-run]
+	 * : Report how many rows need repair without changing anything.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs repair-storage --dry-run
+	 *     wp mvs repair-storage
+	 *
+	 * @subcommand repair-storage
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional CLI args (unused).
+	 * @param array $assoc_args Associative CLI flags.
+	 */
+	public function repair_storage( $args, $assoc_args ) {
+		unset( $args );
+
+		$dry_run = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$service = \WPMediaVerse\Core\Plugin::container()->get( 'storage_repair' );
+
+		if ( $dry_run ) {
+			$counts = $service->run_to_completion( true );
+			WP_CLI::log(
+				sprintf(
+					'Dry run — absolute-path rows: %d, stranded thumbnails detected: %s.',
+					(int) $counts['absolute'],
+					! empty( $counts['stranded_any'] ) ? 'yes' : 'no'
+				)
+			);
+			if ( empty( $counts['needs_repair'] ) ) {
+				WP_CLI::success( 'Nothing to repair.' );
+			}
+			return;
+		}
+
+		WP_CLI::log( 'Repairing storage paths (idempotent, copy-only)…' );
+		$result = $service->run_to_completion( false );
+
+		if ( ! empty( $result['dry_run'] ) || ( isset( $result['needs_repair'] ) && empty( $result['needs_repair'] ) ) ) {
+			WP_CLI::success( 'Nothing to repair.' );
+			return;
+		}
+
+		WP_CLI::success(
+			sprintf(
+				'Repair done. Scanned: %d, absolute-path healed: %d, stranded thumbnails healed: %d, failed: %d.',
+				(int) ( $result['scanned'] ?? 0 ),
+				(int) ( $result['healed_absolute'] ?? 0 ),
+				(int) ( $result['healed_stranded'] ?? 0 ),
+				(int) ( $result['failed'] ?? 0 )
+			)
+		);
+	}
 }

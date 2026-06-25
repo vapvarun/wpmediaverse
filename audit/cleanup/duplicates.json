@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-06-25T06:41:04Z",
+    "generated_at": "2026-06-25T08:10:41Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -17,7 +17,7 @@
     "counts": {
         "cross_plugin_duplicates": 11,
         "within_plugin_duplicates": 38,
-        "free_files_scanned": 167,
+        "free_files_scanned": 168,
         "pro_files_scanned": 162
     },
     "cross_plugin_duplicates": [
@@ -503,12 +503,12 @@
             "sites": [
                 {
                     "file": "includes/Integrations/MediaPress/Importer.php",
-                    "lines": "360-360",
+                    "lines": "364-364",
                     "method": "create_album_from_mpp_gallery"
                 },
                 {
                     "file": "includes/Integrations/MediaPress/MigrationAdmin.php",
-                    "lines": "225-225",
+                    "lines": "229-229",
                     "method": "MigrationAdmin::create_album_from_mpp_gallery"
                 }
             ]
@@ -593,12 +593,12 @@
             "sites": [
                 {
                     "file": "includes/Integrations/BuddyBoss/Importer.php",
-                    "lines": "458-458",
+                    "lines": "460-460",
                     "method": "create_album_from_bb"
                 },
                 {
                     "file": "includes/Integrations/BuddyBoss/MigrationAdmin.php",
-                    "lines": "384-384",
+                    "lines": "387-387",
                     "method": "create_album_from_bb"
                 }
             ]
@@ -824,12 +824,12 @@
             "sites": [
                 {
                     "file": "includes/Integrations/BuddyBoss/Importer.php",
-                    "lines": "352-352",
+                    "lines": "354-354",
                     "method": "get_album_id_from_context"
                 },
                 {
                     "file": "includes/Integrations/BuddyBoss/MigrationAdmin.php",
-                    "lines": "332-332",
+                    "lines": "335-335",
                     "method": "get_album_id_from_context"
                 }
             ]
