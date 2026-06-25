@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 // Logged-out: show a "Log in to upload" CTA instead of a blank gap on the page.
 if ( ! is_user_logged_in() ) {
+	// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML; the __()/wp_login_url() values are data it escapes.
 	echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
 		array(
 			'icon'    => 'upload',
@@ -26,7 +27,8 @@ if ( ! is_user_logged_in() ) {
 				),
 			),
 		)
-	); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns pre-escaped HTML.
+	);
+	// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 	return;
 }
 

@@ -258,7 +258,7 @@ class PosterService {
 		}
 		foreach ( $pipes as $pipe ) {
 			if ( is_resource( $pipe ) ) {
-				fclose( $pipe );
+				fclose( $pipe ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- proc_open() pipes are native stream resources; WP_Filesystem cannot close them.
 			}
 		}
 		return 0 === proc_close( $process );

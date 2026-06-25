@@ -265,13 +265,15 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 		<?php endif; ?>
 	<?php else : ?>
 		<?php
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML; the __() values are data it escapes.
 		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
 			array(
 				'icon'    => 'image',
 				'title'   => __( 'No media yet', 'wpmediaverse' ),
 				'message' => __( 'No media items found.', 'wpmediaverse' ),
 			)
-		); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper returns pre-escaped HTML.
+		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 		?>
 	<?php endif; ?>
 </div>

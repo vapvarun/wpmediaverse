@@ -1085,7 +1085,7 @@ foreach ( $collections_config as $col_cfg ) {
 			'posts_per_page'   => 1,
 			'fields'           => 'ids',
 			'no_found_rows'    => true,
-			'suppress_filters' => true,
+			'suppress_filters' => true, // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.SuppressFilters_suppress_filters -- one-off CLI/dev seeder; bypassing filters keeps demo seeding deterministic.
 		)
 	);
 
