@@ -121,6 +121,8 @@ Wbcom-family Integrations page, configurable AI moderation with a new Claude pro
 * Improve  - Dark mode now follows the active BuddyX/Reign theme toggle (data-bx-mode) and uses shared elevation tokens.
 * Fix      - Selecting Watermark Type "Image" now applies the configured logo; the chosen attachment is passed to the watermark renderer instead of being dropped.
 * Fix      - Restricted (gated) images now display the watermarked preview to visitors without access, instead of the plain blurred thumbnail that was shown before. Watermarking applies to images only, never video or audio.
+* Fix      - Like, comment, bookmark, share, and other action buttons on the Instagram feed layout now run their action instead of opening the media lightbox.
+* Fix      - Dashboard tabs, the lightbox reaction bar, and the lightbox action buttons keep their clean styling under themes that restyle plain buttons (such as BuddyX), instead of turning into filled colored buttons.
 * Dev      - New mvs_apply_watermark_preview filter to skip the watermark for specific uploaders or roles; the default watermark position is now bottom-right.
 * Fix      - Direct-message attachments are scoped to their conversation so only participants can view them.
 * Fix      - A new message is delivered again after both members had deleted the conversation.

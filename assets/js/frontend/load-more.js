@@ -75,6 +75,16 @@
 			}
 		}
 
+		// Interactive controls inside a card (like, comment, bookmark, share,
+		// mute, follow, carousel, expand, etc.) carry their own Interactivity
+		// click action. Don't let the generic lightbox-open swallow those clicks
+		// — they self-handle, and the expand button even opens the lightbox via
+		// its own action. Without this, every Instagram-layout action button just
+		// popped the lightbox instead of running. (Bugs #10014549774.)
+		if ( e.target.closest( '[data-wp-on--click], [data-wp-on-async--click]' ) ) {
+			return;
+		}
+
 		e.preventDefault();
 
 		var mediaId = parseInt( card.dataset.mediaId, 10 );

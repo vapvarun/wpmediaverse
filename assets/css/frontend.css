@@ -1773,6 +1773,27 @@ body.dark-mode .mvs-skeleton::after {
     border-bottom-color: var(--mvs-primary);
 }
 
+/* Theme defense. Some themes (e.g. BuddyX) style bare <button> with a filled
+   accent background + full border + radius, which turns these flat tabs into
+   chunky colored buttons. Re-assert the intended clean look so the dashboard
+   reads the same on any theme: flat text tabs, primary underline on the active
+   tab. !important is the standard pattern for a frontend plugin defending its
+   own controls inside arbitrary themes. Bug #10019404777. */
+.mvs-dashboard-tabs .mvs-dashboard-tab {
+    background: none !important;
+    border: 0 !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.mvs-dashboard-tabs .mvs-dashboard-tab:hover,
+.mvs-dashboard-tabs .mvs-dashboard-tab:focus,
+.mvs-dashboard-tabs .mvs-dashboard-tab.active {
+    background: none !important;
+    border-bottom-color: var(--mvs-primary) !important;
+}
+
 .mvs-dashboard-panel {
     min-height: 200px;
 }
@@ -5457,6 +5478,39 @@ a.mvs-dashboard-card-title:hover {
     width: 18px;
     height: 18px;
     stroke-width: 2;
+}
+
+/* Theme defense for the lightbox controls — keep the reaction pills and action
+   buttons clean (no theme-injected fill/border/radius) so the lightbox reads as
+   a premium, uncluttered surface on any theme. !important guards against themes
+   that style bare <button>. Bug #10019404777. */
+.mvs-lightbox-reaction {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 20px !important;
+    box-shadow: none !important;
+}
+
+.mvs-lightbox-reaction:hover {
+    background: var(--mvs-surface-2) !important;
+    border-color: var(--mvs-border-light) !important;
+}
+
+.mvs-lightbox-reaction.active {
+    background: var(--mvs-info-bg) !important;
+    border-color: var(--mvs-primary) !important;
+}
+
+.mvs-lightbox-action {
+    background: none !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+}
+
+.mvs-lightbox-action:hover,
+.mvs-lightbox-action:focus {
+    background: var(--mvs-surface-2) !important;
 }
 
 /* Fullscreen — when the lightbox enters browser fullscreen via the
