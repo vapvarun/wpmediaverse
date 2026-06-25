@@ -136,6 +136,7 @@ Configurable AI moderation with a new Claude provider, working image and text wa
 * Fix      - Media replace reprocesses variants, custom post type archives render, and settings defaults apply correctly.
 * Fix      - Paginated Explore and member profile pages (page 2 and beyond) now return HTTP 200 instead of a soft 404, so search engines keep them indexed and page caches serve them.
 * Fix      - Secondary buttons such as View Entries and Browse no longer borrow the active theme's primary button color, so the label stays readable instead of low-contrast text on a colored fill.
+* Fix      - Smart collections with more than one rule of the same type now work. Two rules of the same kind (e.g. media type Image plus Video, or two tags) are matched with OR instead of AND, so the collection returns items and shows a real cover instead of resolving to zero and showing the placeholder; rules of different kinds still combine with AND.
 * Fix      - The demo-data importer reuses an existing same-named collection instead of stacking duplicate copies when it is run more than once.
 * Fix      - "Followers only" online-status visibility now hides presence from non-followers; previously the option behaved like "Everyone".
 * Fix      - Video and audio play analytics record from the main media page, not only the media-player block (the player wires the Pro events endpoint when Pro is active).

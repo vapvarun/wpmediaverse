@@ -157,55 +157,97 @@ class CollectionService {
 		$where_params = array();
 		$join_idx     = 0;
 
+		// Group rule values by key, then combine SAME-key values with OR and
+		// DIFFERENT keys with AND. A flat AND over every rule made same-key rules
+		// mutually exclusive — e.g. two media_type rules became
+		// `file_type LIKE '%image%' AND file_type LIKE '%video%'`, which no single
+		// file can satisfy, so the collection resolved to 0 items and showed the
+		// placeholder cover ("broken image" with multiple rules). (#9962118482)
+		$by_key = array();
 		foreach ( $rules as $rule ) {
 			if ( empty( $rule['key'] ) || ! isset( $rule['value'] ) ) {
 				continue;
 			}
+			$by_key[ $rule['key'] ][] = $rule['value'];
+		}
 
-			switch ( $rule['key'] ) {
+		foreach ( $by_key as $key => $values ) {
+			switch ( $key ) {
 				case 'media_type':
-					$wheres[]       = 'idx.file_type LIKE %s';
-					$where_params[] = '%' . $wpdb->esc_like( sanitize_text_field( $rule['value'] ) ) . '%';
+					$ors = array();
+					foreach ( $values as $value ) {
+						$ors[]          = 'idx.file_type LIKE %s';
+						$where_params[] = '%' . $wpdb->esc_like( sanitize_text_field( $value ) ) . '%';
+					}
+					$wheres[] = '(' . implode( ' OR ', $ors ) . ')';
+					break;
+
+				case 'author':
+					$ors = array();
+					foreach ( $values as $value ) {
+						$ors[]          = 'idx.post_author = %d';
+						$where_params[] = (int) $value;
+					}
+					$wheres[] = '(' . implode( ' OR ', $ors ) . ')';
+					break;
+
+				case 'privacy':
+					$ors = array();
+					foreach ( $values as $value ) {
+						$ors[]          = 'idx.privacy = %s';
+						$where_params[] = sanitize_text_field( $value );
+					}
+					$wheres[] = '(' . implode( ' OR ', $ors ) . ')';
+					break;
+
+				case 'date_after':
+					$ors = array();
+					foreach ( $values as $value ) {
+						$ors[]          = 'idx.created_at >= %s';
+						$where_params[] = sanitize_text_field( $value ) . ' 00:00:00';
+					}
+					$wheres[] = '(' . implode( ' OR ', $ors ) . ')';
+					break;
+
+				case 'date_before':
+					$ors = array();
+					foreach ( $values as $value ) {
+						$ors[]          = 'idx.created_at <= %s';
+						$where_params[] = sanitize_text_field( $value ) . ' 23:59:59';
+					}
+					$wheres[] = '(' . implode( ' OR ', $ors ) . ')';
 					break;
 
 				case 'tag':
 				case 'category':
-					$taxonomy = 'tag' === $rule['key'] ? 'mvs_tag' : 'mvs_category';
-					$term_id  = $this->resolve_term_id( sanitize_text_field( (string) $rule['value'] ), $taxonomy );
-					if ( 0 === $term_id ) {
-						// Unresolvable term can never match anything.
+					$taxonomy = 'tag' === $key ? 'mvs_tag' : 'mvs_category';
+					$term_ids = array();
+					foreach ( $values as $value ) {
+						$term_id = $this->resolve_term_id( sanitize_text_field( (string) $value ), $taxonomy );
+						if ( $term_id > 0 ) {
+							$term_ids[] = $term_id;
+						}
+					}
+					$term_ids = array_values( array_unique( $term_ids ) );
+					if ( empty( $term_ids ) ) {
+						// No resolvable term for this key can never match anything.
 						return array(
 							'items' => array(),
 							'total' => 0,
 						);
 					}
-					$alias_tr      = 'tr' . $join_idx;
-					$alias_tt      = 'tt' . $join_idx;
-					$joins[]       = "INNER JOIN {$wpdb->term_relationships} AS {$alias_tr} ON {$alias_tr}.object_id = idx.media_id";
-					$joins[]       = "INNER JOIN {$wpdb->term_taxonomy} AS {$alias_tt} ON {$alias_tt}.term_taxonomy_id = {$alias_tr}.term_taxonomy_id AND {$alias_tt}.taxonomy = %s AND {$alias_tt}.term_id = %d";
+					// Same-key terms OR together via term_id IN (...); different
+					// taxonomies (tag vs category) stay separate JOINs, so they AND.
+					$alias_tr     = 'tr' . $join_idx;
+					$alias_tt     = 'tt' . $join_idx;
+					$placeholders = implode( ',', array_fill( 0, count( $term_ids ), '%d' ) );
+					$joins[]      = "INNER JOIN {$wpdb->term_relationships} AS {$alias_tr} ON {$alias_tr}.object_id = idx.media_id";
+					$joins[]      = "INNER JOIN {$wpdb->term_taxonomy} AS {$alias_tt} ON {$alias_tt}.term_taxonomy_id = {$alias_tr}.term_taxonomy_id AND {$alias_tt}.taxonomy = %s AND {$alias_tt}.term_id IN ({$placeholders})";
 					$join_params[] = $taxonomy;
-					$join_params[] = $term_id;
+					foreach ( $term_ids as $term_id ) {
+						$join_params[] = $term_id;
+					}
 					++$join_idx;
-					break;
-
-				case 'author':
-					$wheres[]       = 'idx.post_author = %d';
-					$where_params[] = (int) $rule['value'];
-					break;
-
-				case 'date_after':
-					$wheres[]       = 'idx.created_at >= %s';
-					$where_params[] = sanitize_text_field( $rule['value'] ) . ' 00:00:00';
-					break;
-
-				case 'date_before':
-					$wheres[]       = 'idx.created_at <= %s';
-					$where_params[] = sanitize_text_field( $rule['value'] ) . ' 23:59:59';
-					break;
-
-				case 'privacy':
-					$wheres[]       = 'idx.privacy = %s';
-					$where_params[] = sanitize_text_field( $rule['value'] );
 					break;
 			}
 		}
