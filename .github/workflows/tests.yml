@@ -32,10 +32,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout WPMediaVerse Pro
+      # Optional: the free public CI must not hard-depend on the private Pro repo.
+      # When PRO_REPO_TOKEN is present (direct pushes) the combined free+pro suite
+      # runs; on forks / missing-token the clone is skipped and the bootstrap runs
+      # the free suite alone (tests/bootstrap.php loads Pro only if it exists).
+      - name: Checkout WPMediaVerse Pro (optional)
+        continue-on-error: true
         env:
           TOKEN: ${{ secrets.PRO_REPO_TOKEN }}
-        run: git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/vapvarun/wpmediaverse-pro.git" "$GITHUB_WORKSPACE/../wpmediaverse-pro"
+        run: |
+          if [ -z "$TOKEN" ]; then echo "No PRO_REPO_TOKEN; running free-only tests."; exit 0; fi
+          git clone --depth=1 "https://x-access-token:${TOKEN}@github.com/vapvarun/wpmediaverse-pro.git" "$GITHUB_WORKSPACE/../wpmediaverse-pro" || echo "Pro checkout failed; running free-only tests."
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
