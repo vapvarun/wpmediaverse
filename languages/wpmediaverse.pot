@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 1.8.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-06-24 10:32:04+00:00\n"
+"POT-Creation-Date: 2026-06-25 06:19:51+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -49,7 +49,7 @@ msgid "This album is empty."
 msgstr ""
 
 #: build/blocks/explore-feed/render.php:95 includes/Admin/MediaListPage.php:226
-#: includes/Core/Plugin.php:1271 src/blocks/explore-feed/render.php:95
+#: includes/Core/Plugin.php:1280 src/blocks/explore-feed/render.php:95
 #: templates/explore.php:149
 msgid "Search media..."
 msgstr ""
@@ -73,7 +73,7 @@ msgstr ""
 
 #: build/blocks/explore-feed/render.php:128
 #: includes/Admin/CollectionMetaBox.php:222
-#: includes/Admin/Settings/FieldRenderer.php:102 includes/Core/Plugin.php:1042
+#: includes/Admin/Settings/FieldRenderer.php:102 includes/Core/Plugin.php:1051
 #: src/blocks/explore-feed/render.php:128
 #: templates/partials/shared-ui-frame.php:108
 #: templates/partials/usage-history.php:30
@@ -161,7 +161,7 @@ msgstr ""
 
 #: build/blocks/media-stats/render.php:104
 #: build/blocks/media-stats/render.php:148 includes/Admin/StatsPage.php:405
-#: includes/Core/Plugin.php:1046 src/blocks/media-stats/render.php:104
+#: includes/Core/Plugin.php:1055 src/blocks/media-stats/render.php:104
 #: src/blocks/media-stats/render.php:148
 msgid "Views"
 msgstr ""
@@ -287,7 +287,7 @@ msgstr ""
 msgid "Add details above (optional), then upload."
 msgstr ""
 
-#: build/blocks/media-upload/render.php:146 includes/Core/Plugin.php:1238
+#: build/blocks/media-upload/render.php:146 includes/Core/Plugin.php:1247
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:312
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:371
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:582
@@ -342,7 +342,7 @@ msgstr ""
 
 #: build/blocks/member-photos/render.php:202
 #: build/blocks/member-photos/render.php:218 build/member-photos/render.php:202
-#: build/member-photos/render.php:218 includes/Core/Plugin.php:1297
+#: build/member-photos/render.php:218 includes/Core/Plugin.php:1306
 #: includes/Services/GDPRService.php:201
 #: src/blocks/member-photos/render.php:202
 #: src/blocks/member-photos/render.php:218 templates/media-single.php:173
@@ -356,7 +356,7 @@ msgid "View profile"
 msgstr ""
 
 #: build/blocks/member-photos/render.php:217 build/member-photos/render.php:217
-#: includes/Core/Plugin.php:1298 src/blocks/member-photos/render.php:217
+#: includes/Core/Plugin.php:1307 src/blocks/member-photos/render.php:217
 #: templates/media-single.php:172 templates/partials/profile-actions.php:45
 msgid "Follow"
 msgstr ""
@@ -777,7 +777,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: includes/Admin/MediaListPage.php:179 includes/Admin/OverviewPage.php:232
-#: includes/Core/Plugin.php:890 includes/Core/Plugin.php:891
+#: includes/Core/Plugin.php:895 includes/Core/Plugin.php:896
 msgid "All Media"
 msgstr ""
 
@@ -1438,7 +1438,7 @@ msgid "Settings"
 msgstr ""
 
 #: includes/Admin/OverviewPage.php:249 includes/Admin/StatsPage.php:46
-#: includes/Core/Plugin.php:1044
+#: includes/Core/Plugin.php:1053
 msgid "Stats"
 msgstr ""
 
@@ -1457,7 +1457,7 @@ msgid "Frontend Pages"
 msgstr ""
 
 #: includes/Admin/OverviewPage.php:293
-#: includes/Admin/Settings/SettingsRegistrar.php:926
+#: includes/Admin/Settings/SettingsRegistrar.php:984
 msgid "Explore Page"
 msgstr ""
 
@@ -1519,7 +1519,7 @@ msgstr ""
 
 #: includes/Admin/OverviewPage.php:463
 #: includes/Admin/Settings/AiSettingsRegistrar.php:41
-#: includes/Admin/Settings/AiSettingsRegistrar.php:58
+#: includes/Admin/Settings/AiSettingsRegistrar.php:59
 msgid "AI Provider"
 msgstr ""
 
@@ -1583,7 +1583,7 @@ msgid "Explore Media"
 msgstr ""
 
 #: includes/Admin/OverviewPage.php:556 includes/Admin/SetupWizard.php:257
-#: includes/Core/Plugin.php:1553 includes/Services/HealthCheckService.php:177
+#: includes/Core/Plugin.php:1562 includes/Services/HealthCheckService.php:177
 #: templates/partials/dashboard-content.php:302
 msgid "My Media"
 msgstr ""
@@ -1617,110 +1617,111 @@ msgid "AI Features"
 msgstr ""
 
 #: includes/Admin/Settings/AiSettingsRegistrar.php:48
-#: includes/Admin/Settings/AiSettingsRegistrar.php:63
+#: includes/Admin/Settings/AiSettingsRegistrar.php:64
 msgid "OpenAI (GPT-4 Vision)"
 msgstr ""
 
 #: includes/Admin/Settings/AiSettingsRegistrar.php:49
-#: includes/Admin/Settings/AiSettingsRegistrar.php:65
+#: includes/Admin/Settings/AiSettingsRegistrar.php:66
 msgid "Google Vision"
 msgstr ""
 
 #: includes/Admin/Settings/AiSettingsRegistrar.php:50
-#: includes/Admin/Settings/AiSettingsRegistrar.php:66
+#: includes/Admin/Settings/AiSettingsRegistrar.php:67
 msgid "AWS Rekognition"
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:52
+#: includes/Admin/Settings/AiSettingsRegistrar.php:51
+#: includes/Admin/Settings/AiSettingsRegistrar.php:68
+msgid "Claude (Anthropic)"
+msgstr ""
+
+#: includes/Admin/Settings/AiSettingsRegistrar.php:53
 msgid "Which AI service to use for image analysis, tagging, and moderation."
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:84
+#: includes/Admin/Settings/AiSettingsRegistrar.php:86
 msgid "OpenAI API Key"
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:90
-msgid "Or define MVS_OPENAI_API_KEY constant in wp-config.php."
-msgstr ""
-
-#: includes/Admin/Settings/AiSettingsRegistrar.php:105
-msgid "OpenAI Model"
+#: includes/Admin/Settings/AiSettingsRegistrar.php:95
+#. translators: %s: link to the OpenAI API keys page.
+msgid ""
+"Get a key from %s (sign in, create a secret key, and make sure billing is "
+"enabled on the account). Or define the MVS_OPENAI_API_KEY constant in "
+"wp-config.php."
 msgstr ""
 
 #: includes/Admin/Settings/AiSettingsRegistrar.php:112
+msgid "OpenAI Model"
+msgstr ""
+
+#: includes/Admin/Settings/AiSettingsRegistrar.php:120
 msgid "GPT-4o Mini (cheaper)"
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:113
+#: includes/Admin/Settings/AiSettingsRegistrar.php:121
 msgid "GPT-4o (best quality)"
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:115
+#: includes/Admin/Settings/AiSettingsRegistrar.php:123
 msgid ""
 "GPT-4o Mini is faster and cheaper. GPT-4o produces more accurate tags and "
 "descriptions."
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:130
+#: includes/Admin/Settings/AiSettingsRegistrar.php:138
 msgid "Auto-Analyze Uploads"
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:136
+#: includes/Admin/Settings/AiSettingsRegistrar.php:144
 msgid "Automatically run AI on upload (master switch for the two options below)."
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:154
+#: includes/Admin/Settings/AiSettingsRegistrar.php:162
 msgid "Generate Descriptions"
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:160
+#: includes/Admin/Settings/AiSettingsRegistrar.php:168
 msgid "Use AI to generate a description / alt text for each upload."
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:175
+#: includes/Admin/Settings/AiSettingsRegistrar.php:183
 msgid "Generate Tags"
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:181
+#: includes/Admin/Settings/AiSettingsRegistrar.php:189
 msgid ""
 "Use AI to generate tags for each upload. Apply them to the taxonomy with "
 "the option below."
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:196
+#: includes/Admin/Settings/AiSettingsRegistrar.php:204
 msgid "Auto-Apply Tags"
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:202
+#: includes/Admin/Settings/AiSettingsRegistrar.php:210
 msgid "Automatically assign AI-generated tags to taxonomy."
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:217
+#: includes/Admin/Settings/AiSettingsRegistrar.php:225
 msgid "Auto-Moderate Uploads"
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:223
+#: includes/Admin/Settings/AiSettingsRegistrar.php:231
 msgid "Check uploads for policy violations via AI."
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:245
+#: includes/Admin/Settings/AiSettingsRegistrar.php:253
 msgid "Monthly AI Budget ($)"
 msgstr ""
 
-#: includes/Admin/Settings/AiSettingsRegistrar.php:251
+#: includes/Admin/Settings/AiSettingsRegistrar.php:259
 msgid ""
 "Hard cap on OpenAI spend per calendar month. AI calls stop when this cap is "
 "reached and resume next month. Set to 0 to disable the cap (unlimited "
 "spend) — recommended only after you have a billing alert configured on the "
 "OpenAI account itself."
-msgstr ""
-
-#: includes/Admin/Settings/AiSettingsRegistrar.php:266
-msgid "Estimated Cost per Call ($)"
-msgstr ""
-
-#: includes/Admin/Settings/AiSettingsRegistrar.php:272
-msgid "Approximate cost per API call for budget tracking."
 msgstr ""
 
 #: includes/Admin/Settings/FieldRenderer.php:74
@@ -1739,51 +1740,51 @@ msgstr ""
 msgid "Leave empty to keep the current key."
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:401
+#: includes/Admin/Settings/FieldRenderer.php:450
 msgid "Select a page"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:411
+#: includes/Admin/Settings/FieldRenderer.php:460
 msgid "View Page"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:431
+#: includes/Admin/Settings/FieldRenderer.php:480
 msgid "URL:"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:438
+#: includes/Admin/Settings/FieldRenderer.php:487
 msgid "Secret:"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:445
+#: includes/Admin/Settings/FieldRenderer.php:494
 msgid "Shared secret for HMAC signing"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:448
+#: includes/Admin/Settings/FieldRenderer.php:497
 msgid "Leave empty to keep the current secret."
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:452
+#: includes/Admin/Settings/FieldRenderer.php:501
 msgid "Events:"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:457
+#: includes/Admin/Settings/FieldRenderer.php:506
 msgid "All events"
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:468
+#: includes/Admin/Settings/FieldRenderer.php:517
 msgid ""
 "Events are saved only when a destination URL is set above. Without a URL "
 "the webhook is removed and the event selection resets to \"All events\"."
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:489
-#: includes/Admin/Settings/FieldRenderer.php:502
-#: includes/Admin/Settings/SettingsPage.php:437
-#: includes/Admin/Settings/SettingsPage.php:466
-#: includes/Admin/Settings/SettingsPage.php:539
-#: includes/Admin/Settings/SettingsPage.php:577
-#: includes/Admin/Settings/SettingsPage.php:651
+#: includes/Admin/Settings/FieldRenderer.php:538
+#: includes/Admin/Settings/FieldRenderer.php:551
+#: includes/Admin/Settings/SettingsPage.php:450
+#: includes/Admin/Settings/SettingsPage.php:479
+#: includes/Admin/Settings/SettingsPage.php:552
+#: includes/Admin/Settings/SettingsPage.php:590
+#: includes/Admin/Settings/SettingsPage.php:664
 msgid "Pro"
 msgstr ""
 
@@ -1935,7 +1936,7 @@ msgid "Role-based access control for media features."
 msgstr ""
 
 #: includes/Admin/Settings/SettingsPage.php:302
-#: includes/Admin/Settings/SettingsRegistrar.php:752
+#: includes/Admin/Settings/SettingsRegistrar.php:810
 msgid "Webhooks"
 msgstr ""
 
@@ -1964,88 +1965,88 @@ msgstr ""
 msgid "License"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:407
+#: includes/Admin/Settings/SettingsPage.php:420
 msgid "Media platform settings and configuration"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:413
+#: includes/Admin/Settings/SettingsPage.php:426
 msgid "Run Setup Wizard"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:425
+#: includes/Admin/Settings/SettingsPage.php:438
 msgid "SETTINGS"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:492
+#: includes/Admin/Settings/SettingsPage.php:505
 #: includes/Shortcodes/Shortcodes.php:789 templates/profile-edit.php:182
 msgid "Save Changes"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:494
+#: includes/Admin/Settings/SettingsPage.php:507
 msgid "Settings saved."
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:650
+#: includes/Admin/Settings/SettingsPage.php:663
 msgid "Get more with WPMediaVerse Pro"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:659
+#: includes/Admin/Settings/SettingsPage.php:672
 msgid "Upgrade to Pro"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:674
+#: includes/Admin/Settings/SettingsPage.php:687
 msgid "Amazon S3 cloud storage for unlimited scalability"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:675
+#: includes/Admin/Settings/SettingsPage.php:688
 msgid "BunnyCDN integration for global content delivery"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:676
+#: includes/Admin/Settings/SettingsPage.php:689
 msgid "Image watermarking with custom position and opacity"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:677
+#: includes/Admin/Settings/SettingsPage.php:690
 msgid "Advanced privacy controls per media item"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:680
+#: includes/Admin/Settings/SettingsPage.php:693
 msgid "Custom player skins and branding"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:681
+#: includes/Admin/Settings/SettingsPage.php:694
 msgid "Video chapters and resume playback"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:682
+#: includes/Admin/Settings/SettingsPage.php:695
 msgid "Auto-generated video captions (Whisper AI)"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:685
+#: includes/Admin/Settings/SettingsPage.php:698
 msgid "Google Vision AI provider"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:686
+#: includes/Admin/Settings/SettingsPage.php:699
 msgid "AWS Rekognition AI provider"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:687
+#: includes/Admin/Settings/SettingsPage.php:700
 msgid "AI provider fallback chains and comparison mode"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:688
+#: includes/Admin/Settings/SettingsPage.php:701
 msgid "Per-category moderation thresholds"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:691
+#: includes/Admin/Settings/SettingsPage.php:704
 msgid "Multiple webhook endpoints"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:692
+#: includes/Admin/Settings/SettingsPage.php:705
 msgid "Webhook delivery logs and retry management"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsPage.php:693
+#: includes/Admin/Settings/SettingsPage.php:706
 msgid "Custom webhook event filters"
 msgstr ""
 
@@ -2388,126 +2389,176 @@ msgstr ""
 msgid "Reject (move to draft)"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:721
-msgid ""
-"Action taken automatically when AI detects a policy violation in uploaded "
-"media."
+#: includes/Admin/Settings/SettingsRegistrar.php:720
+msgid "Delete permanently (removes file from storage/cloud)"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:737
+#: includes/Admin/Settings/SettingsRegistrar.php:722
+msgid ""
+"Action taken automatically when AI detects a policy violation in uploaded "
+"media. \"Delete permanently\" removes the media and its files from local "
+"and cloud storage and cannot be undone."
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:740
+msgid "AI Flag Criteria"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:747
+msgid "Nudity / sexual content"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:748
+msgid "Violence / gore"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:749
+msgid "Hate / harassment"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:750
+msgid "Self-harm"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:751
+msgid "Drugs"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:752
+msgid "Spam"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:754
+msgid ""
+"Which content categories the AI flags. At least one stays enabled — "
+"unchecking all restores every category."
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:773
+msgid "Custom Flag Terms"
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:779
+msgid ""
+"Optional. Comma-separated terms the AI should also flag, in addition to the "
+"categories above — e.g. weapons, gambling, political content, competitor "
+"logos. Leave blank to use only the built-in categories."
+msgstr ""
+
+#: includes/Admin/Settings/SettingsRegistrar.php:795
 msgid "Auto-Hide Threshold"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:743
+#: includes/Admin/Settings/SettingsRegistrar.php:801
 msgid "Number of reports before media is automatically hidden. Set to 0 to disable."
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:765
+#: includes/Admin/Settings/SettingsRegistrar.php:823
 msgid "Webhook Configuration"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:782
+#: includes/Admin/Settings/SettingsRegistrar.php:840
 msgid "Direct Messages"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:786
+#: includes/Admin/Settings/SettingsRegistrar.php:844
 msgid "Configure direct messaging privacy and spam prevention."
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:804
+#: includes/Admin/Settings/SettingsRegistrar.php:862
 msgid "Who Can Send DMs"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:811
-#: includes/Admin/Settings/SettingsRegistrar.php:891
+#: includes/Admin/Settings/SettingsRegistrar.php:869
+#: includes/Admin/Settings/SettingsRegistrar.php:949
 #: includes/Shortcodes/Shortcodes.php:769
 #: templates/partials/dashboard-content.php:228 templates/profile-edit.php:162
 msgid "Everyone"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:812
+#: includes/Admin/Settings/SettingsRegistrar.php:870
 msgid "Followers only (others go to Requests)"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:813
+#: includes/Admin/Settings/SettingsRegistrar.php:871
 msgid "Mutual followers only"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:814
+#: includes/Admin/Settings/SettingsRegistrar.php:872
 msgid "Nobody (DMs disabled)"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:816
+#: includes/Admin/Settings/SettingsRegistrar.php:874
 msgid "Controls who is allowed to send direct messages to other users on the site."
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:832
+#: includes/Admin/Settings/SettingsRegistrar.php:890
 msgid "Minimum Account Age (days)"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:838
+#: includes/Admin/Settings/SettingsRegistrar.php:896
 msgid "Accounts younger than this cannot send DMs. Set 0 to disable."
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:856
+#: includes/Admin/Settings/SettingsRegistrar.php:914
 msgid "Chat Panel Visibility"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:863
+#: includes/Admin/Settings/SettingsRegistrar.php:921
 msgid "Everywhere (default)"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:864
+#: includes/Admin/Settings/SettingsRegistrar.php:922
 msgid "WPMediaVerse pages only (Explore, Dashboard, Albums, Member Profiles)"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:865
+#: includes/Admin/Settings/SettingsRegistrar.php:923
 msgid "BuddyPress pages only (member + group)"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:866
+#: includes/Admin/Settings/SettingsRegistrar.php:924
 msgid "Never show the slide-out (use only the dedicated /messages/ page)"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:868
+#: includes/Admin/Settings/SettingsRegistrar.php:926
 msgid ""
 "Controls where the floating chat icon appears for logged-in users. Themes "
 "and other plugins can override per-page via the "
 "<code>mvs_should_render_chat_panel</code> filter."
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:884
+#: includes/Admin/Settings/SettingsRegistrar.php:942
 msgid "Online Status Visibility"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:892
+#: includes/Admin/Settings/SettingsRegistrar.php:950
 msgid "Followers only"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:893
+#: includes/Admin/Settings/SettingsRegistrar.php:951
 msgid "Nobody"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:895
+#: includes/Admin/Settings/SettingsRegistrar.php:953
 msgid "Who can see when a user is currently online in the messaging interface."
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:914
+#: includes/Admin/Settings/SettingsRegistrar.php:972
 #: includes/Admin/SetupWizard.php:159
 msgid "Pages"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:918
+#: includes/Admin/Settings/SettingsRegistrar.php:976
 msgid ""
 "Assign pages for plugin features. Pages are auto-created during setup but "
 "can be changed here."
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:925
+#: includes/Admin/Settings/SettingsRegistrar.php:983
 msgid "Dashboard Page"
 msgstr ""
 
-#: includes/Admin/Settings/SettingsRegistrar.php:927
+#: includes/Admin/Settings/SettingsRegistrar.php:985
 msgid "Upload Page"
 msgstr ""
 
@@ -2629,8 +2680,8 @@ msgstr ""
 msgid "Media Stats"
 msgstr ""
 
-#: includes/Admin/StatsPage.php:169 includes/Core/Plugin.php:877
-#: includes/Core/Plugin.php:878
+#: includes/Admin/StatsPage.php:169 includes/Core/Plugin.php:882
+#: includes/Core/Plugin.php:883
 msgid "Overview"
 msgstr ""
 
@@ -2694,8 +2745,8 @@ msgstr ""
 msgid "AI Settings"
 msgstr ""
 
-#: includes/Admin/TagManagementPage.php:123 includes/Core/Plugin.php:903
-#: includes/Core/Plugin.php:904 includes/Taxonomies/MediaTag.php:35
+#: includes/Admin/TagManagementPage.php:123 includes/Core/Plugin.php:908
+#: includes/Core/Plugin.php:909 includes/Taxonomies/MediaTag.php:35
 #: templates/media-single.php:544 templates/partials/dashboard-content.php:770
 msgid "Tags"
 msgstr ""
@@ -2721,7 +2772,7 @@ msgstr ""
 
 #: includes/Admin/TagManagementPage.php:177
 #: includes/Admin/TagManagementPage.php:263
-#: includes/Admin/TagManagementPage.php:310 includes/Core/Plugin.php:1239
+#: includes/Admin/TagManagementPage.php:310 includes/Core/Plugin.php:1248
 #: templates/media-single.php:491 templates/media-single.php:494
 #: templates/media-single.php:633 templates/partials/dashboard-content.php:464
 #: templates/partials/dashboard-content.php:504
@@ -2990,53 +3041,53 @@ msgstr ""
 msgid "View public user profiles with stats, media, and follow counts."
 msgstr ""
 
-#: includes/Core/Plugin.php:1041 includes/Core/TemplateHelpers.php:907
+#: includes/Core/Plugin.php:1050 includes/Core/TemplateHelpers.php:907
 msgid "Delete media"
 msgstr ""
 
-#: includes/Core/Plugin.php:1043
+#: includes/Core/Plugin.php:1052
 msgid "View media"
 msgstr ""
 
-#: includes/Core/Plugin.php:1045
+#: includes/Core/Plugin.php:1054
 msgid "Likes"
 msgstr ""
 
-#: includes/Core/Plugin.php:1236
+#: includes/Core/Plugin.php:1245
 msgid "Are you sure?"
 msgstr ""
 
-#: includes/Core/Plugin.php:1237
+#: includes/Core/Plugin.php:1246
 msgid "Confirm"
 msgstr ""
 
-#: includes/Core/Plugin.php:1270 templates/partials/chat-new.php:28
+#: includes/Core/Plugin.php:1279 templates/partials/chat-new.php:28
 msgid "Search users..."
 msgstr ""
 
-#: includes/Core/Plugin.php:1272
+#: includes/Core/Plugin.php:1281
 msgid "No users found."
 msgstr ""
 
-#: includes/Core/Plugin.php:1273
+#: includes/Core/Plugin.php:1282
 #: includes/Integrations/BuddyPress/MediaDisplayHelper.php:121
 #: templates/explore.php:127
 msgid "media"
 msgstr ""
 
-#: includes/Core/Plugin.php:1299 templates/partials/profile-actions.php:60
+#: includes/Core/Plugin.php:1308 templates/partials/profile-actions.php:60
 msgid "Block"
 msgstr ""
 
-#: includes/Core/Plugin.php:1300 templates/partials/profile-actions.php:60
+#: includes/Core/Plugin.php:1309 templates/partials/profile-actions.php:60
 msgid "Unblock"
 msgstr ""
 
-#: includes/Core/Plugin.php:1301 templates/partials/profile-actions.php:59
+#: includes/Core/Plugin.php:1310 templates/partials/profile-actions.php:59
 msgid "Block this member"
 msgstr ""
 
-#: includes/Core/Plugin.php:1302 templates/partials/profile-actions.php:59
+#: includes/Core/Plugin.php:1311 templates/partials/profile-actions.php:59
 msgid "Unblock this member"
 msgstr ""
 
@@ -4013,26 +4064,26 @@ msgstr ""
 msgid "Too many requests. Please try again later."
 msgstr ""
 
-#: includes/Services/AIService.php:76 includes/Services/AIService.php:118
-#: includes/Services/AIService.php:162
+#: includes/Services/AIService.php:170 includes/Services/AIService.php:212
+#: includes/Services/AIService.php:256
 msgid "No AI provider is configured."
 msgstr ""
 
-#: includes/Services/AIService.php:80 includes/Services/AIService.php:122
-#: includes/Services/AIService.php:169
+#: includes/Services/AIService.php:174 includes/Services/AIService.php:216
+#: includes/Services/AIService.php:263
 msgid "Monthly AI budget has been exceeded."
 msgstr ""
 
-#: includes/Services/AIService.php:88 includes/Services/AIService.php:129
-#: includes/Services/AIService.php:175
+#: includes/Services/AIService.php:182 includes/Services/AIService.php:223
+#: includes/Services/AIService.php:269
 msgid "Media item has no signed file URL."
 msgstr ""
 
-#: includes/Services/AIService.php:98
+#: includes/Services/AIService.php:192
 msgid "AI analysis failed."
 msgstr ""
 
-#: includes/Services/AIService.php:185
+#: includes/Services/AIService.php:279
 msgid "AI moderation returned an invalid response."
 msgstr ""
 
