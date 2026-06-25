@@ -126,6 +126,7 @@ Configurable AI moderation with a new Claude provider, working image and text wa
 * Improve  - Dark mode now follows the active BuddyX/Reign theme toggle (data-bx-mode) and uses shared elevation tokens.
 * Improve  - The AI settings tab shows only the selected provider's credentials (pick a provider, see its key and model); the per-call cost is plugin-managed instead of a manual field.
 * Improve  - The masonry (original aspect ratio) grid is now the default Thumbnail Style; sites that prefer the uniform square crop can restore it in Settings > Display or with the mvs_default_thumbnail_style filter.
+* Improve  - Grid tiles now serve the larger thumbnail so they stay sharp on HiDPI/retina screens; the smaller size visibly upscaled inside the bigger masonry tiles. Byte-conscious sites can drop back with the mvs_grid_thumb_size_key filter.
 * Fix      - Selecting Watermark Type "Image" now applies the configured logo; the chosen attachment is passed to the watermark renderer instead of being dropped.
 * Fix      - Restricted (gated) images now display the watermarked preview to visitors without access, instead of the plain blurred thumbnail that was shown before. Watermarking applies to images only, never video or audio.
 * Fix      - Like, comment, bookmark, share, and other action buttons on the Instagram feed layout now run their action instead of opening the media lightbox.

@@ -132,11 +132,29 @@ class SettingsHelper {
 	 *
 	 * @since 1.7.0
 	 *
+	 * Updated 1.8.0: grid/masonry tiles render large (up to ~half the viewport on
+	 * a 2-column masonry), so the 'medium' (300px) rung visibly upscales and looks
+	 * soft on HiDPI/retina screens. Serve 'large' (1024px) for the grid by default
+	 * so tiles stay crisp at retina density; byte-conscious sites can drop back to
+	 * 'medium' with the mvs_grid_thumb_size_key filter. The configured
+	 * mvs_thumbnail_size is passed to the filter so it can still drive the choice.
+	 *
 	 * @return string One of 'medium', 'large'.
 	 */
 	public static function get_grid_thumb_size_key(): string {
 		$configured = self::get_thumbnail_size();
-		return ( 'full' === $configured ) ? 'large' : $configured;
+		$key        = ( 'medium' === $configured || 'full' === $configured ) ? 'large' : $configured;
+
+		/**
+		 * Filter the thumbnail rung used for grid/masonry tiles.
+		 *
+		 * @since 1.8.0
+		 *
+		 * @param string $key        Resolved rung ('medium' or 'large').
+		 * @param string $configured The mvs_thumbnail_size setting value.
+		 */
+		$key = (string) apply_filters( 'mvs_grid_thumb_size_key', $key, $configured );
+		return in_array( $key, array( 'medium', 'large' ), true ) ? $key : 'large';
 	}
 
 	/**
