@@ -584,7 +584,10 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_thumbnail_style' ),
-				'default'           => 'square',
+				// Default flipped square -> original in 1.8.0 (masonry, full aspect
+				// ratio). Front-end resolves via SettingsHelper::get_thumbnail_style()
+				// + the mvs_default_thumbnail_style escape-hatch filter.
+				'default'           => 'original',
 			)
 		);
 		add_settings_field(

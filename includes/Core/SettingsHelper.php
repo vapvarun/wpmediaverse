@@ -140,6 +140,43 @@ class SettingsHelper {
 	}
 
 	/**
+	 * Resolve the explore/grid thumbnail style.
+	 *
+	 * The default flipped square -> original in 1.8.0 so the explore + media-grid
+	 * feed shows every image at its native aspect ratio (Pinterest-style masonry)
+	 * instead of a center-cropped square. A site that prefers the old uniform
+	 * square crop can restore it in one line, without touching the setting:
+	 *
+	 *     add_filter( 'mvs_default_thumbnail_style', static fn() => 'square' );
+	 *
+	 * (Production Rule #3 escape hatch.) An explicitly saved option always wins
+	 * over the filtered default. register_setting only runs on admin_init, so the
+	 * front-end relies on this resolved default — route every grid read here.
+	 *
+	 * @since 1.8.0
+	 *
+	 * @return string 'square' or 'original'.
+	 */
+	public static function get_thumbnail_style(): string {
+		$allowed = array( 'square', 'original' );
+
+		/**
+		 * Filter the default grid thumbnail style for sites that have not chosen one.
+		 *
+		 * @since 1.8.0
+		 *
+		 * @param string $default 'original' (masonry) or 'square' (uniform crop).
+		 */
+		$default = (string) apply_filters( 'mvs_default_thumbnail_style', 'original' );
+		if ( ! in_array( $default, $allowed, true ) ) {
+			$default = 'original';
+		}
+
+		$style = (string) get_option( 'mvs_thumbnail_style', $default );
+		return in_array( $style, $allowed, true ) ? $style : $default;
+	}
+
+	/**
 	 * Resolve the OpenAI API key.
 	 *
 	 * Reads from the registered `mvs_openai_api_key` option, then runs the

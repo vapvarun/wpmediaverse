@@ -294,7 +294,7 @@ $mvs_archive_url = home_url( '/media/' );
 
 	<?php if ( $has_items ) : ?>
 		<?php $mvs_grid_cols = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) ); ?>
-		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo 'original' === get_option( 'mvs_thumbnail_style', 'square' ) ? ' mvs-grid--original' : ''; ?>" data-mvs-grid-container>
+		<div class="mvs-media-grid mvs-cols-<?php echo (int) $mvs_grid_cols; ?> mvs-feed<?php echo 'original' === \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style() ? ' mvs-grid--original' : ''; ?>" data-mvs-grid-container>
 			<?php
 			// Render albums first.
 			foreach ( $albums as $album_post ) :

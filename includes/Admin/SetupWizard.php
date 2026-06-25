@@ -313,7 +313,7 @@ class SetupWizard {
 	private function render_step_display(): void {
 		$columns  = (int) get_option( 'mvs_grid_columns', 3 );
 		$per_page = (int) get_option( 'mvs_items_per_page', 24 );
-		$style    = get_option( 'mvs_thumbnail_style', 'square' );
+		$style    = \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style();
 		?>
 		<div class="mvs-setup-step">
 			<h2><?php esc_html_e( 'Display Settings', 'wpmediaverse' ); ?></h2>

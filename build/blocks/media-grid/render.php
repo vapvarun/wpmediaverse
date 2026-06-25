@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit;
 // Admin setting is the source of truth for grid columns.
 // Block attribute only overrides if user explicitly set a non-default value.
 $columns = absint( get_option( 'mvs_grid_columns', 3 ) );
-$thumb_style    = get_option( 'mvs_thumbnail_style', 'square' );
+$thumb_style    = \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style();
 $mvs_per_page   = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : absint( get_option( 'mvs_items_per_page', 12 ) );
 $media_type     = isset( $attributes['mediaType'] ) ? sanitize_text_field( $attributes['mediaType'] ) : '';
 $category       = isset( $attributes['category'] ) ? sanitize_text_field( $attributes['category'] ) : '';

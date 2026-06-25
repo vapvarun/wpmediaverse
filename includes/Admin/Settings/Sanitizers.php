@@ -296,7 +296,7 @@ class Sanitizers {
 	 */
 	public static function sanitize_thumbnail_style( $value ): string {
 		$value = is_string( $value ) ? $value : '';
-		return in_array( $value, self::WHITELISTS['mvs_thumbnail_style'], true ) ? $value : 'square';
+		return in_array( $value, self::WHITELISTS['mvs_thumbnail_style'], true ) ? $value : 'original';
 	}
 
 	/**
