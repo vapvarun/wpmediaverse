@@ -137,6 +137,9 @@ Wbcom-family Integrations page, configurable AI moderation with a new Claude pro
 * New      - AI moderation criteria: AI Flag Criteria checkboxes (nudity, violence, hate, self-harm, drugs, spam) let owners choose what the AI flags, plus a Custom Flag Terms field to add their own (e.g. weapons, gambling, political content). All categories enabled by default.
 * New      - Claude (Anthropic) AI provider for image analysis, tagging, and moderation, alongside OpenAI, Google Vision, and AWS Rekognition.
 * New      - "Delete permanently" auto-action for AI-flagged content removes the media and its files from local and cloud storage.
+* Fix      - Media uploaded before a cloud service was connected now displays correctly: each file is served from where it actually lives instead of a fabricated CDN URL that returned 404. Switching between cloud services also keeps existing media readable until it is migrated.
+* Fix      - Migrating storage moves a media's thumbnails and other variants alongside the original, and only flips the media to the new service once the full set has transferred, so thumbnails keep working after a Migrate all instead of 404ing on the new service.
+* Fix      - "Free up server space" never deletes a local file whose cloud copy cannot be verified, preventing permanent loss of thumbnails that were not uploaded.
 * Improve  - The AI settings tab shows only the selected provider's credentials (pick a provider, see its key and model); the per-call cost is plugin-managed instead of a manual field.
 * Fix      - The standalone /messages/ page now loads the conversation list; it enqueues the shared REST client and defers to BuddyNext when active.
 * Fix      - Removed a dead webhook event (media.updated) and dead activity types that could never fire.

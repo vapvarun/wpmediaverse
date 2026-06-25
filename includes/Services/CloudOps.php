@@ -27,20 +27,33 @@ class CloudOps {
 	const STATUS_OPTION = 'mvs_cloud_ops_status';
 
 	/**
-	 * Migrate ONE media row's file from one driver to another.
+	 * Migrate ONE media row from one driver to another — original PLUS every
+	 * stored variant (thumbnails, WebP/AVIF siblings, video/audio posters).
 	 *
-	 * Stages mirror the CLI:
-	 *   1. Skip if destination already has the file (idempotent).
-	 *   2. Download source to temp.
-	 *   3. Upload temp to destination.
-	 *   4. Verify destination has the file.
-	 *   5. Refresh `mvs_media_index.file_url` to the destination's URL.
-	 *   6. Optionally delete source.
+	 * Atomic per media: the destination receives the full file set before
+	 * `mvs_media_index.file_url` is flipped and any source copy is deleted.
+	 * If any file fails to reach the destination, nothing is flipped and
+	 * nothing is deleted, so the media stays fully served from the source and
+	 * the row can be retried on the next run. This is what keeps the
+	 * location-based serving contract (`StorageService::get_driver_for_location()`,
+	 * which derives a media's driver from the original's `file_url`) honest:
+	 * after a successful migration the original AND its thumbnails all live on
+	 * the destination, so thumbnails resolve to the same place as the original
+	 * instead of 404ing on a CDN they were never copied to.
+	 *
+	 * Stages:
+	 *   1. Validate row + privacy gate + resolve drivers.
+	 *   2. Phase 1 — copy original + every variant to the destination (verify
+	 *      each). Files already present are skipped; files missing from BOTH
+	 *      source and destination are skipped (stale meta, nothing to move).
+	 *   3. Phase 2 (only if Phase 1 fully succeeded) — refresh `file_url` to the
+	 *      destination's URL for the original, then optionally delete every
+	 *      source copy.
 	 *
 	 * @param int    $media_id    Media ID.
 	 * @param string $from        Source driver slug.
 	 * @param string $to          Destination driver slug.
-	 * @param bool   $keep_source If true, source file is kept after a verified upload.
+	 * @param bool   $keep_source If true, source files are kept after a verified upload.
 	 * @return array { ok: bool, status: 'migrated'|'skipped'|'failed', error?: string }
 	 */
 	public static function migrate_one( int $media_id, string $from, string $to, bool $keep_source ): array {
@@ -87,55 +100,45 @@ class CloudOps {
 			);
 		}
 
-		if ( $dest_driver->exists( $rel_path ) ) {
-			$expected = $dest_driver->url( $rel_path );
-			if ( '' !== $expected ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-				$wpdb->update(
-					$wpdb->prefix . 'mvs_media_index',
-					array( 'file_url' => $expected ),
-					array( 'media_id' => $media_id ),
-					array( '%s' ),
-					array( '%d' )
-				);
+		// Full file set for this media — original + every recorded variant.
+		// Same authoritative enumerator the orphan-cleanup path uses, so a
+		// migration moves exactly what an uninstall would remove (no thumbnail
+		// left behind on the old driver). Falls back to the original alone if
+		// the repository is unavailable.
+		$paths = self::stored_paths( $media_id, $rel_path );
+
+		// Phase 1 — copy every file to the destination and verify. Track which
+		// tmp dirs we created so we can clean them all up at the end.
+		$tmp_dirs    = array();
+		$moved_any   = false;
+		$failed_path = '';
+
+		foreach ( $paths as $path ) {
+			$result = self::copy_to_dest( $source_driver, $dest_driver, $path, $tmp_dirs );
+			if ( 'failed' === $result ) {
+				$failed_path = $path;
+				break;
 			}
-			return array(
-				'ok'     => true,
-				'status' => 'skipped',
-			);
+			if ( 'moved' === $result ) {
+				$moved_any = true;
+			}
 		}
 
-		$tmp_path = trailingslashit( get_temp_dir() ) . 'mvs-cloudops-' . uniqid() . '/' . ltrim( $rel_path, '/' );
-		if ( ! $source_driver->download( $rel_path, $tmp_path ) ) {
+		// Any hard failure → abort without flipping file_url or deleting
+		// sources. The media stays fully served from the source; the row is
+		// retried next run (already-copied files short-circuit via exists()).
+		if ( '' !== $failed_path ) {
+			self::cleanup_tmp_dirs( $tmp_dirs );
 			return array(
 				'ok'     => false,
 				'status' => 'failed',
-				'error'  => 'download failed',
+				'error'  => 'transfer failed for ' . $failed_path,
 			);
 		}
 
-		if ( ! $dest_driver->store( $tmp_path, $rel_path ) ) {
-			if ( file_exists( $tmp_path ) ) {
-				wp_delete_file( $tmp_path );
-			}
-			return array(
-				'ok'     => false,
-				'status' => 'failed',
-				'error'  => 'upload failed',
-			);
-		}
-
-		if ( ! $dest_driver->exists( $rel_path ) ) {
-			if ( file_exists( $tmp_path ) ) {
-				wp_delete_file( $tmp_path );
-			}
-			return array(
-				'ok'     => false,
-				'status' => 'failed',
-				'error'  => 'verify failed',
-			);
-		}
-
+		// Phase 2 — destination now holds the full set. Flip file_url to the
+		// destination's URL for the ORIGINAL (that is the signal
+		// get_driver_for_location() reads), then optionally delete sources.
 		$new_url = $dest_driver->url( $rel_path );
 		if ( '' !== $new_url ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -149,22 +152,118 @@ class CloudOps {
 		}
 
 		if ( ! $keep_source ) {
-			$source_driver->delete( $rel_path );
+			foreach ( $paths as $path ) {
+				$source_driver->delete( $path );
+			}
 		}
 
-		if ( file_exists( $tmp_path ) ) {
-			wp_delete_file( $tmp_path );
-		}
-		$tmp_dir = dirname( $tmp_path );
-		if ( is_dir( $tmp_dir ) ) {
-			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- best-effort cleanup of a plugin-controlled tmp dir; WP_Filesystem isn't initialized in this CLI/cron path and would add a credentials prompt for an internal-only path.
-			@rmdir( $tmp_dir );
-		}
+		self::cleanup_tmp_dirs( $tmp_dirs );
 
 		return array(
 			'ok'     => true,
-			'status' => 'migrated',
+			'status' => $moved_any ? 'migrated' : 'skipped',
 		);
+	}
+
+	/**
+	 * Copy ONE relative path to the destination driver and verify it landed.
+	 *
+	 * Idempotent: a file already on the destination is reported as 'skipped'.
+	 * A file missing from BOTH source and destination is also 'skipped' (stale
+	 * meta — there is nothing to move and the variant is already absent
+	 * everywhere). Only a genuine download/upload/verify failure is 'failed'.
+	 *
+	 * @param StorageDriverInterface $source_driver Source driver.
+	 * @param StorageDriverInterface $dest_driver   Destination driver.
+	 * @param string                 $rel_path      Relative path to copy.
+	 * @param array                  $tmp_dirs      Collected tmp dirs (by reference).
+	 * @return string 'moved'|'skipped'|'failed'
+	 */
+	private static function copy_to_dest( $source_driver, $dest_driver, string $rel_path, array &$tmp_dirs ): string {
+		if ( '' === $rel_path ) {
+			return 'skipped';
+		}
+
+		if ( $dest_driver->exists( $rel_path ) ) {
+			return 'skipped';
+		}
+
+		// Not on the destination — must be readable on the source to move it.
+		// If it is absent from the source too, the variant is already gone
+		// (stale meta); skip rather than fail the whole media.
+		if ( ! $source_driver->exists( $rel_path ) ) {
+			return 'skipped';
+		}
+
+		$tmp_path = trailingslashit( get_temp_dir() ) . 'mvs-cloudops-' . uniqid() . '/' . ltrim( $rel_path, '/' );
+		$tmp_dirs[] = dirname( $tmp_path );
+
+		if ( ! $source_driver->download( $rel_path, $tmp_path ) ) {
+			return 'failed';
+		}
+		if ( ! $dest_driver->store( $tmp_path, $rel_path ) ) {
+			return 'failed';
+		}
+		if ( ! $dest_driver->exists( $rel_path ) ) {
+			return 'failed';
+		}
+
+		return 'moved';
+	}
+
+	/**
+	 * Best-effort removal of the temp files/dirs created during a migration.
+	 *
+	 * @param array $tmp_dirs Tmp directory paths.
+	 * @return void
+	 */
+	private static function cleanup_tmp_dirs( array $tmp_dirs ): void {
+		foreach ( array_unique( $tmp_dirs ) as $tmp_dir ) {
+			if ( ! is_dir( $tmp_dir ) ) {
+				continue;
+			}
+			$files = glob( trailingslashit( $tmp_dir ) . '*' ) ?: array();
+			foreach ( $files as $file ) {
+				if ( is_file( $file ) ) {
+					wp_delete_file( $file );
+				}
+			}
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- best-effort cleanup of a plugin-controlled tmp dir; WP_Filesystem isn't initialized in this CLI/cron path and would add a credentials prompt for an internal-only path.
+			@rmdir( $tmp_dir );
+		}
+	}
+
+	/**
+	 * Resolve the full set of stored relative paths for a media (original +
+	 * every recorded variant), via the shared repository enumerator.
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $rel_path Original relative path (fallback).
+	 * @return string[] Unique non-empty relative paths.
+	 */
+	private static function stored_paths( int $media_id, string $rel_path ): array {
+		$paths = array();
+
+		if ( class_exists( '\WPMediaVerse\Core\Plugin' ) ) {
+			$container = \WPMediaVerse\Core\Plugin::container();
+			$repo      = $container ? $container->get( 'media_repository' ) : null;
+			if ( $repo && method_exists( $repo, 'get_stored_file_paths' ) ) {
+				$paths = (array) $repo->get_stored_file_paths( $media_id );
+			}
+		}
+
+		if ( '' !== $rel_path ) {
+			$paths[] = $rel_path;
+		}
+
+		$paths = array_filter(
+			array_map( 'strval', $paths ),
+			static function ( $p ) {
+				return '' !== $p;
+			}
+		);
+
+		return array_values( array_unique( $paths ) );
 	}
 
 	/**
@@ -243,15 +342,30 @@ class CloudOps {
 		wp_delete_file( $local_full );
 
 		$thumbs_removed = 0;
+		$thumbs_kept    = 0;
 		if ( ! $keep_thumbs ) {
-			$dir      = dirname( $local_full );
-			$base     = pathinfo( $local_full, PATHINFO_FILENAME );
-			$siblings = glob( $dir . '/' . $base . '-*x*.*' ) ?: array();
-			foreach ( $siblings as $sibling ) {
-				if ( is_file( $sibling ) ) {
-					wp_delete_file( $sibling );
-					++$thumbs_removed;
+			// Delete each recorded variant's local copy ONLY when that exact
+			// file is verified on the cloud. Pre-1.8.0 this globbed sibling
+			// files and deleted them gated solely on the ORIGINAL being on the
+			// cloud — so a migration that moved only the original (the pre-1.8.0
+			// migrate_one behaviour) followed by "Free up server space"
+			// permanently deleted thumbnails that were never uploaded, turning
+			// every thumbnail into a 404. Verify each file on its own; keep any
+			// the cloud can't confirm. (BC #10029395885 follow-up.)
+			foreach ( self::stored_paths( $media_id, $rel_path ) as $path ) {
+				if ( $path === $rel_path ) {
+					continue; // Original handled above.
 				}
+				$variant_full = trailingslashit( $wpmv_local_dir ) . $path;
+				if ( ! is_file( $variant_full ) ) {
+					continue;
+				}
+				if ( ! $driver->exists( $path ) ) {
+					++$thumbs_kept;
+					continue;
+				}
+				wp_delete_file( $variant_full );
+				++$thumbs_removed;
 			}
 		}
 
@@ -259,6 +373,7 @@ class CloudOps {
 			'ok'             => true,
 			'status'         => 'cleaned',
 			'thumbs_removed' => $thumbs_removed,
+			'thumbs_kept'    => $thumbs_kept,
 		);
 	}
 

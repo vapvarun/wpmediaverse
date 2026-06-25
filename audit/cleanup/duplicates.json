@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-06-24T11:38:50Z",
+    "generated_at": "2026-06-25T06:41:04Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -369,19 +369,19 @@
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "415-415",
+                    "lines": "446-446",
                     "method": "Sanitizers::sanitize_dm_access"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "428-428",
+                    "lines": "459-459",
                     "method": "Sanitizers::sanitize_show_online_status"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "441-441",
+                    "lines": "472-472",
                     "method": "Sanitizers::sanitize_chat_panel_visibility"
                 },
                 {
@@ -647,7 +647,7 @@
             "sites": [
                 {
                     "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1059-1059",
+                    "lines": "1065-1065",
                     "method": "SignedUrlService::record_download"
                 },
                 {
@@ -865,12 +865,12 @@
             "sites": [
                 {
                     "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1199-1199",
+                    "lines": "1205-1205",
                     "method": "client_accepts_webp"
                 },
                 {
                     "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1218-1218",
+                    "lines": "1224-1224",
                     "method": "client_accepts_avif"
                 }
             ]

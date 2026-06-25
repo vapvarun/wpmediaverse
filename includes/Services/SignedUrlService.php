@@ -818,11 +818,14 @@ class SignedUrlService {
 		);
 		if ( '' !== $rel_path ) {
 			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
-			$driver  = $storage->get_driver_for_media( $media_id );
+			// Resolve by where the file ACTUALLY lives, not the active driver:
+			// a public file still on local disk (cloud enabled but not migrated
+			// yet) must not be served from a cloud URL that 404s. (BC #10029395885)
+			$driver  = $storage->get_driver_for_location( $media_id );
 			if ( $driver instanceof LocalDriver ) {
-				// Active driver IS local. By default /serve streams it, but let
-				// operators route public, ungated local-storage thumbnails to a
-				// cacheable static/CDN URL (e.g. a reverse proxy in front of
+				// File is local. By default /serve streams it, but let operators
+				// route public, ungated local-storage thumbnails to a cacheable
+				// static/CDN URL (e.g. a reverse proxy in front of
 				// wp-content/uploads) WITHOUT a cloud driver — the cloud filters
 				// above can't help on local storage because we'd otherwise return
 				// '' first. Return a non-empty URL to bypass the signed /serve
@@ -898,7 +901,10 @@ class SignedUrlService {
 		$rel_path = (string) $repo->get_raw( $media_id, 'file_path' );
 		if ( '' !== $rel_path ) {
 			$storage = \WPMediaVerse\Core\Plugin::container()->get( 'storage' );
-			$driver  = $storage->get_driver_for_media( $media_id );
+			// Resolve by where the file ACTUALLY lives, not the active driver, so a
+			// public file still on local disk (cloud enabled but not migrated yet)
+			// is served locally instead of from a 404-ing cloud URL. (BC #10029395885)
+			$driver  = $storage->get_driver_for_location( $media_id );
 			if ( $driver instanceof LocalDriver ) {
 				// See maybe_direct_cloud_thumbnail_url(): same local-storage
 				// public-URL escape hatch for the full file. Default '' keeps the

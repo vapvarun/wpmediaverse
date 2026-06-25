@@ -122,6 +122,74 @@ class StorageService {
 	}
 
 	/**
+	 * The driver where a media's bytes ACTUALLY live right now — as opposed to
+	 * get_driver_for_media(), which says where NEW bytes would be stored by
+	 * privacy. Read paths must use this so a public file that is still on local
+	 * disk (e.g. a cloud driver was enabled but the file has not been migrated
+	 * yet) is served locally instead of from a fabricated cloud URL that 404s.
+	 *
+	 * Location is inferred from the stored `file_url` — the same signal the
+	 * Storage Management counters use. Migration updates `file_url`, so this
+	 * stays correct after a "Move to cloud". A `/wp-content/uploads/` URL (or no
+	 * URL) means local; anything else means it lives on the active cloud driver.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return StorageDriverInterface
+	 */
+	public function get_driver_for_location( int $media_id ): StorageDriverInterface {
+		$file_url = (string) \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->get_raw( $media_id, 'file_url' );
+
+		// Still on local disk (or no URL recorded) — serve locally.
+		if ( '' === $file_url || false !== strpos( $file_url, '/wp-content/uploads/' ) ) {
+			return $this->get_local_driver();
+		}
+
+		// Lives on a cloud — resolve the driver for the host it ACTUALLY sits on,
+		// not the active driver. This keeps existing files serving from their real
+		// home after the owner switches the active driver (e.g. BunnyCDN -> S3)
+		// until they run "Migrate all"; otherwise we'd build S3 URLs for files
+		// still on Bunny and 404. Unknown hosts (e.g. a custom CDN domain we can't
+		// map) fall back to the active driver, which knows its own base URL.
+		$name = self::driver_name_for_url( $file_url );
+		if ( '' !== $name ) {
+			$driver = apply_filters( 'mvs_storage_driver', null, $name );
+			if ( $driver instanceof StorageDriverInterface ) {
+				return $driver;
+			}
+		}
+
+		return $this->get_driver();
+	}
+
+	/**
+	 * Infer the storage driver name from a stored file_url's host.
+	 *
+	 * Matches the default cloud hostnames each driver emits. Custom CDN domains
+	 * are not covered here (return '') — callers fall back to the active driver.
+	 *
+	 * @param string $url Stored public URL.
+	 * @return string Driver slug (s3|bunnycdn|r2|dospaces) or '' when unknown/local.
+	 */
+	private static function driver_name_for_url( string $url ): string {
+		$patterns = array(
+			's3'       => array( '.amazonaws.com/' ),
+			'bunnycdn' => array( '.b-cdn.net/' ),
+			'r2'       => array( '.r2.cloudflarestorage.com/', '.r2.dev/' ),
+			'dospaces' => array( '.digitaloceanspaces.com/' ),
+		);
+		foreach ( $patterns as $name => $needles ) {
+			foreach ( $needles as $needle ) {
+				if ( false !== strpos( $url, $needle ) ) {
+					return $name;
+				}
+			}
+		}
+		return '';
+	}
+
+	/**
 	 * Localize a media row's stored URLs after privacy escalates from public
 	 * to a restricted level.
 	 *
