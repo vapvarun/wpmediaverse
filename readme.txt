@@ -112,7 +112,7 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 = 1.8.0 - June 2026 =
 
-Wbcom-family Integrations page, an image-watermark fix, conversation-scoped DM media, and faster client-side navigation. No database schema change.
+Wbcom-family Integrations page, configurable AI moderation with a new Claude provider, an image-watermark fix, conversation-scoped DM media, and faster client-side navigation. No database schema change.
 
 * New      - Integrations page lists the Wbcom plugin family with product logos, store links, and a one-click companion installer.
 * New      - REST POST /conversations accepts an as_request flag to open a conversation as a pending message request the recipient accepts or declines, so native apps can start message requests through mvs/v1 alone.
@@ -134,6 +134,13 @@ Wbcom-family Integrations page, an image-watermark fix, conversation-scoped DM m
 * New      - Members can block or unblock another member from their profile (Block toggle next to Follow and Message); blocking already hid that member's media from the feed and refused follows and direct messages, but there was previously no way to do it from the frontend.
 * Fix      - Video tiles show the video's first frame instead of a generic placeholder on My Media, the explore-feed block, and the Pinterest/Flickr/Dribbble/Instagram layout grids (including Load More), matching the Explore grid. All client-side thumbnail renderers now follow the same video-first contract as the server.
 * Fix      - The story viewer plays video and audio stories instead of showing a broken image; it renders the correct element per media type.
+* New      - AI moderation criteria: AI Flag Criteria checkboxes (nudity, violence, hate, self-harm, drugs, spam) let owners choose what the AI flags, plus a Custom Flag Terms field to add their own (e.g. weapons, gambling, political content). All categories enabled by default.
+* New      - Claude (Anthropic) AI provider for image analysis, tagging, and moderation, alongside OpenAI, Google Vision, and AWS Rekognition.
+* New      - "Delete permanently" auto-action for AI-flagged content removes the media and its files from local and cloud storage.
+* Improve  - The AI settings tab shows only the selected provider's credentials (pick a provider, see its key and model); the per-call cost is plugin-managed instead of a manual field.
+* Fix      - The standalone /messages/ page now loads the conversation list; it enqueues the shared REST client and defers to BuddyNext when active.
+* Fix      - Removed a dead webhook event (media.updated) and dead activity types that could never fire.
+* Dev      - New filters mvs_ai_moderation_terms (add AI flag terms in code) and mvs_ai_cost_per_call (per-provider cost estimate); the messaging transport resolves MessagingService via the container.
 * Dev      - New filters mvs_strip_dead_bp_links, mvs_dead_bp_link_patterns, mvs_dm_denial_message, and mvs_dm_denial_reason; MessagingService::find_or_create_conversation() gains a force_request option; WatermarkService::get_config() now exposes image_id for the Pro renderer.
 * Dev      - The frontend was refactored onto a shared window.mvsRest client plus a router store and region partials for client-side navigation.
 * Dev      - New mvs_collections_enabled filter lets a collections backend render a "Save to collection" control next to the favorite heart; the lightbox exposes the actions.lightboxOpenCollections action and dispatches an mvs-collections-click event carrying the current media id.
