@@ -112,18 +112,22 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 = 1.8.0 - June 2026 =
 
-Wbcom-family Integrations page, configurable AI moderation with a new Claude provider, an image-watermark fix, conversation-scoped DM media, and faster client-side navigation. No database schema change.
+Configurable AI moderation with a new Claude provider, working image and text watermarks, cloud-storage display and migration fixes with an automatic one-time repair, a Wbcom Integrations page, member blocking, and faster client-side navigation. No database schema change.
 
 * New      - Integrations page lists the Wbcom plugin family with product logos, store links, and a one-click companion installer.
 * New      - REST POST /conversations accepts an as_request flag to open a conversation as a pending message request the recipient accepts or declines, so native apps can start message requests through mvs/v1 alone.
+* New      - Members can block or unblock another member from their profile (Block toggle next to Follow and Message); blocking already hid that member's media from the feed and refused follows and direct messages, but there was previously no way to do it from the frontend.
+* New      - AI moderation criteria: AI Flag Criteria checkboxes (nudity, violence, hate, self-harm, drugs, spam) let owners choose what the AI flags, plus a Custom Flag Terms field to add their own (e.g. weapons, gambling, political content). All categories enabled by default.
+* New      - Claude (Anthropic) AI provider for image analysis, tagging, and moderation, alongside OpenAI, Google Vision, and AWS Rekognition.
+* New      - "Delete permanently" auto-action for AI-flagged content removes the media and its files from local and cloud storage.
 * Improve  - The Explore lightbox now opens in place instead of stacking over the previous screen.
 * Improve  - Explore and the dashboard share one REST client with document-level event delegation, so Load More and other actions keep working after client-side navigation.
 * Improve  - Dark mode now follows the active BuddyX/Reign theme toggle (data-bx-mode) and uses shared elevation tokens.
+* Improve  - The AI settings tab shows only the selected provider's credentials (pick a provider, see its key and model); the per-call cost is plugin-managed instead of a manual field.
 * Fix      - Selecting Watermark Type "Image" now applies the configured logo; the chosen attachment is passed to the watermark renderer instead of being dropped.
 * Fix      - Restricted (gated) images now display the watermarked preview to visitors without access, instead of the plain blurred thumbnail that was shown before. Watermarking applies to images only, never video or audio.
 * Fix      - Like, comment, bookmark, share, and other action buttons on the Instagram feed layout now run their action instead of opening the media lightbox.
 * Fix      - Dashboard tabs, the lightbox reaction bar, and the lightbox action buttons keep their clean styling under themes that restyle plain buttons (such as BuddyX), instead of turning into filled colored buttons.
-* Dev      - New mvs_apply_watermark_preview filter to skip the watermark for specific uploaders or roles; the default watermark position is now bottom-right.
 * Fix      - Direct-message attachments are scoped to their conversation so only participants can view them.
 * Fix      - A new message is delivered again after both members had deleted the conversation.
 * Fix      - The BuddyPress component-link cleanup no longer removes live navigation owned by another community plugin; it is off by default and never deletes a link that resolves to a real page.
@@ -135,19 +139,15 @@ Wbcom-family Integrations page, configurable AI moderation with a new Claude pro
 * Fix      - The demo-data importer reuses an existing same-named collection instead of stacking duplicate copies when it is run more than once.
 * Fix      - "Followers only" online-status visibility now hides presence from non-followers; previously the option behaved like "Everyone".
 * Fix      - Video and audio play analytics record from the main media page, not only the media-player block (the player wires the Pro events endpoint when Pro is active).
-* New      - Members can block or unblock another member from their profile (Block toggle next to Follow and Message); blocking already hid that member's media from the feed and refused follows and direct messages, but there was previously no way to do it from the frontend.
 * Fix      - Video tiles show the video's first frame instead of a generic placeholder on My Media, the explore-feed block, and the Pinterest/Flickr/Dribbble/Instagram layout grids (including Load More), matching the Explore grid. All client-side thumbnail renderers now follow the same video-first contract as the server.
 * Fix      - The story viewer plays video and audio stories instead of showing a broken image; it renders the correct element per media type.
-* New      - AI moderation criteria: AI Flag Criteria checkboxes (nudity, violence, hate, self-harm, drugs, spam) let owners choose what the AI flags, plus a Custom Flag Terms field to add their own (e.g. weapons, gambling, political content). All categories enabled by default.
-* New      - Claude (Anthropic) AI provider for image analysis, tagging, and moderation, alongside OpenAI, Google Vision, and AWS Rekognition.
-* New      - "Delete permanently" auto-action for AI-flagged content removes the media and its files from local and cloud storage.
 * Fix      - Media uploaded before a cloud service was connected now displays correctly: each file is served from where it actually lives instead of a fabricated CDN URL that returned 404. Switching between cloud services also keeps existing media readable until it is migrated.
 * Fix      - Migrating storage moves a media's thumbnails and other variants alongside the original, and only flips the media to the new service once the full set has transferred, so thumbnails keep working after a Migrate all instead of 404ing on the new service.
 * Fix      - "Free up server space" never deletes a local file whose cloud copy cannot be verified, preventing permanent loss of thumbnails that were not uploaded.
 * Fix      - Storage paths left inconsistent by earlier versions are repaired automatically in the background after update: media imported from another plugin (which pointed at the original file in place) is copied into the library so it displays, and thumbnails left on the server after an older cloud migration are moved to the cloud. The repair runs in small batches, only touches affected media, and can be disabled with the mvs_storage_repair_enabled filter or run manually with wp mvs repair-storage.
-* Improve  - The AI settings tab shows only the selected provider's credentials (pick a provider, see its key and model); the per-call cost is plugin-managed instead of a manual field.
 * Fix      - The standalone /messages/ page now loads the conversation list; it enqueues the shared REST client and defers to BuddyNext when active.
 * Fix      - Removed a dead webhook event (media.updated) and dead activity types that could never fire.
+* Dev      - New mvs_apply_watermark_preview filter to skip the watermark for specific uploaders or roles; the default watermark position is now bottom-right.
 * Dev      - New filters mvs_ai_moderation_terms (add AI flag terms in code) and mvs_ai_cost_per_call (per-provider cost estimate); the messaging transport resolves MessagingService via the container.
 * Dev      - New UploadService::sideload_external_file() is the canonical way to bring an outside file into the library as a relative path; new mvs_storage_repair_enabled filter and wp mvs repair-storage command gate and run the storage-path repair.
 * Dev      - New filters mvs_strip_dead_bp_links, mvs_dead_bp_link_patterns, mvs_dm_denial_message, and mvs_dm_denial_reason; MessagingService::find_or_create_conversation() gains a force_request option; WatermarkService::get_config() now exposes image_id for the Pro renderer.
