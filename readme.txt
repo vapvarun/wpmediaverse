@@ -112,7 +112,7 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 = 1.8.0 - June 2026 =
 
-Configurable AI moderation with a new Claude provider, working image and text watermarks, cloud-storage display and migration fixes with an automatic one-time repair, a Wbcom Integrations page, member blocking, and faster client-side navigation. No database schema change.
+Configurable AI moderation with a new Claude provider, working image and text watermarks, cloud-storage display and migration fixes with an automatic one-time repair, a Wbcom Integrations page, member blocking, a masonry media grid (now the default), and faster client-side navigation. No database schema change.
 
 * New      - Integrations page lists the Wbcom plugin family with product logos, store links, and a one-click companion installer.
 * New      - REST POST /conversations accepts an as_request flag to open a conversation as a pending message request the recipient accepts or declines, so native apps can start message requests through mvs/v1 alone.
@@ -120,14 +120,16 @@ Configurable AI moderation with a new Claude provider, working image and text wa
 * New      - AI moderation criteria: AI Flag Criteria checkboxes (nudity, violence, hate, self-harm, drugs, spam) let owners choose what the AI flags, plus a Custom Flag Terms field to add their own (e.g. weapons, gambling, political content). All categories enabled by default.
 * New      - Claude (Anthropic) AI provider for image analysis, tagging, and moderation, alongside OpenAI, Google Vision, and AWS Rekognition.
 * New      - "Delete permanently" auto-action for AI-flagged content removes the media and its files from local and cloud storage.
+* New      - Masonry media grid: the Explore and media-grid feed shows every image at its native aspect ratio, packed with no cropping or gaps. Set Thumbnail Style to Square in Settings to keep uniform cropped tiles.
 * Improve  - The Explore lightbox now opens in place instead of stacking over the previous screen.
 * Improve  - Explore and the dashboard share one REST client with document-level event delegation, so Load More and other actions keep working after client-side navigation.
 * Improve  - Dark mode now follows the active BuddyX/Reign theme toggle (data-bx-mode) and uses shared elevation tokens.
 * Improve  - The AI settings tab shows only the selected provider's credentials (pick a provider, see its key and model); the per-call cost is plugin-managed instead of a manual field.
+* Improve  - The masonry (original aspect ratio) grid is now the default Thumbnail Style; sites that prefer the uniform square crop can restore it in Settings > Display or with the mvs_default_thumbnail_style filter.
 * Fix      - Selecting Watermark Type "Image" now applies the configured logo; the chosen attachment is passed to the watermark renderer instead of being dropped.
 * Fix      - Restricted (gated) images now display the watermarked preview to visitors without access, instead of the plain blurred thumbnail that was shown before. Watermarking applies to images only, never video or audio.
 * Fix      - Like, comment, bookmark, share, and other action buttons on the Instagram feed layout now run their action instead of opening the media lightbox.
-* Fix      - Dashboard tabs, the lightbox reaction bar, and the lightbox action buttons keep their clean styling under themes that restyle plain buttons (such as BuddyX), instead of turning into filled colored buttons.
+* Fix      - The dashboard, create-modal, and chat tabs plus the lightbox reaction bar and action buttons keep their flat, readable styling (with visible labels) under themes that restyle plain buttons (BuddyX, Reign), instead of turning into filled colored buttons or invisible white-on-white text.
 * Fix      - Direct-message attachments are scoped to their conversation so only participants can view them.
 * Fix      - A new message is delivered again after both members had deleted the conversation.
 * Fix      - The BuddyPress component-link cleanup no longer removes live navigation owned by another community plugin; it is off by default and never deletes a link that resolves to a real page.
@@ -151,6 +153,7 @@ Configurable AI moderation with a new Claude provider, working image and text wa
 * Dev      - New mvs_apply_watermark_preview filter to skip the watermark for specific uploaders or roles; the default watermark position is now bottom-right.
 * Dev      - New filters mvs_ai_moderation_terms (add AI flag terms in code) and mvs_ai_cost_per_call (per-provider cost estimate); the messaging transport resolves MessagingService via the container.
 * Dev      - New UploadService::sideload_external_file() is the canonical way to bring an outside file into the library as a relative path; new mvs_storage_repair_enabled filter and wp mvs repair-storage command gate and run the storage-path repair.
+* Dev      - New mvs_default_thumbnail_style filter and SettingsHelper::get_thumbnail_style() resolve the grid thumbnail style (escape hatch for the square-to-original default change); the original mode now renders as a CSS-column masonry.
 * Dev      - New filters mvs_strip_dead_bp_links, mvs_dead_bp_link_patterns, mvs_dm_denial_message, and mvs_dm_denial_reason; MessagingService::find_or_create_conversation() gains a force_request option; WatermarkService::get_config() now exposes image_id for the Pro renderer.
 * Dev      - The frontend was refactored onto a shared window.mvsRest client plus a router store and region partials for client-side navigation.
 * Dev      - New mvs_collections_enabled filter lets a collections backend render a "Save to collection" control next to the favorite heart; the lightbox exposes the actions.lightboxOpenCollections action and dispatches an mvs-collections-click event carrying the current media id.
