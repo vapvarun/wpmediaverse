@@ -531,6 +531,43 @@
         "handler": "ConfigController",
         "permission": "__return_true (public, pre-login)",
         "purpose": "White-label branding + feature flags for the mobile app; mvs_app_config_features filter aggregates Free+Pro toggles"
+      },
+      {
+        "route": "/app/interests",
+        "methods": [
+          "GET"
+        ],
+        "handler": "InterestsController::get_interests",
+        "permission": "__return_true (public)",
+        "purpose": "Interest categories (mvs_category) for the onboarding picker; cached via mvs_app_interests"
+      },
+      {
+        "route": "/me/interests",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "handler": "InterestsController",
+        "permission": "logged-in",
+        "purpose": "Read/save the viewer's interest categories in mvs_interests user-meta; save also flips mvs_onboarded"
+      },
+      {
+        "route": "/users/suggested",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::get_suggested",
+        "permission": "logged-in",
+        "purpose": "People-you-may-know: ranked creators via SuggestionService, excluding self/followed/blocked, interest-boosted, cached pool mvs_top_creators"
+      },
+      {
+        "route": "/me/onboarding/complete",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ProfileController::complete_onboarding",
+        "permission": "logged-in",
+        "purpose": "Flag first-session onboarding done via mvs_onboarded"
       }
     ]
   },

@@ -13,7 +13,7 @@
     "extension_hook_fired": "mvs_loaded"
   },
   "counts": {
-    "rest_endpoints": 85,
+    "rest_endpoints": 89,
     "ajax": 3,
     "admin_pages": 17,
     "settings": 40,
@@ -179,5 +179,28 @@
     "unified": [
       "/feed and /me/favorites now return the canonical media object"
     ]
+  },
+  "refresh_2026_06_30": {
+    "date": "2026-06-30",
+    "branch": "1.8.1",
+    "summary": "First-session activation cold-start endpoints (Phase A).",
+    "added_routes": [
+      "GET /mvs/v1/app/interests",
+      "GET+POST /mvs/v1/me/interests",
+      "GET /mvs/v1/users/suggested",
+      "POST /mvs/v1/me/onboarding/complete"
+    ],
+    "param_additions": [
+      "GET /media interests=auto filters trending/popular/date feed to the viewer's interest categories"
+    ],
+    "field_additions": [
+      "/me/profile: onboarded bool"
+    ],
+    "new_filters": [
+      "mvs_app_interests_cache_ttl",
+      "mvs_suggestions_cache_ttl"
+    ],
+    "new_class": "Social/SuggestionService (cached candidate pool, big-site-safe)",
+    "spec": "docs/plans/app/MEDIAVERSE-ACTIVATION-SPEC.md"
   }
 }

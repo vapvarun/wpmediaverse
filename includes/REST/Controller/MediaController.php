@@ -414,6 +414,29 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
+		// Interest filter (activation cold-start) — `interests=auto` narrows the
+		// feed to the viewer's chosen interest categories so a new user's first
+		// scroll is relevant, not just globally popular. Silently no-ops for
+		// anonymous viewers or those with no saved interests (never empty).
+		if ( 'auto' === $request->get_param( 'interests' ) && $user_id ) {
+			$interest_ids = get_user_meta( $user_id, 'mvs_interests', true );
+			$interest_ids = is_array( $interest_ids ) ? array_filter( array_map( 'intval', $interest_ids ) ) : array();
+			if ( $interest_ids ) {
+				$ti_ph  = implode( ',', array_fill( 0, count( $interest_ids ), '%d' ) );
+				$tt_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					$wpdb->prepare(
+						"SELECT term_taxonomy_id FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'mvs_category' AND term_id IN ({$ti_ph})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+						...array_values( $interest_ids )
+					)
+				);
+				$tt_ids = array_filter( array_map( 'intval', (array) $tt_ids ) );
+				if ( $tt_ids ) {
+					$tt_in          = implode( ',', $tt_ids ); // Integers from the DB — safe to inline.
+					$join_clauses[] = "INNER JOIN {$wpdb->term_relationships} mvs_ir ON mvs_ir.object_id = i.media_id AND mvs_ir.term_taxonomy_id IN ($tt_in)"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				}
+			}
+		}
+
 		// Search filter — FULLTEXT index when supported, LIKE fallback otherwise.
 		// FULLTEXT swap is the 100k-readiness fix (Phase 3B): LIKE '%term%' on
 		// 100k rows is a sequential scan, MATCH/AGAINST hits the index.

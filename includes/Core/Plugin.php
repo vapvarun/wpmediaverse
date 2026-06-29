@@ -69,6 +69,7 @@ use WPMediaVerse\REST\Controller\ProfileController;
 use WPMediaVerse\REST\Controller\TransactionController;
 use WPMediaVerse\REST\Controller\AuthController;
 use WPMediaVerse\REST\Controller\ConfigController;
+use WPMediaVerse\REST\Controller\InterestsController;
 use WPMediaVerse\Services\ProfileService;
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
@@ -804,6 +805,7 @@ class Plugin {
 			new AdminController(),
 			new AuthController(),
 			new ConfigController(),
+			new InterestsController(),
 		);
 
 		foreach ( $controllers as $controller ) {
