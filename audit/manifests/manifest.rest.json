@@ -6,28 +6,39 @@
     "endpoints": [
       {
         "route": "/media",
-        "methods": ["GET", "POST"],
+        "methods": [
+          "GET",
+          "POST"
+        ],
         "handler": "MediaController",
         "permission": "GET __return_true (privacy enforced in SQL); POST create_item_permissions_check",
         "purpose": "List media (privacy/moderation filtered) or create a new media item"
       },
       {
         "route": "/media/(?P<id>[\\d]+)",
-        "methods": ["GET", "PUT", "DELETE"],
+        "methods": [
+          "GET",
+          "PUT",
+          "DELETE"
+        ],
         "handler": "MediaController",
         "permission": "GET get_item_permissions_check; PUT update_item_permissions_check; DELETE delete_item_permissions_check",
         "purpose": "Retrieve, update, or delete a single media item"
       },
       {
         "route": "/media/(?P<id>[\\d]+)/replace",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MediaController",
         "permission": "update_item_permissions_check (owner or edit_others_mvs_media)",
         "purpose": "Replace the underlying file for an existing media item"
       },
       {
         "route": "/media/(?P<id>[\\d]+)/view",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MediaController",
         "permission": "__return_true (analytics ingest; rate-limited inside handler)",
         "purpose": "Record a view event on a media item",
@@ -35,350 +46,467 @@
       },
       {
         "route": "/media/(?P<id>[\\d]+)/download",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MediaController",
         "permission": "__return_true (analytics ingest)",
         "purpose": "Record a download event and increment downloads stat"
       },
       {
         "route": "/media/(?P<id>[\\d]+)/share",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MediaController",
         "permission": "__return_true (analytics ingest)",
         "purpose": "Record a share event and increment shares stat"
       },
       {
         "route": "/media/(?P<id>[\\d]+)/access",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "MediaController",
         "permission": "__return_true (returns {can_view: bool} only)",
         "purpose": "Check whether the current user can view a media item"
       },
       {
         "route": "/media/(?P<id>[\\d]+)/group",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "MediaController",
         "permission": "__return_true (privacy enforced via MediaRepository)",
         "purpose": "Get gallery group items for navigation siblings"
       },
       {
         "route": "/me/media",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "MediaController",
         "permission": "is_user_logged_in",
         "purpose": "List the current user's media items"
       },
       {
         "route": "/albums",
-        "methods": ["GET", "POST"],
+        "methods": [
+          "GET",
+          "POST"
+        ],
         "handler": "AlbumController",
         "permission": "GET __return_true (privacy in SQL); POST create_item_permissions_check",
         "purpose": "List albums or create a new album"
       },
       {
         "route": "/albums/(?P<id>[\\d]+)",
-        "methods": ["GET", "PUT", "DELETE"],
+        "methods": [
+          "GET",
+          "PUT",
+          "DELETE"
+        ],
         "handler": "AlbumController",
         "permission": "GET __return_true (private albums 404 for non-owners); PUT/DELETE update_item/delete_item permission checks",
         "purpose": "Read, update, or delete a single album"
       },
       {
         "route": "/albums/(?P<id>[\\d]+)/reorder",
-        "methods": ["PUT"],
+        "methods": [
+          "PUT"
+        ],
         "handler": "AlbumController",
         "permission": "update_item_permissions_check",
         "purpose": "Reorder items within an album"
       },
       {
         "route": "/albums/(?P<id>[\\d]+)/items",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "AlbumController",
         "permission": "update_item_permissions_check",
         "purpose": "Add one or more media items to an album"
       },
       {
         "route": "/albums/(?P<id>[\\d]+)/items/(?P<media_id>[\\d]+)",
-        "methods": ["DELETE"],
+        "methods": [
+          "DELETE"
+        ],
         "handler": "AlbumController",
         "permission": "update_item_permissions_check",
         "purpose": "Remove a specific media item from an album"
       },
       {
         "route": "/albums/(?P<id>[\\d]+)/cover",
-        "methods": ["PUT"],
+        "methods": [
+          "PUT"
+        ],
         "handler": "AlbumController",
         "permission": "update_item_permissions_check",
         "purpose": "Set the cover media for an album"
       },
       {
         "route": "/media/(?P<media_id>[\\d]+)/rules",
-        "methods": ["GET", "POST"],
+        "methods": [
+          "GET",
+          "POST"
+        ],
         "handler": "AccessController",
         "permission": "manage_permissions_check (owner or manage_options)",
         "purpose": "List or replace the access rules attached to a media item"
       },
       {
         "route": "/media/(?P<media_id>[\\d]+)/rules/(?P<rule_id>[\\d]+)",
-        "methods": ["DELETE"],
+        "methods": [
+          "DELETE"
+        ],
         "handler": "AccessController",
         "permission": "manage_permissions_check",
         "purpose": "Delete a single access rule from a media item"
       },
       {
         "route": "/media/(?P<media_id>[\\d]+)/grant",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "AccessController",
         "permission": "manage_permissions_check",
         "purpose": "Grant a user access to a media item"
       },
       {
         "route": "/media/(?P<media_id>[\\d]+)/grant/(?P<user_id>[\\d]+)",
-        "methods": ["DELETE"],
+        "methods": [
+          "DELETE"
+        ],
         "handler": "AccessController",
         "permission": "manage_permissions_check",
         "purpose": "Revoke a user's access grant on a media item"
       },
       {
         "route": "/me/grants",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "AccessController",
         "permission": "authenticated_check (is_user_logged_in)",
         "purpose": "List the current user's active access grants"
       },
       {
         "route": "/feed",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "ActivityController",
         "permission": "__return_true (handler restricts 'following' scope to logged-in callers)",
         "purpose": "Public or following activity feed"
       },
       {
         "route": "/users/(?P<id>[\\d]+)/activity",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "ActivityController",
         "permission": "__return_true (only public-media events surfaced)",
         "purpose": "Get a specific user's activity stream"
       },
       {
         "route": "/admin/welcome/dismiss",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "AdminController",
         "permission": "logged_in_permissions_check",
         "purpose": "Dismiss the admin welcome banner for the current user"
       },
       {
         "route": "/media/bulk",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "BulkController",
         "permission": "bulk_permissions_check (logged-in; per-item ownership filter inside handler)",
         "purpose": "Bulk delete, move-to-album, or change-privacy for media (max 100 items)"
       },
       {
         "route": "/collections",
-        "methods": ["GET", "POST"],
+        "methods": [
+          "GET",
+          "POST"
+        ],
         "handler": "CollectionController",
         "permission": "is_user_logged_in (anonymous closure)",
         "purpose": "List or create the current user's collections"
       },
       {
         "route": "/collections/(?P<id>[\\d]+)",
-        "methods": ["GET", "PUT", "DELETE"],
+        "methods": [
+          "GET",
+          "PUT",
+          "DELETE"
+        ],
         "handler": "CollectionController",
         "permission": "GET get_item_permissions_check; PUT/DELETE owner_permissions_check",
         "purpose": "Read, update, or delete a single collection"
       },
       {
         "route": "/collections/(?P<id>[\\d]+)/rules",
-        "methods": ["PUT"],
+        "methods": [
+          "PUT"
+        ],
         "handler": "CollectionController",
         "permission": "owner_permissions_check",
         "purpose": "Set the smart-collection auto-fill rules"
       },
       {
         "route": "/comments",
-        "methods": ["GET", "POST"],
+        "methods": [
+          "GET",
+          "POST"
+        ],
         "handler": "CommentController",
         "permission": "GET __return_true (inherits parent media visibility); POST create_item_permissions_check",
         "purpose": "List comments on a media item or create a new comment"
       },
       {
         "route": "/comments/(?P<comment_id>[\\d]+)",
-        "methods": ["PUT", "DELETE"],
+        "methods": [
+          "PUT",
+          "DELETE"
+        ],
         "handler": "CommentController",
         "permission": "create_item_permissions_check (author or moderator)",
         "purpose": "Edit or delete an existing comment"
       },
       {
         "route": "/media/(?P<media_id>[\\d]+)/favorite",
-        "methods": ["GET", "POST", "DELETE"],
+        "methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
         "handler": "FavoriteController",
         "permission": "auth_check (is_user_logged_in) on all methods",
         "purpose": "Read or toggle (create/delete) a favorite/bookmark on a media item"
       },
       {
         "route": "/me/favorites",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "FavoriteController",
         "permission": "auth_check",
         "purpose": "List the current user's favorited media (optionally scoped to a collection)"
       },
       {
         "route": "/users/(?P<id>[\\d]+)/follow",
-        "methods": ["POST", "DELETE"],
+        "methods": [
+          "POST",
+          "DELETE"
+        ],
         "handler": "FollowController",
         "permission": "is_user_logged_in",
         "purpose": "Follow or unfollow another user"
       },
       {
         "route": "/users/(?P<id>[\\d]+)/followers",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "FollowController",
         "permission": "__return_true (display name + avatar only)",
         "purpose": "List followers of a public user"
       },
       {
         "route": "/users/(?P<id>[\\d]+)/following",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "FollowController",
         "permission": "__return_true",
         "purpose": "List accounts a public user follows"
       },
       {
         "route": "/me/following",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "FollowController",
         "permission": "is_user_logged_in",
         "purpose": "List the current user's followed accounts"
       },
       {
         "route": "/me/followers",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "FollowController",
         "permission": "is_user_logged_in",
         "purpose": "List the current user's followers"
       },
       {
         "route": "/moderation",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "ModerationController",
         "permission": "moderate_permissions_check (moderate_mvs_media)",
         "purpose": "Get the moderation queue"
       },
       {
         "route": "/moderation/counts",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "ModerationController",
         "permission": "moderate_permissions_check",
         "purpose": "Get moderation queue counts grouped by status"
       },
       {
         "route": "/moderation/(?P<id>[\\d]+)/approve",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "ModerationController",
         "permission": "moderate_permissions_check",
         "purpose": "Approve a media item in the moderation queue"
       },
       {
         "route": "/moderation/(?P<id>[\\d]+)/reject",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "ModerationController",
         "permission": "moderate_permissions_check",
         "purpose": "Reject a media item with an optional reason"
       },
       {
         "route": "/moderation/(?P<id>[\\d]+)/analyze",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "ModerationController",
         "permission": "moderate_permissions_check",
         "purpose": "Run AI moderation analysis on a media item"
       },
       {
         "route": "/ai/usage",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "ModerationController",
         "permission": "moderate_permissions_check",
         "purpose": "Return AI provider usage metrics (tokens, calls, cost)"
       },
       {
         "route": "/me/notifications",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "NotificationController",
         "permission": "is_user_logged_in",
         "purpose": "List the current user's notifications with optional filter"
       },
       {
         "route": "/me/notifications/read",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "NotificationController",
         "permission": "is_user_logged_in",
         "purpose": "Mark specified (or all) notifications as read"
       },
       {
         "route": "/me/notifications/count",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "NotificationController",
         "permission": "is_user_logged_in",
         "purpose": "Get the current user's unread notification count"
       },
       {
         "route": "/me/profile",
-        "methods": ["GET", "PUT"],
+        "methods": [
+          "GET",
+          "PUT"
+        ],
         "handler": "ProfileController",
         "permission": "check_logged_in",
         "purpose": "Read or update the current user's profile fields"
       },
       {
         "route": "/me/avatar",
-        "methods": ["POST", "DELETE"],
+        "methods": [
+          "POST",
+          "DELETE"
+        ],
         "handler": "ProfileController",
         "permission": "check_logged_in",
         "purpose": "Upload a custom avatar or remove the existing one"
       },
       {
         "route": "/reactions",
-        "methods": ["GET", "POST", "DELETE"],
+        "methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
         "handler": "ReactionController",
         "permission": "GET __return_true (aggregated counts only); POST/DELETE create_item_permissions_check",
         "purpose": "Read aggregated reactions or toggle the current user's reaction on a media item"
       },
       {
         "route": "/media/(?P<id>[\\d]+)/report",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "ReportController",
         "permission": "is_user_logged_in",
         "purpose": "Report a media item for moderation review"
       },
       {
         "route": "/users/(?P<id>[\\d]+)/report",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "ReportController",
         "permission": "is_user_logged_in",
         "purpose": "Report a user account for moderation review"
       },
       {
         "route": "/users/(?P<id>[\\d]+)/block",
-        "methods": ["POST", "DELETE"],
+        "methods": [
+          "POST",
+          "DELETE"
+        ],
         "handler": "ReportController",
         "permission": "is_user_logged_in",
         "purpose": "Block or unblock another user"
       },
       {
         "route": "/me/blocked",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "ReportController",
         "permission": "is_user_logged_in",
         "purpose": "List the users the current user has blocked"
       },
       {
         "route": "/media/(?P<media_id>[\\d]+)/signed-url",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "SignedUrlController",
         "permission": "get_signed_url_permissions_check (can_view + rate-limited)",
         "purpose": "Generate an HMAC-signed URL for a media item (optional download flag, TTL)"
       },
       {
         "route": "/serve",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "SignedUrlController",
         "permission": "__return_true (signature + expiry + bound user_id validated in handler)",
         "purpose": "Stream a media file when called with a valid signed URL",
@@ -386,49 +514,64 @@
       },
       {
         "route": "/media/(?P<media_id>[\\d]+)/stats",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "StatsController",
         "permission": "__return_true (privacy gate in handler; private media 404s)",
         "purpose": "Aggregated public stats for a media item (views, reactions, comments, shares)"
       },
       {
         "route": "/me/stats",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "StatsController",
         "permission": "is_user_logged_in",
         "purpose": "Aggregated stats across the current user's media"
       },
       {
         "route": "/tags",
-        "methods": ["GET", "POST"],
+        "methods": [
+          "GET",
+          "POST"
+        ],
         "handler": "TagController",
         "permission": "GET __return_true (public taxonomy); POST create_tag_permissions_check",
         "purpose": "Search/autocomplete tags or create a new tag"
       },
       {
         "route": "/tags/cloud",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "TagController",
         "permission": "__return_true",
         "purpose": "Top tags with usage counts for tag-cloud rendering"
       },
       {
         "route": "/tags/merge",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "TagController",
         "permission": "admin_check (manage_options)",
         "purpose": "Merge a source tag into a target tag"
       },
       {
         "route": "/tags/(?P<id>[\\d]+)",
-        "methods": ["PUT"],
+        "methods": [
+          "PUT"
+        ],
         "handler": "TagController",
         "permission": "admin_check",
         "purpose": "Rename an existing tag"
       },
       {
         "route": "/tags/(?P<id>[\\d]+)",
-        "methods": ["DELETE"],
+        "methods": [
+          "DELETE"
+        ],
         "handler": "TagController",
         "permission": "admin_check",
         "purpose": "Delete a tag",
@@ -436,49 +579,63 @@
       },
       {
         "route": "/users/(?P<id>[\\d]+)",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "UserController",
         "permission": "__return_true (only public profile fields returned)",
         "purpose": "Get a user's public profile (display name, bio, avatar, follow counts)"
       },
       {
         "route": "/users/(?P<id>[\\d]+)/media",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "UserController",
         "permission": "__return_true (privacy filter in SQL)",
         "purpose": "List a user's public media items"
       },
       {
         "route": "/users/search",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "UserController",
         "permission": "__return_true (public profile fields only)",
         "purpose": "Search users by display name/login"
       },
       {
         "route": "/me/conversations",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth (is_user_logged_in)",
         "purpose": "List the current user's DM conversations with tab/pagination"
       },
       {
         "route": "/conversations",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Find-or-create a conversation with a recipient (blocked-user gate)"
       },
       {
         "route": "/conversations/(?P<id>\\d+)",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Get a single conversation by ID"
       },
       {
         "route": "/conversations/(?P<id>\\d+)",
-        "methods": ["PATCH"],
+        "methods": [
+          "PATCH"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Update conversation settings (mute, archive, pin, etc.)",
@@ -486,7 +643,9 @@
       },
       {
         "route": "/conversations/(?P<id>\\d+)",
-        "methods": ["DELETE"],
+        "methods": [
+          "DELETE"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Delete (leave/clear) a conversation",
@@ -494,14 +653,18 @@
       },
       {
         "route": "/conversations/(?P<id>\\d+)/messages",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "List messages in a conversation (cursor-paginated via 'before' param)"
       },
       {
         "route": "/conversations/(?P<id>\\d+)/messages",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Send a message into a conversation (text, attachment, media, or reply)",
@@ -509,42 +672,54 @@
       },
       {
         "route": "/messages/(?P<id>\\d+)",
-        "methods": ["DELETE"],
+        "methods": [
+          "DELETE"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Delete a message from the current user's view"
       },
       {
         "route": "/messages/(?P<id>\\d+)/unsend",
-        "methods": ["DELETE"],
+        "methods": [
+          "DELETE"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Unsend a message globally (within unsend window)"
       },
       {
         "route": "/conversations/(?P<id>\\d+)/read",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Mark a conversation as read up to the latest message"
       },
       {
         "route": "/conversations/(?P<id>\\d+)/typing",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Broadcast a typing indicator for the current conversation"
       },
       {
         "route": "/messages/(?P<id>\\d+)/reactions",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Add an emoji reaction to a message"
       },
       {
         "route": "/messages/(?P<id>\\d+)/reactions",
-        "methods": ["DELETE"],
+        "methods": [
+          "DELETE"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Remove the current user's reaction from a message",
@@ -552,38 +727,57 @@
       },
       {
         "route": "/messages/poll",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Long-poll for new messages since a timestamp (used by RestPollingTransport)"
       },
       {
         "route": "/me/messages/unread-count",
-        "methods": ["GET"],
+        "methods": [
+          "GET"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Current user's total unread DM count for the badge"
       },
       {
         "route": "/conversations/(?P<id>\\d+)/accept",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Accept a pending message request (move from requests tab to inbox)"
       },
       {
         "route": "/conversations/(?P<id>\\d+)/decline",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Decline a pending message request"
       },
       {
         "route": "/messages/upload",
-        "methods": ["POST"],
+        "methods": [
+          "POST"
+        ],
         "handler": "MessagingController",
         "permission": "check_auth",
         "purpose": "Upload a file attachment for use in a subsequent DM send"
+      },
+      {
+        "route": "/app/config",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConfigController",
+        "permission": "__return_true (public, pre-login)",
+        "purpose": "White-label branding + feature flags for the mobile app; mvs_app_config_features filter aggregates Free+Pro toggles"
       }
     ]
   }

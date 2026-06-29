@@ -522,6 +522,15 @@
         "handler": "MessagingController::add_reaction",
         "permission": "participant",
         "purpose": "React to DM"
+      },
+      {
+        "route": "/app/config",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConfigController",
+        "permission": "__return_true (public, pre-login)",
+        "purpose": "White-label branding + feature flags for the mobile app; mvs_app_config_features filter aggregates Free+Pro toggles"
       }
     ]
   },
@@ -1624,10 +1633,6 @@
     {
       "key": "collections",
       "class": "Services/CollectionService.php"
-    },
-    {
-      "key": "stories",
-      "class": "Services/StoryService.php"
     },
     {
       "key": "ai",
