@@ -232,7 +232,13 @@ class UserController extends WP_REST_Controller {
 		if ( $int_ids ) {
 			_prime_post_caches( $int_ids, true, true );
 			update_meta_cache( 'post', $int_ids );
+			// Prime the MVS index+meta rows so the per-item prepare below does not
+			// run get_all() once per tile (N+1). Mirrors the 1.7.0 grid prefetch.
+			Plugin::container()->get( 'media_repository' )->prefetch( $int_ids );
 		}
+
+		// Batch-load the viewer's favorite/reaction state for the whole page.
+		MediaController::prime_viewer_state( $int_ids, $viewer_id );
 
 		$privacy    = Plugin::container()->get( 'privacy' );
 		$media_ctrl = new MediaController( $privacy );
@@ -247,6 +253,7 @@ class UserController extends WP_REST_Controller {
 
 		$response = rest_ensure_response( $items );
 		$response->header( 'X-WP-Total', $total );
+		$response->header( 'X-WP-TotalPages', (string) (int) ceil( $total / max( 1, $per_page ) ) );
 
 		return $response;
 	}

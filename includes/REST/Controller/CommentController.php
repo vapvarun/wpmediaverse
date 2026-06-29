@@ -400,6 +400,15 @@ class CommentController extends WP_REST_Controller {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error( 'mvs_unauthorized', __( 'You must be logged in to comment.', 'wpmediaverse' ), array( 'status' => 401 ) );
 		}
+
+		// Block gate — App Passwords bypass login, so enforce here, not only at
+		// the data layer. A blocked relationship cannot comment on the other's media.
+		$author  = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( (int) $request->get_param( 'media_id' ) );
+		$blocked = \WPMediaVerse\REST\RestGuards::deny_if_blocked( get_current_user_id(), $author );
+		if ( $blocked instanceof WP_Error ) {
+			return $blocked;
+		}
+
 		return true;
 	}
 

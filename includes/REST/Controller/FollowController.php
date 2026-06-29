@@ -58,8 +58,14 @@ class FollowController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'follow_user' ),
-					'permission_callback' => function () {
-						return is_user_logged_in();
+					'permission_callback' => function ( $request ) {
+						if ( ! is_user_logged_in() ) {
+							return false;
+						}
+						// Block gate — App Passwords bypass login; a blocked
+						// relationship cannot follow the other member.
+						$blocked = \WPMediaVerse\REST\RestGuards::deny_if_blocked( get_current_user_id(), (int) $request['id'] );
+						return $blocked instanceof \WP_Error ? $blocked : true;
 					},
 					'args'                => array(
 						'id' => array(

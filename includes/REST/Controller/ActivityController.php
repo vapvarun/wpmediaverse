@@ -135,8 +135,11 @@ class ActivityController extends WP_REST_Controller {
 			)
 		);
 
-		$response = rest_ensure_response( $data['activities'] );
+		$activities = $this->enrich_activity_media( $data['activities'], $request );
+
+		$response = rest_ensure_response( $activities );
 		$response->header( 'X-WP-Total', $data['total'] );
+		$response->header( 'X-WP-TotalPages', (string) (int) ceil( $data['total'] / max( 1, \WPMediaVerse\REST\Pagination::resolve_per_page( $request ) ) ) );
 
 		return $response;
 	}
@@ -157,9 +160,53 @@ class ActivityController extends WP_REST_Controller {
 			)
 		);
 
-		$response = rest_ensure_response( $data['activities'] );
+		$activities = $this->enrich_activity_media( $data['activities'], $request );
+
+		$response = rest_ensure_response( $activities );
 		$response->header( 'X-WP-Total', $data['total'] );
+		$response->header( 'X-WP-TotalPages', (string) (int) ceil( $data['total'] / max( 1, \WPMediaVerse\REST\Pagination::resolve_per_page( $request ) ) ) );
 
 		return $response;
+	}
+
+	/**
+	 * Replace each activity's thin media summary with the canonical media object,
+	 * so the app consumes one media model everywhere (explore, profile, feed,
+	 * favorites). Batch-primed: index/meta + viewer state load once per page,
+	 * keeping the feed query-bounded at any size.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param array           $activities Activity rows from ActivityService.
+	 * @param WP_REST_Request $request    Request.
+	 * @return array Activities with `media` upgraded to the canonical shape.
+	 */
+	private function enrich_activity_media( array $activities, $request ): array {
+		$media_ids = array();
+		foreach ( $activities as $activity ) {
+			if ( ! empty( $activity['media_id'] ) ) {
+				$media_ids[] = (int) $activity['media_id'];
+			}
+		}
+
+		if ( empty( $media_ids ) ) {
+			return $activities;
+		}
+
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $media_ids );
+		MediaController::prime_viewer_state( $media_ids, get_current_user_id() );
+		$media_ctrl = new MediaController( \WPMediaVerse\Core\Plugin::container()->get( 'privacy' ) );
+
+		foreach ( $activities as $index => $activity ) {
+			if ( empty( $activity['media_id'] ) ) {
+				continue;
+			}
+			$canonical = $media_ctrl->prepare_item_for_response( (int) $activity['media_id'], $request );
+			if ( null !== $canonical ) {
+				$activities[ $index ]['media'] = $canonical;
+			}
+		}
+
+		return $activities;
 	}
 }

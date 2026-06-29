@@ -189,6 +189,39 @@ class CommentService {
 	}
 
 	/**
+	 * Viewer-relative permission flags for a comment.
+	 *
+	 * Mirrors the real enforcement so the REST contract does not lie (Rule 13):
+	 * `can_edit` matches CommentController::update_item() — author-only, within
+	 * the `mvs_comment_edit_window` (default 15 min); `can_delete` matches
+	 * delete() — author OR a moderator. All false for anonymous viewers.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int    $author_id        Comment author user ID.
+	 * @param string $comment_date_gmt Comment GMT timestamp.
+	 * @return array{is_author: bool, can_edit: bool, can_delete: bool}
+	 */
+	private function viewer_comment_flags( int $author_id, string $comment_date_gmt ): array {
+		$viewer_id = get_current_user_id();
+		$is_author = $viewer_id > 0 && $viewer_id === $author_id;
+
+		/** This filter is documented in includes/REST/Controller/CommentController.php */
+		$edit_window = (int) apply_filters(
+			'mvs_comment_edit_window',
+			(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
+		);
+		$ts     = strtotime( $comment_date_gmt );
+		$within = $ts && ( time() - $ts ) <= $edit_window;
+
+		return array(
+			'is_author'  => $is_author,
+			'can_edit'   => $is_author && $within,
+			'can_delete' => $is_author || ( $viewer_id > 0 && user_can( $viewer_id, 'moderate_mvs_media' ) ),
+		);
+	}
+
+	/**
 	 * Format a comment for API response.
 	 *
 	 * @param \WP_Comment $comment         Comment object.
@@ -210,6 +243,8 @@ class CommentService {
 			/* translators: %s: human-readable time difference, e.g. "2 days" */
 			'date_human'    => $comment_ts ? sprintf( __( '%s ago', 'wpmediaverse' ), human_time_diff( $comment_ts, time() ) ) : '',
 		);
+
+		$data += $this->viewer_comment_flags( $cmt_author_id, (string) $comment->comment_date_gmt );
 
 		if ( $include_replies ) {
 			$replies = get_comments(
@@ -255,6 +290,8 @@ class CommentService {
 			'date_human'    => $comment_ts ? sprintf( __( '%s ago', 'wpmediaverse' ), human_time_diff( $comment_ts, time() ) ) : '',
 			'replies'       => array(),
 		);
+
+		$data += $this->viewer_comment_flags( $author_id, (string) $comment->comment_date_gmt );
 
 		if ( isset( $replies_map[ $comment_id ] ) ) {
 			foreach ( $replies_map[ $comment_id ] as $reply ) {

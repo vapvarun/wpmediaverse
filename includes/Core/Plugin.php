@@ -19,7 +19,6 @@ use WPMediaVerse\Services\StorageService;
 use WPMediaVerse\Services\PrivacyService;
 use WPMediaVerse\Services\AlbumService;
 use WPMediaVerse\Services\CollectionService;
-use WPMediaVerse\Services\StoryService;
 use WPMediaVerse\Services\AIService;
 use WPMediaVerse\Services\OpenAIProvider;
 use WPMediaVerse\Services\ModerationService;
@@ -69,6 +68,7 @@ use WPMediaVerse\REST\Controller\ActivityController;
 use WPMediaVerse\REST\Controller\ProfileController;
 use WPMediaVerse\REST\Controller\TransactionController;
 use WPMediaVerse\REST\Controller\AuthController;
+use WPMediaVerse\REST\Controller\ConfigController;
 use WPMediaVerse\Services\ProfileService;
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
@@ -219,9 +219,6 @@ class Plugin {
 
 		// Register REST API routes.
 		add_action( 'rest_api_init', array( self::class, 'register_rest_routes' ) );
-
-		// Initialize story cleanup cron.
-		self::$container->get( 'stories' );
 
 		// Defer moderation service — only load on admin or when processing uploads.
 		if ( is_admin() ) {
@@ -474,15 +471,6 @@ class Plugin {
 			'collections',
 			function () {
 				return new CollectionService();
-			}
-		);
-
-		self::$container->register(
-			'stories',
-			function () {
-				$service = new StoryService();
-				$service->init();
-				return $service;
 			}
 		);
 
@@ -815,6 +803,7 @@ class Plugin {
 			new ProfileController( $profile ),
 			new AdminController(),
 			new AuthController(),
+			new ConfigController(),
 		);
 
 		foreach ( $controllers as $controller ) {

@@ -332,6 +332,33 @@ class MediaController extends WP_REST_Controller {
 			return rest_ensure_response( array() );
 		}
 
+		// Batch fetch by explicit IDs — lets the app resolve an ID list (album
+		// items, etc.) into full canonical media objects in ONE call instead of
+		// N. Privacy-gated per item, request order preserved, capped at 100.
+		$include = $request->get_param( 'include' );
+		if ( ! empty( $include ) ) {
+			$ids = array_slice( array_values( array_unique( array_filter( array_map( 'intval', (array) $include ) ) ) ), 0, 100 );
+			if ( empty( $ids ) ) {
+				return rest_ensure_response( array() );
+			}
+			$viewer = get_current_user_id();
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $ids );
+			self::prime_viewer_state( $ids, $viewer );
+			$items = array();
+			foreach ( $ids as $mid ) {
+				if ( ! $this->privacy->can_view( $mid, $viewer ) ) {
+					continue;
+				}
+				$item = $this->prepare_item_for_response( $mid, $request );
+				if ( $item ) {
+					$items[] = $item;
+				}
+			}
+			$response = rest_ensure_response( $items );
+			$response->header( 'X-WP-Total', (string) count( $items ) );
+			return $response;
+		}
+
 		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
 		$page     = \WPMediaVerse\REST\Pagination::resolve_page( $request );
 		$offset   = ( $page - 1 ) * $per_page;
@@ -535,6 +562,10 @@ class MediaController extends WP_REST_Controller {
 		 * @param WP_REST_Request $request REST request object.
 		 */
 		$int_ids = apply_filters( 'mvs_feed_media_ids', $int_ids, $request );
+
+		// Batch-load viewer favorite/reaction state for the whole page (2 queries),
+		// so the per-item prepare below stays query-bounded at any list size.
+		self::prime_viewer_state( $int_ids, get_current_user_id() );
 
 		$items = array();
 		foreach ( $int_ids as $media_id ) {
@@ -1468,6 +1499,53 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Per-request prefill of the viewer's favorite state, media_id => true.
+	 *
+	 * @var array<int,bool>
+	 */
+	private static array $viewer_fav_set = array();
+
+	/**
+	 * Per-request prefill of the viewer's reactions, media_id => reaction_type.
+	 *
+	 * @var array<int,string>
+	 */
+	private static array $viewer_reaction_map = array();
+
+	/**
+	 * Viewer ID the prefill maps were primed for, or null when not primed.
+	 *
+	 * @var int|null
+	 */
+	private static ?int $viewer_state_primed_for = null;
+
+	/**
+	 * Batch-load the current viewer's favorite + reaction state for a page of
+	 * media so prepare_item_for_response() resolves is_favorited / viewer_reaction
+	 * from a set instead of one query per tile (big-site: 2 queries/page, not 2N).
+	 *
+	 * Call once, before looping prepare_item_for_response() over a list. The
+	 * single-item path falls back to a per-item lookup when not primed.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int[] $media_ids Media IDs on this page.
+	 * @param int   $viewer_id Current user ID (0 = anonymous; clears the maps).
+	 */
+	public static function prime_viewer_state( array $media_ids, int $viewer_id ): void {
+		self::$viewer_state_primed_for = $viewer_id;
+		self::$viewer_fav_set          = array();
+		self::$viewer_reaction_map     = array();
+
+		if ( $viewer_id <= 0 ) {
+			return;
+		}
+
+		self::$viewer_fav_set      = Plugin::container()->get( 'favorites' )->get_favorited_set( $viewer_id, $media_ids );
+		self::$viewer_reaction_map = Plugin::container()->get( 'reactions' )->get_user_reactions_map( $viewer_id, $media_ids );
+	}
+
+	/**
 	 * Prepare a media item for REST response.
 	 *
 	 * Builds the response entirely from the mvs_media_index and mvs_media_meta
@@ -1529,6 +1607,22 @@ class MediaController extends WP_REST_Controller {
 		$allow_download_raw = isset( $all['allow_download'] ) ? (string) $all['allow_download'] : '';
 		$allow_download     = ( '0' !== $allow_download_raw );
 
+		// Viewer-relative interaction state (1.9.0, additive). Resolved from the
+		// per-request prefill when a list endpoint primed it (2 queries/page),
+		// else a single lookup for standalone single-item reads. false/null for
+		// anonymous viewers.
+		$is_favorited    = false;
+		$viewer_reaction = null;
+		if ( $viewer_id > 0 ) {
+			if ( self::$viewer_state_primed_for === $viewer_id ) {
+				$is_favorited    = isset( self::$viewer_fav_set[ $media_id ] );
+				$viewer_reaction = self::$viewer_reaction_map[ $media_id ] ?? null;
+			} else {
+				$is_favorited    = \WPMediaVerse\Core\Plugin::container()->get( 'favorites' )->is_favorited( $media_id, $viewer_id );
+				$viewer_reaction = \WPMediaVerse\Core\Plugin::container()->get( 'reactions' )->get_user_reaction( $media_id, $viewer_id );
+			}
+		}
+
 		$data = array(
 			'id'                => $media_id,
 			'title'             => ! empty( $all['title'] ) ? $all['title'] : '',
@@ -1556,6 +1650,8 @@ class MediaController extends WP_REST_Controller {
 			'lightbox_webp_url' => $lightbox_webp_url,
 			'lightbox_avif_url' => $lightbox_avif_url,
 			'can_edit'          => $can_edit,
+			'is_favorited'      => $is_favorited,
+			'viewer_reaction'   => $viewer_reaction,
 		);
 
 		// Add author data for lightbox sidebar.
@@ -1669,6 +1765,12 @@ class MediaController extends WP_REST_Controller {
 	 */
 	public function get_collection_params() {
 		return array(
+			'include'      => array(
+				'type'        => 'array',
+				'items'       => array( 'type' => 'integer' ),
+				'default'     => array(),
+				'description' => __( 'Resolve specific media IDs to full objects in one call (e.g. album items). Max 100, privacy-gated, order preserved.', 'wpmediaverse' ),
+			),
 			'per_page'     => array(
 				'type'              => 'integer',
 				'default'           => 20,

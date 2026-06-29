@@ -163,6 +163,46 @@ class ReactionService {
 	}
 
 	/**
+	 * Batch-resolve a user's reaction across a set of media.
+	 *
+	 * One query for a whole page of media instead of one per tile — the
+	 * big-site path behind `viewer_reaction` in the media REST response.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int   $user_id   User ID (0 returns an empty map).
+	 * @param int[] $media_ids Media IDs to test.
+	 * @return array<int,string> Map of media_id => reaction_type. Absent key = no reaction.
+	 */
+	public function get_user_reactions_map( int $user_id, array $media_ids ): array {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
+		if ( $user_id <= 0 || empty( $ids ) ) {
+			return array();
+		}
+
+		$table        = $wpdb->prefix . 'mvs_reactions';
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$params       = array_merge( array( $user_id ), $ids );
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id, reaction_type FROM {$table} WHERE user_id = %d AND media_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$params
+			),
+			ARRAY_A
+		);
+
+		$map = array();
+		foreach ( (array) $rows as $row ) {
+			$map[ (int) $row['media_id'] ] = (string) $row['reaction_type'];
+		}
+
+		return $map;
+	}
+
+	/**
 	 * Get reaction counts grouped by type for a media item.
 	 *
 	 * @param int $media_id Media post ID.

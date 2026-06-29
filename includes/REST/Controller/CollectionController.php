@@ -381,6 +381,11 @@ class CollectionController extends WP_REST_Controller {
 		// Get cover from the first media item with a renderable thumbnail.
 		$cover_url = $this->get_collection_cover_url( $post->ID, $collection_type );
 
+		$viewer   = get_current_user_id();
+		$is_owner = $viewer > 0 && (int) $post->post_author === $viewer;
+		// Mirrors get_item_permissions_check: owner or a moderator may edit.
+		$can_edit = $is_owner || ( $viewer > 0 && current_user_can( 'moderate_mvs_media' ) );
+
 		$data = array(
 			'id'          => $post->ID,
 			'title'       => $post->post_title,
@@ -390,6 +395,8 @@ class CollectionController extends WP_REST_Controller {
 			'type'        => $collection_type,
 			'link'        => get_permalink( $post->ID ),
 			'cover_url'   => $cover_url,
+			'is_owner'    => $is_owner,
+			'can_edit'    => $can_edit,
 		);
 
 		if ( 'smart' === $collection_type ) {

@@ -34,10 +34,7 @@ class Shortcodes {
 		add_shortcode( 'mvs_member_photos', array( $this, 'render_member_photos' ) );
 		add_shortcode( 'mvs_pdf_viewer', array( $this, 'render_pdf_viewer' ) );
 		add_shortcode( 'mvs_usage_history', array( $this, 'render_usage_history' ) );
-		// [mvs_story_viewer] intentionally NOT registered — the story
-		// create-flow (upload-form toggle + REST endpoint + expiry cron)
-		// lands in 1.2.1; until then a story-viewer shortcode would
-		// always render empty.
+		// Stories moved to the Pro plugin in 1.9.0 — no story shortcode in Free.
 	}
 
 	/**

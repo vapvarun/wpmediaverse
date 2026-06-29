@@ -210,23 +210,41 @@ class FavoriteController extends WP_REST_Controller {
 			$page
 		);
 
-		// Enrich items with post data for frontend display, skip orphaned.
-		$enriched = array();
+		// Collect the page's media IDs (skip orphaned favorites) and keep each
+		// created_at to alias back onto the canonical object below.
+		$repo        = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$page_ids    = array();
+		$created_map = array();
 		foreach ( $result['items'] as $item ) {
 			$media_id = (int) $item['media_id'];
-			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+			if ( ! $repo->exists( $media_id ) ) {
 				continue;
 			}
-			$enriched[] = array(
-				'media_id'      => $media_id,
-				'title'         => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ),
-				'link'          => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $media_id ),
-				// Configured grid size (default medium), not a hardcoded 'large'. (1.7.0)
-				'thumbnail_url' => (string) \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, \WPMediaVerse\Core\SettingsHelper::get_grid_thumb_size_key() ),
-				'file_url'      => (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_url' ),
-				'media_type'    => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' ),
-				'created_at'    => $item['created_at'],
-			);
+			$page_ids[]               = $media_id;
+			$created_map[ $media_id ] = $item['created_at'];
+		}
+
+		// Batch-prime index/meta + viewer state so the canonical builder stays
+		// query-bounded (no per-tile get_all / favorite / reaction lookups).
+		if ( $page_ids ) {
+			$repo->prefetch( $page_ids );
+		}
+		MediaController::prime_viewer_state( $page_ids, get_current_user_id() );
+
+		$media_ctrl = new MediaController( \WPMediaVerse\Core\Plugin::container()->get( 'privacy' ) );
+
+		// Return the canonical media object (one model app-wide) plus the legacy
+		// `media_id` + `created_at` aliases the existing web blocks read
+		// (media-social, dashboard-view) — additive, no breakage.
+		$enriched = array();
+		foreach ( $page_ids as $media_id ) {
+			$media = $media_ctrl->prepare_item_for_response( $media_id, $request );
+			if ( null === $media ) {
+				continue;
+			}
+			$media['media_id']   = $media_id;
+			$media['created_at'] = $created_map[ $media_id ];
+			$enriched[]          = $media;
 		}
 
 		$response = rest_ensure_response( $enriched );

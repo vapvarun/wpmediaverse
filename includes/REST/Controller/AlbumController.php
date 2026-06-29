@@ -605,6 +605,11 @@ class AlbumController extends WP_REST_Controller {
 			}
 		}
 
+		$viewer   = get_current_user_id();
+		$is_owner = $viewer > 0 && (int) $post->post_author === $viewer;
+		// Mirrors update_item_permissions_check: owner or edit_others_mvs_medias.
+		$can_edit = $is_owner || ( $viewer > 0 && current_user_can( 'edit_others_mvs_medias' ) );
+
 		$data = array(
 			'id'             => $album_id,
 			'title'          => $post->post_title,
@@ -618,6 +623,8 @@ class AlbumController extends WP_REST_Controller {
 			'cover_url'      => $this->albums->get_cover_url( $album_id ),
 			'cover_media_id' => $this->albums->get_cover_media_id( $album_id ),
 			'categories'     => $categories,
+			'is_owner'       => $is_owner,
+			'can_edit'       => $can_edit,
 		);
 
 		if ( $include_items ) {

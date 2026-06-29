@@ -209,4 +209,43 @@ class FavoriteService {
 			)
 		);
 	}
+
+	/**
+	 * Batch-resolve which of the given media a user has favorited.
+	 *
+	 * One query for a whole page of media instead of one per tile — the
+	 * big-site path behind `is_favorited` in the media REST response.
+	 *
+	 * @since 1.9.0
+	 *
+	 * @param int   $user_id   User ID (0 returns an empty set).
+	 * @param int[] $media_ids Media IDs to test.
+	 * @return array<int,bool> Map of favorited media_id => true. Absent key = not favorited.
+	 */
+	public function get_favorited_set( int $user_id, array $media_ids ): array {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $media_ids ) ) ) );
+		if ( $user_id <= 0 || empty( $ids ) ) {
+			return array();
+		}
+
+		$table        = $wpdb->prefix . 'mvs_favorites';
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$params       = array_merge( array( $user_id ), $ids );
+
+		$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$table} WHERE user_id = %d AND media_id IN ({$placeholders})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$params
+			)
+		);
+
+		$set = array();
+		foreach ( (array) $rows as $mid ) {
+			$set[ (int) $mid ] = true;
+		}
+
+		return $set;
+	}
 }
