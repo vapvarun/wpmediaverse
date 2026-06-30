@@ -482,7 +482,11 @@ class MediaController extends WP_REST_Controller {
 		// Exclude non-cover gallery group items from feeds (only when explicitly requested).
 		$group_covers = $request->get_param( 'group_covers' );
 		if ( $group_covers ) {
-			$where[] = "(media_id NOT IN (
+			// `i.media_id` (not bare `media_id`): the trending/popular data query
+			// LEFT JOINs mvs_media_stats, which also has a media_id column, so an
+			// unqualified ref is ambiguous and the data query silently returns 0
+			// rows while the (stats-join-free) COUNT query still returns the total.
+			$where[] = "(i.media_id NOT IN (
 				SELECT mm.media_id FROM {$wpdb->prefix}mvs_media_meta mm
 				WHERE mm.meta_key = 'media_group' AND mm.media_id != (
 					SELECT mm2.media_id FROM {$wpdb->prefix}mvs_media_meta mm2
@@ -495,7 +499,7 @@ class MediaController extends WP_REST_Controller {
 		// Filter by specific media group ID.
 		$media_group_param = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
 		if ( $media_group_param ) {
-			$where[]  = "media_id IN (SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s)";
+			$where[]  = "i.media_id IN (SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'media_group' AND meta_value = %s)";
 			$params[] = $media_group_param;
 		}
 
