@@ -16,7 +16,6 @@ const viewOnlyStores = [
 	'media-grid',
 	'media-player',
 	'media-upload',
-	'story-viewer',
 ];
 
 const viewEntries = {};
