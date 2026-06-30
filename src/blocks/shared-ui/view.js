@@ -1516,12 +1516,18 @@ const { state: mvsState } = store( 'mvs', {
 			try {
 				const router = yield import( '@wordpress/interactivity-router' );
 				yield router.actions.navigate( href );
-				document.dispatchEvent( new CustomEvent( 'mvs:navigated', { detail: { href } } ) );
 				const region = document.querySelector( '[data-wp-router-region="mvs/main"]' );
-				if ( region ) {
-					if ( ! region.hasAttribute( 'tabindex' ) ) region.setAttribute( 'tabindex', '-1' );
-					region.focus( { preventScroll: true } );
+				// If the target page has no MVS router region (a block-page like
+				// Gamification, a blog post, or any non-template page), the swap
+				// leaves the region empty. Full-load instead of stranding the user
+				// on a blank screen. Keeps SPA for region pages, graceful for the rest.
+				if ( ! region || ! region.textContent.trim() ) {
+					window.location.href = href;
+					return;
 				}
+				document.dispatchEvent( new CustomEvent( 'mvs:navigated', { detail: { href } } ) );
+				if ( ! region.hasAttribute( 'tabindex' ) ) region.setAttribute( 'tabindex', '-1' );
+				region.focus( { preventScroll: true } );
 				window.scrollTo( 0, 0 );
 			} catch ( e ) {
 				window.location.href = href; // never strand the user
