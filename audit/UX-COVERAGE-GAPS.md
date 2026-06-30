@@ -15,13 +15,13 @@ viewer) and the simplified upload modal were verified COVERED as of this date.
 | 1 | **Per-media access rules & grants** (Free) | `GET/POST /media/{id}/rules`, `DELETE …/rules/{id}`, `POST /media/{id}/grant`, `DELETE …/grant/{user_id}`, `GET /me/grants` | **NOT a gap — REST is the entry point by design.** Consumed by the **BuddyNext** integration (the app drives per-media access/grants over REST). Mandatory-API rule satisfied; no plugin web UX required. |
 | 2 | **Streaks member widget** (Pro) | `/streaks/buy-freeze` + `templates/partials/streak-widget.php` | **FIXED (Pro `7547872` + `61d5e5b`).** Now rendered as a compact strip at the top of the member dashboard (`/my-media/`) via `mvs_dashboard_before_content`, gated on `mvs_streaks_enabled`; widget self-enqueues `gamification.css`. |
 
-## Tier 2 — member website flows half-wired (report/manage)
+## Tier 2 — RESOLVED (member website flows wired up)
 
-| # | Feature | Endpoints | State | Fix |
-|---|---------|-----------|-------|-----|
-| 3 | **Report-a-member** (Free) | `POST /users/{id}/report` | `profile-actions.php` renders Follow / Message / Block only — no Report button. Only *media* reporting exists. Member-side report pipeline half-wired. | Add a Report action to the profile overflow menu. |
-| 4 | **Blocked-users list** (Free) | `GET /me/blocked` | Zero consumers. Unblock only by revisiting the person's profile. No "Blocked members" screen. | Add a "Blocked members" list (dashboard settings) with unblock. |
-| 5 | **Follower / following lists** (Free) | `/users/{id}/followers`, `/following`, `/me/followers` | Counts shown (`member-photos/render.php:197`) but no browsable list — "120 followers" opens nothing. | Make the counts open a followers/following list modal. |
+| # | Feature | Endpoints | Resolution |
+|---|---------|-----------|------------|
+| 3 | **Report-a-member** (Free) | `POST /users/{id}/report` | **FIXED (Free `5aad87c`).** Block moved into a ⋯ overflow menu on profiles; a **Report** item (gated on `mvs_reports_enabled` so it never 403s in Free) opens a dialog built on the existing `.mvs-modal` component. Persists to `mvs_reports`. |
+| 4 | **Blocked-users list** (Free) | `GET /me/blocked` | **FIXED (Free `fa49872`).** "Blocked members" section on Edit Profile (`/media/edit-profile/`) — avatar + name + Unblock (`DELETE /users/{id}/block`), empty state. |
+| 5 | **Follower / following lists** (Free + Pro) | `/users/{id}/followers`, `/following` | **FIXED (Free `969127a`, Pro `a678bc9`).** Profile counts open a Followers\|Following modal (tabs, avatar+name rows, follow-back) on the shared `.mvs-modal` component, via `templates/partials/follows-modal.php` + `assets/js/frontend/member-follows.js`. Wired into the Pro IG profile header + member-photos block + Free profile header. |
 
 ## Tier 3 — website member UX missing, app-covered (Pro media features REST-only on web)
 
@@ -49,6 +49,7 @@ The Pro manifest (`audit/pro/manifests/manifest.rest.json`) omits two registered
 - **Fully covered (member + admin):** Free media/albums/collections/feed/comments/favorites/reactions/
   moderation/AI-usage/notifications/profile/stats/tags/users/messages; Pro stories/connectors+feeds/
   battles/challenges/tournaments/compete-hub/leaderboard/boosts/collections/video-analytics(admin).
-- **Tier 1 closed:** #1 per-media access/grants is BuddyNext-driven over REST (by design, not a gap); #2 streak widget fixed (now on `/my-media/`).
-- **Remaining real gaps:** 7 — 3 Tier-2 half-wired member flows (report-a-member, blocked list, follower/following lists), 4 Tier-3 web-UX-missing/app-covered (quota, captions, chapters+resume, advanced privacy).
+- **Tier 1 closed:** #1 per-media access/grants is BuddyNext-driven over REST (by design); #2 streak widget fixed (now a strip on `/my-media/`).
+- **Tier 2 closed:** #3 report-a-member, #4 blocked-members list, #5 follower/following modal — all shipped, reusing the `.mvs-modal` component (no bespoke modals).
+- **Remaining real gaps:** 4 — all Tier-3 web-UX-missing/app-covered (quota balance, video captions, chapters+resume, advanced privacy). The app already drives these over REST; they're a website-polish pass.
 - **By design:** app feeders + internal receipts — not gaps.
