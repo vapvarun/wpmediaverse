@@ -179,13 +179,16 @@ $mvs_archive_url = home_url( '/media/' );
 		data-wp-init="callbacks.init">
 		<a class="mvs-tag-cloud-item <?php echo empty( $mvs_explore_ctx['activeTag'] ) && empty( $_GET['s'] ) ? 'active' : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>"
 			href="<?php echo esc_url( $mvs_archive_url ); ?>"><?php esc_html_e( 'All', 'wpmediaverse' ); ?></a>
-		<template data-wp-each="context.tags">
-			<a class="mvs-tag-cloud-item" href="#"
-				data-wp-bind--href="context.item.href"
-				data-wp-text="context.item.name"
-				data-wp-class--active="context.item.active"
-				role="link"></a>
-		</template>
+		<?php // The each-template must be the sole child of its parent or iAPI logs a hydration mismatch; display:contents keeps the flat flex row. ?>
+		<span class="mvs-tag-cloud-items">
+			<template data-wp-each="context.tags">
+				<a class="mvs-tag-cloud-item" href="#"
+					data-wp-bind--href="context.item.href"
+					data-wp-text="context.item.name"
+					data-wp-class--active="context.item.active"
+					role="link"></a>
+			</template>
+		</span>
 	</div>
 
 	<?php

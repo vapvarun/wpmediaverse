@@ -6256,3 +6256,8 @@ body.dark-mode .mvs-auth-gate__card {
 
 /* Stat buttons (clickable follower/following counts) reset to look like text. */
 button.mvs-follows-open { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: 0; }
+
+/* Tag-cloud dynamic items wrapper — display:contents keeps the flat flex row while
+   making the data-wp-each <template> the sole child of its parent (avoids an
+   Interactivity API hydration mismatch from a static sibling). */
+.mvs-tag-cloud-items { display: contents; }
