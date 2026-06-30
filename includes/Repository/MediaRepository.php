@@ -421,6 +421,63 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Viewer-aware signed thumbnail URL.
+	 *
+	 * Unlike get_broadcast_thumbnail_url() — which resolves anonymously for
+	 * broadcast emission and therefore returns '' for any non-public media —
+	 * this resolves against a specific viewer: it returns a signed thumbnail URL
+	 * when that viewer is allowed to see the media (owner / admin / permitted
+	 * audience) and '' otherwise. Lets app-layer consumers (BuddyNext galleries,
+	 * profile feeds) show the real poster to authorized viewers of
+	 * Members/Friends/Only-Me media instead of falling back to a generic poster.
+	 *
+	 * Privacy is enforced at sign time via the same viewer-aware access model
+	 * query_by_author() uses (PrivacyService::can_view( $media_id, $viewer_id ))
+	 * and re-verified at request time by the /serve endpoint, so the minted URL
+	 * is never a bearer token past a privacy downgrade.
+	 *
+	 * @since 1.8.1
+	 *
+	 * @param int      $media_id  Media ID.
+	 * @param string   $size      Thumbnail meta key ('thumb_large'|'thumb_medium'|'thumb_thumb')
+	 *                            or SignedUrlService size ('large'|'medium'|'thumbnail').
+	 * @param int|null $viewer_id Viewer to authorize against. Null = current user.
+	 * @return string Signed URL when the viewer may view the media, else ''.
+	 */
+	public function get_thumbnail_url_for_viewer( int $media_id, string $size = 'thumb_large', ?int $viewer_id = null ): string {
+		if ( $media_id <= 0 ) {
+			return '';
+		}
+		$signed = $this->signed_urls_service();
+		if ( ! $signed ) {
+			return '';
+		}
+		$viewer_id = ( null === $viewer_id ) ? get_current_user_id() : (int) $viewer_id;
+		// Accept either thumb_* meta key or the SignedUrlService size name.
+		$svc_size = self::$thumb_size_map[ $size ] ?? $size;
+		/**
+		 * Filter the viewer-aware thumbnail TTL (seconds). Default 1 hour; the
+		 * /serve endpoint re-checks privacy per request, so this is only a cache
+		 * horizon, not a credential lifetime.
+		 *
+		 * @since 1.8.1
+		 *
+		 * @param int    $ttl       TTL in seconds.
+		 * @param int    $media_id  Media ID.
+		 * @param int    $viewer_id Viewer the URL is minted for.
+		 * @param string $size      Thumbnail size key.
+		 */
+		$ttl = (int) apply_filters( 'mvs_viewer_thumbnail_ttl', HOUR_IN_SECONDS, $media_id, $viewer_id, $size );
+		if ( $ttl <= 0 ) {
+			$ttl = HOUR_IN_SECONDS;
+		}
+		// $skip_privacy_check = false — SignedUrlService verifies can_view( $media_id,
+		// $viewer_id ) at sign time; an unauthorized viewer gets '' from here.
+		$url = $signed->generate_thumbnail( $media_id, $viewer_id, $svc_size, $ttl, false );
+		return is_string( $url ) ? $url : '';
+	}
+
+	/**
 	 * Resolve the absolute filesystem path for a media file.
 	 *
 	 * Internal API for callers that need to read the source file directly:

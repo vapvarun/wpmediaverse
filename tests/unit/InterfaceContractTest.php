@@ -59,6 +59,7 @@ class InterfaceContractTest extends WP_UnitTestCase {
 			'find_by_url',
 			'get_broadcast_url',
 			'get_broadcast_thumbnail_url',
+			'get_thumbnail_url_for_viewer',
 			'set',
 			'set_many',
 			'delete',
