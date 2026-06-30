@@ -6235,3 +6235,23 @@ body.dark-mode .mvs-auth-gate__card {
 .mvs-actions-menu .mvs-block-toggle--blocked { color: var(--mvs-danger, #dc2626); }
 /* Report dialog reuses the .mvs-modal component; ensure controls fill the field. */
 .mvs-report-reason, .mvs-report-details { width: 100%; }
+
+/* Followers / Following modal (reuses .mvs-modal) + clickable member stats. */
+.mvs-member-photos-card__stat--clickable { cursor: pointer; border-radius: var(--mvs-radius-sm, 4px); }
+.mvs-member-photos-card__stat--clickable:hover, .mvs-member-photos-card__stat--clickable:focus-visible { background: var(--mvs-bg-muted, #f3f4f6); }
+.mvs-follows-tabs { display: flex; gap: var(--mvs-space-md, 12px); }
+.mvs-follows-tab { background: none; border: 0; padding: 4px 2px; font-size: var(--mvs-font-md, 16px); font-weight: 600; color: var(--mvs-text-secondary, #6b7280); cursor: pointer; border-bottom: 2px solid transparent; }
+.mvs-follows-tab.is-active { color: var(--mvs-text, #111827); border-bottom-color: var(--mvs-accent, #7c3aed); }
+.mvs-follows-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mvs-space-sm, 8px); }
+.mvs-follows-row { display: flex; align-items: center; gap: var(--mvs-space-md, 12px); }
+.mvs-follows-row__avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.mvs-follows-row__name { font-weight: 600; }
+.mvs-follows-row .mvs-follows-follow { margin-inline-start: auto; }
+.mvs-follows-state { text-align: center; color: var(--mvs-text-secondary, #6b7280); padding: var(--mvs-space-xl, 24px) 0; }
+
+/* Clickable follower/following counts in the profile header. */
+.mvs-profile-header-stats__link { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; }
+.mvs-profile-header-stats__link:hover, .mvs-profile-header-stats__link:focus-visible { text-decoration: underline; }
+
+/* Stat buttons (clickable follower/following counts) reset to look like text. */
+button.mvs-follows-open { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: 0; }

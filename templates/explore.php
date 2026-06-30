@@ -125,9 +125,16 @@ $mvs_archive_url = home_url( '/media/' );
 			</div>
 			<div class="mvs-profile-header-stats">
 				<span><strong><?php echo esc_html( number_format_i18n( $mvs_profile_post_count ) ); ?></strong> <?php esc_html_e( 'media', 'wpmediaverse' ); ?></span>
-				<span><strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['followers'] ) ); ?></strong> <?php esc_html_e( 'followers', 'wpmediaverse' ); ?></span>
-				<span><strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['following'] ) ); ?></strong> <?php esc_html_e( 'following', 'wpmediaverse' ); ?></span>
+				<button type="button" class="mvs-profile-header-stats__link mvs-follows-open"
+					data-user-id="<?php echo esc_attr( $mvs_profile->ID ); ?>" data-list="followers">
+					<strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['followers'] ) ); ?></strong> <?php esc_html_e( 'followers', 'wpmediaverse' ); ?>
+				</button>
+				<button type="button" class="mvs-profile-header-stats__link mvs-follows-open"
+					data-user-id="<?php echo esc_attr( $mvs_profile->ID ); ?>" data-list="following">
+					<strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['following'] ) ); ?></strong> <?php esc_html_e( 'following', 'wpmediaverse' ); ?>
+				</button>
 			</div>
+			<?php include MVS_PLUGIN_DIR . 'templates/partials/follows-modal.php'; ?>
 			<?php if ( $mvs_profile->description ) : ?>
 				<p class="mvs-profile-header-bio"><?php echo esc_html( $mvs_profile->description ); ?></p>
 			<?php endif; ?>
