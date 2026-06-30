@@ -121,11 +121,24 @@ final class ConfigController extends WP_REST_Controller {
 			)
 		);
 
+		/**
+		 * Feed layout the site owner chose for presenting their media
+		 * (grid|instagram|pinterest|flickr|dribbble). Pro supplies it from
+		 * `mvs_pro_feed_layout`; Free defaults to grid. The app renders the
+		 * matching presentation so the app mirrors the site owner's intent.
+		 *
+		 * @since 1.9.0
+		 *
+		 * @param string $layout Layout slug.
+		 */
+		$layout = (string) apply_filters( 'mvs_app_config_layout', 'grid' );
+
 		$config = array(
 			'accent_color'      => $branding['accent_color'] ?? null,
 			'logo_url'          => $branding['logo_url'] ?? null,
 			'login_bg_url'      => $branding['login_bg_url'] ?? null,
 			'dark_mode_default' => (bool) ( $branding['dark_mode_default'] ?? false ),
+			'layout'            => $layout,
 			'pro_active'        => defined( 'MVS_PRO_VERSION' ),
 			'features'          => array_map( 'boolval', $features ),
 		);
