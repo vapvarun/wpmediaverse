@@ -844,3 +844,12 @@
 	margin-right: 2px;
 	opacity: 0.6;
 }
+
+/* Simplified upload modal — "Add details" disclosure + full-width selects. */
+.mvs-modal-details{border-top:1px solid var(--mvs-border,#e2e4e7);margin-top:10px;padding-top:6px}
+.mvs-modal-details__summary{cursor:pointer;font-weight:600;padding:8px 0;list-style:none;color:var(--mvs-accent,#7c3aed)}
+.mvs-modal-details__summary::-webkit-details-marker{display:none}
+.mvs-modal-details__summary::before{content:"+";margin-inline-end:6px}
+.mvs-modal-details[open] .mvs-modal-details__summary::before{content:"\2212";margin-inline-end:6px}
+.mvs-modal-details>.mvs-modal-field{margin-top:10px}
+.mvs-modal-album-select,.mvs-modal-privacy{width:100%}

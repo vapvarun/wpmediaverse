@@ -79,8 +79,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalAlbumTitle: '',
 		uploadModalAlbumDescription: '',
 		uploadModalMediaGroup: null,
+		uploadModalAlbum: 0, // chosen existing album id (Add to album), 0 = none
+		userAlbums: [], // [{ id, title }] for the "Add to album" select
 		get hideUploadMetaFields() {
-			return state.uploadModalUploading || state.uploadModalMode === 'album';
+			return state.uploadModalUploading;
+		},
+		get hasUserAlbums() {
+			return Array.isArray( state.userAlbums ) && state.userAlbums.length > 0;
 		},
 		get hideAlbumCoverHint() {
 			return state.uploadModalMode !== 'album' || state.uploadModalUploading || ! state.hasFiles;
@@ -97,15 +102,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return titles[ state.uploadModalMode ] || __( 'Upload', 'wpmediaverse' );
 		},
 		get uploadAccept() {
+			// Auto-detect flow: accept every supported type; the picked file(s)
+			// determine the mode (photo/gallery/video/audio).
 			const allowed = getContext().allowedTypes || '';
-			const types = allowed ? allowed.split( ',' ).map( ( t ) => t.trim() ) : [];
-			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
-			const prefix = prefixes[ state.uploadModalMode ] || 'image/';
-			const filtered = types.filter( ( t ) => t.startsWith( prefix ) );
-			return filtered.length ? filtered.join( ',' ) : prefix + '*';
+			return allowed || 'image/*,video/*,audio/*';
 		},
 		get uploadMultiple() {
-			return state.uploadModalMode === 'gallery' || state.uploadModalMode === 'album';
+			return true;
 		},
 		get isPhotoMode() {
 			return state.uploadModalMode === 'photo';
@@ -430,8 +433,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalAlbumTitle = '';
 			state.uploadModalAlbumDescription = '';
 			state.uploadModalMediaGroup = null;
+			state.uploadModalAlbum = 0;
 			document.body.style.overflow = 'hidden';
 			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
+			actions.loadUserAlbums(); // fire-and-forget; "Add to album" options.
 		},
 		closeUploadModal() {
 			state.uploadModalVisible = false;
@@ -612,37 +617,47 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		handleFileSelect( event ) {
-			const rawFiles = Array.from( event.target.files );
-			if ( ! rawFiles.length ) return;
-
-			const files = actions.filterFilesByMode( rawFiles );
-			if ( ! files.length ) return;
-
-			// In photo/video/audio mode, only keep last file.
-			if ( state.uploadModalMode === 'photo' || state.uploadModalMode === 'video' || state.uploadModalMode === 'audio' ) {
-				state.uploadModalFiles = [ files[ files.length - 1 ] ];
-			} else {
-				state.uploadModalFiles = [ ...state.uploadModalFiles, ...files ];
-			}
-
-			// Generate previews.
-			actions.generatePreviews();
+			actions.ingestFiles( Array.from( event.target.files ) );
 		},
 		handleUploadDrop( event ) {
 			event.preventDefault();
-			const rawFiles = Array.from( event.dataTransfer.files );
+			actions.ingestFiles( Array.from( event.dataTransfer.files ) );
+		},
+		// Auto-detect: key off the first picked file's type, keep only that media
+		// group, set the mode (photo/gallery/video/audio), and preview.
+		ingestFiles( rawFiles ) {
 			if ( ! rawFiles.length ) return;
-
-			const files = actions.filterFilesByMode( rawFiles );
-			if ( ! files.length ) return;
-
-			if ( state.uploadModalMode === 'photo' || state.uploadModalMode === 'video' || state.uploadModalMode === 'audio' ) {
-				state.uploadModalFiles = [ files[ 0 ] ];
-			} else {
-				state.uploadModalFiles = [ ...state.uploadModalFiles, ...files ];
+			const ft = rawFiles[ 0 ].type || '';
+			let group = 'image/';
+			if ( ft.startsWith( 'video/' ) ) {
+				group = 'video/';
+			} else if ( ft.startsWith( 'audio/' ) ) {
+				group = 'audio/';
 			}
-
+			const valid = rawFiles.filter( ( f ) => ( f.type || '' ).startsWith( group ) );
+			const rejected = rawFiles.length - valid.length;
+			if ( rejected > 0 ) {
+				actions.showToast( rejected + ' file(s) skipped — upload one media type at a time.', 'error' );
+			}
+			if ( ! valid.length ) return;
+			if ( group === 'image/' ) {
+				// Images append (so picking more turns a photo into a gallery).
+				const existing = state.uploadModalFiles.filter( ( f ) => ( f.type || '' ).startsWith( 'image/' ) );
+				state.uploadModalFiles = [ ...existing, ...valid ];
+			} else {
+				// One video / one audio per post.
+				state.uploadModalFiles = [ valid[ valid.length - 1 ] ];
+			}
+			state.uploadModalMode = actions.detectMode();
 			actions.generatePreviews();
+		},
+		detectMode() {
+			const f = state.uploadModalFiles;
+			if ( ! f.length ) return 'photo';
+			const t = f[ 0 ].type || '';
+			if ( t.startsWith( 'video/' ) ) return 'video';
+			if ( t.startsWith( 'audio/' ) ) return 'audio';
+			return f.length > 1 ? 'gallery' : 'photo';
 		},
 		handleUploadDragOver( event ) {
 			event.preventDefault();
@@ -756,6 +771,22 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		updateUploadPrivacy( event ) {
 			state.uploadModalPrivacy = event.target.value;
+		},
+		updateUploadAlbum( event ) {
+			state.uploadModalAlbum = parseInt( event.target.value, 10 ) || 0;
+		},
+		async loadUserAlbums() {
+			const ctx = getContext();
+			if ( ! ctx || ! ctx.restUrl ) return;
+			try {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'albums?author=' + ( ctx.currentUserId || 0 ) + '&per_page=50' );
+				const rows = Array.isArray( res.data ) ? res.data : [];
+				state.userAlbums = rows
+					.filter( ( a ) => a && ( a.can_edit || a.is_owner ) )
+					.map( ( a ) => ( { id: a.id, title: a.title || 'Untitled' } ) );
+			} catch {
+				state.userAlbums = [];
+			}
 		},
 		updateAlbumTitle( event ) {
 			state.uploadModalAlbumTitle = event.target.value;
@@ -894,6 +925,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					state.uploadModalFailed++;
 				}
 				state.uploadModalDone = i + 1;
+			}
+
+			// "Add to album" (chosen in Add details) — link the uploads to that
+			// existing album. Doesn't touch the album cover.
+			if ( state.uploadModalAlbum && uploadedMediaIds.length ) {
+				try {
+					await window.mvsRest.restFetch( restUrl + 'albums/' + state.uploadModalAlbum + '/items', {
+						method: 'POST',
+						body: { media_ids: uploadedMediaIds },
+					} );
+				} catch { /* linking failed — media still uploaded */ }
 			}
 
 			// Link uploaded media to album, then set the first image as the cover.

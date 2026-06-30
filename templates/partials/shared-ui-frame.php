@@ -73,69 +73,8 @@ $mvs_show_fab = $mvs_is_logged_in && (
 				</button>
 			</div>
 
-			<!-- Mode Tabs -->
-			<div class="mvs-modal-tabs">
-				<button class="mvs-modal-tab" data-wp-class--active="state.isPhotoMode"
-					data-wp-on--click="actions.setUploadMode" data-wp-context='{"uploadMode":"photo"}'>
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
-						<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-						<circle cx="8.5" cy="8.5" r="1.5"></circle>
-						<polyline points="21 15 16 10 5 21"></polyline>
-					</svg>
-					<?php esc_html_e( 'Photo', 'wpmediaverse' ); ?>
-				</button>
-				<button class="mvs-modal-tab" data-wp-class--active="state.isGalleryMode"
-					data-wp-on--click="actions.setUploadMode" data-wp-context='{"uploadMode":"gallery"}'>
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
-						<rect x="2" y="2" width="16" height="16" rx="2"></rect>
-						<rect x="6" y="6" width="16" height="16" rx="2"></rect>
-					</svg>
-					<?php esc_html_e( 'Gallery', 'wpmediaverse' ); ?>
-				</button>
-				<button class="mvs-modal-tab" data-wp-class--active="state.isAlbumMode"
-					data-wp-on--click="actions.setUploadMode" data-wp-context='{"uploadMode":"album"}'>
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
-						<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-					</svg>
-					<?php esc_html_e( 'Album', 'wpmediaverse' ); ?>
-				</button>
-				<button class="mvs-modal-tab" data-wp-class--active="state.isVideoMode"
-					data-wp-on--click="actions.setUploadMode" data-wp-context='{"uploadMode":"video"}'>
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
-						<polygon points="23 7 16 12 23 17 23 7"></polygon>
-						<rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-					</svg>
-					<?php esc_html_e( 'Video', 'wpmediaverse' ); ?>
-				</button>
-				<button class="mvs-modal-tab" data-wp-class--active="state.isAudioMode"
-					data-wp-on--click="actions.setUploadMode" data-wp-context='{"uploadMode":"audio"}'>
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
-						<path d="M9 18V5l12-2v13"></path>
-						<circle cx="6" cy="18" r="3"></circle>
-						<circle cx="18" cy="16" r="3"></circle>
-					</svg>
-					<?php esc_html_e( 'Audio', 'wpmediaverse' ); ?>
-				</button>
-			</div>
-
 			<!-- Modal Body -->
 			<div class="mvs-modal-body">
-				<!-- Album fields (only in album mode) -->
-				<div class="mvs-modal-album-fields" data-wp-bind--hidden="!state.isAlbumMode">
-					<div class="mvs-modal-field">
-						<label for="mvs-modal-album-title"><?php esc_html_e( 'Album Name', 'wpmediaverse' ); ?></label>
-						<input type="text" id="mvs-modal-album-title"
-							placeholder="<?php esc_attr_e( 'Enter album name...', 'wpmediaverse' ); ?>"
-							data-wp-on--input="actions.updateAlbumTitle" />
-					</div>
-					<div class="mvs-modal-field">
-						<label for="mvs-modal-album-desc"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
-						<textarea id="mvs-modal-album-desc" rows="2"
-							placeholder="<?php esc_attr_e( 'Album description (optional)...', 'wpmediaverse' ); ?>"
-							data-wp-on--input="actions.updateAlbumDescription"></textarea>
-					</div>
-				</div>
-
 				<!-- Dropzone -->
 				<div class="mvs-modal-dropzone" data-wp-on--click="actions.handleUploadClick"
 					data-wp-on--drop="actions.handleUploadDrop"
@@ -208,57 +147,47 @@ $mvs_show_fab = $mvs_is_logged_in && (
 				</div>
 
 				<!-- Per-file metadata (photo/gallery/video/audio modes only; album has its own fields above) -->
-				<div class="mvs-modal-fields" data-wp-bind--hidden="state.hideUploadMetaFields">
-					<div class="mvs-modal-field">
-						<input type="text" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
-							data-wp-on--input="actions.updateUploadTitle"
-							data-wp-bind--value="state.uploadModalTitle" />
-					</div>
-					<div class="mvs-modal-field">
-						<textarea rows="2" placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>"
-							data-wp-on--input="actions.updateUploadDescription"
-							data-wp-bind--value="state.uploadModalDescription"></textarea>
-					</div>
-					<div class="mvs-modal-field-row">
-						<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
-							aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
-							data-wp-on--input="actions.updateUploadTags"
-							data-wp-bind--value="state.uploadModalTags" />
+					<div class="mvs-modal-fields" data-wp-bind--hidden="state.hideUploadMetaFields">
 						<?php if ( get_option( 'mvs_allow_user_privacy', true ) ) : ?>
-						<select data-wp-on--change="actions.updateUploadPrivacy"
-							data-wp-bind--value="state.uploadModalPrivacy"
-							aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
-							<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
-							<option value="members"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
-							<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
-							<option value="friends"><?php esc_html_e( 'Friends Only', 'wpmediaverse' ); ?></option>
-							<?php endif; ?>
-							<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
-						</select>
+						<div class="mvs-modal-field-row">
+							<select class="mvs-modal-privacy" data-wp-on--change="actions.updateUploadPrivacy" data-wp-bind--value="state.uploadModalPrivacy" aria-label="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>">
+								<option value="public"><?php esc_html_e( 'Public', 'wpmediaverse' ); ?></option>
+								<option value="members"><?php esc_html_e( 'Members Only', 'wpmediaverse' ); ?></option>
+								<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
+								<option value="friends"><?php esc_html_e( 'Friends Only', 'wpmediaverse' ); ?></option>
+								<?php endif; ?>
+								<option value="private"><?php esc_html_e( 'Private', 'wpmediaverse' ); ?></option>
+							</select>
+						</div>
 						<?php endif; ?>
+						<details class="mvs-modal-details">
+							<summary class="mvs-modal-details__summary"><?php esc_html_e( 'Add details', 'wpmediaverse' ); ?></summary>
+							<div class="mvs-modal-field">
+								<input type="text" placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTitle" data-wp-bind--value="state.uploadModalTitle" />
+							</div>
+							<div class="mvs-modal-field">
+								<textarea rows="2" placeholder="<?php esc_attr_e( 'Description (optional)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadDescription" data-wp-bind--value="state.uploadModalDescription"></textarea>
+							</div>
+							<div class="mvs-modal-field">
+								<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTags" data-wp-bind--value="state.uploadModalTags" />
+							</div>
+							<div class="mvs-modal-field" data-wp-bind--hidden="!state.hasUserAlbums">
+								<select class="mvs-modal-album-select" data-wp-on--change="actions.updateUploadAlbum" aria-label="<?php esc_attr_e( 'Add to album', 'wpmediaverse' ); ?>">
+									<option value="0"><?php esc_html_e( 'Add to album (optional)', 'wpmediaverse' ); ?></option>
+									<template data-wp-each="state.userAlbums">
+										<option data-wp-bind--value="context.item.id" data-wp-text="context.item.title"></option>
+									</template>
+								</select>
+							</div>
+							<div class="mvs-tag-pills" data-wp-bind--hidden="!state.popularTagsLoaded" role="group" aria-label="<?php esc_attr_e( 'Popular tags', 'wpmediaverse' ); ?>">
+								<span class="mvs-tag-pills__label"><?php esc_html_e( 'Popular tags:', 'wpmediaverse' ); ?></span>
+								<template data-wp-each="state.popularTags">
+									<button type="button" class="mvs-tag-pill" data-wp-on--click="actions.addUploadTag" data-wp-bind--data-mvs-tag-name="context.item.name"><span data-wp-text="context.item.name"></span></button>
+								</template>
+							</div>
+						</details>
 					</div>
-					<!-- Popular tag pills — lazy-loaded; click to add to the
-						 tag input above. Hidden when none returned. -->
-					<div class="mvs-tag-pills" data-wp-bind--hidden="!state.popularTagsLoaded" role="group" aria-label="<?php esc_attr_e( 'Popular tags', 'wpmediaverse' ); ?>">
-						<span class="mvs-tag-pills__label"><?php esc_html_e( 'Popular tags:', 'wpmediaverse' ); ?></span>
-						<template data-wp-each="state.popularTags">
-							<button type="button" class="mvs-tag-pill"
-								data-wp-on--click="actions.addUploadTag"
-								data-wp-bind--data-mvs-tag-name="context.item.name">
-								<span data-wp-text="context.item.name"></span>
-							</button>
-						</template>
-					</div>
-				</div>
 
-				<!-- Album cover hint (album mode only, when files are selected) -->
-				<div class="mvs-modal-album-cover-hint"
-					data-wp-bind--hidden="state.hideAlbumCoverHint">
-					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
-						<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-					</svg>
-					<span><?php esc_html_e( 'The first image you upload will be the album cover. You can change it later from the album settings.', 'wpmediaverse' ); ?></span>
-				</div>
 			</div>
 
 			<!-- Modal Footer -->
