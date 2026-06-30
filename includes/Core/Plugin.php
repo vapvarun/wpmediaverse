@@ -2089,7 +2089,10 @@ JS;
 			return;
 		}
 
-		$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-frame.php';
+		$template = \WPMediaVerse\Core\TemplateLoader::locate( 'shared-ui-frame.php', 'partials' );
+		if ( ! $template ) {
+			$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-frame.php';
+		}
 		if ( file_exists( $template ) ) {
 			$rendered = true;
 			include $template;
@@ -2266,7 +2269,10 @@ JS;
 					return;
 				}
 
-				$template = MVS_PLUGIN_DIR . 'templates/messages.php';
+				$template = \WPMediaVerse\Core\TemplateLoader::locate( 'messages.php' );
+				if ( ! $template ) {
+					$template = MVS_PLUGIN_DIR . 'templates/messages.php';
+				}
 				if ( file_exists( $template ) ) {
 					include $template;
 					exit;
