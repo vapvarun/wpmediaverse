@@ -119,7 +119,7 @@ $mvs_archive_url = home_url( '/media/' );
 					<?php
 					$mvs_profile_id     = $mvs_profile->ID;
 					$mvs_is_own_profile = false;
-					include MVS_PLUGIN_DIR . 'templates/partials/profile-actions.php';
+					include ( \WPMediaVerse\Core\TemplateLoader::locate( 'profile-actions.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/profile-actions.php' );
 					?>
 				<?php endif; ?>
 			</div>
@@ -134,7 +134,7 @@ $mvs_archive_url = home_url( '/media/' );
 					<strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['following'] ) ); ?></strong> <?php esc_html_e( 'following', 'wpmediaverse' ); ?>
 				</button>
 			</div>
-			<?php include MVS_PLUGIN_DIR . 'templates/partials/follows-modal.php'; ?>
+			<?php include ( \WPMediaVerse\Core\TemplateLoader::locate( 'follows-modal.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/follows-modal.php' ); ?>
 			<?php if ( $mvs_profile->description ) : ?>
 				<p class="mvs-profile-header-bio"><?php echo esc_html( $mvs_profile->description ); ?></p>
 			<?php endif; ?>
@@ -548,7 +548,7 @@ do_action( 'mvs_after_content' );
 if ( $mvs_profile ) {
 	$mvs_profile_id     = $mvs_profile->ID;
 	$mvs_is_own_profile = is_user_logged_in() && get_current_user_id() === $mvs_profile->ID;
-	include MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php';
+	include ( \WPMediaVerse\Core\TemplateLoader::locate( 'profile-actions-js.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php' );
 }
 
 get_footer();
