@@ -138,6 +138,13 @@ if [ -x bin/template-style-check.sh ]; then
   run_stage "1.7" "Template-style check (no inline cosmetic CSS)" bash bin/template-style-check.sh
 fi
 
+# 1.8 — Dead-template check: flag template files no include/locate/map reaches.
+# Catches the orphan-template bug class cleaned in 1.8.1 (legacy files that drift
+# and miss fixes). Static, fast — always runs. See bin/dead-template-check.sh.
+if [ -x bin/dead-template-check.sh ]; then
+  run_stage "1.8" "Dead-template check (no orphan templates)" bash bin/dead-template-check.sh
+fi
+
 # ─── 2.x — Security + Architecture (always cheap) ────────────────────────────
 
 if [ -x bin/coding-rules-check.sh ]; then

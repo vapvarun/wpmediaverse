@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-06-23T08:48:35Z",
+    "generated_at": "2026-06-30T18:14:42Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -15,12 +15,31 @@
         ]
     },
     "counts": {
-        "cross_plugin_duplicates": 9,
-        "within_plugin_duplicates": 38,
-        "free_files_scanned": 167,
+        "cross_plugin_duplicates": 10,
+        "within_plugin_duplicates": 39,
+        "free_files_scanned": 172,
         "pro_files_scanned": 161
     },
     "cross_plugin_duplicates": [
+        {
+            "hash": "f1bebf51114f3cffe76a9b81e81b5e3de01a468e",
+            "instances": 2,
+            "token_count": 105,
+            "sites": [
+                {
+                    "plugin": "free",
+                    "file": "includes/Cert/CertCommand.php",
+                    "lines": "80-80",
+                    "method": "CertCommand::render"
+                },
+                {
+                    "plugin": "pro",
+                    "file": "includes/Cert/CertCommand.php",
+                    "lines": "87-87",
+                    "method": "CertCommand::render"
+                }
+            ]
+        },
         {
             "hash": "351f1bb9a791607cc4b74bdfb1dc804bc1d9bc2a",
             "instances": 2,
@@ -177,14 +196,8 @@
                 },
                 {
                     "plugin": "free",
-                    "file": "includes/REST/Controller/CommentController.php",
-                    "lines": "399-399",
-                    "method": "CommentController::create_item_permissions_check"
-                },
-                {
-                    "plugin": "free",
                     "file": "includes/REST/Controller/ProfileController.php",
-                    "lines": "125-125",
+                    "lines": "148-148",
                     "method": "ProfileController::check_logged_in"
                 },
                 {
@@ -195,14 +208,14 @@
                 },
                 {
                     "plugin": "free",
-                    "file": "includes/REST/Controller/ReactionController.php",
-                    "lines": "241-241",
-                    "method": "ReactionController::create_item_permissions_check"
+                    "file": "includes/REST/Controller/InterestsController.php",
+                    "lines": "217-217",
+                    "method": "logged_in_check"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/REST/Controller/FavoriteController.php",
-                    "lines": "245-245",
+                    "lines": "263-263",
                     "method": "FavoriteController::auth_check"
                 },
                 {
@@ -228,12 +241,18 @@
                     "file": "includes/Quota/QuotaController.php",
                     "lines": "423-423",
                     "method": "QuotaController::logged_in_check"
+                },
+                {
+                    "plugin": "pro",
+                    "file": "includes/REST/PushController.php",
+                    "lines": "139-139",
+                    "method": "PushController::logged_in_check"
                 }
             ]
         },
         {
             "hash": "fdf5a54fda494c0b7e22146db64f7bde5c4131b9",
-            "instances": 3,
+            "instances": 4,
             "token_count": 32,
             "sites": [
                 {
@@ -247,6 +266,12 @@
                     "file": "includes/Admin/IntegrationsPage.php",
                     "lines": "58-58",
                     "method": "IntegrationsPage::register_submenu"
+                },
+                {
+                    "plugin": "pro",
+                    "file": "includes/Admin/StoriesPage.php",
+                    "lines": "53-53",
+                    "method": "StoriesPage::add_page"
                 },
                 {
                     "plugin": "pro",
@@ -399,10 +424,10 @@
     ],
     "within_plugin_duplicates": [
         {
-            "hash": "c8eca3b39007089fb96714b3d1b5888cea957a0f",
+            "hash": "88c4ac3d3d1cc851fb6c8920a72cd1cf6992612b",
             "plugin": "pro",
             "instances": 3,
-            "token_count": 209,
+            "token_count": 214,
             "sites": [
                 {
                     "file": "includes/Frontend/Layouts/PinterestLayout.php",
@@ -537,12 +562,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1426-1426",
+                    "lines": "1484-1484",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1451-1451",
+                    "lines": "1509-1509",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -616,6 +641,24 @@
                     "file": "includes/Services/StatsService.php",
                     "lines": "123-123",
                     "method": "record_download"
+                }
+            ]
+        },
+        {
+            "hash": "7f9a45b2199b5c0850d25f38603e800d4ec6c3ca",
+            "plugin": "free",
+            "instances": 2,
+            "token_count": 82,
+            "sites": [
+                {
+                    "file": "includes/REST/Controller/CommentController.php",
+                    "lines": "399-399",
+                    "method": "CommentController::create_item_permissions_check"
+                },
+                {
+                    "file": "includes/REST/Controller/ReactionController.php",
+                    "lines": "241-241",
+                    "method": "ReactionController::create_item_permissions_check"
                 }
             ]
         },
@@ -909,7 +952,7 @@
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1392-1392",
+                    "lines": "1450-1450",
                     "method": "create_item_permissions_check"
                 },
                 {

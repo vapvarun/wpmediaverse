@@ -78,6 +78,9 @@ check_unauthenticated_rest_allowlist() {
         # HMAC-signed credential / capability discovery
         'SignedUrlController.php'    # GET /serve — HMAC signature on URL is the credential (S3 pre-signed pattern)
         'Abilities.php'              # 4 discovery entries — readonly metadata, execute_callback=noop
+        # Public app bootstrap reads (consumed pre-auth by the BuddyNext mobile app)
+        'ConfigController.php'       # GET /app/config — public branding + feature flags, read before login by design
+        'InterestsController.php'    # GET /app/interests — public onboarding catalog (the /me/interests routes are logged-in)
     )
 
     if [ ${#allowed_files[@]} -eq 0 ]; then
