@@ -59,6 +59,8 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 $rest_url      = esc_url( rest_url( 'mvs/v1/media' ) );
 $nonce         = wp_create_nonce( 'wp_rest' );
 $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );
+// Stories is a Pro feature, off by default. Show the "share as story" toggle only when enabled.
+$mvs_stories_on = ( '1' === get_option( 'mvs_stories_enabled', '0' ) );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/media-upload"
@@ -76,6 +78,7 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 			'pendingCount'   => 0,
 			'files'          => array(),
 			'privacy'        => $show_privacy ? get_option( 'mvs_default_privacy', 'public' ) : '',
+			'isStory'        => false,
 			'allowedTypes'   => array_map( 'trim', explode( ',', $allowed_types ) ),
 		)
 	);
@@ -136,6 +139,12 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 			placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 			aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.setTags" />
+		<?php if ( $mvs_stories_on ) : ?>
+			<label class="mvs-upload-story-toggle">
+				<input type="checkbox" data-wp-on--change="actions.toggleStory" />
+				<span><?php esc_html_e( 'Also share as a story (visible for 24 hours)', 'wpmediaverse' ); ?></span>
+			</label>
+		<?php endif; ?>
 	</div>
 	<!-- Review step: shown after files are selected so the user can fill the
 	     details above before the upload starts. -->
