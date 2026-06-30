@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-06-30T18:14:42Z",
+    "generated_at": "2026-06-30T18:23:29Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -670,12 +670,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2113-2113",
+                    "lines": "2170-2170",
                     "method": "trash"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2141-2141",
+                    "lines": "2198-2198",
                     "method": "restore"
                 }
             ]
@@ -734,7 +734,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "1942-1942",
+                    "lines": "1999-1999",
                     "method": "record_event"
                 },
                 {
@@ -793,12 +793,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "1887-1887",
+                    "lines": "1944-1944",
                     "method": "increment_stat"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "1914-1914",
+                    "lines": "1971-1971",
                     "method": "set_stat"
                 }
             ]
@@ -1103,7 +1103,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "1819-1819",
+                    "lines": "1876-1876",
                     "method": "get_user_stats"
                 },
                 {
