@@ -10,6 +10,8 @@ defined( 'ABSPATH' ) || exit;
 
 get_header();
 
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+
 do_action( 'mvs_before_content' );
 ?>
 
@@ -49,5 +51,7 @@ do_action( 'mvs_before_content' );
 
 <?php
 do_action( 'mvs_after_content' );
+
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 get_footer();
