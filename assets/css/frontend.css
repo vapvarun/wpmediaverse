@@ -6215,3 +6215,13 @@ body.dark-mode .mvs-auth-gate__card {
     font-size: 0.8125rem;
 }
 
+
+/* Blocked members (Edit Profile) — manage/undo blocks. */
+.mvs-blocked-members { margin-top: var(--mvs-space-xl, 24px); }
+.mvs-blocked-members__title { font-size: var(--mvs-font-lg, 18px); font-weight: 700; margin: 0 0 var(--mvs-space-md, 12px); }
+.mvs-blocked-members__empty { color: var(--mvs-text-secondary, #6b7280); font-size: var(--mvs-font-sm, 14px); }
+.mvs-blocked-members__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mvs-space-sm, 8px); }
+.mvs-blocked-members__row { display: flex; align-items: center; gap: var(--mvs-space-md, 12px); padding: var(--mvs-space-sm, 8px) var(--mvs-space-md, 12px); border: 1px solid var(--mvs-border, #e5e7eb); border-radius: var(--mvs-radius-md, 8px); }
+.mvs-blocked-members__avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.mvs-blocked-members__name { font-weight: 600; }
+.mvs-blocked-members__unblock { margin-inline-start: auto; }

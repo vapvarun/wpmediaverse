@@ -32,9 +32,26 @@ if ( $mvs_container->has( 'profile' ) ) {
 	$mvs_has_custom  = $mvs_profile_svc->has_custom_avatar( $mvs_user_id );
 }
 
+// Pre-seed the member's blocked list (localize, don't fetch — matches this
+// page's pattern). Mirrors ReportController::get_blocked() row shape.
+$mvs_blocked = array();
+if ( $mvs_container->has( 'reports' ) ) {
+	foreach ( $mvs_container->get( 'reports' )->get_blocked_ids( $mvs_user_id ) as $mvs_bid ) {
+		$mvs_buser = get_userdata( $mvs_bid );
+		if ( $mvs_buser ) {
+			$mvs_blocked[] = array(
+				'id'     => (int) $mvs_bid,
+				'name'   => $mvs_buser->display_name,
+				'avatar' => get_avatar_url( $mvs_bid, array( 'size' => 48 ) ),
+			);
+		}
+	}
+}
+
 $mvs_profile_ctx = array(
 	'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 	'nonce'           => wp_create_nonce( 'wp_rest' ),
+	'blocked'         => $mvs_blocked,
 	'userId'          => $mvs_user_id,
 	'firstName'       => $mvs_user->first_name,
 	'lastName'        => $mvs_user->last_name,
@@ -184,6 +201,25 @@ wp_enqueue_script_module(
 			</button>
 		</div>
 	</form>
+
+	<!-- Blocked members — manage / undo blocks (REST: GET /me/blocked, DELETE /users/{id}/block). -->
+	<section class="mvs-profile-edit__section mvs-blocked-members">
+		<h2 class="mvs-blocked-members__title"><?php esc_html_e( 'Blocked members', 'wpmediaverse' ); ?></h2>
+		<p class="mvs-blocked-members__empty" data-wp-bind--hidden="context.blocked.length">
+			<?php esc_html_e( "You haven't blocked anyone.", 'wpmediaverse' ); ?>
+		</p>
+		<ul class="mvs-blocked-members__list" data-wp-bind--hidden="!context.blocked.length">
+			<template data-wp-each="context.blocked">
+				<li class="mvs-blocked-members__row">
+					<img class="mvs-blocked-members__avatar" data-wp-bind--src="context.item.avatar" alt="" width="40" height="40" loading="lazy" />
+					<span class="mvs-blocked-members__name" data-wp-text="context.item.name"></span>
+					<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--sm mvs-blocked-members__unblock" data-wp-on--click="actions.unblockMember">
+						<?php esc_html_e( 'Unblock', 'wpmediaverse' ); ?>
+					</button>
+				</li>
+			</template>
+		</ul>
+	</section>
 </div>
 <?php
 include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';

@@ -22,6 +22,25 @@ const { actions } = store( 'mvs/profile-edit', {
 			ctx.errorMessage = '';
 		},
 
+		// Unblock a member from the "Blocked members" list. Row context carries
+		// `item`; restUrl/blocked are inherited from the page root context.
+		async unblockMember() {
+			const ctx = getContext();
+			const id = ctx.item && ctx.item.id;
+			if ( ! id ) {
+				return;
+			}
+			try {
+				await window.mvsRest.restFetch( ctx.restUrl + 'users/' + id + '/block', { method: 'DELETE' } );
+				const idx = ctx.blocked.findIndex( ( u ) => u.id === id );
+				if ( idx > -1 ) {
+					ctx.blocked.splice( idx, 1 );
+				}
+			} catch ( e ) {
+				// leave the row in place; the member can retry
+			}
+		},
+
 		updateFirstName() {
 			const ctx = getContext();
 			const { ref } = getElement();
