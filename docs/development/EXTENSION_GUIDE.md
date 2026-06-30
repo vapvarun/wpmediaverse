@@ -284,3 +284,34 @@ add_action( 'mvs_favorite_toggled', function( int $media_id, int $user_id, strin
 | `mvs_media_shared` | action | `$media_id, $user_id, $platform` | Media is shared to a platform |
 | `mvs_media_uploaded` | action | `$media_id` | A new media item is saved |
 | `mvs_moderation_changed` | action | `$media_id, $status, $old_status, $user_id` | Moderation status changes |
+
+## Template overrides (child themes)
+
+Every member-facing template resolves **theme-first**, so a child (or parent) theme can override any of them by placing a file under a `wpmediaverse/` directory in the theme:
+
+```
+wp-content/themes/<child>/wpmediaverse/<template>.php
+```
+
+Resolution order (via `\WPMediaVerse\Core\TemplateLoader::locate()`):
+1. `wp-content/themes/<child>/wpmediaverse/<template>` (child theme)
+2. `wp-content/themes/<parent>/wpmediaverse/<template>` (parent theme)
+3. the plugin's own `templates/<template>` (fallback)
+
+### Overridable full-page templates
+
+`explore.php`, `media-single.php`, `album.php`, `collection.php`, `cpt-archive.php`, `profile-edit.php`, `404.php`, `messages.php`.
+
+Pro adds: the Compete pages (`battles.php`, `challenges.php`, `tournaments.php`, `compete-hub.php`) and, for each active layout, `explore.php` / `user-profile.php`. **A theme override wins even when a Pro layout is active** — e.g. `wpmediaverse/explore.php` replaces the Instagram-layout feed.
+
+### Partials
+
+Partials loaded through the loader use the `partials` sub-path, e.g. override the global frame at `wpmediaverse/partials/shared-ui-frame.php`.
+
+### Filters
+
+- `mvs_locate_template( $path, $name, $subdir )` — final say on the resolved template path.
+- `mvs_template_variables( $args, $name )` — mutate the variables passed to `TemplateLoader::get_template()`.
+- `mvs_layout_template_map( $map, $layout )` (Pro) — remap which layout file a template name resolves to.
+
+> Structural wrappers (`partials/router-region-open.php` / `router-region-close.php`) and `templates/admin/*` are intentionally **not** theme-overridable.
