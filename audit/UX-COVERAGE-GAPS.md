@@ -8,12 +8,12 @@ Method: two parallel coverage audits over `mvs/v1` (Free, 87 routes) and `mvs-pr
 against `src/blocks/`, `templates/`, `includes/Admin/`, and `assets/js/`. Stories (create tile + IG
 viewer) and the simplified upload modal were verified COVERED as of this date.
 
-## Tier 1 — truly unreachable (no member AND/OR no admin UX; dead-weight endpoints)
+## Tier 1 — resolved
 
-| # | Feature | Endpoints | State | Fix |
-|---|---------|-----------|-------|-----|
-| 1 | **Per-media access rules & grants** (Free) | `GET/POST /media/{id}/rules`, `DELETE …/rules/{id}`, `POST /media/{id}/grant`, `DELETE …/grant/{user_id}`, `GET /me/grants` | No member UI, no admin UI. Only *collection* rules have UI. Owner can't say "who can see this" item; member can't grant a person access. | Add a "Who can see this" panel to the media edit modal + a grants list. |
-| 2 | **Streaks member widget orphaned** (Pro) | `/streaks/buy-freeze` + `templates/partials/streak-widget.php` | The widget file is complete but **nothing renders it** (no block/shortcode/layout includes it); `assets/js/streaks-store.js` enqueued by nothing. REST + admin toggle live, member surface unreachable. | Wire the widget into compete-hub / dashboard, or delete it as dead weight. |
+| # | Feature | Endpoints | Resolution |
+|---|---------|-----------|------------|
+| 1 | **Per-media access rules & grants** (Free) | `GET/POST /media/{id}/rules`, `DELETE …/rules/{id}`, `POST /media/{id}/grant`, `DELETE …/grant/{user_id}`, `GET /me/grants` | **NOT a gap — REST is the entry point by design.** Consumed by the **BuddyNext** integration (the app drives per-media access/grants over REST). Mandatory-API rule satisfied; no plugin web UX required. |
+| 2 | **Streaks member widget** (Pro) | `/streaks/buy-freeze` + `templates/partials/streak-widget.php` | **FIXED (Pro `7547872` + `61d5e5b`).** Now rendered as a compact strip at the top of the member dashboard (`/my-media/`) via `mvs_dashboard_before_content`, gated on `mvs_streaks_enabled`; widget self-enqueues `gamification.css`. |
 
 ## Tier 2 — member website flows half-wired (report/manage)
 
@@ -49,5 +49,6 @@ The Pro manifest (`audit/pro/manifests/manifest.rest.json`) omits two registered
 - **Fully covered (member + admin):** Free media/albums/collections/feed/comments/favorites/reactions/
   moderation/AI-usage/notifications/profile/stats/tags/users/messages; Pro stories/connectors+feeds/
   battles/challenges/tournaments/compete-hub/leaderboard/boosts/collections/video-analytics(admin).
-- **Real gaps:** 9 (2 Tier-1 unreachable, 3 Tier-2 half-wired member flows, 4 Tier-3 web-UX-missing/app-covered).
+- **Tier 1 closed:** #1 per-media access/grants is BuddyNext-driven over REST (by design, not a gap); #2 streak widget fixed (now on `/my-media/`).
+- **Remaining real gaps:** 7 — 3 Tier-2 half-wired member flows (report-a-member, blocked list, follower/following lists), 4 Tier-3 web-UX-missing/app-covered (quota, captions, chapters+resume, advanced privacy).
 - **By design:** app feeders + internal receipts — not gaps.
