@@ -51,7 +51,6 @@ if ( $mvs_container->has( 'reports' ) ) {
 $mvs_profile_ctx = array(
 	'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 	'nonce'           => wp_create_nonce( 'wp_rest' ),
-	'blocked'         => $mvs_blocked,
 	'userId'          => $mvs_user_id,
 	'firstName'       => $mvs_user->first_name,
 	'lastName'        => $mvs_user->last_name,
@@ -205,19 +204,22 @@ wp_enqueue_script_module(
 	<!-- Blocked members — manage / undo blocks (REST: GET /me/blocked, DELETE /users/{id}/block). -->
 	<section class="mvs-profile-edit__section mvs-blocked-members">
 		<h2 class="mvs-blocked-members__title"><?php esc_html_e( 'Blocked members', 'wpmediaverse' ); ?></h2>
-		<p class="mvs-blocked-members__empty" data-wp-bind--hidden="context.blocked.length">
+		<?php // Server-rendered (display + remove only, not add-reactive) so SSR matches hydration under any theme. ?>
+		<p class="mvs-blocked-members__empty"<?php echo empty( $mvs_blocked ) ? '' : ' hidden'; ?>>
 			<?php esc_html_e( "You haven't blocked anyone.", 'wpmediaverse' ); ?>
 		</p>
-		<ul class="mvs-blocked-members__list" data-wp-bind--hidden="!context.blocked.length">
-			<template data-wp-each="context.blocked">
+		<ul class="mvs-blocked-members__list"<?php echo empty( $mvs_blocked ) ? ' hidden' : ''; ?>>
+			<?php foreach ( $mvs_blocked as $mvs_blocked_row ) : ?>
 				<li class="mvs-blocked-members__row">
-					<img class="mvs-blocked-members__avatar" data-wp-bind--src="context.item.avatar" alt="" width="40" height="40" loading="lazy" />
-					<span class="mvs-blocked-members__name" data-wp-text="context.item.name"></span>
-					<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--sm mvs-blocked-members__unblock" data-wp-on--click="actions.unblockMember">
+					<img class="mvs-blocked-members__avatar" src="<?php echo esc_url( $mvs_blocked_row['avatar'] ); ?>" alt="" width="40" height="40" loading="lazy" />
+					<span class="mvs-blocked-members__name"><?php echo esc_html( $mvs_blocked_row['name'] ); ?></span>
+					<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--sm mvs-blocked-members__unblock"
+						data-wp-on--click="actions.unblockMember"
+						data-id="<?php echo esc_attr( $mvs_blocked_row['id'] ); ?>">
 						<?php esc_html_e( 'Unblock', 'wpmediaverse' ); ?>
 					</button>
 				</li>
-			</template>
+			<?php endforeach; ?>
 		</ul>
 	</section>
 </div>
