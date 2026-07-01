@@ -1902,6 +1902,16 @@ JS;
 			return true;
 		}
 
+		// Pro competition surfaces (/compete/, /media/battles|challenges|tournaments/),
+		// identified by the query vars the Pro GamificationTemplateLoader registers.
+		// These pages need MediaVerse's own styles, so keep the frontend UI on them.
+		if ( (bool) get_query_var( 'mvs_compete_page' )
+			|| (bool) get_query_var( 'mvs_battles_page' )
+			|| (bool) get_query_var( 'mvs_challenges_page' )
+			|| (bool) get_query_var( 'mvs_tournaments_page' ) ) {
+			return true;
+		}
+
 		$mvs_page_ids = array_filter(
 			array_map(
 				'absint',
