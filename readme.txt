@@ -110,6 +110,10 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Changelog ==
 
+= 1.8.1 - July 2026 =
+
+* Fix      - Competition pages (Compete, Battles, Challenges, Tournaments) now keep their MediaVerse styling when BuddyNext is active, instead of rendering unstyled.
+
 = 1.8.0 - June 2026 =
 
 Wbcom-family Integrations page, an image-watermark fix, conversation-scoped DM media, and faster client-side navigation. No database schema change.
