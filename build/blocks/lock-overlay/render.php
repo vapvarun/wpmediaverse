@@ -41,6 +41,19 @@ $file_url    = \WPMediaVerse\Core\MediaUrl::file( $media_id, $user_id );
 // Blurred preview thumbnail shown to locked users as a teaser (privacy check skipped — intentional).
 $preview_url = \WPMediaVerse\Core\MediaUrl::thumb( $media_id, 'large', 0, $user_id );
 $is_image    = 0 === strpos( (string) $file_type, 'image/' );
+
+// Watermarked preview — when watermarking is enabled and this ruled image has
+// a watermarked variant, prefer it over the blurred thumbnail and show it
+// UNBLURRED (the watermark itself is the protection). Empty unless Pro's
+// Watermarker is active AND the media has an access rule
+// (WatermarkService::get_preview_url gates on has_active_rules()).
+$watermark_url = '';
+if ( $is_image ) {
+	$watermark = $container->get( 'watermark' );
+	if ( $watermark && $watermark->is_enabled() ) {
+		$watermark_url = $watermark->get_preview_url( $media_id );
+	}
+}
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
 \WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
 $mvs_classes = trim(
@@ -100,7 +113,9 @@ $permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->
 	<?php else : ?>
 		<div class="mvs-lock-overlay-content mvs-lock-overlay-locked" style="--mvs-blur: <?php echo absint( $blur_amount ); ?>px; --mvs-overlay-opacity: <?php echo absint( $overlay_opacity ) / 100; ?>">
 			<div class="mvs-lock-overlay-preview">
-				<?php if ( $is_image && $preview_url ) : ?>
+				<?php if ( $is_image && $watermark_url ) : ?>
+					<img class="mvs-lock-overlay-preview__watermarked" src="<?php echo esc_url( $watermark_url ); ?>" alt="" loading="lazy" aria-hidden="true" />
+				<?php elseif ( $is_image && $preview_url ) : ?>
 					<img src="<?php echo esc_url( $preview_url ); ?>" alt="" loading="lazy" aria-hidden="true" />
 				<?php else : ?>
 					<div class="mvs-lock-overlay-placeholder">

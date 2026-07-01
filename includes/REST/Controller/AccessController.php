@@ -208,6 +208,21 @@ class AccessController extends WP_REST_Controller {
 				),
 			)
 		);
+
+		// Rule-builder options (roles + member-facing rule types). Drives the
+		// frontend edit-modal panel and the admin sub-page; the mobile app
+		// consumes the same endpoint (Rule 18: API-first).
+		register_rest_route(
+			$this->namespace,
+			'/access/options',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_options' ),
+					'permission_callback' => array( $this, 'authenticated_check' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -374,6 +389,21 @@ class AccessController extends WP_REST_Controller {
 		$response->header( 'X-WP-TotalPages', ceil( $result['total'] / max( 1, $mvs_per_page ) ) );
 
 		return $response;
+	}
+
+	/**
+	 * Get the bounded option set the rule-builder UI needs.
+	 *
+	 * Returns the member-facing rule types and the site's editable roles — a
+	 * small, bounded list. It deliberately never returns the user or
+	 * BuddyPress-group corpus (unbounded on large sites); "membership" rules
+	 * take a group ID the owner supplies. The mobile app consumes the same
+	 * endpoint (Rule 18: API-first).
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_options() {
+		return rest_ensure_response( $this->access->get_builder_options() );
 	}
 
 	/**

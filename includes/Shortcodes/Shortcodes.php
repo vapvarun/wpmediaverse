@@ -460,7 +460,7 @@ class Shortcodes {
 
 		ob_start();
 		include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
-		include ( \WPMediaVerse\Core\TemplateLoader::locate( 'dashboard-content.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/dashboard-content.php' );
+		include \WPMediaVerse\Core\TemplateLoader::locate( 'dashboard-content.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/dashboard-content.php';
 		include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 		return ob_get_clean();
 	}
@@ -813,7 +813,7 @@ class Shortcodes {
 		wp_enqueue_style( 'mvs-frontend' );
 
 		ob_start();
-		require ( \WPMediaVerse\Core\TemplateLoader::locate( 'usage-history.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/usage-history.php' );
+		require \WPMediaVerse\Core\TemplateLoader::locate( 'usage-history.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/usage-history.php';
 		return (string) ob_get_clean();
 	}
 }

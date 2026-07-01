@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-06-30T18:23:29Z",
+    "generated_at": "2026-07-01T12:15:00Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -17,7 +17,7 @@
     "counts": {
         "cross_plugin_duplicates": 10,
         "within_plugin_duplicates": 39,
-        "free_files_scanned": 172,
+        "free_files_scanned": 173,
         "pro_files_scanned": 161
     },
     "cross_plugin_duplicates": [
@@ -203,7 +203,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/REST/Controller/AccessController.php",
-                    "lines": "410-410",
+                    "lines": "440-440",
                     "method": "AccessController::authenticated_check"
                 },
                 {

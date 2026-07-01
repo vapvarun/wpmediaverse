@@ -46,6 +46,13 @@
 	transform: scale(1.05); /* Prevent blur edge artifacts */
 }
 
+/* A watermarked preview is shown unblurred — the watermark is the protection,
+   so blurring it would defeat the purpose. */
+.mvs-lock-overlay-preview img.mvs-lock-overlay-preview__watermarked {
+	filter: none;
+	transform: none;
+}
+
 .mvs-lock-overlay-placeholder {
 	display: flex;
 	align-items: center;

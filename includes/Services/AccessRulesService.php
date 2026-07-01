@@ -222,6 +222,71 @@ class AccessRulesService {
 	}
 
 	/**
+	 * Get the bounded option set the rule-builder UIs need.
+	 *
+	 * Single source of truth shared by the REST controller (frontend edit
+	 * modal + mobile app) and the admin All Media access screen: the
+	 * member-facing rule types and the site's editable roles. Deliberately
+	 * never returns the user/group corpus (unbounded on large sites) — a
+	 * "membership" rule takes a group ID the owner supplies.
+	 *
+	 * @return array{rule_types: array<int, array{value: string, label: string}>, roles: array<int, array{value: string, label: string}>, bp_groups_active: bool}
+	 */
+	public function get_builder_options(): array {
+		if ( ! function_exists( 'get_editable_roles' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/user.php';
+		}
+
+		$roles = array();
+		foreach ( get_editable_roles() as $slug => $role ) {
+			$roles[] = array(
+				'value' => $slug,
+				'label' => translate_user_role( $role['name'] ),
+			);
+		}
+
+		// Only offer "membership" when BuddyPress groups are active — the
+		// engine's membership branch (check_implicit_rule) needs
+		// groups_is_user_member().
+		$bp_groups_active = function_exists( 'bp_is_active' ) && bp_is_active( 'groups' );
+
+		$rule_types = array(
+			array(
+				'value' => 'role',
+				'label' => __( 'User role', 'wpmediaverse' ),
+			),
+		);
+		if ( $bp_groups_active ) {
+			$rule_types[] = array(
+				'value' => 'membership',
+				'label' => __( 'Group membership', 'wpmediaverse' ),
+			);
+		}
+		$rule_types[] = array(
+			'value' => 'capability',
+			'label' => __( 'Capability', 'wpmediaverse' ),
+		);
+
+		/**
+		 * Filter the access-rule types offered in the rule-builder UIs.
+		 *
+		 * Pro hooks here to add monetization / code-grant rule types. Each entry
+		 * is array{value:string,label:string}; the value must be a type the
+		 * access engine understands (self::RULE_TYPES, or one Pro also teaches
+		 * the engine to evaluate).
+		 *
+		 * @param array $rule_types Rule-type options ({value,label} pairs).
+		 */
+		$rule_types = apply_filters( 'mvs_access_rule_types_ui', $rule_types );
+
+		return array(
+			'rule_types'       => array_values( $rule_types ),
+			'roles'            => $roles,
+			'bp_groups_active' => $bp_groups_active,
+		);
+	}
+
+	/**
 	 * Check if a media item has active access rules.
 	 *
 	 * @param int $media_id Media post ID.
