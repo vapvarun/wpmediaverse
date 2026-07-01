@@ -378,13 +378,27 @@ class CollectionController extends WP_REST_Controller {
 	private function prepare_collection_response( $post, bool $include_items = false, int $per_page = 20, int $page = 1 ): array {
 		$collection_type = $this->collections->get_type( $post->ID );
 
-		// Get cover from the first media item with a renderable thumbnail.
-		$cover_url = $this->get_collection_cover_url( $post->ID, $collection_type );
-
 		$viewer   = get_current_user_id();
 		$is_owner = $viewer > 0 && (int) $post->post_author === $viewer;
 		// Mirrors get_item_permissions_check: owner or a moderator may edit.
 		$can_edit = $is_owner || ( $viewer > 0 && current_user_can( 'moderate_mvs_media' ) );
+
+		// Resolve a smart collection's matches ONCE — they drive both the cover
+		// and the item count. Manual membership lives in the favorites table.
+		// Every response (list AND detail) now carries a real `total`: before,
+		// the count was only computed for smart collections in the detail view,
+		// so the list endpoint the app + dashboard consume reported "0 items"
+		// beside a populated cover.
+		$smart_items = array();
+		if ( 'smart' === $collection_type ) {
+			$resolved    = $this->collections->resolve( $post->ID, $include_items ? $per_page : 5, $page );
+			$smart_items = $resolved['items'];
+			$total       = (int) $resolved['total'];
+			$cover_ids   = wp_list_pluck( $smart_items, 'media_id' );
+		} else {
+			$cover_ids = $this->manual_cover_ids( $post->ID );
+			$total     = $this->count_manual_items( $post->ID );
+		}
 
 		$data = array(
 			'id'          => $post->ID,
@@ -394,9 +408,10 @@ class CollectionController extends WP_REST_Controller {
 			'date'        => $post->post_date_gmt,
 			'type'        => $collection_type,
 			'link'        => get_permalink( $post->ID ),
-			'cover_url'   => $cover_url,
+			'cover_url'   => $this->cover_from_media_ids( $cover_ids ),
 			'is_owner'    => $is_owner,
 			'can_edit'    => $can_edit,
+			'total'       => $total,
 		);
 
 		if ( 'smart' === $collection_type ) {
@@ -406,9 +421,7 @@ class CollectionController extends WP_REST_Controller {
 
 		if ( $include_items ) {
 			if ( 'smart' === $collection_type ) {
-				$resolved      = $this->collections->resolve( $post->ID, $per_page, $page );
-				$data['items'] = $resolved['items'];
-				$data['total'] = $resolved['total'];
+				$data['items'] = $smart_items;
 			} else {
 				global $wpdb;
 				$data['favorites'] = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -474,39 +487,55 @@ class CollectionController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Get the cover thumbnail URL for a collection.
+	 * Newest manual-collection member media IDs, for cover selection.
 	 *
-	 * Scans the first few collection items and returns the first one with a
-	 * renderable thumbnail. An item can legitimately lack a thumb (audio
-	 * without cover art mid-processing, import shells), so picking item #1
-	 * blindly produced empty covers when the newest item had no file.
-	 *
-	 * @param int    $collection_id Collection post ID.
-	 * @param string $type          Collection type (smart or manual).
-	 * @return string|null Thumbnail URL, or null when no item has one.
+	 * @param int $collection_id Collection post ID.
+	 * @return int[] Up to five media IDs, most recent first.
 	 */
-	private function get_collection_cover_url( int $collection_id, string $type ): ?string {
-		$candidates = array();
+	private function manual_cover_ids( int $collection_id ): array {
+		global $wpdb;
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC LIMIT 5", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$collection_id
+			)
+		);
 
-		if ( 'smart' === $type ) {
-			$resolved = $this->collections->resolve( $collection_id, 5, 1 );
-			foreach ( $resolved['items'] as $item ) {
-				$candidates[] = (int) $item['media_id'];
-			}
-		} else {
-			global $wpdb;
-			$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d ORDER BY created_at DESC LIMIT 5", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$collection_id
-				)
-			);
+		/** This filter is documented in includes/Social/FavoriteService.php */
+		return apply_filters( 'mvs_collection_media_ids', array_map( 'intval', $ids ), $collection_id, 5 );
+	}
 
-			/** This filter is documented in includes/Social/FavoriteService.php */
-			$candidates = apply_filters( 'mvs_collection_media_ids', array_map( 'intval', $ids ), $collection_id, 5 );
-		}
+	/**
+	 * Count the members of a manual collection.
+	 *
+	 * Free-side source of truth; the Pro `mvs_collection_response` filter merges
+	 * its own table and overrides this for combo installs.
+	 *
+	 * @param int $collection_id Collection post ID.
+	 * @return int Distinct member count.
+	 */
+	private function count_manual_items( int $collection_id ): int {
+		global $wpdb;
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT media_id) FROM {$wpdb->prefix}mvs_favorites WHERE collection_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$collection_id
+			)
+		);
+	}
 
-		foreach ( $candidates as $media_id ) {
+	/**
+	 * First renderable thumbnail across a list of media IDs.
+	 *
+	 * An item can legitimately lack a thumb (audio without cover art
+	 * mid-processing, import shells), so picking item #1 blindly produced empty
+	 * covers when the newest item had no file.
+	 *
+	 * @param int[] $media_ids Candidate media IDs, most relevant first.
+	 * @return string|null Thumbnail URL, or null when none is renderable.
+	 */
+	private function cover_from_media_ids( array $media_ids ): ?string {
+		foreach ( $media_ids as $media_id ) {
 			$thumb = \WPMediaVerse\Core\MediaUrl::thumb( (int) $media_id );
 			if ( '' !== $thumb ) {
 				return $thumb;
