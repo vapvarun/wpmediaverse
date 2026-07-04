@@ -1162,6 +1162,21 @@ class MessagingService {
 			);
 		}
 
+		// Content-moderation seam. MediaVerse ships standalone, so it only fires a
+		// filter; a host (e.g. BuddyNext auto-moderation) can hook it to scan the
+		// message text. A WP_Error return blocks the send.
+		if ( '' !== $content ) {
+			$moderation = apply_filters( 'mvs_message_content_check', true, $content, $sender_id, $conversation_id );
+			if ( is_wp_error( $moderation ) ) {
+				return array(
+					'success'    => false,
+					'message_id' => 0,
+					'error'      => $moderation->get_error_code() ? $moderation->get_error_code() : 'content_blocked',
+					'message'    => $moderation->get_error_message(),
+				);
+			}
+		}
+
 		$allowed_types = apply_filters(
 			'mvs_message_types',
 			array( 'text', 'media_share', 'image', 'video', 'audio', 'voice', 'file', 'system' )
