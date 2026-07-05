@@ -295,6 +295,23 @@ class TemplateLoader {
 			return;
 		}
 
+		/**
+		 * Let a host redirect single-media URLs somewhere else instead of rendering
+		 * the standalone page. BuddyNext uses this to send /media/{slug}/ to the
+		 * activity the media was posted in, so media lives in the community feed
+		 * rather than as a separate public page. Return '' (the default, and always
+		 * the case for standalone WPMediaVerse) to render the native single page.
+		 *
+		 * @param string $redirect_url Target URL, or '' to render the native page.
+		 * @param int    $media_id     The media item's id.
+		 * @param string $slug         The requested slug (or numeric id).
+		 */
+		$redirect_url = (string) apply_filters( 'mvs_single_media_redirect', '', (int) $media['media_id'], (string) $slug );
+		if ( '' !== $redirect_url ) {
+			wp_safe_redirect( $redirect_url, 301 );
+			exit;
+		}
+
 		// Check privacy.
 		$can_view = $this->can_view_media( $media );
 		if ( ! $can_view ) {
