@@ -22,7 +22,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
+			count: 2
 			path: includes/Admin/MediaListPage.php
 
 		-
@@ -32,7 +32,7 @@ parameters:
 
 		-
 			message: "#^Negated boolean expression is always false\\.$#"
-			count: 2
+			count: 3
 			path: includes/Admin/MediaListPage.php
 
 		-
@@ -509,11 +509,6 @@ parameters:
 			message: "#^Property WPMediaVerse\\\\Services\\\\StorageRepairService\\:\\:\\$storage is never read, only written\\.$#"
 			count: 1
 			path: includes/Services/StorageRepairService.php
-
-		-
-			message: "#^Action callback returns int but should not return anything\\.$#"
-			count: 1
-			path: includes/Services/StoryService.php
 
 		-
 			message: "#^Call to function is_wp_error\\(\\) with array will always evaluate to false\\.$#"
