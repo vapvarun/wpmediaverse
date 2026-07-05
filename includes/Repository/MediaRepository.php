@@ -2264,7 +2264,20 @@ class MediaRepository implements MediaRepositoryInterface {
 		$wpdb->delete( $wpdb->prefix . 'mvs_activity', $where, $format );    // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->delete( $wpdb->prefix . 'mvs_access_rules', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->delete( $wpdb->prefix . 'mvs_access_grants', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = 'mvs_comment'", $media_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// Media comments are detached from the post-ID space (comment_post_ID = 0)
+		// and linked to the media via comment meta; delete each + its meta.
+		$mvs_comment_ids = get_comments(
+			array(
+				'type'       => \WPMediaVerse\Social\CommentService::COMMENT_TYPE,
+				'meta_key'   => \WPMediaVerse\Social\CommentService::MEDIA_META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => $media_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'fields'     => 'ids',
+				'number'     => 0,
+			)
+		);
+		foreach ( $mvs_comment_ids as $mvs_comment_id ) {
+			wp_delete_comment( (int) $mvs_comment_id, true );
+		}
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 		/**

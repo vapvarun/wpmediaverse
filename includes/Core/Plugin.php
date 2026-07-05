@@ -200,6 +200,13 @@ class Plugin {
 		$templates = new TemplateLoader();
 		$templates->init();
 
+		// Media comments (comment_type 'mvs_comment') live in wp_comments but are
+		// detached from the post-ID space (comment_post_ID = 0). This guard keeps
+		// them out of every comment query not explicitly scoped to them, so a
+		// media comment can never surface in a post/page thread, feed, or admin
+		// list — defence-in-depth against the historical id-collision leak.
+		CommentService::register_query_guard();
+
 		// Redirect to overview page on first load after activation.
 		add_action( 'admin_init', array( self::class, 'maybe_redirect_after_activation' ) );
 

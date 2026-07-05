@@ -298,8 +298,9 @@ class CommentController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_forbidden', __( 'You can only edit your own comments.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 
-		// Verify comment belongs to media.
-		if ( (int) $comment->comment_post_ID !== $media_id ) {
+		// Verify comment belongs to media. Media comments are detached from the
+		// post-ID space (comment_post_ID = 0); the owning media id is in meta.
+		if ( \WPMediaVerse\Social\CommentService::comment_media_id( (int) $comment_id ) !== (int) $media_id ) {
 			return new WP_Error( 'mvs_mismatch', __( 'Comment does not belong to this media item.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
@@ -375,9 +376,10 @@ class CommentController extends WP_REST_Controller {
 		$comment_id = $request->get_param( 'comment_id' );
 		$media_id   = $request->get_param( 'media_id' );
 
-		// Verify the comment belongs to the specified media item.
+		// Verify the comment belongs to the specified media item (media id lives
+		// in comment meta; comment_post_ID is 0 for detached media comments).
 		$comment = get_comment( $comment_id );
-		if ( $comment && (int) $comment->comment_post_ID !== $media_id ) {
+		if ( $comment && \WPMediaVerse\Social\CommentService::comment_media_id( (int) $comment_id ) !== (int) $media_id ) {
 			return new WP_Error( 'mvs_mismatch', __( 'Comment does not belong to this media item.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 

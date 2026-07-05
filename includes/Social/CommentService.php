@@ -26,6 +26,81 @@ class CommentService {
 	const COMMENT_TYPE = 'mvs_comment';
 
 	/**
+	 * Comment-meta key that records which media item a comment belongs to.
+	 *
+	 * Media comments are stored with `comment_post_ID = 0` (they are NOT tied to
+	 * a WordPress post) and the real media id lives here instead. Storing the
+	 * media id in `comment_post_ID` — as earlier versions did — collided with the
+	 * shared wp_posts auto-increment space, so a media comment surfaced on the
+	 * post/page that happened to share that id and inflated its comment count.
+	 *
+	 * @var string
+	 */
+	const MEDIA_META_KEY = 'mvs_media_id';
+
+	/**
+	 * Keep media comments (`mvs_comment`) out of every comment query that is not
+	 * explicitly scoped to them — theme comment loops, feeds, wp-admin, the core
+	 * `/wp/v2/comments` REST route, comment-count recalcs. Belt-and-suspenders
+	 * alongside the `comment_post_ID = 0` storage: even a stray legacy row can
+	 * never leak into a real post's thread. Registered once from Plugin::init().
+	 *
+	 * MVS's own reads always pass `type => mvs_comment`, so they are left intact.
+	 *
+	 * @return void
+	 */
+	public static function register_query_guard(): void {
+		add_action( 'pre_get_comments', array( __CLASS__, 'exclude_media_comments_from_foreign_queries' ) );
+	}
+
+	/**
+	 * pre_get_comments handler — exclude `mvs_comment` unless the query asked for it.
+	 *
+	 * @param \WP_Comment_Query $query The comment query, mutated in place.
+	 * @return void
+	 */
+	public static function exclude_media_comments_from_foreign_queries( $query ): void {
+		$vars    = $query->query_vars;
+		$type    = isset( $vars['type'] ) ? $vars['type'] : '';
+		$type_in = isset( $vars['type__in'] ) ? (array) $vars['type__in'] : array();
+
+		// Our own reads scope to mvs_comment explicitly — leave them alone.
+		if ( self::COMMENT_TYPE === $type || in_array( self::COMMENT_TYPE, $type_in, true ) ) {
+			return;
+		}
+
+		$not_in   = isset( $vars['type__not_in'] ) ? (array) $vars['type__not_in'] : array();
+		$not_in[] = self::COMMENT_TYPE;
+
+		$query->query_vars['type__not_in'] = array_values( array_unique( $not_in ) );
+	}
+
+	/**
+	 * Resolve the media id a comment belongs to from its meta.
+	 *
+	 * @param int $comment_id Comment id.
+	 * @return int Media id, or 0 when not an MVS media comment.
+	 */
+	public static function comment_media_id( int $comment_id ): int {
+		return (int) get_comment_meta( $comment_id, self::MEDIA_META_KEY, true );
+	}
+
+	/**
+	 * Shared query args scoping a comment query to one media item's comments.
+	 *
+	 * @param int $media_id Media id.
+	 * @return array<string,mixed>
+	 */
+	private function media_scope_args( int $media_id ): array {
+		return array(
+			'type'       => self::COMMENT_TYPE,
+			'status'     => 'approve',
+			'meta_key'   => self::MEDIA_META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			'meta_value' => $media_id,            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+		);
+	}
+
+	/**
 	 * Add a comment to a media item.
 	 *
 	 * @param int    $media_id  Media post ID.
@@ -44,14 +119,17 @@ class CommentService {
 		// Validate parent comment belongs to same media.
 		if ( $parent_id ) {
 			$parent = get_comment( $parent_id );
-			if ( ! $parent || (int) $parent->comment_post_ID !== $media_id || self::COMMENT_TYPE !== $parent->comment_type ) {
+			if ( ! $parent || self::COMMENT_TYPE !== $parent->comment_type || self::comment_media_id( $parent_id ) !== $media_id ) {
 				return new WP_Error( 'mvs_invalid_parent', __( 'Invalid parent comment.', 'wpmediaverse' ), array( 'status' => 400 ) );
 			}
 		}
 
+		// comment_post_ID is deliberately 0: a media comment is NOT tied to a WP
+		// post. The media id lives in the MEDIA_META_KEY meta. See the constant's
+		// docblock for why storing it in comment_post_ID leaked onto real posts.
 		$comment_id = wp_insert_comment(
 			array(
-				'comment_post_ID'  => $media_id,
+				'comment_post_ID'  => 0,
 				'user_id'          => $user_id,
 				'comment_author'   => $user->display_name,
 				'comment_content'  => wp_kses_post( $content ),
@@ -64,6 +142,8 @@ class CommentService {
 		if ( ! $comment_id ) {
 			return new WP_Error( 'mvs_comment_failed', __( 'Failed to create comment.', 'wpmediaverse' ), array( 'status' => 500 ) );
 		}
+
+		add_comment_meta( (int) $comment_id, self::MEDIA_META_KEY, $media_id );
 
 		$this->sync_stats( $media_id );
 
@@ -105,26 +185,26 @@ class CommentService {
 	public function get_for_media( int $media_id, int $per_page = 20, int $page = 1 ): array {
 		// Count total top-level comments.
 		$total = (int) get_comments(
-			array(
-				'post_id' => $media_id,
-				'type'    => self::COMMENT_TYPE,
-				'status'  => 'approve',
-				'parent'  => 0,
-				'count'   => true,
+			array_merge(
+				$this->media_scope_args( $media_id ),
+				array(
+					'parent' => 0,
+					'count'  => true,
+				)
 			)
 		);
 
 		// Fetch top-level comments for the current page.
 		$top_level = get_comments(
-			array(
-				'post_id' => $media_id,
-				'type'    => self::COMMENT_TYPE,
-				'status'  => 'approve',
-				'parent'  => 0,
-				'number'  => $per_page,
-				'offset'  => ( $page - 1 ) * $per_page,
-				'orderby' => 'comment_date_gmt',
-				'order'   => 'DESC',
+			array_merge(
+				$this->media_scope_args( $media_id ),
+				array(
+					'parent'  => 0,
+					'number'  => $per_page,
+					'offset'  => ( $page - 1 ) * $per_page,
+					'orderby' => 'comment_date_gmt',
+					'order'   => 'DESC',
+				)
 			)
 		);
 
@@ -132,14 +212,14 @@ class CommentService {
 		$all_replies = array();
 		if ( $top_level ) {
 			$replies_raw = get_comments(
-				array(
-					'post_id'        => $media_id,
-					'type'           => self::COMMENT_TYPE,
-					'status'         => 'approve',
-					'parent__not_in' => array( 0 ),
-					'orderby'        => 'comment_date_gmt',
-					'order'          => 'ASC',
-					'number'         => 0, // All replies.
+				array_merge(
+					$this->media_scope_args( $media_id ),
+					array(
+						'parent__not_in' => array( 0 ),
+						'orderby'        => 'comment_date_gmt',
+						'order'          => 'ASC',
+						'number'         => 0, // All replies.
+					)
 				)
 			);
 			foreach ( $replies_raw as $reply ) {
@@ -181,7 +261,7 @@ class CommentService {
 			return new WP_Error( 'mvs_forbidden', __( 'You cannot delete this comment.', 'wpmediaverse' ), array( 'status' => 403 ) );
 		}
 
-		$media_id = (int) $comment->comment_post_ID;
+		$media_id = self::comment_media_id( (int) $comment_id );
 		wp_delete_comment( $comment_id, true );
 		$this->sync_stats( $media_id );
 
@@ -211,8 +291,8 @@ class CommentService {
 			'mvs_comment_edit_window',
 			(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
 		);
-		$ts     = strtotime( $comment_date_gmt );
-		$within = $ts && ( time() - $ts ) <= $edit_window;
+		$ts          = strtotime( $comment_date_gmt );
+		$within      = $ts && ( time() - $ts ) <= $edit_window;
 
 		return array(
 			'is_author'  => $is_author,
@@ -309,11 +389,9 @@ class CommentService {
 	 */
 	private function sync_stats( int $media_id ): void {
 		$total = (int) get_comments(
-			array(
-				'post_id' => $media_id,
-				'type'    => self::COMMENT_TYPE,
-				'status'  => 'approve',
-				'count'   => true,
+			array_merge(
+				$this->media_scope_args( $media_id ),
+				array( 'count' => true )
 			)
 		);
 

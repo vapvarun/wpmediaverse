@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 17;
+	const CURRENT_VERSION = 18;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -800,6 +800,71 @@ class Migrator {
 			$wpdb->query( "ALTER TABLE {$conv} ADD KEY container (container_type, container_id)" );
 		}
 		// phpcs:enable
+	}
+
+	/**
+	 * Migration v18 — detach media comments from the wp_posts ID namespace.
+	 *
+	 * Media comments were stored in wp_comments with comment_post_ID = media_id
+	 * (comment_type 'mvs_comment'). Media IDs and post IDs share one
+	 * auto-increment space, so a media comment surfaced on the real post/page
+	 * that happened to share that ID (WordPress's default comment queries are
+	 * not type-scoped) and inflated that post's comment_count. This moves the
+	 * real media id into comment meta ('mvs_media_id'), sets comment_post_ID = 0
+	 * so no post can ever match again, and recounts the posts that were inflated.
+	 * Idempotent — safe to re-run.
+	 *
+	 * @since 1.8.1
+	 */
+	private function migrate_to_18(): void {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		// The real posts whose comment_count was inflated (capture BEFORE we zero
+		// the column) and the comments we are about to move (for cache flush once
+		// their comment_post_ID changes underneath WordPress's object cache).
+		$affected_posts = $wpdb->get_col(
+			"SELECT DISTINCT comment_post_ID FROM {$wpdb->comments}
+			 WHERE comment_type = 'mvs_comment' AND comment_post_ID <> 0"
+		);
+		$moved_ids      = $wpdb->get_col(
+			"SELECT comment_ID FROM {$wpdb->comments}
+			 WHERE comment_type = 'mvs_comment' AND comment_post_ID <> 0"
+		);
+
+		// 1. Preserve the media id in comment meta for rows that lack it.
+		$wpdb->query(
+			"INSERT INTO {$wpdb->commentmeta} (comment_id, meta_key, meta_value)
+			 SELECT c.comment_ID, 'mvs_media_id', c.comment_post_ID
+			 FROM {$wpdb->comments} c
+			 WHERE c.comment_type = 'mvs_comment' AND c.comment_post_ID <> 0
+			   AND NOT EXISTS (
+				 SELECT 1 FROM {$wpdb->commentmeta} m
+				 WHERE m.comment_id = c.comment_ID AND m.meta_key = 'mvs_media_id'
+			   )"
+		);
+
+		// 2. Detach from the post-ID namespace.
+		$wpdb->query(
+			"UPDATE {$wpdb->comments} SET comment_post_ID = 0
+			 WHERE comment_type = 'mvs_comment' AND comment_post_ID <> 0"
+		);
+
+		// phpcs:enable
+
+		// 3. Correct the comment counts on the real posts that were inflated.
+		foreach ( (array) $affected_posts as $post_id ) {
+			$post_id = (int) $post_id;
+			if ( $post_id > 0 && get_post( $post_id ) ) {
+				wp_update_comment_count_now( $post_id );
+			}
+		}
+
+		// 4. Flush the stale (now-wrong comment_post_ID) comment caches.
+		foreach ( (array) $moved_ids as $moved_id ) {
+			clean_comment_cache( (int) $moved_id );
+		}
 	}
 
 	/**
