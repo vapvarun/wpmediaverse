@@ -11,6 +11,10 @@
             "reason": "False positive. Fired via Action Scheduler using the class constant StorageCleanupService::CLEANUP_HOOK (as_enqueue_async_action(self::CLEANUP_HOOK,...)). Static scan only resolves the literal at the add_action site, not the constant at the enqueue site."
         },
         {
+            "id": "hook-consumed-never-fired:mvs_repair_storage_paths",
+            "reason": "False positive. Fired via Action Scheduler using StorageRepairService::REPAIR_HOOK (as_enqueue_async_action(self::REPAIR_HOOK, array($cursor), self::AS_GROUP) at StorageRepairService.php:422). Scanner cannot resolve the constant at the enqueue site to the literal at the add_action site. Same pattern as the other AS-fired hooks baselined here; added for the 1.9.0 gate (StorageRepairService merged from main after the 1.8.0 baseline)."
+        },
+        {
             "id": "hook-consumed-never-fired:mvs_daily_streak_check",
             "reason": "False positive. Fired via Action Scheduler / wp_schedule_single_event using StreakService::AS_DAILY_HOOK (as_schedule_cron_action / as_enqueue_async_action with the constant). Scanner cannot resolve self::AS_DAILY_HOOK to the literal."
         },
