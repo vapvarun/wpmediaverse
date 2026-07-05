@@ -112,6 +112,7 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 = 1.8.1 - July 2026 =
 
+* Fix      - Media comments no longer leak onto unrelated posts or pages. They were stored against the post that shared the media's numeric ID, so a comment on an image could appear under a post with the same ID and inflate its comment count; existing comments are repaired automatically on update.
 * Fix      - Competition pages (Compete, Battles, Challenges, Tournaments) now keep their MediaVerse styling when BuddyNext is active, instead of rendering unstyled.
 
 = 1.8.0 - June 2026 =
