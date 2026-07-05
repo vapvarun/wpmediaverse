@@ -121,14 +121,21 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * New      - Access-rules admin screen for gating media, with watermark display wired to the configured logo.
 * New      - Native-app readiness across the mvs/v1 API: /app/config, interest endpoints, and viewer-aware fields.
 * New      - Child themes can override MediaVerse templates; member partials, messages, and layout pages resolve theme-first.
+* New      - AI moderation adds the Anthropic (Claude) provider, owner-configurable flag criteria, and custom flag terms beyond the built-in categories.
+* New      - Masonry (original aspect ratio) is now the default Explore grid style, with an escape hatch back to the fixed grid.
 * Improve  - Media links open the activity they were posted in by default. /media/{slug}/ redirects to that feed post, so media is not a separate public page; switch to dedicated media pages under Settings if you want a standalone page per item. Applies when BuddyNext is active.
 * Improve  - Simplified upload modal: the type tabs are gone and the media type is auto-detected.
 * Improve  - Non-public media now uses a viewer-aware thumbnail URL so previews respect visibility.
+* Improve  - Gated images show the watermarked variant unblurred (the watermark is the protection); older imports self-heal through an automatic storage-path repair.
 * Fix      - Media comments no longer leak onto unrelated posts or pages. They were stored against the post that shared the media's numeric ID, so a comment on an image could appear under a post with the same ID and inflate its comment count; existing comments are repaired automatically on update.
 * Fix      - Competition pages (Compete, Battles, Challenges, Tournaments) now keep their MediaVerse styling when BuddyNext is active, instead of rendering unstyled.
 * Fix      - Smart collections report their real item count in the list.
 * Fix      - The media feed no longer returns empty when group covers are combined with trending or popular sorting.
+* Fix      - AI moderation now runs when only auto-moderate is enabled (it was skipped before).
+* Fix      - Theme-defense fixes for BuddyX and Reign (tab text, lightbox open) and Instagram action buttons hardened against theme button styles.
+* Fix      - Cloud storage display and migration are more robust across admin operations.
 * Dev      - Functional certification engine (wp mvs cert): boot smoke across every REST route plus dead-toggle oracles, gated at 100% coverage in CI.
+* Dev      - Resolved all WP.org Plugin Check errors (30 to 0).
 
 = 1.8.0 - June 2026 =
 
