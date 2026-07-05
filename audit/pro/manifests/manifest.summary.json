@@ -16,11 +16,11 @@
     "license_item_id": 1660828
   },
   "counts": {
-    "rest_endpoints": 60,
+    "rest_endpoints": 66,
     "ajax": 6,
     "admin_pages": 10,
     "settings": 0,
-    "tables": 9,
+    "tables": 10,
     "subsystems": 19,
     "feature_toggles": 7,
     "free_services_consumed": 1,
@@ -30,7 +30,7 @@
     "wp_cli": 3,
     "storage_drivers": 2,
     "templates": 16,
-    "blocks": 12,
+    "blocks": 13,
     "shortcodes": 12,
     "coding_rules": 12,
     "admin_pages_baseline": 28,
@@ -126,5 +126,26 @@
       ]
     },
     "scope": "targeted refresh for the verified picker feature; full re-enumeration tracks with Free."
+  },
+  "refresh_2026_06_29": {
+    "date": "2026-06-29",
+    "branch": "1.8.1",
+    "summary": "App-readiness REST work (Stories, leaderboard, native push).",
+    "added_routes": [
+      "GET /mvs-pro/v1/leaderboard",
+      "POST|DELETE /mvs-pro/v1/push/register-device",
+      "GET /mvs-pro/v1/stories",
+      "POST|DELETE /mvs-pro/v1/media/{id}/story",
+      "POST /mvs-pro/v1/stories/{id}/view",
+      "GET /mvs-pro/v1/stories/{id}/viewers"
+    ],
+    "new_table": "mvs_pro_push_devices (Migrator v8)",
+    "new_block": "mvs/pro-stories",
+    "new_toggle": "mvs_stories_enabled (default off)",
+    "new_filters": [
+      "mvs_pro_leaderboard_cache_ttl",
+      "mvs_app_config_features (hooked)"
+    ],
+    "notes": "Stories receipts reuse Free mvs_media_views (no parallel table); feed network-scoped + privacy-filtered + bounded for big sites"
   }
 }

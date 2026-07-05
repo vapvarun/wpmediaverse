@@ -77,6 +77,25 @@ interface MediaRepositoryInterface {
 	public function get_broadcast_thumbnail_url( int $media_id, string $size = 'thumb_large' ): string;
 
 	/**
+	 * Viewer-aware signed thumbnail URL.
+	 *
+	 * Returns a signed thumbnail URL when the given viewer may see the media
+	 * (owner / admin / permitted audience), else ''. Unlike
+	 * get_broadcast_thumbnail_url() (anonymous, '' for any non-public media),
+	 * this authorizes against a specific viewer so app-layer consumers can show
+	 * the real poster for Members/Friends/Only-Me media to allowed viewers.
+	 * Privacy is enforced at sign time and re-verified by /serve.
+	 *
+	 * @since 1.8.1
+	 *
+	 * @param int      $media_id  Media ID.
+	 * @param string   $size      'thumb_large' | 'thumb_medium' | 'thumb_thumb' or SignedUrlService size.
+	 * @param int|null $viewer_id Viewer to authorize against. Null = current user.
+	 * @return string Signed URL when the viewer may view the media, else ''.
+	 */
+	public function get_thumbnail_url_for_viewer( int $media_id, string $size = 'thumb_large', ?int $viewer_id = null ): string;
+
+	/**
 	 * Resolve the absolute filesystem path for a media file.
 	 *
 	 * INTERNAL USE ONLY. Frontend / template / REST callers MUST use

@@ -115,6 +115,29 @@ class ProfileController extends WP_REST_Controller {
 				),
 			)
 		);
+
+		// POST /me/onboarding/complete — mark first-session onboarding done.
+		register_rest_route(
+			$this->namespace,
+			'/me/onboarding/complete',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'complete_onboarding' ),
+				'permission_callback' => array( $this, 'check_logged_in' ),
+			)
+		);
+	}
+
+	/**
+	 * POST /me/onboarding/complete — flag the viewer as onboarded.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function complete_onboarding( $request ) {
+		unset( $request );
+		update_user_meta( get_current_user_id(), 'mvs_onboarded', 1 );
+		return rest_ensure_response( array( 'onboarded' => true ) );
 	}
 
 	/**
@@ -140,6 +163,11 @@ class ProfileController extends WP_REST_Controller {
 
 		if ( ! $profile ) {
 			return new WP_Error( 'mvs_profile_error', __( 'Could not load profile.', 'wpmediaverse' ), array( 'status' => 500 ) );
+		}
+
+		// Surface onboarding state so the app shows the activation flow only once.
+		if ( is_array( $profile ) ) {
+			$profile['onboarded'] = (bool) get_user_meta( get_current_user_id(), 'mvs_onboarded', true );
 		}
 
 		return rest_ensure_response( $profile );

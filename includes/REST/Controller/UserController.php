@@ -120,6 +120,28 @@ class UserController extends WP_REST_Controller {
 				),
 			)
 		);
+
+		// GET /users/suggested — "people you may know" for first-session activation.
+		register_rest_route(
+			$this->namespace,
+			'/users/suggested',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_suggested' ),
+				'permission_callback' => static function () {
+					return is_user_logged_in();
+				},
+				'args'                => array(
+					'limit' => array(
+						'type'              => 'integer',
+						'default'           => 20,
+						'minimum'           => 1,
+						'maximum'           => 50,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -232,7 +254,13 @@ class UserController extends WP_REST_Controller {
 		if ( $int_ids ) {
 			_prime_post_caches( $int_ids, true, true );
 			update_meta_cache( 'post', $int_ids );
+			// Prime the MVS index+meta rows so the per-item prepare below does not
+			// run get_all() once per tile (N+1). Mirrors the 1.7.0 grid prefetch.
+			Plugin::container()->get( 'media_repository' )->prefetch( $int_ids );
 		}
+
+		// Batch-load the viewer's favorite/reaction state for the whole page.
+		MediaController::prime_viewer_state( $int_ids, $viewer_id );
 
 		$privacy    = Plugin::container()->get( 'privacy' );
 		$media_ctrl = new MediaController( $privacy );
@@ -247,6 +275,7 @@ class UserController extends WP_REST_Controller {
 
 		$response = rest_ensure_response( $items );
 		$response->header( 'X-WP-Total', $total );
+		$response->header( 'X-WP-TotalPages', (string) (int) ceil( $total / max( 1, $per_page ) ) );
 
 		return $response;
 	}
@@ -328,5 +357,89 @@ class UserController extends WP_REST_Controller {
 		}
 
 		return rest_ensure_response( $results );
+	}
+
+	/**
+	 * GET /users/suggested — "people you may know" for first-session activation.
+	 *
+	 * Ranked creators (popularity + interest overlap), excluding self/followed/
+	 * blocked. Each card carries up to 3 sample thumbnails so the app can show a
+	 * rich follow suggestion.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function get_suggested( $request ) {
+		$limit     = max( 1, min( 50, (int) $request->get_param( 'limit' ) ) );
+		$viewer_id = get_current_user_id();
+
+		$suggestions = ( new \WPMediaVerse\Social\SuggestionService() )->get_suggestions( $viewer_id, $limit );
+		if ( empty( $suggestions ) ) {
+			return rest_ensure_response( array() );
+		}
+
+		$ids = array_map( static fn ( $s ) => (int) $s['user_id'], $suggestions );
+
+		// Batch-load user objects.
+		$user_objects = array();
+		$batch        = new \WP_User_Query(
+			array(
+				'include' => $ids,
+				'fields'  => 'all',
+			)
+		);
+		foreach ( $batch->get_results() as $u ) {
+			$user_objects[ (int) $u->ID ] = $u;
+		}
+
+		$tpl     = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+		$results = array();
+		foreach ( $suggestions as $s ) {
+			$uid  = (int) $s['user_id'];
+			$user = $user_objects[ $uid ] ?? null;
+			if ( ! $user ) {
+				continue;
+			}
+			$results[] = array(
+				'id'             => $uid,
+				'name'           => $user->display_name,
+				'avatar'         => get_avatar_url( $uid, array( 'size' => 96 ) ),
+				'profile_url'    => (string) $tpl->get_user_profile_url( $uid ),
+				'follower_count' => (int) $s['follower_count'],
+				'is_following'   => false,
+				'sample_media'   => $this->sample_media_thumbs( $uid, 3, $tpl ),
+			);
+		}
+
+		return rest_ensure_response( $results );
+	}
+
+	/**
+	 * Up to N public-media thumbnails for a creator, for a suggestion card.
+	 *
+	 * @param int   $user_id Creator user ID.
+	 * @param int   $n       Max thumbnails.
+	 * @param mixed $tpl     Template helpers.
+	 * @return string[]
+	 */
+	private function sample_media_thumbs( int $user_id, int $n, $tpl ): array {
+		global $wpdb;
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index
+				WHERE post_author = %d AND status = 'publish' AND moderation_status = 'approved' AND privacy = 'public'
+				ORDER BY created_at DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id,
+				$n
+			)
+		);
+		$thumbs = array();
+		foreach ( (array) $ids as $mid ) {
+			$url = $tpl ? (string) $tpl->get_thumb_url( (int) $mid, 'medium' ) : '';
+			if ( '' !== $url ) {
+				$thumbs[] = $url;
+			}
+		}
+		return $thumbs;
 	}
 }

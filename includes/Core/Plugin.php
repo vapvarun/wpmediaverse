@@ -19,7 +19,6 @@ use WPMediaVerse\Services\StorageService;
 use WPMediaVerse\Services\PrivacyService;
 use WPMediaVerse\Services\AlbumService;
 use WPMediaVerse\Services\CollectionService;
-use WPMediaVerse\Services\StoryService;
 use WPMediaVerse\Services\AIService;
 use WPMediaVerse\Services\OpenAIProvider;
 use WPMediaVerse\Services\ModerationService;
@@ -69,6 +68,8 @@ use WPMediaVerse\REST\Controller\ActivityController;
 use WPMediaVerse\REST\Controller\ProfileController;
 use WPMediaVerse\REST\Controller\TransactionController;
 use WPMediaVerse\REST\Controller\AuthController;
+use WPMediaVerse\REST\Controller\ConfigController;
+use WPMediaVerse\REST\Controller\InterestsController;
 use WPMediaVerse\Services\ProfileService;
 use WPMediaVerse\Core\TemplateHelpers;
 use WPMediaVerse\Repository\MediaRepository;
@@ -199,6 +200,13 @@ class Plugin {
 		$templates = new TemplateLoader();
 		$templates->init();
 
+		// Media comments (comment_type 'mvs_comment') live in wp_comments but are
+		// detached from the post-ID space (comment_post_ID = 0). This guard keeps
+		// them out of every comment query not explicitly scoped to them, so a
+		// media comment can never surface in a post/page thread, feed, or admin
+		// list — defence-in-depth against the historical id-collision leak.
+		CommentService::register_query_guard();
+
 		// Redirect to overview page on first load after activation.
 		add_action( 'admin_init', array( self::class, 'maybe_redirect_after_activation' ) );
 
@@ -219,9 +227,6 @@ class Plugin {
 
 		// Register REST API routes.
 		add_action( 'rest_api_init', array( self::class, 'register_rest_routes' ) );
-
-		// Initialize story cleanup cron.
-		self::$container->get( 'stories' );
 
 		// Defer moderation service — only load on admin or when processing uploads.
 		if ( is_admin() ) {
@@ -479,15 +484,6 @@ class Plugin {
 			'collections',
 			function () {
 				return new CollectionService();
-			}
-		);
-
-		self::$container->register(
-			'stories',
-			function () {
-				$service = new StoryService();
-				$service->init();
-				return $service;
 			}
 		);
 
@@ -834,6 +830,8 @@ class Plugin {
 			new ProfileController( $profile ),
 			new AdminController(),
 			new AuthController(),
+			new ConfigController(),
+			new InterestsController(),
 		);
 
 		foreach ( $controllers as $controller ) {
@@ -1944,6 +1942,16 @@ JS;
 			return true;
 		}
 
+		// Pro competition surfaces (/compete/, /media/battles|challenges|tournaments/),
+		// identified by the query vars the Pro GamificationTemplateLoader registers.
+		// These pages need MediaVerse's own styles, so keep the frontend UI on them.
+		if ( (bool) get_query_var( 'mvs_compete_page' )
+			|| (bool) get_query_var( 'mvs_battles_page' )
+			|| (bool) get_query_var( 'mvs_challenges_page' )
+			|| (bool) get_query_var( 'mvs_tournaments_page' ) ) {
+			return true;
+		}
+
 		$mvs_page_ids = array_filter(
 			array_map(
 				'absint',
@@ -2131,7 +2139,10 @@ JS;
 			return;
 		}
 
-		$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-frame.php';
+		$template = \WPMediaVerse\Core\TemplateLoader::locate( 'shared-ui-frame.php', 'partials' );
+		if ( ! $template ) {
+			$template = MVS_PLUGIN_DIR . 'templates/partials/shared-ui-frame.php';
+		}
 		if ( file_exists( $template ) ) {
 			$rendered = true;
 			include $template;
@@ -2308,7 +2319,10 @@ JS;
 					return;
 				}
 
-				$template = MVS_PLUGIN_DIR . 'templates/messages.php';
+				$template = \WPMediaVerse\Core\TemplateLoader::locate( 'messages.php' );
+				if ( ! $template ) {
+					$template = MVS_PLUGIN_DIR . 'templates/messages.php';
+				}
 				if ( file_exists( $template ) ) {
 					include $template;
 					exit;

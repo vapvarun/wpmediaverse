@@ -196,3 +196,16 @@
 		flex: 1;
 	}
 }
+
+/* "Also share as a story" toggle (shown when Pro stories is enabled). */
+.mvs-upload-story-toggle {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 10px;
+	font-size: 13px;
+	cursor: pointer;
+}
+.mvs-upload-story-toggle input {
+	margin: 0;
+}

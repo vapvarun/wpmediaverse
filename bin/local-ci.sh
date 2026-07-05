@@ -138,6 +138,13 @@ if [ -x bin/template-style-check.sh ]; then
   run_stage "1.7" "Template-style check (no inline cosmetic CSS)" bash bin/template-style-check.sh
 fi
 
+# 1.8 — Dead-template check: flag template files no include/locate/map reaches.
+# Catches the orphan-template bug class cleaned in 1.8.1 (legacy files that drift
+# and miss fixes). Static, fast — always runs. See bin/dead-template-check.sh.
+if [ -x bin/dead-template-check.sh ]; then
+  run_stage "1.8" "Dead-template check (no orphan templates)" bash bin/dead-template-check.sh
+fi
+
 # ─── 2.x — Security + Architecture (always cheap) ────────────────────────────
 
 if [ -x bin/coding-rules-check.sh ]; then
@@ -237,11 +244,12 @@ fi
 # ─── 3.x — Manifest freshness ────────────────────────────────────────────────
 
 if [ "$MODE" != "quick" ]; then
-  if [ -f audit/manifest.json ]; then
-    if jq . audit/manifest.json > /dev/null 2>&1; then
+  MANIFEST_FILE="audit/manifests/manifest.json"
+  if [ -f "$MANIFEST_FILE" ]; then
+    if jq . "$MANIFEST_FILE" > /dev/null 2>&1; then
       pass "3.1 Manifest is valid JSON"
 
-      MANIFEST_AT="$(jq -r '.generated.at // empty' audit/manifest.json)"
+      MANIFEST_AT="$(jq -r '.generated.at // empty' "$MANIFEST_FILE")"
       if [ -n "$MANIFEST_AT" ]; then
         AGE_DAYS=$(( ($(date -u +%s) - $(date -juf "%Y-%m-%dT%H:%M:%SZ" "$MANIFEST_AT" +%s 2>/dev/null || echo 0)) / 86400 ))
         if [ "$AGE_DAYS" -gt 30 ]; then
@@ -252,7 +260,21 @@ if [ "$MODE" != "quick" ]; then
       fail "3.1 Manifest JSON invalid"
     fi
   else
-    warn "3.1 No audit/manifest.json — run /wp-plugin-onboard"
+    warn "3.1 No $MANIFEST_FILE — run /wp-plugin-onboard"
+  fi
+fi
+
+# ─── 3.2 — Functional cert (behavioural gate; needs a live WP) ────────────────
+# Portable plugin-level gate: boot-smoke every REST route + dead-toggle oracles
+# + 100% toggle coverage. Runs identically on any machine that points
+# MVS_WP_PATH at a live, activated WP install.
+
+if [ "$MODE" != "quick" ]; then
+  CERT_WP_PATH="${MVS_WP_PATH:-}"
+  if [ -n "$CERT_WP_PATH" ] && command -v wp > /dev/null 2>&1; then
+    run_stage "3.2" "Functional cert (wp mvs cert)" wp --path="$CERT_WP_PATH" mvs cert
+  else
+    warn "3.2 Functional cert skipped — set MVS_WP_PATH to a live WP to run 'wp mvs cert'"
   fi
 fi
 

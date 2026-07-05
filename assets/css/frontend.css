@@ -56,6 +56,7 @@
     --mvs-on-danger: #ffffff;                  /* text on danger (red both modes) */
     --mvs-border-strong: var(--mvs-border);    /* emphasized divider */
     --mvs-accent: #6366f1;                      /* indigo accent (boosts/highlights) */
+    --mvs-accent-2: #ec4899;                     /* secondary accent (stories-ring gradient end) */
     --mvs-accent-soft: rgba(99, 102, 241, 0.12); /* translucent → works light + dark */
 
     /* ── Theme palette mapping (THE single source of truth) ──────────────────
@@ -6345,3 +6346,48 @@ body.dark-mode .mvs-auth-gate__card {
     font-size: 0.8125rem;
 }
 
+
+/* Blocked members (Edit Profile) — manage/undo blocks. */
+.mvs-blocked-members { margin-top: var(--mvs-space-xl, 24px); }
+.mvs-blocked-members__title { font-size: var(--mvs-font-lg, 18px); font-weight: 700; margin: 0 0 var(--mvs-space-md, 12px); }
+.mvs-blocked-members__empty { color: var(--mvs-text-secondary, #6b7280); font-size: var(--mvs-font-sm, 14px); }
+.mvs-blocked-members__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mvs-space-sm, 8px); }
+.mvs-blocked-members__row { display: flex; align-items: center; gap: var(--mvs-space-md, 12px); padding: var(--mvs-space-sm, 8px) var(--mvs-space-md, 12px); border: 1px solid var(--mvs-border, #e5e7eb); border-radius: var(--mvs-radius-md, 8px); }
+.mvs-blocked-members__avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.mvs-blocked-members__name { font-weight: 600; }
+.mvs-blocked-members__unblock { margin-inline-start: auto; }
+
+/* Profile actions — overflow (⋯) menu + report dialog. */
+.mvs-actions-overflow { position: relative; display: inline-block; }
+.mvs-actions-menu { position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 4px); min-inline-size: 160px; background: var(--mvs-bg, #fff); border: 1px solid var(--mvs-border, #e5e7eb); border-radius: var(--mvs-radius-md, 8px); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); padding: 4px; z-index: 100; display: flex; flex-direction: column; }
+.mvs-actions-menu[hidden] { display: none; }
+.mvs-actions-menu__item { display: block; width: 100%; text-align: start; padding: 8px 12px; background: none; border: 0; border-radius: var(--mvs-radius-sm, 4px); cursor: pointer; font-size: var(--mvs-font-sm, 14px); color: var(--mvs-text, #111827); }
+.mvs-actions-menu__item:hover, .mvs-actions-menu__item:focus-visible { background: var(--mvs-bg-muted, #f3f4f6); }
+.mvs-actions-menu .mvs-block-toggle--blocked { color: var(--mvs-danger, #dc2626); }
+/* Report dialog reuses the .mvs-modal component; ensure controls fill the field. */
+.mvs-report-reason, .mvs-report-details { width: 100%; }
+
+/* Followers / Following modal (reuses .mvs-modal) + clickable member stats. */
+.mvs-member-photos-card__stat--clickable { cursor: pointer; border-radius: var(--mvs-radius-sm, 4px); }
+.mvs-member-photos-card__stat--clickable:hover, .mvs-member-photos-card__stat--clickable:focus-visible { background: var(--mvs-bg-muted, #f3f4f6); }
+.mvs-follows-tabs { display: flex; gap: var(--mvs-space-md, 12px); }
+.mvs-follows-tab { background: none; border: 0; padding: 4px 2px; font-size: var(--mvs-font-md, 16px); font-weight: 600; color: var(--mvs-text-secondary, #6b7280); cursor: pointer; border-bottom: 2px solid transparent; }
+.mvs-follows-tab.is-active { color: var(--mvs-text, #111827); border-bottom-color: var(--mvs-accent, #7c3aed); }
+.mvs-follows-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mvs-space-sm, 8px); }
+.mvs-follows-row { display: flex; align-items: center; gap: var(--mvs-space-md, 12px); }
+.mvs-follows-row__avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.mvs-follows-row__name { font-weight: 600; }
+.mvs-follows-row .mvs-follows-follow { margin-inline-start: auto; }
+.mvs-follows-state { text-align: center; color: var(--mvs-text-secondary, #6b7280); padding: var(--mvs-space-xl, 24px) 0; }
+
+/* Clickable follower/following counts in the profile header. */
+.mvs-profile-header-stats__link { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; }
+.mvs-profile-header-stats__link:hover, .mvs-profile-header-stats__link:focus-visible { text-decoration: underline; }
+
+/* Stat buttons (clickable follower/following counts) reset to look like text. */
+button.mvs-follows-open { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: 0; }
+
+/* Tag-cloud dynamic items wrapper — display:contents keeps the flat flex row while
+   making the data-wp-each <template> the sole child of its parent (avoids an
+   Interactivity API hydration mismatch from a static sibling). */
+.mvs-tag-cloud-items { display: contents; }

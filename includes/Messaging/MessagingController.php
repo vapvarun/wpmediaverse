@@ -157,6 +157,29 @@ class MessagingController extends WP_REST_Controller {
 			)
 		);
 
+		// GET /conversations/{id}/messages/search
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)/messages/search',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'search_messages' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+				'args'                => array(
+					'q'        => array(
+						'type'     => 'string',
+						'required' => true,
+					),
+					'per_page' => array(
+						'type'    => 'integer',
+						'default' => 50,
+						'minimum' => 1,
+						'maximum' => 100,
+					),
+				),
+			)
+		);
+
 		// POST /conversations/{id}/messages
 		register_rest_route(
 			$this->namespace,
@@ -507,6 +530,29 @@ class MessagingController extends WP_REST_Controller {
 		);
 
 		return new WP_REST_Response( $messages, 200 );
+	}
+
+	/**
+	 * GET /conversations/{id}/messages/search
+	 */
+	public function search_messages( WP_REST_Request $request ): WP_REST_Response {
+		$user_id = get_current_user_id();
+		$conv_id = (int) $request['id'];
+
+		// Verify access before searching.
+		$conv = $this->service->get_conversation( $conv_id, $user_id );
+		if ( ! $conv ) {
+			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
+		}
+
+		$results = $this->service->search_messages(
+			$conv_id,
+			$user_id,
+			(string) $request->get_param( 'q' ),
+			(int) $request->get_param( 'per_page' )
+		);
+
+		return new WP_REST_Response( array( 'results' => $results ), 200 );
 	}
 
 	/**

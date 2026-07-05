@@ -134,4 +134,117 @@
 			detail: { userId: userId },
 		} ) );
 	} );
+
+	// --- Overflow (⋯) menu: toggle on the trigger, close on outside click. ---
+	function closeAllActionMenus() {
+		document.querySelectorAll( '.mvs-actions-menu:not([hidden])' ).forEach( function ( m ) {
+			m.setAttribute( 'hidden', '' );
+			var t = m.parentElement && m.parentElement.querySelector( '.mvs-actions-more' );
+			if ( t ) {
+				t.setAttribute( 'aria-expanded', 'false' );
+			}
+		} );
+	}
+	document.addEventListener( 'click', function ( e ) {
+		var more = e.target.closest( '.mvs-actions-more' );
+		if ( more ) {
+			var menu = more.parentElement.querySelector( '.mvs-actions-menu' );
+			var willOpen = menu && menu.hasAttribute( 'hidden' );
+			closeAllActionMenus();
+			if ( willOpen ) {
+				menu.removeAttribute( 'hidden' );
+				more.setAttribute( 'aria-expanded', 'true' );
+			}
+			return;
+		}
+		// Click anywhere outside an open menu closes it.
+		if ( ! e.target.closest( '.mvs-actions-menu' ) ) {
+			closeAllActionMenus();
+		}
+	} );
+	document.addEventListener( 'keydown', function ( e ) {
+		if ( e.key === 'Escape' ) {
+			closeAllActionMenus();
+			var dlg = document.querySelector( '.mvs-report-modal:not([hidden])' );
+			if ( dlg ) {
+				dlg.setAttribute( 'hidden', '' );
+			}
+		}
+	} );
+
+	// --- Report: open dialog from the menu item. ---
+	document.addEventListener( 'click', function ( e ) {
+		var rtrig = e.target.closest( '.mvs-report-trigger' );
+		if ( ! rtrig ) {
+			return;
+		}
+		closeAllActionMenus();
+		var dlg = document.querySelector( '.mvs-report-modal' );
+		if ( dlg ) {
+			dlg.removeAttribute( 'hidden' );
+		}
+	} );
+
+	// --- Report: cancel / backdrop close. ---
+	document.addEventListener( 'click', function ( e ) {
+		if ( e.target.closest( '.mvs-report-cancel' ) || e.target.classList.contains( 'mvs-report-modal' ) ) {
+			var dlg = document.querySelector( '.mvs-report-modal:not([hidden])' );
+			if ( dlg ) {
+				dlg.setAttribute( 'hidden', '' );
+			}
+		}
+	} );
+
+	// --- Report: submit → POST /users/{id}/report { reason, details }. ---
+	document.addEventListener( 'click', function ( e ) {
+		var sbtn = e.target.closest( '.mvs-report-submit' );
+		if ( ! sbtn || sbtn.classList.contains( 'is-loading' ) ) {
+			return;
+		}
+		var dlg = sbtn.closest( '.mvs-report-modal' );
+		if ( ! dlg ) {
+			return;
+		}
+		var userId = dlg.getAttribute( 'data-user-id' );
+		var restUrl = dlg.getAttribute( 'data-rest-url' );
+		var reason = ( dlg.querySelector( '.mvs-report-reason' ) || {} ).value || 'other';
+		var details = ( dlg.querySelector( '.mvs-report-details' ) || {} ).value || '';
+
+		sbtn.classList.add( 'is-loading' );
+		sbtn.disabled = true;
+		window.mvsRest.restFetch( restUrl + 'users/' + userId + '/report', {
+			method: 'POST',
+			body: { reason: reason, details: details },
+		} )
+			.then( function ( r ) {
+				sbtn.classList.remove( 'is-loading' );
+				sbtn.disabled = false;
+				// Any server response (200, or a 4xx "already reported" dedup) means
+				// the member is reported from the user's view — show done, never hang.
+				if ( r ) {
+					// Swap to the success state, then auto-close.
+					var form = dlg.querySelector( '.mvs-report-form' );
+					var done = dlg.querySelector( '.mvs-report-done' );
+					if ( form ) {
+						form.setAttribute( 'hidden', '' );
+					}
+					if ( done ) {
+						done.removeAttribute( 'hidden' );
+					}
+					setTimeout( function () {
+						dlg.setAttribute( 'hidden', '' );
+						if ( form ) {
+							form.removeAttribute( 'hidden' );
+						}
+						if ( done ) {
+							done.setAttribute( 'hidden', '' );
+						}
+					}, 1600 );
+				}
+			} )
+			.catch( function () {
+				sbtn.classList.remove( 'is-loading' );
+				sbtn.disabled = false;
+			} );
+	} );
 }() );

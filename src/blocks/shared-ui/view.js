@@ -79,8 +79,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalAlbumTitle: '',
 		uploadModalAlbumDescription: '',
 		uploadModalMediaGroup: null,
+		uploadModalAlbum: 0, // chosen existing album id (Add to album), 0 = none
+		userAlbums: [], // [{ id, title }] for the "Add to album" select
 		get hideUploadMetaFields() {
-			return state.uploadModalUploading || state.uploadModalMode === 'album';
+			return state.uploadModalUploading;
+		},
+		get hasUserAlbums() {
+			return Array.isArray( state.userAlbums ) && state.userAlbums.length > 0;
 		},
 		get hideAlbumCoverHint() {
 			return state.uploadModalMode !== 'album' || state.uploadModalUploading || ! state.hasFiles;
@@ -97,15 +102,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return titles[ state.uploadModalMode ] || __( 'Upload', 'wpmediaverse' );
 		},
 		get uploadAccept() {
+			// Auto-detect flow: accept every supported type; the picked file(s)
+			// determine the mode (photo/gallery/video/audio).
 			const allowed = getContext().allowedTypes || '';
-			const types = allowed ? allowed.split( ',' ).map( ( t ) => t.trim() ) : [];
-			const prefixes = { photo: 'image/', gallery: 'image/', album: 'image/', video: 'video/', audio: 'audio/' };
-			const prefix = prefixes[ state.uploadModalMode ] || 'image/';
-			const filtered = types.filter( ( t ) => t.startsWith( prefix ) );
-			return filtered.length ? filtered.join( ',' ) : prefix + '*';
+			return allowed || 'image/*,video/*,audio/*';
 		},
 		get uploadMultiple() {
-			return state.uploadModalMode === 'gallery' || state.uploadModalMode === 'album';
+			return true;
 		},
 		get isPhotoMode() {
 			return state.uploadModalMode === 'photo';
@@ -167,6 +170,38 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// branch applies.
 		editModalRegenerateSlug: false,
 		editModalError: '',
+
+		// --- Access rules panel (inside the edit modal). Each row is
+		// { rule_type: 'role'|'membership'|'capability', rule_value, index }.
+		// A viewer matching ANY rule may view; empty list = privacy alone.
+		// Options (roles + rule types) load once per session from
+		// GET /access/options; the rules themselves load per-media.
+		editModalRules: [],
+		editModalRulesSnapshot: '[]',
+		accessRuleTypes: [],
+		accessRoles: [],
+		accessBpGroupsActive: false,
+		accessOptionsLoaded: false,
+
+		// Context-aware getters for the access-rule rows (read the current
+		// row/option via getContext(), mirroring the smart-collection builder).
+		get isAccessRuleTypeSelected() {
+			const ctx = getContext();
+			return !! ( ctx.rt && ctx.rule && String( ctx.rt.value ) === String( ctx.rule.rule_type ) );
+		},
+		get isAccessRuleValueSelected() {
+			const ctx = getContext();
+			return !! ( ctx.opt && ctx.rule && String( ctx.opt.value ) === String( ctx.rule.rule_value ) );
+		},
+		get accessRuleIsRole() {
+			return getContext().rule?.rule_type === 'role';
+		},
+		get accessRuleValuePlaceholder() {
+			const type = getContext().rule?.rule_type;
+			if ( type === 'membership' ) return __( 'BuddyPress group ID', 'wpmediaverse' );
+			if ( type === 'capability' ) return __( 'Capability name (e.g. read)', 'wpmediaverse' );
+			return '';
+		},
 
 		// --- Popular tag pills (cached for the session, lazily loaded the
 		// first time the upload or edit modal opens).
@@ -430,8 +465,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalAlbumTitle = '';
 			state.uploadModalAlbumDescription = '';
 			state.uploadModalMediaGroup = null;
+			state.uploadModalAlbum = 0;
 			document.body.style.overflow = 'hidden';
 			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
+			actions.loadUserAlbums(); // fire-and-forget; "Add to album" options.
 		},
 		closeUploadModal() {
 			state.uploadModalVisible = false;
@@ -502,6 +539,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalDescription = data.description || '';
 				state.editModalPrivacy = data.privacy || 'public';
 				state.editModalAllowDownload = data.allow_download !== false;
+
+				// Load the rule-builder options (session-cached) and this
+				// media's current access rules for the panel.
+				actions.loadAccessOptions();
+				const rulesRes = await window.mvsRest.restFetch( `${ restUrl }media/${ id }/rules` );
+				const loadedRules = ( rulesRes.ok && Array.isArray( rulesRes.data?.rules ) )
+					? rulesRes.data.rules.map( ( r, i ) => ( {
+						rule_type: r.rule_type || 'role',
+						rule_value: r.rule_value != null ? String( r.rule_value ) : '',
+						index: i,
+					} ) )
+					: [];
+				state.editModalRules = loadedRules;
+				state.editModalRulesSnapshot = JSON.stringify( actions.serializeAccessRules( loadedRules ) );
 			} catch {
 				state.editModalError = 'Could not load this media. Try again.';
 			}
@@ -517,6 +568,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalRegenerateSlug = false;
 			state.editModalError = '';
 			state.editModalSaving = false;
+			state.editModalRules = [];
+			state.editModalRulesSnapshot = '[]';
 			document.body.style.overflow = '';
 		},
 		updateEditTitle() {
@@ -533,6 +586,61 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		updateEditRegenerateSlug() {
 			state.editModalRegenerateSlug = !! getElement().ref?.checked;
+		},
+		// --- Access rules panel ------------------------------------------------
+		loadAccessOptions() {
+			if ( state.accessOptionsLoaded ) return;
+			state.accessOptionsLoaded = true; // optimistic — prevents duplicate loads.
+			const restUrl = window.mvsBpActions?.restUrl
+				|| ( window.location.origin + '/wp-json/mvs/v1/' );
+			window.mvsRest.restFetch( `${ restUrl }access/options` ).then( ( res ) => {
+				if ( res.ok && res.data ) {
+					state.accessRuleTypes = Array.isArray( res.data.rule_types ) ? res.data.rule_types : [];
+					state.accessRoles = Array.isArray( res.data.roles ) ? res.data.roles : [];
+					state.accessBpGroupsActive = !! res.data.bp_groups_active;
+				} else {
+					state.accessOptionsLoaded = false; // allow retry on next open.
+				}
+			} ).catch( () => {
+				state.accessOptionsLoaded = false;
+			} );
+		},
+		serializeAccessRules( rules ) {
+			// Keep only complete rows; strip the UI-only `index` field.
+			return ( rules || [] )
+				.filter( ( r ) => r.rule_type && String( r.rule_value ).trim() !== '' )
+				.map( ( r ) => ( { rule_type: r.rule_type, rule_value: String( r.rule_value ).trim() } ) );
+		},
+		addAccessRule() {
+			const rules = [ ...state.editModalRules ];
+			const firstType = state.accessRuleTypes[ 0 ]?.value || 'role';
+			rules.push( { rule_type: firstType, rule_value: '', index: rules.length } );
+			state.editModalRules = rules;
+		},
+		removeAccessRule( event ) {
+			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
+			state.editModalRules = state.editModalRules
+				.filter( ( r ) => r.index !== idx )
+				.map( ( r, i ) => ( { ...r, index: i } ) );
+		},
+		setAccessRuleType( event ) {
+			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
+			const rules = [ ...state.editModalRules ];
+			const rule = rules.find( ( r ) => r.index === idx );
+			if ( rule ) {
+				rule.rule_type = event.target.value;
+				rule.rule_value = ''; // value semantics change with type — reset.
+				state.editModalRules = rules;
+			}
+		},
+		setAccessRuleValue( event ) {
+			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
+			const rules = [ ...state.editModalRules ];
+			const rule = rules.find( ( r ) => r.index === idx );
+			if ( rule ) {
+				rule.rule_value = event.target.value;
+				state.editModalRules = rules;
+			}
 		},
 		async saveEditModal() {
 			if ( state.editModalSaving || ! state.editModalMediaId ) return;
@@ -574,6 +682,23 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				}
 				const updated = res.data || {};
 
+				// Persist access rules (full-replace) — only when they actually
+				// changed, to avoid a needless write + rate-limit hit on every
+				// save. Runs before the slug-redirect branch below so a rule
+				// change is never dropped when the slug also changes.
+				const desiredRules = actions.serializeAccessRules( state.editModalRules );
+				if ( JSON.stringify( desiredRules ) !== state.editModalRulesSnapshot ) {
+					const rulesRes = await window.mvsRest.restFetch( `${ restUrl }media/${ state.editModalMediaId }/rules`, {
+						method: 'POST',
+						body: { rules: desiredRules },
+					} );
+					if ( ! rulesRes.ok ) {
+						const err = rulesRes.data || {};
+						throw new Error( err.message || 'save_failed' );
+					}
+					state.editModalRulesSnapshot = JSON.stringify( desiredRules );
+				}
+
 				// When the user opted into a slug change AND they're CURRENTLY
 				// on the media's single page (`/media/{old-slug}/`), the page
 				// they're viewing now points at a dead URL. Redirect to the
@@ -612,37 +737,47 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			}
 		},
 		handleFileSelect( event ) {
-			const rawFiles = Array.from( event.target.files );
-			if ( ! rawFiles.length ) return;
-
-			const files = actions.filterFilesByMode( rawFiles );
-			if ( ! files.length ) return;
-
-			// In photo/video/audio mode, only keep last file.
-			if ( state.uploadModalMode === 'photo' || state.uploadModalMode === 'video' || state.uploadModalMode === 'audio' ) {
-				state.uploadModalFiles = [ files[ files.length - 1 ] ];
-			} else {
-				state.uploadModalFiles = [ ...state.uploadModalFiles, ...files ];
-			}
-
-			// Generate previews.
-			actions.generatePreviews();
+			actions.ingestFiles( Array.from( event.target.files ) );
 		},
 		handleUploadDrop( event ) {
 			event.preventDefault();
-			const rawFiles = Array.from( event.dataTransfer.files );
+			actions.ingestFiles( Array.from( event.dataTransfer.files ) );
+		},
+		// Auto-detect: key off the first picked file's type, keep only that media
+		// group, set the mode (photo/gallery/video/audio), and preview.
+		ingestFiles( rawFiles ) {
 			if ( ! rawFiles.length ) return;
-
-			const files = actions.filterFilesByMode( rawFiles );
-			if ( ! files.length ) return;
-
-			if ( state.uploadModalMode === 'photo' || state.uploadModalMode === 'video' || state.uploadModalMode === 'audio' ) {
-				state.uploadModalFiles = [ files[ 0 ] ];
-			} else {
-				state.uploadModalFiles = [ ...state.uploadModalFiles, ...files ];
+			const ft = rawFiles[ 0 ].type || '';
+			let group = 'image/';
+			if ( ft.startsWith( 'video/' ) ) {
+				group = 'video/';
+			} else if ( ft.startsWith( 'audio/' ) ) {
+				group = 'audio/';
 			}
-
+			const valid = rawFiles.filter( ( f ) => ( f.type || '' ).startsWith( group ) );
+			const rejected = rawFiles.length - valid.length;
+			if ( rejected > 0 ) {
+				actions.showToast( rejected + ' file(s) skipped — upload one media type at a time.', 'error' );
+			}
+			if ( ! valid.length ) return;
+			if ( group === 'image/' ) {
+				// Images append (so picking more turns a photo into a gallery).
+				const existing = state.uploadModalFiles.filter( ( f ) => ( f.type || '' ).startsWith( 'image/' ) );
+				state.uploadModalFiles = [ ...existing, ...valid ];
+			} else {
+				// One video / one audio per post.
+				state.uploadModalFiles = [ valid[ valid.length - 1 ] ];
+			}
+			state.uploadModalMode = actions.detectMode();
 			actions.generatePreviews();
+		},
+		detectMode() {
+			const f = state.uploadModalFiles;
+			if ( ! f.length ) return 'photo';
+			const t = f[ 0 ].type || '';
+			if ( t.startsWith( 'video/' ) ) return 'video';
+			if ( t.startsWith( 'audio/' ) ) return 'audio';
+			return f.length > 1 ? 'gallery' : 'photo';
 		},
 		handleUploadDragOver( event ) {
 			event.preventDefault();
@@ -756,6 +891,22 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		updateUploadPrivacy( event ) {
 			state.uploadModalPrivacy = event.target.value;
+		},
+		updateUploadAlbum( event ) {
+			state.uploadModalAlbum = parseInt( event.target.value, 10 ) || 0;
+		},
+		async loadUserAlbums() {
+			const ctx = getContext();
+			if ( ! ctx || ! ctx.restUrl ) return;
+			try {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + 'albums?author=' + ( ctx.currentUserId || 0 ) + '&per_page=50' );
+				const rows = Array.isArray( res.data ) ? res.data : [];
+				state.userAlbums = rows
+					.filter( ( a ) => a && ( a.can_edit || a.is_owner ) )
+					.map( ( a ) => ( { id: a.id, title: a.title || 'Untitled' } ) );
+			} catch {
+				state.userAlbums = [];
+			}
 		},
 		updateAlbumTitle( event ) {
 			state.uploadModalAlbumTitle = event.target.value;
@@ -894,6 +1045,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					state.uploadModalFailed++;
 				}
 				state.uploadModalDone = i + 1;
+			}
+
+			// "Add to album" (chosen in Add details) — link the uploads to that
+			// existing album. Doesn't touch the album cover.
+			if ( state.uploadModalAlbum && uploadedMediaIds.length ) {
+				try {
+					await window.mvsRest.restFetch( restUrl + 'albums/' + state.uploadModalAlbum + '/items', {
+						method: 'POST',
+						body: { media_ids: uploadedMediaIds },
+					} );
+				} catch { /* linking failed — media still uploaded */ }
 			}
 
 			// Link uploaded media to album, then set the first image as the cover.

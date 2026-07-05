@@ -1162,6 +1162,21 @@ class MessagingService {
 			);
 		}
 
+		// Content-moderation seam. MediaVerse ships standalone, so it only fires a
+		// filter; a host (e.g. BuddyNext auto-moderation) can hook it to scan the
+		// message text. A WP_Error return blocks the send.
+		if ( '' !== $content ) {
+			$moderation = apply_filters( 'mvs_message_content_check', true, $content, $sender_id, $conversation_id );
+			if ( is_wp_error( $moderation ) ) {
+				return array(
+					'success'    => false,
+					'message_id' => 0,
+					'error'      => $moderation->get_error_code() ? $moderation->get_error_code() : 'content_blocked',
+					'message'    => $moderation->get_error_message(),
+				);
+			}
+		}
+
 		$allowed_types = apply_filters(
 			'mvs_message_types',
 			array( 'text', 'media_share', 'image', 'video', 'audio', 'voice', 'file', 'system' )
@@ -1294,6 +1309,51 @@ class MessagingService {
 			'message_id' => $message_id,
 			'error'      => '',
 		);
+	}
+
+	/**
+	 * Search messages within a single conversation by content.
+	 *
+	 * The caller (controller) must first confirm the user participates in the
+	 * conversation. Deleted / unsent messages are excluded (except the requester's
+	 * own soft-deleted rows are also hidden). Newest match first.
+	 *
+	 * @param int    $conversation_id Conversation ID.
+	 * @param int    $user_id         User requesting.
+	 * @param string $query           Search term.
+	 * @param int    $limit           Max results (1-100).
+	 * @return array
+	 */
+	public function search_messages( int $conversation_id, int $user_id, string $query, int $limit = 50 ): array {
+		$query = trim( $query );
+		if ( '' === $query ) {
+			return array();
+		}
+
+		global $wpdb;
+		$msg_table = $wpdb->prefix . 'mvs_messages';
+		$like      = '%' . $wpdb->esc_like( $query ) . '%';
+		$limit     = max( 1, min( 100, $limit ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT m.id, m.sender_id, m.content, m.created_at
+				 FROM {$msg_table} m
+				 WHERE m.conversation_id = %d
+				   AND m.is_deleted = 0
+				   AND m.deleted_for_all = 0
+				   AND m.content LIKE %s
+				 ORDER BY m.id DESC
+				 LIMIT %d",
+				$conversation_id,
+				$like,
+				$limit
+			)
+		);
+		// phpcs:enable
+
+		return is_array( $rows ) ? $rows : array();
 	}
 
 	/**

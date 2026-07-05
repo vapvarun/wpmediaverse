@@ -384,7 +384,9 @@ $mvs_archive_url = home_url( '/media/' );
 			'editPrivacy'        => $current_privacy,
 			// Off by default — title edits leave the URL slug alone.
 			'editRegenerateSlug' => false,
-			'editTags'           => $mvs_tag_names,
+			// Empty at SSR so the data-wp-each <template> matches hydration; the
+			// store's callbacks.init() fills editTags from initialTags (above).
+			'editTags'           => array(),
 			'tagInput'           => '',
 			'tagResults'         => array(),
 			'tagDropdownVisible' => false,

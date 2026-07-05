@@ -24,6 +24,8 @@ defined( 'ABSPATH' ) || exit;
 
 get_header();
 
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+
 do_action( 'mvs_before_content' );
 
 $mvs_context     = isset( $GLOBALS['mvs_404_context'] ) ? (string) $GLOBALS['mvs_404_context'] : '';
@@ -92,4 +94,6 @@ $mvs_popular_tags = get_terms(
 </div>
 <?php
 do_action( 'mvs_after_content' );
+include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+
 get_footer();

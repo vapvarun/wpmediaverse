@@ -34,10 +34,7 @@ class Shortcodes {
 		add_shortcode( 'mvs_member_photos', array( $this, 'render_member_photos' ) );
 		add_shortcode( 'mvs_pdf_viewer', array( $this, 'render_pdf_viewer' ) );
 		add_shortcode( 'mvs_usage_history', array( $this, 'render_usage_history' ) );
-		// [mvs_story_viewer] intentionally NOT registered — the story
-		// create-flow (upload-form toggle + REST endpoint + expiry cron)
-		// lands in 1.2.1; until then a story-viewer shortcode would
-		// always render empty.
+		// Stories moved to the Pro plugin in 1.9.0 — no story shortcode in Free.
 	}
 
 	/**
@@ -463,7 +460,7 @@ class Shortcodes {
 
 		ob_start();
 		include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
-		include MVS_PLUGIN_DIR . 'templates/partials/dashboard-content.php';
+		include \WPMediaVerse\Core\TemplateLoader::locate( 'dashboard-content.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/dashboard-content.php';
 		include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 		return ob_get_clean();
 	}
@@ -816,7 +813,7 @@ class Shortcodes {
 		wp_enqueue_style( 'mvs-frontend' );
 
 		ob_start();
-		require MVS_PLUGIN_DIR . 'templates/partials/usage-history.php';
+		require \WPMediaVerse\Core\TemplateLoader::locate( 'usage-history.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/usage-history.php';
 		return (string) ob_get_clean();
 	}
 }

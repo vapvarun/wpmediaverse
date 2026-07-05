@@ -198,6 +198,10 @@ const { state, actions } = store( 'mvs/media-upload', {
 			const ctx = getContext();
 			ctx.privacy = event.target.value;
 		},
+		toggleStory( event ) {
+			const ctx = getContext();
+			ctx.isStory = !! event.target.checked;
+		},
 		setTitle( event ) {
 			const ctx = getContext();
 			ctx.uploadTitle = event.target.value;
@@ -282,6 +286,16 @@ const { state, actions } = store( 'mvs/media-upload', {
 						if ( mediaData && mediaData.duplicate_warning ) {
 							duplicateCount++;
 							lastDuplicateId = mediaData.existing_media_id || 0;
+						}
+						// "Also share as a story" — mark the new media as a 24h story (Pro).
+						if ( ctx.isStory && mediaData && mediaData.id ) {
+							const storyUrl =
+								ctx.restUrl.replace( '/mvs/v1/', '/mvs-pro/v1/' ) + '/' + mediaData.id + '/story';
+							try {
+								await window.mvsRest.restFetch( storyUrl, { method: 'POST', body: {} } );
+							} catch ( e ) {
+								// Non-fatal: media uploaded even if the story flag failed.
+							}
 						}
 					} else {
 						const err = resp.data || {};

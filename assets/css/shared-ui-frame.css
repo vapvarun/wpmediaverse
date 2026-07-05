@@ -743,6 +743,93 @@
 	padding-left: 24px;
 }
 
+/* Access rules panel — repeatable role / group-membership / capability
+   conditions inside the Edit modal. Each row is
+   [ type select | value select-or-input | remove ]. Flex-based so it stays
+   RTL-safe; stacks under 480px. */
+.mvs-access-rules-label {
+	display: block;
+	font-size: 13px;
+	font-weight: 500;
+	margin-bottom: 4px;
+	color: var( --mvs-text );
+}
+
+.mvs-access-rules-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 8px 0;
+}
+
+.mvs-access-rules-list:empty {
+	margin: 0;
+}
+
+.mvs-access-rule-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.mvs-access-rule-type {
+	flex: 0 0 40%;
+	min-width: 0;
+}
+
+.mvs-access-rule-value {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+/* The inactive value control (select vs text) collapses fully so the visible
+   one keeps the row width. */
+.mvs-access-rule-value[hidden] {
+	display: none !important;
+}
+
+.mvs-access-rule-remove {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: 1px solid var( --mvs-border );
+	border-radius: 6px;
+	background: transparent;
+	color: var( --mvs-text-muted, #757575 );
+	cursor: pointer;
+	transition: color 0.15s, border-color 0.15s;
+}
+
+.mvs-access-rule-remove:hover,
+.mvs-access-rule-remove:focus-visible {
+	color: var( --mvs-danger, #d63638 );
+	border-color: var( --mvs-danger, #d63638 );
+	outline: none;
+}
+
+.mvs-access-rule-add {
+	margin-top: 4px;
+}
+
+@media ( max-width: 480px ) {
+	.mvs-access-rule-row {
+		flex-wrap: wrap;
+	}
+
+	.mvs-access-rule-type,
+	.mvs-access-rule-value {
+		flex: 1 1 100%;
+	}
+
+	.mvs-access-rule-remove {
+		flex: 0 0 auto;
+	}
+}
+
 .mvs-modal-loading {
 	display: flex;
 	flex-direction: column;
@@ -864,3 +951,12 @@
 	margin-right: 2px;
 	opacity: 0.6;
 }
+
+/* Simplified upload modal — "Add details" disclosure + full-width selects. */
+.mvs-modal-details{border-top:1px solid var(--mvs-border,#e2e4e7);margin-top:10px;padding-top:6px}
+.mvs-modal-details__summary{cursor:pointer;font-weight:600;padding:8px 0;list-style:none;color:var(--mvs-accent,#7c3aed)}
+.mvs-modal-details__summary::-webkit-details-marker{display:none}
+.mvs-modal-details__summary::before{content:"+";margin-inline-end:6px}
+.mvs-modal-details[open] .mvs-modal-details__summary::before{content:"\2212";margin-inline-end:6px}
+.mvs-modal-details>.mvs-modal-field{margin-top:10px}
+.mvs-modal-album-select,.mvs-modal-privacy{width:100%}

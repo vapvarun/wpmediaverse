@@ -13,7 +13,7 @@
     "extension_hook_fired": "mvs_loaded"
   },
   "counts": {
-    "rest_endpoints": 84,
+    "rest_endpoints": 89,
     "ajax": 3,
     "admin_pages": 17,
     "settings": 40,
@@ -153,5 +153,54 @@
       "note": "Stored via ProfileService/ProfileController, not register_setting - so the settings count (register_setting whitelist) is unchanged."
     },
     "counts_unchanged": "hooks_fired_unique stays 141 (these 7 were already counted in the collection-picker refresh); this pass only fills in their detail entries."
+  },
+  "refresh_2026_06_29": {
+    "date": "2026-06-29",
+    "branch": "1.8.1",
+    "summary": "App-readiness REST work for the native app.",
+    "added_routes": [
+      "GET /mvs/v1/app/config",
+      "GET /mvs/v1/media?include= (batch resolve)"
+    ],
+    "field_additions": [
+      "media: is_favorited, viewer_reaction (batch)",
+      "album/collection: is_owner, can_edit",
+      "comments: is_author, can_edit, can_delete"
+    ],
+    "new_filters": [
+      "mvs_app_config_features"
+    ],
+    "new_helpers": [
+      "REST/RestGuards (write-time block enforcement on comments/reactions/follow)"
+    ],
+    "removed": [
+      "Services/StoryService.php + src/blocks/story-viewer (Stories relocated to Pro)"
+    ],
+    "unified": [
+      "/feed and /me/favorites now return the canonical media object"
+    ]
+  },
+  "refresh_2026_06_30": {
+    "date": "2026-06-30",
+    "branch": "1.8.1",
+    "summary": "First-session activation cold-start endpoints (Phase A).",
+    "added_routes": [
+      "GET /mvs/v1/app/interests",
+      "GET+POST /mvs/v1/me/interests",
+      "GET /mvs/v1/users/suggested",
+      "POST /mvs/v1/me/onboarding/complete"
+    ],
+    "param_additions": [
+      "GET /media interests=auto filters trending/popular/date feed to the viewer's interest categories"
+    ],
+    "field_additions": [
+      "/me/profile: onboarded bool"
+    ],
+    "new_filters": [
+      "mvs_app_interests_cache_ttl",
+      "mvs_suggestions_cache_ttl"
+    ],
+    "new_class": "Social/SuggestionService (cached candidate pool, big-site-safe)",
+    "spec": "docs/plans/app/MEDIAVERSE-ACTIVATION-SPEC.md"
   }
 }

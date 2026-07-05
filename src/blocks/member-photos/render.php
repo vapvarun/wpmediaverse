@@ -193,11 +193,19 @@ if ( $mvs_member_user_obj ) {
 						<dd><?php echo esc_html( number_format_i18n( $mvs_member_stats['media'] ) ); ?></dd>
 						<dt><?php esc_html_e( 'Photos', 'wpmediaverse' ); ?></dt>
 					</div>
-					<div class="mvs-member-photos-card__stat">
+					<div class="mvs-member-photos-card__stat mvs-member-photos-card__stat--clickable mvs-follows-open"
+						role="button" tabindex="0"
+						data-user-id="<?php echo esc_attr( $mvs_member_resolved_user_id ); ?>"
+						data-list="followers"
+						aria-label="<?php esc_attr_e( 'View followers', 'wpmediaverse' ); ?>">
 						<dd><?php echo esc_html( number_format_i18n( $mvs_member_stats['followers'] ) ); ?></dd>
 						<dt><?php esc_html_e( 'Followers', 'wpmediaverse' ); ?></dt>
 					</div>
-					<div class="mvs-member-photos-card__stat">
+					<div class="mvs-member-photos-card__stat mvs-member-photos-card__stat--clickable mvs-follows-open"
+						role="button" tabindex="0"
+						data-user-id="<?php echo esc_attr( $mvs_member_resolved_user_id ); ?>"
+						data-list="following"
+						aria-label="<?php esc_attr_e( 'View following', 'wpmediaverse' ); ?>">
 						<dd><?php echo esc_html( number_format_i18n( $mvs_member_stats['following'] ) ); ?></dd>
 						<dt><?php esc_html_e( 'Following', 'wpmediaverse' ); ?></dt>
 					</div>
@@ -241,4 +249,6 @@ if ( $mvs_member_user_obj ) {
 
 	echo do_blocks( '<!-- wp:mvs/media-grid ' . wp_json_encode( $grid_attrs ) . ' /-->' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- do_blocks output is the rendered block markup.
 	?>
+
+	<?php include MVS_PLUGIN_DIR . 'templates/partials/follows-modal.php'; ?>
 </div>

@@ -350,6 +350,62 @@
         "handler": "Collections/CollectionItemsController::get_collections / set_collection",
         "permission": "logged-in (ownership + manual-type guarded on write)",
         "purpose": "Read which collections a media is in (Favorites from Free + manual collections) and toggle Pro multi-collection membership"
+      },
+      {
+        "route": "/leaderboard",
+        "methods": [
+          "GET"
+        ],
+        "handler": "REST/LeaderboardController::get_leaderboard",
+        "permission": "__return_true (public)",
+        "purpose": "Paginated leaderboard (reactions|media_count|gamification_xp) + viewer_rank; cached via mvs_pro_leaderboard_cache_ttl"
+      },
+      {
+        "route": "/push/register-device",
+        "methods": [
+          "POST",
+          "DELETE"
+        ],
+        "handler": "REST/PushController",
+        "permission": "logged-in",
+        "purpose": "Register/remove an Expo push token (mvs_pro_push_devices); fan-out on mvs_notification_created"
+      },
+      {
+        "route": "/stories",
+        "methods": [
+          "GET"
+        ],
+        "handler": "REST/StoryController::get_stories",
+        "permission": "__return_true (network-scoped + privacy-filtered)",
+        "purpose": "Active stories from people the viewer follows + self (WhatsApp model)"
+      },
+      {
+        "route": "/media/(?P<id>[\\d]+)/story",
+        "methods": [
+          "POST",
+          "DELETE"
+        ],
+        "handler": "REST/StoryController",
+        "permission": "owner",
+        "purpose": "Mark/unmark a media item as a 24h story"
+      },
+      {
+        "route": "/stories/(?P<id>[\\d]+)/view",
+        "methods": [
+          "POST"
+        ],
+        "handler": "REST/StoryController::record_view",
+        "permission": "logged-in + can_view",
+        "purpose": "Record a story view receipt (reuses Free mvs_media_views)"
+      },
+      {
+        "route": "/stories/(?P<id>[\\d]+)/viewers",
+        "methods": [
+          "GET"
+        ],
+        "handler": "REST/StoryController::get_viewers",
+        "permission": "owner only",
+        "purpose": "Seen-by list for own story"
       }
     ]
   }

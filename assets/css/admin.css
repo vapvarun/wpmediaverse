@@ -2109,3 +2109,11 @@ a.mvs-stat-card:focus {
 .mvs-webhook-events-hint.is-active {
 	color: #b32d2e;
 }
+
+/* Access Rules mini-page — per-media rule management (view=access). The
+   actions column stays narrow and end-aligned so Remove links line up. */
+.mvs-access-rules-table__actions {
+	width: 1%;
+	white-space: nowrap;
+	text-align: end;
+}

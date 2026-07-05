@@ -66,6 +66,25 @@ class WatermarkService {
 	public function init(): void {
 		// Filter media REST response to add preview_url for gated images.
 		add_filter( 'mvs_media_response', array( $this, 'add_preview_url' ), 30, 2 );
+
+		// When a media item's access rules change, its watermark eligibility can
+		// change (watermarks apply only to ruled media), so drop any cached
+		// preview and let it regenerate on next view.
+		add_action( 'mvs_access_rule_created', array( $this, 'invalidate_on_rule_change' ), 10, 2 );
+		add_action( 'mvs_access_rule_deleted', array( $this, 'invalidate_on_rule_change' ), 10, 2 );
+	}
+
+	/**
+	 * Invalidate the cached watermark when a media item's access rules change.
+	 *
+	 * Hooked to mvs_access_rule_created / mvs_access_rule_deleted; both pass
+	 * ( $rule_id, $media_id ) as their first two args.
+	 *
+	 * @param int $rule_id  Rule ID (unused).
+	 * @param int $media_id Media post ID.
+	 */
+	public function invalidate_on_rule_change( int $rule_id, int $media_id ): void { // phpcs:ignore WordPressVIPMinimum.Hooks, Generic.CodeAnalysis.UnusedFunctionParameter.Found
+		$this->invalidate( $media_id );
 	}
 
 	/**

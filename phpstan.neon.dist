@@ -12,3 +12,9 @@ parameters:
         -
             message: '#(BuddyPress|bp_|BP_)#'
             reportUnmatched: false
+        # WP_CLI is provided by the WP-CLI runtime, not analysable by PHPStan
+        # (same treatment the baseline gives includes/CLI/Commands.php).
+        -
+            message: '#^Call to static method \w+\(\) on an unknown class WP_CLI\.$#'
+            path: includes/Cert/CertCommand.php
+            reportUnmatched: false

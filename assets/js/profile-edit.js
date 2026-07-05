@@ -22,6 +22,39 @@ const { actions } = store( 'mvs/profile-edit', {
 			ctx.errorMessage = '';
 		},
 
+		// Unblock a member from the "Blocked members" list. The list is
+		// server-rendered (no data-wp-each), so the clicked button carries the
+		// id via data-id and we remove its row from the DOM directly — keeps SSR
+		// and hydration identical under any theme.
+		async unblockMember() {
+			const ctx = getContext();
+			const { ref } = getElement();
+			const id = ref && ref.dataset ? ref.dataset.id : '';
+			if ( ! id ) {
+				return;
+			}
+			try {
+				await window.mvsRest.restFetch( ctx.restUrl + 'users/' + id + '/block', { method: 'DELETE' } );
+				const row = ref.closest( '.mvs-blocked-members__row' );
+				const list = row ? row.parentElement : null;
+				if ( row ) {
+					row.remove();
+				}
+				// Show the empty state when the last block is removed.
+				if ( list && ! list.querySelector( '.mvs-blocked-members__row' ) ) {
+					list.hidden = true;
+					const empty = list.parentElement
+						? list.parentElement.querySelector( '.mvs-blocked-members__empty' )
+						: null;
+					if ( empty ) {
+						empty.hidden = false;
+					}
+				}
+			} catch ( e ) {
+				// leave the row in place; the member can retry
+			}
+		},
+
 		updateFirstName() {
 			const ctx = getContext();
 			const { ref } = getElement();

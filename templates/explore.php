@@ -119,15 +119,22 @@ $mvs_archive_url = home_url( '/media/' );
 					<?php
 					$mvs_profile_id     = $mvs_profile->ID;
 					$mvs_is_own_profile = false;
-					include MVS_PLUGIN_DIR . 'templates/partials/profile-actions.php';
+					include ( \WPMediaVerse\Core\TemplateLoader::locate( 'profile-actions.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/profile-actions.php' );
 					?>
 				<?php endif; ?>
 			</div>
 			<div class="mvs-profile-header-stats">
 				<span><strong><?php echo esc_html( number_format_i18n( $mvs_profile_post_count ) ); ?></strong> <?php esc_html_e( 'media', 'wpmediaverse' ); ?></span>
-				<span><strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['followers'] ) ); ?></strong> <?php esc_html_e( 'followers', 'wpmediaverse' ); ?></span>
-				<span><strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['following'] ) ); ?></strong> <?php esc_html_e( 'following', 'wpmediaverse' ); ?></span>
+				<button type="button" class="mvs-profile-header-stats__link mvs-follows-open"
+					data-user-id="<?php echo esc_attr( $mvs_profile->ID ); ?>" data-list="followers">
+					<strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['followers'] ) ); ?></strong> <?php esc_html_e( 'followers', 'wpmediaverse' ); ?>
+				</button>
+				<button type="button" class="mvs-profile-header-stats__link mvs-follows-open"
+					data-user-id="<?php echo esc_attr( $mvs_profile->ID ); ?>" data-list="following">
+					<strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['following'] ) ); ?></strong> <?php esc_html_e( 'following', 'wpmediaverse' ); ?>
+				</button>
 			</div>
+			<?php include ( \WPMediaVerse\Core\TemplateLoader::locate( 'follows-modal.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/follows-modal.php' ); ?>
 			<?php if ( $mvs_profile->description ) : ?>
 				<p class="mvs-profile-header-bio"><?php echo esc_html( $mvs_profile->description ); ?></p>
 			<?php endif; ?>
@@ -172,13 +179,16 @@ $mvs_archive_url = home_url( '/media/' );
 		data-wp-init="callbacks.init">
 		<a class="mvs-tag-cloud-item <?php echo empty( $mvs_explore_ctx['activeTag'] ) && empty( $_GET['s'] ) ? 'active' : ''; // phpcs:ignore WordPress.Security.NonceVerification ?>"
 			href="<?php echo esc_url( $mvs_archive_url ); ?>"><?php esc_html_e( 'All', 'wpmediaverse' ); ?></a>
-		<template data-wp-each="context.tags">
-			<a class="mvs-tag-cloud-item" href="#"
-				data-wp-bind--href="context.item.href"
-				data-wp-text="context.item.name"
-				data-wp-class--active="context.item.active"
-				role="link"></a>
-		</template>
+		<?php // The each-template must be the sole child of its parent or iAPI logs a hydration mismatch; display:contents keeps the flat flex row. ?>
+		<span class="mvs-tag-cloud-items">
+			<template data-wp-each="context.tags">
+				<a class="mvs-tag-cloud-item" href="#"
+					data-wp-bind--href="context.item.href"
+					data-wp-text="context.item.name"
+					data-wp-class--active="context.item.active"
+					role="link"></a>
+			</template>
+		</span>
 	</div>
 
 	<?php
@@ -538,7 +548,7 @@ do_action( 'mvs_after_content' );
 if ( $mvs_profile ) {
 	$mvs_profile_id     = $mvs_profile->ID;
 	$mvs_is_own_profile = is_user_logged_in() && get_current_user_id() === $mvs_profile->ID;
-	include MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php';
+	include ( \WPMediaVerse\Core\TemplateLoader::locate( 'profile-actions-js.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php' );
 }
 
 get_footer();
