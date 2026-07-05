@@ -96,7 +96,7 @@ class CommentService {
 			'type'       => self::COMMENT_TYPE,
 			'status'     => 'approve',
 			'meta_key'   => self::MEDIA_META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-			'meta_value' => $media_id,            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			'meta_value' => (string) $media_id,   // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 		);
 	}
 

@@ -2270,7 +2270,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			array(
 				'type'       => \WPMediaVerse\Social\CommentService::COMMENT_TYPE,
 				'meta_key'   => \WPMediaVerse\Social\CommentService::MEDIA_META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-				'meta_value' => $media_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'meta_value' => (string) $media_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 				'fields'     => 'ids',
 				'number'     => 0,
 			)
