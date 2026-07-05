@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 1.8.1
+Stable tag: 1.9.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -110,10 +110,25 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Changelog ==
 
-= 1.8.1 - July 2026 =
+= 1.9.0 - July 2026 =
 
+* New      - Interests and personalized onboarding: members choose interests, get suggested people to follow, and see an interest-aware feed.
+* New      - Per-conversation message search in direct messages.
+* New      - Direct messages run through the same content moderation as posts and comments, so blocked words can't be planted in a DM.
+* New      - Followers and following open in a modal from the profile counts, and member profiles gain an overflow menu with Report.
+* New      - Manage blocked members from Edit Profile.
+* New      - "Also share as a story" option in the upload flow.
+* New      - Access-rules admin screen for gating media, with watermark display wired to the configured logo.
+* New      - Native-app readiness across the mvs/v1 API: /app/config, interest endpoints, and viewer-aware fields.
+* New      - Child themes can override MediaVerse templates; member partials, messages, and layout pages resolve theme-first.
+* Improve  - Media links open the activity they were posted in by default. /media/{slug}/ redirects to that feed post, so media is not a separate public page; switch to dedicated media pages under Settings if you want a standalone page per item. Applies when BuddyNext is active.
+* Improve  - Simplified upload modal: the type tabs are gone and the media type is auto-detected.
+* Improve  - Non-public media now uses a viewer-aware thumbnail URL so previews respect visibility.
 * Fix      - Media comments no longer leak onto unrelated posts or pages. They were stored against the post that shared the media's numeric ID, so a comment on an image could appear under a post with the same ID and inflate its comment count; existing comments are repaired automatically on update.
 * Fix      - Competition pages (Compete, Battles, Challenges, Tournaments) now keep their MediaVerse styling when BuddyNext is active, instead of rendering unstyled.
+* Fix      - Smart collections report their real item count in the list.
+* Fix      - The media feed no longer returns empty when group covers are combined with trending or popular sorting.
+* Dev      - Functional certification engine (wp mvs cert): boot smoke across every REST route plus dead-toggle oracles, gated at 100% coverage in CI.
 
 = 1.8.0 - June 2026 =
 
