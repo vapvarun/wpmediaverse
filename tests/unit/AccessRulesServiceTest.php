@@ -23,6 +23,11 @@ class AccessRulesServiceTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
+		// The presence cache is static; WP_UnitTestCase's per-test DB rollback
+		// happens behind the service's back, so a value primed by an earlier
+		// test would go stale here.
+		AccessRulesService::flush_rules_presence_cache();
+
 		$this->service  = new AccessRulesService();
 		$this->media_id = 123456; // Arbitrary — the service keys purely on media_id.
 	}

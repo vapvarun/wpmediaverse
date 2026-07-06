@@ -359,9 +359,13 @@ class AccessRulesService {
 	/**
 	 * Clear the has_active_rules() presence cache (call after any rule write).
 	 *
+	 * Public so test harnesses and long-running processes (WP-CLI) can reset
+	 * the static cache when the underlying table changes outside this service
+	 * (e.g. the per-test DB rollback in WP_UnitTestCase).
+	 *
 	 * @since 1.7.0
 	 */
-	private static function flush_rules_presence_cache(): void {
+	public static function flush_rules_presence_cache(): void {
 		self::$rules_presence_cache = array();
 	}
 
