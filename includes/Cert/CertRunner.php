@@ -545,7 +545,7 @@ class CertRunner {
 	 */
 	private function write_ledger( array $summary, array $rows, bool $ok ): void {
 		$dir = $this->dir . 'audit';
-		if ( ! is_dir( $dir ) || ! is_writable( $dir ) ) {
+		if ( ! is_dir( $dir ) || ! wp_is_writable( $dir ) ) {
 			return;
 		}
 		$payload = wp_json_encode(
