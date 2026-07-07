@@ -53,7 +53,7 @@ class ModerationService {
 	/**
 	 * Get the moderation status for a media item.
 	 *
-	 * @param int $media_id Media post ID.
+	 * @param int $media_id Media ID (mvs_media_index PK, not a wp_posts ID).
 	 * @return string
 	 */
 	public function get_status( int $media_id ): string {
@@ -64,7 +64,7 @@ class ModerationService {
 	/**
 	 * Set the moderation status for a media item.
 	 *
-	 * @param int    $media_id Media post ID.
+	 * @param int    $media_id Media ID (mvs_media_index PK, not a wp_posts ID).
 	 * @param string $status   One of the STATUS_* constants.
 	 * @param int    $user_id  Moderator user ID (0 for automated).
 	 * @return bool
@@ -84,7 +84,7 @@ class ModerationService {
 		/**
 		 * Fires when a media item's moderation status changes.
 		 *
-		 * @param int    $media_id   Media post ID.
+		 * @param int    $media_id   Media ID (mvs_media_index PK, not a wp_posts ID).
 		 * @param string $status     New status.
 		 * @param string $old_status Previous status.
 		 * @param int    $user_id    Moderator user ID (0 for automated).
@@ -97,7 +97,7 @@ class ModerationService {
 	/**
 	 * Handle AI-flagged content.
 	 *
-	 * @param int   $media_id Media post ID.
+	 * @param int   $media_id Media ID (mvs_media_index PK, not a wp_posts ID).
 	 * @param array $result   AI moderation result.
 	 */
 	public function handle_flagged( int $media_id, array $result ): void {
@@ -113,13 +113,9 @@ class ModerationService {
 				break;
 
 			case 'reject':
+				// Media lives in mvs_media_index, not wp_posts — moderation state
+				// is the moderation_status column; feed/list queries filter on it.
 				$this->set_status( $media_id, self::STATUS_REJECTED );
-				wp_update_post(
-					array(
-						'ID'          => $media_id,
-						'post_status' => 'draft',
-					)
-				);
 				break;
 
 			case 'hide':
@@ -192,29 +188,20 @@ class ModerationService {
 	/**
 	 * Approve a media item.
 	 *
-	 * @param int $media_id Media post ID.
+	 * @param int $media_id Media ID (mvs_media_index PK, not a wp_posts ID).
 	 * @param int $user_id  Moderator user ID.
 	 * @return bool
 	 */
 	public function approve( int $media_id, int $user_id ): bool {
-		$result = $this->set_status( $media_id, self::STATUS_APPROVED, $user_id );
-
-		if ( $result ) {
-			wp_update_post(
-				array(
-					'ID'          => $media_id,
-					'post_status' => 'publish',
-				)
-			);
-		}
-
-		return $result;
+		// Media lives in mvs_media_index; approval only clears the moderation
+		// hold (moderation_status column) — it must not touch any wp_posts row.
+		return $this->set_status( $media_id, self::STATUS_APPROVED, $user_id );
 	}
 
 	/**
 	 * Reject a media item.
 	 *
-	 * @param int    $media_id Media post ID.
+	 * @param int    $media_id Media ID (mvs_media_index PK, not a wp_posts ID).
 	 * @param int    $user_id  Moderator user ID.
 	 * @param string $reason   Optional rejection reason.
 	 * @return bool
@@ -222,17 +209,10 @@ class ModerationService {
 	public function reject( int $media_id, int $user_id, string $reason = '' ): bool {
 		$result = $this->set_status( $media_id, self::STATUS_REJECTED, $user_id );
 
-		if ( $result ) {
-			wp_update_post(
-				array(
-					'ID'          => $media_id,
-					'post_status' => 'draft',
-				)
-			);
-
-			if ( $reason ) {
-				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'rejection_reason', sanitize_text_field( $reason ) );
-			}
+		// Rejection hides media via the moderation_status filter in feed/list
+		// queries — no wp_posts mutation. Only persist the optional reason.
+		if ( $result && $reason ) {
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'rejection_reason', sanitize_text_field( $reason ) );
 		}
 
 		return $result;
@@ -241,7 +221,7 @@ class ModerationService {
 	/**
 	 * Log a moderation action.
 	 *
-	 * @param int    $media_id Media post ID.
+	 * @param int    $media_id Media ID (mvs_media_index PK, not a wp_posts ID).
 	 * @param string $status   New status.
 	 * @param int    $user_id  Moderator user ID (0 for automated).
 	 */
@@ -264,7 +244,7 @@ class ModerationService {
 	/**
 	 * Get moderation log for a media item.
 	 *
-	 * @param int $media_id Media post ID.
+	 * @param int $media_id Media ID (mvs_media_index PK, not a wp_posts ID).
 	 * @return array
 	 */
 	public function get_log( int $media_id ): array {
