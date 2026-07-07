@@ -282,57 +282,6 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						</p>
 					</div>
 					<?php endif; ?>
-					<!-- Access rules — optional conditions that restrict who can
-					     view this media (by role / group membership / capability).
-					     A viewer matching ANY rule may view; with Pro active, a
-					     ruled image also gets a watermarked preview. Empty = the
-					     Privacy setting above applies on its own. -->
-					<div class="mvs-modal-field mvs-access-rules">
-						<span class="mvs-access-rules-label" id="mvs-access-rules-label"><?php esc_html_e( 'Access rules', 'wpmediaverse' ); ?></span>
-						<p class="mvs-modal-field-hint">
-							<?php esc_html_e( 'Optional. Restrict viewing to people who match a rule below. Leave empty to use the Privacy setting on its own.', 'wpmediaverse' ); ?>
-						</p>
-						<div class="mvs-access-rules-list" role="group" aria-labelledby="mvs-access-rules-label">
-							<template data-wp-each--rule="state.editModalRules">
-								<div class="mvs-access-rule-row" data-wp-bind--data-rule-index="context.rule.index">
-									<select class="mvs-access-rule-type" data-wp-on--change="actions.setAccessRuleType"
-										aria-label="<?php esc_attr_e( 'Rule type', 'wpmediaverse' ); ?>">
-										<template data-wp-each--rt="state.accessRuleTypes">
-											<option data-wp-bind--value="context.rt.value"
-												data-wp-bind--selected="state.isAccessRuleTypeSelected"
-												data-wp-text="context.rt.label"></option>
-										</template>
-									</select>
-									<!-- Role → pick from the site's roles. -->
-									<select class="mvs-access-rule-value" data-wp-on--change="actions.setAccessRuleValue"
-										data-wp-bind--hidden="!state.accessRuleIsRole"
-										aria-label="<?php esc_attr_e( 'Rule value', 'wpmediaverse' ); ?>">
-										<template data-wp-each--opt="state.accessRoles">
-											<option data-wp-bind--value="context.opt.value"
-												data-wp-bind--selected="state.isAccessRuleValueSelected"
-												data-wp-text="context.opt.label"></option>
-										</template>
-									</select>
-									<!-- Group membership (group ID) or capability → free text. -->
-									<input type="text" class="mvs-access-rule-value" data-wp-on--input="actions.setAccessRuleValue"
-										data-wp-bind--hidden="state.accessRuleIsRole"
-										data-wp-bind--value="context.rule.rule_value"
-										data-wp-bind--placeholder="state.accessRuleValuePlaceholder"
-										aria-label="<?php esc_attr_e( 'Rule value', 'wpmediaverse' ); ?>" />
-									<button type="button" class="mvs-access-rule-remove" data-wp-on--click="actions.removeAccessRule"
-										aria-label="<?php esc_attr_e( 'Remove rule', 'wpmediaverse' ); ?>">
-										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-											<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-										</svg>
-									</button>
-								</div>
-							</template>
-						</div>
-						<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary mvs-access-rule-add"
-							data-wp-on--click="actions.addAccessRule">
-							+ <?php esc_html_e( 'Add rule', 'wpmediaverse' ); ?>
-						</button>
-					</div>
 					<div class="mvs-modal-error" data-wp-bind--hidden="!state.editModalError">
 						<p data-wp-text="state.editModalError"></p>
 					</div>

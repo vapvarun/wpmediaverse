@@ -176,37 +176,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		editModalRegenerateSlug: false,
 		editModalError: '',
 
-		// --- Access rules panel (inside the edit modal). Each row is
-		// { rule_type: 'role'|'membership'|'capability', rule_value, index }.
-		// A viewer matching ANY rule may view; empty list = privacy alone.
-		// Options (roles + rule types) load once per session from
-		// GET /access/options; the rules themselves load per-media.
-		editModalRules: [],
-		editModalRulesSnapshot: '[]',
-		accessRuleTypes: [],
-		accessRoles: [],
-		accessBpGroupsActive: false,
-		accessOptionsLoaded: false,
-
-		// Context-aware getters for the access-rule rows (read the current
-		// row/option via getContext(), mirroring the smart-collection builder).
-		get isAccessRuleTypeSelected() {
-			const ctx = getContext();
-			return !! ( ctx.rt && ctx.rule && String( ctx.rt.value ) === String( ctx.rule.rule_type ) );
-		},
-		get isAccessRuleValueSelected() {
-			const ctx = getContext();
-			return !! ( ctx.opt && ctx.rule && String( ctx.opt.value ) === String( ctx.rule.rule_value ) );
-		},
-		get accessRuleIsRole() {
-			return getContext().rule?.rule_type === 'role';
-		},
-		get accessRuleValuePlaceholder() {
-			const type = getContext().rule?.rule_type;
-			if ( type === 'membership' ) return __( 'BuddyPress group ID', 'wpmediaverse' );
-			if ( type === 'capability' ) return __( 'Capability name (e.g. read)', 'wpmediaverse' );
-			return '';
-		},
 
 		// --- Popular tag pills (cached for the session, lazily loaded the
 		// first time the upload or edit modal opens).
@@ -547,20 +516,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalDescription = data.description || '';
 				state.editModalPrivacy = data.privacy || 'public';
 				state.editModalAllowDownload = data.allow_download !== false;
-
-				// Load the rule-builder options (session-cached) and this
-				// media's current access rules for the panel.
-				actions.loadAccessOptions();
-				const rulesRes = await window.mvsRest.restFetch( `${ restUrl }media/${ id }/rules` );
-				const loadedRules = ( rulesRes.ok && Array.isArray( rulesRes.data?.rules ) )
-					? rulesRes.data.rules.map( ( r, i ) => ( {
-						rule_type: r.rule_type || 'role',
-						rule_value: r.rule_value != null ? String( r.rule_value ) : '',
-						index: i,
-					} ) )
-					: [];
-				state.editModalRules = loadedRules;
-				state.editModalRulesSnapshot = JSON.stringify( actions.serializeAccessRules( loadedRules ) );
 			} catch {
 				state.editModalError = 'Could not load this media. Try again.';
 			}
@@ -576,8 +531,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalRegenerateSlug = false;
 			state.editModalError = '';
 			state.editModalSaving = false;
-			state.editModalRules = [];
-			state.editModalRulesSnapshot = '[]';
 			document.body.style.overflow = '';
 		},
 		updateEditTitle() {
@@ -594,61 +547,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		updateEditRegenerateSlug() {
 			state.editModalRegenerateSlug = !! getElement().ref?.checked;
-		},
-		// --- Access rules panel ------------------------------------------------
-		loadAccessOptions() {
-			if ( state.accessOptionsLoaded ) return;
-			state.accessOptionsLoaded = true; // optimistic — prevents duplicate loads.
-			const restUrl = window.mvsBpActions?.restUrl
-				|| ( window.location.origin + '/wp-json/mvs/v1/' );
-			window.mvsRest.restFetch( `${ restUrl }access/options` ).then( ( res ) => {
-				if ( res.ok && res.data ) {
-					state.accessRuleTypes = Array.isArray( res.data.rule_types ) ? res.data.rule_types : [];
-					state.accessRoles = Array.isArray( res.data.roles ) ? res.data.roles : [];
-					state.accessBpGroupsActive = !! res.data.bp_groups_active;
-				} else {
-					state.accessOptionsLoaded = false; // allow retry on next open.
-				}
-			} ).catch( () => {
-				state.accessOptionsLoaded = false;
-			} );
-		},
-		serializeAccessRules( rules ) {
-			// Keep only complete rows; strip the UI-only `index` field.
-			return ( rules || [] )
-				.filter( ( r ) => r.rule_type && String( r.rule_value ).trim() !== '' )
-				.map( ( r ) => ( { rule_type: r.rule_type, rule_value: String( r.rule_value ).trim() } ) );
-		},
-		addAccessRule() {
-			const rules = [ ...state.editModalRules ];
-			const firstType = state.accessRuleTypes[ 0 ]?.value || 'role';
-			rules.push( { rule_type: firstType, rule_value: '', index: rules.length } );
-			state.editModalRules = rules;
-		},
-		removeAccessRule( event ) {
-			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
-			state.editModalRules = state.editModalRules
-				.filter( ( r ) => r.index !== idx )
-				.map( ( r, i ) => ( { ...r, index: i } ) );
-		},
-		setAccessRuleType( event ) {
-			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
-			const rules = [ ...state.editModalRules ];
-			const rule = rules.find( ( r ) => r.index === idx );
-			if ( rule ) {
-				rule.rule_type = event.target.value;
-				rule.rule_value = ''; // value semantics change with type — reset.
-				state.editModalRules = rules;
-			}
-		},
-		setAccessRuleValue( event ) {
-			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
-			const rules = [ ...state.editModalRules ];
-			const rule = rules.find( ( r ) => r.index === idx );
-			if ( rule ) {
-				rule.rule_value = event.target.value;
-				state.editModalRules = rules;
-			}
 		},
 		async saveEditModal() {
 			if ( state.editModalSaving || ! state.editModalMediaId ) return;
@@ -689,23 +587,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					throw new Error( err.message || 'save_failed' );
 				}
 				const updated = res.data || {};
-
-				// Persist access rules (full-replace) — only when they actually
-				// changed, to avoid a needless write + rate-limit hit on every
-				// save. Runs before the slug-redirect branch below so a rule
-				// change is never dropped when the slug also changes.
-				const desiredRules = actions.serializeAccessRules( state.editModalRules );
-				if ( JSON.stringify( desiredRules ) !== state.editModalRulesSnapshot ) {
-					const rulesRes = await window.mvsRest.restFetch( `${ restUrl }media/${ state.editModalMediaId }/rules`, {
-						method: 'POST',
-						body: { rules: desiredRules },
-					} );
-					if ( ! rulesRes.ok ) {
-						const err = rulesRes.data || {};
-						throw new Error( err.message || 'save_failed' );
-					}
-					state.editModalRulesSnapshot = JSON.stringify( desiredRules );
-				}
 
 				// When the user opted into a slug change AND they're CURRENTLY
 				// on the media's single page (`/media/{old-slug}/`), the page
