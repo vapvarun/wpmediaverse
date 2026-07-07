@@ -899,12 +899,22 @@
       ],
       "where": "includes/Core/Watermarker.php:263",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_captions_reaped",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $count"
+      ],
+      "where": "includes/Captions/TranscriptionService.php:365",
+      "consumed_by": []
     }
   ],
   "generated": {
     "at": "2026-07-07T00:00:00Z",
     "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
-    "branch": "main",
+    "branch": "2.0.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -949,6 +959,16 @@
       "namespace": "mvs-pro/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
       "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+    },
+    "refresh_2026_07_07_v200": {
+      "scope": "2.0.0 functional bug batch (21 cards). Pro: CompetitionVotes::record shared vote guard (new includes/Competitions/CompetitionVotes.php); transcode RUNNING lock; 4 ghost crons cleared on deactivation; bounded StoryService cleanup; connector delta-sync AS continuation (mvs_pro_connector_delta_sync_continue); captions stale-job reaper (mvs_pro_captions_reap_stale + mvs_pro_captions_reaped); feed scope wired to 3 layouts; compete blocks self-enqueue via enqueue_store(); user_login->nicename in layout templates; boost refund.",
+      "new_symbols": [
+        "class WPMediaVersePro\\Competitions\\CompetitionVotes",
+        "action mvs_pro_captions_reaped",
+        "AS hook mvs_pro_connector_delta_sync_continue",
+        "AS hook mvs_pro_captions_reap_stale"
+      ],
+      "not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
     }
   }
 }

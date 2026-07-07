@@ -33,7 +33,7 @@
     "journeys": 12,
     "migrator_version": 15,
     "rest": 113,
-    "hooks_fired": 167
+    "hooks_fired": 168
   },
   "detail_files": {
     "rest": "manifest.rest.json",
@@ -49,7 +49,7 @@
   "generated": {
     "at": "2026-07-07T00:00:00Z",
     "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
-    "branch": "main",
+    "branch": "2.0.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -214,6 +214,16 @@
       "namespace": "mvs/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
       "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+    },
+    "refresh_2026_07_07_v200": {
+      "scope": "2.0.0 functional bug batch (21 cards). Free: moderation wp_update_post removed (no wp_posts corruption); messaging global-nobody ceiling + can_message on send (resolve_privacy_ceiling, chat_panel_enabled helpers); user_login->nicename profile URLs (get_user_profile_url) with login-fallback alias; watermark preview on single media page (TemplateHelpers::resolve_watermark_preview + mvs_apply_watermark_preview filter); media-grid columns attribute honored; /media feed prefetch N+1 fix; delete_cascade taxonomy cleanup; find_ids_by_meta keyset args.",
+      "new_symbols": [
+        "filter mvs_apply_watermark_preview",
+        "Plugin::resolve_privacy_ceiling()",
+        "Plugin::chat_panel_enabled()",
+        "TemplateHelpers::resolve_watermark_preview() (+interface)"
+      ],
+      "not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
     }
   },
   "refreshed_at": "2026-05-28T12:30:00Z",
