@@ -200,6 +200,10 @@ final class InterestsController extends WP_REST_Controller {
 				"SELECT i.media_id
 				FROM {$wpdb->prefix}mvs_media_index i
 				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = i.media_id AND tr.term_taxonomy_id = %d
+				-- privacy = 'public' is intentional and required here: this picks the public
+				-- cover image shown to EVERYONE for an interest tag, so it must never surface
+				-- members/friends/private media. Do NOT route through the viewer-aware
+				-- MediaRepository::build_privacy_where() helper — that would leak non-public media.
 				WHERE i.status = 'publish' AND i.moderation_status = 'approved' AND i.privacy = 'public'
 				ORDER BY i.reaction_count DESC
 				LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

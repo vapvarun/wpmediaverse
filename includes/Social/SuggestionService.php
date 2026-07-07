@@ -120,6 +120,9 @@ class SuggestionService {
 		}
 
 		// 2. Supplement with prolific public creators (followers default 0).
+		// privacy = 'public' is intentional: "who to follow" is a discovery feed that
+		// ranks people by their PUBLIC output only — never their private/members media.
+		// Do NOT swap in the viewer-aware build_privacy_where() helper here.
 		$creators = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT post_author
@@ -188,6 +191,8 @@ class SuggestionService {
 				"SELECT DISTINCT i.post_author
 				FROM {$wpdb->prefix}mvs_media_index i
 				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = i.media_id AND tr.term_taxonomy_id IN ({$tt_ph})
+				-- public-only by design: interest-affinity suggestions rank authors by their
+				-- PUBLIC media only; viewer-aware privacy must NOT be applied here.
 				WHERE i.privacy = 'public' AND i.moderation_status = 'approved' AND i.post_author IN ({$cand_ph})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				...array_merge( array_values( $tt_ids ), array_map( 'intval', $candidate_ids ) )
 			)

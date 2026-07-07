@@ -216,42 +216,34 @@ class UserController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_user_media( $request ) {
-		global $wpdb;
-
-		$user_id  = $request->get_param( 'id' );
+		$user_id  = (int) $request->get_param( 'id' );
 		$per_page = \WPMediaVerse\REST\Pagination::resolve_per_page( $request );
-		$page     = (int) $request->get_param( 'page' );
+		$page     = max( 1, (int) $request->get_param( 'page' ) );
 		$offset   = ( $page - 1 ) * $per_page;
 
 		$viewer_id = get_current_user_id();
 
-		// Determine visible privacy levels.
-		if ( $viewer_id === $user_id ) {
-			$privacy_clause = '1=1'; // Owner sees all own media.
-		} elseif ( $viewer_id ) {
-			$privacy_clause = "privacy IN ('public', 'members')";
-		} else {
-			$privacy_clause = "privacy = 'public'";
-		}
-
-		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND moderation_status = 'approved' AND {$privacy_clause}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$user_id
-			)
-		);
-
-		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND moderation_status = 'approved' AND {$privacy_clause} ORDER BY created_at DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$user_id,
-				$per_page,
-				$offset
+		// Privacy is resolved through the ONE canonical helper
+		// (MediaRepository::build_privacy_where 'profile' mode, via
+		// query_by_author()/count_visible_by_author()) — the exact same path the
+		// profile grid, the main feed, and /serve use. No hand-rolled privacy
+		// clause here, so this API can never drift from the rest of the plugin:
+		// anon = public; logged-in viewer = public + members + friends-of-author;
+		// owner/admin = own media (dm excluded); group/custom need per-item checks.
+		$repo  = Plugin::container()->get( 'media_repository' );
+		$total = $repo->count_visible_by_author( $user_id, $viewer_id );
+		$rows  = $repo->query_by_author(
+			$user_id,
+			array(
+				'moderation_status' => 'approved',
+				'limit'             => $per_page,
+				'offset'            => $offset,
+				'viewer_id'         => $viewer_id,
 			)
 		);
 
 		// Prime post and meta caches in bulk.
-		$int_ids = array_map( 'intval', $ids );
+		$int_ids = array_map( static fn( $row ) => (int) $row['media_id'], $rows );
 		if ( $int_ids ) {
 			_prime_post_caches( $int_ids, true, true );
 			update_meta_cache( 'post', $int_ids );
