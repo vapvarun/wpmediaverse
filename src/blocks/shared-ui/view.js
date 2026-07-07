@@ -932,42 +932,32 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDuplicates = 0;
 			state.uploadModalLastDuplicateId = 0;
 
-			// For album mode, create album first.
+			// For album mode, create album first. Delegates to the single
+			// shared validate-name + POST path (window.mvsRest.createAlbum) so
+			// this surface and the BuddyPress albums tab share one create +
+			// message implementation (Basecamp 10069383195).
 			if ( state.uploadModalMode === 'album' ) {
-				if ( ! state.uploadModalAlbumTitle.trim() ) {
-					actions.showToast( __( 'Please enter an album name.', 'wpmediaverse' ), 'error' );
+				const albumResult = await window.mvsRest.createAlbum(
+					state.uploadModalAlbumTitle,
+					{
+						description: state.uploadModalAlbumDescription,
+						privacy: state.uploadModalPrivacy,
+					}
+				);
+				if ( ! albumResult.ok ) {
+					actions.showToast( albumResult.message, 'error' );
 					state.uploadModalUploading = false;
 					return;
 				}
-				try {
-					const albumRes = await window.mvsRest.restFetch( restUrl + 'albums', {
-						method: 'POST',
-						body: {
-							title: state.uploadModalAlbumTitle.trim(),
-							description: state.uploadModalAlbumDescription.trim(),
-							privacy: state.uploadModalPrivacy,
-						},
-					} );
-					const albumData = albumRes.data;
-					if ( albumData.id ) {
-						state._pendingAlbumId = albumData.id;
-						actions.showToast( __( 'Album "', 'wpmediaverse' ) + albumData.title + '" created!' );
-						if ( ! files.length ) {
-							state.uploadModalUploading = false;
-							setTimeout( () => {
-								actions.closeUploadModal();
-								window.location.reload();
-							}, 800 );
-							return;
-						}
-					} else {
-						actions.showToast( albumData.message || 'Failed to create album.', 'error' );
-						state.uploadModalUploading = false;
-						return;
-					}
-				} catch {
-					actions.showToast( __( 'Network error creating album.', 'wpmediaverse' ), 'error' );
+				const albumData = albumResult.data;
+				state._pendingAlbumId = albumData.id;
+				actions.showToast( __( 'Album "', 'wpmediaverse' ) + albumData.title + '" created!' );
+				if ( ! files.length ) {
 					state.uploadModalUploading = false;
+					setTimeout( () => {
+						actions.closeUploadModal();
+						window.location.reload();
+					}, 800 );
 					return;
 				}
 			}

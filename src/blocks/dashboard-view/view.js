@@ -960,12 +960,25 @@ const { state, actions } = store( 'mvs/dashboard', {
 						} );
 					}
 				} else {
-					const res = await apiFetch( ctx, 'albums', {
-						method: 'POST',
-						body: payload,
-					} );
-					const created = res.data;
-					albumId = created.id;
+					// Shared validate-name + POST path — the same helper the
+					// upload modal and BuddyPress albums tab use, so the
+					// empty-name message and create logic live in one place.
+					// It also checks the response, so a failed create (e.g. an
+					// empty title returning 400) can no longer fall through and
+					// be reported as "Album created!" (Basecamp 10069383195).
+					const albumResult = await window.mvsRest.createAlbum(
+						state.albumModal.title,
+						{
+							description: state.albumModal.description,
+							privacy: state.albumModal.privacy,
+						}
+					);
+					if ( ! albumResult.ok ) {
+						state.albumModal.saving = false;
+						sharedUI.actions.showToast( albumResult.message, 'error' );
+						return;
+					}
+					albumId = albumResult.data.id;
 					if ( state.albumModal.selectedIds.length && albumId ) {
 						await apiFetch( ctx, 'albums/' + albumId + '/items', {
 							method: 'POST',

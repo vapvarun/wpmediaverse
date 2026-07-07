@@ -551,44 +551,35 @@
 		} );
 
 		saveBtn.addEventListener( 'click', function() {
-			var title = titleIn.value.trim();
-			if ( ! title ) {
-				msgEl.textContent = __( 'Please enter an album name.', 'wpmediaverse' );
-				msgEl.className = 'mvs-bp-album-msg mvs-bp-album-msg-error';
-				return;
-			}
+			// Read the inputs at click-time, not the init-captured refs. BP
+			// Nouveau can re-render the tab body via AJAX after this handler
+			// binds, which would leave `titleIn` pointing at a detached node
+			// that reads empty — the false "Please enter an album name." bug
+			// (Basecamp 10069383195). getElementById always resolves the live
+			// node in the current DOM.
+			var titleEl = document.getElementById( 'mvs-bp-album-title' );
+			var descEl  = document.getElementById( 'mvs-bp-album-desc' );
+			var groupEl = document.getElementById( 'mvs-bp-group-id' );
 
 			saveBtn.disabled = true;
 			saveBtn.textContent = __( 'Creating...', 'wpmediaverse' );
 			msgEl.textContent = '';
 
-			var payload = { title: title, description: descIn.value.trim() };
-			var groupIdEl = document.getElementById( 'mvs-bp-group-id' );
-			if ( groupIdEl && groupIdEl.value ) {
-				payload.group_id = parseInt( groupIdEl.value, 10 );
-			}
-
-			window.mvsRest.restFetch( restUrl + 'albums', {
-				method: 'POST',
-				body: payload,
-			} )
-			.then( function( r ) { return r.data; } )
-			.then( function( data ) {
-				saveBtn.disabled = false;
-				saveBtn.textContent = __( 'Create', 'wpmediaverse' );
-
-				if ( data.id ) {
+			// One shared validate-name + POST path (window.mvsRest.createAlbum)
+			// so the message + create logic live in one place across both
+			// album-create surfaces.
+			window.mvsRest.createAlbum( titleEl ? titleEl.value : '', {
+				description: descEl ? descEl.value : '',
+				groupId: ( groupEl && groupEl.value ) ? groupEl.value : 0,
+			} ).then( function( res ) {
+				if ( res.ok ) {
 					// Success — reload to show the new album.
 					window.location.reload();
-				} else {
-					msgEl.textContent = data.message || __( 'Failed to create album.', 'wpmediaverse' );
-					msgEl.className = 'mvs-bp-album-msg mvs-bp-album-msg-error';
+					return;
 				}
-			} )
-			.catch( function() {
 				saveBtn.disabled = false;
 				saveBtn.textContent = __( 'Create', 'wpmediaverse' );
-				msgEl.textContent = __( 'Network error. Please try again.', 'wpmediaverse' );
+				msgEl.textContent = res.message;
 				msgEl.className = 'mvs-bp-album-msg mvs-bp-album-msg-error';
 			} );
 		} );

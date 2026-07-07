@@ -285,7 +285,97 @@
 		return performRequest( path, opts || {}, false );
 	}
 
+	/**
+	 * Resolve the gettext `__` at call time. mvs-rest loads in the header
+	 * before wp-i18n may be present, so we look it up when the message is
+	 * actually needed and fall back to the English string otherwise. Mirrors
+	 * the guarded bridge in assets/js/bp-activity-media.js.
+	 *
+	 * @return {function(string, string=): string}
+	 */
+	function gettext() {
+		return ( window.wp && window.wp.i18n && window.wp.i18n.__ )
+			? window.wp.i18n.__
+			: function ( s ) { return s; };
+	}
+
+	/**
+	 * Create an album via `POST mvs/v1/albums`. This is the SINGLE
+	 * validate-name + create path shared by every album-create surface
+	 * (the upload-modal album mode in the shared-ui block and the BuddyPress
+	 * profile/group albums tab). Keeping the validation message and the create
+	 * request in one place removes the duplicate implementations that drifted
+	 * apart (Basecamp 10069383195).
+	 *
+	 * Album names are intentionally NOT unique — they are per-member labels
+	 * (AlbumService::create runs no name-uniqueness check), so validation only
+	 * rejects an empty name.
+	 *
+	 * @param {string} name              Album title (trimmed internally).
+	 * @param {Object} [opts]
+	 * @param {string} [opts.description] Album description.
+	 * @param {string} [opts.privacy]     Privacy value ('public'|'members'|'friends'|'private').
+	 * @param {number} [opts.groupId]     BuddyPress group id when created in a group.
+	 * @return {Promise<{ok: boolean, data: *, code: string, message: string}>}
+	 *   ok:false, code:'empty_name'    — blank name, no request sent.
+	 *   ok:true,  data:<album>         — created (data.id present).
+	 *   ok:false, code:'network_error' — request never reached the server.
+	 *   ok:false, code:'create_failed' — server declined; message carries why.
+	 */
+	function createAlbum( name, opts ) {
+		opts = opts || {};
+		var __ = gettext();
+		var title = ( name == null ? '' : String( name ) ).trim();
+
+		if ( ! title ) {
+			return Promise.resolve( {
+				ok: false,
+				data: null,
+				code: 'empty_name',
+				message: __( 'Please enter an album name.', 'wpmediaverse' )
+			} );
+		}
+
+		var body = { title: title };
+		if ( opts.description ) {
+			body.description = String( opts.description ).trim();
+		}
+		if ( opts.privacy ) {
+			body.privacy = opts.privacy;
+		}
+		if ( opts.groupId ) {
+			var groupId = parseInt( opts.groupId, 10 );
+			if ( groupId ) {
+				body.group_id = groupId;
+			}
+		}
+
+		return restFetch( 'albums', { method: 'POST', body: body } ).then( function ( r ) {
+			var data = ( r && r.data ) ? r.data : null;
+			if ( data && data.id ) {
+				return { ok: true, data: data, code: '', message: '' };
+			}
+			if ( r && r.status === 0 ) {
+				return {
+					ok: false,
+					data: null,
+					code: 'network_error',
+					message: __( 'Network error. Please try again.', 'wpmediaverse' )
+				};
+			}
+			return {
+				ok: false,
+				data: data,
+				code: 'create_failed',
+				message: ( data && data.message )
+					? data.message
+					: __( 'Failed to create album.', 'wpmediaverse' )
+			};
+		} );
+	}
+
 	window.mvsRest = {
-		restFetch: restFetch
+		restFetch: restFetch,
+		createAlbum: createAlbum
 	};
 } )();
