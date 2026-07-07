@@ -312,17 +312,32 @@ class TemplateLoader {
 			exit;
 		}
 
-		// Check privacy. Denied viewers get the branded 404 — media privacy is
-		// enforced here, not softened into a teaser.
+		// Check privacy. A denied viewer gets the SAME single-media template and
+		// container — the template swaps the media itself for a "log in to view"
+		// message in the media slot and hides the social + comment sections. No
+		// redirect, no separate 404/gate page. The file URL, poster, OG image and
+		// download are never exposed to a denied viewer (see mvs_media_can_view;
+		// MediaUrl::file()/get_thumb_url() already return '' when the gate denies).
 		$can_view = $this->can_view_media( $media );
-		if ( ! $can_view ) {
-			self::render_branded_404( 'media', $slug );
-			return;
-		}
 
 		// Set globals for the template.
 		$GLOBALS['mvs_current_media']  = $media;
-		$GLOBALS['mvs_media_can_view'] = true;
+		$GLOBALS['mvs_media_can_view'] = $can_view;
+
+		// Denied viewers: mark the page non-indexable and forbidden, but keep
+		// rendering the media container so the message lands where the media
+		// would have.
+		if ( ! $can_view ) {
+			status_header( 403 );
+			nocache_headers();
+			add_action(
+				'wp_head',
+				static function () {
+					echo '<meta name="robots" content="noindex,nofollow" />' . "\n";
+				},
+				1
+			);
+		}
 
 		// Set page title.
 		add_filter(
@@ -336,55 +351,58 @@ class TemplateLoader {
 		// Open Graph + Twitter Card meta — when this URL is shared on
 		// Facebook / X / LinkedIn / Slack / etc., the platform scrapes
 		// these tags to render a preview card with image + title +
-		// description. Without these the link renders as a bare URL.
-		add_action(
-			'wp_head',
-			function () use ( $media ) {
-				$title       = $media['title'] ? $media['title'] : __( 'Media', 'wpmediaverse' );
-				$description = isset( $media['description'] ) ? wp_strip_all_tags( $media['description'] ) : '';
-				if ( strlen( $description ) > 280 ) {
-					$description = substr( $description, 0, 277 ) . '…';
-				}
+		// description. Skipped entirely for denied viewers so a shared link
+		// never leaks the poster or description of gated media.
+		if ( $can_view ) {
+			add_action(
+				'wp_head',
+				function () use ( $media ) {
+					$title       = $media['title'] ? $media['title'] : __( 'Media', 'wpmediaverse' );
+					$description = isset( $media['description'] ) ? wp_strip_all_tags( $media['description'] ) : '';
+					if ( strlen( $description ) > 280 ) {
+						$description = substr( $description, 0, 277 ) . '…';
+					}
 
-				// Use a thumbnail (signed if needed) so private-but-shareable
-				// items still get a preview image. The signed_urls service
-				// is registered unconditionally on plugin init so this
-				// returns a usable instance in any normal request, but the
-				// guard stays for the rare edge case where service
-				// resolution failed (e.g. plugin half-activated).
-				$signed    = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
-				$thumb_url = $signed ? $signed->generate_thumbnail( (int) $media['media_id'], 0, 'large', 0, true ) : '';
+					// Use a thumbnail (signed if needed) so private-but-shareable
+					// items still get a preview image. The signed_urls service
+					// is registered unconditionally on plugin init so this
+					// returns a usable instance in any normal request, but the
+					// guard stays for the rare edge case where service
+					// resolution failed (e.g. plugin half-activated).
+					$signed    = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
+					$thumb_url = $signed ? $signed->generate_thumbnail( (int) $media['media_id'], 0, 'large', 0, true ) : '';
 
-				$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $media['media_id'] );
-				$site_name = get_bloginfo( 'name' );
-				$is_video  = isset( $media['media_type'] ) && 'video' === $media['media_type'];
-				$is_audio  = isset( $media['media_type'] ) && 'audio' === $media['media_type'];
+					$permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( (int) $media['media_id'] );
+					$site_name = get_bloginfo( 'name' );
+					$is_video  = isset( $media['media_type'] ) && 'video' === $media['media_type'];
+					$is_audio  = isset( $media['media_type'] ) && 'audio' === $media['media_type'];
 
-				echo "\n<!-- WPMediaVerse Open Graph -->\n";
-				echo '<meta property="og:title" content="' . esc_attr( $title ) . '" />' . "\n";
-				echo '<meta property="og:type" content="' . esc_attr( $is_video ? 'video.other' : ( $is_audio ? 'music.song' : 'article' ) ) . '" />' . "\n";
-				echo '<meta property="og:url" content="' . esc_url( $permalink ) . '" />' . "\n";
-				echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '" />' . "\n";
-				if ( $description ) {
-					echo '<meta property="og:description" content="' . esc_attr( $description ) . '" />' . "\n";
-				}
-				if ( $thumb_url ) {
-					echo '<meta property="og:image" content="' . esc_url( $thumb_url ) . '" />' . "\n";
-					echo '<meta property="og:image:alt" content="' . esc_attr( $title ) . '" />' . "\n";
-				}
+					echo "\n<!-- WPMediaVerse Open Graph -->\n";
+					echo '<meta property="og:title" content="' . esc_attr( $title ) . '" />' . "\n";
+					echo '<meta property="og:type" content="' . esc_attr( $is_video ? 'video.other' : ( $is_audio ? 'music.song' : 'article' ) ) . '" />' . "\n";
+					echo '<meta property="og:url" content="' . esc_url( $permalink ) . '" />' . "\n";
+					echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '" />' . "\n";
+					if ( $description ) {
+						echo '<meta property="og:description" content="' . esc_attr( $description ) . '" />' . "\n";
+					}
+					if ( $thumb_url ) {
+						echo '<meta property="og:image" content="' . esc_url( $thumb_url ) . '" />' . "\n";
+						echo '<meta property="og:image:alt" content="' . esc_attr( $title ) . '" />' . "\n";
+					}
 
-				echo '<meta name="twitter:card" content="' . esc_attr( $thumb_url ? 'summary_large_image' : 'summary' ) . '" />' . "\n";
-				echo '<meta name="twitter:title" content="' . esc_attr( $title ) . '" />' . "\n";
-				if ( $description ) {
-					echo '<meta name="twitter:description" content="' . esc_attr( $description ) . '" />' . "\n";
-				}
-				if ( $thumb_url ) {
-					echo '<meta name="twitter:image" content="' . esc_url( $thumb_url ) . '" />' . "\n";
-				}
-				echo "<!-- /WPMediaVerse Open Graph -->\n";
-			},
-			5 // run early so themes / SEO plugins can override below.
-		);
+					echo '<meta name="twitter:card" content="' . esc_attr( $thumb_url ? 'summary_large_image' : 'summary' ) . '" />' . "\n";
+					echo '<meta name="twitter:title" content="' . esc_attr( $title ) . '" />' . "\n";
+					if ( $description ) {
+						echo '<meta name="twitter:description" content="' . esc_attr( $description ) . '" />' . "\n";
+					}
+					if ( $thumb_url ) {
+						echo '<meta name="twitter:image" content="' . esc_url( $thumb_url ) . '" />' . "\n";
+					}
+					echo "<!-- /WPMediaVerse Open Graph -->\n";
+				},
+				5 // run early so themes / SEO plugins can override below.
+			);
+		}
 
 		$template = self::locate( 'media-single.php' );
 		if ( $template ) {
@@ -462,7 +480,7 @@ class TemplateLoader {
 	 */
 	private function serve_profile_edit(): void {
 		if ( ! is_user_logged_in() ) {
-			wp_safe_redirect( wp_login_url( home_url( '/media/edit-profile/' ) ) );
+			wp_safe_redirect( \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( '/media/edit-profile/' ) ) );
 			exit;
 		}
 

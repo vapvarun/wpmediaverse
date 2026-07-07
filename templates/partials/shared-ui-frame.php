@@ -18,10 +18,15 @@ $mvs_rest_url     = esc_url_raw( rest_url( 'mvs/v1/' ) );
 $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 
 // Show FAB only on MVS pages (explore, dashboard, media single/archive).
-$mvs_page_ids = array_filter( array_map( 'absint', array(
-	get_option( 'mvs_page_explore', 0 ),
-	get_option( 'mvs_page_dashboard', 0 ),
-) ) );
+$mvs_page_ids = array_filter(
+	array_map(
+		'absint',
+		array(
+			get_option( 'mvs_page_explore', 0 ),
+			get_option( 'mvs_page_dashboard', 0 ),
+		)
+	)
+);
 $mvs_show_fab = $mvs_is_logged_in && (
 	( ! empty( $mvs_page_ids ) && is_page( $mvs_page_ids ) )
 	|| ! empty( $GLOBALS['mvs_current_media'] )
@@ -208,7 +213,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 	<?php endif; ?>
 
 	<!-- Edit Media modal — opened via window.mvsOpenEditModal( id )
-	     when an owner clicks .mvs-media-edit-btn on their own card. -->
+		when an owner clicks .mvs-media-edit-btn on their own card. -->
 	<?php if ( $mvs_is_logged_in ) : ?>
 	<div class="mvs-modal-overlay mvs-edit-modal-overlay" hidden data-wp-bind--hidden="!state.editModalVisible" data-wp-on--click="actions.closeEditModal" role="dialog" aria-modal="true" aria-labelledby="mvs-edit-modal-title">
 		<div class="mvs-modal mvs-edit-modal" data-wp-on--click="actions.handleModalClick">
@@ -245,7 +250,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 							data-wp-bind--value="state.editModalDescription"></textarea>
 					</div>
 					<!-- Privacy + slug-regenerate sit on the same row to save
-					     vertical space — pure presentation, no functional pairing. -->
+						vertical space — pure presentation, no functional pairing. -->
 					<div class="mvs-modal-row">
 						<div class="mvs-modal-field mvs-modal-field--inline">
 							<label for="mvs-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
@@ -495,7 +500,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						</div>
 					<?php else : ?>
 						<p class="mvs-lightbox-login-prompt">
-							<a href="<?php echo esc_url( wp_login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ) ); ?>">
+							<a href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ) ); ?>">
 								<?php esc_html_e( 'Log in to comment', 'wpmediaverse' ); ?>
 							</a>
 						</p>

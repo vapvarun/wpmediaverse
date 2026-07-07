@@ -542,6 +542,82 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * BuddyNext-aware login URL.
+	 *
+	 * Identity in this stack lives in BuddyNext (login/register/reset/2FA/social),
+	 * so every "log in" link MediaVerse renders must route to BuddyNext's paged
+	 * front-end auth screen when that plugin is active — NOT wp-login.php. Falls
+	 * back to core `wp_login_url()` when BuddyNext is absent (Free running
+	 * standalone). Override the final URL via the `mvs_login_url` filter.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $redirect Optional URL to return to after login.
+	 * @return string Login URL.
+	 */
+	public static function login_url( string $redirect = '' ): string {
+		$url = '';
+
+		if ( class_exists( '\BuddyNext\Core\PageRouter' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
+			$bn = (string) \BuddyNext\Core\PageRouter::auth_url();
+			if ( '' !== $bn ) {
+				$url = $redirect ? add_query_arg( 'redirect_to', rawurlencode( $redirect ), $bn ) : $bn;
+			}
+		}
+
+		if ( '' === $url ) {
+			$url = wp_login_url( $redirect );
+		}
+
+		/**
+		 * Filters the login URL MediaVerse links to across every surface.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $url      Resolved login URL (BuddyNext auth page when active).
+		 * @param string $redirect Post-login return URL.
+		 */
+		return (string) apply_filters( 'mvs_login_url', $url, $redirect );
+	}
+
+	/**
+	 * BuddyNext-aware registration URL.
+	 *
+	 * BuddyNext's auth screen carries both sign-in and sign-up, so registration
+	 * routes to the same paged auth URL when BuddyNext is active; otherwise falls
+	 * back to core `wp_registration_url()`. Override via `mvs_registration_url`.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $redirect Optional URL to return to after registration.
+	 * @return string Registration URL.
+	 */
+	public static function registration_url( string $redirect = '' ): string {
+		$url = '';
+
+		if ( class_exists( '\BuddyNext\Core\PageRouter' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
+			$bn = (string) \BuddyNext\Core\PageRouter::auth_url();
+			if ( '' !== $bn ) {
+				$url = $redirect ? add_query_arg( 'redirect_to', rawurlencode( $redirect ), $bn ) : $bn;
+			}
+		}
+
+		if ( '' === $url ) {
+			$url = wp_registration_url();
+		}
+
+		/**
+		 * Filters the registration URL MediaVerse links to.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $url      Resolved registration URL.
+		 * @param string $redirect Post-registration return URL.
+		 */
+		return (string) apply_filters( 'mvs_registration_url', $url, $redirect );
+	}
+
+	/**
 	 * Render a `<picture>` element that prefers WebP when a variant exists.
 	 *
 	 * Single-image renderers (media-single, lightbox, custom templates) that
@@ -1210,5 +1286,4 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		return $html;
 	}
-
 }

@@ -368,7 +368,7 @@ class Shortcodes {
 				wp_enqueue_script( 'mvs-lucide' );
 			}
 			$return_url = get_permalink();
-			$login_url  = wp_login_url( $return_url );
+			$login_url  = \WPMediaVerse\Core\TemplateHelpers::login_url( $return_url );
 			$signup_url = function_exists( 'wc_registration_url' )
 				? wc_registration_url( $return_url )
 				: wp_registration_url();

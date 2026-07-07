@@ -15,7 +15,7 @@ get_header();
 
 do_action( 'mvs_before_content' );
 
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
 // Archive URL (base media page).
 $mvs_archive_url = home_url( '/media/' );
@@ -28,7 +28,7 @@ $mvs_archive_url = home_url( '/media/' );
 			<span><?php esc_html_e( 'Upload, share, and discover media', 'wpmediaverse' ); ?></span>
 		</div>
 		<div class="mvs-logged-out-banner__actions">
-			<a href="<?php echo esc_url( wp_login_url( $mvs_archive_url ) ); ?>" class="mvs-btn mvs-btn--primary mvs-btn--small">
+			<a href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_archive_url ) ); ?>" class="mvs-btn mvs-btn--primary mvs-btn--small">
 				<?php esc_html_e( 'Log In', 'wpmediaverse' ); ?>
 			</a>
 			<?php if ( get_option( 'users_can_register' ) ) : ?>
@@ -105,11 +105,11 @@ $mvs_archive_url = home_url( '/media/' );
 			$mvs_dashboard_link = $mvs_dash_page ? get_permalink( $mvs_dash_page ) : home_url( '/' );
 		}
 		?>
-	<?php
-	// Platform-agnostic profile URL (BP / BuddyNext override via filter) so the
-	// header avatar + name can route to the integration's profile.
-	$mvs_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_profile->ID );
-	?>
+		<?php
+		// Platform-agnostic profile URL (BP / BuddyNext override via filter) so the
+		// header avatar + name can route to the integration's profile.
+		$mvs_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_profile->ID );
+		?>
 	<div class="mvs-profile-header-card">
 		<?php if ( $mvs_profile_url ) : ?>
 		<a class="mvs-profile-header-avatar-link" href="<?php echo esc_url( $mvs_profile_url ); ?>"><img class="mvs-profile-header-avatar" src="<?php echo esc_url( get_avatar_url( $mvs_profile->ID, array( 'size' => 96 ) ) ); ?>" alt="<?php echo esc_attr( $mvs_profile->display_name ); ?>" width="96" height="96" /></a>
@@ -119,13 +119,15 @@ $mvs_archive_url = home_url( '/media/' );
 		<?php endif; ?>
 		<div class="mvs-profile-header-info">
 			<div class="mvs-profile-header-top">
-				<h2 class="mvs-profile-header-name"><?php
+				<h2 class="mvs-profile-header-name">
+				<?php
 				if ( $mvs_profile_url ) {
 					printf( '<a href="%s">%s</a>', esc_url( $mvs_profile_url ), esc_html( $mvs_profile->display_name ) );
 				} else {
 					echo esc_html( $mvs_profile->display_name );
 				}
-				?></h2>
+				?>
+				</h2>
 				<?php if ( $mvs_is_own_profile ) : ?>
 					<a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="<?php echo esc_url( $mvs_dashboard_link ); ?>">
 						<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
@@ -134,7 +136,7 @@ $mvs_archive_url = home_url( '/media/' );
 					<?php
 					$mvs_profile_id     = $mvs_profile->ID;
 					$mvs_is_own_profile = false;
-					include ( \WPMediaVerse\Core\TemplateLoader::locate( 'profile-actions.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/profile-actions.php' );
+					include \WPMediaVerse\Core\TemplateLoader::locate( 'profile-actions.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/profile-actions.php';
 					?>
 				<?php endif; ?>
 			</div>
@@ -149,7 +151,7 @@ $mvs_archive_url = home_url( '/media/' );
 					<strong><?php echo esc_html( number_format_i18n( $mvs_follow_counts['following'] ) ); ?></strong> <?php esc_html_e( 'following', 'wpmediaverse' ); ?>
 				</button>
 			</div>
-			<?php include ( \WPMediaVerse\Core\TemplateLoader::locate( 'follows-modal.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/follows-modal.php' ); ?>
+			<?php include \WPMediaVerse\Core\TemplateLoader::locate( 'follows-modal.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/follows-modal.php'; ?>
 			<?php if ( $mvs_profile->description ) : ?>
 				<p class="mvs-profile-header-bio"><?php echo esc_html( $mvs_profile->description ); ?></p>
 			<?php endif; ?>
@@ -548,7 +550,7 @@ $mvs_archive_url = home_url( '/media/' );
 // .mvs-explore-page div above. Everything below (script enqueues, the
 // mvs_after_content hook, profile-actions enqueue) emits no markup, so it
 // belongs outside the swappable region, consistent with the other templates.
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 // Enqueue Interactivity API stores.
 wp_enqueue_script_module(
@@ -563,7 +565,7 @@ do_action( 'mvs_after_content' );
 if ( $mvs_profile ) {
 	$mvs_profile_id     = $mvs_profile->ID;
 	$mvs_is_own_profile = is_user_logged_in() && get_current_user_id() === $mvs_profile->ID;
-	include ( \WPMediaVerse\Core\TemplateLoader::locate( 'profile-actions-js.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php' );
+	include \WPMediaVerse\Core\TemplateLoader::locate( 'profile-actions-js.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php';
 }
 
 get_footer();
