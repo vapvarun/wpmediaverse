@@ -107,6 +107,38 @@ class WatermarkService {
 	}
 
 	/**
+	 * Whether an upload by the given user should be watermarked, per the admin
+	 * scope setting. `all` (default) stamps every upload; `roles` stamps only
+	 * uploads from users whose role is in mvs_watermark_roles. Admin decides
+	 * once; every matching upload is stamped at ingest so everyone sees it.
+	 *
+	 * @param int $user_id Uploader user ID.
+	 * @return bool
+	 */
+	public function applies_to_user( int $user_id ): bool {
+		if ( ! $this->is_enabled() ) {
+			return false;
+		}
+
+		$mode = (string) get_option( 'mvs_watermark_apply', 'all' );
+		if ( 'roles' !== $mode ) {
+			return true; // 'all' — every upload is watermarked.
+		}
+
+		$roles = (array) get_option( 'mvs_watermark_roles', array() );
+		if ( empty( $roles ) || $user_id <= 0 ) {
+			return false;
+		}
+
+		$user = get_userdata( $user_id );
+		if ( ! $user ) {
+			return false;
+		}
+
+		return (bool) array_intersect( (array) $user->roles, $roles );
+	}
+
+	/**
 	 * Get the watermark configuration.
 	 *
 	 * The image watermark is stored by the admin UI as a Media Library

@@ -269,6 +269,19 @@ class UploadService {
 		$avif_local   = null;
 		$bytes_before = (int) $actual_size;
 		if ( 0 === strpos( $mime, 'image/' ) ) {
+			// Admin watermark: stamp the ORIGINAL in place before optimization so
+			// every derivative (webp/avif/thumbnails) inherits it and everyone
+			// sees it. Scope (all uploads, or selected uploader roles) is decided
+			// by the admin; Pro's Watermarker does the stamp via
+			// mvs_watermark_stamp_file — a no-op when Pro is inactive.
+			$watermark = \WPMediaVerse\Core\Plugin::container()->get( 'watermark' );
+			if ( $watermark->applies_to_user( $user_id ) ) {
+				(bool) apply_filters( 'mvs_watermark_stamp_file', false, $file['tmp_name'], $mime, $user_id );
+				clearstatcache( true, $file['tmp_name'] );
+				$actual_size  = (int) filesize( $file['tmp_name'] );
+				$bytes_before = (int) $actual_size;
+			}
+
 			$image_opt   = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
 			$opt_context = array(
 				'media_id' => 0, // not yet assigned — set after media insert.
