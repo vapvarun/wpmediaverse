@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse-pro",
     "name": "WPMediaVerse Pro",
-    "version": "1.2.0",
+    "version": "1.9.0",
     "namespace": "WPMediaVersePro",
     "main_file": "wpmediaverse-pro.php",
     "text_domain": "wpmediaverse-pro",
@@ -45,548 +45,1270 @@
     "namespace": "mvs-pro/v1",
     "endpoints": [
       {
-        "route": "/connectors",
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions",
         "methods": [
           "GET"
         ],
-        "handler": "Connectors/ConnectorRESTController::list_connectors",
-        "permission": "logged-in",
-        "purpose": "List available connectors"
+        "handler": "CaptionController::get_captions",
+        "permission": "can_read",
+        "purpose": "Get caption tracks for a media item",
+        "file": "includes/Captions/CaptionController.php:64"
       },
       {
-        "route": "/connectors/(?P<id>[\\w-]+)/connect",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Connectors/ConnectorRESTController::start_connect",
-        "permission": "logged-in",
-        "purpose": "Begin OAuth/connect flow"
-      },
-      {
-        "route": "/connectors/(?P<id>[\\w-]+)/disconnect",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Connectors/ConnectorRESTController::do_disconnect",
-        "permission": "connected",
-        "purpose": "Disconnect platform"
-      },
-      {
-        "route": "/connectors/(?P<id>[\\w-]+)/status",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Connectors/ConnectorRESTController::get_status",
-        "permission": "connected",
-        "purpose": "Connection status"
-      },
-      {
-        "route": "/connectors/(?P<id>[\\w-]+)/browse",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Connectors/ConnectorRESTController::browse_remote",
-        "permission": "connected",
-        "purpose": "Browse remote media"
-      },
-      {
-        "route": "/connectors/(?P<id>[\\w-]+)/import",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Connectors/ConnectorRESTController::import_media",
-        "permission": "connected",
-        "purpose": "Sideload import remote media"
-      },
-      {
-        "route": "/connectors/(?P<id>[\\w-]+)/sync-delta",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Connectors/ConnectorRESTController::sync_delta",
-        "permission": "connected",
-        "purpose": "Incremental sync since last import"
-      },
-      {
-        "route": "/battles",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "Battles/BattleController",
-        "permission": "public read; logged-in create",
-        "purpose": "1v1 photo battles"
-      },
-      {
-        "route": "/battles/(?P<id>\\d+)",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Battles/BattleController::get_item",
-        "permission": "public",
-        "purpose": "Battle detail"
-      },
-      {
-        "route": "/battles/(?P<id>\\d+)/accept",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Battles/BattleController::accept_item",
-        "permission": "opponent",
-        "purpose": "Accept battle invite"
-      },
-      {
-        "route": "/battles/(?P<id>\\d+)/decline",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Battles/BattleController::decline_item",
-        "permission": "opponent",
-        "purpose": "Decline battle invite"
-      },
-      {
-        "route": "/battles/(?P<id>\\d+)/submit",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Battles/BattleController::submit_entry",
-        "permission": "participant",
-        "purpose": "Submit battle entry"
-      },
-      {
-        "route": "/battles/(?P<id>\\d+)/vote",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Battles/BattleController::vote_item",
-        "permission": "can_vote",
-        "purpose": "Vote in battle"
-      },
-      {
-        "route": "/challenges",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "Challenges/ChallengeController",
-        "permission": "public read; admin create",
-        "purpose": "Challenges list/create"
-      },
-      {
-        "route": "/challenges/(?P<id>\\d+)",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Challenges/ChallengeController::get_item",
-        "permission": "public",
-        "purpose": "Challenge detail"
-      },
-      {
-        "route": "/challenges/(?P<id>\\d+)/cancel",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Challenges/ChallengeController::cancel_item",
-        "permission": "creator/admin",
-        "purpose": "Cancel challenge"
-      },
-      {
-        "route": "/challenges/(?P<id>\\d+)/entries",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Challenges/ChallengeController::get_entries",
-        "permission": "public",
-        "purpose": "List entries"
-      },
-      {
-        "route": "/challenges/(?P<id>\\d+)/entries/(?P<entry_id>\\d+)/vote",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Challenges/ChallengeController::vote_entry",
-        "permission": "logged-in",
-        "purpose": "Vote on entry"
-      },
-      {
-        "route": "/challenges/(?P<id>\\d+)/results",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Challenges/ChallengeController::get_results",
-        "permission": "public",
-        "purpose": "Challenge results"
-      },
-      {
-        "route": "/tournaments",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "Tournaments/TournamentController",
-        "permission": "public read; admin create",
-        "purpose": "Tournaments list/create"
-      },
-      {
-        "route": "/tournaments/(?P<id>\\d+)",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Tournaments/TournamentController::get_item",
-        "permission": "public",
-        "purpose": "Tournament detail"
-      },
-      {
-        "route": "/tournaments/(?P<id>\\d+)/bracket",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Tournaments/TournamentController::get_bracket",
-        "permission": "public",
-        "purpose": "Bracket data"
-      },
-      {
-        "route": "/tournaments/(?P<id>\\d+)/register",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Tournaments/TournamentController::register_item",
-        "permission": "logged-in",
-        "purpose": "Register participant"
-      },
-      {
-        "route": "/tournaments/(?P<id>\\d+)/matches/(?P<match_id>\\d+)/vote",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Tournaments/TournamentController::vote_match",
-        "permission": "logged-in",
-        "purpose": "Vote on match"
-      },
-      {
-        "route": "/me/quota",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Quota/QuotaController::get_my_quota",
-        "permission": "logged-in",
-        "purpose": "My quota"
-      },
-      {
-        "route": "/users/(?P<user_id>\\d+)/quota",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Quota/QuotaController::get_user_quota",
-        "permission": "admin",
-        "purpose": "User's quota"
-      },
-      {
-        "route": "/users/(?P<user_id>\\d+)/quota/assign",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Quota/QuotaController::assign_package",
-        "permission": "admin",
-        "purpose": "Assign quota package"
-      },
-      {
-        "route": "/me/boosts",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Boosts/BoostController::get_my_boosts",
-        "permission": "logged-in",
-        "purpose": "My boosts"
-      },
-      {
-        "route": "/boosts",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Boosts/BoostController::create_boost",
-        "permission": "logged-in",
-        "purpose": "Create boost"
-      },
-      {
-        "route": "/captions/(?P<media_id>\\d+)",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "Captions/CaptionController",
-        "permission": "media owner/admin",
-        "purpose": "Captions get/transcribe"
-      },
-      {
-        "route": "/transcode",
-        "methods": [
-          "POST"
-        ],
-        "handler": "Video/TranscodeController::start_transcode",
-        "permission": "admin",
-        "purpose": "Start transcode job"
-      },
-      {
-        "route": "/transcode/(?P<job_id>\\d+)",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Video/TranscodeController::get_status",
-        "permission": "admin",
-        "purpose": "Job status"
-      },
-      {
-        "route": "/videos/(?P<id>\\d+)/chapters",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Video/VideoController::get_chapters",
-        "permission": "public",
-        "purpose": "Video chapters"
-      },
-      {
-        "route": "/videos/(?P<id>\\d+)/resume",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "Video/VideoController",
-        "permission": "viewer",
-        "purpose": "Resume position"
-      },
-      {
-        "route": "/videos/(?P<id>\\d+)/analytics",
-        "methods": [
-          "GET"
-        ],
-        "handler": "Analytics/AnalyticsController::get_heatmap",
-        "permission": "owner/admin",
-        "purpose": "Video heatmap"
-      },
-      {
-        "route": "/privacy/settings",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "Privacy/PrivacyController",
-        "permission": "logged-in",
-        "purpose": "Advanced privacy settings"
-      },
-      {
-        "route": "/compete-summary",
-        "methods": [
-          "GET"
-        ],
-        "handler": "REST/CompeteSummaryController::get_summary",
-        "permission": "logged-in",
-        "purpose": "Competition dashboard summary"
-      },
-      {
-        "route": "/leaderboard",
-        "methods": [
-          "GET"
-        ],
-        "handler": "REST/LeaderboardController::get_leaderboard",
-        "permission": "__return_true (public)",
-        "purpose": "Paginated leaderboard (reactions|media_count|gamification_xp) + viewer_rank; cached via mvs_pro_leaderboard_cache_ttl"
-      },
-      {
-        "route": "/push/register-device",
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions",
         "methods": [
           "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "CaptionController::update_captions",
+        "permission": "can_modify",
+        "purpose": "Update caption tracks for a media item",
+        "file": "includes/Captions/CaptionController.php:73"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions",
+        "methods": [
           "DELETE"
         ],
-        "handler": "REST/PushController",
-        "permission": "logged-in",
-        "purpose": "Register/remove an Expo push token (mvs_pro_push_devices); fan-out on mvs_notification_created"
+        "handler": "CaptionController::delete_captions",
+        "permission": "can_modify",
+        "purpose": "Delete caption tracks for a media item",
+        "file": "includes/Captions/CaptionController.php:87"
       },
       {
-        "route": "/stories",
-        "methods": [
-          "GET"
-        ],
-        "handler": "REST/StoryController::get_stories",
-        "permission": "__return_true (network-scoped + privacy-filtered)",
-        "purpose": "Active stories from people the viewer follows + self (WhatsApp model)"
-      },
-      {
-        "route": "/media/(?P<id>[\\d]+)/story",
-        "methods": [
-          "POST",
-          "DELETE"
-        ],
-        "handler": "REST/StoryController",
-        "permission": "owner",
-        "purpose": "Mark/unmark a media item as a 24h story"
-      },
-      {
-        "route": "/stories/(?P<id>[\\d]+)/view",
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions/generate",
         "methods": [
           "POST"
         ],
-        "handler": "REST/StoryController::record_view",
-        "permission": "logged-in + can_view",
-        "purpose": "Record a story view receipt (reuses Free mvs_media_views)"
+        "handler": "CaptionController::generate_captions",
+        "permission": "can_modify",
+        "purpose": "Trigger auto caption generation",
+        "file": "includes/Captions/CaptionController.php:98"
       },
       {
-        "route": "/stories/(?P<id>[\\d]+)/viewers",
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/captions/status",
         "methods": [
           "GET"
         ],
-        "handler": "REST/StoryController::get_viewers",
-        "permission": "owner only",
-        "purpose": "Seen-by list for own story"
+        "handler": "CaptionController::get_status",
+        "permission": "can_read",
+        "purpose": "Get caption generation job status",
+        "file": "includes/Captions/CaptionController.php:110"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConnectorRESTController::list_connectors",
+        "permission": "check_logged_in",
+        "purpose": "List available/connected connectors",
+        "file": "includes/Connectors/ConnectorRESTController.php:96"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/connect",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ConnectorRESTController::start_connect",
+        "permission": "check_logged_in",
+        "purpose": "Start OAuth/connect flow for a connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:111"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/disconnect",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ConnectorRESTController::do_disconnect",
+        "permission": "check_connected",
+        "purpose": "Disconnect a connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:150"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/status",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConnectorRESTController::get_status",
+        "permission": "check_connected",
+        "purpose": "Get connector connection status",
+        "file": "includes/Connectors/ConnectorRESTController.php:164"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/photos",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConnectorRESTController::list_photos",
+        "permission": "check_connected",
+        "purpose": "List remote photos from connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:178"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/albums",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConnectorRESTController::list_albums",
+        "permission": "check_connected",
+        "purpose": "List remote albums from connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:214"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/import",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ConnectorRESTController::import_photos",
+        "permission": "check_connected",
+        "purpose": "Import photos from connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:228"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/export",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ConnectorRESTController::export_media",
+        "permission": "check_connected",
+        "purpose": "Export media to connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:252"
+      },
+      {
+        "route": "/mvs-pro/v1/connectors/(?P<id>[a-z0-9_-]+)/sync",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ConnectorRESTController::delta_sync",
+        "permission": "check_connected",
+        "purpose": "Run delta sync with connector",
+        "file": "includes/Connectors/ConnectorRESTController.php:276"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/transcodes",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TranscodeController::get_transcodes",
+        "permission": "owner_or_admin",
+        "purpose": "List transcode renditions for media",
+        "file": "includes/Video/TranscodeController.php:66"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/transcodes",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "TranscodeController::delete_transcodes",
+        "permission": "owner_or_admin",
+        "purpose": "Delete transcode renditions for media",
+        "file": "includes/Video/TranscodeController.php:75"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/transcode",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TranscodeController::trigger_transcode",
+        "permission": "owner_or_admin",
+        "purpose": "Trigger transcode job for media",
+        "file": "includes/Video/TranscodeController.php:86"
+      },
+      {
+        "route": "/mvs-pro/v1/transcode/status",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TranscodeController::get_queue_status",
+        "permission": "admin_check",
+        "purpose": "Get transcode queue status",
+        "file": "includes/Video/TranscodeController.php:108"
+      },
+      {
+        "route": "/mvs-pro/v1/transcode/config",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TranscodeController::get_config",
+        "permission": "admin_check",
+        "purpose": "Get transcode configuration",
+        "file": "includes/Video/TranscodeController.php:139"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/chapters",
+        "methods": [
+          "GET"
+        ],
+        "handler": "VideoController::get_chapters",
+        "permission": "can_read_media",
+        "purpose": "Get video chapters",
+        "file": "includes/Video/VideoController.php:69"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/chapters",
+        "methods": [
+          "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "VideoController::set_chapters",
+        "permission": "can_edit_chapters",
+        "purpose": "Set video chapters",
+        "file": "includes/Video/VideoController.php:78"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/resume",
+        "methods": [
+          "GET"
+        ],
+        "handler": "VideoController::get_resume",
+        "permission": "require_logged_in",
+        "purpose": "Get playback resume position",
+        "file": "includes/Video/VideoController.php:117"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/resume",
+        "methods": [
+          "POST"
+        ],
+        "handler": "VideoController::save_resume",
+        "permission": "require_logged_in",
+        "purpose": "Save playback resume position",
+        "file": "includes/Video/VideoController.php:126"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/resume",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "VideoController::clear_resume",
+        "permission": "require_logged_in",
+        "purpose": "Clear playback resume position",
+        "file": "includes/Video/VideoController.php:141"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/privacy",
+        "methods": [
+          "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "PrivacyController::update_item_privacy",
+        "permission": "item_owner_or_admin",
+        "purpose": "Update privacy for a media item",
+        "file": "includes/Privacy/PrivacyController.php:63"
+      },
+      {
+        "route": "/mvs-pro/v1/media/bulk-privacy",
+        "methods": [
+          "POST"
+        ],
+        "handler": "PrivacyController::bulk_update_privacy",
+        "permission": "logged_in_check",
+        "purpose": "Bulk update privacy on media items",
+        "file": "includes/Privacy/PrivacyController.php:78"
+      },
+      {
+        "route": "/mvs-pro/v1/privacy/presets",
+        "methods": [
+          "GET"
+        ],
+        "handler": "PrivacyController::get_presets",
+        "permission": "logged_in_check",
+        "purpose": "List privacy presets",
+        "file": "includes/Privacy/PrivacyController.php:112"
+      },
+      {
+        "route": "/mvs-pro/v1/privacy/presets",
+        "methods": [
+          "POST"
+        ],
+        "handler": "PrivacyController::create_preset",
+        "permission": "logged_in_check",
+        "purpose": "Create a privacy preset",
+        "file": "includes/Privacy/PrivacyController.php:121"
+      },
+      {
+        "route": "/mvs-pro/v1/me/quota/check",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UsageWidget::rest_check_quota",
+        "permission": "is_user_logged_in (closure)",
+        "purpose": "Check current user quota for a media type",
+        "file": "includes/Frontend/UsageWidget.php:174"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ChallengeController::get_items",
+        "permission": "__return_true",
+        "purpose": "List challenges",
+        "file": "includes/Challenges/ChallengeController.php:76"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ChallengeController::create_item",
+        "permission": "admin_permissions_check",
+        "purpose": "Create a challenge",
+        "file": "includes/Challenges/ChallengeController.php:105"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ChallengeController::get_item",
+        "permission": "__return_true",
+        "purpose": "Get a challenge",
+        "file": "includes/Challenges/ChallengeController.php:171"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)",
+        "methods": [
+          "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "ChallengeController::update_item",
+        "permission": "admin_permissions_check",
+        "purpose": "Update a challenge",
+        "file": "includes/Challenges/ChallengeController.php:186"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/cancel",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ChallengeController::cancel_item",
+        "permission": "admin_permissions_check",
+        "purpose": "Cancel a challenge",
+        "file": "includes/Challenges/ChallengeController.php:203"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/entries",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ChallengeController::get_entries",
+        "permission": "__return_true",
+        "purpose": "List challenge entries",
+        "file": "includes/Challenges/ChallengeController.php:221"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/entries",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ChallengeController::submit_entry",
+        "permission": "is_user_logged_in",
+        "purpose": "Submit a challenge entry",
+        "file": "includes/Challenges/ChallengeController.php:255"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/entries/(?P<entry_id>[\\d]+)/vote",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ChallengeController::vote_entry",
+        "permission": "is_user_logged_in",
+        "purpose": "Vote on a challenge entry",
+        "file": "includes/Challenges/ChallengeController.php:277"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/entries/(?P<entry_id>[\\d]+)/vote",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "ChallengeController::unvote_entry",
+        "permission": "is_user_logged_in",
+        "purpose": "Remove vote on a challenge entry",
+        "file": "includes/Challenges/ChallengeController.php:297"
+      },
+      {
+        "route": "/mvs-pro/v1/challenges/(?P<id>[\\d]+)/results",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ChallengeController::get_results",
+        "permission": "__return_true",
+        "purpose": "Get challenge results",
+        "file": "includes/Challenges/ChallengeController.php:319"
+      },
+      {
+        "route": "/mvs-pro/v1/groups",
+        "methods": [
+          "POST"
+        ],
+        "handler": "GroupController::create_group",
+        "permission": "logged_in_check",
+        "purpose": "Create a group",
+        "file": "includes/Groups/GroupController.php:52"
+      },
+      {
+        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)",
+        "methods": [
+          "PUT"
+        ],
+        "handler": "GroupController::rename_group",
+        "permission": "admin_check",
+        "purpose": "Rename a group",
+        "file": "includes/Groups/GroupController.php:76"
+      },
+      {
+        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/participants",
+        "methods": [
+          "POST"
+        ],
+        "handler": "GroupController::add_participant",
+        "permission": "admin_check",
+        "purpose": "Add participant to group",
+        "file": "includes/Groups/GroupController.php:93"
+      },
+      {
+        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/participants/(?P<user_id>\\d+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "GroupController::remove_participant",
+        "permission": "admin_check",
+        "purpose": "Remove participant from group",
+        "file": "includes/Groups/GroupController.php:114"
+      },
+      {
+        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/participants/(?P<user_id>\\d+)/role",
+        "methods": [
+          "PUT"
+        ],
+        "handler": "GroupController::set_role",
+        "permission": "admin_check",
+        "purpose": "Set participant role",
+        "file": "includes/Groups/GroupController.php:128"
+      },
+      {
+        "route": "/mvs-pro/v1/groups/(?P<id>\\d+)/leave",
+        "methods": [
+          "POST"
+        ],
+        "handler": "GroupController::leave_group",
+        "permission": "participant_check",
+        "purpose": "Leave a group",
+        "file": "includes/Groups/GroupController.php:147"
+      },
+      {
+        "route": "/mvs-pro/v1/battles",
+        "methods": [
+          "GET"
+        ],
+        "handler": "BattleController::get_items",
+        "permission": "__return_true",
+        "purpose": "List battles",
+        "file": "includes/Battles/BattleController.php:69"
+      },
+      {
+        "route": "/mvs-pro/v1/battles",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BattleController::create_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Create a battle",
+        "file": "includes/Battles/BattleController.php:99"
+      },
+      {
+        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "BattleController::get_item",
+        "permission": "__return_true",
+        "purpose": "Get a battle",
+        "file": "includes/Battles/BattleController.php:121"
+      },
+      {
+        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/accept",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BattleController::accept_item",
+        "permission": "is_user_logged_in",
+        "purpose": "Accept a battle challenge",
+        "file": "includes/Battles/BattleController.php:139"
+      },
+      {
+        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/decline",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BattleController::decline_item",
+        "permission": "is_user_logged_in",
+        "purpose": "Decline a battle challenge",
+        "file": "includes/Battles/BattleController.php:157"
+      },
+      {
+        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/submit",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BattleController::submit_item",
+        "permission": "is_user_logged_in",
+        "purpose": "Submit media to a battle",
+        "file": "includes/Battles/BattleController.php:175"
+      },
+      {
+        "route": "/mvs-pro/v1/battles/(?P<id>[\\d]+)/vote",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BattleController::vote_item",
+        "permission": "is_user_logged_in",
+        "purpose": "Vote in a battle",
+        "file": "includes/Battles/BattleController.php:198"
+      },
+      {
+        "route": "/mvs-pro/v1/me/quota",
+        "methods": [
+          "GET"
+        ],
+        "handler": "QuotaController::get_my_quota",
+        "permission": "logged_in_check",
+        "purpose": "Get current user quota",
+        "file": "includes/Quota/QuotaController.php:54"
+      },
+      {
+        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/quota",
+        "methods": [
+          "GET"
+        ],
+        "handler": "QuotaController::get_user_quota",
+        "permission": "admin_check",
+        "purpose": "Get a user's quota",
+        "file": "includes/Quota/QuotaController.php:65"
+      },
+      {
+        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/package",
+        "methods": [
+          "POST"
+        ],
+        "handler": "QuotaController::assign_user_package",
+        "permission": "admin_check",
+        "purpose": "Assign package to a user",
+        "file": "includes/Quota/QuotaController.php:83"
+      },
+      {
+        "route": "/mvs-pro/v1/users/(?P<user_id>[\\d]+)/credits",
+        "methods": [
+          "POST"
+        ],
+        "handler": "QuotaController::add_user_credits",
+        "permission": "admin_check",
+        "purpose": "Add credits to a user",
+        "file": "includes/Quota/QuotaController.php:106"
+      },
+      {
+        "route": "/mvs-pro/v1/packages",
+        "methods": [
+          "GET"
+        ],
+        "handler": "QuotaController::list_packages",
+        "permission": "admin_check",
+        "purpose": "List quota packages",
+        "file": "includes/Quota/QuotaController.php:139"
+      },
+      {
+        "route": "/mvs-pro/v1/packages",
+        "methods": [
+          "POST"
+        ],
+        "handler": "QuotaController::create_package",
+        "permission": "admin_check",
+        "purpose": "Create a quota package",
+        "file": "includes/Quota/QuotaController.php:147"
+      },
+      {
+        "route": "/mvs-pro/v1/packages/(?P<id>[\\d]+)",
+        "methods": [
+          "POST",
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "QuotaController::update_package",
+        "permission": "admin_check",
+        "purpose": "Update a quota package",
+        "file": "includes/Quota/QuotaController.php:183"
+      },
+      {
+        "route": "/mvs-pro/v1/packages/(?P<id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "QuotaController::delete_package",
+        "permission": "admin_check",
+        "purpose": "Delete a quota package",
+        "file": "includes/Quota/QuotaController.php:191"
+      },
+      {
+        "route": "/mvs-pro/v1/credits/webhook",
+        "methods": [
+          "POST"
+        ],
+        "handler": "QuotaController::handle_webhook",
+        "permission": "__return_true",
+        "purpose": "Payment/credits webhook receiver",
+        "file": "includes/Quota/QuotaController.php:208"
+      },
+      {
+        "route": "/mvs-pro/v1/me/credits/history",
+        "methods": [
+          "GET"
+        ],
+        "handler": "QuotaController::get_credit_history",
+        "permission": "logged_in_check",
+        "purpose": "Get current user credit history",
+        "file": "includes/Quota/QuotaController.php:219"
+      },
+      {
+        "route": "/mvs-pro/v1/streaks/buy-freeze",
+        "methods": [
+          "POST"
+        ],
+        "handler": "StreakController::buy_freeze",
+        "permission": "is_user_logged_in",
+        "purpose": "Buy a streak freeze",
+        "file": "includes/Streaks/StreakController.php:30"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TournamentController::get_items",
+        "permission": "__return_true",
+        "purpose": "List tournaments",
+        "file": "includes/Tournaments/TournamentController.php:75"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TournamentController::create_item",
+        "permission": "admin_permissions_check",
+        "purpose": "Create a tournament",
+        "file": "includes/Tournaments/TournamentController.php:100"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TournamentController::get_item",
+        "permission": "__return_true",
+        "purpose": "Get a tournament",
+        "file": "includes/Tournaments/TournamentController.php:157"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/register",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TournamentController::register_participant",
+        "permission": "is_user_logged_in",
+        "purpose": "Register for a tournament",
+        "file": "includes/Tournaments/TournamentController.php:175"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/register",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "TournamentController::unregister_participant",
+        "permission": "is_user_logged_in",
+        "purpose": "Unregister from a tournament",
+        "file": "includes/Tournaments/TournamentController.php:190"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/bracket",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TournamentController::get_bracket",
+        "permission": "__return_true",
+        "purpose": "Get tournament bracket",
+        "file": "includes/Tournaments/TournamentController.php:207"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/participants",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TournamentController::get_participants",
+        "permission": "__return_true",
+        "purpose": "List tournament participants",
+        "file": "includes/Tournaments/TournamentController.php:225"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/matches/(?P<match_id>[\\d]+)/submit",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TournamentController::submit_media",
+        "permission": "is_user_logged_in",
+        "purpose": "Submit media to a tournament match",
+        "file": "includes/Tournaments/TournamentController.php:243"
+      },
+      {
+        "route": "/mvs-pro/v1/tournaments/(?P<id>[\\d]+)/matches/(?P<match_id>[\\d]+)/vote",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TournamentController::vote_match",
+        "permission": "is_user_logged_in",
+        "purpose": "Vote in a tournament match",
+        "file": "includes/Tournaments/TournamentController.php:271"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<media_id>[\\d]+)/collections",
+        "methods": [
+          "GET"
+        ],
+        "handler": "CollectionItemsController::get_status",
+        "permission": "auth_check",
+        "purpose": "Get collection membership status for media",
+        "file": "includes/Collections/CollectionItemsController.php:57"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<media_id>[\\d]+)/collections",
+        "methods": [
+          "POST"
+        ],
+        "handler": "CollectionItemsController::toggle_membership",
+        "permission": "auth_check",
+        "purpose": "Toggle media membership in a collection",
+        "file": "includes/Collections/CollectionItemsController.php:65"
+      },
+      {
+        "route": "/mvs-pro/v1/boosts",
+        "methods": [
+          "GET"
+        ],
+        "handler": "BoostController::get_items",
+        "permission": "is_user_logged_in",
+        "purpose": "List boosts",
+        "file": "includes/Boosts/BoostController.php:39"
+      },
+      {
+        "route": "/mvs-pro/v1/boosts",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BoostController::create_item",
+        "permission": "is_user_logged_in",
+        "purpose": "Create/apply a boost",
+        "file": "includes/Boosts/BoostController.php:64"
+      },
+      {
+        "route": "/mvs-pro/v1/boosts/balance",
+        "methods": [
+          "GET"
+        ],
+        "handler": "BoostController::get_balance",
+        "permission": "is_user_logged_in",
+        "purpose": "Get boost balance",
+        "file": "includes/Boosts/BoostController.php:85"
+      },
+      {
+        "route": "/mvs-pro/v1/admin/gamification-welcome/dismiss",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AdminController::dismiss_gamification_welcome",
+        "permission": "manage_settings_permissions_check",
+        "purpose": "Dismiss gamification welcome notice",
+        "file": "includes/REST/AdminController.php:61"
+      },
+      {
+        "route": "/mvs-pro/v1/competitions/active-summary",
+        "methods": [
+          "GET"
+        ],
+        "handler": "CompeteSummaryController::get_items",
+        "permission": "__return_true",
+        "purpose": "Get active competitions summary",
+        "file": "includes/REST/CompeteSummaryController.php:61"
+      },
+      {
+        "route": "/mvs-pro/v1/push/register-device",
+        "methods": [
+          "POST"
+        ],
+        "handler": "PushController::register_device",
+        "permission": "logged_in_check",
+        "purpose": "Register a device push token",
+        "file": "includes/REST/PushController.php:57"
+      },
+      {
+        "route": "/mvs-pro/v1/push/register-device",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "PushController::unregister_device",
+        "permission": "logged_in_check",
+        "purpose": "Unregister a device push token",
+        "file": "includes/REST/PushController.php:80"
+      },
+      {
+        "route": "/mvs-pro/v1/stories",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StoryController::get_stories",
+        "permission": "__return_true",
+        "purpose": "List stories",
+        "file": "includes/REST/StoryController.php:59"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/story",
+        "methods": [
+          "POST"
+        ],
+        "handler": "StoryController::create_story",
+        "permission": "owner_permissions_check",
+        "purpose": "Create a story from media",
+        "file": "includes/REST/StoryController.php:90"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/story",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "StoryController::delete_story",
+        "permission": "owner_permissions_check",
+        "purpose": "Delete a story",
+        "file": "includes/REST/StoryController.php:102"
+      },
+      {
+        "route": "/mvs-pro/v1/stories/(?P<id>[\\d]+)/view",
+        "methods": [
+          "POST"
+        ],
+        "handler": "StoryController::record_view",
+        "permission": "viewer_permissions_check",
+        "purpose": "Record a story view",
+        "file": "includes/REST/StoryController.php:114"
+      },
+      {
+        "route": "/mvs-pro/v1/stories/(?P<id>[\\d]+)/viewers",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StoryController::get_viewers",
+        "permission": "owner_permissions_check",
+        "purpose": "List story viewers",
+        "file": "includes/REST/StoryController.php:126"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/events",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AnalyticsController::record_event",
+        "permission": "__return_true",
+        "purpose": "Record a media analytics event",
+        "file": "includes/Analytics/AnalyticsController.php:66"
+      },
+      {
+        "route": "/mvs-pro/v1/media/(?P<id>[\\d]+)/analytics",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AnalyticsController::get_media_analytics",
+        "permission": "can_view_media_analytics",
+        "purpose": "Get analytics for a media item",
+        "file": "includes/Analytics/AnalyticsController.php:108"
+      },
+      {
+        "route": "/mvs-pro/v1/analytics/top",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AnalyticsController::get_top_media",
+        "permission": "admin_check",
+        "purpose": "Get top media by analytics",
+        "file": "includes/Analytics/AnalyticsController.php:132"
+      },
+      {
+        "route": "/mvs-pro/v1/analytics/overview",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AnalyticsController::get_overview",
+        "permission": "admin_check",
+        "purpose": "Get analytics overview",
+        "file": "includes/Analytics/AnalyticsController.php:161"
+      },
+      {
+        "route": "/mvs-pro/v1/leaderboard",
+        "methods": [
+          "GET"
+        ],
+        "handler": "LeaderboardController::get_leaderboard",
+        "permission": "__return_true",
+        "purpose": "Get leaderboard rankings",
+        "file": "includes/REST/LeaderboardController.php:62"
       }
     ]
   },
   "ajax": [
     {
       "action": "mvs_pro_test_s3",
-      "handler": "Core/ConnectionTester::test_s3",
-      "nonce": "mvs_test_storage_nonce",
-      "capability": "manage_options"
+      "handler": "Core\\ConnectionTester::test_s3",
+      "nonce": "mvs_pro_test_connection",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Core/ConnectionTester.php:33"
     },
     {
       "action": "mvs_pro_test_bunny",
-      "handler": "Core/ConnectionTester::test_bunny",
-      "nonce": "mvs_test_storage_nonce",
-      "capability": "manage_options"
+      "handler": "Core\\ConnectionTester::test_bunny",
+      "nonce": "mvs_pro_test_connection",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Core/ConnectionTester.php:34"
+    },
+    {
+      "action": "mvs_pro_test_r2",
+      "handler": "Core\\ConnectionTester::test_r2",
+      "nonce": "mvs_pro_test_connection",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Core/ConnectionTester.php:35"
+    },
+    {
+      "action": "mvs_pro_test_dospaces",
+      "handler": "Core\\ConnectionTester::test_dospaces",
+      "nonce": "mvs_pro_test_connection",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Core/ConnectionTester.php:36"
+    },
+    {
+      "action": "mvs_pro_cloud_migrate_chunk",
+      "handler": "Admin\\CloudOpsManager::ajax_migrate_chunk",
+      "nonce": "mvs_pro_cloud_migrate_chunk",
+      "capability": "manage_options",
+      "file": "includes/Admin/CloudOpsManager.php:69"
     },
     {
       "action": "mvs_save_connector_prefs",
-      "handler": "Admin/ProSettings::ajax_save_connector_prefs",
-      "nonce": "mvs_nonce",
-      "capability": "manage_options"
-    },
-    {
-      "action": "mvs_dismiss_gamification_welcome",
-      "handler": "Admin/CompetitionsDashboard::ajax_dismiss_gamification_welcome",
-      "nonce": "mvs_nonce",
-      "capability": "manage_options"
+      "handler": "Admin\\ProSettings::ajax_save_connector_prefs",
+      "nonce": "wp_rest",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:64"
     },
     {
       "action": "mvs_migration_batch",
-      "handler": "Admin/MigrationPage::ajax_run_batch",
-      "nonce": "mvs_migration_nonce",
-      "capability": "manage_options"
+      "handler": "Admin\\MigrationPage::ajax_run_batch",
+      "nonce": "mvs_migration",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/MigrationPage.php:65"
     },
     {
       "action": "mvs_migration_reset",
-      "handler": "Admin/MigrationPage::ajax_reset_state",
-      "nonce": "mvs_migration_nonce",
-      "capability": "manage_options"
+      "handler": "Admin\\MigrationPage::ajax_reset_state",
+      "nonce": "mvs_migration",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/MigrationPage.php:66"
     }
   ],
   "admin_pages": [
     {
       "title": "Competitions",
       "slug": "mvs-competitions",
-      "parent": null,
-      "capability": "manage_options",
-      "source": "Admin/CompetitionsDashboard.php"
+      "parent": "(top-level add_menu_page)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/CompetitionsDashboard.php:101"
     },
     {
-      "title": "Challenges",
+      "title": "Dashboard",
+      "slug": "mvs-competitions",
+      "parent": "mvs-competitions",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/CompetitionsDashboard.php:111"
+    },
+    {
+      "title": "Photo Challenges",
       "slug": "mvs-challenges",
       "parent": "mvs-competitions",
-      "capability": "manage_options",
-      "source": "Admin/ChallengeManager.php"
-    },
-    {
-      "title": "Battles",
-      "slug": "mvs-battles",
-      "parent": "mvs-competitions",
-      "capability": "manage_options",
-      "source": "Admin/BattleMonitor.php"
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ChallengeManager.php:77"
     },
     {
       "title": "Tournaments",
       "slug": "mvs-tournaments",
       "parent": "mvs-competitions",
-      "capability": "manage_options",
-      "source": "Admin/TournamentManager.php"
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/TournamentManager.php:54"
     },
     {
-      "title": "Analytics",
-      "slug": "mvs-analytics",
+      "title": "Photo Battles",
+      "slug": "mvs-battles",
       "parent": "mvs-competitions",
-      "capability": "manage_options",
-      "source": "Admin/AnalyticsDashboard.php"
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/BattleMonitor.php:31"
     },
     {
-      "title": "Reports",
-      "slug": "mvs-reports",
-      "parent": "mvs-competitions",
-      "capability": "manage_options",
-      "source": "Admin/ReportManager.php"
-    },
-    {
-      "title": "Pro Settings",
-      "slug": "mvs-pro-settings",
-      "parent": "wpmediaverse",
-      "capability": "manage_options",
-      "source": "Admin/ProSettings.php"
-    },
-    {
-      "title": "Quota",
-      "slug": "mvs-quota",
-      "parent": "wpmediaverse",
-      "capability": "manage_options",
-      "source": "Admin/QuotaPage.php"
-    },
-    {
-      "title": "Theme Library",
+      "title": "Theme Library (Themes)",
       "slug": "mvs-theme-library",
-      "parent": "wpmediaverse",
-      "capability": "manage_options",
-      "source": "Admin/ThemeLibrary.php"
+      "parent": "mvs-competitions",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ThemeLibrary.php:58"
     },
     {
-      "title": "Migration Tools",
+      "title": "Quota & Credits",
+      "slug": "mvs-quotas",
+      "parent": "wpmediaverse",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/QuotaPage.php:45"
+    },
+    {
+      "title": "Import Migration",
       "slug": "mvs-migration",
       "parent": "wpmediaverse",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/MigrationPage.php:73"
+    },
+    {
+      "title": "Stories",
+      "slug": "mvs-stories",
+      "parent": "wpmediaverse",
       "capability": "manage_options",
-      "source": "Admin/MigrationPage.php",
-      "notes": "1.2.0 Phase 5 P2.1: thin shell (627 lines, was 1,866) hosting one card per platform-specific MigrationAdmin: Integrations/RtMedia/MigrationAdmin.php (394), Integrations/MediaPress/MigrationAdmin.php (278), Integrations/BuddyBoss/MigrationAdmin.php (453). Shell owns menu entry, page UI, per-card JS, AJAX dispatcher (mvs_migration_batch / mvs_migration_reset); each MigrationAdmin owns detection, count, run_batch, album-creation, and platform-specific helpers (e.g. rtMedia activity rewriting). Shared base class: Integrations/AbstractMigrationAdmin.php."
+      "file": "includes/Admin/StoriesPage.php:54"
+    },
+    {
+      "title": "Reports (User Reports)",
+      "slug": "mvs-reports",
+      "parent": "mvs-moderation",
+      "capability": "moderate_mvs_media",
+      "file": "includes/Admin/ReportManager.php:38"
+    },
+    {
+      "title": "Media Analytics (Analytics)",
+      "slug": "mvs-analytics",
+      "parent": "mvs-stats",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/AnalyticsDashboard.php:58"
+    },
+    {
+      "title": "Settings section: Platform Connectors",
+      "slug": "mvs-settings-connectors / mvs_pro_connectors",
+      "parent": "mvs-settings (Free settings page, Connected Accounts tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:233"
+    },
+    {
+      "title": "Settings section: Amazon S3 Storage",
+      "slug": "mvs-settings-storage / mvs_pro_s3",
+      "parent": "mvs-settings (Storage tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:388"
+    },
+    {
+      "title": "Settings section: BunnyCDN Storage",
+      "slug": "mvs-settings-storage / mvs_pro_bunny",
+      "parent": "mvs-settings (Storage tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:472"
+    },
+    {
+      "title": "Settings section: Cloudflare R2 Storage",
+      "slug": "mvs-settings-storage / mvs_pro_r2",
+      "parent": "mvs-settings (Storage tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:568"
+    },
+    {
+      "title": "Settings section: DigitalOcean Spaces Storage",
+      "slug": "mvs-settings-storage / mvs_pro_dospaces",
+      "parent": "mvs-settings (Storage tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:667"
+    },
+    {
+      "title": "Settings section: Storage Management (Cloud Ops)",
+      "slug": "mvs-settings-storage / mvs_pro_cloud_ops",
+      "parent": "mvs-settings (Storage tab)",
+      "capability": "manage_options",
+      "file": "includes/Core/Plugin.php:695 (add_settings_section); includes/Admin/CloudOpsManager.php"
+    },
+    {
+      "title": "Settings section: Credit Webhook",
+      "slug": "mvs-settings-webhooks / mvs_pro_webhook",
+      "parent": "mvs-settings (Webhooks tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:759"
+    },
+    {
+      "title": "Settings section: Feed Layout",
+      "slug": "mvs-settings-display / mvs_pro_feed_layout",
+      "parent": "mvs-settings (Display tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:809"
+    },
+    {
+      "title": "Settings section: Mobile App Branding",
+      "slug": "mvs-settings-display / mvs_app_branding",
+      "parent": "mvs-settings (Display tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:857"
+    },
+    {
+      "title": "Settings section: Image Watermarking",
+      "slug": "mvs-settings-display / mvs_pro_watermark",
+      "parent": "mvs-settings (Display tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:935"
+    },
+    {
+      "title": "Settings section: Google Cloud Vision",
+      "slug": "mvs-settings-ai / mvs_pro_ai_google",
+      "parent": "mvs-settings (AI tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:1051"
+    },
+    {
+      "title": "Settings section: AWS Rekognition",
+      "slug": "mvs-settings-ai / mvs_pro_ai_aws",
+      "parent": "mvs-settings (AI tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:1085"
+    },
+    {
+      "title": "Settings section: Anthropic (Claude)",
+      "slug": "mvs-settings-ai / mvs_pro_ai_anthropic",
+      "parent": "mvs-settings (AI tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:1140"
+    },
+    {
+      "title": "Settings section: Auto-Captions & Transcription",
+      "slug": "mvs-settings-ai / mvs_pro_captions",
+      "parent": "mvs-settings (AI tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:1209"
+    },
+    {
+      "title": "Settings tab/section: Video Transcoding",
+      "slug": "mvs-settings-video / mvs_pro_transcode",
+      "parent": "mvs-settings (Video tab, Pro-owned)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/ProSettings.php:1384 (section); :117 (tab)"
+    },
+    {
+      "title": "Settings section: Stories (Gamification)",
+      "slug": "mvs-settings-gamification",
+      "parent": "mvs-settings (Competitions tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/GamificationSettings.php:86"
+    },
+    {
+      "title": "Settings section: Competition Features",
+      "slug": "mvs-settings-gamification",
+      "parent": "mvs-settings (Competitions tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/GamificationSettings.php:127"
+    },
+    {
+      "title": "Settings section: Boost Pricing",
+      "slug": "mvs-settings-gamification",
+      "parent": "mvs-settings (Competitions tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/GamificationSettings.php:248"
+    },
+    {
+      "title": "Settings section: Weekly Autopilot",
+      "slug": "mvs-settings-gamification",
+      "parent": "mvs-settings (Competitions tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/GamificationSettings.php:329"
+    },
+    {
+      "title": "Settings section: Upload Streaks",
+      "slug": "mvs-settings-gamification",
+      "parent": "mvs-settings (Competitions tab)",
+      "capability": "manage_mvs_settings",
+      "file": "includes/Admin/GamificationSettings.php:527"
     }
   ],
   "feature_toggles": [
     {
-      "option": "mvs_battles_enabled",
-      "default": "0",
-      "controls": "1v1 photo battles UI + BattleService + BattleController + BattleMonitor"
+      "option": "mvs_challenges_enabled",
+      "default": "1 on activation / '0' at read-gate",
+      "controls": "Challenges service+controller+manager, autopilot, notif listener",
+      "file": "wpmediaverse-pro.php:116; includes/Core/Plugin.php:458; register includes/Admin/GamificationSettings.php:127"
     },
     {
-      "option": "mvs_challenges_enabled",
-      "default": "0",
-      "controls": "Challenges + ChallengeService + AutopilotService + ChallengeManager"
+      "option": "mvs_battles_enabled",
+      "default": "1 on activation / '0' at read-gate",
+      "controls": "Battles service+controller+monitor, resolve cron",
+      "file": "wpmediaverse-pro.php:117; includes/Core/Plugin.php:439; register includes/Admin/GamificationSettings.php:127"
     },
     {
       "option": "mvs_tournaments_enabled",
-      "default": "0",
-      "controls": "Tournaments + TournamentService + TournamentController + TournamentManager"
+      "default": "1 on activation / '0' at read-gate",
+      "controls": "Tournaments service+controller+manager",
+      "file": "wpmediaverse-pro.php:118; includes/Core/Plugin.php:481; register includes/Admin/GamificationSettings.php:127"
     },
     {
       "option": "mvs_boosts_enabled",
-      "default": "0",
-      "controls": "BoostService + BoostController"
+      "default": "1 on activation / '0' at read-gate",
+      "controls": "Boosts service+controller, expire cron",
+      "file": "wpmediaverse-pro.php:119; includes/Core/Plugin.php:508; register includes/Admin/GamificationSettings.php:127"
     },
     {
       "option": "mvs_streaks_enabled",
+      "default": "1 on activation / '0' at read-gate",
+      "controls": "Streak badge in mvs_user_display_name, streak widget/panels",
+      "file": "wpmediaverse-pro.php:120; includes/Core/Plugin.php:642; register includes/Admin/GamificationSettings.php:185"
+    },
+    {
+      "option": "mvs_streak_freezes_enabled",
       "default": "0",
-      "controls": "Streak badge UI (StreakService always loads; toggle gates UI only)"
+      "controls": "Streak freeze purchase feature",
+      "file": "includes/Admin/GamificationSettings.php (Upload Streaks section :527)"
+    },
+    {
+      "option": "mvs_autopilot_enabled",
+      "default": "0",
+      "controls": "Weekly autopilot challenge creation",
+      "file": "includes/Admin/GamificationSettings.php (Weekly Autopilot section :329)"
+    },
+    {
+      "option": "mvs_stories_enabled",
+      "default": "0",
+      "controls": "Stories engine + REST + StoriesPage + cleanup cron",
+      "file": "includes/Core/Plugin.php:607; register includes/Admin/GamificationSettings.php:86,95"
     },
     {
       "option": "mvs_connectors_enabled",
       "default": "0",
-      "controls": "Platform connectors + ConnectorManager + FlickrConnector"
+      "controls": "Platform connectors (Flickr), ConnectorManager, REST, dashboard tab",
+      "file": "includes/Core/Plugin.php:177; register includes/Admin/ProSettings.php:241"
+    },
+    {
+      "option": "mvs_watermark_enabled",
+      "default": "0",
+      "controls": "Image watermarking (mvs_generate_watermark filter)",
+      "file": "includes/Admin/ProSettings.php:943; applied includes/Core/Plugin.php:370"
     },
     {
       "option": "mvs_pro_transcode_enabled",
       "default": "0",
-      "controls": "Video transcoding pipeline via FFmpeg"
+      "controls": "Video transcoding pipeline; app/config 'video' flag",
+      "file": "includes/Admin/ProSettings.php:1392; read includes/Core/Plugin.php:992"
     }
   ],
   "subsystems": [
@@ -837,346 +1559,321 @@
   ],
   "blocks": [
     {
-      "name": "mvs/pro-tournament",
-      "title": "Tournament",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-tournament/",
-      "render": "src/blocks/pro-tournament/render.php",
-      "block_specific_attrs": [
-        "tournamentId"
-      ],
-      "renderer": "WPMediaVersePro\\Tournaments\\Renderer::render_single",
-      "feature_toggle": "mvs_tournaments_enabled",
-      "scoped_css": "MVS_CSS::add",
-      "notes": "Single tournament embed; ID picker in inspector. Phase 3d pilot block."
-    },
-    {
-      "name": "mvs/pro-tournaments-list",
-      "title": "Tournaments List",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-tournaments-list/",
-      "render": "src/blocks/pro-tournaments-list/render.php",
-      "block_specific_attrs": [],
-      "renderer": "WPMediaVersePro\\Tournaments\\Renderer::render_list",
-      "feature_toggle": "mvs_tournaments_enabled",
-      "scoped_css": "MVS_CSS::add"
-    },
-    {
-      "name": "mvs/pro-challenge",
-      "title": "Photo Challenge",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-challenge/",
-      "render": "src/blocks/pro-challenge/render.php",
-      "block_specific_attrs": [
-        "challengeId"
-      ],
-      "renderer": "WPMediaVersePro\\Challenges\\Renderer::render_single",
-      "feature_toggle": "mvs_challenges_enabled",
-      "scoped_css": "MVS_CSS::add"
-    },
-    {
-      "name": "mvs/pro-challenges-list",
-      "title": "Challenges List",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-challenges-list/",
-      "render": "src/blocks/pro-challenges-list/render.php",
-      "block_specific_attrs": [],
-      "renderer": "WPMediaVersePro\\Challenges\\Renderer::render_list",
-      "feature_toggle": "mvs_challenges_enabled",
-      "scoped_css": "MVS_CSS::add"
-    },
-    {
       "name": "mvs/pro-battle",
-      "title": "Photo Battle",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-battle/",
       "render": "src/blocks/pro-battle/render.php",
-      "block_specific_attrs": [
-        "battleId"
-      ],
-      "renderer": "WPMediaVersePro\\Battles\\Renderer::render_single",
-      "feature_toggle": "mvs_battles_enabled",
-      "scoped_css": "MVS_CSS::add"
+      "file": "src/blocks/pro-battle/block.json",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
       "name": "mvs/pro-battles-active",
-      "title": "Active Battles",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-battles-active/",
       "render": "src/blocks/pro-battles-active/render.php",
-      "block_specific_attrs": [],
-      "renderer": "WPMediaVersePro\\Battles\\Renderer::render_active",
-      "feature_toggle": "mvs_battles_enabled",
-      "scoped_css": "MVS_CSS::add"
+      "file": "src/blocks/pro-battles-active/block.json",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
-      "name": "mvs/pro-instagram-feed",
-      "title": "Instagram Feed",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-instagram-feed/",
-      "render": "src/blocks/pro-instagram-feed/render.php",
-      "block_specific_attrs": [
-        "perPage",
-        "scope"
-      ],
-      "renderer": "WPMediaVersePro\\Frontend\\Layouts\\InstagramLayout::render_feed",
-      "scoped_css": "MVS_CSS::add",
-      "notes": "render.php instantiates InstagramLayout and calls $layout->enqueue_assets() (Rule 6) before delegating to render_feed (Phase 3a)."
+      "name": "mvs/pro-challenge",
+      "render": "src/blocks/pro-challenge/render.php",
+      "file": "src/blocks/pro-challenge/block.json",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
-      "name": "mvs/pro-flickr-feed",
-      "title": "Flickr Feed",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-flickr-feed/",
-      "render": "src/blocks/pro-flickr-feed/render.php",
-      "block_specific_attrs": [
-        "perPage",
-        "scope"
-      ],
-      "renderer": "WPMediaVersePro\\Frontend\\Layouts\\FlickrLayout::render_feed",
-      "scoped_css": "MVS_CSS::add",
-      "notes": "render.php instantiates FlickrLayout and calls $layout->enqueue_assets() (Rule 6) before delegating to render_feed."
-    },
-    {
-      "name": "mvs/pro-pinterest-feed",
-      "title": "Pinterest Feed",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-pinterest-feed/",
-      "render": "src/blocks/pro-pinterest-feed/render.php",
-      "block_specific_attrs": [
-        "perPage",
-        "scope"
-      ],
-      "renderer": "WPMediaVersePro\\Frontend\\Layouts\\PinterestLayout::render_feed",
-      "scoped_css": "MVS_CSS::add",
-      "notes": "render.php instantiates PinterestLayout and calls $layout->enqueue_assets() (Rule 6) before delegating to render_feed."
-    },
-    {
-      "name": "mvs/pro-dribbble-feed",
-      "title": "Dribbble Feed",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-dribbble-feed/",
-      "render": "src/blocks/pro-dribbble-feed/render.php",
-      "block_specific_attrs": [
-        "perPage",
-        "scope"
-      ],
-      "renderer": "WPMediaVersePro\\Frontend\\Layouts\\DribbbleLayout::render_feed",
-      "scoped_css": "MVS_CSS::add",
-      "notes": "render.php instantiates DribbbleLayout and calls $layout->enqueue_assets() (Rule 6) before delegating to render_feed."
-    },
-    {
-      "name": "mvs/pro-leaderboard",
-      "title": "Leaderboard",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-leaderboard/",
-      "render": "src/blocks/pro-leaderboard/render.php",
-      "block_specific_attrs": [
-        "source",
-        "perPage",
-        "window"
-      ],
-      "renderer": "WPMediaVersePro\\Frontend\\LeaderboardRenderer::render",
-      "scoped_css": "MVS_CSS::add",
-      "notes": "Self-contained renderer (no template). source enum: reactions|media_count|gamification_xp; window: all|30d|7d. gamification_xp source defers to mvs_pro_leaderboard_xp_rows filter when wb-gamification is active."
+      "name": "mvs/pro-challenges-list",
+      "render": "src/blocks/pro-challenges-list/render.php",
+      "file": "src/blocks/pro-challenges-list/block.json",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
       "name": "mvs/pro-compete-hub",
-      "title": "Compete Hub",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-compete-hub/",
       "render": "src/blocks/pro-compete-hub/render.php",
-      "block_specific_attrs": [],
-      "renderer": "WPMediaVersePro\\Frontend\\CompeteHubRenderer::render",
-      "feature_toggle": "any of mvs_tournaments_enabled / mvs_challenges_enabled / mvs_battles_enabled",
-      "scoped_css": "MVS_CSS::add"
+      "file": "src/blocks/pro-compete-hub/block.json",
+      "interactivity": false,
+      "layout_owning": false
+    },
+    {
+      "name": "mvs/pro-dribbble-feed",
+      "render": "src/blocks/pro-dribbble-feed/render.php",
+      "file": "src/blocks/pro-dribbble-feed/block.json",
+      "interactivity": false,
+      "layout_owning": false
+    },
+    {
+      "name": "mvs/pro-flickr-feed",
+      "render": "src/blocks/pro-flickr-feed/render.php",
+      "file": "src/blocks/pro-flickr-feed/block.json",
+      "interactivity": false,
+      "layout_owning": false
+    },
+    {
+      "name": "mvs/pro-instagram-feed",
+      "render": "src/blocks/pro-instagram-feed/render.php",
+      "file": "src/blocks/pro-instagram-feed/block.json",
+      "interactivity": false,
+      "layout_owning": false
+    },
+    {
+      "name": "mvs/pro-leaderboard",
+      "render": "src/blocks/pro-leaderboard/render.php",
+      "file": "src/blocks/pro-leaderboard/block.json",
+      "interactivity": false,
+      "layout_owning": false
+    },
+    {
+      "name": "mvs/pro-pinterest-feed",
+      "render": "src/blocks/pro-pinterest-feed/render.php",
+      "file": "src/blocks/pro-pinterest-feed/block.json",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
       "name": "mvs/pro-stories",
-      "title": "Stories Bar",
-      "category": "wpmediaverse-pro",
-      "source": "src/blocks/pro-stories/",
       "render": "src/blocks/pro-stories/render.php",
-      "feature_toggle": "mvs_stories_enabled",
-      "notes": "WhatsApp-style stories bar + Interactivity fullscreen viewer; viewScriptModule emitted by bin/build-block-view-modules.js"
+      "file": "src/blocks/pro-stories/block.json",
+      "interactivity": false,
+      "layout_owning": false
+    },
+    {
+      "name": "mvs/pro-tournament",
+      "render": "src/blocks/pro-tournament/render.php",
+      "file": "src/blocks/pro-tournament/block.json",
+      "interactivity": false,
+      "layout_owning": false
+    },
+    {
+      "name": "mvs/pro-tournaments-list",
+      "render": "src/blocks/pro-tournaments-list/render.php",
+      "file": "src/blocks/pro-tournaments-list/block.json",
+      "interactivity": false,
+      "layout_owning": false
     }
   ],
   "shortcodes": [
     {
       "tag": "mvs_pro_tournament",
-      "handler": "Blocks/Shortcodes.php::render_tournament",
-      "attrs": [
-        "id"
-      ],
-      "renderer": "WPMediaVersePro\\Tournaments\\Renderer::render_single",
-      "notes": "Plus the 20 standard kebab-case attrs translated to camelCase (e.g. padding-desktop → paddingDesktop)."
+      "handler": "Blocks\\Shortcodes::render_tournament",
+      "file": "includes/Blocks/Shortcodes.php:41"
     },
     {
       "tag": "mvs_pro_tournaments_list",
-      "handler": "Blocks/Shortcodes.php::render_tournaments_list",
-      "attrs": [],
-      "renderer": "WPMediaVersePro\\Tournaments\\Renderer::render_list"
+      "handler": "Blocks\\Shortcodes::render_tournaments_list",
+      "file": "includes/Blocks/Shortcodes.php:42"
     },
     {
       "tag": "mvs_pro_challenge",
-      "handler": "Blocks/Shortcodes.php::render_challenge",
-      "attrs": [
-        "id"
-      ],
-      "renderer": "WPMediaVersePro\\Challenges\\Renderer::render_single"
+      "handler": "Blocks\\Shortcodes::render_challenge",
+      "file": "includes/Blocks/Shortcodes.php:43"
     },
     {
       "tag": "mvs_pro_challenges_list",
-      "handler": "Blocks/Shortcodes.php::render_challenges_list",
-      "attrs": [],
-      "renderer": "WPMediaVersePro\\Challenges\\Renderer::render_list"
+      "handler": "Blocks\\Shortcodes::render_challenges_list",
+      "file": "includes/Blocks/Shortcodes.php:44"
     },
     {
       "tag": "mvs_pro_battle",
-      "handler": "Blocks/Shortcodes.php::render_battle",
-      "attrs": [
-        "id"
-      ],
-      "renderer": "WPMediaVersePro\\Battles\\Renderer::render_single"
+      "handler": "Blocks\\Shortcodes::render_battle",
+      "file": "includes/Blocks/Shortcodes.php:45"
     },
     {
       "tag": "mvs_pro_battles_active",
-      "handler": "Blocks/Shortcodes.php::render_battles_active",
-      "attrs": [],
-      "renderer": "WPMediaVersePro\\Battles\\Renderer::render_active"
+      "handler": "Blocks\\Shortcodes::render_battles_active",
+      "file": "includes/Blocks/Shortcodes.php:46"
     },
     {
       "tag": "mvs_pro_instagram_feed",
-      "handler": "Blocks/Shortcodes.php::render_instagram_feed",
-      "attrs": [
-        "per-page",
-        "scope"
-      ],
-      "renderer": "WPMediaVersePro\\Frontend\\Layouts\\InstagramLayout::render_feed"
+      "handler": "Blocks\\Shortcodes::render_instagram_feed",
+      "file": "includes/Blocks/Shortcodes.php:47"
     },
     {
       "tag": "mvs_pro_flickr_feed",
-      "handler": "Blocks/Shortcodes.php::render_flickr_feed",
-      "attrs": [
-        "per-page",
-        "scope"
-      ],
-      "renderer": "WPMediaVersePro\\Frontend\\Layouts\\FlickrLayout::render_feed"
+      "handler": "Blocks\\Shortcodes::render_flickr_feed",
+      "file": "includes/Blocks/Shortcodes.php:48"
     },
     {
       "tag": "mvs_pro_pinterest_feed",
-      "handler": "Blocks/Shortcodes.php::render_pinterest_feed",
-      "attrs": [
-        "per-page",
-        "scope"
-      ],
-      "renderer": "WPMediaVersePro\\Frontend\\Layouts\\PinterestLayout::render_feed"
+      "handler": "Blocks\\Shortcodes::render_pinterest_feed",
+      "file": "includes/Blocks/Shortcodes.php:49"
     },
     {
       "tag": "mvs_pro_dribbble_feed",
-      "handler": "Blocks/Shortcodes.php::render_dribbble_feed",
-      "attrs": [
-        "per-page",
-        "scope"
-      ],
-      "renderer": "WPMediaVersePro\\Frontend\\Layouts\\DribbbleLayout::render_feed"
+      "handler": "Blocks\\Shortcodes::render_dribbble_feed",
+      "file": "includes/Blocks/Shortcodes.php:50"
     },
     {
       "tag": "mvs_pro_leaderboard",
-      "handler": "Blocks/Shortcodes.php::render_leaderboard",
-      "attrs": [
-        "source",
-        "per-page",
-        "window"
-      ],
-      "renderer": "WPMediaVersePro\\Frontend\\LeaderboardRenderer::render"
+      "handler": "Blocks\\Shortcodes::render_leaderboard",
+      "file": "includes/Blocks/Shortcodes.php:51"
     },
     {
       "tag": "mvs_pro_compete_hub",
-      "handler": "Blocks/Shortcodes.php::render_compete_hub",
-      "attrs": [],
-      "renderer": "WPMediaVersePro\\Frontend\\CompeteHubRenderer::render"
+      "handler": "Blocks\\Shortcodes::render_compete_hub",
+      "file": "includes/Blocks/Shortcodes.php:52"
     }
   ],
   "tables": [
     {
-      "name": "mvs_quota_packages",
-      "purpose": "Quota plan definitions (image_limit, video_limit, storage_bytes)"
+      "name": "{prefix}mvs_pro_collection_items",
+      "purpose": "Multi-collection memberships (media can live in many manual collections)",
+      "file": "includes/Core/Migrator.php:221"
     },
     {
-      "name": "mvs_credit_log",
-      "purpose": "Gamification points transaction history"
+      "name": "{prefix}mvs_pro_push_devices",
+      "purpose": "Native push device registry (Expo tokens per user/device)",
+      "file": "includes/Core/Migrator.php:252"
     },
     {
-      "name": "mvs_play_events",
-      "purpose": "Video analytics events (play/pause/seek/complete)"
+      "name": "{prefix}mvs_quota_packages",
+      "purpose": "Upload/storage quota package definitions",
+      "file": "includes/Core/Migrator.php:366"
     },
     {
-      "name": "mvs_competitions",
-      "purpose": "Unified competition header (battles, challenges, tournaments)"
+      "name": "{prefix}mvs_credit_log",
+      "purpose": "Credit/quota transaction ledger",
+      "file": "includes/Core/Migrator.php:383"
     },
     {
-      "name": "mvs_competition_entries",
-      "purpose": "Participants/submissions per competition"
+      "name": "{prefix}mvs_play_events",
+      "purpose": "Video play + heatmap analytics events",
+      "file": "includes/Core/Migrator.php:402"
     },
     {
-      "name": "mvs_competition_matches",
-      "purpose": "Head-to-head matches (battles + tournament rounds)"
+      "name": "{prefix}mvs_competitions",
+      "purpose": "Competitions (battles/challenges/tournaments) master rows",
+      "file": "includes/Core/Migrator.php:498"
     },
     {
-      "name": "mvs_competition_votes",
-      "purpose": "Votes on entries or matches"
+      "name": "{prefix}mvs_competition_entries",
+      "purpose": "Per-competition media entries",
+      "file": "includes/Core/Migrator.php:524"
     },
     {
-      "name": "mvs_boosts",
-      "purpose": "Media visibility boosts (points spent)"
+      "name": "{prefix}mvs_competition_matches",
+      "purpose": "Tournament/battle match pairings",
+      "file": "includes/Core/Migrator.php:545"
     },
     {
-      "name": "mvs_pro_push_devices",
-      "purpose": "Expo push tokens per device (UNIQUE token; supports device->account migration)"
+      "name": "{prefix}mvs_competition_votes",
+      "purpose": "Votes cast in competitions",
+      "file": "includes/Core/Migrator.php:572"
+    },
+    {
+      "name": "{prefix}mvs_boosts",
+      "purpose": "Media boosts (points-for-visibility)",
+      "file": "includes/Core/Migrator.php:588"
     }
   ],
   "cron": [
     {
+      "hook": "mvs_resolve_expired_battles",
+      "interval": "HOUR (AS recurring)",
+      "handler": "Battles\\BattleService::resolve_expired",
+      "file": "wpmediaverse-pro.php:166 (schedule); includes/Core/Plugin.php:449 (handler)"
+    },
+    {
+      "hook": "mvs_activate_scheduled_challenges",
+      "interval": "HOUR (AS recurring)",
+      "handler": "Challenges\\ChallengeService::activate_scheduled",
+      "file": "wpmediaverse-pro.php:167; includes/Core/Plugin.php:470"
+    },
+    {
+      "hook": "mvs_close_challenge_entries",
+      "interval": "HOUR (AS recurring)",
+      "handler": "Challenges\\ChallengeService::close_entries",
+      "file": "wpmediaverse-pro.php:168; includes/Core/Plugin.php:471"
+    },
+    {
+      "hook": "mvs_finalize_expired_challenges",
+      "interval": "HOUR (AS recurring)",
+      "handler": "Challenges\\ChallengeService::finalize_expired",
+      "file": "wpmediaverse-pro.php:169; includes/Core/Plugin.php:472"
+    },
+    {
+      "hook": "mvs_start_registered_tournaments",
+      "interval": "HOUR (AS recurring)",
+      "handler": "Tournaments\\TournamentService::start_registered",
+      "file": "wpmediaverse-pro.php:170; includes/Core/Plugin.php:491"
+    },
+    {
+      "hook": "mvs_resolve_expired_matches",
+      "interval": "HOUR (AS recurring)",
+      "handler": "Tournaments\\TournamentService::resolve_expired_matches",
+      "file": "wpmediaverse-pro.php:171; includes/Core/Plugin.php:492"
+    },
+    {
+      "hook": "mvs_expire_boosts",
+      "interval": "HOUR (AS recurring + wp_schedule_event fallback)",
+      "handler": "Boosts\\BoostService::expire_boosts",
+      "file": "wpmediaverse-pro.php:172; includes/Core/Plugin.php:524 (wp_schedule_event); includes/Core/Plugin.php:526 (handler)"
+    },
+    {
+      "hook": "mvs_competitions_tick",
+      "interval": "300s (AS recurring)",
+      "handler": "Competitions\\CompetitionsScheduler::tick",
+      "file": "includes/Competitions/CompetitionsScheduler.php:64 (schedule); :39 (handler)"
+    },
+    {
+      "hook": "mvs_autopilot_create_weekly_challenge",
+      "interval": "WEEK (AS recurring)",
+      "handler": "Challenges\\AutopilotService::create_weekly_challenge",
+      "file": "includes/Challenges/AutopilotService.php:91 (schedule); :65 (handler)"
+    },
+    {
+      "hook": "mvs_daily_streak_check",
+      "interval": "cron 0 2 * * * (AS cron)",
+      "handler": "Streaks\\StreakService::daily_check",
+      "file": "includes/Streaks/StreakService.php:99 (schedule); :71 (handler)"
+    },
+    {
       "hook": "mvs_pro_transcode_cleanup",
-      "interval": "hourly",
-      "handler": "Video/TranscodeService::cleanup_old_jobs",
-      "purpose": "Drop completed/failed transcode jobs > 7 days"
+      "interval": "hourly (WP-Cron)",
+      "handler": "Video\\TranscodeService::cleanup_temp_files",
+      "file": "includes/Core/Plugin.php:355 (schedule); :357 (handler)"
     },
     {
-      "hook": "mvs_pro_challenges_autopilot_weekly",
-      "interval": "weekly",
-      "handler": "Challenges/AutopilotService::run_weekly",
-      "purpose": "Auto-create challenges, roll voting windows, crown winners"
-    },
-    {
-      "hook": "mvs_pro_streaks_daily_reset",
-      "interval": "daily",
-      "handler": "Streaks/StreakService::reset_daily",
-      "purpose": "Reset upload eligibility for next day"
+      "hook": "mvs_story_cleanup",
+      "interval": "hourly (WP-Cron)",
+      "handler": "Stories\\StoryService::cleanup_expired",
+      "file": "includes/Stories/StoryService.php:59 (schedule); :52 (handler)"
     },
     {
       "hook": "mvs_pro_prune_play_events",
-      "interval": "daily",
-      "handler": "Analytics/AnalyticsService::prune_old_events",
-      "purpose": "Drop play events > 90 days"
+      "interval": "daily (WP-Cron)",
+      "handler": "Analytics\\AnalyticsService::prune_events",
+      "file": "includes/Analytics/AnalyticsService.php:45 (schedule); :47 (handler)"
     }
   ],
   "wp_cli": [
     {
-      "command": "wp mvs migrate rtmedia",
-      "class": "CLI/ImportRtMedia.php",
-      "purpose": "Import media from rtMedia (uses ImportThumbnailTrait)"
+      "command": "mvs import-rtmedia",
+      "handler": "Integrations\\RtMedia\\Importer",
+      "file": "wpmediaverse-pro.php:215"
     },
     {
-      "command": "wp mvs migrate mediapress",
-      "class": "CLI/ImportMediaPress.php",
-      "purpose": "Import from MediaPress"
+      "command": "mvs import-mediapress",
+      "handler": "Integrations\\MediaPress\\Importer",
+      "file": "wpmediaverse-pro.php:216"
     },
     {
-      "command": "wp mvs migrate buddyboss",
-      "class": "CLI/ImportBuddyBoss.php",
-      "purpose": "Import from BuddyBoss media"
+      "command": "mvs import-buddyboss",
+      "handler": "Integrations\\BuddyBoss\\Importer",
+      "file": "wpmediaverse-pro.php:217"
+    },
+    {
+      "command": "mvs-pro cert",
+      "handler": "Cert\\CertCommand",
+      "file": "wpmediaverse-pro.php:218"
+    },
+    {
+      "command": "mvs competitions tick",
+      "handler": "Competitions\\CompetitionsScheduler::cli_tick",
+      "file": "includes/Competitions/CompetitionsScheduler.php:47"
+    },
+    {
+      "command": "mvs competitions recompute",
+      "handler": "Competitions\\CompetitionsScheduler::cli_recompute",
+      "file": "includes/Competitions/CompetitionsScheduler.php:48"
     }
   ],
   "storage_drivers": [
@@ -1203,121 +1900,94 @@
   ],
   "free_services_consumed": [
     {
+      "key": "media_repository",
+      "note": "dominant dependency; used across nearly all Pro files via Plugin::free_service()/container()->get()"
+    },
+    {
+      "key": "template_helpers"
+    },
+    {
       "key": "upload",
-      "where": "includes/Integrations/Flickr/Connector.php",
-      "purpose": "Sideload imported media into MVS"
+      "note": "Flickr connector sideload (includes/Integrations/Flickr/Connector.php:45) + others"
+    },
+    {
+      "key": "privacy"
+    },
+    {
+      "key": "notifications"
+    },
+    {
+      "key": "reports"
+    },
+    {
+      "key": "messaging",
+      "note": "Group DM gating (GroupController)"
+    },
+    {
+      "key": "follows"
+    },
+    {
+      "key": "collections"
+    },
+    {
+      "key": "favorites"
+    },
+    {
+      "key": "activity"
+    },
+    {
+      "key": "logger"
     }
   ],
   "free_filters_hooked": [
-    {
-      "filter": "mvs_storage_driver",
-      "where": "Core/Plugin.php:?",
-      "behavior": "Returns S3Driver or BunnyCDNDriver based on mvs_storage_provider setting"
-    },
-    {
-      "filter": "mvs_generate_watermark",
-      "where": "Core/Plugin.php:214",
-      "behavior": "Watermarker::generate() — uses $file_path filesystem read; outputs preview to /uploads/wpmediaverse/previews/"
-    },
-    {
-      "filter": "mvs_stats_tabs",
-      "where": "?",
-      "behavior": "Injects Video Analytics tab"
-    },
-    {
-      "filter": "mvs_moderation_tabs",
-      "where": "?",
-      "behavior": "Injects User Reports tab"
-    },
-    {
-      "action": "mvs_ai_providers",
-      "where": "?",
-      "behavior": "Registers GoogleVisionProvider + RekognitionProvider on AIService"
-    },
-    {
-      "filter": "mvs_media_uploaded",
-      "where": "includes/Connectors/ConnectorManager.php:60",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
-    },
-    {
-      "filter": "mvs_media_uploaded",
-      "where": "includes/Captions/TranscriptionService.php:71",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
-    },
-    {
-      "filter": "mvs_media_response",
-      "where": "includes/Captions/TranscriptionService.php:74",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_filter_listener"
-    },
-    {
-      "filter": "mvs_media_response",
-      "where": "includes/Video/ChapterService.php:34",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_filter_listener"
-    },
-    {
-      "filter": "mvs_media_uploaded",
-      "where": "includes/Video/TranscodeService.php:100",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
-    },
-    {
-      "filter": "mvs_storage_driver",
-      "where": "includes/Core/Plugin.php:211",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_filter_listener"
-    },
-    {
-      "filter": "mvs_generate_watermark",
-      "where": "includes/Core/Plugin.php:214",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_filter_listener"
-    },
-    {
-      "filter": "mvs_ai_providers",
-      "where": "includes/Core/Plugin.php:217",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
-    },
-    {
-      "filter": "mvs_media_response",
-      "where": "includes/Privacy/PrivacyUIService.php:78",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_filter_listener"
-    },
-    {
-      "filter": "mvs_media_uploaded",
-      "where": "includes/Quota/QuotaService.php:42",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
-    },
-    {
-      "filter": "mvs_media_deleted",
-      "where": "includes/Quota/QuotaService.php:43",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
-    },
-    {
-      "filter": "mvs_media_uploaded",
-      "where": "includes/Streaks/StreakService.php:53",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
-    }
+    "mvs_media_uploaded (x5)",
+    "mvs_settings_sections (x3)",
+    "mvs_notification_types (x3)",
+    "mvs_notification_message (x3)",
+    "mvs_media_response (x3)",
+    "mvs_dashboard_tabs (x2)",
+    "mvs_dashboard_panels (x2)",
+    "mvs_upload_args",
+    "mvs_storage_driver",
+    "mvs_settings_render_license",
+    "mvs_settings_group_labels",
+    "mvs_repair_media_thumb",
+    "mvs_can_repair_thumb",
+    "mvs_quota_save_mapping",
+    "mvs_quota_render_mapping_fields",
+    "mvs_pro_quota_default_applies_to_unassigned",
+    "mvs_pro_inject_compete_nav",
+    "mvs_privacy_can_view",
+    "mvs_notification_created",
+    "mvs_media_deleted",
+    "mvs_collection_deleted",
+    "mvs_collection_media_ids",
+    "mvs_collection_response",
+    "mvs_locate_template",
+    "mvs_layout_modes",
+    "mvs_generate_watermark",
+    "mvs_feed_media_ids",
+    "mvs_dashboard_after_content",
+    "mvs_dashboard_before_content",
+    "mvs_collections_enabled",
+    "mvs_reserved_media_paths",
+    "mvs_challenge_finalized",
+    "mvs_challenge_entry_submitted",
+    "mvs_challenge_created",
+    "mvs_battle_resolved",
+    "mvs_tournament_match_resolved",
+    "mvs_tournament_finalized",
+    "mvs_before_upload_form",
+    "mvs_after_content",
+    "mvs_user_display_name",
+    "mvs_activity_types",
+    "mvs_app_config_features",
+    "mvs_app_config_layout",
+    "mvs_app_config_branding",
+    "mvs_ai_providers",
+    "mvs_moderation_tabs",
+    "mvs_stats_tabs",
+    "wp_nav_menu_items (opt-in)"
   ],
   "security": {
     "uploads_gate": "Inherits Free's .htaccess deny-all on /wp-content/uploads/wpmediaverse/",
@@ -1355,13 +2025,13 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-05-26T03:12:20Z",
-    "from": "wp-plugin-onboard skill (1.2.1 cloud admin UI + S3 fix targeted refresh 2026-05-07 PM)",
-    "branch": "1.2.1",
+    "at": "2026-07-07T00:00:00Z",
+    "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
+    "branch": "main",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
-    "php_file_count": 95,
+    "php_file_count": 162,
     "refresh_2026_05_07_pm": {
       "scope": "targeted (CloudOpsManager admin UI + S3 SigV4 path encoding + storage settings UX)",
       "added": {
@@ -1395,7 +2065,14 @@
     },
     "phase_2_rescan_skipped": true,
     "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
-    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables — manifest category counts unchanged. SafeRender helper not tracked here (not in service container)."
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables — manifest category counts unchanged. SafeRender helper not tracked here (not in service container).",
+    "refresh_2026_07_07": {
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (91), hooks_fired (83), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies, feature_toggles, free_services_consumed, free_filters_hooked.",
+      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "namespace": "mvs-pro/v1",
+      "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+    }
   },
   "category_sources": {
     "rest": [
@@ -1479,5 +2156,1275 @@
     "registry_strategy": "see audit/derived/adapter-registry-strategy.json (6 registry-shaped surfaces: storage_driver, ai_provider, connector, quota_membership_adapter, layout_mode, migration_admin_card; 5 use explicit_id_or_option, 1 uses all_active_with_credentials)",
     "cross_plugin_coupling": "see audit/derived/cross-plugin-coupling.json (50 listeners against Free hooks; -3 vs 2026-05-01 — messaging cleanup removed mvs_message_sent listener and the entire includes/Messaging/ directory)",
     "notes": "Phase 2.5.11–2.5.14 reclassified 2026-05-03: previous baseline note (\"adapter/registry detectors skipped\") was incorrect. Pro DOES have 6 internal registry-shaped surfaces (storage drivers, AI providers, connectors, quota membership adapters, layout modes, migration-admin cards) — see adapter-registry-strategy.json. The Pro/Free boundary itself uses ServiceContainer DI (correct prior reading) but Pro's internal extension surfaces are filter-based registries with explicit-id selection. wppqa baseline 2026-05-03 (zero real bugs; both confirm() findings false positives — modal-first-fallback) supersedes 2026-05-01. See audit/wppqa-baseline-2026-05-03/SUMMARY.md."
-  }
+  },
+  "hooks_fired": [
+    {
+      "name": "mvs_activate_scheduled_challenges",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Competitions/CompetitionsScheduler.php:149",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_after_content",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/challenges-body.php:266",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_autopilot_challenge_created",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$result",
+        "$theme"
+      ],
+      "where": "includes/Challenges/AutopilotService.php:175",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_autopilot_create_failed",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$result",
+        "$theme"
+      ],
+      "where": "includes/Challenges/AutopilotService.php:169",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_autopilot_no_theme_available",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Challenges/AutopilotService.php:138",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_autopilot_pool_reset",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$pool"
+      ],
+      "where": "includes/Challenges/AutopilotService.php:434",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_battle_accepted",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$battle_id",
+        "$user_id"
+      ],
+      "where": "includes/Battles/BattleService.php:240",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_battle_cancelled",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$battle_id"
+      ],
+      "where": "includes/Battles/BattleService.php:716",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_battle_created",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$comp_id",
+        "$challenger_id",
+        "$opponent_id"
+      ],
+      "where": "includes/Battles/BattleService.php:177",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_battle_resolved",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$battle_id",
+        "$winner_id",
+        "$loser_id"
+      ],
+      "where": "includes/Battles/BattleService.php:502",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_before_content",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/challenges.php:20",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_before_explore_grid",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/layouts/pinterest/feed-body.php:138",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_before_layout_render",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$this",
+        "$template_name"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:178",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_boosts_store_enqueued",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/layouts/instagram/partials/feed-card.php:32",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_activated",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$challenge_id"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:519",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_created",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$comp_id",
+        "$args",
+        "$created_by"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:154",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_entry_submitted",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$challenge_id",
+        "$user_id",
+        "$media_id"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:329",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_finalized",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$challenge_id",
+        "$results"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:669",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_voting_started",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$challenge_id"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:552",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_winner_named",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$challenge_id",
+        "int $results",
+        "$rank"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:666",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_close_challenge_entries",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Competitions/CompetitionsScheduler.php:150",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_competition_status_changed",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$challenge_id",
+        "self::STATUS_SCHEDULED",
+        "self::STATUS_ACTIVE"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:520",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_competitions_tick_ran",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "time()"
+      ],
+      "where": "includes/Competitions/CompetitionsScheduler.php:103",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_finalize_expired_challenges",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Competitions/CompetitionsScheduler.php:151",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_assets",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$this",
+        "$this"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:272",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_exported",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$media_id",
+        "string",
+        "$photo_id"
+      ],
+      "where": "includes/Integrations/Flickr/Connector.php:600",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_imported",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$media_id",
+        "string",
+        "$remote_id"
+      ],
+      "where": "includes/Integrations/Flickr/Connector.php:513",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_analytics_recorded",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$media_id",
+        "$event_type",
+        "$user_id"
+      ],
+      "where": "includes/Analytics/AnalyticsService.php:142",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_captions_generated",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$media_id",
+        "$saved"
+      ],
+      "where": "includes/Captions/TranscriptionService.php:210",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_credits_added",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "$user_id",
+        "$media_type",
+        "$amount",
+        "$source"
+      ],
+      "where": "includes/Quota/QuotaService.php:428",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_memberpress_package_assigned",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$user_id",
+        "$membership_id",
+        "$package_id"
+      ],
+      "where": "includes/Integrations/MemberPress/QuotaAdapter.php:96",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_memberpress_package_reverted",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$user_id",
+        "$default"
+      ],
+      "where": "includes/Integrations/MemberPress/QuotaAdapter.php:133",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_pmpro_package_assigned",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $user_id",
+        "int $level_id",
+        "$package_id"
+      ],
+      "where": "includes/Integrations/PaidMembershipsPro/QuotaAdapter.php:86",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_pmpro_package_reverted",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $user_id",
+        "$default"
+      ],
+      "where": "includes/Integrations/PaidMembershipsPro/QuotaAdapter.php:109",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_package_unassigned",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$user_id",
+        "$source"
+      ],
+      "where": "includes/Quota/QuotaService.php:362",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_transcode_complete",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$media_id",
+        "$results",
+        "$final_status"
+      ],
+      "where": "includes/Video/TranscodeService.php:521",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_woo_package_assigned",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $user_id",
+        "int $product_id",
+        "$package_id",
+        "$new_status"
+      ],
+      "where": "includes/Integrations/WooCommerce/QuotaAdapter.php:103",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_woo_package_reverted",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $user_id",
+        "$default",
+        "$new_status"
+      ],
+      "where": "includes/Integrations/WooCommerce/QuotaAdapter.php:132",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_quota_render_mapping_fields",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Admin/QuotaPage.php:526",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_quota_save_mapping",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Admin/QuotaPage.php:690",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_resolve_expired_matches",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Competitions/CompetitionsScheduler.php:153",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_start_registered_tournaments",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Competitions/CompetitionsScheduler.php:152",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_story_created",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$media_id",
+        "$user_id",
+        "$expires_at"
+      ],
+      "where": "includes/Stories/StoryService.php:94",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_story_expired",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$media_id"
+      ],
+      "where": "includes/Stories/StoryService.php:112",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_streak_milestone",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$user_id",
+        "$days",
+        "$xp"
+      ],
+      "where": "includes/Streaks/StreakService.php:262",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_cancelled",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$id"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:848",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_created",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$comp_id",
+        "$args",
+        "$created_by"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:107",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_finalized",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $comp",
+        "$champion_id"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:617",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_match_resolved",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$match_id",
+        "$winner_id"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:475",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_started",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$tournament_id"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:304",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_updated",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$id",
+        "$args"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:809",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_active_layout",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$slug"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:119",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_ai_moderation_terms",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "self::CATEGORIES"
+      ],
+      "where": "includes/Integrations/Anthropic/AIProvider.php:163",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_created_body",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$args",
+        "$created_by"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:126",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_created_subject",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$args",
+        "$created_by"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:127",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_entry_body",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$user_id",
+        "$media_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:171",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_entry_subject",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$user_id",
+        "$media_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:170",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_participant_body",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$user_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:293",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_participant_subject",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$user_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:292",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_winner_body",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$user_id",
+        "$rank"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:261",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_winner_subject",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$user_id",
+        "$rank"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:260",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_connectors",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array"
+      ],
+      "where": "includes/Connectors/ConnectorManager.php:57",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_feed_query_args",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$mvs_query_args",
+        "string"
+      ],
+      "where": "templates/layouts/pinterest/feed-body.php:95",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_config",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$config",
+        "$slug"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:93",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_modes",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "self::MODES"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:139",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_template_map",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$map",
+        "$this"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:162",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_openai_api_key",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$key"
+      ],
+      "where": "includes/Integrations/Whisper/CaptionProvider.php:136",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_privacy_can_view",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "null",
+        "$album_id",
+        "$user_id",
+        "$album_privacy"
+      ],
+      "where": "includes/Privacy/PrivacyUIService.php:155",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_analytics_event_data",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$event_data",
+        "$media_id",
+        "$event_type"
+      ],
+      "where": "includes/Analytics/AnalyticsService.php:117",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_analytics_summary",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$overview",
+        "int",
+        "string"
+      ],
+      "where": "includes/Analytics/AnalyticsService.php:646",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_before_quota_check",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$args",
+        "$user_id"
+      ],
+      "where": "includes/Quota/QuotaService.php:537",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_collections_manage_url",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$mvs_collections_url"
+      ],
+      "where": "includes/Core/Plugin.php:919",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_compete_points_url",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$mvs_hub_page_id"
+      ],
+      "where": "templates/compete-hub-body.php:53",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_inject_compete_nav",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool"
+      ],
+      "where": "includes/Core/Plugin.php:856",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_leaderboard_cache_ttl",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "5 * MINUTE_IN_SECONDS"
+      ],
+      "where": "includes/REST/LeaderboardController.php:126",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_leaderboard_xp_rows",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "array",
+        "int",
+        "$window"
+      ],
+      "where": "includes/Leaderboard/LeaderboardService.php:79",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_poster_frame",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$poster_url",
+        "$media_id",
+        "$input"
+      ],
+      "where": "includes/Video/TranscodeService.php:834",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_default_applies_to_unassigned",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool",
+        "$user_id"
+      ],
+      "where": "includes/Quota/QuotaService.php:263",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_revert_to_default_on_end",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool",
+        "$user_id",
+        "$source"
+      ],
+      "where": "includes/Quota/QuotaService.php:343",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_source",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$package",
+        "$user_id"
+      ],
+      "where": "includes/Quota/QuotaService.php:277",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_transcode_presets",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$presets",
+        "$media_id"
+      ],
+      "where": "includes/Video/TranscodeService.php:458",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_rest_pagination_max",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int"
+      ],
+      "where": "includes/Challenges/ChallengeController.php:93",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_watermark_font_path",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string",
+        "$config"
+      ],
+      "where": "includes/Core/Watermarker.php:263",
+      "consumed_by": []
+    }
+  ],
+  "services": [
+    {
+      "key": "core.plugin",
+      "class": "Core\\Plugin",
+      "file": "includes/Core/Plugin.php:68"
+    },
+    {
+      "key": "core.migrator",
+      "class": "Core\\Migrator",
+      "file": "includes/Core/Migrator.php"
+    },
+    {
+      "key": "core.license_manager",
+      "class": "Core\\LicenseManager",
+      "file": "includes/Core/LicenseManager.php"
+    },
+    {
+      "key": "core.connection_tester",
+      "class": "Core\\ConnectionTester",
+      "file": "includes/Core/ConnectionTester.php"
+    },
+    {
+      "key": "core.watermarker",
+      "class": "Core\\Watermarker",
+      "file": "includes/Core/Watermarker.php"
+    },
+    {
+      "key": "quota.service",
+      "class": "Quota\\QuotaService",
+      "file": "includes/Quota/QuotaService.php"
+    },
+    {
+      "key": "quota.controller",
+      "class": "Quota\\QuotaController",
+      "file": "includes/Quota/QuotaController.php"
+    },
+    {
+      "key": "frontend.usage_widget",
+      "class": "Frontend\\UsageWidget",
+      "file": "includes/Frontend/UsageWidget.php"
+    },
+    {
+      "key": "frontend.layout_manager",
+      "class": "Frontend\\Layouts\\LayoutManager",
+      "file": "includes/Frontend/Layouts/LayoutManager.php"
+    },
+    {
+      "key": "frontend.gamification_templates",
+      "class": "Frontend\\GamificationTemplateLoader",
+      "file": "includes/Frontend/GamificationTemplateLoader.php"
+    },
+    {
+      "key": "blocks.registrar",
+      "class": "Blocks\\BlockRegistrar",
+      "file": "includes/Blocks/BlockRegistrar.php"
+    },
+    {
+      "key": "blocks.shortcodes",
+      "class": "Blocks\\Shortcodes",
+      "file": "includes/Blocks/Shortcodes.php"
+    },
+    {
+      "key": "connectors.manager",
+      "class": "Connectors\\ConnectorManager",
+      "file": "includes/Connectors/ConnectorManager.php"
+    },
+    {
+      "key": "connectors.rest",
+      "class": "Connectors\\ConnectorRESTController",
+      "file": "includes/Connectors/ConnectorRESTController.php"
+    },
+    {
+      "key": "privacy.ui",
+      "class": "Privacy\\PrivacyUIService",
+      "file": "includes/Privacy/PrivacyUIService.php"
+    },
+    {
+      "key": "privacy.controller",
+      "class": "Privacy\\PrivacyController",
+      "file": "includes/Privacy/PrivacyController.php"
+    },
+    {
+      "key": "video.chapter",
+      "class": "Video\\ChapterService",
+      "file": "includes/Video/ChapterService.php"
+    },
+    {
+      "key": "video.resume",
+      "class": "Video\\ResumeService",
+      "file": "includes/Video/ResumeService.php"
+    },
+    {
+      "key": "video.controller",
+      "class": "Video\\VideoController",
+      "file": "includes/Video/VideoController.php"
+    },
+    {
+      "key": "video.transcode",
+      "class": "Video\\TranscodeService",
+      "file": "includes/Video/TranscodeService.php"
+    },
+    {
+      "key": "video.transcode_controller",
+      "class": "Video\\TranscodeController",
+      "file": "includes/Video/TranscodeController.php"
+    },
+    {
+      "key": "captions.transcription",
+      "class": "Captions\\TranscriptionService",
+      "file": "includes/Captions/TranscriptionService.php"
+    },
+    {
+      "key": "captions.controller",
+      "class": "Captions\\CaptionController",
+      "file": "includes/Captions/CaptionController.php"
+    },
+    {
+      "key": "groups.controller",
+      "class": "Groups\\GroupController",
+      "file": "includes/Groups/GroupController.php"
+    },
+    {
+      "key": "collections.items",
+      "class": "Collections\\CollectionItemsService",
+      "file": "includes/Collections/CollectionItemsService.php"
+    },
+    {
+      "key": "collections.items_controller",
+      "class": "Collections\\CollectionItemsController",
+      "file": "includes/Collections/CollectionItemsController.php"
+    },
+    {
+      "key": "analytics.service",
+      "class": "Analytics\\AnalyticsService",
+      "file": "includes/Analytics/AnalyticsService.php"
+    },
+    {
+      "key": "analytics.controller",
+      "class": "Analytics\\AnalyticsController",
+      "file": "includes/Analytics/AnalyticsController.php"
+    },
+    {
+      "key": "battles.service",
+      "class": "Battles\\BattleService",
+      "file": "includes/Battles/BattleService.php"
+    },
+    {
+      "key": "battles.controller",
+      "class": "Battles\\BattleController",
+      "file": "includes/Battles/BattleController.php"
+    },
+    {
+      "key": "battles.notif_listener",
+      "class": "Battles\\BattleNotificationListener",
+      "file": "includes/Battles/BattleNotificationListener.php"
+    },
+    {
+      "key": "challenges.service",
+      "class": "Challenges\\ChallengeService",
+      "file": "includes/Challenges/ChallengeService.php"
+    },
+    {
+      "key": "challenges.autopilot",
+      "class": "Challenges\\AutopilotService",
+      "file": "includes/Challenges/AutopilotService.php"
+    },
+    {
+      "key": "challenges.controller",
+      "class": "Challenges\\ChallengeController",
+      "file": "includes/Challenges/ChallengeController.php"
+    },
+    {
+      "key": "challenges.notif_listener",
+      "class": "Challenges\\ChallengeNotificationListener",
+      "file": "includes/Challenges/ChallengeNotificationListener.php"
+    },
+    {
+      "key": "tournaments.service",
+      "class": "Tournaments\\TournamentService",
+      "file": "includes/Tournaments/TournamentService.php"
+    },
+    {
+      "key": "tournaments.controller",
+      "class": "Tournaments\\TournamentController",
+      "file": "includes/Tournaments/TournamentController.php"
+    },
+    {
+      "key": "tournaments.notif_listener",
+      "class": "Tournaments\\TournamentNotificationListener",
+      "file": "includes/Tournaments/TournamentNotificationListener.php"
+    },
+    {
+      "key": "competitions.scheduler",
+      "class": "Competitions\\CompetitionsScheduler",
+      "file": "includes/Competitions/CompetitionsScheduler.php"
+    },
+    {
+      "key": "boosts.service",
+      "class": "Boosts\\BoostService",
+      "file": "includes/Boosts/BoostService.php"
+    },
+    {
+      "key": "boosts.controller",
+      "class": "Boosts\\BoostController",
+      "file": "includes/Boosts/BoostController.php"
+    },
+    {
+      "key": "streaks.service",
+      "class": "Streaks\\StreakService",
+      "file": "includes/Streaks/StreakService.php"
+    },
+    {
+      "key": "streaks.controller",
+      "class": "Streaks\\StreakController",
+      "file": "includes/Streaks/StreakController.php"
+    },
+    {
+      "key": "leaderboard.service",
+      "class": "Leaderboard\\LeaderboardService",
+      "file": "includes/Leaderboard/LeaderboardService.php"
+    },
+    {
+      "key": "leaderboard.controller",
+      "class": "REST\\LeaderboardController",
+      "file": "includes/REST/LeaderboardController.php"
+    },
+    {
+      "key": "push.service",
+      "class": "Push\\PushService",
+      "file": "includes/Push/PushService.php"
+    },
+    {
+      "key": "push.controller",
+      "class": "REST\\PushController",
+      "file": "includes/REST/PushController.php"
+    },
+    {
+      "key": "stories.service",
+      "class": "Stories\\StoryService",
+      "file": "includes/Stories/StoryService.php"
+    },
+    {
+      "key": "stories.controller",
+      "class": "REST\\StoryController",
+      "file": "includes/REST/StoryController.php"
+    },
+    {
+      "key": "rest.compete_summary",
+      "class": "REST\\CompeteSummaryController",
+      "file": "includes/REST/CompeteSummaryController.php"
+    },
+    {
+      "key": "rest.admin",
+      "class": "REST\\AdminController",
+      "file": "includes/REST/AdminController.php"
+    },
+    {
+      "key": "gamification.points_bridge",
+      "class": "Gamification\\CompetePointsBridge",
+      "file": "includes/Gamification/CompetePointsBridge.php"
+    },
+    {
+      "key": "quota_adapter.memberpress",
+      "class": "Integrations\\MemberPress\\QuotaAdapter",
+      "file": "includes/Integrations/MemberPress/QuotaAdapter.php"
+    },
+    {
+      "key": "quota_adapter.pmpro",
+      "class": "Integrations\\PaidMembershipsPro\\QuotaAdapter",
+      "file": "includes/Integrations/PaidMembershipsPro/QuotaAdapter.php"
+    },
+    {
+      "key": "quota_adapter.woocommerce",
+      "class": "Integrations\\WooCommerce\\QuotaAdapter",
+      "file": "includes/Integrations/WooCommerce/QuotaAdapter.php"
+    },
+    {
+      "key": "admin.pro_settings",
+      "class": "Admin\\ProSettings",
+      "file": "includes/Admin/ProSettings.php"
+    },
+    {
+      "key": "admin.gamification_settings",
+      "class": "Admin\\GamificationSettings",
+      "file": "includes/Admin/GamificationSettings.php"
+    },
+    {
+      "key": "admin.cloud_ops",
+      "class": "Admin\\CloudOpsManager",
+      "file": "includes/Admin/CloudOpsManager.php"
+    },
+    {
+      "key": "admin.confirm_dialog",
+      "class": "Admin\\ConfirmDialog",
+      "file": "includes/Admin/ConfirmDialog.php"
+    },
+    {
+      "key": "admin.notice_suppressor",
+      "class": "Admin\\NoticeSuppressor",
+      "file": "includes/Admin/NoticeSuppressor.php"
+    }
+  ],
+  "post_types": [],
+  "taxonomies": [],
+  "capabilities": [
+    {
+      "cap": "manage_mvs_settings",
+      "default_roles": [],
+      "registered_at": "Free plugin (WPMediaVerse) — not registered in Pro",
+      "enforced_at": [
+        "includes/Admin/CompetitionsDashboard.php:104,115,125",
+        "includes/Admin/ChallengeManager.php:77,88",
+        "includes/Admin/TournamentManager.php:58,93",
+        "includes/Admin/BattleMonitor.php:32,68",
+        "includes/Admin/ThemeLibrary.php:62,72",
+        "includes/Admin/QuotaPage.php:46,59",
+        "includes/Admin/MigrationPage.php:87",
+        "includes/Admin/AnalyticsDashboard.php:62,96",
+        "includes/Core/ConnectionTester.php:71,117,160,198",
+        "includes/Video/TranscodeController.php:385,402",
+        "includes/Captions/CaptionController.php:352",
+        "includes/Challenges/ChallengeController.php:346"
+      ],
+      "enforcement_count": 12,
+      "meta": false,
+      "requires_context": "none"
+    },
+    {
+      "cap": "moderate_mvs_media",
+      "default_roles": [],
+      "registered_at": "Free plugin — not registered in Pro",
+      "enforced_at": [
+        "includes/Admin/ReportManager.php:42,57,75,215,231",
+        "includes/Privacy/PrivacyUIService.php:144,219",
+        "includes/Privacy/PrivacyController.php:336"
+      ],
+      "enforcement_count": 3,
+      "meta": false,
+      "requires_context": "none"
+    },
+    {
+      "cap": "edit_mvs_media",
+      "default_roles": [],
+      "registered_at": "Free plugin — not registered in Pro",
+      "enforced_at": [
+        "includes/Video/VideoController.php:339"
+      ],
+      "enforcement_count": 1,
+      "meta": false,
+      "requires_context": "none"
+    },
+    {
+      "cap": "manage_options",
+      "default_roles": [],
+      "registered_at": "WordPress core",
+      "enforced_at": [
+        "includes/Admin/StoriesPage.php:58,68,229",
+        "includes/Admin/CloudOpsManager.php:198,275,341",
+        "includes/Core/LicenseManager.php:85",
+        "includes/Frontend/CompeteHubRenderer.php:54",
+        "includes/Core/Plugin.php:545",
+        "includes/Challenges/Renderer.php:59"
+      ],
+      "enforcement_count": 6,
+      "meta": false,
+      "requires_context": "none"
+    }
+  ]
 }

@@ -1,44 +1,104 @@
 {
   "tables": [
     {
-      "name": "mvs_quota_packages",
-      "purpose": "Quota plan definitions (image_limit, video_limit, storage_bytes)"
+      "name": "{prefix}mvs_pro_collection_items",
+      "purpose": "Multi-collection memberships (media can live in many manual collections)",
+      "file": "includes/Core/Migrator.php:221"
     },
     {
-      "name": "mvs_credit_log",
-      "purpose": "Gamification points transaction history"
+      "name": "{prefix}mvs_pro_push_devices",
+      "purpose": "Native push device registry (Expo tokens per user/device)",
+      "file": "includes/Core/Migrator.php:252"
     },
     {
-      "name": "mvs_play_events",
-      "purpose": "Video analytics events (play/pause/seek/complete)"
+      "name": "{prefix}mvs_quota_packages",
+      "purpose": "Upload/storage quota package definitions",
+      "file": "includes/Core/Migrator.php:366"
     },
     {
-      "name": "mvs_competitions",
-      "purpose": "Unified competition header (battles, challenges, tournaments)"
+      "name": "{prefix}mvs_credit_log",
+      "purpose": "Credit/quota transaction ledger",
+      "file": "includes/Core/Migrator.php:383"
     },
     {
-      "name": "mvs_competition_entries",
-      "purpose": "Participants/submissions per competition"
+      "name": "{prefix}mvs_play_events",
+      "purpose": "Video play + heatmap analytics events",
+      "file": "includes/Core/Migrator.php:402"
     },
     {
-      "name": "mvs_competition_matches",
-      "purpose": "Head-to-head matches (battles + tournament rounds)"
+      "name": "{prefix}mvs_competitions",
+      "purpose": "Competitions (battles/challenges/tournaments) master rows",
+      "file": "includes/Core/Migrator.php:498"
     },
     {
-      "name": "mvs_competition_votes",
-      "purpose": "Votes on entries or matches"
+      "name": "{prefix}mvs_competition_entries",
+      "purpose": "Per-competition media entries",
+      "file": "includes/Core/Migrator.php:524"
     },
     {
-      "name": "mvs_boosts",
-      "purpose": "Media visibility boosts (points spent)"
+      "name": "{prefix}mvs_competition_matches",
+      "purpose": "Tournament/battle match pairings",
+      "file": "includes/Core/Migrator.php:545"
     },
     {
-      "name": "mvs_pro_collection_items",
-      "purpose": "Multi-collection membership (user_id, media_id, collection_id) - which manual collections a media is in beyond Free's single mvs_favorites.collection_id. Migrator v7."
+      "name": "{prefix}mvs_competition_votes",
+      "purpose": "Votes cast in competitions",
+      "file": "includes/Core/Migrator.php:572"
     },
     {
-      "name": "mvs_pro_push_devices",
-      "purpose": "Expo push tokens per device (UNIQUE token; supports device->account migration)"
+      "name": "{prefix}mvs_boosts",
+      "purpose": "Media boosts (points-for-visibility)",
+      "file": "includes/Core/Migrator.php:588"
     }
-  ]
+  ],
+  "generated": {
+    "at": "2026-07-07T00:00:00Z",
+    "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
+    "branch": "main",
+    "schema_version": "v2.2",
+    "scan_scope": "distignore",
+    "scan_path": ".",
+    "php_file_count": 162,
+    "refresh_2026_05_07_pm": {
+      "scope": "targeted (CloudOpsManager admin UI + S3 SigV4 path encoding + storage settings UX)",
+      "added": {
+        "admin_classes_added": [
+          "WPMediaVersePro\\Admin\\CloudOpsManager"
+        ],
+        "admin_post_actions_added": [
+          "mvs_pro_cloud_migrate_batch",
+          "mvs_pro_cloud_cleanup_batch"
+        ],
+        "transients_added": [
+          "mvs_pro_cloud_ops_notice (60s, success/error message between admin-post redirect and notice render)"
+        ],
+        "free_services_consumed_added": [
+          "WPMediaVerse\\Services\\CloudOps — per-row migrate / cleanup-local helpers shared with Free CLI"
+        ],
+        "drivers_changed": [
+          "Integrations\\AmazonS3\\StorageDriver — encode_s3_uri() helper added; put_object / delete_object / head_object switched from rawurlencode($key) to per-segment encoding (S3-compat fix for R2 / MinIO / B2)",
+          "Integrations\\AmazonS3\\StorageDriver::download() — implemented (StorageDriverInterface contract)",
+          "Integrations\\BunnyCDN\\StorageDriver::download() — implemented (StorageDriverInterface contract)",
+          "Integrations\\BunnyCDN\\StorageDriver::exists() — switched HEAD to Range-GET (BunnyCDN storage API does not support HEAD)"
+        ],
+        "settings_ui_changes": [
+          "BunnyCDN: Storage Zone Password / Pull Zone Hostname / Storage Zone Region label rewording",
+          "AWS: Bucket Name / Region label rewording",
+          "Both: 2-step setup walkthrough in section header; per-field help trimmed to keep form scannable",
+          "All 5 secret fields now preserve stored value on empty form submit (pre_update_option_* filter chain — fixes secret-wipe on Save Changes)"
+        ]
+      },
+      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration. No S3 smoke test run live today — code-review only per user direction."
+    },
+    "phase_2_rescan_skipped": true,
+    "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables — manifest category counts unchanged. SafeRender helper not tracked here (not in service container).",
+    "refresh_2026_07_07": {
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (91), hooks_fired (83), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies, feature_toggles, free_services_consumed, free_filters_hooked.",
+      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "namespace": "mvs-pro/v1",
+      "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+    }
+  }
 }

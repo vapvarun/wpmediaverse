@@ -15,23 +15,25 @@
   "counts": {
     "rest_endpoints": 89,
     "ajax": 3,
-    "admin_pages": 17,
+    "admin_pages": 20,
     "settings": 40,
-    "shortcodes": 12,
-    "blocks": 14,
+    "shortcodes": 13,
+    "blocks": 13,
     "post_types": 2,
     "taxonomies": 2,
-    "tables": 22,
+    "tables": 23,
     "capabilities": 10,
-    "services": 35,
+    "services": 49,
     "services_registered": 46,
     "hooks_fired_unique": 145,
     "hooks_with_args_signature": 29,
     "hooks_no_call_site": 0,
     "cron": 4,
-    "wp_cli": 17,
+    "wp_cli": 20,
     "journeys": 12,
-    "migrator_version": 15
+    "migrator_version": 15,
+    "rest": 113,
+    "hooks_fired": 167
   },
   "detail_files": {
     "rest": "manifest.rest.json",
@@ -45,14 +47,174 @@
     "args_signature_extraction": "Last full pass 2026-05-17. Counts refreshed 2026-05-28; per-entry detail files lag — re-enumerate before next major release."
   },
   "generated": {
-    "at": "2026-06-04T10:27:09Z",
-    "from": "wp-plugin-onboard skill — refresh (1.6.0 audit session: +4 hooks, +1 CLI)",
+    "at": "2026-07-07T00:00:00Z",
+    "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
     "branch": "main",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
-    "php_file_count": 141,
-    "previous_full_pass": "2026-05-17T08:50:00Z"
+    "php_file_count": 174,
+    "refresh_2026_05_07_pm": {
+      "scope": "targeted (cloud-storage tooling + cloud thumbnails + i18n sweep + privacy gate)",
+      "added": {
+        "services_added": [
+          "WPMediaVerse\\Services\\CloudOps"
+        ],
+        "interface_changes": [
+          "StorageDriverInterface::download(string $path, string $local_dest): bool — new contract method"
+        ],
+        "cli_subcommands_added": [
+          "wp mvs migrate-storage --from --to [--keep-source] [--include-non-public]",
+          "wp mvs cloud-thumbs-backfill",
+          "wp mvs cleanup-local [--keep-thumbs]"
+        ],
+        "settings_added": [
+          "mvs_cloud_direct_public_urls (boolean, default false)"
+        ],
+        "filters_added": [
+          "mvs_cloud_thumbnail_url($url, $size, $media_id) — delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
+          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) — opt-in for private-bucket setups"
+        ],
+        "options_added": [
+          "mvs_cloud_ops_status — last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
+        ],
+        "i18n_strings_wrapped": 98,
+        "pot_entries": "1 → 1,179",
+        "wp_localize_script_handles": [
+          "mvsConfirmI18n",
+          "mvsCardBuildersI18n"
+        ],
+        "view_script_strings_via_runtime_shim": 50,
+        "locale_broken_matchers_fixed": [
+          "bp-activity-media.js favorite-button click delegation (was textContent.indexOf Share)",
+          "bp-activity-media.js share-button click delegation (was textContent.indexOf Share/Copied)"
+        ]
+      },
+      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration, Phase 4.7 scaffold (already in place)."
+    },
+    "args_signature_extraction": {
+      "at": "2026-04-30",
+      "tool": "wp-plugin-onboard SKILL.md Phase 2.5.2 extractor",
+      "populated": 14,
+      "phantom": 8,
+      "total": 22
+    },
+    "refresh_2026_05_03": {
+      "scope": "targeted (REST + blocks + shortcodes + settings + 1 hook + bulk admin)",
+      "added": {
+        "rest_endpoints": [
+          "POST /media/{id}/download",
+          "POST /media/{id}/share"
+        ],
+        "rest_endpoints_updated": [
+          "PUT /media/{id} (added allow_download param)"
+        ],
+        "blocks_added": [
+          "mvs/member-photos",
+          "mvs/pdf-viewer"
+        ],
+        "blocks_unregistered": [
+          "wpmediaverse/story-viewer (source kept; not registered in BlockRegistrar::BLOCKS for 1.2.0)"
+        ],
+        "shortcodes_added": [
+          "mvs_explore_feed",
+          "mvs_lock_overlay",
+          "mvs_member_photos",
+          "mvs_pdf_viewer"
+        ],
+        "shortcodes_updated": [
+          "mvs_gallery (added user_id + order attrs)"
+        ],
+        "settings_added": [
+          "mvs_chat_panel_visibility",
+          "mvs_allow_downloads"
+        ],
+        "hooks_fired_added": [
+          "mvs_should_render_chat_panel"
+        ],
+        "media_meta_keys_added": [
+          "allow_download (string '1'/'0', default '1' when absent)"
+        ],
+        "admin_pages_extended": [
+          "Admin/MediaListPage.php::handle_bulk_action_apply (multi-select Trash/Restore/Delete on the existing All Media page)"
+        ]
+      },
+      "out_of_scope": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3 outputs) NOT regenerated. audit/derived/ cache untouched. Journeys untouched."
+    },
+    "refreshed_at": "2026-05-17T03:30:00Z",
+    "refresh_2026_05_17": {
+      "scope": "targeted: 1.2.2 image optimization pipeline (services + settings + CLI + filters + video poster ffmpeg fallback + audio waveform + explore feed chronology)",
+      "services_added": [
+        "image_optimization"
+      ],
+      "settings_added": [
+        "mvs_optimize_originals",
+        "mvs_generate_webp"
+      ],
+      "cli_added": [
+        "wp mvs optimize",
+        "wp mvs optimize-bulk"
+      ],
+      "filters_added": [
+        "mvs_optimize_image - single extension point for external compressors",
+        "mvs_optimize_jpeg_quality - default 92 for lossless re-encode",
+        "mvs_webp_quality - default 82 for WebP sibling",
+        "mvs_ffmpeg_binary - default ffmpeg, override for Docker"
+      ],
+      "meta_keys_added": [
+        "original_webp",
+        "thumb_large_webp",
+        "thumb_medium_webp",
+        "thumb_thumb_webp",
+        "_mvs_optimized_at",
+        "_mvs_optimize_failed",
+        "_mvs_bytes_before",
+        "_mvs_bytes_after"
+      ],
+      "files_added": [
+        "includes/Services/ImageOptimizationService.php",
+        "tests/unit/ImageOptimizationServiceTest.php",
+        "docs/architecture/specs/2026-05-17-image-optimization-pipeline.md",
+        "docs/development/COMPRESSION_INTEGRATIONS.md"
+      ],
+      "templates_changed": [
+        "templates/explore.php - albums removed from feed (static containers misrepresented freshness); media-only strict created_at DESC",
+        "templates/media-single.php - uses picture_or_img() so single-media view serves WebP via picture+source when sibling exists"
+      ],
+      "template_helpers_added": [
+        "picture_or_img() - emits picture when WebP sibling exists and JPEG URL is not /serve-gated",
+        "get_webp_variant_url() - central choke point; size mapping + original_webp fallback",
+        "render_audio_waveform_svg() - deterministic 48-bar waveform from media_id for audio cards without album art"
+      ],
+      "upload_service_changes": [
+        "process_upload: optimize runs on temp file BEFORE driver->store so cloud drivers receive optimized bytes",
+        "process_upload: ensure-local-copy fallback before extract_and_store_metadata for cloud-driver installs",
+        "generate_thumbnails: per-variant optimize + emit_webp_sibling; cloud upload of variant WebPs",
+        "extract_and_store_metadata audio case: embedded album art feeds through generate_thumbnails",
+        "generate_video_poster_thumbnails: Path B added - ffmpeg fallback when no embedded cover atom (proc_open with arg array, no shell injection)"
+      ],
+      "admin_changes": [
+        "MediaListPage Optimization column with badges: -X.X% / WebP ready / No lossless gain / Not optimized / Could not optimize",
+        "MediaListPage row actions: Details (?view=details mini-page), Optimize (admin-php nonced trigger)",
+        "MediaListPage::render_detail - read-only mini-page with site-owner-friendly metadata"
+      ],
+      "not_re_enumerated": "REST/AJAX/post_types/taxonomies/tables/capabilities/shortcodes/blocks/cron unchanged",
+      "deferred_to_1_3_0": [
+        "AVIF variant generation",
+        "/serve content negotiation reading Accept header",
+        "Lightbox WebP serving (needs Interactivity state + REST schema + JS build)",
+        "Screen Options column toggles",
+        "Admin bulk-optimize progress UI"
+      ]
+    },
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only — inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired — manifest category counts unchanged. Full re-scan deferred to next structural change.",
+    "refresh_2026_07_07": {
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
+      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "namespace": "mvs/v1",
+      "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+    }
   },
   "refreshed_at": "2026-05-28T12:30:00Z",
   "refresh_2026_05_28": {

@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "1.3.0",
+    "version": "1.9.0",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -14,809 +14,1311 @@
   },
   "rest": {
     "namespace": "mvs/v1",
-    "controllers_dir": "includes/REST/Controller/",
-    "rate_limiter": "includes/REST/RateLimiter.php",
     "endpoints": [
       {
-        "route": "/media",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "MediaController",
-        "permission": "public read; create_item_permissions_check write",
-        "purpose": "List/create media"
-      },
-      {
-        "route": "/media/(?P<id>\\d+)",
-        "methods": [
-          "GET",
-          "PUT",
-          "DELETE"
-        ],
-        "handler": "MediaController",
-        "permission": "per-method permission_check",
-        "purpose": "Single media CRUD",
-        "notes": "1.2.0: PUT now accepts an `allow_download` boolean param (stored as media_meta '1'/'0', default '1' when absent). prepare_item_for_response emits `allow_download` (defaults true when meta absent or != '0')."
-      },
-      {
-        "route": "/media/(?P<id>[0-9]+)/download",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MediaController::record_download",
-        "permission": "__return_true (read endpoint, gated by privacy + global mvs_allow_downloads + per-media allow_download meta)",
-        "purpose": "Record a download event + increment mvs_media_stats.downloads",
-        "notes": "1.2.0: rate-limited 30/min per user/IP; 403 if global mvs_allow_downloads off or per-media allow_download='0'; writes mvs_media_views row with event_type='download' and increments mvs_media_stats.downloads via INSERT...ON DUPLICATE KEY UPDATE."
-      },
-      {
-        "route": "/media/(?P<id>[0-9]+)/share",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MediaController::record_share",
-        "permission": "__return_true (read endpoint, gated by privacy)",
-        "purpose": "Record a share event + increment mvs_media_stats.shares",
-        "notes": "1.2.0: mirrors record_download but writes shares; same privacy gate (privacy->can_view); rate-limited 30/min per user/IP."
-      },
-      {
-        "route": "/media/bulk",
-        "methods": [
-          "POST"
-        ],
-        "handler": "BulkController",
-        "permission": "bulk_permissions_check",
-        "purpose": "Bulk delete/move/privacy"
-      },
-      {
-        "route": "/media/(?P<id>\\d+)/signed-url",
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/rules",
         "methods": [
           "GET"
         ],
-        "handler": "SignedUrlController",
-        "permission": "get_signed_url_permissions_check",
-        "purpose": "Generate signed URL"
-      },
-      {
-        "route": "/serve",
-        "methods": [
-          "GET"
-        ],
-        "handler": "SignedUrlController::serve_file",
-        "permission": "token-validated public",
-        "purpose": "Stream file via signed URL"
-      },
-      {
-        "route": "/media/(?P<id>\\d+)/report",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ReportController::report_media",
-        "permission": "logged-in",
-        "purpose": "Flag media"
-      },
-      {
-        "route": "/media/(?P<id>\\d+)/reactions",
-        "methods": [
-          "GET",
-          "POST",
-          "DELETE"
-        ],
-        "handler": "ReactionController",
-        "permission": "public read; logged-in write",
-        "purpose": "Emoji reactions"
-      },
-      {
-        "route": "/media/(?P<id>\\d+)/comments",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "CommentController",
-        "permission": "public read; logged-in write",
-        "purpose": "Comments"
-      },
-      {
-        "route": "/media/(?P<id>\\d+)/comments/(?P<comment_id>\\d+)",
-        "methods": [
-          "PUT",
-          "DELETE"
-        ],
-        "handler": "CommentController",
-        "permission": "author or moderator",
-        "purpose": "Edit/delete comment"
-      },
-      {
-        "route": "/media/(?P<id>\\d+)/favorite",
-        "methods": [
-          "GET",
-          "POST",
-          "DELETE"
-        ],
-        "handler": "FavoriteController",
-        "permission": "logged-in",
-        "purpose": "Favorite toggle"
-      },
-      {
-        "route": "/me/favorites",
-        "methods": [
-          "GET"
-        ],
-        "handler": "FavoriteController",
-        "permission": "logged-in",
-        "purpose": "List my favorites"
-      },
-      {
-        "route": "/albums",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "AlbumController",
-        "permission": "public read; logged-in create",
-        "purpose": "Albums list/create"
-      },
-      {
-        "route": "/albums/(?P<id>\\d+)",
-        "methods": [
-          "GET",
-          "PUT",
-          "DELETE"
-        ],
-        "handler": "AlbumController",
-        "permission": "owner write",
-        "purpose": "Album CRUD"
-      },
-      {
-        "route": "/albums/(?P<id>\\d+)/items",
-        "methods": [
-          "POST"
-        ],
-        "handler": "AlbumController::add_items",
-        "permission": "owner",
-        "purpose": "Add media to album"
-      },
-      {
-        "route": "/collections",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "CollectionController",
-        "permission": "logged-in",
-        "purpose": "Collections list/create"
-      },
-      {
-        "route": "/collections/(?P<id>\\d+)",
-        "methods": [
-          "GET",
-          "PUT",
-          "DELETE"
-        ],
-        "handler": "CollectionController",
-        "permission": "owner",
-        "purpose": "Collection CRUD"
-      },
-      {
-        "route": "/tags",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "TagController",
-        "permission": "public read; logged-in create",
-        "purpose": "Tag list/create"
-      },
-      {
-        "route": "/tags/cloud",
-        "methods": [
-          "GET"
-        ],
-        "handler": "TagController::get_cloud",
-        "permission": "public",
-        "purpose": "Tag cloud"
-      },
-      {
-        "route": "/tags/(?P<id>\\d+)",
-        "methods": [
-          "PUT",
-          "DELETE"
-        ],
-        "handler": "TagController",
-        "permission": "admin",
-        "purpose": "Rename/delete tag"
-      },
-      {
-        "route": "/tags/merge",
-        "methods": [
-          "POST"
-        ],
-        "handler": "TagController::merge_tags",
-        "permission": "admin",
-        "purpose": "Merge tags"
-      },
-      {
-        "route": "/users/(?P<id>\\d+)",
-        "methods": [
-          "GET"
-        ],
-        "handler": "UserController::get_profile",
-        "permission": "public",
-        "purpose": "Public profile"
-      },
-      {
-        "route": "/users/(?P<id>\\d+)/media",
-        "methods": [
-          "GET"
-        ],
-        "handler": "UserController::get_user_media",
-        "permission": "public (privacy-filtered)",
-        "purpose": "User's media"
-      },
-      {
-        "route": "/users/search",
-        "methods": [
-          "GET"
-        ],
-        "handler": "UserController::search_users",
-        "permission": "public",
-        "purpose": "Search users"
-      },
-      {
-        "route": "/users/(?P<id>\\d+)/follow",
-        "methods": [
-          "POST",
-          "DELETE"
-        ],
-        "handler": "FollowController",
-        "permission": "logged-in",
-        "purpose": "Follow toggle"
-      },
-      {
-        "route": "/users/(?P<id>\\d+)/followers",
-        "methods": [
-          "GET"
-        ],
-        "handler": "FollowController::get_followers",
-        "permission": "public",
-        "purpose": "Followers list"
-      },
-      {
-        "route": "/users/(?P<id>\\d+)/following",
-        "methods": [
-          "GET"
-        ],
-        "handler": "FollowController::get_following",
-        "permission": "public",
-        "purpose": "Following list"
-      },
-      {
-        "route": "/me/profile",
-        "methods": [
-          "GET",
-          "PUT",
-          "PATCH"
-        ],
-        "handler": "ProfileController",
-        "permission": "logged-in",
-        "purpose": "My profile"
-      },
-      {
-        "route": "/me/avatar",
-        "methods": [
-          "POST",
-          "DELETE"
-        ],
-        "handler": "ProfileController",
-        "permission": "logged-in",
-        "purpose": "Avatar upload/delete"
-      },
-      {
-        "route": "/users/(?P<id>\\d+)/report",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ReportController::report_user",
-        "permission": "logged-in",
-        "purpose": "Report user"
-      },
-      {
-        "route": "/users/(?P<id>\\d+)/block",
-        "methods": [
-          "POST"
-        ],
-        "handler": "ReportController::block_user",
-        "permission": "logged-in",
-        "purpose": "Block user"
-      },
-      {
-        "route": "/me/blocked",
-        "methods": [
-          "GET"
-        ],
-        "handler": "ReportController::get_blocked",
-        "permission": "logged-in",
-        "purpose": "My blocked users"
-      },
-      {
-        "route": "/feed",
-        "methods": [
-          "GET"
-        ],
-        "handler": "ActivityController::get_feed",
-        "permission": "public (privacy-filtered)",
-        "purpose": "Activity feed"
-      },
-      {
-        "route": "/users/(?P<id>\\d+)/activity",
-        "methods": [
-          "GET"
-        ],
-        "handler": "ActivityController::get_user_activity",
-        "permission": "public",
-        "purpose": "User activity"
-      },
-      {
-        "route": "/media/(?P<id>\\d+)/stats",
-        "methods": [
-          "GET"
-        ],
-        "handler": "StatsController::get_media_stats",
-        "permission": "public",
-        "purpose": "Media stats"
-      },
-      {
-        "route": "/me/stats",
-        "methods": [
-          "GET"
-        ],
-        "handler": "StatsController::get_my_stats",
-        "permission": "logged-in",
-        "purpose": "My upload stats"
-      },
-      {
-        "route": "/media/(?P<id>\\d+)/rules",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "AccessController",
+        "handler": "AccessController::get_rules",
         "permission": "manage_permissions_check",
-        "purpose": "Access rules"
+        "purpose": "List access rules for a media item",
+        "file": "includes/REST/Controller/AccessController.php:53"
       },
       {
-        "route": "/media/(?P<id>\\d+)/rules/(?P<rule_id>\\d+)",
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/rules",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AccessController::set_rules",
+        "permission": "manage_permissions_check",
+        "purpose": "Set/create access rules for a media item",
+        "file": "includes/REST/Controller/AccessController.php:53"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/rules/(?P<rule_id>[\\d]+)",
         "methods": [
           "DELETE"
         ],
         "handler": "AccessController::delete_rule",
         "permission": "manage_permissions_check",
-        "purpose": "Delete access rule"
+        "purpose": "Delete an access rule",
+        "file": "includes/REST/Controller/AccessController.php:102"
       },
       {
-        "route": "/media/(?P<id>\\d+)/grant",
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/grant",
         "methods": [
           "POST"
         ],
         "handler": "AccessController::grant_access",
         "permission": "manage_permissions_check",
-        "purpose": "Grant user access"
+        "purpose": "Grant a user access to media",
+        "file": "includes/REST/Controller/AccessController.php:125"
       },
       {
-        "route": "/moderation",
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/grant/(?P<user_id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "AccessController::revoke_access",
+        "permission": "manage_permissions_check",
+        "purpose": "Revoke a user's access to media",
+        "file": "includes/REST/Controller/AccessController.php:157"
+      },
+      {
+        "route": "/mvs/v1/me/grants",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AccessController::get_my_grants",
+        "permission": "authenticated_check",
+        "purpose": "List access grants for current user",
+        "file": "includes/REST/Controller/AccessController.php:180"
+      },
+      {
+        "route": "/mvs/v1/access/options",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AccessController::get_options",
+        "permission": "authenticated_check",
+        "purpose": "Get access-control option choices",
+        "file": "includes/REST/Controller/AccessController.php:215"
+      },
+      {
+        "route": "/mvs/v1/feed",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ActivityController::get_feed",
+        "permission": "__return_true",
+        "purpose": "Global activity feed",
+        "file": "includes/REST/Controller/ActivityController.php:57"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/activity",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ActivityController::get_user_activity",
+        "permission": "__return_true",
+        "purpose": "Activity feed for a user",
+        "file": "includes/REST/Controller/ActivityController.php:86"
+      },
+      {
+        "route": "/mvs/v1/admin/welcome/dismiss",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AdminController::dismiss_welcome",
+        "permission": "logged_in_permissions_check",
+        "purpose": "Dismiss admin welcome notice",
+        "file": "includes/REST/Controller/AdminController.php:53"
+      },
+      {
+        "route": "/mvs/v1/albums",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AlbumController::get_items",
+        "permission": "__return_true",
+        "purpose": "List albums",
+        "file": "includes/REST/Controller/AlbumController.php:75"
+      },
+      {
+        "route": "/mvs/v1/albums",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AlbumController::create_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Create an album",
+        "file": "includes/REST/Controller/AlbumController.php:75"
+      },
+      {
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AlbumController::get_item",
+        "permission": "__return_true",
+        "purpose": "Get single album",
+        "file": "includes/REST/Controller/AlbumController.php:93"
+      },
+      {
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)",
+        "methods": [
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "AlbumController::update_item",
+        "permission": "update_item_permissions_check",
+        "purpose": "Update an album",
+        "file": "includes/REST/Controller/AlbumController.php:93"
+      },
+      {
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "AlbumController::delete_item",
+        "permission": "delete_item_permissions_check",
+        "purpose": "Delete an album",
+        "file": "includes/REST/Controller/AlbumController.php:93"
+      },
+      {
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)/reorder",
+        "methods": [
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "AlbumController::reorder_items",
+        "permission": "update_item_permissions_check",
+        "purpose": "Reorder album items",
+        "file": "includes/REST/Controller/AlbumController.php:135"
+      },
+      {
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)/items",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AlbumController::add_items",
+        "permission": "update_item_permissions_check",
+        "purpose": "Add media items to album",
+        "file": "includes/REST/Controller/AlbumController.php:158"
+      },
+      {
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)/items/(?P<media_id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "AlbumController::remove_item",
+        "permission": "update_item_permissions_check",
+        "purpose": "Remove item from album",
+        "file": "includes/REST/Controller/AlbumController.php:181"
+      },
+      {
+        "route": "/mvs/v1/albums/(?P<id>[\\d]+)/cover",
+        "methods": [
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "AlbumController::set_cover",
+        "permission": "update_item_permissions_check",
+        "purpose": "Set album cover image",
+        "file": "includes/REST/Controller/AlbumController.php:204"
+      },
+      {
+        "route": "/mvs/v1/auth/nonce",
+        "methods": [
+          "GET"
+        ],
+        "handler": "AuthController::get_nonce",
+        "permission": "closure (returns true)",
+        "purpose": "Issue a REST nonce for authenticated requests",
+        "file": "includes/REST/Controller/AuthController.php:41"
+      },
+      {
+        "route": "/mvs/v1/media/bulk",
+        "methods": [
+          "POST"
+        ],
+        "handler": "BulkController::handle_bulk",
+        "permission": "bulk_permissions_check",
+        "purpose": "Perform bulk actions on media",
+        "file": "includes/REST/Controller/BulkController.php:43"
+      },
+      {
+        "route": "/mvs/v1/collections",
+        "methods": [
+          "GET"
+        ],
+        "handler": "CollectionController::get_items",
+        "permission": "closure (logged-in check)",
+        "purpose": "List collections",
+        "file": "includes/REST/Controller/CollectionController.php:60"
+      },
+      {
+        "route": "/mvs/v1/collections",
+        "methods": [
+          "POST"
+        ],
+        "handler": "CollectionController::create_item",
+        "permission": "closure (logged-in check)",
+        "purpose": "Create a collection",
+        "file": "includes/REST/Controller/CollectionController.php:60"
+      },
+      {
+        "route": "/mvs/v1/collections/(?P<id>[\\d]+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "CollectionController::get_item",
+        "permission": "get_item_permissions_check",
+        "purpose": "Get single collection",
+        "file": "includes/REST/Controller/CollectionController.php:82"
+      },
+      {
+        "route": "/mvs/v1/collections/(?P<id>[\\d]+)",
+        "methods": [
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "CollectionController::update_item",
+        "permission": "owner_permissions_check",
+        "purpose": "Update a collection",
+        "file": "includes/REST/Controller/CollectionController.php:82"
+      },
+      {
+        "route": "/mvs/v1/collections/(?P<id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "CollectionController::delete_item",
+        "permission": "owner_permissions_check",
+        "purpose": "Delete a collection",
+        "file": "includes/REST/Controller/CollectionController.php:82"
+      },
+      {
+        "route": "/mvs/v1/collections/(?P<id>[\\d]+)/rules",
+        "methods": [
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "CollectionController::set_rules",
+        "permission": "owner_permissions_check",
+        "purpose": "Set collection access rules",
+        "file": "includes/REST/Controller/CollectionController.php:112"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/comments",
+        "methods": [
+          "GET"
+        ],
+        "handler": "CommentController::get_items",
+        "permission": "__return_true",
+        "purpose": "List comments on media",
+        "file": "includes/REST/Controller/CommentController.php:65"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/comments",
+        "methods": [
+          "POST"
+        ],
+        "handler": "CommentController::create_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Create a comment on media",
+        "file": "includes/REST/Controller/CommentController.php:65"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/comments/(?P<comment_id>[\\d]+)",
+        "methods": [
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "CommentController::update_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Update a comment",
+        "file": "includes/REST/Controller/CommentController.php:123"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/comments/(?P<comment_id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "CommentController::delete_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Delete a comment",
+        "file": "includes/REST/Controller/CommentController.php:123"
+      },
+      {
+        "route": "/mvs/v1/app/config",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ConfigController::get_config",
+        "permission": "__return_true",
+        "purpose": "Get frontend app configuration",
+        "file": "includes/REST/Controller/ConfigController.php:52"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/favorite",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FavoriteController::get_favorite_status",
+        "permission": "auth_check",
+        "purpose": "Get favorite status for media",
+        "file": "includes/REST/Controller/FavoriteController.php:53"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/favorite",
+        "methods": [
+          "POST"
+        ],
+        "handler": "FavoriteController::toggle_favorite",
+        "permission": "auth_check",
+        "purpose": "Add media to favorites",
+        "file": "includes/REST/Controller/FavoriteController.php:53"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/favorite",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "FavoriteController::toggle_favorite",
+        "permission": "auth_check",
+        "purpose": "Remove media from favorites",
+        "file": "includes/REST/Controller/FavoriteController.php:53"
+      },
+      {
+        "route": "/mvs/v1/me/favorites",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FavoriteController::get_my_favorites",
+        "permission": "auth_check",
+        "purpose": "List current user's favorites",
+        "file": "includes/REST/Controller/FavoriteController.php:101"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/follow",
+        "methods": [
+          "POST"
+        ],
+        "handler": "FollowController::follow_user",
+        "permission": "closure (logged-in check)",
+        "purpose": "Follow a user",
+        "file": "includes/REST/Controller/FollowController.php:54"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/follow",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "FollowController::unfollow_user",
+        "permission": "closure (logged-in check)",
+        "purpose": "Unfollow a user",
+        "file": "includes/REST/Controller/FollowController.php:54"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/followers",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FollowController::get_followers",
+        "permission": "__return_true",
+        "purpose": "List a user's followers",
+        "file": "includes/REST/Controller/FollowController.php:101"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/following",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FollowController::get_following",
+        "permission": "__return_true",
+        "purpose": "List who a user follows",
+        "file": "includes/REST/Controller/FollowController.php:112"
+      },
+      {
+        "route": "/mvs/v1/me/following",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FollowController::get_my_following",
+        "permission": "closure (logged-in check)",
+        "purpose": "List who current user follows",
+        "file": "includes/REST/Controller/FollowController.php:124"
+      },
+      {
+        "route": "/mvs/v1/me/followers",
+        "methods": [
+          "GET"
+        ],
+        "handler": "FollowController::get_my_followers",
+        "permission": "closure (logged-in check)",
+        "purpose": "List current user's followers",
+        "file": "includes/REST/Controller/FollowController.php:138"
+      },
+      {
+        "route": "/mvs/v1/app/interests",
+        "methods": [
+          "GET"
+        ],
+        "handler": "InterestsController::get_interests",
+        "permission": "__return_true",
+        "purpose": "List available interests/topics",
+        "file": "includes/REST/Controller/InterestsController.php:50"
+      },
+      {
+        "route": "/mvs/v1/me/interests",
+        "methods": [
+          "GET"
+        ],
+        "handler": "InterestsController::get_my_interests",
+        "permission": "logged_in_check",
+        "purpose": "Get current user's interests",
+        "file": "includes/REST/Controller/InterestsController.php:62"
+      },
+      {
+        "route": "/mvs/v1/me/interests",
+        "methods": [
+          "POST"
+        ],
+        "handler": "InterestsController::save_my_interests",
+        "permission": "logged_in_check",
+        "purpose": "Save current user's interests",
+        "file": "includes/REST/Controller/InterestsController.php:62"
+      },
+      {
+        "route": "/mvs/v1/media",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MediaController::get_items",
+        "permission": "__return_true",
+        "purpose": "List/search media items",
+        "file": "includes/REST/Controller/MediaController.php:79"
+      },
+      {
+        "route": "/mvs/v1/media",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::create_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Upload/create a media item",
+        "file": "includes/REST/Controller/MediaController.php:79"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MediaController::get_item",
+        "permission": "get_item_permissions_check",
+        "purpose": "Get a single media item",
+        "file": "includes/REST/Controller/MediaController.php:99"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)",
+        "methods": [
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "MediaController::update_item",
+        "permission": "update_item_permissions_check",
+        "purpose": "Update a media item",
+        "file": "includes/REST/Controller/MediaController.php:99"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "MediaController::delete_item",
+        "permission": "delete_item_permissions_check",
+        "purpose": "Delete a media item",
+        "file": "includes/REST/Controller/MediaController.php:99"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/replace",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::replace_file",
+        "permission": "update_item_permissions_check",
+        "purpose": "Replace the media file",
+        "file": "includes/REST/Controller/MediaController.php:182"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/view",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::record_view",
+        "permission": "__return_true",
+        "purpose": "Record a media view",
+        "file": "includes/REST/Controller/MediaController.php:200"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/download",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::record_download",
+        "permission": "__return_true",
+        "purpose": "Record a media download",
+        "file": "includes/REST/Controller/MediaController.php:218"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/share",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MediaController::record_share",
+        "permission": "__return_true",
+        "purpose": "Record a media share",
+        "file": "includes/REST/Controller/MediaController.php:236"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/access",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MediaController::check_access",
+        "permission": "__return_true",
+        "purpose": "Check current user's access to media",
+        "file": "includes/REST/Controller/MediaController.php:254"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/group",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MediaController::get_group_items",
+        "permission": "__return_true",
+        "purpose": "Get grouped/related media items",
+        "file": "includes/REST/Controller/MediaController.php:272"
+      },
+      {
+        "route": "/mvs/v1/me/media",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MediaController::get_my_items",
+        "permission": "closure (logged-in check)",
+        "purpose": "List current user's media",
+        "file": "includes/REST/Controller/MediaController.php:290"
+      },
+      {
+        "route": "/mvs/v1/moderation",
         "methods": [
           "GET"
         ],
         "handler": "ModerationController::get_queue",
         "permission": "moderate_permissions_check",
-        "purpose": "Moderation queue"
+        "purpose": "Get moderation queue",
+        "file": "includes/REST/Controller/ModerationController.php:68"
       },
       {
-        "route": "/moderation/counts",
+        "route": "/mvs/v1/moderation/counts",
         "methods": [
           "GET"
         ],
         "handler": "ModerationController::get_counts",
-        "permission": "moderator",
-        "purpose": "Pending counts"
+        "permission": "moderate_permissions_check",
+        "purpose": "Get moderation queue counts",
+        "file": "includes/REST/Controller/ModerationController.php:81"
       },
       {
-        "route": "/moderation/(?P<id>\\d+)/approve",
+        "route": "/mvs/v1/moderation/(?P<id>[\\d]+)/approve",
         "methods": [
           "POST"
         ],
         "handler": "ModerationController::approve_item",
-        "permission": "moderator",
-        "purpose": "Approve"
+        "permission": "moderate_permissions_check",
+        "purpose": "Approve a moderation item",
+        "file": "includes/REST/Controller/ModerationController.php:93"
       },
       {
-        "route": "/moderation/(?P<id>\\d+)/reject",
+        "route": "/mvs/v1/moderation/(?P<id>[\\d]+)/reject",
         "methods": [
           "POST"
         ],
         "handler": "ModerationController::reject_item",
-        "permission": "moderator",
-        "purpose": "Reject"
+        "permission": "moderate_permissions_check",
+        "purpose": "Reject a moderation item",
+        "file": "includes/REST/Controller/ModerationController.php:111"
       },
       {
-        "route": "/me/notifications",
+        "route": "/mvs/v1/moderation/(?P<id>[\\d]+)/analyze",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ModerationController::analyze_item",
+        "permission": "moderate_permissions_check",
+        "purpose": "Run AI analysis on a moderation item",
+        "file": "includes/REST/Controller/ModerationController.php:134"
+      },
+      {
+        "route": "/mvs/v1/ai/usage",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ModerationController::get_ai_usage",
+        "permission": "moderate_permissions_check",
+        "purpose": "Get AI moderation usage stats",
+        "file": "includes/REST/Controller/ModerationController.php:152"
+      },
+      {
+        "route": "/mvs/v1/me/notifications",
         "methods": [
           "GET"
         ],
         "handler": "NotificationController::get_notifications",
-        "permission": "logged-in",
-        "purpose": "My notifications"
+        "permission": "logged-in check ($auth)",
+        "purpose": "List current user's notifications",
+        "file": "includes/REST/Controller/NotificationController.php:56"
       },
       {
-        "route": "/me/notifications/read",
+        "route": "/mvs/v1/me/notifications/read",
         "methods": [
           "POST"
         ],
         "handler": "NotificationController::mark_read",
-        "permission": "logged-in",
-        "purpose": "Mark read"
+        "permission": "logged-in check ($auth)",
+        "purpose": "Mark notifications as read",
+        "file": "includes/REST/Controller/NotificationController.php:84"
       },
       {
-        "route": "/me/notifications/count",
+        "route": "/mvs/v1/me/notifications/count",
         "methods": [
           "GET"
         ],
-        "handler": "NotificationController::get_unread_count",
-        "permission": "logged-in",
-        "purpose": "Unread count"
+        "handler": "NotificationController::get_count",
+        "permission": "logged-in check ($auth)",
+        "purpose": "Get unread notification count",
+        "file": "includes/REST/Controller/NotificationController.php:102"
       },
       {
-        "route": "/me/conversations",
+        "route": "/mvs/v1/me/profile",
         "methods": [
           "GET"
         ],
-        "handler": "MessagingController::list_conversations",
-        "permission": "logged-in",
-        "purpose": "DM conversations"
+        "handler": "ProfileController::get_profile",
+        "permission": "check_logged_in",
+        "purpose": "Get current user's profile",
+        "file": "includes/REST/Controller/ProfileController.php:56"
       },
       {
-        "route": "/conversations",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MessagingController::create_conversation",
-        "permission": "logged-in",
-        "purpose": "Start DM"
-      },
-      {
-        "route": "/conversations/(?P<id>\\d+)",
-        "methods": [
-          "GET",
-          "PATCH",
-          "DELETE"
-        ],
-        "handler": "MessagingController",
-        "permission": "participant",
-        "purpose": "DM CRUD"
-      },
-      {
-        "route": "/conversations/(?P<id>\\d+)/messages",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "MessagingController",
-        "permission": "participant",
-        "purpose": "List/send messages"
-      },
-      {
-        "route": "/conversations/(?P<id>\\d+)/messages/(?P<msg_id>\\d+)",
+        "route": "/mvs/v1/me/profile",
         "methods": [
           "PUT",
+          "PATCH"
+        ],
+        "handler": "ProfileController::update_profile",
+        "permission": "check_logged_in",
+        "purpose": "Update current user's profile",
+        "file": "includes/REST/Controller/ProfileController.php:56"
+      },
+      {
+        "route": "/mvs/v1/me/avatar",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ProfileController::upload_avatar",
+        "permission": "check_logged_in",
+        "purpose": "Upload profile avatar",
+        "file": "includes/REST/Controller/ProfileController.php:102"
+      },
+      {
+        "route": "/mvs/v1/me/avatar",
+        "methods": [
           "DELETE"
         ],
-        "handler": "MessagingController",
-        "permission": "sender",
-        "purpose": "Edit/delete message"
+        "handler": "ProfileController::delete_avatar",
+        "permission": "check_logged_in",
+        "purpose": "Delete profile avatar",
+        "file": "includes/REST/Controller/ProfileController.php:102"
       },
       {
-        "route": "/conversations/(?P<id>\\d+)/messages/(?P<msg_id>\\d+)/reactions",
-        "methods": [
-          "POST"
-        ],
-        "handler": "MessagingController::add_reaction",
-        "permission": "participant",
-        "purpose": "React to DM"
-      },
-      {
-        "route": "/app/config",
-        "methods": [
-          "GET"
-        ],
-        "handler": "ConfigController",
-        "permission": "__return_true (public, pre-login)",
-        "purpose": "White-label branding + feature flags for the mobile app; mvs_app_config_features filter aggregates Free+Pro toggles"
-      },
-      {
-        "route": "/app/interests",
-        "methods": [
-          "GET"
-        ],
-        "handler": "InterestsController::get_interests",
-        "permission": "__return_true (public)",
-        "purpose": "Interest categories (mvs_category) for the onboarding picker; cached via mvs_app_interests"
-      },
-      {
-        "route": "/me/interests",
-        "methods": [
-          "GET",
-          "POST"
-        ],
-        "handler": "InterestsController",
-        "permission": "logged-in",
-        "purpose": "Read/save the viewer's interest categories in mvs_interests user-meta; save also flips mvs_onboarded"
-      },
-      {
-        "route": "/users/suggested",
-        "methods": [
-          "GET"
-        ],
-        "handler": "UserController::get_suggested",
-        "permission": "logged-in",
-        "purpose": "People-you-may-know: ranked creators via SuggestionService, excluding self/followed/blocked, interest-boosted, cached pool mvs_top_creators"
-      },
-      {
-        "route": "/me/onboarding/complete",
+        "route": "/mvs/v1/me/onboarding/complete",
         "methods": [
           "POST"
         ],
         "handler": "ProfileController::complete_onboarding",
-        "permission": "logged-in",
-        "purpose": "Flag first-session onboarding done via mvs_onboarded"
+        "permission": "check_logged_in",
+        "purpose": "Mark onboarding complete",
+        "file": "includes/REST/Controller/ProfileController.php:120"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/reactions",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ReactionController::get_items",
+        "permission": "__return_true",
+        "purpose": "List reactions on media",
+        "file": "includes/REST/Controller/ReactionController.php:66"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/reactions",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ReactionController::create_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Add a reaction to media",
+        "file": "includes/REST/Controller/ReactionController.php:66"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/reactions",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "ReactionController::delete_item",
+        "permission": "create_item_permissions_check",
+        "purpose": "Remove a reaction from media",
+        "file": "includes/REST/Controller/ReactionController.php:66"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<id>[\\d]+)/report",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ReportController::report_media",
+        "permission": "logged-in check ($auth)",
+        "purpose": "Report a media item",
+        "file": "includes/REST/Controller/ReportController.php:57"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/report",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ReportController::report_user",
+        "permission": "logged-in check ($auth)",
+        "purpose": "Report a user",
+        "file": "includes/REST/Controller/ReportController.php:84"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/block",
+        "methods": [
+          "POST"
+        ],
+        "handler": "ReportController::block_user",
+        "permission": "logged-in check ($auth)",
+        "purpose": "Block a user",
+        "file": "includes/REST/Controller/ReportController.php:112"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/block",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "ReportController::unblock_user",
+        "permission": "logged-in check ($auth)",
+        "purpose": "Unblock a user",
+        "file": "includes/REST/Controller/ReportController.php:112"
+      },
+      {
+        "route": "/mvs/v1/me/blocked",
+        "methods": [
+          "GET"
+        ],
+        "handler": "ReportController::get_blocked",
+        "permission": "logged-in check ($auth)",
+        "purpose": "List blocked users",
+        "file": "includes/REST/Controller/ReportController.php:144"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/signed-url",
+        "methods": [
+          "GET"
+        ],
+        "handler": "SignedUrlController::get_signed_url",
+        "permission": "get_signed_url_permissions_check",
+        "purpose": "Get a signed URL for protected media",
+        "file": "includes/REST/Controller/SignedUrlController.php:63"
+      },
+      {
+        "route": "/mvs/v1/serve",
+        "methods": [
+          "GET"
+        ],
+        "handler": "SignedUrlController::serve_file",
+        "permission": "__return_true",
+        "purpose": "Serve a protected file via signed token",
+        "file": "includes/REST/Controller/SignedUrlController.php:96"
+      },
+      {
+        "route": "/mvs/v1/media/(?P<media_id>[\\d]+)/stats",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StatsController::get_media_stats",
+        "permission": "__return_true",
+        "purpose": "Get stats for a media item",
+        "file": "includes/REST/Controller/StatsController.php:67"
+      },
+      {
+        "route": "/mvs/v1/me/stats",
+        "methods": [
+          "GET"
+        ],
+        "handler": "StatsController::get_my_stats",
+        "permission": "closure (logged-in check)",
+        "purpose": "Get current user's aggregate stats",
+        "file": "includes/REST/Controller/StatsController.php:85"
+      },
+      {
+        "route": "/mvs/v1/tags",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TagController::get_tags",
+        "permission": "__return_true",
+        "purpose": "List tags",
+        "file": "includes/REST/Controller/TagController.php:41"
+      },
+      {
+        "route": "/mvs/v1/tags",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TagController::create_tag",
+        "permission": "create_tag_permissions_check",
+        "purpose": "Create a tag",
+        "file": "includes/REST/Controller/TagController.php:41"
+      },
+      {
+        "route": "/mvs/v1/tags/cloud",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TagController::get_cloud",
+        "permission": "__return_true",
+        "purpose": "Get tag cloud (weighted tags)",
+        "file": "includes/REST/Controller/TagController.php:88"
+      },
+      {
+        "route": "/mvs/v1/tags/merge",
+        "methods": [
+          "POST"
+        ],
+        "handler": "TagController::merge_tags",
+        "permission": "admin_check",
+        "purpose": "Merge tags",
+        "file": "includes/REST/Controller/TagController.php:108"
+      },
+      {
+        "route": "/mvs/v1/tags/(?P<id>[\\d]+)",
+        "methods": [
+          "PUT",
+          "PATCH"
+        ],
+        "handler": "TagController::rename_tag",
+        "permission": "admin_check",
+        "purpose": "Rename a tag",
+        "file": "includes/REST/Controller/TagController.php:131"
+      },
+      {
+        "route": "/mvs/v1/tags/(?P<id>[\\d]+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "TagController::delete_tag",
+        "permission": "admin_check",
+        "purpose": "Delete a tag",
+        "file": "includes/REST/Controller/TagController.php:154"
+      },
+      {
+        "route": "/mvs/v1/me/transactions",
+        "methods": [
+          "GET"
+        ],
+        "handler": "TransactionController::get_transactions",
+        "permission": "closure (logged-in check)",
+        "purpose": "List current user's transactions",
+        "file": "includes/REST/Controller/TransactionController.php:52"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::get_profile",
+        "permission": "__return_true",
+        "purpose": "Get a user's public profile",
+        "file": "includes/REST/Controller/UserController.php:48"
+      },
+      {
+        "route": "/mvs/v1/users/(?P<id>[\\d]+)/media",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::get_user_media",
+        "permission": "__return_true",
+        "purpose": "List a user's media",
+        "file": "includes/REST/Controller/UserController.php:70"
+      },
+      {
+        "route": "/mvs/v1/users/search",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::search_users",
+        "permission": "__return_true",
+        "purpose": "Search users",
+        "file": "includes/REST/Controller/UserController.php:102"
+      },
+      {
+        "route": "/mvs/v1/users/suggested",
+        "methods": [
+          "GET"
+        ],
+        "handler": "UserController::get_suggested",
+        "permission": "closure (logged-in check)",
+        "purpose": "Get suggested users to follow",
+        "file": "includes/REST/Controller/UserController.php:125"
+      },
+      {
+        "route": "/mvs/v1/me/conversations",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::list_conversations",
+        "permission": "check_auth",
+        "purpose": "List current user's conversations",
+        "file": "includes/Messaging/MessagingController.php:53"
+      },
+      {
+        "route": "/mvs/v1/conversations",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::create_conversation",
+        "permission": "check_auth",
+        "purpose": "Create a conversation",
+        "file": "includes/Messaging/MessagingController.php:82"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::get_conversation",
+        "permission": "check_auth",
+        "purpose": "Get a conversation",
+        "file": "includes/Messaging/MessagingController.php:105"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)",
+        "methods": [
+          "PATCH"
+        ],
+        "handler": "MessagingController::update_conversation",
+        "permission": "check_auth",
+        "purpose": "Update a conversation",
+        "file": "includes/Messaging/MessagingController.php:116"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "MessagingController::delete_conversation",
+        "permission": "check_auth",
+        "purpose": "Delete a conversation",
+        "file": "includes/Messaging/MessagingController.php:127"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/messages",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::list_messages",
+        "permission": "check_auth",
+        "purpose": "List messages in a conversation",
+        "file": "includes/Messaging/MessagingController.php:138"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/messages/search",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::search_messages",
+        "permission": "check_auth",
+        "purpose": "Search messages in a conversation",
+        "file": "includes/Messaging/MessagingController.php:161"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/messages",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::send_message",
+        "permission": "check_auth",
+        "purpose": "Send a message",
+        "file": "includes/Messaging/MessagingController.php:184"
+      },
+      {
+        "route": "/mvs/v1/messages/(?P<id>\\d+)",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "MessagingController::delete_message",
+        "permission": "check_auth",
+        "purpose": "Delete a message",
+        "file": "includes/Messaging/MessagingController.php:209"
+      },
+      {
+        "route": "/mvs/v1/messages/(?P<id>\\d+)/unsend",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "MessagingController::unsend_message",
+        "permission": "check_auth",
+        "purpose": "Unsend a message",
+        "file": "includes/Messaging/MessagingController.php:220"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/read",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::mark_read",
+        "permission": "check_auth",
+        "purpose": "Mark conversation as read",
+        "file": "includes/Messaging/MessagingController.php:231"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/typing",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::typing",
+        "permission": "check_auth",
+        "purpose": "Send typing indicator",
+        "file": "includes/Messaging/MessagingController.php:242"
+      },
+      {
+        "route": "/mvs/v1/messages/(?P<id>\\d+)/reactions",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::add_reaction",
+        "permission": "check_auth",
+        "purpose": "Add reaction to a message",
+        "file": "includes/Messaging/MessagingController.php:253"
+      },
+      {
+        "route": "/mvs/v1/messages/(?P<id>\\d+)/reactions",
+        "methods": [
+          "DELETE"
+        ],
+        "handler": "MessagingController::remove_reaction",
+        "permission": "check_auth",
+        "purpose": "Remove reaction from a message",
+        "file": "includes/Messaging/MessagingController.php:270"
+      },
+      {
+        "route": "/mvs/v1/messages/poll",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::poll",
+        "permission": "check_auth",
+        "purpose": "Poll for new messages/events",
+        "file": "includes/Messaging/MessagingController.php:281"
+      },
+      {
+        "route": "/mvs/v1/me/messages/unread-count",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::unread_count",
+        "permission": "check_auth",
+        "purpose": "Get unread message count",
+        "file": "includes/Messaging/MessagingController.php:302"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/accept",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::accept_request",
+        "permission": "check_auth",
+        "purpose": "Accept a message request",
+        "file": "includes/Messaging/MessagingController.php:313"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/decline",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::decline_request",
+        "permission": "check_auth",
+        "purpose": "Decline a message request",
+        "file": "includes/Messaging/MessagingController.php:324"
+      },
+      {
+        "route": "/mvs/v1/messages/upload",
+        "methods": [
+          "POST"
+        ],
+        "handler": "MessagingController::upload_attachment",
+        "permission": "check_auth",
+        "purpose": "Upload a message attachment",
+        "file": "includes/Messaging/MessagingController.php:335"
       }
     ]
   },
   "ajax": [
     {
       "action": "mvs_import_demo_data",
-      "handler": "Admin/OverviewPage.php::ajax_import_demo_data",
-      "line": 711,
+      "handler": "Admin\\OverviewPage::ajax_import_demo_data",
       "nonce": "mvs_import_demo",
-      "capability": "manage_options OR manage_mvs_settings",
-      "purpose": "Seed 12 demo media items"
+      "capability": "manage_options / manage_mvs_settings",
+      "file": "includes/Admin/OverviewPage.php:34"
     },
     {
       "action": "mvs_cleanup_demo_data",
-      "handler": "Admin/OverviewPage.php::handle_cleanup_demo",
-      "line": 738,
+      "handler": "Admin\\OverviewPage::handle_cleanup_demo",
       "nonce": "mvs_cleanup_demo",
-      "capability": "manage_options OR manage_mvs_settings",
-      "purpose": "Delete demo media + reset"
+      "capability": "manage_options / manage_mvs_settings",
+      "file": "includes/Admin/OverviewPage.php:35"
     },
     {
-      "action": "mvs_dismiss_welcome",
-      "handler": "Admin/OverviewPage.php::ajax_dismiss_welcome",
-      "line": 625,
-      "nonce": "mvs_dismiss_welcome",
+      "action": "mvs_dismiss_welcome (MIGRATED to REST, no longer wp_ajax_)",
+      "handler": "REST\\Controller\\AdminController::dismiss_welcome",
+      "nonce": "wp_rest",
       "capability": "logged-in",
-      "purpose": "Hide welcome banner"
+      "file": "includes/REST/Controller/AdminController.php:58 (manifest ajax entry is stale; comment at OverviewPage.php:586)"
     }
   ],
   "admin_pages": [
     {
-      "slug": "wpmediaverse",
-      "parent": "",
       "title": "WPMediaVerse",
-      "menu_title": "WPMediaVerse",
+      "slug": "wpmediaverse",
+      "parent": "(top-level)",
       "capability": "manage_options",
-      "where": "Core/Plugin.php:699 (add_menu_page)",
-      "renders": "Admin/OverviewPage.php::render_page",
-      "purpose": "Top-level WPMediaVerse admin menu; renders the Overview dashboard with quick stats, recent uploads, setup checklist, and links to all sub-pages."
+      "file": "includes/Core/Plugin.php:881 (add_menu_page)"
     },
     {
+      "title": "Overview",
       "slug": "wpmediaverse",
       "parent": "wpmediaverse",
-      "title": "Overview",
-      "menu_title": "Overview",
       "capability": "manage_options",
-      "where": "Core/Plugin.php:710 (add_submenu_page)",
-      "renders": "Admin/OverviewPage.php::render_page",
-      "purpose": "First sub-menu entry that replaces the auto-created duplicate of the top-level menu; routes to the Overview dashboard."
+      "file": "includes/Core/Plugin.php:892 (add_submenu_page)"
     },
     {
+      "title": "All Media",
       "slug": "mvs-media",
       "parent": "wpmediaverse",
-      "title": "All Media",
-      "menu_title": "All Media",
       "capability": "manage_options",
-      "where": "Core/Plugin.php:720 (add_submenu_page)",
-      "renders": "Admin/MediaListPage.php::render",
-      "purpose": "Custom WP_List_Table-style listing of all mvs_media records with bulk actions (delete, change privacy, set status), filters by privacy/status/owner, and per-row action links (edit, view, optimize, details)."
+      "file": "includes/Core/Plugin.php:905 (add_submenu_page)"
     },
     {
+      "title": "Tags",
       "slug": "mvs-tags",
       "parent": "wpmediaverse",
-      "title": "Tags",
-      "menu_title": "Tags",
       "capability": "manage_options",
-      "where": "Core/Plugin.php:730 (add_submenu_page)",
-      "renders": "Admin/TagManagementPage.php::render",
-      "purpose": "Tag management screen for the mvs_media_tag taxonomy: add, edit, merge, and bulk-delete tags applied to media items."
+      "file": "includes/Core/Plugin.php:918 (add_submenu_page)"
     },
     {
+      "title": "Settings",
       "slug": "mvs-settings",
       "parent": "wpmediaverse",
-      "title": "WPMediaVerse Settings",
-      "menu_title": "Settings",
       "capability": "manage_options",
-      "where": "Admin/Settings/SettingsPage.php:200 (add_submenu_page via admin_menu)",
-      "renders": "Admin/Settings/SettingsPage.php::render_page",
-      "purpose": "Master settings page; sidebar-tabbed UI orchestrated by SettingsPage, with sections registered by SettingsRegistrar (general, storage, display, ai+moderation, webhooks, social/DM, monetization)."
+      "file": "includes/Admin/Settings/SettingsPage.php:200"
     },
     {
-      "slug": "mvs-settings&tab=general",
-      "parent": "mvs-settings",
-      "title": "General Settings",
-      "menu_title": "General",
-      "capability": "manage_options",
-      "where": "Admin/Settings/SettingsRegistrar.php:95 (add_settings_section mvs_general)",
-      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=general)",
-      "purpose": "General tab of the settings page: upload limits, allowed file types, privacy defaults, and duplicate-detection options."
-    },
-    {
-      "slug": "mvs-settings&tab=storage",
-      "parent": "mvs-settings",
-      "title": "Storage Settings",
-      "menu_title": "Storage",
-      "capability": "manage_options",
-      "where": "Admin/Settings/SettingsRegistrar.php:241 (add_settings_section mvs_storage)",
-      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=storage)",
-      "purpose": "Storage tab: storage driver selection (local/cloud), cloud credentials, thumbnail-generation toggles, WebP/optimization, filename strategy, signed-URL TTL."
-    },
-    {
-      "slug": "mvs-settings&tab=display",
-      "parent": "mvs-settings",
-      "title": "Media Display Settings",
-      "menu_title": "Display",
-      "capability": "manage_options",
-      "where": "Admin/Settings/SettingsRegistrar.php:497 (add_settings_section mvs_display)",
-      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=display)",
-      "purpose": "Display tab: grid layout, columns per breakpoint, lightbox behavior, lazy-load, infinite scroll, default sort order, watermark display."
-    },
-    {
-      "slug": "mvs-settings&tab=ai",
-      "parent": "mvs-settings",
-      "title": "AI Features Settings",
-      "menu_title": "AI & Moderation",
-      "capability": "manage_options",
-      "where": "Admin/Settings/SettingsRegistrar.php:664 (add_settings_section mvs_ai) + 873 (mvs_moderation)",
-      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=ai)",
-      "purpose": "AI & Moderation tab: OpenAI key, auto-tag toggle, auto-alt-text, NSFW detection threshold, manual-review queue thresholds, banned-keyword list."
-    },
-    {
-      "slug": "mvs-settings&tab=webhooks",
-      "parent": "mvs-settings",
-      "title": "Webhooks Settings",
-      "menu_title": "Webhooks",
-      "capability": "manage_options",
-      "where": "Admin/Settings/SettingsRegistrar.php:928 (add_settings_section mvs_webhooks)",
-      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=webhooks)",
-      "purpose": "Webhooks tab: outbound webhook URLs, signing secrets, event subscriptions (media uploaded/approved/deleted) and retry policy."
-    },
-    {
-      "slug": "mvs-settings&tab=social",
-      "parent": "mvs-settings",
-      "title": "Social & Messaging Settings",
-      "menu_title": "Social / DM",
-      "capability": "manage_options",
-      "where": "Admin/Settings/SettingsRegistrar.php:956 (add_settings_section mvs_messaging)",
-      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=social)",
-      "purpose": "Social tab: DM access (everyone/followers/mutual/nobody), minimum account age, chat-panel visibility scope, online-status visibility."
-    },
-    {
-      "slug": "mvs-settings&tab=monetization",
-      "parent": "mvs-settings",
-      "title": "Monetization Settings",
-      "menu_title": "Monetization",
-      "capability": "manage_options",
-      "where": "Admin/Settings/SettingsRegistrar.php:1088 (add_settings_section monetization)",
-      "renders": "Admin/Settings/SettingsPage.php::render_page (tab=monetization)",
-      "purpose": "Monetization tab: credit-system toggles, transaction defaults, payout settings, and Pro-only paywall hooks."
-    },
-    {
+      "title": "Stats",
       "slug": "mvs-stats",
       "parent": "wpmediaverse",
-      "title": "Media Stats",
-      "menu_title": "Stats",
       "capability": "manage_options",
-      "where": "Admin/StatsPage.php:43 (add_submenu_page via admin_menu)",
-      "renders": "Admin/StatsPage.php::render_page",
-      "purpose": "Statistics dashboard: top media by views/reactions/comments, AI usage and cost tracking, with CSV export of top-media stats via admin_init handler."
+      "file": "includes/Admin/StatsPage.php:43"
     },
     {
+      "title": "Moderation",
       "slug": "mvs-moderation",
       "parent": "wpmediaverse",
-      "title": "Media Moderation",
-      "menu_title": "Moderation (with awaiting-mod badge)",
       "capability": "manage_options",
-      "where": "Admin/ModerationQueue.php:56 (add_submenu_page via admin_menu)",
-      "renders": "Admin/ModerationQueue.php::render_page",
-      "purpose": "Moderation queue for flagged/pending media; supports approve/reject (single + bulk) actions; menu title includes live awaiting-moderation count badge from ModerationService."
+      "file": "includes/Admin/ModerationQueue.php:56"
     },
     {
+      "title": "Logs",
       "slug": "mvs-logs",
       "parent": "wpmediaverse",
-      "title": "Log Viewer",
-      "menu_title": "Logs",
       "capability": "manage_options",
-      "where": "Admin/LogViewerPage.php:33 (add_submenu_page via admin_menu)",
-      "renders": "Admin/LogViewerPage.php::render_page",
-      "purpose": "Read-only viewer for the mvs_error_log custom table; supports filtering by level/source, pagination, and a Clear Logs admin_init action with nonce."
+      "file": "includes/Admin/LogViewerPage.php:33"
     },
     {
+      "title": "Setup",
       "slug": "mvs-setup",
       "parent": "wpmediaverse",
-      "title": "WPMediaVerse Setup",
-      "menu_title": "Setup (hidden via CSS)",
       "capability": "manage_options",
-      "where": "Admin/SetupWizard.php:39 (add_submenu_page via admin_menu)",
-      "renders": "Admin/SetupWizard.php::render_wizard",
-      "purpose": "First-time setup wizard router; the submenu entry is hidden via CSS but kept in $submenu so user_can_access_admin_page() still works for direct URL access."
+      "file": "includes/Admin/SetupWizard.php:39"
     },
     {
-      "slug": "mvs-setup&step=welcome",
-      "parent": "mvs-setup",
-      "title": "Setup Wizard - Welcome",
-      "menu_title": "",
+      "title": "Integrations",
+      "slug": "mvs-integrations",
+      "parent": "wpmediaverse",
       "capability": "manage_options",
-      "where": "Admin/SetupWizard.php:195 (render_wizard step switch)",
-      "renders": "Admin/SetupWizard.php::render_welcome_step",
-      "purpose": "Step 1 of setup wizard: welcomes the admin and explains what the wizard will configure (pages, display, completion)."
+      "file": "includes/Admin/IntegrationsPage.php:59"
     },
     {
-      "slug": "mvs-setup&step=pages",
-      "parent": "mvs-setup",
-      "title": "Setup Wizard - Pages",
-      "menu_title": "",
-      "capability": "manage_options",
-      "where": "Admin/SetupWizard.php:198 (render_wizard step switch)",
-      "renders": "Admin/SetupWizard.php::render_pages_step",
-      "purpose": "Step 2 of setup wizard: auto-creates required WP pages (Explore, Dashboard, Albums, Messages) with the matching shortcodes/blocks."
-    },
-    {
-      "slug": "mvs-setup&step=display",
-      "parent": "mvs-setup",
-      "title": "Setup Wizard - Display",
-      "menu_title": "",
-      "capability": "manage_options",
-      "where": "Admin/SetupWizard.php:201 (render_wizard step switch); save handler 84",
-      "renders": "Admin/SetupWizard.php::render_display_step",
-      "purpose": "Step 3 of setup wizard: collects basic display preferences (grid columns, lightbox enable, default privacy) and writes them to settings options."
-    },
-    {
-      "slug": "mvs-setup&step=done",
-      "parent": "mvs-setup",
-      "title": "Setup Wizard - Done",
-      "menu_title": "",
-      "capability": "manage_options",
-      "where": "Admin/SetupWizard.php:204 (render_wizard step switch); save handler 89",
-      "renders": "Admin/SetupWizard.php::render_done_step",
-      "purpose": "Step 4 of setup wizard: marks setup complete, sets the mvs_setup_complete flag, and links to Overview/Settings."
-    },
-    {
+      "title": "Albums (CPT list)",
       "slug": "edit.php?post_type=mvs_album",
       "parent": "wpmediaverse",
-      "title": "Albums",
-      "menu_title": "Albums",
       "capability": "edit_posts",
-      "where": "PostTypes/Album.php:46 (register_post_type show_in_menu => wpmediaverse)",
-      "renders": "wp-admin/edit.php (WP core list table)",
-      "purpose": "WP-core post-list screen for the mvs_album CPT, injected under the WPMediaVerse menu via show_in_menu so album CRUD lives next to the rest of the plugin."
+      "file": "includes/PostTypes/Album.php:46 (show_in_menu)"
     },
     {
+      "title": "Collections (CPT list)",
       "slug": "edit.php?post_type=mvs_collection",
       "parent": "wpmediaverse",
-      "title": "Collections",
-      "menu_title": "Collections",
       "capability": "edit_posts",
-      "where": "PostTypes/Collection.php:46 (register_post_type show_in_menu => wpmediaverse)",
-      "renders": "wp-admin/edit.php (WP core list table)",
-      "purpose": "WP-core post-list screen for the mvs_collection CPT, injected under the WPMediaVerse menu via show_in_menu so collection CRUD lives next to the rest of the plugin."
+      "file": "includes/PostTypes/Collection.php:46 (show_in_menu)"
+    },
+    {
+      "title": "General Settings tab",
+      "slug": "mvs-settings&tab=general",
+      "parent": "mvs-settings",
+      "capability": "manage_options",
+      "file": "includes/Admin/Settings/SettingsRegistrar.php:95 (add_settings_section)"
+    },
+    {
+      "title": "Storage Settings tab",
+      "slug": "mvs-settings&tab=storage",
+      "parent": "mvs-settings",
+      "capability": "manage_options",
+      "file": "includes/Admin/Settings/SettingsRegistrar.php:241"
+    },
+    {
+      "title": "Display Settings tab",
+      "slug": "mvs-settings&tab=display",
+      "parent": "mvs-settings",
+      "capability": "manage_options",
+      "file": "includes/Admin/Settings/SettingsRegistrar.php:497"
+    },
+    {
+      "title": "AI Settings tab",
+      "slug": "mvs-settings&tab=ai",
+      "parent": "mvs-settings",
+      "capability": "manage_options",
+      "file": "includes/Admin/Settings/SettingsRegistrar.php:664 (mvs_ai)"
+    },
+    {
+      "title": "Moderation Settings section",
+      "slug": "mvs-settings&tab=ai",
+      "parent": "mvs-settings",
+      "capability": "manage_options",
+      "file": "includes/Admin/Settings/SettingsRegistrar.php:873 (mvs_moderation)"
+    },
+    {
+      "title": "Webhooks Settings tab",
+      "slug": "mvs-settings&tab=webhooks",
+      "parent": "mvs-settings",
+      "capability": "manage_options",
+      "file": "includes/Admin/Settings/SettingsRegistrar.php:928"
+    },
+    {
+      "title": "Social/Messaging Settings tab",
+      "slug": "mvs-settings&tab=social",
+      "parent": "mvs-settings",
+      "capability": "manage_options",
+      "file": "includes/Admin/Settings/SettingsRegistrar.php:956 (mvs_messaging)"
+    },
+    {
+      "title": "Monetization Settings tab",
+      "slug": "mvs-settings&tab=monetization",
+      "parent": "mvs-settings",
+      "capability": "manage_options",
+      "file": "includes/Admin/Settings/SettingsRegistrar.php:1088"
     }
   ],
   "settings": [
@@ -1277,292 +1779,304 @@
   "shortcodes": [
     {
       "tag": "mvs_gallery",
-      "handler": "Shortcodes/Shortcodes.php::render_gallery",
-      "attrs": [
-        "type",
-        "category",
-        "tag",
-        "orderby",
-        "order",
-        "user_id"
-      ],
-      "notes": "1.2.0: gained `user_id` attr (filters grid to a single user; falls back to bp_displayed_user_id() inside BP templates) and `order` attr ('asc'|'desc', default 'desc'). `per_page` and `columns` now always come from backend settings (mvs_items_per_page / mvs_grid_columns) — shortcode attributes intentionally do NOT override admin-configured display values."
+      "handler": "Shortcodes::render_gallery",
+      "file": "includes/Shortcodes/Shortcodes.php:24"
     },
     {
       "tag": "mvs_upload",
-      "handler": "Shortcodes/Shortcodes.php::render_upload",
-      "attrs": [
-        "max_files",
-        "show_privacy"
-      ]
+      "handler": "Shortcodes::render_upload",
+      "file": "includes/Shortcodes/Shortcodes.php:25"
     },
     {
       "tag": "mvs_album",
-      "handler": "Shortcodes/Shortcodes.php::render_album",
-      "attrs": [
-        "id",
-        "columns",
-        "show_title"
-      ]
+      "handler": "Shortcodes::render_album",
+      "file": "includes/Shortcodes/Shortcodes.php:26"
     },
     {
       "tag": "mvs_player",
-      "handler": "Shortcodes/Shortcodes.php::render_player",
-      "attrs": [
-        "id",
-        "autoplay",
-        "loop",
-        "download"
-      ]
+      "handler": "Shortcodes::render_player",
+      "file": "includes/Shortcodes/Shortcodes.php:27"
     },
     {
       "tag": "mvs_stats",
-      "handler": "Shortcodes/Shortcodes.php::render_stats",
-      "attrs": [
-        "views",
-        "downloads",
-        "top_count"
-      ]
+      "handler": "Shortcodes::render_stats",
+      "file": "includes/Shortcodes/Shortcodes.php:28"
     },
     {
       "tag": "mvs_dashboard",
-      "handler": "Shortcodes/Shortcodes.php::render_dashboard",
-      "attrs": []
+      "handler": "Shortcodes::render_dashboard",
+      "file": "includes/Shortcodes/Shortcodes.php:29"
     },
     {
       "tag": "mvs_collection",
-      "handler": "Shortcodes/Shortcodes.php::render_collection",
-      "attrs": [
-        "id",
-        "columns",
-        "per_page"
-      ]
+      "handler": "Shortcodes::render_collection",
+      "file": "includes/Shortcodes/Shortcodes.php:30"
     },
     {
       "tag": "mvs_profile_edit",
-      "handler": "Shortcodes/Shortcodes.php::render_profile_edit",
-      "attrs": []
+      "handler": "Shortcodes::render_profile_edit",
+      "file": "includes/Shortcodes/Shortcodes.php:31"
     },
     {
       "tag": "mvs_explore_feed",
-      "handler": "Shortcodes/Shortcodes.php::render_explore_feed",
-      "attrs": [
-        "layout",
-        "columns",
-        "per_page",
-        "filters",
-        "search"
-      ],
-      "notes": "1.2.0: classic-editor wrapper around the `mvs/explore-feed` block (delegates to render_block_template)."
+      "handler": "Shortcodes::render_explore_feed",
+      "file": "includes/Shortcodes/Shortcodes.php:32"
     },
     {
       "tag": "mvs_lock_overlay",
-      "handler": "Shortcodes/Shortcodes.php::render_lock_overlay",
-      "attrs": [
-        "id",
-        "blur",
-        "overlay_opacity",
-        "unlock_label"
-      ],
-      "notes": "1.2.0: classic-editor wrapper around the `mvs/lock-overlay` block."
+      "handler": "Shortcodes::render_lock_overlay",
+      "file": "includes/Shortcodes/Shortcodes.php:33"
     },
     {
       "tag": "mvs_member_photos",
-      "handler": "Shortcodes/Shortcodes.php::render_member_photos",
-      "attrs": [
-        "user_id",
-        "columns",
-        "per_page",
-        "type",
-        "show_header",
-        "actions"
-      ],
-      "notes": "1.2.0: classic-editor wrapper around the `mvs/member-photos` block; same auto-resolve order (explicit user_id → BP displayed user → post author → current user)."
+      "handler": "Shortcodes::render_member_photos",
+      "file": "includes/Shortcodes/Shortcodes.php:34"
     },
     {
       "tag": "mvs_pdf_viewer",
-      "handler": "Shortcodes/Shortcodes.php::render_pdf_viewer",
-      "attrs": [
-        "id",
-        "height",
-        "toolbar"
-      ],
-      "notes": "1.2.0: classic-editor wrapper around the `mvs/pdf-viewer` block; height clamped 200-1400."
+      "handler": "Shortcodes::render_pdf_viewer",
+      "file": "includes/Shortcodes/Shortcodes.php:35"
+    },
+    {
+      "tag": "mvs_usage_history",
+      "handler": "Shortcodes::render_usage_history",
+      "file": "includes/Shortcodes/Shortcodes.php:36"
     }
   ],
   "blocks": [
     {
-      "name": "wpmediaverse/media-grid",
-      "render": "src/blocks/media-grid/render.php",
-      "interactivity": true
+      "name": "mvs/album-viewer",
+      "render": "file:./render.php",
+      "file": "src/blocks/album-viewer/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
-      "name": "wpmediaverse/media-player",
-      "render": "src/blocks/media-player/render.php",
-      "interactivity": true
+      "name": "mvs/dashboard-view",
+      "render": null,
+      "file": "src/blocks/dashboard-view/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
-      "name": "wpmediaverse/media-upload",
-      "render": "src/blocks/media-upload/render.php",
-      "interactivity": true
+      "name": "mvs/explore-feed",
+      "render": "file:./render.php",
+      "file": "src/blocks/explore-feed/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
-      "name": "wpmediaverse/media-stats",
-      "render": "src/blocks/media-stats/render.php",
-      "interactivity": false
+      "name": "mvs/explore-view",
+      "render": null,
+      "file": "src/blocks/explore-view/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
-      "name": "wpmediaverse/media-social",
-      "render": "src/blocks/media-social/render.php",
-      "interactivity": true
+      "name": "mvs/lock-overlay",
+      "render": "file:./render.php",
+      "file": "src/blocks/lock-overlay/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
-      "name": "wpmediaverse/album-viewer",
-      "render": "src/blocks/album-viewer/render.php",
-      "interactivity": true
+      "name": "mvs/media-grid",
+      "render": "file:./render.php",
+      "file": "src/blocks/media-grid/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
-      "name": "wpmediaverse/explore-feed",
-      "render": "src/blocks/explore-feed/render.php",
-      "interactivity": true
+      "name": "mvs/media-player",
+      "render": "file:./render.php",
+      "file": "src/blocks/media-player/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
-      "name": "wpmediaverse/explore-view",
-      "render": "src/blocks/explore-view/render.php",
-      "interactivity": true
+      "name": "mvs/media-social",
+      "render": null,
+      "file": "src/blocks/media-social/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
-      "name": "wpmediaverse/dashboard-view",
-      "render": "src/blocks/dashboard-view/render.php",
-      "interactivity": true
+      "name": "mvs/media-stats",
+      "render": "file:./render.php",
+      "file": "src/blocks/media-stats/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
+    },
+    {
+      "name": "mvs/media-upload",
+      "render": "file:./render.php",
+      "file": "src/blocks/media-upload/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
     },
     {
       "name": "mvs/member-photos",
-      "render": "src/blocks/member-photos/render.php",
+      "render": "file:./render.php",
+      "file": "src/blocks/member-photos/block.json:4",
       "interactivity": false,
-      "notes": "1.2.0: auto-resolves user (explicit userId attr → BP displayed user → post author → current user). Delegates grid render to media-grid via do_blocks(). Attrs: userId (int), columns (int, default 3), perPage (int, default 12), mediaType (string), showHeader (bool, default true), showActions (bool, default true)."
+      "layout_owning": false
     },
     {
       "name": "mvs/pdf-viewer",
-      "render": "src/blocks/pdf-viewer/render.php",
+      "render": "file:./render.php",
+      "file": "src/blocks/pdf-viewer/block.json:4",
       "interactivity": false,
-      "notes": "1.2.0: iframe with `#view=FitH` URL fragment. Attrs: mediaId (int), height (int, range 200-1400, default 600), showToolbar (bool, default true). 5 server-side empty states (no mediaId, missing media, not a PDF, no signed URL, etc.)."
+      "layout_owning": false
     },
     {
-      "name": "wpmediaverse/lock-overlay",
-      "render": "src/blocks/lock-overlay/render.php",
-      "interactivity": false
-    },
-    {
-      "name": "wpmediaverse/shared-ui",
-      "render": "src/blocks/shared-ui/render.php",
-      "interactivity": true
+      "name": "mvs/shared-ui",
+      "render": null,
+      "file": "src/blocks/shared-ui/block.json:4",
+      "interactivity": false,
+      "layout_owning": false
     }
   ],
   "post_types": [
     {
-      "slug": "mvs_album",
-      "source": "PostTypes/Album.php"
+      "name": "mvs_album",
+      "file": "includes/PostTypes/Album.php:49",
+      "show_in_menu": "wpmediaverse"
     },
     {
-      "slug": "mvs_collection",
-      "source": "PostTypes/Collection.php"
+      "name": "mvs_collection",
+      "file": "includes/PostTypes/Collection.php:49",
+      "show_in_menu": "wpmediaverse"
     }
   ],
   "taxonomies": [
     {
-      "slug": "mvs_tag",
-      "source": "Taxonomies/MediaTag.php"
+      "name": "mvs_tag",
+      "object_type": "mvs_album",
+      "hierarchical": false,
+      "file": "includes/Taxonomies/MediaTag.php:49"
     },
     {
-      "slug": "mvs_category",
-      "source": "Taxonomies/MediaCategory.php"
+      "name": "mvs_category",
+      "object_type": "mvs_album",
+      "hierarchical": true,
+      "file": "includes/Taxonomies/MediaCategory.php:51"
     }
   ],
   "tables": [
     {
-      "name": "mvs_media_index",
-      "purpose": "Authoritative media record (CPT-free)"
+      "name": "{prefix}mvs_reports",
+      "purpose": "Content/user abuse reports",
+      "file": "includes/Core/Migrator.php:62"
     },
     {
-      "name": "mvs_media_meta",
-      "purpose": "Sparse key/value media metadata"
+      "name": "{prefix}mvs_blocks",
+      "purpose": "User block list",
+      "file": "includes/Core/Migrator.php:80"
     },
     {
-      "name": "mvs_media_views",
-      "purpose": "Per-user view tracking"
+      "name": "{prefix}mvs_activity",
+      "purpose": "Activity feed entries",
+      "file": "includes/Core/Migrator.php:93"
     },
     {
-      "name": "mvs_media_stats",
-      "purpose": "Aggregated stats"
+      "name": "{prefix}mvs_follows",
+      "purpose": "User-to-user follow relationships",
+      "file": "includes/Core/Migrator.php:124"
     },
     {
-      "name": "mvs_reactions",
-      "purpose": "Emoji reactions"
+      "name": "{prefix}mvs_notifications",
+      "purpose": "User notification queue",
+      "file": "includes/Core/Migrator.php:139"
     },
     {
-      "name": "mvs_favorites",
-      "purpose": "Bookmarks"
+      "name": "{prefix}mvs_reactions",
+      "purpose": "Emoji reactions on media",
+      "file": "includes/Core/Migrator.php:168"
     },
     {
-      "name": "mvs_follows",
-      "purpose": "Follow graph"
+      "name": "{prefix}mvs_favorites",
+      "purpose": "User favorites/bookmarks",
+      "file": "includes/Core/Migrator.php:182"
     },
     {
-      "name": "mvs_mentions",
-      "purpose": "@-mentions"
+      "name": "{prefix}mvs_media_views",
+      "purpose": "Per-user view tracking",
+      "file": "includes/Core/Migrator.php:197"
     },
     {
-      "name": "mvs_activity",
-      "purpose": "Activity feed entries"
+      "name": "{prefix}mvs_media_stats",
+      "purpose": "Aggregated media statistics",
+      "file": "includes/Core/Migrator.php:212"
     },
     {
-      "name": "mvs_notifications",
-      "purpose": "In-app notifications"
+      "name": "{prefix}mvs_access_rules",
+      "purpose": "Per-media access control rules",
+      "file": "includes/Core/Migrator.php:226"
     },
     {
-      "name": "mvs_reports",
-      "purpose": "Abuse reports"
+      "name": "{prefix}mvs_access_grants",
+      "purpose": "Granted access tokens",
+      "file": "includes/Core/Migrator.php:242"
     },
     {
-      "name": "mvs_blocks",
-      "purpose": "User blocklist"
+      "name": "{prefix}mvs_mentions",
+      "purpose": "@mention records",
+      "file": "includes/Core/Migrator.php:258"
     },
     {
-      "name": "mvs_access_rules",
-      "purpose": "Per-media access rules"
+      "name": "{prefix}mvs_album_items",
+      "purpose": "Album-to-media mapping",
+      "file": "includes/Core/Migrator.php:273"
     },
     {
-      "name": "mvs_access_grants",
-      "purpose": "Granted tokens"
+      "name": "{prefix}mvs_media_index",
+      "purpose": "Authoritative media record (no CPT dependency)",
+      "file": "includes/Core/Migrator.php:287"
     },
     {
-      "name": "mvs_album_items",
-      "purpose": "Album↔media join"
+      "name": "{prefix}mvs_error_log",
+      "purpose": "Internal error/debug log",
+      "file": "includes/Core/Migrator.php:339"
     },
     {
-      "name": "mvs_error_log",
-      "purpose": "Internal log table"
+      "name": "{prefix}mvs_conversations",
+      "purpose": "DM conversation threads",
+      "file": "includes/Core/Migrator.php:427"
     },
     {
-      "name": "mvs_conversations",
-      "purpose": "DM threads"
+      "name": "{prefix}mvs_conversation_participants",
+      "purpose": "Conversation membership",
+      "file": "includes/Core/Migrator.php:443"
     },
     {
-      "name": "mvs_conversation_participants",
-      "purpose": "DM membership"
+      "name": "{prefix}mvs_messages",
+      "purpose": "Individual DM messages",
+      "file": "includes/Core/Migrator.php:462"
     },
     {
-      "name": "mvs_messages",
-      "purpose": "DM messages"
+      "name": "{prefix}mvs_message_reactions",
+      "purpose": "Reactions on DM messages",
+      "file": "includes/Core/Migrator.php:483"
     },
     {
-      "name": "mvs_message_reactions",
-      "purpose": "DM message reactions"
+      "name": "{prefix}mvs_media_index",
+      "purpose": "Heal/recreate of media_index with full schema (idempotent upgrade path)",
+      "file": "includes/Core/Migrator.php:534"
     },
     {
-      "name": "mvs_transactions",
-      "purpose": "Credit/payment ledger (Pro consumes)"
+      "name": "{prefix}mvs_media_meta",
+      "purpose": "Arbitrary key-value metadata for media",
+      "file": "includes/Core/Migrator.php:602"
+    },
+    {
+      "name": "{prefix}mvs_transactions",
+      "purpose": "Credit/monetization transactions",
+      "file": "includes/Core/Migrator.php:614"
+    },
+    {
+      "name": "{prefix}mvs_bp_activity_media",
+      "purpose": "BuddyPress activity <-> media linkage",
+      "file": "includes/Core/Migrator.php:716"
     }
   ],
   "capabilities": [
@@ -1574,7 +2088,19 @@
         "author",
         "contributor",
         "subscriber"
-      ]
+      ],
+      "registered_at": "includes/Capabilities/MediaCapabilities.php:51",
+      "enforced_at": [
+        "includes/REST/Controller/MediaController.php:1451",
+        "includes/REST/Controller/AlbumController.php:528",
+        "includes/REST/Controller/TagController.php:456",
+        "includes/Admin/MediaListPage.php:26",
+        "includes/Admin/StatsPage.php:162",
+        "includes/Core/Abilities.php:287"
+      ],
+      "enforcement_count": 6,
+      "meta": false,
+      "requires_context": "none"
     },
     {
       "cap": "edit_mvs_media",
@@ -1584,14 +2110,30 @@
         "author",
         "contributor",
         "subscriber"
-      ]
+      ],
+      "registered_at": "includes/Capabilities/MediaCapabilities.php:52",
+      "enforced_at": [
+        "mapped to plural edit_mvs_medias via PLURAL_CAP_MAP (includes/Capabilities/MediaCapabilities.php:36); enforced by CPT map_meta_cap in MediaController update paths",
+        "includes/Admin/Settings/PermissionsManager.php:70 (matrix)"
+      ],
+      "enforcement_count": 2,
+      "meta": false,
+      "requires_context": "none"
     },
     {
       "cap": "edit_others_mvs_media",
       "default_roles": [
         "administrator",
         "editor"
-      ]
+      ],
+      "registered_at": "includes/Capabilities/MediaCapabilities.php:53",
+      "enforced_at": [
+        "mapped to edit_others_mvs_medias (includes/Capabilities/MediaCapabilities.php:37)",
+        "includes/Admin/Settings/PermissionsManager.php:71"
+      ],
+      "enforcement_count": 2,
+      "meta": false,
+      "requires_context": "none"
     },
     {
       "cap": "delete_mvs_media",
@@ -1601,23 +2143,86 @@
         "author",
         "contributor",
         "subscriber"
-      ]
+      ],
+      "registered_at": "includes/Capabilities/MediaCapabilities.php:54",
+      "enforced_at": [
+        "mapped to delete_mvs_medias (includes/Capabilities/MediaCapabilities.php:38)",
+        "includes/Admin/Settings/PermissionsManager.php:72"
+      ],
+      "enforcement_count": 2,
+      "meta": false,
+      "requires_context": "none"
     },
     {
       "cap": "delete_others_mvs_media",
       "default_roles": [
         "administrator",
         "editor"
-      ]
+      ],
+      "registered_at": "includes/Capabilities/MediaCapabilities.php:55",
+      "enforced_at": [
+        "mapped to delete_others_mvs_medias (includes/Capabilities/MediaCapabilities.php:39)",
+        "includes/Admin/Settings/PermissionsManager.php:73"
+      ],
+      "enforcement_count": 2,
+      "meta": false,
+      "requires_context": "none"
     },
     {
-      "cap": "publish_mvs_media",
+      "cap": "moderate_mvs_media",
       "default_roles": [
         "administrator",
-        "editor",
-        "author",
-        "subscriber"
-      ]
+        "editor"
+      ],
+      "registered_at": "includes/Capabilities/MediaCapabilities.php:56",
+      "enforced_at": [
+        "includes/Admin/ModerationQueue.php:70",
+        "includes/Admin/ModerationQueue.php:82",
+        "includes/Admin/ModerationQueue.php:161",
+        "includes/Admin/TagManagementPage.php:41",
+        "includes/Repository/MediaRepository.php:1245",
+        "includes/Repository/MediaRepository.php:1590",
+        "includes/Repository/MediaRepository.php:1623"
+      ],
+      "enforcement_count": 7,
+      "meta": false,
+      "requires_context": "none"
+    },
+    {
+      "cap": "manage_mvs_settings",
+      "default_roles": [
+        "administrator"
+      ],
+      "registered_at": "includes/Capabilities/MediaCapabilities.php:57",
+      "enforced_at": [
+        "includes/Core/Plugin.php:1464",
+        "includes/Admin/OverviewPage.php:632",
+        "includes/Admin/OverviewPage.php:659",
+        "includes/Admin/SetupWizard.php:80",
+        "includes/Admin/SetupWizard.php:120",
+        "includes/Admin/LogViewerPage.php:55",
+        "includes/Admin/LogViewerPage.php:79"
+      ],
+      "enforcement_count": 7,
+      "meta": false,
+      "requires_context": "none"
+    },
+    {
+      "cap": "manage_mvs_access",
+      "default_roles": [
+        "administrator",
+        "editor"
+      ],
+      "registered_at": "includes/Capabilities/MediaCapabilities.php:58",
+      "enforced_at": [
+        "includes/Admin/MediaListPage.php:426",
+        "includes/Admin/MediaListPage.php:808",
+        "includes/Admin/MediaListPage.php:1106",
+        "includes/REST/Controller/AccessController.php:427"
+      ],
+      "enforcement_count": 4,
+      "meta": false,
+      "requires_context": "none"
     },
     {
       "cap": "read_mvs_media",
@@ -1627,197 +2232,313 @@
         "author",
         "contributor",
         "subscriber"
-      ]
+      ],
+      "registered_at": "includes/Capabilities/MediaCapabilities.php:59",
+      "enforced_at": [
+        "includes/Admin/Settings/PermissionsManager.php:68 (matrix); read gate on private media"
+      ],
+      "enforcement_count": 1,
+      "meta": false,
+      "requires_context": "none"
     },
     {
-      "cap": "moderate_mvs_media",
+      "cap": "publish_mvs_media",
       "default_roles": [
         "administrator",
-        "editor"
-      ]
-    },
-    {
-      "cap": "manage_mvs_settings",
-      "default_roles": [
-        "administrator"
-      ]
-    },
-    {
-      "cap": "manage_mvs_access",
-      "default_roles": [
-        "administrator",
-        "editor"
-      ]
+        "editor",
+        "author",
+        "subscriber"
+      ],
+      "registered_at": "includes/Capabilities/MediaCapabilities.php:60",
+      "enforced_at": [
+        "mapped to publish_mvs_medias (includes/Capabilities/MediaCapabilities.php:40)",
+        "includes/Admin/Settings/PermissionsManager.php:69"
+      ],
+      "enforcement_count": 2,
+      "meta": false,
+      "requires_context": "none"
     }
   ],
   "services": [
     {
       "key": "storage",
-      "class": "Services/StorageService.php"
+      "class": "Services\\StorageService",
+      "file": "includes/Core/Plugin.php:361"
     },
     {
       "key": "upload",
-      "class": "Services/UploadService.php"
+      "class": "Services\\UploadService",
+      "file": "includes/Core/Plugin.php:368"
+    },
+    {
+      "key": "storage_router",
+      "class": "Services\\StorageRouter",
+      "file": "includes/Core/Plugin.php:375"
+    },
+    {
+      "key": "variant_writer",
+      "class": "Services\\MediaVariantWriter",
+      "file": "includes/Core/Plugin.php:382"
+    },
+    {
+      "key": "poster",
+      "class": "Services\\PosterService",
+      "file": "includes/Core/Plugin.php:389"
+    },
+    {
+      "key": "admin.overview",
+      "class": "Admin\\OverviewPage",
+      "file": "includes/Core/Plugin.php:396"
+    },
+    {
+      "key": "admin.settings",
+      "class": "Admin\\Settings\\SettingsPage",
+      "file": "includes/Core/Plugin.php:403"
+    },
+    {
+      "key": "admin.tags",
+      "class": "Admin\\TagManagementPage",
+      "file": "includes/Core/Plugin.php:410"
     },
     {
       "key": "privacy",
-      "class": "Services/PrivacyService.php"
-    },
-    {
-      "key": "albums",
-      "class": "Services/AlbumService.php"
-    },
-    {
-      "key": "collections",
-      "class": "Services/CollectionService.php"
-    },
-    {
-      "key": "ai",
-      "class": "Services/AIService.php"
-    },
-    {
-      "key": "moderation",
-      "class": "Services/ModerationService.php"
-    },
-    {
-      "key": "stats",
-      "class": "Services/StatsService.php"
-    },
-    {
-      "key": "access_rules",
-      "class": "Services/AccessRulesService.php"
-    },
-    {
-      "key": "signed_urls",
-      "class": "Services/SignedUrlService.php"
-    },
-    {
-      "key": "watermark",
-      "class": "Services/WatermarkService.php"
-    },
-    {
-      "key": "cache",
-      "class": "Services/CacheService.php"
-    },
-    {
-      "key": "media_url_helper",
-      "class": "Services/MediaUrl.php",
-      "added": "1.1.3",
-      "purpose": "Single signing entry point for non-REST callers"
+      "class": "Services\\PrivacyService",
+      "file": "includes/Core/Plugin.php:417"
     },
     {
       "key": "reactions",
-      "class": "Social/ReactionService.php"
+      "class": "Social\\ReactionService",
+      "file": "includes/Core/Plugin.php:424"
     },
     {
       "key": "comments",
-      "class": "Social/CommentService.php"
+      "class": "Social\\CommentService",
+      "file": "includes/Core/Plugin.php:431"
     },
     {
       "key": "favorites",
-      "class": "Social/FavoriteService.php"
+      "class": "Social\\FavoriteService",
+      "file": "includes/Core/Plugin.php:438"
+    },
+    {
+      "key": "transactions",
+      "class": "Services\\TransactionService",
+      "file": "includes/Core/Plugin.php:446"
     },
     {
       "key": "mentions",
-      "class": "Social/MentionService.php"
+      "class": "Social\\MentionService",
+      "file": "includes/Core/Plugin.php:455"
     },
     {
       "key": "shares",
-      "class": "Social/ShareService.php"
+      "class": "Social\\ShareService",
+      "file": "includes/Core/Plugin.php:462"
     },
     {
-      "key": "follows",
-      "class": "Social/FollowService.php"
+      "key": "stats",
+      "class": "Services\\StatsService",
+      "file": "includes/Core/Plugin.php:469"
     },
     {
-      "key": "notifications",
-      "class": "Social/NotificationService.php"
+      "key": "albums",
+      "class": "Services\\AlbumService",
+      "file": "includes/Core/Plugin.php:476"
     },
     {
-      "key": "reports",
-      "class": "Social/ReportService.php"
+      "key": "collections",
+      "class": "Services\\CollectionService",
+      "file": "includes/Core/Plugin.php:483"
     },
     {
-      "key": "activity",
-      "class": "Social/ActivityService.php"
+      "key": "ai",
+      "class": "Services\\AIService (+OpenAIProvider)",
+      "file": "includes/Core/Plugin.php:490"
     },
     {
-      "key": "messaging",
-      "class": "Messaging/MessagingService.php"
+      "key": "moderation",
+      "class": "Services\\ModerationService",
+      "file": "includes/Core/Plugin.php:512"
     },
     {
-      "key": "media_repository",
-      "class": "Repository/MediaRepository.php"
+      "key": "admin.moderation",
+      "class": "Admin\\ModerationQueue",
+      "file": "includes/Core/Plugin.php:521"
+    },
+    {
+      "key": "admin.stats",
+      "class": "Admin\\StatsPage",
+      "file": "includes/Core/Plugin.php:528"
+    },
+    {
+      "key": "admin.logs",
+      "class": "Admin\\LogViewerPage",
+      "file": "includes/Core/Plugin.php:535"
+    },
+    {
+      "key": "admin.setup_wizard",
+      "class": "Admin\\SetupWizard",
+      "file": "includes/Core/Plugin.php:542"
+    },
+    {
+      "key": "admin.collection_metabox",
+      "class": "Admin\\CollectionMetaBox",
+      "file": "includes/Core/Plugin.php:549"
+    },
+    {
+      "key": "admin.integrations",
+      "class": "Admin\\IntegrationsPage",
+      "file": "includes/Core/Plugin.php:558"
+    },
+    {
+      "key": "access_rules",
+      "class": "Services\\AccessRulesService",
+      "file": "includes/Core/Plugin.php:565"
+    },
+    {
+      "key": "signed_urls",
+      "class": "Services\\SignedUrlService",
+      "file": "includes/Core/Plugin.php:572"
+    },
+    {
+      "key": "watermark",
+      "class": "Services\\WatermarkService",
+      "file": "includes/Core/Plugin.php:579"
     },
     {
       "key": "integration.buddypress",
-      "class": "Integrations/BuddyPress/BuddyPressManager.php"
+      "class": "Integrations\\BuddyPress\\BuddyPressManager",
+      "file": "includes/Core/Plugin.php:588"
+    },
+    {
+      "key": "integration.bp_verified_member",
+      "class": "Integrations\\BPVerifiedMember\\BadgeIntegration",
+      "file": "includes/Core/Plugin.php:597"
+    },
+    {
+      "key": "integration.bp_activity_linkage",
+      "class": "Integrations\\BuddyPress\\ActivityMediaLinkage",
+      "file": "includes/Core/Plugin.php:606"
     },
     {
       "key": "integration.webhooks",
-      "class": "Integrations/WebhookService.php"
+      "class": "Integrations\\WebhookService",
+      "file": "includes/Core/Plugin.php:618"
     },
     {
-      "key": "profile",
-      "class": "Services/ProfileService.php"
+      "key": "cache",
+      "class": "Services\\CacheService",
+      "file": "includes/Core/Plugin.php:627"
     },
     {
       "key": "image_optimization",
-      "class": "Services/ImageOptimizationService.php",
-      "added": "1.2.2"
+      "class": "Services\\ImageOptimizationService",
+      "file": "includes/Core/Plugin.php:636"
+    },
+    {
+      "key": "telemetry",
+      "class": "Services\\TelemetryService",
+      "file": "includes/Core/Plugin.php:643"
+    },
+    {
+      "key": "admin_aggregates",
+      "class": "Services\\AdminAggregatesService",
+      "file": "includes/Core/Plugin.php:655"
+    },
+    {
+      "key": "follows",
+      "class": "Social\\FollowService",
+      "file": "includes/Core/Plugin.php:694"
+    },
+    {
+      "key": "notifications",
+      "class": "Social\\NotificationService",
+      "file": "includes/Core/Plugin.php:701"
+    },
+    {
+      "key": "reports",
+      "class": "Social\\ReportService",
+      "file": "includes/Core/Plugin.php:710"
+    },
+    {
+      "key": "activity",
+      "class": "Social\\ActivityService",
+      "file": "includes/Core/Plugin.php:717"
+    },
+    {
+      "key": "profile",
+      "class": "Services\\ProfileService",
+      "file": "includes/Core/Plugin.php:726"
+    },
+    {
+      "key": "user_deletion",
+      "class": "Services\\UserDeletionService",
+      "file": "includes/Core/Plugin.php:735"
+    },
+    {
+      "key": "storage_cleanup",
+      "class": "Services\\StorageCleanupService",
+      "file": "includes/Core/Plugin.php:744"
+    },
+    {
+      "key": "storage_repair",
+      "class": "Services\\StorageRepairService",
+      "file": "includes/Core/Plugin.php:753"
+    },
+    {
+      "key": "media_repository",
+      "class": "Repository\\MediaRepository",
+      "file": "includes/Core/Plugin.php:762"
+    },
+    {
+      "key": "object_media",
+      "class": "Media\\ObjectMediaLinkage",
+      "file": "includes/Core/Plugin.php:772"
+    },
+    {
+      "key": "template_helpers",
+      "class": "Core\\TemplateHelpers",
+      "file": "includes/Core/Plugin.php:779"
+    },
+    {
+      "key": "messaging",
+      "class": "Messaging\\MessagingService",
+      "file": "includes/Core/Plugin.php:1655 (init_messaging; instantiated :1641)"
     }
   ],
   "hooks_fired": [
     {
-      "name": "mvs_loaded",
-      "type": "action",
-      "args": "ServiceContainer",
-      "where": "Core/Plugin.php::init",
-      "purpose": "Pro extension entry point",
-      "consumed_by": [],
-      "args_signature": [
-        "\\WPMediaVerse\\Core\\ServiceContainer $container"
-      ],
-      "args_count": 1
-    },
-    {
-      "name": "mvs_media_uploaded",
-      "type": "action",
-      "args": "$media_id, $file_path, $user_id",
-      "where": "includes/Services/UploadService.php:341",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Connectors/ConnectorManager.php:60",
-          "kind": "add_action_listener"
-        }
-      ],
-      "args_signature": [
-        "int $media_id",
-        "array $file_data"
-      ],
-      "args_count": 2
-    },
-    {
       "name": "mvs_media_privacy_changed",
       "type": "action",
-      "args": "$entity_id, $new_privacy, $old_privacy",
-      "where": "includes/Repository/MediaRepository.php:447",
-      "consumed_by": [],
+      "args_count": 3,
       "args_signature": [
-        "int $entity_id",
-        "string $new_privacy",
+        "int $media_id",
+        "string $value",
         "string $old_privacy"
       ],
-      "args_count": 3,
-      "_added_in": "1.2.1",
-      "_purpose": "Fires when a media OR album privacy is updated (UPDATE only — INSERT skipped, since uploaders set initial state at activity creation). ActivitySyncIntegration listens to keep BP activity hide_sitewide in sync; albums fan out to all linked per-media + gallery activities. Most-restrictive-wins across media + parent album."
+      "where": "includes/Repository/MediaRepository.php:690",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_files_orphaned",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $media_id",
+        "array $orphaned_files"
+      ],
+      "where": "includes/Repository/MediaRepository.php:2250",
+      "consumed_by": []
     },
     {
       "name": "mvs_media_deleted",
       "type": "action",
-      "args": "$media_id, $user_id",
-      "where": "Repository/MediaRepository.php:2183 (delete_cascade — every delete path)",
+      "args_count": 2,
+      "args_signature": [
+        "int $media_id",
+        "int $author_id"
+      ],
+      "where": "includes/Repository/MediaRepository.php:2305",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
@@ -1834,35 +2555,1021 @@
           "where": "includes/Core/Plugin.php:261",
           "kind": "add_action_listener"
         }
-      ],
-      "args_signature": [
-        "int $media_id",
-        "int $author_id"
-      ],
-      "args_count": 2
+      ]
     },
     {
-      "name": "mvs_media_response",
-      "type": "filter",
-      "args": "$data, $media_id",
-      "where": "includes/REST/Controller/MediaController.php:1188",
+      "name": "mvs_before_template_render",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "string $template_name",
+        "array $args"
+      ],
+      "where": "includes/Core/TemplateLoader.php:738",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_after_template_render",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "string $template_name",
+        "array $args"
+      ],
+      "where": "includes/Core/TemplateLoader.php:750",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_loaded",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "Container $container"
+      ],
+      "where": "includes/Core/Plugin.php:354",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_ai_providers",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "mixed $service"
+      ],
+      "where": "includes/Core/Plugin.php:506",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
-          "where": "includes/Captions/TranscriptionService.php:74",
-          "kind": "add_filter_listener"
+          "where": "includes/Core/Plugin.php:217",
+          "kind": "add_action_listener"
         }
-      ],
+      ]
+    },
+    {
+      "name": "mvs_album_deleted",
+      "type": "action",
+      "args_count": 1,
       "args_signature": [
-        "array $data",
+        "int $post_id"
+      ],
+      "where": "includes/PostTypes/Album.php:83",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dashboard_widgets",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Admin/OverviewPage.php:491",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_collection_deleted",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $post_id"
+      ],
+      "where": "includes/PostTypes/Collection.php:79",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Core/Plugin.php:251",
+          "kind": "add_action_listener"
+        }
+      ]
+    },
+    {
+      "name": "mvs_settings_before_save",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "string $option_page"
+      ],
+      "where": "includes/Admin/Settings/SettingsPage.php:118",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_settings_sidebar_after",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Admin/Settings/SettingsPage.php:463",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_settings_render_{renderer}",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "array $section"
+      ],
+      "where": "includes/Admin/Settings/SettingsPage.php:495",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_before_upload_form",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Shortcodes/Shortcodes.php:126",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_reaction_added",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $user_id",
+        "string $reaction_type"
+      ],
+      "where": "includes/Social/ReactionService.php:100",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_reaction_removed",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $media_id",
+        "int $user_id"
+      ],
+      "where": "includes/Social/ReactionService.php:139",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_notification_created",
+      "type": "action",
+      "args_count": 7,
+      "args_signature": [
+        "int $notification_id",
+        "int $user_id",
+        "string $type",
+        "int $actor_id",
+        "int $media_id",
+        "string $message",
+        "string $link"
+      ],
+      "where": "includes/Social/NotificationService.php:172",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_mentions_created",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $media_id",
+        "array $mentioned_ids",
+        "string $context",
+        "int $comment_id"
+      ],
+      "where": "includes/Social/MentionService.php:58",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_comment_created",
+      "type": "action",
+      "args_count": 5,
+      "args_signature": [
+        "int $media_id",
+        "int $user_id",
+        "int $comment_id",
+        "string $content",
+        "string $source"
+      ],
+      "where": "includes/Social/CommentService.php:159",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_shared",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $user_id",
+        "string $platform"
+      ],
+      "where": "includes/Social/ShareService.php:48",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_user_followed",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $follower_id",
+        "int $following_id"
+      ],
+      "where": "includes/Social/FollowService.php:76",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_user_unfollowed",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $follower_id",
+        "int $following_id"
+      ],
+      "where": "includes/Social/FollowService.php:115",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_report_submitted",
+      "type": "action",
+      "args_count": 5,
+      "args_signature": [
+        "int $report_id",
+        "int $reporter_id",
+        "string $target_type",
+        "int $target_id",
+        "string $reason"
+      ],
+      "where": "includes/Social/ReportService.php:121",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_user_blocked",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $blocker_id",
+        "int $blocked_id"
+      ],
+      "where": "includes/Social/ReportService.php:252",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_favorite_added",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $media_id",
+        "int $user_id"
+      ],
+      "where": "includes/Social/FavoriteService.php:68",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_conversation_created",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $conv_id",
+        "int $user_a",
+        "array $participants"
+      ],
+      "where": "includes/Messaging/MessagingService.php:414",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_message_sent",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $message_id",
+        "int $conversation_id",
+        "int $sender_id",
+        "array $recipient_ids"
+      ],
+      "where": "includes/Messaging/MessagingService.php:1297",
+      "consumed_by": [
+        {
+          "plugin": "wpmediaverse-pro",
+          "where": "includes/Messaging/NotificationListener.php:33",
+          "kind": "add_action_listener"
+        }
+      ]
+    },
+    {
+      "name": "mvs_group_conversation_created",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $conv_id",
+        "int $creator_id",
+        "array $all_ids",
+        "array $opts"
+      ],
+      "where": "includes/Messaging/MessagingService.php:798",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_participant_added",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $conversation_id",
+        "int $user_id",
+        "string $role"
+      ],
+      "where": "includes/Messaging/MessagingService.php:905",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_participant_removed",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $conversation_id",
+        "int $user_id"
+      ],
+      "where": "includes/Messaging/MessagingService.php:946",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_message_request_accepted",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $conversation_id",
+        "int $user_id"
+      ],
+      "where": "includes/Messaging/MessagingService.php:1051",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_voice_message_sent",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $message_id",
+        "int $conversation_id",
+        "int $duration"
+      ],
+      "where": "includes/Messaging/MessagingService.php:1304",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_message_deleted",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $message_id",
+        "int $user_id",
+        "bool $for_everyone"
+      ],
+      "where": "includes/Messaging/MessagingService.php:1557",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_conversation_read",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $conversation_id",
+        "int $user_id"
+      ],
+      "where": "includes/Messaging/MessagingService.php:1738",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_message_reaction_added",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $message_id",
+        "int $user_id",
+        "string $emoji"
+      ],
+      "where": "includes/Messaging/MessagingService.php:1853",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_access_rule_created",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $rule_id",
+        "int $media_id",
+        "string $rule_type",
+        "mixed $rule_value"
+      ],
+      "where": "includes/Services/AccessRulesService.php:106",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_access_rule_deleted",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $rule_id",
+        "int $media_id",
+        "string $rule_type"
+      ],
+      "where": "includes/Services/AccessRulesService.php:185",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_access_granted",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $grant_id",
+        "int $media_id",
+        "int $user_id",
+        "string $source"
+      ],
+      "where": "includes/Services/AccessRulesService.php:451",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_access_revoked",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $media_id",
+        "int $user_id"
+      ],
+      "where": "includes/Services/AccessRulesService.php:487",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_flagged",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $media_id",
+        "array $result"
+      ],
+      "where": "includes/Services/AIService.php:334",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_moderation_changed",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $media_id",
+        "string $status",
+        "string $old_status",
+        "int $user_id"
+      ],
+      "where": "includes/Services/ModerationService.php:92",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_album_items_added",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $album_id",
+        "int $actor_id",
+        "array $media_ids",
+        "array $added"
+      ],
+      "where": "includes/Services/AlbumService.php:255",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_album_cover_set",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $album_id",
         "int $media_id"
       ],
-      "args_count": 2
+      "where": "includes/Services/AlbumService.php:371",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_watermark_invalidated",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $media_id"
+      ],
+      "where": "includes/Services/WatermarkService.php:232",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_watermarks_invalidated_all",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Services/WatermarkService.php:245",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_profile_updated",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $user_id",
+        "array $fields"
+      ],
+      "where": "includes/Services/ProfileService.php:193",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_avatar_uploaded",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $user_id",
+        "int $attachment_id"
+      ],
+      "where": "includes/Services/ProfileService.php:290",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_avatar_deleted",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $user_id"
+      ],
+      "where": "includes/Services/ProfileService.php:320",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_before_media_insert",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Services/UploadService.php:421",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_before_thumbnail_generation",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "string $file_path",
+        "array $sizes"
+      ],
+      "where": "includes/Services/UploadService.php:1050",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_after_thumbnail_generation",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "array $generated",
+        "string $file_path"
+      ],
+      "where": "includes/Services/UploadService.php:1246",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_user_data_purged",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $user_id"
+      ],
+      "where": "includes/Services/UserDeletionService.php:190",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_group_assigned",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $media_id",
+        "int $group_id"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:803",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_replaced",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $media_id",
+        "array $file_data",
+        "int $user_id",
+        "string $media_type"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:1171",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_share_recorded",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $media_id",
+        "int $user_id"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:1390",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tags_merged",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $source_id",
+        "int $target_id",
+        "array $posts"
+      ],
+      "where": "includes/REST/Controller/TagController.php:307",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_before_content",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/cpt-archive.php:20",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_after_content",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/cpt-archive.php:225",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_favorite_toggled",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $user_id",
+        "string $action"
+      ],
+      "where": "includes/REST/Controller/FavoriteController.php:183",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_object_media_set",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "string $object_type",
+        "int $object_id",
+        "array $media_ids"
+      ],
+      "where": "includes/Media/ObjectMediaLinkage.php:97",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_reaction_toggled",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $media_id",
+        "int $user_id",
+        "string $reaction_type",
+        "string $action"
+      ],
+      "where": "includes/REST/Controller/ReactionController.php:191",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_before_explore_grid",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/explore.php:303",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_after_explore_grid",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/explore.php:528",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dashboard_before_content",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/partials/dashboard-content.php:20",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dashboard_tabs",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/partials/dashboard-content.php:365",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dashboard_panels",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/partials/dashboard-content.php:622",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dashboard_after_content",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/partials/dashboard-content.php:935",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_broadcast_thumbnail_ttl",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "int $ttl",
+        "int $media_id",
+        "string $size"
+      ],
+      "where": "includes/Repository/MediaRepository.php:413",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_viewer_thumbnail_ttl",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "int $ttl",
+        "int $media_id",
+        "int $viewer_id",
+        "string $size"
+      ],
+      "where": "includes/Repository/MediaRepository.php:470",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_profile_privacy_levels",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "array $levels",
+        "int $author_id",
+        "int $viewer_id"
+      ],
+      "where": "includes/Repository/MediaRepository.php:1543",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_single_media_redirect",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $redirect",
+        "int $media_id",
+        "string $slug"
+      ],
+      "where": "includes/Core/TemplateLoader.php:309",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_body_classes",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $classes"
+      ],
+      "where": "includes/Core/TemplateLoader.php:601",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_locate_template",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $template",
+        "string $template_name",
+        "string $template_path"
+      ],
+      "where": "includes/Core/TemplateLoader.php:700",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_template_variables",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $args",
+        "string $template_name"
+      ],
+      "where": "includes/Core/TemplateLoader.php:724",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_strip_dead_bp_links",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "includes/Core/Plugin.php:323",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_buddynext_active",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $active"
+      ],
+      "where": "includes/Core/Plugin.php:1105",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_theme_json",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $plugin_data"
+      ],
+      "where": "includes/Core/Plugin.php:1626",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_suppress_frontend_ui",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $suppressed"
+      ],
+      "where": "includes/Core/Plugin.php:1985",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_frontend_presence_keep_handles",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $handles"
+      ],
+      "where": "includes/Core/Plugin.php:2011",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_should_render_chat_panel",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $render",
+        "mixed $visibility"
+      ],
+      "where": "includes/Core/Plugin.php:2226",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_moderation_tabs",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $tabs"
+      ],
+      "where": "includes/Admin/ModerationQueue.php:199",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_user_profile_url",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $url",
+        "int $user_id"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:223",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_user_display_name",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $name",
+        "int $user_id"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:246",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_alt_text",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $alt",
+        "int $media_id"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:329",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_default_video_poster_url",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $default"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:535",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_parent_route",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $parent",
+        "string $context",
+        "array $args"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:1102",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_thumbnail_size_resolved",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "mixed $size"
+      ],
+      "where": "includes/Core/SettingsHelper.php:114",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_grid_thumb_size_key",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $key",
+        "mixed $configured"
+      ],
+      "where": "includes/Core/SettingsHelper.php:156",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_default_thumbnail_style",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $style"
+      ],
+      "where": "includes/Core/SettingsHelper.php:188",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_openai_api_key",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $key"
+      ],
+      "where": "includes/Core/SettingsHelper.php:221",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_stats_tabs",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $tabs"
+      ],
+      "where": "includes/Admin/StatsPage.php:181",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_hide_submenu_slugs",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $slugs"
+      ],
+      "where": "includes/Admin/Settings/SettingsPage.php:73",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_settings_sections",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $sections"
+      ],
+      "where": "includes/Admin/Settings/SettingsPage.php:320",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_settings_group_labels",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $group_labels"
+      ],
+      "where": "includes/Admin/Settings/SettingsPage.php:355",
+      "consumed_by": []
     },
     {
       "name": "mvs_storage_driver",
       "type": "filter",
-      "args": "$driver_class",
+      "args_count": 2,
+      "args_signature": [
+        "mixed $driver",
+        "string $name"
+      ],
       "where": "includes/Services/StorageService.php:39",
       "consumed_by": [
         {
@@ -1870,308 +3577,816 @@
           "where": "includes/Core/Plugin.php:211",
           "kind": "add_filter_listener"
         }
-      ],
-      "args_signature": [
-        "?\\WPMediaVerse\\Services\\StorageDriverInterface $driver",
-        "string $driver_name"
-      ],
-      "args_count": 2
+      ]
     },
     {
-      "name": "mvs_ai_providers",
-      "type": "action",
-      "args": "$ai_service",
-      "where": "includes/Core/Plugin.php:354",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:217",
-          "kind": "add_action_listener"
-        }
-      ],
-      "args_signature": [
-        "\\WPMediaVerse\\Services\\AIService $service"
-      ],
-      "args_count": 1
-    },
-    {
-      "name": "mvs_thumbnail_sizes",
+      "name": "mvs_can_repair_thumb",
       "type": "filter",
-      "args": "$sizes",
-      "where": "includes/Services/UploadService.php:741",
-      "consumed_by": [],
+      "args_count": 4,
       "args_signature": [
-        "array $sizes"
-      ],
-      "args_count": 1
-    },
-    {
-      "name": "mvs_after_thumbnail_generation",
-      "type": "action",
-      "args": "$media_id, $generated, $file_path",
-      "where": "includes/Services/UploadService.php:699",
-      "consumed_by": [],
-      "args_signature": [
+        "bool $can",
         "int $media_id",
-        "array $generated",
+        "string $file_type",
         "string $file_path"
       ],
-      "args_count": 3
+      "where": "includes/Admin/MediaListPage.php:1315",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_collection_media_ids",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "array $media_ids",
+        "int $collection_id",
+        "int $per_page"
+      ],
+      "where": "includes/Shortcodes/Shortcodes.php:581",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_webhook_sslverify",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $sslverify",
+        "string $url"
+      ],
+      "where": "includes/Integrations/WebhookService.php:200",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_activity_media_ids",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "array $ids",
+        "int $activity_id",
+        "object $activity"
+      ],
+      "where": "includes/Integrations/BuddyPress/ActivityMediaLinkage.php:220",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_activity_max_media",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $max"
+      ],
+      "where": "includes/Integrations/BuddyPress/ActivityFormIntegration.php:163",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_activity_max_tags",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $max"
+      ],
+      "where": "includes/Integrations/BuddyPress/ActivityFormIntegration.php:395",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_notification_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $types"
+      ],
+      "where": "includes/Social/NotificationService.php:97",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_should_send_notification",
+      "type": "filter",
+      "args_count": 5,
+      "args_signature": [
+        "bool $send",
+        "int $user_id",
+        "string $type",
+        "int $actor_id",
+        "int $media_id"
+      ],
+      "where": "includes/Social/NotificationService.php:116",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_notification_message",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "mixed $message",
+        "string $type",
+        "string $actor_name",
+        "string $media_title"
+      ],
+      "where": "includes/Social/NotificationService.php:502",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_suggestions_cache_ttl",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $ttl"
+      ],
+      "where": "includes/Social/SuggestionService.php:146",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_activity_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $types"
+      ],
+      "where": "includes/Social/ActivityService.php:59",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_reports_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "includes/Social/ReportService.php:55",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tag_term_count",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $count",
+        "int $term_taxonomy_id"
+      ],
+      "where": "includes/Taxonomies/MediaTag.php:87",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dm_max_upload_size",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $size"
+      ],
+      "where": "includes/Messaging/MessagingController.php:862",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_can_send_message",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $can",
+        "int $sender_id",
+        "int $recipient_id"
+      ],
+      "where": "includes/Messaging/MessagingService.php:59",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dm_denial_reason",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $reason",
+        "int $sender_id",
+        "int $recipient_id"
+      ],
+      "where": "includes/Messaging/MessagingService.php:74",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dm_access_level",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "mixed $access",
+        "int $sender_id",
+        "int $recipient_id"
+      ],
+      "where": "includes/Messaging/MessagingService.php:105",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dm_denial_message",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $message",
+        "string $reason"
+      ],
+      "where": "includes/Messaging/MessagingService.php:194",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dm_message_rate_limit",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $limit"
+      ],
+      "where": "includes/Messaging/MessagingService.php:208",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_dm_convo_rate_limit",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $limit"
+      ],
+      "where": "includes/Messaging/MessagingService.php:227",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_message_max_length",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $length"
+      ],
+      "where": "includes/Messaging/MessagingService.php:1136",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_message_content_check",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $ok",
+        "string $content",
+        "int $sender_id",
+        "int $conversation_id"
+      ],
+      "where": "includes/Messaging/MessagingService.php:1169",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_show_online_status",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $show",
+        "int $current_user_id",
+        "int $user_id"
+      ],
+      "where": "includes/Messaging/MessagingService.php:1938",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_ai_moderation_result",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $result",
+        "int $media_id"
+      ],
+      "where": "includes/Services/AIService.php:292",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_should_ai_analyze",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $should",
+        "int $media_id"
+      ],
+      "where": "includes/Services/AIService.php:365",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_ai_result",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $output",
+        "int $media_id"
+      ],
+      "where": "includes/Services/AIService.php:402",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_access_rule_types_ui",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $rule_types"
+      ],
+      "where": "includes/Services/AccessRulesService.php:280",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_storage_repair_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "includes/Services/StorageRepairService.php:116",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_serve_expired_public_urls",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $serve",
+        "int $media_id"
+      ],
+      "where": "includes/Services/SignedUrlService.php:332",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_stable_public_urls",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $stable",
+        "int $media_id"
+      ],
+      "where": "includes/Services/SignedUrlService.php:700",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_public_media_max_age",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $max_age",
+        "string $privacy"
+      ],
+      "where": "includes/Services/SignedUrlService.php:737",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_public_local_thumbnail_url",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "string $url",
+        "int $media_id",
+        "string $size",
+        "string $rel_path"
+      ],
+      "where": "includes/Services/SignedUrlService.php:833",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_public_cloud_thumbnail_url",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $thumb_url",
+        "int $media_id",
+        "string $size"
+      ],
+      "where": "includes/Services/SignedUrlService.php:840",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_public_local_file_url",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $url",
+        "int $media_id",
+        "string $rel_path"
+      ],
+      "where": "includes/Services/SignedUrlService.php:913",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_public_cloud_file_url",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $file_url",
+        "int $media_id",
+        "string $rel_path"
+      ],
+      "where": "includes/Services/SignedUrlService.php:920",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_serve_public_cloud_direct",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $serve",
+        "int $media_id"
+      ],
+      "where": "includes/Services/SignedUrlService.php:955",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_filename_strategy_upgrade_default",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $default"
+      ],
+      "where": "includes/Services/FilenameStrategy.php:102",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_filename_strategy",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $strategy",
+        "int $user_id"
+      ],
+      "where": "includes/Services/FilenameStrategy.php:128",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_watermark_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "includes/Services/WatermarkService.php:106",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_watermark_config",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $defaults"
+      ],
+      "where": "includes/Services/WatermarkService.php:138",
+      "consumed_by": []
     },
     {
       "name": "mvs_generate_watermark",
       "type": "filter",
-      "args": "$preview_url, $media_id, $file_path, $file_url, $config",
-      "where": "includes/Services/WatermarkService.php:164",
+      "args_count": 5,
+      "args_signature": [
+        "string $result",
+        "int $media_id",
+        "string $file_path",
+        "string $file_url",
+        "array $config"
+      ],
+      "where": "includes/Services/WatermarkService.php:199",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
           "where": "includes/Core/Plugin.php:214",
           "kind": "add_filter_listener"
         }
-      ],
-      "args_signature": [
-        "string $preview_url",
-        "int $media_id",
-        "string $file_path",
-        "string $file_url",
-        "array $config"
-      ],
-      "args_count": 5
+      ]
     },
     {
-      "name": "mvs_watermark_invalidated",
-      "type": "action",
-      "args": "$media_id",
-      "where": "includes/Services/WatermarkService.php:193",
-      "consumed_by": [],
-      "args_signature": [
-        "int $media_id"
-      ],
-      "args_count": 1
-    },
-    {
-      "name": "mvs_stats_tabs",
+      "name": "mvs_profile_data",
       "type": "filter",
-      "args": "$tabs",
-      "where": "includes/Admin/StatsPage.php:176",
-      "consumed_by": [],
+      "args_count": 2,
       "args_signature": [
-        "array $tabs"
+        "array $profile",
+        "int $user_id"
       ],
-      "args_count": 1
+      "where": "includes/Services/ProfileService.php:119",
+      "consumed_by": []
     },
     {
-      "name": "mvs_moderation_tabs",
+      "name": "mvs_profile_update_fields",
       "type": "filter",
-      "args": "$tabs",
-      "where": "includes/Admin/ModerationQueue.php:185",
-      "consumed_by": [],
+      "args_count": 2,
       "args_signature": [
-        "array $tabs"
+        "array $fields",
+        "int $user_id"
       ],
-      "args_count": 1
+      "where": "includes/Services/ProfileService.php:140",
+      "consumed_by": []
     },
     {
-      "name": "mvs_notification_created",
-      "type": "action",
-      "args": "$notification_id, $user_id, $type, $actor_id, $media_id",
-      "where": "includes/Social/NotificationService.php:153",
-      "consumed_by": [],
+      "name": "mvs_avatar_allowed_types",
+      "type": "filter",
+      "args_count": 2,
       "args_signature": [
-        "int $message_id",
+        "array $allowed_types",
+        "int $user_id"
+      ],
+      "where": "includes/Services/ProfileService.php:219",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_avatar_max_size",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $max_size",
+        "int $user_id"
+      ],
+      "where": "includes/Services/ProfileService.php:231",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_max_upload_size",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $max_size",
+        "int $user_id"
+      ],
+      "where": "includes/Services/UploadService.php:123",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_upload_directory",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $dir",
         "int $user_id",
-        "string $type",
-        "int $actor_id",
+        "string $media_type"
+      ],
+      "where": "includes/Services/UploadService.php:246",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_hold_uploads_for_moderation",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $hold",
+        "int $user_id"
+      ],
+      "where": "includes/Services/UploadService.php:395",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_allowed_file_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $types"
+      ],
+      "where": "includes/Services/UploadService.php:760",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_metadata",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "array $metadata",
+        "string $file_path",
         "int $media_id"
       ],
-      "args_count": 5
-    },
-    {
-      "name": "mvs_message_sent",
-      "type": "action",
-      "args": "$message_id, $conversation_id, $sender_id",
-      "where": "includes/Messaging/MessagingService.php:833",
-      "consumed_by": [
-        {
-          "plugin": "wpmediaverse-pro",
-          "where": "includes/Messaging/NotificationListener.php:33",
-          "kind": "add_action_listener"
-        }
-      ],
-      "args_signature": [
-        "int $message_id",
-        "int $conversation_id",
-        "int $sender_id",
-        "int[] $recipient_ids"
-      ],
-      "args_count": 4
-    },
-    {
-      "name": "mvs_page_id_dashboard",
-      "type": "filter",
-      "args": "$page_id, $slot",
-      "args_signature": [
-        "int $page_id",
-        "string $slot"
-      ],
-      "args_count": 2,
-      "where": "includes/Core/SettingsHelper.php:66",
-      "purpose": "Override resolved page id for the dashboard slot (dynamic name: mvs_page_id_{slot})",
+      "where": "includes/Services/UploadService.php:989",
       "consumed_by": []
     },
     {
-      "name": "mvs_page_id_explore",
+      "name": "mvs_cloud_thumbnail_url",
       "type": "filter",
-      "args": "$page_id, $slot",
+      "args_count": 3,
       "args_signature": [
-        "int $page_id",
-        "string $slot"
+        "string $url",
+        "string $size_name",
+        "int $media_id"
       ],
-      "args_count": 2,
-      "where": "includes/Core/SettingsHelper.php:66",
-      "purpose": "Override resolved page id for the explore slot (dynamic name: mvs_page_id_{slot})",
+      "where": "includes/Services/UploadService.php:1142",
       "consumed_by": []
     },
     {
-      "name": "mvs_page_id_upload",
+      "name": "mvs_thumbnail_sizes",
       "type": "filter",
-      "args": "$page_id, $slot",
-      "args_signature": [
-        "int $page_id",
-        "string $slot"
-      ],
-      "args_count": 2,
-      "where": "includes/Core/SettingsHelper.php:66",
-      "purpose": "Override resolved page id for the upload slot (dynamic name: mvs_page_id_{slot})",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_thumbnail_size_resolved",
-      "type": "filter",
-      "args": "$size",
-      "args_signature": [
-        "string $size"
-      ],
       "args_count": 1,
-      "where": "includes/Core/SettingsHelper.php:112",
-      "purpose": "Per-context override of resolved thumbnail size (validated against medium|large|full)",
-      "consumed_by": []
-    },
-    {
-      "name": "mvs_should_render_chat_panel",
-      "type": "filter",
-      "args": "$should_render, $visibility",
       "args_signature": [
-        "bool $should_render",
-        "string $resolved_visibility"
+        "array $sizes"
       ],
-      "args_count": 2,
-      "where": "includes/Core/Plugin.php:1477",
-      "purpose": "Per-page override of the slide-out chat panel render decision after the mvs_chat_panel_visibility setting has resolved (e.g. force-hide on WooCommerce checkout, single-product, or specific post IDs / roles). Returning false skips the chat-panel render in wp_footer for the current request.",
+      "where": "includes/Services/UploadService.php:1288",
       "consumed_by": []
     },
     {
       "name": "mvs_optimize_image",
       "type": "filter",
-      "args": "$file_path, $context",
+      "args_count": 2,
       "args_signature": [
         "string $file_path",
         "array $context"
       ],
-      "where": "Services/ImageOptimizationService.php:90",
-      "purpose": "Single extension point for external compressors (EWWW/Imagify/Smush/ShortPixel). Dispatched at every disk-write moment (original + variants + WebP siblings). Listeners may modify file in place or return replacement path; WP_Error logs failure and keeps original.",
-      "consumed_by": [],
-      "added": "1.2.2"
-    },
-    {
-      "name": "mvs_optimize_jpeg_quality",
-      "type": "filter",
-      "args": "$quality, $context",
-      "args_signature": [
-        "int $quality",
-        "array $context"
-      ],
-      "where": "Services/ImageOptimizationService.php:330",
-      "purpose": "Quality level for the lossless JPEG re-encode pass. Default 92. Set to 100 for near-lossless; lower for more aggressive compression.",
-      "consumed_by": [],
-      "added": "1.2.2"
+      "where": "includes/Services/ImageOptimizationService.php:113",
+      "consumed_by": []
     },
     {
       "name": "mvs_webp_quality",
       "type": "filter",
-      "args": "$quality, $context",
+      "args_count": 2,
       "args_signature": [
         "int $quality",
         "array $context"
       ],
-      "where": "Services/ImageOptimizationService.php:198",
-      "purpose": "Quality level for WebP sibling generation. Default 82 (matches WP core JPEG default).",
-      "consumed_by": [],
-      "added": "1.2.2"
+      "where": "includes/Services/ImageOptimizationService.php:221",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_avif_quality",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $quality",
+        "array $context"
+      ],
+      "where": "includes/Services/ImageOptimizationService.php:337",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_optimize_jpeg_quality",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int $quality",
+        "array $context"
+      ],
+      "where": "includes/Services/ImageOptimizationService.php:644",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_cloudops_allow_non_public_to_cloud",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $allow",
+        "int $media_id",
+        "string $privacy",
+        "string $to"
+      ],
+      "where": "includes/Services/CloudOps.php:81",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_privacy_can_view",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "mixed $can",
+        "int $media_id",
+        "int $user_id",
+        "string $privacy"
+      ],
+      "where": "includes/Services/PrivacyService.php:91",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_rest_pagination_max",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $max"
+      ],
+      "where": "includes/REST/Pagination.php:55",
+      "consumed_by": []
     },
     {
       "name": "mvs_ffmpeg_binary",
       "type": "filter",
-      "args": "$binary",
+      "args_count": 1,
       "args_signature": [
         "string $binary"
       ],
-      "where": "Services/UploadService.php (extract_video_poster_via_ffmpeg)",
-      "purpose": "Path to ffmpeg binary used for the video poster fallback when a video has no embedded cover atom. Default 'ffmpeg' (relies on PATH). Override for Docker / custom-prefix installs.",
-      "consumed_by": [],
-      "added": "1.2.2"
+      "where": "includes/Services/PosterService.php:120",
+      "consumed_by": []
     },
     {
-      "name": "mvs_album_deleted",
-      "type": "action",
-      "args": "$post_id",
-      "where": "PostTypes/Album.php:83",
-      "consumed_by": [],
+      "name": "mvs_collection_response",
+      "type": "filter",
+      "args_count": 2,
       "args_signature": [
+        "array $data",
         "int $post_id"
       ],
-      "args_count": 1
+      "where": "includes/REST/Controller/CollectionController.php:445",
+      "consumed_by": []
     },
     {
-      "name": "mvs_collection_deleted",
-      "type": "action",
-      "args": "$collection_id",
-      "where": "PostTypes/Collection.php:79",
+      "name": "mvs_album_response",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $data",
+        "int $album_id"
+      ],
+      "where": "includes/REST/Controller/AlbumController.php:642",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_app_interests_cache_ttl",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $ttl"
+      ],
+      "where": "includes/REST/Controller/InterestsController.php:132",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_feed_media_ids",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $int_ids",
+        "WP_REST_Request $request"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:591",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_user_badge_html",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $html",
+        "int $author_id"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:1720",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_response",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $data",
+        "int $media_id"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:1785",
       "consumed_by": [
         {
           "plugin": "wpmediaverse-pro",
-          "where": "includes/Core/Plugin.php:251",
-          "kind": "add_action_listener"
+          "where": "includes/Captions/TranscriptionService.php:74",
+          "kind": "add_filter_listener"
         }
-      ],
-      "args_signature": [
-        "int $collection_id"
-      ],
-      "args_count": 1
+      ]
     },
     {
-      "name": "mvs_reports_enabled",
+      "name": "mvs_feed_sort_options",
       "type": "filter",
-      "args": "false (default)",
-      "where": "Social/ReportService.php:55; REST/Controller/ReportController.php:170; templates/media-single.php:457; templates/partials/shared-ui-frame.php:499",
-      "consumed_by": [],
+      "args_count": 1,
       "args_signature": [
-        "bool $enabled=false"
+        "array $options"
       ],
-      "args_count": 1
+      "where": "includes/REST/Controller/MediaController.php:1844",
+      "consumed_by": []
     },
     {
-      "name": "mvs_media_alt_text",
+      "name": "mvs_app_config_layout",
       "type": "filter",
-      "args": "$alt, $media_id",
-      "where": "Core/TemplateHelpers.php:331",
-      "consumed_by": [],
+      "args_count": 1,
       "args_signature": [
-        "string $alt",
-        "int $media_id"
+        "string $layout"
       ],
-      "args_count": 2
+      "where": "includes/REST/Controller/ConfigController.php:134",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_collections_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "templates/media-single.php:444",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_explore_query_args",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "array $query_args",
+        "mixed $profile"
+      ],
+      "where": "templates/explore.php:268",
+      "consumed_by": []
+    },
+    {
+      "name": "wpmediaverse_client_nav_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "templates/partials/router-region-open.php:16",
+      "consumed_by": []
+    },
+    {
+      "name": "wpmediaverse_client_nav_deny_paths",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $paths"
+      ],
+      "where": "templates/partials/router-region-open.php:17",
+      "consumed_by": []
     }
   ],
   "buddypress_integration": {
@@ -2324,102 +4539,129 @@
   "cron": [
     {
       "hook": "mvs_prune_logs",
-      "interval": "daily",
-      "handler": "Services/LoggerService::prune",
-      "purpose": "Drop log rows > 30 days"
+      "interval": "daily (wp_schedule_event)",
+      "handler": "Services\\LoggerService::prune",
+      "file": "includes/Core/Plugin.php:666 (schedule); includes/Core/Plugin.php:668 (handler)"
     },
     {
-      "hook": "mvs_story_cleanup",
-      "interval": "hourly",
-      "handler": "Services/StoryService::cleanup",
-      "purpose": "Expire 24h stories"
+      "hook": "mvs_purge_old_views",
+      "interval": "daily (wp_schedule_event)",
+      "handler": "Services\\ViewRetentionService::purge",
+      "file": "includes/Core/Plugin.php:675 (schedule); includes/Core/Plugin.php:677 (handler)"
+    },
+    {
+      "hook": "mvs_deliver_webhook",
+      "interval": "single/Action Scheduler (retry +5/+10min, max 3)",
+      "handler": "Core\\Plugin::deliver_webhook",
+      "file": "includes/Integrations/WebhookService.php:238 (schedule); includes/Core/Plugin.php:297 (handler)"
+    },
+    {
+      "hook": "mvs_cleanup_media_files",
+      "interval": "async/single Action Scheduler (retry, MAX_ATTEMPTS)",
+      "handler": "Services\\StorageCleanupService::process",
+      "file": "includes/Services/StorageCleanupService.php:72 (handler); :94/:131 (schedule)"
     }
   ],
   "wp_cli": [
     {
-      "command": "wp mvs",
-      "class": "CLI/Commands.php",
-      "purpose": "Router for sub-commands"
+      "command": "wp mvs (base registration)",
+      "handler": "WPMediaVerse\\CLI\\Commands",
+      "file": "wpmediaverse.php:144"
     },
     {
       "command": "wp mvs stats",
-      "class": "CLI/Commands.php:27",
-      "purpose": "Show plugin statistics (total media, views, reactions, favorites) — reads through AdminAggregatesService"
+      "handler": "Commands::stats",
+      "file": "includes/CLI/Commands.php:29"
     },
     {
       "command": "wp mvs migrate",
-      "class": "CLI/Commands.php:87",
-      "purpose": "Migrate legacy mvs_media CPT rows into mvs_media_index (one-way) — Migrator v6+"
+      "handler": "Commands::migrate",
+      "file": "includes/CLI/Commands.php:89"
     },
     {
       "command": "wp mvs prune-views",
-      "class": "CLI/Commands.php:130",
-      "purpose": "Manual run of the view-retention cron (drops rows older than mvs_view_retention_days)"
+      "handler": "Commands::prune_views",
+      "file": "includes/CLI/Commands.php:132"
     },
     {
       "command": "wp mvs cleanup-expired",
-      "class": "CLI/Commands.php:167",
-      "purpose": "Drop expired signed_url cache rows"
+      "handler": "Commands::cleanup_expired",
+      "file": "includes/CLI/Commands.php:169"
     },
     {
       "command": "wp mvs reindex",
-      "class": "CLI/Commands.php:189",
-      "purpose": "Rebuild FULLTEXT index on mvs_media_index(title,description)"
+      "handler": "Commands::reindex",
+      "file": "includes/CLI/Commands.php:191"
     },
     {
       "command": "wp mvs cache-flush",
-      "class": "CLI/Commands.php:262",
-      "purpose": "Flush all WPMediaVerse caches (transients + wp_cache groups)"
+      "handler": "Commands::cache_flush",
+      "file": "includes/CLI/Commands.php:264"
     },
     {
       "command": "wp mvs backfill-activity-thumbnails",
-      "class": "CLI/Commands.php:303",
-      "purpose": "BP activity Phase 1: backfill thumbnail HTML into bp_activity.content for legacy uploads"
+      "handler": "Commands::backfill_activity_thumbnails",
+      "file": "includes/CLI/Commands.php:306"
     },
     {
       "command": "wp mvs generate-video-thumbnails",
-      "class": "CLI/Commands.php:436",
-      "purpose": "Bulk-extract embedded poster atoms from videos and regenerate thumbnail variants"
+      "handler": "Commands::generate_video_thumbnails",
+      "file": "includes/CLI/Commands.php:438"
     },
     {
       "command": "wp mvs moderation-stats",
-      "class": "CLI/Commands.php:544",
-      "purpose": "Show moderation queue statistics (pending count, AI-tagged count, action counters)"
+      "handler": "Commands::moderation_stats",
+      "file": "includes/CLI/Commands.php:546"
     },
     {
       "command": "wp mvs sync-activity-privacy",
-      "class": "CLI/Commands.php:595",
-      "purpose": "Walk every BP activity tied to mvs media and recompute hide_sitewide based on media+album privacy (Zoho #39974 backfill)"
+      "handler": "Commands::sync_activity_privacy",
+      "file": "includes/CLI/Commands.php:601"
     },
     {
       "command": "wp mvs migrate-storage",
-      "class": "CLI/Commands.php:794",
-      "purpose": "Move every media file between storage drivers (local <-> s3 <-> bunnycdn). Flags: --from --to [--keep-source] [--include-non-public] [--dry-run]. Idempotent."
+      "handler": "Commands::migrate_storage",
+      "file": "includes/CLI/Commands.php:800"
     },
     {
       "command": "wp mvs cloud-thumbs-backfill",
-      "class": "CLI/Commands.php:1034",
-      "purpose": "For each image on a cloud driver, download original locally, regenerate 3 thumbnail sizes, upload back. Closes the cloud-thumb gap before /serve is cloud-aware."
+      "handler": "Commands::cloud_thumbs_backfill",
+      "file": "includes/CLI/Commands.php:1040"
     },
     {
       "command": "wp mvs cleanup-local",
-      "class": "CLI/Commands.php:1226",
-      "purpose": "Delete local copies after verifying cloud has the file. Reclaim disk space on cloud-driver installs. Public media only (non-public still routes through /serve which is local-only in 1.2.x)."
+      "handler": "Commands::cleanup_local",
+      "file": "includes/CLI/Commands.php:1232"
+    },
+    {
+      "command": "wp mvs relocalize-private",
+      "handler": "Commands::relocalize_private",
+      "file": "includes/CLI/Commands.php:1388"
     },
     {
       "command": "wp mvs optimize",
-      "class": "CLI/Commands.php:1370",
-      "purpose": "Optimize one media row. Flags: <media_id> [--include-variants] [--force]. Added 1.2.2."
+      "handler": "Commands::optimize",
+      "file": "includes/CLI/Commands.php:1518"
     },
     {
       "command": "wp mvs optimize-bulk",
-      "class": "CLI/Commands.php:1439",
-      "purpose": "Bulk optimize image library with resume support via _mvs_optimized_at sentinel. Flags: [--limit] [--offset] [--mime] [--media-type] [--include-variants] [--dry-run] [--include-failed]. Added 1.2.2."
+      "handler": "Commands::optimize_bulk",
+      "file": "includes/CLI/Commands.php:1587"
     },
     {
-      "command": "wp mvs backfill_ai",
-      "class": "CLI/Commands.php:1722",
-      "purpose": "Run AI describe/tags on media uploaded before AI was enabled — idempotent on ai_status; flags --limit, --dry-run, --sync, --force"
+      "command": "wp mvs backfill-ai",
+      "handler": "Commands::backfill_ai",
+      "file": "includes/CLI/Commands.php:1722"
+    },
+    {
+      "command": "wp mvs repair-storage",
+      "handler": "Commands::repair_storage",
+      "file": "includes/CLI/Commands.php:1830"
+    },
+    {
+      "command": "wp mvs cert",
+      "handler": "Cert\\CertCommand::__invoke",
+      "file": "wpmediaverse.php:145 (register); includes/Cert/CertCommand.php:42 (handler)"
     }
   ],
   "storage_drivers": [
@@ -2476,13 +4718,13 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-05-26T03:11:59Z",
-    "from": "wp-plugin-onboard skill (1.2.1 cloud + i18n targeted refresh 2026-05-07 PM)",
-    "branch": "1.2.1",
+    "at": "2026-07-07T00:00:00Z",
+    "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
+    "branch": "main",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
-    "php_file_count": 162,
+    "php_file_count": 174,
     "refresh_2026_05_07_pm": {
       "scope": "targeted (cloud-storage tooling + cloud thumbnails + i18n sweep + privacy gate)",
       "added": {
@@ -2636,7 +4878,14 @@
         "Admin bulk-optimize progress UI"
       ]
     },
-    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only — inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired — manifest category counts unchanged. Full re-scan deferred to next structural change."
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only — inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired — manifest category counts unchanged. Full re-scan deferred to next structural change.",
+    "refresh_2026_07_07": {
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
+      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "namespace": "mvs/v1",
+      "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+    }
   },
   "category_sources": {
     "rest": [

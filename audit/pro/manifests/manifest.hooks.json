@@ -1,141 +1,954 @@
 {
-  "free_filters_hooked": [
+  "hooks_fired": [
     {
-      "filter": "mvs_storage_driver",
-      "where": "Core/Plugin.php:?",
-      "behavior": "Returns S3Driver or BunnyCDNDriver based on mvs_storage_provider setting"
+      "name": "mvs_activate_scheduled_challenges",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Competitions/CompetitionsScheduler.php:149",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_generate_watermark",
-      "where": "Core/Plugin.php:214",
-      "behavior": "Watermarker::generate() — uses $file_path filesystem read; outputs preview to /uploads/wpmediaverse/previews/"
+      "name": "mvs_after_content",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/challenges-body.php:266",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_stats_tabs",
-      "where": "?",
-      "behavior": "Injects Video Analytics tab"
+      "name": "mvs_autopilot_challenge_created",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$result",
+        "$theme"
+      ],
+      "where": "includes/Challenges/AutopilotService.php:175",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_moderation_tabs",
-      "where": "?",
-      "behavior": "Injects User Reports tab"
+      "name": "mvs_autopilot_create_failed",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$result",
+        "$theme"
+      ],
+      "where": "includes/Challenges/AutopilotService.php:169",
+      "consumed_by": []
     },
     {
-      "action": "mvs_ai_providers",
-      "where": "?",
-      "behavior": "Registers GoogleVisionProvider + RekognitionProvider on AIService"
+      "name": "mvs_autopilot_no_theme_available",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Challenges/AutopilotService.php:138",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_media_uploaded",
-      "where": "includes/Connectors/ConnectorManager.php:60",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
+      "name": "mvs_autopilot_pool_reset",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$pool"
+      ],
+      "where": "includes/Challenges/AutopilotService.php:434",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_media_uploaded",
-      "where": "includes/Captions/TranscriptionService.php:71",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
+      "name": "mvs_battle_accepted",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$battle_id",
+        "$user_id"
+      ],
+      "where": "includes/Battles/BattleService.php:240",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_media_response",
-      "where": "includes/Captions/TranscriptionService.php:74",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_filter_listener"
+      "name": "mvs_battle_cancelled",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$battle_id"
+      ],
+      "where": "includes/Battles/BattleService.php:716",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_media_response",
-      "where": "includes/Video/ChapterService.php:34",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_filter_listener"
+      "name": "mvs_battle_created",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$comp_id",
+        "$challenger_id",
+        "$opponent_id"
+      ],
+      "where": "includes/Battles/BattleService.php:177",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_media_uploaded",
-      "where": "includes/Video/TranscodeService.php:100",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
+      "name": "mvs_battle_resolved",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$battle_id",
+        "$winner_id",
+        "$loser_id"
+      ],
+      "where": "includes/Battles/BattleService.php:502",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_storage_driver",
-      "where": "includes/Core/Plugin.php:211",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_filter_listener"
+      "name": "mvs_before_content",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/challenges.php:20",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_generate_watermark",
-      "where": "includes/Core/Plugin.php:214",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_filter_listener"
+      "name": "mvs_before_explore_grid",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/layouts/pinterest/feed-body.php:138",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_ai_providers",
-      "where": "includes/Core/Plugin.php:217",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
+      "name": "mvs_before_layout_render",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$this",
+        "$template_name"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:178",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_media_response",
-      "where": "includes/Privacy/PrivacyUIService.php:78",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_filter_listener"
+      "name": "mvs_boosts_store_enqueued",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "templates/layouts/instagram/partials/feed-card.php:32",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_media_uploaded",
-      "where": "includes/Quota/QuotaService.php:42",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
+      "name": "mvs_challenge_activated",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$challenge_id"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:519",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_media_deleted",
-      "where": "includes/Quota/QuotaService.php:43",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
+      "name": "mvs_challenge_created",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$comp_id",
+        "$args",
+        "$created_by"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:154",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_media_uploaded",
-      "where": "includes/Streaks/StreakService.php:53",
-      "behavior": "Pro extension listener; firer in FREE per audit/derived/cross-plugin-coupling.json",
-      "fired_by": "wpmediaverse",
-      "kind": "add_action_listener"
+      "name": "mvs_challenge_entry_submitted",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$challenge_id",
+        "$user_id",
+        "$media_id"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:329",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_collection_media_ids",
-      "kind": "filter",
-      "fired_by": "wpmediaverse (Free)",
-      "where": "Core/Plugin.php",
-      "behavior": "Unions mvs_pro_collection_items media IDs into a manual collection's list so picker-added media render (shortcode + cover paths)"
+      "name": "mvs_challenge_finalized",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$challenge_id",
+        "$results"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:669",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_collection_response",
-      "kind": "filter",
-      "fired_by": "wpmediaverse (Free)",
-      "where": "Core/Plugin.php",
-      "behavior": "Appends Pro multi-collection items (with created_at) to the REST collection detail's favorites list, sorted newest-first"
+      "name": "mvs_challenge_voting_started",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$challenge_id"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:552",
+      "consumed_by": []
     },
     {
-      "action": "mvs_media_deleted",
-      "kind": "action",
-      "fired_by": "wpmediaverse (Free)",
-      "where": "Core/Plugin.php:220",
-      "behavior": "Purges all mvs_pro_collection_items rows for a deleted media item"
+      "name": "mvs_challenge_winner_named",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$challenge_id",
+        "int $results",
+        "$rank"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:666",
+      "consumed_by": []
     },
     {
-      "filter": "mvs_pro_quota_default_applies_to_unassigned",
-      "kind": "filter",
-      "fired_by": "wpmediaverse-pro (Pro-internal extension point)",
-      "where": "Quota/QuotaService.php:251",
-      "behavior": "Lets a site opt the default quota into applying to users with no explicit plan (default false)"
+      "name": "mvs_close_challenge_entries",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Competitions/CompetitionsScheduler.php:150",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_competition_status_changed",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$challenge_id",
+        "self::STATUS_SCHEDULED",
+        "self::STATUS_ACTIVE"
+      ],
+      "where": "includes/Challenges/ChallengeService.php:520",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_competitions_tick_ran",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "time()"
+      ],
+      "where": "includes/Competitions/CompetitionsScheduler.php:103",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_finalize_expired_challenges",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Competitions/CompetitionsScheduler.php:151",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_assets",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$this",
+        "$this"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:272",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_exported",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$media_id",
+        "string",
+        "$photo_id"
+      ],
+      "where": "includes/Integrations/Flickr/Connector.php:600",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_imported",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$media_id",
+        "string",
+        "$remote_id"
+      ],
+      "where": "includes/Integrations/Flickr/Connector.php:513",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_analytics_recorded",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$media_id",
+        "$event_type",
+        "$user_id"
+      ],
+      "where": "includes/Analytics/AnalyticsService.php:142",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_captions_generated",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$media_id",
+        "$saved"
+      ],
+      "where": "includes/Captions/TranscriptionService.php:210",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_credits_added",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "$user_id",
+        "$media_type",
+        "$amount",
+        "$source"
+      ],
+      "where": "includes/Quota/QuotaService.php:428",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_memberpress_package_assigned",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$user_id",
+        "$membership_id",
+        "$package_id"
+      ],
+      "where": "includes/Integrations/MemberPress/QuotaAdapter.php:96",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_memberpress_package_reverted",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$user_id",
+        "$default"
+      ],
+      "where": "includes/Integrations/MemberPress/QuotaAdapter.php:133",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_pmpro_package_assigned",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $user_id",
+        "int $level_id",
+        "$package_id"
+      ],
+      "where": "includes/Integrations/PaidMembershipsPro/QuotaAdapter.php:86",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_pmpro_package_reverted",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $user_id",
+        "$default"
+      ],
+      "where": "includes/Integrations/PaidMembershipsPro/QuotaAdapter.php:109",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_package_unassigned",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$user_id",
+        "$source"
+      ],
+      "where": "includes/Quota/QuotaService.php:362",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_transcode_complete",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$media_id",
+        "$results",
+        "$final_status"
+      ],
+      "where": "includes/Video/TranscodeService.php:521",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_woo_package_assigned",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $user_id",
+        "int $product_id",
+        "$package_id",
+        "$new_status"
+      ],
+      "where": "includes/Integrations/WooCommerce/QuotaAdapter.php:103",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_woo_package_reverted",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $user_id",
+        "$default",
+        "$new_status"
+      ],
+      "where": "includes/Integrations/WooCommerce/QuotaAdapter.php:132",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_quota_render_mapping_fields",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Admin/QuotaPage.php:526",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_quota_save_mapping",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Admin/QuotaPage.php:690",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_resolve_expired_matches",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Competitions/CompetitionsScheduler.php:153",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_start_registered_tournaments",
+      "type": "action",
+      "args_count": 0,
+      "args_signature": [],
+      "where": "includes/Competitions/CompetitionsScheduler.php:152",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_story_created",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$media_id",
+        "$user_id",
+        "$expires_at"
+      ],
+      "where": "includes/Stories/StoryService.php:94",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_story_expired",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$media_id"
+      ],
+      "where": "includes/Stories/StoryService.php:112",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_streak_milestone",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$user_id",
+        "$days",
+        "$xp"
+      ],
+      "where": "includes/Streaks/StreakService.php:262",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_cancelled",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$id"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:848",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_created",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "$comp_id",
+        "$args",
+        "$created_by"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:107",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_finalized",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $comp",
+        "$champion_id"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:617",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_match_resolved",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$match_id",
+        "$winner_id"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:475",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_started",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "$tournament_id"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:304",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_tournament_updated",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "$id",
+        "$args"
+      ],
+      "where": "includes/Tournaments/TournamentService.php:809",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_active_layout",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$slug"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:119",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_ai_moderation_terms",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "self::CATEGORIES"
+      ],
+      "where": "includes/Integrations/Anthropic/AIProvider.php:163",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_created_body",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$args",
+        "$created_by"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:126",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_created_subject",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$args",
+        "$created_by"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:127",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_entry_body",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$user_id",
+        "$media_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:171",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_entry_subject",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$user_id",
+        "$media_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:170",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_participant_body",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$user_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:293",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_participant_subject",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$user_id"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:292",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_winner_body",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$body",
+        "$challenge_id",
+        "$user_id",
+        "$rank"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:261",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_challenge_email_winner_subject",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "$subject",
+        "$challenge_id",
+        "$user_id",
+        "$rank"
+      ],
+      "where": "includes/Challenges/ChallengeNotificationListener.php:260",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_connectors",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array"
+      ],
+      "where": "includes/Connectors/ConnectorManager.php:57",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_feed_query_args",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$mvs_query_args",
+        "string"
+      ],
+      "where": "templates/layouts/pinterest/feed-body.php:95",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_config",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$config",
+        "$slug"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:93",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_modes",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "self::MODES"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:139",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_layout_template_map",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$map",
+        "$this"
+      ],
+      "where": "includes/Frontend/Layouts/LayoutManager.php:162",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_openai_api_key",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$key"
+      ],
+      "where": "includes/Integrations/Whisper/CaptionProvider.php:136",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_privacy_can_view",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "null",
+        "$album_id",
+        "$user_id",
+        "$album_privacy"
+      ],
+      "where": "includes/Privacy/PrivacyUIService.php:155",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_analytics_event_data",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$event_data",
+        "$media_id",
+        "$event_type"
+      ],
+      "where": "includes/Analytics/AnalyticsService.php:117",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_analytics_summary",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$overview",
+        "int",
+        "string"
+      ],
+      "where": "includes/Analytics/AnalyticsService.php:646",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_before_quota_check",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$args",
+        "$user_id"
+      ],
+      "where": "includes/Quota/QuotaService.php:537",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_collections_manage_url",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$mvs_collections_url"
+      ],
+      "where": "includes/Core/Plugin.php:919",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_compete_points_url",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "$mvs_hub_page_id"
+      ],
+      "where": "templates/compete-hub-body.php:53",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_inject_compete_nav",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool"
+      ],
+      "where": "includes/Core/Plugin.php:856",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_leaderboard_cache_ttl",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "5 * MINUTE_IN_SECONDS"
+      ],
+      "where": "includes/REST/LeaderboardController.php:126",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_leaderboard_xp_rows",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "array",
+        "int",
+        "$window"
+      ],
+      "where": "includes/Leaderboard/LeaderboardService.php:79",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_poster_frame",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "$poster_url",
+        "$media_id",
+        "$input"
+      ],
+      "where": "includes/Video/TranscodeService.php:834",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_default_applies_to_unassigned",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool",
+        "$user_id"
+      ],
+      "where": "includes/Quota/QuotaService.php:263",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_revert_to_default_on_end",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool",
+        "$user_id",
+        "$source"
+      ],
+      "where": "includes/Quota/QuotaService.php:343",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_quota_source",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$package",
+        "$user_id"
+      ],
+      "where": "includes/Quota/QuotaService.php:277",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_pro_transcode_presets",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "$presets",
+        "$media_id"
+      ],
+      "where": "includes/Video/TranscodeService.php:458",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_rest_pagination_max",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int"
+      ],
+      "where": "includes/Challenges/ChallengeController.php:93",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_watermark_font_path",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string",
+        "$config"
+      ],
+      "where": "includes/Core/Watermarker.php:263",
+      "consumed_by": []
     }
-  ]
+  ],
+  "generated": {
+    "at": "2026-07-07T00:00:00Z",
+    "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
+    "branch": "main",
+    "schema_version": "v2.2",
+    "scan_scope": "distignore",
+    "scan_path": ".",
+    "php_file_count": 162,
+    "refresh_2026_05_07_pm": {
+      "scope": "targeted (CloudOpsManager admin UI + S3 SigV4 path encoding + storage settings UX)",
+      "added": {
+        "admin_classes_added": [
+          "WPMediaVersePro\\Admin\\CloudOpsManager"
+        ],
+        "admin_post_actions_added": [
+          "mvs_pro_cloud_migrate_batch",
+          "mvs_pro_cloud_cleanup_batch"
+        ],
+        "transients_added": [
+          "mvs_pro_cloud_ops_notice (60s, success/error message between admin-post redirect and notice render)"
+        ],
+        "free_services_consumed_added": [
+          "WPMediaVerse\\Services\\CloudOps — per-row migrate / cleanup-local helpers shared with Free CLI"
+        ],
+        "drivers_changed": [
+          "Integrations\\AmazonS3\\StorageDriver — encode_s3_uri() helper added; put_object / delete_object / head_object switched from rawurlencode($key) to per-segment encoding (S3-compat fix for R2 / MinIO / B2)",
+          "Integrations\\AmazonS3\\StorageDriver::download() — implemented (StorageDriverInterface contract)",
+          "Integrations\\BunnyCDN\\StorageDriver::download() — implemented (StorageDriverInterface contract)",
+          "Integrations\\BunnyCDN\\StorageDriver::exists() — switched HEAD to Range-GET (BunnyCDN storage API does not support HEAD)"
+        ],
+        "settings_ui_changes": [
+          "BunnyCDN: Storage Zone Password / Pull Zone Hostname / Storage Zone Region label rewording",
+          "AWS: Bucket Name / Region label rewording",
+          "Both: 2-step setup walkthrough in section header; per-field help trimmed to keep form scannable",
+          "All 5 secret fields now preserve stored value on empty form submit (pre_update_option_* filter chain — fixes secret-wipe on Save Changes)"
+        ]
+      },
+      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration. No S3 smoke test run live today — code-review only per user direction."
+    },
+    "phase_2_rescan_skipped": true,
+    "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables — manifest category counts unchanged. SafeRender helper not tracked here (not in service container).",
+    "refresh_2026_07_07": {
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (91), hooks_fired (83), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies, feature_toggles, free_services_consumed, free_filters_hooked.",
+      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "namespace": "mvs-pro/v1",
+      "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+    }
+  }
 }
