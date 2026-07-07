@@ -343,6 +343,7 @@ class MediaController extends WP_REST_Controller {
 			}
 			$viewer = get_current_user_id();
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $ids );
+			\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $ids );
 			self::prime_viewer_state( $ids, $viewer );
 			$items = array();
 			foreach ( $ids as $mid ) {
@@ -590,6 +591,16 @@ class MediaController extends WP_REST_Controller {
 		 */
 		$int_ids = apply_filters( 'mvs_feed_media_ids', $int_ids, $request );
 
+		// Batch-load the media rows + meta and the access-rules presence flag
+		// for the whole page BEFORE the per-item prepare loop below, mirroring
+		// the template grids (explore.php/album.php/collection.php) since
+		// 1.7.0. Without this, prepare_item_for_response() -> get_all() and
+		// -> sign_file_url() -> can_view() -> has_active_rules() each fire one
+		// query per item (this was the REST-path gap; templates were fixed).
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->prefetch( $int_ids );
+		\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $int_ids );
+
 		// Batch-load viewer favorite/reaction state for the whole page (2 queries),
 		// so the per-item prepare below stays query-bounded at any list size.
 		self::prime_viewer_state( $int_ids, get_current_user_id() );
@@ -664,6 +675,11 @@ class MediaController extends WP_REST_Controller {
 		if ( empty( $group_media_ids ) ) {
 			return rest_ensure_response( array( $this->prepare_item_for_response( $media_id, $request ) ) );
 		}
+
+		$int_group_ids = array_map( 'intval', $group_media_ids );
+		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->prefetch( $int_group_ids );
+		\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $int_group_ids );
 
 		$items = array();
 		foreach ( $group_media_ids as $gid ) {
@@ -1193,16 +1209,11 @@ class MediaController extends WP_REST_Controller {
 
 		$author_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 
-		// Remove from custom tables. delete_all() -> delete_cascade() fires
-		// `mvs_media_files_orphaned` first, so StorageCleanupService reclaims the
-		// original AND every variant (thumbnails, WebP/AVIF, posters) from local
-		// + cloud asynchronously. No inline single-driver delete here.
-		global $wpdb;
+		// delete_all() -> delete_cascade() fires `mvs_media_files_orphaned` first, so
+		// StorageCleanupService reclaims the original AND every variant (thumbnails,
+		// WebP/AVIF, posters) from local + cloud asynchronously, and also clears
+		// mvs_tag/mvs_category term relationships. No inline cleanup here.
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-
-		// Remove taxonomy relationships.
-		wp_delete_object_term_relationships( $media_id, array( 'mvs_tag', 'mvs_category' ) );
 
 		// mvs_media_deleted is now fired inside MediaRepository::delete_cascade()
 		// (the single funnel for every delete path), so it is NOT fired here —

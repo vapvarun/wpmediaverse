@@ -1484,12 +1484,12 @@ class Plugin {
 		}
 
 		$order_map = array(
-			self::ADMIN_SLUG      => 1,
-			'mvs-media'           => 5,
-			'mvs-settings'        => 50,
-			'mvs-moderation'      => 51,
-			'mvs-stats'           => 52,
-			'mvs-integrations'    => 53,
+			self::ADMIN_SLUG   => 1,
+			'mvs-media'        => 5,
+			'mvs-settings'     => 50,
+			'mvs-moderation'   => 51,
+			'mvs-stats'        => 52,
+			'mvs-integrations' => 53,
 		);
 
 		usort(
@@ -1635,6 +1635,48 @@ class Plugin {
 	// -------------------------------------------------------------------------
 
 	/**
+	 * Resolve an effective privacy/access level from a site-wide ceiling and
+	 * a per-user override.
+	 *
+	 * Shared by the online-status filter and MessagingService::can_message()
+	 * (and any future per-user "who can X me" setting) so the precedence rule
+	 * lives in exactly one place: the per-user value may only NARROW the
+	 * site-wide setting (make it more restrictive), never WIDEN it. Without
+	 * this ceiling, an admin's site-wide "nobody" can be silently bypassed by
+	 * a member's own (possibly stale) per-user meta value.
+	 *
+	 * @param string   $global_value Site-wide option value (already resolved
+	 *                                via get_option() with its own default).
+	 * @param mixed    $user_value   Per-user meta value. Empty string or
+	 *                                `false` means "unset — inherit the global
+	 *                                value" (the normal get_user_meta() empty
+	 *                                return).
+	 * @param string[] $rank         Valid values for this setting, ordered MOST
+	 *                                permissive first, LEAST permissive
+	 *                                (most restrictive) last, e.g.
+	 *                                array( 'everyone', 'followers', 'nobody' ).
+	 * @return string Effective value. Never more permissive than $global_value.
+	 */
+	public static function resolve_privacy_ceiling( string $global_value, $user_value, array $rank ): string {
+		// Fail closed: an unrecognized global value is treated as the most
+		// restrictive rank entry rather than silently falling open.
+		if ( ! in_array( $global_value, $rank, true ) ) {
+			$global_value = end( $rank );
+		}
+
+		if ( '' === $user_value || false === $user_value || ! is_string( $user_value ) || ! in_array( $user_value, $rank, true ) ) {
+			return $global_value;
+		}
+
+		$global_index = array_search( $global_value, $rank, true );
+		$user_index   = array_search( $user_value, $rank, true );
+
+		// Higher index = more restrictive. Effective = whichever of the two is
+		// MORE restrictive — the ceiling can be lowered by the user, never raised.
+		return $user_index > $global_index ? $user_value : $global_value;
+	}
+
+	/**
 	 * Initialize the DM/messaging engine.
 	 */
 	private static function init_messaging(): void {
@@ -1664,10 +1706,20 @@ class Plugin {
 		add_filter(
 			'mvs_show_online_status',
 			function ( $show, $viewer_id = 0, $target_id = 0 ) {
-				$setting = $target_id ? get_user_meta( $target_id, '_mvs_show_online', true ) : '';
-				if ( '' === $setting || false === $setting ) {
-					$setting = get_option( 'mvs_show_online_status', 'everyone' );
-				}
+				$global_setting = get_option( 'mvs_show_online_status', 'everyone' );
+				$user_setting   = $target_id ? get_user_meta( $target_id, '_mvs_show_online', true ) : '';
+
+				// Site-wide setting is a CEILING: the target's own per-user choice
+				// may only narrow it (e.g. "everyone" -> "nobody"), never widen it
+				// (e.g. global "nobody" -> per-user "everyone"). Fixes the
+				// online-status-leak where a looser per-user meta value bypassed
+				// an admin's site-wide "nobody" (Basecamp #10053174913).
+				$setting = self::resolve_privacy_ceiling(
+					$global_setting,
+					$user_setting,
+					array( 'everyone', 'followers', 'nobody' )
+				);
+
 				if ( 'nobody' === $setting ) {
 					return false;
 				}
@@ -1696,6 +1748,34 @@ class Plugin {
 	}
 
 	/**
+	 * Whether the floating chat panel bundle (CSS + JS module + inline config)
+	 * should load on this request.
+	 *
+	 * Single home for the `mvs_chat_panel_visibility === 'disabled'` check that
+	 * used to live only in render_chat_panel() (markup), while the two asset
+	 * loaders (enqueue_messaging_assets(), print_messaging_config()) had no
+	 * gate at all and shipped the full messaging bundle on every logged-in
+	 * pageview even when the admin disabled the panel (Basecamp #10053068913).
+	 *
+	 * The dedicated `/messages/` full-page template (templates/messages.php)
+	 * renders its OWN chat UI using this same JS module + config — it is not
+	 * "the panel", so it always needs the bundle regardless of the panel
+	 * visibility setting. Callers that need the markup-placement rules
+	 * (`mvs_pages` / `bp_pages` scoping, the `mvs_should_render_chat_panel`
+	 * filter) still apply those themselves; this helper only answers "is the
+	 * panel switched off site-wide".
+	 *
+	 * @return bool
+	 */
+	private static function chat_panel_enabled(): bool {
+		if ( (int) get_query_var( 'mvs_messages_page' ) ) {
+			return true;
+		}
+
+		return 'disabled' !== (string) get_option( 'mvs_chat_panel_visibility', 'everywhere' );
+	}
+
+	/**
 	 * Enqueue messaging CSS + JS for logged-in users.
 	 */
 	public static function enqueue_messaging_assets(): void {
@@ -1705,6 +1785,12 @@ class Plugin {
 
 		// Suppress DM UI when BuddyNext handles it.
 		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			return;
+		}
+
+		// Don't ship the messaging bundle when the admin has switched the
+		// chat panel off site-wide (Basecamp #10053068913).
+		if ( ! self::chat_panel_enabled() ) {
 			return;
 		}
 
@@ -1741,6 +1827,12 @@ class Plugin {
 		}
 
 		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			return;
+		}
+
+		// Same gate as enqueue_messaging_assets() — no point printing the
+		// config the disabled bundle would have consumed (Basecamp #10053068913).
+		if ( ! self::chat_panel_enabled() ) {
 			return;
 		}
 
@@ -2193,7 +2285,7 @@ JS;
 
 		$visibility = (string) get_option( 'mvs_chat_panel_visibility', 'everywhere' );
 
-		if ( 'disabled' === $visibility ) {
+		if ( ! self::chat_panel_enabled() ) {
 			return;
 		}
 

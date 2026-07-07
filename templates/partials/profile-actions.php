@@ -30,16 +30,21 @@ if ( class_exists( '\WPMediaVerse\Core\Plugin' ) ) {
 	}
 }
 
-// Messaging enabled? Check recipient-level DM privacy first, then fall back to global.
-$mvs_dm_access    = get_user_meta( $mvs_profile_id, '_mvs_dm_access', true );
-if ( ! $mvs_dm_access ) {
-	$mvs_dm_access = get_option( 'mvs_dm_access', 'everyone' );
-}
+// Messaging enabled? The site-wide `mvs_dm_access` option is a ceiling — see
+// Plugin::resolve_privacy_ceiling(). Mirrors the exact precedence used by
+// MessagingService::can_message() so the "Message" button's visibility
+// always matches what a send attempt will actually be allowed to do
+// (Basecamp #10053143680).
+$mvs_dm_access    = \WPMediaVerse\Core\Plugin::resolve_privacy_ceiling(
+	get_option( 'mvs_dm_access', 'everyone' ),
+	get_user_meta( $mvs_profile_id, '_mvs_dm_access', true ),
+	array( 'everyone', 'followers', 'mutual', 'nobody' )
+);
 $mvs_messaging_on = ( 'nobody' !== $mvs_dm_access );
 
 // Member reporting is a Pro feature — POST /users/{id}/report 403s in Free unless
 // this filter is true. Only surface the Report action when it will actually work.
-$mvs_reports_on = (bool) apply_filters( 'mvs_reports_enabled', false );
+$mvs_reports_on     = (bool) apply_filters( 'mvs_reports_enabled', false );
 $mvs_report_reasons = array(
 	'spam'           => __( 'Spam', 'wpmediaverse' ),
 	'harassment'     => __( 'Harassment or bullying', 'wpmediaverse' ),

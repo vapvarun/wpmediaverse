@@ -36,35 +36,67 @@ $mvs_duration     = $mvs_media['duration'] ?? '';
 $mvs_attach_id    = (int) ( $mvs_media['attachment_id'] ?? 0 );
 $mvs_created      = $mvs_media['created_at'] ?? '';
 
-// Privacy gate: block access to non-public media for unauthorized viewers.
-if ( 'public' !== $mvs_privacy ) {
-	$mvs_viewer_id = get_current_user_id();
-	$mvs_can_view  = false;
+// Privacy gate: TemplateLoader::serve_single_media() already ran the
+// authoritative PrivacyService::can_view() check before including this
+// template and set mvs_media_can_view accordingly. Denied-with-preview
+// viewers still reach this template (so the watermarked/blurred teaser can
+// render below); a denial with no preview available never gets here at all
+// (TemplateLoader 404s it first). Default true preserves old behavior for
+// any direct include/test bypassing TemplateLoader.
+$mvs_can_view = $GLOBALS['mvs_media_can_view'] ?? true;
 
-	if ( $mvs_viewer_id === $mvs_author_id || current_user_can( 'moderate_mvs_media' ) ) {
-		$mvs_can_view = true;
-	} elseif ( 'members' === $mvs_privacy && $mvs_viewer_id > 0 ) {
-		$mvs_can_view = true;
-	}
-	// 'private', 'friends', 'group' etc -- deny unless owner/admin.
+if ( ! $mvs_can_view ) {
+	$mvs_is_image = 'image' === $mvs_media_type;
+	$mvs_preview  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->resolve_watermark_preview(
+		$mvs_media_id,
+		$mvs_author_id,
+		get_current_user_id(),
+		$mvs_is_image
+	);
 
-	if ( ! $mvs_can_view ) {
-		get_header();
-		echo '<div class="mvs-single-media"><div class="mvs-privacy-blocked">';
-		echo '<span class="mvs-privacy-blocked__icon">&#128274;</span>';
-		echo '<h2>' . esc_html__( 'This media is private', 'wpmediaverse' ) . '</h2>';
-		echo '<p>' . esc_html__( 'You do not have permission to view this content.', 'wpmediaverse' ) . '</p>';
-		echo '</div></div>';
-		get_footer();
-		return;
-	}
+	get_header();
+	do_action( 'mvs_before_content' );
+	include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+	?>
+	<div class="mvs-single-media mvs-page">
+		<div class="mvs-lock-overlay-block mvs-single-media-restricted">
+			<div class="mvs-lock-overlay-content mvs-lock-overlay-locked<?php echo $mvs_preview['is_watermarked'] ? ' is-watermarked' : ''; ?>" style="--mvs-blur: <?php echo $mvs_preview['is_watermarked'] ? 0 : 20; ?>px; --mvs-overlay-opacity: <?php echo $mvs_preview['is_watermarked'] ? '0.2' : '0.6'; ?>">
+				<div class="mvs-lock-overlay-preview">
+					<?php if ( $mvs_is_image && $mvs_preview['preview_url'] ) : ?>
+						<img src="<?php echo esc_url( $mvs_preview['preview_url'] ); ?>" alt="" loading="lazy" aria-hidden="true" />
+					<?php else : ?>
+						<div class="mvs-lock-overlay-placeholder">
+							<span class="dashicons dashicons-lock"></span>
+						</div>
+					<?php endif; ?>
+				</div>
+				<div class="mvs-lock-overlay-prompt">
+					<span class="dashicons dashicons-lock mvs-lock-icon"></span>
+					<h1 class="mvs-lock-overlay-title"><?php echo esc_html( $mvs_title ?: __( 'Restricted Content', 'wpmediaverse' ) ); ?></h1>
+					<?php if ( ! is_user_logged_in() ) : ?>
+						<a href="<?php echo esc_url( wp_login_url( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $mvs_media_id ) ) ); ?>" class="mvs-lock-overlay-btn wp-element-button">
+							<?php esc_html_e( 'Log in to View', 'wpmediaverse' ); ?>
+						</a>
+					<?php else : ?>
+						<p class="mvs-lock-overlay-restricted">
+							<?php esc_html_e( 'You do not have access to this content. Contact the site administrator for access.', 'wpmediaverse' ); ?>
+						</p>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php
+	do_action( 'mvs_after_content' );
+	get_footer();
+	return;
 }
 
 get_header();
 
 do_action( 'mvs_before_content' );
 
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
 // Resolve media type flags.
 $is_image = 'image' === $mvs_media_type;
@@ -102,7 +134,6 @@ if ( $mvs_duration ) {
 // plain name for attribute contexts (aria-label, alt) that need escapable text.
 $mvs_author       = get_userdata( $mvs_author_id );
 $mvs_author_plain = $mvs_author ? (string) $mvs_author->display_name : __( 'Unknown', 'wpmediaverse' );
-$mvs_author_login = $mvs_author ? $mvs_author->user_login : '';
 $mvs_author_name  = $mvs_author
 	? \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_display_name( $mvs_author_id )
 	: $mvs_author_plain;
@@ -523,7 +554,7 @@ $mvs_archive_url = home_url( '/media/' );
 						data-wp-bind--value="context.editDesc"></textarea>
 				</div>
 				<!-- Privacy + slug-regenerate share a row to save vertical space.
-					 Off by default — keeps inbound URLs stable. -->
+					Off by default — keeps inbound URLs stable. -->
 				<div class="mvs-field-row">
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
@@ -676,7 +707,7 @@ $mvs_archive_url = home_url( '/media/' );
 	</div>
 </div>
 <?php
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 

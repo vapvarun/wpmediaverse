@@ -1691,6 +1691,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param array  $args       {
 	 *     @type int $author_id Optional author filter (joins to index).
 	 *                          Default 0 = no filter.
+	 *     @type int $after_id  Optional keyset cursor — only IDs greater than
+	 *                          this value are returned. Default 0 = no cursor.
+	 *     @type int $limit     Optional row cap, ordered by media_id ASC so the
+	 *                          cursor above is stable. Default 0 = unbounded.
 	 * }
 	 * @return array<int> Media IDs matching the criteria.
 	 */
@@ -1698,6 +1702,10 @@ class MediaRepository implements MediaRepositoryInterface {
 		global $wpdb;
 
 		$author_id = isset( $args['author_id'] ) ? (int) $args['author_id'] : 0;
+		$after_id  = isset( $args['after_id'] ) ? (int) $args['after_id'] : 0;
+		$limit     = isset( $args['limit'] ) ? (int) $args['limit'] : 0;
+
+		$limit_sql = $limit > 0 ? $wpdb->prepare( ' ORDER BY m.media_id ASC LIMIT %d', $limit ) : '';
 
 		if ( $author_id > 0 ) {
 			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -1705,18 +1713,24 @@ class MediaRepository implements MediaRepositoryInterface {
 					"SELECT m.media_id
 					 FROM {$wpdb->prefix}mvs_media_meta m
 					 INNER JOIN {$wpdb->prefix}mvs_media_index i ON i.media_id = m.media_id
-					 WHERE m.meta_key = %s AND m.meta_value = %s AND i.post_author = %d",
+					 WHERE m.meta_key = %s AND m.meta_value = %s AND i.post_author = %d AND m.media_id > %d"
+					. $limit_sql,
 					$meta_key,
 					$meta_value,
-					$author_id
+					$author_id,
+					$after_id
 				)
 			);
 		} else {
+			// Aliased as `m` (matching the author_id branch above) so $limit_sql's
+			// `ORDER BY m.media_id` resolves correctly in both branches.
 			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = %s AND meta_value = %s",
+					"SELECT m.media_id FROM {$wpdb->prefix}mvs_media_meta m WHERE m.meta_key = %s AND m.meta_value = %s AND m.media_id > %d"
+					. $limit_sql,
 					$meta_key,
-					$meta_value
+					$meta_value,
+					$after_id
 				)
 			);
 		}
@@ -2278,6 +2292,15 @@ class MediaRepository implements MediaRepositoryInterface {
 		foreach ( $mvs_comment_ids as $mvs_comment_id ) {
 			wp_delete_comment( (int) $mvs_comment_id, true );
 		}
+
+		// Taxonomy term relationships are keyed by media_id as the object id
+		// (mvs_tag / mvs_category are registered against the media object type,
+		// not a WP post) and are NOT covered by any of the wpdb deletes above —
+		// moved here from MediaController::delete_item() so every delete path
+		// (REST single, REST bulk, admin single, admin bulk) gets it for free,
+		// matching this method's "single funnel for EVERY delete path" contract.
+		wp_delete_object_term_relationships( $media_id, array( 'mvs_tag', 'mvs_category' ) );
+
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 		// 1.7.0 cache layer: row_cache still holds the now-deleted index row, and

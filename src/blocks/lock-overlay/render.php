@@ -45,38 +45,18 @@ $file_url    = \WPMediaVerse\Core\MediaUrl::file( $media_id, $user_id );
 // show THAT instead and drop the blur — the watermark is the intended
 // protection for a gated teaser, and blurring it would defeat the purpose. This
 // is the render-side consumer of WatermarkService's preview (the same image the
-// REST response exposes as preview_url / watermarked).
+// REST response exposes as preview_url / watermarked). Resolution logic lives
+// in TemplateHelpers::resolve_watermark_preview() — the single source of truth
+// shared with templates/media-single.php; do not re-derive it here.
 $preview_url    = \WPMediaVerse\Core\MediaUrl::thumb( $media_id, 'large', 0, $user_id );
 $is_watermarked = false;
 if ( ! $has_access && $is_image ) {
-	$watermark = $container->get( 'watermark' );
-
 	$uploader_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'post_author' );
 
-	/**
-	 * Two cases for a locked viewer: watermark on -> show the watermarked image;
-	 * watermark off -> show the plain blurred teaser. Watermarking applies to
-	 * IMAGES only (video/audio are never watermarked — enforced in
-	 * WatermarkService::get_preview_url()). Role targeting keys off the UPLOADER:
-	 * by default every gated image is watermarked (so e.g. all subscriber uploads
-	 * get the mark); a site can exclude higher roles by returning false, e.g.
-	 * skip when the uploader can edit others' posts (editor/admin).
-	 *
-	 * @param bool $apply       Whether to apply the watermark.
-	 * @param int  $media_id    Media ID.
-	 * @param int  $uploader_id Author/uploader of the media (for role targeting).
-	 * @param int  $user_id     Current viewer (0 = logged out).
-	 */
-	$apply_watermark = $watermark->is_enabled()
-		&& (bool) apply_filters( 'mvs_apply_watermark_preview', true, $media_id, $uploader_id, $user_id );
-
-	if ( $apply_watermark ) {
-		$watermarked_preview = $watermark->get_preview_url( $media_id );
-		if ( '' !== $watermarked_preview ) {
-			$preview_url    = $watermarked_preview;
-			$is_watermarked = true;
-		}
-	}
+	$resolved       = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )
+		->resolve_watermark_preview( $media_id, $uploader_id, $user_id, $is_image );
+	$preview_url    = $resolved['preview_url'];
+	$is_watermarked = $resolved['is_watermarked'];
 }
 
 // When watermarked, the watermark replaces the blur/heavy overlay as the

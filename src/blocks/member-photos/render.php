@@ -180,8 +180,8 @@ if ( $mvs_member_user_obj ) {
 					<a href="<?php echo esc_url( $mvs_member_profile_url ); ?>"><?php echo esc_html( $mvs_member_user_obj->display_name ); ?></a>
 				</h2>
 
-				<?php if ( $mvs_member_user_obj->user_login && $mvs_member_user_obj->user_login !== $mvs_member_user_obj->display_name ) : ?>
-					<p class="mvs-member-photos-card__handle">@<?php echo esc_html( $mvs_member_user_obj->user_login ); ?></p>
+				<?php if ( $mvs_member_user_obj->user_nicename && $mvs_member_user_obj->user_nicename !== $mvs_member_user_obj->display_name ) : ?>
+					<p class="mvs-member-photos-card__handle">@<?php echo esc_html( $mvs_member_user_obj->user_nicename ); ?></p>
 				<?php endif; ?>
 
 				<?php if ( ! empty( $mvs_member_user_obj->description ) ) : ?>

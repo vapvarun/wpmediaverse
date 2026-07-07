@@ -315,12 +315,30 @@ class TemplateLoader {
 		// Check privacy.
 		$can_view = $this->can_view_media( $media );
 		if ( ! $can_view ) {
-			self::render_branded_404( 'media', $slug );
-			return;
+			// Denied viewers still get the page when a watermarked teaser (or the
+			// plain blurred fallback) is available for this media — same
+			// gated-teaser contract the lock-overlay block already honors. Only a
+			// truly preview-less denial (video/audio, watermarking off, no active
+			// rules) 404s, matching the current behavior for those cases.
+			$is_image = 'image' === ( $media['media_type'] ?? '' );
+			$preview  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->resolve_watermark_preview(
+				(int) $media['media_id'],
+				(int) ( $media['post_author'] ?? 0 ),
+				get_current_user_id(),
+				$is_image
+			);
+
+			if ( '' === $preview['preview_url'] ) {
+				self::render_branded_404( 'media', $slug );
+				return;
+			}
 		}
 
-		// Set globals for the template.
-		$GLOBALS['mvs_current_media'] = $media;
+		// Set globals for the template. mvs_media_can_view tells the template
+		// whether to render full content or the restricted teaser (set false only
+		// when the branch above found a preview for a denied viewer).
+		$GLOBALS['mvs_current_media']  = $media;
+		$GLOBALS['mvs_media_can_view'] = $can_view;
 
 		// Set page title.
 		add_filter(
@@ -416,7 +434,18 @@ class TemplateLoader {
 	 * @param string $username Username (without @).
 	 */
 	private function serve_user_profile( string $username ): void {
-		$user = get_user_by( 'login', sanitize_user( $username ) );
+		// Canonical: new links are nicename-based (see TemplateHelpers::
+		// get_user_profile_url()). sanitize_title() matches how WP derives/stores
+		// user_nicename, so this is an exact-match lookup, not a fuzzy one.
+		$user = get_user_by( 'slug', sanitize_title( $username ) );
+
+		// Back-compat: pre-fix URLs (bookmarks, shared links, search-engine index,
+		// emails already sent) were login-based. Keep resolving them so existing
+		// links never 404. sanitize_user() mirrors the original lookup exactly.
+		if ( ! $user ) {
+			$user = get_user_by( 'login', sanitize_user( $username, true ) );
+		}
+
 		if ( ! $user ) {
 			self::render_branded_404( 'profile', $username );
 			return;

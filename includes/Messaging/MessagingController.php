@@ -595,9 +595,17 @@ class MessagingController extends WP_REST_Controller {
 		);
 
 		if ( ! $result['success'] ) {
+			// New reason codes now reachable here because send_message() re-checks
+			// can_message() on every send (Basecamp #10053143680), not just at
+			// conversation creation — see MessagingService::send_message().
 			$status_map = array(
-				'not_participant' => 403,
-				'rate_limited'    => 429,
+				'not_participant'        => 403,
+				'rate_limited'           => 429,
+				'dms_disabled'           => 403,
+				'blocked'                => 403,
+				'account_too_new'        => 403,
+				'mutual_follow_required' => 403,
+				'cannot_message_self'    => 400,
 			);
 			$status     = $status_map[ $result['error'] ] ?? 400;
 			return new WP_REST_Response(
