@@ -171,13 +171,17 @@ $mvs_show_fab = $mvs_is_logged_in && (
 							<div class="mvs-modal-field">
 								<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTags" data-wp-bind--value="state.uploadModalTags" />
 							</div>
-							<div class="mvs-modal-field" data-wp-bind--hidden="!state.hasUserAlbums">
-								<select class="mvs-modal-album-select" data-wp-on--change="actions.updateUploadAlbum" aria-label="<?php esc_attr_e( 'Add to album', 'wpmediaverse' ); ?>">
+							<div class="mvs-modal-field">
+								<select class="mvs-modal-album-select" data-wp-on--change="actions.updateUploadAlbum" data-wp-bind--value="state.uploadModalAlbum" aria-label="<?php esc_attr_e( 'Add to album', 'wpmediaverse' ); ?>">
 									<option value="0"><?php esc_html_e( 'Add to album (optional)', 'wpmediaverse' ); ?></option>
+									<option value="-1"><?php esc_html_e( '+ Create new album…', 'wpmediaverse' ); ?></option>
 									<template data-wp-each="state.userAlbums">
 										<option data-wp-bind--value="context.item.id" data-wp-text="context.item.title"></option>
 									</template>
 								</select>
+							</div>
+							<div class="mvs-modal-field" data-wp-bind--hidden="!state.isCreatingNewAlbum">
+								<input type="text" placeholder="<?php esc_attr_e( 'New album name', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'New album name', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateNewAlbumName" data-wp-bind--value="state.uploadModalNewAlbumName" />
 							</div>
 							<div class="mvs-tag-pills" data-wp-bind--hidden="!state.popularTagsLoaded" role="group" aria-label="<?php esc_attr_e( 'Popular tags', 'wpmediaverse' ); ?>">
 								<span class="mvs-tag-pills__label"><?php esc_html_e( 'Popular tags:', 'wpmediaverse' ); ?></span>

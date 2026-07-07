@@ -79,13 +79,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalAlbumTitle: '',
 		uploadModalAlbumDescription: '',
 		uploadModalMediaGroup: null,
-		uploadModalAlbum: 0, // chosen existing album id (Add to album), 0 = none
+		uploadModalAlbum: 0, // chosen album: 0 = none, -1 = create new, >0 = existing id
+		uploadModalNewAlbumName: '', // typed name when "Create new album" is chosen
 		userAlbums: [], // [{ id, title }] for the "Add to album" select
 		get hideUploadMetaFields() {
 			return state.uploadModalUploading;
 		},
 		get hasUserAlbums() {
 			return Array.isArray( state.userAlbums ) && state.userAlbums.length > 0;
+		},
+		get isCreatingNewAlbum() {
+			// "Create new album" chosen in the "Add to album" select (value -1).
+			return state.uploadModalAlbum === -1;
 		},
 		get hideAlbumCoverHint() {
 			return state.uploadModalMode !== 'album' || state.uploadModalUploading || ! state.hasFiles;
@@ -466,6 +471,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalAlbumDescription = '';
 			state.uploadModalMediaGroup = null;
 			state.uploadModalAlbum = 0;
+			state.uploadModalNewAlbumName = '';
 			document.body.style.overflow = 'hidden';
 			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
 			actions.loadUserAlbums(); // fire-and-forget; "Add to album" options.
@@ -486,6 +492,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDuplicates = 0;
 			state.uploadModalLastDuplicateId = 0;
 			state.uploadModalLastError = '';
+			state.uploadModalAlbum = 0;
+			state.uploadModalNewAlbumName = '';
 			document.body.style.overflow = '';
 		},
 		// --- Edit Media modal actions ---
@@ -893,7 +901,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalPrivacy = event.target.value;
 		},
 		updateUploadAlbum( event ) {
-			state.uploadModalAlbum = parseInt( event.target.value, 10 ) || 0;
+			// -1 = "Create new album", 0 = none, >0 = existing album id.
+			const val = parseInt( event.target.value, 10 );
+			state.uploadModalAlbum = Number.isNaN( val ) ? 0 : val;
+			if ( state.uploadModalAlbum !== -1 ) {
+				state.uploadModalNewAlbumName = '';
+			}
+		},
+		updateNewAlbumName( event ) {
+			state.uploadModalNewAlbumName = event.target.value;
 		},
 		async loadUserAlbums() {
 			const ctx = getContext();
@@ -960,6 +976,24 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					}, 800 );
 					return;
 				}
+			}
+
+			// "Create new album" chosen in the Add-to-album select: create it up
+			// front via the shared validate-name + POST helper so an invalid name
+			// aborts before any file is uploaded. Reuse the _pendingAlbumId path
+			// below to attach the uploads and set the cover.
+			if ( state.uploadModalAlbum === -1 ) {
+				const newAlbum = await window.mvsRest.createAlbum(
+					state.uploadModalNewAlbumName,
+					{ privacy: state.uploadModalPrivacy }
+				);
+				if ( ! newAlbum.ok ) {
+					actions.showToast( newAlbum.message, 'error' );
+					state.uploadModalUploading = false;
+					return;
+				}
+				state._pendingAlbumId = newAlbum.data.id;
+				state.uploadModalAlbum = 0; // consumed — skip the existing-album attach branch
 			}
 
 			const uploadedMediaIds = [];
