@@ -193,6 +193,7 @@ class Activator {
 			'mvs_ai_monthly_budget'   => 10,
 			// Watermark (Pro controls the UI; free seeds defaults).
 			'mvs_watermark_enabled'   => false,
+			'mvs_watermark_apply'     => 'all',
 			'mvs_watermark_type'      => 'text',
 			'mvs_watermark_text'      => get_bloginfo( 'name' ),
 			'mvs_watermark_image_id'  => 0,

@@ -111,9 +111,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * - `thumb_large` / `thumb_medium` / `thumb_thumb` — signed thumbnail URLs
 	 *   via `SignedUrlService::generate_thumbnail` (skip-privacy at sign time;
 	 *   serve endpoint re-applies access control).
-	 * - `watermark_url` — signed watermark URL (size=watermark variant) for
-	 *   the Pro-generated preview file. Returns empty string when no
-	 *   watermark has been generated yet.
 	 *
 	 * Every caller (REST controllers, templates, BP integration, blocks)
 	 * automatically receives token-bearing URLs that flow through the gated
@@ -135,10 +132,6 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		if ( isset( self::$thumb_size_map[ $key ] ) ) {
 			return $this->sign_thumbnail_url( $media_id, self::$thumb_size_map[ $key ] );
-		}
-
-		if ( 'watermark_url' === $key ) {
-			return $this->sign_watermark_url( $media_id );
 		}
 
 		return $this->get_raw( $media_id, $key );
@@ -569,35 +562,6 @@ class MediaRepository implements MediaRepositoryInterface {
 			return '';
 		}
 		$url = $signed->generate( $media_id, get_current_user_id() );
-		return is_string( $url ) ? $url : '';
-	}
-
-	/**
-	 * Sign the watermark URL for a media item via SignedUrlService.
-	 *
-	 * Returns empty string when no watermark has been generated yet —
-	 * `watermark_url` meta is the cache marker. Skip-privacy at sign time
-	 * is correct because the watermark is the degraded preview shown to
-	 * viewers WITHOUT access to the original; the serve endpoint validates
-	 * the HMAC signature regardless.
-	 *
-	 * @param int $media_id Media ID.
-	 * @return string Signed URL or empty string.
-	 */
-	private function sign_watermark_url( int $media_id ): string {
-		if ( $media_id <= 0 ) {
-			return '';
-		}
-		// Cache marker — Pro's Watermarker writes the raw URL into meta only
-		// after generating the preview file. No meta = no file to serve.
-		if ( ! $this->get_raw( $media_id, 'watermark_url' ) ) {
-			return '';
-		}
-		$signed = $this->signed_urls_service();
-		if ( ! $signed ) {
-			return '';
-		}
-		$url = $signed->generate_thumbnail( $media_id, get_current_user_id(), 'watermark', 0, true );
 		return is_string( $url ) ? $url : '';
 	}
 

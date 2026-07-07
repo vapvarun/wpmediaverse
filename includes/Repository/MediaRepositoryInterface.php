@@ -29,9 +29,9 @@ interface MediaRepositoryInterface {
 	/**
 	 * Get a single field for a media item.
 	 *
-	 * URL fields (`file_url`, `thumb_large`/`thumb_medium`/`thumb_thumb`,
-	 * `watermark_url`) are always returned as signed URLs. Internal callers
-	 * that need the raw stored value MUST use `get_raw()`.
+	 * URL fields (`file_url`, `thumb_large`/`thumb_medium`/`thumb_thumb`) are
+	 * always returned as signed URLs. Internal callers that need the raw stored
+	 * value MUST use `get_raw()`.
 	 *
 	 * @param int    $media_id Media ID.
 	 * @param string $key      Field name.

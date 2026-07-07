@@ -1211,45 +1211,4 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		return $html;
 	}
 
-	/**
-	 * Resolve the teaser image + watermark flag to show a DENIED viewer for a
-	 * gated media item. Single source of truth for lock-overlay + single-media —
-	 * do not re-derive this decision at any new call site.
-	 *
-	 * Precondition: caller has already confirmed the viewer does NOT have access
-	 * (PrivacyService::can_view() === false). For image media, tries the
-	 * watermarked preview first (WatermarkService::get_preview_url(), gated by
-	 * is_enabled() + the mvs_apply_watermark_preview role filter, matching
-	 * lock-overlay's contract exactly); falls back to the plain blurred thumbnail
-	 * (MediaUrl::thumb()) when watermarking is off/ineligible/non-image.
-	 *
-	 * @param int  $media_id    Media ID.
-	 * @param int  $uploader_id Author/uploader of the media (role-targeting filter).
-	 * @param int  $user_id     Current viewer id (0 = logged out).
-	 * @param bool $is_image    Whether the media's type is 'image'.
-	 * @return array{preview_url: string, is_watermarked: bool}
-	 */
-	public function resolve_watermark_preview( int $media_id, int $uploader_id, int $user_id, bool $is_image ): array {
-		$preview_url    = \WPMediaVerse\Core\MediaUrl::thumb( $media_id, 'large', 0, $user_id );
-		$is_watermarked = false;
-
-		if ( $is_image ) {
-			$watermark       = \WPMediaVerse\Core\Plugin::container()->get( 'watermark' );
-			$apply_watermark = $watermark->is_enabled()
-				&& (bool) apply_filters( 'mvs_apply_watermark_preview', true, $media_id, $uploader_id, $user_id );
-
-			if ( $apply_watermark ) {
-				$watermarked_preview = $watermark->get_preview_url( $media_id );
-				if ( '' !== $watermarked_preview ) {
-					$preview_url    = $watermarked_preview;
-					$is_watermarked = true;
-				}
-			}
-		}
-
-		return array(
-			'preview_url'    => $preview_url,
-			'is_watermarked' => $is_watermarked,
-		);
-	}
 }

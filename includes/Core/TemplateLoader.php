@@ -312,33 +312,17 @@ class TemplateLoader {
 			exit;
 		}
 
-		// Check privacy.
+		// Check privacy. Denied viewers get the branded 404 — media privacy is
+		// enforced here, not softened into a teaser.
 		$can_view = $this->can_view_media( $media );
 		if ( ! $can_view ) {
-			// Denied viewers still get the page when a watermarked teaser (or the
-			// plain blurred fallback) is available for this media — same
-			// gated-teaser contract the lock-overlay block already honors. Only a
-			// truly preview-less denial (video/audio, watermarking off, no active
-			// rules) 404s, matching the current behavior for those cases.
-			$is_image = 'image' === ( $media['media_type'] ?? '' );
-			$preview  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->resolve_watermark_preview(
-				(int) $media['media_id'],
-				(int) ( $media['post_author'] ?? 0 ),
-				get_current_user_id(),
-				$is_image
-			);
-
-			if ( '' === $preview['preview_url'] ) {
-				self::render_branded_404( 'media', $slug );
-				return;
-			}
+			self::render_branded_404( 'media', $slug );
+			return;
 		}
 
-		// Set globals for the template. mvs_media_can_view tells the template
-		// whether to render full content or the restricted teaser (set false only
-		// when the branch above found a preview for a denied viewer).
+		// Set globals for the template.
 		$GLOBALS['mvs_current_media']  = $media;
-		$GLOBALS['mvs_media_can_view'] = $can_view;
+		$GLOBALS['mvs_media_can_view'] = true;
 
 		// Set page title.
 		add_filter(

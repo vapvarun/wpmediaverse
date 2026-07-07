@@ -149,16 +149,4 @@ interface TemplateHelpersInterface {
 	 * @return string Escaped HTML.
 	 */
 	public function render_admin_empty_state( array $args = array() ): string;
-
-	/**
-	 * Resolve the teaser image + watermark flag to show a DENIED viewer for a
-	 * gated media item. Single source of truth for lock-overlay + single-media.
-	 *
-	 * @param int  $media_id    Media ID.
-	 * @param int  $uploader_id Author/uploader of the media (role-targeting filter).
-	 * @param int  $user_id     Current viewer id (0 = logged out).
-	 * @param bool $is_image    Whether the media's type is 'image'.
-	 * @return array{preview_url: string, is_watermarked: bool}
-	 */
-	public function resolve_watermark_preview( int $media_id, int $uploader_id, int $user_id, bool $is_image ): array;
 }

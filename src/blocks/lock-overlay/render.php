@@ -40,30 +40,11 @@ $is_image    = 0 === strpos( (string) $file_type, 'image/' );
 // checks can_view() and returns '' when denied.
 $file_url    = \WPMediaVerse\Core\MediaUrl::file( $media_id, $user_id );
 
-// Locked-user teaser. Default: the standard thumbnail shown CSS-blurred. When
-// watermarking is enabled and a watermarked preview exists for this gated image,
-// show THAT instead and drop the blur — the watermark is the intended
-// protection for a gated teaser, and blurring it would defeat the purpose. This
-// is the render-side consumer of WatermarkService's preview (the same image the
-// REST response exposes as preview_url / watermarked). Resolution logic lives
-// in TemplateHelpers::resolve_watermark_preview() — the single source of truth
-// shared with templates/media-single.php; do not re-derive it here.
-$preview_url    = \WPMediaVerse\Core\MediaUrl::thumb( $media_id, 'large', 0, $user_id );
-$is_watermarked = false;
-if ( ! $has_access && $is_image ) {
-	$uploader_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'post_author' );
-
-	$resolved       = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )
-		->resolve_watermark_preview( $media_id, $uploader_id, $user_id, $is_image );
-	$preview_url    = $resolved['preview_url'];
-	$is_watermarked = $resolved['is_watermarked'];
-}
-
-// When watermarked, the watermark replaces the blur/heavy overlay as the
-// protection, so show the image clearly (no blur, light overlay so the mark
-// stays visible); otherwise keep the configured blur + overlay teaser.
-$lock_blur    = $is_watermarked ? 0 : absint( $blur_amount );
-$lock_opacity = ( $is_watermarked ? min( absint( $overlay_opacity ), 20 ) : absint( $overlay_opacity ) ) / 100;
+// Locked-user teaser: the standard thumbnail, shown CSS-blurred behind the
+// configured overlay.
+$preview_url  = \WPMediaVerse\Core\MediaUrl::thumb( $media_id, 'large', 0, $user_id );
+$lock_blur    = absint( $blur_amount );
+$lock_opacity = absint( $overlay_opacity ) / 100;
 $mvs_block_uid = ! empty( $attributes['uniqueId'] ) ? $attributes['uniqueId'] : '';
 \WPMediaVerse\Blocks\MVS_CSS::add( $mvs_block_uid, $attributes );
 $mvs_classes = trim(
@@ -121,7 +102,7 @@ $permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->
 			<?php endif; ?>
 		</div>
 	<?php else : ?>
-		<div class="mvs-lock-overlay-content mvs-lock-overlay-locked<?php echo $is_watermarked ? ' is-watermarked' : ''; ?>" style="--mvs-blur: <?php echo (int) $lock_blur; ?>px; --mvs-overlay-opacity: <?php echo esc_attr( (string) $lock_opacity ); ?>">
+		<div class="mvs-lock-overlay-content mvs-lock-overlay-locked" style="--mvs-blur: <?php echo (int) $lock_blur; ?>px; --mvs-overlay-opacity: <?php echo esc_attr( (string) $lock_opacity ); ?>">
 			<div class="mvs-lock-overlay-preview">
 				<?php if ( $is_image && $preview_url ) : ?>
 					<img src="<?php echo esc_url( $preview_url ); ?>" alt="" loading="lazy" aria-hidden="true" />
