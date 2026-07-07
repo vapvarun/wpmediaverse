@@ -304,6 +304,7 @@ class FollowController extends WP_REST_Controller {
 				'id'           => $uid,
 				'name'         => $user->display_name,
 				'avatar'       => get_avatar_url( $uid, array( 'size' => 96 ) ),
+				'profile_url'  => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $uid ),
 				'is_following' => isset( $following_map[ $uid ] ),
 			);
 		}

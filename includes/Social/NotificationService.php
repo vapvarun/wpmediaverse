@@ -421,9 +421,10 @@ class NotificationService {
 			'message'    => $rendered['message'],
 			'url'        => $rendered['link'],
 			'actor'      => array(
-				'id'     => (int) $row->actor_id,
-				'name'   => $actor_name,
-				'avatar' => get_avatar_url( (int) $row->actor_id, array( 'size' => 48 ) ),
+				'id'          => (int) $row->actor_id,
+				'name'        => $actor_name,
+				'avatar'      => get_avatar_url( (int) $row->actor_id, array( 'size' => 48 ) ),
+				'profile_url' => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $row->actor_id ),
 			),
 			'media_id'   => (int) $row->media_id,
 			'comment_id' => (int) $row->comment_id,

@@ -194,6 +194,7 @@ class UserController extends WP_REST_Controller {
 			'name'         => $user->display_name,
 			'bio'          => $user->description,
 			'avatar'       => get_avatar_url( $user_id, array( 'size' => 150 ) ),
+			'profile_url'  => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $user_id ),
 			'media_count'  => $media_count,
 			'followers'    => $counts['followers'],
 			'following'    => $counts['following'],

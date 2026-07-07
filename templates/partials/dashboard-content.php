@@ -115,10 +115,25 @@ wp_enqueue_style( 'mvs-frontend' );
 	<!-- Profile Header -->
 	<div class="mvs-dashboard-profile-header">
 		<div class="mvs-dashboard-profile-view" data-wp-bind--hidden="context.editingProfile">
+			<?php
+			// Platform-agnostic profile URL (BP / BuddyNext override via filter) so
+			// the header avatar + name route to the integration's profile.
+			$mvs_dash_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_current_user->ID );
+			?>
+			<?php if ( $mvs_dash_profile_url ) : ?>
+			<a class="mvs-dashboard-profile-avatar-link" href="<?php echo esc_url( $mvs_dash_profile_url ); ?>"><img class="mvs-dashboard-profile-avatar" data-wp-bind--src="context.avatarUrl" alt="" data-wp-bind--alt="context.displayName" width="64" height="64" /></a>
+			<?php else : ?>
 			<img class="mvs-dashboard-profile-avatar" data-wp-bind--src="context.avatarUrl"
 				alt="" data-wp-bind--alt="context.displayName" width="64" height="64" />
+			<?php endif; ?>
 			<div class="mvs-dashboard-profile-info">
-				<h2 class="mvs-dashboard-profile-name" data-wp-text="context.displayName"></h2>
+				<h2 class="mvs-dashboard-profile-name">
+					<?php if ( $mvs_dash_profile_url ) : ?>
+					<a href="<?php echo esc_url( $mvs_dash_profile_url ); ?>" data-wp-text="context.displayName"></a>
+					<?php else : ?>
+					<span data-wp-text="context.displayName"></span>
+					<?php endif; ?>
+				</h2>
 				<p class="mvs-dashboard-profile-bio" data-wp-bind--hidden="!context.bio"
 					data-wp-text="context.bio"></p>
 			</div>

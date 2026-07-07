@@ -153,14 +153,21 @@ $mvs_archive_url = home_url( '/media/' );
 		<header class="mvs-media-header">
 			<div class="mvs-media-header-row">
 				<div class="mvs-media-author-info">
-					<?php echo get_avatar( $mvs_author_id, 40, '', '', array( 'class' => 'mvs-media-author-avatar' ) ); ?>
-					<div class="mvs-media-author-text">
-						<?php
-						// Platform-agnostic profile URL (BP / BuddyNext override via filter).
-						$mvs_author_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_author_id );
+					<?php
+					// Platform-agnostic profile URL (BP / BuddyNext override via filter).
+					// Both the avatar and the name link through it so an integration
+					// (BuddyNext) can route the whole author affordance to its profile.
+					$mvs_author_url    = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_author_id );
+					$mvs_author_avatar = get_avatar( $mvs_author_id, 40, '', '', array( 'class' => 'mvs-media-author-avatar' ) );
 
-						if ( $mvs_author_url ) :
-							?>
+					if ( $mvs_author_url ) :
+						?>
+					<a href="<?php echo esc_url( $mvs_author_url ); ?>" class="mvs-media-author-avatar-link"><?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?></a>
+					<?php else : ?>
+					<?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?>
+					<?php endif; ?>
+					<div class="mvs-media-author-text">
+						<?php if ( $mvs_author_url ) : ?>
 					<a href="<?php echo esc_url( $mvs_author_url ); ?>" class="mvs-media-author-name">
 							<?php echo wp_kses_post( $mvs_author_name ); ?>
 					</a>

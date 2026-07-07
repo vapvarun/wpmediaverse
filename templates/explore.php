@@ -105,12 +105,27 @@ $mvs_archive_url = home_url( '/media/' );
 			$mvs_dashboard_link = $mvs_dash_page ? get_permalink( $mvs_dash_page ) : home_url( '/' );
 		}
 		?>
+	<?php
+	// Platform-agnostic profile URL (BP / BuddyNext override via filter) so the
+	// header avatar + name can route to the integration's profile.
+	$mvs_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_profile->ID );
+	?>
 	<div class="mvs-profile-header-card">
+		<?php if ( $mvs_profile_url ) : ?>
+		<a class="mvs-profile-header-avatar-link" href="<?php echo esc_url( $mvs_profile_url ); ?>"><img class="mvs-profile-header-avatar" src="<?php echo esc_url( get_avatar_url( $mvs_profile->ID, array( 'size' => 96 ) ) ); ?>" alt="<?php echo esc_attr( $mvs_profile->display_name ); ?>" width="96" height="96" /></a>
+		<?php else : ?>
 		<img class="mvs-profile-header-avatar" src="<?php echo esc_url( get_avatar_url( $mvs_profile->ID, array( 'size' => 96 ) ) ); ?>"
 			alt="<?php echo esc_attr( $mvs_profile->display_name ); ?>" width="96" height="96" />
+		<?php endif; ?>
 		<div class="mvs-profile-header-info">
 			<div class="mvs-profile-header-top">
-				<h2 class="mvs-profile-header-name"><?php echo esc_html( $mvs_profile->display_name ); ?></h2>
+				<h2 class="mvs-profile-header-name"><?php
+				if ( $mvs_profile_url ) {
+					printf( '<a href="%s">%s</a>', esc_url( $mvs_profile_url ), esc_html( $mvs_profile->display_name ) );
+				} else {
+					echo esc_html( $mvs_profile->display_name );
+				}
+				?></h2>
 				<?php if ( $mvs_is_own_profile ) : ?>
 					<a class="mvs-btn mvs-btn--secondary mvs-btn--small" href="<?php echo esc_url( $mvs_dashboard_link ); ?>">
 						<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>

@@ -67,17 +67,17 @@ include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 				<h1 class="mvs-collection-card-title"><?php the_title(); ?></h1>
 				<div class="mvs-collection-card-meta">
 					<span class="mvs-collection-meta-author">
-						<?php echo get_avatar( get_the_author_meta( 'ID' ), 24, '', '', array( 'class' => 'mvs-collection-avatar' ) ); ?>
 						<?php
 						$mvs_author_id  = (int) get_the_author_meta( 'ID' );
 						// Platform-agnostic profile URL (BP / BuddyNext override via filter).
-						$mvs_author_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $mvs_author_id );
+						$mvs_author_url    = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $mvs_author_id );
+						$mvs_author_avatar = get_avatar( $mvs_author_id, 24, '', '', array( 'class' => 'mvs-collection-avatar' ) );
 
 						if ( $mvs_author_url ) :
 							?>
-						<a href="<?php echo esc_url( $mvs_author_url ); ?>"><?php echo esc_html( get_the_author() ); ?></a>
+						<a href="<?php echo esc_url( $mvs_author_url ); ?>" class="mvs-collection-author-link"><?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?><?php echo esc_html( get_the_author() ); ?></a>
 						<?php else : ?>
-						<span><?php echo esc_html( get_the_author() ); ?></span>
+						<?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?><span><?php echo esc_html( get_the_author() ); ?></span>
 						<?php endif; ?>
 					</span>
 					<span class="mvs-collection-meta-text">

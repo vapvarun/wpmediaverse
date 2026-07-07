@@ -304,9 +304,10 @@ class ReportController extends WP_REST_Controller {
 			$user = get_userdata( $uid );
 			if ( $user ) {
 				$users[] = array(
-					'id'     => $uid,
-					'name'   => $user->display_name,
-					'avatar' => get_avatar_url( $uid, array( 'size' => 48 ) ),
+					'id'          => $uid,
+					'name'        => $user->display_name,
+					'avatar'      => get_avatar_url( $uid, array( 'size' => 48 ) ),
+					'profile_url' => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $uid ),
 				);
 			}
 		}

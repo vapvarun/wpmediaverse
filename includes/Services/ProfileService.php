@@ -95,6 +95,7 @@ class ProfileService {
 			'bio'               => $user->description,
 			'avatar'            => get_avatar_url( $user_id, array( 'size' => 150 ) ),
 			'has_custom_avatar' => $this->has_custom_avatar( $user_id ),
+			'profile_url'       => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $user_id ),
 		);
 
 		// User-level privacy settings (fall back to the site-wide option, then
@@ -399,17 +400,36 @@ class ProfileService {
 			return $args;
 		}
 
-		$attachment_id = $this->get_custom_avatar_id( $user_id );
+		$size = ! empty( $args['size'] ) ? (int) $args['size'] : 96;
 
-		if ( ! $attachment_id ) {
-			return $args;
+		$attachment_id = $this->get_custom_avatar_id( $user_id );
+		if ( $attachment_id ) {
+			$url = $this->get_custom_avatar_url( $user_id, $size );
+			if ( $url ) {
+				$args['url']          = $url;
+				$args['found_avatar'] = true;
+			}
 		}
 
-		$size = ! empty( $args['size'] ) ? (int) $args['size'] : 96;
-		$url  = $this->get_custom_avatar_url( $user_id, $size );
-
-		if ( $url ) {
-			$args['url']          = $url;
+		/**
+		 * MV-scoped avatar seam. Because every get_avatar()/get_avatar_url()
+		 * call passes through pre_get_avatar_data, hooking this one filter
+		 * lets BuddyNext (or any integration) override the avatar image for a
+		 * user everywhere MediaVerse renders it — templates, blocks, and REST
+		 * payloads alike — without touching each call site.
+		 *
+		 * @param string $url     Current avatar URL (custom or core).
+		 * @param int    $user_id Resolved user ID.
+		 * @param int    $size    Requested avatar size in px.
+		 */
+		$filtered = (string) apply_filters(
+			'mvs_user_avatar_url',
+			isset( $args['url'] ) ? (string) $args['url'] : '',
+			$user_id,
+			$size
+		);
+		if ( '' !== $filtered ) {
+			$args['url']          = $filtered;
 			$args['found_avatar'] = true;
 		}
 
@@ -435,8 +455,13 @@ class ProfileService {
 
 		$size       = ! empty( $args['size'] ) ? (int) $args['size'] : 96;
 		$custom_url = $this->get_custom_avatar_url( $user_id, $size );
+		if ( $custom_url ) {
+			$url = $custom_url;
+		}
 
-		return $custom_url ? $custom_url : $url;
+		// Same MV-scoped avatar seam as filter_avatar_data(), applied on the
+		// direct get_avatar_url filter so BuddyNext wins on both code paths.
+		return (string) apply_filters( 'mvs_user_avatar_url', $url, $user_id, $size );
 	}
 
 	/**

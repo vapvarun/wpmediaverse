@@ -569,6 +569,7 @@ class MessagingService {
 				'role'         => isset( $row->role ) ? (string) $row->role : 'member',
 				'display_name' => $user->display_name,
 				'avatar_url'   => get_avatar_url( $row->user_id, array( 'size' => 96 ) ),
+				'profile_url'  => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $row->user_id ),
 				'status'       => $row->status,
 				'last_read_at' => $row->last_read_at,
 				'is_online'    => $this->is_user_online( (int) $row->user_id ),
@@ -1460,8 +1461,9 @@ class MessagingService {
 			// Add sender info.
 			$sender = get_userdata( (int) $msg->sender_id );
 			if ( $sender ) {
-				$msg->sender_name   = $sender->display_name;
-				$msg->sender_avatar = get_avatar_url( $msg->sender_id, array( 'size' => 64 ) );
+				$msg->sender_name        = $sender->display_name;
+				$msg->sender_avatar      = get_avatar_url( $msg->sender_id, array( 'size' => 64 ) );
+				$msg->sender_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $msg->sender_id );
 			}
 
 			// Attachment / media-share payloads are never shipped for deleted
@@ -2159,8 +2161,9 @@ class MessagingService {
 			}
 			$sender = get_userdata( (int) $msg->sender_id );
 			if ( $sender ) {
-				$msg->sender_name   = $sender->display_name;
-				$msg->sender_avatar = get_avatar_url( $msg->sender_id, array( 'size' => 64 ) );
+				$msg->sender_name        = $sender->display_name;
+				$msg->sender_avatar      = get_avatar_url( $msg->sender_id, array( 'size' => 64 ) );
+				$msg->sender_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $msg->sender_id );
 			}
 			if ( $msg->metadata ) {
 				$msg->metadata = json_decode( $msg->metadata, true );
