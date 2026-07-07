@@ -2,14 +2,20 @@
 /**
  * Access Rules mini-page template.
  *
+ * @deprecated 2.0.0 The admin access-rules UX was retired in 2.0.0 — members get
+ * simple Facebook-style privacy only and the site owner uses standard privacy, so
+ * no surface creates NEW per-media rules. This file is now ORPHANED dead code: the
+ * `MediaListPage::render_access()` / `handle_access_rule_actions()` methods that
+ * loaded it were removed, and nothing `require`s it. Kept in place pending a
+ * deprecation-tracked cleanup of the whole access-rules backend across a later
+ * major (Production Rule #1/#5). ENFORCEMENT is unaffected — `AccessRulesService`
+ * still gates any rules already stored, driven by REST (read/`/access/options`)
+ * and WP-CLI; only the create/manage UI is gone.
+ *
  * Renders the per-media access-rule management surface: the current rules for a
  * media item plus a form to add another (role / group membership / capability).
- *
- * Loaded by {@see \WPMediaVerse\Admin\MediaListPage::render_access()} via
- * `require` after that method has prepared and escaped the data. Writes are
- * handled server-side in MediaListPage::handle_access_rule_actions() (own cap +
- * nonce). This file is pure presentation per Coding Rule #4 (Admin HTML lives in
- * template files, never inline echo in PHP classes).
+ * This file is pure presentation per Coding Rule #4 (Admin HTML lives in template
+ * files, never inline echo in PHP classes).
  *
  * @package WPMediaVerse
  *
