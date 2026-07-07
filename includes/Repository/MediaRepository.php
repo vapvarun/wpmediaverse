@@ -471,6 +471,57 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Signed, viewer-aware URL for the FULL / original media file.
+	 *
+	 * The counterpart to get_thumbnail_url_for_viewer() for the original file
+	 * rather than a thumbnail size. Non-public media (Members / Friends / Only Me)
+	 * has no anonymous broadcast URL, so a caller that needs to DISPLAY the full
+	 * media to an authorized viewer — a lightbox, a single-media stage — had no
+	 * URL to render and showed a broken slot. Privacy is enforced at sign time
+	 * (SignedUrlService::generate() returns false unless PrivacyService::can_view(
+	 * $media_id, $viewer_id )) and re-verified per request by the /serve endpoint,
+	 * so the minted URL is never a bearer token past a privacy downgrade.
+	 *
+	 * For public media on a cloud driver this returns the direct CDN URL (same as
+	 * the broadcast path); for local/non-public media it returns the gated /serve
+	 * URL. Returns '' when the viewer may not view the media.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int      $media_id  Media ID.
+	 * @param int|null $viewer_id Viewer to authorize against. Null = current user.
+	 * @return string Signed URL when the viewer may view the media, else ''.
+	 */
+	public function get_url_for_viewer( int $media_id, ?int $viewer_id = null ): string {
+		if ( $media_id <= 0 ) {
+			return '';
+		}
+		$signed = $this->signed_urls_service();
+		if ( ! $signed ) {
+			return '';
+		}
+		$viewer_id = ( null === $viewer_id ) ? get_current_user_id() : (int) $viewer_id;
+		/**
+		 * Filter the viewer-aware full-file URL TTL (seconds). Default 1 hour; the
+		 * /serve endpoint re-checks privacy per request, so this is only a cache
+		 * horizon, not a credential lifetime.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param int $ttl       TTL in seconds.
+		 * @param int $media_id  Media ID.
+		 * @param int $viewer_id Viewer the URL is minted for.
+		 */
+		$ttl = (int) apply_filters( 'mvs_viewer_url_ttl', HOUR_IN_SECONDS, $media_id, $viewer_id );
+		if ( $ttl <= 0 ) {
+			$ttl = HOUR_IN_SECONDS;
+		}
+		// $download = false — display URL; privacy is verified inside generate().
+		$url = $signed->generate( $media_id, $viewer_id, $ttl, false );
+		return is_string( $url ) ? $url : '';
+	}
+
+	/**
 	 * Resolve the absolute filesystem path for a media file.
 	 *
 	 * Internal API for callers that need to read the source file directly:
