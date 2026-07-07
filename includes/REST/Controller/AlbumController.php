@@ -256,15 +256,61 @@ class AlbumController extends WP_REST_Controller {
 			$args['meta_value'] = sanitize_text_field( $album_type ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 		}
 
-		$query   = new \WP_Query( $args );
-		$items   = array();
 		$user_id = get_current_user_id();
 
+		// Enforce privacy at the SQL level so the pagination totals
+		// (X-WP-Total / X-WP-TotalPages) reflect only the albums this viewer may
+		// see. The previous per-item can_view() filter ran AFTER the query, so
+		// found_posts over-reported and paginated visitors hit empty/short pages
+		// ("albums not visible to visitors", Basecamp 10071400189).
+		//
+		// Albums are CPTs; their privacy lives in mvs_media_index.privacy. LEFT
+		// JOIN it and reuse the one canonical privacy definition
+		// (MediaRepository::explore_privacy_clause) — same rule as every media
+		// list. Albums with no index row have no privacy set = public, matching
+		// PrivacyService's default. The per-item can_view() below stays as a
+		// defense-in-depth gate; the SQL set is a subset of it, so it never drops
+		// a counted row (totals stay accurate).
+		global $wpdb;
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		list( $priv_sql, $priv_params ) = $repo->explore_privacy_clause( 'mvidx', $user_id );
+		$priv_fragment = empty( $priv_params )
+			? $priv_sql
+			: $wpdb->prepare( $priv_sql, ...$priv_params ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		// The album's author is wp_posts.post_author — album index rows carry
+		// post_author = 0, so explore_privacy_clause's own-media check (which
+		// keys on mvidx.post_author) never matches an album. Add an owner OR on
+		// the post row so a logged-in viewer still sees THEIR OWN non-public
+		// albums in the list.
+		$owner_extra = $user_id
+			? $wpdb->prepare( " OR {$wpdb->posts}.post_author = %d", (int) $user_id ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			: '';
+
+		$join_cb = static function ( $join ) use ( $wpdb ) {
+			return $join . " LEFT JOIN {$wpdb->prefix}mvs_media_index mvidx ON mvidx.media_id = {$wpdb->posts}.ID ";
+		};
+		$where_cb = static function ( $where ) use ( $priv_fragment, $owner_extra ) {
+			return $where . " AND ( mvidx.media_id IS NULL OR ( {$priv_fragment}{$owner_extra} ) )";
+		};
+
+		add_filter( 'posts_join', $join_cb );
+		add_filter( 'posts_where', $where_cb );
+		$query = new \WP_Query( $args );
+		remove_filter( 'posts_join', $join_cb );
+		remove_filter( 'posts_where', $where_cb );
+
+		// Privacy is fully enforced by the SQL clause above (public / members /
+		// own via wp_posts.post_author; private/friends/group/custom are owner-
+		// only in the list, matching how media explore treats them). The old
+		// per-item can_view() re-check was REMOVED here on purpose: album index
+		// rows carry an unreliable post_author (0 or stale), so can_view() —
+		// which keys on the index author for indexed albums — wrongly dropped an
+		// owner's own non-public album, re-introducing the found_posts vs
+		// returned-count mismatch this fix exists to kill. wp_posts.post_author
+		// (used by the SQL clause) is the authoritative album author.
+		$items = array();
 		foreach ( $query->posts as $post ) {
-			// Privacy enforcement on album listing.
-			if ( ! $this->privacy->can_view( $post->ID, $user_id ) ) {
-				continue;
-			}
 			$items[] = $this->prepare_album_response( $post, true );
 		}
 
