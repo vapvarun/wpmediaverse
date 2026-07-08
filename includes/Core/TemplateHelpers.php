@@ -1286,4 +1286,70 @@ class TemplateHelpers implements TemplateHelpersInterface {
 
 		return $html;
 	}
+
+	/**
+	 * Seed PHP-translated strings for the mvs/media-social Interactivity store.
+	 *
+	 * The store (src/blocks/media-social/view.js) is a script MODULE, so
+	 * window.wp.i18n.__() is English-locked there (wp_set_script_translations()
+	 * can't reach a module). We inject the translated strings into interactivity
+	 * state; the store reads state.i18n.<key> with an English fallback. Called
+	 * before the first data-wp-interactive="mvs/media-social" root element in
+	 * media-single.php and album.php so the state is seeded during render.
+	 * Basecamp 10073528834.
+	 *
+	 * @return void
+	 */
+	public static function media_social_i18n_state(): void {
+		wp_interactivity_state(
+			'mvs/media-social',
+			array(
+				'i18n' => array(
+					// Reactions.
+					'loginToReact'         => __( 'Please log in to react.', 'wpmediaverse' ),
+					'reactionSaveFailed'   => __( 'Could not save reaction.', 'wpmediaverse' ),
+					'networkError'         => __( 'Network error.', 'wpmediaverse' ),
+					// Favorites.
+					'loginToFavorite'      => __( 'Please log in to favorite.', 'wpmediaverse' ),
+					'favoriteUpdateFailed' => __( 'Could not update favorite.', 'wpmediaverse' ),
+					// Comments.
+					'loginToComment'       => __( 'Please log in to comment.', 'wpmediaverse' ),
+					'commentPostFailed'    => __( 'Could not post comment.', 'wpmediaverse' ),
+					'commentUpdated'       => __( 'Comment updated.', 'wpmediaverse' ),
+					'editFailed'           => __( 'Edit failed.', 'wpmediaverse' ),
+					'deleteCommentConfirm' => __( 'Delete this comment?', 'wpmediaverse' ),
+					'commentDeleted'       => __( 'Comment deleted.', 'wpmediaverse' ),
+					// Share.
+					'shareCopied'          => __( '✓ Copied!', 'wpmediaverse' ),
+					'linkCopiedClipboard'  => __( 'Link copied to clipboard!', 'wpmediaverse' ),
+					'shareResetLabel'      => __( '🔗 Share', 'wpmediaverse' ),
+					'copyLinkFailed'       => __( 'Could not copy link. Please copy the URL manually.', 'wpmediaverse' ),
+					// Follow.
+					'followFailed'         => __( 'Follow action failed.', 'wpmediaverse' ),
+					// Owner edit.
+					'savedRedirecting'     => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
+					'albumSaved'           => __( 'Album saved!', 'wpmediaverse' ),
+					'saved'                => __( 'Saved!', 'wpmediaverse' ),
+					'saveFailed'           => __( 'Save failed.', 'wpmediaverse' ),
+					// Owner delete.
+					'deleteAlbumConfirm'   => __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' ),
+					'deleteMediaConfirm'   => __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' ),
+					'deleteAction'         => __( 'Delete', 'wpmediaverse' ),
+					// Report.
+					'loginToReport'        => __( 'Please log in to report content.', 'wpmediaverse' ),
+					'reasonSpam'           => __( 'Spam', 'wpmediaverse' ),
+					'reasonHarassment'     => __( 'Harassment', 'wpmediaverse' ),
+					'reasonNudity'         => __( 'Nudity or sexual content', 'wpmediaverse' ),
+					'reasonViolence'       => __( 'Violence or dangerous acts', 'wpmediaverse' ),
+					'reasonCopyright'      => __( 'Copyright infringement', 'wpmediaverse' ),
+					'reasonMisinformation' => __( 'Misinformation', 'wpmediaverse' ),
+					'reasonOther'          => __( 'Other', 'wpmediaverse' ),
+					'reportPrompt'         => __( 'Why are you reporting this media?', 'wpmediaverse' ),
+					'reportSubmitted'      => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
+					'reportAlready'        => __( 'Already reported or error occurred.', 'wpmediaverse' ),
+					'reportAction'         => __( 'Report', 'wpmediaverse' ),
+				),
+			)
+		);
+	}
 }

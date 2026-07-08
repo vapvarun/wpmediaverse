@@ -12,9 +12,11 @@
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
-// i18n: wp-i18n is loaded as a classic script on every WP page; read it
-// from window since @wordpress/i18n is not yet importable in script modules.
-const __ = ( str, domain ) => ( window.wp && window.wp.i18n && window.wp.i18n.__ ) ? window.wp.i18n.__( str, domain || 'wpmediaverse' ) : str;
+// i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
+// (no getLocaleData for the domain). Strings are PHP-translated and injected into
+// interactivity state by TemplateHelpers::media_social_i18n_state() via
+// wp_interactivity_state(); read them as `state.i18n.<key>` with an English
+// fallback. Basecamp 10073528834.
 const REACTION_TYPES = {
 	like: '\u{1F44D}',
 	love: '\u{2764}\u{FE0F}',
@@ -108,7 +110,7 @@ async function fetchFavorite( ctx ) {
 	}
 }
 
-store( 'mvs/media-social', {
+const { state } = store( 'mvs/media-social', {
 	state: {
 		reactions: [],
 		userReaction: '',
@@ -137,7 +139,7 @@ store( 'mvs/media-social', {
 		async toggleReaction( event ) {
 			const ctx = getContext();
 			if ( ! ctx.isLoggedIn ) {
-				sharedUI.actions.showToast( __( 'Please log in to react.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.loginToReact || 'Please log in to react.' ), 'error' );
 				return;
 			}
 			const type = event.target.closest( '[data-reaction-type]' )?.dataset.reactionType;
@@ -180,7 +182,7 @@ store( 'mvs/media-social', {
 					// Roll back the optimistic update.
 					ctx.userReaction = previousReaction;
 					ctx.reactions = previousReactions;
-					sharedUI.actions.showToast( __( 'Could not save reaction.', 'wpmediaverse' ), 'error' );
+					sharedUI.actions.showToast( ( state.i18n?.reactionSaveFailed || 'Could not save reaction.' ), 'error' );
 					return;
 				}
 				// Reconcile with server-truth so the count matches reality after race conditions.
@@ -188,7 +190,7 @@ store( 'mvs/media-social', {
 			} catch ( e ) {
 				ctx.userReaction = previousReaction;
 				ctx.reactions = previousReactions;
-				sharedUI.actions.showToast( __( 'Network error.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.networkError || 'Network error.' ), 'error' );
 			}
 		},
 
@@ -196,7 +198,7 @@ store( 'mvs/media-social', {
 		async toggleFavorite() {
 			const ctx = getContext();
 			if ( ! ctx.isLoggedIn ) {
-				sharedUI.actions.showToast( __( 'Please log in to favorite.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.loginToFavorite || 'Please log in to favorite.' ), 'error' );
 				return;
 			}
 			// Extension point: an add-on (Pro multi-collection picker) may handle
@@ -224,11 +226,11 @@ store( 'mvs/media-social', {
 				} );
 				if ( ! res.ok ) {
 					ctx.isFavorite = previous;
-					sharedUI.actions.showToast( __( 'Could not update favorite.', 'wpmediaverse' ), 'error' );
+					sharedUI.actions.showToast( ( state.i18n?.favoriteUpdateFailed || 'Could not update favorite.' ), 'error' );
 				}
 			} catch ( e ) {
 				ctx.isFavorite = previous;
-				sharedUI.actions.showToast( __( 'Network error.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.networkError || 'Network error.' ), 'error' );
 			}
 		},
 
@@ -242,7 +244,7 @@ store( 'mvs/media-social', {
 			event.preventDefault();
 			const ctx = getContext();
 			if ( ! ctx.isLoggedIn ) {
-				sharedUI.actions.showToast( __( 'Please log in to comment.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.loginToComment || 'Please log in to comment.' ), 'error' );
 				return;
 			}
 			const text = ctx.commentText.trim();
@@ -256,13 +258,13 @@ store( 'mvs/media-social', {
 				} );
 				if ( ! res.ok ) {
 					// Keep the typed text so the user can retry — do NOT clear.
-					sharedUI.actions.showToast( ( res.data && ( res.data.message || res.data.error ) ) || __( 'Could not post comment.', 'wpmediaverse' ), 'error' );
+					sharedUI.actions.showToast( ( res.data && ( res.data.message || res.data.error ) ) || ( state.i18n?.commentPostFailed || 'Could not post comment.' ), 'error' );
 					return;
 				}
 				ctx.commentText = '';
 				await fetchComments( ctx );
 			} catch ( e ) {
-				sharedUI.actions.showToast( __( 'Network error.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.networkError || 'Network error.' ), 'error' );
 			} finally {
 				ctx.submittingComment = false;
 			}
@@ -299,13 +301,13 @@ store( 'mvs/media-social', {
 					comment.content = updated.content;
 					comment.editing = false;
 					comment.editText = '';
-					sharedUI.actions.showToast( __( 'Comment updated.', 'wpmediaverse' ), 'success' );
+					sharedUI.actions.showToast( ( state.i18n?.commentUpdated || 'Comment updated.' ), 'success' );
 				} else {
 					const err = res.data;
-					sharedUI.actions.showToast( err.message || 'Edit failed.', 'error' );
+					sharedUI.actions.showToast( err.message || ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
 				}
 			} catch {
-				sharedUI.actions.showToast( __( 'Edit failed.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
 			}
 		},
 
@@ -322,13 +324,13 @@ store( 'mvs/media-social', {
 			const comment = ctx.item;
 			if ( ! comment ) return;
 
-			sharedUI.actions.showConfirm( __( 'Delete this comment?', 'wpmediaverse' ), async () => {
+			sharedUI.actions.showConfirm( ( state.i18n?.deleteCommentConfirm || 'Delete this comment?' ), async () => {
 				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/comments/' + comment.id, {
 					method: 'DELETE',
 				} );
 				if ( res.ok ) {
 					await fetchComments( ctx );
-					sharedUI.actions.showToast( __( 'Comment deleted.', 'wpmediaverse' ), 'success' );
+					sharedUI.actions.showToast( ( state.i18n?.commentDeleted || 'Comment deleted.' ), 'success' );
 				}
 			} );
 		},
@@ -363,13 +365,13 @@ store( 'mvs/media-social', {
 					document.execCommand( 'copy' );
 					document.body.removeChild( ta );
 				}
-				ctx.shareLabel = '✓ Copied!';
-				sharedUI.actions.showToast( __( 'Link copied to clipboard!', 'wpmediaverse' ), 'success' );
+				ctx.shareLabel = ( state.i18n?.shareCopied || '✓ Copied!' );
+				sharedUI.actions.showToast( ( state.i18n?.linkCopiedClipboard || 'Link copied to clipboard!' ), 'success' );
 				setTimeout( () => {
-					ctx.shareLabel = '\u{1F517} Share';
+					ctx.shareLabel = ( state.i18n?.shareResetLabel || '\u{1F517} Share' );
 				}, 2000 );
 			} catch {
-				sharedUI.actions.showToast( __( 'Could not copy link. Please copy the URL manually.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.copyLinkFailed || 'Could not copy link. Please copy the URL manually.' ), 'error' );
 			}
 		},
 
@@ -388,11 +390,11 @@ store( 'mvs/media-social', {
 				} );
 				if ( ! res.ok ) {
 					ctx.isFollowing = previous;
-					sharedUI.actions.showToast( __( 'Follow action failed.', 'wpmediaverse' ), 'error' );
+					sharedUI.actions.showToast( ( state.i18n?.followFailed || 'Follow action failed.' ), 'error' );
 				}
 			} catch {
 				ctx.isFollowing = previous;
-				sharedUI.actions.showToast( __( 'Follow action failed.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.followFailed || 'Follow action failed.' ), 'error' );
 			}
 		},
 
@@ -515,7 +517,7 @@ store( 'mvs/media-social', {
 					typeof window !== 'undefined' &&
 					window.location.pathname !== new URL( updated.link ).pathname
 				) {
-					sharedUI.actions.showToast( __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ), 'success' );
+					sharedUI.actions.showToast( ( state.i18n?.savedRedirecting || 'Saved! Redirecting to the new URL…' ), 'success' );
 					window.location.replace( updated.link );
 					return;
 				}
@@ -539,10 +541,10 @@ store( 'mvs/media-social', {
 					}
 				}
 
-				sharedUI.actions.showToast( ctx.type === 'album' ? 'Album saved!' : 'Saved!', 'success' );
+				sharedUI.actions.showToast( ctx.type === 'album' ? ( state.i18n?.albumSaved || 'Album saved!' ) : ( state.i18n?.saved || 'Saved!' ), 'success' );
 			} catch {
 				ctx.saving = false;
-				sharedUI.actions.showToast( __( 'Save failed.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.saveFailed || 'Save failed.' ), 'error' );
 			}
 		},
 
@@ -550,8 +552,8 @@ store( 'mvs/media-social', {
 		confirmDelete() {
 			const ctx = getContext();
 			const msg = ctx.type === 'album'
-				? __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' )
-				: __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' );
+				? ( state.i18n?.deleteAlbumConfirm || 'Delete this album? Media items will not be deleted.' )
+				: ( state.i18n?.deleteMediaConfirm || 'Delete this media item? This cannot be undone.' );
 			sharedUI.actions.showConfirm( msg, async () => {
 				const ep = endpoint( ctx );
 				const res = await window.mvsRest.restFetch( ctx.restUrl + ep + ctx.mediaId, {
@@ -560,26 +562,26 @@ store( 'mvs/media-social', {
 				if ( res.ok ) {
 					window.location.href = ctx.archiveUrl || '/';
 				}
-			}, 'Delete' );
+			}, ( state.i18n?.deleteAction || 'Delete' ) );
 		},
 
 		/* --- Report Media --- */
 		reportMedia() {
 			const ctx = getContext();
 			if ( ! ctx.isLoggedIn ) {
-				sharedUI.actions.showToast( __( 'Please log in to report content.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.loginToReport || 'Please log in to report content.' ), 'error' );
 				return;
 			}
 
 			// Build a reason selector dropdown.
 			const reasons = [
-				{ value: 'spam', label: __( 'Spam', 'wpmediaverse' ) },
-				{ value: 'harassment', label: __( 'Harassment', 'wpmediaverse' ) },
-				{ value: 'nudity', label: __( 'Nudity or sexual content', 'wpmediaverse' ) },
-				{ value: 'violence', label: __( 'Violence or dangerous acts', 'wpmediaverse' ) },
-				{ value: 'copyright', label: __( 'Copyright infringement', 'wpmediaverse' ) },
-				{ value: 'misinformation', label: __( 'Misinformation', 'wpmediaverse' ) },
-				{ value: 'other', label: __( 'Other', 'wpmediaverse' ) },
+				{ value: 'spam', label: ( state.i18n?.reasonSpam || 'Spam' ) },
+				{ value: 'harassment', label: ( state.i18n?.reasonHarassment || 'Harassment' ) },
+				{ value: 'nudity', label: ( state.i18n?.reasonNudity || 'Nudity or sexual content' ) },
+				{ value: 'violence', label: ( state.i18n?.reasonViolence || 'Violence or dangerous acts' ) },
+				{ value: 'copyright', label: ( state.i18n?.reasonCopyright || 'Copyright infringement' ) },
+				{ value: 'misinformation', label: ( state.i18n?.reasonMisinformation || 'Misinformation' ) },
+				{ value: 'other', label: ( state.i18n?.reasonOther || 'Other' ) },
 			];
 
 			// Create a temporary select element in the DOM.
@@ -594,7 +596,7 @@ store( 'mvs/media-social', {
 
 			// Inject select into confirm message area after dialog opens.
 			sharedUI.actions.showConfirm(
-				'Why are you reporting this media?',
+				( state.i18n?.reportPrompt || 'Why are you reporting this media?' ),
 				async () => {
 					const reason = select.value || 'other';
 					const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/report', {
@@ -602,14 +604,14 @@ store( 'mvs/media-social', {
 						body: { reason, details: 'Reported via media page' },
 					} );
 					if ( res.ok ) {
-						sharedUI.actions.showToast( __( 'Report submitted. Thank you.', 'wpmediaverse' ), 'success' );
+						sharedUI.actions.showToast( ( state.i18n?.reportSubmitted || 'Report submitted. Thank you.' ), 'success' );
 						ctx.reported = true;
 					} else {
 						const data = res.data || {};
-						sharedUI.actions.showToast( data.message || 'Already reported or error occurred.', 'error' );
+						sharedUI.actions.showToast( data.message || ( state.i18n?.reportAlready || 'Already reported or error occurred.' ), 'error' );
 					}
 				},
-				'Report'
+				( state.i18n?.reportAction || 'Report' )
 			);
 
 			// Append select to the confirm dialog message area.

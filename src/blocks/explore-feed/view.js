@@ -6,6 +6,11 @@
 
 import { store, getContext } from '@wordpress/interactivity';
 
+// i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
+// (no getLocaleData for the domain). Strings are PHP-translated and injected into
+// interactivity state by render.php via wp_interactivity_state(); read them as
+// `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
+
 /**
  * Build the thumbnail node(s) for a Load More media item.
  *
@@ -87,7 +92,7 @@ const searchTimers = new WeakMap();
 // suggestions visible if the "ne" response arrived second.
 const searchAborters = new WeakMap();
 
-store( 'mvs/explore-feed', {
+const { state } = store( 'mvs/explore-feed', {
 	state: {
 		get isMasonry() {
 			return getContext().layout === 'masonry';
@@ -155,7 +160,7 @@ store( 'mvs/explore-feed', {
 
 					ctx.suggestions = data.slice( 0, 8 ).map( ( item ) => ( {
 						id: item.id || 0,
-						title: item.title || '(untitled)',
+						title: item.title || ( state.i18n?.untitled || '(untitled)' ),
 						thumb: item.thumbnail_url || '',
 						url: item.link || '',
 					} ) );
@@ -280,7 +285,7 @@ store( 'mvs/explore-feed', {
 				// Surface the failure instead of swallowing it — keep ctx.hasMore so
 				// the member can retry rather than seeing a silently dead feed.
 				try {
-					store( 'mvs/shared-ui' ).actions.showToast( 'Couldn’t load more. Tap to retry.', 'error' );
+					store( 'mvs/shared-ui' ).actions.showToast( ( state.i18n?.loadMoreError || 'Couldn’t load more. Tap to retry.' ), 'error' );
 				} catch ( e ) {}
 			}
 

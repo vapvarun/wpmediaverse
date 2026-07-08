@@ -8,9 +8,9 @@
 
 import { store, getContext } from '@wordpress/interactivity';
 
-// i18n: wp-i18n is loaded as a classic script on every WP page; read it
-// from window since @wordpress/i18n is not yet importable in script modules.
-const __ = ( str, domain ) => ( window.wp && window.wp.i18n && window.wp.i18n.__ ) ? window.wp.i18n.__( str, domain || 'wpmediaverse' ) : str;
+// i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here.
+// PHP (dashboard-content.php) seeds translated strings into interactivity state;
+// read them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
 const sharedUI = store( 'mvs/shared-ui' );
 
 function apiFetch( ctx, path, opts = {} ) {
@@ -266,16 +266,16 @@ const { state, actions } = store( 'mvs/dashboard', {
 			return !! getContext().item?.cover_url;
 		},
 		get itemTitle() {
-			return getContext().item?.title || '(Untitled)';
+			return getContext().item?.title || ( state.i18n?.untitled || '(Untitled)' );
 		},
 		get itemPrivacy() {
 			return getContext().item?.privacy || 'public';
 		},
 		get albumItemCount() {
-			return ( getContext().item?.media_count || 0 ) + ' items';
+			return ( state.i18n?.itemsCount || '%d items' ).replace( '%d', getContext().item?.media_count || 0 );
 		},
 		get collectionItemCount() {
-			return ( getContext().item?.matchCount || 0 ) + ' items';
+			return ( state.i18n?.itemsCount || '%d items' ).replace( '%d', getContext().item?.matchCount || 0 );
 		},
 		get rulePillText() {
 			const rule = getContext().rule;
@@ -330,9 +330,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			const rule = ctx.rule;
 			if ( ! rule ) return '';
-			if ( rule.key === 'author' ) return 'User ID';
-			if ( rule.key === 'date_after' || rule.key === 'date_before' ) return 'YYYY-MM-DD';
-			return 'Value';
+			if ( rule.key === 'author' ) return ( state.i18n?.ruleUserIdPlaceholder || 'User ID' );
+			if ( rule.key === 'date_after' || rule.key === 'date_before' ) return ( state.i18n?.ruleDatePlaceholder || 'YYYY-MM-DD' );
+			return ( state.i18n?.ruleValuePlaceholder || 'Value' );
 		},
 		get ruleValueOptions() {
 			const ctx = getContext();
@@ -340,26 +340,26 @@ const { state, actions } = store( 'mvs/dashboard', {
 			if ( ! rule ) return [];
 			if ( rule.key === 'media_type' ) {
 				return [
-					{ value: '', label: __( '-- Select --', 'wpmediaverse' ) },
-					{ value: 'image', label: __( 'Image', 'wpmediaverse' ) },
-					{ value: 'video', label: __( 'Video', 'wpmediaverse' ) },
-					{ value: 'audio', label: __( 'Audio', 'wpmediaverse' ) },
-					{ value: 'document', label: __( 'Document', 'wpmediaverse' ) },
+					{ value: '', label: ( state.i18n?.selectOption || '-- Select --' ) },
+					{ value: 'image', label: ( state.i18n?.optImage || 'Image' ) },
+					{ value: 'video', label: ( state.i18n?.optVideo || 'Video' ) },
+					{ value: 'audio', label: ( state.i18n?.optAudio || 'Audio' ) },
+					{ value: 'document', label: ( state.i18n?.optDocument || 'Document' ) },
 				];
 			}
 			if ( rule.key === 'privacy' ) {
 				return [
-					{ value: '', label: __( '-- Select --', 'wpmediaverse' ) },
-					{ value: 'public', label: __( 'Public', 'wpmediaverse' ) },
-					{ value: 'members', label: __( 'Members', 'wpmediaverse' ) },
-					{ value: 'private', label: __( 'Private', 'wpmediaverse' ) },
+					{ value: '', label: ( state.i18n?.selectOption || '-- Select --' ) },
+					{ value: 'public', label: ( state.i18n?.optPublic || 'Public' ) },
+					{ value: 'members', label: ( state.i18n?.optMembers || 'Members' ) },
+					{ value: 'private', label: ( state.i18n?.optPrivate || 'Private' ) },
 				];
 			}
 			if ( rule.key === 'tag' ) {
-				return [ { value: '', label: __( '-- Select --', 'wpmediaverse' ) }, ...state.collectionModal.tags ];
+				return [ { value: '', label: ( state.i18n?.selectOption || '-- Select --' ) }, ...state.collectionModal.tags ];
 			}
 			if ( rule.key === 'category' ) {
-				return [ { value: '', label: __( '-- Select --', 'wpmediaverse' ) }, ...state.collectionModal.categories ];
+				return [ { value: '', label: ( state.i18n?.selectOption || '-- Select --' ) }, ...state.collectionModal.categories ];
 			}
 			return [];
 		},
@@ -487,7 +487,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 				}
 				if ( rejected.length ) {
 					sharedUI.actions.showToast(
-						__( 'File type not allowed: ', 'wpmediaverse' ) + rejected.join( ', ' ) + '. Supported: ' + ctx.allowedExtensions,
+						( state.i18n?.fileTypeNotAllowed || 'File type not allowed: %1$s. Supported: %2$s' )
+							.replace( '%1$s', rejected.join( ', ' ) )
+							.replace( '%2$s', ctx.allowedExtensions ),
 						'error'
 					);
 				}
@@ -501,7 +503,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 			let lastError = '';
 
 			for ( let i = 0; i < total; i++ ) {
-				state.upload.status = `Uploading ${ i + 1 } of ${ total }...`;
+				state.upload.status = ( state.i18n?.uploadingProgress || 'Uploading %1$d of %2$d...' )
+					.replace( '%1$d', i + 1 )
+					.replace( '%2$d', total );
 				const formData = new FormData();
 				formData.append( 'file', files[ i ] );
 				if ( state.upload.privacy ) formData.append( 'privacy', state.upload.privacy );
@@ -520,7 +524,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 						uploaded++;
 					} else {
 						const errData = res.data || {};
-						lastError = errData.message || 'Upload failed.';
+						lastError = errData.message || ( state.i18n?.uploadFailed || 'Upload failed.' );
 					}
 				} catch {
 					// Continue with remaining.
@@ -530,11 +534,19 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.upload.uploading = false;
 			state.upload.status = '';
 			if ( uploaded === 0 ) {
-				sharedUI.actions.showToast( lastError || 'Upload failed. Please try again.', 'error' );
+				sharedUI.actions.showToast( lastError || ( state.i18n?.uploadFailedRetry || 'Upload failed. Please try again.' ), 'error' );
 			} else if ( uploaded < total ) {
-				sharedUI.actions.showToast( uploaded + ' of ' + total + ' file(s) uploaded.', 'error' );
+				sharedUI.actions.showToast(
+					( state.i18n?.filesUploadedPartial || '%1$d of %2$d file(s) uploaded.' )
+						.replace( '%1$d', uploaded )
+						.replace( '%2$d', total ),
+					'error'
+				);
 			} else {
-				sharedUI.actions.showToast( total + ' file(s) uploaded!', 'success' );
+				sharedUI.actions.showToast(
+					( state.i18n?.filesUploaded || '%d file(s) uploaded!' ).replace( '%d', total ),
+					'success'
+				);
 			}
 			if ( uploaded > 0 ) {
 				// Reset upload form so old data doesn't carry forward.
@@ -721,13 +733,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 					if ( idx !== -1 ) {
 						state.media.items[ idx ] = { ...state.media.items[ idx ], ...updated };
 					}
-					sharedUI.actions.showToast( __( 'File replaced!', 'wpmediaverse' ), 'success' );
+					sharedUI.actions.showToast( ( state.i18n?.fileReplaced || 'File replaced!' ), 'success' );
 				} else {
 					const err = res.data || {};
-					sharedUI.actions.showToast( err.message || 'Replace failed.', 'error' );
+					sharedUI.actions.showToast( err.message || ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
 				}
 			} catch {
-				sharedUI.actions.showToast( __( 'Replace failed.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
 			}
 			state.editModal.saving = false;
 		},
@@ -775,10 +787,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 					state.media.items[ idx ] = { ...state.media.items[ idx ], ...updated };
 				}
 
-				sharedUI.actions.showToast( __( 'Media updated!', 'wpmediaverse' ), 'success' );
+				sharedUI.actions.showToast( ( state.i18n?.mediaUpdated || 'Media updated!' ), 'success' );
 			} catch {
 				state.editModal.saving = false;
-				sharedUI.actions.showToast( __( 'Update failed.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.updateFailed || 'Update failed.' ), 'error' );
 			}
 		},
 
@@ -796,19 +808,19 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			const id = ctx.item?.id;
 			if ( ! id ) return;
-			sharedUI.actions.showConfirm( __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' ), async () => {
+			sharedUI.actions.showConfirm( ( state.i18n?.confirmDeleteMedia || 'Delete this media item? This cannot be undone.' ), async () => {
 				try {
 					const res = await apiFetch( ctx, 'media/' + id, {
 						method: 'DELETE',
 					} );
 					if ( res.ok ) {
 						state.media.items = state.media.items.filter( ( m ) => m.id !== id );
-						sharedUI.actions.showToast( __( 'Media deleted.', 'wpmediaverse' ), 'success' );
+						sharedUI.actions.showToast( ( state.i18n?.mediaDeleted || 'Media deleted.' ), 'success' );
 					} else {
-						sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
+						sharedUI.actions.showToast( ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
 					}
 				} catch {
-					sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
+					sharedUI.actions.showToast( ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
 				}
 			} );
 		},
@@ -995,11 +1007,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 				}
 				state.albumModal.visible = false;
 				state.albumModal.saving = false;
-				sharedUI.actions.showToast( state.albumModal.isEdit ? 'Album updated!' : 'Album created!', 'success' );
+				sharedUI.actions.showToast( state.albumModal.isEdit ? ( state.i18n?.albumUpdated || 'Album updated!' ) : ( state.i18n?.albumCreated || 'Album created!' ), 'success' );
 				await actions.loadAlbums( ctx );
 			} catch {
 				state.albumModal.saving = false;
-				sharedUI.actions.showToast( __( 'Save failed.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.saveFailed || 'Save failed.' ), 'error' );
 			}
 		},
 
@@ -1007,19 +1019,19 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			const id = ctx.item?.id;
 			if ( ! id ) return;
-			sharedUI.actions.showConfirm( __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' ), async () => {
+			sharedUI.actions.showConfirm( ( state.i18n?.confirmDeleteAlbum || 'Delete this album? Media items will not be deleted.' ), async () => {
 				try {
 					const res = await apiFetch( ctx, 'albums/' + id, {
 						method: 'DELETE',
 					} );
 					if ( res.ok ) {
 						state.albums.items = state.albums.items.filter( ( a ) => a.id !== id );
-						sharedUI.actions.showToast( __( 'Album deleted.', 'wpmediaverse' ), 'success' );
+						sharedUI.actions.showToast( ( state.i18n?.albumDeleted || 'Album deleted.' ), 'success' );
 					} else {
-						sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
+						sharedUI.actions.showToast( ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
 					}
 				} catch {
-					sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
+					sharedUI.actions.showToast( ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
 				}
 			} );
 		},
@@ -1062,7 +1074,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			} );
 			if ( res.ok ) {
 				state.favorites.items = state.favorites.items.filter( ( f ) => f.media_id !== mediaId );
-				sharedUI.actions.showToast( __( 'Removed from favorites.', 'wpmediaverse' ), 'success' );
+				sharedUI.actions.showToast( ( state.i18n?.removedFromFavorites || 'Removed from favorites.' ), 'success' );
 			}
 		},
 
@@ -1309,20 +1321,20 @@ const { state, actions } = store( 'mvs/dashboard', {
 							body: { rules: validRules },
 						} );
 					}
-					sharedUI.actions.showToast( __( 'Collection updated!', 'wpmediaverse' ), 'success' );
+					sharedUI.actions.showToast( ( state.i18n?.collectionUpdated || 'Collection updated!' ), 'success' );
 				} else {
 					await apiFetch( ctx, 'collections', {
 						method: 'POST',
 						body: payload,
 					} );
-					sharedUI.actions.showToast( __( 'Collection created!', 'wpmediaverse' ), 'success' );
+					sharedUI.actions.showToast( ( state.i18n?.collectionCreated || 'Collection created!' ), 'success' );
 				}
 				state.collectionModal.visible = false;
 				state.collectionModal.saving = false;
 				await actions.loadCollections( ctx );
 			} catch {
 				state.collectionModal.saving = false;
-				sharedUI.actions.showToast( __( 'Save failed.', 'wpmediaverse' ), 'error' );
+				sharedUI.actions.showToast( ( state.i18n?.saveFailed || 'Save failed.' ), 'error' );
 			}
 		},
 
@@ -1330,19 +1342,19 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 			const id = ctx.item?.id;
 			if ( ! id ) return;
-			sharedUI.actions.showConfirm( __( 'Delete this collection? Media items will not be deleted.', 'wpmediaverse' ), async () => {
+			sharedUI.actions.showConfirm( ( state.i18n?.confirmDeleteCollection || 'Delete this collection? Media items will not be deleted.' ), async () => {
 				try {
 					const res = await apiFetch( ctx, 'collections/' + id, {
 						method: 'DELETE',
 					} );
 					if ( res.ok ) {
 						state.collections.items = state.collections.items.filter( ( c ) => c.id !== id );
-						sharedUI.actions.showToast( __( 'Collection deleted.', 'wpmediaverse' ), 'success' );
+						sharedUI.actions.showToast( ( state.i18n?.collectionDeleted || 'Collection deleted.' ), 'success' );
 					} else {
-						sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
+						sharedUI.actions.showToast( ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
 					}
 				} catch {
-					sharedUI.actions.showToast( __( 'Delete failed.', 'wpmediaverse' ), 'error' );
+					sharedUI.actions.showToast( ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
 				}
 			} );
 		},
@@ -1382,7 +1394,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				} );
 				state.notifications.count = 0;
 				state.notifications.items = state.notifications.items.map( ( n ) => ( { ...n, read: true } ) );
-				sharedUI.actions.showToast( __( 'All notifications marked as read.', 'wpmediaverse' ), 'success' );
+				sharedUI.actions.showToast( ( state.i18n?.allNotificationsRead || 'All notifications marked as read.' ), 'success' );
 			} catch {
 				// Ignore.
 			}

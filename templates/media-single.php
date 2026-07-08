@@ -139,6 +139,7 @@ $mvs_archive_url = home_url( '/media/' );
 						</span>
 					</div>
 				</div>
+				<?php \WPMediaVerse\Core\TemplateHelpers::media_social_i18n_state(); ?>
 				<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
 				<span class="mvs-follow-btn-wrap"
 					data-wp-interactive="mvs/media-social"

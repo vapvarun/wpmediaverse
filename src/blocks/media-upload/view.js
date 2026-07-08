@@ -49,7 +49,7 @@ function isAllowedFile( file, allowedTypes ) {
  */
 function formatAllowedLabels( allowedTypes ) {
 	if ( ! allowedTypes || ! allowedTypes.length ) {
-		return 'images, videos, and audio files';
+		return ( state.i18n?.allowedFallback || 'images, videos, and audio files' );
 	}
 	return allowedTypes
 		.map( ( mime ) => MIME_LABELS[ mime ] || mime.split( '/' ).pop().toUpperCase() )
@@ -75,7 +75,9 @@ function filterFiles( files, ctx ) {
 	}
 	if ( rejected.length ) {
 		const allowed = formatAllowedLabels( ctx.allowedTypes );
-		ctx.uploadError = `File type not allowed: ${ rejected.join( ', ' ) }. Supported formats: ${ allowed }.`;
+		ctx.uploadError = ( state.i18n?.fileTypeNotAllowed || 'File type not allowed: %1$s. Supported formats: %2$s.' )
+			.replace( '%1$s', rejected.join( ', ' ) )
+			.replace( '%2$s', allowed );
 	}
 	return valid;
 }
@@ -90,7 +92,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 		},
 		get uploadStatus() {
 			const ctx = getContext();
-			return ctx.uploading ? ( ctx.uploadMessage || 'Uploading...' ) : '';
+			return ctx.uploading ? ( ctx.uploadMessage || ( state.i18n?.uploading || 'Uploading...' ) ) : '';
 		},
 		get hasSuccess() {
 			const ctx = getContext();
@@ -110,7 +112,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 		},
 		get pendingLabel() {
 			const n = getContext().pendingCount || 0;
-			return n === 1 ? 'Upload 1 file' : `Upload ${ n } files`;
+			return n === 1
+				? ( state.i18n?.uploadOneFile || 'Upload 1 file' )
+				: ( state.i18n?.uploadNFiles || 'Upload %d files' ).replace( '%d', n );
 		},
 	},
 	actions: {
@@ -227,7 +231,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 			ctx.uploading = true;
 			ctx.successMessage = '';
 			ctx.uploadError = '';
-			ctx.uploadMessage = `Uploading ${ files.length } file(s)...`;
+			ctx.uploadMessage = ( state.i18n?.uploadingNFiles || 'Uploading %d file(s)...' ).replace( '%d', files.length );
 			let successCount = 0;
 			let duplicateCount = 0;
 			let lastDuplicateId = 0;
@@ -248,7 +252,7 @@ const { state, actions } = store( 'mvs/media-upload', {
 					if ( checkData.can_upload === false ) {
 						ctx.uploading = false;
 						ctx.uploadMessage = '';
-						ctx.uploadError = checkData.reason || 'Upload limit reached. Please upgrade your plan.';
+						ctx.uploadError = checkData.reason || ( state.i18n?.uploadLimitReached || 'Upload limit reached. Please upgrade your plan.' );
 						return;
 					}
 				}
@@ -258,7 +262,9 @@ const { state, actions } = store( 'mvs/media-upload', {
 			}
 
 			for ( let i = 0; i < files.length; i++ ) {
-				ctx.uploadMessage = `Uploading ${ i + 1 } of ${ files.length }...`;
+				ctx.uploadMessage = ( state.i18n?.uploadingProgress || 'Uploading %1$d of %2$d...' )
+					.replace( '%1$d', i + 1 )
+					.replace( '%2$d', files.length );
 				const formData = new FormData();
 				formData.append( 'file', files[ i ] );
 				if ( ctx.privacy ) {
@@ -299,24 +305,28 @@ const { state, actions } = store( 'mvs/media-upload', {
 						}
 					} else {
 						const err = resp.data || {};
-						ctx.uploadError = err.message || `Upload failed for ${ files[ i ].name }.`;
+						ctx.uploadError = err.message || ( state.i18n?.uploadFailedFor || 'Upload failed for %s.' ).replace( '%s', files[ i ].name );
 					}
 				} catch ( err ) {
-					ctx.uploadError = `Network error uploading ${ files[ i ].name }.`;
+					ctx.uploadError = ( state.i18n?.networkError || 'Network error uploading %s.' ).replace( '%s', files[ i ].name );
 				}
 			}
 
 			ctx.uploading = false;
 			ctx.uploadMessage = '';
 			if ( successCount === files.length ) {
-				ctx.successMessage = `${ successCount } file(s) uploaded successfully!`;
+				ctx.successMessage = ( state.i18n?.uploadSuccess || '%d file(s) uploaded successfully!' ).replace( '%d', successCount );
 			} else if ( successCount > 0 ) {
-				ctx.successMessage = `${ successCount } of ${ files.length } file(s) uploaded.`;
+				ctx.successMessage = ( state.i18n?.uploadPartial || '%1$d of %2$d file(s) uploaded.' )
+					.replace( '%1$d', successCount )
+					.replace( '%2$d', files.length );
 			} else {
 				ctx.successMessage = '';
 			}
 			if ( duplicateCount > 0 ) {
-				ctx.uploadError = `${ duplicateCount } duplicate file(s) detected. Existing media #${ lastDuplicateId } already contains this content.`;
+				ctx.uploadError = ( state.i18n?.duplicatesDetected || '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.' )
+					.replace( '%1$d', duplicateCount )
+					.replace( '%2$d', lastDuplicateId );
 			}
 
 			// Reset form fields after upload.
