@@ -69,6 +69,11 @@ class Collection {
 			return;
 		}
 
+		// Collections also carry an mvs_media_index row (privacy storage). Purge it
+		// so a deleted collection doesn't leave a dead tile on Explore — same gap
+		// and fix as albums. Basecamp 10073671889.
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->purge_index_record( $post_id );
+
 		/**
 		 * Fires when a collection is permanently deleted.
 		 *

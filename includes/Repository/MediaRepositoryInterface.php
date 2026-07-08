@@ -342,4 +342,13 @@ interface MediaRepositoryInterface {
 	 * @param int $media_id Media ID.
 	 */
 	public function delete_cascade( int $media_id ): bool;
+
+	/**
+	 * Purge the mvs_media_index + mvs_media_meta rows for an id and drop its row
+	 * cache. Targeted row/meta cleanup for album/collection privacy rows on
+	 * delete (they never touch the downstream tables delete_cascade() clears).
+	 *
+	 * @param int $media_id The mvs_media_index PK.
+	 */
+	public function purge_index_record( int $media_id ): void;
 }

@@ -303,6 +303,32 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Purge the mvs_media_index + mvs_media_meta rows for an id and drop its
+	 * request-scope row cache.
+	 *
+	 * Albums and collections get an mvs_media_index row purely to store their
+	 * privacy (media_type left empty). This is the targeted row/meta purge their
+	 * delete handlers call on `before_delete_post` so a deleted album/collection
+	 * doesn't leave a dead tile on Explore (Basecamp 10073671889). Media items use
+	 * delete_cascade() instead — it also clears the downstream reaction / stat /
+	 * view / album-item tables that albums and collections never touch.
+	 *
+	 * @param int $media_id The mvs_media_index PK (media / album / collection id).
+	 * @return void
+	 */
+	public function purge_index_record( int $media_id ): void {
+		if ( $media_id <= 0 ) {
+			return;
+		}
+		global $wpdb;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', array( 'media_id' => $media_id ), array( '%d' ) );
+		$wpdb->delete( $wpdb->prefix . 'mvs_media_meta', array( 'media_id' => $media_id ), array( '%d' ) );
+		// phpcs:enable
+		self::invalidate_row_cache( $media_id );
+	}
+
+	/**
 	 * Reverse-lookup a media_id from a stored file_url.
 	 *
 	 * Used by callers that have a raw URL string but no media_id — typically
