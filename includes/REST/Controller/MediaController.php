@@ -368,7 +368,11 @@ class MediaController extends WP_REST_Controller {
 		$media_type = $request->get_param( 'media_type' );
 		$author     = $request->get_param( 'author' );
 
-		$where  = array( 'moderation_status = %s' );
+		// media_type != '' excludes the privacy-only stub rows albums/collections
+		// leave in mvs_media_index (media_type empty — see PrivacyService). Without
+		// it the /media feed (and the mobile app that reads it) returned those
+		// stubs as empty items. Same fix as the media-grid block. Basecamp 10074442944.
+		$where  = array( 'moderation_status = %s', "media_type != ''" );
 		$params = array( 'approved' );
 
 		// Privacy filtering via index table.

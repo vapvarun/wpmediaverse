@@ -42,7 +42,12 @@ $index_table = $wpdb->prefix . 'mvs_media_index';
 $meta_table  = $wpdb->prefix . 'mvs_media_meta';
 
 // Build WHERE/JOIN clauses.
-$where  = "WHERE m.status = 'publish'";
+// media_type != '' excludes the privacy-only stub rows that albums/collections
+// (mvs_album / mvs_collection CPTs) leave in mvs_media_index — those rows carry
+// only a privacy value with media_type left empty (see PrivacyService), and
+// without this filter they surfaced as broken/empty tiles in the gallery grid.
+// Real media always has an image/video/audio/document type.
+$where  = "WHERE m.status = 'publish' AND m.media_type != ''";
 $joins  = '';
 $params = array();
 
