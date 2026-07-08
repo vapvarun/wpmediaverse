@@ -1124,7 +1124,7 @@ class UploadService {
 
 			// Per-variant optimization pass — dispatches mvs_optimize_image so
 			// external compressors can process the thumbnail. The internal
-			// lossless re-encode skips variants (they're already minimal).
+			// re-compression pass skips variants (they're already minimal).
 			$variant_ctx = array(
 				'media_id' => $media_id,
 				'variant'  => $size_name,

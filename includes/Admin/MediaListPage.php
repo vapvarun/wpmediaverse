@@ -552,7 +552,7 @@ class MediaListPage {
 		// Pick badge style + label by outcome:
 		// 1. JPEG shrunk -> green badge with savings %
 		// 2. No JPEG savings but a WebP copy was created -> success "WebP ready"
-		// 3. No savings, no WebP -> neutral "No lossless gain". We deliberately
+		// 3. No savings, no WebP -> neutral "No size gain". We deliberately
 		// avoid the word "Optimized" here because an admin staring at a 3 MB
 		// file would (correctly) push back on that claim.
 		if ( $saved_pct > 0 ) {
@@ -563,7 +563,7 @@ class MediaListPage {
 			$badge_label = __( 'WebP ready', 'wpmediaverse' );
 		} else {
 			$badge_class = 'mvs-media-badge--neutral';
-			$badge_label = __( 'No lossless gain', 'wpmediaverse' );
+			$badge_label = __( 'No size gain', 'wpmediaverse' );
 		}
 
 		$title = sprintf(
@@ -1503,7 +1503,7 @@ class MediaListPage {
 					<?php if ( $is_img ) : ?>
 						<h2><?php esc_html_e( 'Optimization', 'wpmediaverse' ); ?></h2>
 						<?php
-						// When no lossless gain happened on this image, give the
+						// When re-compression produced no size gain on this image, give the
 						// admin one transparent line explaining why an
 						// already-high-quality JPEG often cannot be shrunk on
 						// PHP-GD environments. Mentions Imagick as the path
@@ -1557,7 +1557,7 @@ class MediaListPage {
 											<?php
 										elseif ( $optimized_at > 0 ) :
 											?>
-											<span class="mvs-media-badge mvs-media-badge--neutral"><?php esc_html_e( 'No lossless gain', 'wpmediaverse' ); ?></span>
+											<span class="mvs-media-badge mvs-media-badge--neutral"><?php esc_html_e( 'No size gain', 'wpmediaverse' ); ?></span>
 											&nbsp;
 											<?php
 											/* translators: %s: human-readable date and time */
@@ -1592,10 +1592,10 @@ class MediaListPage {
 											<?php
 											if ( '' !== $webp_orig ) {
 												/* translators: %s: file size in human-readable form */
-												echo wp_kses_post( sprintf( __( 'Lossless compression could not shrink this %s image further. A smaller WebP copy was created instead, so visitors on modern browsers get a faster page load.', 'wpmediaverse' ), '<strong>' . esc_html( size_format( $bytes_before ) ) . '</strong>' ) );
+												echo wp_kses_post( sprintf( __( 'Re-compression could not shrink this %s image further. A smaller WebP copy was created instead, so visitors on modern browsers get a faster page load.', 'wpmediaverse' ), '<strong>' . esc_html( size_format( $bytes_before ) ) . '</strong>' ) );
 											} else {
 												/* translators: %s: file size in human-readable form */
-												echo wp_kses_post( sprintf( __( 'This %s image was saved at a high quality level. Lossless compression cannot make it smaller, and a WebP copy would have been larger than the original (so we did not create one). To reduce the file size further you can re-upload at a smaller resolution, or save it at a lower JPEG quality before uploading.', 'wpmediaverse' ), '<strong>' . esc_html( size_format( $bytes_before ) ) . '</strong>' ) );
+												echo wp_kses_post( sprintf( __( 'This %s image was saved at a high quality level. Re-compressing it would have produced a LARGER file, so we kept your original untouched, and a WebP copy would also have been larger (so we did not create one). To reduce the file size further you can re-upload at a smaller resolution, or save it at a lower JPEG quality before uploading.', 'wpmediaverse' ), '<strong>' . esc_html( size_format( $bytes_before ) ) . '</strong>' ) );
 											}
 											?>
 										</td>

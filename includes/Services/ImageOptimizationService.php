@@ -3,8 +3,9 @@
  * Image optimization pipeline.
  *
  * Provides:
- *   1. Lossless re-encode of originals (PNG: re-encode at level 9; JPEG:
- *      re-encode with metadata stripped at a high-quality default).
+ *   1. Re-compression of originals (PNG: re-encode at level 9; JPEG: re-encode
+ *      at quality 92 with metadata stripped). This is LOSSY for JPEG — see
+ *      run_recompress_pass(). The admin opts in via "Compress uploaded images".
  *   2. WebP sibling emission for originals and every thumbnail variant.
  *   3. A single `mvs_optimize_image` filter dispatched at every disk-write
  *      moment, so external compression plugins (EWWW, Imagify, Smush,
@@ -51,7 +52,7 @@ class ImageOptimizationService {
 	 * untouched (still get the filter dispatched, still get a WebP sibling
 	 * if the editor supports the source MIME).
 	 */
-	private const LOSSLESS_MIMES = array( 'image/jpeg', 'image/png', 'image/gif' );
+	private const RECOMPRESS_MIMES = array( 'image/jpeg', 'image/png', 'image/gif' );
 
 	/**
 	 * MIMEs we will source from when emitting a WebP sibling.
@@ -84,7 +85,7 @@ class ImageOptimizationService {
 	 * Run the optimization pass on a file and dispatch the public filter.
 	 *
 	 * The filter is dispatched FIRST so external compressors get the file in
-	 * its pristine state. Our internal lossless pass then runs as a fallback
+	 * its pristine state. Our internal re-compression pass then runs as a fallback
 	 * for sites without an external compressor. Running both is safe — our
 	 * pass is a no-op on already-optimized files.
 	 *
@@ -126,17 +127,18 @@ class ImageOptimizationService {
 			$file_path = $filtered;
 		}
 
-		// Built-in lossless pass — only when the toggle is on AND the MIME is
+		// Built-in re-compression pass (LOSSY for JPEG, see run_recompress_pass) —
+		// only when the toggle is on AND the MIME is
 		// one we understand. Variants are already minimal so we skip them.
 		$mime    = (string) ( $context['mime'] ?? '' );
 		$variant = (string) ( $context['variant'] ?? 'original' );
 		if (
 			'original' === $variant
 			&& $this->is_enabled( 'originals' )
-			&& in_array( $mime, self::LOSSLESS_MIMES, true )
+			&& in_array( $mime, self::RECOMPRESS_MIMES, true )
 			&& ! self::is_animated_gif( $file_path, $mime )
 		) {
-			$this->run_lossless_pass( $file_path, $mime, $context );
+			$this->run_recompress_pass( $file_path, $mime, $context );
 		}
 
 		return $file_path;
@@ -147,7 +149,7 @@ class ImageOptimizationService {
 	 *
 	 * Re-encoding an animated GIF via WP_Image_Editor would flatten it to
 	 * the first frame on most builds (GD has no native multi-frame writer,
-	 * Imagick can but only when iterated explicitly). Skipping the lossless
+	 * Imagick can but only when iterated explicitly). Skipping the re-compression
 	 * pass for animated GIFs preserves the animation. Static GIFs go through
 	 * normally and benefit from the metadata-strip pass.
 	 *
@@ -618,20 +620,36 @@ class ImageOptimizationService {
 	}
 
 	/**
-	 * Run the built-in lossless re-encode pass.
+	 * Re-compress the image in place. NOT lossless for JPEG.
+	 *
+	 * This method used to be called `run_lossless_pass()`. It never was lossless:
+	 * it decodes the image and re-encodes it at `mvs_optimize_jpeg_quality`
+	 * (default 92). The name told a maintainer the opposite of what the code did.
+	 *
+	 * The commit guard below only keeps the result when it is SMALLER than the
+	 * source, which has a consequence worth stating plainly:
+	 *
+	 *   - source better than q92 -> re-encode is smaller -> kept, quality dropped.
+	 *   - source at or below q92 -> re-encode is larger  -> discarded, no change.
+	 *
+	 * So this pass can never improve an image; it trades quality for bytes on the
+	 * good ones and leaves the poor ones alone. That is exactly what the admin
+	 * setting promises ("Compress uploaded images ... re-saving with stronger
+	 * compression ... 10 to 30 percent smaller"), and it is default-on, so this is
+	 * a disclosed choice — not a silent degradation. Do not "optimize" it into
+	 * something more aggressive on the assumption that it is lossless.
 	 *
 	 * PNG: re-encode (drops metadata, applies WP's default compression).
-	 * JPEG: re-encode at high quality with metadata stripped. The
-	 *       `mvs_optimize_jpeg_quality` filter (default 92) lets sites tune
-	 *       the quality / size tradeoff. Setting to 100 produces a near
-	 *       lossless re-encode that still drops EXIF.
+	 * JPEG: lossy re-encode at quality 92 with metadata stripped. Setting the
+	 *       `mvs_optimize_jpeg_quality` filter to 100 gets close to lossless but
+	 *       is still a re-encode, and still drops EXIF.
 	 * GIF: re-encode (frame data preserved; metadata dropped).
 	 *
 	 * @param string $file_path Absolute path to source image.
 	 * @param string $mime      Source MIME.
 	 * @param array  $context   Filter context.
 	 */
-	private function run_lossless_pass( string $file_path, string $mime, array $context ): void {
+	private function run_recompress_pass( string $file_path, string $mime, array $context ): void {
 		self::require_image_editor();
 		$editor = wp_get_image_editor( $file_path );
 		if ( is_wp_error( $editor ) ) {
@@ -654,7 +672,7 @@ class ImageOptimizationService {
 		if ( is_wp_error( $saved ) ) {
 			LoggerService::warning(
 				'optimize',
-				'Lossless pass failed',
+				'Re-compression pass failed',
 				array(
 					'media_id' => (int) ( $context['media_id'] ?? 0 ),
 					'mime'     => $mime,
