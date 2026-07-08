@@ -35,6 +35,34 @@ $mvs_show_fab = $mvs_is_logged_in && (
 	|| is_tax( 'mvs_tag' )
 	|| is_tax( 'mvs_category' )
 );
+
+// i18n for the mvs/shared-ui store. It is a script MODULE (viewScriptModule), so
+// wp_set_script_translations() can't reach it and window.wp.i18n.__() falls
+// through to English. Seed PHP-translated strings into interactivity state; the
+// store reads state.i18n.<key> with an English fallback. Basecamp 10073528834.
+wp_interactivity_state(
+	'mvs/shared-ui',
+	array(
+		'i18n' => array(
+			'uploadPhoto'      => __( 'Upload Photo', 'wpmediaverse' ),
+			'createGallery'    => __( 'Create Gallery Post', 'wpmediaverse' ),
+			'createAlbum'      => __( 'Create Album', 'wpmediaverse' ),
+			'uploadVideo'      => __( 'Upload Video', 'wpmediaverse' ),
+			'uploadAudio'      => __( 'Upload Audio', 'wpmediaverse' ),
+			'upload'           => __( 'Upload', 'wpmediaverse' ),
+			'savedRedirecting' => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
+			'settingsSaved'    => __( 'Media settings saved.', 'wpmediaverse' ),
+			'selectFiles'      => __( 'Please select files to upload.', 'wpmediaverse' ),
+			/* translators: %s: album name. */
+			'albumCreated'     => __( 'Album "%s" created!', 'wpmediaverse' ),
+			'failedLoad'       => __( 'Failed to load media.', 'wpmediaverse' ),
+			'failedComment'    => __( 'Failed to post comment.', 'wpmediaverse' ),
+			'linkCopied'       => __( 'Link copied!', 'wpmediaverse' ),
+			'copyFailed'       => __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
+			'notDownloadable'  => __( 'This media is not available for download.', 'wpmediaverse' ),
+		),
+	)
+);
 ?>
 <div class="mvs-app-shell"
 	data-wp-interactive="mvs/shared-ui"

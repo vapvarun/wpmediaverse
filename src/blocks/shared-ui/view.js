@@ -15,9 +15,10 @@
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
-// i18n: wp-i18n is loaded as a classic script on every WP page; read it
-// from window since @wordpress/i18n is not yet importable in script modules.
-const __ = ( str, domain ) => ( window.wp && window.wp.i18n && window.wp.i18n.__ ) ? window.wp.i18n.__( str, domain || 'wpmediaverse' ) : str;
+// i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
+// (no getLocaleData for the domain). Strings are PHP-translated and injected into
+// interactivity state by shared-ui-frame.php via wp_interactivity_state(); read
+// them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
 let toastTimer = null;
 let tagSearchTimer = null;
 
@@ -98,13 +99,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 		get uploadModalHeading() {
 			const titles = {
-				photo: __( 'Upload Photo', 'wpmediaverse' ),
-				gallery: __( 'Create Gallery Post', 'wpmediaverse' ),
-				album: __( 'Create Album', 'wpmediaverse' ),
-				video: __( 'Upload Video', 'wpmediaverse' ),
-				audio: __( 'Upload Audio', 'wpmediaverse' ),
+				photo: ( state.i18n?.uploadPhoto || 'Upload Photo' ),
+				gallery: ( state.i18n?.createGallery || 'Create Gallery Post' ),
+				album: ( state.i18n?.createAlbum || 'Create Album' ),
+				video: ( state.i18n?.uploadVideo || 'Upload Video' ),
+				audio: ( state.i18n?.uploadAudio || 'Upload Audio' ),
 			};
-			return titles[ state.uploadModalMode ] || __( 'Upload', 'wpmediaverse' );
+			return titles[ state.uploadModalMode ] || ( state.i18n?.upload || 'Upload' );
 		},
 		get uploadAccept() {
 			// Auto-detect flow: accept every supported type; the picked file(s)
@@ -600,13 +601,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					window.location.pathname !== new URL( updated.link ).pathname &&
 					/\/media\/[^/]+\/?$/.test( window.location.pathname )
 				) {
-					actions.showToast( __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ), 'success' );
+					actions.showToast( ( state.i18n?.savedRedirecting || 'Saved! Redirecting to the new URL…' ), 'success' );
 					actions.closeEditModal();
 					window.location.replace( updated.link );
 					return;
 				}
 
-				actions.showToast( __( 'Media settings saved.', 'wpmediaverse' ), 'success' );
+				actions.showToast( ( state.i18n?.settingsSaved || 'Media settings saved.' ), 'success' );
 				actions.closeEditModal();
 			} catch ( err ) {
 				state.editModalError = err.message || 'Could not save. Try again.';
@@ -818,7 +819,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const files = state.uploadModalFiles;
 
 			if ( ! files.length && state.uploadModalMode !== 'album' ) {
-				actions.showToast( __( 'Please select files to upload.', 'wpmediaverse' ), 'error' );
+				actions.showToast( ( state.i18n?.selectFiles || 'Please select files to upload.' ), 'error' );
 				return;
 			}
 
@@ -848,7 +849,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				}
 				const albumData = albumResult.data;
 				state._pendingAlbumId = albumData.id;
-				actions.showToast( __( 'Album "', 'wpmediaverse' ) + albumData.title + '" created!' );
+				actions.showToast( ( state.i18n?.albumCreated || 'Album "%s" created!' ).replace( '%s', albumData.title ) );
 				if ( ! files.length ) {
 					state.uploadModalUploading = false;
 					setTimeout( () => {
@@ -1058,7 +1059,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.lightboxLoadSocial( ctx, mediaId );
 			} catch {
 				state.lightboxLoading = false;
-				actions.showToast( __( 'Failed to load media.', 'wpmediaverse' ), 'error' );
+				actions.showToast( ( state.i18n?.failedLoad || 'Failed to load media.' ), 'error' );
 			}
 		},
 		async openLightboxById( mediaId ) {
@@ -1125,7 +1126,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.lightboxLoadSocial( { restUrl, nonce, isLoggedIn }, mediaId );
 			} catch {
 				state.lightboxLoading = false;
-				actions.showToast( __( 'Failed to load media.', 'wpmediaverse' ), 'error' );
+				actions.showToast( ( state.i18n?.failedLoad || 'Failed to load media.' ), 'error' );
 			}
 		},
 		noop() {},
@@ -1271,7 +1272,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					state.lightboxCommentText = '';
 				}
 			} catch {
-				actions.showToast( __( 'Failed to post comment.', 'wpmediaverse' ), 'error' );
+				actions.showToast( ( state.i18n?.failedComment || 'Failed to post comment.' ), 'error' );
 			}
 		},
 		async lightboxShare() {
@@ -1323,8 +1324,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				}
 				actions.showToast(
 					shared
-						? __( 'Link copied!', 'wpmediaverse' )
-						: __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
+						? ( state.i18n?.linkCopied || 'Link copied!' )
+						: ( state.i18n?.copyFailed || 'Could not copy link. Use the Open button to view this media in a new tab.' ),
 					shared ? 'success' : 'error'
 				);
 			}
@@ -1359,7 +1360,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// no downloadable file_url.
 			const data = state.lightboxMediaData;
 			if ( ! data || ! data.file_url ) {
-				actions.showToast( __( 'This media is not available for download.', 'wpmediaverse' ), 'error' );
+				actions.showToast( ( state.i18n?.notDownloadable || 'This media is not available for download.' ), 'error' );
 				return;
 			}
 
