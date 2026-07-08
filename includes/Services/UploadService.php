@@ -276,7 +276,25 @@ class UploadService {
 			// mvs_watermark_stamp_file — a no-op when Pro is inactive.
 			$watermark = \WPMediaVerse\Core\Plugin::container()->get( 'watermark' );
 			if ( $watermark->applies_to_user( $user_id ) ) {
-				(bool) apply_filters( 'mvs_watermark_stamp_file', false, $file['tmp_name'], $mime, $user_id );
+				$stamped = (bool) apply_filters( 'mvs_watermark_stamp_file', false, $file['tmp_name'], $mime, $user_id );
+
+				// Do NOT fail open silently. When a stamper is registered (Pro
+				// active) but the stamp did not succeed, a paid "protect my media"
+				// upload would otherwise be stored + served UN-watermarked with no
+				// trace. Log an error so the site owner sees it on the Logs screen
+				// and can act (most often: the GD image library is unavailable).
+				// Basecamp 10073499080.
+				if ( ! $stamped && has_filter( 'mvs_watermark_stamp_file' ) ) {
+					LoggerService::error(
+						'watermark',
+						'Watermark stamp failed; the un-watermarked original was stored. Check that the GD image library is available on this server.',
+						array(
+							'user_id' => $user_id,
+							'mime'    => $mime,
+						)
+					);
+				}
+
 				clearstatcache( true, $file['tmp_name'] );
 				$actual_size  = (int) filesize( $file['tmp_name'] );
 				$bytes_before = (int) $actual_size;
