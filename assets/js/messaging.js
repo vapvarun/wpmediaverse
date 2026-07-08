@@ -7,13 +7,17 @@
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
-// i18n runtime shim — script modules can't import @wordpress/i18n yet,
-// so we read it from the global wp.i18n that core enqueues for admin
-// + Interactivity-API-aware frontend. Falls back to the literal string
-// if the global isn't present (e.g. before wp-i18n boots).
-const __ = ( str, domain ) => ( window.wp && window.wp.i18n && window.wp.i18n.__ ) ? window.wp.i18n.__( str, domain || 'wpmediaverse' ) : str;
-
 const config = window.mvsMessagingConfig || {};
+
+// i18n — script modules can't import @wordpress/i18n and the global wp.i18n
+// carries no 'wpmediaverse' catalog on the frontend, so reading it there just
+// returned the English source. Instead PHP seeds mvsMessagingConfig.i18n with
+// __()-translated strings keyed by their English source (gettext-style); the
+// shim looks the source up, falling back to the literal. Matches how the
+// Interactivity stores read wp_interactivity_state i18n. Basecamp 10073528834.
+const I18N = config.i18n || {};
+const __ = ( str ) => ( Object.prototype.hasOwnProperty.call( I18N, str ) ? I18N[ str ] : str );
+
 const REST   = config.restBase || '/wp-json/mvs/v1';
 const NONCE  = config.nonce || '';
 const ME     = config.currentUser || {};
