@@ -14,7 +14,7 @@ get_header();
 
 do_action( 'mvs_before_content' );
 
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 ?>
 <div class="mvs-single-collection">
 	<?php
@@ -24,6 +24,21 @@ include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 		$collection_id   = get_the_ID();
 		$collection_type = get_post_meta( $collection_id, '_mvs_collection_type', true ) ?: 'manual';
 		$is_owner        = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
+
+		// Privacy gate for the whole collection — mirror album.php. Without this a
+		// members/private collection's title, counts, and item layout rendered to
+		// anyone (individual thumbnails still sign per-viewer, but the structure
+		// leaked). A viewer who can't see the collection gets the branded 404,
+		// nothing else. Basecamp 10073499554.
+		if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $collection_id, get_current_user_id() ) ) {
+			status_header( 404 );
+			echo '<div class="mvs-empty-state"><p>' . esc_html__( 'Collection not found.', 'wpmediaverse' ) . '</p></div>';
+			echo '</div>';
+			include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+			do_action( 'mvs_after_content' );
+			get_footer();
+			return;
+		}
 
 		// Resolve items.
 		$container = \WPMediaVerse\Core\Plugin::container();
@@ -68,7 +83,7 @@ include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 				<div class="mvs-collection-card-meta">
 					<span class="mvs-collection-meta-author">
 						<?php
-						$mvs_author_id  = (int) get_the_author_meta( 'ID' );
+						$mvs_author_id = (int) get_the_author_meta( 'ID' );
 						// Platform-agnostic profile URL (BP / BuddyNext override via filter).
 						$mvs_author_url    = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $mvs_author_id );
 						$mvs_author_avatar = get_avatar( $mvs_author_id, 24, '', '', array( 'class' => 'mvs-collection-avatar' ) );
@@ -77,7 +92,7 @@ include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 							?>
 						<a href="<?php echo esc_url( $mvs_author_url ); ?>" class="mvs-collection-author-link"><?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?><?php echo esc_html( get_the_author() ); ?></a>
 						<?php else : ?>
-						<?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?><span><?php echo esc_html( get_the_author() ); ?></span>
+							<?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?><span><?php echo esc_html( get_the_author() ); ?></span>
 						<?php endif; ?>
 					</span>
 					<span class="mvs-collection-meta-text">
@@ -159,7 +174,7 @@ include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 <?php
 wp_enqueue_style( 'mvs-frontend' );
 
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 

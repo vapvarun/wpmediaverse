@@ -215,6 +215,21 @@ class TemplateLoader {
 	}
 
 	public function load_media_templates(): void {
+		// Gate single album/collection privacy here (template_redirect@5), BEFORE
+		// the theme renders. The in-template gates in album.php / collection.php
+		// run after get_header(), so a members/private album's or collection's
+		// document <title> and breadcrumbs still leaked its name to non-owners.
+		// Rendering the branded 404 now — before the theme sets the title — closes
+		// that. The in-template gates stay as defense-in-depth. Basecamp 10073499554.
+		if ( is_singular( array( 'mvs_album', 'mvs_collection' ) ) ) {
+			$mvs_cpt_id = get_queried_object_id();
+			if ( $mvs_cpt_id && ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $mvs_cpt_id, get_current_user_id() ) ) {
+				$mvs_ctx = ( 'mvs_collection' === get_post_type( $mvs_cpt_id ) ) ? 'collection' : 'album';
+				self::render_branded_404( $mvs_ctx, (string) get_post_field( 'post_name', $mvs_cpt_id ) );
+				return; // render_branded_404() exits; return keeps control flow explicit.
+			}
+		}
+
 		// Single media by slug.
 		$slug = get_query_var( 'mvs_media_slug' );
 		if ( $slug ) {
