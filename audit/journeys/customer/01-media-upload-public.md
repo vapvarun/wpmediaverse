@@ -66,5 +66,5 @@ ALL of the following hold:
 |---|---|---|
 | 403 on POST | Subscriber missing upload cap | `includes/Capabilities/MediaCapabilities.php` |
 | Upload succeeds, signed URL 401 | TTL too short or signing key rotated | `includes/Services/SignedUrlService.php` |
-| Image src is plain `/wp-content/uploads/...` (not signed) | Signing-entry-point regression | `includes/Services/MediaUrl.php`, `includes/Core/TemplateHelpers.php` |
+| Image src is plain `/wp-content/uploads/...` (not signed) | Signing-entry-point regression | `includes/Core/MediaUrl.php`, `includes/Core/TemplateHelpers.php` |
 | Explore renders no items | Privacy gate flipped or query filter | `includes/Services/PrivacyService.php`, `includes/REST/Controller/MediaController.php` |

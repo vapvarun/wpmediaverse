@@ -37,7 +37,7 @@ estimated_runtime_minutes: 8
 ### 3. Open a single media item
 - **Action**: click an image card.
 - **Expect**: single-media view (or modal) shows the full image (`naturalWidth > 0`), title, author, and reaction/comment affordances.
-- **On fail**: `templates/single-media.php`, `TemplateHelpers::picture_or_img`.
+- **On fail**: `templates/media-single.php`, `TemplateHelpers::picture_or_img`.
 
 ### 4. Lightbox
 - **Action**: trigger the lightbox; navigate next/prev.
@@ -50,7 +50,7 @@ estimated_runtime_minutes: 8
 - **On fail**: `assets/css/frontend.css` / block `style.css` missing `@media (max-width:640px)` rules.
 
 ### 6. Translation-readiness
-- **Action**: grep `templates/explore.php`, `templates/single-media.php`, and the explore/lightbox JS for visible strings.
+- **Action**: grep `templates/explore.php`, `templates/media-single.php`, and the explore/lightbox JS for visible strings.
 - **Expect**: all labels ("Search media", "No results", filter names, "by", reaction labels) wrapped in `__()/esc_html__()` with domain `wpmediaverse`; JS strings localized, not inlined.
 - **On fail**: the template/JS emitting the literal.
 
