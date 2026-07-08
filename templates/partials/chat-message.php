@@ -133,7 +133,14 @@ defined( 'ABSPATH' ) || exit;
 	<!-- Reactions -->
 	<div class="mvs-chat-msg__reactions" data-wp-bind--hidden="context.item.noReactions">
 		<template data-wp-each="context.item.reactions">
-			<button class="mvs-chat-msg__reaction" data-wp-on--click="actions.addReaction" type="button">
+			<button
+				class="mvs-chat-msg__reaction"
+				data-wp-class--mvs-chat-msg__reaction--mine="context.item.mine"
+				data-wp-on--click="actions.toggleReaction"
+				data-wp-bind--title="context.item.reactedByLabel"
+				data-wp-bind--aria-pressed="context.item.mine"
+				type="button"
+			>
 				<span data-wp-text="context.item.emoji"></span>
 				<span class="mvs-chat-msg__reaction-count" data-wp-text="context.item.count"></span>
 			</button>

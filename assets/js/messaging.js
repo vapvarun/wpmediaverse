@@ -142,6 +142,27 @@ function enrichMessage( msg ) {
 	msg.noReply    = ! msg.hasReply;
 	msg.hasReactions = Array.isArray( msg.reactions ) && msg.reactions.length > 0;
 	msg.noReactions  = ! msg.hasReactions;
+	// Attribution + toggle affordance for each reaction pill. In a 1:1 DM a
+	// reaction is mine, the other person's, or both — so `mine` is the meaningful
+	// "who reacted" signal, and it also decides whether tapping the pill adds or
+	// removes my own reaction (removeReaction existed but was bound to nothing).
+	if ( msg.hasReactions ) {
+		msg.reactions = msg.reactions.map( r => {
+			const ids  = Array.isArray( r.user_ids ) ? r.user_ids : [];
+			const mine = ids.some( id => String( id ) === String( ME.id ) );
+			// Only the `__` shim exists in this module (no _n/sprintf). In a 1:1
+			// DM `mine` is the complete who-reacted signal, and it also drives the
+			// tap-to-remove toggle below.
+			const label = mine
+				? __( 'You reacted — tap to remove', 'wpmediaverse' )
+				: __( 'Reacted', 'wpmediaverse' );
+			// messageId is carried onto the reaction so the pill — which lives
+			// inside data-wp-each="reactions" where context.item is the reaction,
+			// not the message — can resolve its own message. Plain camelCase: the
+			// Interactivity each does not track underscore-prefixed props.
+			return { ...r, mine, notMine: ! mine, reactedByLabel: label, messageId: msg.id };
+		} );
+	}
 	msg.notText    = msg.message_type !== 'text';
 	msg.notImage   = msg.message_type !== 'image';
 	msg.notVideo   = msg.message_type !== 'video';
@@ -1112,6 +1133,64 @@ const { state, actions } = store( 'mvs/messaging', {
 			}
 			state.contextMenuMessageId = null;
 			state.messages.forEach( m => { m.showMenu = false; m.noMenu = true; } );
+		},
+
+		// Tapping an existing reaction pill toggles MY reaction: remove it if it
+		// is already mine, otherwise add it. The pill's context.item IS the
+		// reaction (it sits inside data-wp-each="reactions"), so the message id
+		// comes from the reaction's carried messageId, not ctx.messageId (which
+		// is only set while the context menu is open). Backend allows one reaction
+		// per user per message, so adding also clears my reaction on any other
+		// emoji to keep the optimistic view honest until the next poll.
+		*toggleReaction() {
+			const ctx      = getContext();
+			const reaction = ctx.item || {};
+			const msgId    = reaction.messageId;
+			const emoji    = reaction.emoji;
+			if ( ! msgId || ! emoji ) return;
+			const removing = !! reaction.mine;
+
+			try {
+				yield apiFetch( '/messages/' + msgId + '/reactions', removing
+					? { method: 'DELETE' }
+					: { method: 'POST', body: JSON.stringify( { emoji } ) }
+				);
+
+				state.messages = state.messages.map( m => {
+					if ( String( m.id ) !== String( msgId ) ) return m;
+					let reactions = ( m.reactions || [] ).map( r => ( { ...r } ) );
+
+					if ( removing ) {
+						const idx = reactions.findIndex( r => r.emoji === emoji );
+						if ( idx >= 0 ) {
+							reactions[ idx ].user_ids = reactions[ idx ].user_ids.filter( id => String( id ) !== String( ME.id ) );
+							reactions[ idx ].count    = reactions[ idx ].user_ids.length;
+						}
+					} else {
+						// One reaction per user: drop me from every other emoji first.
+						reactions.forEach( r => {
+							if ( r.emoji !== emoji && r.user_ids.some( id => String( id ) === String( ME.id ) ) ) {
+								r.user_ids = r.user_ids.filter( id => String( id ) !== String( ME.id ) );
+								r.count    = r.user_ids.length;
+							}
+						} );
+						const idx = reactions.findIndex( r => r.emoji === emoji );
+						if ( idx >= 0 ) {
+							if ( ! reactions[ idx ].user_ids.some( id => String( id ) === String( ME.id ) ) ) {
+								reactions[ idx ].user_ids = [ ...reactions[ idx ].user_ids, ME.id ];
+								reactions[ idx ].count    = reactions[ idx ].user_ids.length;
+							}
+						} else {
+							reactions.push( { emoji, count: 1, user_ids: [ ME.id ] } );
+						}
+					}
+
+					reactions = reactions.filter( r => r.count > 0 );
+					return enrichMessage( { ...m, reactions } );
+				} );
+			} catch ( e ) {
+				// Silently fail — the next poll reconciles server truth.
+			}
 		},
 
 		*removeReaction() {

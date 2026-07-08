@@ -1867,6 +1867,8 @@ class Plugin {
 				'Could not share media.'      => __( 'Could not share media.', 'wpmediaverse' ),
 				'Upload failed'               => __( 'Upload failed', 'wpmediaverse' ),
 				'Microphone access denied'    => __( 'Microphone access denied', 'wpmediaverse' ),
+				'You reacted — tap to remove' => __( 'You reacted — tap to remove', 'wpmediaverse' ),
+				'Reacted'                     => __( 'Reacted', 'wpmediaverse' ),
 			),
 		);
 
