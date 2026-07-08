@@ -1025,6 +1025,22 @@ class MediaController extends WP_REST_Controller {
 		$filename      = $filename_pick['stored'];
 		$dest_path     = $dest_sub . '/' . $filename;
 
+		// Hash the member's SOURCE bytes before anything rewrites the file in
+		// place. Mirrors UploadService::handle(), where dup detection matches the
+		// upload as the user supplied it rather than the post-encode bytes.
+		$source_hash = (string) hash_file( 'sha256', $file['tmp_name'] );
+
+		// A replacement is new member bytes entering the library, so it stamps —
+		// the same rule as a fresh upload. This MUST run before store() below:
+		// store() persists the temp file, and the WebP/AVIF siblings are cut from
+		// that same temp file further down. Stamping afterwards would ship a
+		// clean original alongside watermarked siblings. Basecamp 10073917553.
+		Plugin::container()->get( 'watermark' )->stamp_new_upload(
+			$file['tmp_name'],
+			$mime,
+			get_current_user_id()
+		);
+
 		if ( ! $driver->store( $file['tmp_name'], $dest_path ) ) {
 			return new \WP_Error( 'mvs_storage_failed', __( 'Failed to store the file.', 'wpmediaverse' ), array( 'status' => 500 ) );
 		}
@@ -1048,7 +1064,7 @@ class MediaController extends WP_REST_Controller {
 				'file_path'  => $dest_path,
 				'file_type'  => $mime,
 				'file_size'  => filesize( $file['tmp_name'] ) ?: 0,
-				'file_hash'  => hash_file( 'sha256', $file['tmp_name'] ),
+				'file_hash'  => $source_hash,
 				'media_type' => $media_type,
 			)
 		);

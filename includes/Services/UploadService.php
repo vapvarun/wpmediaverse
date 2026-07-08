@@ -269,32 +269,16 @@ class UploadService {
 		$avif_local   = null;
 		$bytes_before = (int) $actual_size;
 		if ( 0 === strpos( $mime, 'image/' ) ) {
-			// Admin watermark: stamp the ORIGINAL in place before optimization so
-			// every derivative (webp/avif/thumbnails) inherits it and everyone
-			// sees it. Scope (all uploads, or selected uploader roles) is decided
-			// by the admin; Pro's Watermarker does the stamp via
-			// mvs_watermark_stamp_file — a no-op when Pro is inactive.
+			// Admin watermark: stamped into the ORIGINAL in place, before
+			// optimization, so every derivative (webp/avif/thumbnails) inherits it
+			// from a single draw. WatermarkService::stamp_new_upload() owns the
+			// image guard, the scope check, the filter, and the fail-open log —
+			// it is the one place the stamp is fired from. `$hash` above stays
+			// pre-stamp on purpose: dup detection matches the user's source.
 			$watermark = \WPMediaVerse\Core\Plugin::container()->get( 'watermark' );
-			if ( $watermark->applies_to_user( $user_id ) ) {
-				$stamped = (bool) apply_filters( 'mvs_watermark_stamp_file', false, $file['tmp_name'], $mime, $user_id );
-
-				// Do NOT fail open silently. When a stamper is registered (Pro
-				// active) but the stamp did not succeed, a paid "protect my media"
-				// upload would otherwise be stored + served UN-watermarked with no
-				// trace. Log an error so the site owner sees it on the Logs screen
-				// and can act (most often: the GD image library is unavailable).
-				// Basecamp 10073499080.
-				if ( ! $stamped && has_filter( 'mvs_watermark_stamp_file' ) ) {
-					LoggerService::error(
-						'watermark',
-						'Watermark stamp failed; the un-watermarked original was stored. Check that the GD image library is available on this server.',
-						array(
-							'user_id' => $user_id,
-							'mime'    => $mime,
-						)
-					);
-				}
-
+			if ( $watermark->stamp_new_upload( $file['tmp_name'], $mime, $user_id ) ) {
+				// The stamp rewrote the file in place. Re-measure so the optimizer
+				// below records its before/after byte counts against the real size.
 				clearstatcache( true, $file['tmp_name'] );
 				$actual_size  = (int) filesize( $file['tmp_name'] );
 				$bytes_before = (int) $actual_size;

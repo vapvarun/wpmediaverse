@@ -85,4 +85,68 @@ class WatermarkService {
 
 		return (bool) array_intersect( (array) $user->roles, $roles );
 	}
+
+	/**
+	 * Stamp the admin watermark into bytes a member is publishing right now.
+	 *
+	 * THE RULE, stated once: stamp what the member publishes now; never
+	 * re-process what is already in the library.
+	 *
+	 * This is the only place `mvs_watermark_stamp_file` is fired. Two ingest
+	 * paths introduce new member bytes and both call it:
+	 *
+	 *   - `UploadService::handle()`            — a brand-new upload.
+	 *   - `MediaController::replace_item()`    — a new file for an existing row.
+	 *
+	 * `UploadService::sideload_external_file()` deliberately does NOT call it.
+	 * That path re-ingests bytes already in the library: `StorageRepairService`
+	 * heals a stored file, and the Pro CLI importers migrate legacy MediaPress /
+	 * rtMedia / BuddyBoss media. Those files are either already stamped — and
+	 * nothing records that a file was stamped, so a second pass would draw a
+	 * second watermark — or they are pre-existing content the admin never agreed
+	 * to alter. Watermarking applies to new uploads only. The omission there is
+	 * deliberate; do not "fix" it by adding a call.
+	 *
+	 * Callers must stamp BEFORE the bytes are stored and before any derivative
+	 * (WebP/AVIF sibling, thumbnail) is cut, so every derivative inherits the
+	 * mark from one draw. Callers that record a content hash of the user's
+	 * source must take that hash BEFORE calling this — the stamp rewrites the
+	 * file in place.
+	 *
+	 * @param string $path    Absolute path to the image bytes. Stamped IN PLACE.
+	 * @param string $mime    Source mime type.
+	 * @param int    $user_id Uploader — drives the {username} token and role scope.
+	 * @return bool True when a watermark was actually drawn into the file.
+	 */
+	public function stamp_new_upload( string $path, string $mime, int $user_id ): bool {
+		// Images only. Video and audio are never watermarked, and returning
+		// early here keeps the failure log below from firing on every video.
+		if ( 0 !== strpos( $mime, 'image/' ) ) {
+			return false;
+		}
+
+		if ( ! $this->applies_to_user( $user_id ) ) {
+			return false;
+		}
+
+		$stamped = (bool) apply_filters( 'mvs_watermark_stamp_file', false, $path, $mime, $user_id );
+
+		// Do NOT fail open silently. When a stamper is registered (Pro active)
+		// but the stamp did not succeed, a paid "protect my media" upload would
+		// otherwise be stored and served UN-watermarked with no trace. Log an
+		// error so the site owner sees it on the Logs screen and can act (most
+		// often: the GD image library is unavailable). Basecamp 10073499080.
+		if ( ! $stamped && has_filter( 'mvs_watermark_stamp_file' ) ) {
+			LoggerService::error(
+				'watermark',
+				'Watermark stamp failed; the un-watermarked original was stored. Check that the GD image library is available on this server.',
+				array(
+					'user_id' => $user_id,
+					'mime'    => $mime,
+				)
+			);
+		}
+
+		return $stamped;
+	}
 }
