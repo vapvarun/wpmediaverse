@@ -707,7 +707,14 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_moderation_auto_action' ),
-				'default'           => 'delete',
+				// MUST match ModerationService's runtime default (get_option(..,
+				// 'flag')) and the sanitizer's fallback ('flag'). This registered
+				// default drives the settings field's displayed selection and the
+				// REST schema, so 'delete' here made a fresh install SHOW "Delete
+				// permanently" as the default and persist it on the first Save —
+				// silently arming auto-deletion of flagged uploads. Auto-moderation
+				// must default to the safe, reversible action. Basecamp 10074612454.
+				'default'           => 'flag',
 			)
 		);
 		add_settings_field(
