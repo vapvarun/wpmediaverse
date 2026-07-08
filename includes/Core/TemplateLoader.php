@@ -47,10 +47,25 @@ class TemplateLoader {
 		add_filter( 'archive_template', array( $this, 'load_archive_template' ) );
 		add_filter( 'taxonomy_template', array( $this, 'load_taxonomy_template' ) );
 
-		// Own the page template for the pages THIS plugin created, so a member's
+		// Own the page layout for the pages THIS plugin created, so a member's
 		// media library is not rendered beside the theme's blog sidebar. Each of
 		// the three Wbcom themes removes the sidebar its own way — we use the
-		// theme's mechanism, not a bare wrapper that discards the theme's shell.
+		// theme's mechanism, not a bare wrapper that discards the theme's shell:
+		//
+		// - BuddyX / BuddyX-Pro map the page to a no-sidebar page template.
+		// That is a persisted page attribute (visible + editable in the block
+		// editor as "Template: Page No Sidebar"), synced below.
+		// - Reign drives layout from post-meta (force_reign_full_width).
+		// - Any other theme falls through to use_app_template()'s bare shell.
+
+		// Keep the page-template attribute in step with the active theme: stamp it
+		// when switching to a theme that ships a no-sidebar template, clear a stale
+		// one when switching to a theme that doesn't. Also runs once on upgrade to
+		// backfill pages created before this existed.
+		add_action( 'after_switch_theme', array( self::class, 'sync_app_page_templates' ) );
+		add_action( 'init', array( self::class, 'maybe_backfill_app_page_templates' ), 20 );
+
+		// Fallback only: a theme with no no-sidebar page template and not Reign.
 		add_filter( 'template_include', array( $this, 'use_app_template' ), 99 );
 
 		// Reign removes the sidebar via post-meta, not a page template. Force its
@@ -813,30 +828,30 @@ class TemplateLoader {
 
 		$post_id = (int) get_queried_object_id();
 
-		// Reign: its own page template stays; the meta filter forces full-width.
-		if ( self::is_reign_theme() ) {
-			/** This filter is documented below. */
-			return (string) apply_filters( 'mvs_app_template', $template, $post_id );
+		// The page has an explicit, resolvable page template — our synced
+		// "Page No Sidebar" mapping on BuddyX/BuddyX-Pro, or one the admin chose
+		// in the editor. WordPress already resolved it; respect it, do not
+		// second-guess a visible page attribute.
+		$assigned = (string) get_page_template_slug( $post_id );
+		if ( '' !== $assigned && 'default' !== $assigned && locate_template( $assigned ) ) {
+			return $template;
 		}
 
-		// A theme's own no-sidebar page template keeps the theme's container +
-		// hooks (BuddyX/BuddyX-Pro ship both; -container.php keeps the content
-		// width, full-width.php is edge-to-edge — prefer the contained one).
-		$theme_full_width = locate_template(
-			array(
-				'page-templates/full-width-container.php',
-				'page-templates/full-width.php',
-			)
-		);
+		// Reign: its own page template stays; the meta filter forces full-width.
+		if ( self::is_reign_theme() ) {
+			return $template;
+		}
 
-		// Fall back to the plugin's own sidebar-free shell on non-Wbcom themes.
-		$resolved = $theme_full_width ? $theme_full_width : self::locate( 'app-page.php' );
+		// No usable no-sidebar page template on this theme, and not Reign — fall
+		// back to the plugin's own sidebar-free shell so the sidebar never leaks
+		// through on a non-Wbcom theme.
+		$resolved = self::locate( 'app-page.php' );
 		if ( ! $resolved ) {
 			return $template;
 		}
 
 		/**
-		 * Filters the layout template used for a plugin app page.
+		 * Filters the fallback app-page template path.
 		 *
 		 * @since 2.0.0
 		 *
@@ -844,6 +859,104 @@ class TemplateLoader {
 		 * @param int    $post_id  The app page being rendered.
 		 */
 		return (string) apply_filters( 'mvs_app_template', $resolved, $post_id );
+	}
+
+	/**
+	 * The active theme's "no sidebar" page template slug, or '' if it has none.
+	 *
+	 * BuddyX and BuddyX-Pro both ship page-templates/full-width-container.php
+	 * ("Page No Sidebar" — keeps the content container) and
+	 * page-templates/full-width.php ("Page Full Screen" — edge to edge). We
+	 * prefer the contained one. Resolved against the theme's registered page
+	 * templates so a theme that renamed or dropped the file is handled correctly.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return string Page-template slug (e.g. 'page-templates/full-width-container.php'), or ''.
+	 */
+	public static function theme_no_sidebar_template(): string {
+		$candidates = array(
+			'page-templates/full-width-container.php',
+			'page-templates/full-width.php',
+		);
+
+		/**
+		 * Filters the page-template slugs treated as "no sidebar" for app pages.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string[] $candidates Ordered candidate slugs; first match wins.
+		 */
+		$candidates = (array) apply_filters( 'mvs_no_sidebar_templates', $candidates );
+
+		$registered = wp_get_theme()->get_page_templates( null, 'page' );
+		foreach ( $candidates as $slug ) {
+			if ( isset( $registered[ $slug ] ) ) {
+				return $slug;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Point every app page at the active theme's no-sidebar page template.
+	 *
+	 * Sets the visible, editable _wp_page_template attribute so the block editor
+	 * shows "Template: Page No Sidebar" and the theme renders the page natively.
+	 * When the active theme has no such template (e.g. Reign, which uses meta),
+	 * clears any full-width slug WE previously stamped — but never touches a slug
+	 * an admin chose. Idempotent; safe on every theme switch.
+	 *
+	 * @since 2.0.0
+	 */
+	public static function sync_app_page_templates(): void {
+		$slug = self::theme_no_sidebar_template();
+
+		foreach ( self::app_page_ids() as $post_id ) {
+			$current = (string) get_post_meta( $post_id, '_wp_page_template', true );
+
+			if ( '' !== $slug ) {
+				// Only stamp when unset/default or already one of ours — never
+				// overwrite an admin's explicit non-full-width choice.
+				if ( '' === $current || 'default' === $current || self::is_full_width_slug( $current ) ) {
+					update_post_meta( $post_id, '_wp_page_template', $slug );
+				}
+			} elseif ( self::is_full_width_slug( $current ) ) {
+				// New theme has no such template; drop the now-dangling slug we set
+				// so WordPress falls to the default (Reign meta / app-page fallback
+				// then does the work).
+				delete_post_meta( $post_id, '_wp_page_template' );
+			}
+		}
+	}
+
+	/**
+	 * Whether a stored page-template slug is one of the full-width ones we manage.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $slug Stored _wp_page_template value.
+	 * @return bool
+	 */
+	private static function is_full_width_slug( string $slug ): bool {
+		return in_array(
+			$slug,
+			array( 'page-templates/full-width-container.php', 'page-templates/full-width.php' ),
+			true
+		);
+	}
+
+	/**
+	 * Backfill the app-page template attribute once, for pages that predate it.
+	 *
+	 * @since 2.0.0
+	 */
+	public static function maybe_backfill_app_page_templates(): void {
+		if ( get_option( 'mvs_app_page_templates_synced' ) ) {
+			return;
+		}
+		self::sync_app_page_templates();
+		update_option( 'mvs_app_page_templates_synced', 1, false );
 	}
 
 	/**

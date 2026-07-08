@@ -33,6 +33,11 @@ class Activator {
 		// Create frontend pages if they don't exist.
 		self::create_pages();
 
+		// Point those pages at the active theme's no-sidebar page template so a
+		// member's media library never renders beside the theme's blog sidebar.
+		TemplateLoader::sync_app_page_templates();
+		update_option( 'mvs_app_page_templates_synced', 1, false );
+
 		// Protect upload directory from direct access.
 		self::protect_upload_directory();
 
