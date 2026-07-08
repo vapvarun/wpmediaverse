@@ -460,11 +460,22 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
-		// Scope filter.
+		// Scope filter. The feed blocks (Instagram/Dribbble/Flickr/Pinterest)
+		// offer Public / Followers / My uploads; only 'public' was implemented
+		// here, so 'followers' and 'self' silently did nothing on every layout.
+		// self/followers need a logged-in viewer; anonymous falls through to the
+		// public-only privacy gate above. Basecamp 10068992480.
 		$scope = $request->get_param( 'scope' );
 		if ( 'public' === $scope ) {
 			$where[]  = 'privacy = %s';
 			$params[] = 'public';
+		} elseif ( 'self' === $scope && $user_id ) {
+			$where[]  = 'post_author = %d';
+			$params[] = $user_id;
+		} elseif ( 'followers' === $scope && $user_id ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$where[]  = "post_author IN ( SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND status = 'active' )";
+			$params[] = $user_id;
 		}
 
 		// Exclude media from blocked users.
