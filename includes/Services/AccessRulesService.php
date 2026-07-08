@@ -653,14 +653,24 @@ class AccessRulesService {
 		// rules block them. (Redundant with check_access()'s own owner gate, but
 		// kept as defense in depth for any caller that invokes this filter
 		// directly.)
-		$author_id = 0;
-		$post      = get_post( $media_id );
-		if ( $post ) {
-			$author_id = (int) $post->post_author;
-		}
-		if ( ! $author_id ) {
-			// Try mvs_media_index for non-CPT media.
-			$author_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'post_author' );
+		// Resolve the author INDEX-FIRST — mvs_media_index.media_id is its own
+		// AUTO_INCREMENT space and can collide with an unrelated wp_posts.ID, so
+		// calling get_post($media_id) first would read the wrong entity's author
+		// for an access decision (Basecamp 10073499758). Mirror
+		// PrivacyService::check_access(): a real media item (in the index with a
+		// concrete media_type) resolves from the index; only album/collection CPTs
+		// (privacy-only index rows / not indexed) fall back to wp_posts, with a
+		// post_type check.
+		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$in_index   = $repo->exists( $media_id );
+		$media_type = $in_index ? (string) $repo->get( $media_id, 'media_type' ) : '';
+		if ( $in_index && '' !== $media_type ) {
+			$author_id = (int) $repo->get_author( $media_id );
+		} else {
+			$post      = get_post( $media_id );
+			$author_id = ( $post && in_array( $post->post_type, array( 'mvs_album', 'mvs_collection' ), true ) )
+				? (int) $post->post_author
+				: 0;
 		}
 		if ( $user_id && ( $author_id === $user_id || user_can( $user_id, 'moderate_mvs_media' ) ) ) {
 			return true;
