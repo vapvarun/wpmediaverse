@@ -47,6 +47,19 @@ class TemplateLoader {
 		add_filter( 'archive_template', array( $this, 'load_archive_template' ) );
 		add_filter( 'taxonomy_template', array( $this, 'load_taxonomy_template' ) );
 
+		// Own the page template for the pages THIS plugin created, so a member's
+		// media library is not rendered beside the theme's blog sidebar. Each of
+		// the three Wbcom themes removes the sidebar its own way — we use the
+		// theme's mechanism, not a bare wrapper that discards the theme's shell.
+		add_filter( 'template_include', array( $this, 'use_app_template' ), 99 );
+
+		// Reign removes the sidebar via post-meta, not a page template. Force its
+		// full-width layout for our app pages the same way Reign forces it for
+		// FluentCart pages (inc/fluentcart-support.php). No-op off Reign.
+		if ( self::is_reign_theme() ) {
+			add_filter( 'get_post_metadata', array( $this, 'force_reign_full_width' ), 10, 4 );
+		}
+
 		// Body class signal for BuddyX and other themes.
 		add_action( 'wp', array( $this, 'maybe_add_mvs_body_class' ) );
 
@@ -717,6 +730,180 @@ class TemplateLoader {
 			exit;
 		}
 		// No plugin template — let WP fall through to the theme's 404.
+	}
+
+	/**
+	 * The pages this plugin created on activation and therefore owns the layout of.
+	 *
+	 * Activator::create_pages() inserts /my-media/, /explore-media/ and
+	 * /upload-media/ as ordinary WP pages. On a theme whose default page template
+	 * carries a sidebar (BuddyX's blog template does), that renders a member's
+	 * media library beside "Recent Posts" / "Recent Comments". We inserted those
+	 * pages, so the sidebar is our doing, not WordPress's — own the template
+	 * rather than CSS-hide the chrome. Hidden chrome still queries widgets, still
+	 * gets announced by screen readers, still gets indexed, and still takes Tab
+	 * focus.
+	 *
+	 * Keyed on the three mvs_page_* options Activator writes; a page the plugin
+	 * never created is never routed here.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return int[] Post IDs of the plugin-owned app pages.
+	 */
+	public static function app_page_ids(): array {
+		$ids = array();
+		foreach ( array( 'dashboard', 'explore', 'upload' ) as $key ) {
+			$id = (int) get_option( 'mvs_page_' . $key, 0 );
+			if ( $id > 0 ) {
+				$ids[] = $id;
+			}
+		}
+
+		/**
+		 * Filters the pages that render with the plugin's full-bleed app template.
+		 *
+		 * A site owner can add a page (e.g. a custom landing page built from mvs
+		 * blocks) or remove one to restore the theme's default template.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param int[] $ids Post IDs of the plugin-owned app pages.
+		 */
+		return array_values( array_unique( (array) apply_filters( 'mvs_app_page_ids', $ids ) ) );
+	}
+
+	/**
+	 * Whether a post is one of the plugin-owned app pages.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function is_app_page( int $post_id ): bool {
+		return $post_id > 0 && in_array( $post_id, self::app_page_ids(), true );
+	}
+
+	/**
+	 * Route the plugin's own pages to a sidebar-free layout.
+	 *
+	 * We use each theme's OWN full-width mechanism so the content renders inside
+	 * the theme's container, header hooks and responsive rules — not a bare
+	 * wrapper that throws the theme's shell away:
+	 *
+	 *   - Reign drives layout from post-meta, so its own template stays and
+	 *     force_reign_full_width() does the work. Leave $template untouched.
+	 *   - BuddyX / BuddyX-Pro (and any theme shipping a "no sidebar" page
+	 *     template) → render inside the theme's full-width-container template.
+	 *   - Any other theme → the plugin's own templates/app-page.php.
+	 *
+	 * A theme or site owner overrides all of this with the mvs_app_template filter,
+	 * and removes a page from routing entirely with mvs_app_page_ids.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $template The template WordPress resolved.
+	 * @return string The layout template for a plugin page, else $template.
+	 */
+	public function use_app_template( string $template ): string {
+		if ( ! is_page() || ! self::is_app_page( (int) get_queried_object_id() ) ) {
+			return $template;
+		}
+
+		$post_id = (int) get_queried_object_id();
+
+		// Reign: its own page template stays; the meta filter forces full-width.
+		if ( self::is_reign_theme() ) {
+			/** This filter is documented below. */
+			return (string) apply_filters( 'mvs_app_template', $template, $post_id );
+		}
+
+		// A theme's own no-sidebar page template keeps the theme's container +
+		// hooks (BuddyX/BuddyX-Pro ship both; -container.php keeps the content
+		// width, full-width.php is edge-to-edge — prefer the contained one).
+		$theme_full_width = locate_template(
+			array(
+				'page-templates/full-width-container.php',
+				'page-templates/full-width.php',
+			)
+		);
+
+		// Fall back to the plugin's own sidebar-free shell on non-Wbcom themes.
+		$resolved = $theme_full_width ? $theme_full_width : self::locate( 'app-page.php' );
+		if ( ! $resolved ) {
+			return $template;
+		}
+
+		/**
+		 * Filters the layout template used for a plugin app page.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $resolved Absolute template path.
+		 * @param int    $post_id  The app page being rendered.
+		 */
+		return (string) apply_filters( 'mvs_app_template', $resolved, $post_id );
+	}
+
+	/**
+	 * Whether the active theme is Reign (or a Reign child).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return bool
+	 */
+	public static function is_reign_theme(): bool {
+		return false !== strpos( (string) get_template(), 'reign' );
+	}
+
+	/**
+	 * Force Reign's full-width layout for the plugin's app pages.
+	 *
+	 * Reign removes the sidebar from a page by reading its layout out of the
+	 * serialized `reign_wbcom_metabox_data` post-meta. Rather than persist that
+	 * meta on our pages (which would be stale if the site later switched away
+	 * from Reign), we short-circuit the read for our app pages only — exactly how
+	 * Reign itself forces full-width for FluentCart pages
+	 * (inc/fluentcart-support.php::reign_fluentcart_force_layout). Only ever sets
+	 * full-width when no explicit layout is configured, so an admin who chose a
+	 * layout keeps it.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param mixed  $value     The value get_metadata() is about to return (null = not short-circuited).
+	 * @param int    $object_id Post ID being queried.
+	 * @param string $meta_key  Meta key being queried.
+	 * @param bool   $single    Whether a single value was requested.
+	 * @return mixed Filtered meta, or the untouched $value.
+	 */
+	public function force_reign_full_width( $value, $object_id, $meta_key, $single ) {
+		if ( 'reign_wbcom_metabox_data' !== $meta_key || is_admin() ) {
+			return $value;
+		}
+		if ( ! self::is_app_page( (int) $object_id ) ) {
+			return $value;
+		}
+
+		// Read the real meta without re-entering this filter.
+		remove_filter( 'get_post_metadata', array( $this, 'force_reign_full_width' ), 10 );
+		$meta = get_post_meta( (int) $object_id, 'reign_wbcom_metabox_data', true );
+		add_filter( 'get_post_metadata', array( $this, 'force_reign_full_width' ), 10, 4 );
+
+		if ( ! is_array( $meta ) ) {
+			$meta = array();
+		}
+		if ( ! isset( $meta['layout'] ) || ! is_array( $meta['layout'] ) ) {
+			$meta['layout'] = array();
+		}
+
+		// Respect an explicit choice; only fill in when unset or the default '0'.
+		$current = $meta['layout']['site_layout'] ?? '0';
+		if ( '' === $current || '0' === $current ) {
+			$meta['layout']['site_layout'] = 'full_width';
+		}
+
+		return $single ? array( $meta ) : array( array( $meta ) );
 	}
 
 	public static function locate( string $template_name, string $template_path = '' ): string {
