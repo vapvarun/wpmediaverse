@@ -1,0 +1,87 @@
+# ─────────────────────────────────────────────────────────────────────────
+# AutoVAP v2 — Remediation Manifest (single direction)
+# Target: wpmediaverse (FREE) · branch 1.6.0 (B already landed: e2b62e7)
+#
+# Re-attempt of direction A only. The first attempt's sanitizer logic
+# (sentinel + reconcile vs KNOWN_FILE_TYPES) is CORRECT and verified to
+# produce the right value — but the value never reached the DB. Root cause
+# (verified in-browser + DB): WordPress update_option() delegates to
+# add_option() (a no-op on an existing row) when the current stored value
+# equals the registered default. mvs_allowed_file_types is registered with
+# DEFAULT_ALLOWED_FILE_TYPES (all 8 types), which equals the stored value on
+# any site that never customized it — i.e. most sites — so the first uncheck
+# never persists. Fix the PERSISTENCE, keep the sanitizer reconcile.
+# ─────────────────────────────────────────────────────────────────────────
+version: 1
+
+target:
+  type: plugin
+  slug: wpmediaverse
+  path: /Users/varundubey/Local Sites/wb-media/app/public/wp-content/plugins/wpmediaverse
+  repo: vapvarun/wpmediaverse
+  local_wp_site: wb-media
+  site_url: https://wb-media.local
+  pair: wpmediaverse-pro
+  basecamp_project_id: "46336461"
+
+goal: >
+  Make unchecking an Allowed File Type persist on EVERY site, including a fresh
+  install where the stored value still equals the registered default. This is a
+  TWO-PART fix and the base branch contains NEITHER part yet:
+  (1) sanitize_file_types() must reconcile the submitted (checked) MIME set
+  against the full known picker universe using a hidden "field was present"
+  sentinel, so a present-but-empty submission means "remove all picker types"
+  while a genuinely absent field falls back to the stored/default value;
+  (2) the sanitized value must actually PERSIST. The previous attempt got (1)
+  right but the value was silently dropped because WordPress update_option()
+  delegates to add_option() (a no-op on an existing row) when get_option()
+  returns a value equal to the registered default — true on most sites, since
+  mvs_allowed_file_types is registered with DEFAULT_ALLOWED_FILE_TYPES.
+  Implement BOTH parts. Do not change the option key or its stored CSV format,
+  do not break fresh-install seeding or the mvs_allowed_file_types developer
+  filter (Production Rules #2/#4). The functional gate must prove a first-time
+  uncheck persists in wp_options after reload.
+
+contracts:
+  options:
+    - "mvs_allowed_file_types"
+
+migrations: []
+
+standards:
+  build_skills:  [wp-plugin-development]
+  audit_skills:  [action-audit]
+  phpstan_level: 6
+  wpcs_standard: WordPress-Extra
+
+gates:
+  default_static:     [php-lint, wpcs, phpstan]
+  default_functional: [browser-smoke]
+
+journeys:
+  - id: owner-unchecks-file-type
+    role: admin
+    steps:
+      - "WP Admin → WPMediaVerse → Settings → General; Allowed File Types shows all native types checked"
+      - "uncheck OGG (audio/ogg), leave the rest checked, click Save Changes"
+      - "page reloads: OGG is still unchecked AND wp_options.mvs_allowed_file_types no longer contains audio/ogg"
+      - "re-check OGG and save: it persists checked again (reconciliation works both directions)"
+      - "this must work on the first change from the default state, not only after a prior customization"
+      - "no JS console errors; correct at 390px and 1280px"
+
+waves:
+  - id: wave-a-persist
+    depends_on: []
+    functional_gates: [browser-smoke]
+    journeys: [owner-unchecks-file-type]
+    directions:
+      - id: "a-file-types-persist-v2"
+        title: "Allowed File Types: unchecking a type must persist (TWO parts, base has neither) — (1) sanitize reconcile vs full known-type universe via a present-field sentinel, present-but-empty = remove all; (2) make the value actually save past WP's update_option→add_option no-op when the stored value equals the registered default. Keep option key + CSV format; don't break fresh-install seeding or the mvs_allowed_file_types filter. Functional gate must prove a FIRST uncheck persists in wp_options after reload."
+        journey: fix
+        scope:
+          - "includes/Admin/Settings/Sanitizers.php"
+          - "includes/Admin/Settings/SettingsRegistrar.php"
+          - "includes/Admin/Settings/FieldRenderer.php"
+        skills: [bug-fix, action-audit]
+        static_gates: [php-lint, wpcs, phpstan, wiring]
+        depends_on: []
