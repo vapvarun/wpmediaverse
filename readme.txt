@@ -32,9 +32,9 @@ Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores
 * **Explore Feed** - Public media grid with filtering by tag, album, user, and media type
 * **Lightbox** - Full-screen with reactions, comments, favorites, share, gallery navigation - no page reload
 * **BuddyPress Integration** - Activity uploads (1-6 per post), profile/group media tabs, lightbox in feed
-* **13 Gutenberg Blocks** - Media grid, upload, player, album viewer, explore feed, stories, and more
-* **80+ REST API Endpoints** - 17 controllers covering every operation for headless/decoupled builds
-* **8 WP-CLI Commands** - Bulk operations, migrations, cache management, moderation
+* **9 Gutenberg Blocks** - Media grid, upload, player, album viewer, explore feed, member photos, and more
+* **80+ REST API Endpoints** - 23 controllers covering every operation for headless/decoupled builds
+* **18 WP-CLI Commands** - Bulk operations, migrations, cache management, moderation
 * **8 Shortcodes** - Drop media features into any page or widget
 * **Webhooks** - Outbound event webhooks with HMAC-SHA256 signing via Action Scheduler
 * **GDPR** - Full data export and erasure via WordPress privacy tools
@@ -529,11 +529,11 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * 6-level privacy system with BuddyPress-aware fallback
 * Full social layer: reactions (6 types), threaded comments, favorites, follows, DMs, @mentions, sharing
 * AI moderation with OpenAI Vision - flag, quarantine, or reject uploads automatically
-* 13 Gutenberg blocks powered by WordPress Interactivity API
+* 9 Gutenberg blocks powered by WordPress Interactivity API
 * 8 shortcodes for embedding media features anywhere
 * BuddyPress integration: activity uploads (1-6 per post), profile/group media tabs, lightbox in activity feed
-* 80+ REST API endpoints across 17 controllers
-* 8 WP-CLI commands for bulk operations and maintenance
+* 80+ REST API endpoints across 23 controllers
+* 18 WP-CLI commands for bulk operations and maintenance
 * Outbound webhooks with HMAC-SHA256 signing via Action Scheduler
 * Template override system
 * GDPR data export and erasure

@@ -1,19 +1,19 @@
 # WPMediaVerse — AI Quick Reference
 
-> **READ FIRST:** [`audit/manifests/manifest.summary.json`](audit/manifests/manifest.summary.json) is a ≤2 KB index — load it first. The full inventory in [`audit/manifests/manifest.json`](audit/manifests/manifest.json) (v2.2 schema) covers **84 REST endpoints, 3 plugin AJAX actions, 17 admin pages, 40 settings, 145 unique hooks fired (incl. 4 added in 1.6.0: `mvs_media_alt_text`, `mvs_reports_enabled` filters + `mvs_album_deleted`, `mvs_collection_deleted` actions; `mvs_media_deleted` now fires once from the `delete_cascade` funnel), 22 tables, 14 blocks, 35 services, 17 WP-CLI subcommands (incl. 1.6.0 `wp mvs backfill_ai`)**. Detail files: [`manifest.rest.json`](audit/manifests/manifest.rest.json), [`manifest.hooks.json`](audit/manifests/manifest.hooks.json), [`manifest.tables.json`](audit/manifests/manifest.tables.json). Cross-plugin coupling: [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Bug-finder baseline: [`audit/runs/2026-05-03-wppqa-baseline-SUMMARY.md`](audit/runs/2026-05-03-wppqa-baseline-SUMMARY.md). Reports: [`audit/reports/FEATURE_AUDIT.md`](audit/reports/FEATURE_AUDIT.md), [`audit/reports/CODE_FLOWS.md`](audit/reports/CODE_FLOWS.md), [`audit/reports/ROLE_MATRIX.md`](audit/reports/ROLE_MATRIX.md), [`audit/graph.html`](audit/graph.html). Pro audit mirror: [`audit/pro/`](audit/pro/). Refresh: `/wp-plugin-onboard --refresh`.
+> **READ FIRST:** [`audit/manifests/manifest.summary.json`](audit/manifests/manifest.summary.json) is a ≤2 KB index — load it first. The full inventory in [`audit/manifests/manifest.json`](audit/manifests/manifest.json) (v2.2 schema) covers **84 REST endpoints, 3 plugin AJAX actions, 17 admin pages, 40 settings, 145 unique hooks fired (incl. 4 added in 1.6.0: `mvs_media_alt_text`, `mvs_reports_enabled` filters + `mvs_album_deleted`, `mvs_collection_deleted` actions; `mvs_media_deleted` now fires once from the `delete_cascade` funnel), 22 tables, 9 registered blocks (13 `block.json` dirs; 4 are Interactivity-only, not registered as editor blocks), 37 services, 18 WP-CLI subcommands (incl. `wp mvs backfill_ai`, `repair_storage`)**. Detail files: [`manifest.rest.json`](audit/manifests/manifest.rest.json), [`manifest.hooks.json`](audit/manifests/manifest.hooks.json), [`manifest.tables.json`](audit/manifests/manifest.tables.json). Cross-plugin coupling: [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Bug-finder baseline: [`audit/runs/2026-05-03-wppqa-baseline-SUMMARY.md`](audit/runs/2026-05-03-wppqa-baseline-SUMMARY.md). Reports: [`audit/reports/FEATURE_AUDIT.md`](audit/reports/FEATURE_AUDIT.md), [`audit/reports/CODE_FLOWS.md`](audit/reports/CODE_FLOWS.md), [`audit/reports/ROLE_MATRIX.md`](audit/reports/ROLE_MATRIX.md), [`audit/graph.html`](audit/graph.html). Pro audit mirror: [`audit/pro/`](audit/pro/). Refresh: `/wp-plugin-onboard --refresh`.
 
 ## Quick Facts
 
 | Key | Value |
 |-----|-------|
-| Version | 1.8.0 |
+| Version | 2.0.0 |
 | PHP | >= 7.4 (header), target 8.1+ |
 | WordPress | >= 6.5 |
 | Namespace | `WPMediaVerse\` |
 | Autoload | PSR-4 via Composer (`includes/`) |
 | Text Domain | `wpmediaverse` |
-| Custom Tables | 21 (prefixed `mvs_`) |
-| REST Controllers | 19 (namespace `mvs/v1`) |
+| Custom Tables | 22 (prefixed `mvs_`) |
+| REST Controllers | 23 (namespace `mvs/v1`) |
 | Pro Extension Hook | `mvs_loaded` (fires with `ServiceContainer`) |
 | Build | `npx grunt dist` |
 | Entry Point | `wpmediaverse.php` -> `Plugin::init()` |
@@ -28,7 +28,7 @@
 | `Core\` | Bootstrap, DI container, migrations, templates, settings helper, read-side URL facade | `Plugin`, `ServiceContainer`, `Migrator`, `Loader`, `Activator`, `Deactivator`, `TemplateLoader`, `TemplateHelpers`, `Abilities`, `SettingsHelper`, `MediaUrl` |
 | `Admin\` | WP admin pages, moderation queue | `OverviewPage`, `StatsPage`, `ModerationQueue`, `LogViewerPage`, `SetupWizard`, `CollectionMetaBox`, `MediaListPage` |
 | `Admin\Settings\` | Settings page (5 focused classes) | `SettingsPage`, `SettingsRegistrar`, `FieldRenderer`, `PermissionsManager`, `Sanitizers` |
-| `REST\Controller\` | REST API endpoints (18 controllers) | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `AccessController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController` |
+| `REST\Controller\` | REST API endpoints (23 controllers) | `MediaController`, `AlbumController`, `CollectionController`, `BulkController`, `ReactionController`, `CommentController`, `FavoriteController`, `StatsController`, `TagController`, `ModerationController`, `AccessController`, `SignedUrlController`, `FollowController`, `NotificationController`, `UserController`, `ReportController`, `ActivityController`, `ProfileController`, `AdminController`, `AuthController`, `ConfigController`, `InterestsController`, `TransactionController` |
 | `REST\` | Rate limiting middleware | `RateLimiter` |
 | `Services\` | Business logic, storage, AI, caching, URL signing, variant pipeline, poster generation | `UploadService`, `StorageService`, `StorageRouter`, `MediaVariantWriter`, `VariantSpec`, `PosterService`, `PrivacyService`, `AlbumService`, `CollectionService`, `StoryService`, `AIService`, `OpenAIProvider`, `ModerationService`, `StatsService`, `AccessRulesService`, `SignedUrlService`, `WatermarkService`, `CacheService`, `LoggerService`, `GDPRService`, `HealthCheckService`, `ProfileService`, `LocalDriver` |
 | `Social\` | Social interactions (reactions, comments, follows) | `ReactionService`, `CommentService`, `FavoriteService`, `MentionService`, `ShareService`, `FollowService`, `NotificationService`, `ReportService`, `ActivityService` |
