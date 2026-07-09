@@ -18,10 +18,15 @@ $mvs_rest_url     = esc_url_raw( rest_url( 'mvs/v1/' ) );
 $mvs_nonce        = $mvs_is_logged_in ? wp_create_nonce( 'wp_rest' ) : '';
 
 // Show FAB only on MVS pages (explore, dashboard, media single/archive).
-$mvs_page_ids = array_filter( array_map( 'absint', array(
-	get_option( 'mvs_page_explore', 0 ),
-	get_option( 'mvs_page_dashboard', 0 ),
-) ) );
+$mvs_page_ids = array_filter(
+	array_map(
+		'absint',
+		array(
+			get_option( 'mvs_page_explore', 0 ),
+			get_option( 'mvs_page_dashboard', 0 ),
+		)
+	)
+);
 $mvs_show_fab = $mvs_is_logged_in && (
 	( ! empty( $mvs_page_ids ) && is_page( $mvs_page_ids ) )
 	|| ! empty( $GLOBALS['mvs_current_media'] )
@@ -29,6 +34,34 @@ $mvs_show_fab = $mvs_is_logged_in && (
 	|| is_post_type_archive( 'mvs_album' )
 	|| is_tax( 'mvs_tag' )
 	|| is_tax( 'mvs_category' )
+);
+
+// i18n for the mvs/shared-ui store. It is a script MODULE (viewScriptModule), so
+// wp_set_script_translations() can't reach it and window.wp.i18n.__() falls
+// through to English. Seed PHP-translated strings into interactivity state; the
+// store reads state.i18n.<key> with an English fallback. Basecamp 10073528834.
+wp_interactivity_state(
+	'mvs/shared-ui',
+	array(
+		'i18n' => array(
+			'uploadPhoto'      => __( 'Upload Photo', 'wpmediaverse' ),
+			'createGallery'    => __( 'Create Gallery Post', 'wpmediaverse' ),
+			'createAlbum'      => __( 'Create Album', 'wpmediaverse' ),
+			'uploadVideo'      => __( 'Upload Video', 'wpmediaverse' ),
+			'uploadAudio'      => __( 'Upload Audio', 'wpmediaverse' ),
+			'upload'           => __( 'Upload', 'wpmediaverse' ),
+			'savedRedirecting' => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
+			'settingsSaved'    => __( 'Media settings saved.', 'wpmediaverse' ),
+			'selectFiles'      => __( 'Please select files to upload.', 'wpmediaverse' ),
+			/* translators: %s: album name. */
+			'albumCreated'     => __( 'Album "%s" created!', 'wpmediaverse' ),
+			'failedLoad'       => __( 'Failed to load media.', 'wpmediaverse' ),
+			'failedComment'    => __( 'Failed to post comment.', 'wpmediaverse' ),
+			'linkCopied'       => __( 'Link copied!', 'wpmediaverse' ),
+			'copyFailed'       => __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
+			'notDownloadable'  => __( 'This media is not available for download.', 'wpmediaverse' ),
+		),
+	)
 );
 ?>
 <div class="mvs-app-shell"
@@ -171,13 +204,17 @@ $mvs_show_fab = $mvs_is_logged_in && (
 							<div class="mvs-modal-field">
 								<input type="text" placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateUploadTags" data-wp-bind--value="state.uploadModalTags" />
 							</div>
-							<div class="mvs-modal-field" data-wp-bind--hidden="!state.hasUserAlbums">
-								<select class="mvs-modal-album-select" data-wp-on--change="actions.updateUploadAlbum" aria-label="<?php esc_attr_e( 'Add to album', 'wpmediaverse' ); ?>">
+							<div class="mvs-modal-field">
+								<select class="mvs-modal-album-select" data-wp-on--change="actions.updateUploadAlbum" data-wp-bind--value="state.uploadModalAlbum" aria-label="<?php esc_attr_e( 'Add to album', 'wpmediaverse' ); ?>">
 									<option value="0"><?php esc_html_e( 'Add to album (optional)', 'wpmediaverse' ); ?></option>
+									<option value="-1"><?php esc_html_e( '+ Create new album…', 'wpmediaverse' ); ?></option>
 									<template data-wp-each="state.userAlbums">
 										<option data-wp-bind--value="context.item.id" data-wp-text="context.item.title"></option>
 									</template>
 								</select>
+							</div>
+							<div class="mvs-modal-field" data-wp-bind--hidden="!state.isCreatingNewAlbum">
+								<input type="text" placeholder="<?php esc_attr_e( 'New album name', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'New album name', 'wpmediaverse' ); ?>" data-wp-on--input="actions.updateNewAlbumName" data-wp-bind--value="state.uploadModalNewAlbumName" />
 							</div>
 							<div class="mvs-tag-pills" data-wp-bind--hidden="!state.popularTagsLoaded" role="group" aria-label="<?php esc_attr_e( 'Popular tags', 'wpmediaverse' ); ?>">
 								<span class="mvs-tag-pills__label"><?php esc_html_e( 'Popular tags:', 'wpmediaverse' ); ?></span>
@@ -204,7 +241,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 	<?php endif; ?>
 
 	<!-- Edit Media modal — opened via window.mvsOpenEditModal( id )
-	     when an owner clicks .mvs-media-edit-btn on their own card. -->
+		when an owner clicks .mvs-media-edit-btn on their own card. -->
 	<?php if ( $mvs_is_logged_in ) : ?>
 	<div class="mvs-modal-overlay mvs-edit-modal-overlay" hidden data-wp-bind--hidden="!state.editModalVisible" data-wp-on--click="actions.closeEditModal" role="dialog" aria-modal="true" aria-labelledby="mvs-edit-modal-title">
 		<div class="mvs-modal mvs-edit-modal" data-wp-on--click="actions.handleModalClick">
@@ -241,7 +278,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 							data-wp-bind--value="state.editModalDescription"></textarea>
 					</div>
 					<!-- Privacy + slug-regenerate sit on the same row to save
-					     vertical space — pure presentation, no functional pairing. -->
+						vertical space — pure presentation, no functional pairing. -->
 					<div class="mvs-modal-row">
 						<div class="mvs-modal-field mvs-modal-field--inline">
 							<label for="mvs-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
@@ -278,57 +315,6 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						</p>
 					</div>
 					<?php endif; ?>
-					<!-- Access rules — optional conditions that restrict who can
-					     view this media (by role / group membership / capability).
-					     A viewer matching ANY rule may view; with Pro active, a
-					     ruled image also gets a watermarked preview. Empty = the
-					     Privacy setting above applies on its own. -->
-					<div class="mvs-modal-field mvs-access-rules">
-						<span class="mvs-access-rules-label" id="mvs-access-rules-label"><?php esc_html_e( 'Access rules', 'wpmediaverse' ); ?></span>
-						<p class="mvs-modal-field-hint">
-							<?php esc_html_e( 'Optional. Restrict viewing to people who match a rule below. Leave empty to use the Privacy setting on its own.', 'wpmediaverse' ); ?>
-						</p>
-						<div class="mvs-access-rules-list" role="group" aria-labelledby="mvs-access-rules-label">
-							<template data-wp-each--rule="state.editModalRules">
-								<div class="mvs-access-rule-row" data-wp-bind--data-rule-index="context.rule.index">
-									<select class="mvs-access-rule-type" data-wp-on--change="actions.setAccessRuleType"
-										aria-label="<?php esc_attr_e( 'Rule type', 'wpmediaverse' ); ?>">
-										<template data-wp-each--rt="state.accessRuleTypes">
-											<option data-wp-bind--value="context.rt.value"
-												data-wp-bind--selected="state.isAccessRuleTypeSelected"
-												data-wp-text="context.rt.label"></option>
-										</template>
-									</select>
-									<!-- Role → pick from the site's roles. -->
-									<select class="mvs-access-rule-value" data-wp-on--change="actions.setAccessRuleValue"
-										data-wp-bind--hidden="!state.accessRuleIsRole"
-										aria-label="<?php esc_attr_e( 'Rule value', 'wpmediaverse' ); ?>">
-										<template data-wp-each--opt="state.accessRoles">
-											<option data-wp-bind--value="context.opt.value"
-												data-wp-bind--selected="state.isAccessRuleValueSelected"
-												data-wp-text="context.opt.label"></option>
-										</template>
-									</select>
-									<!-- Group membership (group ID) or capability → free text. -->
-									<input type="text" class="mvs-access-rule-value" data-wp-on--input="actions.setAccessRuleValue"
-										data-wp-bind--hidden="state.accessRuleIsRole"
-										data-wp-bind--value="context.rule.rule_value"
-										data-wp-bind--placeholder="state.accessRuleValuePlaceholder"
-										aria-label="<?php esc_attr_e( 'Rule value', 'wpmediaverse' ); ?>" />
-									<button type="button" class="mvs-access-rule-remove" data-wp-on--click="actions.removeAccessRule"
-										aria-label="<?php esc_attr_e( 'Remove rule', 'wpmediaverse' ); ?>">
-										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-											<path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-										</svg>
-									</button>
-								</div>
-							</template>
-						</div>
-						<button type="button" class="mvs-btn mvs-btn--small mvs-btn--secondary mvs-access-rule-add"
-							data-wp-on--click="actions.addAccessRule">
-							+ <?php esc_html_e( 'Add rule', 'wpmediaverse' ); ?>
-						</button>
-					</div>
 					<div class="mvs-modal-error" data-wp-bind--hidden="!state.editModalError">
 						<p data-wp-text="state.editModalError"></p>
 					</div>
@@ -455,24 +441,24 @@ $mvs_show_fab = $mvs_is_logged_in && (
 				<!-- Actions bar -->
 				<div class="mvs-lightbox-actions">
 					<?php if ( $mvs_is_logged_in ) : ?>
-						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
+						<button class="mvs-lightbox-action mvs-lb-fav" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
 							<i data-lucide="heart" aria-hidden="true"></i>
 							<span data-wp-text="state.lightboxFavoriteLabel"></span>
 						</button>
 					<?php endif; ?>
 					<?php // "Save to collection" is separate from the heart; shown only when a collections backend (Pro) enables it. ?>
 					<?php if ( $mvs_is_logged_in && apply_filters( 'mvs_collections_enabled', false ) ) : ?>
-						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
+						<button class="mvs-lightbox-action mvs-lb-save" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
 							<i data-lucide="bookmark" aria-hidden="true"></i>
 							<?php esc_html_e( 'Save', 'wpmediaverse' ); ?>
 						</button>
 					<?php endif; ?>
-					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxShare" aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>">
+					<button class="mvs-lightbox-action mvs-lb-share" data-wp-on--click="actions.lightboxShare" aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>">
 						<i data-lucide="share-2" aria-hidden="true"></i>
 						<?php esc_html_e( 'Share', 'wpmediaverse' ); ?>
 					</button>
 					<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
-					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxDownload" data-wp-bind--hidden="state.lightboxHideDownload" aria-label="<?php esc_attr_e( 'Download this media to your device', 'wpmediaverse' ); ?>">
+					<button class="mvs-lightbox-action mvs-lb-download" data-wp-on--click="actions.lightboxDownload" data-wp-bind--hidden="state.lightboxHideDownload" aria-label="<?php esc_attr_e( 'Download this media to your device', 'wpmediaverse' ); ?>">
 						<i data-lucide="download" aria-hidden="true"></i>
 						<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
 					</button>
@@ -542,7 +528,7 @@ $mvs_show_fab = $mvs_is_logged_in && (
 						</div>
 					<?php else : ?>
 						<p class="mvs-lightbox-login-prompt">
-							<a href="<?php echo esc_url( wp_login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ) ); ?>">
+							<a href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ) ); ?>">
 								<?php esc_html_e( 'Log in to comment', 'wpmediaverse' ); ?>
 							</a>
 						</p>

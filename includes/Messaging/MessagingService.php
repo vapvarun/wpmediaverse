@@ -96,11 +96,19 @@ class MessagingService {
 			}
 		}
 
-		// DM access level.
-		$access = get_user_meta( $recipient_id, '_mvs_dm_access', true );
-		if ( ! $access ) {
-			$access = get_option( 'mvs_dm_access', 'everyone' );
-		}
+		// DM access level. The site-wide `mvs_dm_access` option is a CEILING:
+		// the recipient's own per-user meta may only narrow it (e.g. global
+		// "everyone" + user "mutual" -> "mutual"), never widen past it (e.g.
+		// global "nobody" + user "everyone" must stay "nobody"). Without this,
+		// a recipient's per-user meta could silently re-open DMs an admin
+		// disabled site-wide (Basecamp #10053143680).
+		$global_access = get_option( 'mvs_dm_access', 'everyone' );
+		$user_access   = get_user_meta( $recipient_id, '_mvs_dm_access', true );
+		$access        = \WPMediaVerse\Core\Plugin::resolve_privacy_ceiling(
+			$global_access,
+			$user_access,
+			array( 'everyone', 'followers', 'mutual', 'nobody' )
+		);
 
 		$access = apply_filters( 'mvs_dm_access_level', $access, $sender_id, $recipient_id );
 
@@ -561,6 +569,7 @@ class MessagingService {
 				'role'         => isset( $row->role ) ? (string) $row->role : 'member',
 				'display_name' => $user->display_name,
 				'avatar_url'   => get_avatar_url( $row->user_id, array( 'size' => 96 ) ),
+				'profile_url'  => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $row->user_id ),
 				'status'       => $row->status,
 				'last_read_at' => $row->last_read_at,
 				'is_online'    => $this->is_user_online( (int) $row->user_id ),
@@ -1105,10 +1114,15 @@ class MessagingService {
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 		$msg_table  = $wpdb->prefix . 'mvs_messages';
 
-		// Verify sender is a participant.
+		// Verify sender is a participant. Also pull the conversation type in
+		// the same query so the DM re-check below doesn't need a second
+		// round trip.
 		$participant = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT status FROM {$part_table} WHERE conversation_id = %d AND user_id = %d",
+				"SELECT p.status, c.type
+				FROM {$part_table} p
+				INNER JOIN {$conv_table} c ON c.id = p.conversation_id
+				WHERE p.conversation_id = %d AND p.user_id = %d",
 				$conversation_id,
 				$sender_id
 			)
@@ -1120,6 +1134,34 @@ class MessagingService {
 				'message_id' => 0,
 				'error'      => 'not_participant',
 			);
+		}
+
+		// Re-check DM privacy at SEND time, not just at conversation-creation
+		// time. A conversation can outlive a later privacy change (recipient
+		// sets DM access to "nobody", blocks the sender, admin flips the
+		// site-wide setting) — without this, every send into an
+		// already-open conversation silently bypassed can_message() forever
+		// (Basecamp #10053143680). Only applies to 1:1 `direct` conversations;
+		// group DM access isn't governed by per-recipient DM privacy rules.
+		if ( 'direct' === $participant->type ) {
+			$other_id = 0;
+			foreach ( $this->get_participants( $conversation_id ) as $p ) {
+				if ( (int) $p['id'] !== $sender_id ) {
+					$other_id = (int) $p['id'];
+					break;
+				}
+			}
+
+			if ( $other_id ) {
+				$access = $this->can_message( $sender_id, $other_id );
+				if ( ! $access['allowed'] ) {
+					return array(
+						'success'    => false,
+						'message_id' => 0,
+						'error'      => $access['reason'],
+					);
+				}
+			}
 		}
 
 		// Rate limit.
@@ -1419,8 +1461,9 @@ class MessagingService {
 			// Add sender info.
 			$sender = get_userdata( (int) $msg->sender_id );
 			if ( $sender ) {
-				$msg->sender_name   = $sender->display_name;
-				$msg->sender_avatar = get_avatar_url( $msg->sender_id, array( 'size' => 64 ) );
+				$msg->sender_name        = $sender->display_name;
+				$msg->sender_avatar      = get_avatar_url( $msg->sender_id, array( 'size' => 64 ) );
+				$msg->sender_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $msg->sender_id );
 			}
 
 			// Attachment / media-share payloads are never shipped for deleted
@@ -2118,8 +2161,9 @@ class MessagingService {
 			}
 			$sender = get_userdata( (int) $msg->sender_id );
 			if ( $sender ) {
-				$msg->sender_name   = $sender->display_name;
-				$msg->sender_avatar = get_avatar_url( $msg->sender_id, array( 'size' => 64 ) );
+				$msg->sender_name        = $sender->display_name;
+				$msg->sender_avatar      = get_avatar_url( $msg->sender_id, array( 'size' => 64 ) );
+				$msg->sender_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $msg->sender_id );
 			}
 			if ( $msg->metadata ) {
 				$msg->metadata = json_decode( $msg->metadata, true );
@@ -2237,9 +2281,9 @@ class MessagingService {
 
 		$su = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 		if ( $su ) {
-			$thumb            = $su->generate_thumbnail( $media_id, $viewer_id );
-			$view             = $su->generate( $media_id, $viewer_id );
-			$download         = $su->generate( $media_id, $viewer_id, 0, true );
+			$thumb                = $su->generate_thumbnail( $media_id, $viewer_id );
+			$view                 = $su->generate( $media_id, $viewer_id );
+			$download             = $su->generate( $media_id, $viewer_id, 0, true );
 			$data['thumbnail']    = is_string( $thumb ) ? $thumb : '';
 			$data['url']          = is_string( $view ) ? $view : '';
 			$data['download_url'] = is_string( $download ) ? $download : '';

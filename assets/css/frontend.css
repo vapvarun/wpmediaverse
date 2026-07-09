@@ -6391,3 +6391,52 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
    making the data-wp-each <template> the sole child of its parent (avoids an
    Interactivity API hydration mismatch from a static sibling). */
 .mvs-tag-cloud-items { display: contents; }
+
+/* ---------------------------------------------------------------------------
+   Access gate — shown inside .mvs-media-content on the single media page when
+   the viewer is not permitted to see protected media (privacy-denied). Keeps
+   the same page container; only the media slot is replaced. Token-driven so it
+   adapts to dark mode automatically.
+   --------------------------------------------------------------------------- */
+.mvs-media-gate {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	gap: 0.75rem;
+	min-height: 320px;
+	padding: 3rem 1.5rem;
+	background: var(--mvs-surface-2);
+	border: 1px solid var(--mvs-surface-2);
+	border-radius: var(--mvs-radius-lg);
+}
+.mvs-media-gate__glyph {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	background: var(--mvs-surface);
+	color: var(--mvs-text-secondary);
+}
+.mvs-media-gate__glyph svg {
+	width: 28px;
+	height: 28px;
+}
+.mvs-media-gate__title {
+	margin: 0;
+	font-family: var(--mvs-font-heading);
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: var(--mvs-text);
+}
+.mvs-media-gate__lede {
+	margin: 0;
+	max-width: 42ch;
+	color: var(--mvs-text-secondary);
+}
+.mvs-media-gate__cta {
+	margin-top: 0.5rem;
+}

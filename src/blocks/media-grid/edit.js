@@ -1,12 +1,12 @@
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, RangeControl, SelectControl, ToggleControl, TextControl } from '@wordpress/components';
+import { PanelBody, RangeControl, SelectControl, ToggleControl, TextControl, __experimentalNumberControl as NumberControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { StandardInspectorPanels } from '../../shared/components';
 import { useUniqueId } from '../../shared/hooks';
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
 	useUniqueId( clientId, attributes.uniqueId, setAttributes );
-	const { columns, perPage, mediaType, category, tag, orderBy, order, showLightbox, showReactions, gap } = attributes;
+	const { columns, perPage, mediaType, category, tag, orderBy, order, showLightbox, showReactions, gap, userId } = attributes;
 	const blockProps = useBlockProps();
 
 	return (
@@ -39,6 +39,13 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					/>
 				</PanelBody>
 				<PanelBody title={ __( 'Filters', 'wpmediaverse' ) } initialOpen={ false }>
+					<NumberControl
+						label={ __( 'User ID', 'wpmediaverse' ) }
+						value={ userId || '' }
+						onChange={ ( val ) => setAttributes( { userId: parseInt( val, 10 ) || 0 } ) }
+						min={ 0 }
+						help={ __( 'Show only this user\'s media, or leave empty (0) for no author filter.', 'wpmediaverse' ) }
+					/>
 					<SelectControl
 						label={ __( 'Media Type', 'wpmediaverse' ) }
 						value={ mediaType }

@@ -206,13 +206,19 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Profile URL.
 	 */
 	public function get_user_profile_url( int $user_id ): string {
-		// Standalone default: the plugin's own @username profile route. Core is
+		// Standalone default: the plugin's own @handle profile route. Core is
 		// platform-agnostic — no bp_* calls here. Social platforms (BuddyPress,
 		// BuddyNext) override this via the filter below; the BuddyPress
 		// integration's ProfileTabIntegration::filter_user_profile_url() returns
 		// the BP member URL when BP is active.
-		$user_login = get_the_author_meta( 'user_login', $user_id );
-		$url        = home_url( '/media/@' . $user_login . '/' );
+		//
+		// SECURITY: use user_nicename, never user_login. user_login is the
+		// wp-login.php credential and must never be exposed in a public URL —
+		// it enables username enumeration for brute-force/credential-stuffing
+		// attacks. user_nicename is already public (WP core exposes it via
+		// /author/{nicename}/ author archives), so this carries no new exposure.
+		$user_nicename = get_the_author_meta( 'user_nicename', $user_id );
+		$url           = home_url( '/media/@' . $user_nicename . '/' );
 
 		/**
 		 * Filter the user profile URL.
@@ -533,6 +539,82 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// matching how every other asset URL is built across the plugin.
 		$default = MVS_PLUGIN_URL . 'assets/images/default-video-poster.svg';
 		return (string) apply_filters( 'mvs_default_video_poster_url', $default );
+	}
+
+	/**
+	 * BuddyNext-aware login URL.
+	 *
+	 * Identity in this stack lives in BuddyNext (login/register/reset/2FA/social),
+	 * so every "log in" link MediaVerse renders must route to BuddyNext's paged
+	 * front-end auth screen when that plugin is active — NOT wp-login.php. Falls
+	 * back to core `wp_login_url()` when BuddyNext is absent (Free running
+	 * standalone). Override the final URL via the `mvs_login_url` filter.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $redirect Optional URL to return to after login.
+	 * @return string Login URL.
+	 */
+	public static function login_url( string $redirect = '' ): string {
+		$url = '';
+
+		if ( class_exists( '\BuddyNext\Core\PageRouter' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
+			$bn = (string) \BuddyNext\Core\PageRouter::auth_url();
+			if ( '' !== $bn ) {
+				$url = $redirect ? add_query_arg( 'redirect_to', rawurlencode( $redirect ), $bn ) : $bn;
+			}
+		}
+
+		if ( '' === $url ) {
+			$url = wp_login_url( $redirect );
+		}
+
+		/**
+		 * Filters the login URL MediaVerse links to across every surface.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $url      Resolved login URL (BuddyNext auth page when active).
+		 * @param string $redirect Post-login return URL.
+		 */
+		return (string) apply_filters( 'mvs_login_url', $url, $redirect );
+	}
+
+	/**
+	 * BuddyNext-aware registration URL.
+	 *
+	 * BuddyNext's auth screen carries both sign-in and sign-up, so registration
+	 * routes to the same paged auth URL when BuddyNext is active; otherwise falls
+	 * back to core `wp_registration_url()`. Override via `mvs_registration_url`.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $redirect Optional URL to return to after registration.
+	 * @return string Registration URL.
+	 */
+	public static function registration_url( string $redirect = '' ): string {
+		$url = '';
+
+		if ( class_exists( '\BuddyNext\Core\PageRouter' ) && method_exists( '\BuddyNext\Core\PageRouter', 'auth_url' ) ) {
+			$bn = (string) \BuddyNext\Core\PageRouter::auth_url();
+			if ( '' !== $bn ) {
+				$url = $redirect ? add_query_arg( 'redirect_to', rawurlencode( $redirect ), $bn ) : $bn;
+			}
+		}
+
+		if ( '' === $url ) {
+			$url = wp_registration_url();
+		}
+
+		/**
+		 * Filters the registration URL MediaVerse links to.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param string $url      Resolved registration URL.
+		 * @param string $redirect Post-registration return URL.
+		 */
+		return (string) apply_filters( 'mvs_registration_url', $url, $redirect );
 	}
 
 	/**
@@ -1203,5 +1285,71 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		$html .= '</div>';
 
 		return $html;
+	}
+
+	/**
+	 * Seed PHP-translated strings for the mvs/media-social Interactivity store.
+	 *
+	 * The store (src/blocks/media-social/view.js) is a script MODULE, so
+	 * window.wp.i18n.__() is English-locked there (wp_set_script_translations()
+	 * can't reach a module). We inject the translated strings into interactivity
+	 * state; the store reads state.i18n.<key> with an English fallback. Called
+	 * before the first data-wp-interactive="mvs/media-social" root element in
+	 * media-single.php and album.php so the state is seeded during render.
+	 * Basecamp 10073528834.
+	 *
+	 * @return void
+	 */
+	public static function media_social_i18n_state(): void {
+		wp_interactivity_state(
+			'mvs/media-social',
+			array(
+				'i18n' => array(
+					// Reactions.
+					'loginToReact'         => __( 'Please log in to react.', 'wpmediaverse' ),
+					'reactionSaveFailed'   => __( 'Could not save reaction.', 'wpmediaverse' ),
+					'networkError'         => __( 'Network error.', 'wpmediaverse' ),
+					// Favorites.
+					'loginToFavorite'      => __( 'Please log in to favorite.', 'wpmediaverse' ),
+					'favoriteUpdateFailed' => __( 'Could not update favorite.', 'wpmediaverse' ),
+					// Comments.
+					'loginToComment'       => __( 'Please log in to comment.', 'wpmediaverse' ),
+					'commentPostFailed'    => __( 'Could not post comment.', 'wpmediaverse' ),
+					'commentUpdated'       => __( 'Comment updated.', 'wpmediaverse' ),
+					'editFailed'           => __( 'Edit failed.', 'wpmediaverse' ),
+					'deleteCommentConfirm' => __( 'Delete this comment?', 'wpmediaverse' ),
+					'commentDeleted'       => __( 'Comment deleted.', 'wpmediaverse' ),
+					// Share.
+					'shareCopied'          => __( '✓ Copied!', 'wpmediaverse' ),
+					'linkCopiedClipboard'  => __( 'Link copied to clipboard!', 'wpmediaverse' ),
+					'shareResetLabel'      => __( '🔗 Share', 'wpmediaverse' ),
+					'copyLinkFailed'       => __( 'Could not copy link. Please copy the URL manually.', 'wpmediaverse' ),
+					// Follow.
+					'followFailed'         => __( 'Follow action failed.', 'wpmediaverse' ),
+					// Owner edit.
+					'savedRedirecting'     => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
+					'albumSaved'           => __( 'Album saved!', 'wpmediaverse' ),
+					'saved'                => __( 'Saved!', 'wpmediaverse' ),
+					'saveFailed'           => __( 'Save failed.', 'wpmediaverse' ),
+					// Owner delete.
+					'deleteAlbumConfirm'   => __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' ),
+					'deleteMediaConfirm'   => __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' ),
+					'deleteAction'         => __( 'Delete', 'wpmediaverse' ),
+					// Report.
+					'loginToReport'        => __( 'Please log in to report content.', 'wpmediaverse' ),
+					'reasonSpam'           => __( 'Spam', 'wpmediaverse' ),
+					'reasonHarassment'     => __( 'Harassment', 'wpmediaverse' ),
+					'reasonNudity'         => __( 'Nudity or sexual content', 'wpmediaverse' ),
+					'reasonViolence'       => __( 'Violence or dangerous acts', 'wpmediaverse' ),
+					'reasonCopyright'      => __( 'Copyright infringement', 'wpmediaverse' ),
+					'reasonMisinformation' => __( 'Misinformation', 'wpmediaverse' ),
+					'reasonOther'          => __( 'Other', 'wpmediaverse' ),
+					'reportPrompt'         => __( 'Why are you reporting this media?', 'wpmediaverse' ),
+					'reportSubmitted'      => __( 'Report submitted. Thank you.', 'wpmediaverse' ),
+					'reportAlready'        => __( 'Already reported or error occurred.', 'wpmediaverse' ),
+					'reportAction'         => __( 'Report', 'wpmediaverse' ),
+				),
+			)
+		);
 	}
 }

@@ -40,6 +40,7 @@ class NotificationIntegration {
 		}
 
 		add_action( 'mvs_notification_created', array( $this, 'on_notification_created' ), 10, 5 );
+		add_action( 'mvs_media_deleted', array( $this, 'cleanup_notifications' ), 10, 2 );
 		add_filter( 'bp_notifications_get_registered_components', array( $this, 'register_notification_component' ) );
 		add_filter( 'bp_notifications_get_notifications_for_user', array( $this, 'format_notifications' ), 10, 8 );
 		add_action( 'bp_nouveau_notifications_init_filters', array( $this, 'register_notification_filters' ) );
@@ -73,6 +74,30 @@ class NotificationIntegration {
 			return;
 		}
 
+		// Duplicate-notification guard (Basecamp #10077983779). When the media
+		// has a linked BP activity, a comment on it is also posted as a BP
+		// activity comment (ActivitySyncIntegration::sync_media_comment_to_activity),
+		// and BP's own notification system already notifies the activity author
+		// (= media owner) with a native "replied" notification. Mirroring the MVS
+		// media_comment on top of that gives the owner two dropdown entries for
+		// one comment. Skip the mirror when BP already covers it; the native MVS
+		// in-app notification (mvs_notifications) is untouched. Sites can restore
+		// the old double-notify behavior via the filter.
+		if ( 'media_comment' === $type && $this->bp_activity_covers_comment( $media_id ) ) {
+			/**
+			 * Filter whether to suppress the BP-mirrored media_comment notification
+			 * when a BP-native activity-comment notification already fires.
+			 *
+			 * @param bool $suppress Default true (suppress the duplicate).
+			 * @param int  $media_id Media ID.
+			 * @param int  $user_id  Recipient (media owner) user ID.
+			 * @param int  $actor_id Commenter user ID.
+			 */
+			if ( apply_filters( 'mvs_suppress_bp_comment_notification', true, $media_id, $user_id, $actor_id ) ) {
+				return;
+			}
+		}
+
 		bp_notifications_add_notification(
 			array(
 				'user_id'           => $user_id,
@@ -82,6 +107,53 @@ class NotificationIntegration {
 				'component_action'  => self::TYPE_TO_BP_ACTION[ $type ],
 			)
 		);
+	}
+
+	/**
+	 * Whether a BP-native activity-comment notification already covers a comment
+	 * on this media (so the MVS mirror would be a duplicate).
+	 *
+	 * True only when the activity component is active AND the media has a linked
+	 * BP activity — the exact condition under which
+	 * ActivitySyncIntegration::sync_media_comment_to_activity() posts a BP
+	 * activity comment and BP notifies the activity author.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool
+	 */
+	private function bp_activity_covers_comment( int $media_id ): bool {
+		if ( ! function_exists( 'bp_is_active' ) || ! bp_is_active( 'activity' ) ) {
+			return false;
+		}
+
+		$activity_id = (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'bp_activity_id' );
+
+		return $activity_id > 0;
+	}
+
+	/**
+	 * Remove BP notifications mirrored for a media item when it is deleted.
+	 *
+	 * Mirrors ActivitySyncIntegration's mvs_media_deleted cleanup: without this,
+	 * bp_notifications rows created by on_notification_created (component
+	 * 'wpmediaverse', item_id = media_id) dangle after the media is gone and keep
+	 * rendering in the owner's dropdown (Basecamp #10077983779).
+	 *
+	 * @param int $media_id  Deleted media ID.
+	 * @param int $author_id Media author (unused; kept for hook signature).
+	 */
+	public function cleanup_notifications( int $media_id, int $author_id ): void {
+		unset( $author_id );
+
+		if ( $media_id <= 0 || ! function_exists( 'bp_notifications_delete_all_notifications_by_type' ) ) {
+			return;
+		}
+
+		// Delete every wpmediaverse notification pointing at this media, across
+		// all recipients. bp_notifications_delete_notifications_by_item_id() is
+		// the WRONG helper here — it requires a specific user_id + component_action;
+		// _all_notifications_by_type() clears the item for the whole component.
+		bp_notifications_delete_all_notifications_by_type( $media_id, 'wpmediaverse' );
 	}
 
 	/**

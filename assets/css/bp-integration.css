@@ -598,6 +598,26 @@
     text-decoration: none;
 }
 
+/* "View all N photos in album" link under a batch-upload gallery. */
+#buddypress .mvs-activity-album-link,
+.activity-list .mvs-activity-album-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    font-weight: 600;
+    color: var(--mvs-primary);
+    text-decoration: none;
+}
+
+#buddypress .mvs-activity-album-link:hover,
+#buddypress .mvs-activity-album-link:focus,
+.activity-list .mvs-activity-album-link:hover,
+.activity-list .mvs-activity-album-link:focus {
+    color: var(--mvs-primary-hover);
+    text-decoration: underline;
+}
+
 #buddypress .mvs-activity-audio-icon,
 .activity-list .mvs-activity-audio-icon {
     display: flex;

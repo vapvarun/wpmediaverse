@@ -33,6 +33,11 @@ class Activator {
 		// Create frontend pages if they don't exist.
 		self::create_pages();
 
+		// Point those pages at the active theme's no-sidebar page template so a
+		// member's media library never renders beside the theme's blog sidebar.
+		TemplateLoader::sync_app_page_templates();
+		update_option( 'mvs_app_page_templates_synced', 1, false );
+
 		// Protect upload directory from direct access.
 		self::protect_upload_directory();
 
@@ -193,6 +198,7 @@ class Activator {
 			'mvs_ai_monthly_budget'   => 10,
 			// Watermark (Pro controls the UI; free seeds defaults).
 			'mvs_watermark_enabled'   => false,
+			'mvs_watermark_apply'     => 'all',
 			'mvs_watermark_type'      => 'text',
 			'mvs_watermark_text'      => get_bloginfo( 'name' ),
 			'mvs_watermark_image_id'  => 0,

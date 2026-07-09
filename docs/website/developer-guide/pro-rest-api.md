@@ -1,6 +1,6 @@
 # Pro REST API Reference
 
-> Endpoints marked **(Pro)** require WPMediaVerse Pro 1.5.0+.
+> Endpoints marked **(Pro)** require WPMediaVerse Pro. Sections tagged with a version (e.g. "New in 1.9.0") were added in that release or later — check your installed Pro version if a route 404s.
 
 **Base URL:** `/wp-json/mvs-pro/v1/`
 
@@ -907,6 +907,81 @@ Export local media to the remote platform.
 Run an incremental delta sync of recently changed items.
 
 **Auth:** User (must be connected)
+
+---
+
+## Stories **(New in 1.9.0)**
+
+WhatsApp-style ephemeral stories. Story state is stored as free media meta (`is_story` / `story_expires_at`); per-viewer "seen by" receipts live in the Pro table `mvs_pro_story_views`. Replying to a story reuses the existing free DM routes — there is no separate reply endpoint here. Requires `mvs_stories_enabled`.
+
+### GET /stories
+
+List active stories. Defaults to the viewer's network (people they follow, plus themselves); pass `author_id` to scope to one profile.
+
+**Auth:** Public (returns an empty set for logged-out visitors since the default scope needs a viewer)
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `author_id` | int | (viewer's network) | Scope to one author's stories |
+| `page` | int | `1` | Page number |
+| `per_page` | int | `50` | Items per page (max 100) |
+
+**Response:** array of `{ media_id, media_type, thumbnail_url, expires_at, viewed, author: { id, name, avatar, profile_url } }`. `X-WP-Total` / `X-WP-TotalPages` headers carry pagination.
+
+---
+
+### POST /media/{id}/story
+
+Mark a media item as a story.
+
+**Auth:** Owner/Admin
+
+**Body:**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `duration_hours` | int | `24` | Visibility window, 1-168 hours |
+
+**Response:** `{ media_id, is_story: true, expires_at }`
+
+---
+
+### DELETE /media/{id}/story
+
+End a story early. The media itself is untouched — only the story designation is cleared.
+
+**Auth:** Owner/Admin
+
+**Response:** `{ media_id, is_story: false }`
+
+---
+
+### POST /stories/{id}/view
+
+Record a view receipt for the current user. The author's own views are never recorded — "seen by" counts the audience, not the owner.
+
+**Auth:** User (subject to the media's normal privacy check)
+
+**Response:** `{ recorded: true }`
+
+---
+
+### GET /stories/{id}/viewers
+
+"Seen by" list for a story.
+
+**Auth:** Owner/Admin
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | int | `1` | Page number |
+| `per_page` | int | `50` | Items per page (max 100) |
+
+**Response:** `{ viewers: [ { user_id, name, avatar, profile_url, viewed_at } ], total }`. `X-WP-Total` / `X-WP-TotalPages` headers carry pagination.
 
 ---
 

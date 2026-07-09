@@ -73,6 +73,12 @@ class Album {
 		global $wpdb;
 		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'album_id' => $post_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
+		// Albums also carry an mvs_media_index row (privacy storage). Purge it so a
+		// deleted album doesn't leave a dead, click-broken tile on Explore Media —
+		// this fires for MediaVerse's own REST delete AND BuddyNext's wrapper, both
+		// of which funnel through wp_delete_post()/before_delete_post. Basecamp 10073671889.
+		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->purge_index_record( $post_id );
+
 		/**
 		 * Fires after an album's custom-table rows are cleaned on permanent delete.
 		 *

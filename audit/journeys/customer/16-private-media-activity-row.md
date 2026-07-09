@@ -44,7 +44,7 @@ estimated_runtime_minutes: 4
 ### 4. Verify the private item is NOT shown sitewide to another member
 - **Action**: as member B (`?autologin=<member-b>`), `curl $SITE_URL/wp-json/mvs/v1/feed` and `curl $SITE_URL/wp-json/mvs/v1/users/<member-a-id>/activity`.
 - **Expect**: member B's feed and member A's *public* activity view do **NOT** contain `PRIVATE_MEDIA_ID`. The private upload is invisible to a non-owner. (Member A viewing their own activity MAY see it — owner sees own private items.)
-- **On fail**: `includes/REST/Controller/ActivityController.php` + `includes/Services/PrivacyService.php::filter_privacy_can_view()` — the feed query is not applying the privacy gate to activity rows.
+- **On fail**: `includes/REST/Controller/ActivityController.php` + `includes/Services/AccessRulesService.php::filter_privacy_can_view()` — the feed query is not applying the privacy gate to activity rows.
 
 ### 5. Anonymous sees nothing
 - **Action**: `curl $SITE_URL/wp-json/mvs/v1/feed` with no auth.

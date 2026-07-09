@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 19;
+	const CURRENT_VERSION = 20;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -880,6 +880,34 @@ class Migrator {
 		foreach ( (array) $moved_ids as $moved_id ) {
 			clean_comment_cache( (int) $moved_id );
 		}
+	}
+
+	/**
+	 * Migration v20 — sweep orphaned album/collection index rows.
+	 *
+	 * Albums and collections get an mvs_media_index row purely to store their
+	 * privacy (media_type left empty). Before 2.0.0 the delete handlers cleaned
+	 * only their own item tables, so deleting the CPT left that index row behind
+	 * and Explore kept rendering a dead, click-broken tile (Basecamp 10073671889).
+	 * The delete handlers now purge the row; this heals installs that already
+	 * accumulated orphans (deleted albums/collections, authorless placeholders).
+	 *
+	 * Scoped to empty-media_type rows only, so real media (media_type =
+	 * image/video/audio) is never touched. Idempotent.
+	 *
+	 * @since 2.0.0
+	 */
+	private function migrate_to_20(): void {
+		global $wpdb;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
+			"DELETE mi FROM {$wpdb->prefix}mvs_media_index mi
+			 WHERE ( mi.media_type = '' OR mi.media_type IS NULL )
+			   AND mi.media_id NOT IN (
+				 SELECT ID FROM {$wpdb->posts} WHERE post_type IN ( 'mvs_album', 'mvs_collection' )
+			   )"
+		);
+		// phpcs:enable
 	}
 
 	/**

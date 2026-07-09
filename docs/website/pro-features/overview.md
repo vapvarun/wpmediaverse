@@ -10,7 +10,7 @@ WPMediaVerse Pro extends the free plugin with advanced layout modes, cloud stora
 
 ## Requirements
 
-- WPMediaVerse (free) 1.5.0 or higher installed and activated (Pro halts with an admin notice on older Free)
+- WPMediaVerse (free) 2.0.0 or higher installed and activated (Pro halts with an admin notice on older Free)
 - WordPress 6.5+
 - PHP 7.4+
 - MySQL 5.7+ or MariaDB 10.4+
@@ -50,6 +50,7 @@ Every Pro feature now ships as a first-class Gutenberg block - drop-in, configur
 | Dribbble Feed | `mvs/pro-dribbble-feed` | Dribbble-style card grid layout. |
 | Leaderboard | `mvs/pro-leaderboard` | Top performers across competitions. |
 | Compete Hub | `mvs/pro-compete-hub` | Combined challenges + battles + tournaments dashboard. |
+| Stories | `mvs/pro-stories` | 24-hour ephemeral stories bar + fullscreen viewer, with a same-screen "Your story" upload tile. Added in 1.9.0. |
 
 **Layout flexibility:** because each layout (Instagram, Flickr, Pinterest, Dribbble) is its own block, admins can mix layouts on different pages - e.g. a Pinterest feed on the home page and an Instagram feed on a member directory - instead of being locked to one site-wide layout setting.
 
@@ -68,10 +69,11 @@ The migration tool admin page is now a generic shell that hosts per-platform car
 | Auto-Captions | [auto-captions.md](auto-captions.md) | OpenAI Whisper transcription and WebVTT captions |
 | Watermarking | [watermarking.md](watermarking.md) | GD-based text and logo watermarks on media |
 | Video Analytics | [video-analytics.md](video-analytics.md) | Play event tracking, heatmaps, and retention reports |
-| AI Providers | [ai-providers.md](ai-providers.md) | Google Cloud Vision and AWS Rekognition support |
+| AI Providers | [ai-providers.md](ai-providers.md) | Google Cloud Vision, AWS Rekognition, and Claude (Anthropic) support |
 | Quotas | [quotas.md](quotas.md) | Per-user storage and count limits with membership integration |
 | Advanced Privacy | [advanced-privacy.md](advanced-privacy.md) | Multi-level privacy, presets, album inheritance, and bulk updates |
 | Connected Accounts | [connected-accounts.md](connected-accounts.md) | Connect Flickr to import/export photos and auto-push new uploads |
+| Stories | [stories.md](stories.md) | 24-hour ephemeral stories with a tap-to-advance viewer and "seen by" receipts |
 
 ## User Reports (Pro Moderation)
 

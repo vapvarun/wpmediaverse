@@ -381,9 +381,11 @@ class SettingsRegistrar {
 			)
 		);
 
-		// Image optimization — lossless re-encode of originals. PNG/GIF are
-		// re-encoded; JPEG is re-encoded at quality 92 (filterable via
-		// `mvs_optimize_jpeg_quality`) with metadata stripped. Default on.
+		// Image optimization — re-compression of originals. PNG/GIF are re-encoded;
+		// JPEG is re-encoded at quality 92 (filterable via
+		// `mvs_optimize_jpeg_quality`) with metadata stripped, which is LOSSY.
+		// Default on, and the field copy below says so ("stronger compression",
+		// "10 to 30 percent smaller"), so it is a disclosed choice.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_storage',
 			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
@@ -705,7 +707,14 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_moderation_auto_action' ),
-				'default'           => 'delete',
+				// MUST match ModerationService's runtime default (get_option(..,
+				// 'flag')) and the sanitizer's fallback ('flag'). This registered
+				// default drives the settings field's displayed selection and the
+				// REST schema, so 'delete' here made a fresh install SHOW "Delete
+				// permanently" as the default and persist it on the first Save —
+				// silently arming auto-deletion of flagged uploads. Auto-moderation
+				// must default to the safe, reversible action. Basecamp 10074612454.
+				'default'           => 'flag',
 			)
 		);
 		add_settings_field(

@@ -62,12 +62,6 @@ class MediaListPage {
 			return;
 		}
 
-		// Access Rules mini-page — view/add/remove per-media access rules.
-		if ( 'access' === $view ) {
-			self::render_access();
-			return;
-		}
-
 		// Bulk-action success notice (shown after the redirect from
 		// handle_bulk_action_apply()).
 		if ( isset( $_GET['mvs_bulk_done'], $_GET['mvs_bulk_action'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -422,19 +416,6 @@ class MediaListPage {
 					);
 					?>
 					| <span class="ai-review"><a href="<?php echo esc_url( $ai_review_url ); ?>"><?php esc_html_e( 'AI Review', 'wpmediaverse' ); ?></a></span>
-					<?php
-					if ( current_user_can( 'manage_mvs_access' ) ) : // phpcs:ignore WordPress.WP.Capabilities.Unknown
-						$access_url = add_query_arg(
-							array(
-								'page'     => 'mvs-media',
-								'view'     => 'access',
-								'media_id' => $media_id,
-							),
-							admin_url( 'admin.php' )
-						);
-						?>
-						| <span class="access-rules"><a href="<?php echo esc_url( $access_url ); ?>"><?php esc_html_e( 'Access rules', 'wpmediaverse' ); ?></a></span>
-					<?php endif; ?>
 					<?php if ( 'trash' !== $status && 0 === strpos( (string) ( $item['file_type'] ?? '' ), 'image/' ) ) : ?>
 						| <span class="optimize"><a href="
 						<?php
@@ -571,7 +552,7 @@ class MediaListPage {
 		// Pick badge style + label by outcome:
 		// 1. JPEG shrunk -> green badge with savings %
 		// 2. No JPEG savings but a WebP copy was created -> success "WebP ready"
-		// 3. No savings, no WebP -> neutral "No lossless gain". We deliberately
+		// 3. No savings, no WebP -> neutral "No size gain". We deliberately
 		// avoid the word "Optimized" here because an admin staring at a 3 MB
 		// file would (correctly) push back on that claim.
 		if ( $saved_pct > 0 ) {
@@ -582,7 +563,7 @@ class MediaListPage {
 			$badge_label = __( 'WebP ready', 'wpmediaverse' );
 		} else {
 			$badge_class = 'mvs-media-badge--neutral';
-			$badge_label = __( 'No lossless gain', 'wpmediaverse' );
+			$badge_label = __( 'No size gain', 'wpmediaverse' );
 		}
 
 		$title = sprintf(
@@ -791,67 +772,6 @@ class MediaListPage {
 	}
 
 	/**
-	 * Render the Access Rules mini-page for a single media item.
-	 *
-	 * Lists the media's current access rules and provides add/remove controls.
-	 * Writes are handled server-side in handle_access_rule_actions() (own cap +
-	 * nonce). The same rules are also drivable via the mvs/v1 REST API and the
-	 * frontend edit modal (Rule 18: three entry points on one data store).
-	 */
-	private static function render_access(): void {
-		$media_id = isset( $_GET['media_id'] ) ? (int) $_GET['media_id'] : 0; // phpcs:ignore WordPress.Security.NonceVerification
-		if ( $media_id <= 0 ) {
-			wp_safe_redirect( admin_url( 'admin.php?page=mvs-media' ) );
-			exit;
-		}
-
-		if ( ! current_user_can( 'manage_mvs_access' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown
-			wp_die( esc_html__( 'You are not allowed to manage access rules.', 'wpmediaverse' ), 403 );
-		}
-
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		if ( ! $repo || ! $repo->exists( $media_id ) ) {
-			?>
-			<div class="wrap wpmediaverse-admin">
-				<h1><?php esc_html_e( 'Media not found', 'wpmediaverse' ); ?></h1>
-				<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=mvs-media' ) ); ?>"><?php esc_html_e( 'Back to all media', 'wpmediaverse' ); ?></a></p>
-			</div>
-			<?php
-			return;
-		}
-
-		$access  = \WPMediaVerse\Core\Plugin::container()->get( 'access_rules' );
-		$rules   = $access->get_rules( $media_id );
-		$options = $access->get_builder_options();
-
-		// Slug → display-name maps so the current-rules table reads in plain
-		// English (role slug → "Subscriber", type → "User role").
-		$role_labels = array();
-		foreach ( $options['roles'] as $role_opt ) {
-			$role_labels[ $role_opt['value'] ] = $role_opt['label'];
-		}
-		$type_labels = array();
-		foreach ( $options['rule_types'] as $type_opt ) {
-			$type_labels[ $type_opt['value'] ] = $type_opt['label'];
-		}
-
-		// Template variables (consumed by templates/admin/access-rules.php).
-		$title     = (string) $repo->get( $media_id, 'title' );
-		$list_url  = admin_url( 'admin.php?page=mvs-media' );
-		$form_url  = add_query_arg(
-			array(
-				'page'     => 'mvs-media',
-				'view'     => 'access',
-				'media_id' => $media_id,
-			),
-			admin_url( 'admin.php' )
-		);
-		$add_nonce = wp_nonce_field( 'mvs_add_access_rule_' . $media_id, '_wpnonce', true, false );
-
-		require MVS_PLUGIN_DIR . 'templates/admin/access-rules.php';
-	}
-
-	/**
 	 * Render pagination controls.
 	 *
 	 * @param int $total       Total items.
@@ -909,14 +829,6 @@ class MediaListPage {
 	 */
 	public static function handle_bulk_actions(): void {
 		global $wpdb;
-
-		// Access-rule add/remove have their own capability (manage_mvs_access)
-		// and run BEFORE the manage_options entry gate below, so an editor who
-		// holds that cap (but not manage_options) can use the Access Rules
-		// screen. Returns true when it handled + redirected.
-		if ( self::handle_access_rule_actions() ) {
-			return;
-		}
 
 		// Entry gate: media moderators (moderate_mvs_media) reach this handler
 		// for the AI-review actions; full admins (manage_options) reach every
@@ -1075,92 +987,6 @@ class MediaListPage {
 			exit;
 		}
 		wp_safe_redirect( admin_url( 'admin.php?page=mvs-media' ) );
-		exit;
-	}
-
-	/**
-	 * Handle add/remove of per-media access rules from the Access Rules screen.
-	 *
-	 * Runs before the manage_options entry gate in handle_bulk_actions() and
-	 * enforces its own capability (manage_mvs_access) + per-action nonce. All
-	 * writes delegate to AccessRulesService (the same engine the REST controller
-	 * uses) — no duplicated rule logic. Redirects back to the screen and exits
-	 * when it handles an action; returns false to let normal handling continue.
-	 *
-	 * @return bool True when an access action was handled (in practice it
-	 *              redirects+exits first); false when nothing matched.
-	 */
-	private static function handle_access_rule_actions(): bool {
-		$is_add = isset( $_POST['mvs_add_access_rule'] ); // phpcs:ignore WordPress.Security.NonceVerification
-		$action = isset( $_GET['action'] ) ? sanitize_text_field( wp_unslash( $_GET['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
-		$is_del = ( 'delete_access_rule' === $action );
-
-		if ( ! $is_add && ! $is_del ) {
-			return false;
-		}
-
-		$media_id = isset( $_POST['media_id'] )
-			? (int) $_POST['media_id'] // phpcs:ignore WordPress.Security.NonceVerification
-			: ( isset( $_GET['media_id'] ) ? (int) $_GET['media_id'] : 0 ); // phpcs:ignore WordPress.Security.NonceVerification
-
-		if ( ! current_user_can( 'manage_mvs_access' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown
-			wp_die( esc_html__( 'You are not allowed to manage access rules.', 'wpmediaverse' ), 403 );
-		}
-
-		if ( $media_id <= 0 ) {
-			wp_safe_redirect( admin_url( 'admin.php?page=mvs-media' ) );
-			exit;
-		}
-
-		$access = \WPMediaVerse\Core\Plugin::container()->get( 'access_rules' );
-
-		if ( $is_add ) {
-			check_admin_referer( 'mvs_add_access_rule_' . $media_id );
-
-			$rule_type  = isset( $_POST['rule_type'] ) ? sanitize_key( wp_unslash( $_POST['rule_type'] ) ) : '';
-			$rule_value = isset( $_POST['rule_value'] ) ? sanitize_text_field( wp_unslash( $_POST['rule_value'] ) ) : '';
-
-			if (
-				'' !== $rule_type
-				&& '' !== $rule_value
-				&& in_array( $rule_type, \WPMediaVerse\Services\AccessRulesService::RULE_TYPES, true )
-				&& \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id )
-			) {
-				$access->add_rule( $media_id, $rule_type, $rule_value );
-			}
-			self::redirect_to_access( $media_id );
-		}
-
-		// Delete — verify the rule belongs to this media before removing it.
-		$rule_id = isset( $_GET['rule_id'] ) ? (int) $_GET['rule_id'] : 0;
-		check_admin_referer( 'mvs_delete_access_rule_' . $rule_id );
-		foreach ( $access->get_rules( $media_id ) as $rule ) {
-			if ( (int) $rule['id'] === $rule_id ) {
-				$access->delete_rule( $rule_id );
-				break;
-			}
-		}
-		self::redirect_to_access( $media_id );
-
-		return true; // Unreachable (both paths redirect+exit); keeps the type honest.
-	}
-
-	/**
-	 * Redirect back to the Access Rules screen for a media item.
-	 *
-	 * @param int $media_id Media post ID.
-	 */
-	private static function redirect_to_access( int $media_id ): void {
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'page'     => 'mvs-media',
-					'view'     => 'access',
-					'media_id' => $media_id,
-				),
-				admin_url( 'admin.php' )
-			)
-		);
 		exit;
 	}
 
@@ -1677,7 +1503,7 @@ class MediaListPage {
 					<?php if ( $is_img ) : ?>
 						<h2><?php esc_html_e( 'Optimization', 'wpmediaverse' ); ?></h2>
 						<?php
-						// When no lossless gain happened on this image, give the
+						// When re-compression produced no size gain on this image, give the
 						// admin one transparent line explaining why an
 						// already-high-quality JPEG often cannot be shrunk on
 						// PHP-GD environments. Mentions Imagick as the path
@@ -1731,7 +1557,7 @@ class MediaListPage {
 											<?php
 										elseif ( $optimized_at > 0 ) :
 											?>
-											<span class="mvs-media-badge mvs-media-badge--neutral"><?php esc_html_e( 'No lossless gain', 'wpmediaverse' ); ?></span>
+											<span class="mvs-media-badge mvs-media-badge--neutral"><?php esc_html_e( 'No size gain', 'wpmediaverse' ); ?></span>
 											&nbsp;
 											<?php
 											/* translators: %s: human-readable date and time */
@@ -1766,10 +1592,10 @@ class MediaListPage {
 											<?php
 											if ( '' !== $webp_orig ) {
 												/* translators: %s: file size in human-readable form */
-												echo wp_kses_post( sprintf( __( 'Lossless compression could not shrink this %s image further. A smaller WebP copy was created instead, so visitors on modern browsers get a faster page load.', 'wpmediaverse' ), '<strong>' . esc_html( size_format( $bytes_before ) ) . '</strong>' ) );
+												echo wp_kses_post( sprintf( __( 'Re-compression could not shrink this %s image further. A smaller WebP copy was created instead, so visitors on modern browsers get a faster page load.', 'wpmediaverse' ), '<strong>' . esc_html( size_format( $bytes_before ) ) . '</strong>' ) );
 											} else {
 												/* translators: %s: file size in human-readable form */
-												echo wp_kses_post( sprintf( __( 'This %s image was saved at a high quality level. Lossless compression cannot make it smaller, and a WebP copy would have been larger than the original (so we did not create one). To reduce the file size further you can re-upload at a smaller resolution, or save it at a lower JPEG quality before uploading.', 'wpmediaverse' ), '<strong>' . esc_html( size_format( $bytes_before ) ) . '</strong>' ) );
+												echo wp_kses_post( sprintf( __( 'This %s image was saved at a high quality level. Re-compressing it would have produced a LARGER file, so we kept your original untouched, and a WebP copy would also have been larger (so we did not create one). To reduce the file size further you can re-upload at a smaller resolution, or save it at a lower JPEG quality before uploading.', 'wpmediaverse' ), '<strong>' . esc_html( size_format( $bytes_before ) ) . '</strong>' ) );
 											}
 											?>
 										</td>

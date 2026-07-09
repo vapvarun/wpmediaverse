@@ -66,6 +66,40 @@ $mvs_stories_on = ( '1' === get_option( 'mvs_stories_enabled', '0' ) );
 // Pre-check the toggle when arriving from the "Your story" tile (?mvs_story=1). Display-only, no action.
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $mvs_prefill_story = $mvs_stories_on && isset( $_GET['mvs_story'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['mvs_story'] ) );
+
+// i18n for the mvs/media-upload store. It is a script MODULE (viewScriptModule), so
+// wp_set_script_translations() can't reach it and window.wp.i18n.__() falls
+// through to English. Seed PHP-translated strings into interactivity state; the
+// store reads state.i18n.<key> with an English fallback. Basecamp 10073528834.
+wp_interactivity_state(
+	'mvs/media-upload',
+	array(
+		'i18n' => array(
+			'uploading'          => __( 'Uploading...', 'wpmediaverse' ),
+			'uploadOneFile'      => __( 'Upload 1 file', 'wpmediaverse' ),
+			/* translators: %d: number of files. */
+			'uploadNFiles'       => __( 'Upload %d files', 'wpmediaverse' ),
+			/* translators: %d: number of files. */
+			'uploadingNFiles'    => __( 'Uploading %d file(s)...', 'wpmediaverse' ),
+			'uploadLimitReached' => __( 'Upload limit reached. Please upgrade your plan.', 'wpmediaverse' ),
+			/* translators: %1$d: current file number, %2$d: total number of files. */
+			'uploadingProgress'  => __( 'Uploading %1$d of %2$d...', 'wpmediaverse' ),
+			/* translators: %s: file name. */
+			'uploadFailedFor'    => __( 'Upload failed for %s.', 'wpmediaverse' ),
+			/* translators: %s: file name. */
+			'networkError'       => __( 'Network error uploading %s.', 'wpmediaverse' ),
+			/* translators: %d: number of files uploaded. */
+			'uploadSuccess'      => __( '%d file(s) uploaded successfully!', 'wpmediaverse' ),
+			/* translators: %1$d: number uploaded, %2$d: total number of files. */
+			'uploadPartial'      => __( '%1$d of %2$d file(s) uploaded.', 'wpmediaverse' ),
+			/* translators: %1$d: number of duplicate files, %2$d: existing media ID. */
+			'duplicatesDetected' => __( '%1$d duplicate file(s) detected. Existing media #%2$d already contains this content.', 'wpmediaverse' ),
+			'allowedFallback'    => __( 'images, videos, and audio files', 'wpmediaverse' ),
+			/* translators: %1$s: rejected file names, %2$s: supported formats. */
+			'fileTypeNotAllowed' => __( 'File type not allowed: %1$s. Supported formats: %2$s.', 'wpmediaverse' ),
+		),
+	)
+);
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/media-upload"

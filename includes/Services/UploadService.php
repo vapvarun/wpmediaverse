@@ -269,6 +269,21 @@ class UploadService {
 		$avif_local   = null;
 		$bytes_before = (int) $actual_size;
 		if ( 0 === strpos( $mime, 'image/' ) ) {
+			// Admin watermark: stamped into the ORIGINAL in place, before
+			// optimization, so every derivative (webp/avif/thumbnails) inherits it
+			// from a single draw. WatermarkService::stamp_new_upload() owns the
+			// image guard, the scope check, the filter, and the fail-open log —
+			// it is the one place the stamp is fired from. `$hash` above stays
+			// pre-stamp on purpose: dup detection matches the user's source.
+			$watermark = \WPMediaVerse\Core\Plugin::container()->get( 'watermark' );
+			if ( $watermark->stamp_new_upload( $file['tmp_name'], $mime, $user_id ) ) {
+				// The stamp rewrote the file in place. Re-measure so the optimizer
+				// below records its before/after byte counts against the real size.
+				clearstatcache( true, $file['tmp_name'] );
+				$actual_size  = (int) filesize( $file['tmp_name'] );
+				$bytes_before = (int) $actual_size;
+			}
+
 			$image_opt   = \WPMediaVerse\Core\Plugin::container()->get( 'image_optimization' );
 			$opt_context = array(
 				'media_id' => 0, // not yet assigned — set after media insert.
@@ -837,30 +852,135 @@ class UploadService {
 		}
 		$raw = $exif;
 
-		// Strip GPS data from file using GD — re-save the image without EXIF.
-		if ( $has_gps && extension_loaded( 'gd' ) ) {
-			$info = getimagesize( $file_path );
-			if ( $info ) {
-				// PHP 8.4+ deprecated imagedestroy — GdImage instances are
-				// first-class objects and GC'd when $img goes out of scope.
-				switch ( $info['mime'] ) {
-					case 'image/jpeg':
-						$img = imagecreatefromjpeg( $file_path );
-						if ( $img ) {
-							imagejpeg( $img, $file_path, 95 );
-						}
-						break;
-					case 'image/png':
-						$img = imagecreatefrompng( $file_path );
-						if ( $img ) {
-							imagepng( $img, $file_path );
-						}
-						break;
+		// Strip GPS/EXIF from the stored file.
+		//
+		// JPEG: remove the APP1 (EXIF/XMP) marker segment WITHOUT decoding the
+		// image (Basecamp #10073918955). The previous approach decoded and
+		// re-encoded via GD at quality 95 — a lossy generation on every
+		// GPS-tagged photo, on top of the separate optimize pass, so a phone
+		// photo was re-encoded twice before it was ever stored. It also dropped
+		// the ICC colour profile. Segment removal rewrites only the metadata
+		// header; the compressed scan data is copied byte-for-byte, so there is
+		// zero quality loss and non-APP1 segments (ICC profile, JFIF) survive.
+		// Falls back to the old GD re-encode only if the JPEG structure will not
+		// parse — a privacy control must never fail open and leave GPS in place.
+		if ( $has_gps ) {
+			$info = @getimagesize( $file_path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			$type = is_array( $info ) ? $info['mime'] : '';
+
+			if ( 'image/jpeg' === $type ) {
+				if ( ! $this->strip_jpeg_app1_segments( $file_path ) && extension_loaded( 'gd' ) ) {
+					// PHP 8.4+ deprecated imagedestroy — GdImage instances are
+					// first-class objects and GC'd when $img goes out of scope.
+					$img = imagecreatefromjpeg( $file_path );
+					if ( $img ) {
+						imagejpeg( $img, $file_path, 95 );
+					}
+				}
+			} elseif ( 'image/png' === $type && extension_loaded( 'gd' ) ) {
+				// PNG re-encode is lossless and PNG rarely carries GPS; left as-is.
+				$img = imagecreatefrompng( $file_path );
+				if ( $img ) {
+					imagepng( $img, $file_path );
 				}
 			}
 		}
 
 		return $raw;
+	}
+
+	/**
+	 * Remove APP1 (EXIF/XMP) marker segments from a JPEG in place, without
+	 * decoding the image. Lossless: the entropy-coded scan data is copied
+	 * verbatim, so no quality is lost and non-APP1 segments (ICC colour profile,
+	 * JFIF header) survive. Walks the marker structure defined by ITU-T T.81.
+	 *
+	 * @param string $file_path Absolute path to a JPEG file.
+	 * @return bool True if an APP1 segment was removed and the file rewritten;
+	 *              false if the structure could not be parsed or held no APP1
+	 *              (caller falls back to a guaranteed GD strip).
+	 */
+	private function strip_jpeg_app1_segments( string $file_path ): bool {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.PHP.NoSilencedErrors.Discouraged
+		$data = @file_get_contents( $file_path );
+		if ( ! is_string( $data ) ) {
+			return false;
+		}
+
+		$len = strlen( $data );
+		// Must begin with SOI (0xFFD8).
+		if ( $len < 4 || "\xFF\xD8" !== substr( $data, 0, 2 ) ) {
+			return false;
+		}
+
+		$out     = "\xFF\xD8";
+		$i       = 2;
+		$removed = false;
+
+		while ( $i + 1 < $len ) {
+			// Every marker starts with 0xFF.
+			if ( "\xFF" !== $data[ $i ] ) {
+				return false;
+			}
+			$marker = ord( $data[ $i + 1 ] );
+
+			// Standalone markers with no length payload: fill byte, TEM, RSTn.
+			if ( 0xFF === $marker || 0x01 === $marker || ( $marker >= 0xD0 && $marker <= 0xD7 ) ) {
+				$out .= substr( $data, $i, 2 );
+				$i   += 2;
+				continue;
+			}
+
+			// Start-of-scan / end-of-image: entropy-coded data has no length
+			// field, so copy everything from here to EOF verbatim.
+			if ( 0xDA === $marker || 0xD9 === $marker ) {
+				$out .= substr( $data, $i );
+				return $removed ? $this->overwrite_file( $file_path, $out ) : false;
+			}
+
+			// Length-bearing segment: FFxx marker + 2 length bytes (length
+			// counts itself) + payload.
+			if ( $i + 3 >= $len ) {
+				return false;
+			}
+			$seg_len = ( ord( $data[ $i + 2 ] ) << 8 ) | ord( $data[ $i + 3 ] );
+			$advance = 2 + $seg_len;
+			if ( $seg_len < 2 || $i + $advance > $len ) {
+				return false;
+			}
+
+			if ( 0xE1 === $marker ) {
+				$removed = true; // APP1 (EXIF / XMP) — drop it.
+			} else {
+				$out .= substr( $data, $i, $advance );
+			}
+			$i += $advance;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Atomically overwrite a file with new bytes (temp write + rename).
+	 *
+	 * @param string $file_path Destination path.
+	 * @param string $bytes     New file contents.
+	 * @return bool True on success.
+	 */
+	private function overwrite_file( string $file_path, string $bytes ): bool {
+		$tmp = $file_path . '.mvs-exif.tmp';
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_put_contents_file_put_contents, WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( false === @file_put_contents( $tmp, $bytes ) ) {
+			return false;
+		}
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.rename_rename
+		if ( @rename( $tmp, $file_path ) ) {
+			clearstatcache( true, $file_path );
+			return true;
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink, WordPress.PHP.NoSilencedErrors.Discouraged
+		@unlink( $tmp );
+		return false;
 	}
 
 	/**
@@ -1109,7 +1229,7 @@ class UploadService {
 
 			// Per-variant optimization pass — dispatches mvs_optimize_image so
 			// external compressors can process the thumbnail. The internal
-			// lossless re-encode skips variants (they're already minimal).
+			// re-compression pass skips variants (they're already minimal).
 			$variant_ctx = array(
 				'media_id' => $media_id,
 				'variant'  => $size_name,

@@ -517,6 +517,17 @@ Every item must be browser-verified at desktop AND 390px mobile per the project 
 - [ ] **16.11** FAB z-index — lightbox must cover FAB, not vice-versa.
 - [ ] **16.12** Feature toggle OFF for a Pro module must not leave broken links in nav or dashboard panels.
 
+### 16.A — Member-expectation regressions (2.0.0; each has an executable journey)
+
+Re-test every release as an actual member, not just by reading code. Executable
+equivalents live in `audit/journeys/customer/` and are enforced by the
+journey-coverage gate (local-CI stage 1.6 / `REQUIRED-COVERS.txt`).
+
+- [ ] **16.A.1 Protected media = login gate, not 404** (journey `20-protected-media-login-gate`). Mark a photo "Members only". Owner + another logged-in member see the image. A logged-out visitor sees the SAME single-media container with a "Log in to view" message **where the image would be** — never a "couldn't find that media" 404, never the image/OG-image. The gate's login link goes to the **BuddyNext** auth page (not `wp-login.php`). HTTP 403 + noindex.
+- [ ] **16.A.2 Album lists count honestly for visitors** (journey `21-album-privacy-and-pagination`). As a logged-out visitor, page through the album list: `X-WP-Total` matches what actually renders, no empty/short trailing page, private albums never appear. A member's own **private album single page** opens for the owner and is denied to everyone else.
+- [ ] **16.A.3 Edits persist + comments never leak onto posts** (journey `22-edit-save-and-comment-no-post-leak`). Edit a media's title/privacy in the modal, Save, reload → it stuck. Comment on media → it shows on the media and **never** under the blog post/page sharing that numeric id (`comment_post_ID = 0`). Reaction toggles + persists.
+- [ ] **16.A.4 Watermark is admin-global, stamped at upload** (journey `15-watermark-stamped-at-upload`). One setting (Settings → Display), no access-rules wording. An in-scope upload is baked with the mark; every viewer (owner/member/anon) sees the same stamped public image; out-of-scope role uploads are not stamped.
+
 ---
 
 ## 17. Accessibility Smoke (keyboard + VoiceOver, on plugin pages only)

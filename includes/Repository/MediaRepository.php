@@ -111,9 +111,6 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * - `thumb_large` / `thumb_medium` / `thumb_thumb` — signed thumbnail URLs
 	 *   via `SignedUrlService::generate_thumbnail` (skip-privacy at sign time;
 	 *   serve endpoint re-applies access control).
-	 * - `watermark_url` — signed watermark URL (size=watermark variant) for
-	 *   the Pro-generated preview file. Returns empty string when no
-	 *   watermark has been generated yet.
 	 *
 	 * Every caller (REST controllers, templates, BP integration, blocks)
 	 * automatically receives token-bearing URLs that flow through the gated
@@ -135,10 +132,6 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		if ( isset( self::$thumb_size_map[ $key ] ) ) {
 			return $this->sign_thumbnail_url( $media_id, self::$thumb_size_map[ $key ] );
-		}
-
-		if ( 'watermark_url' === $key ) {
-			return $this->sign_watermark_url( $media_id );
 		}
 
 		return $this->get_raw( $media_id, $key );
@@ -310,6 +303,32 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Purge the mvs_media_index + mvs_media_meta rows for an id and drop its
+	 * request-scope row cache.
+	 *
+	 * Albums and collections get an mvs_media_index row purely to store their
+	 * privacy (media_type left empty). This is the targeted row/meta purge their
+	 * delete handlers call on `before_delete_post` so a deleted album/collection
+	 * doesn't leave a dead tile on Explore (Basecamp 10073671889). Media items use
+	 * delete_cascade() instead — it also clears the downstream reaction / stat /
+	 * view / album-item tables that albums and collections never touch.
+	 *
+	 * @param int $media_id The mvs_media_index PK (media / album / collection id).
+	 * @return void
+	 */
+	public function purge_index_record( int $media_id ): void {
+		if ( $media_id <= 0 ) {
+			return;
+		}
+		global $wpdb;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', array( 'media_id' => $media_id ), array( '%d' ) );
+		$wpdb->delete( $wpdb->prefix . 'mvs_media_meta', array( 'media_id' => $media_id ), array( '%d' ) );
+		// phpcs:enable
+		self::invalidate_row_cache( $media_id );
+	}
+
+	/**
 	 * Reverse-lookup a media_id from a stored file_url.
 	 *
 	 * Used by callers that have a raw URL string but no media_id — typically
@@ -478,6 +497,57 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Signed, viewer-aware URL for the FULL / original media file.
+	 *
+	 * The counterpart to get_thumbnail_url_for_viewer() for the original file
+	 * rather than a thumbnail size. Non-public media (Members / Friends / Only Me)
+	 * has no anonymous broadcast URL, so a caller that needs to DISPLAY the full
+	 * media to an authorized viewer — a lightbox, a single-media stage — had no
+	 * URL to render and showed a broken slot. Privacy is enforced at sign time
+	 * (SignedUrlService::generate() returns false unless PrivacyService::can_view(
+	 * $media_id, $viewer_id )) and re-verified per request by the /serve endpoint,
+	 * so the minted URL is never a bearer token past a privacy downgrade.
+	 *
+	 * For public media on a cloud driver this returns the direct CDN URL (same as
+	 * the broadcast path); for local/non-public media it returns the gated /serve
+	 * URL. Returns '' when the viewer may not view the media.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int      $media_id  Media ID.
+	 * @param int|null $viewer_id Viewer to authorize against. Null = current user.
+	 * @return string Signed URL when the viewer may view the media, else ''.
+	 */
+	public function get_url_for_viewer( int $media_id, ?int $viewer_id = null ): string {
+		if ( $media_id <= 0 ) {
+			return '';
+		}
+		$signed = $this->signed_urls_service();
+		if ( ! $signed ) {
+			return '';
+		}
+		$viewer_id = ( null === $viewer_id ) ? get_current_user_id() : (int) $viewer_id;
+		/**
+		 * Filter the viewer-aware full-file URL TTL (seconds). Default 1 hour; the
+		 * /serve endpoint re-checks privacy per request, so this is only a cache
+		 * horizon, not a credential lifetime.
+		 *
+		 * @since 2.0.0
+		 *
+		 * @param int $ttl       TTL in seconds.
+		 * @param int $media_id  Media ID.
+		 * @param int $viewer_id Viewer the URL is minted for.
+		 */
+		$ttl = (int) apply_filters( 'mvs_viewer_url_ttl', HOUR_IN_SECONDS, $media_id, $viewer_id );
+		if ( $ttl <= 0 ) {
+			$ttl = HOUR_IN_SECONDS;
+		}
+		// $download = false — display URL; privacy is verified inside generate().
+		$url = $signed->generate( $media_id, $viewer_id, $ttl, false );
+		return is_string( $url ) ? $url : '';
+	}
+
+	/**
 	 * Resolve the absolute filesystem path for a media file.
 	 *
 	 * Internal API for callers that need to read the source file directly:
@@ -569,35 +639,6 @@ class MediaRepository implements MediaRepositoryInterface {
 			return '';
 		}
 		$url = $signed->generate( $media_id, get_current_user_id() );
-		return is_string( $url ) ? $url : '';
-	}
-
-	/**
-	 * Sign the watermark URL for a media item via SignedUrlService.
-	 *
-	 * Returns empty string when no watermark has been generated yet —
-	 * `watermark_url` meta is the cache marker. Skip-privacy at sign time
-	 * is correct because the watermark is the degraded preview shown to
-	 * viewers WITHOUT access to the original; the serve endpoint validates
-	 * the HMAC signature regardless.
-	 *
-	 * @param int $media_id Media ID.
-	 * @return string Signed URL or empty string.
-	 */
-	private function sign_watermark_url( int $media_id ): string {
-		if ( $media_id <= 0 ) {
-			return '';
-		}
-		// Cache marker — Pro's Watermarker writes the raw URL into meta only
-		// after generating the preview file. No meta = no file to serve.
-		if ( ! $this->get_raw( $media_id, 'watermark_url' ) ) {
-			return '';
-		}
-		$signed = $this->signed_urls_service();
-		if ( ! $signed ) {
-			return '';
-		}
-		$url = $signed->generate_thumbnail( $media_id, get_current_user_id(), 'watermark', 0, true );
 		return is_string( $url ) ? $url : '';
 	}
 
@@ -1367,6 +1408,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type string $privacy                  'any'|'public'|'visible'|'profile'. Default 'any'.
 	 *     @type int    $viewer_id                Required when privacy='visible'/'profile'. Default 0.
 	 *     @type bool   $exclude_non_cover_group  Drop non-cover gallery members. Default false.
+	 *     @type bool   $exclude_empty_media_type Drop privacy-only stub rows (albums/collections). Default false.
 	 *     @type string $since                    created_at >= this datetime. Default ''.
 	 *     @type string $orderby                  Allowlisted column. Default 'created_at'.
 	 *     @type string $order                    'ASC'|'DESC'. Default 'DESC'.
@@ -1387,6 +1429,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				'privacy'                 => 'any',
 				'viewer_id'               => 0,
 				'exclude_non_cover_group' => false,
+				'exclude_empty_media_type' => false,
 				'since'                   => '',
 				'orderby'                 => 'created_at',
 				'order'                   => 'DESC',
@@ -1464,6 +1507,13 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		if ( ! empty( $args['exclude_non_cover_group'] ) ) {
 			$where[] = 'm.media_id NOT IN (' . $this->gallery_exclude_subquery() . ')';
+		}
+
+		// Drop the privacy-only stub rows that album/collection creation inserts
+		// into mvs_media_index (media_type left empty — see PrivacyService). These
+		// are containers, not media, and render as broken tiles on grids/explore.
+		if ( ! empty( $args['exclude_empty_media_type'] ) ) {
+			$where[] = "m.media_type != ''";
 		}
 
 		if ( empty( $where ) ) {
@@ -1691,6 +1741,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param array  $args       {
 	 *     @type int $author_id Optional author filter (joins to index).
 	 *                          Default 0 = no filter.
+	 *     @type int $after_id  Optional keyset cursor — only IDs greater than
+	 *                          this value are returned. Default 0 = no cursor.
+	 *     @type int $limit     Optional row cap, ordered by media_id ASC so the
+	 *                          cursor above is stable. Default 0 = unbounded.
 	 * }
 	 * @return array<int> Media IDs matching the criteria.
 	 */
@@ -1698,6 +1752,10 @@ class MediaRepository implements MediaRepositoryInterface {
 		global $wpdb;
 
 		$author_id = isset( $args['author_id'] ) ? (int) $args['author_id'] : 0;
+		$after_id  = isset( $args['after_id'] ) ? (int) $args['after_id'] : 0;
+		$limit     = isset( $args['limit'] ) ? (int) $args['limit'] : 0;
+
+		$limit_sql = $limit > 0 ? $wpdb->prepare( ' ORDER BY m.media_id ASC LIMIT %d', $limit ) : '';
 
 		if ( $author_id > 0 ) {
 			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -1705,18 +1763,24 @@ class MediaRepository implements MediaRepositoryInterface {
 					"SELECT m.media_id
 					 FROM {$wpdb->prefix}mvs_media_meta m
 					 INNER JOIN {$wpdb->prefix}mvs_media_index i ON i.media_id = m.media_id
-					 WHERE m.meta_key = %s AND m.meta_value = %s AND i.post_author = %d",
+					 WHERE m.meta_key = %s AND m.meta_value = %s AND i.post_author = %d AND m.media_id > %d"
+					. $limit_sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $limit_sql is itself a $wpdb->prepare() fragment (line above); the %d is already bound.
 					$meta_key,
 					$meta_value,
-					$author_id
+					$author_id,
+					$after_id
 				)
 			);
 		} else {
+			// Aliased as `m` (matching the author_id branch above) so $limit_sql's
+			// `ORDER BY m.media_id` resolves correctly in both branches.
 			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = %s AND meta_value = %s",
+					"SELECT m.media_id FROM {$wpdb->prefix}mvs_media_meta m WHERE m.meta_key = %s AND m.meta_value = %s AND m.media_id > %d"
+					. $limit_sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $limit_sql is itself a $wpdb->prepare() fragment (line above); the %d is already bound.
 					$meta_key,
-					$meta_value
+					$meta_value,
+					$after_id
 				)
 			);
 		}
@@ -2278,6 +2342,15 @@ class MediaRepository implements MediaRepositoryInterface {
 		foreach ( $mvs_comment_ids as $mvs_comment_id ) {
 			wp_delete_comment( (int) $mvs_comment_id, true );
 		}
+
+		// Taxonomy term relationships are keyed by media_id as the object id
+		// (mvs_tag / mvs_category are registered against the media object type,
+		// not a WP post) and are NOT covered by any of the wpdb deletes above —
+		// moved here from MediaController::delete_item() so every delete path
+		// (REST single, REST bulk, admin single, admin bulk) gets it for free,
+		// matching this method's "single funnel for EVERY delete path" contract.
+		wp_delete_object_term_relationships( $media_id, array( 'mvs_tag', 'mvs_category' ) );
+
 		$wpdb->delete( $wpdb->prefix . 'mvs_media_index', $where, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 		// 1.7.0 cache layer: row_cache still holds the now-deleted index row, and

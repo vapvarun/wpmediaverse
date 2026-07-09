@@ -2,7 +2,7 @@
   "product_slug": "wpmediaverse",
   "product_name": "WPMediaVerse",
   "product_type": "plugin",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.",
   "author": "Wbcom Designs",
   "author_url": "https://wbcomdesigns.com/",
@@ -90,7 +90,8 @@
         { "slug": "video-analytics", "title": "Video Analytics & Heatmaps" },
         { "slug": "ai-providers", "title": "AI Providers (Vision & Rekognition)" },
         { "slug": "quotas", "title": "Quotas & Credit Packages" },
-        { "slug": "advanced-privacy", "title": "Advanced Privacy Controls" }
+        { "slug": "advanced-privacy", "title": "Advanced Privacy Controls" },
+        { "slug": "stories", "title": "Stories" }
       ]
     },
     {

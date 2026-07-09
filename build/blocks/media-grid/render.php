@@ -13,9 +13,12 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// Admin setting is the source of truth for grid columns.
-// Block attribute only overrides if user explicitly set a non-default value.
-$columns = absint( get_option( 'mvs_grid_columns', 3 ) );
+// Block attribute is the source of truth when the merchant has explicitly
+// set it in the sidebar; falls back to the admin default (Settings →
+// Display) when unset/absent/0. Matches edit.js's own "Using admin default"
+// help text, which the frontend previously never honored.
+$mvs_grid_columns_attr = isset( $attributes['columns'] ) ? absint( $attributes['columns'] ) : 0;
+$columns               = $mvs_grid_columns_attr > 0 ? $mvs_grid_columns_attr : absint( get_option( 'mvs_grid_columns', 3 ) );
 $thumb_style    = \WPMediaVerse\Core\SettingsHelper::get_thumbnail_style();
 $mvs_per_page   = isset( $attributes['perPage'] ) ? absint( $attributes['perPage'] ) : absint( get_option( 'mvs_items_per_page', 12 ) );
 $media_type     = isset( $attributes['mediaType'] ) ? sanitize_text_field( $attributes['mediaType'] ) : '';
@@ -39,7 +42,12 @@ $index_table = $wpdb->prefix . 'mvs_media_index';
 $meta_table  = $wpdb->prefix . 'mvs_media_meta';
 
 // Build WHERE/JOIN clauses.
-$where  = "WHERE m.status = 'publish'";
+// media_type != '' excludes the privacy-only stub rows that albums/collections
+// (mvs_album / mvs_collection CPTs) leave in mvs_media_index — those rows carry
+// only a privacy value with media_type left empty (see PrivacyService), and
+// without this filter they surfaced as broken/empty tiles in the gallery grid.
+// Real media always has an image/video/audio/document type.
+$where  = "WHERE m.status = 'publish' AND m.media_type != ''";
 $joins  = '';
 $params = array();
 

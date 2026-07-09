@@ -247,9 +247,10 @@ class ActivityService {
 			'id'         => (int) $row->id,
 			'type'       => $row->type,
 			'user'       => array(
-				'id'     => (int) $row->user_id,
-				'name'   => $user ? $user->display_name : '',
-				'avatar' => get_avatar_url( (int) $row->user_id, array( 'size' => 48 ) ),
+				'id'          => (int) $row->user_id,
+				'name'        => $user ? $user->display_name : '',
+				'avatar'      => get_avatar_url( (int) $row->user_id, array( 'size' => 48 ) ),
+				'profile_url' => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $row->user_id ),
 			),
 			'media_id'   => (int) $row->media_id,
 			'album_id'   => (int) $row->album_id,

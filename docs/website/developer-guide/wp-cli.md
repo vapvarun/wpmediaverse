@@ -441,6 +441,64 @@ wp mvs optimize-bulk --offset=200
 
 ---
 
+## wp mvs backfill_ai
+
+Run AI description + tagging on image media that was uploaded before AI moderation was enabled (or before `mvs_ai_auto_describe` / `mvs_ai_auto_tag` were turned on). Only images with no `ai_status` meta are picked up unless `--force` is passed. Each match is queued to the same async Action Scheduler job that runs on upload (`mvs_ai_process_media`) unless `--sync` is passed to process inline.
+
+Added in 1.6.0.
+
+```bash
+# Preview how many images would be processed.
+wp mvs backfill_ai --dry-run
+
+# Cap the run for a first pass.
+wp mvs backfill_ai --limit=200
+
+# Process inline instead of queueing (respects the AI budget cap per item).
+wp mvs backfill_ai --sync
+
+# Reprocess every image, including ones already attempted.
+wp mvs backfill_ai --force
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--limit=<n>` | 0 (all) | Max media to process |
+| `--sync` | off | Process inline instead of queueing the async job |
+| `--dry-run` | off | List how many media would be processed without doing it |
+| `--force` | off | Reprocess all image media, including ones already attempted |
+
+**Output:** Reports queued, processed inline, and failed counts.
+
+---
+
+## wp mvs repair-storage
+
+Heal two pre-1.8.0 storage inconsistencies without deleting or moving anything - the source file is only ever copied:
+
+- **Absolute file paths** left over from a plugin migration (rtMedia / MediaPress / BuddyBoss) that 404 because the path never matched a valid URL. Re-sideloaded into `uploads/wpmediaverse/` as a relative path.
+- **Stranded thumbnails** - an older "Migrate all" moved the original to cloud but left thumbnails on local disk, so they 404 at the cloud URL. Pushed to the active cloud driver.
+
+Idempotent and safe to re-run. On the admin side this repair already runs automatically in the background after update; use this command for headless sites or to run it on demand.
+
+```bash
+# Report how many rows need repair without changing anything.
+wp mvs repair-storage --dry-run
+
+# Apply the repair.
+wp mvs repair-storage
+```
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--dry-run` | off | Report how many rows need repair without changing anything |
+
+---
+
 ## wp mvs competitions tick **(Pro)**
 
 Run one competitions scheduler tick immediately, instead of waiting for the recurring Action Scheduler job. A tick fires every competition transition hook once - activating scheduled challenges, closing challenge entries, finalizing expired challenges, starting registered tournaments, and resolving expired matches - so any challenge or tournament whose deadline has passed advances right away. Useful for debugging on a site where Action Scheduler / WP-Cron is not firing, or to force an immediate state advance after editing competition rows.

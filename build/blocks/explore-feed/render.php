@@ -62,6 +62,18 @@ $mvs_classes = trim(
 );
 $wrapper  = get_block_wrapper_attributes( array( 'class' => $mvs_classes ) );
 $rest_url = esc_url( rest_url( 'mvs/v1/media' ) );
+
+// i18n for the mvs/explore-feed store (script module — English-locked __()). Seed
+// PHP-translated strings; store reads state.i18n.<key> with English fallback. Basecamp 10073528834.
+wp_interactivity_state(
+	'mvs/explore-feed',
+	array(
+		'i18n' => array(
+			'loadMoreError' => __( 'Couldn’t load more. Tap to retry.', 'wpmediaverse' ),
+			'untitled'      => __( '(untitled)', 'wpmediaverse' ),
+		),
+	)
+);
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-wp-interactive="mvs/explore-feed"

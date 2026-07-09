@@ -1,9 +1,11 @@
 <?php
 /**
- * Watermark service (Pro stub).
+ * Watermark service.
  *
- * Provides watermarking hooks and preview image generation for gated media.
- * The actual watermark rendering is deferred to Pro via filters.
+ * Resolves the admin watermark configuration and scope. The watermark is
+ * stamped into the image at upload time by Pro's Watermarker (via the
+ * `mvs_watermark_stamp_file` filter), so it is baked into the stored file and
+ * every derivative — there is no per-media or serve-time watermarking.
  *
  * @package WPMediaVerse
  */
@@ -12,9 +14,8 @@ namespace WPMediaVerse\Services;
 
 defined( 'ABSPATH' ) || exit;
 
-
 /**
- * Watermark service — generates watermarked preview images for gated content.
+ * Watermark service — admin config + upload-scope resolution.
  */
 class WatermarkService {
 
@@ -38,56 +39,6 @@ class WatermarkService {
 	const POSITIONS = array( 'center', 'bottom-right', 'bottom-left', 'top-right', 'top-left', 'tile' );
 
 	/**
-	 * Access rules service.
-	 *
-	 * @var AccessRulesService
-	 */
-	private $access_rules;
-
-	/**
-	 * Per-request cache for preview URLs.
-	 *
-	 * @var array<int, string>
-	 */
-	private $preview_cache = array();
-
-	/**
-	 * Constructor.
-	 *
-	 * @param AccessRulesService $access_rules Access rules service.
-	 */
-	public function __construct( AccessRulesService $access_rules ) {
-		$this->access_rules = $access_rules;
-	}
-
-	/**
-	 * Initialize watermark hooks.
-	 */
-	public function init(): void {
-		// Filter media REST response to add preview_url for gated images.
-		add_filter( 'mvs_media_response', array( $this, 'add_preview_url' ), 30, 2 );
-
-		// When a media item's access rules change, its watermark eligibility can
-		// change (watermarks apply only to ruled media), so drop any cached
-		// preview and let it regenerate on next view.
-		add_action( 'mvs_access_rule_created', array( $this, 'invalidate_on_rule_change' ), 10, 2 );
-		add_action( 'mvs_access_rule_deleted', array( $this, 'invalidate_on_rule_change' ), 10, 2 );
-	}
-
-	/**
-	 * Invalidate the cached watermark when a media item's access rules change.
-	 *
-	 * Hooked to mvs_access_rule_created / mvs_access_rule_deleted; both pass
-	 * ( $rule_id, $media_id ) as their first two args.
-	 *
-	 * @param int $rule_id  Rule ID (unused).
-	 * @param int $media_id Media post ID.
-	 */
-	public function invalidate_on_rule_change( int $rule_id, int $media_id ): void { // phpcs:ignore WordPressVIPMinimum.Hooks, Generic.CodeAnalysis.UnusedFunctionParameter.Found
-		$this->invalidate( $media_id );
-	}
-
-	/**
 	 * Check if watermarking is enabled.
 	 *
 	 * @return bool
@@ -98,184 +49,104 @@ class WatermarkService {
 		/**
 		 * Filter whether watermarking is enabled.
 		 *
-		 * The option value is read first, then passed through this filter
-		 * so Pro or third-party code can override if needed.
-		 *
 		 * @param bool $enabled Whether watermarking is enabled.
 		 */
 		return (bool) apply_filters( 'mvs_watermark_enabled', $enabled );
 	}
 
 	/**
-	 * Get the watermark configuration.
+	 * Whether an upload by the given user should be watermarked, per the admin
+	 * scope setting. `all` (default) stamps every upload; `roles` stamps only
+	 * uploads from users whose role is in mvs_watermark_roles. Admin decides
+	 * once; every matching upload is stamped at ingest so everyone sees it.
 	 *
-	 * The image watermark is stored by the admin UI as a Media Library
-	 * attachment ID under `mvs_watermark_image_id`. Pro's Watermarker consumes
-	 * `image_id`; `image_url` is resolved from the same attachment for any
-	 * third-party consumer of that key (empty string when no image is set).
-	 *
-	 * @return array{type: string, text: string, image_id: int, image_url: string, position: string, opacity: int, font_size: int, color: string}
-	 */
-	public function get_config(): array {
-		$image_id = (int) get_option( 'mvs_watermark_image_id', 0 );
-
-		$defaults = array(
-			'type'      => get_option( 'mvs_watermark_type', 'text' ),
-			'text'      => get_option( 'mvs_watermark_text', get_bloginfo( 'name' ) ),
-			'image_id'  => $image_id,
-			'image_url' => $image_id > 0 ? (string) wp_get_attachment_url( $image_id ) : '',
-			'position'  => get_option( 'mvs_watermark_position', self::POSITION_BOTTOM_RIGHT ),
-			'opacity'   => (int) get_option( 'mvs_watermark_opacity', 40 ),
-			'font_size' => (int) get_option( 'mvs_watermark_font_size', 24 ),
-			'color'     => get_option( 'mvs_watermark_color', '#ffffff' ),
-		);
-
-		/**
-		 * Filter the watermark configuration.
-		 *
-		 * @param array $config Watermark configuration.
-		 */
-		return apply_filters( 'mvs_watermark_config', $defaults );
-	}
-
-	/**
-	 * Get or generate a watermarked preview URL for a media item.
-	 *
-	 * @param int $media_id Media post ID.
-	 * @return string Preview URL, or empty string if not applicable.
-	 */
-	public function get_preview_url( int $media_id ): string {
-		if ( isset( $this->preview_cache[ $media_id ] ) ) {
-			return $this->preview_cache[ $media_id ];
-		}
-
-		// Only watermark images.
-		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
-		if ( ! $file_type || 0 !== strpos( $file_type, 'image/' ) ) {
-			$this->preview_cache[ $media_id ] = '';
-			return '';
-		}
-
-		// Only watermark gated media.
-		if ( ! $this->access_rules->has_active_rules( $media_id ) ) {
-			$this->preview_cache[ $media_id ] = '';
-			return '';
-		}
-
-		// Check for cached watermarked file.
-		$cached_url = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'watermark_url' );
-		if ( $cached_url ) {
-			$this->preview_cache[ $media_id ] = $cached_url;
-			return $cached_url;
-		}
-
-		// Short-circuit when the source file isn't reachable on local disk
-		// (e.g. cloud-stored media, deleted file). Pro's Watermarker fails
-		// gracefully on its own, but skipping here avoids the round trip.
-		if ( null === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_filesystem_path( $media_id ) ) {
-			$this->preview_cache[ $media_id ] = '';
-			return '';
-		}
-
-		// Pro's Watermarker filter contract: relative `file_path` (composed
-		// against {uploads}/wpmediaverse/ on the Pro side). Pass the raw
-		// stored value — the filter argument is never emitted to a browser.
-		$file_path = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_path' );
-		$file_url  = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_url' );
-		$config    = $this->get_config();
-
-		/**
-		 * Filter to generate a watermarked preview image.
-		 *
-		 * Pro plugins should hook here to generate the watermarked image and return its URL.
-		 * The generated image should be stored persistently (e.g., alongside the original).
-		 *
-		 * @param string $preview_url Generated preview URL. Empty string if not generated.
-		 * @param int    $media_id    Media post ID.
-		 * @param string $file_path   Relative file path.
-		 * @param string $file_url    Original file URL.
-		 * @param array  $config      Watermark configuration.
-		 */
-		$preview_url = apply_filters( 'mvs_generate_watermark', '', $media_id, $file_path, $file_url, $config );
-
-		if ( $preview_url ) {
-			// Persist the raw URL returned by Pro's Watermarker, then
-			// re-fetch via get() so the caller emits the signed variant
-			// (Phase 0a item 3 — watermark_url always-signed at the data layer).
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'watermark_url', $preview_url );
-			$preview_url = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'watermark_url' );
-		}
-
-		$this->preview_cache[ $media_id ] = $preview_url;
-
-		return $preview_url;
-	}
-
-	/**
-	 * Invalidate the cached watermark for a media item.
-	 *
-	 * Call this when the original file or watermark settings change.
-	 *
-	 * @param int $media_id Media post ID.
-	 */
-	public function invalidate( int $media_id ): void {
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete( $media_id, 'watermark_url' );
-		unset( $this->preview_cache[ $media_id ] );
-
-		/**
-		 * Fires when a watermark is invalidated.
-		 *
-		 * Pro plugins should hook here to delete the cached watermarked file.
-		 *
-		 * @param int $media_id Media post ID.
-		 */
-		do_action( 'mvs_watermark_invalidated', $media_id );
-	}
-
-	/**
-	 * Invalidate all cached watermarks (e.g., when settings change).
-	 */
-	public function invalidate_all(): void {
-		delete_metadata( 'post', 0, '_mvs_watermark_url', '', true );
-		$this->preview_cache = array();
-
-		/**
-		 * Fires when all watermarks are invalidated.
-		 */
-		do_action( 'mvs_watermarks_invalidated_all' );
-	}
-
-	/**
-	 * Add preview_url to media REST response for gated images.
-	 *
-	 * Hooks into mvs_media_response at priority 30 (after signed URL filter at 10).
-	 *
-	 * @param array $data     Response data.
-	 * @param int   $media_id Media post ID.
-	 * @return array Modified response data.
-	 */
-	public function add_preview_url( array $data, int $media_id ): array {
-		if ( ! $this->is_enabled() ) {
-			return $data;
-		}
-
-		$preview_url = $this->get_preview_url( $media_id );
-
-		if ( $preview_url ) {
-			$data['preview_url'] = $preview_url;
-			$data['watermarked'] = true;
-		}
-
-		return $data;
-	}
-
-	/**
-	 * Check if a media item has a watermarked preview.
-	 *
-	 * @param int $media_id Media post ID.
+	 * @param int $user_id Uploader user ID.
 	 * @return bool
 	 */
-	public function has_preview( int $media_id ): bool {
-		return ! empty( $this->get_preview_url( $media_id ) );
+	public function applies_to_user( int $user_id ): bool {
+		if ( ! $this->is_enabled() ) {
+			return false;
+		}
+
+		$mode = (string) get_option( 'mvs_watermark_apply', 'all' );
+		if ( 'roles' !== $mode ) {
+			return true; // 'all' — every upload is watermarked.
+		}
+
+		$roles = (array) get_option( 'mvs_watermark_roles', array() );
+		if ( empty( $roles ) || $user_id <= 0 ) {
+			return false;
+		}
+
+		$user = get_userdata( $user_id );
+		if ( ! $user ) {
+			return false;
+		}
+
+		return (bool) array_intersect( (array) $user->roles, $roles );
+	}
+
+	/**
+	 * Stamp the admin watermark into bytes a member is publishing right now.
+	 *
+	 * THE RULE, stated once: stamp what the member publishes now; never
+	 * re-process what is already in the library.
+	 *
+	 * This is the only place `mvs_watermark_stamp_file` is fired. Two ingest
+	 * paths introduce new member bytes and both call it:
+	 *
+	 *   - `UploadService::handle()`            — a brand-new upload.
+	 *   - `MediaController::replace_item()`    — a new file for an existing row.
+	 *
+	 * `UploadService::sideload_external_file()` deliberately does NOT call it.
+	 * That path re-ingests bytes already in the library: `StorageRepairService`
+	 * heals a stored file, and the Pro CLI importers migrate legacy MediaPress /
+	 * rtMedia / BuddyBoss media. Those files are either already stamped — and
+	 * nothing records that a file was stamped, so a second pass would draw a
+	 * second watermark — or they are pre-existing content the admin never agreed
+	 * to alter. Watermarking applies to new uploads only. The omission there is
+	 * deliberate; do not "fix" it by adding a call.
+	 *
+	 * Callers must stamp BEFORE the bytes are stored and before any derivative
+	 * (WebP/AVIF sibling, thumbnail) is cut, so every derivative inherits the
+	 * mark from one draw. Callers that record a content hash of the user's
+	 * source must take that hash BEFORE calling this — the stamp rewrites the
+	 * file in place.
+	 *
+	 * @param string $path    Absolute path to the image bytes. Stamped IN PLACE.
+	 * @param string $mime    Source mime type.
+	 * @param int    $user_id Uploader — drives the {username} token and role scope.
+	 * @return bool True when a watermark was actually drawn into the file.
+	 */
+	public function stamp_new_upload( string $path, string $mime, int $user_id ): bool {
+		// Images only. Video and audio are never watermarked, and returning
+		// early here keeps the failure log below from firing on every video.
+		if ( 0 !== strpos( $mime, 'image/' ) ) {
+			return false;
+		}
+
+		if ( ! $this->applies_to_user( $user_id ) ) {
+			return false;
+		}
+
+		$stamped = (bool) apply_filters( 'mvs_watermark_stamp_file', false, $path, $mime, $user_id );
+
+		// Do NOT fail open silently. When a stamper is registered (Pro active)
+		// but the stamp did not succeed, a paid "protect my media" upload would
+		// otherwise be stored and served UN-watermarked with no trace. Log an
+		// error so the site owner sees it on the Logs screen and can act (most
+		// often: the GD image library is unavailable). Basecamp 10073499080.
+		if ( ! $stamped && has_filter( 'mvs_watermark_stamp_file' ) ) {
+			LoggerService::error(
+				'watermark',
+				'Watermark stamp failed; the un-watermarked original was stored. Check that the GD image library is available on this server.',
+				array(
+					'user_id' => $user_id,
+					'mime'    => $mime,
+				)
+			);
+		}
+
+		return $stamped;
 	}
 }

@@ -16,7 +16,7 @@ get_header();
 
 do_action( 'mvs_before_content' );
 
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
 // Archive URL (base media page).
 $mvs_archive_url = home_url( '/media/' );
@@ -70,17 +70,17 @@ $mvs_archive_url = home_url( '/media/' );
 				<h1 class="mvs-collection-card-title"><?php the_title(); ?></h1>
 				<div class="mvs-collection-card-meta">
 					<span class="mvs-collection-meta-author">
-						<?php echo get_avatar( get_the_author_meta( 'ID' ), 24, '', '', array( 'class' => 'mvs-collection-avatar' ) ); ?>
 						<?php
-						$mvs_author_id  = (int) get_the_author_meta( 'ID' );
+						$mvs_author_id = (int) get_the_author_meta( 'ID' );
 						// Platform-agnostic profile URL (BP / BuddyNext override via filter).
-						$mvs_author_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $mvs_author_id );
+						$mvs_author_url    = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( $mvs_author_id );
+						$mvs_author_avatar = get_avatar( $mvs_author_id, 24, '', '', array( 'class' => 'mvs-collection-avatar' ) );
 
 						if ( $mvs_author_url ) :
 							?>
-						<a href="<?php echo esc_url( $mvs_author_url ); ?>"><?php echo esc_html( get_the_author() ); ?></a>
+						<a href="<?php echo esc_url( $mvs_author_url ); ?>" class="mvs-collection-author-link"><?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?><?php echo esc_html( get_the_author() ); ?></a>
 						<?php else : ?>
-						<span><?php echo esc_html( get_the_author() ); ?></span>
+							<?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?><span><?php echo esc_html( get_the_author() ); ?></span>
 						<?php endif; ?>
 					</span>
 					<span class="mvs-collection-meta-text">
@@ -140,8 +140,9 @@ $mvs_archive_url = home_url( '/media/' );
 						'tagResults'         => array(),
 						'tagDropdownVisible' => false,
 						'saving'             => false,
-						'shareLabel'         => "\xF0\x9F\x94\x97 Share",
+						'shareLabel'         => __( "\xF0\x9F\x94\x97 Share", 'wpmediaverse' ),
 					);
+					\WPMediaVerse\Core\TemplateHelpers::media_social_i18n_state();
 					?>
 					<div class="mvs-social-wrapper"
 						data-wp-interactive="mvs/media-social"
@@ -429,7 +430,7 @@ endif;
 	</div>
 </div>
 <?php
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 

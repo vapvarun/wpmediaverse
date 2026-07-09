@@ -15,9 +15,10 @@
 
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
-// i18n: wp-i18n is loaded as a classic script on every WP page; read it
-// from window since @wordpress/i18n is not yet importable in script modules.
-const __ = ( str, domain ) => ( window.wp && window.wp.i18n && window.wp.i18n.__ ) ? window.wp.i18n.__( str, domain || 'wpmediaverse' ) : str;
+// i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here
+// (no getLocaleData for the domain). Strings are PHP-translated and injected into
+// interactivity state by shared-ui-frame.php via wp_interactivity_state(); read
+// them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
 let toastTimer = null;
 let tagSearchTimer = null;
 
@@ -79,7 +80,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		uploadModalAlbumTitle: '',
 		uploadModalAlbumDescription: '',
 		uploadModalMediaGroup: null,
-		uploadModalAlbum: 0, // chosen existing album id (Add to album), 0 = none
+		uploadModalAlbum: 0, // chosen album: 0 = none, -1 = create new, >0 = existing id
+		uploadModalNewAlbumName: '', // typed name when "Create new album" is chosen
 		userAlbums: [], // [{ id, title }] for the "Add to album" select
 		get hideUploadMetaFields() {
 			return state.uploadModalUploading;
@@ -87,19 +89,23 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get hasUserAlbums() {
 			return Array.isArray( state.userAlbums ) && state.userAlbums.length > 0;
 		},
+		get isCreatingNewAlbum() {
+			// "Create new album" chosen in the "Add to album" select (value -1).
+			return state.uploadModalAlbum === -1;
+		},
 		get hideAlbumCoverHint() {
 			return state.uploadModalMode !== 'album' || state.uploadModalUploading || ! state.hasFiles;
 		},
 
 		get uploadModalHeading() {
 			const titles = {
-				photo: __( 'Upload Photo', 'wpmediaverse' ),
-				gallery: __( 'Create Gallery Post', 'wpmediaverse' ),
-				album: __( 'Create Album', 'wpmediaverse' ),
-				video: __( 'Upload Video', 'wpmediaverse' ),
-				audio: __( 'Upload Audio', 'wpmediaverse' ),
+				photo: ( state.i18n?.uploadPhoto || 'Upload Photo' ),
+				gallery: ( state.i18n?.createGallery || 'Create Gallery Post' ),
+				album: ( state.i18n?.createAlbum || 'Create Album' ),
+				video: ( state.i18n?.uploadVideo || 'Upload Video' ),
+				audio: ( state.i18n?.uploadAudio || 'Upload Audio' ),
 			};
-			return titles[ state.uploadModalMode ] || __( 'Upload', 'wpmediaverse' );
+			return titles[ state.uploadModalMode ] || ( state.i18n?.upload || 'Upload' );
 		},
 		get uploadAccept() {
 			// Auto-detect flow: accept every supported type; the picked file(s)
@@ -171,37 +177,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		editModalRegenerateSlug: false,
 		editModalError: '',
 
-		// --- Access rules panel (inside the edit modal). Each row is
-		// { rule_type: 'role'|'membership'|'capability', rule_value, index }.
-		// A viewer matching ANY rule may view; empty list = privacy alone.
-		// Options (roles + rule types) load once per session from
-		// GET /access/options; the rules themselves load per-media.
-		editModalRules: [],
-		editModalRulesSnapshot: '[]',
-		accessRuleTypes: [],
-		accessRoles: [],
-		accessBpGroupsActive: false,
-		accessOptionsLoaded: false,
-
-		// Context-aware getters for the access-rule rows (read the current
-		// row/option via getContext(), mirroring the smart-collection builder).
-		get isAccessRuleTypeSelected() {
-			const ctx = getContext();
-			return !! ( ctx.rt && ctx.rule && String( ctx.rt.value ) === String( ctx.rule.rule_type ) );
-		},
-		get isAccessRuleValueSelected() {
-			const ctx = getContext();
-			return !! ( ctx.opt && ctx.rule && String( ctx.opt.value ) === String( ctx.rule.rule_value ) );
-		},
-		get accessRuleIsRole() {
-			return getContext().rule?.rule_type === 'role';
-		},
-		get accessRuleValuePlaceholder() {
-			const type = getContext().rule?.rule_type;
-			if ( type === 'membership' ) return __( 'BuddyPress group ID', 'wpmediaverse' );
-			if ( type === 'capability' ) return __( 'Capability name (e.g. read)', 'wpmediaverse' );
-			return '';
-		},
 
 		// --- Popular tag pills (cached for the session, lazily loaded the
 		// first time the upload or edit modal opens).
@@ -466,6 +441,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalAlbumDescription = '';
 			state.uploadModalMediaGroup = null;
 			state.uploadModalAlbum = 0;
+			state.uploadModalNewAlbumName = '';
 			document.body.style.overflow = 'hidden';
 			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
 			actions.loadUserAlbums(); // fire-and-forget; "Add to album" options.
@@ -486,6 +462,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDuplicates = 0;
 			state.uploadModalLastDuplicateId = 0;
 			state.uploadModalLastError = '';
+			state.uploadModalAlbum = 0;
+			state.uploadModalNewAlbumName = '';
 			document.body.style.overflow = '';
 		},
 		// --- Edit Media modal actions ---
@@ -539,20 +517,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalDescription = data.description || '';
 				state.editModalPrivacy = data.privacy || 'public';
 				state.editModalAllowDownload = data.allow_download !== false;
-
-				// Load the rule-builder options (session-cached) and this
-				// media's current access rules for the panel.
-				actions.loadAccessOptions();
-				const rulesRes = await window.mvsRest.restFetch( `${ restUrl }media/${ id }/rules` );
-				const loadedRules = ( rulesRes.ok && Array.isArray( rulesRes.data?.rules ) )
-					? rulesRes.data.rules.map( ( r, i ) => ( {
-						rule_type: r.rule_type || 'role',
-						rule_value: r.rule_value != null ? String( r.rule_value ) : '',
-						index: i,
-					} ) )
-					: [];
-				state.editModalRules = loadedRules;
-				state.editModalRulesSnapshot = JSON.stringify( actions.serializeAccessRules( loadedRules ) );
 			} catch {
 				state.editModalError = 'Could not load this media. Try again.';
 			}
@@ -568,8 +532,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalRegenerateSlug = false;
 			state.editModalError = '';
 			state.editModalSaving = false;
-			state.editModalRules = [];
-			state.editModalRulesSnapshot = '[]';
 			document.body.style.overflow = '';
 		},
 		updateEditTitle() {
@@ -586,61 +548,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		updateEditRegenerateSlug() {
 			state.editModalRegenerateSlug = !! getElement().ref?.checked;
-		},
-		// --- Access rules panel ------------------------------------------------
-		loadAccessOptions() {
-			if ( state.accessOptionsLoaded ) return;
-			state.accessOptionsLoaded = true; // optimistic — prevents duplicate loads.
-			const restUrl = window.mvsBpActions?.restUrl
-				|| ( window.location.origin + '/wp-json/mvs/v1/' );
-			window.mvsRest.restFetch( `${ restUrl }access/options` ).then( ( res ) => {
-				if ( res.ok && res.data ) {
-					state.accessRuleTypes = Array.isArray( res.data.rule_types ) ? res.data.rule_types : [];
-					state.accessRoles = Array.isArray( res.data.roles ) ? res.data.roles : [];
-					state.accessBpGroupsActive = !! res.data.bp_groups_active;
-				} else {
-					state.accessOptionsLoaded = false; // allow retry on next open.
-				}
-			} ).catch( () => {
-				state.accessOptionsLoaded = false;
-			} );
-		},
-		serializeAccessRules( rules ) {
-			// Keep only complete rows; strip the UI-only `index` field.
-			return ( rules || [] )
-				.filter( ( r ) => r.rule_type && String( r.rule_value ).trim() !== '' )
-				.map( ( r ) => ( { rule_type: r.rule_type, rule_value: String( r.rule_value ).trim() } ) );
-		},
-		addAccessRule() {
-			const rules = [ ...state.editModalRules ];
-			const firstType = state.accessRuleTypes[ 0 ]?.value || 'role';
-			rules.push( { rule_type: firstType, rule_value: '', index: rules.length } );
-			state.editModalRules = rules;
-		},
-		removeAccessRule( event ) {
-			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
-			state.editModalRules = state.editModalRules
-				.filter( ( r ) => r.index !== idx )
-				.map( ( r, i ) => ( { ...r, index: i } ) );
-		},
-		setAccessRuleType( event ) {
-			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
-			const rules = [ ...state.editModalRules ];
-			const rule = rules.find( ( r ) => r.index === idx );
-			if ( rule ) {
-				rule.rule_type = event.target.value;
-				rule.rule_value = ''; // value semantics change with type — reset.
-				state.editModalRules = rules;
-			}
-		},
-		setAccessRuleValue( event ) {
-			const idx = parseInt( event.target.closest( '[data-rule-index]' )?.dataset.ruleIndex, 10 );
-			const rules = [ ...state.editModalRules ];
-			const rule = rules.find( ( r ) => r.index === idx );
-			if ( rule ) {
-				rule.rule_value = event.target.value;
-				state.editModalRules = rules;
-			}
 		},
 		async saveEditModal() {
 			if ( state.editModalSaving || ! state.editModalMediaId ) return;
@@ -682,23 +589,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				}
 				const updated = res.data || {};
 
-				// Persist access rules (full-replace) — only when they actually
-				// changed, to avoid a needless write + rate-limit hit on every
-				// save. Runs before the slug-redirect branch below so a rule
-				// change is never dropped when the slug also changes.
-				const desiredRules = actions.serializeAccessRules( state.editModalRules );
-				if ( JSON.stringify( desiredRules ) !== state.editModalRulesSnapshot ) {
-					const rulesRes = await window.mvsRest.restFetch( `${ restUrl }media/${ state.editModalMediaId }/rules`, {
-						method: 'POST',
-						body: { rules: desiredRules },
-					} );
-					if ( ! rulesRes.ok ) {
-						const err = rulesRes.data || {};
-						throw new Error( err.message || 'save_failed' );
-					}
-					state.editModalRulesSnapshot = JSON.stringify( desiredRules );
-				}
-
 				// When the user opted into a slug change AND they're CURRENTLY
 				// on the media's single page (`/media/{old-slug}/`), the page
 				// they're viewing now points at a dead URL. Redirect to the
@@ -711,13 +601,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					window.location.pathname !== new URL( updated.link ).pathname &&
 					/\/media\/[^/]+\/?$/.test( window.location.pathname )
 				) {
-					actions.showToast( __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ), 'success' );
+					actions.showToast( ( state.i18n?.savedRedirecting || 'Saved! Redirecting to the new URL…' ), 'success' );
 					actions.closeEditModal();
 					window.location.replace( updated.link );
 					return;
 				}
 
-				actions.showToast( __( 'Media settings saved.', 'wpmediaverse' ), 'success' );
+				actions.showToast( ( state.i18n?.settingsSaved || 'Media settings saved.' ), 'success' );
 				actions.closeEditModal();
 			} catch ( err ) {
 				state.editModalError = err.message || 'Could not save. Try again.';
@@ -893,7 +783,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalPrivacy = event.target.value;
 		},
 		updateUploadAlbum( event ) {
-			state.uploadModalAlbum = parseInt( event.target.value, 10 ) || 0;
+			// -1 = "Create new album", 0 = none, >0 = existing album id.
+			const val = parseInt( event.target.value, 10 );
+			state.uploadModalAlbum = Number.isNaN( val ) ? 0 : val;
+			if ( state.uploadModalAlbum !== -1 ) {
+				state.uploadModalNewAlbumName = '';
+			}
+		},
+		updateNewAlbumName( event ) {
+			state.uploadModalNewAlbumName = event.target.value;
 		},
 		async loadUserAlbums() {
 			const ctx = getContext();
@@ -921,7 +819,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const files = state.uploadModalFiles;
 
 			if ( ! files.length && state.uploadModalMode !== 'album' ) {
-				actions.showToast( __( 'Please select files to upload.', 'wpmediaverse' ), 'error' );
+				actions.showToast( ( state.i18n?.selectFiles || 'Please select files to upload.' ), 'error' );
 				return;
 			}
 
@@ -932,44 +830,52 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.uploadModalDuplicates = 0;
 			state.uploadModalLastDuplicateId = 0;
 
-			// For album mode, create album first.
+			// For album mode, create album first. Delegates to the single
+			// shared validate-name + POST path (window.mvsRest.createAlbum) so
+			// this surface and the BuddyPress albums tab share one create +
+			// message implementation (Basecamp 10069383195).
 			if ( state.uploadModalMode === 'album' ) {
-				if ( ! state.uploadModalAlbumTitle.trim() ) {
-					actions.showToast( __( 'Please enter an album name.', 'wpmediaverse' ), 'error' );
-					state.uploadModalUploading = false;
-					return;
-				}
-				try {
-					const albumRes = await window.mvsRest.restFetch( restUrl + 'albums', {
-						method: 'POST',
-						body: {
-							title: state.uploadModalAlbumTitle.trim(),
-							description: state.uploadModalAlbumDescription.trim(),
-							privacy: state.uploadModalPrivacy,
-						},
-					} );
-					const albumData = albumRes.data;
-					if ( albumData.id ) {
-						state._pendingAlbumId = albumData.id;
-						actions.showToast( __( 'Album "', 'wpmediaverse' ) + albumData.title + '" created!' );
-						if ( ! files.length ) {
-							state.uploadModalUploading = false;
-							setTimeout( () => {
-								actions.closeUploadModal();
-								window.location.reload();
-							}, 800 );
-							return;
-						}
-					} else {
-						actions.showToast( albumData.message || 'Failed to create album.', 'error' );
-						state.uploadModalUploading = false;
-						return;
+				const albumResult = await window.mvsRest.createAlbum(
+					state.uploadModalAlbumTitle,
+					{
+						description: state.uploadModalAlbumDescription,
+						privacy: state.uploadModalPrivacy,
 					}
-				} catch {
-					actions.showToast( __( 'Network error creating album.', 'wpmediaverse' ), 'error' );
+				);
+				if ( ! albumResult.ok ) {
+					actions.showToast( albumResult.message, 'error' );
 					state.uploadModalUploading = false;
 					return;
 				}
+				const albumData = albumResult.data;
+				state._pendingAlbumId = albumData.id;
+				actions.showToast( ( state.i18n?.albumCreated || 'Album "%s" created!' ).replace( '%s', albumData.title ) );
+				if ( ! files.length ) {
+					state.uploadModalUploading = false;
+					setTimeout( () => {
+						actions.closeUploadModal();
+						window.location.reload();
+					}, 800 );
+					return;
+				}
+			}
+
+			// "Create new album" chosen in the Add-to-album select: create it up
+			// front via the shared validate-name + POST helper so an invalid name
+			// aborts before any file is uploaded. Reuse the _pendingAlbumId path
+			// below to attach the uploads and set the cover.
+			if ( state.uploadModalAlbum === -1 ) {
+				const newAlbum = await window.mvsRest.createAlbum(
+					state.uploadModalNewAlbumName,
+					{ privacy: state.uploadModalPrivacy }
+				);
+				if ( ! newAlbum.ok ) {
+					actions.showToast( newAlbum.message, 'error' );
+					state.uploadModalUploading = false;
+					return;
+				}
+				state._pendingAlbumId = newAlbum.data.id;
+				state.uploadModalAlbum = 0; // consumed — skip the existing-album attach branch
 			}
 
 			const uploadedMediaIds = [];
@@ -1153,7 +1059,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.lightboxLoadSocial( ctx, mediaId );
 			} catch {
 				state.lightboxLoading = false;
-				actions.showToast( __( 'Failed to load media.', 'wpmediaverse' ), 'error' );
+				actions.showToast( ( state.i18n?.failedLoad || 'Failed to load media.' ), 'error' );
 			}
 		},
 		async openLightboxById( mediaId ) {
@@ -1220,7 +1126,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.lightboxLoadSocial( { restUrl, nonce, isLoggedIn }, mediaId );
 			} catch {
 				state.lightboxLoading = false;
-				actions.showToast( __( 'Failed to load media.', 'wpmediaverse' ), 'error' );
+				actions.showToast( ( state.i18n?.failedLoad || 'Failed to load media.' ), 'error' );
 			}
 		},
 		noop() {},
@@ -1366,7 +1272,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					state.lightboxCommentText = '';
 				}
 			} catch {
-				actions.showToast( __( 'Failed to post comment.', 'wpmediaverse' ), 'error' );
+				actions.showToast( ( state.i18n?.failedComment || 'Failed to post comment.' ), 'error' );
 			}
 		},
 		async lightboxShare() {
@@ -1418,8 +1324,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				}
 				actions.showToast(
 					shared
-						? __( 'Link copied!', 'wpmediaverse' )
-						: __( 'Could not copy link. Use the Open button to view this media in a new tab.', 'wpmediaverse' ),
+						? ( state.i18n?.linkCopied || 'Link copied!' )
+						: ( state.i18n?.copyFailed || 'Could not copy link. Use the Open button to view this media in a new tab.' ),
 					shared ? 'success' : 'error'
 				);
 			}
@@ -1454,7 +1360,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			// no downloadable file_url.
 			const data = state.lightboxMediaData;
 			if ( ! data || ! data.file_url ) {
-				actions.showToast( __( 'This media is not available for download.', 'wpmediaverse' ), 'error' );
+				actions.showToast( ( state.i18n?.notDownloadable || 'This media is not available for download.' ), 'error' );
 				return;
 			}
 

@@ -884,7 +884,25 @@ class ActivitySyncIntegration {
 		$grid_class = 'mvs-activity-media-grid mvs-activity-grid-' . min( count( $shown ), 6 );
 		$content    = '<div class="' . esc_attr( $grid_class ) . '">' . $grid_html . '</div>';
 
-		$album_link = '<a href="' . esc_url( get_permalink( $album_id ) ) . '">' . esc_html( $album->post_title ) . '</a>';
+		// Prominent "view all" link inside the activity CONTENT — the album URL
+		// otherwise lives only in the $action string, which many BP themes never
+		// render, leaving batch-upload galleries with no path to the album or the
+		// remaining photos (Basecamp #10077895284).
+		$album_url    = get_permalink( $album_id );
+		$view_all_txt = sprintf(
+			/* translators: 1: album title, 2: total photo count */
+			_n(
+				'View %2$d photo in album %1$s',
+				'View all %2$d photos in album %1$s',
+				count( $media_ids ),
+				'wpmediaverse'
+			),
+			$album->post_title,
+			count( $media_ids )
+		);
+		$content .= '<a class="mvs-activity-album-link" href="' . esc_url( $album_url ) . '">' . esc_html( $view_all_txt ) . '</a>';
+
+		$album_link = '<a href="' . esc_url( $album_url ) . '">' . esc_html( $album->post_title ) . '</a>';
 		$user_link  = bp_core_get_userlink( $user_id );
 		$count      = count( $media_ids );
 		$action     = sprintf(

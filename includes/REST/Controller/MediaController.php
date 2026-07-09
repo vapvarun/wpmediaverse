@@ -343,6 +343,7 @@ class MediaController extends WP_REST_Controller {
 			}
 			$viewer = get_current_user_id();
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $ids );
+			\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $ids );
 			self::prime_viewer_state( $ids, $viewer );
 			$items = array();
 			foreach ( $ids as $mid ) {
@@ -367,7 +368,11 @@ class MediaController extends WP_REST_Controller {
 		$media_type = $request->get_param( 'media_type' );
 		$author     = $request->get_param( 'author' );
 
-		$where  = array( 'moderation_status = %s' );
+		// media_type != '' excludes the privacy-only stub rows albums/collections
+		// leave in mvs_media_index (media_type empty — see PrivacyService). Without
+		// it the /media feed (and the mobile app that reads it) returned those
+		// stubs as empty items. Same fix as the media-grid block. Basecamp 10074442944.
+		$where  = array( 'moderation_status = %s', "media_type != ''" );
 		$params = array( 'approved' );
 
 		// Privacy filtering via index table.
@@ -455,11 +460,22 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
-		// Scope filter.
+		// Scope filter. The feed blocks (Instagram/Dribbble/Flickr/Pinterest)
+		// offer Public / Followers / My uploads; only 'public' was implemented
+		// here, so 'followers' and 'self' silently did nothing on every layout.
+		// self/followers need a logged-in viewer; anonymous falls through to the
+		// public-only privacy gate above. Basecamp 10068992480.
 		$scope = $request->get_param( 'scope' );
 		if ( 'public' === $scope ) {
 			$where[]  = 'privacy = %s';
 			$params[] = 'public';
+		} elseif ( 'self' === $scope && $user_id ) {
+			$where[]  = 'post_author = %d';
+			$params[] = $user_id;
+		} elseif ( 'followers' === $scope && $user_id ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$where[]  = "post_author IN ( SELECT following_id FROM {$wpdb->prefix}mvs_follows WHERE follower_id = %d AND status = 'active' )";
+			$params[] = $user_id;
 		}
 
 		// Exclude media from blocked users.
@@ -590,6 +606,16 @@ class MediaController extends WP_REST_Controller {
 		 */
 		$int_ids = apply_filters( 'mvs_feed_media_ids', $int_ids, $request );
 
+		// Batch-load the media rows + meta and the access-rules presence flag
+		// for the whole page BEFORE the per-item prepare loop below, mirroring
+		// the template grids (explore.php/album.php/collection.php) since
+		// 1.7.0. Without this, prepare_item_for_response() -> get_all() and
+		// -> sign_file_url() -> can_view() -> has_active_rules() each fire one
+		// query per item (this was the REST-path gap; templates were fixed).
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->prefetch( $int_ids );
+		\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $int_ids );
+
 		// Batch-load viewer favorite/reaction state for the whole page (2 queries),
 		// so the per-item prepare below stays query-bounded at any list size.
 		self::prime_viewer_state( $int_ids, get_current_user_id() );
@@ -664,6 +690,11 @@ class MediaController extends WP_REST_Controller {
 		if ( empty( $group_media_ids ) ) {
 			return rest_ensure_response( array( $this->prepare_item_for_response( $media_id, $request ) ) );
 		}
+
+		$int_group_ids = array_map( 'intval', $group_media_ids );
+		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo->prefetch( $int_group_ids );
+		\WPMediaVerse\Core\Plugin::container()->get( 'access_rules' )->prefetch_active_rules( $int_group_ids );
 
 		$items = array();
 		foreach ( $group_media_ids as $gid ) {
@@ -1009,6 +1040,22 @@ class MediaController extends WP_REST_Controller {
 		$filename      = $filename_pick['stored'];
 		$dest_path     = $dest_sub . '/' . $filename;
 
+		// Hash the member's SOURCE bytes before anything rewrites the file in
+		// place. Mirrors UploadService::handle(), where dup detection matches the
+		// upload as the user supplied it rather than the post-encode bytes.
+		$source_hash = (string) hash_file( 'sha256', $file['tmp_name'] );
+
+		// A replacement is new member bytes entering the library, so it stamps —
+		// the same rule as a fresh upload. This MUST run before store() below:
+		// store() persists the temp file, and the WebP/AVIF siblings are cut from
+		// that same temp file further down. Stamping afterwards would ship a
+		// clean original alongside watermarked siblings. Basecamp 10073917553.
+		Plugin::container()->get( 'watermark' )->stamp_new_upload(
+			$file['tmp_name'],
+			$mime,
+			get_current_user_id()
+		);
+
 		if ( ! $driver->store( $file['tmp_name'], $dest_path ) ) {
 			return new \WP_Error( 'mvs_storage_failed', __( 'Failed to store the file.', 'wpmediaverse' ), array( 'status' => 500 ) );
 		}
@@ -1032,7 +1079,7 @@ class MediaController extends WP_REST_Controller {
 				'file_path'  => $dest_path,
 				'file_type'  => $mime,
 				'file_size'  => filesize( $file['tmp_name'] ) ?: 0,
-				'file_hash'  => hash_file( 'sha256', $file['tmp_name'] ),
+				'file_hash'  => $source_hash,
 				'media_type' => $media_type,
 			)
 		);
@@ -1193,16 +1240,11 @@ class MediaController extends WP_REST_Controller {
 
 		$author_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 
-		// Remove from custom tables. delete_all() -> delete_cascade() fires
-		// `mvs_media_files_orphaned` first, so StorageCleanupService reclaims the
-		// original AND every variant (thumbnails, WebP/AVIF, posters) from local
-		// + cloud asynchronously. No inline single-driver delete here.
-		global $wpdb;
+		// delete_all() -> delete_cascade() fires `mvs_media_files_orphaned` first, so
+		// StorageCleanupService reclaims the original AND every variant (thumbnails,
+		// WebP/AVIF, posters) from local + cloud asynchronously, and also clears
+		// mvs_tag/mvs_category term relationships. No inline cleanup here.
 		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->delete_all( $media_id );
-		$wpdb->delete( $wpdb->prefix . 'mvs_media_stats', array( 'media_id' => $media_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-
-		// Remove taxonomy relationships.
-		wp_delete_object_term_relationships( $media_id, array( 'mvs_tag', 'mvs_category' ) );
 
 		// mvs_media_deleted is now fired inside MediaRepository::delete_cascade()
 		// (the single funnel for every delete path), so it is NOT fired here —

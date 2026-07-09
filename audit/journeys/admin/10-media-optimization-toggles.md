@@ -39,7 +39,7 @@ estimated_runtime_minutes: 5
 
 ### 4. Upload an image with toggles ON
 - **Action**: `POST /wp-json/mvs/v1/media` (multipart) with the test asset.
-- **Expect**: 201 Created; response `id` set. Derivatives exist: `mysql_query "SELECT meta_key FROM wp_mvs_media_meta WHERE media_id=<id> AND meta_key IN ('_mvs_webp','_mvs_avif')"` returns both rows (or the equivalent generated-file markers), and the stored original dimensions are within the configured max.
+- **Expect**: 201 Created; response `id` set. Derivatives exist: `mysql_query "SELECT meta_key FROM wp_mvs_media_meta WHERE media_id=<id> AND meta_key IN ('original_webp','original_avif')"` returns both rows (or the equivalent generated-file markers), and the stored original dimensions are within the configured max.
 
 ### 5. Disable all three toggles
 - **Action**: uncheck the three toggles in the Storage tab; submit; reload.
@@ -47,7 +47,7 @@ estimated_runtime_minutes: 5
 
 ### 6. Upload a second image with toggles OFF
 - **Action**: `POST /wp-json/mvs/v1/media` with the same asset.
-- **Expect**: 201 Created; NO `_mvs_webp` / `_mvs_avif` derivative rows for the new id; the original is stored unmodified (no resize/re-encode).
+- **Expect**: 201 Created; NO `original_webp` / `original_avif` derivative rows for the new id; the original is stored unmodified (no resize/re-encode).
 
 ## Pass criteria
 
@@ -62,6 +62,6 @@ ALL hold:
 | Symptom | Likely cause | File to inspect |
 |---|---|---|
 | Toggle reverts after reload | Duplicate `register_setting()` overwrote the sanitizer | `includes/Admin/Settings/SettingsRegistrar.php` (search the option name) |
-| Derivatives generated while toggle OFF | Pipeline reads the wrong option / ignores it | `includes/Media/OptimizationPipeline.php` (or the upload service) |
-| No derivatives while toggle ON | GD/Imagick missing, or the format guard short-circuits | `includes/Media/OptimizationPipeline.php`; check `wp_image_editor_supports` |
+| Derivatives generated while toggle OFF | Pipeline reads the wrong option / ignores it | `includes/Services/ImageOptimizationService.php` (or the upload service) |
+| No derivatives while toggle ON | GD/Imagick missing, or the format guard short-circuits | `includes/Services/ImageOptimizationService.php`; check `wp_image_editor_supports` |
 | Upload 500 | Encoder threw on an unsupported source format | the optimization pipeline class |

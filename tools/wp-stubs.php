@@ -120,6 +120,40 @@ function site_url( string $p = '' ): string { return 'https://example.test' . $p
 function admin_url( string $p = '' ): string { return 'https://example.test/wp-admin/' . $p; }
 function rest_url( string $p = '' ): string { return 'https://example.test/wp-json/' . $p; }
 function get_bloginfo( string $s = '' ): string { return 'Smoke Test Site'; }
+function get_template(): string { return 'smoke-theme'; }
+function get_stylesheet(): string { return 'smoke-theme'; }
+function wp_get_theme( $stylesheet = null ) {
+	return new class() {
+		public function get_page_templates( $post = null, $type = 'page' ): array { return array(); }
+		public function get( $header ) { return ''; }
+		public function exists(): bool { return true; }
+		public function __toString(): string { return 'smoke-theme'; }
+	};
+}
+function locate_template( $template_names, $load = false, $require_once = true ): string { return ''; }
+// Post-meta family — backed by an in-memory array (Pro's bundled Action Scheduler
+// touches these at boot). Mirrors the __options-backed get_option() stub above.
+function update_post_meta( $post_id, $key, $value, $prev = '' ) { $GLOBALS['__postmeta'][ (int) $post_id ][ $key ] = $value; return true; }
+function add_post_meta( $post_id, $key, $value, $unique = false ) { $GLOBALS['__postmeta'][ (int) $post_id ][ $key ] = $value; return 1; }
+function delete_post_meta( $post_id, $key, $value = '' ) { unset( $GLOBALS['__postmeta'][ (int) $post_id ][ $key ] ); return true; }
+function get_post_meta( $post_id, $key = '', $single = false ) {
+	$all = $GLOBALS['__postmeta'][ (int) $post_id ] ?? array();
+	if ( '' === $key ) { return $all; }
+	$v = $all[ $key ] ?? '';
+	return $single ? $v : ( '' === $v ? array() : array( $v ) );
+}
+// Term-relationship + post-count stubs — the last two WP surfaces Pro's bundled
+// Action Scheduler wpPostStore touches when it persists a scheduled action at boot.
+function wp_set_object_terms( $object_id, $terms, $taxonomy, $append = false ) { return array( 1 ); }
+function wp_count_posts( $type = 'post', $perm = '' ) { return (object) array( 'publish' => 0, 'pending' => 0, 'future' => 0, 'complete' => 0, 'failed' => 0, 'in-progress' => 0 ); }
+// Comment family — AS's default (wpComment) logger records each scheduled action
+// as a comment on the action post; the always-on Pro schedulers hit this at boot.
+function wp_insert_comment( $data ) { return 1; }
+function get_comment( $id = null, $output = OBJECT ) { return null; }
+function get_comments( $args = '' ) { return array(); }
+function wp_count_comments( $post_id = 0 ) { return (object) array( 'approved' => 0, 'total_comments' => 0 ); }
+function add_comment_meta( $comment_id, $key, $value, $unique = false ) { return 1; }
+function get_comment_meta( $comment_id, $key = '', $single = false ) { return $single ? '' : array(); }
 function get_locale(): string { return 'en_US'; }
 function get_user_locale( $u = 0 ): string { return 'en_US'; }
 

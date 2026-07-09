@@ -57,6 +57,6 @@ With the viewer's session attached: URL_A streams initially (200), expires after
 
 | Symptom | Likely cause | File to inspect |
 |---|---|---|
-| URL_A still works after the wait | TTL not honored or token has no exp claim | `includes/Services/SignedUrlService.php` `verify_token()` / `get_ttl()` |
-| URL_B == URL_A | Signing payload missing nonce/timestamp | `includes/Services/SignedUrlService.php` `sign_url()` |
+| URL_A still works after the wait | TTL not honored or token has no exp claim | `includes/Services/SignedUrlService.php` `validate_signature()` / `get_ttl()` |
+| URL_B == URL_A | Signing payload missing nonce/timestamp | `includes/Services/SignedUrlService.php` `sign()` |
 | 403 *immediately* in step 2 | Fetch sent without the viewer's cookie, OR viewer lacks `can_view` for `$PRIVATE_ID` | test harness (attach cookie / pick a viewable item), not the product |

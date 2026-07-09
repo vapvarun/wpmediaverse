@@ -3,7 +3,7 @@
  * Plugin Name: WPMediaVerse
  * Plugin URI:  https://store.wbcomdesigns.com/wpmediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
- * Version:     1.9.0
+ * Version:     2.0.0
  * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
@@ -18,12 +18,12 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MVS_VERSION', '1.9.0' );
+define( 'MVS_VERSION', '2.0.0' );
 // Minimum Pro version compatible with this free build. Free and Pro release in
 // lockstep; bump this together with MVS_VERSION. Free works standalone, so an
 // older Pro is only warned (not gated) — Pro carries its own hard requirement
 // on the free plugin in the other direction.
-define( 'MVS_MIN_PRO', '1.9.0' );
+define( 'MVS_MIN_PRO', '2.0.0' );
 define( 'MVS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MVS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MVS_PLUGIN_FILE', __FILE__ );

@@ -52,17 +52,17 @@ $mvs_dash_ctx['defaultPrivacy']  = get_option( 'mvs_default_privacy', 'public' )
 // Allowed file extensions for client-side upload validation.
 $mvs_allowed_mimes = array_map( 'trim', explode( ',', get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' ) ) );
 $mvs_mime_to_ext   = array(
-	'image/jpeg' => '.jpg,.jpeg',
-	'image/png'  => '.png',
-	'image/gif'  => '.gif',
-	'image/webp' => '.webp',
-	'video/mp4'  => '.mp4',
-	'video/webm' => '.webm',
-	'audio/mpeg' => '.mp3',
-	'audio/ogg'  => '.ogg',
+	'image/jpeg'      => '.jpg,.jpeg',
+	'image/png'       => '.png',
+	'image/gif'       => '.gif',
+	'image/webp'      => '.webp',
+	'video/mp4'       => '.mp4',
+	'video/webm'      => '.webm',
+	'audio/mpeg'      => '.mp3',
+	'audio/ogg'       => '.ogg',
 	'application/pdf' => '.pdf',
 );
-$mvs_allowed_exts = array();
+$mvs_allowed_exts  = array();
 foreach ( $mvs_allowed_mimes as $mvs_mime ) {
 	if ( isset( $mvs_mime_to_ext[ $mvs_mime ] ) ) {
 		$mvs_allowed_exts[] = $mvs_mime_to_ext[ $mvs_mime ];
@@ -106,6 +106,68 @@ wp_enqueue_script_module(
 
 // Enqueue frontend CSS.
 wp_enqueue_style( 'mvs-frontend' );
+
+// i18n for the mvs/dashboard store. It is a script MODULE (viewScriptModule), so
+// wp_set_script_translations() can't reach it and window.wp.i18n.__() falls
+// through to English. Seed PHP-translated strings into interactivity state; the
+// store reads state.i18n.<key> with an English fallback. Basecamp 10073528834.
+wp_interactivity_state(
+	'mvs/dashboard',
+	array(
+		'i18n' => array(
+			// Rule-builder select options + placeholders.
+			'selectOption'            => __( '-- Select --', 'wpmediaverse' ),
+			'optImage'                => __( 'Image', 'wpmediaverse' ),
+			'optVideo'                => __( 'Video', 'wpmediaverse' ),
+			'optAudio'                => __( 'Audio', 'wpmediaverse' ),
+			'optDocument'             => __( 'Document', 'wpmediaverse' ),
+			'optPublic'               => __( 'Public', 'wpmediaverse' ),
+			'optMembers'              => __( 'Members', 'wpmediaverse' ),
+			'optPrivate'              => __( 'Private', 'wpmediaverse' ),
+			'ruleUserIdPlaceholder'   => __( 'User ID', 'wpmediaverse' ),
+			'ruleDatePlaceholder'     => __( 'YYYY-MM-DD', 'wpmediaverse' ),
+			'ruleValuePlaceholder'    => __( 'Value', 'wpmediaverse' ),
+			// List item labels.
+			'untitled'                => __( '(Untitled)', 'wpmediaverse' ),
+			/* translators: %d: number of items. */
+			'itemsCount'              => __( '%d items', 'wpmediaverse' ),
+			// Upload flow.
+			/* translators: 1: rejected file names, 2: supported extensions. */
+			'fileTypeNotAllowed'      => __( 'File type not allowed: %1$s. Supported: %2$s', 'wpmediaverse' ),
+			/* translators: 1: current file number, 2: total files. */
+			'uploadingProgress'       => __( 'Uploading %1$d of %2$d...', 'wpmediaverse' ),
+			'uploadFailed'            => __( 'Upload failed.', 'wpmediaverse' ),
+			'uploadFailedRetry'       => __( 'Upload failed. Please try again.', 'wpmediaverse' ),
+			/* translators: 1: uploaded count, 2: total files. */
+			'filesUploadedPartial'    => __( '%1$d of %2$d file(s) uploaded.', 'wpmediaverse' ),
+			/* translators: %d: number of files uploaded. */
+			'filesUploaded'           => __( '%d file(s) uploaded!', 'wpmediaverse' ),
+			'fileReplaced'            => __( 'File replaced!', 'wpmediaverse' ),
+			'replaceFailed'           => __( 'Replace failed.', 'wpmediaverse' ),
+			// Edit media.
+			'mediaUpdated'            => __( 'Media updated!', 'wpmediaverse' ),
+			'updateFailed'            => __( 'Update failed.', 'wpmediaverse' ),
+			'confirmDeleteMedia'      => __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' ),
+			'mediaDeleted'            => __( 'Media deleted.', 'wpmediaverse' ),
+			'deleteFailed'            => __( 'Delete failed.', 'wpmediaverse' ),
+			'saveFailed'              => __( 'Save failed.', 'wpmediaverse' ),
+			// Albums.
+			'albumUpdated'            => __( 'Album updated!', 'wpmediaverse' ),
+			'albumCreated'            => __( 'Album created!', 'wpmediaverse' ),
+			'confirmDeleteAlbum'      => __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' ),
+			'albumDeleted'            => __( 'Album deleted.', 'wpmediaverse' ),
+			// Favorites.
+			'removedFromFavorites'    => __( 'Removed from favorites.', 'wpmediaverse' ),
+			// Collections.
+			'collectionUpdated'       => __( 'Collection updated!', 'wpmediaverse' ),
+			'collectionCreated'       => __( 'Collection created!', 'wpmediaverse' ),
+			'confirmDeleteCollection' => __( 'Delete this collection? Media items will not be deleted.', 'wpmediaverse' ),
+			'collectionDeleted'       => __( 'Collection deleted.', 'wpmediaverse' ),
+			// Notifications.
+			'allNotificationsRead'    => __( 'All notifications marked as read.', 'wpmediaverse' ),
+		),
+	)
+);
 ?>
 <div class="mvs-dashboard"
 	data-wp-interactive="mvs/dashboard"
@@ -115,10 +177,25 @@ wp_enqueue_style( 'mvs-frontend' );
 	<!-- Profile Header -->
 	<div class="mvs-dashboard-profile-header">
 		<div class="mvs-dashboard-profile-view" data-wp-bind--hidden="context.editingProfile">
+			<?php
+			// Platform-agnostic profile URL (BP / BuddyNext override via filter) so
+			// the header avatar + name route to the integration's profile.
+			$mvs_dash_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_current_user->ID );
+			?>
+			<?php if ( $mvs_dash_profile_url ) : ?>
+			<a class="mvs-dashboard-profile-avatar-link" href="<?php echo esc_url( $mvs_dash_profile_url ); ?>"><img class="mvs-dashboard-profile-avatar" data-wp-bind--src="context.avatarUrl" alt="" data-wp-bind--alt="context.displayName" width="64" height="64" /></a>
+			<?php else : ?>
 			<img class="mvs-dashboard-profile-avatar" data-wp-bind--src="context.avatarUrl"
 				alt="" data-wp-bind--alt="context.displayName" width="64" height="64" />
+			<?php endif; ?>
 			<div class="mvs-dashboard-profile-info">
-				<h2 class="mvs-dashboard-profile-name" data-wp-text="context.displayName"></h2>
+				<h2 class="mvs-dashboard-profile-name">
+					<?php if ( $mvs_dash_profile_url ) : ?>
+					<a href="<?php echo esc_url( $mvs_dash_profile_url ); ?>" data-wp-text="context.displayName"></a>
+					<?php else : ?>
+					<span data-wp-text="context.displayName"></span>
+					<?php endif; ?>
+				</h2>
 				<p class="mvs-dashboard-profile-bio" data-wp-bind--hidden="!context.bio"
 					data-wp-text="context.bio"></p>
 			</div>
@@ -270,7 +347,8 @@ wp_enqueue_style( 'mvs-frontend' );
 	$mvs_has_gravatar       = ! empty( $mvs_avatar_data['found_avatar'] );
 	$mvs_has_any_avatar     = $mvs_has_custom || $mvs_has_gravatar;
 	$mvs_profile_incomplete = ! $mvs_has_any_avatar || empty( $mvs_current_user->description );
-	if ( $mvs_profile_incomplete ) : ?>
+	if ( $mvs_profile_incomplete ) :
+		?>
 	<div class="mvs-profile-prompt" id="mvs-profile-prompt">
 		<span class="mvs-profile-prompt-icon">&#x1F464;</span>
 		<span class="mvs-profile-prompt-text">
@@ -284,7 +362,7 @@ wp_enqueue_style( 'mvs-frontend' );
 		<button type="button" class="mvs-profile-prompt-close" id="mvs-profile-prompt-close"
 			aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
-	<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
+		<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
 	<?php endif; ?>
 
 	<?php
@@ -746,7 +824,7 @@ wp_enqueue_style( 'mvs-frontend' );
 						data-wp-on--input="actions.setEditDesc"></textarea>
 				</div>
 				<!-- Privacy + slug-regenerate share a row to save vertical space.
-				     Off by default — keeps inbound URLs stable. -->
+					Off by default — keeps inbound URLs stable. -->
 				<div class="mvs-field-row">
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
@@ -799,7 +877,7 @@ wp_enqueue_style( 'mvs-frontend' );
 					&#8635; <?php esc_html_e( 'Replace File', 'wpmediaverse' ); ?>
 					<input type="file" hidden data-wp-on--change="actions.handleReplaceFile" />
 				</label>
-					<span class="mvs-replace-file-hint"><?php esc_html_e( "Upload a new file. Metadata is preserved.", "wpmediaverse" ); ?></span>
+					<span class="mvs-replace-file-hint"><?php esc_html_e( 'Upload a new file. Metadata is preserved.', 'wpmediaverse' ); ?></span>
 			</div>
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" type="button"

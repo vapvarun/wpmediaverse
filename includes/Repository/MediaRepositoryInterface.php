@@ -29,9 +29,9 @@ interface MediaRepositoryInterface {
 	/**
 	 * Get a single field for a media item.
 	 *
-	 * URL fields (`file_url`, `thumb_large`/`thumb_medium`/`thumb_thumb`,
-	 * `watermark_url`) are always returned as signed URLs. Internal callers
-	 * that need the raw stored value MUST use `get_raw()`.
+	 * URL fields (`file_url`, `thumb_large`/`thumb_medium`/`thumb_thumb`) are
+	 * always returned as signed URLs. Internal callers that need the raw stored
+	 * value MUST use `get_raw()`.
 	 *
 	 * @param int    $media_id Media ID.
 	 * @param string $key      Field name.
@@ -94,6 +94,25 @@ interface MediaRepositoryInterface {
 	 * @return string Signed URL when the viewer may view the media, else ''.
 	 */
 	public function get_thumbnail_url_for_viewer( int $media_id, string $size = 'thumb_large', ?int $viewer_id = null ): string;
+
+	/**
+	 * Viewer-aware signed URL for the FULL / original media file.
+	 *
+	 * The full-file analogue of get_thumbnail_url_for_viewer(): returns a signed
+	 * `/serve` URL for the original when the viewer may see the media, else ''.
+	 * Privacy is enforced at sign time and re-verified by /serve per request.
+	 * Part of the Free<->Pro<->BuddyNext contract: BuddyNext's private-media
+	 * lightbox resolves the full file strictly through this interface method
+	 * (BN 1.0.7 MediaUrlResolver::descriptor()), so it must live on the contract,
+	 * not just the concrete class.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int      $media_id  Media ID.
+	 * @param int|null $viewer_id Viewer to authorize against. Null = current user.
+	 * @return string Signed full-file URL when the viewer may view the media, else ''.
+	 */
+	public function get_url_for_viewer( int $media_id, ?int $viewer_id = null ): string;
 
 	/**
 	 * Resolve the absolute filesystem path for a media file.
@@ -323,4 +342,13 @@ interface MediaRepositoryInterface {
 	 * @param int $media_id Media ID.
 	 */
 	public function delete_cascade( int $media_id ): bool;
+
+	/**
+	 * Purge the mvs_media_index + mvs_media_meta rows for an id and drop its row
+	 * cache. Targeted row/meta cleanup for album/collection privacy rows on
+	 * delete (they never touch the downstream tables delete_cascade() clears).
+	 *
+	 * @param int $media_id The mvs_media_index PK.
+	 */
+	public function purge_index_record( int $media_id ): void;
 }

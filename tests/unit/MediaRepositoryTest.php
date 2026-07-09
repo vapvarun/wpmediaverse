@@ -270,46 +270,6 @@ class MediaRepositoryTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * get($id, 'watermark_url') signs via SignedUrlService when a
-	 * watermark exists, returns empty string when none has been generated
-	 * (Phase 0a item 3).
-	 *
-	 * Watermark presence is the cache marker — Pro's Watermarker writes
-	 * the raw URL into meta only after creating the preview file. The
-	 * signed URL routes through the serve endpoint with size=watermark.
-	 */
-	public function test_get_watermark_url_returns_signed_when_present_empty_when_absent(): void {
-		$media_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->insert(
-			array(
-				'title'       => 'Watermark Contract',
-				'post_author' => $this->admin_id,
-				'media_type'  => 'image',
-			)
-		);
-
-		// No watermark yet → empty string, never a signed URL pointing at a non-existent file.
-		$this->assertSame( '', (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'watermark_url' ) );
-
-		// Pro's Watermarker writes raw URL into meta after generating the preview.
-		$raw_watermark = 'https://example.org/wp-content/uploads/wpmediaverse/previews/' . $media_id . '-preview.jpg';
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'watermark_url', $raw_watermark );
-
-		$result = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'watermark_url' );
-
-		// Signed URL — routed through serve endpoint with the watermark variant.
-		$this->assertNotSame( $raw_watermark, $result );
-		$this->assertIsString( $result );
-		if ( '' !== $result ) {
-			$this->assertStringContainsString( 'mvs_sig=', $result );
-			$this->assertStringContainsString( 'mvs_id=', $result );
-			$this->assertStringContainsString( 'mvs_size=watermark', $result );
-		}
-
-		// Internal callers can still read the raw URL via get_raw.
-		$this->assertSame( $raw_watermark, \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'watermark_url' ) );
-	}
-
-	/**
 	 * get_raw() returns the raw stored thumbnail URLs — internal escape
 	 * hatch for the signing service serving files from disk and the
 	 * upload pipeline backfilling thumb_large with file_url.

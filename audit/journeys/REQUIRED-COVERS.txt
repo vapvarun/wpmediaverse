@@ -17,3 +17,11 @@ ai-feature-toggles
 messaging-send-reliability
 social-failure-paths
 usage-ledger
+
+# 2.0.0 member-expectation regressions (each mapped to a customer journey above).
+protected-media-gate
+album-privacy-pagination
+album-owner-single-view
+comment-post-id-zero
+media-edit-persist
+watermark-stamp-upload

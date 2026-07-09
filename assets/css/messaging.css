@@ -709,6 +709,17 @@ body.dark-mode {
 	border-color: var(--mvs-chat-primary);
 }
 
+/* My own reaction — highlighted so it reads as "yours" and tap-to-remove. */
+.mvs-chat-msg__reaction--mine {
+	background: var(--mvs-chat-primary);
+	border-color: var(--mvs-chat-primary);
+	color: #fff;
+}
+
+.mvs-chat-msg__reaction--mine .mvs-chat-msg__reaction-count {
+	color: #fff;
+}
+
 .mvs-chat-msg__reaction-count {
 	font-size: 11px;
 	color: var(--mvs-chat-text-secondary);

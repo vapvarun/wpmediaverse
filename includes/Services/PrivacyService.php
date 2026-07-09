@@ -53,13 +53,23 @@ class PrivacyService {
 	 * @return bool
 	 */
 	private function check_access( int $media_id, int $user_id ): bool {
-		// Check custom tables first (media items live in mvs_media_index).
-		$is_media = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id );
+		// Resolve the item's author. A real media item lives in mvs_media_index
+		// with a concrete media_type (image/video/audio). Albums and collections
+		// are CPTs whose authoritative author is wp_posts.post_author — but they
+		// may ALSO get an mvs_media_index row that only stores their privacy
+		// (media_type left empty). That row's post_author is unreliable (0 or
+		// stale), so an indexed album must NOT be treated as media, or the owner
+		// is denied their own non-public album (Basecamp 10071824547). Keying on
+		// media_type keeps the hot media-grid path (media_type set) fast — no
+		// get_post() — and only albums/collections fall through to the CPT branch.
+		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$in_index   = $repo->exists( $media_id );
+		$media_type = $in_index ? (string) $repo->get( $media_id, 'media_type' ) : '';
 
-		if ( $is_media ) {
-			$author_id = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
+		if ( $in_index && '' !== $media_type ) {
+			$author_id = $repo->get_author( $media_id );
 		} else {
-			// Albums and collections are still CPTs.
+			// Album / collection CPT (no index row, or a privacy-only row).
 			$post          = get_post( $media_id );
 			$allowed_types = array( 'mvs_album', 'mvs_collection' );
 			if ( ! $post || ! in_array( $post->post_type, $allowed_types, true ) ) {

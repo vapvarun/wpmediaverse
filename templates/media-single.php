@@ -36,35 +36,15 @@ $mvs_duration     = $mvs_media['duration'] ?? '';
 $mvs_attach_id    = (int) ( $mvs_media['attachment_id'] ?? 0 );
 $mvs_created      = $mvs_media['created_at'] ?? '';
 
-// Privacy gate: block access to non-public media for unauthorized viewers.
-if ( 'public' !== $mvs_privacy ) {
-	$mvs_viewer_id = get_current_user_id();
-	$mvs_can_view  = false;
-
-	if ( $mvs_viewer_id === $mvs_author_id || current_user_can( 'moderate_mvs_media' ) ) {
-		$mvs_can_view = true;
-	} elseif ( 'members' === $mvs_privacy && $mvs_viewer_id > 0 ) {
-		$mvs_can_view = true;
-	}
-	// 'private', 'friends', 'group' etc -- deny unless owner/admin.
-
-	if ( ! $mvs_can_view ) {
-		get_header();
-		echo '<div class="mvs-single-media"><div class="mvs-privacy-blocked">';
-		echo '<span class="mvs-privacy-blocked__icon">&#128274;</span>';
-		echo '<h2>' . esc_html__( 'This media is private', 'wpmediaverse' ) . '</h2>';
-		echo '<p>' . esc_html__( 'You do not have permission to view this content.', 'wpmediaverse' ) . '</p>';
-		echo '</div></div>';
-		get_footer();
-		return;
-	}
-}
+// Privacy is enforced in TemplateLoader::serve_single_media() before this
+// template is included — denied viewers get the branded 404 and never reach
+// here. So this template only ever renders viewable media.
 
 get_header();
 
 do_action( 'mvs_before_content' );
 
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
 // Resolve media type flags.
 $is_image = 'image' === $mvs_media_type;
@@ -77,6 +57,13 @@ $album_name = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )-
 
 // Poster/thumbnail from media meta.
 $poster_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $mvs_media_id, 'large' );
+
+// Whether the current viewer may see the media itself. Set by
+// TemplateLoader::serve_single_media() from the privacy gate. When false the
+// container still renders, but the media slot shows a "log in to view" message
+// and the social + comment sections are hidden (no file/poster/download is
+// exposed — MediaUrl::file()/get_thumb_url() already return '' when denied).
+$mvs_can_view = ! isset( $GLOBALS['mvs_media_can_view'] ) || (bool) $GLOBALS['mvs_media_can_view'];
 
 // Format duration for display.
 $mvs_is_owner = is_user_logged_in() && $mvs_author_id === get_current_user_id();
@@ -102,7 +89,6 @@ if ( $mvs_duration ) {
 // plain name for attribute contexts (aria-label, alt) that need escapable text.
 $mvs_author       = get_userdata( $mvs_author_id );
 $mvs_author_plain = $mvs_author ? (string) $mvs_author->display_name : __( 'Unknown', 'wpmediaverse' );
-$mvs_author_login = $mvs_author ? $mvs_author->user_login : '';
 $mvs_author_name  = $mvs_author
 	? \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_display_name( $mvs_author_id )
 	: $mvs_author_plain;
@@ -122,14 +108,21 @@ $mvs_archive_url = home_url( '/media/' );
 		<header class="mvs-media-header">
 			<div class="mvs-media-header-row">
 				<div class="mvs-media-author-info">
-					<?php echo get_avatar( $mvs_author_id, 40, '', '', array( 'class' => 'mvs-media-author-avatar' ) ); ?>
-					<div class="mvs-media-author-text">
-						<?php
-						// Platform-agnostic profile URL (BP / BuddyNext override via filter).
-						$mvs_author_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_author_id );
+					<?php
+					// Platform-agnostic profile URL (BP / BuddyNext override via filter).
+					// Both the avatar and the name link through it so an integration
+					// (BuddyNext) can route the whole author affordance to its profile.
+					$mvs_author_url    = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_author_id );
+					$mvs_author_avatar = get_avatar( $mvs_author_id, 40, '', '', array( 'class' => 'mvs-media-author-avatar' ) );
 
-						if ( $mvs_author_url ) :
-							?>
+					if ( $mvs_author_url ) :
+						?>
+					<a href="<?php echo esc_url( $mvs_author_url ); ?>" class="mvs-media-author-avatar-link"><?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?></a>
+					<?php else : ?>
+						<?php echo $mvs_author_avatar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_avatar() returns safe markup ?>
+					<?php endif; ?>
+					<div class="mvs-media-author-text">
+						<?php if ( $mvs_author_url ) : ?>
 					<a href="<?php echo esc_url( $mvs_author_url ); ?>" class="mvs-media-author-name">
 							<?php echo wp_kses_post( $mvs_author_name ); ?>
 					</a>
@@ -146,6 +139,7 @@ $mvs_archive_url = home_url( '/media/' );
 						</span>
 					</div>
 				</div>
+				<?php \WPMediaVerse\Core\TemplateHelpers::media_social_i18n_state(); ?>
 				<?php if ( is_user_logged_in() && ! $mvs_is_owner ) : ?>
 				<span class="mvs-follow-btn-wrap"
 					data-wp-interactive="mvs/media-social"
@@ -179,7 +173,21 @@ $mvs_archive_url = home_url( '/media/' );
 		</header>
 
 		<div class="mvs-media-content">
-			<?php if ( $is_image ) : ?>
+			<?php if ( ! $mvs_can_view ) : ?>
+				<div class="mvs-media-gate">
+					<div class="mvs-media-gate__glyph" aria-hidden="true"><i data-lucide="lock"></i></div>
+					<?php if ( is_user_logged_in() ) : ?>
+						<p class="mvs-media-gate__title"><?php esc_html_e( 'This media is private', 'wpmediaverse' ); ?></p>
+						<p class="mvs-media-gate__lede"><?php esc_html_e( 'You don\'t have permission to view this media. It may be limited to the owner, their connections, or a specific group.', 'wpmediaverse' ); ?></p>
+					<?php else : ?>
+						<p class="mvs-media-gate__title"><?php esc_html_e( 'This media is for members', 'wpmediaverse' ); ?></p>
+						<p class="mvs-media-gate__lede"><?php esc_html_e( 'Log in to view this media.', 'wpmediaverse' ); ?></p>
+						<a class="mvs-btn mvs-btn--primary mvs-media-gate__cta" href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_permalink ) ); ?>">
+							<?php esc_html_e( 'Log in to view', 'wpmediaverse' ); ?>
+						</a>
+					<?php endif; ?>
+				</div>
+			<?php elseif ( $is_image ) : ?>
 				<div class="mvs-media-image">
 					<?php
 					// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- helper pre-escapes inner values.
@@ -288,115 +296,116 @@ $mvs_archive_url = home_url( '/media/' );
 				</div>
 			<?php endif; ?>
 
-			<?php if ( $mvs_desc ) : ?>
+			<?php if ( $mvs_can_view && $mvs_desc ) : ?>
 				<div class="mvs-media-description">
 					<?php echo wp_kses_post( wpautop( $mvs_desc ) ); ?>
 				</div>
 			<?php endif; ?>
 		</div>
 
-		<?php
-		// Prepare Interactivity API context.
-		$current_privacy = $mvs_privacy ? $mvs_privacy : 'public';
+		<?php if ( $mvs_can_view ) : // Social bar + comments only render for viewers who can see the media. ?>
+			<?php
+			// Prepare Interactivity API context.
+			$current_privacy = $mvs_privacy ? $mvs_privacy : 'public';
 
-		// Get tags from taxonomy (media_id -> mvs_tag term relationships via mvs_media_meta).
-		$mvs_tag_names = array();
-		$mvs_tags_raw  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'tags' );
-		if ( $mvs_tags_raw ) {
-			// Handle both JSON array and comma-separated formats.
-			$decoded = json_decode( $mvs_tags_raw, true );
-			if ( is_array( $decoded ) ) {
-				$mvs_tag_names = array_filter( array_map( 'trim', $decoded ) );
-			} else {
-				$mvs_tag_names = array_filter( array_map( 'trim', explode( ',', $mvs_tags_raw ) ) );
+			// Get tags from taxonomy (media_id -> mvs_tag term relationships via mvs_media_meta).
+			$mvs_tag_names = array();
+			$mvs_tags_raw  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'tags' );
+			if ( $mvs_tags_raw ) {
+				// Handle both JSON array and comma-separated formats.
+				$decoded = json_decode( $mvs_tags_raw, true );
+				if ( is_array( $decoded ) ) {
+					$mvs_tag_names = array_filter( array_map( 'trim', $decoded ) );
+				} else {
+					$mvs_tag_names = array_filter( array_map( 'trim', explode( ',', $mvs_tags_raw ) ) );
+				}
 			}
-		}
-		// Also try taxonomy terms if still stored there. Legacy uploads
-		// stored one mvs_tag_id meta row per tag; resolve those to WP term
-		// names through the repository + standard term API instead of a
-		// direct JOIN against mvs_media_meta.
-		if ( empty( $mvs_tag_names ) ) {
-			$mvs_term_ids = \WPMediaVerse\Core\Plugin::container()
+			// Also try taxonomy terms if still stored there. Legacy uploads
+			// stored one mvs_tag_id meta row per tag; resolve those to WP term
+			// names through the repository + standard term API instead of a
+			// direct JOIN against mvs_media_meta.
+			if ( empty( $mvs_tag_names ) ) {
+				$mvs_term_ids = \WPMediaVerse\Core\Plugin::container()
 				->get( 'media_repository' )
 				->get_meta_values( $mvs_media_id, 'mvs_tag_id' );
-			foreach ( $mvs_term_ids as $mvs_term_id ) {
-				$mvs_term = get_term( (int) $mvs_term_id );
-				if ( $mvs_term && ! is_wp_error( $mvs_term ) ) {
-					$mvs_tag_names[] = $mvs_term->name;
+				foreach ( $mvs_term_ids as $mvs_term_id ) {
+					$mvs_term = get_term( (int) $mvs_term_id );
+					if ( $mvs_term && ! is_wp_error( $mvs_term ) ) {
+						$mvs_tag_names[] = $mvs_term->name;
+					}
 				}
 			}
-		}
-		// Final fallback: WP term relationships (legacy).
-		if ( empty( $mvs_tag_names ) ) {
-			$mvs_tags_list = get_the_terms( $mvs_media_id, 'mvs_tag' );
-			if ( $mvs_tags_list && ! is_wp_error( $mvs_tags_list ) ) {
-				foreach ( $mvs_tags_list as $mvs_t ) {
-					$mvs_tag_names[] = $mvs_t->name;
+			// Final fallback: WP term relationships (legacy).
+			if ( empty( $mvs_tag_names ) ) {
+				$mvs_tags_list = get_the_terms( $mvs_media_id, 'mvs_tag' );
+				if ( $mvs_tags_list && ! is_wp_error( $mvs_tags_list ) ) {
+					foreach ( $mvs_tags_list as $mvs_t ) {
+						$mvs_tag_names[] = $mvs_t->name;
+					}
 				}
 			}
-		}
 
-		// Hydrate per-viewer interactivity state from the server so the initial
-		// render reflects reality — prevents "Report" / "Favorite" buttons from
-		// appearing clickable when the current user has already acted on this
-		// media. See Coding Rule #11 / card #7.
-		$mvs_current_user_id = get_current_user_id();
-		$mvs_has_reported    = false;
-		if ( $mvs_current_user_id > 0 && ! $mvs_is_owner ) {
-			$mvs_reports_svc = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
-			if ( $mvs_reports_svc ) {
-				$mvs_has_reported = $mvs_reports_svc->has_reported( $mvs_current_user_id, 'media', $mvs_media_id );
+			// Hydrate per-viewer interactivity state from the server so the initial
+			// render reflects reality — prevents "Report" / "Favorite" buttons from
+			// appearing clickable when the current user has already acted on this
+			// media. See Coding Rule #11 / card #7.
+			$mvs_current_user_id = get_current_user_id();
+			$mvs_has_reported    = false;
+			if ( $mvs_current_user_id > 0 && ! $mvs_is_owner ) {
+				$mvs_reports_svc = \WPMediaVerse\Core\Plugin::container()->get( 'reports' );
+				if ( $mvs_reports_svc ) {
+					$mvs_has_reported = $mvs_reports_svc->has_reported( $mvs_current_user_id, 'media', $mvs_media_id );
+				}
 			}
-		}
-		$mvs_is_favorited = false;
-		if ( $mvs_current_user_id > 0 ) {
-			$mvs_favorites_svc = \WPMediaVerse\Core\Plugin::container()->get( 'favorites' );
-			if ( $mvs_favorites_svc ) {
-				$mvs_is_favorited = $mvs_favorites_svc->is_favorited( $mvs_media_id, $mvs_current_user_id );
+			$mvs_is_favorited = false;
+			if ( $mvs_current_user_id > 0 ) {
+				$mvs_favorites_svc = \WPMediaVerse\Core\Plugin::container()->get( 'favorites' );
+				if ( $mvs_favorites_svc ) {
+					$mvs_is_favorited = $mvs_favorites_svc->is_favorited( $mvs_media_id, $mvs_current_user_id );
+				}
 			}
-		}
 
-		$mvs_social_ctx = array(
-			'mediaId'            => $mvs_media_id,
-			'restUrl'            => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-			'nonce'              => wp_create_nonce( 'wp_rest' ),
-			'isLoggedIn'         => is_user_logged_in(),
-			'currentUserId'      => $mvs_current_user_id,
-			'isOwner'            => $mvs_is_owner,
-			'authorId'           => $mvs_author_id,
-			'isFollowing'        => false,
-			'type'               => 'media',
-			'archiveUrl'         => esc_url( $mvs_archive_url ),
-			'initialTitle'       => $mvs_title,
-			'initialDesc'        => $mvs_desc,
-			'initialPrivacy'     => $current_privacy,
-			'initialTags'        => $mvs_tag_names,
-			'reactions'          => array(),
-			'userReaction'       => '',
-			'isFavorite'         => $mvs_is_favorited,
-			'reported'           => $mvs_has_reported,
-			'comments'           => array(),
-			'commentText'        => '',
-			'viewCount'          => '',
-			'editVisible'        => false,
-			'editTitle'          => $mvs_title,
-			'editDesc'           => $mvs_desc,
-			'editPrivacy'        => $current_privacy,
-			// Off by default — title edits leave the URL slug alone.
-			'editRegenerateSlug' => false,
-			// Empty at SSR so the data-wp-each <template> matches hydration; the
-			// store's callbacks.init() fills editTags from initialTags (above).
-			'editTags'           => array(),
-			'tagInput'           => '',
-			'tagResults'         => array(),
-			'tagDropdownVisible' => false,
-			'saving'             => false,
-			// Plain text — the adjacent <i data-lucide="share-2"> supplies the icon.
-			// Previously this had a leading 🔗 emoji which rendered alongside the
-			// lucide SVG as a double-icon (card #6).
-			'shareLabel'         => __( 'Share', 'wpmediaverse' ),
-		);
-		?>
+			$mvs_social_ctx = array(
+				'mediaId'            => $mvs_media_id,
+				'restUrl'            => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'              => wp_create_nonce( 'wp_rest' ),
+				'isLoggedIn'         => is_user_logged_in(),
+				'currentUserId'      => $mvs_current_user_id,
+				'isOwner'            => $mvs_is_owner,
+				'authorId'           => $mvs_author_id,
+				'isFollowing'        => false,
+				'type'               => 'media',
+				'archiveUrl'         => esc_url( $mvs_archive_url ),
+				'initialTitle'       => $mvs_title,
+				'initialDesc'        => $mvs_desc,
+				'initialPrivacy'     => $current_privacy,
+				'initialTags'        => $mvs_tag_names,
+				'reactions'          => array(),
+				'userReaction'       => '',
+				'isFavorite'         => $mvs_is_favorited,
+				'reported'           => $mvs_has_reported,
+				'comments'           => array(),
+				'commentText'        => '',
+				'viewCount'          => '',
+				'editVisible'        => false,
+				'editTitle'          => $mvs_title,
+				'editDesc'           => $mvs_desc,
+				'editPrivacy'        => $current_privacy,
+				// Off by default — title edits leave the URL slug alone.
+				'editRegenerateSlug' => false,
+				// Empty at SSR so the data-wp-each <template> matches hydration; the
+				// store's callbacks.init() fills editTags from initialTags (above).
+				'editTags'           => array(),
+				'tagInput'           => '',
+				'tagResults'         => array(),
+				'tagDropdownVisible' => false,
+				'saving'             => false,
+				// Plain text — the adjacent <i data-lucide="share-2"> supplies the icon.
+				// Previously this had a leading 🔗 emoji which rendered alongside the
+				// lucide SVG as a double-icon (card #6).
+				'shareLabel'         => __( 'Share', 'wpmediaverse' ),
+			);
+			?>
 
 		<div class="mvs-social-wrapper"
 			data-wp-interactive="mvs/media-social"
@@ -430,7 +439,7 @@ $mvs_archive_url = home_url( '/media/' );
 							<span class="mvs-btn__label"><?php esc_html_e( 'Favorite', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php elseif ( ! is_user_logged_in() ) : ?>
-						<a href="<?php echo esc_url( wp_login_url( $mvs_permalink ) ); ?>" class="mvs-favorite-btn mvs-btn--icon-collapse mvs-login-prompt"
+						<a href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_permalink ) ); ?>" class="mvs-favorite-btn mvs-btn--icon-collapse mvs-login-prompt"
 							data-mvs-tooltip="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
 							title="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>"
 							aria-label="<?php esc_attr_e( 'Log in to favorite', 'wpmediaverse' ); ?>">
@@ -523,7 +532,7 @@ $mvs_archive_url = home_url( '/media/' );
 						data-wp-bind--value="context.editDesc"></textarea>
 				</div>
 				<!-- Privacy + slug-regenerate share a row to save vertical space.
-					 Off by default — keeps inbound URLs stable. -->
+					Off by default — keeps inbound URLs stable. -->
 				<div class="mvs-field-row">
 					<div class="mvs-field mvs-field--inline">
 						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
@@ -596,7 +605,7 @@ $mvs_archive_url = home_url( '/media/' );
 					</form>
 				<?php else : ?>
 					<p class="mvs-login-to-comment">
-						<a href="<?php echo esc_url( wp_login_url( $mvs_permalink ) ); ?>">
+						<a href="<?php echo esc_url( \WPMediaVerse\Core\TemplateHelpers::login_url( $mvs_permalink ) ); ?>">
 							<?php esc_html_e( 'Log in to leave a comment', 'wpmediaverse' ); ?>
 						</a>
 					</p>
@@ -656,6 +665,7 @@ $mvs_archive_url = home_url( '/media/' );
 				</div>
 			<?php endif; ?>
 		</footer>
+			<?php endif; // End $mvs_can_view - social bar, comments, and tags footer. ?>
 	</article>
 </div>
 <?php
@@ -676,7 +686,7 @@ $mvs_archive_url = home_url( '/media/' );
 	</div>
 </div>
 <?php
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 
