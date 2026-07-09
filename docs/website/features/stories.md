@@ -1,52 +1,21 @@
-# Stories (Coming Soon)
+# Stories
 
-> **Planned Feature** - Stories infrastructure exists in the codebase but is not yet available as a user-facing feature.
+> **Pro feature.** Stories (time-limited, ephemeral posts) ship in WPMediaVerse Pro. The free plugin provides the upload-flow entry point described below, but story creation, the viewer, and view receipts all require Pro.
 
-## Current Status
+## What's in Free
 
-The backend `StoryService` is built and can mark any media item as a time-limited story with automatic expiration. However, there is currently:
+The Media Upload block includes an **"Also share as a story"** checkbox next to the tag input, but only when the `mvs_stories_enabled` option is on:
 
-- No "Post as Story" option in the upload form
-- No dedicated REST endpoint for creating stories
-- No story viewer UI for browsing stories
+```php
+$mvs_stories_on = ( '1' === get_option( 'mvs_stories_enabled', '0' ) );
+```
 
-## What Works Today
+`mvs_stories_enabled` defaults to off and is set by Pro when it registers the Stories feature — so on a free-only install this toggle stays hidden and no story code runs. Free no longer ships a `StoryService`; the class was relocated to Pro in 1.9.0 (it was built ahead of the create-flow and viewer UI, then moved wholesale once those shipped).
 
-### Instagram Layout - Recent Uploaders Bar
+## What Pro Adds
 
-When the **Instagram layout** is active (Pro), the explore page shows a horizontal bar of circular avatars above the feed. This displays users who uploaded recently - similar to the Instagram stories tray visual style, but these are links to user profiles, not ephemeral story content.
+See [Stories (Pro)](../pro-features/stories.md) for the full feature: 24-hour default expiry (1-168h configurable per story), a tap-to-advance viewer, "seen by" receipts, and the `mvs-pro/v1` REST routes that drive it (`GET /stories`, `POST /media/{id}/story`, `DELETE /media/{id}/story`, `POST /stories/{id}/view`, `GET /stories/{id}/viewers`).
 
-![Instagram layout with story-style avatar bar](../images/layout-instagram.png)
+## Hooks
 
-### Backend Service
-
-The `StoryService` class provides:
-
-- `create( $media_id, $duration_hours )` - mark media as a story with expiration
-- `is_active( $media_id )` - check if a story is still live
-- `cleanup_expired()` - hourly cron removes expired story flags
-- Default duration: 24 hours
-
-### Meta Keys
-
-| Key | Value | Description |
-|-----|-------|-------------|
-| `is_story` | `1` | Media is marked as a story |
-| `story_expires_at` | `2026-04-01 12:00:00` | UTC expiration datetime |
-
-### Hooks
-
-| Hook | When | Parameters |
-|------|------|------------|
-| `mvs_story_created` | Media marked as story | `$media_id`, `$user_id`, `$expires_at` |
-| `mvs_story_expired` | Story auto-expired by cleanup cron | `$media_id` |
-
-## Planned Features
-
-The following are planned for a future release:
-
-- "Post as Story" toggle in the upload modal
-- Full-screen story viewer with tap-to-advance navigation
-- Story highlight reels on user profiles
-- Story reactions and reply-to-story DMs
-- REST API endpoints for story CRUD
+`mvs_story_created` and `mvs_story_expired` are Pro hooks (fired from `WPMediaVersePro\Stories\StoryService`). See [Hooks & Filters — Access & Privacy](../developer-guide/hooks-filters.md#13-access--privacy).

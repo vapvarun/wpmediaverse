@@ -4,7 +4,7 @@
 
 
 
-WPMediaVerse Pro adds Google Cloud Vision and AWS Rekognition as AI analysis providers alongside the built-in OpenAI Vision option. All three providers support auto-tagging and content moderation.
+WPMediaVerse Pro adds Google Cloud Vision, AWS Rekognition, and Claude (Anthropic) as AI analysis providers alongside the built-in OpenAI Vision option. All four providers support auto-tagging and content moderation.
 
 ![AI and Moderation settings tab showing provider selector](../images/admin-settings-general.png)
 
@@ -15,6 +15,7 @@ WPMediaVerse Pro adds Google Cloud Vision and AWS Rekognition as AI analysis pro
 | OpenAI Vision (free + Pro) | Yes | Yes | Media > Settings > AI & Moderation |
 | Google Cloud Vision | Yes | Yes | Media > Settings > AI & Moderation > Google Vision |
 | AWS Rekognition | Yes | Yes | Media > Settings > AI & Moderation > AWS Rekognition |
+| Claude (Anthropic) | Yes | Yes | Media > Settings > AI & Moderation > Claude |
 
 Only one provider is active at a time. Select it under **Media > Settings > AI & Moderation > Provider**.
 
@@ -64,6 +65,28 @@ Only one provider is active at a time. Select it under **Media > Settings > AI &
 
 - **Labels:** Hierarchical object and scene labels with confidence scores, mapped to `mvs_tag` terms
 - **Moderation Labels:** Content categories (nudity, violence, drugs, etc.) with confidence scores used by the moderation threshold settings
+
+---
+
+## Claude (Anthropic) **(New in 1.9.0)**
+
+### Requirements
+
+- An Anthropic account and API key with billing enabled
+
+### Settings
+
+| Option | Option Key | Description |
+|--------|-----------|-------------|
+| Anthropic API Key | `mvs_pro_anthropic_key` | Your Anthropic API key |
+| Claude Model | `mvs_pro_anthropic_model` | Vision-capable model used for analysis, tagging, and moderation. Choices: **Claude Haiku 4.5** (fast & low cost, recommended, default), **Claude Sonnet 4.6** (stronger judgment), **Claude Opus 4.8** (most capable) |
+
+![Claude settings section with API key and model fields](../images/admin-settings-general.png)
+
+### What Claude Returns
+
+- **Description + tags:** same natural-language description and comma-separated tag suggestions as the OpenAI path, mapped to `mvs_tag` terms when Auto-Apply Tags is on
+- **Moderation:** flags content against the site's configured [AI Flag Criteria and Custom Flag Terms](../settings/ai-moderation.md#ai-flag-criteria-and-custom-flag-terms-new-in-200) - the same category checkboxes and custom-terms field the free plugin's OpenAI path uses
 
 ---
 

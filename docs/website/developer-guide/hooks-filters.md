@@ -136,8 +136,8 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_access_rule_deleted` | action | Free | 1.0 |
 | `mvs_access_granted` | action | Free | 1.0 |
 | `mvs_access_revoked` | action | Free | 1.0 |
-| `mvs_story_created` | action | Free | 1.0 |
-| `mvs_story_expired` | action | Free | 1.0 |
+| `mvs_story_created` | action | Pro | 1.0 (moved from Free in 1.9.0) |
+| `mvs_story_expired` | action | Pro | 1.0 (moved from Free in 1.9.0) |
 | `mvs_privacy_can_view` | filter | Free | 1.0 |
 | `mvs_buddynext_active` | filter | Free | 1.0 |
 | `mvs_pro_transcode_complete` | action | Pro | 1.0 |
@@ -215,6 +215,11 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_public_cloud_thumbnail_url` | filter | Free | 1.4.0 |
 | `mvs_public_cloud_file_url` | filter | Free | 1.4.0 |
 | `mvs_broadcast_thumbnail_ttl` | filter | Free | 1.5.0 |
+| `mvs_stable_public_urls` | filter | Free | 1.7.0 |
+| `mvs_public_media_max_age` | filter | Free | 1.7.0 |
+| `mvs_public_local_thumbnail_url` | filter | Free | 1.7.0 |
+| `mvs_public_local_file_url` | filter | Free | 1.7.0 |
+| `mvs_suppress_bp_comment_notification` | filter | Free | 2.0.0 |
 
 ---
 
@@ -1450,6 +1455,81 @@ add_filter( 'mvs_broadcast_thumbnail_ttl', function( int $ttl, int $media_id, st
 
 ---
 
+### Render-Stable Public URLs (1.7.0)
+
+Public media is served through signed `/serve` URLs like everything else, but a fresh signature on every page render defeats browser and CDN caching. These four filters, all in `SignedUrlService`, control the render-stable/cacheable URL behavior for **public** media only — private/restricted media always keeps its rolling, per-request signature.
+
+#### `mvs_stable_public_urls`
+
+Whether public media gets a render-stable (cacheable) signed URL instead of a fresh signature every page load. Default `true`. The stable URL is bucketed to the current month plus a one-year offset, so it stays constant for about a month, then rotates. Access is still gated by privacy on every request (see `serve()`), so a long, stable expiry value is safe to cache. Set to `false` to fall back to the old per-request signature.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$stable` | bool | Whether to mint a render-stable URL. Default `true` |
+| `$media_id` | int | Media ID |
+
+**Returns:** `bool`
+
+```php
+add_filter( 'mvs_stable_public_urls', '__return_false' );
+```
+
+---
+
+#### `mvs_public_media_max_age`
+
+`Cache-Control: max-age` (seconds) sent by `/serve` for public media. Return `0` to keep public media on `no-store` (disable HTTP caching entirely).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$max_age` | int | Default `WEEK_IN_SECONDS` (604800) |
+| `$privacy` | string | Media privacy level (always `public` when this filter runs) |
+
+**Returns:** `int`
+
+```php
+add_filter( 'mvs_public_media_max_age', function( int $max_age, string $privacy ) : int {
+    return DAY_IN_SECONDS; // Shorter cache window for a fast-moving feed.
+}, 10, 2 );
+```
+
+---
+
+#### `mvs_public_local_thumbnail_url` / `mvs_public_local_file_url`
+
+Local-storage escape hatch for public media. By default, public files stored on the `local` driver still stream through the signed `/serve` proxy. If you put a reverse proxy or static-file rule in front of `wp-content/uploads` (e.g. Nginx `location` block, a CDN pull zone with no cloud driver configured), return a non-empty URL from these filters to bypass `/serve` and point directly at that static URL. Default `''` keeps the existing `/serve` behavior.
+
+**Parameters (`mvs_public_local_thumbnail_url`):**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$url` | string | Default `''` (keeps `/serve`) |
+| `$media_id` | int | Media ID |
+| `$size` | string | Size key (e.g. `thumb_large`) |
+| `$rel_path` | string | Relative storage path |
+
+**Parameters (`mvs_public_local_file_url`):**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$url` | string | Default `''` (keeps `/serve`) |
+| `$media_id` | int | Media ID |
+| `$rel_path` | string | Relative storage path |
+
+**Returns:** `string` — non-empty to bypass `/serve`.
+
+```php
+add_filter( 'mvs_public_local_file_url', function( string $url, int $media_id, string $rel_path ) : string {
+    return 'https://static.example.com/wpmediaverse/' . ltrim( $rel_path, '/' );
+}, 10, 3 );
+```
+
+---
+
 ### Cloud, Thumbnails & Filenames
 
 #### `mvs_cloudops_allow_non_public_to_cloud`
@@ -1674,9 +1754,9 @@ add_action( 'mvs_media_privacy_changed', function( int $media_id, string $new_pr
 | `mvs_access_rule_deleted` | action | Access rule removed | `$rule_id`, `$media_id`, `$rule_type` | 1.0 |
 | `mvs_access_granted` | action | User granted access to restricted media | `$grant_id`, `$media_id`, `$user_id`, `$source` | 1.0 |
 | `mvs_access_revoked` | action | User access revoked | `$media_id`, `$user_id` | 1.0 |
-| `mvs_story_created` | action | Story published | `$media_id`, `$user_id`, `$expires_at` (signature changed in 1.2.3) | 1.0 |
 | `mvs_album_items_added` | action | Media added to an album | `$album_id`, `$actor_id`, `$media_ids`, `$added` (signature changed in 1.2.3) | 1.0 |
-| `mvs_story_expired` | action | Story expired and removed | `$media_id` | 1.0 |
+
+> **Stories moved to Pro in 1.9.0.** `mvs_story_created` and `mvs_story_expired` now fire from `WPMediaVersePro\Stories\StoryService` — see [Stories (Pro)](../pro-features/stories.md). The free plugin no longer ships a `StoryService`; the upload block's "Also share as a story" toggle only renders when the `mvs_stories_enabled` option is on, which Pro sets when it registers the feature.
 
 ---
 
@@ -1708,6 +1788,38 @@ Filters whether the BuddyNext integration is considered active. Override this if
 add_filter( 'mvs_buddynext_active', function( bool $active ) {
     return defined( 'WP_STAGING' ) ? false : $active;
 } );
+```
+
+---
+
+### `mvs_suppress_bp_comment_notification` **(New in 2.0.0)**
+
+When a media comment is posted from inside a linked BuddyPress activity, BuddyPress already fires its own native "replied to your update" notification for the activity comment. Without this filter, `NotificationIntegration` also mirrors the MVS `media_comment` notification, giving the media owner two dropdown entries for one comment. The filter only suppresses the **BP-mirrored** notification (`bp_notifications_add_notification()`); the native MVS in-app notification row in `mvs_notifications` is untouched, so `/me/notifications` and any REST/app client still see it. Only applies when the comment's media has a linked `bp_activity_id` that BuddyPress itself will notify on.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$suppress` | bool | Whether to suppress the BP-mirrored notification. Default `true` |
+| `$media_id` | int | Media ID the comment belongs to |
+| `$user_id` | int | Recipient (media owner) user ID |
+| `$actor_id` | int | Commenter user ID |
+
+**Returns:** `bool`
+
+```php
+/**
+ * Restore the old double-notify behavior on a site that wants both.
+ *
+ * @since 2.0.0
+ *
+ * @param bool $suppress Whether to suppress the BP mirror. Default true.
+ * @param int  $media_id Media ID.
+ * @param int  $user_id  Recipient (media owner) user ID.
+ * @param int  $actor_id Commenter user ID.
+ * @return bool
+ */
+add_filter( 'mvs_suppress_bp_comment_notification', '__return_false' );
 ```
 
 ---

@@ -2,14 +2,7 @@
 
 WPMediaVerse Free is a full-featured media platform. WPMediaVerse Pro unlocks advanced tools for professional communities, monetization, and engagement.
 
-## What's New in 1.2.0
-
-Both editions ship together at 1.2.0 (May 5, 2026). Highlights:
-
-- **Free** - 2 new Gutenberg blocks (Member Photos, PDF Viewer), 4 new sort options on Media Grid (popularity, views, reactions, random), Lightbox Download + Fullscreen + Share fixes, per-media Edit modal, Open Graph + Twitter Card meta on `/media/{slug}/`, Bulk Actions on the admin All Media screen, and a full WCAG 2.1 AA accessibility pass on every customer-facing surface.
-- **Pro** - every Pro feature is now a first-class Gutenberg block. **12 new Pro blocks**: Tournament, Tournaments List, Challenge, Challenges List, Battle, Battles Active, Instagram Feed, Flickr Feed, Pinterest Feed, Dribbble Feed, Leaderboard, Compete Hub. Each block has a matching `[mvs_pro_*]` shortcode. Layouts can now be mixed per-page instead of being locked to one site-wide setting.
-
-→ Full release notes: [What's New in 1.2.0](whats-new-1-2-0.md) · [Pro feature overview](../pro-features/overview.md)
+Free and Pro release in lockstep and share the same version number (both at 2.0.0). See the [changelog](https://github.com/vapvarun/wpmediaverse/blob/main/readme.txt) for what shipped in each release, or [Pro feature overview](../pro-features/overview.md) for the current Pro feature set.
 
 ## Quick Comparison
 
@@ -44,7 +37,7 @@ Both editions ship together at 1.2.0 (May 5, 2026). Highlights:
 | **Content Organization** | | |
 | Albums with cover photos | Yes | Yes |
 | Collections (curated boards) | Yes | Yes |
-| Stories (coming soon) | Planned | Planned |
+| Stories (24-hour ephemeral posts, seen-by receipts) | -- | Yes |
 | Gallery groups (multi-photo posts) | Yes | Yes |
 | **Privacy & Moderation** | | |
 | Public / Members Only / Private | Yes | Yes |
@@ -57,6 +50,7 @@ Both editions ship together at 1.2.0 (May 5, 2026). Highlights:
 | AI content moderation (OpenAI) | Yes | Yes |
 | Google Cloud Vision moderation | -- | Yes |
 | AWS Rekognition moderation | -- | Yes |
+| Claude (Anthropic) moderation | -- | Yes |
 | User reporting | Yes | Yes |
 | User blocking | Yes | Yes |
 | GDPR data export & erasure | Yes | Yes |
@@ -109,21 +103,19 @@ Both editions ship together at 1.2.0 (May 5, 2026). Highlights:
 | Activity stream media | Yes | Yes |
 | Notifications (likes, comments, follows) | Yes | Yes |
 | **Gutenberg Blocks** | | |
-| Core blocks (Media Grid, Player, Album, Upload, Stats, Explore, Dashboard, etc.) | Yes (12) | Yes (inherited) |
-| Member Photos block (`mvs/member-photos`) | Yes | Yes |
-| PDF Viewer block (`mvs/pdf-viewer`) | Yes | Yes |
+| Core blocks (Media Grid, Player, Album, Upload, Stats, Explore Feed, Lock Overlay, Member Photos, PDF Viewer) | Yes (9) | Yes (inherited) |
 | Pro feature blocks (Tournament, Challenge, Battle, Leaderboard, Compete Hub) | -- | Yes (5) |
 | Pro feed-layout blocks (Instagram, Flickr, Pinterest, Dribbble) | -- | Yes (4) |
 | Pro list blocks (Tournaments List, Challenges List, Battles Active) | -- | Yes (3) |
 | Mix layouts per-page | -- | Yes |
 | **Developer** | | |
-| REST API (80+ endpoints) | Yes | Yes |
-| Pro REST API (37 additional endpoints) | -- | Yes |
+| REST API (100+ endpoints, `mvs/v1` namespace) | Yes | Yes |
+| Pro REST API (37 additional endpoints, `mvs-pro/v1` namespace) | -- | Yes |
 | Lightbox download + share REST endpoints | Yes | Yes |
-| 33 action hooks + 16 filter hooks | Yes | Yes |
+| 150+ action and filter hooks | Yes | Yes |
 | Template override system | Yes | Yes |
 | Custom storage driver API | Yes | Yes |
-| WP-CLI commands (17 commands) | Yes | Yes |
+| WP-CLI commands (18 commands, `wp mvs` namespace) | Yes | Yes |
 | `wp mvs generate-video-thumbnails` (poster backfill) | Yes | Yes |
 | Migration tools (rtMedia, MediaPress, BuddyBoss) | -- | Yes |
 | MigrationPage admin (per-platform cards) | -- | Yes |
@@ -155,7 +147,7 @@ WPMediaVerse Free is not a stripped-down trial. It is a complete media platform 
 - User profiles with follow/message buttons and media grids
 - AI content moderation via OpenAI
 - BuddyPress integration (profiles, groups, activity, notifications)
-- Full REST API with 50+ endpoints
+- Full REST API with 100+ endpoints
 - GDPR compliance (data export + erasure)
 - User blocking and reporting
 
@@ -169,7 +161,7 @@ WPMediaVerse Pro is for sites that need professional-grade features:
 - **Engagement** - Gamification system with challenges, battles, tournaments, boosts, and streaks that keep users coming back
 - **Monetization** - Quota packages with MemberPress/WooCommerce integration let you sell tiered upload plans
 - **Privacy** - Six privacy levels with album inheritance, presets, and bulk management
-- **AI** - Google Vision and AWS Rekognition for auto-tagging and advanced content moderation
+- **AI** - Google Vision, AWS Rekognition, and Claude (Anthropic) for auto-tagging and advanced content moderation
 - **Migration** - Import from rtMedia, MediaPress, or BuddyBoss with one WP-CLI command
 
 ## Upgrading

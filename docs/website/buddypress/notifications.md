@@ -63,6 +63,20 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/me/notifications/read \
 
 The frontend reads the unread count from `GET /mvs/v1/me/notifications/count`, which returns `{"count": N}` for the current user, without requiring WebSockets.
 
+## 2.0.0 update - no double-notify on activity comments
+
+When a media comment is posted from inside a linked BuddyPress activity (an upload shared to the activity stream), BuddyPress already fires its own native "replied to your update" notification. Before 2.0.0, WPMediaVerse also mirrored its own `media_comment` notification for the same comment, so the media owner saw two bell entries for one comment.
+
+`NotificationIntegration` now detects this case (a comment whose media has a linked `bp_activity_id` that BuddyPress itself will notify on) and skips the BP-mirrored `media_comment` notification. The native MVS in-app notification is unaffected - `GET /mvs/v1/me/notifications` and any REST/app client still see it; only the duplicate BuddyPress bell entry is suppressed.
+
+Restore the old double-notify behavior with a filter, if a site wants both:
+
+```php
+add_filter( 'mvs_suppress_bp_comment_notification', '__return_false' );
+```
+
+See [`mvs_suppress_bp_comment_notification`](../developer-guide/hooks-filters.md#mvs_suppress_bp_comment_notification-new-in-200) in the hooks reference.
+
 ## 1.2.0 update - single notification surface
 
 When BuddyPress is active, every WPMediaVerse notification is mirrored to BuddyPress via `bp_notifications_add_notification`, and the standalone dashboard `.mvs-notification-bell` markup is suppressed. This means BP-active sites see one bell - the BP nav bell - instead of two competing bells rendering the same notifications.

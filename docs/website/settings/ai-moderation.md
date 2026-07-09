@@ -10,7 +10,7 @@ AI is **opt-in and off by default**. Nothing calls an AI provider until you (1) 
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| AI Provider | OpenAI (GPT-4 Vision) | The AI service used for image analysis, tagging, and moderation. Free version: OpenAI only. Pro adds **Google Vision** and **AWS Rekognition** (selectable from this dropdown). |
+| AI Provider | OpenAI (GPT-4 Vision) | The AI service used for image analysis, tagging, and moderation. Free version: OpenAI only. Pro adds **Google Vision**, **AWS Rekognition**, and **Claude (Anthropic)** (selectable from this dropdown). |
 | OpenAI API Key | (empty) | Your OpenAI API key. You can also define `MVS_OPENAI_API_KEY` in `wp-config.php` instead. |
 | OpenAI Model | GPT-4o Mini | Model used for analysis calls. **GPT-4o Mini** is cheaper; **GPT-4o** provides higher quality results. |
 | Auto-Analyze Uploads | Off | Master switch for the two per-feature toggles below. When off, neither descriptions nor tags are generated on upload. |
@@ -19,7 +19,15 @@ AI is **opt-in and off by default**. Nothing calls an AI provider until you (1) 
 | Auto-Apply Tags | Off | When enabled, AI-suggested tags are automatically assigned to the `mvs_tag` taxonomy. Requires **Generate Tags** to be on. |
 | Auto-Moderate Uploads | Off | When enabled, each new upload is checked for policy violations. The action taken depends on the **When AI Flags Content** setting below. |
 | Monthly AI Budget ($) | $10 | Hard cap on AI spend per calendar month, covering analysis, tagging **and moderation** calls. When the cap is reached, all AI calls stop until the next month. Set to **0** for unlimited spend - recommended only after you configure a billing alert on the provider account itself. |
-| Estimated Cost per Call ($) | $0.01 | Used for budget tracking. Adjust based on your actual API pricing. |
+
+**Estimated cost per call** is not a settings-page field - it is a developer-only default (`$0.01`) used for budget tracking, overridable via the [`mvs_ai_cost_per_call`](../developer-guide/hooks-filters.md) filter.
+
+### AI Flag Criteria and Custom Flag Terms **(New in 2.0.0)**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| AI Flag Criteria | All 6 categories on | Checkbox group controlling which content categories the AI flags: Nudity / sexual content, Violence / gore, Hate / harassment, Self-harm, Drugs, Spam. Unchecking all categories restores every category (the rule can never go blank). |
+| Custom Flag Terms | (empty) | Optional comma-separated terms the AI should also flag beyond the built-in categories - e.g. `weapons, gambling, political content, competitor logos`. Narrated to the AI alongside the categories above. |
 
 ### Choosing exactly which AI features run
 
