@@ -48,7 +48,7 @@ class ModerationQueue {
 		}
 		$badge = $counts['flagged'];
 
-		$menu_title = __( 'Moderation', 'wpmediaverse' );
+		$menu_title = __( 'Media Moderation', 'wpmediaverse' );
 		if ( $badge > 0 ) {
 			$menu_title .= sprintf( ' <span class="awaiting-mod">%d</span>', $badge );
 		}
@@ -213,7 +213,7 @@ class ModerationQueue {
 				<div class="mvs-page-header__left">
 					<h1 class="mvs-page-header__title">
 						<i data-lucide="shield-check"></i>
-						<?php esc_html_e( 'Moderation', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'Media Moderation', 'wpmediaverse' ); ?>
 					</h1>
 					<p class="mvs-page-header__desc"><?php esc_html_e( 'Review and manage flagged, pending, and reported media items.', 'wpmediaverse' ); ?></p>
 				</div>
