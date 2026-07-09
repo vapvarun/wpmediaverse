@@ -499,6 +499,45 @@ wp mvs repair-storage
 
 ---
 
+## wp mvs cert
+
+Run the functional certification gate: a boot smoke test across every registered REST route plus a "dead toggle" oracle check (settings/options that are read but never wired to real behavior). Exits non-zero on any failure, so CI and the release pipeline can gate identically on any machine.
+
+Added in 1.8.1.
+
+```bash
+# Run every check.
+wp mvs cert
+
+# Run only the boot smoke check.
+wp mvs cert boot
+
+# Run only the dead-toggle contract check, machine-readable output.
+wp mvs cert contract --porcelain
+```
+
+**Synopsis:**
+
+```
+wp mvs cert [<check>] [--porcelain]
+```
+
+**Arguments:**
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `<check>` | `all` | Which check to run: `all`, `contract`, or `boot` |
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--porcelain` | Emit the machine-readable JSON ledger instead of the human-readable table |
+
+**Output (table mode):** one `[PASS]` / `[FAIL]` / `[HOLE]` row per check, followed by a `Summary: N pass, N fail, N hole.` line. A `[HOLE]` marks a tracked gap (not yet a regression, but not proven either) rather than a failure. The command calls `WP_CLI::error()` (exit code 1) when any check fails.
+
+---
+
 ## wp mvs competitions tick **(Pro)**
 
 Run one competitions scheduler tick immediately, instead of waiting for the recurring Action Scheduler job. A tick fires every competition transition hook once - activating scheduled challenges, closing challenge entries, finalizing expired challenges, starting registered tournaments, and resolving expired matches - so any challenge or tournament whose deadline has passed advances right away. Useful for debugging on a site where Action Scheduler / WP-Cron is not firing, or to force an immediate state advance after editing competition rows.

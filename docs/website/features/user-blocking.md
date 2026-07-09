@@ -54,7 +54,7 @@ The same reason whitelist applies to both user and media reports:
 | `misinformation` |
 | `other` |
 
-Reports appear in **Media > Moderation Queue** under the Users tab. Moderators with the `moderate_mvs_media` capability can review, dismiss, or act on reports.
+Reports appear in **Media > Media Moderation** under the Users tab. Moderators with the `moderate_mvs_media` capability can review, dismiss, or act on reports.
 
 ## Media Reporting
 

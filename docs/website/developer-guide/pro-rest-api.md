@@ -985,6 +985,125 @@ Record a view receipt for the current user. The author's own views are never rec
 
 ---
 
+## App (Mobile App) **(New in 1.9.0)**
+
+Routes that support the native mobile app: branding/feature-flag delivery, push-device registration, and the app leaderboard. See [Mobile App](../pro-features/mobile-app.md) for the feature-level explanation of white-label branding and feed layout.
+
+### GET /wp-json/mvs/v1/app/config
+
+The single call a native/headless client makes before theming itself and deciding which feature surfaces to mount. This route ships in the **Free** plugin (namespace `mvs/v1`, not `mvs-pro/v1`); Pro contributes to its response via filters rather than registering its own route.
+
+**Auth:** Public (`__return_true`)
+
+**Response:**
+
+```json
+{
+  "accent_color": "#7C3AED",
+  "logo_url": "https://example.com/wp-content/uploads/2026/07/logo.png",
+  "login_bg_url": null,
+  "dark_mode_default": false,
+  "layout": "instagram",
+  "pro_active": true,
+  "features": {
+    "messaging": true,
+    "reactions": true,
+    "comments": true,
+    "favorites": true,
+    "albums": true,
+    "collections": true,
+    "follows": true,
+    "notifications": true,
+    "activity": true,
+    "battles": false,
+    "challenges": true,
+    "tournaments": false,
+    "boosts": false,
+    "streaks": true,
+    "video": true,
+    "stories": true
+  }
+}
+```
+
+Site name, description, icon, and auth discovery come from the core WordPress `/wp-json/` index, not this route - `/app/config` only carries what the core index cannot express: branding and feature flags. `accent_color`, `logo_url`, `login_bg_url`, and `dark_mode_default` are `null`/`false` unless Pro's white-label branding settings are configured (see [Mobile App](../pro-features/mobile-app.md)). `layout` mirrors the site owner's `mvs_pro_feed_layout` choice (`grid` when Pro is inactive). The `features` map is Free's always-on capabilities plus Pro's toggle-driven flags (`battles`, `challenges`, `tournaments`, `boosts`, `streaks`, `video`, `stories`) — each Pro flag is only `true` when its matching admin toggle is on.
+
+---
+
+### POST /mvs-pro/v1/push/register-device
+
+Register (or refresh) the current user's device push token so the app can deliver push notifications.
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `expo_push_token` | string | Yes | - | The device's Expo push token |
+| `platform` | string | No | `""` | One of `""`, `ios`, `android`, `web` |
+| `device_name` | string | No | `""` | Human-readable device label |
+
+**Response:**
+
+```json
+{ "registered": true }
+```
+
+---
+
+### DELETE /mvs-pro/v1/push/register-device
+
+Remove a device push token for the current user (e.g. on logout or app uninstall).
+
+**Auth:** User
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `expo_push_token` | string | Yes | The device's Expo push token to remove |
+
+**Response:**
+
+```json
+{ "removed": true }
+```
+
+---
+
+### GET /mvs-pro/v1/leaderboard
+
+Paginated leaderboard for the app's gamification screen. Backed by the same `LeaderboardService` as the `pro-leaderboard` block, so the app and web show identical rankings. Returns the ranked page plus the current viewer's own rank in a single round trip.
+
+**Auth:** Public. Public rows are cached (5 minutes by default via `mvs_pro_leaderboard_cache_ttl`); the viewer's own rank is cached per-user and only computed when logged in.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `source` | string | `reactions` | One of `reactions`, `media_count`, `gamification_xp` |
+| `period` | string | `all` | One of `all`, `30d`, `7d` |
+| `page` | int | `1` | Page number |
+| `per_page` | int | `10` | Rows per page (1–100) |
+
+**Response:**
+
+```json
+{
+  "rows": [
+    { "rank": 1, "user_id": 5, "display_name": "Jane", "avatar_url": "https://…", "profile_url": "https://…", "score": 342, "metric_label": "reactions" }
+  ],
+  "total": 128,
+  "viewer_rank": 14,
+  "viewer_score": 27
+}
+```
+
+`X-WP-Total` and `X-WP-TotalPages` headers carry pagination. `viewer_rank` is `null` when the current user is not logged in or has no score yet.
+
+---
+
 ## Admin
 
 ### POST /admin/gamification-welcome/dismiss

@@ -37,7 +37,7 @@ Go to **Media > Settings > Display > Image Watermarking** and configure the opti
 | Watermark Image | `mvs_watermark_image_id` | `0` | WordPress attachment ID of the logo image (used when type is `image`) |
 | Position | `mvs_watermark_position` | `bottom-right` | Where on the image to place the watermark |
 | Opacity | `mvs_watermark_opacity` | `40` | Watermark opacity, 0 (transparent) to 100 (opaque) |
-| Font Size | `mvs_watermark_font_size` | `24` | Base font size for text watermarks (px); scales with the image |
+| Text Size | `mvs_watermark_font_size` | `24` | Base font size for text watermarks (px); scales with the image |
 | Text Colour | `mvs_watermark_color` | `#ffffff` | Hex colour for text watermarks |
 
 ![Watermark position selector showing position options](../images/admin-settings-display.png)
@@ -67,7 +67,7 @@ When **Watermark Type** is `text`, WPMediaVerse Pro renders the string in **Wate
 - `{site}` - your site name.
 - `{username}` - the uploader's public handle (their `user_nicename`, e.g. `@jane`). It never uses the WordPress login name.
 
-The text size comes from **Font Size** and scales with the image so it stays proportional on any photo. When a TrueType font is available it is measured for accurate placement; otherwise the built-in GD bitmap font is used. Supply your own TTF with the `mvs_watermark_font_path` filter:
+The text size comes from **Text Size** and scales with the image so it stays proportional on any photo. When a TrueType font is available it is measured for accurate placement; otherwise the built-in GD bitmap font is used. Supply your own TTF with the `mvs_watermark_font_path` filter:
 
 ```php
 add_filter( 'mvs_watermark_font_path', function ( $path, $config ) {

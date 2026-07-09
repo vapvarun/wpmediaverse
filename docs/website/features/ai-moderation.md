@@ -26,6 +26,7 @@ When **Auto-Moderate Uploads** is enabled, WPMediaVerse checks the AI safety sco
 | Flag for review | Media stays published but appears in the moderation queue |
 | Hide | Media's `privacy` is set to `private` |
 | Reject | Media's `post_status` is set to `draft` |
+| Delete permanently | Media and its files are removed from local and cloud storage. Cannot be undone. |
 
 Moderation status changes fire the `mvs_moderation_changed` action hook (`$media_id`, `$status`, `$old_status`, `$user_id`).
 
@@ -40,7 +41,7 @@ curl -X POST https://yoursite.com/wp-json/mvs/v1/moderation/123/analyze \
 
 ## Approving or Rejecting from the Moderation Queue
 
-1. Go to **Media > Moderation Queue**.
+1. Go to **Media > Media Moderation** (renamed from "Moderation" in 2.0.0).
 2. Review the flagged item and its AI analysis result.
 3. Click **Approve** to publish or **Reject** to move to draft.
 

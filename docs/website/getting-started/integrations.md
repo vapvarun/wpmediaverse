@@ -2,6 +2,16 @@
 
 WPMediaVerse connects with 12+ third-party services and plugins out of the box. No custom code, no middleware - configure credentials in settings and the integration activates.
 
+## Integrations Admin Page (1.8.0)
+
+Go to **WPMediaVerse > Integrations** for a visual view of the Wbcom plugin family - the products designed to work alongside WPMediaVerse. Each card shows the product logo, a short "why you'd want this" description, and a status badge (**Connected**, **Installed, activate**, or **Not installed**).
+
+- **Install free** - installs and activates the companion plugin's free version in one click, without leaving the page.
+- **Learn more** - links out to the product's page on the Wbcom store.
+- Every companion plugin works standalone - installing one from this page does not tie it to WPMediaVerse, and WPMediaVerse simply lights up the matching integration when it detects the companion is active.
+
+This page lists the family (WB Gamification, BuddyX/BuddyNext, and other Wbcom products); it's separate from the third-party service integrations (AI providers, cloud storage) documented below, which are configured under **Settings**.
+
 ## Integration Map
 
 | Integration | Plugin | What It Does | Free | Pro |
@@ -43,7 +53,7 @@ See [BuddyPress Integration](../buddypress/overview.md) for full details.
 
 ### BuddyNext
 
-If you use the BuddyNext theme, WPMediaVerse detects it automatically and enhances the member directory with media counts and the profile layout with media grid blocks.
+If you use the BuddyNext theme, WPMediaVerse detects it automatically and enhances the member directory with media counts and the profile layout with media grid blocks. As of 2.0.0, BuddyNext also changes how individual media links behave - see [Activity Stream Media](../buddypress/activity-media.md#buddynext-media-links-open-their-activity-post-200) for details.
 
 ### wb-gamification **(Pro)**
 

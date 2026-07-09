@@ -44,6 +44,12 @@ Share photos, videos, and audio with your community - no admin access needed, st
 
 Customize allowed types in **Media > Settings > General**.
 
+## Upload Modal (1.9.0, 2.0.0)
+
+The upload modal no longer asks you to pick a media type tab first - drop in an image, video, or audio file and WPMediaVerse auto-detects the type (1.9.0).
+
+When uploading into an album, you can create a brand-new album right from the upload modal instead of leaving to create one first, then switching back to upload into it (2.0.0).
+
 ## Bulk Album Upload (1.2.0)
 
 When uploading multiple files at once into an album, WPMediaVerse now creates **one** activity entry for the whole batch ("Varun uploaded 3 photos to album Portrait Series") with a thumbnail grid, instead of one separate activity per file. Single-file uploads and ad-hoc photo posts retain their existing per-post behaviour.

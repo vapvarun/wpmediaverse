@@ -145,6 +145,12 @@ The media picker in the entry form lets users select from their existing uploade
 
 ![Challenge entry submission form](../images/dashboard-challenges.png)
 
+## Who Can See Entries (Logged-Out Experience)
+
+- **Entering makes the photo public.** The moment a member submits an entry, that photo is visible in the challenge gallery to everyone - including logged-out visitors - even if the original upload is private. This is by design: challenges are a public competition, so an entered photo can't stay hidden while still being voted on. The entry form tells the member this before they submit.
+- **Challenges show when voting opened, not just when it ends.** Each challenge displays both a **Voting opened** and a **Voting ends** timestamp, so visitors can see the full voting window instead of only a deadline with no visible start.
+- **Logged-out visitors get a call to action, not a blank area.** On the Active tab, a visitor who is not logged in sees **Create an account to enter challenges** (linking to registration) in place of the entry form. On the Voting tab, each entry shows **Log in to vote** (linking to login) instead of a vote button. Neither area is left empty.
+
 ## Scheduled Actions
 
 | Action Hook | Condition |

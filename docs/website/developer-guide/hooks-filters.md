@@ -220,6 +220,22 @@ All WPMediaVerse hooks use the `mvs_` prefix. Pro-only hooks require WPMediaVers
 | `mvs_public_local_thumbnail_url` | filter | Free | 1.7.0 |
 | `mvs_public_local_file_url` | filter | Free | 1.7.0 |
 | `mvs_suppress_bp_comment_notification` | filter | Free | 2.0.0 |
+| `mvs_ai_moderation_terms` | filter | Free | 1.8.0 |
+| `mvs_default_thumbnail_style` | filter | Free | 1.8.0 |
+| `mvs_grid_thumb_size_key` | filter | Free | 1.8.0 |
+| `mvs_storage_repair_enabled` | filter | Free | 1.8.0 |
+| `mvs_strip_dead_bp_links` | filter | Free | 1.7.1 |
+| `mvs_dead_bp_link_patterns` | filter | Free | 1.7.1 |
+| `mvs_dm_denial_message` | filter | Free | 1.8.0 |
+| `mvs_dm_denial_reason` | filter | Free | 1.8.0 |
+| `mvs_collections_enabled` | filter | Free | 1.8.0 |
+| `mvs_app_config_features` | filter | Free | 1.9.0 |
+| `mvs_app_config_branding` | filter | Free | 1.9.0 |
+| `mvs_app_config_layout` | filter | Free | 1.9.0 |
+| `mvs_app_interests_cache_ttl` | filter | Free | 1.9.0 |
+| `mvs_suggestions_cache_ttl` | filter | Free | 1.9.0 |
+| `mvs_pro_collections_manage_url` | filter | Pro | 1.8.0 |
+| `mvs_pro_compete_points_url` | filter | Pro | 1.8.0 |
 
 ---
 
@@ -680,6 +696,146 @@ add_filter( 'mvs_media_response', function( array $data, int $media_id ) {
 
 ---
 
+### Native App Config (1.9.0)
+
+These filters back the `GET /app/config` response consumed by the native mobile app (see [REST API Reference](rest-api.md)). Free seeds sane defaults; Pro (or a white-label add-on) supplies its own values.
+
+#### `mvs_app_config_features`
+
+Filters the `features` boolean map returned by `GET /app/config`. Free seeds its always-on capabilities plus the messaging gate (derived from `mvs_dm_access`); Pro filters in its own toggles (battles, challenges, tournaments, boosts, streaks, video, stories, …).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$features` | array<string,bool> | Default: `messaging`, `reactions`, `comments`, `favorites`, `albums`, `collections`, `follows`, `notifications`, `activity` (all `true` except `messaging`, which follows `mvs_dm_access`) |
+
+**Returns:** `array<string,bool>`
+
+```php
+add_filter( 'mvs_app_config_features', function( array $features ) : array {
+    $features['my_custom_feature'] = true;
+    return $features;
+} );
+```
+
+---
+
+#### `mvs_app_config_branding`
+
+Filters the white-label branding array returned by `GET /app/config`. No Free setting drives this — Pro's Mobile App Branding settings (accent color, logo, login background, dark-mode default) populate it. Do not add site name/description/icon here; those come from the core `/wp-json/` index.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$branding` | array | Default: `accent_color`, `logo_url`, `login_bg_url` all `null`; `dark_mode_default` `false` |
+
+**Returns:** `array`
+
+```php
+add_filter( 'mvs_app_config_branding', function( array $branding ) : array {
+    $branding['accent_color'] = '#1a73e8';
+    return $branding;
+} );
+```
+
+---
+
+#### `mvs_app_config_layout`
+
+Filters the feed layout slug (`grid|instagram|pinterest|flickr|dribbble`) reported to the app so it presents media the way the site owner configured Explore. Pro supplies it from its `mvs_pro_feed_layout` setting; Free always defaults to `grid`.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$layout` | string | Default `'grid'` |
+
+**Returns:** `string`
+
+```php
+add_filter( 'mvs_app_config_layout', static fn() => 'grid' );
+```
+
+---
+
+#### `mvs_app_interests_cache_ttl`
+
+Filters the cache TTL (seconds) for the interest-list transient behind `GET /app/interests`. `0` disables caching.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$ttl` | int | Default `HOUR_IN_SECONDS` |
+
+**Returns:** `int`
+
+```php
+add_filter( 'mvs_app_interests_cache_ttl', static fn() => 6 * HOUR_IN_SECONDS );
+```
+
+---
+
+#### `mvs_suggestions_cache_ttl`
+
+Filters the cache TTL (seconds) for the suggested-creators candidate pool behind `GET /users/suggested`. `0` disables caching.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$ttl` | int | Default `HOUR_IN_SECONDS` |
+
+**Returns:** `int`
+
+```php
+add_filter( 'mvs_suggestions_cache_ttl', static fn() => 15 * MINUTE_IN_SECONDS );
+```
+
+---
+
+#### `mvs_pro_collections_manage_url` **(Pro)**
+
+Filters the URL the frontend "Save to collection" picker links to for "View your collections" (defaults to the My Media dashboard's Collections tab). Lets a site that places the dashboard elsewhere repoint the link.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$url` | string | Default: permalink of the page at slug `my-media` + `#collections`, or `''` if that page doesn't exist |
+
+**Returns:** `string`
+
+```php
+add_filter( 'mvs_pro_collections_manage_url', function( string $url ) : string {
+    return home_url( '/my-photos/#collections' );
+} );
+```
+
+---
+
+#### `mvs_pro_compete_points_url` **(Pro)**
+
+Filters the URL the Compete hub's points-balance chip links to (normally the WB Gamification rewards hub page). Returning an empty string degrades the chip to a non-linked span.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$url` | string | Default: permalink of the `wb_gam_hub_page_id` option's page, or `''` if not configured |
+
+**Returns:** `string`
+
+```php
+add_filter( 'mvs_pro_compete_points_url', function( string $url ) : string {
+    return home_url( '/rewards/' );
+} );
+```
+
+---
+
 ## 6. Social & Engagement
 
 ### `mvs_comment_created`
@@ -771,6 +927,40 @@ Fires when a follow relationship is created.
 add_action( 'mvs_user_followed', function( int $follower_id, int $following_id ) {
     my_send_follower_notification( $following_id, $follower_id );
 }, 10, 2 );
+```
+
+---
+
+### `mvs_collections_enabled` **(New in 1.8.0)**
+
+Gates whether the lightbox and single-media page render a separate "Save to collection" control next to the favorite heart. Favoriting (a one-tap like) and saving to a named collection are deliberately separate actions in the UI; there is no bundled Free collections-management backend, so this defaults to `false` and stays hidden until a collections backend (e.g. WPMediaVerse Pro) enables it.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$enabled` | bool | Whether to render the Save control. Default `false` |
+
+**Returns:** `bool`
+
+```php
+/**
+ * Enable the "Save to collection" control from a custom collections backend.
+ *
+ * @since 1.8.0
+ *
+ * @param bool $enabled Whether the Save control renders. Default false.
+ * @return bool
+ */
+add_filter( 'mvs_collections_enabled', '__return_true' );
+```
+
+**Frontend companion.** In the shared-ui lightbox (Interactivity API store), the Save button calls the `actions.lightboxOpenCollections` action, which dispatches a `mvs-collections-click` `CustomEvent` (bubbling) carrying `detail: { mediaId }`. A collections backend listens for this event on the document to open its own picker UI — the lightbox itself has no picker.
+
+```js
+document.addEventListener( 'mvs-collections-click', ( event ) => {
+	myCollectionsPicker.open( event.detail.mediaId );
+} );
 ```
 
 ---
@@ -960,6 +1150,68 @@ add_action( 'mvs_message_sent', function( int $message_id, int $conversation_id,
 
 ---
 
+### `mvs_dm_denial_reason` **(New in 1.8.0)**
+
+Filters the reason code returned when `MessagingService` blocks a conversation because the sender is blocked by the recipient. Return one of the codes `denial_message()` understands (`blocked`, `dms_disabled`, `mutual_follow_required`, `account_too_new`, `rate_limited`, `not_participant`, `content_too_long`, …) so the human-readable message stays consistent.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$reason` | string | Default `'blocked'` |
+| `$sender_id` | int | Sending user ID |
+| `$recipient_id` | int | Recipient user ID |
+
+**Returns:** `string`
+
+```php
+/**
+ * Report a custom denial reason for a bespoke blocking rule.
+ *
+ * @since 1.8.0
+ *
+ * @param string $reason       Default 'blocked'.
+ * @param int    $sender_id    Sender user ID.
+ * @param int    $recipient_id Recipient user ID.
+ * @return string
+ */
+add_filter( 'mvs_dm_denial_reason', function( string $reason, int $sender_id, int $recipient_id ) : string {
+    return my_plugin_is_shadow_blocked( $sender_id, $recipient_id ) ? 'blocked' : $reason;
+}, 10, 3 );
+```
+
+---
+
+### `mvs_dm_denial_message` **(New in 1.8.0)**
+
+Filters the human-readable message shown for a DM denial reason code. Apps consuming `mvs/v1` directly may localize from the `reason` code instead of this string; use this filter for per-site or per-locale message overrides.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$message` | string | Default message for the reason code |
+| `$reason` | string | Reason code (see `mvs_dm_denial_reason`) |
+
+**Returns:** `string`
+
+```php
+/**
+ * Customize the "blocked" denial message shown to senders.
+ *
+ * @since 1.8.0
+ *
+ * @param string $message Default message.
+ * @param string $reason  Reason code.
+ * @return string
+ */
+add_filter( 'mvs_dm_denial_message', function( string $message, string $reason ) : string {
+    return 'blocked' === $reason ? __( 'This member is not accepting messages from you.', 'my-plugin' ) : $message;
+}, 10, 2 );
+```
+
+---
+
 ### Additional DM Hooks
 
 | Hook | Type | Description | Parameters | Since |
@@ -1141,6 +1393,32 @@ Filters the OpenAI API key used for AI moderation and tagging. Use this to suppl
 add_filter( 'mvs_openai_api_key', function( string $key ) {
     return defined( 'OPENAI_API_KEY' ) ? OPENAI_API_KEY : $key;
 } );
+```
+
+---
+
+### `mvs_ai_moderation_terms` **(New in 1.8.0)**
+
+Supplies the full list of moderation terms — the enabled built-in categories (nudity, violence, hate, self-harm, drugs, spam) plus the owner's custom flag terms — to AI providers that don't read Free's options directly. Unusually for a filter, **Free is the consumer that registers the default callback**, not the one that calls `apply_filters()`: `Core\Plugin` does `add_filter( 'mvs_ai_moderation_terms', array( AIService::class, 'get_moderation_terms' ) )` so any provider (Pro's Claude/Anthropic provider calls `apply_filters( 'mvs_ai_moderation_terms', self::CATEGORIES )`) gets the site's real moderation criteria back instead of building its own hardcoded prompt.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$terms` | string[] | Default term list passed in by the caller (e.g. a provider's own fallback category constant) |
+
+**Returns:** `string[]` — Free's registered callback ignores the incoming default and always returns `AIService::get_moderation_terms()` (enabled categories + `mvs_ai_moderation_custom_terms`, comma-split, deduped).
+
+```php
+/**
+ * Read the site's configured AI moderation terms from a custom provider.
+ *
+ * @since 1.8.0
+ *
+ * @param string[] $terms Default terms (your provider's own fallback list).
+ * @return string[]
+ */
+$terms = apply_filters( 'mvs_ai_moderation_terms', array( 'nudity', 'violence' ) );
 ```
 
 ---
@@ -1556,6 +1834,90 @@ add_filter( 'mvs_cloudops_allow_non_public_to_cloud', function( bool $allow, int
 
 ---
 
+#### `mvs_default_thumbnail_style`
+
+Filters the default grid thumbnail style for sites that have not explicitly saved the `mvs_thumbnail_style` option. The default flipped from `square` to `original` (masonry) in 1.8.0 so Explore and the media-grid show every image at its native aspect ratio instead of a center-cropped square. Use this filter to restore the old uniform-crop default without touching the site's saved option — an explicitly saved option always wins over the filtered default, since `register_setting()` only runs on `admin_init` and the frontend relies on this resolved default.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$default` | string | `'original'` (masonry) or `'square'` (uniform crop). Default `'original'` |
+
+**Returns:** `string`
+
+```php
+/**
+ * Restore the pre-1.8.0 uniform square-crop grid default.
+ *
+ * @since 1.8.0
+ *
+ * @param string $default 'original' or 'square'.
+ * @return string
+ */
+add_filter( 'mvs_default_thumbnail_style', static fn() => 'square' );
+```
+
+---
+
+#### `mvs_grid_thumb_size_key`
+
+Filters the thumbnail size rung (`medium` or `large`) served for grid/masonry tiles. 1.8.0 raised the grid's default from `medium` to `large` so tiles stay sharp on HiDPI/retina screens (the `medium` rung visibly upscaled inside larger masonry tiles). Byte-conscious sites can drop back to `medium` with this filter instead of changing the `mvs_thumbnail_size` setting site-wide.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$key` | string | Resolved rung, `'medium'` or `'large'` |
+| `$configured` | string | The raw `mvs_thumbnail_size` setting value |
+
+**Returns:** `string` — must resolve to `'medium'` or `'large'`; any other value falls back to `'large'`.
+
+```php
+/**
+ * Serve the smaller thumbnail rung for grid tiles on a bandwidth-constrained site.
+ *
+ * @since 1.8.0
+ *
+ * @param string $key        Resolved rung.
+ * @param string $configured The mvs_thumbnail_size setting value.
+ * @return string
+ */
+add_filter( 'mvs_grid_thumb_size_key', function( string $key, string $configured ) : string {
+    return 'medium';
+}, 10, 2 );
+```
+
+---
+
+### Storage Repair (1.8.0)
+
+#### `mvs_storage_repair_enabled`
+
+Owner escape hatch for the automatic post-update storage repair pass (`Services\StorageRepairService`). The repair heals two pre-1.8.0 inconsistencies without deleting or moving anything — absolute file paths left over from a plugin migration (rtMedia / MediaPress / BuddyBoss), and thumbnails stranded on local disk after an older "Migrate all" — copying files into the library and correcting `file_path`/`file_url` only. It runs opt-out (default `true`), in bounded Action Scheduler batches, and is idempotent/resumable. Also gates `wp mvs repair-storage` (see [WP-CLI Commands](wp-cli.md)).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$enabled` | bool | Whether the repair pass may run. Default `true` |
+
+**Returns:** `bool`
+
+```php
+/**
+ * Disable the automatic background storage repair on this site.
+ *
+ * @since 1.8.0
+ *
+ * @param bool $enabled Whether the repair pass is enabled. Default true.
+ * @return bool
+ */
+add_filter( 'mvs_storage_repair_enabled', '__return_false' );
+```
+
+---
+
 #### `mvs_filename_strategy`
 
 Filters the stored-filename strategy used for new uploads. The built-in strategies are `hashed` (default) and `original`.
@@ -1787,6 +2149,61 @@ Filters whether the BuddyNext integration is considered active. Override this if
  */
 add_filter( 'mvs_buddynext_active', function( bool $active ) {
     return defined( 'WP_STAGING' ) ? false : $active;
+} );
+```
+
+---
+
+### `mvs_strip_dead_bp_links` **(New in 1.7.1)**
+
+Opt-in gate for cleaning up dead BuddyPress component links (`/members/`, `/groups/`, `/activity/`) from the site's nav menus when BuddyPress is inactive. **Off by default** — per Coding Rule #17, WPMediaVerse never edits a site owner's authored navigation on its own. Only enable this on a site where you specifically want the plugin to drop menu items that would 404 once BuddyPress is gone. The cleanup never removes an item that resolves to a real published page, and it fully bails when a sibling community plugin (detected via `mvs_buddynext_active`) owns those routes as live pages.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$enabled` | bool | Whether to run the cleanup. Default `false` |
+
+**Returns:** `bool`
+
+```php
+/**
+ * Opt this site into automatic dead-BP-link menu cleanup.
+ *
+ * @since 1.7.1
+ *
+ * @param bool $enabled Whether the cleanup runs. Default false.
+ * @return bool
+ */
+add_filter( 'mvs_strip_dead_bp_links', '__return_true' );
+```
+
+---
+
+### `mvs_dead_bp_link_patterns` **(New in 1.7.1)**
+
+Filters the URL fragments treated as "dead" BuddyPress component links when `mvs_strip_dead_bp_links` is enabled and BuddyPress is inactive. Only consulted when the cleanup above actually runs.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$patterns` | string[] | Default `array( '/members/', '/groups/', '/activity/' )` |
+
+**Returns:** `string[]`
+
+```php
+/**
+ * Also treat a custom /community/ archive as a dead BP-style link.
+ *
+ * @since 1.7.1
+ *
+ * @param string[] $patterns Default members/groups/activity archives.
+ * @return string[]
+ */
+add_filter( 'mvs_dead_bp_link_patterns', function( array $patterns ) : array {
+    $patterns[] = '/community/';
+    return $patterns;
 } );
 ```
 

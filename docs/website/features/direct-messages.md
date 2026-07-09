@@ -129,6 +129,19 @@ Each user controls their DM privacy from their account settings. Admins set the 
 
 When `mvs_dm_access` is set to `nobody`, the **Message** button is hidden on that user's profile.
 
+## Content Moderation (1.9.0)
+
+Every outgoing DM passes through the `mvs_message_content_check` filter before it is stored, the same seam other content types on the site already use to reject disallowed words. On its own, WPMediaVerse Free doesn't ship a word-blocklist for messages - the filter is what lets a host (a full community stack like BuddyNext, or your own mu-plugin) block a message the moment it's sent, so a member can't route banned words through a DM that would otherwise be caught in a comment or activity post. A blocked send returns an error instead of saving the message.
+
+```php
+add_filter( 'mvs_message_content_check', function( $result, $content, $sender_id, $conversation_id ) {
+    if ( str_contains( strtolower( $content ), 'bannedword' ) ) {
+        return new WP_Error( 'content_blocked', 'That word is not allowed.' );
+    }
+    return $result; // true lets the message through.
+}, 10, 4 );
+```
+
 ## Transport
 
 The chat panel polls the REST API to fetch new messages. There are three intervals (in milliseconds), chosen by context: an open conversation polls fastest, the conversation list slower, and a closed panel slowest. The defaults are `active` 3000, `list` 10000, and `background` 30000.
@@ -205,6 +218,21 @@ Send a message. The current user must be a participant and must satisfy the reci
 | `metadata` | No | Object of extra data (e.g. `{ "duration": 12 }` for voice messages). |
 
 **Response:** `201 Created` with the new message object.
+
+---
+
+### GET /conversations/{id}/messages/search
+
+Search message content within a single conversation (1.9.0). The current user must be a participant.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `q` | string | (required) | Search term matched against message content |
+| `per_page` | int | `50` | Matching messages per page |
+
+**Response:** Array of matching message objects, same shape as `GET /conversations/{id}/messages`.
 
 ---
 
@@ -309,3 +337,7 @@ add_filter( 'mvs_message_types', function( $types ) {
 ### `mvs_messaging_poll_intervals`
 
 Filter the client-side polling intervals (in milliseconds) delivered to the front end. See the Transport section above.
+
+### `mvs_message_content_check`
+
+Filter fired before a message is stored. Return a `WP_Error` to block the send; return the passed-in `true` (or anything not a `WP_Error`) to let it through. See the Content Moderation section above.

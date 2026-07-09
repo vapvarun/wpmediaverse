@@ -63,6 +63,18 @@ React, comment, follow, and share - WPMediaVerse turns your media site into a li
 4. Set the auto-hide threshold: when a media item receives a certain number of reports, it is automatically hidden and sent to the moderation queue
 5. BuddyPress notifications fire automatically for reactions, comments, and mentions when BuddyPress is active
 
+## Explore Feed Scope Filters (2.0.0)
+
+The media listing REST endpoint accepts a `scope` parameter that narrows results to a viewer's own network, available across every layout (default grid and every Pro feed layout):
+
+| Value | Shows |
+|-------|-------|
+| `public` | Public media only |
+| `followers` | Media from people the current viewer follows |
+| `self` | Only the current viewer's own uploads |
+
+`followers` and `self` require a logged-in viewer and fall back to the public-only privacy gate for anonymous requests.
+
 ## Reactions
 
 WPMediaVerse uses a custom reactions system stored in a dedicated database table, separate from WordPress post meta.

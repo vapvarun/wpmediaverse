@@ -10,7 +10,7 @@ AI is **opt-in and off by default**. Nothing calls an AI provider until you (1) 
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| AI Provider | OpenAI (GPT-4 Vision) | The AI service used for image analysis, tagging, and moderation. Free version: OpenAI only. Pro adds **Google Vision**, **AWS Rekognition**, and **Claude (Anthropic)** (selectable from this dropdown). |
+| AI Provider | OpenAI (GPT-4 Vision) | The AI service used for image analysis, tagging, and moderation. Free version: OpenAI only. Pro adds **Google Vision**, **AWS Rekognition**, and **Claude (Anthropic)** (added in 1.8.0, selectable from this dropdown). |
 | OpenAI API Key | (empty) | Your OpenAI API key. You can also define `MVS_OPENAI_API_KEY` in `wp-config.php` instead. |
 | OpenAI Model | GPT-4o Mini | Model used for analysis calls. **GPT-4o Mini** is cheaper; **GPT-4o** provides higher quality results. |
 | Auto-Analyze Uploads | Off | Master switch for the two per-feature toggles below. When off, neither descriptions nor tags are generated on upload. |
@@ -22,7 +22,7 @@ AI is **opt-in and off by default**. Nothing calls an AI provider until you (1) 
 
 **Estimated cost per call** is not a settings-page field - it is a developer-only default (`$0.01`) used for budget tracking, overridable via the [`mvs_ai_cost_per_call`](../developer-guide/hooks-filters.md) filter.
 
-### AI Flag Criteria and Custom Flag Terms **(New in 2.0.0)**
+### AI Flag Criteria and Custom Flag Terms **(New in 1.8.0)**
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -52,12 +52,12 @@ When this constant is defined, the settings page field is disabled and shows a n
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| When AI Flags Content | Flag for review | What happens when AI detects a policy violation. Options: **Flag for review** (keeps media visible but adds it to the moderation queue), **Hide** (sets media to private), **Reject** (moves media to draft). |
+| When AI Flags Content | Flag for review | What happens when AI detects a policy violation. Options: **Flag for review** (keeps media visible but adds it to the moderation queue), **Hide** (sets media to private), **Reject** (moves media to draft), **Delete permanently** (removes the media and its files from local and cloud storage - cannot be undone). The default changed from Delete permanently to Flag for review in 2.0.0, so a fresh install can never auto-delete uploads before an admin has chosen otherwise. |
 | Auto-Hide Threshold | 3 | Number of user reports required to automatically hide a media item. The media is set to private and added to the moderation queue. Set to 0 to disable automatic hiding. |
 
 ## Moderation Queue
 
-Administrators with the `moderate_mvs_media` capability can review flagged media at **WPMediaVerse > Moderation**.
+Administrators with the `moderate_mvs_media` capability can review flagged media at **WPMediaVerse > Media Moderation** (renamed from "Moderation" in 2.0.0 to avoid ambiguity with the general WordPress term).
 
 ![Moderation queue with pending media items](../images/admin-moderation.jpg)
 

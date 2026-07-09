@@ -59,13 +59,18 @@ List media items. Returns only rows the caller is allowed to see.
       "views": 42,
       "reactions_count": 5,
       "comments_count": 2,
-      "created_at": "2025-03-27T12:00:00Z"
+      "created_at": "2025-03-27T12:00:00Z",
+      "can_edit": false,
+      "is_favorited": false,
+      "viewer_reaction": null
     }
   ],
   "total": 50,
   "pages": 5
 }
 ```
+
+**Viewer-aware fields.** Every media item carries three fields resolved against the requesting user, not cached statically: `can_edit` (bool — `true` when the viewer is the author or has `manage_options`), `is_favorited` (bool), and `viewer_reaction` (string reaction slug, or `null` if the viewer hasn't reacted). All three are `false`/`null` for anonymous requests. List endpoints batch-load this state per page (`MediaController::prime_viewer_state()`) rather than querying per row.
 
 ### POST /media
 
@@ -144,6 +149,19 @@ Record a share event and increment `mvs_media_stats.shares`. Called by the light
 **Auth:** Public.
 
 Report whether the current user can view the item (resolves privacy rules and any access grants). Returns an access decision, not the file.
+
+**Response:**
+
+```json
+{
+  "media_id": 123,
+  "can_view": true,
+  "privacy": "members",
+  "is_owner": false
+}
+```
+
+`privacy` and `is_owner` are only populated when the caller can view the item or owns it; a caller with neither returns `403` before these fields are built.
 
 ### GET /media/{id}/group
 
@@ -784,6 +802,122 @@ Mark notifications as read. Pass an `ids` array to mark specific notifications, 
 
 ---
 
+## Native App & Interests
+
+Added in 1.9.0 to support a native mobile/headless client: a public pre-login config call, an interest-picker onboarding flow, and "people you may know" suggestions. See [`mvs_app_config_features`](hooks-filters.md#native-app-config-190) and related filters for how Free/Pro contribute to `/app/config`.
+
+### GET /app/config
+
+**Auth:** Public.
+
+Single call a client makes before theming itself and deciding which feature surfaces to mount. Returns only what the core `/wp-json/` index cannot express (branding + feature flags) — site name, description, icon, and auth come from the core index, never restated here.
+
+**Response:**
+
+```json
+{
+  "accent_color": null,
+  "logo_url": null,
+  "login_bg_url": null,
+  "dark_mode_default": false,
+  "layout": "grid",
+  "pro_active": true,
+  "features": {
+    "messaging": true,
+    "reactions": true,
+    "comments": true,
+    "favorites": true,
+    "albums": true,
+    "collections": true,
+    "follows": true,
+    "notifications": true,
+    "activity": true
+  }
+}
+```
+
+`features.messaging` is `false` when `mvs_dm_access` is `nobody`/`disabled`/`none`. Pro extends `features` with its own toggles (battles, challenges, tournaments, boosts, streaks, video, stories, …) and can populate `accent_color` / `logo_url` / `login_bg_url` / `dark_mode_default` / `layout` from its Mobile App Branding settings.
+
+### GET /app/interests
+
+**Auth:** Public.
+
+Available interest chips for the onboarding picker — the top 40 `mvs_category` terms by usage count, each with a representative public cover thumbnail. Cached (transient, default 1 hour, filterable via `mvs_app_interests_cache_ttl`).
+
+**Response:**
+
+```json
+[
+  { "id": 12, "name": "Nature", "slug": "nature", "count": 84, "cover_url": "https://example.com/.../serve?..." }
+]
+```
+
+### GET /me/interests
+
+**Auth:** Authenticated.
+
+The current user's saved interest picks.
+
+**Response:**
+
+```json
+{ "interest_ids": [12, 19] }
+```
+
+### POST /me/interests
+
+**Auth:** Authenticated.
+
+Save the current user's interest picks. Only valid `mvs_category` term IDs are kept; unknown IDs are silently dropped. Saving also marks the viewer as onboarded (`mvs_onboarded` user meta), so a client doesn't have to separately call `/me/onboarding/complete`.
+
+```json
+{ "interest_ids": [12, 19, 4] }
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `interest_ids` | Yes | Array of `mvs_category` term IDs |
+
+**Response:** `{ "interest_ids": [12, 19, 4] }` (filtered to valid term IDs).
+
+### GET /users/suggested
+
+**Auth:** Authenticated.
+
+"People you may know" — ranked creators (popularity + interest overlap with the viewer's picks), excluding the viewer, users they already follow, and blocked users. Each result carries up to 3 sample public-media thumbnails for the suggestion card.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | int | (service default) | Max results, clamped to 1-50 |
+
+**Response:**
+
+```json
+[
+  {
+    "id": 55,
+    "name": "Jane Smith",
+    "avatar": "https://example.com/avatar.jpg",
+    "profile_url": "https://example.com/media/@jane/",
+    "follower_count": 120,
+    "is_following": false,
+    "sample_media": ["https://example.com/.../thumb1.jpg"]
+  }
+]
+```
+
+The candidate pool is cached (default 1 hour, filterable via `mvs_suggestions_cache_ttl`).
+
+### POST /me/onboarding/complete
+
+**Auth:** Authenticated.
+
+Explicitly flag the current user as onboarded (`mvs_onboarded` user meta), for clients whose first-session flow doesn't end with saving interests. Idempotent.
+
+**Response:** `{ "onboarded": true }`
+
+---
+
 ## Admin
 
 ### POST /admin/welcome/dismiss
@@ -835,8 +969,13 @@ List the current user's conversations.
 Start a new conversation.
 
 ```json
-{ "recipient_id": 42 }
+{ "recipient_id": 42, "as_request": false }
 ```
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `recipient_id` | Yes | - | User ID to start (or resume) a conversation with |
+| `as_request` | No | `false` | When `true`, force the conversation to open as a pending **message request** (lands in the recipient's Requests tab and must be accepted/declined) instead of an active thread — even if the sender/recipient relationship would otherwise allow a direct thread. Lets a native app open a "message request" flow explicitly through `mvs/v1` alone (1.8.0). |
 
 **Response:** `201 Created` with the new conversation object.
 

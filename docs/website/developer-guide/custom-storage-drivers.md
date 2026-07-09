@@ -209,3 +209,42 @@ add_filter( 'mvs_public_cloud_thumbnail_url', function( string $url, int $media_
 ```
 
 Private and restricted media is never eligible for the direct-cloud path — `StorageService::get_driver_for_privacy()` keeps non-public media on local disk, and `/serve` re-checks `can_view()` on every request. So these filters only affect **public** media.
+
+## Viewer-Aware Full-File URLs (2.0.0)
+
+`MediaRepositoryInterface::get_url_for_viewer()` is a driver-agnostic, viewer-aware way to get a URL for a media item's **full original file** (not a thumbnail) that is authorized for a specific viewer rather than the current logged-in user. It exists so callers that already have a `$viewer_id` (a REST controller resolving on behalf of a specific user, an email/notification job, an app backend) don't have to swap the global user or hand-roll a signed URL.
+
+```php
+namespace WPMediaVerse\Repository;
+
+interface MediaRepositoryInterface {
+
+    /**
+     * Viewer-aware URL for the full original file.
+     *
+     * For public media on a cloud driver this returns the direct CDN URL (same
+     * as the broadcast path); for local/non-public media it returns the gated
+     * /serve URL. Returns '' when the viewer may not view the media.
+     *
+     * @since 2.0.0
+     *
+     * @param int      $media_id  Media ID.
+     * @param int|null $viewer_id Viewer to authorize against. Null = current user.
+     * @return string Signed URL when the viewer may view the media, else ''.
+     */
+    public function get_url_for_viewer( int $media_id, ?int $viewer_id = null ): string;
+}
+```
+
+```php
+$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+// Resolve the file URL as it would appear to a specific member (not the current request user).
+$url = $repo->get_url_for_viewer( $media_id, $target_user_id );
+
+if ( '' === $url ) {
+    // $target_user_id is not authorized to view this media.
+}
+```
+
+Like every other read-side URL helper in this plugin, do not hand-build the path or call `SignedUrlService` directly — `get_url_for_viewer()` runs the same privacy check and driver resolution as `Core\MediaUrl` (see [Template Overrides — Getting Media URLs](template-overrides.md#getting-media-urls-in-a-template-mediaurl)), just parameterized by an explicit viewer instead of the current user. Custom storage drivers do not need to implement anything extra for this to work — it composes `StorageService` + `SignedUrlService` the same way the rest of the read path does.

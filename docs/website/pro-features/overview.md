@@ -74,6 +74,8 @@ The migration tool admin page is now a generic shell that hosts per-platform car
 | Advanced Privacy | [advanced-privacy.md](advanced-privacy.md) | Multi-level privacy, presets, album inheritance, and bulk updates |
 | Connected Accounts | [connected-accounts.md](connected-accounts.md) | Connect Flickr to import/export photos and auto-push new uploads |
 | Stories | [stories.md](stories.md) | 24-hour ephemeral stories with a tap-to-advance viewer and "seen by" receipts |
+| Save to Collections | [collections.md](collections.md) | A dedicated Save control for adding media to any number of named collections, separate from favoriting |
+| Mobile App | [mobile-app.md](mobile-app.md) | White-label branding, feed layout, push notifications, and a leaderboard endpoint for the native app |
 
 ## User Reports (Pro Moderation)
 

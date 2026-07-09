@@ -21,6 +21,9 @@
         { "slug": "why-wpmediaverse", "title": "Why WPMediaVerse" },
         { "slug": "installation", "title": "Installation" },
         { "slug": "setup-wizard", "title": "Setup Wizard" },
+        { "slug": "whats-new-2-0-0", "title": "What's New in 2.0.0" },
+        { "slug": "whats-new-1-9-0", "title": "What's New in 1.9.0" },
+        { "slug": "whats-new-1-8-0", "title": "What's New in 1.8.0" },
         { "slug": "whats-new-1-5-0", "title": "What's New in 1.5.0" },
         { "slug": "whats-new-1-4-0", "title": "What's New in 1.4.0" },
         { "slug": "whats-new-1-2-0", "title": "What's New in 1.2.0" },
@@ -53,6 +56,7 @@
         { "slug": "collections", "title": "Collections" },
         { "slug": "stories", "title": "Stories" },
         { "slug": "social-features", "title": "Social Features" },
+        { "slug": "interests-onboarding", "title": "Interests & Personalized Onboarding" },
         { "slug": "direct-messages", "title": "Direct Messages" },
         { "slug": "privacy-access-control", "title": "Privacy & Access Control" },
         { "slug": "ai-moderation", "title": "AI Moderation" },
@@ -91,7 +95,9 @@
         { "slug": "ai-providers", "title": "AI Providers (Vision & Rekognition)" },
         { "slug": "quotas", "title": "Quotas & Credit Packages" },
         { "slug": "advanced-privacy", "title": "Advanced Privacy Controls" },
-        { "slug": "stories", "title": "Stories" }
+        { "slug": "stories", "title": "Stories" },
+        { "slug": "collections", "title": "Save to Collections (Pro Picker)" },
+        { "slug": "mobile-app", "title": "Mobile App" }
       ]
     },
     {

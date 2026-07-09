@@ -68,7 +68,7 @@ Only one provider is active at a time. Select it under **Media > Settings > AI &
 
 ---
 
-## Claude (Anthropic) **(New in 1.9.0)**
+## Claude (Anthropic) **(New in 1.8.0)**
 
 ### Requirements
 
@@ -86,7 +86,7 @@ Only one provider is active at a time. Select it under **Media > Settings > AI &
 ### What Claude Returns
 
 - **Description + tags:** same natural-language description and comma-separated tag suggestions as the OpenAI path, mapped to `mvs_tag` terms when Auto-Apply Tags is on
-- **Moderation:** flags content against the site's configured [AI Flag Criteria and Custom Flag Terms](../settings/ai-moderation.md#ai-flag-criteria-and-custom-flag-terms-new-in-200) - the same category checkboxes and custom-terms field the free plugin's OpenAI path uses
+- **Moderation:** flags content against the site's configured [AI Flag Criteria and Custom Flag Terms](../settings/ai-moderation.md#ai-flag-criteria-and-custom-flag-terms-new-in-180) - the same category checkboxes and custom-terms field the free plugin's OpenAI path uses
 
 ---
 

@@ -137,6 +137,54 @@ $webp_url = get_post_meta( $media_id, $webp_key, true );
 
 > **Note:** `TemplateHelpers::get_thumb_url()` is now a one-line delegate to `MediaUrl::thumb()`, so existing templates that already use it keep working unchanged — `MediaUrl` is simply the canonical name to reach for in new code.
 
+## Pro Layout Templates **(Pro)**
+
+When a Pro feed layout (Instagram, Pinterest, Flickr, or Dribbble) is active (`mvs_pro_feed_layout` setting), `Frontend\Layouts\LayoutManager` hooks the same `mvs_locate_template` filter chain described above to swap in the layout's own `explore.php` / `user-profile.php` replacements. Because it hooks the same filter, a **child-theme override you already placed under `wpmediaverse/` wins automatically** — `LayoutManager::override_template()` checks whether the resolved path already lives inside the active theme before forcing the layout file, so `wp-content/themes/your-theme/wpmediaverse/explore.php` (or `user-profile.php`) is honored over any layout's version, exactly like Free templates.
+
+| Free template name | Overridden by (per layout) | Layout template directory |
+|---------------------|----------------------------|----------------------------|
+| `explore.php` | `feed.php` | `templates/layouts/{instagram,pinterest,flickr,dribbble}/` |
+| `user-profile.php` | `profile.php` | `templates/layouts/{instagram,pinterest,flickr,dribbble}/` |
+
+Each layout also loads a **body partial** (`feed-body.php`) and further partials (e.g. Instagram's `partials/stories-bar.php`, `partials/feed-card.php`) that are outside the `mvs_locate_template` filter's `$template_name` map. These use a separate, path-based lookup (`LayoutManager::theme_or_plugin()`) that checks the SAME `wpmediaverse/` theme directory, just keyed by the file's path relative to `templates/` instead of by template name:
+
+```
+wp-content/themes/your-theme/
+└── wpmediaverse/
+    └── layouts/
+        └── instagram/
+            ├── feed-body.php
+            └── partials/
+                ├── stories-bar.php
+                └── feed-card.php
+```
+
+Ship an override at that path (mirroring `wp-content/plugins/wpmediaverse-pro/templates/layouts/{slug}/...`) and it is read in preference to the plugin's copy — no filter needed.
+
+Third-party hooks for customizing a layout without a template override: `mvs_layout_modes` (register additional layout modes), `mvs_active_layout` (force the active layout slug), `mvs_layout_template_map` (remap which layout file backs each free template name), `mvs_layout_config` (filter a layout's config array), `mvs_before_layout_render` (fires before a layout template loads). See [Hooks & Filters Reference](hooks-filters.md#17-layout-system-pro).
+
+## Compete-Page Templates **(Pro)**
+
+The gamification frontend pages (`GamificationTemplateLoader`) are theme-overridable through the SAME `WPMediaVerse\Core\TemplateLoader::locate()` call the free plugin uses — so the `wpmediaverse/` child-theme directory convention applies here too, with no separate lookup path:
+
+| Route | Query var | Template file |
+|-------|-----------|----------------|
+| `/media/battles/` | `mvs_battles_page` | `battles.php` |
+| `/media/challenges/` | `mvs_challenges_page` | `challenges.php` |
+| `/media/tournaments/` | `mvs_tournaments_page` | `tournaments.php` |
+| `/compete/` | `mvs_compete_page` | `compete-hub.php` |
+
+```
+wp-content/themes/your-theme/
+└── wpmediaverse/
+    ├── battles.php
+    ├── challenges.php
+    ├── tournaments.php
+    └── compete-hub.php
+```
+
+Each page 404s if its backing feature toggle (`mvs_battles_enabled`, `mvs_challenges_enabled`, `mvs_tournaments_enabled`) is off — Compete Hub (`/compete/`) 404s only when none of the three are enabled. Added in 1.9.0.
+
 ## Filtering the Template Path
 
 You can override any template path using the `mvs_locate_template` filter:
