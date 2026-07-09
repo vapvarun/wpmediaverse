@@ -1408,6 +1408,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type string $privacy                  'any'|'public'|'visible'|'profile'. Default 'any'.
 	 *     @type int    $viewer_id                Required when privacy='visible'/'profile'. Default 0.
 	 *     @type bool   $exclude_non_cover_group  Drop non-cover gallery members. Default false.
+	 *     @type bool   $exclude_empty_media_type Drop privacy-only stub rows (albums/collections). Default false.
 	 *     @type string $since                    created_at >= this datetime. Default ''.
 	 *     @type string $orderby                  Allowlisted column. Default 'created_at'.
 	 *     @type string $order                    'ASC'|'DESC'. Default 'DESC'.
@@ -1428,6 +1429,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				'privacy'                 => 'any',
 				'viewer_id'               => 0,
 				'exclude_non_cover_group' => false,
+				'exclude_empty_media_type' => false,
 				'since'                   => '',
 				'orderby'                 => 'created_at',
 				'order'                   => 'DESC',
@@ -1505,6 +1507,13 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		if ( ! empty( $args['exclude_non_cover_group'] ) ) {
 			$where[] = 'm.media_id NOT IN (' . $this->gallery_exclude_subquery() . ')';
+		}
+
+		// Drop the privacy-only stub rows that album/collection creation inserts
+		// into mvs_media_index (media_type left empty — see PrivacyService). These
+		// are containers, not media, and render as broken tiles on grids/explore.
+		if ( ! empty( $args['exclude_empty_media_type'] ) ) {
+			$where[] = "m.media_type != ''";
 		}
 
 		if ( empty( $where ) ) {

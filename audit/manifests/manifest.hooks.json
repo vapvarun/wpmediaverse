@@ -1406,6 +1406,19 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_suppress_bp_comment_notification",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $suppress",
+        "int $media_id",
+        "int $user_id",
+        "int $actor_id"
+      ],
+      "where": "includes/Integrations/BuddyPress/NotificationIntegration.php:96",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_public_media_max_age",
       "type": "filter",
       "args_count": 2,

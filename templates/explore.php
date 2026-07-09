@@ -236,6 +236,7 @@ $mvs_archive_url = home_url( '/media/' );
 		'privacy'                 => $mvs_privacy,
 		'viewer_id'               => $mvs_viewer_id,
 		'exclude_non_cover_group' => true,
+		'exclude_empty_media_type' => true,
 		'orderby'                 => 'created_at',
 		'order'                   => 'DESC',
 		'limit'                   => $per_page,

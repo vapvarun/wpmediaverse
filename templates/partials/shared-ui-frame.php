@@ -441,24 +441,24 @@ wp_interactivity_state(
 				<!-- Actions bar -->
 				<div class="mvs-lightbox-actions">
 					<?php if ( $mvs_is_logged_in ) : ?>
-						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
+						<button class="mvs-lightbox-action mvs-lb-fav" data-wp-on--click="actions.lightboxToggleFavorite" data-wp-class--active="state.lightboxIsFavorited" aria-label="<?php esc_attr_e( 'Favorite this media', 'wpmediaverse' ); ?>" data-wp-bind--aria-pressed="state.lightboxIsFavorited">
 							<i data-lucide="heart" aria-hidden="true"></i>
 							<span data-wp-text="state.lightboxFavoriteLabel"></span>
 						</button>
 					<?php endif; ?>
 					<?php // "Save to collection" is separate from the heart; shown only when a collections backend (Pro) enables it. ?>
 					<?php if ( $mvs_is_logged_in && apply_filters( 'mvs_collections_enabled', false ) ) : ?>
-						<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
+						<button class="mvs-lightbox-action mvs-lb-save" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
 							<i data-lucide="bookmark" aria-hidden="true"></i>
 							<?php esc_html_e( 'Save', 'wpmediaverse' ); ?>
 						</button>
 					<?php endif; ?>
-					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxShare" aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>">
+					<button class="mvs-lightbox-action mvs-lb-share" data-wp-on--click="actions.lightboxShare" aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>">
 						<i data-lucide="share-2" aria-hidden="true"></i>
 						<?php esc_html_e( 'Share', 'wpmediaverse' ); ?>
 					</button>
 					<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
-					<button class="mvs-lightbox-action" data-wp-on--click="actions.lightboxDownload" data-wp-bind--hidden="state.lightboxHideDownload" aria-label="<?php esc_attr_e( 'Download this media to your device', 'wpmediaverse' ); ?>">
+					<button class="mvs-lightbox-action mvs-lb-download" data-wp-on--click="actions.lightboxDownload" data-wp-bind--hidden="state.lightboxHideDownload" aria-label="<?php esc_attr_e( 'Download this media to your device', 'wpmediaverse' ); ?>">
 						<i data-lucide="download" aria-hidden="true"></i>
 						<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
 					</button>

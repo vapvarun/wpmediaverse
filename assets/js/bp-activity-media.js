@@ -624,6 +624,8 @@
 		var suiState = {
 			mediaId: 0,
 			permalink: '',
+			fileUrl: '',   // Current item's downloadable file URL (for the Download action).
+			title: '',     // Current item's title (download filename fallback).
 			gallery: [],   // Array of { mediaId, imgSrc }
 			galleryIndex: 0,
 			active: false  // True while the shared-ui lightbox is driven by this module.
@@ -866,8 +868,24 @@
 
 			// Permalink on open link.
 			suiState.permalink = data.link || data.permalink || '';
+			suiState.fileUrl   = data.file_url || '';
+			suiState.title     = data.title || '';
 			var openLink = overlay.querySelector( '.mvs-lightbox-actions a.mvs-lightbox-action[target="_blank"]' );
 			if ( openLink ) { openLink.href = suiState.permalink; }
+
+			// Download button: the clone inherits the original's stripped
+			// data-wp-bind--hidden state (stays hidden), so mirror the IA's
+			// state.lightboxHideDownload logic here — show it only when the item
+			// has a file_url and per-media downloads aren't disabled. Without this
+			// the Download action is invisible even though its handler is wired.
+			var dlBtn = overlay.querySelector( '.mvs-lightbox-actions button.mvs-lb-download' );
+			if ( dlBtn ) {
+				if ( suiState.fileUrl && data.allow_download !== false ) {
+					dlBtn.removeAttribute( 'hidden' );
+				} else {
+					dlBtn.setAttribute( 'hidden', '' );
+				}
+			}
 
 			// Gallery nav.
 			updateSharedNav( overlay );
@@ -1154,11 +1172,12 @@
 
 		document.addEventListener( 'click', function( e ) {
 			if ( ! suiState.active ) { return; }
-			// Target ONLY the favorite button via its Interactivity action attribute.
-			// Matching on textContent ('Share') was locale-broken on non-English sites
-			// because the share button's text is translated. The data-wp-on--click
-			// attribute always carries the action name regardless of UI language.
-			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lightbox-action[data-wp-on--click*="lightboxToggleFavorite"]' );
+			// Target the favorite button via a STABLE class. The BP lightbox is a
+			// clone with every data-wp-* attribute stripped (createBPLightbox), so
+			// selecting on [data-wp-on--click*=...] never matched and the handler
+			// was dead (Basecamp #10077932144). The .mvs-lb-fav class survives the
+			// clone and is locale-independent (textContent was translation-broken).
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-fav' );
 			if ( ! btn ) { return; }
 			if ( ! suiState.mediaId ) { return; }
 
@@ -1183,11 +1202,10 @@
 
 		document.addEventListener( 'click', function( e ) {
 			if ( ! suiState.active ) { return; }
-			// Target ONLY the share button via its Interactivity action attribute.
-			// Matching on textContent ('Share' / 'Copied') was locale-broken on
-			// non-English sites because the button's text is translated. The
-			// data-wp-on--click attribute always carries the action name.
-			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lightbox-action[data-wp-on--click*="lightboxShare"]' );
+			// Target the share button via a STABLE class — see the favorite
+			// handler above; the cloned lightbox strips data-wp-* so the old
+			// [data-wp-on--click*="lightboxShare"] selector was dead (#10077932144).
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-share' );
 			if ( ! btn ) { return; }
 
 			var url = suiState.permalink || window.location.href;
@@ -1200,6 +1218,45 @@
 					setTimeout( function() { btn.innerHTML = original; }, 2000 );
 				} );
 			}
+		} );
+
+		// ── Save to collection (event delegation) ──
+		// The Save button has no BP handler and relied on the IA action
+		// lightboxOpenCollections, which is stripped from the clone. Replicate it:
+		// announce the media id so Pro's collection-picker.js (listening on document
+		// for 'mvs-collections-click') can open the picker (#10077932144).
+
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-save' );
+			if ( ! btn ) { return; }
+			if ( ! suiState.mediaId ) { return; }
+
+			btn.dispatchEvent( new CustomEvent( 'mvs-collections-click', {
+				bubbles: true,
+				cancelable: false,
+				detail: { mediaId: suiState.mediaId }
+			} ) );
+		} );
+
+		// ── Download (event delegation) ──
+		// Also relied on the stripped IA action lightboxDownload. Replicate the
+		// browser-native download via a hidden anchor (signed URLs carry the
+		// Content-Disposition header from the storage driver) (#10077932144).
+
+		document.addEventListener( 'click', function( e ) {
+			if ( ! suiState.active ) { return; }
+			var btn = e.target.closest( '.mvs-lightbox-actions button.mvs-lb-download' );
+			if ( ! btn ) { return; }
+			if ( ! suiState.fileUrl ) { return; }
+
+			var a = document.createElement( 'a' );
+			a.href = suiState.fileUrl;
+			a.download = suiState.title || 'media';
+			a.rel = 'noopener';
+			document.body.appendChild( a );
+			a.click();
+			document.body.removeChild( a );
 		} );
 
 		// ── Comment posting ──

@@ -56,7 +56,7 @@
     --mvs-on-danger: #ffffff;                  /* text on danger (red both modes) */
     --mvs-border-strong: var(--mvs-border);    /* emphasized divider */
     --mvs-accent: #6366f1;                      /* indigo accent (boosts/highlights) */
-    --mvs-accent-2: #ec4899;
+    --mvs-accent-2: #ec4899;                     /* secondary accent (stories-ring gradient end) */
     --mvs-accent-soft: rgba(99, 102, 241, 0.12); /* translucent → works light + dark */
 
     /* ── Theme palette mapping (THE single source of truth) ──────────────────
@@ -1043,6 +1043,76 @@ body.dark-mode .mvs-skeleton::after {
     object-fit: contain;
 }
 
+/* Original mode = true masonry (Pinterest / Unsplash): every image keeps its
+   native aspect ratio (no square crop) and tiles pack with no gaps. CSS
+   multi-column is a no-JS masonry — it works with Load More (appended cards
+   flow into the columns) and preserves DOM order so the lightbox prev/next
+   stays correct. This overrides .mvs-media-grid's `display:grid`, whose uniform
+   rows left large gaps under short/wide images. (Aspect-ratio request.) */
+.mvs-media-grid.mvs-grid--original {
+    display: block;
+    column-gap: 16px;
+}
+
+.mvs-grid--original.mvs-cols-2 {
+    column-count: 2;
+}
+
+.mvs-grid--original.mvs-cols-3 {
+    column-count: 3;
+}
+
+.mvs-grid--original.mvs-cols-4 {
+    column-count: 4;
+}
+
+.mvs-grid--original.mvs-cols-5 {
+    column-count: 5;
+}
+
+.mvs-grid--original .mvs-grid-item {
+    -webkit-column-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 16px;
+    width: 100%;
+}
+
+/* The card's <a> wrapper is forced square by `.mvs-feed .mvs-grid-item-link`
+   (a later, equal-specificity rule). In masonry that square wrapper re-introduces
+   the gap even though the <img> is natural height. Beat it with a compound
+   selector so the link hugs the image and the card hugs the link. */
+.mvs-media-grid.mvs-grid--original .mvs-grid-item-link,
+.mvs-media-grid.mvs-grid--original .mvs-grid-item a {
+    aspect-ratio: auto;
+    height: auto;
+}
+
+@media (max-width: 1024px) {
+
+    .mvs-grid--original.mvs-cols-5 {
+        column-count: 4;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .mvs-grid--original.mvs-cols-3,
+    .mvs-grid--original.mvs-cols-4,
+    .mvs-grid--original.mvs-cols-5 {
+        column-count: 2;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .mvs-grid--original.mvs-cols-2,
+    .mvs-grid--original.mvs-cols-3,
+    .mvs-grid--original.mvs-cols-4,
+    .mvs-grid--original.mvs-cols-5 {
+        column-count: 1;
+    }
+}
+
 .mvs-grid-item-placeholder {
     display: flex;
     align-items: center;
@@ -1772,6 +1842,31 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-dashboard-tab.active {
     color: var(--mvs-primary);
     border-bottom-color: var(--mvs-primary);
+}
+
+/* Theme defense. Some themes (e.g. BuddyX) style bare <button> with a filled
+   accent background + full border + radius, which turns these flat tabs into
+   chunky colored buttons. Re-assert the intended clean look so the dashboard
+   reads the same on any theme: flat text tabs, primary underline on the active
+   tab. !important is the standard pattern for a frontend plugin defending its
+   own controls inside arbitrary themes. Bug #10019404777. */
+.mvs-dashboard-tabs .mvs-dashboard-tab {
+    background: none !important;
+    border: 0 !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    /* The theme also forces button text white; without re-asserting the text
+       color the label turns white-on-light = invisible once the fill is gone. */
+    color: var(--mvs-text) !important;
+}
+
+.mvs-dashboard-tabs .mvs-dashboard-tab:hover,
+.mvs-dashboard-tabs .mvs-dashboard-tab:focus,
+.mvs-dashboard-tabs .mvs-dashboard-tab.active {
+    background: none !important;
+    border-bottom-color: var(--mvs-primary) !important;
+    color: var(--mvs-primary) !important;
 }
 
 .mvs-dashboard-panel {
@@ -5460,6 +5555,41 @@ a.mvs-dashboard-card-title:hover {
     stroke-width: 2;
 }
 
+/* Theme defense for the lightbox controls — keep the reaction pills and action
+   buttons clean (no theme-injected fill/border/radius) so the lightbox reads as
+   a premium, uncluttered surface on any theme. !important guards against themes
+   that style bare <button>. Bug #10019404777. */
+.mvs-lightbox-reaction {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 20px !important;
+    box-shadow: none !important;
+}
+
+.mvs-lightbox-reaction:hover {
+    background: var(--mvs-surface-2) !important;
+    border-color: var(--mvs-border-light) !important;
+}
+
+.mvs-lightbox-reaction.active {
+    background: var(--mvs-info-bg) !important;
+    border-color: var(--mvs-primary) !important;
+}
+
+.mvs-lightbox-action {
+    background: none !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    color: var(--mvs-text) !important;
+}
+
+.mvs-lightbox-action:hover,
+.mvs-lightbox-action:focus {
+    background: var(--mvs-surface-2) !important;
+    color: var(--mvs-text) !important;
+}
+
 /* Fullscreen — when the lightbox enters browser fullscreen via the
    Fullscreen API, override the dialog max sizes so the media fills the
    actual viewport. ESC and the F shortcut both exit. */
@@ -6216,3 +6346,97 @@ body.dark-mode .mvs-auth-gate__card {
     font-size: 0.8125rem;
 }
 
+
+/* Blocked members (Edit Profile) — manage/undo blocks. */
+.mvs-blocked-members { margin-top: var(--mvs-space-xl, 24px); }
+.mvs-blocked-members__title { font-size: var(--mvs-font-lg, 18px); font-weight: 700; margin: 0 0 var(--mvs-space-md, 12px); }
+.mvs-blocked-members__empty { color: var(--mvs-text-secondary, #6b7280); font-size: var(--mvs-font-sm, 14px); }
+.mvs-blocked-members__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mvs-space-sm, 8px); }
+.mvs-blocked-members__row { display: flex; align-items: center; gap: var(--mvs-space-md, 12px); padding: var(--mvs-space-sm, 8px) var(--mvs-space-md, 12px); border: 1px solid var(--mvs-border, #e5e7eb); border-radius: var(--mvs-radius-md, 8px); }
+.mvs-blocked-members__avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.mvs-blocked-members__name { font-weight: 600; }
+.mvs-blocked-members__unblock { margin-inline-start: auto; }
+
+/* Profile actions — overflow (⋯) menu + report dialog. */
+.mvs-actions-overflow { position: relative; display: inline-block; }
+.mvs-actions-menu { position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 4px); min-inline-size: 160px; background: var(--mvs-bg, #fff); border: 1px solid var(--mvs-border, #e5e7eb); border-radius: var(--mvs-radius-md, 8px); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); padding: 4px; z-index: 100; display: flex; flex-direction: column; }
+.mvs-actions-menu[hidden] { display: none; }
+.mvs-actions-menu__item { display: block; width: 100%; text-align: start; padding: 8px 12px; background: none; border: 0; border-radius: var(--mvs-radius-sm, 4px); cursor: pointer; font-size: var(--mvs-font-sm, 14px); color: var(--mvs-text, #111827); }
+.mvs-actions-menu__item:hover, .mvs-actions-menu__item:focus-visible { background: var(--mvs-bg-muted, #f3f4f6); }
+.mvs-actions-menu .mvs-block-toggle--blocked { color: var(--mvs-danger, #dc2626); }
+/* Report dialog reuses the .mvs-modal component; ensure controls fill the field. */
+.mvs-report-reason, .mvs-report-details { width: 100%; }
+
+/* Followers / Following modal (reuses .mvs-modal) + clickable member stats. */
+.mvs-member-photos-card__stat--clickable { cursor: pointer; border-radius: var(--mvs-radius-sm, 4px); }
+.mvs-member-photos-card__stat--clickable:hover, .mvs-member-photos-card__stat--clickable:focus-visible { background: var(--mvs-bg-muted, #f3f4f6); }
+.mvs-follows-tabs { display: flex; gap: var(--mvs-space-md, 12px); }
+.mvs-follows-tab { background: none; border: 0; padding: 4px 2px; font-size: var(--mvs-font-md, 16px); font-weight: 600; color: var(--mvs-text-secondary, #6b7280); cursor: pointer; border-bottom: 2px solid transparent; }
+.mvs-follows-tab.is-active { color: var(--mvs-text, #111827); border-bottom-color: var(--mvs-accent, #7c3aed); }
+.mvs-follows-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--mvs-space-sm, 8px); }
+.mvs-follows-row { display: flex; align-items: center; gap: var(--mvs-space-md, 12px); }
+.mvs-follows-row__avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.mvs-follows-row__name { font-weight: 600; }
+.mvs-follows-row .mvs-follows-follow { margin-inline-start: auto; }
+.mvs-follows-state { text-align: center; color: var(--mvs-text-secondary, #6b7280); padding: var(--mvs-space-xl, 24px) 0; }
+
+/* Clickable follower/following counts in the profile header. */
+.mvs-profile-header-stats__link { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; }
+.mvs-profile-header-stats__link:hover, .mvs-profile-header-stats__link:focus-visible { text-decoration: underline; }
+
+/* Stat buttons (clickable follower/following counts) reset to look like text. */
+button.mvs-follows-open { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: 0; }
+
+/* Tag-cloud dynamic items wrapper — display:contents keeps the flat flex row while
+   making the data-wp-each <template> the sole child of its parent (avoids an
+   Interactivity API hydration mismatch from a static sibling). */
+.mvs-tag-cloud-items { display: contents; }
+
+/* ---------------------------------------------------------------------------
+   Access gate — shown inside .mvs-media-content on the single media page when
+   the viewer is not permitted to see protected media (privacy-denied). Keeps
+   the same page container; only the media slot is replaced. Token-driven so it
+   adapts to dark mode automatically.
+   --------------------------------------------------------------------------- */
+.mvs-media-gate {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	gap: 0.75rem;
+	min-height: 320px;
+	padding: 3rem 1.5rem;
+	background: var(--mvs-surface-2);
+	border: 1px solid var(--mvs-surface-2);
+	border-radius: var(--mvs-radius-lg);
+}
+.mvs-media-gate__glyph {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	background: var(--mvs-surface);
+	color: var(--mvs-text-secondary);
+}
+.mvs-media-gate__glyph svg {
+	width: 28px;
+	height: 28px;
+}
+.mvs-media-gate__title {
+	margin: 0;
+	font-family: var(--mvs-font-heading);
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: var(--mvs-text);
+}
+.mvs-media-gate__lede {
+	margin: 0;
+	max-width: 42ch;
+	color: var(--mvs-text-secondary);
+}
+.mvs-media-gate__cta {
+	margin-top: 0.5rem;
+}
