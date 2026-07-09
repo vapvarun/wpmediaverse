@@ -110,6 +110,35 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Changelog ==
 
+= 2.0.0 - July 2026 =
+
+Major release: upload watermarking, full frontend translation readiness, privacy hardening across albums, collections, and protected media, plus a batch of activity, moderation, and image-pipeline fixes. Paired with WPMediaVerse Pro 2.0.0 - install and test both together.
+
+* New      - Admin-global watermark stamped into every uploaded image at upload time, with a single stamp owner and no replace-file bypass.
+* New      - Create a new album directly from the upload modal.
+* New      - Explore feed scope filters for "followers" and "self" across all layouts.
+* New      - Viewer-aware URLs for the full original file via the new get_url_for_viewer() method.
+* New      - Filterable avatar and profile-link seams for BuddyNext integration.
+* Improve  - The whole frontend is now translation-ready: every Interactivity store, the shared-ui store, classic scripts, and the messaging module ship translatable strings, with a standard i18n delivery pipeline.
+* Improve  - Album and collection privacy is enforced at the database level, so visitor pagination counts stay correct and private items never leak.
+* Improve  - Protected media shows a login gate in the media slot instead of a 404, and keeps the correct 403 status.
+* Improve  - Private collection single views and their REST responses are now gated; they previously leaked title and structure.
+* Improve  - Moderation auto-action defaults to Flag instead of Delete.
+* Improve  - Direct-message reactions can be removed and are correctly attributed.
+* Improve  - App pages use the theme's no-sidebar page template for a cleaner full-width layout.
+* Improve  - The admin sidebar label "Moderation" is now "Media Moderation" to avoid ambiguity.
+* Fix      - Album and collection privacy-stub rows no longer appear as broken tiles on Explore, the media grid, or the media feed, and their index row is purged on delete.
+* Fix      - Favorite, Save, Share, and Download buttons work in the media lightbox inside the BuddyPress activity stream.
+* Fix      - Batch uploads to an album show a "View all photos" link in the activity entry.
+* Fix      - BuddyPress notifications are cleaned up when media is deleted, and commenting on activity media no longer sends a duplicate notification.
+* Fix      - GPS location data is stripped from photos without a lossy re-encode, preserving image quality and the colour profile.
+* Fix      - Moderation actions no longer corrupt unrelated posts.
+* Fix      - Watermark stamping fails closed instead of passing an unstamped image through on error.
+* Dev      - New filter mvs_suppress_bp_comment_notification controls the BuddyPress comment-notification bridge.
+* Dev      - MediaRepositoryInterface now declares get_url_for_viewer().
+* Dev      - Removed the dead watermark preview and serve system and retired the admin access-rules UI; access-rule enforcement stays in the backend.
+* Compat   - Lockstep with WPMediaVerse Pro 2.0.0. Install and test both together.
+
 = 1.9.0 - July 2026 =
 
 * New      - Interests and personalized onboarding: members choose interests, get suggested people to follow, and see an interest-aware feed.
