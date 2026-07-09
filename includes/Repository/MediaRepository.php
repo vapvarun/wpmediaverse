@@ -1764,7 +1764,7 @@ class MediaRepository implements MediaRepositoryInterface {
 					 FROM {$wpdb->prefix}mvs_media_meta m
 					 INNER JOIN {$wpdb->prefix}mvs_media_index i ON i.media_id = m.media_id
 					 WHERE m.meta_key = %s AND m.meta_value = %s AND i.post_author = %d AND m.media_id > %d"
-					. $limit_sql,
+					. $limit_sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $limit_sql is itself a $wpdb->prepare() fragment (line above); the %d is already bound.
 					$meta_key,
 					$meta_value,
 					$author_id,
@@ -1777,7 +1777,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"SELECT m.media_id FROM {$wpdb->prefix}mvs_media_meta m WHERE m.meta_key = %s AND m.meta_value = %s AND m.media_id > %d"
-					. $limit_sql,
+					. $limit_sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $limit_sql is itself a $wpdb->prepare() fragment (line above); the %d is already bound.
 					$meta_key,
 					$meta_value,
 					$after_id
