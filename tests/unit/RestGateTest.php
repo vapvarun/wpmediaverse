@@ -282,6 +282,15 @@ class RestGateTest extends WP_UnitTestCase {
 
 			// --- Pro: safety valve. ------------------------------------------
 			'leave group'           => array( 'POST', '/mvs-pro/v1/groups/1/leave', 'exempt' ),
+
+			// --- Leaving the community, and taking it back. -------------------
+			// Requesting deletion suspends the member for the grace window, and
+			// the suspension gate denies every write — so it denied the cancel
+			// route too. A member who scheduled deletion could never change their
+			// mind: the grace period, whose whole purpose is second thoughts, was
+			// a one-way door. Both must stay exempt.
+			'delete own account'    => array( 'DELETE', '/mvs/v1/me', 'exempt' ),
+			'cancel deletion'       => array( 'DELETE', '/mvs/v1/me/deletion', 'exempt' ),
 		);
 	}
 

@@ -88,15 +88,29 @@ final class ConfigController extends WP_REST_Controller {
 		$features = (array) apply_filters(
 			'mvs_app_config_features',
 			array(
-				'messaging'     => ! in_array( (string) $dm_access, array( 'nobody', 'disabled', 'none' ), true ),
-				'reactions'     => true,
-				'comments'      => true,
-				'favorites'     => true,
-				'albums'        => true,
-				'collections'   => true,
-				'follows'       => true,
-				'notifications' => true,
-				'activity'      => true,
+				'messaging'        => ! in_array( (string) $dm_access, array( 'nobody', 'disabled', 'none' ), true ),
+				'reactions'        => true,
+				'comments'         => true,
+				'favorites'        => true,
+				'albums'           => true,
+				'collections'      => true,
+				'follows'          => true,
+				'notifications'    => true,
+				'activity'         => true,
+
+				// Safety. A native client cannot guess these, and it must not
+				// render a Report control that will 403 — App Store guideline 1.2
+				// wants a report path that works, and a blocked-list the member
+				// can manage.
+				'reporting'        => \WPMediaVerse\Social\ReportService::reports_enabled(),
+				'blocking'         => true,
+
+				// Guideline 5.1.1(v): an app that lets you create an account must
+				// let you begin deleting it in-app. The client needs to know
+				// whether this site's plugin is new enough to offer the endpoint,
+				// so an older site degrades to a web fallback instead of showing a
+				// button that 404s.
+				'account_deletion' => true,
 			)
 		);
 

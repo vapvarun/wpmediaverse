@@ -42,6 +42,8 @@ use WPMediaVerse\Services\WatermarkService;
 use WPMediaVerse\Admin\ModerationQueue;
 use WPMediaVerse\Admin\ReportsPage;
 use WPMediaVerse\Admin\MemberModeration;
+use WPMediaVerse\REST\Controller\AccountController;
+use WPMediaVerse\Services\AccountDeletionService;
 use WPMediaVerse\Admin\OverviewPage;
 use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Admin\LogViewerPage;
@@ -238,6 +240,9 @@ class Plugin {
 		// dispatch, not per controller, because Application Passwords bypass the
 		// login gate and only three of ~112 write endpoints used to check.
 		\WPMediaVerse\REST\RestGate::register();
+
+		// Schedules the grace-period sweep.
+		self::$container->get( 'account_deletion' )->init();
 
 		// Defer moderation service — only load on admin or when processing uploads.
 		if ( is_admin() ) {
@@ -548,6 +553,16 @@ class Plugin {
 			);
 		}
 
+		// Member-initiated account deletion. A member is a WordPress user, so this
+		// ends at wp_delete_user() and lets core's `deleted_user` run the existing
+		// UserDeletionService cascade — no purge logic is duplicated.
+		self::$container->register(
+			'account_deletion',
+			function () {
+				return new AccountDeletionService();
+			}
+		);
+
 		// The trigger for the suspension gate. Without it, a moderator can read a
 		// report and resolve it, but has no way to act on the member who caused it.
 		self::$container->register(
@@ -838,7 +853,10 @@ class Plugin {
 		$activity      = self::$container->get( 'activity' );
 		$profile       = self::$container->get( 'profile' );
 
+		$account_deletion = self::$container->get( 'account_deletion' );
+
 		$controllers = array(
+			new AccountController( $account_deletion ),
 			new MediaController( $privacy ),
 			new AlbumController( $albums, $privacy ),
 			new CollectionController( $collections ),

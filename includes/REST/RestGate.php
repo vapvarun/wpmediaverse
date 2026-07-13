@@ -118,6 +118,33 @@ final class RestGate {
 				'mode'    => 'exempt',
 			),
 
+			// Leaving the community, and taking that back, must ALWAYS be
+			// possible — including while suspended.
+			//
+			// This is not a nicety. Requesting deletion suspends the member for
+			// the grace window (that is what stops a thief with a stolen token
+			// from posting while the real owner is locked out). But the
+			// suspension gate denies every write, so it also denied the cancel
+			// route: a member who scheduled deletion could never change their
+			// mind, and the grace period — whose entire purpose is second
+			// thoughts — was a one-way door. Caught end-to-end, not by reading
+			// the code.
+			//
+			// A member suspended by a moderator must also still be able to
+			// delete their account. Apple guideline 5.1.1(v) has no carve-out
+			// for members you are unhappy with, and you cannot hold someone's
+			// account hostage.
+			array(
+				'pattern' => '#^/mvs/v1/me$#',
+				'methods' => array( 'DELETE' ),
+				'mode'    => 'exempt',
+			),
+			array(
+				'pattern' => '#^/mvs/v1/me/deletion$#',
+				'methods' => array( 'DELETE' ),
+				'mode'    => 'exempt',
+			),
+
 			// --- Between-members writes. Block gate applies. ----------------
 			array(
 				'pattern'  => '#^/mvs/v1/users/(\d+)/follow$#',
