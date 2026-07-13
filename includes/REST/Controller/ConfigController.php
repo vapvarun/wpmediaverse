@@ -155,9 +155,69 @@ final class ConfigController extends WP_REST_Controller {
 			'layout'            => $layout,
 			'pro_active'        => defined( 'MVS_PRO_VERSION' ),
 			'features'          => array_map( 'boolval', $features ),
+			'legal'             => $this->get_legal(),
 		);
 
 		return rest_ensure_response( $config );
+	}
+
+	/**
+	 * The site's legal and safety surface, for a native client.
+	 *
+	 * App Store guideline 1.2 expects a UGC app to make its privacy policy
+	 * reachable *inside* the app and to publish a contact for abuse reports.
+	 * These belong to the community, not to us: each site owns its own data, its
+	 * own moderators and its own terms, so a single hardcoded Wbcom policy would
+	 * be a lie.
+	 *
+	 * `privacy_policy_url` defaults to WordPress core's own
+	 * get_privacy_policy_url(). Every install already has that field, and most
+	 * owners have filled it in — which is what makes this scale to thousands of
+	 * sites with zero configuration.
+	 *
+	 * `abuse_contact_email` defaults to the site admin's address: on a UGC site
+	 * somebody must receive abuse reports, and the owner is that somebody until
+	 * they nominate a moderator.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return array<string, string|null>
+	 */
+	private function get_legal(): array {
+		$privacy = get_privacy_policy_url();
+
+		$abuse = (string) get_option( 'mvs_abuse_contact_email', '' );
+
+		$legal = array(
+			'privacy_policy_url'       => '' !== $privacy ? $privacy : null,
+			'terms_url'                => (string) get_option( 'mvs_terms_url', '' ),
+			'eula_url'                 => (string) get_option( 'mvs_eula_url', '' ),
+			'community_guidelines_url' => (string) get_option( 'mvs_guidelines_url', '' ),
+			'abuse_contact_email'      => '' !== $abuse ? $abuse : (string) get_option( 'admin_email' ),
+		);
+
+		/**
+		 * Filter the legal/safety URLs handed to native clients.
+		 *
+		 * A site with no privacy policy set returns null for it, and the client
+		 * falls back to its own. Never return a placeholder: a policy link that
+		 * goes nowhere is worse than one the client can substitute.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param array<string, string|null> $legal Legal URLs and the abuse contact.
+		 */
+		$legal = (array) apply_filters( 'mvs_app_config_legal', $legal );
+
+		foreach ( array( 'privacy_policy_url', 'terms_url', 'eula_url', 'community_guidelines_url' ) as $key ) {
+			$legal[ $key ] = ! empty( $legal[ $key ] ) ? esc_url_raw( (string) $legal[ $key ] ) : null;
+		}
+
+		$legal['abuse_contact_email'] = ! empty( $legal['abuse_contact_email'] )
+			? sanitize_email( (string) $legal['abuse_contact_email'] )
+			: null;
+
+		return $legal;
 	}
 
 	/**

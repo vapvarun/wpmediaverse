@@ -701,6 +701,78 @@ class SettingsRegistrar {
 	private function register_moderation_settings(): void {
 		add_settings_section( 'mvs_moderation', __( 'Moderation', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-ai' );
 
+		// Legal + safety surface. Handed to the mobile app through
+		// /mvs/v1/app/config -> legal.*, because App Store guideline 1.2 expects a
+		// UGC app to make its policy reachable inside the app and to publish a
+		// contact for abuse reports. These belong to the community, not to us:
+		// each site owns its own moderators, data and terms.
+		//
+		// The privacy policy is NOT duplicated here — WordPress core already has
+		// that field (Settings -> Privacy), every install has it, and most owners
+		// have filled it in. Asking twice invites the two to disagree.
+		$legal_fields = array(
+			'mvs_terms_url'      => array(
+				__( 'Terms of Service URL', 'wpmediaverse' ),
+				__( 'Shown in the mobile app under About. Leave blank if you have none.', 'wpmediaverse' ),
+			),
+			'mvs_eula_url'       => array(
+				__( 'EULA URL', 'wpmediaverse' ),
+				__( 'Leave blank to use the standard Apple end-user licence, which the app falls back to.', 'wpmediaverse' ),
+			),
+			'mvs_guidelines_url' => array(
+				__( 'Community Guidelines URL', 'wpmediaverse' ),
+				__( 'What members may and may not post. Shown in the app and alongside the Report control.', 'wpmediaverse' ),
+			),
+		);
+
+		foreach ( $legal_fields as $option => $labels ) {
+			register_setting(
+				SettingsPage::OPTION_GROUP . '_ai',
+				$option,
+				array(
+					'type'              => 'string',
+					'sanitize_callback' => 'esc_url_raw',
+					'default'           => '',
+				)
+			);
+			add_settings_field(
+				$option,
+				$labels[0],
+				array( FieldRenderer::class, 'render_text_field' ),
+				SettingsPage::PAGE_SLUG . '-ai',
+				'mvs_moderation',
+				array(
+					'option'      => $option,
+					'description' => $labels[1],
+					'placeholder' => 'https://',
+				)
+			);
+		}
+
+		// Somebody must receive abuse reports. Defaults to the site admin, because
+		// on a UGC site that person exists whether or not they nominated anyone.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_ai',
+			'mvs_abuse_contact_email',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_email',
+				'default'           => '',
+			)
+		);
+		add_settings_field(
+			'mvs_abuse_contact_email',
+			__( 'Abuse Contact Email', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_text_field' ),
+			SettingsPage::PAGE_SLUG . '-ai',
+			'mvs_moderation',
+			array(
+				'option'      => 'mvs_abuse_contact_email',
+				'description' => __( 'Where members can reach a human about abuse. Published in the mobile app. Defaults to the site administrator.', 'wpmediaverse' ),
+				'placeholder' => get_option( 'admin_email' ),
+			)
+		);
+
 		// Member abuse reporting. Defaults ON: a community whose members cannot
 		// report abuse is not safe to run, and the mobile app cannot ship
 		// without a working report path (App Store guideline 1.2). Reports land
