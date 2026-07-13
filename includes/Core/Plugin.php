@@ -41,6 +41,7 @@ use WPMediaVerse\Services\SignedUrlService;
 use WPMediaVerse\Services\WatermarkService;
 use WPMediaVerse\Admin\ModerationQueue;
 use WPMediaVerse\Admin\ReportsPage;
+use WPMediaVerse\Admin\MemberModeration;
 use WPMediaVerse\Admin\OverviewPage;
 use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Admin\LogViewerPage;
@@ -219,6 +220,7 @@ class Plugin {
 			if ( ! defined( 'MVS_PRO_VERSION' ) ) {
 				self::$container->get( 'admin.reports' );
 			}
+			self::$container->get( 'admin.member_moderation' );
 			self::$container->get( 'admin.stats' );
 			self::$container->get( 'admin.logs' );
 			self::$container->get( 'admin.setup_wizard' );
@@ -545,6 +547,15 @@ class Plugin {
 				}
 			);
 		}
+
+		// The trigger for the suspension gate. Without it, a moderator can read a
+		// report and resolve it, but has no way to act on the member who caused it.
+		self::$container->register(
+			'admin.member_moderation',
+			function () {
+				return new MemberModeration();
+			}
+		);
 
 		self::$container->register(
 			'admin.stats',
@@ -1886,13 +1897,13 @@ class Plugin {
 			// the frontend global wp.i18n carries no 'wpmediaverse' catalog, so
 			// the store reads these instead. Basecamp 10073528834.
 			'i18n'        => array(
-				'Request failed'              => __( 'Request failed', 'wpmediaverse' ),
+				'Request failed'               => __( 'Request failed', 'wpmediaverse' ),
 				'Could not open conversation.' => __( 'Could not open conversation.', 'wpmediaverse' ),
-				'Could not share media.'      => __( 'Could not share media.', 'wpmediaverse' ),
-				'Upload failed'               => __( 'Upload failed', 'wpmediaverse' ),
-				'Microphone access denied'    => __( 'Microphone access denied', 'wpmediaverse' ),
-				'You reacted — tap to remove' => __( 'You reacted — tap to remove', 'wpmediaverse' ),
-				'Reacted'                     => __( 'Reacted', 'wpmediaverse' ),
+				'Could not share media.'       => __( 'Could not share media.', 'wpmediaverse' ),
+				'Upload failed'                => __( 'Upload failed', 'wpmediaverse' ),
+				'Microphone access denied'     => __( 'Microphone access denied', 'wpmediaverse' ),
+				'You reacted — tap to remove'  => __( 'You reacted — tap to remove', 'wpmediaverse' ),
+				'Reacted'                      => __( 'Reacted', 'wpmediaverse' ),
 			),
 		);
 
