@@ -487,7 +487,7 @@ $mvs_archive_url = home_url( '/media/' );
 					 *
 					 * @param bool $enabled Whether reporting is enabled. Default false.
 					 */
-					$mvs_reports_enabled = (bool) apply_filters( 'mvs_reports_enabled', false );
+					$mvs_reports_enabled = \WPMediaVerse\Social\ReportService::reports_enabled();
 					?>
 					<?php if ( $mvs_is_owner ) : ?>
 						<button class="mvs-btn mvs-btn--small mvs-btn--icon-collapse" type="button"

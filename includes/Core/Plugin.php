@@ -40,6 +40,7 @@ use WPMediaVerse\REST\Controller\SignedUrlController;
 use WPMediaVerse\Services\SignedUrlService;
 use WPMediaVerse\Services\WatermarkService;
 use WPMediaVerse\Admin\ModerationQueue;
+use WPMediaVerse\Admin\ReportsPage;
 use WPMediaVerse\Admin\OverviewPage;
 use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Admin\LogViewerPage;
@@ -215,6 +216,9 @@ class Plugin {
 			self::$container->get( 'admin.overview' );
 			self::$container->get( 'admin.settings' );
 			self::$container->get( 'admin.moderation' );
+			if ( ! defined( 'MVS_PRO_VERSION' ) ) {
+				self::$container->get( 'admin.reports' );
+			}
 			self::$container->get( 'admin.stats' );
 			self::$container->get( 'admin.logs' );
 			self::$container->get( 'admin.setup_wizard' );
@@ -521,6 +525,21 @@ class Plugin {
 				return new ModerationQueue( $c->get( 'moderation' ) );
 			}
 		);
+
+		// Free's reports queue. Registered only when Pro is absent — Pro ships a
+		// richer User Reports screen (Pro Admin\ReportManager) and two reports
+		// menus would be confusing. Reporting defaults ON, so a Free site must
+		// still have somewhere for reports to land.
+		if ( ! defined( 'MVS_PRO_VERSION' ) ) {
+			self::$container->register(
+				'admin.reports',
+				function ( ServiceContainer $c ) {
+					/** @var \WPMediaVerse\Social\ReportService $reports */
+					$reports = $c->get( 'reports' );
+					return new ReportsPage( $reports );
+				}
+			);
+		}
 
 		self::$container->register(
 			'admin.stats',

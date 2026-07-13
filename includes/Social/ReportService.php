@@ -35,6 +35,36 @@ class ReportService {
 	);
 
 	/**
+	 * Whether members may file reports on this site.
+	 *
+	 * Single source of truth for the report write path. Every caller (REST,
+	 * service, templates) must gate on this rather than re-deriving the state,
+	 * so the button a member sees and the endpoint it posts to can never
+	 * disagree.
+	 *
+	 * Defaults to ON. Reporting used to default to OFF behind a filter no
+	 * shipped code ever set, which meant every install — Free and Pro alike —
+	 * refused every report with a 403 while Pro still rendered an (always
+	 * empty) User Reports queue. A UGC platform whose members cannot report
+	 * abuse is not shippable, and Apple App Store guideline 1.2 requires a
+	 * working report mechanism, so the default is now on and site owners opt
+	 * *out* via Settings, not in via a mu-plugin.
+	 *
+	 * The `mvs_reports_enabled` filter is preserved and still wins, so sites
+	 * that already force it either way keep their behaviour.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return bool True when reports may be filed.
+	 */
+	public static function reports_enabled(): bool {
+		$enabled = (bool) get_option( 'mvs_enable_reports', true );
+
+		/** This filter is documented in templates/media-single.php */
+		return (bool) apply_filters( 'mvs_reports_enabled', $enabled );
+	}
+
+	/**
 	 * Report a media item or user.
 	 *
 	 * @since 1.1.0
@@ -47,12 +77,9 @@ class ReportService {
 	 * @return int|false Report ID or false.
 	 */
 	public function report( int $reporter_id, string $target_type, int $target_id, string $reason, string $details = '' ) {
-		// Reporting is a Pro feature: Free has no queue/UI to read or resolve
-		// reports, so it must not collect them. Defaults to false in Free; Pro
-		// (or a site) opts in via the `mvs_reports_enabled` filter. This guards
-		// every caller, not just REST, so reports can never pile up unread.
-		// This filter is documented in templates/media-single.php.
-		if ( ! apply_filters( 'mvs_reports_enabled', false ) ) {
+		// Guards every caller, not just REST, so a disabled site can never
+		// collect reports nobody will read.
+		if ( ! self::reports_enabled() ) {
 			return false;
 		}
 
@@ -183,6 +210,44 @@ class ReportService {
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_reports WHERE status = %s",
 				$status
+			)
+		);
+	}
+
+	/**
+	 * List reports for a status, newest first, one page at a time.
+	 *
+	 * The read path for every reports queue (Free's Member Reports screen and
+	 * Pro's richer User Reports screen). Paginated on purpose: an abuse queue on
+	 * a busy community is one of the few tables that grows without bound, and a
+	 * moderator opening an unbounded SELECT on 50k rows is how the admin dies.
+	 * `status` is indexed, so the WHERE + LIMIT stays cheap at any size.
+	 *
+	 * Pair with count_by_status() for the total.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $status   Status to list ('pending', 'resolved', 'dismissed').
+	 * @param int    $per_page Rows per page. Clamped to 1..100.
+	 * @param int    $offset   Row offset.
+	 * @return array<int, object> Report rows, newest first.
+	 */
+	public function list_reports( string $status, int $per_page = 20, int $offset = 0 ): array {
+		global $wpdb;
+
+		$per_page = max( 1, min( 100, $per_page ) );
+		$offset   = max( 0, $offset );
+
+		return (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT id, reporter_id, target_type, target_id, reason, details, status, created_at
+				 FROM {$wpdb->prefix}mvs_reports
+				 WHERE status = %s
+				 ORDER BY created_at DESC, id DESC
+				 LIMIT %d OFFSET %d",
+				$status,
+				$per_page,
+				$offset
 			)
 		);
 	}

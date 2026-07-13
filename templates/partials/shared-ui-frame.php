@@ -468,8 +468,8 @@ wp_interactivity_state(
 						<?php esc_html_e( 'Open', 'wpmediaverse' ); ?>
 					</a>
 					<?php // Reporting is a Pro feature: Free has no queue/UI to read or resolve reports. ?>
-					<?php // Hidden by default; Pro (or a site) opts in via the `mvs_reports_enabled` filter. ?>
-					<?php if ( $mvs_is_logged_in && apply_filters( 'mvs_reports_enabled', false ) ) : ?>
+					<?php // Shown by default; site owners opt out in Settings -> Moderation. ?>
+					<?php if ( $mvs_is_logged_in && \WPMediaVerse\Social\ReportService::reports_enabled() ) : ?>
 						<button class="mvs-lightbox-action mvs-lightbox-action--report" data-wp-on--click="actions.lightboxReport"
 							data-wp-bind--hidden="state.lightboxIsOwner" aria-label="<?php esc_attr_e( 'Report this media for review', 'wpmediaverse' ); ?>">
 							<i data-lucide="flag" aria-hidden="true"></i>

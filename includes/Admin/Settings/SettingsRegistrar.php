@@ -701,6 +701,33 @@ class SettingsRegistrar {
 	private function register_moderation_settings(): void {
 		add_settings_section( 'mvs_moderation', __( 'Moderation', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-ai' );
 
+		// Member abuse reporting. Defaults ON: a community whose members cannot
+		// report abuse is not safe to run, and the mobile app cannot ship
+		// without a working report path (App Store guideline 1.2). Reports land
+		// in the User Reports screen. Owners may opt out, but they must choose
+		// to.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_ai',
+			'mvs_enable_reports',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			'mvs_enable_reports',
+			__( 'Member Reporting', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-ai',
+			'mvs_moderation',
+			array(
+				'option'      => 'mvs_enable_reports',
+				'label'       => __( 'Allow members to report media and members', 'wpmediaverse' ),
+				'description' => __( 'Members can flag content and people for review. Reports appear under User Reports. Turning this off hides every Report control and refuses incoming reports.', 'wpmediaverse' ),
+			)
+		);
+
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_ai',
 			'mvs_moderation_auto_action',
