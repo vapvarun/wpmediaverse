@@ -232,6 +232,11 @@ class Plugin {
 		// Register REST API routes.
 		add_action( 'rest_api_init', array( self::class, 'register_rest_routes' ) );
 
+		// Block/suspension gate for every write route in both namespaces. Runs at
+		// dispatch, not per controller, because Application Passwords bypass the
+		// login gate and only three of ~112 write endpoints used to check.
+		\WPMediaVerse\REST\RestGate::register();
+
 		// Defer moderation service — only load on admin or when processing uploads.
 		if ( is_admin() ) {
 			self::$container->get( 'moderation' );
