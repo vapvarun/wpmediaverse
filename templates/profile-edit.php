@@ -70,7 +70,7 @@ get_header();
 
 do_action( 'mvs_before_content' );
 
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
 wp_enqueue_style( 'mvs-frontend' );
 
@@ -201,30 +201,13 @@ wp_enqueue_script_module(
 		</div>
 	</form>
 
-	<!-- Blocked members — manage / undo blocks (REST: GET /me/blocked, DELETE /users/{id}/block). -->
-	<section class="mvs-profile-edit__section mvs-blocked-members">
-		<h2 class="mvs-blocked-members__title"><?php esc_html_e( 'Blocked members', 'wpmediaverse' ); ?></h2>
-		<?php // Server-rendered (display + remove only, not add-reactive) so SSR matches hydration under any theme. ?>
-		<p class="mvs-blocked-members__empty"<?php echo empty( $mvs_blocked ) ? '' : ' hidden'; ?>>
-			<?php esc_html_e( "You haven't blocked anyone.", 'wpmediaverse' ); ?>
-		</p>
-		<ul class="mvs-blocked-members__list"<?php echo empty( $mvs_blocked ) ? ' hidden' : ''; ?>>
-			<?php foreach ( $mvs_blocked as $mvs_blocked_row ) : ?>
-				<li class="mvs-blocked-members__row">
-					<img class="mvs-blocked-members__avatar" src="<?php echo esc_url( $mvs_blocked_row['avatar'] ); ?>" alt="" width="40" height="40" loading="lazy" />
-					<span class="mvs-blocked-members__name"><?php echo esc_html( $mvs_blocked_row['name'] ); ?></span>
-					<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--sm mvs-blocked-members__unblock"
-						data-wp-on--click="actions.unblockMember"
-						data-id="<?php echo esc_attr( $mvs_blocked_row['id'] ); ?>">
-						<?php esc_html_e( 'Unblock', 'wpmediaverse' ); ?>
-					</button>
-				</li>
-			<?php endforeach; ?>
-		</ul>
-	</section>
+	<?php
+	// Shared with the dashboard so there is one blocked-members implementation.
+	require MVS_PLUGIN_DIR . 'templates/partials/blocked-members.php';
+	?>
 </div>
 <?php
-include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
+require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 
