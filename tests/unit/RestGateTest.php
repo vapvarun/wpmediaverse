@@ -201,45 +201,164 @@ class RestGateTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Every write endpoint registered in our namespaces is reachable by the map.
-	 *
-	 * This does not assert a mode — it asserts the map is well-formed and that
-	 * classification never throws for a real route, which is what would happen if
-	 * someone added a rule with a broken pattern.
+	 * Classify a concrete route via the private classifier.
 	 */
-	public function test_every_registered_write_route_classifies(): void {
-		$routes = rest_get_server()->get_routes();
-		$seen   = 0;
+	private function mode_of( string $method, string $route ): string {
+		$reflection = new \ReflectionMethod( RestGate::class, 'classify' );
+		$reflection->setAccessible( true );
+		$rule = $reflection->invoke( null, $route, $method );
 
-		foreach ( $routes as $route => $handlers ) {
-			if ( 0 !== strpos( $route, '/mvs/v1' ) && 0 !== strpos( $route, '/mvs-pro/v1' ) ) {
-				continue;
-			}
+		return (string) $rule['mode'];
+	}
 
-			foreach ( $handlers as $handler ) {
-				foreach ( (array) ( $handler['methods'] ?? array() ) as $method => $enabled ) {
-					if ( ! $enabled || ! in_array( $method, array( 'POST', 'PUT', 'PATCH', 'DELETE' ), true ) ) {
-						continue;
-					}
+	/**
+	 * The anti-rot test.
+	 *
+	 * Asserts the CORRECT mode for every route whose classification carries
+	 * security meaning — not merely that it resolves to *a* known mode.
+	 *
+	 * That distinction is the whole point. An unclassified write silently falls
+	 * through to `self`, which is a valid mode, so a weaker assertion would pass
+	 * happily while a between-member route sat wide open. That is precisely how
+	 * the original bug shipped: favourite/share/battle/story-view were all
+	 * "valid", just ungated. If a refactor drops a rule from RestGate::map() or
+	 * from Pro's mvs_rest_gate_map filter, this test fails.
+	 *
+	 * Adding a new write route between two members? Add it here and to the map,
+	 * in the same commit.
+	 *
+	 * @dataProvider provide_expected_modes
+	 */
+	public function test_route_classifies_to_the_expected_mode( string $method, string $route, string $expected ): void {
+		$this->assertSame(
+			$expected,
+			$this->mode_of( $method, $route ),
+			"{$method} {$route} must classify as '{$expected}'. A between-member write that "
+			. "falls through to 'self' is an open door, not a safe default."
+		);
+	}
 
-					++$seen;
+	/**
+	 * @return array<string, array{0:string,1:string,2:string}>
+	 */
+	public function provide_expected_modes(): array {
+		return array(
+			// --- Free: writes that touch another member. ---------------------
+			'comment on media'      => array( 'POST', '/mvs/v1/media/1/comments', 'gated' ),
+			'react to media'        => array( 'POST', '/mvs/v1/media/1/reactions', 'gated' ),
+			'favorite media'        => array( 'POST', '/mvs/v1/media/1/favorite', 'gated' ),
+			'share media'           => array( 'POST', '/mvs/v1/media/1/share', 'gated' ),
+			'follow member'         => array( 'POST', '/mvs/v1/users/1/follow', 'gated' ),
+			'start conversation'    => array( 'POST', '/mvs/v1/conversations', 'gated' ),
+			'send message'          => array( 'POST', '/mvs/v1/conversations/1/messages', 'gated' ),
+			'upload DM attachment'  => array( 'POST', '/mvs/v1/messages/upload', 'gated' ),
+			'react to message'      => array( 'POST', '/mvs/v1/messages/1/reactions', 'gated' ),
+			'accept msg request'    => array( 'POST', '/mvs/v1/conversations/1/accept', 'gated' ),
 
-					// A concrete path for the regex to bite on.
-					$concrete = preg_replace( '#\(\?P<[^>]+>[^)]*\)#', '1', $route );
+			// --- Free: safety valves. Must never be gated. --------------------
+			'report media'          => array( 'POST', '/mvs/v1/media/1/report', 'exempt' ),
+			'report member'         => array( 'POST', '/mvs/v1/users/1/report', 'exempt' ),
+			'block member'          => array( 'POST', '/mvs/v1/users/1/block', 'exempt' ),
+			'unblock member'        => array( 'DELETE', '/mvs/v1/users/1/block', 'exempt' ),
+			'decline msg request'   => array( 'POST', '/mvs/v1/conversations/1/decline', 'exempt' ),
 
-					$reflection = new \ReflectionMethod( RestGate::class, 'classify' );
-					$reflection->setAccessible( true );
-					$rule = $reflection->invoke( null, $concrete, $method );
+			// --- Free: retractions. Must never be gated. ----------------------
+			'unfollow'              => array( 'DELETE', '/mvs/v1/users/1/follow', 'exempt' ),
+			'un-favorite'           => array( 'DELETE', '/mvs/v1/media/1/favorite', 'exempt' ),
+			'un-react to media'     => array( 'DELETE', '/mvs/v1/media/1/reactions', 'exempt' ),
+			'un-react to message'   => array( 'DELETE', '/mvs/v1/messages/1/reactions', 'exempt' ),
+			'delete own comment'    => array( 'DELETE', '/mvs/v1/media/1/comments/2', 'exempt' ),
 
-					$this->assertContains(
-						$rule['mode'],
-						array( 'exempt', 'self', 'gated' ),
-						"{$method} {$route} did not classify to a known mode."
-					);
-				}
-			}
-		}
+			// --- Free: own-resource writes. Suspension gate only. -------------
+			'upload media'          => array( 'POST', '/mvs/v1/media', 'self' ),
+			'create album'          => array( 'POST', '/mvs/v1/albums', 'self' ),
 
-		$this->assertGreaterThan( 0, $seen, 'Expected to find write routes to classify.' );
+			// --- Pro: writes that touch another member. -----------------------
+			'challenge to battle'   => array( 'POST', '/mvs-pro/v1/battles', 'gated' ),
+			'view their story'      => array( 'POST', '/mvs-pro/v1/stories/1/view', 'gated' ),
+			'save their media'      => array( 'POST', '/mvs-pro/v1/media/1/collections', 'gated' ),
+			'create group'          => array( 'POST', '/mvs-pro/v1/groups', 'gated' ),
+			'add group participant' => array( 'POST', '/mvs-pro/v1/groups/1/participants', 'gated' ),
+
+			// --- Pro: safety valve. ------------------------------------------
+			'leave group'           => array( 'POST', '/mvs-pro/v1/groups/1/leave', 'exempt' ),
+		);
+	}
+
+	/**
+	 * A gated route must actually resolve its target.
+	 *
+	 * Classification is not enforcement. The DM-reaction rule was correctly
+	 * classified `gated`, and a blocked member could still react — because the
+	 * resolver read `user_id` from MessagingService::get_participants(), which
+	 * returns rows keyed `id`. It found nobody, and a gated route with no target
+	 * has nothing to check, so it passed. The gate failed open and every
+	 * classification test still went green.
+	 *
+	 * This asserts the resolver finds the peer. If someone changes the shape of
+	 * get_participants() again, this fails instead of quietly reopening the door.
+	 */
+	public function test_conversation_peers_resolver_finds_the_other_member(): void {
+		/** @var \WPMediaVerse\Messaging\MessagingService $messaging */
+		$messaging = Plugin::container()->get( 'messaging' );
+
+		$convo    = $messaging->find_or_create_conversation( $this->owner, $this->bystander );
+		$convo_id = (int) ( $convo['conversation_id'] ?? 0 );
+
+		$this->assertGreaterThan( 0, $convo_id, 'Fixture failed: no conversation was created.' );
+
+		wp_set_current_user( $this->bystander );
+
+		$ref = new \ReflectionMethod( RestGate::class, 'conversation_peers' );
+		$ref->setAccessible( true );
+		$peers = $ref->invoke( null, $convo_id );
+
+		$this->assertSame(
+			array( $this->owner ),
+			array_values( array_map( 'intval', $peers ) ),
+			'The resolver must find the other participant. An empty result silently disables the gate.'
+		);
+	}
+
+	/**
+	 * Reporting must be available out of the box.
+	 *
+	 * The regression sentinel for the other half of this incident: reporting
+	 * defaulted to OFF behind a filter no shipped code ever set, so every report
+	 * on every install — Free and Pro — returned 403, while Pro rendered a User
+	 * Reports queue that could never receive one. Nothing in the test suite,
+	 * the cert run, or the journeys would have noticed.
+	 *
+	 * If someone "tidies" the default back to false, this fails.
+	 */
+	public function test_reporting_is_enabled_by_default(): void {
+		delete_option( 'mvs_enable_reports' );
+
+		$this->assertTrue(
+			\WPMediaVerse\Social\ReportService::reports_enabled(),
+			'Members must be able to report abuse on a fresh install, with no filter or mu-plugin.'
+		);
+
+		$this->assertNotSame(
+			403,
+			$this->status_as( $this->bystander, 'POST', "/mvs/v1/media/{$this->media}/report", array( 'reason' => 'spam' ) ),
+			'A fresh install must accept a report, not refuse it.'
+		);
+	}
+
+	/**
+	 * ...and the site owner must still be able to turn it off.
+	 */
+	public function test_reporting_can_be_disabled_by_the_owner(): void {
+		update_option( 'mvs_enable_reports', false );
+
+		$this->assertFalse( \WPMediaVerse\Social\ReportService::reports_enabled() );
+
+		$this->assertSame(
+			403,
+			$this->status_as( $this->bystander, 'POST', "/mvs/v1/media/{$this->media}/report", array( 'reason' => 'spam' ) )
+		);
+
+		delete_option( 'mvs_enable_reports' );
 	}
 }

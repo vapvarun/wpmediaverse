@@ -164,6 +164,36 @@ final class RestGate {
 				'mode'     => 'gated',
 				'resolver' => 'param_conversation_peers',
 			),
+			// Reacting to a message someone sent you. Same shape as reacting to
+			// their media, and it was missed for the same reason: the block gate
+			// was applied per-controller instead of per-route.
+			array(
+				'pattern'  => '#^/mvs/v1/messages/(\d+)/reactions$#',
+				'methods'  => array( 'POST' ),
+				'mode'     => 'gated',
+				'resolver' => 'message_peers',
+			),
+			// Un-reacting is a retraction. Always allowed.
+			array(
+				'pattern' => '#^/mvs/v1/messages/\d+/reactions$#',
+				'methods' => array( 'DELETE' ),
+				'mode'    => 'exempt',
+			),
+			// Accepting a message request from someone who has since blocked you
+			// would re-open a channel they closed.
+			array(
+				'pattern'  => '#^/mvs/v1/conversations/(\d+)/accept$#',
+				'methods'  => array( 'POST' ),
+				'mode'     => 'gated',
+				'resolver' => 'conversation_peers',
+			),
+			// Declining is a safety valve. Never gated — refusing contact must
+			// always be possible.
+			array(
+				'pattern' => '#^/mvs/v1/conversations/\d+/decline$#',
+				'methods' => array( 'POST' ),
+				'mode'    => 'exempt',
+			),
 			array(
 				'pattern'  => '#^/mvs/v1/media/(\d+)/share$#',
 				'methods'  => array( 'POST' ),
@@ -251,14 +281,24 @@ final class RestGate {
 		}
 
 		if ( 'gated' === $rule['mode'] ) {
-			$targets = self::resolve_targets( $rule, $route, $request );
+			$targets = array_filter( self::resolve_targets( $rule, $route, $request ) );
 
-			if ( ! empty( $targets ) ) {
-				$blocked = RestGuards::deny_if_blocked( $actor, $targets );
-				if ( $blocked instanceof WP_Error ) {
-					self::denied( $route, $method, $actor, 'blocked' );
-					return $blocked;
-				}
+			if ( empty( $targets ) ) {
+				// A gated route whose resolver finds nobody is indistinguishable
+				// from a route with no second party — so the gate passes. That is
+				// exactly how a resolver bug hides: it looks like "nothing to
+				// check" rather than "I failed to look". Announce it so a broken
+				// resolver is detectable in logs and CI instead of silently
+				// disabling the gate for that route.
+				do_action( 'mvs_rest_gate_unresolved', $route, $method, $actor );
+
+				return $response;
+			}
+
+			$blocked = RestGuards::deny_if_blocked( $actor, $targets );
+			if ( $blocked instanceof WP_Error ) {
+				self::denied( $route, $method, $actor, 'blocked' );
+				return $blocked;
 			}
 		}
 
@@ -355,6 +395,11 @@ final class RestGate {
 
 			case 'param_conversation_peers':
 				return self::conversation_peers( (int) $request->get_param( 'conversation_id' ) );
+
+			case 'message_peers':
+				/** @var \WPMediaVerse\Messaging\MessagingService $messaging */
+				$messaging = Plugin::container()->get( 'messaging' );
+				return self::conversation_peers( $messaging->get_message_conversation_id( $captured ) );
 		}
 
 		/**
@@ -396,10 +441,15 @@ final class RestGate {
 		foreach ( (array) $messaging->get_participants( $conversation_id ) as $participant ) {
 			$id = 0;
 
-			if ( is_object( $participant ) && isset( $participant->user_id ) ) {
-				$id = (int) $participant->user_id;
-			} elseif ( is_array( $participant ) && isset( $participant['user_id'] ) ) {
-				$id = (int) $participant['user_id'];
+			// MessagingService::get_participants() returns presentation rows keyed
+			// `id`, not `user_id`. Reading the wrong key here returned an empty
+			// target list, and an empty list means the gate has nobody to check —
+			// so it passed. A resolver that cannot find its target must never be
+			// mistaken for "there is no target".
+			$row = is_object( $participant ) ? (array) $participant : $participant;
+
+			if ( is_array( $row ) ) {
+				$id = (int) ( $row['id'] ?? $row['user_id'] ?? 0 );
 			} elseif ( is_numeric( $participant ) ) {
 				$id = (int) $participant;
 			}

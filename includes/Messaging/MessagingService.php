@@ -539,6 +539,33 @@ class MessagingService {
 	}
 
 	/**
+	 * Which conversation a message belongs to.
+	 *
+	 * Used by the REST write gate to resolve the other party behind a
+	 * message-scoped route (reacting to a message) without the gate reaching
+	 * into the messages table itself.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $message_id Message ID.
+	 * @return int Conversation ID, or 0 when the message is gone.
+	 */
+	public function get_message_conversation_id( int $message_id ): int {
+		global $wpdb;
+
+		if ( $message_id <= 0 ) {
+			return 0;
+		}
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT conversation_id FROM {$wpdb->prefix}mvs_messages WHERE id = %d",
+				$message_id
+			)
+		);
+	}
+
+	/**
 	 * Get participants of a conversation.
 	 *
 	 * @param int $conversation_id Conversation ID.
