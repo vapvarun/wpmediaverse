@@ -25,3 +25,22 @@ album-owner-single-view
 comment-post-id-zero
 media-edit-persist
 watermark-stamp-upload
+
+# 2.1.0 safety. The gate that was supposed to stop a critical feature shipping
+# uncovered had never been told that SAFETY is a critical feature — none of the
+# tags above is about blocking, reporting, or moderation. Both 2.1.0 incidents
+# went straight through it:
+#
+#   - reporting was dead on every install (403 everywhere, on Free and Pro),
+#     while `wp mvs cert` passed 66/66;
+#   - the block gate was applied to 3 of ~112 write endpoints, so a blocked
+#     member could still favourite, share, battle, and story-view their blocker.
+#
+# These are cross-actor authorization bugs: correctness depends on a relationship
+# between two identities. Nothing that dispatches one GET as one user can see
+# them. The journeys behind these tags use two real identities and assert the 403.
+block-enforcement
+suspension-gate
+report
+reports-default-on
+safety
