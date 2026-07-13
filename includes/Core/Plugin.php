@@ -241,6 +241,19 @@ class Plugin {
 		// login gate and only three of ~112 write endpoints used to check.
 		\WPMediaVerse\REST\RestGate::register();
 
+		// Erase the member from every mapped table when their WordPress user is
+		// deleted. UserDeletionService fires this after its own cascade; the purger
+		// covers what that cascade never knew about — the usage ledger, the error
+		// log, and every Pro table (push devices above all: a deleted member's push
+		// tokens surviving means the site keeps a live channel to someone who asked
+		// to be forgotten).
+		add_action(
+			'mvs_user_data_purged',
+			static function ( $user_id ) {
+				( new \WPMediaVerse\Privacy\MemberPurger() )->purge( (int) $user_id );
+			}
+		);
+
 		// Schedules the grace-period sweep.
 		self::$container->get( 'account_deletion' )->init();
 
