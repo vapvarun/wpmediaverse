@@ -1763,6 +1763,11 @@ class MediaController extends WP_REST_Controller {
 		$data['author_name']   = $author_name;
 		$data['author_avatar'] = $author_avatar;
 		$data['author_url']    = $author_url;
+		// The author's numeric id. A consumer that renders its own media viewer (BuddyNext's
+		// lightbox) needs it to offer "Block this member" — it has a name, an avatar and a
+		// profile URL, none of which identify the user to a block endpoint. Without it the only
+		// abuse control reachable from a third-party viewer is Report.
+		$data['author_id']     = $author_id;
 		$data['author_data']   = array(
 			'name'        => $author_name_plain,
 			'badge_html'  => $author_badge_html,
