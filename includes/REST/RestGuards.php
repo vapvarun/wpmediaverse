@@ -122,7 +122,12 @@ final class RestGuards {
 			$suspended = (bool) get_user_meta( $actor, 'mvs_suspended', true );
 
 			if ( ! $suspended && is_multisite() && function_exists( 'is_user_spammy' ) ) {
-				$suspended = is_user_spammy( $actor );
+				// is_user_spammy() treats a non-WP_User arg as a login STRING, so
+				// passing the int ID looked up a user whose login is that number
+				// (never matches) and the multisite spam check silently no-opped.
+				// Pass the WP_User so it actually enforces.
+				$actor_user = get_userdata( $actor );
+				$suspended  = $actor_user ? is_user_spammy( $actor_user ) : false;
 			}
 
 			if ( ! $suspended && function_exists( 'bp_is_user_spammer' ) ) {

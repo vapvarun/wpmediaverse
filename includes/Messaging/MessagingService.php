@@ -1468,10 +1468,9 @@ class MessagingService {
 		foreach ( $rows as $row ) {
 			$sender_ids[] = (int) $row->sender_id;
 		}
-		$sender_ids = array_unique( $sender_ids );
-		if ( ! empty( $sender_ids ) ) {
-			cache_users( $sender_ids );
-		}
+		// $rows is non-empty here (early return above), so there is always at
+		// least one sender to prime.
+		cache_users( array_unique( $sender_ids ) );
 
 		foreach ( $rows as &$row ) {
 			$sender              = get_userdata( (int) $row->sender_id );
