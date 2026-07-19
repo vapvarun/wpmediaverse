@@ -2092,7 +2092,7 @@ class MessagingService {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT emoji, GROUP_CONCAT(user_id) as user_ids, COUNT(*) as count
+				"SELECT emoji, GROUP_CONCAT(user_id) as user_ids, COUNT(*) as count, MAX(created_at) as reacted_at
 				FROM {$react_table}
 				WHERE message_id = %d
 				GROUP BY emoji",
@@ -2103,9 +2103,11 @@ class MessagingService {
 		$reactions = array();
 		foreach ( $rows as $row ) {
 			$reactions[] = array(
-				'emoji'    => $row->emoji,
-				'count'    => (int) $row->count,
-				'user_ids' => array_map( 'intval', explode( ',', $row->user_ids ) ),
+				'emoji'      => $row->emoji,
+				'count'      => (int) $row->count,
+				'user_ids'   => array_map( 'intval', explode( ',', $row->user_ids ) ),
+				// Latest reaction of this emoji (UTC); normalizer adds reacted_at_gmt.
+				'reacted_at' => (string) $row->reacted_at,
 			);
 		}
 
