@@ -71,6 +71,7 @@ final class Dates {
 				'created_at',
 				'updated_at',
 				'date',
+				'added_at',
 				'last_activity_at',
 				'last_read_at',
 				'last_message_at',
