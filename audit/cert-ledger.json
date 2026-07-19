@@ -1,7 +1,7 @@
 {
     "ok": true,
     "summary": {
-        "pass": 66,
+        "pass": 68,
         "fail": 0,
         "hole": 0
     },
@@ -99,6 +99,12 @@
         {
             "check": "boot",
             "entity": "/mvs/v1",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/deletion",
             "status": "pass",
             "detail": "GET -> 200"
         },
@@ -389,6 +395,12 @@
             "entity": "/mvs/v1/conversations/(?P<id>\\d+)/messages/search",
             "status": "pass",
             "detail": "GET -> 400 (rest_missing_callback_param)"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/conversations/(?P<id>\\d+)/media",
+            "status": "pass",
+            "detail": "GET -> 404"
         },
         {
             "check": "boot",
