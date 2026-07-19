@@ -316,7 +316,8 @@ class Migrator {
 				KEY type_date (media_type, created_at),
 				KEY status_date (status, created_at),
 				KEY album_id (album_id),
-				KEY file_hash (file_hash)
+				KEY file_hash (file_hash),
+				KEY rank_scan (status, moderation_status, privacy, post_author, reaction_count, created_at)
 			) {$charset_collate};"
 		);
 	}
