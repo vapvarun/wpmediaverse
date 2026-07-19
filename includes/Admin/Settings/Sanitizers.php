@@ -313,6 +313,25 @@ class Sanitizers {
 	}
 
 	/**
+	 * Sanitize the "Large image size" pixel value (mvs_large_image_size).
+	 *
+	 * Drives the `large` rung in UploadService::get_thumbnail_sizes(). An empty
+	 * or non-positive submission resets to the 1024 default; otherwise the value
+	 * is clamped to 100-4096px. Keep this range in lockstep with the guard in
+	 * get_thumbnail_sizes().
+	 *
+	 * @param mixed $value Raw input.
+	 * @return int Sanitized pixel dimension.
+	 */
+	public static function sanitize_large_image_size( $value ): int {
+		$value = absint( $value );
+		if ( 0 === $value ) {
+			return 1024;
+		}
+		return max( 100, min( 4096, $value ) );
+	}
+
+	/**
 	 * Sanitize default privacy choice.
 	 *
 	 * @param mixed $value Raw input.

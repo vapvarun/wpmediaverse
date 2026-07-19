@@ -535,6 +535,132 @@ class Commands {
 	}
 
 	/**
+	 * Regenerate image thumbnail size variants for existing media.
+	 *
+	 * Re-runs UploadService::generate_thumbnails() for every image in
+	 * mvs_media_index, rebuilding the large/medium/thumb rungs from the current
+	 * mvs_thumbnail_sizes spec — which honours the "Large image size" setting
+	 * (mvs_large_image_size). Run this after changing the Large image size so
+	 * images uploaded before the change pick up the new dimension; new uploads
+	 * get it automatically. Reads each original from its local path, so it is a
+	 * local-disk operation (for cloud-only originals use cloud-thumbs-backfill).
+	 *
+	 * Keyset-paginated over media_id and safe to re-run — big-library friendly.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--only-missing]
+	 * : Only process images with no thumb_large meta yet (fill gaps; do not
+	 *   rebuild images that already have variants).
+	 *
+	 * [--dry-run]
+	 * : List what would be processed without writing anything.
+	 *
+	 * [--batch=<n>]
+	 * : Rows to pull per query when walking the index. Default 200.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs regenerate-thumbnails
+	 *     wp mvs regenerate-thumbnails --only-missing
+	 *     wp mvs regenerate-thumbnails --dry-run
+	 *
+	 * @subcommand regenerate-thumbnails
+	 */
+	public function regenerate_thumbnails( $args, $assoc_args ) {
+		unset( $args );
+		global $wpdb;
+
+		$dry_run      = (bool) Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$only_missing = (bool) Utils\get_flag_value( $assoc_args, 'only-missing', false );
+		$batch        = max( 1, (int) Utils\get_flag_value( $assoc_args, 'batch', 200 ) );
+
+		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE media_type = %s",
+				'image'
+			)
+		);
+
+		if ( 0 === $total ) {
+			WP_CLI::success( 'No image media found. Nothing to do.' );
+			return;
+		}
+
+		$large_px = (int) get_option( 'mvs_large_image_size', 1024 );
+		WP_CLI::log(
+			sprintf(
+				'Found %d image(s). Large rung = %dpx%s%s',
+				$total,
+				$large_px,
+				$only_missing ? ' [only-missing]' : '',
+				$dry_run ? ' [DRY-RUN]' : ''
+			)
+		);
+
+		$repo        = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$service     = \WPMediaVerse\Core\Plugin::container()->get( 'upload' );
+		$progress    = Utils\make_progress_bar( $dry_run ? 'Scanning images' : 'Regenerating thumbnails', $total );
+		$regenerated = 0;
+		$skipped     = 0;
+		$failed      = 0;
+		$last_id     = 0;
+
+		do {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_type = %s AND media_id > %d ORDER BY media_id ASC LIMIT %d",
+					'image',
+					$last_id,
+					$batch
+				)
+			);
+
+			foreach ( $rows as $row ) {
+				$media_id = (int) $row->media_id;
+				$last_id  = $media_id;
+
+				if ( $only_missing && $repo->get_raw( $media_id, 'thumb_large' ) ) {
+					++$skipped;
+					$progress->tick();
+					continue;
+				}
+
+				// Resolve the local original with traversal containment.
+				$file_path = $repo->get_filesystem_path( $media_id );
+				if ( null === $file_path ) {
+					++$skipped;
+					if ( $dry_run ) {
+						WP_CLI::log( "Skip (no reachable local file): media {$media_id}" );
+					}
+					$progress->tick();
+					continue;
+				}
+
+				if ( $dry_run ) {
+					++$regenerated;
+					$progress->tick();
+					continue;
+				}
+
+				$mime = (string) $repo->get( $media_id, 'file_type' );
+				if ( $service->generate_thumbnails( $media_id, $file_path, $mime ) ) {
+					++$regenerated;
+				} else {
+					++$failed;
+					WP_CLI::warning( "Failed to regenerate media {$media_id}." );
+				}
+				$progress->tick();
+			}
+		} while ( ! empty( $rows ) );
+
+		$progress->finish();
+
+		$verb = $dry_run ? 'Would regenerate' : 'Regenerated';
+		WP_CLI::success( sprintf( '%s %d image(s); skipped %d; failed %d.', $verb, $regenerated, $skipped, $failed ) );
+	}
+
+	/**
 	 * Show moderation queue statistics.
 	 *
 	 * ## EXAMPLES

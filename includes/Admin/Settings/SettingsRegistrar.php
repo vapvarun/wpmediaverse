@@ -640,6 +640,29 @@ class SettingsRegistrar {
 
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_display',
+			'mvs_large_image_size',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_large_image_size' ),
+				// 1024 keeps existing installs pixel-identical; the "Large" rung
+				// only changes when an owner deliberately sets a custom value.
+				'default'           => 1024,
+			)
+		);
+		add_settings_field(
+			'mvs_large_image_size',
+			__( 'Large Image Size', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_number_field' ),
+			SettingsPage::PAGE_SLUG . '-display',
+			'mvs_display',
+			array(
+				'option'      => 'mvs_large_image_size',
+				'description' => __( 'Max width/height in pixels for the "Large" image size used by grids and feeds (default 1024). To set a custom display size — e.g. 800px — enter it here and pick "Large" for Thumbnail Quality above. New uploads use it immediately; to apply it to images already uploaded, run <code>wp mvs regenerate-thumbnails</code>, or use the per-item "Repair thumb" link on the Media list.', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_display',
 			'mvs_lightbox_image_source',
 			array(
 				'type'              => 'string',
