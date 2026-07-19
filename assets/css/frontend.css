@@ -608,6 +608,10 @@ body.dark-mode .mvs-skeleton::after {
     padding: 32px;
     margin-bottom: 24px;
     background: var(--mvs-surface);
+    /* Pair the foreground with the background this component sets; without it
+       the text inherited the ambient theme colour and went unreadable in dark
+       mode (measured 1.07-1.38:1). */
+    color: var(--mvs-text);
     border-radius: 12px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
@@ -943,7 +947,11 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-explore-header h1 {
     margin: 0;
     font-size: 1.75em;
-    color: var(--mvs-text);
+    /* Sits directly on the THEME's page background, not on a MediaVerse
+       surface, so it follows the theme's own text colour. Using --mvs-text made
+       it vanish on a theme that signals dark (so --mvs-text goes light) while
+       keeping the page background white - BuddyX only darkens its footer. */
+    color: inherit;
 }
 
 /* ==========================================================================
@@ -1005,6 +1013,10 @@ body.dark-mode .mvs-skeleton::after {
     overflow: hidden;
     border-radius: 8px;
     background: var(--mvs-surface-2);
+    /* Pair the foreground with the background this component sets; without it
+       the text inherited the ambient theme colour and went unreadable in dark
+       mode (measured 1.07-1.38:1). */
+    color: var(--mvs-text);
     aspect-ratio: 1;
     min-width: 0;
 }
@@ -4507,6 +4519,10 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     align-items: center;
     background: var(--mvs-bg);
+    /* Pair the foreground with the background this component sets; without it
+       the text inherited the ambient theme colour and went unreadable in dark
+       mode (measured 1.07-1.38:1). */
+    color: var(--mvs-text);
     border: 1.5px solid var(--mvs-border-light);
     border-radius: 100px;
     padding: 5px 5px 5px 6px;
@@ -4523,6 +4539,10 @@ a.mvs-dashboard-card-title:hover {
 .mvs-search-mode {
     display: flex;
     background: var(--mvs-surface-2);
+    /* Pair the foreground with the background this component sets; without it
+       the text inherited the ambient theme colour and went unreadable in dark
+       mode (measured 1.07-1.38:1). */
+    color: var(--mvs-text);
     border-radius: 100px;
     padding: 2px;
     flex-shrink: 0;
