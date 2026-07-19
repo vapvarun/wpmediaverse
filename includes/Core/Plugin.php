@@ -241,6 +241,14 @@ class Plugin {
 		// login gate and only three of ~112 write endpoints used to check.
 		\WPMediaVerse\REST\RestGate::register();
 
+		// One seam for app-facing timestamps: at dispatch, add an ISO-8601
+		// `<key>_gmt` sibling to every whitelisted timestamp field in mvs
+		// responses, so no controller emits it by hand and future endpoints
+		// inherit it. Uses rest_request_after_callbacks (runs inside dispatch())
+		// so both real HTTP requests and internal rest_do_request() calls are
+		// covered. See WPMediaVerse\Core\Dates.
+		add_filter( 'rest_request_after_callbacks', array( \WPMediaVerse\Core\Dates::class, 'filter_rest_response' ), 20, 3 );
+
 		// Erase the member from every mapped table when their WordPress user is
 		// deleted. UserDeletionService fires this after its own cascade; the purger
 		// covers what that cascade never knew about — the usage ledger, the error

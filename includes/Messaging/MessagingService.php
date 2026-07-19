@@ -1406,12 +1406,10 @@ class MessagingService {
 	 * @return string ISO-8601 UTC ('...Z'), or '' when input is empty/invalid.
 	 */
 	public static function to_iso8601( string $mysql_utc ): string {
-		$mysql_utc = trim( $mysql_utc );
-		if ( '' === $mysql_utc || '0000-00-00 00:00:00' === $mysql_utc ) {
-			return '';
-		}
-		$ts = strtotime( $mysql_utc . ' UTC' );
-		return false === $ts ? '' : gmdate( 'Y-m-d\TH:i:s\Z', $ts );
+		// Single converter lives in Core\Dates (also the source for the REST-wide
+		// rest_post_dispatch normalizer). Kept as a thin delegate so the hot
+		// polling paths here stay explicit.
+		return \WPMediaVerse\Core\Dates::iso8601( $mysql_utc );
 	}
 
 	/**
