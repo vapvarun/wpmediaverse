@@ -47,7 +47,7 @@
         "dup-gate": "bash bin/duplication-gate.sh",
         "dup-gate:bless": "bash bin/duplication-gate.sh --bless",
         "journey-coverage": "bash bin/journey-coverage.sh",
-        "arch-checks": "bash bin/architecture-checks.sh",
+        "arch-checks": "bash -c 'if [ -x ../wpmediaverse-pro/bin/architecture-checks.sh ]; then bash ../wpmediaverse-pro/bin/architecture-checks.sh; else echo \"[arch-checks] Free/Pro contract script lives in the wpmediaverse-pro sibling; check out Pro alongside to run it.\"; fi'",
         "phpcs": "vendor/bin/phpcs --standard=phpcs.xml -p --warning-severity=0",
         "phpcs:fix": "vendor/bin/phpcbf --standard=phpcs.xml",
         "phpcs:full": "vendor/bin/phpcs --standard=phpcs.xml -p",

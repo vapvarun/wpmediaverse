@@ -161,7 +161,13 @@ if [ -x bin/coding-rules-check.sh ]; then
   run_stage "2.1" "Coding-rules check" bash bin/coding-rules-check.sh
 fi
 
-if [ -x bin/architecture-checks.sh ]; then
+# Architecture invariants (Free/Pro contract). The enforcement script lives in
+# the wpmediaverse-pro sibling (it resolves Free as ../wpmediaverse via its own
+# BASH_SOURCE), so run it from there when Pro is checked out alongside; a local
+# bin/ copy still wins if one exists; skip cleanly when neither is present.
+if [ -x ../wpmediaverse-pro/bin/architecture-checks.sh ]; then
+  run_stage "2.2" "Architecture invariants (Free/Pro contract)" bash ../wpmediaverse-pro/bin/architecture-checks.sh
+elif [ -x bin/architecture-checks.sh ]; then
   run_stage "2.2" "Architecture invariants (Free/Pro contract)" bash bin/architecture-checks.sh
 fi
 
