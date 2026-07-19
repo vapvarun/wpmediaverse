@@ -152,18 +152,26 @@
 [data-bx-mode="dark"],
 html.dark-mode,
 body.dark-mode {
-    /* Same theme chains as :root, but with DARK hardcoded fallbacks. Theming
-       themes (Reign/BuddyX/Pro) flip their own vars, so those resolve here and
-       the plugin tracks the theme's real dark palette; the hardcoded values are
-       only hit by generic themes that signal dark without theming their vars. */
-    --mvs-bg: var(--reign-site-body-bg-color, var(--color-theme-white-box, #121212));
-    --mvs-surface: var(--reign-site-body-bg-color, var(--global-body-lightcolor, #1e1e1e));
-    --mvs-surface-2: var(--reign-site-body-bg-color, var(--global-body-lightcolor, #2a2a2a));
-    --mvs-bg-muted: var(--reign-site-body-bg-color, var(--global-body-lightcolor, #2a2a2a));
-    --mvs-text: var(--reign-site-body-text-color, var(--global-title-color, #f0f0f0));
-    --mvs-text-secondary: var(--reign-site-alternate-text-color, var(--global-font-color, #b0b0b0));
-    --mvs-text-muted: var(--reign-site-alternate-text-color, var(--color-meta, #888888));
-    --mvs-border: var(--reign-site-border-color, var(--global-border-color, #363636));
+    /* Same Reign chain as :root, but with DARK hardcoded fallbacks. Reign flips
+       its own --reign-site-* vars for dark, so those still track the theme.
+
+       The generic --global-* / --color-* fallbacks are deliberately NOT repeated
+       in this block. Themes such as BuddyX declare them once at :root with
+       light-mode values (--global-font-color: #0f172a, --global-body-lightcolor:
+       #f1f5f9 -- note the name) and never flip them for dark, so chaining
+       through them meant the dark fallbacks below were never reached: dark mode
+       resolved to near-black text on a dark surface (~1.3:1) on every
+       MediaVerse surface. A theme that genuinely themes dark flips
+       --reign-site-* or restyles directly; a readable default beats an
+       unreadable "themed" one. */
+    --mvs-bg: var(--reign-site-body-bg-color, #121212);
+    --mvs-surface: var(--reign-site-body-bg-color, #1e1e1e);
+    --mvs-surface-2: var(--reign-site-body-bg-color, #2a2a2a);
+    --mvs-bg-muted: var(--reign-site-body-bg-color, #2a2a2a);
+    --mvs-text: var(--reign-site-body-text-color, #f0f0f0);
+    --mvs-text-secondary: var(--reign-site-alternate-text-color, #b0b0b0);
+    --mvs-text-muted: var(--reign-site-alternate-text-color, #888888);
+    --mvs-border: var(--reign-site-border-color, #363636);
     --mvs-border-light: #2e2e2e;
     --mvs-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
     --mvs-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
