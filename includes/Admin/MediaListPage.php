@@ -376,7 +376,7 @@ class MediaListPage {
 					: \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, 'thumbnail' );
 				?>
 				<?php if ( $thumb_url ) : ?>
-					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="" class="mvs-thumb" loading="lazy" />
+					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="<?php echo esc_attr( $title ); ?>" class="mvs-thumb" loading="lazy" />
 				<?php else : ?>
 					<?php
 					$icons = array(

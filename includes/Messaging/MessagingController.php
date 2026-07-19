@@ -180,6 +180,25 @@ class MessagingController extends WP_REST_Controller {
 			)
 		);
 
+		// GET /conversations/{id}/media
+		register_rest_route(
+			$this->namespace,
+			'/conversations/(?P<id>\d+)/media',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'list_conversation_media' ),
+				'permission_callback' => array( $this, 'check_auth' ),
+				'args'                => array(
+					'per_page' => array(
+						'type'    => 'integer',
+						'default' => 60,
+						'minimum' => 1,
+						'maximum' => 200,
+					),
+				),
+			)
+		);
+
 		// POST /conversations/{id}/messages
 		register_rest_route(
 			$this->namespace,
@@ -549,6 +568,32 @@ class MessagingController extends WP_REST_Controller {
 			$conv_id,
 			$user_id,
 			(string) $request->get_param( 'q' ),
+			(int) $request->get_param( 'per_page' )
+		);
+
+		return new WP_REST_Response( array( 'results' => $results ), 200 );
+	}
+
+	/**
+	 * GET /conversations/{id}/media
+	 *
+	 * Returns media shared in the conversation (newest first) so web and app
+	 * render the "shared media" panel from one REST source instead of scraping
+	 * the DOM of already-loaded bubbles.
+	 */
+	public function list_conversation_media( WP_REST_Request $request ): WP_REST_Response {
+		$user_id = get_current_user_id();
+		$conv_id = (int) $request['id'];
+
+		// Verify participation before listing.
+		$conv = $this->service->get_conversation( $conv_id, $user_id );
+		if ( ! $conv ) {
+			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
+		}
+
+		$results = $this->service->get_conversation_media(
+			$conv_id,
+			$user_id,
 			(int) $request->get_param( 'per_page' )
 		);
 

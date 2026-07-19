@@ -461,6 +461,44 @@ class TemplateLoader {
 	}
 
 	/**
+	 * Point active SEO plugins at a virtual route's real title + canonical.
+	 *
+	 * These routes emit a custom query var (mvs_media_archive / mvs_profile_user
+	 * / mvs_edit_profile), so WP mis-reads the main query as the blog home and
+	 * Yoast / Rank Math print the Posts page's title + canonical (e.g. "Sample
+	 * Page") over the whole route. The document_title_parts filter each caller
+	 * sets covers the native (no SEO plugin) path; this covers the case where an
+	 * SEO plugin has taken over <head>. Each filter only fires when its plugin is
+	 * active, so this is a no-op otherwise. Canonical is derived from the actual
+	 * matched request, so pagination (/page/N/) stays correct.
+	 *
+	 * @param string $title Human-readable route title (without the site name).
+	 */
+	private function apply_seo_overrides( string $title ): void {
+		$request   = isset( $GLOBALS['wp']->request ) ? (string) $GLOBALS['wp']->request : '';
+		$canonical = home_url( user_trailingslashit( $request ) );
+
+		$sep        = (string) apply_filters( 'mvs_seo_title_separator', '-' );
+		$full_title = trim( $title ) . ' ' . $sep . ' ' . get_bloginfo( 'name' );
+
+		$title_cb = static function () use ( $full_title ) {
+			return $full_title;
+		};
+		$url_cb   = static function () use ( $canonical ) {
+			return $canonical;
+		};
+
+		// Yoast SEO.
+		add_filter( 'wpseo_title', $title_cb, 20 );
+		add_filter( 'wpseo_canonical', $url_cb, 20 );
+		add_filter( 'wpseo_opengraph_url', $url_cb, 20 );
+
+		// Rank Math (same failure mode).
+		add_filter( 'rank_math/frontend/title', $title_cb, 20 );
+		add_filter( 'rank_math/frontend/canonical', $url_cb, 20 );
+	}
+
+	/**
 	 * Serve the media archive (explore) page.
 	 */
 	private function serve_media_archive(): void {
@@ -473,6 +511,7 @@ class TemplateLoader {
 				return $title;
 			}
 		);
+		$this->apply_seo_overrides( __( 'Explore Media', 'wpmediaverse' ) );
 
 		$template = self::locate( 'explore.php' );
 		if ( $template ) {
@@ -514,6 +553,8 @@ class TemplateLoader {
 				return $title;
 			}
 		);
+		/* translators: %s: user display name */
+		$this->apply_seo_overrides( sprintf( __( '%s: Media', 'wpmediaverse' ), $user->display_name ) );
 
 		// Try user-profile.php first (Pro provides Instagram-style version), fall back to explore.php.
 		$template = self::locate( 'user-profile.php' );
@@ -533,6 +574,15 @@ class TemplateLoader {
 			wp_safe_redirect( \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( '/media/edit-profile/' ) ) );
 			exit;
 		}
+
+		add_filter(
+			'document_title_parts',
+			function ( $title ) {
+				$title['title'] = __( 'Edit Profile', 'wpmediaverse' );
+				return $title;
+			}
+		);
+		$this->apply_seo_overrides( __( 'Edit Profile', 'wpmediaverse' ) );
 
 		$template = self::locate( 'profile-edit.php' );
 		if ( $template ) {

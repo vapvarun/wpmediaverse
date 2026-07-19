@@ -294,7 +294,14 @@ class MessagingService {
 		$conv_table = $wpdb->prefix . 'mvs_conversations';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
-		// Find existing conversation between these two users.
+		// Find an existing direct conversation the CURRENT user has NOT deleted.
+		// `p1.status <> 'left'` is the fresh-thread rule: when the initiator has
+		// deleted the thread, re-contacting starts a brand-new empty conversation
+		// instead of silently restoring the old one with its full history (which
+		// is what a "Delete" should mean — matches Instagram/Messenger). Delivery
+		// the other way still works: send_message() reactivates a 'left' recipient
+		// so an inbound message is never lost. ORDER BY newest keeps the lookup
+		// deterministic now that multiple direct threads per pair can exist.
 		$existing_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT p1.conversation_id
@@ -302,6 +309,8 @@ class MessagingService {
 				INNER JOIN {$part_table} p2 ON p1.conversation_id = p2.conversation_id
 				INNER JOIN {$conv_table} c ON c.id = p1.conversation_id
 				WHERE p1.user_id = %d AND p2.user_id = %d AND c.type = 'direct'
+					AND p1.status <> 'left'
+				ORDER BY p1.conversation_id DESC
 				LIMIT 1",
 				$user_a,
 				$user_b
@@ -492,9 +501,12 @@ class MessagingService {
 
 		// Enrich with participant data and unread count.
 		foreach ( $conversations as &$conv ) {
-			$conv->participants = $this->get_participants( (int) $conv->id );
-			$conv->unread_count = $this->get_conversation_unread_count( (int) $conv->id, $user_id );
+			$conv->participants         = $this->get_participants( (int) $conv->id );
+			$conv->unread_count         = $this->get_conversation_unread_count( (int) $conv->id, $user_id );
+			$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
+			$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
 		}
+		unset( $conv );
 
 		return $conversations;
 	}
@@ -532,8 +544,10 @@ class MessagingService {
 			return null;
 		}
 
-		$conv->participants = $this->get_participants( $conversation_id );
-		$conv->unread_count = $this->get_conversation_unread_count( $conversation_id, $user_id );
+		$conv->participants         = $this->get_participants( $conversation_id );
+		$conv->unread_count         = $this->get_conversation_unread_count( $conversation_id, $user_id );
+		$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
+		$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
 
 		return $conv;
 	}
@@ -1381,11 +1395,33 @@ class MessagingService {
 	}
 
 	/**
+	 * Convert a stored UTC "Y-m-d H:i:s" timestamp to an ISO-8601 'Z' string.
+	 *
+	 * Messaging timestamps are written with current_time('mysql', true) (UTC)
+	 * but shipped unmarked, which is timezone-ambiguous for the mobile app. This
+	 * powers the additive `*_gmt` fields (e.g. 2026-07-18T19:44:27Z) the app uses
+	 * to compute the absolute instant. Empty/zero/invalid input yields ''.
+	 *
+	 * @param string $mysql_utc UTC datetime as stored (no timezone marker).
+	 * @return string ISO-8601 UTC ('...Z'), or '' when input is empty/invalid.
+	 */
+	public static function to_iso8601( string $mysql_utc ): string {
+		$mysql_utc = trim( $mysql_utc );
+		if ( '' === $mysql_utc || '0000-00-00 00:00:00' === $mysql_utc ) {
+			return '';
+		}
+		$ts = strtotime( $mysql_utc . ' UTC' );
+		return false === $ts ? '' : gmdate( 'Y-m-d\TH:i:s\Z', $ts );
+	}
+
+	/**
 	 * Search messages within a single conversation by content.
 	 *
 	 * The caller (controller) must first confirm the user participates in the
 	 * conversation. Deleted / unsent messages are excluded (except the requester's
-	 * own soft-deleted rows are also hidden). Newest match first.
+	 * own soft-deleted rows are also hidden). Newest match first. Each hit is
+	 * enriched with the sender's display name + avatar (and a UTC-ISO timestamp)
+	 * so the result is usable in group threads and identical for web + app.
 	 *
 	 * @param int    $conversation_id Conversation ID.
 	 * @param int    $user_id         User requesting.
@@ -1422,7 +1458,96 @@ class MessagingService {
 		);
 		// phpcs:enable
 
-		return is_array( $rows ) ? $rows : array();
+		$rows = is_array( $rows ) ? $rows : array();
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		// Prime the user cache once for all distinct senders (results cap at 100),
+		// then enrich each hit — a bare content snippet with no author is unusable
+		// in group threads, and the app cannot resolve names client-side.
+		$sender_ids = array();
+		foreach ( $rows as $row ) {
+			$sender_ids[] = (int) $row->sender_id;
+		}
+		$sender_ids = array_unique( $sender_ids );
+		if ( ! empty( $sender_ids ) ) {
+			cache_users( $sender_ids );
+		}
+
+		foreach ( $rows as &$row ) {
+			$sender              = get_userdata( (int) $row->sender_id );
+			$row->sender_name    = $sender ? $sender->display_name : '';
+			$row->sender_avatar  = get_avatar_url( (int) $row->sender_id, array( 'size' => 64 ) );
+			$row->created_at_gmt = self::to_iso8601( (string) $row->created_at );
+		}
+		unset( $row );
+
+		return $rows;
+	}
+
+	/**
+	 * List media shared in a conversation, newest first.
+	 *
+	 * Backs the "shared media" info panel and the mobile app's equivalent. The
+	 * web panel previously scraped the DOM of already-loaded bubbles, so it saw
+	 * only part of the thread and the app could not do it at all. This walks the
+	 * full message history for rows carrying an attachment or a shared media
+	 * item and returns a resolved payload per item, so web + app share one
+	 * source. The caller (controller) must confirm participation first.
+	 *
+	 * @param int $conversation_id Conversation ID.
+	 * @param int $user_id         Requesting participant (for media-share access).
+	 * @param int $limit           Max items (1-200).
+	 * @return array<int,array<string,mixed>> Newest-first shared-media items.
+	 */
+	public function get_conversation_media( int $conversation_id, int $user_id, int $limit = 60 ): array {
+		global $wpdb;
+		$msg_table = $wpdb->prefix . 'mvs_messages';
+		$limit     = max( 1, min( 200, $limit ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT m.id, m.sender_id, m.attachment_id, m.media_id, m.created_at
+				 FROM {$msg_table} m
+				 WHERE m.conversation_id = %d
+				   AND m.is_deleted = 0
+				   AND m.deleted_for_all = 0
+				   AND ( m.attachment_id > 0 OR m.media_id > 0 )
+				 ORDER BY m.id DESC
+				 LIMIT %d",
+				$conversation_id,
+				$limit
+			)
+		);
+		// phpcs:enable
+
+		if ( ! is_array( $rows ) || empty( $rows ) ) {
+			return array();
+		}
+
+		$items = array();
+		foreach ( $rows as $row ) {
+			$payload = null;
+			if ( (int) $row->attachment_id > 0 ) {
+				$payload = $this->get_attachment_data( (int) $row->attachment_id );
+			} elseif ( (int) $row->media_id > 0 ) {
+				$payload = $this->get_media_share_data( (int) $row->media_id, $user_id );
+			}
+			if ( ! $payload ) {
+				continue;
+			}
+			$items[] = array(
+				'message_id'     => (int) $row->id,
+				'sender_id'      => (int) $row->sender_id,
+				'created_at'     => (string) $row->created_at,
+				'created_at_gmt' => self::to_iso8601( (string) $row->created_at ),
+				'media'          => $payload,
+			);
+		}
+
+		return $items;
 	}
 
 	/**
@@ -1476,6 +1601,10 @@ class MessagingService {
 			if ( $msg->metadata ) {
 				$msg->metadata = json_decode( $msg->metadata, true );
 			}
+
+			// Additive UTC-ISO timestamp for the app (stored value is UTC but
+			// unmarked). Web ignores it; the app reads it for the absolute instant.
+			$msg->created_at_gmt = self::to_iso8601( (string) $msg->created_at );
 
 			// Get reactions.
 			$msg->reactions = $this->get_message_reactions( (int) $msg->id );
@@ -2195,7 +2324,9 @@ class MessagingService {
 			if ( $msg->metadata ) {
 				$msg->metadata = json_decode( $msg->metadata, true );
 			}
-			$msg->reactions = $this->get_message_reactions( (int) $msg->id );
+			// Additive UTC-ISO timestamp for the app (stored value is UTC but unmarked).
+			$msg->created_at_gmt = self::to_iso8601( (string) $msg->created_at );
+			$msg->reactions      = $this->get_message_reactions( (int) $msg->id );
 			// Don't ship attachment/media data for unsent messages either.
 			if ( $msg->attachment_id && ! $msg->deleted_for_all ) {
 				$msg->attachment = $this->get_attachment_data( (int) $msg->attachment_id );
