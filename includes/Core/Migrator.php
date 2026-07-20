@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 21;
+	const CURRENT_VERSION = 22;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -948,6 +948,46 @@ class Migrator {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$wpdb->query( "ALTER TABLE {$index_table} ADD KEY rank_scan (status, moderation_status, privacy, post_author, reaction_count, created_at)" );
 		$wpdb->show_errors( $prev_show );
+	}
+
+	/**
+	 * Migration v22 — object-cache-independent DM typing indicator.
+	 *
+	 * Typing state was stored in `wp_cache` only, so on the majority of sites
+	 * (no persistent object cache) the write in one request was gone before the
+	 * poll in the next — the "typing…" pip never showed to the recipient. Per
+	 * Coding Rule #16 per-(conversation,user) state may not live in wp_options or
+	 * unguarded transients; it belongs in the per-participant row that already
+	 * exists. This adds a `typing_until` datetime on
+	 * `mvs_conversation_participants`: a durable, indexed, self-expiring marker
+	 * BuddyNext's existing typing UI reads through the same REST endpoint.
+	 *
+	 * Additive, idempotent, back-compat (NULL = not typing).
+	 *
+	 * @since 2.1.0
+	 */
+	private function migrate_to_22(): void {
+		global $wpdb;
+		$part = $wpdb->prefix . 'mvs_conversation_participants';
+
+		$has = function ( string $table, string $column ) use ( $wpdb ): bool {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			return (int) $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT COUNT(*) FROM information_schema.COLUMNS
+					 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s',
+					$table,
+					$column
+				)
+			) > 0;
+		};
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		if ( ! $has( $part, 'typing_until' ) ) {
+			$wpdb->query( "ALTER TABLE {$part} ADD COLUMN typing_until datetime DEFAULT NULL AFTER last_read_at" );
+			$wpdb->query( "ALTER TABLE {$part} ADD KEY conv_typing (conversation_id, typing_until)" );
+		}
+		// phpcs:enable
 	}
 
 	/**

@@ -1938,65 +1938,87 @@ class MessagingService {
 	}
 
 	/**
-	 * Typing-indicator object-cache group. Per-(conversation, user) key —
-	 * unbounded cardinality, must NOT live in wp_options. Coding Rule #16.
+	 * How long (seconds) a typing ping stays live before it is treated as stale.
+	 * The client re-pings well inside this window while a user is actively typing.
 	 *
-	 * @since 1.2.1
+	 * @since 2.1.0
 	 */
-	private const TYPING_CACHE_GROUP = 'wpmediaverse_typing';
+	private const TYPING_TTL = 6;
 
 	/**
-	 * Build the typing cache key for a (conversation, user) pair.
-	 */
-	private static function typing_cache_key( int $conversation_id, int $user_id ): string {
-		return $conversation_id . ':' . $user_id;
-	}
-
-	/**
-	 * Set typing indicator. Stored in `wp_cache` only — degrades gracefully
-	 * (no "typing…" pip) when no persistent object cache is present, but
-	 * never bloats wp_options with millions of (conv, user) rows on busy
-	 * sites. 5-second TTL matches the previous transient lifetime.
+	 * Mark a user as typing in a conversation.
+	 *
+	 * Persisted on the participant's own row (`mvs_conversation_participants.
+	 * typing_until`) rather than `wp_cache`: request-scoped object cache meant the
+	 * write in the typist's request was gone before the recipient's poll read it,
+	 * so on any site without a persistent object cache the indicator never showed.
+	 * The per-(conversation, user) row already exists, so this adds no cardinality
+	 * and honours Coding Rule #16 (no wp_options / unguarded-transient bloat).
 	 *
 	 * @param int $conversation_id Conversation ID.
 	 * @param int $user_id         User ID.
 	 */
 	public function set_typing( int $conversation_id, int $user_id ): void {
-		wp_cache_set(
-			self::typing_cache_key( $conversation_id, $user_id ),
-			true,
-			self::TYPING_CACHE_GROUP,
-			5
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_conversation_participants';
+		$until = gmdate( 'Y-m-d H:i:s', time() + self::TYPING_TTL );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$table} SET typing_until = %s WHERE conversation_id = %d AND user_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$until,
+				$conversation_id,
+				$user_id
+			)
 		);
 	}
 
 	/**
-	 * Get typing users for a conversation. Reads from `wp_cache` only;
-	 * sites without a persistent object cache simply won't show typing
-	 * indicators (acceptable degradation — the rest of DM still works).
+	 * Get the users currently typing in a conversation.
+	 *
+	 * One indexed query against `mvs_conversation_participants` (KEY conv_typing),
+	 * so it works identically with or without a persistent object cache. A row is
+	 * "typing" while its `typing_until` is in the future; stale markers simply
+	 * fall out of the window with no cleanup pass needed.
 	 *
 	 * @param int $conversation_id Conversation ID.
 	 * @param int $exclude_user_id User to exclude (current user).
-	 * @return array User IDs currently typing.
+	 * @return array<int, array{id: int, name: string}> Users currently typing.
 	 */
 	public function get_typing_users( int $conversation_id, int $exclude_user_id ): array {
-		$participants = $this->get_participants( $conversation_id );
-		$typing       = array();
+		global $wpdb;
 
-		foreach ( $participants as $p ) {
-			if ( $p['id'] === $exclude_user_id ) {
-				continue;
-			}
-			$found = false;
-			$value = wp_cache_get(
-				self::typing_cache_key( $conversation_id, (int) $p['id'] ),
-				self::TYPING_CACHE_GROUP,
-				false,
-				$found
-			);
-			if ( $found && $value ) {
+		$table = $wpdb->prefix . 'mvs_conversation_participants';
+		$now   = gmdate( 'Y-m-d H:i:s' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$typing_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT user_id FROM {$table}
+				 WHERE conversation_id = %d
+				   AND user_id <> %d
+				   AND typing_until IS NOT NULL
+				   AND typing_until > %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$conversation_id,
+				$exclude_user_id,
+				$now
+			)
+		);
+
+		if ( empty( $typing_ids ) ) {
+			return array();
+		}
+
+		$typing_ids = array_map( 'intval', $typing_ids );
+		$typing     = array();
+
+		// Resolve display names from the already-cached participant set.
+		foreach ( $this->get_participants( $conversation_id ) as $p ) {
+			if ( in_array( (int) $p['id'], $typing_ids, true ) ) {
 				$typing[] = array(
-					'id'   => $p['id'],
+					'id'   => (int) $p['id'],
 					'name' => $p['display_name'],
 				);
 			}
