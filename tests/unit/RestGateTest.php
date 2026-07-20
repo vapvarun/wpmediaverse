@@ -370,4 +370,162 @@ class RestGateTest extends WP_UnitTestCase {
 
 		delete_option( 'mvs_enable_reports' );
 	}
+
+	/**
+	 * The coverage guarantee the class docblock promises: a write route cannot
+	 * ship unclassified.
+	 *
+	 * Walks every write route WordPress actually registered under /mvs/v1/,
+	 * concretises its regex to a sample path, classifies it through the live
+	 * RestGate, and asserts the result matches the recorded expectation. A NEW
+	 * write route that nobody added to RestGate::map() (and here) falls through to
+	 * a default it was never reviewed for and fails this test; a route whose mode
+	 * DRIFTS from the recorded value fails too. Either way the door cannot open
+	 * silently the way favourite/share/follow once did.
+	 *
+	 * Adding or changing a write route? Classify it in RestGate::map() and record
+	 * the concrete route => mode below, in the same commit.
+	 */
+	public function test_every_registered_write_route_is_classified(): void {
+		$expected = $this->expected_write_route_modes();
+		$writable = array( 'POST', 'PUT', 'PATCH', 'DELETE' );
+		$problems = array();
+
+		foreach ( rest_get_server()->get_routes() as $route => $handlers ) {
+			if ( 0 !== strpos( $route, '/mvs/v1/' ) ) {
+				continue; // Pro (/mvs-pro/v1/) is covered by Pro's own suite.
+			}
+			foreach ( (array) $handlers as $handler ) {
+				if ( empty( $handler['methods'] ) || ! is_array( $handler['methods'] ) ) {
+					continue;
+				}
+				foreach ( array_keys( array_filter( $handler['methods'] ) ) as $method ) {
+					$method = strtoupper( (string) $method );
+					if ( ! in_array( $method, $writable, true ) ) {
+						continue;
+					}
+					$concrete = $this->concretise_route( (string) $route );
+					$key      = $method . ' ' . $concrete;
+					$mode     = $this->mode_of( $method, $concrete );
+
+					if ( ! isset( $expected[ $key ] ) ) {
+						$problems[] = "{$key} is registered but not recorded (classifies '{$mode}'). "
+							. 'Classify it in RestGate::map() and record it in expected_write_route_modes().';
+					} elseif ( $expected[ $key ] !== $mode ) {
+						$problems[] = "{$key} classifies '{$mode}' but the matrix expects '{$expected[ $key ]}'.";
+					}
+				}
+			}
+		}
+
+		$this->assertSame( array(), $problems, "RestGate coverage gaps:\n" . implode( "\n", $problems ) );
+	}
+
+	/**
+	 * Turn a registered route regex into a concrete sample path RestGate::map()
+	 * patterns can match: numeric id groups become 1, any other group becomes x.
+	 */
+	private function concretise_route( string $route ): string {
+		$route = preg_replace( '#\(\?P<[a-z_]+>\[\\\\d\]\+\)#i', '1', $route );
+		$route = preg_replace( '#\(\?P<[a-z_]+>\\\\d\+\)#i', '1', $route );
+		$route = preg_replace( '#\(\?P<[a-z_]+>[^)]*\)#i', 'x', $route );
+		return (string) $route;
+	}
+
+	/**
+	 * Every registered /mvs/v1/ write route and the mode it must classify as.
+	 * Generated from the live route registry; keep it in lockstep with
+	 * RestGate::map(). 'self' = suspension gate only (own-resource write),
+	 * 'gated' = blocked+suspension (touches another member), 'exempt' = never
+	 * gated (safety valve / retraction / leaving).
+	 *
+	 * @return array<string, string>
+	 */
+	private function expected_write_route_modes(): array {
+		return array(
+			'DELETE /mvs/v1/albums/1' => 'self',
+			'DELETE /mvs/v1/albums/1/items/1' => 'self',
+			'DELETE /mvs/v1/collections/1' => 'self',
+			'DELETE /mvs/v1/conversations/1' => 'self',
+			'DELETE /mvs/v1/me' => 'exempt',
+			'DELETE /mvs/v1/me/avatar' => 'self',
+			'DELETE /mvs/v1/me/deletion' => 'exempt',
+			'DELETE /mvs/v1/media/1' => 'self',
+			'DELETE /mvs/v1/media/1/comments/1' => 'exempt',
+			'DELETE /mvs/v1/media/1/favorite' => 'exempt',
+			'DELETE /mvs/v1/media/1/grant/1' => 'self',
+			'DELETE /mvs/v1/media/1/reactions' => 'exempt',
+			'DELETE /mvs/v1/media/1/rules/1' => 'self',
+			'DELETE /mvs/v1/messages/1' => 'self',
+			'DELETE /mvs/v1/messages/1/reactions' => 'exempt',
+			'DELETE /mvs/v1/messages/1/unsend' => 'self',
+			'DELETE /mvs/v1/tags/1' => 'self',
+			'DELETE /mvs/v1/users/1/block' => 'exempt',
+			'DELETE /mvs/v1/users/1/follow' => 'exempt',
+			'PATCH /mvs/v1/albums/1' => 'self',
+			'PATCH /mvs/v1/albums/1/cover' => 'self',
+			'PATCH /mvs/v1/albums/1/reorder' => 'self',
+			'PATCH /mvs/v1/collections/1' => 'self',
+			'PATCH /mvs/v1/collections/1/rules' => 'self',
+			'PATCH /mvs/v1/conversations/1' => 'self',
+			'PATCH /mvs/v1/me/profile' => 'self',
+			'PATCH /mvs/v1/media/1' => 'self',
+			'PATCH /mvs/v1/media/1/comments/1' => 'exempt',
+			'PATCH /mvs/v1/tags/1' => 'self',
+			'POST /mvs/v1/admin/welcome/dismiss' => 'self',
+			'POST /mvs/v1/albums' => 'self',
+			'POST /mvs/v1/albums/1' => 'self',
+			'POST /mvs/v1/albums/1/cover' => 'self',
+			'POST /mvs/v1/albums/1/items' => 'self',
+			'POST /mvs/v1/albums/1/reorder' => 'self',
+			'POST /mvs/v1/collections' => 'self',
+			'POST /mvs/v1/collections/1' => 'self',
+			'POST /mvs/v1/collections/1/rules' => 'self',
+			'POST /mvs/v1/conversations' => 'gated',
+			'POST /mvs/v1/conversations/1/accept' => 'gated',
+			'POST /mvs/v1/conversations/1/decline' => 'exempt',
+			'POST /mvs/v1/conversations/1/messages' => 'gated',
+			'POST /mvs/v1/conversations/1/read' => 'self',
+			'POST /mvs/v1/conversations/1/typing' => 'self',
+			'POST /mvs/v1/me/avatar' => 'self',
+			'POST /mvs/v1/me/interests' => 'self',
+			'POST /mvs/v1/me/notifications/read' => 'self',
+			'POST /mvs/v1/me/onboarding/complete' => 'self',
+			'POST /mvs/v1/me/profile' => 'self',
+			'POST /mvs/v1/media' => 'self',
+			'POST /mvs/v1/media/1' => 'self',
+			'POST /mvs/v1/media/1/comments' => 'gated',
+			'POST /mvs/v1/media/1/comments/1' => 'self',
+			'POST /mvs/v1/media/1/download' => 'self',
+			'POST /mvs/v1/media/1/favorite' => 'gated',
+			'POST /mvs/v1/media/1/grant' => 'self',
+			'POST /mvs/v1/media/1/reactions' => 'gated',
+			'POST /mvs/v1/media/1/replace' => 'self',
+			'POST /mvs/v1/media/1/report' => 'exempt',
+			'POST /mvs/v1/media/1/rules' => 'self',
+			'POST /mvs/v1/media/1/share' => 'gated',
+			'POST /mvs/v1/media/1/view' => 'self',
+			'POST /mvs/v1/media/bulk' => 'self',
+			'POST /mvs/v1/messages/1/reactions' => 'gated',
+			'POST /mvs/v1/messages/upload' => 'gated',
+			'POST /mvs/v1/moderation/1/analyze' => 'self',
+			'POST /mvs/v1/moderation/1/approve' => 'self',
+			'POST /mvs/v1/moderation/1/reject' => 'self',
+			'POST /mvs/v1/tags' => 'self',
+			'POST /mvs/v1/tags/1' => 'self',
+			'POST /mvs/v1/tags/merge' => 'self',
+			'POST /mvs/v1/users/1/block' => 'exempt',
+			'POST /mvs/v1/users/1/follow' => 'gated',
+			'POST /mvs/v1/users/1/report' => 'exempt',
+			'PUT /mvs/v1/albums/1' => 'self',
+			'PUT /mvs/v1/albums/1/cover' => 'self',
+			'PUT /mvs/v1/albums/1/reorder' => 'self',
+			'PUT /mvs/v1/collections/1' => 'self',
+			'PUT /mvs/v1/collections/1/rules' => 'self',
+			'PUT /mvs/v1/me/profile' => 'self',
+			'PUT /mvs/v1/media/1' => 'self',
+			'PUT /mvs/v1/media/1/comments/1' => 'exempt',
+			'PUT /mvs/v1/tags/1' => 'self',
+		);
+	}
 }

@@ -190,11 +190,16 @@ class MemberModeration {
 			return (string) $output;
 		}
 
+		// This renders inside WordPress's core Users list table, where the
+		// plugin's admin stylesheet (and its design tokens) is not enqueued, so we
+		// lean on core-native semantics instead of inline colour: plain text for
+		// Active, bold for the state that matters. The red destructive cue lives on
+		// the row action below via core's own `submitdelete` class.
 		if ( ! $this->is_suspended( (int) $user_id ) ) {
-			return '<span style="color:#646970;">' . esc_html__( 'Active', 'wpmediaverse' ) . '</span>';
+			return esc_html__( 'Active', 'wpmediaverse' );
 		}
 
-		return '<strong style="color:#d63638;">' . esc_html__( 'Suspended', 'wpmediaverse' ) . '</strong>';
+		return '<strong>' . esc_html__( 'Suspended', 'wpmediaverse' ) . '</strong>';
 	}
 
 	/**
@@ -225,10 +230,13 @@ class MemberModeration {
 			'mvs_suspend_user_' . $user_id
 		);
 
+		// Suspend is destructive → core's `submitdelete` class (renders red, the
+		// WP convention for a row's destructive action). Restore is a plain link
+		// (default admin-link blue). No inline colour, no hardcoded hex.
 		$actions['mvs_suspend'] = sprintf(
-			'<a href="%s" style="color:%s;">%s</a>',
+			'<a href="%s"%s>%s</a>',
 			esc_url( $url ),
-			$suspended ? '#2271b1' : '#d63638',
+			$suspended ? '' : ' class="submitdelete"',
 			$suspended ? esc_html__( 'Restore', 'wpmediaverse' ) : esc_html__( 'Suspend', 'wpmediaverse' )
 		);
 

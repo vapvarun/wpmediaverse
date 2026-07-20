@@ -38,8 +38,10 @@ use WPMediaVerse\Core\Plugin;
  *            gate — but the suspension gate still applies.
  *   gated  — a write that touches another member. Block gate + suspension gate.
  *
- * The map is the audit artifact. RestGateCoverageTest fails if any registered
- * write route is missing from it, so a new route cannot ship unclassified.
+ * The map is the audit artifact. RestGateTest::test_every_registered_write_route_is_classified()
+ * walks the live REST route registry and fails if any registered write route is
+ * missing from the map's recorded classification, so a new route cannot ship
+ * unclassified.
  */
 final class RestGate {
 
@@ -58,6 +60,45 @@ final class RestGate {
 	 */
 	public static function register(): void {
 		add_filter( 'rest_request_before_callbacks', array( self::class, 'gate' ), 10, 3 );
+
+		// Make the gate observable. The fail-open branch (a gated route whose
+		// targets don't resolve) passes the write through and fires
+		// mvs_rest_gate_unresolved so the no-op is detectable in logs - but
+		// nothing was listening, so in production it was silent (Coding Rule #8).
+		// Log the fail-open at warning level and a normal denial at info level.
+		add_action(
+			'mvs_rest_gate_unresolved',
+			static function ( $route, $method, $actor ) {
+				\WPMediaVerse\Services\LoggerService::warning(
+					'rest-gate',
+					'Gated route passed through unresolved (fail-open); block/suspension was not enforced.',
+					array(
+						'route'  => (string) $route,
+						'method' => (string) $method,
+						'actor'  => (int) $actor,
+					)
+				);
+			},
+			10,
+			3
+		);
+		add_action(
+			'mvs_rest_gate_denied',
+			static function ( $route, $method, $actor, $reason ) {
+				\WPMediaVerse\Services\LoggerService::info(
+					'rest-gate',
+					'Write denied by the block/suspension gate.',
+					array(
+						'route'  => (string) $route,
+						'method' => (string) $method,
+						'actor'  => (int) $actor,
+						'reason' => (string) $reason,
+					)
+				);
+			},
+			10,
+			4
+		);
 	}
 
 	/**
