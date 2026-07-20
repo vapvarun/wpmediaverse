@@ -533,10 +533,17 @@ class GDPRService {
 					continue;
 				}
 
-				$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+				// The WHERE clause is assembled from $wpdb->prepare()'d fragments
+				// (each `column = %d`), and $full/$column come from a fixed table
+				// map, never user input - so this is safe. Plugin Check attributes
+				// the sniff to the SQL-string line, which a single-line phpcs:ignore
+				// on the call doesn't cover, so disable/enable spans the statement.
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+				$rows = $wpdb->get_results(
 					"SELECT * FROM `{$full}` WHERE " . implode( ' OR ', $where ) . ' LIMIT 500',
 					ARRAY_A
 				);
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
 				foreach ( (array) $rows as $i => $row ) {
 					$data = array();
