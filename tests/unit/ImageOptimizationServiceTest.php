@@ -168,12 +168,15 @@ class ImageOptimizationServiceTest extends WP_UnitTestCase {
 		$this->assertNull( $result );
 	}
 
-	public function test_is_enabled_defaults_to_true(): void {
+	public function test_is_enabled_defaults(): void {
 		delete_option( ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS );
 		delete_option( ImageOptimizationService::SETTING_GENERATE_WEBP );
 
 		$service = new ImageOptimizationService();
-		$this->assertTrue( $service->is_enabled( 'originals' ) );
+		// 'originals' is a LOSSY JPEG re-encode, so it is opt-in (default off) to
+		// keep uploaded photos untouched (Basecamp #10073918955). WebP generation
+		// is lossless-sibling and stays default-on.
+		$this->assertFalse( $service->is_enabled( 'originals' ) );
 		$this->assertTrue( $service->is_enabled( 'webp' ) );
 		$this->assertFalse( $service->is_enabled( 'unknown' ) );
 	}
