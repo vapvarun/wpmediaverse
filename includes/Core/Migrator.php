@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 20;
+	const CURRENT_VERSION = 21;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -909,6 +909,45 @@ class Migrator {
 			   )"
 		);
 		// phpcs:enable
+	}
+
+	/**
+	 * Migration v21 — leaderboard rank composite index on mvs_media_index.
+	 *
+	 * LeaderboardService::get_viewer_rank() scans mvs_media_index with
+	 * WHERE status='publish' AND moderation_status='approved' AND
+	 * privacy='public' AND post_author > 0 (+ a created_at window),
+	 * GROUP BY post_author, SUM(reaction_count). Fresh 2.1.0 installs get the
+	 * `rank_scan` covering index from the CREATE (migrate_to_1); 2.0.x sites
+	 * upgrading in place never re-run that CREATE, so without this ALTER the
+	 * rank query full-scans the table (O(n) at 50k rows, only masked by a
+	 * 5-min cache). This heals existing installs.
+	 *
+	 * Column order matches the query: the three equality columns first, then
+	 * the GROUP BY column, then the aggregated column, then the window column,
+	 * so MySQL can satisfy the whole query from the index.
+	 *
+	 * Idempotent (SHOW INDEX guard), add-only. Suppresses wpdb error display so
+	 * a locked-down host that rejects the ALTER degrades to the cached
+	 * full-scan rather than fataling.
+	 *
+	 * @since 2.1.0
+	 */
+	private function migrate_to_21(): void {
+		global $wpdb;
+
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$exists = $wpdb->get_var( "SHOW INDEX FROM {$index_table} WHERE Key_name = 'rank_scan'" );
+		if ( $exists ) {
+			return;
+		}
+
+		$prev_show = $wpdb->show_errors( false );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "ALTER TABLE {$index_table} ADD KEY rank_scan (status, moderation_status, privacy, post_author, reaction_count, created_at)" );
+		$wpdb->show_errors( $prev_show );
 	}
 
 	/**
