@@ -182,6 +182,19 @@ final class MemberDataMap {
 				'reason'  => 'Billing and usage ledger the site owner may be legally required to retain.',
 				'basis'   => 'Legal obligation (accounting records). Rows are anonymised: user_id set to 0.',
 			),
+
+			// A conversation is a shared container other members are still in. The
+			// participant rows and messages are hard-deleted (erase_map), and an
+			// emptied thread is swept away entirely, but a thread that still has
+			// other active participants survives — its created_by must be removed,
+			// not the whole thread, or erasing one member would destroy a
+			// conversation others are part of.
+			'mvs_conversations' => array(
+				'columns' => array( 'created_by' ),
+				'label'   => __( 'Conversations created', 'wpmediaverse' ),
+				'reason'  => 'A conversation with other active participants is a shared record; erasing its creator must not delete the thread for everyone else.',
+				'basis'   => 'Legitimate interest (integrity of a shared record). Rows are anonymised: created_by set to 0.',
+			),
 		);
 
 		/**

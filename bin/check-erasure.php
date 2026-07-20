@@ -45,6 +45,7 @@ $user_columns = array(
 	'reporter_id',
 	'mentioned_user_id',
 	'creator_id',
+	'created_by',
 	'winner_id',
 	'owner_id',
 	'voter_id',
