@@ -868,11 +868,14 @@ class TemplateLoader {
 	 *
 	 * @since 2.0.0
 	 *
-	 * @param string $template The template WordPress resolved.
-	 * @return string The layout template for a plugin page, else $template.
+	 * @param string|mixed $template The template WordPress resolved. Not type-hinted:
+	 *                                another `template_include` filter running before us
+	 *                                can hand back null (or any value), and a bad actor
+	 *                                upstream must not turn into a fatal in our callback.
+	 * @return string|mixed The layout template for a plugin page, else $template untouched.
 	 */
-	public function use_app_template( string $template ): string {
-		if ( ! is_page() || ! self::is_app_page( (int) get_queried_object_id() ) ) {
+	public function use_app_template( $template ) {
+		if ( ! is_string( $template ) || ! is_page() || ! self::is_app_page( (int) get_queried_object_id() ) ) {
 			return $template;
 		}
 
