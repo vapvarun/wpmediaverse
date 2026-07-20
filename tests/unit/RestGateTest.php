@@ -67,7 +67,20 @@ class RestGateTest extends WP_UnitTestCase {
 		$this->blocked   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		$this->bystander = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 
-		$this->media = self::factory()->attachment->create( array( 'post_author' => $this->owner ) );
+		// MediaVerse stores media in mvs_media_index, NOT as a wp_posts
+		// attachment: the gate's media_author resolver reads
+		// MediaRepository::get_author(), so a factory attachment (post_author in
+		// wp_posts) resolves to nobody and the block gate silently passes. Seed a
+		// real index row owned by $owner so the resolver finds the blocker.
+		$this->media = (int) Plugin::container()->get( 'media_repository' )->insert(
+			array(
+				'title'       => 'Blocker Media',
+				'post_author' => $this->owner,
+				'media_type'  => 'image',
+				'file_url'    => 'https://example.test/blocker-media.jpg',
+				'file_type'   => 'image/jpeg',
+			)
+		);
 
 		/** @var \WPMediaVerse\Social\ReportService $reports */
 		$reports = Plugin::container()->get( 'reports' );
@@ -230,6 +243,14 @@ class RestGateTest extends WP_UnitTestCase {
 	 * @dataProvider provide_expected_modes
 	 */
 	public function test_route_classifies_to_the_expected_mode( string $method, string $route, string $expected ): void {
+		// Pro contributes its /mvs-pro/v1/ rows through the mvs_rest_gate_map
+		// filter. On the public free-only CI (Pro not installed) those rows fall
+		// through to 'self'; assert them only in the combo suite that runs locally
+		// with Pro active.
+		if ( 0 === strpos( $route, '/mvs-pro/v1/' ) && ! defined( 'MVS_PRO_VERSION' ) ) {
+			$this->markTestSkipped( 'Pro not loaded; its rest-gate map rows are covered by the combo suite.' );
+		}
+
 		$this->assertSame(
 			$expected,
 			$this->mode_of( $method, $route ),
@@ -359,7 +380,12 @@ class RestGateTest extends WP_UnitTestCase {
 	 * ...and the site owner must still be able to turn it off.
 	 */
 	public function test_reporting_can_be_disabled_by_the_owner(): void {
-		update_option( 'mvs_enable_reports', false );
+		// Disable with a stored '0', not boolean false: update_option( ..., false )
+		// on an option that doesn't exist yet is a WordPress no-op (the new value
+		// equals get_option()'s false default, so nothing is written) and the
+		// setting would stay at its on-by-default - which is not how the settings
+		// screen persists an unchecked box.
+		update_option( 'mvs_enable_reports', '0' );
 
 		$this->assertFalse( \WPMediaVerse\Social\ReportService::reports_enabled() );
 
