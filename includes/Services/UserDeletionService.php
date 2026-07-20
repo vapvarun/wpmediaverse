@@ -89,6 +89,12 @@ class UserDeletionService {
 		);
 
 		// Phase 2 — purge per-user rows across all user-scoped tables.
+		//
+		// mvs_reports is NOT in this list: a report is moderation evidence another
+		// member filed, so it is RETAINED (anonymised) rather than deleted — the
+		// same classification MemberDataMap::retain_map() applies on the formal
+		// GDPR-erasure path. Deleting it would let a reported member wipe the case
+		// against them simply by leaving. See the anonymisation block below.
 		$user_scoped_tables = array(
 			'mvs_media_views'               => 'user_id',
 			'mvs_favorites'                 => 'user_id',
@@ -100,7 +106,6 @@ class UserDeletionService {
 			'mvs_mentions'                  => 'mentioned_user_id',
 			'mvs_follows'                   => 'follower_id',
 			'mvs_blocks'                    => 'blocker_id',
-			'mvs_reports'                   => 'reporter_id',
 			'mvs_messages'                  => 'sender_id',
 			'mvs_message_reactions'         => 'user_id', // audit 2026-06-04 — was orphaned.
 		);
@@ -124,13 +129,37 @@ class UserDeletionService {
 			array( '%d' )
 		);
 
-		// Reports targeting the user (target_type='user', target_id=$user_id).
+		// A notification the deleted user CAUSED ("X liked your photo") carries
+		// their id in actor_id and lives in someone else's queue; the loop above
+		// only cleared rows they RECEIVED (user_id). Erase the actor side too, or
+		// the deleted member stays scattered through other members' notifications
+		// (erase_map lists mvs_notifications = [user_id, actor_id]).
 		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_notifications',
+			array( 'actor_id' => $user_id ),
+			array( '%d' )
+		);
+
+		// Reports are RETAINED, anonymised — both the report this member filed
+		// (reporter_id) and the report filed ABOUT them (target_type='user',
+		// target_id). The case survives for the moderator; the person is removed
+		// from it. target_id is scoped by target_type so a media/comment report
+		// whose id collides with this user id is never touched.
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prefix . 'mvs_reports',
+			array( 'reporter_id' => 0 ),
+			array( 'reporter_id' => $user_id ),
+			array( '%d' ),
+			array( '%d' )
+		);
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_reports',
+			array( 'target_id' => 0 ),
 			array(
 				'target_type' => 'user',
 				'target_id'   => $user_id,
 			),
+			array( '%d' ),
 			array( '%s', '%d' )
 		);
 
@@ -157,6 +186,21 @@ class UserDeletionService {
 				array( '%d' )
 			);
 		}
+
+		// The deleted member created conversations that still have other active
+		// participants (the empty-shell sweep above only removed threads with
+		// nobody left). Those shared threads survive, but created_by must not keep
+		// pointing at a deleted account — otherwise GDPRService reports erasure
+		// "done" while the member's id lives on in mvs_conversations.created_by.
+		// Anonymise it: the container stays, the originator is removed (mirrors the
+		// mvs_competitions.winner_id retain policy).
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prefix . 'mvs_conversations',
+			array( 'created_by' => 0 ),
+			array( 'created_by' => $user_id ),
+			array( '%d' ),
+			array( '%d' )
+		);
 
 		// Recompute view aggregates for media the deleted user had viewed, now
 		// that their raw mvs_media_views rows are gone — otherwise the public

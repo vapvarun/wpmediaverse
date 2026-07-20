@@ -376,7 +376,7 @@ class MediaListPage {
 					: \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $media_id, 'thumbnail' );
 				?>
 				<?php if ( $thumb_url ) : ?>
-					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="" class="mvs-thumb" loading="lazy" />
+					<img src="<?php echo esc_url( $thumb_url ); ?>" alt="<?php echo esc_attr( $title ); ?>" class="mvs-thumb" loading="lazy" />
 				<?php else : ?>
 					<?php
 					$icons = array(
@@ -1027,29 +1027,19 @@ class MediaListPage {
 		$file_path   = (string) $repo->get( $media_id, 'file_path' );
 		$regenerated = 0;
 
-		// Image: regenerate size variants locally when the original is on disk.
-		if ( 0 === strpos( $file_type, 'image/' ) && $file_path ) {
-			$upload     = wp_upload_dir();
-			$local_path = trailingslashit( (string) ( $upload['basedir'] ?? '' ) ) . 'wpmediaverse/' . ltrim( $file_path, '/' );
-			if ( file_exists( $local_path ) ) {
-				$editor = wp_get_image_editor( $local_path );
-				if ( ! is_wp_error( $editor ) ) {
-					$sizes = array(
-						'thumb'  => array( 200, 200 ),
-						'medium' => array( 600, 600 ),
-						'large'  => array( 1280, 1280 ),
-					);
-					foreach ( $sizes as $size_key => $dims ) {
-						$resized = clone $editor;
-						$resized->resize( $dims[0], $dims[1], false );
-						$saved = $resized->save();
-						if ( ! is_wp_error( $saved ) && ! empty( $saved['path'] ) ) {
-							$rel = ltrim( str_replace( (string) $upload['basedir'], '', (string) $saved['path'] ), '/' );
-							$url = trailingslashit( (string) $upload['baseurl'] ) . $rel;
-							$repo->set( $media_id, 'thumb_' . $size_key, $url );
-							++$regenerated;
-						}
-					}
+		// Image: regenerate size variants through the shared generator so repair
+		// produces exactly the same rungs as a fresh upload — including the
+		// owner-configured "Large image size" (mvs_large_image_size). This path
+		// previously hardcoded its own 200/600/1280 sizes, which both diverged
+		// from the upload pipeline (1024 large) and ignored the setting + the
+		// mvs_thumbnail_sizes filter. Routing through UploadService keeps
+		// get_thumbnail_sizes() the single source of truth.
+		if ( 0 === strpos( $file_type, 'image/' ) ) {
+			$path = $repo->get_filesystem_path( $media_id );
+			if ( null !== $path ) {
+				$upload_service = \WPMediaVerse\Core\Plugin::container()->get( 'upload' );
+				if ( $upload_service->generate_thumbnails( $media_id, $path, $file_type ) ) {
+					$regenerated = count( \WPMediaVerse\Services\UploadService::get_thumbnail_sizes() );
 				}
 			}
 		}

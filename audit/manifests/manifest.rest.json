@@ -1022,6 +1022,16 @@
         "file": "includes/Messaging/MessagingController.php:161"
       },
       {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/media",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::list_conversation_media",
+        "permission": "check_auth",
+        "purpose": "List media shared in a conversation (full history, app parity)",
+        "file": "includes/Messaging/MessagingController.php:184"
+      },
+      {
         "route": "/mvs/v1/conversations/(?P<id>\\d+)/messages",
         "methods": [
           "POST"

@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 20;
+	const CURRENT_VERSION = 22;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -316,7 +316,8 @@ class Migrator {
 				KEY type_date (media_type, created_at),
 				KEY status_date (status, created_at),
 				KEY album_id (album_id),
-				KEY file_hash (file_hash)
+				KEY file_hash (file_hash),
+				KEY rank_scan (status, moderation_status, privacy, post_author, reaction_count, created_at)
 			) {$charset_collate};"
 		);
 	}
@@ -907,6 +908,85 @@ class Migrator {
 				 SELECT ID FROM {$wpdb->posts} WHERE post_type IN ( 'mvs_album', 'mvs_collection' )
 			   )"
 		);
+		// phpcs:enable
+	}
+
+	/**
+	 * Migration v21 — leaderboard rank composite index on mvs_media_index.
+	 *
+	 * LeaderboardService::get_viewer_rank() scans mvs_media_index with
+	 * WHERE status='publish' AND moderation_status='approved' AND
+	 * privacy='public' AND post_author > 0 (+ a created_at window),
+	 * GROUP BY post_author, SUM(reaction_count). Fresh 2.1.0 installs get the
+	 * `rank_scan` covering index from the CREATE (migrate_to_1); 2.0.x sites
+	 * upgrading in place never re-run that CREATE, so without this ALTER the
+	 * rank query full-scans the table (O(n) at 50k rows, only masked by a
+	 * 5-min cache). This heals existing installs.
+	 *
+	 * Column order matches the query: the three equality columns first, then
+	 * the GROUP BY column, then the aggregated column, then the window column,
+	 * so MySQL can satisfy the whole query from the index.
+	 *
+	 * Idempotent (SHOW INDEX guard), add-only. Suppresses wpdb error display so
+	 * a locked-down host that rejects the ALTER degrades to the cached
+	 * full-scan rather than fataling.
+	 *
+	 * @since 2.1.0
+	 */
+	private function migrate_to_21(): void {
+		global $wpdb;
+
+		$index_table = $wpdb->prefix . 'mvs_media_index';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$exists = $wpdb->get_var( "SHOW INDEX FROM {$index_table} WHERE Key_name = 'rank_scan'" );
+		if ( $exists ) {
+			return;
+		}
+
+		$prev_show = $wpdb->show_errors( false );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "ALTER TABLE {$index_table} ADD KEY rank_scan (status, moderation_status, privacy, post_author, reaction_count, created_at)" );
+		$wpdb->show_errors( $prev_show );
+	}
+
+	/**
+	 * Migration v22 — object-cache-independent DM typing indicator.
+	 *
+	 * Typing state was stored in `wp_cache` only, so on the majority of sites
+	 * (no persistent object cache) the write in one request was gone before the
+	 * poll in the next — the "typing…" pip never showed to the recipient. Per
+	 * Coding Rule #16 per-(conversation,user) state may not live in wp_options or
+	 * unguarded transients; it belongs in the per-participant row that already
+	 * exists. This adds a `typing_until` datetime on
+	 * `mvs_conversation_participants`: a durable, indexed, self-expiring marker
+	 * BuddyNext's existing typing UI reads through the same REST endpoint.
+	 *
+	 * Additive, idempotent, back-compat (NULL = not typing).
+	 *
+	 * @since 2.1.0
+	 */
+	private function migrate_to_22(): void {
+		global $wpdb;
+		$part = $wpdb->prefix . 'mvs_conversation_participants';
+
+		$has = function ( string $table, string $column ) use ( $wpdb ): bool {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			return (int) $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT COUNT(*) FROM information_schema.COLUMNS
+					 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s',
+					$table,
+					$column
+				)
+			) > 0;
+		};
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		if ( ! $has( $part, 'typing_until' ) ) {
+			$wpdb->query( "ALTER TABLE {$part} ADD COLUMN typing_until datetime DEFAULT NULL AFTER last_read_at" );
+			$wpdb->query( "ALTER TABLE {$part} ADD KEY conv_typing (conversation_id, typing_until)" );
+		}
 		// phpcs:enable
 	}
 

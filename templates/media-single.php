@@ -461,6 +461,23 @@ $mvs_archive_url = home_url( '/media/' );
 							<span class="mvs-btn__label"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 						</button>
 					<?php endif; ?>
+					<?php
+					/**
+					 * Owner / add-on actions for the single-media social bar.
+					 *
+					 * The canonical media view every feed layout links to, so it is the
+					 * one place an add-on can surface a per-media owner action (e.g. Pro
+					 * "Boost this media") and have it reachable regardless of the active
+					 * feed layout. Handlers should self-gate on ownership + availability.
+					 *
+					 * @since 2.1.0
+					 *
+					 * @param int  $mvs_media_id  Media being viewed.
+					 * @param int  $mvs_author_id Media author id.
+					 * @param bool $mvs_is_owner  Whether the current viewer owns the media.
+					 */
+					do_action( 'mvs_media_single_actions', $mvs_media_id, $mvs_author_id, $mvs_is_owner );
+					?>
 					<button class="mvs-share-btn mvs-btn--icon-collapse" type="button"
 						data-wp-on--click="actions.handleShare"
 						data-mvs-tooltip="<?php esc_attr_e( 'Share', 'wpmediaverse' ); ?>"
@@ -487,7 +504,7 @@ $mvs_archive_url = home_url( '/media/' );
 					 *
 					 * @param bool $enabled Whether reporting is enabled. Default false.
 					 */
-					$mvs_reports_enabled = (bool) apply_filters( 'mvs_reports_enabled', false );
+					$mvs_reports_enabled = \WPMediaVerse\Social\ReportService::reports_enabled();
 					?>
 					<?php if ( $mvs_is_owner ) : ?>
 						<button class="mvs-btn mvs-btn--small mvs-btn--icon-collapse" type="button"

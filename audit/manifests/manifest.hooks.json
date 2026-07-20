@@ -1673,6 +1673,18 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_rest_timestamp_keys",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $keys"
+      ],
+      "where": "includes/Core/Dates.php:72",
+      "consumed_by": [
+        "wpmediaverse-pro: includes/Core/Plugin.php (registers Pro UTC timestamp keys)"
+      ]
+    },
+    {
       "name": "mvs_optimize_image",
       "type": "filter",
       "args_count": 2,

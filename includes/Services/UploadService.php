@@ -1375,15 +1375,30 @@ class UploadService {
 	 * without patching core. Keys become the meta suffix (`thumb_large` etc.);
 	 * values are `width`, `height`, `crop` as consumed by WP_Image_Editor::multi_resize().
 	 *
+	 * The `large` rung is the primary display/feed size and is owner-configurable
+	 * via the "Large image size" setting (`mvs_large_image_size`, default 1024px),
+	 * so a site can pick a custom display dimension (e.g. 800px) with no code. It
+	 * is the single point every generator (fresh upload, CLI regenerate, admin
+	 * "Repair thumb") reads, so changing it stays consistent everywhere. `medium`
+	 * (grid) and `thumb` remain fixed. The value is clamped here as a second guard
+	 * so a legacy/direct option write that bypassed the sanitizer can never emit
+	 * an absurd rung.
+	 *
 	 * @since 1.1.3
 	 *
 	 * @return array<string,array{width:int,height:int,crop:bool}>
 	 */
 	public static function get_thumbnail_sizes(): array {
+		$large = (int) get_option( 'mvs_large_image_size', 1024 );
+		if ( $large <= 0 ) {
+			$large = 1024;
+		}
+		$large = max( 100, min( 4096, $large ) );
+
 		$sizes = array(
 			'large'  => array(
-				'width'  => 1024,
-				'height' => 1024,
+				'width'  => $large,
+				'height' => $large,
 				'crop'   => false,
 			),
 			'medium' => array(

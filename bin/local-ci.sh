@@ -128,6 +128,16 @@ if [ -x bin/journey-coverage.sh ]; then
   run_stage "1.6" "Journey coverage (critical features have a journey)" bash bin/journey-coverage.sh
 fi
 
+# 1.6b — Erasure coverage: every user-keyed table is on the ERASE or the RETAIN
+# list (Data Lifecycle Standard §9a). The rule existed in prose while nine
+# member-bearing tables sat in no exporter and no eraser — including push
+# devices, which means the site kept a live delivery channel to someone who had
+# asked to be forgotten. Nobody disagreed with the rule; a table was added and
+# nothing forced the question. A compliance rule with no gate is a suggestion.
+if [ -f bin/check-erasure.php ]; then
+  run_stage "1.6b" "Erasure coverage (every user-keyed table is ERASE or RETAIN)" php bin/check-erasure.php
+fi
+
 # 1.7 — Template-style check: no STATIC inline styles / hardcoded hex in markup
 # (templates, block render.php, HTML-echoing includes). Closes the hole the CSS
 # token-contract gate can't see — it scans .css files, not inline style="…"
@@ -151,7 +161,13 @@ if [ -x bin/coding-rules-check.sh ]; then
   run_stage "2.1" "Coding-rules check" bash bin/coding-rules-check.sh
 fi
 
-if [ -x bin/architecture-checks.sh ]; then
+# Architecture invariants (Free/Pro contract). The enforcement script lives in
+# the wpmediaverse-pro sibling (it resolves Free as ../wpmediaverse via its own
+# BASH_SOURCE), so run it from there when Pro is checked out alongside; a local
+# bin/ copy still wins if one exists; skip cleanly when neither is present.
+if [ -x ../wpmediaverse-pro/bin/architecture-checks.sh ]; then
+  run_stage "2.2" "Architecture invariants (Free/Pro contract)" bash ../wpmediaverse-pro/bin/architecture-checks.sh
+elif [ -x bin/architecture-checks.sh ]; then
   run_stage "2.2" "Architecture invariants (Free/Pro contract)" bash bin/architecture-checks.sh
 fi
 

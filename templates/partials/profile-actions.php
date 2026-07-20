@@ -44,7 +44,7 @@ $mvs_messaging_on = ( 'nobody' !== $mvs_dm_access );
 
 // Member reporting is a Pro feature — POST /users/{id}/report 403s in Free unless
 // this filter is true. Only surface the Report action when it will actually work.
-$mvs_reports_on     = (bool) apply_filters( 'mvs_reports_enabled', false );
+$mvs_reports_on     = \WPMediaVerse\Social\ReportService::reports_enabled();
 $mvs_report_reasons = array(
 	'spam'           => __( 'Spam', 'wpmediaverse' ),
 	'harassment'     => __( 'Harassment or bullying', 'wpmediaverse' ),

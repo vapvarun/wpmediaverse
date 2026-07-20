@@ -384,15 +384,19 @@ class SettingsRegistrar {
 		// Image optimization — re-compression of originals. PNG/GIF are re-encoded;
 		// JPEG is re-encoded at quality 92 (filterable via
 		// `mvs_optimize_jpeg_quality`) with metadata stripped, which is LOSSY.
-		// Default on, and the field copy below says so ("stronger compression",
-		// "10 to 30 percent smaller"), so it is a disclosed choice.
+		// Default OFF: on a photo platform, silently re-encoding every upload from
+		// (typically) q95 down to q92 loses ~18% of the file's data on the good
+		// photos and can never improve one, so it is opt-in, not opt-out
+		// (Basecamp #10073918955). GPS/EXIF stripping is a SEPARATE, always-on,
+		// lossless segment-removal path (mvs_strip_exif) — turning this off does
+		// not weaken privacy.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_storage',
 			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => true,
+				'default'           => false,
 			)
 		);
 		add_settings_field(
@@ -403,7 +407,7 @@ class SettingsRegistrar {
 			'mvs_storage',
 			array(
 				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
-				'description' => __( 'Shrink each uploaded image automatically by removing hidden camera data and re-saving with stronger compression. Works on JPEG, PNG, and GIF. Most uploads end up 10 to 30 percent smaller with no visible quality change. If you already use EWWW, Imagify, Smush, or ShortPixel, leave this on; they will run alongside.', 'wpmediaverse' ),
+				'description' => __( 'Re-save each uploaded image with stronger compression to save space. Works on JPEG, PNG, and GIF, and typically makes uploads 10 to 30 percent smaller. For JPEG this is a lossy re-encode (about quality 92), so it is off by default to keep your originals untouched - turn it on if storage matters more than pixel-perfect originals. Removing hidden GPS/camera data happens separately and always, with no quality loss. If you use EWWW, Imagify, Smush, or ShortPixel, leave this off and let them handle it.', 'wpmediaverse' ),
 			)
 		);
 
@@ -640,6 +644,29 @@ class SettingsRegistrar {
 
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_display',
+			'mvs_large_image_size',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_large_image_size' ),
+				// 1024 keeps existing installs pixel-identical; the "Large" rung
+				// only changes when an owner deliberately sets a custom value.
+				'default'           => 1024,
+			)
+		);
+		add_settings_field(
+			'mvs_large_image_size',
+			__( 'Large Image Size', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_number_field' ),
+			SettingsPage::PAGE_SLUG . '-display',
+			'mvs_display',
+			array(
+				'option'      => 'mvs_large_image_size',
+				'description' => __( 'Max width/height in pixels for the "Large" image size used by grids and feeds (default 1024). To set a custom display size — e.g. 800px — enter it here and pick "Large" for Thumbnail Quality above. New uploads use it immediately; to apply it to images already uploaded, run <code>wp mvs regenerate-thumbnails</code>, or use the per-item "Repair thumb" link on the Media list.', 'wpmediaverse' ),
+			)
+		);
+
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_display',
 			'mvs_lightbox_image_source',
 			array(
 				'type'              => 'string',
@@ -700,6 +727,105 @@ class SettingsRegistrar {
 	 */
 	private function register_moderation_settings(): void {
 		add_settings_section( 'mvs_moderation', __( 'Moderation', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-ai' );
+
+		// Legal + safety surface. Handed to the mobile app through
+		// /mvs/v1/app/config -> legal.*, because App Store guideline 1.2 expects a
+		// UGC app to make its policy reachable inside the app and to publish a
+		// contact for abuse reports. These belong to the community, not to us:
+		// each site owns its own moderators, data and terms.
+		//
+		// The privacy policy is NOT duplicated here — WordPress core already has
+		// that field (Settings -> Privacy), every install has it, and most owners
+		// have filled it in. Asking twice invites the two to disagree.
+		$legal_fields = array(
+			'mvs_terms_url'      => array(
+				__( 'Terms of Service URL', 'wpmediaverse' ),
+				__( 'Shown in the mobile app under About. Leave blank if you have none.', 'wpmediaverse' ),
+			),
+			'mvs_eula_url'       => array(
+				__( 'EULA URL', 'wpmediaverse' ),
+				__( 'Leave blank to use the standard Apple end-user licence, which the app falls back to.', 'wpmediaverse' ),
+			),
+			'mvs_guidelines_url' => array(
+				__( 'Community Guidelines URL', 'wpmediaverse' ),
+				__( 'What members may and may not post. Shown in the app and alongside the Report control.', 'wpmediaverse' ),
+			),
+		);
+
+		foreach ( $legal_fields as $option => $labels ) {
+			register_setting(
+				SettingsPage::OPTION_GROUP . '_ai',
+				$option,
+				array(
+					'type'              => 'string',
+					'sanitize_callback' => 'esc_url_raw',
+					'default'           => '',
+				)
+			);
+			add_settings_field(
+				$option,
+				$labels[0],
+				array( FieldRenderer::class, 'render_text_field' ),
+				SettingsPage::PAGE_SLUG . '-ai',
+				'mvs_moderation',
+				array(
+					'option'      => $option,
+					'description' => $labels[1],
+					'placeholder' => 'https://',
+				)
+			);
+		}
+
+		// Somebody must receive abuse reports. Defaults to the site admin, because
+		// on a UGC site that person exists whether or not they nominated anyone.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_ai',
+			'mvs_abuse_contact_email',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_email',
+				'default'           => '',
+			)
+		);
+		add_settings_field(
+			'mvs_abuse_contact_email',
+			__( 'Abuse Contact Email', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_text_field' ),
+			SettingsPage::PAGE_SLUG . '-ai',
+			'mvs_moderation',
+			array(
+				'option'      => 'mvs_abuse_contact_email',
+				'description' => __( 'Where members can reach a human about abuse. Published in the mobile app. Defaults to the site administrator.', 'wpmediaverse' ),
+				'placeholder' => get_option( 'admin_email' ),
+			)
+		);
+
+		// Member abuse reporting. Defaults ON: a community whose members cannot
+		// report abuse is not safe to run, and the mobile app cannot ship
+		// without a working report path (App Store guideline 1.2). Reports land
+		// in the User Reports screen. Owners may opt out, but they must choose
+		// to.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_ai',
+			'mvs_enable_reports',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			'mvs_enable_reports',
+			__( 'Member Reporting', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-ai',
+			'mvs_moderation',
+			array(
+				'option'      => 'mvs_enable_reports',
+				'label'       => __( 'Allow members to report media and members', 'wpmediaverse' ),
+				'description' => __( 'Members can flag content and people for review. Reports appear under User Reports. Turning this off hides every Report control and refuses incoming reports.', 'wpmediaverse' ),
+			)
+		);
 
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_ai',

@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,27 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.1.0 - July 2026 =
+
+Member safety and privacy release: block, suspend, and report tools, member-initiated account deletion, and a complete GDPR export and erase map. Paired with WPMediaVerse Pro 2.1.0 - install and test both together.
+
+* New      - Members can delete their own account, with a confirmation step and a grace window they can cancel.
+* New      - Report tools are on by default, and Free now has a moderation reports queue for site owners.
+* New      - Site owners can suspend a member, and every member has a reachable blocked-members list.
+* New      - GDPR personal-data export and erasure cover every member-bearing table through one privacy map.
+* New      - A configurable Large image size, plus a WP-CLI command to regenerate thumbnails after changing it.
+* Improve  - Every REST write between members passes through one block-and-suspension gate, so a blocked or suspended member cannot act on another.
+* Improve  - Erasing a member keeps shared records - the reports filed about them, and conversations others are still in - and anonymises them instead of destroying the evidence or the thread.
+* Improve  - The app config endpoint exposes the site's terms, privacy, and safety surface for the mobile app.
+* Improve  - REST timestamps are normalised to UTC ISO-8601 across the API, and reactions now report their timestamp.
+* Improve  - Direct messaging reaches app parity, with accessibility and SEO fixes on the messaging surface.
+* Improve  - Automatic image compression is now off by default, so uploaded photos keep their original quality unless you turn it on; removing hidden GPS and camera data still happens automatically, with no quality loss.
+* Fix      - A page whose template another plugin resolved to null no longer triggers a fatal error on the front end.
+* Fix      - The direct-message typing indicator now works on sites without a persistent object cache.
+* Fix      - Dark mode no longer renders body text near-black on dark surfaces, and media surfaces pair foreground with background.
+* Dev      - Added mvs_conversation_participants.typing_until and a rank_scan index on mvs_media_index (Migrator v22).
+* Compat   - Lockstep with WPMediaVerse Pro 2.1.0. Install and test both together.
 
 = 2.0.0 - July 2026 =
 

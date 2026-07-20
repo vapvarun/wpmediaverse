@@ -1,0 +1,418 @@
+{
+    "ok": true,
+    "summary": {
+        "pass": 68,
+        "fail": 0,
+        "hole": 0
+    },
+    "rows": [
+        {
+            "check": "contract",
+            "entity": "mvs_allow_downloads",
+            "status": "pass",
+            "detail": "off=mvs_downloads_disabled(403) on=-(200) expect off=mvs_downloads_disabled"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_allow_downloads",
+            "status": "pass",
+            "detail": "oracle (enforcement proven)"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_default_privacy",
+            "status": "pass",
+            "detail": "journey: audit/journeys/customer/02-media-upload-non-public.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_allow_user_privacy",
+            "status": "pass",
+            "detail": "journey: audit/journeys/customer/02-media-upload-non-public.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_dm_access",
+            "status": "pass",
+            "detail": "journey: audit/journeys/customer/05-dm-access-setting-persists.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_show_online_status",
+            "status": "pass",
+            "detail": "journey: audit/journeys/customer/05-dm-access-setting-persists.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_chat_panel_visibility",
+            "status": "pass",
+            "detail": "journey: audit/journeys/admin/11-outbound-and-display-toggles.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_optimize_originals",
+            "status": "pass",
+            "detail": "journey: audit/journeys/admin/10-media-optimization-toggles.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_generate_webp",
+            "status": "pass",
+            "detail": "journey: audit/journeys/admin/10-media-optimization-toggles.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_generate_avif",
+            "status": "pass",
+            "detail": "journey: audit/journeys/admin/10-media-optimization-toggles.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_ai_auto_analyze",
+            "status": "pass",
+            "detail": "journey: audit/journeys/admin/09-ai-features-owner-control.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_ai_auto_apply_tags",
+            "status": "pass",
+            "detail": "journey: audit/journeys/admin/09-ai-features-owner-control.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_ai_auto_moderate",
+            "status": "pass",
+            "detail": "journey: audit/journeys/admin/09-ai-features-owner-control.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_telemetry_enabled",
+            "status": "pass",
+            "detail": "journey: audit/journeys/admin/11-outbound-and-display-toggles.md"
+        },
+        {
+            "check": "coverage",
+            "entity": "mvs_webhooks",
+            "status": "pass",
+            "detail": "journey: audit/journeys/admin/11-outbound-and-display-toggles.md"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/deletion",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/media",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/media/(?P<id>[\\d]+)",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/media/(?P<id>[\\d]+)/access",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/media/(?P<id>[\\d]+)/group",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/media",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/albums",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/albums/(?P<id>[\\d]+)",
+            "status": "pass",
+            "detail": "GET -> 404 (mvs_not_found)"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/collections",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/collections/(?P<id>[\\d]+)",
+            "status": "pass",
+            "detail": "GET -> 404 (mvs_not_found)"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/reactions",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/comments",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/favorite",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/favorites",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/stats",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/stats",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/tags",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/tags/cloud",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/moderation",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/moderation/counts",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/ai/usage",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/rules",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/grants",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/access/options",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/signed-url",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/serve",
+            "status": "pass",
+            "detail": "GET -> 400 (rest_missing_callback_param)"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/users/(?P<id>[\\d]+)/followers",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/users/(?P<id>[\\d]+)/following",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/following",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/followers",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/notifications",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/notifications/count",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/transactions",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/users/(?P<id>[\\d]+)",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/users/(?P<id>[\\d]+)/media",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/users/search",
+            "status": "pass",
+            "detail": "GET -> 400 (rest_missing_callback_param)"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/users/suggested",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/blocked",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/feed",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/users/(?P<id>[\\d]+)/activity",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/profile",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/auth/nonce",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/app/config",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/app/interests",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/interests",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/conversations",
+            "status": "pass",
+            "detail": "GET -> 200"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/conversations/(?P<id>\\d+)",
+            "status": "pass",
+            "detail": "GET -> 404"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/conversations/(?P<id>\\d+)/messages",
+            "status": "pass",
+            "detail": "GET -> 404"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/conversations/(?P<id>\\d+)/messages/search",
+            "status": "pass",
+            "detail": "GET -> 400 (rest_missing_callback_param)"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/conversations/(?P<id>\\d+)/media",
+            "status": "pass",
+            "detail": "GET -> 404"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/messages/poll",
+            "status": "pass",
+            "detail": "GET -> 400 (rest_missing_callback_param)"
+        },
+        {
+            "check": "boot",
+            "entity": "/mvs/v1/me/messages/unread-count",
+            "status": "pass",
+            "detail": "GET -> 200"
+        }
+    ]
+}

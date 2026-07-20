@@ -605,7 +605,10 @@ class ImageOptimizationService {
 	 */
 	public function is_enabled( string $type ): bool {
 		if ( 'originals' === $type ) {
-			return (bool) get_option( self::SETTING_OPTIMIZE_ORIGINALS, true );
+			// Default OFF: a lossy JPEG re-encode must not run on every upload
+			// unless the site owner opts in (Basecamp #10073918955). GPS/EXIF
+			// stripping is separate and always on (UploadService::mvs_strip_exif).
+			return (bool) get_option( self::SETTING_OPTIMIZE_ORIGINALS, false );
 		}
 		if ( 'webp' === $type ) {
 			return (bool) get_option( self::SETTING_GENERATE_WEBP, true );

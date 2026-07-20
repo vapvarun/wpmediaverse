@@ -2290,9 +2290,14 @@ class MediaRepository implements MediaRepositoryInterface {
 	public function delete_cascade( int $media_id ): bool {
 		global $wpdb;
 
-		// Author captured before the index row is deleted, so the
-		// mvs_media_deleted hook (fired at the end) carries it.
+		// Author + permalink captured before the index row is deleted, so the
+		// mvs_media_deleted hook (fired at the end, once the slug row is gone)
+		// can still carry them. The permalink is slug-based, so a listener CANNOT
+		// reconstruct it from the id after delete — a consumer that mirrors this
+		// media elsewhere (e.g. a BuddyNext feed card keyed on the URL) needs the
+		// exact pre-delete permalink to withdraw its copy.
 		$author_id = (int) $this->get_author( $media_id );
+		$permalink = $this->get_permalink( $media_id );
 
 		// Capture every stored file path BEFORE the meta/index rows are deleted,
 		// then hand them to the async storage-cleanup cycle. Both delete paths
@@ -2372,10 +2377,13 @@ class MediaRepository implements MediaRepositoryInterface {
 		 *
 		 * @since 1.1.0
 		 *
-		 * @param int $media_id  The deleted media ID.
-		 * @param int $author_id The author user ID.
+		 * @param int    $media_id  The deleted media ID.
+		 * @param int    $author_id The author user ID.
+		 * @param string $permalink The media's public permalink, captured before
+		 *                          the slug row was deleted (added 1.9.0) — so a
+		 *                          listener can withdraw a mirror keyed on the URL.
 		 */
-		do_action( 'mvs_media_deleted', $media_id, $author_id );
+		do_action( 'mvs_media_deleted', $media_id, $author_id, $permalink );
 
 		return true;
 	}

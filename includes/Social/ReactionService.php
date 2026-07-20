@@ -163,6 +163,35 @@ class ReactionService {
 	}
 
 	/**
+	 * When the given user reacted to a media item.
+	 *
+	 * Backs the app's "you reacted X ago" affordance. Stored UTC
+	 * (see toggle(), current_time('mysql', true)); the REST normalizer adds the
+	 * ISO-8601 reacted_at_gmt sibling. Uses the media_user_date index.
+	 *
+	 * @param int $media_id Media post ID.
+	 * @param int $user_id  User ID.
+	 * @return string|null UTC datetime (MySQL) or null when the user hasn't reacted.
+	 */
+	public function get_user_reaction_at( int $media_id, int $user_id ): ?string {
+		if ( $user_id <= 0 ) {
+			return null;
+		}
+		global $wpdb;
+		$table = $wpdb->prefix . 'mvs_reactions';
+
+		$val = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT created_at FROM {$table} WHERE media_id = %d AND user_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$media_id,
+				$user_id
+			)
+		);
+
+		return null !== $val ? (string) $val : null;
+	}
+
+	/**
 	 * Batch-resolve a user's reaction across a set of media.
 	 *
 	 * One query for a whole page of media instead of one per tile — the

@@ -330,6 +330,16 @@ wp_interactivity_state(
 						<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
 					</button>
 				</div>
+
+					<?php
+					// See and undo your blocks. This section lived only in
+					// templates/profile-edit.php, reachable solely via the
+					// [mvs_profile_edit] shortcode — and the plugin never creates a page
+					// for it. So a member could block someone and never take it back.
+					// Rendered here, inside the mvs/profile-edit region that owns
+					// actions.unblockMember, it reaches every install.
+					require MVS_PLUGIN_DIR . 'templates/partials/blocked-members.php';
+					?>
 			</div>
 			</div>
 		</div>

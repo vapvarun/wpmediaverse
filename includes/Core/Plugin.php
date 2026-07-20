@@ -40,6 +40,10 @@ use WPMediaVerse\REST\Controller\SignedUrlController;
 use WPMediaVerse\Services\SignedUrlService;
 use WPMediaVerse\Services\WatermarkService;
 use WPMediaVerse\Admin\ModerationQueue;
+use WPMediaVerse\Admin\ReportsPage;
+use WPMediaVerse\Admin\MemberModeration;
+use WPMediaVerse\REST\Controller\AccountController;
+use WPMediaVerse\Services\AccountDeletionService;
 use WPMediaVerse\Admin\OverviewPage;
 use WPMediaVerse\Admin\StatsPage;
 use WPMediaVerse\Admin\LogViewerPage;
@@ -215,6 +219,10 @@ class Plugin {
 			self::$container->get( 'admin.overview' );
 			self::$container->get( 'admin.settings' );
 			self::$container->get( 'admin.moderation' );
+			if ( ! defined( 'MVS_PRO_VERSION' ) ) {
+				self::$container->get( 'admin.reports' );
+			}
+			self::$container->get( 'admin.member_moderation' );
 			self::$container->get( 'admin.stats' );
 			self::$container->get( 'admin.logs' );
 			self::$container->get( 'admin.setup_wizard' );
@@ -227,6 +235,35 @@ class Plugin {
 
 		// Register REST API routes.
 		add_action( 'rest_api_init', array( self::class, 'register_rest_routes' ) );
+
+		// Block/suspension gate for every write route in both namespaces. Runs at
+		// dispatch, not per controller, because Application Passwords bypass the
+		// login gate and only three of ~112 write endpoints used to check.
+		\WPMediaVerse\REST\RestGate::register();
+
+		// One seam for app-facing timestamps: at dispatch, add an ISO-8601
+		// `<key>_gmt` sibling to every whitelisted timestamp field in mvs
+		// responses, so no controller emits it by hand and future endpoints
+		// inherit it. Uses rest_request_after_callbacks (runs inside dispatch())
+		// so both real HTTP requests and internal rest_do_request() calls are
+		// covered. See WPMediaVerse\Core\Dates.
+		add_filter( 'rest_request_after_callbacks', array( \WPMediaVerse\Core\Dates::class, 'filter_rest_response' ), 20, 3 );
+
+		// Erase the member from every mapped table when their WordPress user is
+		// deleted. UserDeletionService fires this after its own cascade; the purger
+		// covers what that cascade never knew about — the usage ledger, the error
+		// log, and every Pro table (push devices above all: a deleted member's push
+		// tokens surviving means the site keeps a live channel to someone who asked
+		// to be forgotten).
+		add_action(
+			'mvs_user_data_purged',
+			static function ( $user_id ) {
+				( new \WPMediaVerse\Privacy\MemberPurger() )->purge( (int) $user_id );
+			}
+		);
+
+		// Schedules the grace-period sweep.
+		self::$container->get( 'account_deletion' )->init();
 
 		// Defer moderation service — only load on admin or when processing uploads.
 		if ( is_admin() ) {
@@ -522,6 +559,40 @@ class Plugin {
 			}
 		);
 
+		// Free's reports queue. Registered only when Pro is absent — Pro ships a
+		// richer User Reports screen (Pro Admin\ReportManager) and two reports
+		// menus would be confusing. Reporting defaults ON, so a Free site must
+		// still have somewhere for reports to land.
+		if ( ! defined( 'MVS_PRO_VERSION' ) ) {
+			self::$container->register(
+				'admin.reports',
+				function ( ServiceContainer $c ) {
+					/** @var \WPMediaVerse\Social\ReportService $reports */
+					$reports = $c->get( 'reports' );
+					return new ReportsPage( $reports );
+				}
+			);
+		}
+
+		// Member-initiated account deletion. A member is a WordPress user, so this
+		// ends at wp_delete_user() and lets core's `deleted_user` run the existing
+		// UserDeletionService cascade — no purge logic is duplicated.
+		self::$container->register(
+			'account_deletion',
+			function () {
+				return new AccountDeletionService();
+			}
+		);
+
+		// The trigger for the suspension gate. Without it, a moderator can read a
+		// report and resolve it, but has no way to act on the member who caused it.
+		self::$container->register(
+			'admin.member_moderation',
+			function () {
+				return new MemberModeration();
+			}
+		);
+
 		self::$container->register(
 			'admin.stats',
 			function ( ServiceContainer $c ) {
@@ -803,7 +874,10 @@ class Plugin {
 		$activity      = self::$container->get( 'activity' );
 		$profile       = self::$container->get( 'profile' );
 
+		$account_deletion = self::$container->get( 'account_deletion' );
+
 		$controllers = array(
+			new AccountController( $account_deletion ),
 			new MediaController( $privacy ),
 			new AlbumController( $albums, $privacy ),
 			new CollectionController( $collections ),
@@ -1862,13 +1936,13 @@ class Plugin {
 			// the frontend global wp.i18n carries no 'wpmediaverse' catalog, so
 			// the store reads these instead. Basecamp 10073528834.
 			'i18n'        => array(
-				'Request failed'              => __( 'Request failed', 'wpmediaverse' ),
+				'Request failed'               => __( 'Request failed', 'wpmediaverse' ),
 				'Could not open conversation.' => __( 'Could not open conversation.', 'wpmediaverse' ),
-				'Could not share media.'      => __( 'Could not share media.', 'wpmediaverse' ),
-				'Upload failed'               => __( 'Upload failed', 'wpmediaverse' ),
-				'Microphone access denied'    => __( 'Microphone access denied', 'wpmediaverse' ),
-				'You reacted — tap to remove' => __( 'You reacted — tap to remove', 'wpmediaverse' ),
-				'Reacted'                     => __( 'Reacted', 'wpmediaverse' ),
+				'Could not share media.'       => __( 'Could not share media.', 'wpmediaverse' ),
+				'Upload failed'                => __( 'Upload failed', 'wpmediaverse' ),
+				'Microphone access denied'     => __( 'Microphone access denied', 'wpmediaverse' ),
+				'You reacted — tap to remove'  => __( 'You reacted — tap to remove', 'wpmediaverse' ),
+				'Reacted'                      => __( 'Reacted', 'wpmediaverse' ),
 			),
 		);
 

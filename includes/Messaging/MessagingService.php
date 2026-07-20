@@ -294,7 +294,14 @@ class MessagingService {
 		$conv_table = $wpdb->prefix . 'mvs_conversations';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
-		// Find existing conversation between these two users.
+		// Find an existing direct conversation the CURRENT user has NOT deleted.
+		// `p1.status <> 'left'` is the fresh-thread rule: when the initiator has
+		// deleted the thread, re-contacting starts a brand-new empty conversation
+		// instead of silently restoring the old one with its full history (which
+		// is what a "Delete" should mean — matches Instagram/Messenger). Delivery
+		// the other way still works: send_message() reactivates a 'left' recipient
+		// so an inbound message is never lost. ORDER BY newest keeps the lookup
+		// deterministic now that multiple direct threads per pair can exist.
 		$existing_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT p1.conversation_id
@@ -302,6 +309,8 @@ class MessagingService {
 				INNER JOIN {$part_table} p2 ON p1.conversation_id = p2.conversation_id
 				INNER JOIN {$conv_table} c ON c.id = p1.conversation_id
 				WHERE p1.user_id = %d AND p2.user_id = %d AND c.type = 'direct'
+					AND p1.status <> 'left'
+				ORDER BY p1.conversation_id DESC
 				LIMIT 1",
 				$user_a,
 				$user_b
@@ -492,9 +501,12 @@ class MessagingService {
 
 		// Enrich with participant data and unread count.
 		foreach ( $conversations as &$conv ) {
-			$conv->participants = $this->get_participants( (int) $conv->id );
-			$conv->unread_count = $this->get_conversation_unread_count( (int) $conv->id, $user_id );
+			$conv->participants         = $this->get_participants( (int) $conv->id );
+			$conv->unread_count         = $this->get_conversation_unread_count( (int) $conv->id, $user_id );
+			$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
+			$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
 		}
+		unset( $conv );
 
 		return $conversations;
 	}
@@ -532,10 +544,39 @@ class MessagingService {
 			return null;
 		}
 
-		$conv->participants = $this->get_participants( $conversation_id );
-		$conv->unread_count = $this->get_conversation_unread_count( $conversation_id, $user_id );
+		$conv->participants         = $this->get_participants( $conversation_id );
+		$conv->unread_count         = $this->get_conversation_unread_count( $conversation_id, $user_id );
+		$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
+		$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
 
 		return $conv;
+	}
+
+	/**
+	 * Which conversation a message belongs to.
+	 *
+	 * Used by the REST write gate to resolve the other party behind a
+	 * message-scoped route (reacting to a message) without the gate reaching
+	 * into the messages table itself.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param int $message_id Message ID.
+	 * @return int Conversation ID, or 0 when the message is gone.
+	 */
+	public function get_message_conversation_id( int $message_id ): int {
+		global $wpdb;
+
+		if ( $message_id <= 0 ) {
+			return 0;
+		}
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT conversation_id FROM {$wpdb->prefix}mvs_messages WHERE id = %d",
+				$message_id
+			)
+		);
 	}
 
 	/**
@@ -1354,11 +1395,31 @@ class MessagingService {
 	}
 
 	/**
+	 * Convert a stored UTC "Y-m-d H:i:s" timestamp to an ISO-8601 'Z' string.
+	 *
+	 * Messaging timestamps are written with current_time('mysql', true) (UTC)
+	 * but shipped unmarked, which is timezone-ambiguous for the mobile app. This
+	 * powers the additive `*_gmt` fields (e.g. 2026-07-18T19:44:27Z) the app uses
+	 * to compute the absolute instant. Empty/zero/invalid input yields ''.
+	 *
+	 * @param string $mysql_utc UTC datetime as stored (no timezone marker).
+	 * @return string ISO-8601 UTC ('...Z'), or '' when input is empty/invalid.
+	 */
+	public static function to_iso8601( string $mysql_utc ): string {
+		// Single converter lives in Core\Dates (also the source for the REST-wide
+		// rest_post_dispatch normalizer). Kept as a thin delegate so the hot
+		// polling paths here stay explicit.
+		return \WPMediaVerse\Core\Dates::iso8601( $mysql_utc );
+	}
+
+	/**
 	 * Search messages within a single conversation by content.
 	 *
 	 * The caller (controller) must first confirm the user participates in the
 	 * conversation. Deleted / unsent messages are excluded (except the requester's
-	 * own soft-deleted rows are also hidden). Newest match first.
+	 * own soft-deleted rows are also hidden). Newest match first. Each hit is
+	 * enriched with the sender's display name + avatar (and a UTC-ISO timestamp)
+	 * so the result is usable in group threads and identical for web + app.
 	 *
 	 * @param int    $conversation_id Conversation ID.
 	 * @param int    $user_id         User requesting.
@@ -1395,7 +1456,95 @@ class MessagingService {
 		);
 		// phpcs:enable
 
-		return is_array( $rows ) ? $rows : array();
+		$rows = is_array( $rows ) ? $rows : array();
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		// Prime the user cache once for all distinct senders (results cap at 100),
+		// then enrich each hit — a bare content snippet with no author is unusable
+		// in group threads, and the app cannot resolve names client-side.
+		$sender_ids = array();
+		foreach ( $rows as $row ) {
+			$sender_ids[] = (int) $row->sender_id;
+		}
+		// $rows is non-empty here (early return above), so there is always at
+		// least one sender to prime.
+		cache_users( array_unique( $sender_ids ) );
+
+		foreach ( $rows as &$row ) {
+			$sender              = get_userdata( (int) $row->sender_id );
+			$row->sender_name    = $sender ? $sender->display_name : '';
+			$row->sender_avatar  = get_avatar_url( (int) $row->sender_id, array( 'size' => 64 ) );
+			$row->created_at_gmt = self::to_iso8601( (string) $row->created_at );
+		}
+		unset( $row );
+
+		return $rows;
+	}
+
+	/**
+	 * List media shared in a conversation, newest first.
+	 *
+	 * Backs the "shared media" info panel and the mobile app's equivalent. The
+	 * web panel previously scraped the DOM of already-loaded bubbles, so it saw
+	 * only part of the thread and the app could not do it at all. This walks the
+	 * full message history for rows carrying an attachment or a shared media
+	 * item and returns a resolved payload per item, so web + app share one
+	 * source. The caller (controller) must confirm participation first.
+	 *
+	 * @param int $conversation_id Conversation ID.
+	 * @param int $user_id         Requesting participant (for media-share access).
+	 * @param int $limit           Max items (1-200).
+	 * @return array<int,array<string,mixed>> Newest-first shared-media items.
+	 */
+	public function get_conversation_media( int $conversation_id, int $user_id, int $limit = 60 ): array {
+		global $wpdb;
+		$msg_table = $wpdb->prefix . 'mvs_messages';
+		$limit     = max( 1, min( 200, $limit ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT m.id, m.sender_id, m.attachment_id, m.media_id, m.created_at
+				 FROM {$msg_table} m
+				 WHERE m.conversation_id = %d
+				   AND m.is_deleted = 0
+				   AND m.deleted_for_all = 0
+				   AND ( m.attachment_id > 0 OR m.media_id > 0 )
+				 ORDER BY m.id DESC
+				 LIMIT %d",
+				$conversation_id,
+				$limit
+			)
+		);
+		// phpcs:enable
+
+		if ( ! is_array( $rows ) || empty( $rows ) ) {
+			return array();
+		}
+
+		$items = array();
+		foreach ( $rows as $row ) {
+			$payload = null;
+			if ( (int) $row->attachment_id > 0 ) {
+				$payload = $this->get_attachment_data( (int) $row->attachment_id );
+			} elseif ( (int) $row->media_id > 0 ) {
+				$payload = $this->get_media_share_data( (int) $row->media_id, $user_id );
+			}
+			if ( ! $payload ) {
+				continue;
+			}
+			$items[] = array(
+				'message_id'     => (int) $row->id,
+				'sender_id'      => (int) $row->sender_id,
+				'created_at'     => (string) $row->created_at,
+				'created_at_gmt' => self::to_iso8601( (string) $row->created_at ),
+				'media'          => $payload,
+			);
+		}
+
+		return $items;
 	}
 
 	/**
@@ -1449,6 +1598,10 @@ class MessagingService {
 			if ( $msg->metadata ) {
 				$msg->metadata = json_decode( $msg->metadata, true );
 			}
+
+			// Additive UTC-ISO timestamp for the app (stored value is UTC but
+			// unmarked). Web ignores it; the app reads it for the absolute instant.
+			$msg->created_at_gmt = self::to_iso8601( (string) $msg->created_at );
 
 			// Get reactions.
 			$msg->reactions = $this->get_message_reactions( (int) $msg->id );
@@ -1785,65 +1938,87 @@ class MessagingService {
 	}
 
 	/**
-	 * Typing-indicator object-cache group. Per-(conversation, user) key —
-	 * unbounded cardinality, must NOT live in wp_options. Coding Rule #16.
+	 * How long (seconds) a typing ping stays live before it is treated as stale.
+	 * The client re-pings well inside this window while a user is actively typing.
 	 *
-	 * @since 1.2.1
+	 * @since 2.1.0
 	 */
-	private const TYPING_CACHE_GROUP = 'wpmediaverse_typing';
+	private const TYPING_TTL = 6;
 
 	/**
-	 * Build the typing cache key for a (conversation, user) pair.
-	 */
-	private static function typing_cache_key( int $conversation_id, int $user_id ): string {
-		return $conversation_id . ':' . $user_id;
-	}
-
-	/**
-	 * Set typing indicator. Stored in `wp_cache` only — degrades gracefully
-	 * (no "typing…" pip) when no persistent object cache is present, but
-	 * never bloats wp_options with millions of (conv, user) rows on busy
-	 * sites. 5-second TTL matches the previous transient lifetime.
+	 * Mark a user as typing in a conversation.
+	 *
+	 * Persisted on the participant's own row (`mvs_conversation_participants.
+	 * typing_until`) rather than `wp_cache`: request-scoped object cache meant the
+	 * write in the typist's request was gone before the recipient's poll read it,
+	 * so on any site without a persistent object cache the indicator never showed.
+	 * The per-(conversation, user) row already exists, so this adds no cardinality
+	 * and honours Coding Rule #16 (no wp_options / unguarded-transient bloat).
 	 *
 	 * @param int $conversation_id Conversation ID.
 	 * @param int $user_id         User ID.
 	 */
 	public function set_typing( int $conversation_id, int $user_id ): void {
-		wp_cache_set(
-			self::typing_cache_key( $conversation_id, $user_id ),
-			true,
-			self::TYPING_CACHE_GROUP,
-			5
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'mvs_conversation_participants';
+		$until = gmdate( 'Y-m-d H:i:s', time() + self::TYPING_TTL );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$table} SET typing_until = %s WHERE conversation_id = %d AND user_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$until,
+				$conversation_id,
+				$user_id
+			)
 		);
 	}
 
 	/**
-	 * Get typing users for a conversation. Reads from `wp_cache` only;
-	 * sites without a persistent object cache simply won't show typing
-	 * indicators (acceptable degradation — the rest of DM still works).
+	 * Get the users currently typing in a conversation.
+	 *
+	 * One indexed query against `mvs_conversation_participants` (KEY conv_typing),
+	 * so it works identically with or without a persistent object cache. A row is
+	 * "typing" while its `typing_until` is in the future; stale markers simply
+	 * fall out of the window with no cleanup pass needed.
 	 *
 	 * @param int $conversation_id Conversation ID.
 	 * @param int $exclude_user_id User to exclude (current user).
-	 * @return array User IDs currently typing.
+	 * @return array<int, array{id: int, name: string}> Users currently typing.
 	 */
 	public function get_typing_users( int $conversation_id, int $exclude_user_id ): array {
-		$participants = $this->get_participants( $conversation_id );
-		$typing       = array();
+		global $wpdb;
 
-		foreach ( $participants as $p ) {
-			if ( $p['id'] === $exclude_user_id ) {
-				continue;
-			}
-			$found = false;
-			$value = wp_cache_get(
-				self::typing_cache_key( $conversation_id, (int) $p['id'] ),
-				self::TYPING_CACHE_GROUP,
-				false,
-				$found
-			);
-			if ( $found && $value ) {
+		$table = $wpdb->prefix . 'mvs_conversation_participants';
+		$now   = gmdate( 'Y-m-d H:i:s' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$typing_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT user_id FROM {$table}
+				 WHERE conversation_id = %d
+				   AND user_id <> %d
+				   AND typing_until IS NOT NULL
+				   AND typing_until > %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$conversation_id,
+				$exclude_user_id,
+				$now
+			)
+		);
+
+		if ( empty( $typing_ids ) ) {
+			return array();
+		}
+
+		$typing_ids = array_map( 'intval', $typing_ids );
+		$typing     = array();
+
+		// Resolve display names from the already-cached participant set.
+		foreach ( $this->get_participants( $conversation_id ) as $p ) {
+			if ( in_array( (int) $p['id'], $typing_ids, true ) ) {
 				$typing[] = array(
-					'id'   => $p['id'],
+					'id'   => (int) $p['id'],
 					'name' => $p['display_name'],
 				);
 			}
@@ -1938,7 +2113,7 @@ class MessagingService {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT emoji, GROUP_CONCAT(user_id) as user_ids, COUNT(*) as count
+				"SELECT emoji, GROUP_CONCAT(user_id) as user_ids, COUNT(*) as count, MAX(created_at) as reacted_at
 				FROM {$react_table}
 				WHERE message_id = %d
 				GROUP BY emoji",
@@ -1949,9 +2124,11 @@ class MessagingService {
 		$reactions = array();
 		foreach ( $rows as $row ) {
 			$reactions[] = array(
-				'emoji'    => $row->emoji,
-				'count'    => (int) $row->count,
-				'user_ids' => array_map( 'intval', explode( ',', $row->user_ids ) ),
+				'emoji'      => $row->emoji,
+				'count'      => (int) $row->count,
+				'user_ids'   => array_map( 'intval', explode( ',', $row->user_ids ) ),
+				// Latest reaction of this emoji (UTC); normalizer adds reacted_at_gmt.
+				'reacted_at' => (string) $row->reacted_at,
 			);
 		}
 
@@ -2168,7 +2345,9 @@ class MessagingService {
 			if ( $msg->metadata ) {
 				$msg->metadata = json_decode( $msg->metadata, true );
 			}
-			$msg->reactions = $this->get_message_reactions( (int) $msg->id );
+			// Additive UTC-ISO timestamp for the app (stored value is UTC but unmarked).
+			$msg->created_at_gmt = self::to_iso8601( (string) $msg->created_at );
+			$msg->reactions      = $this->get_message_reactions( (int) $msg->id );
 			// Don't ship attachment/media data for unsent messages either.
 			if ( $msg->attachment_id && ! $msg->deleted_for_all ) {
 				$msg->attachment = $this->get_attachment_data( (int) $msg->attachment_id );

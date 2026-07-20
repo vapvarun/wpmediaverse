@@ -135,9 +135,11 @@ class ReactionController extends WP_REST_Controller {
 		$counts        = $this->reactions->get_counts( $media_id );
 		$total         = array_sum( $counts );
 		$user_reaction = null;
+		$reacted_at    = null;
 
 		if ( is_user_logged_in() ) {
 			$user_reaction = $this->reactions->get_user_reaction( $media_id, get_current_user_id() );
+			$reacted_at    = $this->reactions->get_user_reaction_at( $media_id, get_current_user_id() );
 		}
 
 		return rest_ensure_response(
@@ -146,6 +148,8 @@ class ReactionController extends WP_REST_Controller {
 				'counts'        => $counts,
 				'total'         => $total,
 				'user_reaction' => $user_reaction,
+				// Viewer's own reaction time (UTC); normalizer adds reacted_at_gmt.
+				'reacted_at'    => $reacted_at,
 			)
 		);
 	}
@@ -206,6 +210,9 @@ class ReactionController extends WP_REST_Controller {
 				'reaction_type' => $result['reaction_type'],
 				'counts'        => $counts,
 				'total'         => array_sum( $counts ),
+				// Viewer's reaction time after the toggle (null once removed);
+				// normalizer adds reacted_at_gmt.
+				'reacted_at'    => 'removed' === $result['action'] ? null : $this->reactions->get_user_reaction_at( $media_id, get_current_user_id() ),
 			)
 		);
 	}

@@ -11,6 +11,9 @@ namespace WPMediaVerse\Services;
 defined( 'ABSPATH' ) || exit;
 
 
+use WPMediaVerse\Privacy\MemberDataMap;
+use WPMediaVerse\Privacy\MemberPurger;
+
 class GDPRService {
 
 	/**
@@ -29,6 +32,15 @@ class GDPRService {
 	 * @return array
 	 */
 	public function register_exporters( array $exporters ): array {
+		// Everything the map knows about, including the tables the two hand-written
+		// exporters below never mentioned (the usage ledger, the error log, and
+		// every Pro table). Article 15 is not satisfied by exporting the parts of
+		// someone we happened to remember.
+		$exporters['wpmediaverse-all'] = array(
+			'exporter_friendly_name' => __( 'WPMediaVerse (all data)', 'wpmediaverse' ),
+			'callback'               => array( $this, 'export_mapped' ),
+		);
+
 		$exporters['wpmediaverse-media'] = array(
 			'exporter_friendly_name' => __( 'WPMediaVerse Media', 'wpmediaverse' ),
 			'callback'               => array( $this, 'export_media' ),
@@ -49,17 +61,73 @@ class GDPRService {
 	 * @return array
 	 */
 	public function register_erasers( array $erasers ): array {
-		$erasers['wpmediaverse-social'] = array(
-			'eraser_friendly_name' => __( 'WPMediaVerse Social Data', 'wpmediaverse' ),
-			'callback'             => array( $this, 'erase_social' ),
-		);
-
-		$erasers['wpmediaverse-media'] = array(
-			'eraser_friendly_name' => __( 'WPMediaVerse Media', 'wpmediaverse' ),
-			'callback'             => array( $this, 'erase_media' ),
+		// One eraser, generated from MemberDataMap — the same map the export, the
+		// account-deletion purge and the residue verifier read.
+		//
+		// This replaces the previous pair of hand-written erasers, which between
+		// them missed nine member-bearing tables (the usage ledger, the error log,
+		// and every Pro table: push devices, boosts, credits, play analytics,
+		// competition entries and votes). Worse, they hard-coded `'done' => true`.
+		// Core takes `done` at its word and emails the member to say their data is
+		// gone — so a request could be reported complete while the member's push
+		// tokens were still live. `done` is now earned by counting what is left.
+		$erasers['wpmediaverse'] = array(
+			'eraser_friendly_name' => __( 'WPMediaVerse', 'wpmediaverse' ),
+			'callback'             => array( $this, 'erase_member' ),
 		);
 
 		return $erasers;
+	}
+
+	/**
+	 * Erase a member from every mapped table, and prove it.
+	 *
+	 * Batched and resumable: core calls this again while `done` is false, so an
+	 * oversized member cannot half-erase on a timeout.
+	 *
+	 * @param string $email_address Member's email.
+	 * @param int    $page          Page (core increments while done is false).
+	 * @return array{items_removed: bool, items_retained: bool, messages: array, done: bool}
+	 */
+	public function erase_member( string $email_address, int $page = 1 ): array {
+		$user = get_user_by( 'email', $email_address );
+
+		if ( ! $user ) {
+			return array(
+				'items_removed'  => false,
+				'items_retained' => false,
+				'messages'       => array(),
+				'done'           => true,
+			);
+		}
+
+		$purger = new MemberPurger();
+		$counts = $purger->purge( (int) $user->ID );
+
+		// `done` is EARNED, not asserted: count what is still there and only
+		// report finished at zero. The delete list and the verify list are the
+		// same list, so the two cannot disagree.
+		$left = $purger->residue( (int) $user->ID );
+
+		$messages = array();
+
+		if ( $counts['retained'] > 0 ) {
+			foreach ( MemberDataMap::retain_map() as $spec ) {
+				$messages[] = sprintf(
+					/* translators: 1: data category, 2: why it is kept. */
+					__( '%1$s was kept but anonymised. %2$s', 'wpmediaverse' ),
+					$spec['label'],
+					$spec['reason']
+				);
+			}
+		}
+
+		return array(
+			'items_removed'  => $counts['removed'] > 0,
+			'items_retained' => $counts['retained'] > 0,
+			'messages'       => array_unique( $messages ),
+			'done'           => 0 === $left,
+		);
 	}
 
 	/**
@@ -410,5 +478,103 @@ class GDPRService {
 		);
 
 		wp_add_privacy_policy_content( 'WPMediaVerse', $content );
+	}
+
+	/**
+	 * Export every mapped table's rows for this member.
+	 *
+	 * Generated from MemberDataMap, so a table can never be erasable but not
+	 * exportable — the same list drives both. Retained (anonymised) tables are
+	 * exported too, with the reason they are kept stated in the export itself:
+	 * the member is entitled to know what survives and why.
+	 *
+	 * @param string $email_address Member's email.
+	 * @param int    $page          Page number.
+	 * @return array{data: array, done: bool}
+	 */
+	public function export_mapped( string $email_address, int $page = 1 ): array {
+		global $wpdb;
+
+		$user = get_user_by( 'email', $email_address );
+
+		if ( ! $user ) {
+			return array(
+				'data' => array(),
+				'done' => true,
+			);
+		}
+
+		$user_id = (int) $user->ID;
+		$export  = array();
+
+		$groups = array(
+			'erase'  => MemberDataMap::erase_map(),
+			'retain' => MemberDataMap::retain_map(),
+		);
+
+		foreach ( $groups as $kind => $map ) {
+			foreach ( $map as $table => $spec ) {
+				$full = $wpdb->prefix . $table;
+
+				$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $full ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				if ( ! $exists ) {
+					continue;
+				}
+
+				$where = array();
+				foreach ( $spec['columns'] as $column ) {
+					$has = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM `{$full}` LIKE %s", $column ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					if ( $has ) {
+						$where[] = $wpdb->prepare( "`{$column}` = %d", $user_id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					}
+				}
+
+				if ( empty( $where ) ) {
+					continue;
+				}
+
+				// The WHERE clause is assembled from $wpdb->prepare()'d fragments
+				// (each `column = %d`), and $full/$column come from a fixed table
+				// map, never user input - so this is safe. Plugin Check attributes
+				// the sniff to the SQL-string line, which a single-line phpcs:ignore
+				// on the call doesn't cover, so disable/enable spans the statement.
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+				$rows = $wpdb->get_results(
+					"SELECT * FROM `{$full}` WHERE " . implode( ' OR ', $where ) . ' LIMIT 500',
+					ARRAY_A
+				);
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+
+				foreach ( (array) $rows as $i => $row ) {
+					$data = array();
+
+					foreach ( $row as $key => $value ) {
+						$data[] = array(
+							'name'  => $key,
+							'value' => is_scalar( $value ) ? (string) $value : wp_json_encode( $value ),
+						);
+					}
+
+					if ( 'retain' === $kind ) {
+						$data[] = array(
+							'name'  => __( 'Why this is kept', 'wpmediaverse' ),
+							'value' => $spec['reason'] . ' ' . $spec['basis'],
+						);
+					}
+
+					$export[] = array(
+						'group_id'    => 'mvs-' . $table,
+						'group_label' => $spec['label'],
+						'item_id'     => $table . '-' . $i,
+						'data'        => $data,
+					);
+				}
+			}
+		}
+
+		return array(
+			'data' => $export,
+			'done' => true,
+		);
 	}
 }

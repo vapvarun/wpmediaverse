@@ -153,21 +153,19 @@ class ReportController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Guard the report write path behind the `mvs_reports_enabled` filter.
+	 * Guard the report write path.
 	 *
-	 * Reporting is a Pro feature: Free has no queue/UI to read or resolve
-	 * reports, so Free must not collect them. The filter defaults to false in
-	 * Free; Pro (or a site) opts in by returning true. When disabled, even a
-	 * hand-crafted POST is refused with a clear, distinct error instead of
-	 * piling up unreadable reports.
+	 * Defers to ReportService::reports_enabled() so the endpoint and the UI that
+	 * posts to it read the same switch. Reporting is on by default; a site that
+	 * turns it off in Settings refuses even a hand-crafted POST rather than
+	 * piling up reports nobody will read.
 	 *
 	 * @since 1.6.0
 	 *
 	 * @return WP_Error|null WP_Error when reporting is disabled, null otherwise.
 	 */
 	private function reports_disabled() {
-		/** This filter is documented in templates/media-single.php */
-		if ( apply_filters( 'mvs_reports_enabled', false ) ) {
+		if ( ReportService::reports_enabled() ) {
 			return null;
 		}
 
