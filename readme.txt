@@ -124,6 +124,7 @@ Member safety and privacy release: block, suspend, and report tools, member-init
 * Improve  - The app config endpoint exposes the site's terms, privacy, and safety surface for the mobile app.
 * Improve  - REST timestamps are normalised to UTC ISO-8601 across the API, and reactions now report their timestamp.
 * Improve  - Direct messaging reaches app parity, with accessibility and SEO fixes on the messaging surface.
+* Improve  - Automatic image compression is now off by default, so uploaded photos keep their original quality unless you turn it on; removing hidden GPS and camera data still happens automatically, with no quality loss.
 * Fix      - A page whose template another plugin resolved to null no longer triggers a fatal error on the front end.
 * Fix      - The direct-message typing indicator now works on sites without a persistent object cache.
 * Fix      - Dark mode no longer renders body text near-black on dark surfaces, and media surfaces pair foreground with background.

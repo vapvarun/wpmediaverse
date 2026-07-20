@@ -384,15 +384,19 @@ class SettingsRegistrar {
 		// Image optimization — re-compression of originals. PNG/GIF are re-encoded;
 		// JPEG is re-encoded at quality 92 (filterable via
 		// `mvs_optimize_jpeg_quality`) with metadata stripped, which is LOSSY.
-		// Default on, and the field copy below says so ("stronger compression",
-		// "10 to 30 percent smaller"), so it is a disclosed choice.
+		// Default OFF: on a photo platform, silently re-encoding every upload from
+		// (typically) q95 down to q92 loses ~18% of the file's data on the good
+		// photos and can never improve one, so it is opt-in, not opt-out
+		// (Basecamp #10073918955). GPS/EXIF stripping is a SEPARATE, always-on,
+		// lossless segment-removal path (mvs_strip_exif) — turning this off does
+		// not weaken privacy.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_storage',
 			\WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => 'rest_sanitize_boolean',
-				'default'           => true,
+				'default'           => false,
 			)
 		);
 		add_settings_field(
@@ -403,7 +407,7 @@ class SettingsRegistrar {
 			'mvs_storage',
 			array(
 				'option'      => \WPMediaVerse\Services\ImageOptimizationService::SETTING_OPTIMIZE_ORIGINALS,
-				'description' => __( 'Shrink each uploaded image automatically by removing hidden camera data and re-saving with stronger compression. Works on JPEG, PNG, and GIF. Most uploads end up 10 to 30 percent smaller with no visible quality change. If you already use EWWW, Imagify, Smush, or ShortPixel, leave this on; they will run alongside.', 'wpmediaverse' ),
+				'description' => __( 'Re-save each uploaded image with stronger compression to save space. Works on JPEG, PNG, and GIF, and typically makes uploads 10 to 30 percent smaller. For JPEG this is a lossy re-encode (about quality 92), so it is off by default to keep your originals untouched - turn it on if storage matters more than pixel-perfect originals. Removing hidden GPS/camera data happens separately and always, with no quality loss. If you use EWWW, Imagify, Smush, or ShortPixel, leave this off and let them handle it.', 'wpmediaverse' ),
 			)
 		);
 
