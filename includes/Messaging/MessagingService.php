@@ -282,7 +282,9 @@ class MessagingService {
 	 *                      denial — hard block, DMs-disabled, self, too-new,
 	 *                      mutual-follow-required, rate limit — is still enforced
 	 *                      first; the flag applies only once the send is already
-	 *                      permitted. Default empty array.
+	 *                      permitted. `created_at` (optional): backdated UTC
+	 *                      timestamp for the whole thread (importer seam, see
+	 *                      Core\Dates::resolve_backdate()). Default empty array.
 	 * @return array{conversation_id: int, created: bool, status: string}
 	 */
 	public function find_or_create_conversation( int $user_a, int $user_b, array $args = array() ): array {
@@ -367,7 +369,10 @@ class MessagingService {
 			);
 		}
 
-		$now = current_time( 'mysql', true );
+		// Importer seam: $args['created_at'] backdates the conversation (and the
+		// participants' joined_at below) so a migrated DM history keeps its
+		// original dates. resolve_backdate() returns null for live callers.
+		$now = \WPMediaVerse\Core\Dates::resolve_backdate( isset( $args['created_at'] ) ? (string) $args['created_at'] : null ) ?? current_time( 'mysql', true );
 
 		$wpdb->insert(
 			$conv_table,
@@ -779,7 +784,9 @@ class MessagingService {
 	 * @param int    $creator_id      Creator (becomes admin).
 	 * @param int[]  $participant_ids Other members to add.
 	 * @param string $title           Group title.
-	 * @param array  $opts            Optional: container_type, container_id.
+	 * @param array  $opts            Optional: container_type, container_id, created_at
+	 *                                (backdated UTC timestamp - importer seam, see
+	 *                                Core\Dates::resolve_backdate()).
 	 * @return int New conversation id, or 0 on failure / cap exceeded.
 	 */
 	public function create_group_conversation( int $creator_id, array $participant_ids, string $title = '', array $opts = array() ): int {
@@ -804,7 +811,8 @@ class MessagingService {
 
 		$conv_table = $wpdb->prefix . 'mvs_conversations';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
-		$now        = current_time( 'mysql', true );
+		// Importer seam: $opts['created_at'] backdates a migrated group thread.
+		$now        = \WPMediaVerse\Core\Dates::resolve_backdate( isset( $opts['created_at'] ) ? (string) $opts['created_at'] : null ) ?? current_time( 'mysql', true );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->insert(
@@ -1142,7 +1150,8 @@ class MessagingService {
 	 *
 	 * @param int   $conversation_id Conversation ID.
 	 * @param int   $sender_id       Sender user ID.
-	 * @param array $data            Message data: content, message_type, attachment_id, media_id, parent_id, metadata.
+	 * @param array $data            Message data: content, message_type, attachment_id, media_id, parent_id, metadata,
+	 *                               created_at (optional backdated UTC timestamp - importer seam, see Core\Dates::resolve_backdate()).
 	 * @return array{success: bool, message_id: int, error: string}
 	 */
 	public function send_message( int $conversation_id, int $sender_id, array $data ): array {
@@ -1268,7 +1277,10 @@ class MessagingService {
 			$message_type = 'text';
 		}
 
-		$now = current_time( 'mysql', true );
+		// Importer seam: $data['created_at'] backdates the message and carries
+		// into the conversation's last_activity_at below, so a migrated thread
+		// sorts by its real history rather than the migration run time.
+		$now = \WPMediaVerse\Core\Dates::resolve_backdate( isset( $data['created_at'] ) ? (string) $data['created_at'] : null ) ?? current_time( 'mysql', true );
 
 		$insert_data    = array(
 			'conversation_id' => $conversation_id,
