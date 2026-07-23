@@ -2117,3 +2117,15 @@ a.mvs-stat-card:focus {
 	white-space: nowrap;
 	text-align: end;
 }
+
+/* Reports admin page — spacing lifted out of inline markup styles (Coding Rule 19). */
+.mvs-reports-lead {
+	margin-top: 1em;
+}
+.mvs-reports-table {
+	margin-top: 1em;
+}
+.mvs-report-status-form {
+	display: inline-block;
+	margin-right: 4px;
+}

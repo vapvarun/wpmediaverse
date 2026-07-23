@@ -195,6 +195,20 @@ final class MemberDataMap {
 				'reason'  => 'A conversation with other active participants is a shared record; erasing its creator must not delete the thread for everyone else.',
 				'basis'   => 'Legitimate interest (integrity of a shared record). Rows are anonymised: created_by set to 0.',
 			),
+
+			// A pure activity <-> media linkage table: it maps a BuddyPress
+			// activity id to media ids and holds NO person column of its own
+			// (id, object_type, activity_id, media_id, variant, position). The
+			// member's media lives in mvs_media_index (ERASE, by post_author), and
+			// erasing it there removes the personal data; these link rows are just
+			// join records with nothing to anonymise. Classified explicitly so the
+			// erasure gate accounts for every table rather than leaving one silent.
+			'mvs_bp_activity_media' => array(
+				'columns' => array(),
+				'label'   => __( 'Activity media links', 'wpmediaverse' ),
+				'reason'  => 'Pure activity-to-media join table with no personal column. The member\'s media itself is erased via mvs_media_index; these rows only reference it.',
+				'basis'   => 'No personal data stored (join keys only), so nothing to erase or anonymise here.',
+			),
 		);
 
 		/**
