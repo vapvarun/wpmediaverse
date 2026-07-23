@@ -59,15 +59,23 @@
 					fbtn.classList.add( 'mvs-btn--primary' );
 				}
 				if ( data.counts ) {
+					// Two header markups exist: the free explore profile wraps the
+					// counts in .mvs-follows-open buttons (data-list names each
+					// count); Pro layout profiles use plain spans in the order
+					// media / followers / following. Handle both.
 					var stats = document.querySelector( '.mvs-profile-header-stats' );
-					if ( stats ) {
+					var followersEl = document.querySelector( '.mvs-profile-header-stats .mvs-follows-open[data-list="followers"] strong' );
+					var followingEl = document.querySelector( '.mvs-profile-header-stats .mvs-follows-open[data-list="following"] strong' );
+					if ( ! followersEl && stats ) {
 						var spans = stats.querySelectorAll( 'span' );
-						if ( spans[ 1 ] ) {
-							var strong = spans[ 1 ].querySelector( 'strong' );
-							if ( strong ) {
-								strong.textContent = data.counts.followers;
-							}
-						}
+						followersEl = spans[ 1 ] ? spans[ 1 ].querySelector( 'strong' ) : null;
+						followingEl = spans[ 2 ] ? spans[ 2 ].querySelector( 'strong' ) : null;
+					}
+					if ( followersEl && typeof data.counts.followers !== 'undefined' ) {
+						followersEl.textContent = data.counts.followers;
+					}
+					if ( followingEl && typeof data.counts.following !== 'undefined' ) {
+						followingEl.textContent = data.counts.following;
 					}
 				}
 			} )

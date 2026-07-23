@@ -1945,6 +1945,8 @@ class Plugin {
 				'Could not open conversation.' => __( 'Could not open conversation.', 'wpmediaverse' ),
 				'Could not share media.'       => __( 'Could not share media.', 'wpmediaverse' ),
 				'Upload failed'                => __( 'Upload failed', 'wpmediaverse' ),
+				/* translators: %s: file name */
+				'Uploading %s…'                => __( 'Uploading %s…', 'wpmediaverse' ),
 				'Microphone access denied'     => __( 'Microphone access denied', 'wpmediaverse' ),
 				'You reacted — tap to remove'  => __( 'You reacted — tap to remove', 'wpmediaverse' ),
 				'Reacted'                      => __( 'Reacted', 'wpmediaverse' ),

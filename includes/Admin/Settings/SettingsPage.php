@@ -504,7 +504,10 @@ class SettingsPage {
 								<div class="mvs-settings-section__footer">
 									<?php submit_button( __( 'Save Changes', 'wpmediaverse' ), 'primary', 'submit', false ); ?>
 									<?php if ( isset( $_GET['settings-updated'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification ?>
-										<div class="mvs-save-notice"><p><?php esc_html_e( 'Settings saved.', 'wpmediaverse' ); ?></p></div>
+										<div class="mvs-save-notice">
+											<p><?php esc_html_e( 'Settings saved.', 'wpmediaverse' ); ?></p>
+											<button type="button" class="mvs-save-notice__dismiss" aria-label="<?php esc_attr_e( 'Dismiss this notice', 'wpmediaverse' ); ?>">&times;</button>
+										</div>
 									<?php endif; ?>
 								</div>
 							</form>
