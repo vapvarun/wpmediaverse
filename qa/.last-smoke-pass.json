@@ -2,11 +2,11 @@
   "mode": "combo",
   "release_version": "2.2.0",
   "pro_version": "2.2.0",
-  "ran_at": "2026-07-23T18:07:06Z",
+  "ran_at": "2026-07-23T20:04:58Z",
   "sections": {
     "A_fresh_install":     { "pass": 0, "fail": 0, "skipped": 5 },
     "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 15, "fail": 0, "skipped": 23 },
+    "C_core_flows":        { "pass": 16, "fail": 0, "skipped": 23 },
     "D_regression_guards": { "pass": 7, "fail": 0, "skipped": 22 },
     "E_pro_smoke":         { "pass": 1, "fail": 0, "skipped": 22 },
     "F_cross_browser":     { "pass": 0, "fail": 0, "skipped": 2 }
@@ -24,6 +24,7 @@
     "F.a11y keyboard-focus-ring / tab-order walk not verified this pass beyond the lightbox reaction bar spot-check (D.lightbox-reactions-a11y, which passed).",
     "C.member.upload-privacy-matrix (16-cell privacy x viewer matrix) and D.privacy-fix-2026-05-07 not re-walked this pass - only the default 'public' privacy path was exercised end-to-end.",
     "C.member.edit-categories-persist / D.categories-cache-miss-drop (persistent-object-cache category save regression) not re-tested this pass.",
-    "E section (Pro competitions/gamification/streaks/cloud/AI/watermark/quota/instagram/group-DM/collections) only spot-checked via E.compete-hub (page render) and D.pro-feed-layout-fallback; the other 22 E items need a dedicated pass - feature-toggle options were confirmed all default/absent (OFF) in wp_options, consistent with runbook expectations, but functional flows were not exercised."
+    "E section (Pro competitions/gamification/streaks/cloud/AI/watermark/quota/instagram/group-DM/collections) only spot-checked via E.compete-hub (page render) and D.pro-feed-layout-fallback; the other 22 E items need a dedicated pass - feature-toggle options were confirmed all default/absent (OFF) in wp_options, consistent with runbook expectations, but functional flows were not exercised.",
+    "Messaging backdate importer seam (commit 0544f848, Core\\Dates::resolve_backdate() + MessagingService::find_or_create_conversation()/send_message()): re-verified this pass, see verdict - not part of the runbook's named C/D/E rows yet, consider adding a D row on next maintenance pass."
   ]
 }
