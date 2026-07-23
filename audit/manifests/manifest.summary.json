@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "2.0.0",
+    "version": "2.2.0",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -26,7 +26,7 @@
     "capabilities": 10,
     "services": 37,
     "services_registered": 37,
-    "hooks_fired_unique": 145,
+    "hooks_fired_unique": 172,
     "hooks_with_args_signature": 29,
     "hooks_no_call_site": 0,
     "cron": 4,
@@ -46,7 +46,7 @@
     "wppqa_baseline_dir": "audit/runs/2026-05-28-wppqa-baseline-SUMMARY.md",
     "phase_2_5_11_14_skipped": true,
     "phase_2_5_11_14_skip_reason": "ServiceContainer DI (no Adapter pattern)",
-    "args_signature_extraction": "Last full pass 2026-05-17. Counts refreshed 2026-05-28; per-entry detail files lag \u2014 re-enumerate before next major release."
+    "args_signature_extraction": "Last full pass 2026-05-17. Counts refreshed 2026-05-28; per-entry detail files lag — re-enumerate before next major release."
   },
   "generated": {
     "at": "2026-07-20T12:19:33Z",
@@ -57,7 +57,7 @@
     "scan_path": ".",
     "php_file_count": 174,
     "refresh_2026_07_09_counts": {
-      "scope": "Code-level counts reconciliation for 2.0.0 (no structural re-enumeration \u2014 the 2026-07-07 full enumeration is still current). Fixed the summary counts block to match ground-truth grep + detail files after the audit flagged internal inconsistency (rest_endpoints 89 vs rest 113; blocks 13 vs 9 registered; wp_cli 20/15 vs 18 actual; tables 23 vs 22 distinct; services 49 vs 37 keys).",
+      "scope": "Code-level counts reconciliation for 2.0.0 (no structural re-enumeration — the 2026-07-07 full enumeration is still current). Fixed the summary counts block to match ground-truth grep + detail files after the audit flagged internal inconsistency (rest_endpoints 89 vs rest 113; blocks 13 vs 9 registered; wp_cli 20/15 vs 18 actual; tables 23 vs 22 distinct; services 49 vs 37 keys).",
       "verified_from_code": {
         "blocks_registered": "9 (BlockRegistrar::BLOCKS const)",
         "blocks_defined": "13 (src/blocks/*/block.json dirs; explore-view, media-social, dashboard-view, shared-ui are Interactivity-only)",
@@ -72,7 +72,7 @@
         "cpts": "2 (mvs_album, mvs_collection)",
         "taxonomies": "2 (mvs_category, mvs_tag)"
       },
-      "not_done": "manifest.json detail arrays (services[]=49, blocks[]=13) not hand-edited \u2014 regenerate via the deterministic generator on next structural change per skill hard-rule (never hand-edit enumeration entries)."
+      "not_done": "manifest.json detail arrays (services[]=49, blocks[]=13) not hand-edited — regenerate via the deterministic generator on next structural change per skill hard-rule (never hand-edit enumeration entries)."
     },
     "refresh_2026_05_07_pm": {
       "scope": "targeted (cloud-storage tooling + cloud thumbnails + i18n sweep + privacy gate)",
@@ -81,7 +81,7 @@
           "WPMediaVerse\\Services\\CloudOps"
         ],
         "interface_changes": [
-          "StorageDriverInterface::download(string $path, string $local_dest): bool \u2014 new contract method"
+          "StorageDriverInterface::download(string $path, string $local_dest): bool — new contract method"
         ],
         "cli_subcommands_added": [
           "wp mvs migrate-storage --from --to [--keep-source] [--include-non-public]",
@@ -92,14 +92,14 @@
           "mvs_cloud_direct_public_urls (boolean, default false)"
         ],
         "filters_added": [
-          "mvs_cloud_thumbnail_url($url, $size, $media_id) \u2014 delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
-          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) \u2014 opt-in for private-bucket setups"
+          "mvs_cloud_thumbnail_url($url, $size, $media_id) — delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
+          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) — opt-in for private-bucket setups"
         ],
         "options_added": [
-          "mvs_cloud_ops_status \u2014 last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
+          "mvs_cloud_ops_status — last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
         ],
         "i18n_strings_wrapped": 98,
-        "pot_entries": "1 \u2192 1,179",
+        "pot_entries": "1 → 1,179",
         "wp_localize_script_handles": [
           "mvsConfirmI18n",
           "mvsCardBuildersI18n"
@@ -227,13 +227,13 @@
         "Admin bulk-optimize progress UI"
       ]
     },
-    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only \u2014 inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired \u2014 manifest category counts unchanged. Full re-scan deferred to next structural change.",
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only — inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired — manifest category counts unchanged. Full re-scan deferred to next structural change.",
     "refresh_2026_07_07": {
-      "scope": "FULL re-enumeration for 1.9.0 (1.2.1\u21921.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
-      "method": "wp-plugin-onboard refresh \u2014 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
+      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
       "namespace": "mvs/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
-      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks \u2014 deferred."
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
     },
     "refresh_2026_07_07_v200": {
       "scope": "2.0.0 functional bug batch (21 cards). Free: moderation wp_update_post removed (no wp_posts corruption); messaging global-nobody ceiling + can_message on send (resolve_privacy_ceiling, chat_panel_enabled helpers); user_login->nicename profile URLs (get_user_profile_url) with login-fallback alias; watermark preview on single media page (TemplateHelpers::resolve_watermark_preview + mvs_apply_watermark_preview filter); media-grid columns attribute honored; /media feed prefetch N+1 fix; delete_cascade taxonomy cleanup; find_ids_by_meta keyset args.",
@@ -249,7 +249,7 @@
   },
   "refreshed_at": "2026-05-28T12:30:00Z",
   "refresh_2026_05_28": {
-    "trigger": "1.5.0 release shipped \u2014 upload + serve pipeline unification",
+    "trigger": "1.5.0 release shipped — upload + serve pipeline unification",
     "scope": "counts + plugin.version only; detail files (manifest.rest.json, manifest.hooks.json, manifest.tables.json) NOT re-enumerated",
     "changes_since_2026_05_17": {
       "plugin_version": "1.3.0 -> 1.5.0 (shipped 1.4.0 + 1.5.0)",
@@ -288,7 +288,7 @@
     },
     "follow_up_required": {
       "detail_re_enumeration": "Run full Phase 2 parallel-agent re-enumeration before tagging 1.6.0 to refresh manifest.rest.json, manifest.hooks.json, manifest.tables.json with per-entry detail. Trigger: /wp-plugin-onboard --refresh (this skill).",
-      "static_analysis_phase_2_5": "audit/derived/ cache should be rebuilt \u2014 input file hashes have changed for most categories.",
+      "static_analysis_phase_2_5": "audit/derived/ cache should be rebuilt — input file hashes have changed for most categories.",
       "feature_audit_md": "audit/reports/FEATURE_AUDIT.md is from 2026-05-11; re-generate from refreshed manifest.json."
     }
   },

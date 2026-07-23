@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse-pro",
     "name": "WPMediaVerse Pro",
-    "version": "2.0.0",
+    "version": "2.2.0",
     "namespace": "WPMediaVersePro",
     "main_file": "wpmediaverse-pro.php",
     "text_domain": "wpmediaverse-pro",
@@ -1999,7 +1999,8 @@
     "mvs_ai_providers",
     "mvs_moderation_tabs",
     "mvs_stats_tabs",
-    "wp_nav_menu_items (opt-in)"
+    "wp_nav_menu_items (opt-in)",
+    "mvs_rest_gated_route_prefixes (x1)"
   ],
   "security": {
     "uploads_gate": "Inherits Free's .htaccess deny-all on /wp-content/uploads/wpmediaverse/",
@@ -2037,9 +2038,9 @@
     "ci_local": "bash bin/ci-local.sh"
   },
   "generated": {
-    "at": "2026-07-07T00:00:00Z",
+    "at": "2026-07-24T00:00:00Z",
     "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
-    "branch": "2.0.0",
+    "branch": "2.2.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -2094,6 +2095,35 @@
         "AS hook mvs_pro_captions_reap_stale"
       ],
       "not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
+    },
+    "refresh_2026_07_24_v220": {
+      "scope": "Targeted delta for the 2.1.0 + 2.2.0 shipped surface (manifest had been at 2.0.0). Curated manifest kept per the standing generator limitation.",
+      "v210_added": {
+        "classes_added": [
+          "WPMediaVersePro\\Frontend\\BoostAffordance — single source for the boosts store/modal + owner button; consumes free action mvs_media_single_actions so boost works on every layout via the canonical single-media page"
+        ],
+        "methods_added": [
+          "CompeteSummaryController::register_cache_invalidation() — compete-summary transient invalidated on compete write hooks, 60s TTL backstop"
+        ],
+        "behavior_changes": [
+          "Battle Monitor media batched via free MediaRepository::prefetch()",
+          "tournament bracket endpoint N+1 removed (public route)",
+          "GDPR erasure anonymises competition identity instead of deleting rows"
+        ]
+      },
+      "v220_added": {
+        "classes_added": [
+          "WPMediaVersePro\\Support\\CompetitionMedia — shared competition media formatter (dedup from BattleService + TournamentService)"
+        ],
+        "templates_added": [
+          "templates/layouts/partials/feed-empty-state.php — shared 3-branch empty state (term-not-found / no-search-results / truly-empty) for flickr/pinterest/dribbble feed bodies"
+        ],
+        "behavior_changes": [
+          "flickr/pinterest/dribbble feed-body: unknown tag/category slug forces an empty result set instead of silently returning the unfiltered feed",
+          "free_filters_hooked += mvs_rest_gated_route_prefixes (Core\\Plugin boot appends /mvs-pro/v1/ so private communities gate Pro's public reads)"
+        ]
+      },
+      "not_changed": "No new REST routes, tables, blocks, admin pages, feature toggles, or cron across 2.1.0/2.2.0 on the Pro side."
     }
   },
   "category_sources": {
