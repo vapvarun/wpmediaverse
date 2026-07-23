@@ -29,6 +29,35 @@ final class Dates {
 	private const NAMESPACES = array( '/mvs/v1/', '/mvs-pro/v1/' );
 
 	/**
+	 * Resolve an optional caller-supplied backdated timestamp.
+	 *
+	 * Importer seam (BuddyNext cards 10124307318 / 10124307358): a migration
+	 * replaying a source DM history needs conversations and messages to keep
+	 * their original dates instead of the migration run time. Mirrors the
+	 * contract of BuddyNext's Core\Backdate and Jetonomy's Journey_Backdate:
+	 *
+	 *   - input is a UTC "Y-m-d H:i:s" string;
+	 *   - future or unparseable values resolve to null so the caller's own
+	 *     now-stamp applies — this seam BACKDATES only;
+	 *   - absent input resolves to null: live behaviour is byte-identical.
+	 *
+	 * @param string|null $value Caller-supplied UTC datetime, or null.
+	 * @return string|null Normalized UTC mysql datetime, or null to use now.
+	 */
+	public static function resolve_backdate( ?string $value ): ?string {
+		if ( null === $value || '' === trim( $value ) ) {
+			return null;
+		}
+
+		$timestamp = strtotime( trim( $value ) . ' UTC' );
+		if ( false === $timestamp || $timestamp > time() ) {
+			return null;
+		}
+
+		return gmdate( 'Y-m-d H:i:s', $timestamp );
+	}
+
+	/**
 	 * Convert a stored UTC "Y-m-d H:i:s" timestamp to an ISO-8601 'Z' string.
 	 *
 	 * Plugin timestamps are written with current_time('mysql', true) (UTC) or
