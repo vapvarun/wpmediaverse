@@ -120,6 +120,7 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * Fix      - The lightbox Favorite heart fills and turns red when favorited - the state toggled but the color was stuck.
 * Fix      - The Settings saved notice can be dismissed, fades out on its own, and no longer follows you across settings sections.
 * Fix      - Fatal error on BuddyBoss and older BuddyPress where bp_get_group_url() does not exist.
+* Dev      - Messaging service accepts an optional backdated created_at on conversations and messages, so a migration can replay a source DM history with its original dates. Live behavior is unchanged when the argument is absent.
 * Compat   - Aligned with WPMediaVerse Pro 2.2.0. Install both updates together.
 
 = 2.1.0 - July 2026 =
