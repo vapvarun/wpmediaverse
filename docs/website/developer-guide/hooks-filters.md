@@ -693,8 +693,9 @@ add_filter( 'mvs_media_response', function( array $data, int $media_id ) {
 | `mvs_rest_pagination_max` | Max `per_page` for media feed endpoint | `$maximum` (int) | `100` | 1.1 |
 | `mvs_explore_query_args` | Filter the `WP_Query` args used by the `/media/` explore template | `$query_args` (array), `$profile` (WP_User\|null) | Template query | 1.0 |
 | `mvs_parent_route` | Filter the resolved parent route slug for a template context | `$parent` (string), `$context` (string), `$args` (array) | Resolved slug | 1.0 |
-| `mvs_rest_require_auth` | Community privacy gate: return `true` to require authentication for the whole `mvs/v1` surface (BuddyNext turns this on when the host community is private) | `$require` (bool), `$request` (WP_REST_Request) | `false` | 2.2 |
+| `mvs_rest_require_auth` | Community privacy gate: return `true` to require authentication for the gated REST namespaces (BuddyNext turns this on when the host community is private) | `$require` (bool), `$request` (WP_REST_Request) | `false` | 2.2 |
 | `mvs_rest_can_access` | When `mvs_rest_require_auth` is on, decides whether the current request may pass; blocked requests get `401 mvs_community_private` | `$allowed` (bool), `$request` (WP_REST_Request) | `is_user_logged_in()` | 2.2 |
+| `mvs_rest_gated_route_prefixes` | Route prefixes the community privacy gate covers. Pro appends `/mvs-pro/v1/` so its public reads (e.g. tournament brackets) are gated too; sites can add further prefixes | `$prefixes` (string[]), `$request` (WP_REST_Request) | `array( '/mvs/v1/' )` | 2.2 |
 
 ---
 

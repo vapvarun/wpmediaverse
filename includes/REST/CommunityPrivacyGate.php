@@ -52,8 +52,9 @@ class CommunityPrivacyGate {
 	 * visitor is not authorised.
 	 *
 	 * Runs before the controller callback, so no data is assembled for a blocked
-	 * request. Only the mvs/v1 namespace is touched; other plugins' namespaces are
-	 * left to their own gates.
+	 * request. Only the prefixes returned by `mvs_rest_gated_route_prefixes` are
+	 * touched (Free's own namespace by default; Pro appends its namespace via the
+	 * filter). Third-party namespaces are left to their own gates.
 	 *
 	 * @param mixed            $result  Pre-dispatch short-circuit (WP_Error/response) or null.
 	 * @param mixed            $server  REST server (unused).
@@ -70,7 +71,30 @@ class CommunityPrivacyGate {
 			return $result;
 		}
 
-		if ( 0 !== strpos( (string) $request->get_route(), '/mvs/v1/' ) ) {
+		/**
+		 * Route prefixes covered by the private-community gate.
+		 *
+		 * Defaults to Free's own namespace. Pro appends `/mvs-pro/v1/` via this
+		 * filter (same product, same privacy expectations - e.g. public
+		 * tournament-bracket reads must not leak on a private community).
+		 * Third-party namespaces stay out; they own their own gates.
+		 *
+		 * @since 2.2.0
+		 *
+		 * @param string[]         $prefixes Gated route prefixes.
+		 * @param \WP_REST_Request $request  Current request.
+		 */
+		$prefixes = (array) apply_filters( 'mvs_rest_gated_route_prefixes', array( '/mvs/v1/' ), $request );
+
+		$route = (string) $request->get_route();
+		$gated = false;
+		foreach ( $prefixes as $prefix ) {
+			if ( '' !== $prefix && 0 === strpos( $route, (string) $prefix ) ) {
+				$gated = true;
+				break;
+			}
+		}
+		if ( ! $gated ) {
 			return $result;
 		}
 

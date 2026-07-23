@@ -20,6 +20,7 @@ class CommunityPrivacyGateTest extends WP_UnitTestCase {
 	public function tear_down(): void {
 		remove_all_filters( 'mvs_rest_require_auth' );
 		remove_all_filters( 'mvs_rest_can_access' );
+		remove_all_filters( 'mvs_rest_gated_route_prefixes' );
 		parent::tear_down();
 	}
 
@@ -110,6 +111,32 @@ class CommunityPrivacyGateTest extends WP_UnitTestCase {
 			$result = CommunityPrivacyGate::gate( null, null, new WP_REST_Request( 'GET', $route ) );
 			$this->assertNull( $result, "{$route} must be left to its own namespace's gate." );
 		}
+	}
+
+	/**
+	 * A namespace added via mvs_rest_gated_route_prefixes is gated too — this is
+	 * the seam Pro uses to put /mvs-pro/v1/ behind the same gate.
+	 *
+	 * @return void
+	 */
+	public function test_prefix_filter_extends_the_gate_to_added_namespaces(): void {
+		add_filter( 'mvs_rest_require_auth', '__return_true' );
+		add_filter(
+			'mvs_rest_gated_route_prefixes',
+			static function ( array $prefixes ): array {
+				$prefixes[] = '/mvs-pro/v1/';
+				return $prefixes;
+			}
+		);
+		wp_set_current_user( 0 );
+
+		$result = CommunityPrivacyGate::gate( null, null, new WP_REST_Request( 'GET', '/mvs-pro/v1/tournaments/1/bracket' ) );
+		$this->assertInstanceOf( \WP_Error::class, $result, 'An added prefix (Pro namespace) is gated for guests.' );
+		$this->assertSame( 'mvs_community_private', $result->get_error_code() );
+
+		// The default Free namespace stays gated alongside the added one.
+		$free = CommunityPrivacyGate::gate( null, null, new WP_REST_Request( 'GET', '/mvs/v1/media' ) );
+		$this->assertInstanceOf( \WP_Error::class, $free );
 	}
 
 	/**

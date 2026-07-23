@@ -8,7 +8,7 @@ WPMediaVerse Pro registers its own REST namespace, `mvs-pro/v1`, alongside the f
 
 Authentication uses the same mechanism as the free API: pass an `X-WP-Nonce` header with a nonce from `wp_create_nonce( 'wp_rest' )` and include `credentials: 'same-origin'` so the request is tied to the logged-in user. Application Passwords (WP 5.6+) work for mobile/headless clients.
 
-> **Note (2.2.0):** the free plugin's private-community gate (`mvs_rest_require_auth`) covers the `mvs/v1` namespace only. `mvs-pro/v1` routes are not behind that gate — each Pro route enforces its own permission callback as listed below. If your site is a private community and you need public Pro reads (e.g. tournament brackets) locked down too, hook `rest_pre_dispatch` with the same pattern.
+> **Note (2.2.0):** the free plugin's private-community gate (`mvs_rest_require_auth`) covers `mvs-pro/v1` too — Pro appends its namespace via the `mvs_rest_gated_route_prefixes` filter, so on a private community even Pro's public reads (e.g. tournament brackets) require login. Each route additionally enforces its own permission callback as listed below.
 
 **Permission conventions used below:**
 
