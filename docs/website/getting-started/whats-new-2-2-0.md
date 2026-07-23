@@ -6,7 +6,7 @@ WPMediaVerse 2.2.0 is a polish and privacy release: the whole REST surface can n
 
 ## Private-community REST gate
 
-When the host community is private (for example a BuddyNext site in private mode), the entire `mvs/v1` REST surface now requires a logged-in user - including public reads - so media never leaks to logged-out visitors through the API. Unauthenticated requests get `401 mvs_community_private`. The gate is off by default and developer-controllable via the `mvs_rest_require_auth` and `mvs_rest_can_access` filters. See [REST API: Authentication](../developer-guide/rest-api.md).
+When the host community is private (for example a BuddyNext site in private mode), the entire REST surface now requires a logged-in user - including public reads, and including the Pro `mvs-pro/v1` namespace (tournament brackets and other public Pro reads) - so nothing leaks to logged-out visitors through the API. Unauthenticated requests get `401 mvs_community_private`. The gate is off by default and developer-controllable via the `mvs_rest_require_auth` and `mvs_rest_can_access` filters. See [REST API: Authentication](../developer-guide/rest-api.md).
 
 ## Messaging improvements
 

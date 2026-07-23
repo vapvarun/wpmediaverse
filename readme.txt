@@ -112,7 +112,7 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 = 2.2.0 - July 2026 =
 
-* New      - Private-community gate: when the host community is private, the whole REST surface requires login, so media never leaks to logged-out visitors.
+* New      - Private-community gate: when the host community is private, the whole REST surface - Free and Pro namespaces - requires login, so nothing leaks to logged-out visitors. Developers: mvs_rest_require_auth, mvs_rest_can_access, mvs_rest_gated_route_prefixes.
 * Improve  - Reactions added to an already-delivered message now appear for the other member in real time, without a page reload.
 * Improve  - DM attachments accept media files only - image, video, and audio. Site owners can extend the list with the mvs_dm_allowed_file_types filter.
 * Improve  - Chat shows an upload chip with a progress spinner for video and audio attachments, and Send waits until the upload finishes so a message can never go out without its file.
