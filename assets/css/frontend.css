@@ -5618,6 +5618,19 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text) !important;
 }
 
+/* The active (favorited) state must survive the theme-defense guard above —
+   without the !important here the guard's color pin wins and the heart never
+   changes color even though the state toggles. */
+.mvs-lightbox-action.active,
+.mvs-lightbox-action.active:hover,
+.mvs-lightbox-action.active:focus {
+    color: var(--mvs-danger) !important;
+}
+
+.mvs-lb-fav.active svg {
+    fill: currentColor;
+}
+
 /* Fullscreen — when the lightbox enters browser fullscreen via the
    Fullscreen API, override the dialog max sizes so the media fills the
    actual viewport. ESC and the F shortcut both exit. */
