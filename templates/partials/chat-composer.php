@@ -18,10 +18,14 @@ defined( 'ABSPATH' ) || exit;
 		<button class="mvs-chat-composer__reply-close" data-wp-on--click="actions.clearReply" type="button">&times;</button>
 	</div>
 
-	<!-- Attachment preview -->
-	<div class="mvs-chat-composer__attachment-preview" data-wp-bind--hidden="!state.attachmentPreview">
-		<img data-wp-bind--src="state.attachmentPreview" alt="" />
-		<button class="mvs-chat-composer__reply-close" data-wp-on--click="actions.cancelAttachment" type="button">&times;</button>
+	<!-- Attachment preview / upload state (image thumb, or a chip for video/PDF/other files) -->
+	<div class="mvs-chat-composer__attachment-preview" data-wp-bind--hidden="!state.hasAttachmentBar">
+		<img data-wp-bind--src="state.attachmentPreview" data-wp-bind--hidden="!state.attachmentPreview" alt="" />
+		<span class="mvs-chat-composer__attachment-chip" data-wp-bind--hidden="!state.attachmentChipLabel">
+			<span class="mvs-chat-composer__attachment-spinner" data-wp-bind--hidden="!state.uploadingAttachment" aria-hidden="true"></span>
+			<span class="mvs-chat-composer__attachment-name" data-wp-text="state.attachmentChipLabel"></span>
+		</span>
+		<button class="mvs-chat-composer__reply-close" data-wp-on--click="actions.cancelAttachment" type="button" aria-label="<?php esc_attr_e( 'Remove attachment', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
 
 	<!-- Normal composer row -->

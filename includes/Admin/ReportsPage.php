@@ -173,12 +173,12 @@ class ReportsPage {
 		echo '</h2>';
 
 		if ( empty( $rows ) ) {
-			echo '<p style="margin-top:1em;">' . esc_html__( 'Nothing here. No reports with this status.', 'wpmediaverse' ) . '</p>';
+			echo '<p class="mvs-reports-lead">' . esc_html__( 'Nothing here. No reports with this status.', 'wpmediaverse' ) . '</p>';
 			echo '</div>';
 			return;
 		}
 
-		echo '<table class="wp-list-table widefat fixed striped" style="margin-top:1em;">';
+		echo '<table class="wp-list-table widefat fixed striped mvs-reports-table">';
 		echo '<thead><tr>';
 		echo '<th scope="col">' . esc_html__( 'Reported', 'wpmediaverse' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Reason', 'wpmediaverse' ) . '</th>';
@@ -275,7 +275,7 @@ class ReportsPage {
 				'dismissed' => __( 'Dismiss', 'wpmediaverse' ),
 				'pending'   => __( 'Reopen', 'wpmediaverse' ),
 			);
-			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline-block;margin-right:4px;">';
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="mvs-report-status-form">';
 			wp_nonce_field( 'mvs_report_status_' . (int) $row->id );
 			echo '<input type="hidden" name="action" value="mvs_report_status" />';
 			echo '<input type="hidden" name="report_id" value="' . esc_attr( (string) (int) $row->id ) . '" />';

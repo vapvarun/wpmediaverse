@@ -2068,10 +2068,37 @@ class MessagingService {
 		);
 
 		if ( $result ) {
+			$this->touch_message( $message_id );
 			do_action( 'mvs_message_reaction_added', $message_id, $user_id, $emoji );
 		}
 
 		return (bool) $result;
+	}
+
+	/**
+	 * Stamp a message's updated_at so the poll notices a change that did not
+	 * touch created_at.
+	 *
+	 * A reaction lives in its own table, so without this a reaction on an
+	 * already-delivered message is invisible to the other participant's poll (it
+	 * filters on created_at) until a full reload. Stamped on both add and remove
+	 * because a removal is a hard delete that leaves no other trace.
+	 * poll_reaction_updates() reads this column.
+	 *
+	 * @param int $message_id Message ID.
+	 * @return void
+	 */
+	private function touch_message( int $message_id ): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->update(
+			$wpdb->prefix . 'mvs_messages',
+			array( 'updated_at' => current_time( 'mysql', true ) ),
+			array( 'id' => $message_id ),
+			array( '%s' ),
+			array( '%d' )
+		);
 	}
 
 	/**
@@ -2095,6 +2122,10 @@ class MessagingService {
 			),
 			array( '%d', '%d' )
 		);
+
+		if ( $result ) {
+			$this->touch_message( $message_id );
+		}
 
 		return (bool) $result;
 	}
@@ -2361,6 +2392,62 @@ class MessagingService {
 		}
 
 		return $new_messages;
+	}
+
+	/**
+	 * Already-seen messages whose reactions changed since the last poll.
+	 *
+	 * The poll only returns messages newer than the client's last-seen time, so a
+	 * reaction on an ALREADY-delivered message is invisible to it — the reason
+	 * reactions did not appear live for the other participant (card 10122929662).
+	 * This is the companion query: messages the viewer participates in, created on
+	 * or before `$since` (a newer message already ships its reactions in poll()),
+	 * whose updated_at moved past `$since` because a reaction was added or removed.
+	 *
+	 * Returns just id + conversation_id + the fresh reaction set — never the
+	 * message body, which has not changed and must not be re-shipped (an unsent
+	 * message's blanking, for one, must not be undone here).
+	 *
+	 * @param int    $user_id Viewer.
+	 * @param string $since   Client's last-poll time (any strtotime-able string).
+	 * @return array<int,array{id:int,conversation_id:int,reactions:array}>
+	 */
+	public function poll_reaction_updates( int $user_id, string $since ): array {
+		global $wpdb;
+
+		$msg_table  = $wpdb->prefix . 'mvs_messages';
+		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
+		$since_gmt  = gmdate( 'Y-m-d H:i:s', strtotime( $since ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT m.id, m.conversation_id
+				FROM {$msg_table} m
+				INNER JOIN {$part_table} p ON p.conversation_id = m.conversation_id AND p.user_id = %d
+				WHERE p.status IN ('active', 'request_pending')
+				AND m.is_deleted = 0
+				AND m.deleted_for_all = 0
+				AND m.updated_at > %s
+				AND m.created_at <= %s
+				ORDER BY m.updated_at ASC
+				LIMIT 100",
+				$user_id,
+				$since_gmt,
+				$since_gmt
+			)
+		);
+
+		$updates = array();
+		foreach ( (array) $rows as $row ) {
+			$updates[] = array(
+				'id'              => (int) $row->id,
+				'conversation_id' => (int) $row->conversation_id,
+				'reactions'       => $this->get_message_reactions( (int) $row->id ),
+			);
+		}
+
+		return $updates;
 	}
 
 	// -------------------------------------------------------------------------

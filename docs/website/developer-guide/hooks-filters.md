@@ -693,6 +693,8 @@ add_filter( 'mvs_media_response', function( array $data, int $media_id ) {
 | `mvs_rest_pagination_max` | Max `per_page` for media feed endpoint | `$maximum` (int) | `100` | 1.1 |
 | `mvs_explore_query_args` | Filter the `WP_Query` args used by the `/media/` explore template | `$query_args` (array), `$profile` (WP_User\|null) | Template query | 1.0 |
 | `mvs_parent_route` | Filter the resolved parent route slug for a template context | `$parent` (string), `$context` (string), `$args` (array) | Resolved slug | 1.0 |
+| `mvs_rest_require_auth` | Community privacy gate: return `true` to require authentication for the whole `mvs/v1` surface (BuddyNext turns this on when the host community is private) | `$require` (bool), `$request` (WP_REST_Request) | `false` | 2.2 |
+| `mvs_rest_can_access` | When `mvs_rest_require_auth` is on, decides whether the current request may pass; blocked requests get `401 mvs_community_private` | `$allowed` (bool), `$request` (WP_REST_Request) | `is_user_logged_in()` | 2.2 |
 
 ---
 
@@ -1227,7 +1229,7 @@ add_filter( 'mvs_dm_denial_message', function( string $message, string $reason )
 | `mvs_dm_convo_rate_limit` | filter | Max new conversations/hour | `$limit` (int), default `10` | 1.0 |
 | `mvs_message_max_length` | filter | Max message character length | `$length` (int), default `2000` | 1.0 |
 | `mvs_message_types` | filter | Allowed message type slugs | `$types` (array), default `text, media_share, image, video, audio, voice, file, system` | 1.0 |
-| `mvs_dm_allowed_file_types` | filter | Allowed MIME types for DM file attachments | `$types` (array), default image MIME list | 1.0 |
+| `mvs_dm_allowed_file_types` | filter | Allowed MIME types for DM attachments. Since 2.2.0 the default is media only (image/video/audio) - `application/pdf` was removed; add it back here per-site to re-allow documents | `$types` (array), default image + video + audio MIME list | 1.0 |
 | `mvs_messaging_poll_intervals` | filter | Polling intervals (ms) for the chat client | `$intervals` (array), keys `active`/`list`/`background` | 1.0 |
 | `mvs_messaging_transport` | filter | Swap the messaging transport object (e.g. WebSocket instead of REST polling) | `$transport` (TransportInterface) | 1.0 |
 | `mvs_show_online_status` | filter | Filter online status visibility | `$show` (bool), `$viewer_id`, `$user_id` | 1.0 |

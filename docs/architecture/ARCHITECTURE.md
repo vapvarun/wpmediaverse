@@ -660,6 +660,8 @@ Registered via `init_messaging()` in Plugin.php. All routes require authenticati
 | `mvs_moderation_changed` | action | `Services/ModerationService.php:91` | Fires when moderation status changes. |
 | `mvs_media_response` | filter | `REST/Controller/MediaController.php:995` | Filter media data in REST responses (signed URL injection). |
 | `mvs_rest_pagination_max` | filter | `REST/Controller/MediaController.php:1016` | Max per_page for media list (default 100). |
+| `mvs_rest_require_auth` | filter | `REST/CommunityPrivacyGate.php:69` | Arm the private-community gate over the whole `mvs/v1` namespace (default `false`; BuddyNext arms it in private-community mode). Registered via `CommunityPrivacyGate::register()` on `rest_pre_dispatch`. Since 2.2.0. |
+| `mvs_rest_can_access` | filter | `REST/CommunityPrivacyGate.php:78` | When the gate is armed, decides whether the request passes (default `is_user_logged_in()`); blocked callers get `401 mvs_community_private`. Since 2.2.0. |
 | `mvs_feed_sort_options` | filter | `REST/Controller/MediaController.php:1048` | Allowed sort options for feed (default: date, trending, popular). |
 | `mvs_max_upload_size` | filter | `Services/UploadService.php:70` | Max upload file size in bytes. |
 | `mvs_upload_directory` | filter | `Services/UploadService.php:183` | Upload subdirectory path (default: `Y/m`). |

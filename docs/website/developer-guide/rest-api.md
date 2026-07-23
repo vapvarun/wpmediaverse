@@ -8,6 +8,8 @@ All routes below use the `mvs/v1` namespace (the messaging routes share the same
 
 **Authentication.** Reads of public data are open. Every write — and every `/me/*` route — requires an authenticated user. Pass the `X-WP-Nonce` header with a nonce generated via `wp_create_nonce( 'wp_rest' )` and send cookies with `credentials: 'same-origin'`, or use a WordPress Application Password for non-browser clients.
 
+**Private-community gate (2.2.0).** When the host community is private, the *entire* `mvs/v1` surface — including public reads — requires authentication. Unauthenticated requests get `401` with code `mvs_community_private`. The gate is off by default and controlled by two filters: `mvs_rest_require_auth` (return `true` to arm the gate; BuddyNext arms it automatically when its private-community mode is on) and `mvs_rest_can_access` (defaults to `is_user_logged_in()`; override to allow specific unauthenticated callers, e.g. a trusted server-to-server integration).
+
 **Authorization model.** Three levels are used throughout:
 
 - **Public** — no auth; privacy is enforced inside the query so private rows never leak.

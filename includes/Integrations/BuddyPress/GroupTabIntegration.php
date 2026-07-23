@@ -54,7 +54,7 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 			array(
 				'name'            => __( 'Media', 'wpmediaverse' ),
 				'slug'            => 'media',
-				'parent_url'      => bp_get_group_url( $group ),
+				'parent_url'      => MediaDisplayHelper::group_url( $group ),
 				'parent_slug'     => $group->slug,
 				'screen_function' => array( $this, 'render_group_media_tab' ),
 				'position'        => 80,
@@ -203,7 +203,7 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 
 	protected function get_albums_index_url(): string {
 		$group = groups_get_current_group();
-		return $group ? trailingslashit( bp_get_group_url( $group ) . 'media/albums' ) : '';
+		return $group ? trailingslashit( MediaDisplayHelper::group_url( $group ) . 'media/albums' ) : '';
 	}
 
 	protected function empty_media_message_owner(): string {
@@ -263,7 +263,7 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 			return;
 		}
 
-		$group_url  = bp_get_group_url( $group );
+		$group_url  = MediaDisplayHelper::group_url( $group );
 		$media_url  = trailingslashit( $group_url . 'media' );
 		$albums_url = trailingslashit( $group_url . 'media/albums' );
 

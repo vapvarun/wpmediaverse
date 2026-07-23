@@ -36,6 +36,7 @@ The setting is stored in the `mvs_pro_feed_layout` option.
 - All user profile media tabs switch to the new layout automatically
 - The lightbox updates: Flickr mode shows EXIF camera data in the sidebar; Instagram shows the swipe carousel
 - Stories appear above the grid in Instagram mode only
+- Search and tag filtering behave identically to the default layout, including the empty states (2.2.0): a zero-result search shows "No results for ..." with a Browse-all button and popular-tag chips, and an unknown tag shows "Tag not found" instead of an unfiltered feed
 
 ![Layout mode selector in Settings showing all four options](../images/admin-settings-display.png)
 

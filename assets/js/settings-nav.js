@@ -75,8 +75,50 @@
 		sync();
 	}
 
+	/**
+	 * "Settings saved." notices: the ?settings-updated URL param survives
+	 * client-side section switches, so the per-form footer notice would keep
+	 * showing in every section a user opens. Auto-dismiss all instances after a
+	 * few seconds, support manual dismissal, and strip the param from the URL
+	 * so section switches and reloads don't resurrect the notice.
+	 */
+	function initSaveNotices() {
+		const notices = document.querySelectorAll( '.mvs-save-notice' );
+		if ( ! notices.length ) {
+			return;
+		}
+
+		function dismissAll() {
+			document.querySelectorAll( '.mvs-save-notice' ).forEach( ( n ) => {
+				n.classList.add( 'is-dismissing' );
+				setTimeout( () => n.remove(), 200 );
+			} );
+		}
+
+		document.addEventListener( 'click', ( e ) => {
+			if ( e.target.closest( '.mvs-save-notice__dismiss' ) ) {
+				dismissAll();
+			}
+		} );
+
+		setTimeout( dismissAll, 5000 );
+
+		// Strip the save flags from the URL (keeps the section hash).
+		try {
+			const url = new URL( window.location.href );
+			if ( url.searchParams.has( 'settings-updated' ) || url.searchParams.has( 'permissions-saved' ) ) {
+				url.searchParams.delete( 'settings-updated' );
+				url.searchParams.delete( 'permissions-saved' );
+				history.replaceState( null, '', url.pathname + url.search + url.hash );
+			}
+		} catch ( err ) {
+			// URL API unavailable — leave the address bar as-is.
+		}
+	}
+
 	function init() {
 		initWebhookEvents();
+		initSaveNotices();
 
 		// Click handler for sidebar nav items.
 		document.querySelectorAll( NAV_SELECTOR ).forEach( ( item ) => {

@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,18 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.2.0 - July 2026 =
+
+* New      - Private-community gate: when the host community is private, the whole REST surface requires login, so media never leaks to logged-out visitors.
+* Improve  - Reactions added to an already-delivered message now appear for the other member in real time, without a page reload.
+* Improve  - DM attachments accept media files only - image, video, and audio. Site owners can extend the list with the mvs_dm_allowed_file_types filter.
+* Improve  - Chat shows an upload chip with a progress spinner for video and audio attachments, and Send waits until the upload finishes so a message can never go out without its file.
+* Fix      - Follower and following counts on member profiles update immediately after Follow or Unfollow, on every layout.
+* Fix      - The lightbox Favorite heart fills and turns red when favorited - the state toggled but the color was stuck.
+* Fix      - The Settings saved notice can be dismissed, fades out on its own, and no longer follows you across settings sections.
+* Fix      - Fatal error on BuddyBoss and older BuddyPress where bp_get_group_url() does not exist.
+* Compat   - Aligned with WPMediaVerse Pro 2.2.0. Install both updates together.
 
 = 2.1.0 - July 2026 =
 

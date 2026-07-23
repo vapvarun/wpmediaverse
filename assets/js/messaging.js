@@ -70,6 +70,10 @@ function formatDuration( seconds ) {
 // Temp ID counter for optimistic messages.
 let tempIdCounter = 0;
 
+// Bumped on every attachment upload start and on cancel; lets an in-flight
+// upload detect that it was cancelled and drop its stale response.
+let attachmentRequestId = 0;
+
 // Derive the sidebar preview string for a single message, mirroring the
 // server's MessagingService::send_message() preview rules so the frontend
 // recompute (after a delete) matches what the API would have stored.
@@ -212,6 +216,8 @@ const { state, actions } = store( 'mvs/messaging', {
 		voiceDuration: 0,
 		selectedAttachment: null,
 		attachmentPreview: null,
+		uploadingAttachment: false,
+		attachmentName: '',
 		pollingSince: new Date().toISOString(),
 		pollingTimer: null,
 		unreadTimer: null,
@@ -255,9 +261,26 @@ const { state, actions } = store( 'mvs/messaging', {
 		get canSend() {
 			if ( state.sendingMessage ) return false;
 			if ( state.isRecordingVoice ) return false;
+			// Never send while an attachment upload is in flight — the message
+			// would go out without its attachment_id.
+			if ( state.uploadingAttachment ) return false;
 			const hasText = state.composerText.trim().length > 0;
 			const hasAttachment = !! state.selectedAttachment;
 			return hasText || hasAttachment;
+		},
+
+		get hasAttachmentBar() {
+			return !! ( state.attachmentPreview || state.uploadingAttachment || state.selectedAttachment );
+		},
+
+		get attachmentChipLabel() {
+			if ( state.uploadingAttachment ) {
+				return __( 'Uploading %s…' ).replace( '%s', state.attachmentName );
+			}
+			if ( state.selectedAttachment && ! state.attachmentPreview ) {
+				return state.selectedAttachment.name || '';
+			}
+			return '';
 		},
 
 		get pinnedConversations() {
@@ -699,6 +722,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			state.replyingTo = null;
 			state.selectedAttachment = null;
 			state.attachmentPreview = null;
+			state.attachmentName = '';
 			actions.scrollToBottom();
 
 			try {
@@ -822,16 +846,24 @@ const { state, actions } = store( 'mvs/messaging', {
 		openAttachmentPicker() {
 			const input = document.createElement( 'input' );
 			input.type = 'file';
-			input.accept = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.zip';
+			// Media only — MediaVerse DMs share image/video/audio, not documents.
+			// The server enforces the same allowlist (mvs_dm_allowed_file_types).
+			input.accept = 'image/*,video/*,audio/*';
 			input.onchange = ( e ) => {
 				const file = e.target.files[0];
 				if ( ! file ) return;
 
-				// Determine type.
-				let type = 'file';
+				// Determine type. The accept attribute is advisory (the picker's
+				// "All Files" option bypasses it), so reject non-media here too.
+				let type = '';
 				if ( file.type.startsWith( 'image/' ) ) type = 'image';
 				else if ( file.type.startsWith( 'video/' ) ) type = 'video';
 				else if ( file.type.startsWith( 'audio/' ) ) type = 'audio';
+
+				if ( ! type ) {
+					actions.showToast( __( 'Only image, video, and audio files can be shared in messages.' ) );
+					return;
+				}
 
 				// Preview.
 				if ( type === 'image' ) {
@@ -841,6 +873,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				} else {
 					state.attachmentPreview = null;
 				}
+				state.attachmentName = file.name;
 
 				// Upload via FormData.
 				actions.uploadAttachment( file, type );
@@ -852,6 +885,11 @@ const { state, actions } = store( 'mvs/messaging', {
 			const formData = new FormData();
 			formData.append( 'file', file );
 
+			// Generation token: if the user cancels while the upload is in
+			// flight, the stale response must not re-attach the file.
+			const requestId = ++attachmentRequestId;
+			state.uploadingAttachment = true;
+
 			try {
 				const res = yield window.mvsRest.restFetch( REST + '/messages/upload', {
 					method: 'POST',
@@ -861,6 +899,8 @@ const { state, actions } = store( 'mvs/messaging', {
 
 				if ( ! res.ok ) throw new Error( ( data && data.message ) || __( 'Upload failed', 'wpmediaverse' ) );
 
+				if ( requestId !== attachmentRequestId ) return; // Cancelled mid-flight.
+
 				state.selectedAttachment = {
 					id: data.id,
 					url: data.source_url,
@@ -869,14 +909,23 @@ const { state, actions } = store( 'mvs/messaging', {
 					size: file.size,
 				};
 			} catch ( e ) {
+				if ( requestId !== attachmentRequestId ) return; // Cancelled mid-flight.
 				state.attachmentPreview = null;
+				state.attachmentName = '';
 				actions.showToast( e.message );
+			} finally {
+				if ( requestId === attachmentRequestId ) {
+					state.uploadingAttachment = false;
+				}
 			}
 		},
 
 		cancelAttachment() {
+			attachmentRequestId++; // Invalidate any in-flight upload.
+			state.uploadingAttachment = false;
 			state.selectedAttachment = null;
 			state.attachmentPreview = null;
+			state.attachmentName = '';
 		},
 
 		// ---- Voice Recording ----
@@ -1396,6 +1445,24 @@ const { state, actions } = store( 'mvs/messaging', {
 					// unsent rows the poll repeats for the unsend window.
 					if ( changed ) {
 						yield actions.loadConversations();
+					}
+				}
+
+				// Reactions on already-delivered messages. A reaction never moves
+				// created_at, so it does not arrive in data.messages above — the
+				// server sends it separately, or the other participant's reaction
+				// only appeared after a full reload (card 10122929662). Re-enrich
+				// just the affected message with the server's fresh reaction set.
+				if ( Array.isArray( data.reaction_updates ) && data.reaction_updates.length > 0 ) {
+					for ( const u of data.reaction_updates ) {
+						if ( String( u.conversation_id ) !== String( state.activeConversationId ) ) {
+							continue;
+						}
+						state.messages = state.messages.map( m =>
+							String( m.id ) === String( u.id )
+								? enrichMessage( { ...m, reactions: u.reactions } )
+								: m
+						);
 					}
 				}
 

@@ -774,6 +774,12 @@ class MessagingController extends WP_REST_Controller {
 		$conv_id  = (int) $request->get_param( 'conversation_id' );
 		$messages = $this->transport->poll( $user_id, $since );
 
+		// Reactions on already-delivered messages don't move created_at, so poll()
+		// above never sees them. This companion list carries them so the other
+		// participant's chat updates live instead of only after a reload
+		// (card 10122929662). Additive — a client that ignores the key is unchanged.
+		$reaction_updates = $this->service->poll_reaction_updates( $user_id, (string) $since );
+
 		// Per-conversation typing + presence requires the viewer to actually
 		// be a participant. Without this gate any logged-in user could iterate
 		// conversation_id values and harvest participant lists, presence, and
@@ -790,10 +796,11 @@ class MessagingController extends WP_REST_Controller {
 				// existence via differing 404 vs 403 vs empty.
 				return new WP_REST_Response(
 					array(
-						'messages'     => $messages,
-						'typing'       => array(),
-						'online_users' => array(),
-						'server_time'  => gmdate( 'c' ),
+						'messages'         => $messages,
+						'reaction_updates' => $reaction_updates,
+						'typing'           => array(),
+						'online_users'     => array(),
+						'server_time'      => gmdate( 'c' ),
 					),
 					200
 				);
@@ -814,10 +821,11 @@ class MessagingController extends WP_REST_Controller {
 
 		return new WP_REST_Response(
 			array(
-				'messages'     => $messages,
-				'typing'       => $typing,
-				'online_users' => $online_users,
-				'server_time'  => gmdate( 'c' ),
+				'messages'         => $messages,
+				'reaction_updates' => $reaction_updates,
+				'typing'           => $typing,
+				'online_users'     => $online_users,
+				'server_time'      => gmdate( 'c' ),
 			),
 			200
 		);
@@ -885,7 +893,9 @@ class MessagingController extends WP_REST_Controller {
 
 		$file = $files['file'];
 
-		// Validate MIME type.
+		// Validate MIME type. MediaVerse is a media platform: DMs share the
+		// same media surface (image/video/audio) — documents are out of scope.
+		// Site owners can extend per-site via the filter.
 		$allowed = apply_filters(
 			'mvs_dm_allowed_file_types',
 			array(
@@ -899,7 +909,6 @@ class MessagingController extends WP_REST_Controller {
 				'audio/ogg',
 				'video/mp4',
 				'video/webm',
-				'application/pdf',
 			)
 		);
 

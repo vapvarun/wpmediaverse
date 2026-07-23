@@ -249,6 +249,11 @@ class Plugin {
 		// covered. See WPMediaVerse\Core\Dates.
 		add_filter( 'rest_request_after_callbacks', array( \WPMediaVerse\Core\Dates::class, 'filter_rest_response' ), 20, 3 );
 
+		// Community-wide REST privacy gate. Default-open; a host community
+		// (BuddyNext) flips `mvs_rest_require_auth` on to make the whole mvs/v1
+		// surface login-only when it is marked private. See CommunityPrivacyGate.
+		\WPMediaVerse\REST\CommunityPrivacyGate::register();
+
 		// Erase the member from every mapped table when their WordPress user is
 		// deleted. UserDeletionService fires this after its own cascade; the purger
 		// covers what that cascade never knew about — the usage ledger, the error
@@ -1940,6 +1945,9 @@ class Plugin {
 				'Could not open conversation.' => __( 'Could not open conversation.', 'wpmediaverse' ),
 				'Could not share media.'       => __( 'Could not share media.', 'wpmediaverse' ),
 				'Upload failed'                => __( 'Upload failed', 'wpmediaverse' ),
+				/* translators: %s: file name */
+				'Uploading %s…'                => __( 'Uploading %s…', 'wpmediaverse' ),
+				'Only image, video, and audio files can be shared in messages.' => __( 'Only image, video, and audio files can be shared in messages.', 'wpmediaverse' ),
 				'Microphone access denied'     => __( 'Microphone access denied', 'wpmediaverse' ),
 				'You reacted — tap to remove'  => __( 'You reacted — tap to remove', 'wpmediaverse' ),
 				'Reacted'                      => __( 'Reacted', 'wpmediaverse' ),

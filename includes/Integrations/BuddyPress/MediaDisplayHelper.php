@@ -20,6 +20,30 @@ defined( 'ABSPATH' ) || exit;
 class MediaDisplayHelper {
 
 	/**
+	 * Resolve a BuddyPress group's URL across BP versions and forks.
+	 *
+	 * The bp_get_group_url() function is the BuddyPress 12.0+ URL API. BuddyBoss and
+	 * BuddyPress < 12 never define it and use bp_get_group_permalink() instead — so
+	 * calling bp_get_group_url() unguarded fataled ("Call to undefined function ...
+	 * bp_get_group_url()") on a BuddyBoss site. This shim prefers the modern
+	 * function and falls back to the legacy one, mirroring the guarded member-URL
+	 * resolution in ProfileTabIntegration::filter_user_profile_url(). Because it is
+	 * function_exists-guarded it can never fatal regardless of which BP fork is active.
+	 *
+	 * @param object $group A BP group object (e.g. from groups_get_current_group()).
+	 * @return string The group's URL, or '' when neither BP function is available.
+	 */
+	public static function group_url( $group ): string {
+		if ( function_exists( 'bp_get_group_url' ) ) {
+			return (string) bp_get_group_url( $group );
+		}
+		if ( function_exists( 'bp_get_group_permalink' ) ) {
+			return (string) bp_get_group_permalink( $group );
+		}
+		return '';
+	}
+
+	/**
 	 * Build the thumbnail HTML for a single media item inside an activity entry.
 	 *
 	 * Returns an empty string when no renderable content is available.

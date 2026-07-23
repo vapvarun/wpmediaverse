@@ -8,7 +8,7 @@ Send private messages, share photos, record voice notes, and have real conversat
 ## What You Can Do
 
 - Send a private message to any member directly from their profile
-- Attach photos, files, or share a media item from the gallery straight into chat
+- Attach photos, videos, or audio, or share a media item from the gallery straight into chat
 - Record and send short voice messages
 - React to individual messages with any emoji
 - See typing indicators and read receipts in real time
@@ -98,7 +98,7 @@ There are three ways to start or open a conversation:
 | Feature | Description |
 |---------|-------------|
 | Text messages | Plain text with @mention support |
-| File attachments | Attach any file type within the site's allowed MIME list |
+| Media attachments | Attach images, video, or audio. MediaVerse is a media platform, so documents (PDF, DOC, ZIP) are not accepted in chat as of 2.2.0 - a developer can extend the list with the `mvs_dm_allowed_file_types` filter. While a file uploads, the composer shows an "Uploading..." chip and Send waits for the upload to finish |
 | Media sharing | Share a WPMediaVerse media item directly into a conversation |
 | Voice messages | Record and send short audio clips |
 | Emoji reactions | React to individual messages with any emoji |
@@ -241,6 +241,8 @@ Search message content within a single conversation (1.9.0). The current user mu
 Upload a file to use as a DM attachment. Returns the WordPress attachment ID to pass as `attachment_id` in a subsequent `POST /conversations/{id}/messages` call.
 
 **Body:** `multipart/form-data` with a `file` field.
+
+**Allowed types (2.2.0):** media only - `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `audio/webm`, `audio/mp4`, `audio/mpeg`, `audio/ogg`, `video/mp4`, `video/webm`. The real MIME is sniffed server-side (`finfo`), so renaming a file does not bypass the check; anything else returns `400 File type not allowed.` Extend the list with the `mvs_dm_allowed_file_types` filter. (The `file` message type remains for messages sent before 2.2.0.)
 
 **Response:** `200 OK`
 
