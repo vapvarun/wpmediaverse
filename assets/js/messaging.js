@@ -1399,6 +1399,24 @@ const { state, actions } = store( 'mvs/messaging', {
 					}
 				}
 
+				// Reactions on already-delivered messages. A reaction never moves
+				// created_at, so it does not arrive in data.messages above — the
+				// server sends it separately, or the other participant's reaction
+				// only appeared after a full reload (card 10122929662). Re-enrich
+				// just the affected message with the server's fresh reaction set.
+				if ( Array.isArray( data.reaction_updates ) && data.reaction_updates.length > 0 ) {
+					for ( const u of data.reaction_updates ) {
+						if ( String( u.conversation_id ) !== String( state.activeConversationId ) ) {
+							continue;
+						}
+						state.messages = state.messages.map( m =>
+							String( m.id ) === String( u.id )
+								? enrichMessage( { ...m, reactions: u.reactions } )
+								: m
+						);
+					}
+				}
+
 				// Typing indicators.
 				state.typingUsers = data.typing || [];
 

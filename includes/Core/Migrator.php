@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 22;
+	const CURRENT_VERSION = 23;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -473,8 +473,10 @@ class Migrator {
 				is_deleted tinyint(1) NOT NULL DEFAULT 0,
 				deleted_for_all tinyint(1) NOT NULL DEFAULT 0,
 				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id),
 				KEY conv_date (conversation_id, created_at),
+				KEY conv_updated (conversation_id, updated_at),
 				KEY conv_id (conversation_id),
 				KEY sender (sender_id)
 			) {$charset_collate};"
@@ -970,24 +972,70 @@ class Migrator {
 		global $wpdb;
 		$part = $wpdb->prefix . 'mvs_conversation_participants';
 
-		$has = function ( string $table, string $column ) use ( $wpdb ): bool {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			return (int) $wpdb->get_var(
-				$wpdb->prepare(
-					'SELECT COUNT(*) FROM information_schema.COLUMNS
-					 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s',
-					$table,
-					$column
-				)
-			) > 0;
-		};
-
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		if ( ! $has( $part, 'typing_until' ) ) {
+		if ( ! $this->column_exists( $part, 'typing_until' ) ) {
 			$wpdb->query( "ALTER TABLE {$part} ADD COLUMN typing_until datetime DEFAULT NULL AFTER last_read_at" );
 			$wpdb->query( "ALTER TABLE {$part} ADD KEY conv_typing (conversation_id, typing_until)" );
 		}
 		// phpcs:enable
+	}
+
+	/**
+	 * Migration v23: give mvs_messages an updated_at column.
+	 *
+	 * The DM poll only re-serves messages whose created_at is newer than the
+	 * client's last poll. A reaction lives in a separate table and never touches
+	 * the parent row, so reacting to an already-delivered message was invisible to
+	 * the other participant until a full reload (customer report, card
+	 * 10122929662). A reactions-table scan cannot fix it alone: removals are hard
+	 * deletes that leave no timestamp, so only a column on the message itself —
+	 * stamped on both add and remove — catches every change. This is that column;
+	 * poll_reaction_updates() reads it.
+	 *
+	 * Backfilled to created_at so existing rows sort correctly, and indexed on
+	 * (conversation_id, updated_at) for the scoped poll query. Additive and
+	 * idempotent.
+	 *
+	 * @since 2.2.0
+	 */
+	private function migrate_to_23(): void {
+		global $wpdb;
+		$messages = $wpdb->prefix . 'mvs_messages';
+
+		if ( $this->column_exists( $messages, 'updated_at' ) ) {
+			return;
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "ALTER TABLE {$messages} ADD COLUMN updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER created_at" );
+		$wpdb->query( "ALTER TABLE {$messages} ADD KEY conv_updated (conversation_id, updated_at)" );
+		// Existing rows: no mutation has happened, so updated_at == created_at.
+		$wpdb->query( "UPDATE {$messages} SET updated_at = created_at" );
+		// phpcs:enable
+	}
+
+	/**
+	 * Whether a column exists on a table in the current database.
+	 *
+	 * Shared by the ADD-COLUMN migrations so each stays a guarded, idempotent
+	 * ALTER without re-inlining the information_schema lookup.
+	 *
+	 * @param string $table  Full table name (with prefix).
+	 * @param string $column Column name.
+	 * @return bool
+	 */
+	private function column_exists( string $table, string $column ): bool {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM information_schema.COLUMNS
+				 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s',
+				$table,
+				$column
+			)
+		) > 0;
 	}
 
 	/**
