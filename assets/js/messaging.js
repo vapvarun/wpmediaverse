@@ -846,16 +846,24 @@ const { state, actions } = store( 'mvs/messaging', {
 		openAttachmentPicker() {
 			const input = document.createElement( 'input' );
 			input.type = 'file';
-			input.accept = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.zip';
+			// Media only — MediaVerse DMs share image/video/audio, not documents.
+			// The server enforces the same allowlist (mvs_dm_allowed_file_types).
+			input.accept = 'image/*,video/*,audio/*';
 			input.onchange = ( e ) => {
 				const file = e.target.files[0];
 				if ( ! file ) return;
 
-				// Determine type.
-				let type = 'file';
+				// Determine type. The accept attribute is advisory (the picker's
+				// "All Files" option bypasses it), so reject non-media here too.
+				let type = '';
 				if ( file.type.startsWith( 'image/' ) ) type = 'image';
 				else if ( file.type.startsWith( 'video/' ) ) type = 'video';
 				else if ( file.type.startsWith( 'audio/' ) ) type = 'audio';
+
+				if ( ! type ) {
+					actions.showToast( __( 'Only image, video, and audio files can be shared in messages.' ) );
+					return;
+				}
 
 				// Preview.
 				if ( type === 'image' ) {

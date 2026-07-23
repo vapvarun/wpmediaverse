@@ -893,7 +893,9 @@ class MessagingController extends WP_REST_Controller {
 
 		$file = $files['file'];
 
-		// Validate MIME type.
+		// Validate MIME type. MediaVerse is a media platform: DMs share the
+		// same media surface (image/video/audio) — documents are out of scope.
+		// Site owners can extend per-site via the filter.
 		$allowed = apply_filters(
 			'mvs_dm_allowed_file_types',
 			array(
@@ -907,7 +909,6 @@ class MessagingController extends WP_REST_Controller {
 				'audio/ogg',
 				'video/mp4',
 				'video/webm',
-				'application/pdf',
 			)
 		);
 

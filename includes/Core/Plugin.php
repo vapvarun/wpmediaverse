@@ -1947,6 +1947,7 @@ class Plugin {
 				'Upload failed'                => __( 'Upload failed', 'wpmediaverse' ),
 				/* translators: %s: file name */
 				'Uploading %s…'                => __( 'Uploading %s…', 'wpmediaverse' ),
+				'Only image, video, and audio files can be shared in messages.' => __( 'Only image, video, and audio files can be shared in messages.', 'wpmediaverse' ),
 				'Microphone access denied'     => __( 'Microphone access denied', 'wpmediaverse' ),
 				'You reacted — tap to remove'  => __( 'You reacted — tap to remove', 'wpmediaverse' ),
 				'Reacted'                      => __( 'Reacted', 'wpmediaverse' ),
