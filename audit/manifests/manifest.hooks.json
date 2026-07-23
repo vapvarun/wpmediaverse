@@ -1918,12 +1918,69 @@
       ],
       "where": "includes/Core/TemplateHelpers.php:1239",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_media_single_actions",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "int $author_id",
+        "bool $is_owner"
+      ],
+      "where": "templates/media-single.php:479",
+      "consumed_by": [
+        "wpmediaverse-pro (Frontend\\BoostAffordance — boost store/modal + owner button on the canonical single-media page, all layouts)"
+      ],
+      "added": "2.1.0"
+    },
+    {
+      "name": "mvs_rest_require_auth",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $require = false",
+        "\\WP_REST_Request $request"
+      ],
+      "where": "includes/REST/CommunityPrivacyGate.php:70",
+      "consumed_by": [
+        "buddynext (arms it when buddynext_private_community is on)"
+      ],
+      "added": "2.2.0"
+    },
+    {
+      "name": "mvs_rest_can_access",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $allowed = is_user_logged_in()",
+        "\\WP_REST_Request $request"
+      ],
+      "where": "includes/REST/CommunityPrivacyGate.php:102",
+      "consumed_by": [
+        "buddynext (buddynext_private_community_can_access seam)"
+      ],
+      "added": "2.2.0"
+    },
+    {
+      "name": "mvs_rest_gated_route_prefixes",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string[] $prefixes = array('/mvs/v1/')",
+        "\\WP_REST_Request $request"
+      ],
+      "where": "includes/REST/CommunityPrivacyGate.php:87",
+      "consumed_by": [
+        "wpmediaverse-pro (appends /mvs-pro/v1/ at boot)"
+      ],
+      "added": "2.2.0"
     }
   ],
   "generated": {
-    "at": "2026-07-07T00:00:00Z",
+    "at": "2026-07-24T00:00:00Z",
     "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
-    "branch": "2.0.0",
+    "branch": "2.2.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
