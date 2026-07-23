@@ -310,7 +310,7 @@ class ActivitySyncIntegration {
 		if ( $is_group && function_exists( 'groups_get_group' ) ) {
 			$group = groups_get_group( (int) $activity->item_id );
 			if ( $group && ! empty( $group->name ) ) {
-				$group_link   = '<a href="' . esc_url( bp_get_group_url( $group ) ) . '">' . esc_html( $group->name ) . '</a>';
+				$group_link   = '<a href="' . esc_url( MediaDisplayHelper::group_url( $group ) ) . '">' . esc_html( $group->name ) . '</a>';
 				$group_suffix = sprintf(
 					/* translators: %s: group link */
 					__( ' in the group %s', 'wpmediaverse' ),
