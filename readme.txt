@@ -117,6 +117,7 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * Improve  - DM attachments accept media files only - image, video, and audio. Site owners can extend the list with the mvs_dm_allowed_file_types filter.
 * Improve  - Chat shows an upload chip with a progress spinner for video and audio attachments, and Send waits until the upload finishes so a message can never go out without its file.
 * Fix      - Follower and following counts on member profiles update immediately after Follow or Unfollow, on every layout.
+* Fix      - The lightbox Favorite heart fills and turns red when favorited - the state toggled but the color was stuck.
 * Fix      - The Settings saved notice can be dismissed, fades out on its own, and no longer follows you across settings sections.
 * Fix      - Fatal error on BuddyBoss and older BuddyPress where bp_get_group_url() does not exist.
 * Compat   - Aligned with WPMediaVerse Pro 2.2.0. Install both updates together.
