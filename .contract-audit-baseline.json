@@ -1,6 +1,6 @@
 {
     "generated": "2026-06-21",
-    "note": "Hand-triaged for the 1.8.0 release gate (Free+Pro paired run). Each suppression was individually verified; nothing was bulk-baselined. False positives are scanner limits (dynamic hook/key resolution); graceful-gap items read with sane defaults and are tracked as 'add admin field' enhancements, not runtime breaks.",
+    "note": "Hand-triaged for the 1.8.0 release gate (Free+Pro paired run). Each suppression was individually verified; nothing was bulk-baselined. False positives are scanner limits (dynamic hook/key resolution); graceful-gap items read with sane defaults and are tracked as 'add admin field' enhancements, not runtime breaks. 2.2.0 gate additions (2026-07-23): three AS/WP-Cron constant-fired hooks individually verified as false positives.",
     "suppressions": [
         {
             "id": "ajax-action-no-handler:mvs_media_upload",
@@ -61,6 +61,18 @@
         {
             "id": "option-read-never-written:mvs_pro_quota_woo_map",
             "reason": "Graceful gap (enhancement, not a break). WooCommerce/MemberPress/PMP QuotaAdapters read get_option(self::OPTION_KEY, array()) and degrade to 'no mapping' when unset; the Woo product->quota-package mapping admin writer is not wired yet. Tracked as a 'wire Woo quota-map admin UI' enhancement."
+        },
+        {
+            "id": "hook-consumed-never-fired:mvs_pro_captions_reap_stale",
+            "reason": "False positive. Fired via Action Scheduler using TranscriptionService::AS_REAPER_HOOK (as_enqueue_async_action(self::AS_REAPER_HOOK, ...) at TranscriptionService.php:371 and as_schedule_* at :143). Scanner cannot resolve the constant at the enqueue site to the literal at the add_action site. Verified for the 2.2.0 gate."
+        },
+        {
+            "id": "hook-consumed-never-fired:mvs_pro_connector_delta_sync_continue",
+            "reason": "False positive. Fired via Action Scheduler / WP-Cron using ConnectorRESTController::AS_DELTA_SYNC_HOOK (as_enqueue_async_action at ConnectorRESTController.php:812/:861 with wp_schedule_single_event fallback at :814). Scanner cannot resolve the constant. Verified for the 2.2.0 gate."
+        },
+        {
+            "id": "hook-consumed-never-fired:mvs_process_account_deletions",
+            "reason": "False positive. WP-Cron daily event scheduled with AccountDeletionService::CRON_HOOK (wp_schedule_event(time()+HOUR_IN_SECONDS,'daily',self::CRON_HOOK) at AccountDeletionService.php:76, bound at :73). Scanner cannot resolve the constant. Verified for the 2.2.0 gate."
         }
     ]
 }
