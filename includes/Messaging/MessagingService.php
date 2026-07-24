@@ -23,7 +23,7 @@ class MessagingService {
 	const MAX_PINNED             = 3;
 	const ONLINE_THRESHOLD       = 120; // 2 min.
 	const MAX_GROUP_PARTICIPANTS = 50; // Group conversation hard cap (incl. creator).
-	const REACTION_POLL_OVERLAP  = 2; // Seconds the reaction sweep looks back past the cursor.
+	const POLL_OVERLAP           = 2; // Seconds BOTH poll cursors look back (see poll()).
 	const COALESCE_SECONDS       = 30;
 
 	// -------------------------------------------------------------------------
@@ -2337,7 +2337,28 @@ class MessagingService {
 		$msg_table  = $wpdb->prefix . 'mvs_messages';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
-		$since_gmt = gmdate( 'Y-m-d H:i:s', strtotime( $since ) );
+		$since_ts  = strtotime( $since );
+		$since_gmt = gmdate( 'Y-m-d H:i:s', $since_ts );
+
+		/*
+		 * Sweep POLL_OVERLAP seconds BEHIND the cursor — the message cursor has
+		 * the same second-precision race the reaction sweep does.
+		 *
+		 * `created_at` is a second-precision DATETIME and the client's cursor is
+		 * the previous response's `server_time`, stamped AFTER this query ran. A
+		 * message inserted in the remainder of that same second was therefore
+		 * missed by this query AND excluded by the next poll's strict `>`, so it
+		 * never reached the other participant until a reload or a thread switch
+		 * refetched the list. The exposed window is up to a full second against
+		 * a ~5s poll — the same arithmetic that lost roughly one reaction in five
+		 * before the sweep was added below.
+		 *
+		 * Re-serving a couple of seconds of messages the client already has is
+		 * free: the client keys off the message id (`appendMessage()` returns
+		 * early when `.bn-dm-msg[data-msg-id]` is already in the log, which is
+		 * how our own optimistic send survives being echoed back).
+		 */
+		$sweep_gmt = gmdate( 'Y-m-d H:i:s', $since_ts - self::POLL_OVERLAP );
 
 		// Unsent (deleted_for_all) messages must still be POLLED so other
 		// participants' open chats learn about the unsend without a refresh
@@ -2365,7 +2386,7 @@ class MessagingService {
 				ORDER BY m.created_at ASC
 				LIMIT 100",
 				$user_id,
-				$since_gmt,
+				$sweep_gmt,
 				$unsend_window_start
 			)
 		);
@@ -2431,7 +2452,6 @@ class MessagingService {
 		$msg_table  = $wpdb->prefix . 'mvs_messages';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 		$since_ts   = strtotime( $since );
-		$since_gmt  = gmdate( 'Y-m-d H:i:s', $since_ts );
 
 		/*
 		 * Sweep a couple of seconds BEHIND the cursor.
@@ -2446,11 +2466,14 @@ class MessagingService {
 		 *
 		 * Re-sending a reaction set the client already has is harmless: the
 		 * client rebuilds a message's chips from the authoritative set in this
-		 * payload, so a repeated render is idempotent. `created_at` keeps the
-		 * un-widened cursor — a message newer than that ships its own reactions
-		 * through poll() and must not be duplicated here.
+		 * payload, so a repeated render is idempotent.
+		 *
+		 * Both bounds below use the SWEPT cursor, which keeps this set disjoint
+		 * from poll()'s: poll() returns messages created after the sweep point
+		 * and enriches each with its own reactions, so anything newer than that
+		 * must not be re-shipped here.
 		 */
-		$sweep_gmt = gmdate( 'Y-m-d H:i:s', $since_ts - self::REACTION_POLL_OVERLAP );
+		$sweep_gmt = gmdate( 'Y-m-d H:i:s', $since_ts - self::POLL_OVERLAP );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$rows = $wpdb->get_results(
@@ -2467,7 +2490,7 @@ class MessagingService {
 				LIMIT 100",
 				$user_id,
 				$sweep_gmt,
-				$since_gmt
+				$sweep_gmt
 			)
 		);
 
