@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 23;
+	const CURRENT_VERSION = 24;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -451,6 +451,7 @@ class Migrator {
 				is_pinned tinyint(1) NOT NULL DEFAULT 0,
 				is_archived tinyint(1) NOT NULL DEFAULT 0,
 				status varchar(20) NOT NULL DEFAULT 'active',
+				cleared_up_to bigint(20) unsigned NOT NULL DEFAULT 0,
 				joined_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY  (id),
 				UNIQUE KEY conv_user (conversation_id, user_id),
@@ -1011,6 +1012,35 @@ class Migrator {
 		$wpdb->query( "ALTER TABLE {$messages} ADD KEY conv_updated (conversation_id, updated_at)" );
 		// Existing rows: no mutation has happened, so updated_at == created_at.
 		$wpdb->query( "UPDATE {$messages} SET updated_at = created_at" );
+		// phpcs:enable
+	}
+
+	/**
+	 * Migration v24 — per-user clear point on conversation participants.
+	 *
+	 * "Delete conversation" used to flip the participant to 'left' and
+	 * find_or_create_conversation() then created a brand-new thread on
+	 * re-contact — leaving the other member with TWO threads for the same
+	 * pair (card 10127717045). The fix reuses the pair's single thread and
+	 * hides pre-delete history per user via this clear point instead.
+	 *
+	 * The watermark is a message ID, not a datetime: message ids are strictly
+	 * monotonic, so `m.id > cleared_up_to` is exact, where a second-precision
+	 * DATETIME would hide a message sent in the same second as the delete —
+	 * the identical clock-grain race the 2.2.1 poll-cursor fixes closed.
+	 *
+	 * @since 2.2.1
+	 */
+	private function migrate_to_24(): void {
+		global $wpdb;
+		$participants = $wpdb->prefix . 'mvs_conversation_participants';
+
+		if ( $this->column_exists( $participants, 'cleared_up_to' ) ) {
+			return;
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "ALTER TABLE {$participants} ADD COLUMN cleared_up_to bigint(20) unsigned NOT NULL DEFAULT 0 AFTER status" );
 		// phpcs:enable
 	}
 
