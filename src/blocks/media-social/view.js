@@ -368,7 +368,7 @@ const { state } = store( 'mvs/media-social', {
 				ctx.shareLabel = ( state.i18n?.shareCopied || '✓ Copied!' );
 				sharedUI.actions.showToast( ( state.i18n?.linkCopiedClipboard || 'Link copied to clipboard!' ), 'success' );
 				setTimeout( () => {
-					ctx.shareLabel = ( state.i18n?.shareResetLabel || '\u{1F517} Share' );
+					ctx.shareLabel = ( state.i18n?.shareResetLabel || 'Share' );
 				}, 2000 );
 			} catch {
 				sharedUI.actions.showToast( ( state.i18n?.copyLinkFailed || 'Could not copy link. Please copy the URL manually.' ), 'error' );

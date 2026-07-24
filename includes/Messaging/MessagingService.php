@@ -23,6 +23,7 @@ class MessagingService {
 	const MAX_PINNED             = 3;
 	const ONLINE_THRESHOLD       = 120; // 2 min.
 	const MAX_GROUP_PARTICIPANTS = 50; // Group conversation hard cap (incl. creator).
+	const POLL_OVERLAP           = 2; // Seconds BOTH poll cursors look back (see poll()).
 	const COALESCE_SECONDS       = 30;
 
 	// -------------------------------------------------------------------------
@@ -296,14 +297,16 @@ class MessagingService {
 		$conv_table = $wpdb->prefix . 'mvs_conversations';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
-		// Find an existing direct conversation the CURRENT user has NOT deleted.
-		// `p1.status <> 'left'` is the fresh-thread rule: when the initiator has
-		// deleted the thread, re-contacting starts a brand-new empty conversation
-		// instead of silently restoring the old one with its full history (which
-		// is what a "Delete" should mean — matches Instagram/Messenger). Delivery
-		// the other way still works: send_message() reactivates a 'left' recipient
-		// so an inbound message is never lost. ORDER BY newest keeps the lookup
-		// deterministic now that multiple direct threads per pair can exist.
+		// Find the pair's existing direct conversation — INCLUDING one the
+		// current user has deleted. A pair keeps a single thread: "Delete" set a
+		// per-user clear watermark (participants.cleared_up_to, see
+		// leave_conversation()), so re-contacting reuses the thread and the
+		// initiator simply sees no pre-delete history. The old fresh-thread rule
+		// (`p1.status <> 'left'` here) spawned a second conversation row on
+		// re-contact, and the OTHER member — who never deleted anything — ended
+		// up with two live threads for the same person (card 10127717045).
+		// ORDER BY newest keeps the lookup deterministic for pairs that already
+		// have historical duplicates from the old behaviour.
 		$existing_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT p1.conversation_id
@@ -311,7 +314,6 @@ class MessagingService {
 				INNER JOIN {$part_table} p2 ON p1.conversation_id = p2.conversation_id
 				INNER JOIN {$conv_table} c ON c.id = p1.conversation_id
 				WHERE p1.user_id = %d AND p2.user_id = %d AND c.type = 'direct'
-					AND p1.status <> 'left'
 				ORDER BY p1.conversation_id DESC
 				LIMIT 1",
 				$user_a,
@@ -492,7 +494,7 @@ class MessagingService {
 
 		$conversations = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT c.*, p.last_read_at, p.is_muted, p.muted_until, p.is_pinned, p.is_archived, p.status AS participant_status
+				"SELECT c.*, p.last_read_at, p.is_muted, p.muted_until, p.is_pinned, p.is_archived, p.status AS participant_status, p.cleared_up_to
 				FROM {$conv_table} c
 				INNER JOIN {$part_table} p ON p.conversation_id = c.id
 				WHERE {$where_sql}
@@ -510,6 +512,7 @@ class MessagingService {
 			$conv->unread_count         = $this->get_conversation_unread_count( (int) $conv->id, $user_id );
 			$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
 			$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
+			$this->suppress_cleared_preview( $conv );
 		}
 		unset( $conv );
 
@@ -534,7 +537,7 @@ class MessagingService {
 
 		$conv = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT c.*, p.last_read_at, p.is_muted, p.muted_until, p.is_pinned, p.is_archived, p.status AS participant_status
+				"SELECT c.*, p.last_read_at, p.is_muted, p.muted_until, p.is_pinned, p.is_archived, p.status AS participant_status, p.cleared_up_to
 				FROM {$conv_table} c
 				INNER JOIN {$part_table} p ON p.conversation_id = c.id AND p.user_id = %d
 				WHERE c.id = %d",
@@ -553,8 +556,35 @@ class MessagingService {
 		$conv->unread_count         = $this->get_conversation_unread_count( $conversation_id, $user_id );
 		$conv->created_at_gmt       = self::to_iso8601( (string) ( $conv->created_at ?? '' ) );
 		$conv->last_activity_at_gmt = self::to_iso8601( (string) ( $conv->last_activity_at ?? '' ) );
+		$this->suppress_cleared_preview( $conv );
 
 		return $conv;
+	}
+
+	/**
+	 * Blank the stored last-message preview when it predates the requesting
+	 * user's clear point.
+	 *
+	 * `last_message_id` / `last_message_preview` live on the conversation row
+	 * and are shared by both participants; a user who deleted the thread must
+	 * not see the pre-delete preview when the thread reactivates before any
+	 * new message arrives (card 10127717045). Rows expose `cleared_up_to`
+	 * via the participant JOIN in get_conversations()/get_conversation().
+	 *
+	 * @since 2.2.1
+	 *
+	 * @param object $conv Conversation row (mutated in place).
+	 */
+	private function suppress_cleared_preview( object $conv ): void {
+		$cleared = (int) ( $conv->cleared_up_to ?? 0 );
+		if ( $cleared <= 0 ) {
+			return;
+		}
+
+		if ( (int) ( $conv->last_message_id ?? 0 ) <= $cleared ) {
+			$conv->last_message_id      = null;
+			$conv->last_message_preview = '';
+		}
 	}
 
 	/**
@@ -756,16 +786,36 @@ class MessagingService {
 		global $wpdb;
 
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
+		$msg_table  = $wpdb->prefix . 'mvs_messages';
+
+		// `cleared_up_to` is this user's clear point: every message with an id
+		// at or below it stays hidden from THEM even after the thread
+		// reactivates (re-contact via find_or_create_conversation(), or an
+		// inbound message via send_message()). The other participant keeps the
+		// same single thread and their full history — no duplicate conversation
+		// is ever created for the pair (card 10127717045). An id watermark, not
+		// a timestamp: ids are strictly monotonic, so a message sent in the
+		// same second as the delete is still delivered.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$watermark = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COALESCE( MAX( id ), 0 ) FROM {$msg_table} WHERE conversation_id = %d",
+				$conversation_id
+			)
+		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$result = $wpdb->update(
 			$part_table,
-			array( 'status' => 'left' ),
+			array(
+				'status'        => 'left',
+				'cleared_up_to' => $watermark,
+			),
 			array(
 				'conversation_id' => $conversation_id,
 				'user_id'         => $user_id,
 			),
-			array( '%s' ),
+			array( '%s', '%d' ),
 			array( '%d', '%d' )
 		);
 
@@ -1323,7 +1373,12 @@ class MessagingService {
 		}
 
 		// Update conversation last_message.
-		$preview = $this->build_message_preview( $content, $message_type );
+		$preview = $this->build_message_preview(
+			$content,
+			$message_type,
+			(int) ( $data['attachment_id'] ?? 0 ),
+			(int) ( $data['media_id'] ?? 0 )
+		);
 
 		$wpdb->update(
 			$conv_table,
@@ -1450,6 +1505,15 @@ class MessagingService {
 		$like      = '%' . $wpdb->esc_like( $query ) . '%';
 		$limit     = max( 1, min( 100, $limit ) );
 
+		// History this user deleted stays deleted (per-user clear watermark).
+		$cleared_up_to = $this->get_cleared_up_to( $conversation_id, $user_id );
+		$cleared_sql   = $cleared_up_to > 0 ? ' AND m.id > %d' : '';
+		$params        = array( $conversation_id, $like );
+		if ( $cleared_up_to > 0 ) {
+			$params[] = $cleared_up_to;
+		}
+		$params[] = $limit;
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
@@ -1458,12 +1522,10 @@ class MessagingService {
 				 WHERE m.conversation_id = %d
 				   AND m.is_deleted = 0
 				   AND m.deleted_for_all = 0
-				   AND m.content LIKE %s
+				   AND m.content LIKE %s{$cleared_sql}
 				 ORDER BY m.id DESC
 				 LIMIT %d",
-				$conversation_id,
-				$like,
-				$limit
+				$params
 			)
 		);
 		// phpcs:enable
@@ -1515,6 +1577,15 @@ class MessagingService {
 		$msg_table = $wpdb->prefix . 'mvs_messages';
 		$limit     = max( 1, min( 200, $limit ) );
 
+		// History this user deleted stays deleted (per-user clear watermark).
+		$cleared_up_to = $this->get_cleared_up_to( $conversation_id, $user_id );
+		$cleared_sql   = $cleared_up_to > 0 ? ' AND m.id > %d' : '';
+		$params        = array( $conversation_id );
+		if ( $cleared_up_to > 0 ) {
+			$params[] = $cleared_up_to;
+		}
+		$params[] = $limit;
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
@@ -1523,11 +1594,10 @@ class MessagingService {
 				 WHERE m.conversation_id = %d
 				   AND m.is_deleted = 0
 				   AND m.deleted_for_all = 0
-				   AND ( m.attachment_id > 0 OR m.media_id > 0 )
+				   AND ( m.attachment_id > 0 OR m.media_id > 0 ){$cleared_sql}
 				 ORDER BY m.id DESC
 				 LIMIT %d",
-				$conversation_id,
-				$limit
+				$params
 			)
 		);
 		// phpcs:enable
@@ -1560,6 +1630,34 @@ class MessagingService {
 	}
 
 	/**
+	 * The requesting user's clear-point watermark for a conversation.
+	 *
+	 * Set by leave_conversation() ("Delete" in the UI). Messages with an id at
+	 * or below the watermark must never be served to this user again — the
+	 * thread itself is reused on re-contact instead of duplicated
+	 * (card 10127717045).
+	 *
+	 * @since 2.2.1
+	 *
+	 * @param int $conversation_id Conversation ID.
+	 * @param int $user_id         User ID.
+	 * @return int Highest cleared message id, or 0 when never cleared.
+	 */
+	private function get_cleared_up_to( int $conversation_id, int $user_id ): int {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT cleared_up_to FROM {$wpdb->prefix}mvs_conversation_participants
+				WHERE conversation_id = %d AND user_id = %d",
+				$conversation_id,
+				$user_id
+			)
+		);
+	}
+
+	/**
 	 * Get messages for a conversation with cursor pagination.
 	 *
 	 * @param int $conversation_id Conversation ID.
@@ -1579,6 +1677,13 @@ class MessagingService {
 
 		$where  = 'm.conversation_id = %d AND (m.is_deleted = 0 OR m.sender_id = %d)';
 		$params = array( $conversation_id, $user_id );
+
+		// History this user deleted stays deleted (per-user clear watermark).
+		$cleared_up_to = $this->get_cleared_up_to( $conversation_id, $user_id );
+		if ( $cleared_up_to > 0 ) {
+			$where   .= ' AND m.id > %d';
+			$params[] = $cleared_up_to;
+		}
 
 		if ( $before > 0 ) {
 			$where   .= ' AND m.id < %d';
@@ -1773,19 +1878,61 @@ class MessagingService {
 	 * send_message() and refresh_conversation_last_message() so the preview
 	 * format stays identical across the send and delete paths.
 	 *
-	 * @param string $content      Message content.
-	 * @param string $message_type Message type (text|voice|image|video|file|media_share).
+	 * @param string $content       Message content.
+	 * @param string $message_type  Message type (text|voice|image|video|audio|file|media_share).
+	 * @param int    $attachment_id Attachment post id, when the message carries
+	 *                              one. Clients (the BuddyNext theme, mobile apps)
+	 *                              may send an attachment under message_type
+	 *                              'text' (or a raw MIME the allow-list resets to
+	 *                              'text'), which previously stored an EMPTY
+	 *                              preview and left a blank line in the
+	 *                              conversation list (card 10127764989); the
+	 *                              attachment's real MIME resolves the label.
+	 * @param int    $media_id      Shared media item id, when present.
 	 * @return string Preview (max 100 chars).
 	 */
-	private function build_message_preview( string $content, string $message_type ): string {
+	private function build_message_preview( string $content, string $message_type, int $attachment_id = 0, int $media_id = 0 ): string {
 		$preview = mb_substr( wp_strip_all_tags( $content ), 0, 100 );
-		if ( 'voice' === $message_type ) {
-			$preview = 'Voice message';
-		} elseif ( in_array( $message_type, array( 'image', 'video', 'file' ), true ) && empty( $preview ) ) {
-			$preview = ucfirst( $message_type );
-		} elseif ( 'media_share' === $message_type && empty( $preview ) ) {
-			$preview = 'Shared a media';
+		if ( '' !== $preview && 'voice' !== $message_type ) {
+			return $preview;
 		}
+
+		// Attachment-only messages: a typed placeholder, the way every chat app
+		// previews its media messages. 'audio' was previously missing entirely
+		// and fell through to '' (card 10127764989).
+		$labels = array(
+			'voice'       => __( 'Voice message', 'wpmediaverse' ),
+			'image'       => __( 'Photo', 'wpmediaverse' ),
+			'video'       => __( 'Video', 'wpmediaverse' ),
+			'audio'       => __( 'Audio', 'wpmediaverse' ),
+			'file'        => __( 'File', 'wpmediaverse' ),
+			'media_share' => __( 'Shared a media', 'wpmediaverse' ),
+		);
+
+		if ( isset( $labels[ $message_type ] ) ) {
+			return $labels[ $message_type ];
+		}
+
+		if ( $attachment_id > 0 ) {
+			$mime = (string) get_post_mime_type( $attachment_id );
+			foreach ( array( 'image', 'video', 'audio' ) as $media_kind ) {
+				if ( 0 === strpos( $mime, $media_kind . '/' ) ) {
+					return $labels[ $media_kind ];
+				}
+			}
+			return __( 'Attachment', 'wpmediaverse' );
+		}
+
+		if ( $media_id > 0 ) {
+			// A shared MediaVerse item (how the BuddyNext theme sends DM photos):
+			// label by the item's real type, falling back to the generic share.
+			$media_type = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_type' );
+			if ( isset( $labels[ $media_type ] ) ) {
+				return $labels[ $media_type ];
+			}
+			return $labels['media_share'];
+		}
+
 		return $preview;
 	}
 
@@ -1810,7 +1957,7 @@ class MessagingService {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$last = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT id, content, message_type, created_at
+				"SELECT id, content, message_type, attachment_id, media_id, created_at
 				FROM {$msg_table}
 				WHERE conversation_id = %d AND is_deleted = 0 AND deleted_for_all = 0
 				ORDER BY created_at DESC, id DESC
@@ -1825,7 +1972,12 @@ class MessagingService {
 				$conv_table,
 				array(
 					'last_message_id'      => (int) $last->id,
-					'last_message_preview' => $this->build_message_preview( (string) $last->content, (string) $last->message_type ),
+					'last_message_preview' => $this->build_message_preview(
+						(string) $last->content,
+						(string) $last->message_type,
+						(int) $last->attachment_id,
+						(int) $last->media_id
+					),
 					'last_activity_at'     => $last->created_at,
 				),
 				array( 'id' => $conversation_id ),
@@ -2243,20 +2395,26 @@ class MessagingService {
 		$msg_table  = $wpdb->prefix . 'mvs_messages';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
-		$last_read = $wpdb->get_var(
+		$participant = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT last_read_at FROM {$part_table} WHERE conversation_id = %d AND user_id = %d",
+				"SELECT last_read_at, cleared_up_to FROM {$part_table} WHERE conversation_id = %d AND user_id = %d",
 				$conversation_id,
 				$user_id
 			)
 		);
 
-		if ( ! $last_read ) {
+		$last_read     = $participant ? (string) $participant->last_read_at : '';
+		$cleared_up_to = $participant ? (int) $participant->cleared_up_to : 0;
+
+		// History this user deleted can never count as unread.
+		if ( '' === $last_read ) {
 			return (int) $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$msg_table} WHERE conversation_id = %d AND sender_id != %d AND deleted_for_all = 0",
+					"SELECT COUNT(*) FROM {$msg_table}
+					WHERE conversation_id = %d AND sender_id != %d AND deleted_for_all = 0 AND id > %d",
 					$conversation_id,
-					$user_id
+					$user_id,
+					$cleared_up_to
 				)
 			);
 		}
@@ -2264,10 +2422,11 @@ class MessagingService {
 		return (int) $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$msg_table}
-				WHERE conversation_id = %d AND sender_id != %d AND created_at > %s AND deleted_for_all = 0",
+				WHERE conversation_id = %d AND sender_id != %d AND created_at > %s AND deleted_for_all = 0 AND id > %d",
 				$conversation_id,
 				$user_id,
-				$last_read
+				$last_read,
+				$cleared_up_to
 			)
 		);
 
@@ -2303,7 +2462,8 @@ class MessagingService {
 				AND p.is_muted = 0
 				AND m.sender_id != %d
 				AND m.deleted_for_all = 0
-				AND (p.last_read_at IS NULL OR m.created_at > p.last_read_at)",
+				AND (p.last_read_at IS NULL OR m.created_at > p.last_read_at)
+				AND m.id > p.cleared_up_to",
 				$user_id,
 				$user_id
 			)
@@ -2336,7 +2496,28 @@ class MessagingService {
 		$msg_table  = $wpdb->prefix . 'mvs_messages';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 
-		$since_gmt = gmdate( 'Y-m-d H:i:s', strtotime( $since ) );
+		$since_ts  = strtotime( $since );
+		$since_gmt = gmdate( 'Y-m-d H:i:s', $since_ts );
+
+		/*
+		 * Sweep POLL_OVERLAP seconds BEHIND the cursor — the message cursor has
+		 * the same second-precision race the reaction sweep does.
+		 *
+		 * `created_at` is a second-precision DATETIME and the client's cursor is
+		 * the previous response's `server_time`, stamped AFTER this query ran. A
+		 * message inserted in the remainder of that same second was therefore
+		 * missed by this query AND excluded by the next poll's strict `>`, so it
+		 * never reached the other participant until a reload or a thread switch
+		 * refetched the list. The exposed window is up to a full second against
+		 * a ~5s poll — the same arithmetic that lost roughly one reaction in five
+		 * before the sweep was added below.
+		 *
+		 * Re-serving a couple of seconds of messages the client already has is
+		 * free: the client keys off the message id (`appendMessage()` returns
+		 * early when `.bn-dm-msg[data-msg-id]` is already in the log, which is
+		 * how our own optimistic send survives being echoed back).
+		 */
+		$sweep_gmt = gmdate( 'Y-m-d H:i:s', $since_ts - self::POLL_OVERLAP );
 
 		// Unsent (deleted_for_all) messages must still be POLLED so other
 		// participants' open chats learn about the unsend without a refresh
@@ -2357,6 +2538,7 @@ class MessagingService {
 				INNER JOIN {$part_table} p ON p.conversation_id = m.conversation_id AND p.user_id = %d
 				WHERE p.status IN ('active', 'request_pending')
 				AND m.is_deleted = 0
+				AND m.id > p.cleared_up_to
 				AND (
 					( m.deleted_for_all = 0 AND m.created_at > %s )
 					OR ( m.deleted_for_all = 1 AND m.created_at > %s )
@@ -2364,7 +2546,7 @@ class MessagingService {
 				ORDER BY m.created_at ASC
 				LIMIT 100",
 				$user_id,
-				$since_gmt,
+				$sweep_gmt,
 				$unsend_window_start
 			)
 		);
@@ -2429,7 +2611,29 @@ class MessagingService {
 
 		$msg_table  = $wpdb->prefix . 'mvs_messages';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
-		$since_gmt  = gmdate( 'Y-m-d H:i:s', strtotime( $since ) );
+		$since_ts   = strtotime( $since );
+
+		/*
+		 * Sweep a couple of seconds BEHIND the cursor.
+		 *
+		 * `updated_at` is a second-precision DATETIME and the client's cursor is
+		 * the previous response's server_time, so a reaction landing in the SAME
+		 * second as that cursor was skipped forever by the strict `>` below: the
+		 * row's updated_at equals the cursor, the next poll asks for strictly
+		 * greater, and the client never learned about it until a full reload.
+		 * With a ~5s poll that silently lost roughly one reaction in five —
+		 * measured live, two-actor, on 2.2.0.
+		 *
+		 * Re-sending a reaction set the client already has is harmless: the
+		 * client rebuilds a message's chips from the authoritative set in this
+		 * payload, so a repeated render is idempotent.
+		 *
+		 * Both bounds below use the SWEPT cursor, which keeps this set disjoint
+		 * from poll()'s: poll() returns messages created after the sweep point
+		 * and enriches each with its own reactions, so anything newer than that
+		 * must not be re-shipped here.
+		 */
+		$sweep_gmt = gmdate( 'Y-m-d H:i:s', $since_ts - self::POLL_OVERLAP );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$rows = $wpdb->get_results(
@@ -2440,13 +2644,14 @@ class MessagingService {
 				WHERE p.status IN ('active', 'request_pending')
 				AND m.is_deleted = 0
 				AND m.deleted_for_all = 0
+				AND m.id > p.cleared_up_to
 				AND m.updated_at > %s
 				AND m.created_at <= %s
 				ORDER BY m.updated_at ASC
 				LIMIT 100",
 				$user_id,
-				$since_gmt,
-				$since_gmt
+				$sweep_gmt,
+				$sweep_gmt
 			)
 		);
 

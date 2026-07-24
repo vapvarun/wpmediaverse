@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.2.0
+Stable tag: 2.2.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,18 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.2.1 - July 2026 =
+
+* Fix      - Fatal error on activity feeds containing media imported from BuddyBoss. The feed crashed instead of rendering when an activity stored its attachment ids as a list.
+* Fix      - Chat messages sometimes did not arrive until the member reloaded or switched threads. A message sent in the same second as the live-update cursor was skipped, and the chat never asked for it again.
+* Fix      - Chat reactions on an already-delivered message sometimes never appeared for the other member until they reloaded the page. A reaction added in the same second as the live-update cursor was skipped, which lost roughly one reaction in five.
+* Fix      - Deleting a conversation and messaging the same member again no longer leaves the other member with two chat threads. Delete now clears your copy of the history and the pair keeps a single conversation.
+* Fix      - The conversation list shows a Photo, Video, or Audio placeholder when the newest message is a media attachment with no text, instead of a blank line.
+* Fix      - Media action buttons on BuddyPress profile tabs and the My Media dashboard (Upload Media, Create Album, Edit Media, collections) are readable in dark mode with visible hover states.
+* Fix      - Opening an album and clicking Share no longer shows a link icon next to the share icon.
+* Fix      - The chat composer's attachment chip stayed light grey in dark mode.
+* Compat   - Aligned with WPMediaVerse Pro 2.2.1. Install both updates together.
 
 = 2.2.0 - July 2026 =
 

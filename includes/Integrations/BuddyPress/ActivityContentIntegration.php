@@ -252,7 +252,18 @@ class ActivityContentIntegration {
 		if ( ! function_exists( 'buddyboss_platform_plugin_basename' ) ) {
 			$bb_media_ids = bp_activity_get_meta( (int) $activity->id, 'bp_media_ids', true );
 			if ( $bb_media_ids ) {
-				$bb_ids = array_filter( array_map( 'intval', explode( ',', $bb_media_ids ) ) );
+				// `bp_media_ids` is BuddyBoss's meta, so its shape is not ours to
+				// assume. BuddyBoss stores it serialized (a:1:{i:0;i:745;}), which
+				// bp_activity_get_meta( …, true ) hands back as a real PHP array —
+				// and explode() on an array is a FATAL TypeError in PHP 8, taking
+				// down every feed render that touches such an activity. Other
+				// versions/paths store a plain CSV string, so accept both.
+				$bb_ids = array_filter(
+					array_map(
+						'intval',
+						is_array( $bb_media_ids ) ? $bb_media_ids : explode( ',', (string) $bb_media_ids )
+					)
+				);
 				// resolve_imported_thumbnail() reads multiple meta keys per source ID;
 				// pre-warm the request cache so each ID becomes one batched query
 				// instead of N round-trips. Phase 3D fix.

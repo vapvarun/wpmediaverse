@@ -47,6 +47,26 @@ class MessagingReactionUpdatesTest extends WP_UnitTestCase {
 		$conversation_id  = (int) $conversation['conversation_id'];
 		$message          = $this->service->send_message( $conversation_id, $this->author, array( 'content' => 'hello' ) );
 		$this->message_id = (int) $message['message_id'];
+
+		// Make the fixture a genuinely ALREADY-DELIVERED message: backdate it
+		// well past POLL_OVERLAP. poll() and poll_reaction_updates() split the
+		// timeline at the swept cursor — messages created inside the sweep
+		// window ship through poll() (with their reactions), so a just-created
+		// message can never legitimately appear in reaction_updates. The
+		// original tests created the message "now" and then asked
+		// reaction_updates about it, which asserts a client state that cannot
+		// exist; they only passed before the 2.2.0 disjointness bound landed.
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}mvs_messages
+				SET created_at = DATE_SUB( created_at, INTERVAL 10 MINUTE ),
+					updated_at = DATE_SUB( updated_at, INTERVAL 10 MINUTE )
+				WHERE id = %d",
+				$this->message_id
+			)
+		);
 	}
 
 	/**
@@ -55,18 +75,12 @@ class MessagingReactionUpdatesTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_reaction_add_surfaces_for_the_other_participant(): void {
-		global $wpdb;
-		$created = $wpdb->get_var(
-			$wpdb->prepare( "SELECT created_at FROM {$wpdb->prefix}mvs_messages WHERE id = %d", $this->message_id )
-		);
-		// The message is "already delivered" as of its own created_at.
-		$since = (string) $created;
+		// The client's live cursor — well after the message was delivered.
+		$since = gmdate( 'Y-m-d H:i:s' );
 
 		// Nothing has changed yet.
 		$this->assertSame( array(), $this->service->poll_reaction_updates( $this->author, $since ) );
 
-		// A later reaction moves updated_at past `since` (guard the 1s clock grain).
-		sleep( 1 );
 		$this->service->add_reaction( $this->message_id, $this->reactor, 'love' );
 
 		$updates = $this->service->poll_reaction_updates( $this->author, $since );
@@ -75,6 +89,35 @@ class MessagingReactionUpdatesTest extends WP_UnitTestCase {
 		$this->assertSame( $this->message_id, $updates[0]['id'] );
 		$this->assertSame( 'love', $updates[0]['reactions'][0]['emoji'] );
 		$this->assertSame( array( $this->reactor ), $updates[0]['reactions'][0]['user_ids'] );
+	}
+
+	/**
+	 * A reaction landing in the SAME SECOND as the cursor still surfaces.
+	 *
+	 * This is the 2.2.0 live-reaction loss. `updated_at` is a second-precision
+	 * DATETIME and the client's cursor is the previous response's server_time, so
+	 * when a reaction landed inside that same second the strict `updated_at >
+	 * $since` comparison skipped it — and because the client then advanced its
+	 * cursor, it was skipped FOREVER, leaving the reaction invisible until a full
+	 * page reload. With a ~5s poll that lost roughly one reaction in five,
+	 * reproduced live two-actor before the fix.
+	 *
+	 * Note the sibling test above sleeps 1s to "guard the 1s clock grain" — it
+	 * worked AROUND this bug rather than catching it. This test deliberately does
+	 * not sleep: `since` is the reaction's own second.
+	 *
+	 * @return void
+	 */
+	public function test_reaction_in_the_same_second_as_the_cursor_still_surfaces(): void {
+		// The cursor a client would hold: the very second the reaction lands.
+		$since = gmdate( 'Y-m-d H:i:s' );
+		$this->service->add_reaction( $this->message_id, $this->reactor, 'love' );
+
+		$updates = $this->service->poll_reaction_updates( $this->author, $since );
+
+		$this->assertCount( 1, $updates, 'A same-second reaction must not be skipped by the cursor.' );
+		$this->assertSame( $this->message_id, $updates[0]['id'] );
+		$this->assertSame( 'love', $updates[0]['reactions'][0]['emoji'] );
 	}
 
 	/**

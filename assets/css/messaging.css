@@ -985,7 +985,10 @@ body.dark-mode {
 	max-width: 100%;
 	padding: 4px 10px;
 	border-radius: 999px;
-	background: var(--mvs-chat-bubble-other, rgba(0, 0, 0, 0.06));
+	/* --mvs-chat-bubble-other never existed: the chip was frozen at the fallback
+	   and stayed light-grey in dark mode. --mvs-chat-bubble-received is the
+	   defined neutral surface (and has a dark-mode override). */
+	background: var(--mvs-chat-bubble-received, rgba(0, 0, 0, 0.06));
 	color: var(--mvs-chat-text-secondary);
 	font-size: 13px;
 	min-width: 0;
