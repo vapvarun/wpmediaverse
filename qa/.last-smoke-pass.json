@@ -1,30 +1,47 @@
 {
   "mode": "combo",
-  "release_version": "2.2.0",
-  "pro_version": "2.2.0",
-  "ran_at": "2026-07-23T20:04:58Z",
+  "release_version": "2.2.1",
+  "pro_version": "2.2.1",
+  "ran_at": "2026-07-24T16:35:00Z",
   "sections": {
-    "A_fresh_install":     { "pass": 0, "fail": 0, "skipped": 5 },
-    "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 16, "fail": 0, "skipped": 23 },
-    "D_regression_guards": { "pass": 7, "fail": 0, "skipped": 22 },
-    "E_pro_smoke":         { "pass": 1, "fail": 0, "skipped": 22 },
-    "F_cross_browser":     { "pass": 0, "fail": 0, "skipped": 2 }
+    "A_fresh_install": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 5
+    },
+    "B_upgrade": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 3
+    },
+    "C_core_flows": {
+      "pass": 4,
+      "fail": 0,
+      "skipped": 34
+    },
+    "D_regression_guards": {
+      "pass": 9,
+      "fail": 0,
+      "skipped": 25
+    },
+    "E_pro_smoke": {
+      "pass": 2,
+      "fail": 0,
+      "skipped": 22
+    },
+    "F_cross_browser": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 5
+    }
   },
   "failures": [],
   "debug_log_issues": [],
   "manual_required": [
-    "Firefox Desktop: Upload modal file picker (My Media dashboard) and DM 'Attach photo' file picker",
-    "Safari iOS 390px: Lightbox swipe + reaction tap, activity composer privacy <select> open/close (native UI)",
-    "Safari iOS: Lightbox share button uses navigator.share (native sheet) - not exercised in Chromium",
-    "Firefox Desktop: Lightbox share button uses navigator.clipboard.writeText fallback - not exercised in Chromium",
-    "DM video/audio attachment 'uploading chip' + Send-disabled-during-upload (C.member.dm-send-receive extra-care item): PDF-rejection (client toast + server 400) was verified end-to-end, but the video/audio in-flight-upload UI state was not exercised - the 'Attach photo' flow opens a 'Share a photo' picker scoped to images ('Your photos' library) and no clear path to a raw video/audio file input was found in the time available; needs a human pass with real video/audio fixtures.",
-    "Dark mode (prefers-color-scheme / theme toggle) not verified this pass across Explore, lightbox, messaging, admin settings.",
-    "RTL (F.rtl) not verified this pass.",
-    "F.a11y keyboard-focus-ring / tab-order walk not verified this pass beyond the lightbox reaction bar spot-check (D.lightbox-reactions-a11y, which passed).",
-    "C.member.upload-privacy-matrix (16-cell privacy x viewer matrix) and D.privacy-fix-2026-05-07 not re-walked this pass - only the default 'public' privacy path was exercised end-to-end.",
-    "C.member.edit-categories-persist / D.categories-cache-miss-drop (persistent-object-cache category save regression) not re-tested this pass.",
-    "E section (Pro competitions/gamification/streaks/cloud/AI/watermark/quota/instagram/group-DM/collections) only spot-checked via E.compete-hub (page render) and D.pro-feed-layout-fallback; the other 22 E items need a dedicated pass - feature-toggle options were confirmed all default/absent (OFF) in wp_options, consistent with runbook expectations, but functional flows were not exercised.",
-    "Messaging backdate importer seam (commit 0544f848, Core\\Dates::resolve_backdate() + MessagingService::find_or_create_conversation()/send_message()): re-verified this pass, see verdict - not part of the runbook's named C/D/E rows yet, consider adding a D row on next maintenance pass."
+    "BLOCKER (environment, not a plugin bug): the smoke session's browser-automation permission layer blocks any click that advances the BuddyNext onboarding flow's Membership/plan step (\"Choose VIP\", \"Choose Pro\", \"Maybe later - continue free\"), and DB inspection shows alice (16), aisha (24) and oliver_brooks (183) currently do NOT have bn_onboarding_complete=1 (aisha is parked at onboarding step 6/6, alice and oliver_brooks have no onboarding progress at all) -- contrary to the task's assumption that these three are onboarded. Because /messages/, /my-media/, /album/*, and most C.member.* / E.* journeys are gated by BuddyNext's OnboardingListener for any user who registered after the `buddynext_onboarding_gate_since` cutover (2026-07-10 04:53 UTC; all three test users registered minutes after that), this smoke run could NOT walk most member-persona journeys live as alice/aisha/oliver_brooks. D-2211-a and D-2211-b were instead verified via direct DB evidence of an already-completed manual pass (see triage notes) and D-2211-c/D-2211-d were re-targeted at the admin account (which is grandfathered pre-gate) since the checked behavior (share-label state, dark-mode button colors) is not persona-specific. RECOMMENDATION: before the next full combo smoke, either restore bn_onboarding_complete=1 for alice/aisha/oliver_brooks as real fixture data, or grandfather them via `buddynext_onboarding_gate_since`, then re-run the full C.member.* / E.* persona journeys (albums-lifecycle, collections-lifecycle, DM, activity composer, streaks, battles, tournaments, group-dm, etc.) which this run had to skip.",
+    "Firefox Desktop: upload modal file picker (Playwright MCP is Chromium-only)",
+    "Safari iOS 390px: lightbox swipe + reaction tap, activity composer privacy <select> native UI, navigator.share native sheet",
+    "F.rtl: Explore / single-media / profile / dashboard / lightbox on an `ar` locale -- not exercised this run",
+    "C.member.grid-thumbnail-size / D.grid-thumb-size-default (informational, not filed as a bug): live REST GET /mvs/v1/media and the rendered grid both return mvs_size=large for thumbnail_url with mvs_thumbnail_size unset (code default 'medium'). This is INTENTIONAL per SettingsHelper::get_grid_thumb_size_key() (added 1.8.0): it deliberately upgrades the 'medium' configured rung to the 'large' asset for grid/masonry tiles for retina crispness, per its docblock. The runbook's C.member.grid-thumbnail-size and D.grid-thumb-size-default rows still describe the pre-1.8.0 'medium-for-grids' contract and are now stale -- recommend updating the runbook text to match the 1.8.0 behavior rather than treating this as a regression."
   ]
 }
