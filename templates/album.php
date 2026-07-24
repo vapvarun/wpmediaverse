@@ -140,7 +140,10 @@ $mvs_archive_url = home_url( '/media/' );
 						'tagResults'         => array(),
 						'tagDropdownVisible' => false,
 						'saving'             => false,
-						'shareLabel'         => __( "\xF0\x9F\x94\x97 Share", 'wpmediaverse' ),
+						// Plain text — the adjacent <i data-lucide="share-2"> supplies the icon.
+						// A leading 🔗 emoji here renders alongside the lucide SVG as a
+						// double-icon; media-single.php already dropped it (card #6).
+						'shareLabel'         => __( 'Share', 'wpmediaverse' ),
 					);
 					\WPMediaVerse\Core\TemplateHelpers::media_social_i18n_state();
 					?>

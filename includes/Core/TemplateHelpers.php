@@ -1322,7 +1322,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					// Share.
 					'shareCopied'          => __( '✓ Copied!', 'wpmediaverse' ),
 					'linkCopiedClipboard'  => __( 'Link copied to clipboard!', 'wpmediaverse' ),
-					'shareResetLabel'      => __( '🔗 Share', 'wpmediaverse' ),
+					// Plain text — the share button's <i data-lucide="share-2"> supplies
+					// the icon, so an emoji here re-created the double-icon two seconds
+					// after every share (card 10127321228).
+					'shareResetLabel'      => __( 'Share', 'wpmediaverse' ),
 					'copyLinkFailed'       => __( 'Could not copy link. Please copy the URL manually.', 'wpmediaverse' ),
 					// Follow.
 					'followFailed'         => __( 'Follow action failed.', 'wpmediaverse' ),
