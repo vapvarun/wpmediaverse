@@ -78,6 +78,39 @@ class MessagingReactionUpdatesTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A reaction landing in the SAME SECOND as the cursor still surfaces.
+	 *
+	 * This is the 2.2.0 live-reaction loss. `updated_at` is a second-precision
+	 * DATETIME and the client's cursor is the previous response's server_time, so
+	 * when a reaction landed inside that same second the strict `updated_at >
+	 * $since` comparison skipped it — and because the client then advanced its
+	 * cursor, it was skipped FOREVER, leaving the reaction invisible until a full
+	 * page reload. With a ~5s poll that lost roughly one reaction in five,
+	 * reproduced live two-actor before the fix.
+	 *
+	 * Note the sibling test above sleeps 1s to "guard the 1s clock grain" — it
+	 * worked AROUND this bug rather than catching it. This test deliberately does
+	 * not sleep: `since` is the reaction's own second.
+	 *
+	 * @return void
+	 */
+	public function test_reaction_in_the_same_second_as_the_cursor_still_surfaces(): void {
+		$this->service->add_reaction( $this->message_id, $this->reactor, 'love' );
+
+		global $wpdb;
+		// The cursor a client would hold: the very second the reaction landed.
+		$since = (string) $wpdb->get_var(
+			$wpdb->prepare( "SELECT updated_at FROM {$wpdb->prefix}mvs_messages WHERE id = %d", $this->message_id )
+		);
+
+		$updates = $this->service->poll_reaction_updates( $this->author, $since );
+
+		$this->assertCount( 1, $updates, 'A same-second reaction must not be skipped by the cursor.' );
+		$this->assertSame( $this->message_id, $updates[0]['id'] );
+		$this->assertSame( 'love', $updates[0]['reactions'][0]['emoji'] );
+	}
+
+	/**
 	 * A reaction REMOVAL also surfaces — the case a reactions-table scan misses.
 	 *
 	 * Removal is a hard delete with no timestamp of its own, so only the parent

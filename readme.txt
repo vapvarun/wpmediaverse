@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.2.0
+Stable tag: 2.2.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,12 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.2.1 - July 2026 =
+
+* Fix      - Chat reactions on an already-delivered message sometimes never appeared for the other member until they reloaded the page. A reaction added in the same second as the live-update cursor was skipped, which lost roughly one reaction in five.
+* Fix      - The chat composer's attachment chip stayed light grey in dark mode.
+* Compat   - Aligned with WPMediaVerse Pro 2.2.1. Install both updates together.
 
 = 2.2.0 - July 2026 =
 

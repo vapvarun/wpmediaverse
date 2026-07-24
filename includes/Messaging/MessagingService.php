@@ -23,6 +23,7 @@ class MessagingService {
 	const MAX_PINNED             = 3;
 	const ONLINE_THRESHOLD       = 120; // 2 min.
 	const MAX_GROUP_PARTICIPANTS = 50; // Group conversation hard cap (incl. creator).
+	const REACTION_POLL_OVERLAP  = 2; // Seconds the reaction sweep looks back past the cursor.
 	const COALESCE_SECONDS       = 30;
 
 	// -------------------------------------------------------------------------
@@ -2429,7 +2430,27 @@ class MessagingService {
 
 		$msg_table  = $wpdb->prefix . 'mvs_messages';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
-		$since_gmt  = gmdate( 'Y-m-d H:i:s', strtotime( $since ) );
+		$since_ts   = strtotime( $since );
+		$since_gmt  = gmdate( 'Y-m-d H:i:s', $since_ts );
+
+		/*
+		 * Sweep a couple of seconds BEHIND the cursor.
+		 *
+		 * `updated_at` is a second-precision DATETIME and the client's cursor is
+		 * the previous response's server_time, so a reaction landing in the SAME
+		 * second as that cursor was skipped forever by the strict `>` below: the
+		 * row's updated_at equals the cursor, the next poll asks for strictly
+		 * greater, and the client never learned about it until a full reload.
+		 * With a ~5s poll that silently lost roughly one reaction in five —
+		 * measured live, two-actor, on 2.2.0.
+		 *
+		 * Re-sending a reaction set the client already has is harmless: the
+		 * client rebuilds a message's chips from the authoritative set in this
+		 * payload, so a repeated render is idempotent. `created_at` keeps the
+		 * un-widened cursor — a message newer than that ships its own reactions
+		 * through poll() and must not be duplicated here.
+		 */
+		$sweep_gmt = gmdate( 'Y-m-d H:i:s', $since_ts - self::REACTION_POLL_OVERLAP );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$rows = $wpdb->get_results(
@@ -2445,7 +2466,7 @@ class MessagingService {
 				ORDER BY m.updated_at ASC
 				LIMIT 100",
 				$user_id,
-				$since_gmt,
+				$sweep_gmt,
 				$since_gmt
 			)
 		);
