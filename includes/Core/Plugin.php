@@ -1951,6 +1951,15 @@ class Plugin {
 				'Microphone access denied'     => __( 'Microphone access denied', 'wpmediaverse' ),
 				'You reacted — tap to remove'  => __( 'You reacted — tap to remove', 'wpmediaverse' ),
 				'Reacted'                      => __( 'Reacted', 'wpmediaverse' ),
+				// Sidebar preview placeholders for attachment-only messages —
+				// mirror MessagingService::build_message_preview() (card 10127764989).
+				'Voice message'                => __( 'Voice message', 'wpmediaverse' ),
+				'Photo'                        => __( 'Photo', 'wpmediaverse' ),
+				'Video'                        => __( 'Video', 'wpmediaverse' ),
+				'Audio'                        => __( 'Audio', 'wpmediaverse' ),
+				'File'                         => __( 'File', 'wpmediaverse' ),
+				'Shared a media'               => __( 'Shared a media', 'wpmediaverse' ),
+				'Attachment'                   => __( 'Attachment', 'wpmediaverse' ),
 			),
 		);
 

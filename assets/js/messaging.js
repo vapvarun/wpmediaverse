@@ -83,16 +83,21 @@ function messagePreview( msg ) {
 	if ( content ) return content.slice( 0, 100 );
 	switch ( msg.message_type ) {
 		case 'voice':
+			return __( 'Voice message' );
 		case 'audio':
-			return 'Voice message';
+			return __( 'Audio' );
 		case 'media_share':
-			return 'Shared a media';
+			return __( 'Shared a media' );
 		case 'image':
+			return __( 'Photo' );
 		case 'video':
+			return __( 'Video' );
 		case 'file':
-			return msg.message_type.charAt( 0 ).toUpperCase() + msg.message_type.slice( 1 );
+			return __( 'File' );
 		default:
-			return '';
+			// Attachment under message_type 'text' (mobile clients / MIME
+			// strings the server allow-list resets) — card 10127764989.
+			return ( msg.attachment || msg.attachment_id || msg.media_id ) ? __( 'Attachment' ) : '';
 	}
 }
 
@@ -734,10 +739,13 @@ const { state, actions } = store( 'mvs/messaging', {
 				// Replace temp with real message.
 				state.messages = state.messages.map( m => m.id === tempId ? enrichMessage( { ...realMsg, _sending: false } ) : m );
 
-				// Update conversation preview.
+				// Update conversation preview. Same placeholder rules as the
+				// server's build_message_preview() — the raw lowercase type
+				// ('image') used to flash here until the next poll refetched
+				// the stored preview (card 10127764989).
 				const conv = state.activeConversation;
 				if ( conv ) {
-					conv.last_message_preview = content.slice( 0, 100 ) || body.message_type;
+					conv.last_message_preview = messagePreview( { content: content, message_type: body.message_type, attachment_id: body.attachment_id, media_id: body.media_id } );
 					conv.last_activity_at = new Date().toISOString();
 				}
 			} catch ( e ) {
