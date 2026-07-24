@@ -255,7 +255,10 @@
     font-size: 14px;
     font-weight: 600;
     background: var(--mvs-primary);
-    color: var(--mvs-bg);
+    /* Always --mvs-on-primary on the red primary — never --mvs-bg, which
+     * flips to near-black in dark mode and made the label unreadable
+     * (card 10127407439). */
+    color: var(--mvs-on-primary, #fff);
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -263,6 +266,7 @@
 
 #buddypress .mvs-btn-primary:hover {
     background: var(--mvs-primary-hover);
+    color: var(--mvs-on-primary, #fff);
 }
 
 #buddypress .mvs-btn-primary:disabled {
@@ -282,6 +286,67 @@
 
 #buddypress .mvs-btn-secondary:hover {
     background: var(--mvs-border);
+    /* Full-contrast text on hover — the dim secondary color over the darker
+     * hover surface was near-invisible in dark mode (card 10127407439). */
+    color: var(--mvs-text);
+}
+
+/* Bare `.mvs-btn` actions ("Upload Media" #mvs-bp-upload-btn, "Create Album"
+ * #mvs-bp-create-album-btn) previously had NO plugin background/color/hover —
+ * they fell through to the theme's #buddypress button rules, which break in
+ * BuddyX Pro dark mode (card 10127407439). Style them as primary actions with
+ * dark-safe tokens so the theme never decides their colors. */
+#buddypress #mvs-bp-upload-btn,
+#buddypress #mvs-bp-create-album-btn {
+    background: var(--mvs-primary);
+    color: var(--mvs-on-primary, #fff);
+    border: 1px solid var(--mvs-primary);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#buddypress #mvs-bp-upload-btn:hover,
+#buddypress #mvs-bp-upload-btn:focus,
+#buddypress #mvs-bp-create-album-btn:hover,
+#buddypress #mvs-bp-create-album-btn:focus {
+    background: var(--mvs-primary-hover);
+    border-color: var(--mvs-primary-hover);
+    color: var(--mvs-on-primary, #fff);
+}
+
+/* BEM (double-dash) button variants rendered inside #buddypress (album.php
+ * owner actions, dashboard partials on BP screens). Their dark-safe hover
+ * rules in frontend.css are class-only (0,3,0) and lose to the theme's
+ * #buddypress button:hover (1,0,1) — re-scope them so the plugin wins
+ * (card 10127407439). Tokens flip automatically in dark mode. */
+#buddypress .mvs-btn.mvs-btn--primary {
+    background: var(--mvs-primary);
+    color: var(--mvs-on-primary, #fff);
+}
+
+#buddypress .mvs-btn.mvs-btn--primary:hover,
+#buddypress .mvs-btn.mvs-btn--primary:focus {
+    background: var(--mvs-primary-hover);
+    color: var(--mvs-on-primary, #fff);
+}
+
+#buddypress .mvs-btn.mvs-btn--secondary {
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text);
+    border-color: var(--mvs-border-light);
+}
+
+#buddypress .mvs-btn.mvs-btn--secondary:hover,
+#buddypress .mvs-btn.mvs-btn--secondary:focus {
+    background: var(--mvs-border);
+    color: var(--mvs-text);
+}
+
+#buddypress .mvs-btn.mvs-btn--danger:hover,
+#buddypress .mvs-btn.mvs-btn--danger:focus {
+    background: var(--mvs-danger);
+    color: var(--mvs-on-danger, #ffffff);
+    filter: brightness(0.92);
 }
 
 /* =============================================================================
