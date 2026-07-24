@@ -330,7 +330,9 @@ class ActivityFormIntegration {
 		// Also set group meta on each media item so it appears in group media grid.
 		$raw_ids = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
 		if ( $raw_ids ) {
-			$media_ids = array_filter( array_map( 'absint', explode( ',', $raw_ids ) ) );
+			// Cast for consistency with every other `_mvs_media_ids` read (we
+			// write it as CSV, but a meta value is never type-guaranteed).
+			$media_ids = array_filter( array_map( 'absint', explode( ',', (string) $raw_ids ) ) );
 			foreach ( $media_ids as $media_id ) {
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'privacy', 'group' );
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_id', $group_id );
