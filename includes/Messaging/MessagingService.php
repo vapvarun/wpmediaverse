@@ -437,9 +437,18 @@ class MessagingService {
 		 */
 		do_action( 'mvs_conversation_created', $conv_id, $user_a, array( $user_a, $user_b ) );
 
-		// Fire message_sent hook so DM notifications reach the recipient even
-		// when the conversation is created without an initial send_message() call.
-		do_action( 'mvs_message_sent', 0, $conv_id, $user_a, array( $user_b ) );
+		// Deliberately NOT firing mvs_message_sent here.
+		//
+		// It used to fire with message_id 0 "so DM notifications reach the
+		// recipient even when the conversation is created without an initial
+		// send_message() call" - but creating a conversation is not sending a
+		// message, and every listener took it at its word: our own
+		// NotificationListener and BuddyNext's bridge both told the recipient
+		// "X sent you a message" while mvs_messages held nothing. Opening a
+		// compose window and picking a recipient was enough to notify them.
+		//
+		// Anyone who wants the create signal has mvs_conversation_created
+		// above; the real send fires mvs_message_sent with a real id.
 
 		return array(
 			'conversation_id' => $conv_id,
