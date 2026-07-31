@@ -369,6 +369,14 @@ class Plugin {
 		// Register Abilities API (WP 6.9+).
 		Abilities::init();
 
+		// Mobile-app credential acquisition (Wbcom App Auth standard):
+		// keep core's authorize screen usable (deep-link scheme through
+		// esc_url, WooCommerce wp-admin block exempted for that one screen)
+		// and wire the one-door-per-site seams (BuddyNext bridge join,
+		// reconnect-replaces pruner). Harmless no-ops when nothing uses them.
+		\WPMediaVerse\Auth\AppAuthorizeAccess::init();
+		\WPMediaVerse\Auth\AppConnect::init();
+
 		// Plugin-level theme.json — design tokens at lowest priority (theme always wins).
 		add_filter( 'wp_theme_json_data_default', array( self::class, 'register_theme_json' ) );
 

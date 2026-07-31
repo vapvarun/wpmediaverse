@@ -111,6 +111,13 @@ final class ConfigController extends WP_REST_Controller {
 				// so an older site degrades to a web fallback instead of showing a
 				// button that 404s.
 				'account_deletion' => true,
+
+				// May a member sign in by typing their WordPress password
+				// (POST /auth/app-password), or must they go through the
+				// interactive approval flow? Owner switch, default on. The
+				// app needs to know BEFORE it renders the control, so it
+				// never offers a path this site will refuse.
+				'password_login'   => \WPMediaVerse\Auth\AppCredentials::is_enabled(),
 			)
 		);
 
@@ -156,6 +163,14 @@ final class ConfigController extends WP_REST_Controller {
 			'pro_active'        => defined( 'MVS_PRO_VERSION' ),
 			'features'          => array_map( 'boolval', $features ),
 			'legal'             => $this->get_legal(),
+
+			// How this SITE signs a member into the app (Wbcom App Auth
+			// standard shape — one reader in the app serves every Wbcom
+			// product). On combined sites `connect_url` is BuddyNext's
+			// bridge; standalone it is empty and the app routes through
+			// core's authorize screen or the credentials exchange
+			// (`features.password_login` above is that switch).
+			'auth'              => \WPMediaVerse\Auth\AppConnect::auth_block(),
 		);
 
 		return rest_ensure_response( $config );

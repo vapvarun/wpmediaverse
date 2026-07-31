@@ -81,6 +81,7 @@ check_unauthenticated_rest_allowlist() {
         # Public app bootstrap reads (consumed pre-auth by the BuddyNext mobile app)
         'ConfigController.php'       # GET /app/config — public branding + feature flags, read before login by design
         'InterestsController.php'    # GET /app/interests — public onboarding catalog (the /me/interests routes are logged-in)
+        'AuthController.php'         # POST /auth/app-password — first-credential mint, public by necessity; guards (owner switch, TLS, rate limits, suspension gate) live in Auth\AppCredentials
     )
 
     if [ ${#allowed_files[@]} -eq 0 ]; then
