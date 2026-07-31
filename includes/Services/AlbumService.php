@@ -113,7 +113,15 @@ class AlbumService {
 
 		return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT media_id, position FROM {$wpdb->prefix}mvs_album_items WHERE album_id = %d ORDER BY position ASC",
+				// Trashed media is excluded here rather than by each caller. An
+				// album item row survives its media being trashed, so without this
+				// join a deleted photo stayed in every album it belonged to - as a
+				// broken tile, and counted in get_item_count() below.
+				"SELECT ai.media_id, ai.position
+				FROM {$wpdb->prefix}mvs_album_items ai
+				INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
+				WHERE ai.album_id = %d AND idx.status <> 'trash'
+				ORDER BY ai.position ASC",
 				$album_id
 			),
 			ARRAY_A
@@ -166,7 +174,12 @@ class AlbumService {
 
 		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_album_items WHERE album_id = %d",
+				// Must apply the SAME filter as get_items(), or an album reports
+				// twelve items and renders nine.
+				"SELECT COUNT(*)
+				FROM {$wpdb->prefix}mvs_album_items ai
+				INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
+				WHERE ai.album_id = %d AND idx.status <> 'trash'",
 				$album_id
 			)
 		);
@@ -502,7 +515,7 @@ class AlbumService {
 				"SELECT ai.media_id
 				FROM {$wpdb->prefix}mvs_album_items ai
 				INNER JOIN {$index_table} idx ON idx.media_id = ai.media_id
-				WHERE ai.album_id = %d AND idx.file_type LIKE %s
+				WHERE ai.album_id = %d AND idx.file_type LIKE %s AND idx.status <> 'trash'
 				ORDER BY ai.position ASC
 				LIMIT 1",
 				$album_id,
@@ -514,7 +527,12 @@ class AlbumService {
 		if ( ! $media_id ) {
 			$media_id = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT media_id FROM {$wpdb->prefix}mvs_album_items WHERE album_id = %d ORDER BY position ASC LIMIT 1",
+					"SELECT ai.media_id
+					FROM {$wpdb->prefix}mvs_album_items ai
+					INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
+					WHERE ai.album_id = %d AND idx.status <> 'trash'
+					ORDER BY ai.position ASC
+					LIMIT 1",
 					$album_id
 				)
 			);
@@ -522,6 +540,33 @@ class AlbumService {
 		// phpcs:enable
 
 		return $media_id ? (int) $media_id : null;
+	}
+
+	/**
+	 * The albums a media item belongs to.
+	 *
+	 * Exists so a consumer can tell somebody what deleting a photo is about to
+	 * affect. Album membership is a fact about this join table, so answering it
+	 * here keeps callers from querying mvs_album_items themselves.
+	 *
+	 * @param int $media_id Media id.
+	 * @return int[] Album post ids, in album order.
+	 */
+	public function albums_for_media( int $media_id ): array {
+		global $wpdb;
+
+		if ( $media_id <= 0 ) {
+			return array();
+		}
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT album_id FROM {$wpdb->prefix}mvs_album_items WHERE media_id = %d ORDER BY album_id ASC",
+				$media_id
+			)
+		);
+
+		return array_map( 'intval', (array) $ids );
 	}
 
 	/**
