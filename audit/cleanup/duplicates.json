@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-01T11:24:07Z",
+    "generated_at": "2026-08-01T11:32:09Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -651,12 +651,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1526-1526",
+                    "lines": "1537-1537",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1551-1551",
+                    "lines": "1562-1562",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -1041,7 +1041,7 @@
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1492-1492",
+                    "lines": "1503-1503",
                     "method": "create_item_permissions_check"
                 },
                 {

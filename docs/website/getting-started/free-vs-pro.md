@@ -44,7 +44,7 @@ Free and Pro release in lockstep and share the same version number (both at 2.0.
 | Followers Only privacy level | -- | Yes |
 | Group Members Only privacy level | -- | Yes |
 | Custom privacy (specific users) | -- | Yes |
-| Album-level privacy inheritance | -- | Yes |
+| Album-level privacy inheritance | Yes | Yes |
 | Privacy presets | -- | Yes |
 | Bulk privacy updates | -- | Yes |
 | AI content moderation (OpenAI) | Yes | Yes |

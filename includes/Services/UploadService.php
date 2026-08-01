@@ -856,11 +856,17 @@ class UploadService {
 	 *
 	 * @since 2.3.0
 	 *
+	 * PUBLIC because MediaController::replace_file() reimplements the ingest
+	 * pipeline (watermark, optimise, WebP/AVIF, store) rather than calling
+	 * handle(), so it has to reach this seam explicitly. That duplication is
+	 * tracked separately (Basecamp #10156642711); until it is collapsed, both
+	 * paths must call the SAME rotation, not two copies of it.
+	 *
 	 * @param string $file_path Absolute path to the image, rewritten in place.
 	 * @param string $mime      Detected MIME type.
 	 * @return bool True when the file was rotated and rewritten.
 	 */
-	private function apply_exif_orientation( string $file_path, string $mime ): bool {
+	public function apply_exif_orientation( string $file_path, string $mime ): bool {
 		if ( ! $this->is_image( $mime ) ) {
 			return false;
 		}

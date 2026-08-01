@@ -1045,6 +1045,17 @@ class MediaController extends WP_REST_Controller {
 		// upload as the user supplied it rather than the post-encode bytes.
 		$source_hash = (string) hash_file( 'sha256', $file['tmp_name'] );
 
+		// Normalise EXIF orientation before ANY of the re-encode steps below,
+		// exactly as UploadService::handle() does for a fresh upload. This path
+		// reimplements the ingest pipeline instead of calling handle(), so it
+		// does not inherit that step and a replaced iPhone portrait would land
+		// sideways even though a newly-uploaded one is now correct
+		// (Basecamp #10134243656 fixed create; #10156642711 found replace).
+		//
+		// Calls the same UploadService seam rather than repeating the logic —
+		// two copies of a rotation is how the paths drift apart again.
+		$upload_service->apply_exif_orientation( $file['tmp_name'], $mime );
+
 		// A replacement is new member bytes entering the library, so it stamps —
 		// the same rule as a fresh upload. This MUST run before store() below:
 		// store() persists the temp file, and the WebP/AVIF siblings are cut from
