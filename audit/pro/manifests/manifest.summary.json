@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse-pro",
     "name": "WPMediaVerse Pro",
-    "version": "1.3.0",
+    "version": "2.2.1",
     "namespace": "WPMediaVersePro",
     "main_file": "wpmediaverse-pro.php",
     "text_domain": "wpmediaverse-pro",
@@ -16,7 +16,7 @@
     "license_item_id": 1660828
   },
   "counts": {
-    "rest_endpoints": 66,
+    "rest_endpoints": 91,
     "ajax": 8,
     "admin_pages": 31,
     "settings": 0,
@@ -37,12 +37,11 @@
     "free_filters_hooked_baseline": 14,
     "free_actions_hooked_baseline": 25,
     "hooks_fired_baseline": 72,
-    "rest": 91,
-    "hooks_fired": 84,
     "capabilities": 4,
     "services": 60,
     "post_types": 0,
-    "taxonomies": 0
+    "taxonomies": 0,
+    "hooks_fired_unique": 84
   },
   "detail_files": {
     "rest": "manifest.rest.json",
@@ -80,32 +79,32 @@
           "mvs_pro_cloud_ops_notice (60s, success/error message between admin-post redirect and notice render)"
         ],
         "free_services_consumed_added": [
-          "WPMediaVerse\\Services\\CloudOps — per-row migrate / cleanup-local helpers shared with Free CLI"
+          "WPMediaVerse\\Services\\CloudOps \u2014 per-row migrate / cleanup-local helpers shared with Free CLI"
         ],
         "drivers_changed": [
-          "Integrations\\AmazonS3\\StorageDriver — encode_s3_uri() helper added; put_object / delete_object / head_object switched from rawurlencode($key) to per-segment encoding (S3-compat fix for R2 / MinIO / B2)",
-          "Integrations\\AmazonS3\\StorageDriver::download() — implemented (StorageDriverInterface contract)",
-          "Integrations\\BunnyCDN\\StorageDriver::download() — implemented (StorageDriverInterface contract)",
-          "Integrations\\BunnyCDN\\StorageDriver::exists() — switched HEAD to Range-GET (BunnyCDN storage API does not support HEAD)"
+          "Integrations\\AmazonS3\\StorageDriver \u2014 encode_s3_uri() helper added; put_object / delete_object / head_object switched from rawurlencode($key) to per-segment encoding (S3-compat fix for R2 / MinIO / B2)",
+          "Integrations\\AmazonS3\\StorageDriver::download() \u2014 implemented (StorageDriverInterface contract)",
+          "Integrations\\BunnyCDN\\StorageDriver::download() \u2014 implemented (StorageDriverInterface contract)",
+          "Integrations\\BunnyCDN\\StorageDriver::exists() \u2014 switched HEAD to Range-GET (BunnyCDN storage API does not support HEAD)"
         ],
         "settings_ui_changes": [
           "BunnyCDN: Storage Zone Password / Pull Zone Hostname / Storage Zone Region label rewording",
           "AWS: Bucket Name / Region label rewording",
           "Both: 2-step setup walkthrough in section header; per-field help trimmed to keep form scannable",
-          "All 5 secret fields now preserve stored value on empty form submit (pre_update_option_* filter chain — fixes secret-wipe on Save Changes)"
+          "All 5 secret fields now preserve stored value on empty form submit (pre_update_option_* filter chain \u2014 fixes secret-wipe on Save Changes)"
         ]
       },
-      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration. No S3 smoke test run live today — code-review only per user direction."
+      "out_of_scope": "Phase 0 wppqa baseline, Phase 2 full enumeration, Phase 2.5 sub-checks (cached), Phase 3 audit reports regeneration. No S3 smoke test run live today \u2014 code-review only per user direction."
     },
     "phase_2_rescan_skipped": true,
-    "phase_2_rescan_skip_reason": "Targeted refresh — only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
-    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables — manifest category counts unchanged. SafeRender helper not tracked here (not in service container).",
+    "phase_2_rescan_skip_reason": "Targeted refresh \u2014 only blocks/shortcodes/subsystems/admin_pages/coding_rules touched; full rescan deferred",
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 55448cd). 84 Plugin Check EscapeOutput findings resolved via new Blocks\\\\SafeRender helper class + call-site esc_attr() on title fields. 6 native confirm() fallbacks removed (mvsConfirm hard-dependency). 13 block render.php files refactored to use SafeRender::wrap/admin_notice. No new REST/AJAX/admin pages/blocks/tables \u2014 manifest category counts unchanged. SafeRender helper not tracked here (not in service container).",
     "refresh_2026_07_07": {
-      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (91), hooks_fired (83), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies, feature_toggles, free_services_consumed, free_filters_hooked.",
-      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1\u21921.9.0 drift). Rebuilt: REST (91), hooks_fired (83), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies, feature_toggles, free_services_consumed, free_filters_hooked.",
+      "method": "wp-plugin-onboard refresh \u2014 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
       "namespace": "mvs-pro/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
-      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks \u2014 deferred."
     },
     "refresh_2026_07_07_v200": {
       "scope": "2.0.0 functional bug batch (21 cards). Pro: CompetitionVotes::record shared vote guard (new includes/Competitions/CompetitionVotes.php); transcode RUNNING lock; 4 ghost crons cleared on deactivation; bounded StoryService cleanup; connector delta-sync AS continuation (mvs_pro_connector_delta_sync_continue); captions stale-job reaper (mvs_pro_captions_reap_stale + mvs_pro_captions_reaped); feed scope wired to 3 layouts; compete blocks self-enqueue via enqueue_store(); user_login->nicename in layout templates; boost refund.",
