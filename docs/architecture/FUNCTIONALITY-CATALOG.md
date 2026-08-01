@@ -1,7 +1,16 @@
 # WPMediaVerse — Functionality Catalog
 
-Free 2.3.0 (branch) + Pro 2.3.0. Generated 2026-08-01 from the reconciled manifests
-(`audit/manifests/`, `audit/pro/manifests/`) and verified against source.
+Generated 2026-08-01 from the reconciled manifests (`audit/manifests/`,
+`audit/pro/manifests/`) and verified against source.
+
+**Version status.** Both plugins still ship `Version: 2.2.1` in their headers and
+constants. That is deliberate, not an oversight: the house convention bumps version
+strings as a late release step, not at branch creation (see the 2.2.1 history — "Bump
+package.json to 2.2.1 (version coherence gate)" landed near the end of that cycle). The
+branch is named `2.3.0` for the work it carries. **Free** has the 2.3.0 changes described
+here; **Pro** has an empty `2.3.0` branch at 2.2.1 and inherits Free-side fixes only.
+Version constants, readme stable tag and the website what's-new must all be bumped
+together before tagging — tracked on Basecamp 10156642310.
 
 Every number below is derived from the manifest arrays, not hand-counted — see
 "Manifest reconciliation" at the end for why that distinction matters.
