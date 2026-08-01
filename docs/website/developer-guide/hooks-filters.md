@@ -3023,6 +3023,7 @@ Hooks marked **(Pro)** are fired by WPMediaVerse Pro and never run when only Fre
 
 | Hook | Type | Arguments | Description |
 |------|------|-----------|-------------|
+| `mvs_explore_tag_cloud_limit` | filter | `20` | How many tags the Explore tag cloud requests. A community with a handful of curated tags and one with hundreds want different numbers, so this is not hardcoded. Clamped to 1-200, the range the `/tags/cloud` endpoint itself accepts. Honoured by both the Free Explore template and the Pro layout partial. Since 2.3.0. |
 | `mvs_access_rule_types_ui` | filter | `$rule_types` | Filter the access-rule types offered in the rule-builder UIs. Pro hooks here to add monetization / code-grant rule types. |
 | `mvs_ai_cost_per_call` | filter | `(float) get_option( 'mvs_ai_cost_per_call', 0.01 ), $provider_id` | Filter the estimated per-call AI cost used for budget tracking. |
 | `mvs_comment_duplicate_window` | filter | `60, $media_id, $user_id` | Filters the duplicate-comment window, in seconds. Wide enough to absorb a double-click or a retry on a slow connection, short enough that deliberately repeating yourself later still works. |

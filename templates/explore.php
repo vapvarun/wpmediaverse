@@ -198,11 +198,28 @@ $mvs_archive_url = home_url( '/media/' );
 
 	<!-- Tag Cloud (Interactivity API) -->
 	<?php
+	/**
+	 * Filters how many tags the Explore tag cloud requests.
+	 *
+	 * The client used to hardcode 20, which left site owners no way to widen
+	 * or narrow the cloud for their own community — a photo site with a
+	 * handful of curated tags and one with hundreds want different numbers.
+	 * Clamped to the range the /tags/cloud endpoint itself accepts, so a
+	 * filter returning something wild cannot produce an unbounded query.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param int $limit Number of tags to show. Default 20, max 200.
+	 */
+	$mvs_tag_limit = (int) apply_filters( 'mvs_explore_tag_cloud_limit', 20 );
+	$mvs_tag_limit = max( 1, min( 200, $mvs_tag_limit ) );
+
 	$mvs_explore_ctx = array(
 		'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 		'archiveUrl' => esc_url( $mvs_archive_url ),
 		'activeTag'  => $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '' ), // phpcs:ignore WordPress.Security.NonceVerification
 		'tags'       => array(),
+		'tagLimit'   => $mvs_tag_limit,
 		'loaded'     => false,
 	);
 	?>

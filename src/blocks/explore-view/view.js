@@ -22,8 +22,11 @@ store( 'mvs/explore', {
 				return;
 			}
 			try {
+				// Server-provided, filterable via mvs_explore_tag_cloud_limit.
+				// Falls back to 20 for a context rendered before 2.3.0.
+				const tagLimit = parseInt( ctx.tagLimit, 10 ) || 20;
 				const res = await window.mvsRest.restFetch(
-					ctx.restUrl + 'tags/cloud?limit=20'
+					ctx.restUrl + 'tags/cloud?limit=' + tagLimit
 				);
 				const data = res.data;
 				if ( Array.isArray( data ) ) {

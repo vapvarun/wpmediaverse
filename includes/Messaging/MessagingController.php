@@ -369,7 +369,15 @@ class MessagingController extends WP_REST_Controller {
 	 */
 	public function check_auth() {
 		if ( ! is_user_logged_in() ) {
-			return new WP_Error( 'rest_not_logged_in', 'Authentication required.', array( 'status' => 401 ) );
+			// `mvs_unauthorized` (not core's `rest_not_logged_in`): a plugin
+			// should not emit codes in core's `rest_*` namespace, and every
+			// other Free endpoint already returns this code for this exact
+			// condition. A client should not have to special-case messaging.
+			return new WP_Error(
+				'mvs_unauthorized',
+				__( 'You must be logged in.', 'wpmediaverse' ),
+				array( 'status' => 401 )
+			);
 		}
 		return true;
 	}
