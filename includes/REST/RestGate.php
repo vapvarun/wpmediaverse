@@ -113,6 +113,23 @@ final class RestGate {
 	 */
 	public static function map(): array {
 		$map = array(
+			// --- Credential exchange. Gated by the route itself. -----------
+			// POST /auth/app-password is how a member gets their FIRST
+			// credential, so there is no authenticated caller for this gate to
+			// evaluate — classifying it 'self' would imply a check that cannot
+			// run. Auth\AppCredentials does the equivalent work inline and
+			// earlier: TLS gate, per-IP and per-username rate limiting before
+			// any credential is read, wp_authenticate(), uniform failures so it
+			// cannot enumerate accounts, and RestGuards::deny_if_suspended()
+			// before minting — the same suspension check this gate would apply.
+			// As that class's docblock puts it, a login gate cannot revoke a
+			// credential the member would then hold.
+			array(
+				'pattern' => '#^/mvs/v1/auth/app-password$#',
+				'methods' => array( 'POST' ),
+				'mode'    => 'exempt',
+			),
+
 			// --- Safety valves. Never gated. -------------------------------
 			// Reporting and blocking must work *because* someone blocked you.
 			// Gating these would let an abuser block their victim to silence

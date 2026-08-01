@@ -469,6 +469,7 @@ class RestGateTest extends WP_UnitTestCase {
 	 */
 	private function expected_write_route_modes(): array {
 		return array(
+			'POST /mvs/v1/auth/app-password' => 'exempt',
 			'DELETE /mvs/v1/albums/1' => 'self',
 			'DELETE /mvs/v1/albums/1/items/1' => 'self',
 			'DELETE /mvs/v1/collections/1' => 'self',
