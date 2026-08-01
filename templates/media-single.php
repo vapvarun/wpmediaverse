@@ -371,6 +371,15 @@ $mvs_archive_url = home_url( '/media/' );
 				'nonce'              => wp_create_nonce( 'wp_rest' ),
 				'isLoggedIn'         => is_user_logged_in(),
 				'currentUserId'      => $mvs_current_user_id,
+				// Server-resolved edit window (seconds). The client used to hardcode
+				// 15 minutes while the server read the filterable
+				// mvs_comment_edit_window option, so any site that changed it got a
+				// UI that hid Edit while the API still allowed it — or offered Edit
+				// that then 403'd.
+				'commentEditWindow'  => (int) apply_filters(
+					'mvs_comment_edit_window',
+					(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
+				),
 				'isOwner'            => $mvs_is_owner,
 				'authorId'           => $mvs_author_id,
 				'isFollowing'        => false,

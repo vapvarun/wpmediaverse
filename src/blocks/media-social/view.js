@@ -59,7 +59,9 @@ async function fetchComments( ctx ) {
 		);
 		const data = res.data;
 		const now = Date.now();
-		const editWindow = 15 * 60 * 1000; // 15 minutes in ms.
+		// Seconds from the server (filterable mvs_comment_edit_window), not a
+		// hardcoded 15 minutes — the two used to drift on any site that changed it.
+		const editWindow = ( ctx.commentEditWindow || 15 * 60 ) * 1000;
 		ctx.comments = Array.isArray( data )
 			? data.map( ( c ) => {
 				const commentAge = now - new Date( c.date ).getTime();

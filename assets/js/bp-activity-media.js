@@ -1287,14 +1287,28 @@
 			var text = ( input.value || '' ).trim();
 			if ( ! text ) { return; }
 
+			// Disable the BUTTON, not just the input. The click handler is
+			// delegated on document and reads input.value, which is still
+			// populated while the request is in flight — so disabling only the
+			// input left every extra click posting another identical comment
+			// (#10148507863). Guard on the button's own state too, in case the
+			// element is re-rendered mid-flight.
+			var btn = overlay.querySelector( '.mvs-lightbox-comment-post' );
+			if ( btn && btn.disabled ) { return; }
 			input.disabled = true;
+			if ( btn ) { btn.disabled = true; }
+
+			var release = function() {
+				input.disabled = false;
+				if ( btn ) { btn.disabled = false; }
+			};
 
 			apiPost( 'media/' + suiState.mediaId + '/comments', { content: text } ).then( function() {
 				input.value = '';
-				input.disabled = false;
+				release();
 				loadSharedComments( overlay, suiState.mediaId );
 			} ).catch( function() {
-				input.disabled = false;
+				release();
 			} );
 		}
 

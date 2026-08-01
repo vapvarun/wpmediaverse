@@ -522,7 +522,7 @@ wp_interactivity_state(
 								data-wp-bind--value="state.lightboxCommentText" />
 							<button class="mvs-lightbox-comment-post"
 								data-wp-on--click="actions.lightboxPostComment"
-								data-wp-bind--disabled="!state.lightboxCommentText">
+								data-wp-bind--disabled="state.lightboxCannotPostComment">
 								<?php esc_html_e( 'Post', 'wpmediaverse' ); ?>
 							</button>
 						</div>

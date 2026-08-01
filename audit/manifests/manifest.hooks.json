@@ -2066,6 +2066,18 @@
       ],
       "where": "includes/Services/AlbumService.php (add_items)",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_comment_duplicate_window",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "int $seconds",
+        "int $media_id",
+        "int $user_id"
+      ],
+      "where": "includes/Social/CommentService.php (find_recent_duplicate)",
+      "consumed_by": []
     }
   ],
   "generated": {

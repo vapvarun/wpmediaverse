@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 2.2.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-08-01 08:10:00+00:00\n"
+"POT-Creation-Date: 2026-08-01 09:04:32+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -328,7 +328,7 @@ msgstr ""
 #: includes/Admin/OverviewPage.php:377 includes/Admin/StatsPage.php:404
 #: includes/Admin/TagManagementPage.php:687
 #: includes/Services/GDPRService.php:176 src/blocks/media-stats/render.php:147
-#: templates/album.php:179 templates/media-single.php:542
+#: templates/album.php:179 templates/media-single.php:551
 #: templates/partials/dashboard-content.php:734
 #: templates/partials/dashboard-content.php:835
 #: templates/partials/dashboard-content.php:926
@@ -636,8 +636,8 @@ msgstr ""
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:582
 #: src/blocks/media-upload/render.php:194 templates/album.php:207
 #: templates/album.php:233 templates/album.php:397
-#: templates/media-single.php:607 templates/media-single.php:654
-#: templates/media-single.php:699 templates/partials/chat-composer.php:72
+#: templates/media-single.php:616 templates/media-single.php:663
+#: templates/media-single.php:708 templates/partials/chat-composer.php:72
 #: templates/partials/dashboard-content.php:330
 #: templates/partials/dashboard-content.php:521
 #: templates/partials/dashboard-content.php:811
@@ -927,7 +927,7 @@ msgstr ""
 #: includes/Admin/CollectionMetaBox.php:211
 #: includes/Admin/MediaListPage.php:243 includes/Admin/MediaListPage.php:291
 #: includes/Services/GDPRService.php:188 templates/album.php:189
-#: templates/media-single.php:555 templates/partials/dashboard-content.php:777
+#: templates/media-single.php:564 templates/partials/dashboard-content.php:777
 #: templates/partials/dashboard-content.php:848
 #: templates/partials/dashboard-content.php:936
 #: templates/partials/shared-ui-frame.php:186
@@ -4101,7 +4101,7 @@ msgid "Track views, downloads, reactions, and AI usage across your media library
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/StatsPage.php:342
-#: includes/Admin/StatsPage.php:342
+#: includes/Admin/StatsPage.php:342 includes/Core/Plugin.php:2056
 msgid "Today"
 msgstr ""
 
@@ -4178,7 +4178,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:858
 #: includes/Admin/TagManagementPage.php:123 includes/Core/Plugin.php:1002
 #: includes/Core/Plugin.php:1003 includes/Taxonomies/MediaTag.php:35
-#: templates/media-single.php:572 templates/partials/dashboard-content.php:866
+#: templates/media-single.php:581 templates/partials/dashboard-content.php:866
 msgid "Tags"
 msgstr ""
 
@@ -4226,8 +4226,8 @@ msgstr ""
 #: includes/Admin/TagManagementPage.php:177
 #: includes/Admin/TagManagementPage.php:263
 #: includes/Admin/TagManagementPage.php:310 includes/Core/Plugin.php:1372
-#: includes/Core/TemplateHelpers.php:1340 templates/media-single.php:519
-#: templates/media-single.php:522 templates/media-single.php:661
+#: includes/Core/TemplateHelpers.php:1340 templates/media-single.php:528
+#: templates/media-single.php:531 templates/media-single.php:670
 #: templates/partials/dashboard-content.php:560
 #: templates/partials/dashboard-content.php:600
 #: templates/partials/dashboard-content.php:697
@@ -4288,8 +4288,8 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:590
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:687
 #: dist/wpmediaverse/vendor/woocommerce/action-scheduler/classes/data-stores/ActionScheduler_wpPostStore_PostTypeRegistrar.php:39
-#: includes/Admin/TagManagementPage.php:309 templates/media-single.php:512
-#: templates/media-single.php:515 templates/media-single.php:659
+#: includes/Admin/TagManagementPage.php:309 templates/media-single.php:521
+#: templates/media-single.php:524 templates/media-single.php:668
 #: templates/partials/dashboard-content.php:558
 #: templates/partials/dashboard-content.php:598
 #: templates/partials/dashboard-content.php:695
@@ -4859,8 +4859,8 @@ msgstr ""
 #: dist/wpmediaverse/templates/media-single.php:486
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:458
 #: includes/Core/TemplateHelpers.php:1328 templates/album.php:153
-#: templates/media-single.php:406 templates/media-single.php:483
-#: templates/media-single.php:486 templates/partials/shared-ui-frame.php:458
+#: templates/media-single.php:415 templates/media-single.php:492
+#: templates/media-single.php:495 templates/partials/shared-ui-frame.php:458
 msgid "Share"
 msgstr ""
 
@@ -4976,8 +4976,8 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/profile-actions.php:80
 #: dist/wpmediaverse/templates/partials/profile-actions.php:120
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:476
-#: includes/Core/TemplateHelpers.php:1353 templates/media-single.php:528
-#: templates/media-single.php:531 templates/partials/profile-actions.php:80
+#: includes/Core/TemplateHelpers.php:1353 templates/media-single.php:537
+#: templates/media-single.php:540 templates/partials/profile-actions.php:80
 #: templates/partials/profile-actions.php:120
 #: templates/partials/shared-ui-frame.php:476
 msgid "Report"
@@ -5033,80 +5033,80 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:252
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:254
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:252
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:254
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:224
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:226
 msgid "Media Uploads"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:263
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:265
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:263
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:265
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:235
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:237
 msgid "Group Media Uploads"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:273
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:275
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/NotificationIntegration.php:189
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:273
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:275
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:245
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:247
 #: includes/Integrations/BuddyPress/NotificationIntegration.php:189
 msgid "Media Comments"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:301
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:301
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:273
 #. translators: %s: linked user name.
 msgid "%s uploaded new media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:302
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:302
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:274
 msgid "A member uploaded new media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:316
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:316
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:288
 #. translators: %s: group link
 msgid " in the group %s"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:330
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:330
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:302
 #. translators: 1: user link, 2: media type, 3: album link
 msgid "%1$s uploaded a new %2$s to album %3$s"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:341
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:467
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:341
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:467
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:313
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:439
 #. translators: 1: user link, 2: media type (photo, video, audio file)
 #. translators: 1: user link, 2: media type
 msgid "%1$s uploaded a new %2$s"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:360
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:360
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:332
 #. translators: %s: linked user name.
 msgid "%s commented on a media item"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:361
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:361
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:333
 msgid "A member commented on a media item"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:363
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/MediaDisplayHelper.php:70
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:363
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:335
 #: includes/Integrations/BuddyPress/MediaDisplayHelper.php:70
 msgid "Untitled"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:366
 #: dist/wpmediaverse/includes/Social/NotificationService.php:524
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:366
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:338
 #: includes/Social/NotificationService.php:524
 #. translators: 1: user link, 2: media link
 #. translators: 1: user name, 2: media title
@@ -5114,7 +5114,7 @@ msgid "%1$s commented on %2$s"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:894
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:894
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:866
 #. translators: 1: album title, 2: total photo count
 msgid "View %2$d photo in album %1$s"
 msgid_plural "View all %2$d photos in album %1$s"
@@ -5122,7 +5122,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: dist/wpmediaverse/includes/Integrations/BuddyPress/ActivitySyncIntegration.php:910
-#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:910
+#: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:882
 #. translators: 1: user link, 2: photo count, 3: album link
 msgid "%1$s uploaded %2$d photo to album %3$s"
 msgid_plural "%1$s uploaded %2$d photos to album %3$s"
@@ -5147,7 +5147,7 @@ msgstr[1] ""
 #: includes/REST/Controller/AlbumController.php:595
 #: includes/REST/Controller/AlbumController.php:620
 #: includes/REST/Controller/BulkController.php:174
-#: includes/Services/AlbumService.php:334 templates/album.php:38
+#: includes/Services/AlbumService.php:389 templates/album.php:38
 msgid "Album not found."
 msgstr ""
 
@@ -5861,7 +5861,7 @@ msgstr ""
 #: includes/REST/Controller/ReactionController.php:230
 #: includes/REST/Controller/SignedUrlController.php:232
 #: includes/REST/Controller/StatsController.php:108
-#: includes/Services/AlbumService.php:347
+#: includes/Services/AlbumService.php:402
 msgid "Media item not found."
 msgstr ""
 
@@ -6064,8 +6064,8 @@ msgstr ""
 #: dist/wpmediaverse/includes/Social/CommentService.php:324
 #: dist/wpmediaverse/includes/Social/CommentService.php:370
 #: includes/REST/Controller/CommentController.php:265
-#: includes/Social/CommentService.php:324
-#: includes/Social/CommentService.php:370
+#: includes/Social/CommentService.php:420
+#: includes/Social/CommentService.php:466
 #. translators: %s: human-readable time difference, e.g. "2 days"
 msgid "%s ago"
 msgstr ""
@@ -6073,7 +6073,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/REST/Controller/CommentController.php:293
 #: dist/wpmediaverse/includes/Social/CommentService.php:256
 #: includes/REST/Controller/CommentController.php:293
-#: includes/Social/CommentService.php:256
+#: includes/Social/CommentService.php:352
 msgid "Comment not found."
 msgstr ""
 
@@ -6457,12 +6457,12 @@ msgid "Album title is required."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Services/AlbumService.php:344
-#: includes/Services/AlbumService.php:357
+#: includes/Services/AlbumService.php:412
 msgid "Cover image must be an image (not video or audio)."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Services/AlbumService.php:357
-#: includes/Services/AlbumService.php:370
+#: includes/Services/AlbumService.php:425
 msgid ""
 "Could not add the selected media to this album (the album type may not "
 "accept it)."
@@ -6502,7 +6502,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:923
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:275
 #: includes/Services/GDPRService.php:180 templates/album.php:184
-#: templates/media-single.php:547 templates/partials/dashboard-content.php:739
+#: templates/media-single.php:556 templates/partials/dashboard-content.php:739
 #: templates/partials/dashboard-content.php:840
 #: templates/partials/dashboard-content.php:931
 #: templates/partials/shared-ui-frame.php:275
@@ -6703,18 +6703,18 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Services/UploadService.php:187
 #: dist/wpmediaverse/includes/Services/UploadService.php:199
-#: includes/Services/UploadService.php:187
-#: includes/Services/UploadService.php:199
+#: includes/Services/UploadService.php:195
+#: includes/Services/UploadService.php:207
 msgid "This file extension is not allowed."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Services/UploadService.php:345
-#: includes/Services/UploadService.php:345
+#: includes/Services/UploadService.php:353
 msgid "Failed to store the uploaded file."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Services/UploadService.php:462
-#: includes/Services/UploadService.php:462
+#: includes/Services/UploadService.php:470
 msgid "Failed to create media record."
 msgstr ""
 
@@ -6907,7 +6907,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:990
 #: dist/wpmediaverse/templates/profile-edit.php:199
 #: includes/Shortcodes/Shortcodes.php:787 templates/album.php:203
-#: templates/media-single.php:603 templates/partials/dashboard-content.php:326
+#: templates/media-single.php:612 templates/partials/dashboard-content.php:326
 #: templates/partials/dashboard-content.php:819
 #: templates/partials/dashboard-content.php:907
 #: templates/partials/dashboard-content.php:998 templates/profile-edit.php:199
@@ -6915,22 +6915,22 @@ msgid "Saving..."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Social/CommentService.php:116
-#: includes/Social/CommentService.php:116
+#: includes/Social/CommentService.php:190
 msgid "Invalid user."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Social/CommentService.php:123
-#: includes/Social/CommentService.php:123
+#: includes/Social/CommentService.php:197
 msgid "Invalid parent comment."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Social/CommentService.php:143
-#: includes/Social/CommentService.php:143
+#: includes/Social/CommentService.php:239
 msgid "Failed to create comment."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Social/CommentService.php:261
-#: includes/Social/CommentService.php:261
+#: includes/Social/CommentService.php:357
 msgid "You cannot delete this comment."
 msgstr ""
 
@@ -7248,8 +7248,8 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:898
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:988
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:453
-#: templates/album.php:202 templates/media-single.php:461
-#: templates/media-single.php:602 templates/media-single.php:652
+#: templates/album.php:202 templates/media-single.php:470
+#: templates/media-single.php:611 templates/media-single.php:661
 #: templates/partials/dashboard-content.php:325
 #: templates/partials/dashboard-content.php:817
 #: templates/partials/dashboard-content.php:906
@@ -7426,55 +7426,55 @@ msgstr ""
 #: dist/wpmediaverse/templates/media-single.php:436
 #: dist/wpmediaverse/templates/media-single.php:439
 #: dist/wpmediaverse/templates/media-single.php:447
-#: templates/media-single.php:436 templates/media-single.php:439
-#: templates/media-single.php:447
+#: templates/media-single.php:445 templates/media-single.php:448
+#: templates/media-single.php:456
 msgid "Favorite"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:437
-#: templates/media-single.php:437
+#: templates/media-single.php:446
 msgid "Add to favorites"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:443
 #: dist/wpmediaverse/templates/media-single.php:444
 #: dist/wpmediaverse/templates/media-single.php:445
-#: templates/media-single.php:443 templates/media-single.php:444
-#: templates/media-single.php:445
+#: templates/media-single.php:452 templates/media-single.php:453
+#: templates/media-single.php:454
 msgid "Log in to favorite"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:458
 #: dist/wpmediaverse/templates/media-single.php:459
-#: templates/media-single.php:458 templates/media-single.php:459
+#: templates/media-single.php:467 templates/media-single.php:468
 msgid "Save to a collection"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:484
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:456
-#: templates/media-single.php:484 templates/partials/shared-ui-frame.php:456
+#: templates/media-single.php:493 templates/partials/shared-ui-frame.php:456
 msgid "Share this media"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:513
-#: templates/media-single.php:513
+#: templates/media-single.php:522
 msgid "Edit this media"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:520
-#: templates/media-single.php:520
+#: templates/media-single.php:529
 msgid "Delete this media"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:529
-#: templates/media-single.php:529
+#: templates/media-single.php:538
 msgid "Report this media"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:565
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:851
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:297
-#: templates/media-single.php:565 templates/partials/dashboard-content.php:859
+#: templates/media-single.php:574 templates/partials/dashboard-content.php:859
 #: templates/partials/shared-ui-frame.php:297
 msgid ""
 "Tick to regenerate the URL slug from the new title. Off by default to keep "
@@ -7484,41 +7484,41 @@ msgstr ""
 #: dist/wpmediaverse/templates/media-single.php:567
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:853
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:301
-#: templates/media-single.php:567 templates/partials/dashboard-content.php:861
+#: templates/media-single.php:576 templates/partials/dashboard-content.php:861
 #: templates/partials/shared-ui-frame.php:301
 msgid "Update URL slug"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:583
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:869
-#: templates/media-single.php:583 templates/partials/dashboard-content.php:877
+#: templates/media-single.php:592 templates/partials/dashboard-content.php:877
 msgid "Add tags..."
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:615
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:490
-#: templates/media-single.php:615 templates/partials/shared-ui-frame.php:490
+#: templates/media-single.php:624 templates/partials/shared-ui-frame.php:490
 msgid "Comments"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:618
-#: templates/media-single.php:618
+#: templates/media-single.php:627
 msgid "Write a comment..."
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:621
-#: templates/media-single.php:621
+#: templates/media-single.php:630
 msgid "Post comment"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:621
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:526
-#: templates/media-single.php:621 templates/partials/shared-ui-frame.php:526
+#: templates/media-single.php:630 templates/partials/shared-ui-frame.php:526
 msgid "Post"
 msgstr ""
 
 #: dist/wpmediaverse/templates/media-single.php:626
-#: templates/media-single.php:626
+#: templates/media-single.php:635
 msgid "Log in to leave a comment"
 msgstr ""
 
@@ -9672,6 +9672,22 @@ msgid ""
 "screen instead."
 msgstr ""
 
+#: includes/Core/Plugin.php:2057
+msgid "Yesterday"
+msgstr ""
+
+#: includes/Core/Plugin.php:2059
+msgid "Mute notifications"
+msgstr ""
+
+#: includes/Core/Plugin.php:2060
+msgid "Unmute notifications"
+msgstr ""
+
+#: includes/Core/Plugin.php:2061
+msgid "Voice messages need a secure (https) connection."
+msgstr ""
+
 #: includes/REST/Controller/AuthController.php:78
 msgid "Your email address or username."
 msgstr ""
@@ -9696,6 +9712,10 @@ msgstr ""
 
 #: includes/REST/Controller/AuthController.php:156
 msgid "MediaVerse app"
+msgstr ""
+
+#: includes/Social/CommentService.php:215
+msgid "You have already posted that comment."
 msgstr ""
 
 #: templates/partials/chat-list.php:63

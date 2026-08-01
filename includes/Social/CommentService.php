@@ -110,6 +110,80 @@ class CommentService {
 	 * @param string $source    Optional source identifier (e.g. 'bp_activity') to prevent sync loops.
 	 * @return int|WP_Error Comment ID on success.
 	 */
+	/**
+	 * Find an identical comment by the same author on the same media, posted
+	 * within the dedupe window.
+	 *
+	 * Matches on (media, author, parent, exact content) rather than content
+	 * alone: replying "thanks" to two different people, or on two different
+	 * media items, is legitimate and must still work.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param int    $media_id  Media ID.
+	 * @param int    $user_id   Author.
+	 * @param string $content   Raw comment content.
+	 * @param int    $parent_id Parent comment, 0 for a top-level comment.
+	 * @return int Comment ID of the duplicate, or 0 if there is none.
+	 */
+	private function find_recent_duplicate( int $media_id, int $user_id, string $content, int $parent_id ): int {
+		/**
+		 * Filters the duplicate-comment window, in seconds.
+		 *
+		 * Wide enough to absorb a double-click or a retry on a slow connection,
+		 * short enough that deliberately repeating yourself later still works.
+		 * Return 0 to disable the server-side guard entirely.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @param int $seconds  Window length. Default 60.
+		 * @param int $media_id Media ID.
+		 * @param int $user_id  Author.
+		 */
+		$window = (int) apply_filters( 'mvs_comment_duplicate_window', 60, $media_id, $user_id );
+		if ( $window <= 0 ) {
+			return 0;
+		}
+
+		$normalised = trim( $content );
+		if ( '' === $normalised ) {
+			return 0;
+		}
+
+		$recent = get_comments(
+			array(
+				'type'       => self::COMMENT_TYPE,
+				'user_id'    => $user_id,
+				'parent'     => $parent_id,
+				'number'     => 5,
+				'orderby'    => 'comment_date_gmt',
+				'order'      => 'DESC',
+				'status'     => 'all',
+				'date_query' => array(
+					array(
+						'after'     => gmdate( 'Y-m-d H:i:s', time() - $window ),
+						'column'    => 'comment_date_gmt',
+						'inclusive' => true,
+					),
+				),
+				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- bounded to 5 rows in a 60s window, on the write path only.
+					array(
+						'key'   => self::MEDIA_META_KEY,
+						'value' => (string) $media_id,
+					),
+				),
+			)
+		);
+
+		foreach ( (array) $recent as $comment ) {
+			if ( trim( (string) $comment->comment_content ) === $normalised ) {
+				return (int) $comment->comment_ID;
+			}
+		}
+
+		return 0;
+	}
+
 	public function add( int $media_id, int $user_id, string $content, int $parent_id = 0, string $source = '' ) {
 		$user = get_userdata( $user_id );
 		if ( ! $user ) {
@@ -122,6 +196,28 @@ class CommentService {
 			if ( ! $parent || self::COMMENT_TYPE !== $parent->comment_type || self::comment_media_id( $parent_id ) !== $media_id ) {
 				return new WP_Error( 'mvs_invalid_parent', __( 'Invalid parent comment.', 'wpmediaverse' ), array( 'status' => 400 ) );
 			}
+		}
+
+		// Duplicate guard. wp_insert_comment() below is a raw DB insert that
+		// bypasses wp_allow_comment(), so WordPress core's own
+		// "Duplicate comment detected" check never runs for media comments. The
+		// only other throttle is a 30-per-minute rate limit, which happily
+		// allows 30 copies of the same comment.
+		//
+		// This is the ONLY layer that covers every client: the lightbox had no
+		// in-flight guard at all, the BP activity composer disabled the input
+		// but not the button, and the planned mobile app is a third client we
+		// cannot guard from the browser (#10148507863).
+		$duplicate = $this->find_recent_duplicate( $media_id, $user_id, $content, $parent_id );
+		if ( $duplicate ) {
+			return new WP_Error(
+				'mvs_duplicate_comment',
+				__( 'You have already posted that comment.', 'wpmediaverse' ),
+				array(
+					'status'     => 409,
+					'comment_id' => $duplicate,
+				)
+			);
 		}
 
 		// comment_post_ID is deliberately 0: a media comment is NOT tied to a WP

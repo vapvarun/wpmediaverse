@@ -4573,6 +4573,18 @@
       ],
       "where": "includes/Services/AlbumService.php (add_items)",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_comment_duplicate_window",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "int $seconds",
+        "int $media_id",
+        "int $user_id"
+      ],
+      "where": "includes/Social/CommentService.php (find_recent_duplicate)",
+      "consumed_by": []
     }
   ],
   "buddypress_integration": {
@@ -5229,6 +5241,24 @@
         "docs/website/features/albums.md stated the opposite behaviour",
         "docs/website/pro-features/advanced-privacy.md advertised an inherit_privacy flag that existed in neither Free nor Pro"
       ]
+    },
+    "refresh_2026_08_01_v230_step6": {
+      "scope": "Step 6 (partial): duplicate-comment guard across all three clients + server backstop",
+      "hooks_fired_added": [
+        "mvs_comment_duplicate_window (filter; 0 disables the server guard)"
+      ],
+      "methods_added": [
+        "CommentService::find_recent_duplicate() (private)"
+      ],
+      "behavior_changes": [
+        "CommentService::add() returns 409 mvs_duplicate_comment for an identical (media, author, parent, content) within the window"
+      ],
+      "client_changes": [
+        "shared-ui lightbox gained an in-flight guard + derived disable (had none)",
+        "bp-activity-media disables the submit BUTTON, not just the input",
+        "media-social reads the server-resolved comment edit window instead of a hardcoded 15 minutes"
+      ],
+      "pending": "lightbox comment edit/delete controls (existing PUT/DELETE routes, markup not yet wired) — needs browser verification"
     }
   },
   "category_sources": {
@@ -5517,6 +5547,6 @@
   },
   "counts": {
     "wp_cli": 18,
-    "hooks_fired_unique": 180
+    "hooks_fired_unique": 181
   }
 }
