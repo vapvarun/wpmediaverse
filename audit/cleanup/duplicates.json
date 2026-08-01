@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-01T07:49:06Z",
+    "generated_at": "2026-08-01T07:59:49Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -1133,12 +1133,12 @@
             "sites": [
                 {
                     "file": "includes/Core/Migrator.php",
-                    "lines": "1002-1002",
+                    "lines": "1003-1003",
                     "method": "migrate_to_23"
                 },
                 {
                     "file": "includes/Core/Migrator.php",
-                    "lines": "1034-1034",
+                    "lines": "1035-1035",
                     "method": "migrate_to_24"
                 }
             ]
@@ -1197,12 +1197,12 @@
                 },
                 {
                     "file": "includes/Messaging/MessagingService.php",
-                    "lines": "538-538",
+                    "lines": "616-616",
                     "method": "get_conversation"
                 },
                 {
                     "file": "includes/Messaging/MessagingService.php",
-                    "lines": "2398-2398",
+                    "lines": "2499-2499",
                     "method": "get_conversation_unread_count"
                 }
             ]

@@ -478,28 +478,7 @@ class MessagingService {
 
 		$offset = ( $page - 1 ) * $per_page;
 
-		$where_parts = array( 'p.user_id = %d' );
-		$params      = array( $user_id );
-
-		switch ( $tab ) {
-			case 'unread':
-				$where_parts[] = "p.status = 'active'";
-				$where_parts[] = 'p.is_archived = 0';
-				$where_parts[] = '(p.last_read_at IS NULL OR c.last_activity_at > p.last_read_at)';
-				$where_parts[] = 'c.last_message_id IS NOT NULL';
-				break;
-
-			case 'requests':
-				$where_parts[] = "p.status = 'request_pending'";
-				break;
-
-			default: // all.
-				$where_parts[] = "p.status IN ('active', 'request_pending')";
-				$where_parts[] = 'p.is_archived = 0';
-				break;
-		}
-
-		$where_sql = implode( ' AND ', $where_parts );
+		list( $where_sql, $params ) = $this->conversation_tab_where( $user_id, $tab );
 
 		$conversations = $wpdb->get_results(
 			$wpdb->prepare(
@@ -515,7 +494,106 @@ class MessagingService {
 
 		// phpcs:enable
 
-		// Enrich with participant data and unread count.
+		return $this->enrich_conversations( $conversations, $user_id );
+	}
+
+	/**
+	 * Total conversations for a tab, for honest pagination.
+	 *
+	 * Shares conversation_tab_where() with get_conversations() so the count can
+	 * never drift from the list it counts. Before 2.3.0 the endpoint returned a
+	 * page with no total at all, so a client could not tell a short page from
+	 * the last page (big-site checklist items 1 and 4).
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $tab     Tab: all, unread, requests, archived.
+	 * @return int
+	 */
+	public function count_conversations( int $user_id, string $tab = 'all' ): int {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$conv_table = $wpdb->prefix . 'mvs_conversations';
+		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
+
+		list( $where_sql, $params ) = $this->conversation_tab_where( $user_id, $tab );
+
+		$total = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*)
+				FROM {$conv_table} c
+				INNER JOIN {$part_table} p ON p.conversation_id = c.id
+				WHERE {$where_sql}",
+				$params
+			)
+		);
+
+		// phpcs:enable
+
+		return $total;
+	}
+
+	/**
+	 * Build the participant WHERE clause for a conversation-list tab.
+	 *
+	 * Single source of truth for tab semantics — get_conversations() and
+	 * count_conversations() both consume it.
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $tab     Tab slug.
+	 * @return array{0:string,1:array} WHERE SQL and its prepare() params.
+	 */
+	private function conversation_tab_where( int $user_id, string $tab ): array {
+		$where_parts = array( 'p.user_id = %d' );
+		$params      = array( $user_id );
+
+		switch ( $tab ) {
+			case 'unread':
+				$where_parts[] = "p.status = 'active'";
+				$where_parts[] = 'p.is_archived = 0';
+				$where_parts[] = '(p.last_read_at IS NULL OR c.last_activity_at > p.last_read_at)';
+				$where_parts[] = 'c.last_message_id IS NOT NULL';
+				break;
+
+			case 'requests':
+				$where_parts[] = "p.status = 'request_pending'";
+				break;
+
+			case 'archived':
+				// Archived is the ONLY tab that shows archived rows, and it
+				// ignores is_archived in the other direction. Without it a
+				// member who archived a conversation had no way back to it:
+				// PATCH /conversations/{id} accepted is_archived and the row
+				// then vanished from every available tab. (Basecamp
+				// #10132225661 / app card MV-1.)
+				$where_parts[] = "p.status = 'active'";
+				$where_parts[] = 'p.is_archived = 1';
+				break;
+
+			default: // all.
+				// Requests are deliberately excluded here. They have their own
+				// tab, and listing them in both meant a message from someone
+				// you don't follow appeared twice — once as a pending request
+				// and once as if it were already an accepted conversation
+				// (Basecamp #10153356172).
+				$where_parts[] = "p.status = 'active'";
+				$where_parts[] = 'p.is_archived = 0';
+				break;
+		}
+
+		return array( implode( ' AND ', $where_parts ), $params );
+	}
+
+	/**
+	 * Attach participants, unread counts and ISO timestamps to a conversation row set.
+	 *
+	 * @param array $conversations Raw rows.
+	 * @param int   $user_id       Viewer.
+	 * @return array
+	 */
+	private function enrich_conversations( array $conversations, int $user_id ): array {
 		foreach ( $conversations as &$conv ) {
 			$conv->participants         = $this->get_participants( (int) $conv->id );
 			$conv->unread_count         = $this->get_conversation_unread_count( (int) $conv->id, $user_id );
@@ -1433,6 +1511,29 @@ class MessagingService {
 			array( '%s', '%d' ),
 			array( '%d', '%s' )
 		);
+
+		// A new message also un-archives the thread for participants who had
+		// archived it. Archiving means "done with this for now", not "never
+		// show me this person again" — every mainstream chat app resurfaces an
+		// archived thread when the other person writes. Without this the
+		// message landed in a thread the recipient only saw if they thought to
+		// open the archived tab (Basecamp #10132225661 / MV-1).
+		//
+		// Filter escape hatch (Production Rule #3): return false to keep
+		// archived threads archived on new activity.
+		if ( apply_filters( 'mvs_dm_unarchive_on_activity', true, $conversation_id, $sender_id ) ) {
+			$wpdb->update(
+				$part_table,
+				array( 'is_archived' => 0 ),
+				array(
+					'conversation_id' => $conversation_id,
+					'is_archived'     => 1,
+					'status'          => 'active',
+				),
+				array( '%d' ),
+				array( '%d', '%d', '%s' )
+			);
+		}
 
 		// phpcs:enable
 

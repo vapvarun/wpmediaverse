@@ -61,7 +61,7 @@ class MessagingController extends WP_REST_Controller {
 					'tab'      => array(
 						'type'    => 'string',
 						'default' => 'all',
-						'enum'    => array( 'all', 'unread', 'requests' ),
+						'enum'    => array( 'all', 'unread', 'requests', 'archived' ),
 					),
 					'per_page' => array(
 						'type'    => 'integer',
@@ -382,16 +382,28 @@ class MessagingController extends WP_REST_Controller {
 	 * GET /me/conversations
 	 */
 	public function list_conversations( WP_REST_Request $request ): WP_REST_Response {
-		$user_id = get_current_user_id();
-		$tab     = $request->get_param( 'tab' );
-		$results = $this->service->get_conversations(
+		$user_id  = get_current_user_id();
+		$tab      = $request->get_param( 'tab' );
+		$per_page = (int) $request->get_param( 'per_page' );
+		$results  = $this->service->get_conversations(
 			$user_id,
 			$tab,
-			(int) $request->get_param( 'per_page' ),
+			$per_page,
 			(int) $request->get_param( 'page' )
 		);
 
-		return new WP_REST_Response( $results, 200 );
+		$response = new WP_REST_Response( $results, 200 );
+
+		// Honest pagination. The endpoint previously returned a bare page with
+		// no total, so a client could not distinguish a short page from the
+		// last page, and the mobile app had no way to size an infinite list
+		// (big-site checklist items 1 and 4; Coding Rule 18 requires the API to
+		// be fully drivable on its own).
+		$total = $this->service->count_conversations( $user_id, $tab );
+		$response->header( 'X-WP-Total', (string) $total );
+		$response->header( 'X-WP-TotalPages', (string) ( $per_page > 0 ? (int) ceil( $total / $per_page ) : 0 ) );
+
+		return $response;
 	}
 
 	/**

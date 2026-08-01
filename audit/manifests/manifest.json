@@ -972,7 +972,16 @@
         "handler": "MessagingController::list_conversations",
         "permission": "check_auth",
         "purpose": "List current user's conversations",
-        "file": "includes/Messaging/MessagingController.php:53"
+        "file": "includes/Messaging/MessagingController.php:53",
+        "args": [
+          "tab (all|unread|requests|archived)",
+          "per_page",
+          "page"
+        ],
+        "headers": [
+          "X-WP-Total",
+          "X-WP-TotalPages"
+        ]
       },
       {
         "route": "/mvs/v1/conversations",
@@ -4515,6 +4524,18 @@
       ],
       "where": "includes/Auth/AppAuthorizeAccess.php:97",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_dm_unarchive_on_activity",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $unarchive",
+        "int $conversation_id",
+        "int $sender_id"
+      ],
+      "where": "includes/Messaging/MessagingService.php (send_message)",
+      "consumed_by": []
     }
   ],
   "buddypress_integration": {
@@ -5108,6 +5129,27 @@
         "hooks_fired_unique": "172 -> 176"
       },
       "not_re_enumerated": "tables/blocks/shortcodes/cron/admin_pages/capabilities/settings unchanged by this range."
+    },
+    "refresh_2026_08_01_v230_step2": {
+      "scope": "Step 2 messaging: archived conversations tab + honest pagination + tab semantics fix",
+      "rest_changed": [
+        "GET /mvs/v1/me/conversations — tab enum gains archived; now emits X-WP-Total / X-WP-TotalPages"
+      ],
+      "hooks_fired_added": [
+        "mvs_dm_unarchive_on_activity (filter, Production Rule 3 escape hatch)"
+      ],
+      "migrator_added": [
+        "v25 — KEY user_archived (user_id, is_archived, status) on mvs_conversation_participants; added to the CREATE for fresh installs"
+      ],
+      "methods_added": [
+        "MessagingService::count_conversations()",
+        "MessagingService::conversation_tab_where() (private, shared by list+count)",
+        "MessagingService::enrich_conversations() (private)"
+      ],
+      "behavior_changes": [
+        "all tab no longer lists request_pending rows (Basecamp #10153356172)",
+        "a new message un-archives the thread for participants who archived it (filterable)"
+      ]
     }
   },
   "category_sources": {
@@ -5396,6 +5438,6 @@
   },
   "counts": {
     "wp_cli": 18,
-    "hooks_fired_unique": 176
+    "hooks_fired_unique": 177
   }
 }

@@ -2017,6 +2017,18 @@
       ],
       "where": "includes/Auth/AppAuthorizeAccess.php:97",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_dm_unarchive_on_activity",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $unarchive",
+        "int $conversation_id",
+        "int $sender_id"
+      ],
+      "where": "includes/Messaging/MessagingService.php (send_message)",
+      "consumed_by": []
     }
   ],
   "generated": {

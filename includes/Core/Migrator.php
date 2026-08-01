@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 24;
+	const CURRENT_VERSION = 25;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -456,6 +456,7 @@ class Migrator {
 				PRIMARY KEY  (id),
 				UNIQUE KEY conv_user (conversation_id, user_id),
 				KEY user_status (user_id, status),
+				KEY user_archived (user_id, is_archived, status),
 				KEY conv_read (conversation_id, last_read_at)
 			) {$charset_collate};"
 		);
@@ -1042,6 +1043,36 @@ class Migrator {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->query( "ALTER TABLE {$participants} ADD COLUMN cleared_up_to bigint(20) unsigned NOT NULL DEFAULT 0 AFTER status" );
 		// phpcs:enable
+	}
+
+	/**
+	 * Migration v25 — covering index for the conversation-list tabs.
+	 *
+	 * Every tab filters `user_id` + `status` + `is_archived`, but the only key
+	 * was `user_status (user_id, status)`, so `is_archived` was resolved by
+	 * scanning the matched rows. Harmless on a test account, real work for a
+	 * member with thousands of threads — and 2.3.0 adds a fourth tab
+	 * (`archived`) that filters on exactly that column.
+	 *
+	 * Idempotent (SHOW INDEX guard), add-only, mirrors migrate_to_21.
+	 *
+	 * @since 2.3.0
+	 */
+	private function migrate_to_25(): void {
+		global $wpdb;
+
+		$participants = $wpdb->prefix . 'mvs_conversation_participants';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$exists = $wpdb->get_var( "SHOW INDEX FROM {$participants} WHERE Key_name = 'user_archived'" );
+		if ( $exists ) {
+			return;
+		}
+
+		$prev_show = $wpdb->show_errors( false );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query( "ALTER TABLE {$participants} ADD KEY user_archived (user_id, is_archived, status)" );
+		$wpdb->show_errors( $prev_show );
 	}
 
 	/**
