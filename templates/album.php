@@ -202,25 +202,6 @@ $mvs_archive_url = home_url( '/media/' );
 							</div>
 						</div>
 					</div>
-					<?php
-					wp_enqueue_script( 'mvs-album-upload' );
-					wp_localize_script(
-						'mvs-album-upload',
-						'mvsAlbumUpload',
-						array(
-							'albumId' => (int) get_the_ID(),
-							'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-							'nonce'   => wp_create_nonce( 'wp_rest' ),
-							'i18n'    => array(
-								/* translators: 1: current file number, 2: total files */
-								'uploadingN'    => __( 'Uploading %1$d of %2$d...', 'wpmediaverse' ),
-								'addingToAlbum' => __( 'Adding to album...', 'wpmediaverse' ),
-								/* translators: %d: number of files added */
-								'addedToAlbum'  => __( '%d file(s) added to album!', 'wpmediaverse' ),
-							),
-						)
-					);
-					?>
 				<?php endif; ?>
 			</div>
 
@@ -229,7 +210,8 @@ $mvs_archive_url = home_url( '/media/' );
 					<button type="button" id="mvs-album-upload-btn" class="mvs-btn">
 						<span class="dashicons dashicons-plus-alt"></span> <?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
 					</button>
-					<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;">
+					<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;"
+						data-album-id="<?php echo esc_attr( (string) get_the_ID() ); ?>">
 						<?php
 						$mvs_album_mimes = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );
 						?>

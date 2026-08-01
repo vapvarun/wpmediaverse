@@ -40,88 +40,61 @@
 		} );
 	}
 
-	// Wire the shared dropzone behavior. `opts.onFiles` runs the upload flow.
+	// Register a dropzone with the shared mvs-dropzone module, which is the
+	// single owner of panel toggling, click-to-pick, drag feedback, drop and
+	// input-change wiring for the vanilla uploaders. This file keeps only the
+	// preview rendering + the two upload flows below. Do NOT re-add local
+	// drag/drop listeners here — the album uploader briefly grew its own set,
+	// which is how three parallel dropzone binders came to exist.
+	//
+	// Elements are resolved inside onFiles (not captured at register time)
+	// because the iAPI router replaces region nodes on client-side navigation.
 	function bindForm( opts ) {
-		var btn = byId( opts.btn );
-		var wrap = byId( opts.wrap );
-		var dropzone = byId( opts.dropzone );
-		var fileInput = byId( opts.input );
-		var statusEl = byId( opts.status );
-		var previewEl = byId( opts.preview );
-		var cancelBtn = byId( opts.cancel );
-		if ( ! btn || ! wrap || ! dropzone || ! fileInput || ! statusEl || ! previewEl || ! cancelBtn ) {
+		if ( ! window.mvsDropzone ) {
 			return;
 		}
-
-		btn.addEventListener( 'click', function () {
-			wrap.style.display = 'block';
-			btn.style.display = 'none';
-		} );
-		cancelBtn.addEventListener( 'click', function () {
-			wrap.style.display = 'none';
-			btn.style.display = '';
-			previewEl.textContent = '';
-			statusEl.style.display = 'none';
-		} );
-
-		var clicking = false;
-		dropzone.addEventListener( 'click', function ( e ) {
-			e.preventDefault();
-			e.stopPropagation();
-			if ( clicking ) {
-				return;
-			}
-			clicking = true;
-			fileInput.click();
-			setTimeout( function () {
-				clicking = false;
-			}, 100 );
-		} );
-		dropzone.addEventListener( 'dragover', function ( e ) {
-			e.preventDefault();
-			dropzone.classList.add( 'mvs-bp-dropzone--active' );
-		} );
-		dropzone.addEventListener( 'dragleave', function () {
-			dropzone.classList.remove( 'mvs-bp-dropzone--active' );
-		} );
-		dropzone.addEventListener( 'drop', function ( e ) {
-			e.preventDefault();
-			dropzone.classList.remove( 'mvs-bp-dropzone--active' );
-			handleFiles( Array.prototype.slice.call( e.dataTransfer.files ) );
-		} );
-		fileInput.addEventListener( 'change', function () {
-			handleFiles( Array.prototype.slice.call( fileInput.files ) );
-			fileInput.value = '';
-		} );
-
-		function handleFiles( files ) {
-			if ( ! files.length ) {
-				return;
-			}
-			files.forEach( function ( file ) {
-				if ( ! file.type.match( /^image\// ) ) {
+		window.mvsDropzone.register( {
+			btn: opts.btn,
+			wrap: opts.wrap,
+			dropzone: opts.dropzone,
+			input: opts.input,
+			status: opts.status,
+			preview: opts.preview,
+			cancel: opts.cancel,
+			onFiles: function ( files ) {
+				if ( ! files.length ) {
 					return;
 				}
-				var reader = new FileReader();
-				reader.onload = function ( e ) {
-					var thumb = document.createElement( 'div' );
-					thumb.className = 'mvs-bp-upload-thumb';
-					var img = document.createElement( 'img' );
-					img.src = e.target.result;
-					img.alt = file.name;
-					thumb.appendChild( img );
-					if ( opts.showName ) {
-						var name = document.createElement( 'span' );
-						name.className = 'mvs-bp-upload-thumb-name';
-						name.textContent = file.name;
-						thumb.appendChild( name );
+				var previewEl = byId( opts.preview );
+				var statusEl = byId( opts.status );
+				if ( ! previewEl || ! statusEl ) {
+					return;
+				}
+				files.forEach( function ( file ) {
+					if ( ! file.type.match( /^image\// ) ) {
+						return;
 					}
-					previewEl.appendChild( thumb );
-				};
-				reader.readAsDataURL( file );
-			} );
-			opts.onFiles( files, statusEl );
-		}
+					var reader = new FileReader();
+					reader.onload = function ( e ) {
+						var thumb = document.createElement( 'div' );
+						thumb.className = 'mvs-bp-upload-thumb';
+						var img = document.createElement( 'img' );
+						img.src = e.target.result;
+						img.alt = file.name;
+						thumb.appendChild( img );
+						if ( opts.showName ) {
+							var name = document.createElement( 'span' );
+							name.className = 'mvs-bp-upload-thumb-name';
+							name.textContent = file.name;
+							thumb.appendChild( name );
+						}
+						previewEl.appendChild( thumb );
+					};
+					reader.readAsDataURL( file );
+				} );
+				opts.onFiles( files, statusEl );
+			},
+		} );
 	}
 
 	function startStatus( statusEl, total ) {

@@ -41,6 +41,20 @@ async function apiFetch( path, options = {} ) {
 		);
 	}
 
+	// Fail loudly, not silently. Every caller below wraps apiFetch in a
+	// "silently fail, keep existing data" catch, so a missing REST client used
+	// to surface as an empty conversation list — indistinguishable from "you
+	// have no conversations". That is exactly how the chat panel reported "No
+	// conversations" on any page that didn't enqueue mvs-rest
+	// (Basecamp #10149580967). The enqueue is fixed in Core\Plugin, but keep
+	// this guard so the next delivery regression is diagnosable instead of
+	// looking like an empty state.
+	if ( ! window.mvsRest || typeof window.mvsRest.restFetch !== 'function' ) {
+		throw new Error(
+			'mvsRest unavailable — the mvs-rest script was not enqueued on this page.'
+		);
+	}
+
 	const res = await window.mvsRest.restFetch( url, options );
 
 	if ( res.status === 204 ) return null;

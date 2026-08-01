@@ -324,7 +324,7 @@ abstract class BaseBPTabIntegration {
 		wp_enqueue_script(
 			'mvs-bp-tab-upload',
 			MVS_PLUGIN_URL . 'assets/js/frontend/bp-tab-upload.js',
-			array( 'mvs-rest' ),
+			array( 'mvs-rest', 'mvs-dropzone' ),
 			MVS_VERSION,
 			array( 'in_footer' => true )
 		);

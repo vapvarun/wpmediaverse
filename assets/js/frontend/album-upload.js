@@ -2,8 +2,15 @@
  * Album upload — dropzone + sequential media upload, then attach to the album.
  *
  * Extracted from the inline <script> in templates/album.php (owner-only block).
- * Config + translatable status strings arrive via the localized
- * `window.mvsAlbumUpload` object, so no data or strings live in JS.
+ * Static config + translatable status strings arrive via the localized
+ * `window.mvsAlbumUpload` object (localized at registration in Core\Plugin, NOT
+ * from the template — see the note there). The album id is page-specific and
+ * travels on `#mvs-album-upload-wrap[data-album-id]`, inside the router region.
+ *
+ * Dropzone behaviour is delegated to the shared `mvs-dropzone` module, which is
+ * the single owner of drag/drop/click wiring for the vanilla uploaders. This
+ * file owns only the album-specific upload flow. Do not re-add local drag/drop
+ * listeners here — that is what created a third parallel dropzone binder.
  *
  * @package WPMediaVerse
  */
@@ -13,65 +20,42 @@
 	var cfg = window.mvsAlbumUpload || {};
 	var i18n = cfg.i18n || {};
 
-	var uploadBtn = document.getElementById( 'mvs-album-upload-btn' );
-	var uploadWrap = document.getElementById( 'mvs-album-upload-wrap' );
-	var dropzone = document.getElementById( 'mvs-album-dropzone' );
-	var fileInput = document.getElementById( 'mvs-album-file-input' );
-	var statusEl = document.getElementById( 'mvs-album-upload-status' );
-	var previewEl = document.getElementById( 'mvs-album-upload-preview' );
-	var cancelBtn = document.getElementById( 'mvs-album-upload-cancel' );
+	function el( id ) {
+		return document.getElementById( id );
+	}
 
-	if ( ! uploadBtn || ! uploadWrap || ! dropzone || ! fileInput || ! statusEl || ! previewEl || ! cancelBtn ) {
-		return;
+	function albumId() {
+		var wrap = el( 'mvs-album-upload-wrap' );
+		return wrap ? parseInt( wrap.getAttribute( 'data-album-id' ), 10 ) || 0 : 0;
 	}
 
 	function uploadingLabel( current, total ) {
 		return ( i18n.uploadingN || '' ).replace( '%1$d', current ).replace( '%2$d', total );
 	}
 
-	uploadBtn.addEventListener( 'click', function () {
-		uploadWrap.style.display = 'block';
-		uploadBtn.style.display = 'none';
-	} );
-	cancelBtn.addEventListener( 'click', function () {
-		uploadWrap.style.display = 'none';
-		uploadBtn.style.display = '';
-		previewEl.textContent = '';
-		statusEl.style.display = 'none';
-	} );
-
-	var clicking = false;
-	dropzone.addEventListener( 'click', function ( e ) {
-		e.preventDefault();
-		e.stopPropagation();
-		if ( clicking ) {
-			return;
-		}
-		clicking = true;
-		fileInput.click();
-		setTimeout( function () {
-			clicking = false;
-		}, 100 );
-	} );
-	dropzone.addEventListener( 'dragover', function ( e ) {
-		e.preventDefault();
-		dropzone.classList.add( 'mvs-bp-dropzone--active' );
-	} );
-	dropzone.addEventListener( 'dragleave', function () {
-		dropzone.classList.remove( 'mvs-bp-dropzone--active' );
-	} );
-	dropzone.addEventListener( 'drop', function ( e ) {
-		e.preventDefault();
-		dropzone.classList.remove( 'mvs-bp-dropzone--active' );
-		handleFiles( Array.from( e.dataTransfer.files ) );
-	} );
-	fileInput.addEventListener( 'change', function () {
-		handleFiles( Array.from( fileInput.files ) );
-		fileInput.value = '';
+	// All dropzone wiring (panel toggle, click-to-pick, drag feedback, drop,
+	// input change) lives in the shared mvs-dropzone module. This file owns only
+	// the album-specific upload flow below.
+	if ( ! window.mvsDropzone ) {
+		return;
+	}
+	window.mvsDropzone.register( {
+		btn: 'mvs-album-upload-btn',
+		wrap: 'mvs-album-upload-wrap',
+		dropzone: 'mvs-album-dropzone',
+		input: 'mvs-album-file-input',
+		status: 'mvs-album-upload-status',
+		preview: 'mvs-album-upload-preview',
+		cancel: 'mvs-album-upload-cancel',
+		onFiles: handleFiles,
 	} );
 
 	function handleFiles( files ) {
 		if ( ! files.length ) {
+			return;
+		}
+		var previewEl = el( 'mvs-album-upload-preview' );
+		if ( ! previewEl ) {
 			return;
 		}
 		files.forEach( function ( file ) {
@@ -155,6 +139,11 @@
 	}
 
 	function uploadAndAddToAlbum( files ) {
+		var statusEl = el( 'mvs-album-upload-status' );
+		var album = albumId();
+		if ( ! statusEl || ! album ) {
+			return;
+		}
 		statusEl.style.display = 'block';
 		var total = files.length, done = 0;
 		var uploadedIds = [];
@@ -171,7 +160,7 @@
 			if ( done >= total ) {
 				if ( uploadedIds.length ) {
 					statusEl.textContent = i18n.addingToAlbum || '';
-					window.mvsRest.restFetch( cfg.restUrl + 'albums/' + cfg.albumId + '/items', {
+					window.mvsRest.restFetch( cfg.restUrl + 'albums/' + album + '/items', {
 						method: 'POST',
 						body: { media_ids: uploadedIds },
 					} ).then( function () {
