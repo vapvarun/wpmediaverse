@@ -1231,6 +1231,8 @@ class Plugin {
 			wp_enqueue_script( 'mvs-dismissible' );
 			wp_enqueue_script( 'mvs-collection-filter' );
 			wp_enqueue_script( 'mvs-messages-scroll' );
+			wp_enqueue_script( 'mvs-album-cover' );
+			wp_enqueue_script( 'mvs-album-playlist' );
 
 			wp_enqueue_style(
 				'mvs-frontend',
@@ -1537,6 +1539,10 @@ class Plugin {
 				'strategy'  => 'defer',
 			)
 		);
+		// Static config only. The album id is page-specific and is read from
+		// the enclosing [data-album-id] inside the router region — a
+		// template-body wp_localize_script() prints outside the region and
+		// never survives a client-side navigation.
 		wp_register_script(
 			'mvs-album-cover',
 			MVS_PLUGIN_URL . 'assets/js/frontend/album-cover.js',
@@ -1545,6 +1551,19 @@ class Plugin {
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			'mvs-album-cover',
+			'mvsAlbumCover',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'i18n'    => array(
+					'saving'     => __( 'Saving…', 'wpmediaverse' ),
+					'setAsCover' => __( 'Set as cover', 'wpmediaverse' ),
+					'error'      => __( 'Could not set cover', 'wpmediaverse' ),
+				),
 			)
 		);
 

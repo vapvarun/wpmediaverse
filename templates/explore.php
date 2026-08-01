@@ -40,7 +40,15 @@ $mvs_archive_url = home_url( '/media/' );
 		<button type="button" class="mvs-logged-out-banner__close" id="mvs-logged-out-banner-close"
 			aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
-	<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
+	<?php
+// @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
+// enqueues this handle for every MVS-owned page. Enqueuing from a template body only
+// ever worked on a hard page load: the <script> tag prints in wp_footer, OUTSIDE
+// [data-wp-router-region="mvs/main"], so a client-side navigation swapped in the markup
+// without ever delivering the script (Basecamp #10148246386, #10134243697). Left as an
+// idempotent no-op because themes may override this template — Production Rule #5.
+?>
+<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
 <?php endif; ?>
 
 <div class="mvs-explore-page">
@@ -178,7 +186,15 @@ $mvs_archive_url = home_url( '/media/' );
 		<!-- User search results (populated via safe DOM methods) -->
 		<div class="mvs-user-search-results" id="mvs-user-search-results" style="display:none;"></div>
 	</div>
-	<?php wp_enqueue_script( 'mvs-explore-search' ); ?>
+	<?php
+// @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
+// enqueues this handle for every MVS-owned page. Enqueuing from a template body only
+// ever worked on a hard page load: the <script> tag prints in wp_footer, OUTSIDE
+// [data-wp-router-region="mvs/main"], so a client-side navigation swapped in the markup
+// without ever delivering the script (Basecamp #10148246386, #10134243697). Left as an
+// idempotent no-op because themes may override this template — Production Rule #5.
+?>
+<?php wp_enqueue_script( 'mvs-explore-search' ); ?>
 
 	<!-- Tag Cloud (Interactivity API) -->
 	<?php
