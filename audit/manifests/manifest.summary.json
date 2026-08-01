@@ -13,7 +13,7 @@
     "extension_hook_fired": "mvs_loaded"
   },
   "counts": {
-    "rest_endpoints": 113,
+    "rest_endpoints": 114,
     "ajax": 3,
     "admin_pages": 17,
     "settings": 40,
@@ -26,7 +26,7 @@
     "capabilities": 10,
     "services": 37,
     "services_registered": 37,
-    "hooks_fired_unique": 172,
+    "hooks_fired_unique": 176,
     "hooks_with_args_signature": 29,
     "hooks_no_call_site": 0,
     "cron": 4,
@@ -245,7 +245,8 @@
       ],
       "not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
     },
-    "refreshed_note": "2.1.0 freshness bump; curated manifest kept (deterministic generator zeroes REST/shortcodes on this register_routes() wrapper-pattern plugin)"
+    "refreshed_note": "2.1.0 freshness bump; curated manifest kept (deterministic generator zeroes REST/shortcodes on this register_routes() wrapper-pattern plugin)",
+    "refresh_2026_08_01": "2.3.0 baseline delta: +Auth module (3 classes), +POST /auth/app-password, +4 hooks, +Migrator v23/v24"
   },
   "refreshed_at": "2026-05-28T12:30:00Z",
   "refresh_2026_05_28": {

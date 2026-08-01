@@ -1153,6 +1153,22 @@
         "permission": "check_auth",
         "purpose": "Upload a message attachment",
         "file": "includes/Messaging/MessagingController.php:335"
+      },
+      {
+        "route": "/mvs/v1/auth/app-password",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AuthController::issue_app_password",
+        "permission": "__return_true (Rule-2 allowlisted: first-credential exchange, nothing to authenticate with yet; guarded in Auth\\AppCredentials by owner switch, TLS gate, uniform failures, suspension gate, 409-on-2FA, and pre-read rate limiting)",
+        "purpose": "Trade a WordPress username/password for an Application Password the app holds (Wbcom app-auth standard, WP-password-first)",
+        "file": "includes/REST/Controller/AuthController.php:66",
+        "args": [
+          "username (required, string)",
+          "password (required, string)",
+          "app_name (optional, string)",
+          "app_id (optional, string — stable per-install id so a repeat sign-in replaces the row)"
+        ]
       }
     ]
   },
@@ -4457,6 +4473,48 @@
         "wpmediaverse-pro (appends /mvs-pro/v1/ at boot)"
       ],
       "added": "2.2.0"
+    },
+    {
+      "name": "mvs_app_connect_bridge",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $info"
+      ],
+      "where": "includes/Auth/AppConnect.php:132",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_app_password_login_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $on"
+      ],
+      "where": "includes/Auth/AppCredentials.php:89",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_app_credential_issued",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $user_id",
+        "string $app_id",
+        "string $app_name"
+      ],
+      "where": "includes/Auth/AppCredentials.php:186",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_app_scheme",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $scheme"
+      ],
+      "where": "includes/Auth/AppAuthorizeAccess.php:97",
+      "consumed_by": []
     }
   ],
   "buddypress_integration": {
@@ -4790,7 +4848,7 @@
   "generated": {
     "at": "2026-07-24T00:00:00Z",
     "from": "wp-plugin-onboard skill (1.9.0 full refresh 2026-07-07)",
-    "branch": "2.2.0",
+    "branch": "2.3.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -5010,6 +5068,46 @@
         ]
       },
       "not_changed": "No new REST routes, tables, blocks, admin pages, shortcodes, or cron. Counts unchanged except hooks_fired_unique (+4)."
+    },
+    "refresh_2026_08_01_v230_baseline": {
+      "scope": "BASELINE delta before 2.3.0 work. The 2026-07-24 refresh stopped at the 2.2.0 surface; 10 commits touching includes/ landed after it (all of 2.2.1 plus 3 unreleased on branch 2.3.0) and were never manifested.",
+      "method": "Hand-written targeted delta. Deterministic generator NOT used - it zeroes REST/shortcodes on this register_routes() wrapper-pattern plugin, and wppqa write-manifest.mjs overwrites this curated file with an incompatible schema and breaks the release gate.",
+      "module_added": {
+        "namespace": "WPMediaVerse\\Auth",
+        "classes": [
+          "Auth\\AppConnect",
+          "Auth\\AppCredentials",
+          "Auth\\AppAuthorizeAccess"
+        ],
+        "purpose": "Wbcom app-auth standard - WP-password-first, one-door-per-site credential exchange for the planned native app",
+        "note": "This module shipped with ZERO manifest coverage. Recorded here so Rule-18 (three entry points) and reuse checks can see it."
+      },
+      "rest_added": [
+        "POST /mvs/v1/auth/app-password"
+      ],
+      "hooks_fired_added": [
+        "mvs_app_connect_bridge (filter)",
+        "mvs_app_password_login_enabled (filter)",
+        "mvs_app_credential_issued (action)",
+        "mvs_app_scheme (filter)"
+      ],
+      "migrator_added": [
+        "v23 - mvs_messages.updated_at datetime + conv_updated (conversation_id, updated_at) key; existing rows set updated_at = created_at",
+        "v24 - mvs_conversation_participants.cleared_up_to bigint unsigned DEFAULT 0 (per-user delete watermark)"
+      ],
+      "methods_added": [
+        "REST\\Controller\\AuthController::issue_app_password()",
+        "Services\\AlbumService::albums_for_media()",
+        "Messaging\\MessagingService::build_message_preview()",
+        "Messaging\\MessagingService::get_cleared_up_to()",
+        "Messaging\\MessagingService::suppress_cleared_preview()"
+      ],
+      "duplication_note": "AlbumService::albums_for_media() is one of the two clusters bin/duplication-gate.sh currently reports on a clean tree (vs Pro Battles\\BattleService::get_participant_ids). Recent unmanifested code, not legacy debt.",
+      "counts_changed": {
+        "rest_endpoints": "113 -> 114",
+        "hooks_fired_unique": "172 -> 176"
+      },
+      "not_re_enumerated": "tables/blocks/shortcodes/cron/admin_pages/capabilities/settings unchanged by this range."
     }
   },
   "category_sources": {
@@ -5298,6 +5396,6 @@
   },
   "counts": {
     "wp_cli": 18,
-    "hooks_fired_unique": 172
+    "hooks_fired_unique": 176
   }
 }

@@ -1975,6 +1975,48 @@
         "wpmediaverse-pro (appends /mvs-pro/v1/ at boot)"
       ],
       "added": "2.2.0"
+    },
+    {
+      "name": "mvs_app_connect_bridge",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $info"
+      ],
+      "where": "includes/Auth/AppConnect.php:132",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_app_password_login_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $on"
+      ],
+      "where": "includes/Auth/AppCredentials.php:89",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_app_credential_issued",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $user_id",
+        "string $app_id",
+        "string $app_name"
+      ],
+      "where": "includes/Auth/AppCredentials.php:186",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_app_scheme",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $scheme"
+      ],
+      "where": "includes/Auth/AppAuthorizeAccess.php:97",
+      "consumed_by": []
     }
   ],
   "generated": {
@@ -2155,6 +2197,7 @@
         "TemplateHelpers::resolve_watermark_preview() (+interface)"
       ],
       "not_changed": "No new REST endpoints, tables, blocks, admin pages, or Migrator version. Category counts otherwise unchanged."
-    }
+    },
+    "refresh_2026_08_01": "2.3.0 baseline: +4 Auth-module hooks (see manifest.json .generated.refresh_2026_08_01_v230_baseline)"
   }
 }
