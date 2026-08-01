@@ -937,6 +937,7 @@ body.dark-mode .mvs-skeleton::after {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    box-sizing: border-box;
     width: 100%;
 }
 
@@ -2355,6 +2356,7 @@ a.mvs-dashboard-card-title:hover {
     display: block;
     width: 100%;
     padding: 8px 12px;
+    box-sizing: border-box;
     margin: 12px 0;
     font-size: 14px;
     border: 1px solid var(--mvs-border);
@@ -4037,6 +4039,7 @@ a.mvs-dashboard-card-title:hover {
     border: 1px solid var(--mvs-border);
     border-radius: 4px;
     font-size: 13px;
+    box-sizing: border-box;
 }
 
 /* Section 29 "BP Activity Media Button Alignment" — all rules moved to
@@ -4866,6 +4869,7 @@ a.mvs-dashboard-card-title:hover {
         0 1px 2px rgba(15, 23, 42, 0.04),
         0 18px 48px -12px rgba(15, 23, 42, 0.18);
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 .mvs-empty-state-frontend--404::before {
@@ -6108,6 +6112,7 @@ a.mvs-dashboard-card-title:hover {
     text-align: center;
     overflow: hidden;
     color: var(--mvs-primary);
+    box-sizing: border-box;
 }
 
 .mvs-auth-gate__card::before {
@@ -6495,7 +6500,8 @@ body.dark-mode .mvs-auth-gate__card {
 .mvs-actions-overflow { position: relative; display: inline-block; }
 .mvs-actions-menu { position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 4px); min-inline-size: 160px; background: var(--mvs-bg, #fff); border: 1px solid var(--mvs-border, #e5e7eb); border-radius: var(--mvs-radius-md, 8px); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); padding: 4px; z-index: 100; display: flex; flex-direction: column; }
 .mvs-actions-menu[hidden] { display: none; }
-.mvs-actions-menu__item { display: block; width: 100%; text-align: start; padding: 8px 12px; background: none; border: 0; border-radius: var(--mvs-radius-sm, 4px); cursor: pointer; font-size: var(--mvs-font-sm, 14px); color: var(--mvs-text, #111827); }
+.mvs-actions-menu__item { display: block; width: 100%; text-align: start; padding: 8px 12px;
+    box-sizing: border-box; background: none; border: 0; border-radius: var(--mvs-radius-sm, 4px); cursor: pointer; font-size: var(--mvs-font-sm, 14px); color: var(--mvs-text, #111827); }
 .mvs-actions-menu__item:hover, .mvs-actions-menu__item:focus-visible { background: var(--mvs-bg-muted, #f3f4f6); }
 .mvs-actions-menu .mvs-block-toggle--blocked { color: var(--mvs-danger, #dc2626); }
 /* Report dialog reuses the .mvs-modal component; ensure controls fill the field. */
