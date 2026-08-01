@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-01T11:32:09Z",
+    "generated_at": "2026-08-01T11:54:38Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -705,12 +705,12 @@
             "sites": [
                 {
                     "file": "includes/Admin/OverviewPage.php",
-                    "lines": "629-629",
+                    "lines": "644-644",
                     "method": "OverviewPage::ajax_import_demo_data"
                 },
                 {
                     "file": "includes/Admin/OverviewPage.php",
-                    "lines": "656-656",
+                    "lines": "671-671",
                     "method": "OverviewPage::handle_cleanup_demo"
                 }
             ]
