@@ -1421,3 +1421,50 @@ body.dark-mode {
 	background: var(--mvs-chat-border);
 	border-radius: 3px;
 }
+
+/* ── Day separators in the message thread ──
+ * .mvs-chat-msg-row is the single root data-wp-each requires per item; it is
+ * display:contents so the separator and the bubble still lay out as direct
+ * children of the thread and no existing spacing changes. */
+.mvs-chat-msg-row {
+    display: contents;
+}
+
+.mvs-chat-day-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: var(--mvs-space-4, 16px) 0 var(--mvs-space-2, 8px);
+}
+
+.mvs-chat-day-separator__label {
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--mvs-surface-2);
+    color: var(--mvs-text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Muted state for the conversation bell. Previously there was no muted
+ * variant at all, so the control rendered identically in both states. */
+.mvs-chat-header__menu.is-muted {
+    color: var(--mvs-text-secondary);
+    opacity: 0.65;
+}
+
+.mvs-chat-header__menu.is-muted::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 50%;
+    top: 50%;
+    width: 22px;
+    height: 2px;
+    background: currentColor;
+    transform: translate(50%, -50%) rotate(45deg);
+    border-radius: 2px;
+}
+
+.mvs-chat-header__menu {
+    position: relative;
+}

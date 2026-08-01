@@ -21,7 +21,15 @@ defined( 'ABSPATH' ) || exit;
 		<div class="mvs-chat-header__title" data-wp-text="state.otherName"></div>
 		<div class="mvs-chat-header__subtitle" data-wp-text="state.otherLastActive"></div>
 	</div>
-	<button class="mvs-chat-header__menu" data-wp-on--click="actions.toggleMute" type="button" aria-label="<?php esc_attr_e( 'Mute', 'wpmediaverse' ); ?>">
+	<button
+		class="mvs-chat-header__menu"
+		data-wp-on--click="actions.toggleMute"
+		data-wp-class--is-muted="state.isMuted"
+		data-wp-bind--aria-pressed="state.isMuted"
+		data-wp-bind--aria-label="state.muteLabel"
+		data-wp-bind--title="state.muteLabel"
+		type="button"
+	>
 		<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor"/></svg>
 	</button>
 </div>
@@ -37,7 +45,7 @@ defined( 'ABSPATH' ) || exit;
 	</div>
 
 	<!-- Message Bubbles -->
-	<template data-wp-each="state.messages">
+	<template data-wp-each="state.displayMessages">
 		<?php require __DIR__ . '/chat-message.php'; ?>
 	</template>
 

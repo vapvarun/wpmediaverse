@@ -2052,6 +2052,13 @@ class Plugin {
 				'File'                         => __( 'File', 'wpmediaverse' ),
 				'Shared a media'               => __( 'Shared a media', 'wpmediaverse' ),
 				'Attachment'                   => __( 'Attachment', 'wpmediaverse' ),
+				// Day separators in the message thread (2.3.0).
+				'Today'                        => __( 'Today', 'wpmediaverse' ),
+				'Yesterday'                    => __( 'Yesterday', 'wpmediaverse' ),
+				// Mute control + voice-recording capability notice (2.3.0).
+				'Mute notifications'           => __( 'Mute notifications', 'wpmediaverse' ),
+				'Unmute notifications'         => __( 'Unmute notifications', 'wpmediaverse' ),
+				'Voice messages need a secure (https) connection.' => __( 'Voice messages need a secure (https) connection.', 'wpmediaverse' ),
 			),
 		);
 

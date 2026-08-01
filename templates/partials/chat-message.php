@@ -2,8 +2,10 @@
 /**
  * Chat message bubble — text, media, voice, system, reply-to, reactions.
  *
- * Used inside data-wp-each="state.messages" template.
- * Context: context.item = message object with pre-computed boolean flags.
+ * Used inside data-wp-each="state.displayMessages" template.
+ * Context: context.item = message object with pre-computed boolean flags,
+ * plus timeLabel / dayLabel / showDayHeader derived by the displayMessages
+ * getter (NOT by enrichMessage, so they stay correct as the clock rolls over).
  *
  * IMPORTANT: Interactivity API does not track underscore-prefixed properties
  * on context.item inside data-wp-each. All flags use plain camelCase names
@@ -15,6 +17,16 @@
 
 defined( 'ABSPATH' ) || exit;
 ?>
+<?php
+// Single root element: data-wp-each renders one root per item, so the day
+// separator and the bubble are wrapped together. .mvs-chat-msg-row is
+// display:contents, so both children still lay out as direct children of the
+// thread and no existing spacing changes.
+?>
+<div class="mvs-chat-msg-row">
+<div class="mvs-chat-day-separator" data-wp-bind--hidden="context.item.hideDayHeader">
+	<span class="mvs-chat-day-separator__label" data-wp-text="context.item.dayLabel"></span>
+</div>
 <div
 	class="mvs-chat-msg"
 	data-wp-class--mvs-chat-msg--sent="context.item.isSent"
@@ -122,7 +134,7 @@ defined( 'ABSPATH' ) || exit;
 
 	<!-- Timestamp + send status / read receipt -->
 	<div class="mvs-chat-msg__meta" data-wp-bind--hidden="context.item.isSystem">
-		<span data-wp-text="context.item.created_at"></span>
+		<span data-wp-text="context.item.timeLabel"></span>
 		<span class="mvs-chat-msg__sending" data-wp-bind--hidden="context.item.notSending" title="<?php esc_attr_e( 'Sending…', 'wpmediaverse' ); ?>" aria-hidden="true">&#128338;</span>
 		<button class="mvs-chat-msg__retry" data-wp-bind--hidden="context.item.notFailed" data-wp-on--click="actions.retrySend" type="button">
 			<span aria-hidden="true">&#9888;</span> <?php esc_html_e( 'Not sent — Retry', 'wpmediaverse' ); ?>
@@ -146,4 +158,5 @@ defined( 'ABSPATH' ) || exit;
 			</button>
 		</template>
 	</div>
+</div>
 </div>
