@@ -10,6 +10,10 @@ Authentication uses the same mechanism as the free API: pass an `X-WP-Nonce` hea
 
 > **Note (2.2.0):** the free plugin's private-community gate (`mvs_rest_require_auth`) covers `mvs-pro/v1` too — Pro appends its namespace via the `mvs_rest_gated_route_prefixes` filter, so on a private community even Pro's public reads (e.g. tournament brackets) require login. Each route additionally enforces its own permission callback as listed below.
 
+**Update methods.** Every route documented below with `PUT` also accepts `PATCH` and `POST` - WordPress registers those three together as its "editable" method group, so all three reach the same handler with the same arguments and the same response. `PUT` is used as the canonical form throughout this page.
+
+**Feature toggles.** A Pro feature that is switched off never registers its routes, so its endpoints return `404`, not `403`. If a documented route 404s on a Pro site, check the matching toggle in [Settings Reference](../settings/settings-reference.md#feature-toggles) before assuming a version mismatch. This affects the Stories and Connectors routes in particular, since both ship disabled by default.
+
 **Permission conventions used below:**
 
 - **Public** — no authentication required (`__return_true` or open read). Some are rate-limited inside the service.
@@ -1137,3 +1141,101 @@ Common Pro error codes:
 | `mvs_pro_privacy_update_failed` | 400 | Privacy could not be updated (bad level or write failure) |
 | `mvs_gamification_unavailable` | 400 | Gamification plugin not active (streak freeze) |
 | `mvs_insufficient_points` | 400 | Not enough gamification points for the requested action |
+
+---
+
+## Group conversations
+
+Group messaging routes. The one-to-one conversation routes live in the Free [REST API reference](rest-api.md); these add the multi-participant layer on top of the same conversation store.
+
+Two permission levels apply:
+
+- **Group admin** - the creator, plus anyone promoted to `admin`. Required to rename a group or change its membership.
+- **Participant** - any member of the group. Required to leave it.
+
+### POST /groups
+
+Create a group conversation.
+
+**Auth:** Authenticated.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `participant_ids` | array of integer | yes | User IDs to add. The creator is added automatically as group admin. |
+| `title` | string | no | Group name. Clients usually fall back to a list of participant names when this is empty. |
+
+Fires `mvs_group_conversation_created`.
+
+### PUT /groups/{id}
+
+Update a group - in practice, rename it.
+
+**Auth:** Group admin.
+
+Also accepts `PATCH` and `POST`.
+
+### POST /groups/{id}/participants
+
+Add a participant.
+
+**Auth:** Group admin.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `user_id` | integer | yes | The member to add. |
+| `role` | string | no | `admin` or `member`. Defaults to `member`. |
+
+Fires `mvs_participant_added`.
+
+### DELETE /groups/{id}/participants/{user_id}
+
+Remove a participant.
+
+**Auth:** Group admin.
+
+Fires `mvs_participant_removed`.
+
+### PUT /groups/{id}/participants/{user_id}/role
+
+Promote or demote a participant.
+
+**Auth:** Group admin.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `role` | string | yes | One of `admin`, `member`. |
+
+Also accepts `PATCH` and `POST`.
+
+### POST /groups/{id}/leave
+
+Leave a group you are a participant of.
+
+**Auth:** Participant.
+
+This is deliberately separate from `DELETE /groups/{id}/participants/{user_id}`: leaving is something any participant may do to themselves, while removing someone else requires group admin. Do not implement "leave" by having the client call the removal route with its own user ID - that path checks for admin and will return `403` for ordinary members.
+
+---
+
+## Media collections
+
+### GET /media/{media_id}/collections
+
+Return which of the caller's collections this media item belongs to.
+
+**Auth:** Authenticated.
+
+Used to render the checked state of a "save to collection" menu without a separate lookup per collection.
+
+### POST /media/{media_id}/collections
+
+Add or remove a media item from one collection.
+
+**Auth:** Authenticated.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `collection_id` | integer | yes | - | Target collection. |
+| `member` | boolean | no | `true` | `true` adds the item, `false` removes it. |
+
+A single toggle endpoint rather than separate add and delete routes: send `member: false` to remove.

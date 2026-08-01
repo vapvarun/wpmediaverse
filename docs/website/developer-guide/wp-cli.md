@@ -534,6 +534,22 @@ wp mvs cert [<check>] [--porcelain]
 |--------|-------------|
 | `--porcelain` | Emit the machine-readable JSON ledger instead of the human-readable table |
 
+### wp mvs-pro cert
+
+> Requires WPMediaVerse Pro. Added in Pro 1.8.1.
+
+Certifies the Pro surface. Pro ships no engine of its own - the command reuses the Free `CertRunner`, pointed at the Pro plugin directory so the same checks read Pro's `audit/manifest` and `audit/cert-oracles.json`.
+
+```bash
+wp mvs-pro cert
+wp mvs-pro cert boot
+wp mvs-pro cert contract --porcelain
+```
+
+It takes the same `[<check>]` argument (`all`, `contract`, `boot`) and the same `--porcelain` flag as `wp mvs cert`.
+
+**The Free plugin must be active.** The engine lives in Free, so with Free deactivated the command exits with an error rather than a partial pass. Run both commands in a release gate - `wp mvs cert` does not cover Pro routes or Pro toggles.
+
 **Output (table mode):** one `[PASS]` / `[FAIL]` / `[HOLE]` row per check, followed by a `Summary: N pass, N fail, N hole.` line. A `[HOLE]` marks a tracked gap (not yet a regression, but not proven either) rather than a failure. The command calls `WP_CLI::error()` (exit code 1) when any check fails.
 
 ---

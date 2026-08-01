@@ -16,6 +16,8 @@ All routes below use the `mvs/v1` namespace (the messaging routes share the same
 - **Authenticated** — any logged-in user (`is_user_logged_in()`).
 - **Capability** — a specific capability such as `upload_mvs_media`, `moderate_mvs_media`, or `manage_mvs_access`.
 
+**Update methods.** Every route documented below with `PUT` also accepts `PATCH` and `POST`. WordPress registers these three together as its "editable" method group, so all three reach the same handler with the same arguments and the same response. `PUT` is used throughout this page as the canonical form; pick whichever your HTTP client handles most comfortably.
+
 **Rate limiting.** Many routes are throttled per user/IP (the limit is noted where it is unusually tight). Exceeding a limit returns `429 Too Many Requests`.
 
 ---
@@ -650,9 +652,11 @@ List the users the current user has blocked.
 
 All moderation routes require the `moderate_mvs_media` capability.
 
-### GET /moderation/queue
+### GET /moderation
 
 List flagged / pending media items. Supports collection params (`page`, `per_page`).
+
+> The route is `/moderation`, not `/moderation/queue`. Earlier revisions of this page showed `/moderation/queue`, which returns `404`.
 
 ### GET /moderation/counts
 
@@ -1124,3 +1128,123 @@ Common error codes:
 | `mvs_forbidden` / `rest_forbidden` | 403 | Access denied by privacy/capability rules |
 | `mvs_storage_failed` | 500 | Storage driver error |
 | (rate limit) | 429 | Too many requests |
+
+---
+
+## Authentication
+
+Routes for obtaining the credentials the rest of the API expects. The app-auth filters that govern this flow (`mvs_app_password_login_enabled`, `mvs_app_connect_schemes`, `mvs_app_scheme`, `mvs_app_credential_issued`) are documented in [Hooks & Filters](hooks-filters.md).
+
+### GET /auth/nonce
+
+Return a fresh `wp_rest` nonce for the current session.
+
+**Auth:** Authenticated (cookie).
+
+```json
+{ "nonce": "a1b2c3d4e5" }
+```
+
+Browser clients that keep a page open longer than the nonce lifetime call this to refresh rather than reloading the page.
+
+### POST /auth/app-password
+
+Exchange a WordPress username and password for an Application Password - the credential a mobile or desktop client actually stores.
+
+**Auth:** Public by necessity. This is how a member obtains their *first* credential, so there is nothing to authenticate with yet.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `username` | string | yes | Email address or username. |
+| `password` | string | yes | Account password. |
+| `app_name` | string | no | Name shown beside this credential in the member's profile. |
+| `app_id` | string | no | Stable per-install id, so a repeat sign-in replaces the existing row instead of adding another. |
+
+Because it is unauthenticated, this route is guarded harder than any other: a site-owner switch (`mvs_app_password_login_enabled`), a TLS requirement, uniform failure responses that do not reveal whether a username exists, the suspension gate, and rate limiting applied *before* any credential is read. Accounts with two-factor authentication receive `409` rather than a silent 2FA bypass.
+
+Always send this over HTTPS. Store the returned credential in the platform keychain, never in plain preferences.
+
+---
+
+## Account
+
+### DELETE /me
+
+Schedule deletion of the authenticated member's own account.
+
+**Auth:** Authenticated.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `confirm` | string | yes | Must be the literal string `DELETE`. |
+| `password` | string | conditional | The account password, re-entered. Required unless `mvs_account_deletion_password_required` is filtered to `false`. |
+
+Deletion is not immediate. The request starts a grace period (default 30 days, filterable via `mvs_account_deletion_grace_days`; return `0` to delete on request). During the grace period the member can still cancel.
+
+### GET /me/deletion
+
+Return the authenticated member's pending deletion request, if any - including when it is scheduled to execute.
+
+**Auth:** Authenticated.
+
+### DELETE /me/deletion
+
+Cancel a pending deletion request and restore the account to normal standing.
+
+**Auth:** Authenticated.
+
+> These three routes are the member-facing half of GDPR erasure. The admin-facing export and erasure tools are covered in [GDPR & Privacy](../features/gdpr-privacy.md).
+
+### GET /me/transactions
+
+The authenticated member's own usage ledger - upload credits consumed and granted.
+
+**Auth:** Authenticated.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `per_page` | integer | `20` | Rows per page. |
+| `page` | integer | `1` | Page number. |
+
+Pairs with the `[mvs_usage_history]` shortcode, which renders the same data.
+
+---
+
+## Access control
+
+### GET /access/options
+
+Return the building blocks for the access-rule builder: the site's roles, and the rule types available to members.
+
+**Auth:** Authenticated.
+
+Drives the frontend edit-modal access panel, the admin sub-page, and the mobile app - all three read this one endpoint rather than hardcoding a rule-type list. Pro extends the returned rule types through the `mvs_access_rule_types_ui` filter, so a client that renders whatever this endpoint returns picks up Pro's monetization and code-grant rule types with no client change.
+
+---
+
+## Conversation media and search
+
+These sit alongside the messaging routes documented above.
+
+### GET /conversations/{id}/media
+
+Every media attachment shared in one conversation, newest first. This is what backs the "shared media" panel in a chat.
+
+**Auth:** Authenticated, and the caller must be a participant.
+
+| Parameter | Type | Default | Range | Description |
+|-----------|------|---------|-------|-------------|
+| `per_page` | integer | `60` | 1-200 | Attachments per page. |
+
+### GET /conversations/{id}/messages/search
+
+Full-text search within a single conversation.
+
+**Auth:** Authenticated, and the caller must be a participant.
+
+| Parameter | Type | Required | Default | Range | Description |
+|-----------|------|----------|---------|-------|-------------|
+| `q` | string | yes | - | - | Search term. |
+| `per_page` | integer | no | `50` | 1-100 | Results per page. |
+
+Search is scoped to the one conversation in the path. There is no cross-conversation search endpoint.

@@ -194,3 +194,75 @@ Embeds a PDF using the browser-native viewer (the `#view=FitH` URL fragment). No
 | `id` | (required) | Media ID of the PDF. |
 | `height` | `600` | Viewer height in pixels. Range: 200–1400. |
 | `toolbar` | `true` | Show or hide the browser PDF toolbar. `true` to show, `false` to hide. |
+
+## Usage History
+
+> Free. Requires a logged-in visitor - renders nothing for guests.
+
+Shows the current member's own upload usage ledger. Useful on an account page beside the quota widget when you sell upload packages with Pro.
+
+```
+[mvs_usage_history]
+[mvs_usage_history limit="50"]
+```
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `limit` | `20` | Number of ledger rows to show, most recent first. |
+
+## Pro: Compete shortcodes
+
+> These require WPMediaVerse Pro, and each one needs its feature toggle enabled. With the toggle off the shortcode renders nothing rather than an error.
+
+Every block in the Compete set has a matching shortcode, so you can place competitions on a classic-editor page or inside a page builder.
+
+| Shortcode | Feature toggle | Purpose |
+|-----------|----------------|---------|
+| `[mvs_pro_compete_hub]` | any Compete feature | The combined hub - challenges, battles, tournaments and leaderboard in one tabbed surface. |
+| `[mvs_pro_challenge id="12"]` | `mvs_challenges_enabled` | One challenge, with its entry or voting interface. |
+| `[mvs_pro_challenges_list]` | `mvs_challenges_enabled` | All challenges, grouped by state. |
+| `[mvs_pro_battle id="8"]` | `mvs_battles_enabled` | One head-to-head battle with its voting UI. |
+| `[mvs_pro_battles_active]` | `mvs_battles_enabled` | Every battle currently open for voting. |
+| `[mvs_pro_tournament id="3"]` | `mvs_tournaments_enabled` | One tournament bracket. |
+| `[mvs_pro_tournaments_list]` | `mvs_tournaments_enabled` | All tournaments, grouped by state. |
+| `[mvs_pro_leaderboard]` | - | Top creators ranking. |
+
+The single-item shortcodes (`mvs_pro_challenge`, `mvs_pro_battle`, `mvs_pro_tournament`) take a required `id` attribute and render nothing when it is missing or zero.
+
+### Leaderboard attributes
+
+```
+[mvs_pro_leaderboard source="reactions" window="month" per-page="25"]
+```
+
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `source` | `reactions` | What to rank by. |
+| `window` | `all` | Time window for the ranking. `all` counts everything. |
+| `per-page` | `10` | Number of creators listed. |
+
+### Presentation attributes
+
+All eight Compete shortcodes accept the same optional presentation attributes, which map to the equivalent block settings. Leave them empty to inherit your theme's styling.
+
+| Attribute | Description |
+|-----------|-------------|
+| `padding-desktop`, `padding-tablet`, `padding-mobile` | Per-breakpoint padding. |
+| `margin-desktop`, `margin-tablet`, `margin-mobile` | Per-breakpoint margin. |
+| `border-width`, `border-color`, `border-radius` | Border styling. |
+| `shadow-enabled`, `shadow-offset-x`, `shadow-offset-y`, `shadow-blur` | Drop shadow. |
+
+Use hyphens in shortcode attributes (`padding-desktop`); they are converted to the camelCase block attributes internally.
+
+## Pro: Layout feed shortcodes
+
+> Require WPMediaVerse Pro. See [Layout Modes](../pro-features/layout-modes.md) for what each layout looks like.
+
+| Shortcode | Layout |
+|-----------|--------|
+| `[mvs_pro_instagram_feed]` | Instagram-style square grid |
+| `[mvs_pro_flickr_feed]` | Flickr-style justified rows |
+| `[mvs_pro_pinterest_feed]` | Pinterest-style masonry columns |
+| `[mvs_pro_dribbble_feed]` | Dribbble-style cards with stats |
+
+These accept the same presentation attributes as the Compete shortcodes.

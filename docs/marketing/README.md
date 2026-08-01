@@ -1,6 +1,21 @@
-# MediaVerse Marketing Visuals
+# MediaVerse Marketing
 
-Editorial-grade marketing assets for **WPMediaVerse · Pro** generated from the live `mediaverse.local` sandbox via the `plugin-marketing-visuals` skill.
+Marketing material for **WPMediaVerse** and **WPMediaVerse Pro**, split into written copy and visual assets.
+
+## Written copy
+
+| Document | Use it for |
+|---|---|
+| [Positioning & Messaging](positioning.md) | Who the product is for, what makes it different, feature-to-benefit wording, and the claims we do not make |
+| [Store listing copy](store-listing.md) | WordPress.org and store page copy, FAQ, screenshot captions |
+| [Launch kit](launch-kit.md) | Release announcement templates - GitHub body, email, social, support macro |
+
+Start with Positioning before writing anything customer-facing. Every claim in these files is checkable against the code; do not add one you have not verified.
+
+## Visual assets
+
+
+Editorial-grade visuals generated from the live `mediaverse.local` sandbox via the `plugin-marketing-visuals` skill.
 
 ## Direction
 
