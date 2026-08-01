@@ -2029,6 +2029,18 @@
       ],
       "where": "includes/Messaging/MessagingService.php (send_message)",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_apply_exif_orientation",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $apply",
+        "string $file_path",
+        "string $mime"
+      ],
+      "where": "includes/Services/UploadService.php (apply_exif_orientation)",
+      "consumed_by": []
     }
   ],
   "generated": {

@@ -4536,6 +4536,18 @@
       ],
       "where": "includes/Messaging/MessagingService.php (send_message)",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_apply_exif_orientation",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $apply",
+        "string $file_path",
+        "string $mime"
+      ],
+      "where": "includes/Services/UploadService.php (apply_exif_orientation)",
+      "consumed_by": []
     }
   ],
   "buddypress_integration": {
@@ -5150,6 +5162,22 @@
         "all tab no longer lists request_pending rows (Basecamp #10153356172)",
         "a new message un-archives the thread for participants who archived it (filterable)"
       ]
+    },
+    "refresh_2026_08_01_v230_step3": {
+      "scope": "Step 3: EXIF orientation applied at the single upload seam + repair path",
+      "hooks_fired_added": [
+        "mvs_apply_exif_orientation (filter) — skip rotation on sites that normalise upstream"
+      ],
+      "methods_added": [
+        "UploadService::apply_exif_orientation() (private)"
+      ],
+      "behavior_changes": [
+        "UploadService::handle() rotates image pixels per EXIF Orientation before the EXIF strip, watermark, optimiser, WebP/AVIF siblings, thumbnails and the getimagesize() that records dimensions",
+        "UploadService::generate_thumbnails() rotates too (admin regenerate + wp mvs CLI = the repair path for pre-2.3.0 libraries) and re-records width/height from the file"
+      ],
+      "not_affected": [
+        "avatars (ProfileService) and DM attachments (MessagingController) already rotate via wp_handle_upload + wp_generate_attachment_metadata in core; they never enter UploadService, so no double rotation"
+      ]
     }
   },
   "category_sources": {
@@ -5438,6 +5466,6 @@
   },
   "counts": {
     "wp_cli": 18,
-    "hooks_fired_unique": 177
+    "hooks_fired_unique": 178
   }
 }

@@ -168,6 +168,14 @@ class UploadService {
 			}
 		}
 
+		// Normalise orientation BEFORE anything reads or rewrites the pixels.
+		// Everything downstream — the EXIF strip below, the watermark stamp,
+		// the optimiser, the WebP/AVIF siblings, generate_thumbnails() and the
+		// getimagesize() that records width/height — assumes the bytes are
+		// already upright, so this has to happen first or each of them bakes
+		// the rotation in differently.
+		$this->apply_exif_orientation( $file['tmp_name'], $mime );
+
 		// Strip EXIF GPS data from images.
 		$exif_raw = array();
 		if ( get_option( 'mvs_strip_exif', true ) && $this->is_image( $mime ) ) {
@@ -827,6 +835,108 @@ class UploadService {
 	}
 
 	/**
+	 * Rewrite an image so its pixels are upright, then clear the EXIF flag.
+	 *
+	 * Phones store rotation as an EXIF Orientation tag rather than rotating the
+	 * pixels. Browsers honour that tag, so an iPhone portrait looks correct
+	 * until something re-encodes the file without applying it — at which point
+	 * the raw landscape pixels are all that is left and every portrait lands
+	 * sideways. That is exactly what this pipeline did: extract_and_strip_exif()
+	 * removes the JPEG APP1 segment (where Orientation lives), the watermarker
+	 * uses raw GD, and the optimiser, the WebP/AVIF siblings and
+	 * generate_thumbnails() all save through WP_Image_Editor without rotating.
+	 *
+	 * Avatars (ProfileService) and DM attachments (MessagingController) were
+	 * always correct because they go through wp_handle_upload() +
+	 * wp_generate_attachment_metadata(), which rotates in core. Member media
+	 * never touches that path — it writes straight to mvs_media_index.
+	 *
+	 * Idempotent: maybe_exif_rotate() is a no-op once Orientation is 1 or
+	 * absent, so re-running (regenerate thumbnails, WP-CLI) cannot double-rotate.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $file_path Absolute path to the image, rewritten in place.
+	 * @param string $mime      Detected MIME type.
+	 * @return bool True when the file was rotated and rewritten.
+	 */
+	private function apply_exif_orientation( string $file_path, string $mime ): bool {
+		if ( ! $this->is_image( $mime ) ) {
+			return false;
+		}
+
+		/**
+		 * Filters whether EXIF orientation is applied on upload.
+		 *
+		 * Escape hatch for sites that already normalise orientation upstream
+		 * (some CDNs and phone-upload apps do) and would otherwise pay for the
+		 * re-encode twice.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @param bool   $apply     Whether to rotate. Default true.
+		 * @param string $file_path Absolute file path.
+		 * @param string $mime      Detected MIME type.
+		 */
+		if ( ! apply_filters( 'mvs_apply_exif_orientation', true, $file_path, $mime ) ) {
+			return false;
+		}
+
+		$editor = wp_get_image_editor( $file_path );
+		if ( is_wp_error( $editor ) || ! method_exists( $editor, 'maybe_exif_rotate' ) ) {
+			return false;
+		}
+
+		$rotated = $editor->maybe_exif_rotate();
+		if ( is_wp_error( $rotated ) || true !== $rotated ) {
+			// false === "nothing to do" (Orientation 1 or absent). Not an error.
+			return false;
+		}
+
+		$saved = $editor->save( $file_path );
+		if ( is_wp_error( $saved ) ) {
+			LoggerService::error(
+				'upload',
+				'EXIF orientation rewrite failed',
+				array(
+					'file'  => wp_basename( $file_path ),
+					'error' => $saved->get_error_message(),
+				)
+			);
+			return false;
+		}
+
+		// WP_Image_Editor::save() rewrites the extension to match the output
+		// MIME, so it does NOT necessarily write back to the path it was given.
+		// This is not an edge case: PHP hands uploads to us as
+		// $_FILES['tmp_name'] = /tmp/phpXXXXXX with no extension at all, so
+		// save() writes a sibling /tmp/phpXXXXXX.jpg and the original — still
+		// un-rotated — is what the rest of the pipeline would carry on using.
+		// Move the rewritten file back over the path everything downstream holds.
+		$written = isset( $saved['path'] ) ? (string) $saved['path'] : '';
+		if ( '' !== $written && $written !== $file_path && file_exists( $written ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- moving a temp file we just created, WP_Filesystem is not initialised this early in the upload path.
+			if ( ! @rename( $written, $file_path ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+				if ( ! copy( $written, $file_path ) ) {
+					LoggerService::error(
+						'upload',
+						'EXIF orientation rewrite could not be moved into place',
+						array(
+							'from' => wp_basename( $written ),
+							'to'   => wp_basename( $file_path ),
+						)
+					);
+					wp_delete_file( $written );
+					return false;
+				}
+				wp_delete_file( $written );
+			}
+		}
+
+		return true;
+	}
+
+	/**
 	 * Extract EXIF data and strip GPS from JPEG images.
 	 *
 	 * @param string $file_path File path.
@@ -1141,6 +1251,36 @@ class UploadService {
 			require_once ABSPATH . WPINC . '/class-wp-image-editor-gd.php';
 			require_once ABSPATH . WPINC . '/class-wp-image-editor-imagick.php';
 			require_once ABSPATH . 'wp-admin/includes/image.php';
+		}
+
+		// Repair path. handle() normalises orientation for every NEW upload,
+		// but this method is also the entry point for the admin "Regenerate
+		// thumbnails" row action (Admin\MediaListPage) and `wp mvs` CLI regen,
+		// which is how a library uploaded before 2.3.0 gets healed. Idempotent
+		// — a no-op once Orientation is 1 or absent, so it cannot double-rotate
+		// a file handle() already fixed.
+		$this->apply_exif_orientation( $file_path, $mime );
+
+		// Re-record dimensions from the file on disk, unconditionally. Rotating
+		// swaps width/height, and the index row was written from a
+		// getimagesize() taken before the rotation ran — left stale, a healed
+		// image renders inside a wrongly-shaped aspect-ratio box even though the
+		// pixels are now correct. Doing this unconditionally rather than only
+		// when we just rotated also repairs any other source of drift between
+		// the row and the file. This is not a hot path: it runs on upload and
+		// on explicit regeneration only.
+		$fixed = @getimagesize( $file_path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( is_array( $fixed ) && ! empty( $fixed[0] ) && ! empty( $fixed[1] ) ) {
+			$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			if ( $repo ) {
+				$repo->set_many(
+					$media_id,
+					array(
+						'width'  => (int) $fixed[0],
+						'height' => (int) $fixed[1],
+					)
+				);
+			}
 		}
 
 		$editor = wp_get_image_editor( $file_path );
