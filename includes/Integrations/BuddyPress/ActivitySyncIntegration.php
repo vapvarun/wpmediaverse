@@ -103,22 +103,11 @@ class ActivitySyncIntegration {
 	 * @return int            Numeric level (0 public, 20 members, 40 friends, 60 group, 80 private, 90 custom).
 	 */
 	public static function privacy_to_level( string $privacy ): int {
-		switch ( $privacy ) {
-			case 'public':
-				return 0;
-			case 'members':
-				return 20;
-			case 'friends':
-				return 40;
-			case 'group':
-				return 60;
-			case 'private':
-				return 80;
-			case 'custom':
-				return 90;
-			default:
-				return 0;
-		}
+		// Canonical implementation lives in Services\PrivacyService — this is
+		// general privacy logic, not a BuddyPress concern. Kept as an alias
+		// rather than renamed: it is a public static and Production Rule 2
+		// forbids removing one without an alias for two majors.
+		return \WPMediaVerse\Services\PrivacyService::privacy_to_level( $privacy );
 	}
 
 	/**
@@ -129,27 +118,10 @@ class ActivitySyncIntegration {
 	 * @since 1.2.1
 	 */
 	public static function effective_privacy_for_media( int $media_id ): string {
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-
-		$media_privacy = (string) $repo->get( $media_id, 'privacy' );
-		if ( '' === $media_privacy ) {
-			$media_privacy = 'public';
-		}
-
-		$album_id = (int) $repo->get( $media_id, 'album_id' );
-		if ( $album_id <= 0 ) {
-			return $media_privacy;
-		}
-
-		$album_privacy = (string) $repo->get( $album_id, 'privacy' );
-		if ( '' === $album_privacy || 'public' === $album_privacy ) {
-			return $media_privacy;
-		}
-
-		// Album is non-public. Pick the more restrictive of the two.
-		return self::privacy_to_level( $album_privacy ) >= self::privacy_to_level( $media_privacy )
-			? $album_privacy
-			: $media_privacy;
+		// Canonical implementation lives in Services\PrivacyService. Alias
+		// retained per Production Rule 2 (public static, no removal without
+		// two majors of deprecation).
+		return \WPMediaVerse\Services\PrivacyService::effective_privacy_for_media( $media_id );
 	}
 
 	/**

@@ -26,7 +26,7 @@
     "capabilities": 10,
     "services": 37,
     "services_registered": 37,
-    "hooks_fired_unique": 178,
+    "hooks_fired_unique": 180,
     "hooks_with_args_signature": 29,
     "hooks_no_call_site": 0,
     "cron": 4,

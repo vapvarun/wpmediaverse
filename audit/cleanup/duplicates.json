@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-01T08:49:56Z",
+    "generated_at": "2026-08-01T08:57:02Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -390,7 +390,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/Services/AlbumService.php",
-                    "lines": "555-555",
+                    "lines": "610-610",
                     "method": "albums_for_media"
                 },
                 {

@@ -4548,6 +4548,31 @@
       ],
       "where": "includes/Services/UploadService.php (apply_exif_orientation)",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_album_inherit_privacy",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $inherit",
+        "int $album_id",
+        "int[] $media_ids"
+      ],
+      "where": "includes/Services/AlbumService.php (add_items)",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_privacy_clamped_by_album",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $media_id",
+        "string $from",
+        "string $to",
+        "int $album_id"
+      ],
+      "where": "includes/Services/AlbumService.php (add_items)",
+      "consumed_by": []
     }
   ],
   "buddypress_integration": {
@@ -5178,6 +5203,32 @@
       "not_affected": [
         "avatars (ProfileService) and DM attachments (MessagingController) already rotate via wp_handle_upload + wp_generate_attachment_metadata in core; they never enter UploadService, so no double rotation"
       ]
+    },
+    "refresh_2026_08_01_v230_step4": {
+      "scope": "Step 4: album privacy inheritance on add (new items only, per owner decision)",
+      "hooks_fired_added": [
+        "mvs_album_inherit_privacy (filter, Production Rule 3 escape hatch)",
+        "mvs_media_privacy_clamped_by_album (action)"
+      ],
+      "methods_added": [
+        "PrivacyService::privacy_to_level() (promoted from ActivitySyncIntegration)",
+        "PrivacyService::more_restrictive()",
+        "PrivacyService::effective_privacy_for_media() (promoted)"
+      ],
+      "methods_aliased": [
+        "ActivitySyncIntegration::privacy_to_level() and ::effective_privacy_for_media() now delegate to PrivacyService; kept as aliases per Production Rule 2"
+      ],
+      "behavior_changes": [
+        "AlbumService::add_items() clamps each item to the more restrictive of (item, album) privacy"
+      ],
+      "explicitly_not_changed": [
+        "explore privacy SQL untouched — the three existing copies of the clause already handle a correctly-set item privacy, so no fourth copy was added",
+        "album privacy CHANGE does not re-clamp existing items; no migration of historical rows (owner decision 2026-08-01)"
+      ],
+      "docs_corrected": [
+        "docs/website/features/albums.md stated the opposite behaviour",
+        "docs/website/pro-features/advanced-privacy.md advertised an inherit_privacy flag that existed in neither Free nor Pro"
+      ]
     }
   },
   "category_sources": {
@@ -5466,6 +5517,6 @@
   },
   "counts": {
     "wp_cli": 18,
-    "hooks_fired_unique": 178
+    "hooks_fired_unique": 180
   }
 }

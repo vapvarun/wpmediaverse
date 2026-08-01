@@ -2041,6 +2041,31 @@
       ],
       "where": "includes/Services/UploadService.php (apply_exif_orientation)",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_album_inherit_privacy",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $inherit",
+        "int $album_id",
+        "int[] $media_ids"
+      ],
+      "where": "includes/Services/AlbumService.php (add_items)",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_media_privacy_clamped_by_album",
+      "type": "action",
+      "args_count": 4,
+      "args_signature": [
+        "int $media_id",
+        "string $from",
+        "string $to",
+        "int $album_id"
+      ],
+      "where": "includes/Services/AlbumService.php (add_items)",
+      "consumed_by": []
     }
   ],
   "generated": {
