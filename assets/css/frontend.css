@@ -2589,6 +2589,30 @@ a.mvs-dashboard-card-title:hover {
     margin-bottom: 24px;
 }
 
+/* On a phone the cloud wraps to as many rows as there are tags — a site with
+   22 tags pushed the first media 680px down the page, so Explore opened on a
+   screenful of filters with no media in sight. One horizontally scrollable row
+   instead: 312px of chips becomes ~56px and the grid is visible immediately.
+   Same pattern Pro already uses for .mvs-competition-tabs. */
+@media (max-width: 640px) {
+    .mvs-tag-cloud {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+    }
+
+    .mvs-tag-cloud::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Chips must not shrink to fit, or the labels compress instead of scrolling. */
+    .mvs-tag-cloud-item {
+        flex: 0 0 auto;
+    }
+}
+
 .mvs-tag-cloud-item {
     display: inline-block;
     padding: 4px 14px;
