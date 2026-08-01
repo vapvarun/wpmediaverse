@@ -5438,11 +5438,50 @@ a.mvs-dashboard-card-title:hover {
     position: relative;
 }
 
-.mvs-lightbox-media img {
+/* The <picture> wrapper is the actual flex item — the <img> is its child, not
+ * a child of .mvs-lightbox-media. Nothing styled `picture` at all, so it had no
+ * definite height: `height: 100%` on the img resolved against an indefinite
+ * containing block, fell back to `auto`, the img rendered at its intrinsic
+ * height, and `.mvs-lightbox { overflow: hidden }` silently cut the overflow.
+ * With align-items:center the cut splits top and bottom, which is why tall
+ * portraits lost their heads and feet (Basecamp #10153546608). Measured before
+ * this rule: a 900x1600 upload rendered a 1351px-tall <picture> inside a 739px
+ * media box — 612px clipped.
+ *
+ * Constraining `picture` gives the img a definite box to contain into. Video
+ * and audio are direct children of .mvs-lightbox-media and were never affected,
+ * which is the asymmetry that confirmed the diagnosis. */
+.mvs-lightbox-media picture {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Definite, not just capped. max-height alone leaves the height
+     * indeterminate, so the img's `height: 100%` still resolved to auto and it
+     * kept rendering at intrinsic size inside a correctly-sized picture. */
     width: 100%;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
+}
+
+.mvs-lightbox-media img {
+    /* Sized by the max-* pair, not width/height 100%, so object-fit has a real
+     * box to contain into and the image scales DOWN to fit rather than
+     * overflowing its parent. */
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
     display: block;
+}
+
+/* `display: flex` above beats the HTML `hidden` attribute — the same trap the
+ * img/video/audio rule below already documents. shared-ui-frame.php binds
+ * data-wp-bind--hidden on the <picture> to swap between image and video items,
+ * so without this a hidden <picture> would keep rendering over the video. */
+.mvs-lightbox-media picture[hidden] {
+    display: none !important;
 }
 
 .mvs-lightbox-media img[hidden],
@@ -5699,6 +5738,7 @@ a.mvs-dashboard-card-title:hover {
     max-height: calc(100vh - 64px);
 }
 
+.mvs-lightbox:fullscreen .mvs-lightbox-media picture,
 .mvs-lightbox:fullscreen .mvs-lightbox-media img,
 .mvs-lightbox:fullscreen .mvs-lightbox-video {
     max-height: calc(100vh - 64px);
