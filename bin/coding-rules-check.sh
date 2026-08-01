@@ -206,6 +206,37 @@ PY
 }
 
 # ------------------------------------------------------------------------------
+# Rule 6: a refusal must not be returned through wp_send_json_success().
+#
+# Why this exists: the demo-data importer guarded on "does the site already
+# have media?", refused, and reported the refusal with wp_send_json_success().
+# The admin JS took its success path — redirect, no message — so from the
+# owner's side the Import button did nothing at all. No error, no data, no clue.
+#
+# Every wiring layer was correct, so an action/wiring audit passed it cleanly:
+# the button existed, the JS bound it, the wp_ajax_ handler was registered and
+# the nonce matched. Only the SEMANTICS were wrong. This rule catches that
+# specific shape — a success envelope whose message is plainly a refusal.
+#
+# Heuristic, deliberately narrow: it matches refusal words in the message of a
+# success response. If a legitimate success message trips it, reword the
+# message (users read it too) rather than widening the pattern.
+check_no_refusal_reported_as_success() {
+    local hits
+    hits=$(grep -rniE "wp_send_json_success\([^)]*(already (exists|imported|seeded|running)|nothing to|cannot |can't |unable to|skipping|not allowed|denied|must .* first|delete .* first)" \
+        "$PLUGIN_DIR/includes" "$PLUGIN_DIR"/*.php 2>/dev/null \
+        | grep -v "/vendor/" || true)
+
+    if [ -n "$hits" ]; then
+        violation "Rule 6 — refusal returned via wp_send_json_success() (client cannot tell it failed):"
+        echo "$hits" | sed 's/^/    /'
+        echo "    -> use wp_send_json_error() so the UI can surface the reason."
+    else
+        ok "Rule 6 — no refusals disguised as success responses"
+    fi
+}
+
+# ------------------------------------------------------------------------------
 
 echo "=== WPMediaVerse coding-rules check ==="
 echo "Plugin: $PLUGIN_DIR"
@@ -216,6 +247,7 @@ check_unauthenticated_rest_allowlist
 check_no_raw_aggregate_queries_outside_service
 check_no_per_entity_transients
 check_rest_per_page_has_maximum
+check_no_refusal_reported_as_success
 
 echo ""
 COUNT=$(violations_count)
