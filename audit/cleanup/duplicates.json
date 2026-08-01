@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-01T13:11:10Z",
+    "generated_at": "2026-08-01T13:44:49Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -16,7 +16,7 @@
     },
     "counts": {
         "cross_plugin_duplicates": 15,
-        "within_plugin_duplicates": 37,
+        "within_plugin_duplicates": 36,
         "free_files_scanned": 188,
         "pro_files_scanned": 170
     },
@@ -716,24 +716,6 @@
             ]
         },
         {
-            "hash": "bffc25efad7f16e68b7ee2a93f2d3f1f565e6398",
-            "plugin": "free",
-            "instances": 2,
-            "token_count": 91,
-            "sites": [
-                {
-                    "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1053-1053",
-                    "method": "SignedUrlService::record_download"
-                },
-                {
-                    "file": "includes/Services/StatsService.php",
-                    "lines": "123-123",
-                    "method": "record_download"
-                }
-            ]
-        },
-        {
             "hash": "7f9a45b2199b5c0850d25f38603e800d4ec6c3ca",
             "plugin": "free",
             "instances": 2,
@@ -959,13 +941,13 @@
             "sites": [
                 {
                     "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1193-1193",
-                    "method": "client_accepts_webp"
+                    "lines": "1179-1179",
+                    "method": "SignedUrlService::client_accepts_webp"
                 },
                 {
                     "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1212-1212",
-                    "method": "client_accepts_avif"
+                    "lines": "1198-1198",
+                    "method": "SignedUrlService::client_accepts_avif"
                 }
             ]
         },

@@ -1051,32 +1051,18 @@ class SignedUrlService {
 	 * @param int $user_id  User ID.
 	 */
 	private function record_download( int $media_id, int $user_id ): void {
-		global $wpdb;
-
-		$ip_hash = hash( 'sha256', $this->get_client_ip() . wp_salt() );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->insert(
-			$wpdb->prefix . 'mvs_media_views',
-			array(
-				'media_id'   => $media_id,
-				'user_id'    => $user_id ? $user_id : null,
-				'ip_hash'    => $ip_hash,
-				'event_type' => 'download',
-				'created_at' => current_time( 'mysql', true ),
-			),
-			array( '%d', '%d', '%s', '%s', '%s' )
-		);
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query(
-			$wpdb->prepare(
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				"UPDATE {$wpdb->prefix}mvs_media_stats SET downloads = downloads + 1, updated_at = %s WHERE media_id = %d",
-				current_time( 'mysql', true ),
-				$media_id
-			)
-		);
+		// StatsService owns this write. This method used to carry a
+		// byte-identical copy of the same insert + downloads counter, so a
+		// change to how a download is recorded had to be made in two files or
+		// the two paths would disagree.
+		//
+		// Resolved lazily at call time, matching how this class already reaches
+		// media_repository. StatsService holds no reference back here, so there
+		// is no cycle.
+		$stats = \WPMediaVerse\Core\Plugin::container()->get( 'stats' );
+		if ( $stats && method_exists( $stats, 'record_download' ) ) {
+			$stats->record_download( $media_id, $user_id );
+		}
 	}
 
 	/**
