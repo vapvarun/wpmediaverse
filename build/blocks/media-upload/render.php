@@ -61,8 +61,15 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 $rest_url      = esc_url( rest_url( 'mvs/v1/media' ) );
 $nonce         = wp_create_nonce( 'wp_rest' );
 $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );
-// Stories is a Pro feature, off by default. Show the "share as story" toggle only when enabled.
-$mvs_stories_on = ( '1' === get_option( 'mvs_stories_enabled', '0' ) );
+// Stories is a Pro feature, off by default. Show the "share as story" toggle
+// only when the option is on AND Pro is actually active to honour it.
+//
+// The option check alone is not enough: deactivating Pro leaves
+// mvs_stories_enabled at '1', so the toggle kept rendering on a Free-only site
+// where nothing consumes it — the upload succeeds but no story is ever created,
+// which reads as a broken feature rather than an absent one. Basecamp
+// #10156642726.
+$mvs_stories_on = defined( 'MVS_PRO_VERSION' ) && '1' === get_option( 'mvs_stories_enabled', '0' );
 // Pre-check the toggle when arriving from the "Your story" tile (?mvs_story=1). Display-only, no action.
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $mvs_prefill_story = $mvs_stories_on && isset( $_GET['mvs_story'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['mvs_story'] ) );
