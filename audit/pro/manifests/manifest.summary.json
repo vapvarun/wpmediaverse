@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse-pro",
     "name": "WPMediaVerse Pro",
-    "version": "2.2.1",
+    "version": "2.3.0",
     "namespace": "WPMediaVersePro",
     "main_file": "wpmediaverse-pro.php",
     "text_domain": "wpmediaverse-pro",

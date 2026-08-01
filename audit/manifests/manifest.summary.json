@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -13,7 +13,7 @@
     "extension_hook_fired": "mvs_loaded"
   },
   "counts": {
-    "rest_endpoints": 114,
+    "rest_endpoints": 115,
     "ajax": 3,
     "admin_pages": 20,
     "settings": 40,
