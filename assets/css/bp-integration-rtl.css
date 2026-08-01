@@ -718,11 +718,18 @@
 .activity-list .activity-content a[href*="/media/"] img:not(.emoji):not(.avatar) {
     max-width: 100%;
     max-height: 500px;
-    /* width: auto;
-    height: auto; */
+    /* height:auto is what preserves the ratio. It was commented out in
+     * 84aa3f9db together with object-fit, in a commit aimed at activity image
+     * SPACING (card 9823385561, "give the image breathing space"). Without it
+     * the img falls back to its HTML height attribute — the thumbnail's, not
+     * the original's — while max-width:100% scales the width independently,
+     * so the picture is scaled non-uniformly. That is the distortion in card
+     * 10153582210. The spacing that card 9823385561 asked for is the
+     * margin below, which is untouched. */
+    width: auto;
+    height: auto;
     display: block;
     margin: 8px 0;
-    /* object-fit: contain; */
     border-radius: 12px;
 }
 
@@ -746,12 +753,24 @@
 
 #buddypress .activity-content .mvs-activity-media img,
 .activity-list .activity-content .mvs-activity-media img {
-    width: 100%;
-    height: 100%;
+    /* Single upload: fit the whole picture, do not crop it. height:100% +
+     * object-fit:cover forced every standalone photo into the wrapper's box —
+     * a 682x1024 portrait rendered at 1138x500 lost about half its height
+     * (card 10153582210, customer: "why not keeping the ratio's as it is?").
+     *
+     * Multi-image mosaics are deliberately NOT changed: the grid tiles keep
+     * object-fit:cover via .mvs-activity-media-grid .mvs-activity-media img,
+     * which is more specific than this rule. Cropping mosaic tiles is what
+     * Facebook, Instagram and X all do, and it is what the comment above that
+     * grid block already documents as intentional. */
+    width: auto;
+    height: auto;
+    max-width: 100%;
     max-height: 600px;
     display: block;
-    object-fit: cover;
+    object-fit: contain;
     border-radius: 12px;
+    margin-inline: auto;
 }
 
 /* =============================================================================

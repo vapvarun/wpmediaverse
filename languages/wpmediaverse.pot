@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WPMediaVerse 2.2.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
-"POT-Creation-Date: 2026-08-01 09:04:32+00:00\n"
+"POT-Creation-Date: 2026-08-01 13:08:18+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -325,7 +325,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/shared-ui-frame.php:269
 #: includes/Admin/MediaListPage.php:240 includes/Admin/MediaListPage.php:288
 #: includes/Admin/MediaListPage.php:1481 includes/Admin/ModerationQueue.php:358
-#: includes/Admin/OverviewPage.php:377 includes/Admin/StatsPage.php:404
+#: includes/Admin/OverviewPage.php:392 includes/Admin/StatsPage.php:404
 #: includes/Admin/TagManagementPage.php:687
 #: includes/Services/GDPRService.php:176 src/blocks/media-stats/render.php:147
 #: templates/album.php:179 templates/media-single.php:551
@@ -908,7 +908,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:768
 #: includes/Admin/CollectionMetaBox.php:210
 #: includes/Admin/MediaListPage.php:241 includes/Admin/MediaListPage.php:289
-#: includes/Admin/ModerationQueue.php:359 includes/Admin/OverviewPage.php:378
+#: includes/Admin/ModerationQueue.php:359 includes/Admin/OverviewPage.php:393
 #: templates/partials/dashboard-content.php:776
 msgid "Author"
 msgstr ""
@@ -1268,7 +1268,7 @@ msgstr ""
 #: dist/wpmediaverse/templates/partials/usage-history.php:49
 #: includes/Admin/LogViewerPage.php:197 includes/Admin/MediaListPage.php:247
 #: includes/Admin/MediaListPage.php:295 includes/Admin/ModerationQueue.php:362
-#: includes/Admin/OverviewPage.php:379 includes/Admin/TagManagementPage.php:689
+#: includes/Admin/OverviewPage.php:394 includes/Admin/TagManagementPage.php:689
 #: includes/Services/GDPRService.php:192 includes/Services/GDPRService.php:251
 #: includes/Services/GDPRService.php:277 includes/Services/GDPRService.php:302
 #: templates/partials/usage-history.php:49
@@ -1540,8 +1540,8 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:409
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:412
 #: dist/wpmediaverse/templates/admin/ai-review.php:74
-#: includes/Admin/MediaListPage.php:359 includes/Admin/OverviewPage.php:409
-#: includes/Admin/OverviewPage.php:412 templates/admin/ai-review.php:74
+#: includes/Admin/MediaListPage.php:359 includes/Admin/OverviewPage.php:424
+#: includes/Admin/OverviewPage.php:427 templates/admin/ai-review.php:74
 msgid "(no title)"
 msgstr ""
 
@@ -2030,8 +2030,8 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/MemberModeration.php:199
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:324
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:477
-#: includes/Admin/MemberModeration.php:199 includes/Admin/OverviewPage.php:324
-#: includes/Admin/OverviewPage.php:477
+#: includes/Admin/MemberModeration.php:199 includes/Admin/OverviewPage.php:339
+#: includes/Admin/OverviewPage.php:492
 msgid "Active"
 msgstr ""
 
@@ -2169,7 +2169,7 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/ModerationQueue.php:458
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:420
-#: includes/Admin/ModerationQueue.php:458 includes/Admin/OverviewPage.php:420
+#: includes/Admin/ModerationQueue.php:458 includes/Admin/OverviewPage.php:435
 msgid "ago"
 msgstr ""
 
@@ -2191,7 +2191,7 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:151
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:262
-#: includes/Admin/OverviewPage.php:151 includes/Admin/OverviewPage.php:262
+#: includes/Admin/OverviewPage.php:151 includes/Admin/OverviewPage.php:277
 msgid "Import Demo Data"
 msgstr ""
 
@@ -2214,7 +2214,7 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:155
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:275
-#: includes/Admin/OverviewPage.php:155 includes/Admin/OverviewPage.php:275
+#: includes/Admin/OverviewPage.php:155 includes/Admin/OverviewPage.php:290
 msgid "Delete Demo Data"
 msgstr ""
 
@@ -2305,12 +2305,12 @@ msgid "Stats"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:255
-#: includes/Admin/OverviewPage.php:255
+#: includes/Admin/OverviewPage.php:270
 msgid "Quick Start with Demo Content"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:257
-#: includes/Admin/OverviewPage.php:257
+#: includes/Admin/OverviewPage.php:272
 msgid ""
 "Import 12 sample media items to see how everything works. Albums, "
 "reactions, and your explore page will come alive."
@@ -2318,78 +2318,78 @@ msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:287
 #: dist/wpmediaverse/includes/Admin/SetupWizard.php:269
-#: includes/Admin/OverviewPage.php:287 includes/Admin/SetupWizard.php:269
+#: includes/Admin/OverviewPage.php:302 includes/Admin/SetupWizard.php:269
 msgid "Frontend Pages"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:293
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:1122
-#: includes/Admin/OverviewPage.php:293
+#: includes/Admin/OverviewPage.php:308
 #: includes/Admin/Settings/SettingsRegistrar.php:1122
 msgid "Explore Page"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:298
-#: includes/Admin/OverviewPage.php:298
+#: includes/Admin/OverviewPage.php:313
 msgid "My Media Page"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:327
-#: includes/Admin/OverviewPage.php:327
+#: includes/Admin/OverviewPage.php:342
 msgid "Missing"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:337
-#: includes/Admin/OverviewPage.php:337
+#: includes/Admin/OverviewPage.php:352
 msgid ""
 "Some pages are missing. Deactivate and reactivate the plugin to create "
 "them, or add pages manually with shortcodes:"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:361
-#: includes/Admin/OverviewPage.php:361
+#: includes/Admin/OverviewPage.php:376
 msgid "Recent Uploads"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:367
-#: includes/Admin/OverviewPage.php:367
+#: includes/Admin/OverviewPage.php:382
 msgid "No media uploaded yet."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:369
-#: includes/Admin/OverviewPage.php:369
+#: includes/Admin/OverviewPage.php:384
 msgid "Upload First Media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:432
-#: includes/Admin/OverviewPage.php:432
+#: includes/Admin/OverviewPage.php:447
 msgid "View all media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:440
-#: includes/Admin/OverviewPage.php:440
+#: includes/Admin/OverviewPage.php:455
 msgid "System Status"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:445
-#: includes/Admin/OverviewPage.php:445
+#: includes/Admin/OverviewPage.php:460
 msgid "PHP Version"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:451
-#: includes/Admin/OverviewPage.php:451
+#: includes/Admin/OverviewPage.php:466
 msgid "WordPress"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:455
-#: includes/Admin/OverviewPage.php:455
+#: includes/Admin/OverviewPage.php:470
 msgid "Upload Limit"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:459
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:283
 #: dist/wpmediaverse/includes/Admin/Settings/SettingsRegistrar.php:302
-#: includes/Admin/OverviewPage.php:459
+#: includes/Admin/OverviewPage.php:474
 #: includes/Admin/Settings/SettingsRegistrar.php:283
 #: includes/Admin/Settings/SettingsRegistrar.php:302
 msgid "Storage Driver"
@@ -2398,75 +2398,75 @@ msgstr ""
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:463
 #: dist/wpmediaverse/includes/Admin/Settings/AiSettingsRegistrar.php:41
 #: dist/wpmediaverse/includes/Admin/Settings/AiSettingsRegistrar.php:59
-#: includes/Admin/OverviewPage.php:463
+#: includes/Admin/OverviewPage.php:478
 #: includes/Admin/Settings/AiSettingsRegistrar.php:41
 #: includes/Admin/Settings/AiSettingsRegistrar.php:59
 msgid "AI Provider"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:471
-#: includes/Admin/OverviewPage.php:471
+#: includes/Admin/OverviewPage.php:486
 msgid "Configured"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:471
-#: includes/Admin/OverviewPage.php:471
+#: includes/Admin/OverviewPage.php:486
 msgid "Not set"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:475
-#: includes/Admin/OverviewPage.php:475
+#: includes/Admin/OverviewPage.php:490
 msgid "BuddyPress"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:477
-#: includes/Admin/OverviewPage.php:477
+#: includes/Admin/OverviewPage.php:492
 msgid "Inactive"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:515
 #: dist/wpmediaverse/includes/Admin/SetupWizard.php:223
-#: includes/Admin/OverviewPage.php:515 includes/Admin/SetupWizard.php:223
+#: includes/Admin/OverviewPage.php:530 includes/Admin/SetupWizard.php:223
 msgid "Welcome to WPMediaVerse!"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:516
-#: includes/Admin/OverviewPage.php:516
+#: includes/Admin/OverviewPage.php:531
 msgid "Your media sharing platform is ready. Follow these steps to get started:"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:521
-#: includes/Admin/OverviewPage.php:521
+#: includes/Admin/OverviewPage.php:536
 msgid "Configure settings"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:522
-#: includes/Admin/OverviewPage.php:522
+#: includes/Admin/OverviewPage.php:537
 msgid "Upload limits, privacy, file types"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:528
-#: includes/Admin/OverviewPage.php:528
+#: includes/Admin/OverviewPage.php:543
 msgid "Upload your first media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:529
-#: includes/Admin/OverviewPage.php:529
+#: includes/Admin/OverviewPage.php:544
 msgid "Images, videos, or audio files"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:535
-#: includes/Admin/OverviewPage.php:535
+#: includes/Admin/OverviewPage.php:550
 msgid "Customize permissions"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:536
-#: includes/Admin/OverviewPage.php:536
+#: includes/Admin/OverviewPage.php:551
 msgid "Control who can upload and manage"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:543
-#: includes/Admin/OverviewPage.php:543
+#: includes/Admin/OverviewPage.php:558
 msgid "Dismiss welcome banner"
 msgstr ""
 
@@ -2476,7 +2476,7 @@ msgstr ""
 #: dist/wpmediaverse/includes/Core/TemplateLoader.php:514
 #: dist/wpmediaverse/includes/Services/HealthCheckService.php:176
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:644
-#: includes/Admin/OverviewPage.php:555 includes/Admin/SetupWizard.php:252
+#: includes/Admin/OverviewPage.php:570 includes/Admin/SetupWizard.php:252
 #: includes/Core/TemplateLoader.php:510 includes/Core/TemplateLoader.php:514
 #: includes/Services/HealthCheckService.php:176
 #: templates/partials/dashboard-content.php:652
@@ -2488,40 +2488,40 @@ msgstr ""
 #: dist/wpmediaverse/includes/Core/Plugin.php:1659
 #: dist/wpmediaverse/includes/Services/HealthCheckService.php:177
 #: dist/wpmediaverse/templates/partials/dashboard-content.php:390
-#: includes/Admin/OverviewPage.php:556 includes/Admin/SetupWizard.php:257
+#: includes/Admin/OverviewPage.php:571 includes/Admin/SetupWizard.php:257
 #: includes/Core/Plugin.php:1741 includes/Services/HealthCheckService.php:177
 #: templates/partials/dashboard-content.php:398
 msgid "My Media"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:576
-#: includes/Admin/OverviewPage.php:576
+#: includes/Admin/OverviewPage.php:591
 msgid "Frontend pages created:"
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:633
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:660
-#: includes/Admin/OverviewPage.php:633 includes/Admin/OverviewPage.php:660
+#: includes/Admin/OverviewPage.php:648 includes/Admin/OverviewPage.php:675
 msgid "Permission denied."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:638
-#: includes/Admin/OverviewPage.php:638
+#: includes/Admin/OverviewPage.php:653
 msgid "Demo data seeder not found."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:650
-#: includes/Admin/OverviewPage.php:650
+#: includes/Admin/OverviewPage.php:665
 msgid "Seeder did not return a response."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:665
-#: includes/Admin/OverviewPage.php:665
+#: includes/Admin/OverviewPage.php:680
 msgid "Cleanup script not found."
 msgstr ""
 
 #: dist/wpmediaverse/includes/Admin/OverviewPage.php:675
-#: includes/Admin/OverviewPage.php:675
+#: includes/Admin/OverviewPage.php:690
 msgid "Cleanup did not return a response."
 msgstr ""
 
@@ -5846,14 +5846,14 @@ msgstr ""
 #: includes/REST/Controller/MediaController.php:671
 #: includes/REST/Controller/MediaController.php:867
 #: includes/REST/Controller/MediaController.php:995
-#: includes/REST/Controller/MediaController.php:1238
-#: includes/REST/Controller/MediaController.php:1272
-#: includes/REST/Controller/MediaController.php:1339
-#: includes/REST/Controller/MediaController.php:1401
-#: includes/REST/Controller/MediaController.php:1447
-#: includes/REST/Controller/MediaController.php:1509
-#: includes/REST/Controller/MediaController.php:1531
-#: includes/REST/Controller/MediaController.php:1556
+#: includes/REST/Controller/MediaController.php:1249
+#: includes/REST/Controller/MediaController.php:1283
+#: includes/REST/Controller/MediaController.php:1350
+#: includes/REST/Controller/MediaController.php:1412
+#: includes/REST/Controller/MediaController.php:1458
+#: includes/REST/Controller/MediaController.php:1520
+#: includes/REST/Controller/MediaController.php:1542
+#: includes/REST/Controller/MediaController.php:1567
 #: includes/REST/Controller/ReactionController.php:125
 #: includes/REST/Controller/ReactionController.php:132
 #: includes/REST/Controller/ReactionController.php:173
@@ -6189,7 +6189,7 @@ msgid "This file type is not allowed."
 msgstr ""
 
 #: dist/wpmediaverse/includes/REST/Controller/MediaController.php:1060
-#: includes/REST/Controller/MediaController.php:1060
+#: includes/REST/Controller/MediaController.php:1071
 msgid "Failed to store the file."
 msgstr ""
 
@@ -6200,10 +6200,10 @@ msgstr ""
 #: dist/wpmediaverse/includes/REST/Controller/SignedUrlController.php:157
 #: dist/wpmediaverse/includes/REST/Controller/SignedUrlController.php:241
 #: dist/wpmediaverse/includes/REST/Controller/StatsController.php:113
-#: includes/REST/Controller/MediaController.php:1278
-#: includes/REST/Controller/MediaController.php:1345
-#: includes/REST/Controller/MediaController.php:1406
-#: includes/REST/Controller/MediaController.php:1515
+#: includes/REST/Controller/MediaController.php:1289
+#: includes/REST/Controller/MediaController.php:1356
+#: includes/REST/Controller/MediaController.php:1417
+#: includes/REST/Controller/MediaController.php:1526
 #: includes/REST/Controller/SignedUrlController.php:157
 #: includes/REST/Controller/SignedUrlController.php:241
 #: includes/REST/Controller/StatsController.php:113
@@ -6211,32 +6211,32 @@ msgid "You do not have access to this media item."
 msgstr ""
 
 #: dist/wpmediaverse/includes/REST/Controller/MediaController.php:1326
-#: includes/REST/Controller/MediaController.php:1326
+#: includes/REST/Controller/MediaController.php:1337
 msgid "Downloads are disabled on this site."
 msgstr ""
 
 #: dist/wpmediaverse/includes/REST/Controller/MediaController.php:1352
-#: includes/REST/Controller/MediaController.php:1352
+#: includes/REST/Controller/MediaController.php:1363
 msgid "The owner has disabled downloads for this media."
 msgstr ""
 
 #: dist/wpmediaverse/includes/REST/Controller/MediaController.php:1494
-#: includes/REST/Controller/MediaController.php:1494
+#: includes/REST/Controller/MediaController.php:1505
 msgid "You do not have permission to upload media."
 msgstr ""
 
 #: dist/wpmediaverse/includes/REST/Controller/MediaController.php:1542
-#: includes/REST/Controller/MediaController.php:1542
+#: includes/REST/Controller/MediaController.php:1553
 msgid "You do not have permission to edit this media item."
 msgstr ""
 
 #: dist/wpmediaverse/includes/REST/Controller/MediaController.php:1567
-#: includes/REST/Controller/MediaController.php:1567
+#: includes/REST/Controller/MediaController.php:1578
 msgid "You do not have permission to delete this media item."
 msgstr ""
 
 #: dist/wpmediaverse/includes/REST/Controller/MediaController.php:1841
-#: includes/REST/Controller/MediaController.php:1841
+#: includes/REST/Controller/MediaController.php:1852
 msgid ""
 "Resolve specific media IDs to full objects in one call (e.g. album items). "
 "Max 100, privacy-gated, order preserved."
