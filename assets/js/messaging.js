@@ -1801,3 +1801,17 @@ document.addEventListener( 'mvs:navigated', () => {
 		state.pollingTimer = null;
 	}
 } );
+
+// Escape closes the slide-out. A panel that traps a keyboard user with no way
+// out but the mouse is not an acceptable dialog, and every other drawer on the
+// web dismisses this way. Registered at module level alongside the teardown
+// above so it survives client-side navigation.
+//
+// Deliberately a no-op when the panel is already closed, so Escape keeps
+// working normally for the lightbox, modals and anything else on the page.
+document.addEventListener( 'keydown', ( event ) => {
+	if ( 'Escape' !== event.key || ! state.chatPanelOpen ) {
+		return;
+	}
+	actions.closeChatPanel();
+} );
