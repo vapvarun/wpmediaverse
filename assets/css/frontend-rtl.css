@@ -2862,6 +2862,59 @@ a.mvs-dashboard-card-title:hover {
     border-radius: 8px;
 }
 
+/* The dropzone itself. Every sibling above was already unscoped here for
+ * templates/album.php; the dropzone was the one that was left behind and
+ * only existed under `#buddypress .mvs-bp-screen` in bp-integration.css.
+ * On the single-album page that meant no border, no padding, no
+ * min-height -- a bare line of text instead of a box, so users aimed at
+ * a target that wasn't drawn and dropped on the page background (which
+ * navigates the tab to the file). Basecamp #10134243697, cause B. */
+.mvs-bp-dropzone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border: 2px dashed var(--mvs-border);
+    border-radius: 8px;
+    background: var(--mvs-surface-2);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.mvs-bp-dropzone.is-dragover {
+    border-color: var(--mvs-primary);
+    background: color-mix(in srgb, var(--mvs-primary) 5%, var(--mvs-surface-2));
+}
+
+.mvs-bp-dropzone-text {
+    margin: 0;
+    color: var(--mvs-text-secondary);
+    font-size: 14px;
+}
+
+/* Cloud-upload icon anchors the dropzone, so scale it up from the
+ * 16px body-button default. */
+.mvs-bp-dropzone svg,
+.mvs-bp-dropzone [data-lucide] {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.75;
+    color: var(--mvs-text-secondary);
+    flex-shrink: 0;
+}
+
+/* Mirrors the BP-scoped mobile override in bp-integration.css so the
+ * non-BP single-album dropzone gets the same treatment. Mobile is part of
+ * the definition of done, not a follow-up. */
+@media (max-width: 640px) {
+    .mvs-bp-dropzone {
+        padding: 16px;
+    }
+}
+
 .mvs-bp-upload-preview {
     display: flex;
     flex-wrap: wrap;

@@ -111,41 +111,13 @@
     margin: 0 0 24px;
 }
 
-#buddypress .mvs-bp-screen .mvs-bp-dropzone {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 20px 24px;
-    border: 2px dashed var(--mvs-border);
-    border-radius: 8px;
-    background: var(--mvs-surface-2);
-    text-align: center;
-    transition: border-color 0.2s, background 0.2s;
-}
-
-#buddypress .mvs-bp-screen .mvs-bp-dropzone.is-dragover {
-    border-color: var(--mvs-primary);
-    background: color-mix(in srgb, var(--mvs-primary) 5%, var(--mvs-surface-2));
-}
-
-#buddypress .mvs-bp-screen .mvs-bp-dropzone-text {
-    margin: 0;
-    color: var(--mvs-text-secondary);
-    font-size: 14px;
-}
-
-/* Cloud-upload icon anchors the dropzone, so scale it up from the
- * 16px body-button default. */
-#buddypress .mvs-bp-screen .mvs-bp-dropzone svg,
-#buddypress .mvs-bp-screen .mvs-bp-dropzone [data-lucide] {
-    width: 24px;
-    height: 24px;
-    stroke-width: 1.75;
-    color: var(--mvs-text-secondary);
-    flex-shrink: 0;
-}
+/* Dropzone base styles moved to frontend.css (unscoped), joining the
+ * .mvs-bp-upload-* siblings that already lived there. The same markup is
+ * emitted by templates/album.php outside BuddyPress, where the
+ * #buddypress .mvs-bp-screen scope never matched and the dropzone
+ * rendered with no box at all (Basecamp #10134243697). Keeping a scoped
+ * copy here would be a duplicate class rule (Coding Rule 12). Add rules
+ * back here ONLY for behaviour that genuinely differs inside BP. */
 
 #buddypress .mvs-bp-screen .mvs-bp-upload-preview {
     display: grid;
