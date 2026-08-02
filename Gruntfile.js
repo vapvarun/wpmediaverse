@@ -5,19 +5,6 @@ module.exports = function( grunt ) {
 		pkg: grunt.file.readJSON( 'package.json' ),
 
 		// RTL CSS generation
-		rtlcss: {
-			dist: {
-				files: [
-					{
-						expand: true,
-						cwd: 'assets/css/',
-						src: [ '*.css', '!*-rtl.css', '!*.min.css' ],
-						dest: 'assets/css/',
-						ext: '-rtl.css',
-					},
-				],
-			},
-		},
 
 		// Generate .pot file
 		makepot: {
@@ -194,7 +181,6 @@ module.exports = function( grunt ) {
 	} );
 
 	// Load plugins
-	grunt.loadNpmTasks( 'grunt-rtlcss' );
 	grunt.loadNpmTasks( 'grunt-wp-i18n' );
 	grunt.loadNpmTasks( 'grunt-contrib-cssmin' );
 	grunt.loadNpmTasks( 'grunt-contrib-uglify' );
@@ -348,7 +334,16 @@ module.exports = function( grunt ) {
 	} );
 
 	// Build: blocks + RTL + minify + pot
-	grunt.registerTask( 'build', [ 'blocks', 'rtlcss', 'cssmin', 'uglify', 'makepot' ] );
+	// NOTE: 'rtlcss' was removed from this pipeline in 2.3.0. It generated
+	// assets/css/*-rtl.css, which nothing ever enqueued — there is no
+	// wp_style_add_data( $handle, 'rtl', 'replace' ) anywhere in Free or Pro.
+	//
+	// Do not add it back, and do not "fix" the missing registration. RTL is
+	// already correct without it: the browser mirrors flex and grid from
+	// dir="rtl", so serving an rtlcss-flipped sheet DOUBLE-flips the layout —
+	// verified on an Arabic install, where registering the files moved the
+	// Explore heading and tag chips back to left-aligned on an RTL page.
+	grunt.registerTask( 'build', [ 'blocks', 'cssmin', 'uglify', 'makepot' ] );
 
 	// Dist: full build + strip dev deps + package zip + restore dev deps
 	grunt.registerTask( 'dist', [ 'build', 'composer-prod', 'clean:dist', 'copy:dist', 'compress:dist', 'composer-restore', 'dist-summary' ] );
