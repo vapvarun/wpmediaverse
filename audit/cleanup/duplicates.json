@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-01T13:44:49Z",
+    "generated_at": "2026-08-02T02:12:27Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -261,9 +261,15 @@
         },
         {
             "hash": "4db8cb9c7eb2092d1bcc1916eb9d70b020d674bc",
-            "instances": 10,
+            "instances": 11,
             "token_count": 33,
             "sites": [
+                {
+                    "plugin": "free",
+                    "file": "includes/Messaging/MessagingController.php",
+                    "lines": "370-370",
+                    "method": "MessagingController::check_auth"
+                },
                 {
                     "plugin": "free",
                     "file": "includes/REST/Controller/AdminController.php",
@@ -651,12 +657,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1537-1537",
+                    "lines": "1541-1541",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1562-1562",
+                    "lines": "1566-1566",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -941,12 +947,12 @@
             "sites": [
                 {
                     "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1179-1179",
+                    "lines": "1177-1177",
                     "method": "SignedUrlService::client_accepts_webp"
                 },
                 {
                     "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1198-1198",
+                    "lines": "1196-1196",
                     "method": "SignedUrlService::client_accepts_avif"
                 }
             ]
@@ -1023,7 +1029,7 @@
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1503-1503",
+                    "lines": "1507-1507",
                     "method": "create_item_permissions_check"
                 },
                 {

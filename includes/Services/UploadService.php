@@ -936,7 +936,9 @@ class UploadService {
 		// save() writes a sibling /tmp/phpXXXXXX.jpg and the original — still
 		// un-rotated — is what the rest of the pipeline would carry on using.
 		// Move the rewritten file back over the path everything downstream holds.
-		$written = isset( $saved['path'] ) ? (string) $saved['path'] : '';
+		// $saved is the success shape by here — the WP_Error branch returned
+		// above — so 'path' is always present and isset() would be dead weight.
+		$written = (string) $saved['path'];
 		if ( '' !== $written && $written !== $file_path && file_exists( $written ) ) {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- moving a temp file we just created, WP_Filesystem is not initialised this early in the upload path.
 			if ( ! @rename( $written, $file_path ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
@@ -1294,16 +1296,14 @@ class UploadService {
 		// on explicit regeneration only.
 		$fixed = @getimagesize( $file_path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 		if ( is_array( $fixed ) && ! empty( $fixed[0] ) && ! empty( $fixed[1] ) ) {
-			$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-			if ( $repo ) {
-				$repo->set_many(
-					$media_id,
-					array(
-						'width'  => (int) $fixed[0],
-						'height' => (int) $fixed[1],
-					)
-				);
-			}
+			// The container always returns a repository here, so no null guard.
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set_many(
+				$media_id,
+				array(
+					'width'  => (int) $fixed[0],
+					'height' => (int) $fixed[1],
+				)
+			);
 		}
 
 		$editor = wp_get_image_editor( $file_path );

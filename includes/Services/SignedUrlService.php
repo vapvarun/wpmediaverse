@@ -809,7 +809,7 @@ class SignedUrlService {
 			// Resolve by where the file ACTUALLY lives, not the active driver:
 			// a public file still on local disk (cloud enabled but not migrated
 			// yet) must not be served from a cloud URL that 404s. (BC #10029395885)
-			$driver  = $storage->get_driver_for_location( $media_id );
+			$driver = $storage->get_driver_for_location( $media_id );
 			if ( $driver instanceof LocalDriver ) {
 				// File is local. By default /serve streams it, but let operators
 				// route public, ungated local-storage thumbnails to a cacheable
@@ -892,7 +892,7 @@ class SignedUrlService {
 			// Resolve by where the file ACTUALLY lives, not the active driver, so a
 			// public file still on local disk (cloud enabled but not migrated yet)
 			// is served locally instead of from a 404-ing cloud URL. (BC #10029395885)
-			$driver  = $storage->get_driver_for_location( $media_id );
+			$driver = $storage->get_driver_for_location( $media_id );
 			if ( $driver instanceof LocalDriver ) {
 				// See maybe_direct_cloud_thumbnail_url(): same local-storage
 				// public-URL escape hatch for the full file. Default '' keeps the
@@ -1059,10 +1059,8 @@ class SignedUrlService {
 		// Resolved lazily at call time, matching how this class already reaches
 		// media_repository. StatsService holds no reference back here, so there
 		// is no cycle.
-		$stats = \WPMediaVerse\Core\Plugin::container()->get( 'stats' );
-		if ( $stats && method_exists( $stats, 'record_download' ) ) {
-			$stats->record_download( $media_id, $user_id );
-		}
+		// The container always returns the stats service, so no null guard.
+		\WPMediaVerse\Core\Plugin::container()->get( 'stats' )->record_download( $media_id, $user_id );
 	}
 
 	/**
@@ -1374,17 +1372,5 @@ class SignedUrlService {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
 		readfile( $file_path );
 		exit;
-	}
-
-	/**
-	 * Get client IP address.
-	 *
-	 * @return string
-	 */
-	private function get_client_ip(): string {
-		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-			return sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
-		}
-		return '127.0.0.1';
 	}
 }
