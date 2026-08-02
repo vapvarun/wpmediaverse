@@ -53,3 +53,26 @@ test-results/
 
 # Transient pre-release smoke debug-log archives (evidence only, not shipped)
 qa/.debug-log-*.txt
+
+# Minified assets — build output, not source.
+#
+# Every *.min.css / *.min.js under assets/ and templates/ is produced by
+# `grunt build` (cssmin + uglify) from the unminified file beside it, and
+# `grunt dist` runs build before packaging, so the release ZIP still contains
+# them. Tracking them added nothing but churn: they were regenerated on every
+# build and drifted a month stale against their sources without anyone
+# noticing, because nothing loads them.
+#
+# Verified by deleting all 26 tracked .min files and rebuilding: 18 came back
+# from grunt, 8 did not. The 8 are third-party and stay tracked — see the
+# negation below and phpunit's bundled assets under vendor/.
+assets/**/*.min.css
+assets/**/*.min.js
+templates/**/*.min.js
+templates/**/*.min.css
+
+# ...except vendored libraries, which are shipped as-is and have no source
+# here to regenerate from. assets/js/vendor/lucide.min.js IS enqueued
+# (the `mvs-lucide` handle, Plugin::register_lucide_script).
+!assets/js/vendor/*.min.js
+!assets/js/vendor/*.min.css
