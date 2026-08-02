@@ -2,7 +2,7 @@
 
 WPMediaVerse Free is a full-featured media platform. WPMediaVerse Pro unlocks advanced tools for professional communities, monetization, and engagement.
 
-Free and Pro release in lockstep and share the same version number (both at 2.0.0). See the [changelog](https://github.com/vapvarun/wpmediaverse/blob/main/readme.txt) for what shipped in each release, or [Pro feature overview](../pro-features/overview.md) for the current Pro feature set.
+Free and Pro release in lockstep and share the same version number. See the [changelog](https://github.com/vapvarun/wpmediaverse/blob/main/readme.txt) for what shipped in each release, or [Pro feature overview](../pro-features/overview.md) for the current Pro feature set.
 
 ## Quick Comparison
 
@@ -41,10 +41,10 @@ Free and Pro release in lockstep and share the same version number (both at 2.0.
 | Gallery groups (multi-photo posts) | Yes | Yes |
 | **Privacy & Moderation** | | |
 | Public / Members Only / Private | Yes | Yes |
-| Followers Only privacy level | -- | Yes |
-| Group Members Only privacy level | -- | Yes |
-| Custom privacy (specific users) | -- | Yes |
-| Album-level privacy inheritance | -- | Yes |
+| Friends Only privacy level | Yes (needs BuddyPress Friends) | Yes |
+| Group Members Only privacy level | Yes (enforced) | Yes (picker UI) |
+| Custom privacy (specific users) | Yes (enforced) | Yes (picker UI) |
+| Album-level privacy inheritance | Yes | Yes |
 | Privacy presets | -- | Yes |
 | Bulk privacy updates | -- | Yes |
 | AI content moderation (OpenAI) | Yes | Yes |
@@ -136,6 +136,17 @@ Free and Pro release in lockstep and share the same version number (both at 2.0.
 | Amazon S3 | -- | Yes |
 | BunnyCDN | -- | Yes |
 
+### A note on the privacy rows
+
+Privacy is the one area where "Free vs Pro" is not a clean on/off split, so it is worth stating precisely:
+
+- **Free enforces all six privacy levels.** `PrivacyService` gates viewing for `public`, `members`, `friends`, `group`, `private` and `custom`. If a media item carries one of those levels - set by an import, the REST API, an album inheriting its privacy, or Pro before a licence lapsed - Free honours it. Your members' private media does not become visible because Pro is inactive.
+- **Free's upload form exposes three of them**, plus Friends Only when the BuddyPress Friends component is active: Public, Members, Friends (conditional) and Only Me. Group and Custom are enforced but have no picker in the stock Free upload form.
+- **Pro adds the interface, not the enforcement**: a picker for all six levels with plain-language descriptions, saved presets, and bulk privacy updates across many items at once.
+- **Album-level privacy inheritance is Free.** When media is added to an album, `AlbumService` clamps each item to the more restrictive of the two, filterable via `mvs_album_inherit_privacy`.
+
+There is no "Followers Only" media privacy level in either plugin. `followers` appears only as a **direct-message access** setting (`mvs_dm_access`), which controls who may open a conversation with you - not who can see your media.
+
 ## What You Get Free
 
 WPMediaVerse Free is not a stripped-down trial. It is a complete media platform with:
@@ -160,7 +171,7 @@ WPMediaVerse Pro is for sites that need professional-grade features:
 - **Video intelligence** - Multi-quality transcoding, adaptive streaming, chapters, auto-captions, and engagement analytics
 - **Engagement** - Gamification system with challenges, battles, tournaments, boosts, and streaks that keep users coming back
 - **Monetization** - Quota packages with MemberPress/WooCommerce integration let you sell tiered upload plans
-- **Privacy** - Six privacy levels with album inheritance, presets, and bulk management
+- **Privacy** - A picker UI for all six privacy levels, plus saved presets and bulk privacy management
 - **AI** - Google Vision, AWS Rekognition, and Claude (Anthropic) for auto-tagging and advanced content moderation
 - **Migration** - Import from rtMedia, MediaPress, or BuddyBoss with one WP-CLI command
 

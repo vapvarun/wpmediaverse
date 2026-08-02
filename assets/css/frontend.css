@@ -937,6 +937,7 @@ body.dark-mode .mvs-skeleton::after {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    box-sizing: border-box;
     width: 100%;
 }
 
@@ -2355,6 +2356,7 @@ a.mvs-dashboard-card-title:hover {
     display: block;
     width: 100%;
     padding: 8px 12px;
+    box-sizing: border-box;
     margin: 12px 0;
     font-size: 14px;
     border: 1px solid var(--mvs-border);
@@ -2585,6 +2587,30 @@ a.mvs-dashboard-card-title:hover {
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 24px;
+}
+
+/* On a phone the cloud wraps to as many rows as there are tags — a site with
+   22 tags pushed the first media 680px down the page, so Explore opened on a
+   screenful of filters with no media in sight. One horizontally scrollable row
+   instead: 312px of chips becomes ~56px and the grid is visible immediately.
+   Same pattern Pro already uses for .mvs-competition-tabs. */
+@media (max-width: 640px) {
+    .mvs-tag-cloud {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+    }
+
+    .mvs-tag-cloud::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Chips must not shrink to fit, or the labels compress instead of scrolling. */
+    .mvs-tag-cloud-item {
+        flex: 0 0 auto;
+    }
 }
 
 .mvs-tag-cloud-item {
@@ -2860,6 +2886,59 @@ a.mvs-dashboard-card-title:hover {
     background: var(--mvs-bg);
     border: 1px solid var(--mvs-border);
     border-radius: 8px;
+}
+
+/* The dropzone itself. Every sibling above was already unscoped here for
+ * templates/album.php; the dropzone was the one that was left behind and
+ * only existed under `#buddypress .mvs-bp-screen` in bp-integration.css.
+ * On the single-album page that meant no border, no padding, no
+ * min-height -- a bare line of text instead of a box, so users aimed at
+ * a target that wasn't drawn and dropped on the page background (which
+ * navigates the tab to the file). Basecamp #10134243697, cause B. */
+.mvs-bp-dropzone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border: 2px dashed var(--mvs-border);
+    border-radius: 8px;
+    background: var(--mvs-surface-2);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.mvs-bp-dropzone.is-dragover {
+    border-color: var(--mvs-primary);
+    background: color-mix(in srgb, var(--mvs-primary) 5%, var(--mvs-surface-2));
+}
+
+.mvs-bp-dropzone-text {
+    margin: 0;
+    color: var(--mvs-text-secondary);
+    font-size: 14px;
+}
+
+/* Cloud-upload icon anchors the dropzone, so scale it up from the
+ * 16px body-button default. */
+.mvs-bp-dropzone svg,
+.mvs-bp-dropzone [data-lucide] {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.75;
+    color: var(--mvs-text-secondary);
+    flex-shrink: 0;
+}
+
+/* Mirrors the BP-scoped mobile override in bp-integration.css so the
+ * non-BP single-album dropzone gets the same treatment. Mobile is part of
+ * the definition of done, not a follow-up. */
+@media (max-width: 640px) {
+    .mvs-bp-dropzone {
+        padding: 16px;
+    }
 }
 
 .mvs-bp-upload-preview {
@@ -3984,6 +4063,7 @@ a.mvs-dashboard-card-title:hover {
     border: 1px solid var(--mvs-border);
     border-radius: 4px;
     font-size: 13px;
+    box-sizing: border-box;
 }
 
 /* Section 29 "BP Activity Media Button Alignment" — all rules moved to
@@ -4813,6 +4893,7 @@ a.mvs-dashboard-card-title:hover {
         0 1px 2px rgba(15, 23, 42, 0.04),
         0 18px 48px -12px rgba(15, 23, 42, 0.18);
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 .mvs-empty-state-frontend--404::before {
@@ -5385,11 +5466,50 @@ a.mvs-dashboard-card-title:hover {
     position: relative;
 }
 
-.mvs-lightbox-media img {
+/* The <picture> wrapper is the actual flex item — the <img> is its child, not
+ * a child of .mvs-lightbox-media. Nothing styled `picture` at all, so it had no
+ * definite height: `height: 100%` on the img resolved against an indefinite
+ * containing block, fell back to `auto`, the img rendered at its intrinsic
+ * height, and `.mvs-lightbox { overflow: hidden }` silently cut the overflow.
+ * With align-items:center the cut splits top and bottom, which is why tall
+ * portraits lost their heads and feet (Basecamp #10153546608). Measured before
+ * this rule: a 900x1600 upload rendered a 1351px-tall <picture> inside a 739px
+ * media box — 612px clipped.
+ *
+ * Constraining `picture` gives the img a definite box to contain into. Video
+ * and audio are direct children of .mvs-lightbox-media and were never affected,
+ * which is the asymmetry that confirmed the diagnosis. */
+.mvs-lightbox-media picture {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Definite, not just capped. max-height alone leaves the height
+     * indeterminate, so the img's `height: 100%` still resolved to auto and it
+     * kept rendering at intrinsic size inside a correctly-sized picture. */
     width: 100%;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
+}
+
+.mvs-lightbox-media img {
+    /* Sized by the max-* pair, not width/height 100%, so object-fit has a real
+     * box to contain into and the image scales DOWN to fit rather than
+     * overflowing its parent. */
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
     display: block;
+}
+
+/* `display: flex` above beats the HTML `hidden` attribute — the same trap the
+ * img/video/audio rule below already documents. shared-ui-frame.php binds
+ * data-wp-bind--hidden on the <picture> to swap between image and video items,
+ * so without this a hidden <picture> would keep rendering over the video. */
+.mvs-lightbox-media picture[hidden] {
+    display: none !important;
 }
 
 .mvs-lightbox-media img[hidden],
@@ -5646,6 +5766,7 @@ a.mvs-dashboard-card-title:hover {
     max-height: calc(100vh - 64px);
 }
 
+.mvs-lightbox:fullscreen .mvs-lightbox-media picture,
 .mvs-lightbox:fullscreen .mvs-lightbox-media img,
 .mvs-lightbox:fullscreen .mvs-lightbox-video {
     max-height: calc(100vh - 64px);
@@ -6015,6 +6136,7 @@ a.mvs-dashboard-card-title:hover {
     text-align: center;
     overflow: hidden;
     color: var(--mvs-primary);
+    box-sizing: border-box;
 }
 
 .mvs-auth-gate__card::before {
@@ -6402,7 +6524,8 @@ body.dark-mode .mvs-auth-gate__card {
 .mvs-actions-overflow { position: relative; display: inline-block; }
 .mvs-actions-menu { position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 4px); min-inline-size: 160px; background: var(--mvs-bg, #fff); border: 1px solid var(--mvs-border, #e5e7eb); border-radius: var(--mvs-radius-md, 8px); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); padding: 4px; z-index: 100; display: flex; flex-direction: column; }
 .mvs-actions-menu[hidden] { display: none; }
-.mvs-actions-menu__item { display: block; width: 100%; text-align: start; padding: 8px 12px; background: none; border: 0; border-radius: var(--mvs-radius-sm, 4px); cursor: pointer; font-size: var(--mvs-font-sm, 14px); color: var(--mvs-text, #111827); }
+.mvs-actions-menu__item { display: block; width: 100%; text-align: start; padding: 8px 12px;
+    box-sizing: border-box; background: none; border: 0; border-radius: var(--mvs-radius-sm, 4px); cursor: pointer; font-size: var(--mvs-font-sm, 14px); color: var(--mvs-text, #111827); }
 .mvs-actions-menu__item:hover, .mvs-actions-menu__item:focus-visible { background: var(--mvs-bg-muted, #f3f4f6); }
 .mvs-actions-menu .mvs-block-toggle--blocked { color: var(--mvs-danger, #dc2626); }
 /* Report dialog reuses the .mvs-modal component; ensure controls fill the field. */

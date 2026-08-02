@@ -265,6 +265,35 @@ class SettingsRegistrar {
 			)
 		);
 
+		// App sign-in. AppCredentials::is_enabled() has always READ this option
+		// and its docblock calls it an owner switch — but nothing registered or
+		// wrote it, so the only way to turn the exchange off was to write PHP
+		// against the mvs_app_password_login_enabled filter. A switch that
+		// controls whether members can trade their WordPress password for an
+		// app credential belongs in the UI. Caught by the contract audit
+		// (option-read-never-written) before the 2.3.0 release.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_general',
+			'mvs_app_password_login',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'default'           => true,
+			)
+		);
+		add_settings_field(
+			'mvs_app_password_login',
+			__( 'App Sign-In', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_checkbox_field' ),
+			SettingsPage::PAGE_SLUG . '-general',
+			'mvs_general',
+			array(
+				'option'      => 'mvs_app_password_login',
+				'label'       => __( 'Let members sign in to a mobile app with their WordPress password.', 'wpmediaverse' ),
+				'description' => __( 'The site issues an Application Password behind the scenes. Turn this off if you require every member to go through the interactive login instead, for example when you enforce two-factor authentication.', 'wpmediaverse' ),
+			)
+		);
+
 		// Storage section.
 		add_settings_section( 'mvs_storage', __( 'Storage', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-storage' );
 

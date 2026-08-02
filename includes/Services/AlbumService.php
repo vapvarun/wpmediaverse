@@ -241,8 +241,63 @@ class AlbumService {
 
 		// Store album association on each media item.
 		if ( $added > 0 ) {
+			$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+			/**
+			 * Filters whether media added to an album inherits the album's privacy.
+			 *
+			 * A member who creates a Private album and uploads into it expects the
+			 * contents to be private. Before 2.3.0 nothing carried the album's
+			 * privacy down: the item kept its own value, which for the album-page
+			 * and BuddyPress-tab uploaders was the site default (usually public),
+			 * because neither of those uploaders sent a privacy field at all. The
+			 * album showed a "Private" badge while its photos sat in the public
+			 * Explore feed (Basecamp #10149366902).
+			 *
+			 * Clamping is one-way and only ever tightens: an item that is already
+			 * more restrictive than the album keeps its own setting.
+			 *
+			 * Return false to keep album and item privacy fully independent, which
+			 * is how Free behaved before 2.3.0 (Production Rule 3).
+			 *
+			 * @since 2.3.0
+			 *
+			 * @param bool  $inherit   Whether to clamp. Default true.
+			 * @param int   $album_id  Album ID.
+			 * @param int[] $media_ids Media IDs being added.
+			 */
+			$inherit       = (bool) apply_filters( 'mvs_album_inherit_privacy', true, $album_id, $media_ids );
+			$album_privacy = $inherit ? (string) $repo->get( $album_id, 'privacy' ) : '';
+
 			foreach ( $media_ids as $mid ) {
-				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( (int) $mid, 'album_id', $album_id );
+				$mid = (int) $mid;
+				$repo->set( $mid, 'album_id', $album_id );
+
+				if ( '' === $album_privacy || 'public' === $album_privacy ) {
+					continue;
+				}
+
+				$media_privacy = (string) $repo->get( $mid, 'privacy' );
+				if ( '' === $media_privacy ) {
+					$media_privacy = 'public';
+				}
+
+				$effective = PrivacyService::more_restrictive( $album_privacy, $media_privacy );
+				if ( $effective !== $media_privacy ) {
+					$repo->set( $mid, 'privacy', $effective );
+
+					/**
+					 * Fires when an item's privacy is tightened by its album.
+					 *
+					 * @since 2.3.0
+					 *
+					 * @param int    $media_id   Media ID.
+					 * @param string $from       Previous privacy slug.
+					 * @param string $to         New privacy slug.
+					 * @param int    $album_id   Album that caused the clamp.
+					 */
+					do_action( 'mvs_media_privacy_clamped_by_album', $mid, $media_privacy, $effective, $album_id );
+				}
 			}
 
 			// The actor may be a co-collaborator, not the album owner — keep it

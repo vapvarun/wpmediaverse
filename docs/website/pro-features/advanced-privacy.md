@@ -27,36 +27,14 @@ Pro adds multi-level inheritance, presets, and bulk management on top of these l
 
 ## Album-Level Inheritance
 
-When a media item is inside an album, it can inherit the album's privacy level instead of using its own. Enable this behaviour per album using the `inherit_privacy` flag.
+Media added to a non-public album inherits the album's privacy. This is a **Free** feature as of 2.3.0 — see the Albums documentation.
 
-When `inherit_privacy` is `true`:
-- The media item's own `_mvs_privacy` value is ignored
-- Access checks use the parent album's privacy level
-- Changing the album's privacy instantly updates visibility for all items that inherit from it
+The privacy of an item is clamped to the more restrictive of (item, album) at the moment it is added to the album. The clamp only tightens; it never loosens an item that is already more restrictive.
 
-To enable inheritance when creating or updating an album:
+Site owners can opt out with the `mvs_album_inherit_privacy` filter:
 
-```bash
-curl -X PUT https://yoursite.com/wp-json/mvs/v1/albums/55 \
-  -H "X-WP-Nonce: NONCE" \
-  -H "Content-Type: application/json" \
-  -d '{"inherit_privacy": true, "privacy": "members"}'
-```
-
-![Album edit screen showing the Inherit Privacy toggle](../images/admin-media-list.png)
-
----
-
-## REST API
-
-**Base URL:** `/wp-json/mvs-pro/v1/`
-
-### PUT /media/{id}/privacy
-
-Update the privacy level for a single media item. Requires ownership or the `moderate_mvs_media` capability.
-
-**Body:**
-
+```php
+add_filter( 'mvs_album_inherit_privacy', '__return_false' );
 ```json
 {
   "privacy": "group",

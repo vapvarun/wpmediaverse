@@ -1150,6 +1150,16 @@
         "permission": "check_auth",
         "purpose": "Upload a message attachment",
         "file": "includes/Messaging/MessagingController.php:335"
+      },
+      {
+        "route": "/mvs/v1/auth/app-password",
+        "methods": [
+          "POST"
+        ],
+        "handler": "AuthController::issue_app_password",
+        "permission": "__return_true (Rule-2 allowlisted first-credential exchange; guarded in Auth\\AppCredentials)",
+        "purpose": "Trade a WordPress username/password for an Application Password the app holds",
+        "file": "includes/REST/Controller/AuthController.php:66"
       }
     ]
   },
@@ -1321,6 +1331,7 @@
       "namespace": "mvs/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
       "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
-    }
+    },
+    "refresh_2026_08_01": "2.3.0 baseline: +POST /auth/app-password"
   }
 }

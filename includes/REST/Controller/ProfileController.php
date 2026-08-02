@@ -147,7 +147,7 @@ class ProfileController extends WP_REST_Controller {
 	 */
 	public function check_logged_in() {
 		if ( ! is_user_logged_in() ) {
-			return new WP_Error( 'mvs_not_logged_in', __( 'You must be logged in.', 'wpmediaverse' ), array( 'status' => 401 ) );
+			return new WP_Error( 'mvs_unauthorized', __( 'You must be logged in.', 'wpmediaverse' ), array( 'status' => 401 ) );
 		}
 		return true;
 	}

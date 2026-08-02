@@ -42,6 +42,9 @@ class TemplateLoader {
 		// attachment file URLs when slug matches a WP attachment post.
 		add_filter( 'redirect_canonical', array( $this, 'prevent_attachment_redirect' ), 10, 2 );
 
+		// Stop core soft-404ing our virtual routes before we render them.
+		add_filter( 'pre_handle_404', array( $this, 'prevent_virtual_route_404' ), 10, 2 );
+
 		// CPT template filters — albums and collections only.
 		add_filter( 'single_template', array( $this, 'load_single_template' ) );
 		add_filter( 'archive_template', array( $this, 'load_archive_template' ) );
@@ -231,15 +234,64 @@ class TemplateLoader {
 	 * @return string|false The redirect URL, or false to cancel.
 	 */
 	public function prevent_attachment_redirect( $redirect_url, $requested_url ) {
-		if (
+		if ( $this->is_mvs_virtual_route() ) {
+			return false;
+		}
+		return $redirect_url;
+	}
+
+	/**
+	 * Is the current request one of our virtual routes?
+	 *
+	 * @return bool
+	 */
+	private function is_mvs_virtual_route(): bool {
+		return (bool) (
 			get_query_var( 'mvs_media_slug' )
 			|| get_query_var( 'mvs_media_archive' )
 			|| get_query_var( 'mvs_profile_user' )
 			|| get_query_var( 'mvs_edit_profile' )
-		) {
-			return false;
+		);
+	}
+
+	/**
+	 * Stop WordPress marking our virtual routes as 404 before we render them.
+	 *
+	 * `WP::handle_404()` runs on the `wp` action and 404s any request whose main
+	 * query found no posts. Our virtual pages have no posts by design — the
+	 * content comes from our own tables — so every page beyond the first
+	 * (`/media/page/2/`, `/media/@user/page/2/`) was served as a soft-404: the
+	 * correct page, correct title, correct items, under HTTP 404.
+	 *
+	 * render_template() already tried to heal this by calling status_header(200),
+	 * but it runs on template_redirect — long after `wp` — and its "never
+	 * downgrade an explicit 4xx" guard could not tell core's incidental 404 from
+	 * a deliberate 403 set by the members-only gate, so it correctly refused to
+	 * touch either. Preventing the 404 at source fixes the cause instead of
+	 * fighting the symptom, and leaves that guard doing exactly its intended job:
+	 * a real 403 still survives to the response.
+	 *
+	 * Soft-404s deindex paginated archives and make caches and CDNs skip the
+	 * page, so on a 60-item library only page 1 was reachable to search engines.
+	 * Basecamp: 2.3.0 smoke F1.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param bool      $preempt  Whether to short-circuit core's 404 handling.
+	 * @param \WP_Query $wp_query The query that triggered the check.
+	 * @return bool
+	 */
+	public function prevent_virtual_route_404( $preempt, $wp_query ) {
+		if ( $preempt ) {
+			return $preempt;
 		}
-		return $redirect_url;
+
+		// Only the main query, and only our own routes.
+		if ( ! $wp_query instanceof \WP_Query || ! $wp_query->is_main_query() ) {
+			return $preempt;
+		}
+
+		return $this->is_mvs_virtual_route() ? true : $preempt;
 	}
 
 	public function load_media_templates(): void {

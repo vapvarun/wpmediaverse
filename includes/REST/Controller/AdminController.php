@@ -69,7 +69,7 @@ final class AdminController extends WP_REST_Controller {
 	public function logged_in_permissions_check() {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error(
-				'mvs_rest_unauthenticated',
+				'mvs_unauthorized',
 				__( 'You must be logged in.', 'wpmediaverse' ),
 				array( 'status' => 401 )
 			);

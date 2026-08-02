@@ -103,22 +103,11 @@ class ActivitySyncIntegration {
 	 * @return int            Numeric level (0 public, 20 members, 40 friends, 60 group, 80 private, 90 custom).
 	 */
 	public static function privacy_to_level( string $privacy ): int {
-		switch ( $privacy ) {
-			case 'public':
-				return 0;
-			case 'members':
-				return 20;
-			case 'friends':
-				return 40;
-			case 'group':
-				return 60;
-			case 'private':
-				return 80;
-			case 'custom':
-				return 90;
-			default:
-				return 0;
-		}
+		// Canonical implementation lives in Services\PrivacyService — this is
+		// general privacy logic, not a BuddyPress concern. Kept as an alias
+		// rather than renamed: it is a public static and Production Rule 2
+		// forbids removing one without an alias for two majors.
+		return \WPMediaVerse\Services\PrivacyService::privacy_to_level( $privacy );
 	}
 
 	/**
@@ -129,27 +118,10 @@ class ActivitySyncIntegration {
 	 * @since 1.2.1
 	 */
 	public static function effective_privacy_for_media( int $media_id ): string {
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-
-		$media_privacy = (string) $repo->get( $media_id, 'privacy' );
-		if ( '' === $media_privacy ) {
-			$media_privacy = 'public';
-		}
-
-		$album_id = (int) $repo->get( $media_id, 'album_id' );
-		if ( $album_id <= 0 ) {
-			return $media_privacy;
-		}
-
-		$album_privacy = (string) $repo->get( $album_id, 'privacy' );
-		if ( '' === $album_privacy || 'public' === $album_privacy ) {
-			return $media_privacy;
-		}
-
-		// Album is non-public. Pick the more restrictive of the two.
-		return self::privacy_to_level( $album_privacy ) >= self::privacy_to_level( $media_privacy )
-			? $album_privacy
-			: $media_privacy;
+		// Canonical implementation lives in Services\PrivacyService. Alias
+		// retained per Production Rule 2 (public static, no removal without
+		// two majors of deprecation).
+		return \WPMediaVerse\Services\PrivacyService::effective_privacy_for_media( $media_id );
 	}
 
 	/**
@@ -458,6 +430,22 @@ class ActivitySyncIntegration {
 		$user_id   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_author( $media_id );
 		$thumbnail = MediaDisplayHelper::get_media_thumbnail_html( $media_id, 'large' );
 
+		// Carousel / gallery post: every image in the group belongs to ONE feed
+		// entry, not one each. If a sibling already created the activity, join it
+		// and re-render rather than adding another. Basecamp #10153581987.
+		$media_group = (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'media_group' );
+		if ( '' !== $media_group ) {
+			$existing = $this->find_group_activity( $media_group );
+			if ( $existing > 0 ) {
+				$this->refresh_group_activity( $existing, $media_group );
+				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'bp_activity_id', $existing );
+				$this->recorded_uploads[ $media_id ] = true;
+				return;
+			}
+			// No activity yet — fall through and create it, then render the whole
+			// group into it below.
+		}
+
 		// Build action string at insert time (format callback regenerates on display,
 		// but storing it prevents empty-action crashes in BP Nouveau's strpos()).
 		$file_type  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' );
@@ -501,7 +489,96 @@ class ActivitySyncIntegration {
 			$effective = self::effective_privacy_for_media( $media_id );
 			bp_activity_update_meta( (int) $activity_id, '_mvs_activity_privacy', $effective );
 			bp_activity_update_meta( (int) $activity_id, '_mvs_activity_privacy_level', (string) self::privacy_to_level( $effective ) );
+
+			// First member of a carousel — tag the activity with the group so
+			// siblings can find it, and render the group (which is just this
+			// item so far, plus the caption).
+			if ( '' !== $media_group ) {
+				bp_activity_update_meta( (int) $activity_id, '_mvs_media_group', $media_group );
+				$this->refresh_group_activity( (int) $activity_id, $media_group );
+			}
 		}
+	}
+
+	/**
+	 * Find the activity already representing a carousel group, if any.
+	 *
+	 * Reads `bp_activity_id` back off the group's members rather than querying
+	 * activity meta, because the media rows are the thing we already have
+	 * indexed and the first member stores the id the moment it is created.
+	 *
+	 * @param string $media_group Group key.
+	 * @return int Activity ID, or 0 when the group has no activity yet.
+	 */
+	private function find_group_activity( string $media_group ): int {
+		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$member_ids = $repo->get_group_media_ids( $media_group );
+
+		foreach ( $member_ids as $member_id ) {
+			$activity_id = (int) $repo->get( (int) $member_id, 'bp_activity_id' );
+			if ( $activity_id > 0 ) {
+				return $activity_id;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Re-render a carousel activity from the full current membership.
+	 *
+	 * Called on every upload in the group, so the activity always reflects
+	 * everything uploaded so far. Rebuilding from scratch rather than appending
+	 * makes it order-independent and idempotent: uploads can arrive in any
+	 * sequence, a retry cannot double-render an image, and a member removed
+	 * later simply disappears on the next pass.
+	 *
+	 * @param int    $activity_id Activity to update.
+	 * @param string $media_group Group key.
+	 */
+	private function refresh_group_activity( int $activity_id, string $media_group ): void {
+		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$member_ids = array_map( 'intval', $repo->get_group_media_ids( $media_group ) );
+		if ( empty( $member_ids ) ) {
+			return;
+		}
+
+		/**
+		 * Filters how many carousel images are rendered into one activity.
+		 *
+		 * Mirrors `mvs_activity_max_media`, which caps the BuddyPress composer
+		 * path, so both routes into the feed obey one number.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @param int    $max         Maximum images. Default 6.
+		 * @param string $media_group Group key.
+		 */
+		$max        = (int) apply_filters( 'mvs_activity_max_media', 6, $media_group );
+		$rendered   = array_slice( $member_ids, 0, max( 1, $max ) );
+		$thumbnails = '';
+		foreach ( $rendered as $member_id ) {
+			$thumbnails .= MediaDisplayHelper::get_media_thumbnail_html( $member_id, 'large' );
+		}
+
+		// The caption lives on the group's first item — that is the description
+		// the member typed once for the whole gallery post. Without this the
+		// feed showed thumbnails and no text at all, which was the customer's
+		// actual complaint.
+		$caption = (string) $repo->get( $member_ids[0], 'description' );
+		$content = '' !== trim( $caption )
+			? '<div class="mvs-activity-caption">' . wp_kses_post( wpautop( $caption ) ) . '</div>' . $thumbnails
+			: $thumbnails;
+
+		$GLOBALS['wpdb']->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			buddypress()->activity->table_name,
+			array( 'content' => $content ),
+			array( 'id' => $activity_id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+
+		wp_cache_delete( $activity_id, 'bp_activity' );
 	}
 
 	/**

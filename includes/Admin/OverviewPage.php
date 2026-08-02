@@ -250,7 +250,22 @@ class OverviewPage {
 								</a>
 							</div>
 
-							<?php if ( 0 === (int) $stats['total_media'] ) : ?>
+							<?php
+							// Offer Import when there is no demo content, Delete when there is.
+							//
+							// This used to ask `0 === total_media` — "is the site empty?" — which
+							// is a different question. Any media at all, including the owner's own
+							// real uploads, hid the Import button permanently: after running
+							// Delete Demo Data the cleanup correctly reported "no demo users
+							// found", and there was still no way to import again short of
+							// deleting every file on the site.
+							//
+							// `mvs_demo_seeded` is the marker the seeder writes and the cleanup
+							// removes, so it answers the question actually being asked. It is read
+							// live, not through the day-long aggregate cache that made the old
+							// gate stale on top of being wrong.
+							?>
+							<?php if ( ! get_option( 'mvs_demo_seeded' ) ) : ?>
 								<div class="mvs-demo-import mvs-section-divider">
 									<h4 class="mvs-demo-title"><?php esc_html_e( 'Quick Start with Demo Content', 'wpmediaverse' ); ?></h4>
 									<p class="mvs-demo-desc">

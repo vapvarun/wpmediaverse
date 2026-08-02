@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-07-09T09:19:33Z",
+    "generated_at": "2026-08-02T04:35:14Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -15,10 +15,10 @@
         ]
     },
     "counts": {
-        "cross_plugin_duplicates": 12,
-        "within_plugin_duplicates": 39,
-        "free_files_scanned": 174,
-        "pro_files_scanned": 164
+        "cross_plugin_duplicates": 15,
+        "within_plugin_duplicates": 36,
+        "free_files_scanned": 188,
+        "pro_files_scanned": 170
     },
     "cross_plugin_duplicates": [
         {
@@ -75,6 +75,25 @@
                     "file": "includes/Blocks/StandardAttributes.php",
                     "lines": "249-249",
                     "method": "StandardAttributes::visibility_classes"
+                }
+            ]
+        },
+        {
+            "hash": "b19068dfeaa1968fc077d90b2ee18132eb21259c",
+            "instances": 2,
+            "token_count": 49,
+            "sites": [
+                {
+                    "plugin": "free",
+                    "file": "includes/Privacy/MemberPurger.php",
+                    "lines": "172-172",
+                    "method": "table_exists"
+                },
+                {
+                    "plugin": "pro",
+                    "file": "includes/Privacy/ProMemberData.php",
+                    "lines": "189-189",
+                    "method": "ProMemberData::table_has"
                 }
             ]
         },
@@ -154,6 +173,25 @@
             ]
         },
         {
+            "hash": "1469adc5af8cae1447c0dd4d33d7a02091e46fb3",
+            "instances": 2,
+            "token_count": 36,
+            "sites": [
+                {
+                    "plugin": "free",
+                    "file": "includes/Services/GDPRService.php",
+                    "lines": "22-22",
+                    "method": "GDPRService::init"
+                },
+                {
+                    "plugin": "pro",
+                    "file": "includes/Privacy/ProMemberData.php",
+                    "lines": "39-39",
+                    "method": "ProMemberData::init"
+                }
+            ]
+        },
+        {
             "hash": "1cc740df3dce642dd2b96cb42646fe7e40a648f2",
             "instances": 2,
             "token_count": 34,
@@ -204,7 +242,7 @@
                 {
                     "plugin": "pro",
                     "file": "includes/Quota/QuotaController.php",
-                    "lines": "435-435",
+                    "lines": "437-437",
                     "method": "QuotaController::admin_check"
                 },
                 {
@@ -223,9 +261,15 @@
         },
         {
             "hash": "4db8cb9c7eb2092d1bcc1916eb9d70b020d674bc",
-            "instances": 10,
+            "instances": 11,
             "token_count": 33,
             "sites": [
+                {
+                    "plugin": "free",
+                    "file": "includes/Messaging/MessagingController.php",
+                    "lines": "370-370",
+                    "method": "MessagingController::check_auth"
+                },
                 {
                     "plugin": "free",
                     "file": "includes/REST/Controller/AdminController.php",
@@ -277,7 +321,7 @@
                 {
                     "plugin": "pro",
                     "file": "includes/Quota/QuotaController.php",
-                    "lines": "423-423",
+                    "lines": "425-425",
                     "method": "QuotaController::logged_in_check"
                 },
                 {
@@ -345,6 +389,25 @@
             ]
         },
         {
+            "hash": "71a3c2ac7c29ca1caf17ad69ca891ede0f9de921",
+            "instances": 2,
+            "token_count": 32,
+            "sites": [
+                {
+                    "plugin": "free",
+                    "file": "includes/Services/AlbumService.php",
+                    "lines": "610-610",
+                    "method": "albums_for_media"
+                },
+                {
+                    "plugin": "pro",
+                    "file": "includes/Battles/BattleService.php",
+                    "lines": "214-214",
+                    "method": "get_participant_ids"
+                }
+            ]
+        },
+        {
             "hash": "67b232396bd99249dc53d26a3d49986eb288b119",
             "instances": 20,
             "token_count": 30,
@@ -364,49 +427,49 @@
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "321-321",
+                    "lines": "340-340",
                     "method": "Sanitizers::sanitize_default_privacy"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "332-332",
+                    "lines": "351-351",
                     "method": "Sanitizers::sanitize_duplicate_action"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "345-345",
+                    "lines": "364-364",
                     "method": "Sanitizers::sanitize_storage_driver"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "374-374",
+                    "lines": "393-393",
                     "method": "Sanitizers::sanitize_openai_model"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "385-385",
+                    "lines": "404-404",
                     "method": "Sanitizers::sanitize_moderation_auto_action"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "446-446",
+                    "lines": "465-465",
                     "method": "Sanitizers::sanitize_dm_access"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "459-459",
+                    "lines": "478-478",
                     "method": "Sanitizers::sanitize_show_online_status"
                 },
                 {
                     "plugin": "free",
                     "file": "includes/Admin/Settings/Sanitizers.php",
-                    "lines": "472-472",
+                    "lines": "491-491",
                     "method": "Sanitizers::sanitize_chat_panel_visibility"
                 },
                 {
@@ -545,8 +608,8 @@
                 },
                 {
                     "file": "includes/Integrations/MediaPress/MigrationAdmin.php",
-                    "lines": "229-229",
-                    "method": "MigrationAdmin::create_album_from_mpp_gallery"
+                    "lines": "268-268",
+                    "method": "create_album_from_mpp_gallery"
                 }
             ]
         },
@@ -558,31 +621,13 @@
             "sites": [
                 {
                     "file": "includes/Challenges/ChallengeService.php",
-                    "lines": "742-742",
+                    "lines": "775-775",
                     "method": "list_challenges"
                 },
                 {
                     "file": "includes/Tournaments/TournamentService.php",
-                    "lines": "891-891",
+                    "lines": "923-923",
                     "method": "list_tournaments"
-                }
-            ]
-        },
-        {
-            "hash": "4715e741bbcdf6e31c3d2d2e0e7643554664bcaf",
-            "plugin": "pro",
-            "instances": 2,
-            "token_count": 124,
-            "sites": [
-                {
-                    "file": "includes/Battles/BattleService.php",
-                    "lines": "902-902",
-                    "method": "format_media"
-                },
-                {
-                    "file": "includes/Tournaments/TournamentService.php",
-                    "lines": "1118-1118",
-                    "method": "format_media"
                 }
             ]
         },
@@ -612,12 +657,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1526-1526",
+                    "lines": "1541-1541",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1551-1551",
+                    "lines": "1566-1566",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -666,31 +711,13 @@
             "sites": [
                 {
                     "file": "includes/Admin/OverviewPage.php",
-                    "lines": "629-629",
+                    "lines": "644-644",
                     "method": "OverviewPage::ajax_import_demo_data"
                 },
                 {
                     "file": "includes/Admin/OverviewPage.php",
-                    "lines": "656-656",
+                    "lines": "671-671",
                     "method": "OverviewPage::handle_cleanup_demo"
-                }
-            ]
-        },
-        {
-            "hash": "bffc25efad7f16e68b7ee2a93f2d3f1f565e6398",
-            "plugin": "free",
-            "instances": 2,
-            "token_count": 91,
-            "sites": [
-                {
-                    "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1053-1053",
-                    "method": "SignedUrlService::record_download"
-                },
-                {
-                    "file": "includes/Services/StatsService.php",
-                    "lines": "123-123",
-                    "method": "record_download"
                 }
             ]
         },
@@ -707,8 +734,26 @@
                 },
                 {
                     "file": "includes/REST/Controller/ReactionController.php",
-                    "lines": "241-241",
+                    "lines": "248-248",
                     "method": "ReactionController::create_item_permissions_check"
+                }
+            ]
+        },
+        {
+            "hash": "9b45320925bdcbc93d6de5c2474c3fccc1b56f42",
+            "plugin": "pro",
+            "instances": 2,
+            "token_count": 67,
+            "sites": [
+                {
+                    "file": "includes/Challenges/ChallengeService.php",
+                    "lines": "851-851",
+                    "method": "prime_entry_counts"
+                },
+                {
+                    "file": "includes/Tournaments/TournamentService.php",
+                    "lines": "999-999",
+                    "method": "prime_participant_counts"
                 }
             ]
         },
@@ -755,24 +800,6 @@
                     "file": "includes/Frontend/Layouts/FlickrLayout.php",
                     "lines": "92-92",
                     "method": "FlickrLayout::enqueue_assets"
-                }
-            ]
-        },
-        {
-            "hash": "848c3cfb17a95b86e02c06cbbc5ef87ae0ee5016",
-            "plugin": "free",
-            "instances": 2,
-            "token_count": 57,
-            "sites": [
-                {
-                    "file": "includes/Services/GDPRService.php",
-                    "lines": "31-31",
-                    "method": "GDPRService::register_exporters"
-                },
-                {
-                    "file": "includes/Services/GDPRService.php",
-                    "lines": "51-51",
-                    "method": "GDPRService::register_erasers"
                 }
             ]
         },
@@ -897,17 +924,17 @@
             "sites": [
                 {
                     "file": "includes/Challenges/ChallengeService.php",
-                    "lines": "733-733",
+                    "lines": "766-766",
                     "method": "xp_for_participation"
                 },
                 {
                     "file": "includes/Tournaments/TournamentService.php",
-                    "lines": "717-717",
+                    "lines": "749-749",
                     "method": "xp_for_round_win"
                 },
                 {
                     "file": "includes/Tournaments/TournamentService.php",
-                    "lines": "732-732",
+                    "lines": "764-764",
                     "method": "xp_for_tournament_win"
                 }
             ]
@@ -920,13 +947,13 @@
             "sites": [
                 {
                     "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1193-1193",
-                    "method": "client_accepts_webp"
+                    "lines": "1177-1177",
+                    "method": "SignedUrlService::client_accepts_webp"
                 },
                 {
                     "file": "includes/Services/SignedUrlService.php",
-                    "lines": "1212-1212",
-                    "method": "client_accepts_avif"
+                    "lines": "1196-1196",
+                    "method": "SignedUrlService::client_accepts_avif"
                 }
             ]
         },
@@ -1002,7 +1029,7 @@
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1492-1492",
+                    "lines": "1507-1507",
                     "method": "create_item_permissions_check"
                 },
                 {
@@ -1087,20 +1114,20 @@
             ]
         },
         {
-            "hash": "a9a2568e537e6ea78c4f97c49d368ae4e654253a",
-            "plugin": "pro",
+            "hash": "6a9237d7c1a732633423fa0337981e69a05fda7b",
+            "plugin": "free",
             "instances": 2,
-            "token_count": 36,
+            "token_count": 34,
             "sites": [
                 {
-                    "file": "includes/Challenges/ChallengeService.php",
-                    "lines": "854-854",
-                    "method": "format_challenge"
+                    "file": "includes/Core/Migrator.php",
+                    "lines": "1003-1003",
+                    "method": "migrate_to_23"
                 },
                 {
-                    "file": "includes/Tournaments/TournamentService.php",
-                    "lines": "991-991",
-                    "method": "format_tournament"
+                    "file": "includes/Core/Migrator.php",
+                    "lines": "1035-1035",
+                    "method": "migrate_to_24"
                 }
             ]
         },
@@ -1148,7 +1175,7 @@
         {
             "hash": "722b3f0377fa891fd4074b65af946de9d6a74e70",
             "plugin": "free",
-            "instances": 2,
+            "instances": 3,
             "token_count": 33,
             "sites": [
                 {
@@ -1158,25 +1185,12 @@
                 },
                 {
                     "file": "includes/Messaging/MessagingService.php",
-                    "lines": "509-509",
+                    "lines": "616-616",
                     "method": "get_conversation"
-                }
-            ]
-        },
-        {
-            "hash": "da9d10ec43c147bc7af560d82c9ef30caec44079",
-            "plugin": "free",
-            "instances": 2,
-            "token_count": 33,
-            "sites": [
-                {
-                    "file": "includes/Messaging/MessagingService.php",
-                    "lines": "288-288",
-                    "method": "MessagingService::find_or_create_conversation"
                 },
                 {
                     "file": "includes/Messaging/MessagingService.php",
-                    "lines": "2017-2017",
+                    "lines": "2499-2499",
                     "method": "get_conversation_unread_count"
                 }
             ]
@@ -1189,12 +1203,12 @@
             "sites": [
                 {
                     "file": "includes/REST/CompeteSummaryController.php",
-                    "lines": "303-303",
+                    "lines": "395-395",
                     "method": "get_user_battles"
                 },
                 {
                     "file": "includes/REST/CompeteSummaryController.php",
-                    "lines": "387-387",
+                    "lines": "502-502",
                     "method": "get_user_tournaments"
                 }
             ]

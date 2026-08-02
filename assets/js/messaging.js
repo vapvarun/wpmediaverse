@@ -41,6 +41,20 @@ async function apiFetch( path, options = {} ) {
 		);
 	}
 
+	// Fail loudly, not silently. Every caller below wraps apiFetch in a
+	// "silently fail, keep existing data" catch, so a missing REST client used
+	// to surface as an empty conversation list — indistinguishable from "you
+	// have no conversations". That is exactly how the chat panel reported "No
+	// conversations" on any page that didn't enqueue mvs-rest
+	// (Basecamp #10149580967). The enqueue is fixed in Core\Plugin, but keep
+	// this guard so the next delivery regression is diagnosable instead of
+	// looking like an empty state.
+	if ( ! window.mvsRest || typeof window.mvsRest.restFetch !== 'function' ) {
+		throw new Error(
+			'mvsRest unavailable — the mvs-rest script was not enqueued on this page.'
+		);
+	}
+
 	const res = await window.mvsRest.restFetch( url, options );
 
 	if ( res.status === 204 ) return null;
@@ -65,6 +79,36 @@ function formatDuration( seconds ) {
 	const m = Math.floor( seconds / 60 );
 	const s = Math.floor( seconds % 60 );
 	return m + ':' + String( s ).padStart( 2, '0' );
+}
+
+// Calendar-day key in the viewer's timezone. Used only to detect day
+// boundaries between adjacent messages.
+function dayKey( dateStr ) {
+	const d = new Date( dateStr );
+	if ( isNaN( d.getTime() ) ) return '';
+	return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+}
+
+// "Today" / "Yesterday" / weekday within the last week / full date beyond that,
+// matching how WhatsApp, Messenger and Telegram label day separators.
+function dayLabel( dateStr ) {
+	const d = new Date( dateStr );
+	if ( isNaN( d.getTime() ) ) return '';
+	const now = new Date();
+	if ( dayKey( d ) === dayKey( now ) ) return __( 'Today', 'wpmediaverse' );
+	const yest = new Date( now );
+	yest.setDate( now.getDate() - 1 );
+	if ( dayKey( d ) === dayKey( yest ) ) return __( 'Yesterday', 'wpmediaverse' );
+	const ageDays = ( now - d ) / 86400000;
+	if ( ageDays < 7 ) return d.toLocaleDateString( undefined, { weekday: 'long' } );
+	return d.toLocaleDateString( undefined, { year: 'numeric', month: 'long', day: 'numeric' } );
+}
+
+// Time-only label for a message bubble.
+function messageTimeLabel( dateStr ) {
+	const d = new Date( dateStr );
+	if ( isNaN( d.getTime() ) ) return '';
+	return d.toLocaleTimeString( undefined, { hour: 'numeric', minute: '2-digit' } );
 }
 
 // Temp ID counter for optimistic messages.
@@ -213,8 +257,13 @@ const { state, actions } = store( 'mvs/messaging', {
 		totalUnread: 0,
 		chatPanelOpen: false,
 		chatView: 'list', // list, conversation, new
-		activeTab: 'all', // all, unread, requests
+		activeTab: 'all', // all, unread, requests, archived
+		// searchQuery drives the NEW MESSAGE member search (chat-new.php).
+		// listQuery drives the conversation-LIST filter (chat-list.php). They
+		// were the same field, which is why typing in "Search conversations…"
+		// ran a member search and never filtered the list (#10153528515).
 		searchQuery: '',
+		listQuery: '',
 		searchResults: [],
 		typingUsers: [],
 		isRecordingVoice: false,
@@ -296,6 +345,67 @@ const { state, actions } = store( 'mvs/messaging', {
 			return state.conversations.filter( c => c.participant_status === 'request_pending' );
 		},
 
+		// What the list actually renders. Filters the loaded page by the other
+		// participant's name so the search box does something; server-side tab
+		// filtering still decides which conversations are loaded at all.
+		get filteredConversations() {
+			const q = state.listQuery.trim().toLowerCase();
+			if ( ! q ) {
+				return state.conversations;
+			}
+			return state.conversations.filter(
+				c => ( c.otherName || '' ).toLowerCase().includes( q )
+			);
+		},
+
+		// What the thread actually renders. Derives the time label and the
+		// day-separator flag here rather than at each of the eleven places that
+		// assign state.messages. The template bound created_at directly, so
+		// bubbles showed a raw MySQL datetime (2026-07-08 12:27:26) and there
+		// were no day separators at all (#10074503902). formatMessageTime()
+		// already existed in this store but was never referenced by any template.
+		get displayMessages() {
+			let prevKey = '';
+			return state.messages.map( m => {
+				const key = dayKey( m.created_at );
+				const isNewDay = key !== '' && key !== prevKey;
+				if ( key ) prevKey = key;
+				return Object.assign( {}, m, {
+					timeLabel: messageTimeLabel( m.created_at ),
+					dayLabel: isNewDay ? dayLabel( m.created_at ) : '',
+					showDayHeader: isNewDay,
+					hideDayHeader: ! isNewDay,
+				} );
+			} );
+		},
+
+		get showNoListResults() {
+			return ! state.loadingConversations &&
+				state.conversations.length > 0 &&
+				state.listQuery.trim() !== '' &&
+				this.filteredConversations.length === 0;
+		},
+
+		// The bell had NO state binding at all: no data-wp-bind, no
+		// data-wp-class, a hardcoded aria-label of "Mute". It rendered
+		// identically muted or unmuted, so members reported it "resetting to
+		// off" — it was never on (#10153578635). Muting itself always worked:
+		// NotificationListener and the unread counter both honour is_muted.
+		get isMuted() {
+			const conv = state.activeConversation;
+			return !! ( conv && Number( conv.is_muted ) === 1 );
+		},
+
+		get isNotMuted() {
+			return ! this.isMuted;
+		},
+
+		get muteLabel() {
+			return this.isMuted
+				? __( 'Unmute notifications', 'wpmediaverse' )
+				: __( 'Mute notifications', 'wpmediaverse' );
+		},
+
 		get isRequest() {
 			const conv = state.activeConversation;
 			return conv && conv.participant_status === 'request_pending';
@@ -345,6 +455,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		get isTabAll() { return state.activeTab === 'all'; },
 		get isTabUnread() { return state.activeTab === 'unread'; },
 		get isTabRequests() { return state.activeTab === 'requests'; },
+		get isTabArchived() { return state.activeTab === 'archived'; },
 
 		// Empty state.
 		get hasConversations() { return state.conversations.length > 0; },
@@ -394,7 +505,12 @@ const { state, actions } = store( 'mvs/messaging', {
 		 */
 		openWithMediaShare( mediaId ) {
 			state.pendingMediaShareId = mediaId || null;
-			state.chatView = 'new';
+			// Open the conversation LIST, not the compose view. Sharing is
+			// almost always to someone you already talk to, and forcing compose
+			// meant the control -- which is a paper-plane "Share" icon on the
+			// Instagram layout -- looked like it had opened the wrong screen
+			// (#10153188975). The list still has "New message" for the rest.
+			state.chatView = 'list';
 			state.chatPanelOpen = true;
 			actions.startPolling();
 			if ( state.conversations.length === 0 ) {
@@ -445,6 +561,10 @@ const { state, actions } = store( 'mvs/messaging', {
 			state.typingUsers = [];
 			state.replyingTo = null;
 			state.contextMenuMessageId = null;
+			// Drop a pending media share. It was only ever consumed by
+			// createOrOpenConversation(), so backing out to the list left the id
+			// armed and it later fired on an unrelated new conversation.
+			state.pendingMediaShareId = null;
 		},
 
 		openNewConversation() {
@@ -456,7 +576,11 @@ const { state, actions } = store( 'mvs/messaging', {
 			// (the chat panel ships in the DOM site-wide) and scrolled the page
 			// down to the still-hidden panel before hydration.
 			setTimeout( () => {
-				const input = document.querySelector( '.mvs-chat-search__input' );
+				// Scope to the New Message view. '.mvs-chat-search__input' alone
+				// matches the conversation-LIST input first (it precedes
+				// chat-new.php in DOM order), so this focused a hidden field and
+				// the recipient box never got the caret.
+				const input = document.querySelector( '.mvs-chat-new .mvs-chat-search__input' );
 				if ( input ) {
 					input.focus();
 				}
@@ -468,6 +592,9 @@ const { state, actions } = store( 'mvs/messaging', {
 			const ctx = getContext();
 			if ( ctx.tab ) {
 				state.activeTab = ctx.tab;
+				// A filter typed for one tab should not silently hide results in
+				// the next one.
+				state.listQuery = '';
 				actions.loadConversations();
 			}
 		},
@@ -492,6 +619,41 @@ const { state, actions } = store( 'mvs/messaging', {
 			state.loadingConversations = false;
 		},
 
+		/**
+		 * Send a queued media share into a conversation, if one is pending.
+		 *
+		 * Single owner of the handoff. It used to live inline in
+		 * createOrOpenConversation() only, so picking an EXISTING thread from
+		 * the list dropped the media silently and left the id armed to fire
+		 * later on an unrelated conversation (#10153188975).
+		 *
+		 * @param {number|string} conversationId Target conversation.
+		 */
+		*flushPendingMediaShare( conversationId ) {
+			if ( ! state.pendingMediaShareId || ! conversationId ) {
+				return;
+			}
+			const mediaId = state.pendingMediaShareId;
+			state.pendingMediaShareId = null;
+			try {
+				const msg = yield apiFetch(
+					'/conversations/' + conversationId + '/messages',
+					{
+						method: 'POST',
+						body: JSON.stringify( {
+							content: '',
+							message_type: 'media_share',
+							media_id: mediaId,
+						} ),
+					}
+				);
+				state.messages = [ ...state.messages, enrichMessage( msg ) ];
+				actions.scrollToBottom();
+			} catch ( shareErr ) {
+				actions.showToast( __( 'Could not share media.', 'wpmediaverse' ) );
+			}
+		},
+
 		*openConversation() {
 			const ctx = getContext();
 			const convId = ctx.convId || ctx.item?.id;
@@ -506,6 +668,7 @@ const { state, actions } = store( 'mvs/messaging', {
 
 			yield actions.loadMessages();
 			yield actions.markRead();
+			yield actions.flushPendingMediaShare( convId );
 		},
 
 		*createOrOpenConversation() {
@@ -534,28 +697,7 @@ const { state, actions } = store( 'mvs/messaging', {
 					state.hasMoreMessages = true;
 					yield actions.loadMessages();
 
-					// Auto-send pending media share if queued.
-					if ( state.pendingMediaShareId ) {
-						const mediaId = state.pendingMediaShareId;
-						state.pendingMediaShareId = null;
-						try {
-							const msg = yield apiFetch(
-								'/conversations/' + data.conversation.id + '/messages',
-								{
-									method: 'POST',
-									body: JSON.stringify( {
-										content: '',
-										message_type: 'media_share',
-										media_id: mediaId,
-									} ),
-								}
-							);
-							state.messages = [ ...state.messages, enrichMessage( msg ) ];
-							actions.scrollToBottom();
-						} catch ( shareErr ) {
-							actions.showToast( __( 'Could not share media.', 'wpmediaverse' ) );
-						}
-					}
+					yield actions.flushPendingMediaShare( data.conversation.id );
 				}
 			} catch ( e ) {
 				actions.showToast( e.message );
@@ -589,6 +731,21 @@ const { state, actions } = store( 'mvs/messaging', {
 			}
 		},
 
+		/**
+		 * Re-resolve a conversation from the live list by id.
+		 *
+		 * loadConversations() REPLACES state.conversations wholesale on every
+		 * poll tick, so an object captured before an await is detached by the
+		 * time the request resolves and writing to it updates nothing the UI
+		 * renders. Any optimistic write must re-resolve after the await.
+		 *
+		 * @param {number|string} convId Conversation id.
+		 * @return {Object|null} The current object, or null if it is gone.
+		 */
+		resolveConversation( convId ) {
+			return state.conversations.find( c => String( c.id ) === String( convId ) ) || null;
+		},
+
 		*toggleMute() {
 			const convId = state.activeConversationId;
 			const conv = state.activeConversation;
@@ -600,7 +757,11 @@ const { state, actions } = store( 'mvs/messaging', {
 					method: 'PATCH',
 					body: JSON.stringify( { is_muted: newMuted } ),
 				} );
-				conv.is_muted = newMuted ? 1 : 0;
+				// Re-resolve: a poll landing mid-PATCH detaches `conv`.
+				const fresh = actions.resolveConversation( convId );
+				if ( fresh ) {
+					fresh.is_muted = newMuted ? 1 : 0;
+				}
 			} catch ( e ) {
 				actions.showToast( e.message );
 			}
@@ -617,7 +778,10 @@ const { state, actions } = store( 'mvs/messaging', {
 					method: 'PATCH',
 					body: JSON.stringify( { is_pinned: newPinned } ),
 				} );
-				conv.is_pinned = newPinned ? 1 : 0;
+				const fresh = actions.resolveConversation( convId );
+				if ( fresh ) {
+					fresh.is_pinned = newPinned ? 1 : 0;
+				}
 			} catch ( e ) {
 				actions.showToast( e.message );
 			}
@@ -938,6 +1102,17 @@ const { state, actions } = store( 'mvs/messaging', {
 
 		// ---- Voice Recording ----
 		*startVoiceRecording() {
+			// navigator.mediaDevices is undefined on a non-secure origin, so
+			// the getUserMedia() call below threw a TypeError BEFORE the browser
+			// could show a permission prompt, and the catch swallowed it. From
+			// the member's side the microphone button simply did nothing, with
+			// no prompt and no error (#10153607841). Tell them why.
+			if ( ! window.isSecureContext || ! navigator.mediaDevices || ! window.MediaRecorder ) {
+				actions.showToast(
+					__( 'Voice messages need a secure (https) connection.', 'wpmediaverse' )
+				);
+				return;
+			}
 			try {
 				const stream = yield navigator.mediaDevices.getUserMedia( { audio: true } );
 				const mimeType = MediaRecorder.isTypeSupported( 'audio/webm;codecs=opus' )
@@ -1347,12 +1522,24 @@ const { state, actions } = store( 'mvs/messaging', {
 			}
 		},
 
+		// New Message view: debounced MEMBER search.
 		updateSearchQuery() {
 			const el = getElement();
 			state.searchQuery = el.ref.value;
 			// Debounced search.
 			clearTimeout( state._searchTimeout );
 			state._searchTimeout = setTimeout( () => actions.searchUsers(), 300 );
+		},
+
+		// Conversation list: filter the loaded conversations. Deliberately not
+		// debounced and not a network call — it is a local filter over a page
+		// that is already in memory, so it should feel instant. The list input
+		// used to call updateSearchQuery(), which searched MEMBERS and rendered
+		// its results only in the hidden New Message view, so the list itself
+		// never changed (#10153528515).
+		updateListQuery() {
+			const el = getElement();
+			state.listQuery = el.ref.value;
 		},
 
 		// ---- Polling ----
@@ -1613,4 +1800,18 @@ document.addEventListener( 'mvs:navigated', () => {
 		clearInterval( state.pollingTimer );
 		state.pollingTimer = null;
 	}
+} );
+
+// Escape closes the slide-out. A panel that traps a keyboard user with no way
+// out but the mouse is not an acceptable dialog, and every other drawer on the
+// web dismisses this way. Registered at module level alongside the teardown
+// above so it survives client-side navigation.
+//
+// Deliberately a no-op when the panel is already closed, so Escape keeps
+// working normally for the lightbox, modals and anything else on the page.
+document.addEventListener( 'keydown', ( event ) => {
+	if ( 'Escape' !== event.key || ! state.chatPanelOpen ) {
+		return;
+	}
+	actions.closeChatPanel();
 } );

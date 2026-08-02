@@ -125,3 +125,18 @@ The Explore Feed block provides an infinite-scroll feed of all public media. It 
 ## Lock Overlay Block
 
 The Lock Overlay block wraps any other block content and shows a restriction message to users who do not meet access criteria. Configure access rules via the **Access Control** REST API.
+
+## Internal blocks (not in the inserter)
+
+Four registered blocks are deliberately hidden from the block inserter. They carry no markup of their own - each one registers an Interactivity API store that the plugin's templates bind to, which is how a page rendered by a shortcode still gets a fully reactive interface.
+
+| Block | Purpose |
+|---|---|
+| `mvs/dashboard-view` | Dashboard store for the My Media, Albums and Favorites tabs |
+| `mvs/explore-view` | Explore page tag-cloud store |
+| `mvs/media-social` | Social interactions store for single media and album pages |
+| `mvs/shared-ui` | Shared UI store - toasts, confirm dialogs, tag autocomplete |
+
+Each declares `"supports": { "inserter": false }` in its `block.json`, so it never appears in the editor. You do not add these to a page and there is nothing to configure. They are listed here so that a block audit of the site does not report them as stray registrations.
+
+> **Do not remove these from a custom build.** The dashboard, explore and single-media templates bind to these stores by name. Dropping one leaves the matching interface inert - buttons render but nothing responds.

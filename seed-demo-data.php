@@ -855,18 +855,24 @@ function mvs_seed_flag_demo_terms( array $term_names, string $taxonomy ): void {
 // Check for existing demo data.
 // ---------------------------------------------------------------------------
 
-$existing = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-	$wpdb->prepare(
-		"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		'publish'
-	)
-);
-
-if ( (int) $existing > 0 ) {
-	mvs_seed_log( "Found {$existing} existing media items. Skipping demo import to avoid duplicates.", 'warning' );
-	mvs_seed_log( 'To reimport, first run the cleanup script.' );
+// Refuse only when demo content is ALREADY seeded — not merely because the
+// site has media. Counting mvs_media_index asked the wrong question: a site
+// with any real uploads of its own could never import the demo set, and after
+// running the cleanup the count often stayed above zero (the owner's own
+// files), so "delete existing media first" was advice that could not be
+// followed without emptying the library.
+//
+// `mvs_demo_seeded` is written at the end of this script and removed by
+// cleanup-demo-data.php once no demo users remain, so it answers the question
+// this guard is actually asking.
+if ( get_option( 'mvs_demo_seeded' ) ) {
+	mvs_seed_log( 'Demo data is already seeded. Skipping import to avoid duplicates.', 'warning' );
+	mvs_seed_log( 'To reimport, run Delete Demo Data first.' );
 	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-		wp_send_json_success( array( 'message' => 'Demo data already exists. Delete existing media first to reimport.' ) );
+		// json_ERROR, not success: this is a refusal. Reporting it as success
+		// made the admin JS take its success path — redirect to Explore — so a
+		// refused import looked like a completed one that produced nothing.
+		wp_send_json_error( array( 'message' => 'Demo data is already imported. Delete it first to re-import.' ) );
 	}
 	return;
 }

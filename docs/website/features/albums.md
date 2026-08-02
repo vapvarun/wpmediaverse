@@ -36,7 +36,18 @@ Group your photos into beautiful collections - tell a story, document a trip, or
 
 ## Album Privacy
 
-Albums have their own privacy level independent of the media items they contain. If a user can see the album but not a specific media item (because the item's privacy is more restrictive), that item is hidden from the album view.
+Albums have their own privacy level, and media **added to a non-public album inherits it**.
+
+When you add a media item to an album, its privacy is clamped to the more restrictive of the two. Adding a public photo to a Private album makes that photo private, so it stops appearing in Explore and in other members' feeds. The clamp only ever tightens: an item that is already more restrictive than its album keeps its own setting, and a public album never changes anything.
+
+Two things this does **not** do:
+
+- Changing an album's privacy later does not re-apply to items already inside it. Only the moment of adding clamps.
+- Removing an item from an album does not restore its previous privacy.
+
+Site owners who want album and item privacy to stay fully independent (the behaviour before 2.3.0) can return `false` from the `mvs_album_inherit_privacy` filter.
+
+If a user can see the album but not a specific media item (because the item's privacy is more restrictive still), that item is hidden from the album view.
 
 ## Displaying an Album
 

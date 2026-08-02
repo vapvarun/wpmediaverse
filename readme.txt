@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.2.1
+Stable tag: 2.3.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,30 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.3.0 - August 2026 =
+
+Photos taken on a phone keep their orientation, media added to a private album stays private, and chat gets an Archived tab.
+
+* New      - Archived conversations tab in chat. Archiving hides a conversation without deleting it, and it returns on its own when the other member writes to you again.
+* New      - Members can sign in to a native app with their existing WordPress password; the site issues an Application Password behind the scenes.
+* Improve  - Images uploaded from a phone are rotated to match their EXIF Orientation, on upload and on Replace file, so portrait shots stop appearing sideways.
+* Improve  - Message-request counts are read from actual pending requests, so the badge no longer shows 0 while requests are waiting.
+* Improve  - Chat messages are grouped by day with Today and Yesterday headings.
+* Fix      - Media added to a private album now inherits the album's privacy instead of staying publicly visible.
+* Fix      - Tall portraits are no longer clipped in the lightbox.
+* Fix      - The activity feed no longer distorts single images by cropping them to a fixed height.
+* Fix      - Double-clicking Post no longer publishes the same comment twice.
+* Fix      - Album counts ignore media that is in the trash.
+* Fix      - Opening a conversation no longer sends the other member a "sent you a message" notification when no message was sent.
+* Fix      - Demo data can be removed and re-imported. The importer previously refused to run once demo data had been deleted, and reported that refusal as a success.
+* Fix      - The "Also share as a story" toggle no longer appears when WPMediaVerse Pro is inactive to handle it.
+* Fix      - The album dropzone is visible on sites without BuddyPress, and album assets load correctly under client-side navigation.
+* Security - POST /auth/app-password is classified in the REST write gate.
+* Dev      - New filters: mvs_apply_exif_orientation, mvs_album_inherit_privacy, mvs_comment_duplicate_window, mvs_dm_unarchive_on_activity. New action: mvs_media_privacy_clamped_by_album.
+* Dev      - The moderation queue route is GET /moderation. The REST reference previously documented /moderation/queue, which returns 404.
+* Dev      - Documentation now covers every REST route, hook, setting, shortcode, block and WP-CLI command. Four watermark hooks that never existed in the code were removed from the reference.
+* Compat   - Paired with WPMediaVerse Pro 2.3.0. Install both updates together.
 
 = 2.2.1 - July 2026 =
 

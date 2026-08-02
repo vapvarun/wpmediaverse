@@ -11,7 +11,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-get_header();
+\WPMediaVerse\Core\TemplateHelpers::site_header();
 
 do_action( 'mvs_before_content' );
 
@@ -40,7 +40,15 @@ $mvs_archive_url = home_url( '/media/' );
 		<button type="button" class="mvs-logged-out-banner__close" id="mvs-logged-out-banner-close"
 			aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
-	<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
+	<?php
+// @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
+// enqueues this handle for every MVS-owned page. Enqueuing from a template body only
+// ever worked on a hard page load: the <script> tag prints in wp_footer, OUTSIDE
+// [data-wp-router-region="mvs/main"], so a client-side navigation swapped in the markup
+// without ever delivering the script (Basecamp #10148246386, #10134243697). Left as an
+// idempotent no-op because themes may override this template — Production Rule #5.
+?>
+<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
 <?php endif; ?>
 
 <div class="mvs-explore-page">
@@ -178,15 +186,40 @@ $mvs_archive_url = home_url( '/media/' );
 		<!-- User search results (populated via safe DOM methods) -->
 		<div class="mvs-user-search-results" id="mvs-user-search-results" style="display:none;"></div>
 	</div>
-	<?php wp_enqueue_script( 'mvs-explore-search' ); ?>
+	<?php
+// @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
+// enqueues this handle for every MVS-owned page. Enqueuing from a template body only
+// ever worked on a hard page load: the <script> tag prints in wp_footer, OUTSIDE
+// [data-wp-router-region="mvs/main"], so a client-side navigation swapped in the markup
+// without ever delivering the script (Basecamp #10148246386, #10134243697). Left as an
+// idempotent no-op because themes may override this template — Production Rule #5.
+?>
+<?php wp_enqueue_script( 'mvs-explore-search' ); ?>
 
 	<!-- Tag Cloud (Interactivity API) -->
 	<?php
+	/**
+	 * Filters how many tags the Explore tag cloud requests.
+	 *
+	 * The client used to hardcode 20, which left site owners no way to widen
+	 * or narrow the cloud for their own community — a photo site with a
+	 * handful of curated tags and one with hundreds want different numbers.
+	 * Clamped to the range the /tags/cloud endpoint itself accepts, so a
+	 * filter returning something wild cannot produce an unbounded query.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param int $limit Number of tags to show. Default 20, max 200.
+	 */
+	$mvs_tag_limit = (int) apply_filters( 'mvs_explore_tag_cloud_limit', 20 );
+	$mvs_tag_limit = max( 1, min( 200, $mvs_tag_limit ) );
+
 	$mvs_explore_ctx = array(
 		'restUrl'    => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 		'archiveUrl' => esc_url( $mvs_archive_url ),
 		'activeTag'  => $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '' ), // phpcs:ignore WordPress.Security.NonceVerification
 		'tags'       => array(),
+		'tagLimit'   => $mvs_tag_limit,
 		'loaded'     => false,
 	);
 	?>
@@ -569,4 +602,4 @@ if ( $mvs_profile ) {
 	include \WPMediaVerse\Core\TemplateLoader::locate( 'profile-actions-js.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php';
 }
 
-get_footer();
+\WPMediaVerse\Core\TemplateHelpers::site_footer();

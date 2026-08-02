@@ -151,6 +151,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		lightboxCurrentIndex: 0,
 		lightboxLoading: false,
 		lightboxCommentText: '',
+		lightboxCommentSubmitting: false,
+
+		// Disable the Post button while a comment is in flight as well as when
+		// the box is empty. Interactivity directives cannot express OR, so the
+		// combination is derived here.
+		get lightboxCannotPostComment() {
+			return ! state.lightboxCommentText.trim() || state.lightboxCommentSubmitting;
+		},
 		lightboxComments: [],
 		lightboxTotalComments: 0,
 		lightboxReactions: {},
@@ -1260,7 +1268,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		async lightboxPostComment() {
 			const ctx = getContext();
 			const text = state.lightboxCommentText.trim();
-			if ( ! text || ! state.lightboxMediaId ) return;
+			// In-flight guard. The Post button's only disable was bound to the
+			// text, and the text is not cleared until the response returns, so
+			// the button stayed live for the whole request and every extra
+			// click sent another identical comment (#10148507863). Enter does
+			// the same thing through lightboxCommentKeydown.
+			// media-social/view.js has had this pattern all along; the lightbox
+			// never got it.
+			if ( ! text || ! state.lightboxMediaId || state.lightboxCommentSubmitting ) return;
+			state.lightboxCommentSubmitting = true;
 			try {
 				const r = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments', {
 					method: 'POST',
@@ -1273,6 +1289,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				}
 			} catch {
 				actions.showToast( ( state.i18n?.failedComment || 'Failed to post comment.' ), 'error' );
+			} finally {
+				state.lightboxCommentSubmitting = false;
 			}
 		},
 		async lightboxShare() {

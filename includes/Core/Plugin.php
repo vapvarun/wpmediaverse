@@ -1215,6 +1215,25 @@ class Plugin {
 			// Shared REST client — must load before any consumer script.
 			wp_enqueue_script( 'mvs-rest' );
 
+			// Scripts that drive markup living INSIDE the router region. They
+			// must be on the page BEFORE any client-side navigation, because a
+			// region swap replaces markup without ever running a newly-enqueued
+			// <script> (the tag prints in wp_footer, outside the region). A
+			// per-template enqueue therefore only works on a hard page load —
+			// which is exactly why the album dropzone and the profile
+			// Follow/Message buttons were dead until the user hit refresh.
+			// All of these are delegated + config-from-data-*, so loading them
+			// on a page that has no matching markup is a no-op.
+			// (Basecamp #10148246386, #10134243697.)
+			wp_enqueue_script( 'mvs-profile-actions' );
+			wp_enqueue_script( 'mvs-album-upload' );
+			wp_enqueue_script( 'mvs-explore-search' );
+			wp_enqueue_script( 'mvs-dismissible' );
+			wp_enqueue_script( 'mvs-collection-filter' );
+			wp_enqueue_script( 'mvs-messages-scroll' );
+			wp_enqueue_script( 'mvs-album-cover' );
+			wp_enqueue_script( 'mvs-album-playlist' );
+
 			wp_enqueue_style(
 				'mvs-frontend',
 				MVS_PLUGIN_URL . 'assets/css/frontend.css',
@@ -1418,17 +1437,55 @@ class Plugin {
 			)
 		);
 
-		// Album upload (owner-only dropzone). Registered globally; the album
-		// template enqueues it and localizes the page-specific config (album id,
-		// rest url, nonce) + translatable status strings via wp_localize_script.
+		// Shared dropzone behaviour for the vanilla (non-Interactivity)
+		// uploaders — single owner of panel toggle, click-to-pick, drag
+		// feedback, drop and input-change. Consumed by mvs-album-upload and
+		// mvs-bp-tab-upload; the Interactivity surfaces (shared-ui modal,
+		// dashboard) use data-wp-on--drop directives instead and do not load
+		// this. Extracted in 2.3.0 to collapse three parallel implementations
+		// into one (Basecamp #10134243697).
 		wp_register_script(
-			'mvs-album-upload',
-			MVS_PLUGIN_URL . 'assets/js/frontend/album-upload.js',
-			array( 'mvs-rest' ),
+			'mvs-dropzone',
+			MVS_PLUGIN_URL . 'assets/js/frontend/dropzone.js',
+			array(),
 			MVS_VERSION,
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
+			)
+		);
+
+		// Album upload (owner-only dropzone). Config is localized HERE, at
+		// registration, not from inside templates/album.php — a template-body
+		// wp_localize_script() emits its <script> in wp_footer, outside
+		// [data-wp-router-region="mvs/main"], so a client-side navigation into
+		// the album page swaps in the dropzone markup without ever delivering
+		// the config. Only page-specific state (the album id) travels on a
+		// data-* attribute inside the region, where the router does carry it.
+		// (Basecamp #10134243697.)
+		wp_register_script(
+			'mvs-album-upload',
+			MVS_PLUGIN_URL . 'assets/js/frontend/album-upload.js',
+			array( 'mvs-rest', 'mvs-dropzone' ),
+			MVS_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			'mvs-album-upload',
+			'mvsAlbumUpload',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'i18n'    => array(
+					/* translators: 1: current file number, 2: total files */
+					'uploadingN'    => __( 'Uploading %1$d of %2$d...', 'wpmediaverse' ),
+					'addingToAlbum' => __( 'Adding to album...', 'wpmediaverse' ),
+					/* translators: %d: number of files added */
+					'addedToAlbum'  => __( '%d file(s) added to album!', 'wpmediaverse' ),
+				),
 			)
 		);
 
@@ -1482,6 +1539,10 @@ class Plugin {
 				'strategy'  => 'defer',
 			)
 		);
+		// Static config only. The album id is page-specific and is read from
+		// the enclosing [data-album-id] inside the router region — a
+		// template-body wp_localize_script() prints outside the region and
+		// never survives a client-side navigation.
 		wp_register_script(
 			'mvs-album-cover',
 			MVS_PLUGIN_URL . 'assets/js/frontend/album-cover.js',
@@ -1490,6 +1551,19 @@ class Plugin {
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
+			)
+		);
+		wp_localize_script(
+			'mvs-album-cover',
+			'mvsAlbumCover',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'i18n'    => array(
+					'saving'     => __( 'Saving…', 'wpmediaverse' ),
+					'setAsCover' => __( 'Set as cover', 'wpmediaverse' ),
+					'error'      => __( 'Could not set cover', 'wpmediaverse' ),
+				),
 			)
 		);
 
@@ -1887,6 +1961,16 @@ class Plugin {
 			return;
 		}
 
+		// Shared REST client. messaging.js dereferences window.mvsRest with no
+		// guard, so this is a hard dependency of the module — but the only other
+		// frontend enqueue of it sits inside the MVS-page branch of
+		// enqueue_frontend_assets(). The chat FAB renders on every page (see
+		// render_chat_panel()), so on a non-MVS page (Home, a blog post) the
+		// panel used to mount without a REST client and report "No conversations"
+		// instead of failing loudly. Each module that needs mvsRest enqueues it
+		// itself. (Basecamp #10149580967.)
+		wp_enqueue_script( 'mvs-rest' );
+
 		wp_enqueue_style(
 			'mvs-messaging',
 			MVS_PLUGIN_URL . 'assets/css/messaging.css',
@@ -1968,6 +2052,13 @@ class Plugin {
 				'File'                         => __( 'File', 'wpmediaverse' ),
 				'Shared a media'               => __( 'Shared a media', 'wpmediaverse' ),
 				'Attachment'                   => __( 'Attachment', 'wpmediaverse' ),
+				// Day separators in the message thread (2.3.0).
+				'Today'                        => __( 'Today', 'wpmediaverse' ),
+				'Yesterday'                    => __( 'Yesterday', 'wpmediaverse' ),
+				// Mute control + voice-recording capability notice (2.3.0).
+				'Mute notifications'           => __( 'Mute notifications', 'wpmediaverse' ),
+				'Unmute notifications'         => __( 'Unmute notifications', 'wpmediaverse' ),
+				'Voice messages need a secure (https) connection.' => __( 'Voice messages need a secure (https) connection.', 'wpmediaverse' ),
 			),
 		);
 

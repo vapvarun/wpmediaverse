@@ -12,9 +12,9 @@ defined( 'ABSPATH' ) || exit;
 
 $mvs_media = isset( $GLOBALS['mvs_current_media'] ) ? $GLOBALS['mvs_current_media'] : null;
 if ( ! $mvs_media || empty( $mvs_media['media_id'] ) ) {
-	get_header();
+	\WPMediaVerse\Core\TemplateHelpers::site_header();
 	echo '<div class="mvs-single-media"><p>' . esc_html__( 'Media not found.', 'wpmediaverse' ) . '</p></div>';
-	get_footer();
+	\WPMediaVerse\Core\TemplateHelpers::site_footer();
 	return;
 }
 
@@ -40,7 +40,7 @@ $mvs_created      = $mvs_media['created_at'] ?? '';
 // template is included — denied viewers get the branded 404 and never reach
 // here. So this template only ever renders viewable media.
 
-get_header();
+\WPMediaVerse\Core\TemplateHelpers::site_header();
 
 do_action( 'mvs_before_content' );
 
@@ -371,6 +371,15 @@ $mvs_archive_url = home_url( '/media/' );
 				'nonce'              => wp_create_nonce( 'wp_rest' ),
 				'isLoggedIn'         => is_user_logged_in(),
 				'currentUserId'      => $mvs_current_user_id,
+				// Server-resolved edit window (seconds). The client used to hardcode
+				// 15 minutes while the server read the filterable
+				// mvs_comment_edit_window option, so any site that changed it got a
+				// UI that hid Edit while the API still allowed it — or offered Edit
+				// that then 403'd.
+				'commentEditWindow'  => (int) apply_filters(
+					'mvs_comment_edit_window',
+					(int) get_option( 'mvs_comment_edit_window', 15 * MINUTE_IN_SECONDS )
+				),
 				'isOwner'            => $mvs_is_owner,
 				'authorId'           => $mvs_author_id,
 				'isFollowing'        => false,
@@ -707,4 +716,4 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 
-get_footer();
+\WPMediaVerse\Core\TemplateHelpers::site_footer();

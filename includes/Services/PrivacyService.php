@@ -25,6 +25,81 @@ class PrivacyService {
 	private $cache = array();
 
 	/**
+	 * Numeric restrictiveness of a privacy slug. Higher is more restrictive.
+	 *
+	 * Canonical home for this ordering. It grew up as a static on
+	 * Integrations\BuddyPress\ActivitySyncIntegration, which meant general
+	 * privacy logic lived inside a BuddyPress integration and was unavailable
+	 * to anything that did not want to load BP. That static now delegates here.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $privacy Privacy slug.
+	 * @return int 0 public, 20 members, 40 friends, 60 group, 80 private, 90 custom.
+	 */
+	public static function privacy_to_level( string $privacy ): int {
+		switch ( $privacy ) {
+			case 'public':
+				return 0;
+			case 'members':
+				return 20;
+			case 'friends':
+				return 40;
+			case 'group':
+				return 60;
+			case 'private':
+				return 80;
+			case 'custom':
+				return 90;
+			default:
+				return 0;
+		}
+	}
+
+	/**
+	 * Return whichever of two privacy slugs is more restrictive.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $a First slug.
+	 * @param string $b Second slug.
+	 * @return string The more restrictive slug.
+	 */
+	public static function more_restrictive( string $a, string $b ): string {
+		return self::privacy_to_level( $a ) >= self::privacy_to_level( $b ) ? $a : $b;
+	}
+
+	/**
+	 * Effective privacy for a media item — most restrictive of its own privacy
+	 * and its parent album's.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string Privacy slug.
+	 */
+	public static function effective_privacy_for_media( int $media_id ): string {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		$media_privacy = (string) $repo->get( $media_id, 'privacy' );
+		if ( '' === $media_privacy ) {
+			$media_privacy = 'public';
+		}
+
+		$album_id = (int) $repo->get( $media_id, 'album_id' );
+		if ( $album_id <= 0 ) {
+			return $media_privacy;
+		}
+
+		$album_privacy = (string) $repo->get( $album_id, 'privacy' );
+		if ( '' === $album_privacy || 'public' === $album_privacy ) {
+			return $media_privacy;
+		}
+
+		return self::more_restrictive( $album_privacy, $media_privacy );
+	}
+
+	/**
 	 * Check if a user can view a media item.
 	 *
 	 * @param int $media_id Media post ID.

@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-get_header();
+\WPMediaVerse\Core\TemplateHelpers::site_header();
 
 do_action( 'mvs_before_content' );
 
@@ -39,7 +39,7 @@ $mvs_archive_url = home_url( '/media/' );
 			echo '</div>';
 			include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 			do_action( 'mvs_after_content' );
-			get_footer();
+			\WPMediaVerse\Core\TemplateHelpers::site_footer();
 			return;
 		}
 
@@ -62,7 +62,14 @@ $mvs_archive_url = home_url( '/media/' );
 		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
 		?>
 
-		<article id="mvs-album-<?php the_ID(); ?>" <?php post_class( 'mvs-album-article' ); ?>>
+		<?php
+		// data-album-id rides the markup INSIDE the router region so the album
+		// scripts still know which album they are on after a client-side
+		// navigation. A wp_localize_script() global from this template would
+		// print outside the region and never arrive. See Core\Plugin, where the
+		// static half of their config is localized at registration.
+		?>
+		<article id="mvs-album-<?php the_ID(); ?>" data-album-id="<?php echo esc_attr( (string) get_the_ID() ); ?>" <?php post_class( 'mvs-album-article' ); ?>>
 			<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_back_link( 'album', array( 'author_id' => (int) get_the_author_meta( 'ID' ) ) ); ?>
 
 			<!-- Info Card -->
@@ -202,25 +209,6 @@ $mvs_archive_url = home_url( '/media/' );
 							</div>
 						</div>
 					</div>
-					<?php
-					wp_enqueue_script( 'mvs-album-upload' );
-					wp_localize_script(
-						'mvs-album-upload',
-						'mvsAlbumUpload',
-						array(
-							'albumId' => (int) get_the_ID(),
-							'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-							'nonce'   => wp_create_nonce( 'wp_rest' ),
-							'i18n'    => array(
-								/* translators: 1: current file number, 2: total files */
-								'uploadingN'    => __( 'Uploading %1$d of %2$d...', 'wpmediaverse' ),
-								'addingToAlbum' => __( 'Adding to album...', 'wpmediaverse' ),
-								/* translators: %d: number of files added */
-								'addedToAlbum'  => __( '%d file(s) added to album!', 'wpmediaverse' ),
-							),
-						)
-					);
-					?>
 				<?php endif; ?>
 			</div>
 
@@ -229,7 +217,8 @@ $mvs_archive_url = home_url( '/media/' );
 					<button type="button" id="mvs-album-upload-btn" class="mvs-btn">
 						<span class="dashicons dashicons-plus-alt"></span> <?php esc_html_e( 'Add Media', 'wpmediaverse' ); ?>
 					</button>
-					<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;">
+					<div id="mvs-album-upload-wrap" class="mvs-bp-upload-wrap" style="display:none;"
+						data-album-id="<?php echo esc_attr( (string) get_the_ID() ); ?>">
 						<?php
 						$mvs_album_mimes = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg' );
 						?>
@@ -302,18 +291,16 @@ $mvs_archive_url = home_url( '/media/' );
 							</li>
 						<?php endforeach; ?>
 					</ol>
+					<?php
+					// Track data rides INSIDE the router region as JSON rather
+					// than a wp_localize_script() global, which would print in
+					// wp_footer outside the region and be stale (or absent)
+					// after a client-side navigation into this album.
+					?>
+					<script type="application/json" class="mvs-playlist-data">
+						<?php echo wp_json_encode( $tracks ); ?>
+					</script>
 				</div>
-				<?php
-				wp_enqueue_script( 'mvs-album-playlist' );
-				wp_localize_script(
-					'mvs-album-playlist',
-					'mvsAlbumPlaylist',
-					array(
-						'tracks'  => $tracks,
-						'albumId' => (int) get_the_ID(),
-					)
-				);
-				?>
 			<?php elseif ( ! empty( $items ) ) : ?>
 				<?php
 				$mvs_grid_cols     = max( 2, min( 5, (int) get_option( 'mvs_grid_columns', 3 ) ) );
@@ -360,25 +347,6 @@ $mvs_archive_url = home_url( '/media/' );
 					endforeach;
 					?>
 				</div>
-				<?php if ( $mvs_is_album_owner ) : ?>
-					<?php
-					wp_enqueue_script( 'mvs-album-cover' );
-					wp_localize_script(
-						'mvs-album-cover',
-						'mvsAlbumCover',
-						array(
-							'albumId' => (int) get_the_ID(),
-							'restUrl' => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-							'nonce'   => wp_create_nonce( 'wp_rest' ),
-							'i18n'    => array(
-								'saving'     => __( 'Saving…', 'wpmediaverse' ),
-								'setAsCover' => __( 'Set as cover', 'wpmediaverse' ),
-								'error'      => __( 'Could not set cover', 'wpmediaverse' ),
-							),
-						)
-					);
-					?>
-				<?php endif; ?>
 			<?php else : ?>
 				<p class="mvs-no-media"><?php esc_html_e( 'This album is empty.', 'wpmediaverse' ); ?></p>
 			<?php endif; ?>
@@ -437,4 +405,4 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 
-get_footer();
+\WPMediaVerse\Core\TemplateHelpers::site_footer();

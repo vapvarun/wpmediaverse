@@ -51,6 +51,16 @@ defined( 'ABSPATH' ) || exit;
 		data-wp-bind--data-active="state.isTabRequests"
 		type="button"
 	><?php esc_html_e( 'Requests', 'wpmediaverse' ); ?></button>
+	<button
+		class="mvs-chat-tabs__tab"
+		data-wp-on--click="actions.setTab"
+		<?php
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
+		echo wp_interactivity_data_wp_context( array( 'tab' => 'archived' ) );
+		?>
+		data-wp-bind--data-active="state.isTabArchived"
+		type="button"
+	><?php esc_html_e( 'Archived', 'wpmediaverse' ); ?></button>
 </div>
 
 <!-- Search -->
@@ -59,13 +69,14 @@ defined( 'ABSPATH' ) || exit;
 		class="mvs-chat-search__input"
 		type="text"
 		placeholder="<?php esc_attr_e( 'Search conversations...', 'wpmediaverse' ); ?>"
-		data-wp-on--input="actions.updateSearchQuery"
+		data-wp-on--input="actions.updateListQuery"
+		data-wp-bind--value="state.listQuery"
 	/>
 </div>
 
 <!-- Conversation List -->
 <div class="mvs-chat-list">
-	<template data-wp-each="state.conversations">
+	<template data-wp-each="state.filteredConversations">
 		<button
 			class="mvs-chat-conv-item"
 			data-wp-on--click="actions.openConversation"
@@ -98,5 +109,10 @@ defined( 'ABSPATH' ) || exit;
 	<div class="mvs-chat-list__empty" data-wp-bind--hidden="!state.showListEmpty">
 		<p><?php esc_html_e( 'No conversations yet', 'wpmediaverse' ); ?></p>
 		<p><?php esc_html_e( 'Start a new conversation to begin messaging.', 'wpmediaverse' ); ?></p>
+	</div>
+
+	<div class="mvs-chat-list__empty" data-wp-bind--hidden="!state.showNoListResults">
+		<p><?php esc_html_e( 'No conversations match your search', 'wpmediaverse' ); ?></p>
+		<p><?php esc_html_e( 'Try a different name.', 'wpmediaverse' ); ?></p>
 	</div>
 </div>
