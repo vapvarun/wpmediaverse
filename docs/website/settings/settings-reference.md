@@ -38,6 +38,9 @@ Registered by `Admin\Settings\SettingsRegistrar` and `Admin\Settings\AiSettingsR
 | `mvs_default_privacy` | Default Privacy Level | string | `public` |
 | `mvs_allow_user_privacy` | Allow Users to Set Privacy | boolean | `true` |
 | `mvs_allow_downloads` | Allow Downloads | boolean | `true` |
+| `mvs_app_password_login` | App Sign-In | boolean | `true` |
+
+`mvs_app_password_login` controls whether members may exchange their WordPress password for an Application Password to sign in to a mobile app. Turn it off when you require everyone through the interactive login - for example when you enforce two-factor authentication. Also filterable at runtime via `mvs_app_password_login_enabled`.
 
 `mvs_default_privacy` is the level applied when the uploader makes no choice. When `mvs_allow_user_privacy` is off, the privacy select is removed from the upload form and every upload takes the default.
 
