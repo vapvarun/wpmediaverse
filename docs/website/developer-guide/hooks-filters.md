@@ -986,7 +986,7 @@ document.addEventListener( 'mvs-collections-click', ( event ) => {
 | `mvs_user_blocked` | action | User blocked another user | `$blocker_id`, `$blocked_id` | 1.0 |
 | `mvs_tags_merged` | action | Two tags merged | `$source_id`, `$target_id`, `$posts` | 1.0 |
 | `mvs_activity_types` | filter | Register activity feed types | `$types` (array) | 1.0 |
-| `mvs_activity_max_media` | filter | Max media items per activity post | `$count` (int), default `6` | 1.0 |
+| `mvs_activity_max_media` | filter | Max media items rendered into one activity post. Applies to both routes into the feed: the BuddyPress composer, and carousel/gallery uploads (2.3.0), which pass the group key as a second argument | `$count` (int), default `6`; `$media_group` (string, carousel path only) | 1.0 |
 
 ---
 

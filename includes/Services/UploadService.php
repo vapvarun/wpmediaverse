@@ -558,6 +558,23 @@ class UploadService {
 		// Initialize stats row — fresh upload only; replace must NOT reset counts.
 		$this->init_stats( $media_id );
 
+		// Carousel / gallery-post membership, recorded BEFORE mvs_media_uploaded
+		// fires. It used to be written by the REST controller *after* the upload
+		// call returned, which meant every listener — the BuddyPress activity
+		// recorder above all — saw a media item that did not yet know it belonged
+		// to a group. That is why a 3-image carousel produced 3 separate activity
+		// entries instead of one. Basecamp #10153581987.
+		$media_group = isset( $args['media_group'] ) ? sanitize_text_field( (string) $args['media_group'] ) : '';
+		if ( '' !== $media_group ) {
+			$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+			$repo->set( $media_id, 'media_group', $media_group );
+			$group_position = isset( $args['group_position'] ) ? absint( $args['group_position'] ) : 0;
+			$repo->set( $media_id, 'group_position', $group_position );
+			if ( 0 === $group_position ) {
+				$repo->set( $media_id, 'group_cover', 1 );
+			}
+		}
+
 		// is_first is computed once per upload — cheap COUNT, gates "first upload" badges
 		// in gamification/notification adapters without forcing every listener to repeat the query.
 		$is_first_upload = 1 === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->count_by_author( $user_id );

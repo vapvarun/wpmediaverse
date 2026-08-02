@@ -751,6 +751,16 @@ class MediaController extends WP_REST_Controller {
 			$args['privacy'] = sanitize_text_field( $privacy_param );
 		}
 
+		// Carousel / gallery-post membership travels WITH the upload rather than
+		// being written after it returns. Listeners on mvs_media_uploaded have to
+		// be able to see that this item is part of a group — the BuddyPress
+		// activity recorder bundles on it. Basecamp #10153581987.
+		$media_group_param = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
+		if ( '' !== $media_group_param ) {
+			$args['media_group']    = $media_group_param;
+			$args['group_position'] = absint( $request->get_param( 'group_position' ) );
+		}
+
 		$media_id = $upload_service->handle( $file, get_current_user_id(), $args );
 
 		if ( is_wp_error( $media_id ) ) {
@@ -807,16 +817,10 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
-		// Store media group (gallery post) metadata.
-		$media_group = sanitize_text_field( $request->get_param( 'media_group' ) ?? '' );
-		if ( $media_group ) {
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'media_group', $media_group );
-			$group_position = absint( $request->get_param( 'group_position' ) );
-			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_position', $group_position );
-			if ( 0 === $group_position ) {
-				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_cover', 1 );
-			}
-		}
+		// Media group (gallery post) metadata is written by UploadService before
+		// mvs_media_uploaded fires — see $args['media_group'] above. Nothing to do
+		// here any more; writing it a second time would be a no-op at best and,
+		// while it lived here alone, was the cause of #10153581987.
 
 		// Set group association if group_id is provided and user is a member.
 		$group_id = absint( $request->get_param( 'group_id' ) );
