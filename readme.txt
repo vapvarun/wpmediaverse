@@ -116,10 +116,14 @@ Photos taken on a phone keep their orientation, media added to a private album s
 
 * New      - Archived conversations tab in chat. Archiving hides a conversation without deleting it, and it returns on its own when the other member writes to you again.
 * New      - Members can sign in to a native app with their existing WordPress password; the site issues an Application Password behind the scenes.
+* New      - App Sign-In setting on the General tab, so a site owner can turn that password exchange off without writing code. On by default.
 * Improve  - Images uploaded from a phone are rotated to match their EXIF Orientation, on upload and on Replace file, so portrait shots stop appearing sideways.
 * Improve  - Message-request counts are read from actual pending requests, so the badge no longer shows 0 while requests are waiting.
 * Improve  - Chat messages are grouped by day with Today and Yesterday headings.
+* Improve  - Plugin pages on block themes now render the site header, navigation and footer. Previously they appeared with no site chrome at all, which made a single media page feel disconnected from the site.
 * Fix      - Media added to a private album now inherits the album's privacy instead of staying publicly visible.
+* Fix      - Paginated Explore and member pages returned HTTP 404 while displaying the correct content, which kept them out of search results and stopped caches storing them.
+* Fix      - Plugin pages no longer write a PHP deprecation notice to the debug log on every load under a block theme.
 * Fix      - Tall portraits are no longer clipped in the lightbox.
 * Fix      - The activity feed no longer distorts single images by cropping them to a fixed height.
 * Fix      - Double-clicking Post no longer publishes the same comment twice.
@@ -130,6 +134,7 @@ Photos taken on a phone keep their orientation, media added to a private album s
 * Fix      - The album dropzone is visible on sites without BuddyPress, and album assets load correctly under client-side navigation.
 * Security - POST /auth/app-password is classified in the REST write gate.
 * Dev      - New filters: mvs_apply_exif_orientation, mvs_album_inherit_privacy, mvs_comment_duplicate_window, mvs_dm_unarchive_on_activity. New action: mvs_media_privacy_clamped_by_album.
+* Dev      - Removed 7 generated -rtl.css stylesheets and the rtlcss build step. Nothing loaded them, and serving them would double-flip right-to-left layouts, which already render correctly without them.
 * Dev      - The moderation queue route is GET /moderation. The REST reference previously documented /moderation/queue, which returns 404.
 * Dev      - Documentation now covers every REST route, hook, setting, shortcode, block and WP-CLI command. Four watermark hooks that never existed in the code were removed from the reference.
 * Compat   - Paired with WPMediaVerse Pro 2.3.0. Install both updates together.
