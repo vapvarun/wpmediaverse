@@ -11,7 +11,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-get_header();
+\WPMediaVerse\Core\TemplateHelpers::site_header();
 
 do_action( 'mvs_before_content' );
 
@@ -602,4 +602,4 @@ if ( $mvs_profile ) {
 	include \WPMediaVerse\Core\TemplateLoader::locate( 'profile-actions-js.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/profile-actions-js.php';
 }
 
-get_footer();
+\WPMediaVerse\Core\TemplateHelpers::site_footer();

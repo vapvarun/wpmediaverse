@@ -22,7 +22,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-get_header();
+\WPMediaVerse\Core\TemplateHelpers::site_header();
 
 include MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 
@@ -96,4 +96,4 @@ $mvs_popular_tags = get_terms(
 do_action( 'mvs_after_content' );
 include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
-get_footer();
+\WPMediaVerse\Core\TemplateHelpers::site_footer();

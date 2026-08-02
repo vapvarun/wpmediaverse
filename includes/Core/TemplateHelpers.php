@@ -1355,4 +1355,84 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			)
 		);
 	}
+
+	/**
+	 * Should this request render the block-theme document shell?
+	 *
+	 * @return bool
+	 */
+	private static function use_block_shell(): bool {
+		return function_exists( 'wp_is_block_theme' )
+			&& wp_is_block_theme()
+			&& function_exists( 'block_header_area' )
+			&& function_exists( 'block_footer_area' );
+	}
+
+	/**
+	 * Open a plugin-owned page: document shell + the site header.
+	 *
+	 * `get_header()` predates block themes. Under one — which is every default
+	 * theme since Twenty Twenty-Two — there is no `header.php`, so the call
+	 * emits "Theme without header.php is deprecated" on EVERY plugin page load
+	 * and renders no site chrome whatsoever: measured on Twenty Twenty-Five,
+	 * our pages had no site header, no navigation and no site title. That is a
+	 * large part of why a single media page reads as "a random attachment page"
+	 * rather than part of the community.
+	 *
+	 * Swapping the call for `block_header_area()` alone does NOT work, and the
+	 * failure is silent: those functions render only the header *template
+	 * part*, never the `<!DOCTYPE>`/`<html>`/`<head>` shell or `wp_head()`,
+	 * which `get_header()` supplies via theme-compat. Doing that produced a
+	 * page with the right navigation and zero stylesheets. So on block themes
+	 * we emit the shell ourselves and then the header part, wrapped in
+	 * `.wp-site-blocks` so the theme's own layout and spacing rules apply.
+	 *
+	 * Classic themes are untouched — they keep `get_header()` exactly as before.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string|null $name Optional specialised header name (classic themes only).
+	 */
+	public static function site_header( ?string $name = null ): void {
+		if ( ! self::use_block_shell() ) {
+			get_header( $name );
+			return;
+		}
+		?>
+<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+<meta charset="<?php bloginfo( 'charset' ); ?>" />
+		<?php wp_head(); ?>
+</head>
+<body <?php body_class(); ?>>
+		<?php wp_body_open(); ?>
+<div class="wp-site-blocks">
+		<?php
+		block_header_area();
+	}
+
+	/**
+	 * Close a plugin-owned page: site footer + document shell.
+	 *
+	 * Block-theme counterpart of {@see self::site_header()}. Must be called
+	 * exactly once for each site_header() call or the document is left unclosed.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string|null $name Optional specialised footer name (classic themes only).
+	 */
+	public static function site_footer( ?string $name = null ): void {
+		if ( ! self::use_block_shell() ) {
+			get_footer( $name );
+			return;
+		}
+		block_footer_area();
+		?>
+</div>
+		<?php wp_footer(); ?>
+</body>
+</html>
+		<?php
+	}
 }

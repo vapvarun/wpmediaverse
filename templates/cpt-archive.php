@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-get_header();
+\WPMediaVerse\Core\TemplateHelpers::site_header();
 
 do_action( 'mvs_before_content' );
 
@@ -224,4 +224,4 @@ include MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 
-get_footer();
+\WPMediaVerse\Core\TemplateHelpers::site_footer();

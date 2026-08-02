@@ -12,9 +12,9 @@ defined( 'ABSPATH' ) || exit;
 
 $mvs_media = isset( $GLOBALS['mvs_current_media'] ) ? $GLOBALS['mvs_current_media'] : null;
 if ( ! $mvs_media || empty( $mvs_media['media_id'] ) ) {
-	get_header();
+	\WPMediaVerse\Core\TemplateHelpers::site_header();
 	echo '<div class="mvs-single-media"><p>' . esc_html__( 'Media not found.', 'wpmediaverse' ) . '</p></div>';
-	get_footer();
+	\WPMediaVerse\Core\TemplateHelpers::site_footer();
 	return;
 }
 
@@ -40,7 +40,7 @@ $mvs_created      = $mvs_media['created_at'] ?? '';
 // template is included — denied viewers get the branded 404 and never reach
 // here. So this template only ever renders viewable media.
 
-get_header();
+\WPMediaVerse\Core\TemplateHelpers::site_header();
 
 do_action( 'mvs_before_content' );
 
@@ -716,4 +716,4 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 
-get_footer();
+\WPMediaVerse\Core\TemplateHelpers::site_footer();

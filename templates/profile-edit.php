@@ -13,11 +13,11 @@
 defined( 'ABSPATH' ) || exit;
 
 if ( ! is_user_logged_in() ) {
-	get_header();
+	\WPMediaVerse\Core\TemplateHelpers::site_header();
 	echo '<div class="mvs-profile-edit"><p>';
 	esc_html_e( 'Please log in to edit your profile.', 'wpmediaverse' );
 	echo '</p></div>';
-	get_footer();
+	\WPMediaVerse\Core\TemplateHelpers::site_footer();
 	return;
 }
 
@@ -66,7 +66,7 @@ $mvs_profile_ctx = array(
 	'errorMessage'    => '',
 );
 
-get_header();
+\WPMediaVerse\Core\TemplateHelpers::site_header();
 
 do_action( 'mvs_before_content' );
 
@@ -211,4 +211,4 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-close.php';
 
 do_action( 'mvs_after_content' );
 
-get_footer();
+\WPMediaVerse\Core\TemplateHelpers::site_footer();

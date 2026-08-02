@@ -25,7 +25,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-get_header();
+\WPMediaVerse\Core\TemplateHelpers::site_header();
 ?>
 
 <main id="primary" class="mvs-page mvs-app-page">
@@ -38,4 +38,4 @@ get_header();
 </main>
 
 <?php
-get_footer();
+\WPMediaVerse\Core\TemplateHelpers::site_footer();
