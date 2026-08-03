@@ -103,6 +103,57 @@ class AlbumService {
 	}
 
 	/**
+	 * Update an album's own post fields.
+	 *
+	 * The counterpart to create(). Until this existed the only way to change an
+	 * album's title or description was AlbumController::update_item() building a
+	 * wp_update_post() array inline, so any other caller -- our own code or an
+	 * integration such as BuddyNext, which renders albums as a community surface --
+	 * had to reach past this service and write the post itself. One of them wrote
+	 * the description to post_excerpt, which nothing here ever reads, so the value
+	 * was stored and never shown.
+	 *
+	 * `description` maps to post_content. That is where create() puts it and where
+	 * the REST reader takes it from; the pairing is the contract, and it belongs in
+	 * one place rather than being restated at every call site.
+	 *
+	 * Only keys PRESENT in $args are written, so a caller updating the title alone
+	 * cannot blank a description it never sent.
+	 *
+	 * @param int                                         $album_id Album post ID.
+	 * @param array{title?: string, description?: string} $args     Fields to update.
+	 * @return true|\WP_Error True on success (including a no-op), WP_Error otherwise.
+	 */
+	public function update( int $album_id, array $args ) {
+		$post = get_post( $album_id );
+		if ( ! $post || 'mvs_album' !== $post->post_type ) {
+			return new \WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		$update = array( 'ID' => $album_id );
+
+		// NOTE: create() rejects an empty title, this does not. That asymmetry is
+		// pre-existing behaviour in the REST update path and is preserved here on
+		// purpose -- tightening it is a separate change, not a side effect of
+		// moving the write into the service.
+		if ( array_key_exists( 'title', $args ) ) {
+			$update['post_title'] = sanitize_text_field( (string) $args['title'] );
+		}
+
+		if ( array_key_exists( 'description', $args ) ) {
+			$update['post_content'] = wp_kses_post( (string) $args['description'] );
+		}
+
+		if ( 1 === count( $update ) ) {
+			return true;
+		}
+
+		$result = wp_update_post( $update, true );
+
+		return is_wp_error( $result ) ? $result : true;
+	}
+
+	/**
 	 * Get items for an album, ordered by position.
 	 *
 	 * @param int $album_id Album post ID.
