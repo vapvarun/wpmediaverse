@@ -1,0 +1,39 @@
+{
+  "mode": "free",
+  "release_version": "2.3.1",
+  "pro_version": null,
+  "ran_at": "2026-08-05T06:10:00Z",
+  "sections": {
+    "A_fresh_install":     { "pass": 0, "fail": 0, "skipped": 5 },
+    "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
+    "C_core_flows":        { "pass": 15, "fail": 1, "skipped": 22 },
+    "D_regression_guards": { "pass": 11, "fail": 0, "skipped": 18 },
+    "E_pro_smoke":         { "pass": 0, "fail": 0, "skipped": 24 },
+    "F_cross_browser":     { "pass": 2, "fail": 0, "skipped": 2 },
+    "S_pro_supplements":   { "pass": 0, "fail": 0, "skipped": 0 }
+  },
+  "failures": [
+    {
+      "id": "C.member.lightbox-edit-modal",
+      "origin": "from",
+      "triage_note": "Our own JS validation gate and REST write path both fail to reject an empty title; confirmed via exact accessibility-tree ref (not a stale-query artifact) and confirmed server-side that the row was actually written with title='' after Save.",
+      "expected": "Per qa/runbooks/AGENT_SMOKE_RUNBOOK.md C.member.lightbox-edit-modal and qa/inventory/WHAT-TO-CHECK.md row 'Lightbox Edit-Media modal': 'save disabled while title empty' — clearing the Title field in the per-media Edit modal must disable the Save button so an empty title can never be persisted.",
+      "actual": "Cleared the Title field (confirmed value==='' on the exact input element) in the Edit Media modal for a freshly uploaded media item (media_id 125, slug smoke-free-upload-test). The Save button (class 'mvs-btn', in the Edit Media modal footer) remained enabled (disabled=false, no disabled attribute, no aria-disabled). Clicking Save succeeded (no client-side block, no visible validation error) and the REST write persisted: wp_mvs_media_index.title for media_id 125 became an empty string. This is a real data-loss bug, not just a UI gating miss — the backend also does not reject an empty title.",
+      "url": "http://mediaverse.local/my-media/",
+      "screenshot": "fail-C.member.lightbox-edit-modal-empty-title.png"
+    }
+  ],
+  "debug_log_issues": [],
+  "manual_required": [
+    "Firefox Desktop: upload modal file picker",
+    "Safari iOS 390px: lightbox swipe + reaction tap",
+    "Safari iOS 390px: activity composer privacy <select> open/close (native UI) - N/A this run, BuddyPress not active",
+    "Safari iOS: navigator.share native sheet on lightbox Share button (Chromium confirmed no window.prompt fallback and no console errors, but native share sheet itself needs a real Safari/iOS check)",
+    "RTL locale (ar): Explore, single-media, profile, dashboard, lightbox not walked this run",
+    "Admin browser walk (Overview, Settings x8 tabs, Moderation, Stats, Logs, All Media, Setup Wizard, per-media Details view for media_id=64): could not be completed this run - no admin credentials were available and generating a session (password reset or auth-cookie mint) was blocked by the environment's auto-mode safety classifier as an auth-bypass action. Verified the underlying contracts server-side instead: CloudOps::count_candidates() executes cleanly with the new on_cloud key (total=64, needs_migration=59, non_public_kept=4, on_cloud=1) and does not fatal in free mode; MediaListPage's admin variant-link builders (MediaUrl::variant_url for thumb_large, thumb_medium, thumb_thumb_webp, original_webp) were called directly for media_id=64 and every resulting URL returned HTTP 200 on the same host as its sibling. A real browser pass of the admin UI (page=wpmediaverse-media&view=details&media_id=64 included) is still needed to close this out.",
+    "C.member.upload-privacy-matrix (16-cell privacy x viewer matrix) not walked this run - time-boxed out after the core upload/edit/delete/categories/reactions journeys",
+    "C.member.albums-lifecycle, E.collections-lifecycle full walks not performed - only album/collection anonymous read-side was checked",
+    "C.member.video-poster-fallback / D.blank-video-poster not testable - no video media exists in the current dataset to seed a posterless-video fixture against",
+    "C.member.grid-render-query-budget - grid pages rendered fast and correctly across explore/album/collection but the $wpdb->num_queries delta was not instrumented this run"
+  ]
+}
