@@ -1394,6 +1394,9 @@ class MediaListPage {
 		$bytes_before = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_BYTES_BEFORE );
 		$bytes_after  = (int) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_BYTES_AFTER );
 		$webp_orig    = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
+		// Display URL for the "Open WebP copy" link below. `$webp_orig` stays the
+		// raw meta because the badges around it only test existence.
+		$webp_orig_url = \WPMediaVerse\Core\MediaUrl::variant_url( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
 		$width        = (int) $repo->get_raw( $media_id, 'width' );
 		$height       = (int) $repo->get_raw( $media_id, 'height' );
 		$saved_pct    = ( $bytes_before > 0 ) ? round( ( $bytes_before - $bytes_after ) / $bytes_before * 100, 2 ) : 0;
@@ -1596,7 +1599,7 @@ class MediaListPage {
 									<td>
 										<?php if ( '' !== $webp_orig ) : ?>
 											<span class="mvs-media-badge mvs-media-badge--success"><?php esc_html_e( 'Available', 'wpmediaverse' ); ?></span>
-											&nbsp;<a href="<?php echo esc_url( $webp_orig ); ?>" target="_blank"><?php esc_html_e( 'Open WebP copy', 'wpmediaverse' ); ?> &rarr;</a>
+											&nbsp;<a href="<?php echo esc_url( $webp_orig_url ); ?>" target="_blank"><?php esc_html_e( 'Open WebP copy', 'wpmediaverse' ); ?> &rarr;</a>
 										<?php else : ?>
 											<em><?php esc_html_e( 'Not created yet', 'wpmediaverse' ); ?></em>
 										<?php endif; ?>
@@ -1621,8 +1624,12 @@ class MediaListPage {
 									'thumb'  => __( 'Thumbnail', 'wpmediaverse' ),
 								);
 								foreach ( \WPMediaVerse\Services\ImageOptimizationService::variant_keys() as $size ) :
-									$thumb_url      = (string) $repo->get_raw( $media_id, 'thumb_' . $size );
-									$thumb_webp_url = (string) $repo->get_raw( $media_id, 'thumb_' . $size . '_webp' );
+									// Resolve where the files actually live: on a CDN site the
+									// legacy URL meta still points at the local uploads dir, which
+									// MediaVerse locks with `Deny from all` -> the admin "View" link
+									// 403s. Basecamp #10162798416.
+									$thumb_url      = \WPMediaVerse\Core\MediaUrl::variant_url( $media_id, 'thumb_' . $size );
+									$thumb_webp_url = \WPMediaVerse\Core\MediaUrl::variant_url( $media_id, 'thumb_' . $size . '_webp' );
 									$label          = $size_labels[ $size ] ?? $size;
 									?>
 									<tr>

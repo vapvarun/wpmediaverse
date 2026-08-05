@@ -127,4 +127,57 @@ final class MediaUrl {
 	public static function variant_path_meta_key( string $size, string $format = VariantSpec::FORMAT_PRIMARY ): string {
 		return self::variant_meta_key( $size, $format ) . '_path';
 	}
+
+	/**
+	 * Where a stored variant actually lives, as a URL.
+	 *
+	 * Cloud path is for display; all processing happens on the local path. This
+	 * is the display side of that rule for stored variants, and the single
+	 * implementation behind every caller that needs one.
+	 *
+	 * Resolution order matches
+	 * `SignedUrlService::maybe_direct_cloud_thumbnail_url()`, because the
+	 * primary and its siblings must agree on where the file is:
+	 *
+	 *   1. `<key>_path` — the driver-agnostic relative path, source of truth
+	 *      since 1.4.0 — resolved through the driver the file actually lives
+	 *      on. On a CDN site this yields the CDN URL.
+	 *   2. The legacy absolute URL meta, for rows that never got a `_path`:
+	 *      pre-1.4.0 rows the Migrator v14 backfill has not reached, and
+	 *      imported MediaPress / rtMedia / BuddyBoss records that
+	 *      `MediaVariantWriter::path_meta_ok()` deliberately skips because
+	 *      their `file_path` is absolute.
+	 *
+	 * Callers pairing this with an already-rendered primary URL must also check
+	 * the two share a host — see `TemplateHelpers::get_variant_url()`. A variant
+	 * on a different host than its primary is unreachable, which is what made
+	 * every WebP 403 behind a CDN (Basecamp #10162798416).
+	 *
+	 * @since 2.3.1
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $meta_key Variant meta key, e.g. `thumb_large_webp` or
+	 *                         `original_webp`. Use `variant_meta_key()` to build it.
+	 * @return string Resolved URL, or '' when the variant is not stored.
+	 */
+	public static function variant_url( int $media_id, string $meta_key ): string {
+		if ( $media_id <= 0 || '' === $meta_key ) {
+			return '';
+		}
+
+		// `ServiceContainer::get()` throws on an unregistered key rather than
+		// returning null, so there is nothing to guard against here.
+		$container = Plugin::container();
+		$repo      = $container->get( 'media_repository' );
+
+		$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' );
+		if ( '' !== $rel_path ) {
+			$url = (string) $container->get( 'storage' )->get_driver_for_location( $media_id )->url( $rel_path );
+			if ( '' !== $url ) {
+				return $url;
+			}
+		}
+
+		return (string) $repo->get_raw( $media_id, $meta_key );
+	}
 }

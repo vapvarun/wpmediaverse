@@ -110,6 +110,12 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 == Changelog ==
 
+= 2.3.1 - August 2026 =
+
+* Fix      - WebP and AVIF images no longer return 403 on sites that serve media from a CDN. Variant URLs now resolve through the same storage driver as the JPEG instead of a stale local path.
+* Fix      - Admin media details links to a variant file now point at the file's real location, so they open instead of failing on CDN-backed sites.
+* Improve  - Migrating media to or from cloud storage now repoints every stored variant URL, so nothing is left pointing at the previous location.
+
 = 2.3.0 - August 2026 =
 
 Photos taken on a phone keep their orientation, media added to a private album stays private, and chat gets an Archived tab.
