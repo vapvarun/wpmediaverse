@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.3.0
+Stable tag: 2.3.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,15 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.3.1 - August 2026 =
+
+* Fix      - WebP and AVIF images no longer return 403 on sites that serve media from a CDN. Variant URLs now resolve through the same storage driver as the JPEG instead of a stale local path.
+* Fix      - Admin media details links to a variant file now point at the file's real location, so they open instead of failing on CDN-backed sites.
+* Improve  - Migrating media to or from cloud storage now repoints every stored variant URL, so nothing is left pointing at the previous location.
+* Fix      - A media item can no longer be saved without a title. The Save button stays disabled while the field is empty, and the API refuses a blank title instead of storing one.
+* Fix      - The album and media-player blocks now explain themselves when they point at something missing, instead of rendering an empty space. Editors see the reason; visitors see nothing.
+* Improve  - Reaction buttons on a single media page now report their pressed state to screen readers, matching the lightbox.
 
 = 2.3.0 - August 2026 =
 

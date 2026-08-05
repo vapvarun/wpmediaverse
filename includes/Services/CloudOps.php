@@ -151,6 +151,17 @@ class CloudOps {
 			);
 		}
 
+		// Phase 2b — repoint every stored variant URL meta at the destination.
+		// The variant FILES already moved (stored_paths() collects every
+		// `%_path` meta, which includes the WebP/AVIF siblings), but their URL
+		// metas kept the old base. On a CDN migration that left `thumb_*_webp`
+		// pointing into wp-content/uploads/wpmediaverse/ — the directory
+		// MediaVerse locks with `Deny from all` — so admin links to them 403'd.
+		// The read side no longer trusts these metas when a `_path` exists
+		// (MediaUrl::variant_url), so this is hygiene rather than the fix for
+		// Basecamp #10162798416; it keeps the stored data honest.
+		self::refresh_variant_urls( $media_id, $dest_driver );
+
 		if ( ! $keep_source ) {
 			foreach ( $paths as $path ) {
 				$source_driver->delete( $path );
@@ -163,6 +174,72 @@ class CloudOps {
 			'ok'     => true,
 			'status' => $moved_any ? 'migrated' : 'skipped',
 		);
+	}
+
+	/**
+	 * Repoint stored variant URL metas at a driver after a migration.
+	 *
+	 * Walks every `<key>_path` meta and rewrites its sibling `<key>` URL meta
+	 * to the destination driver's URL. Generic on purpose: it covers
+	 * `thumb_<size>`, `thumb_<size>_webp`, `thumb_<size>_avif`, `original_webp`
+	 * and `original_avif` without enumerating them, so a future variant format
+	 * is handled the day it is added.
+	 *
+	 * Only rewrites keys that already hold a URL — an absent URL meta means the
+	 * variant was never recorded on the legacy path and does not need one.
+	 *
+	 * @since 2.3.1
+	 *
+	 * @param int                    $media_id    Media ID.
+	 * @param StorageDriverInterface $dest_driver Driver the files now live on.
+	 * @return int Number of URL metas rewritten.
+	 */
+	private static function refresh_variant_urls( int $media_id, $dest_driver ): int {
+		global $wpdb;
+
+		if ( $media_id <= 0 || ! is_object( $dest_driver ) || ! method_exists( $dest_driver, 'url' ) ) {
+			return 0;
+		}
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT meta_key, meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$media_id,
+				'%_path'
+			)
+		);
+		if ( empty( $rows ) ) {
+			return 0;
+		}
+
+		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$updated = 0;
+		foreach ( $rows as $row ) {
+			$rel_path = (string) $row->meta_value;
+			if ( '' === $rel_path ) {
+				continue;
+			}
+
+			// `thumb_large_webp_path` -> `thumb_large_webp`. `file_path` has no
+			// sibling URL meta of this shape (file_url lives on the index row
+			// and was flipped above), so skip it.
+			$url_key = (string) preg_replace( '/_path$/', '', (string) $row->meta_key );
+			if ( '' === $url_key || 'file' === $url_key ) {
+				continue;
+			}
+
+			if ( '' === (string) $repo->get_raw( $media_id, $url_key ) ) {
+				continue;
+			}
+
+			$new_url = (string) $dest_driver->url( $rel_path );
+			if ( '' !== $new_url ) {
+				$repo->set( $media_id, $url_key, $new_url );
+				++$updated;
+			}
+		}
+
+		return $updated;
 	}
 
 	/**
@@ -403,10 +480,24 @@ class CloudOps {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$non_public = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy != 'public'" );
 
+		// Counted from the index, NOT derived as `total - needs_migration`.
+		// That subtraction over-reported: `total` spans every privacy level
+		// while `needs_migration` filters to privacy='public', so private rows
+		// fell out of the subtrahend and were silently reported as "in cloud"
+		// — while the private tile counted them a second time. On a library of
+		// 64 with 4 private rows the panel showed "4 in cloud" against 0 files
+		// actually on the CDN, and the three tiles summed past the total.
+		//
+		// This is the exact complement of `needs_migration` inside the public
+		// set, so on_cloud + needs_migration == public rows, by construction.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$on_cloud = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public' AND file_url NOT LIKE 'http%/wp-content/uploads/%'" );
+
 		return array(
 			'total'           => $total,
 			'needs_migration' => $still_local,
 			'non_public_kept' => $non_public,
+			'on_cloud'        => $on_cloud,
 		);
 	}
 

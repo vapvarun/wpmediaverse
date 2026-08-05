@@ -1,0 +1,56 @@
+{
+  "mode": "free",
+  "release_version": "2.3.1",
+  "pro_version": null,
+  "ran_at": "2026-08-05T12:53:30Z",
+  "previous_run_superseded": "2026-08-05T12:15:17Z (see git history of this file / .last-smoke-pass-free.json.bak if retained) -- that run used the runbook BEFORE the D.private-media-activity-row wording correction and reported D.private-media-activity-row, C.shortcodes.mvs_album-no-id-silent, C.shortcodes.mvs_player-image-type-silent, and minor.single-media-reaction-bar-a11y-gap as failures. All four are RE-VERIFIED FIXED in this run (see R3, R4, R5 below) -- fresh live re-tests this pass, not carried forward from that report. minor.comment_count-orphaned-column was independently re-confirmed live this run and is carried forward as still-real.",
+  "sections": {
+    "A_fresh_install":     { "pass": 0, "fail": 0, "skipped": 5 },
+    "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
+    "C_core_flows":        { "pass": 16, "fail": 2, "skipped": 18 },
+    "D_regression_guards": { "pass": 5, "fail": 0, "skipped": 19 },
+    "E_pro_smoke":         { "pass": 0, "fail": 0, "skipped": 24 },
+    "F_cross_browser":     { "pass": 2, "fail": 0, "skipped": 1 },
+    "S_pro_supplements":   { "pass": 0, "fail": 0, "skipped": 0 }
+  },
+  "retests": {
+    "R1_blank_title": "pass",
+    "R2_admin_cdn_links": "pass",
+    "R3_private_activity_row": "pass",
+    "R4_shortcode_empty_states": "pass",
+    "R5_reaction_aria": "pass"
+  },
+  "failures": [
+    {
+      "id": "C.member.signed-url.absent-token-status-code",
+      "origin": "from",
+      "triage_note": "Low severity, not a security hole: the security invariant (no asset served, no 500) fully holds; only the documented HTTP status code differs. Likely the runbook contract text needs updating to match current (arguably more correct) behavior rather than the code needing a fix -- 400 for a malformed/incomplete request is defensible REST semantics.",
+      "expected": "GET /wp-json/mvs/v1/serve?mvs_id={private_id} with no mvs_uid/mvs_exp/mvs_sig params returns HTTP 403 (per runbook C.member.signed-url: 'logged-out viewer with no token returns 403, not the asset, not a 500').",
+      "actual": "Returns HTTP 400 rest_invalid_param / rest_missing_callback_param ('Missing parameter(s): mvs_uid, mvs_exp, mvs_sig') because those three params are registered as REQUIRED route args, so WP's REST arg validation rejects the request before the permission/signature check ever runs. No asset is served and no 500 occurs, but the status code is 400, not 403.",
+      "url": "http://mediaverse.local/wp-json/mvs/v1/serve?mvs_id=124",
+      "screenshot": ""
+    },
+    {
+      "id": "minor.comment_count-orphaned-column",
+      "origin": "from",
+      "triage_note": "Low severity, no customer-facing impact. Re-confirmed live this run (independent of the prior 12:15 report): the real, displayed comment count comes from mvs_media_stats.comments, which DOES update correctly on comment create/delete and is what MediaController's REST response and the grid UI actually read. mvs_media_index.comment_count is a separate denormalized column defined in the schema but has no writer anywhere in includes/ after its default 0 (grepped includes/Social/CommentService.php and callers -- no UPDATE touches this column). Contrast with the sibling reaction_count column, which ReactionService keeps in sync. Worth a one-line fix or dropping the column; not a release blocker.",
+      "expected": "mvs_media_index.comment_count either stays in sync with real comment activity (matching the reaction_count pattern) or is removed if genuinely unused.",
+      "actual": "Posted a real comment on media_id=123 via POST /mvs/v1/media/123/comments (id=4, cleaned up after) -- mvs_media_stats.comments went 0 to 1 correctly, but mvs_media_index.comment_count for the same media_id stayed at 0 throughout.",
+      "url": "http://mediaverse.local/wp-json/mvs/v1/media/123/comments",
+      "screenshot": ""
+    }
+  ],
+  "debug_log_issues": [],
+  "manual_required": [
+    "Firefox Desktop: Upload modal file picker",
+    "Safari iOS 390px: Lightbox swipe + reaction tap",
+    "Safari iOS 390px: Activity composer privacy <select> open/close (native UI)",
+    "Share button: navigator.share on Safari iOS (native sheet); navigator.clipboard.writeText on Firefox Desktop",
+    "F.rtl: Arabic locale render check on Explore/single-media/profile/dashboard/lightbox not exercised this run",
+    "A_fresh_install (A1-A5) and B_upgrade (B1-B3): skipped -- this is a live dev site with real media/albums/users; needs a disposable clean-WP environment for a true activation/upgrade test.",
+    "Frontend + admin dark mode: emulateMedia(colorScheme:'dark') screenshotted on /explore-media/, /media/spectrum-gradient/, and wp-admin Overview. Frontend pages stayed light-themed (active theme Twenty Twenty-Five has no prefers-color-scheme hook) and wp-admin rendered its own dark admin-color-scheme cleanly -- nothing broken/invisible in either case, but true plugin-owned dark-mode CSS (tokens like --mvs-bg under a Reign-theme or dark-mode-aware theme) was not exercised since this site's active theme doesn't trigger it. Colorscheme restored to light before finishing.",
+    "C.member.video-poster-fallback: skipped -- no video or audio media exists anywhere in the current dataset (confirmed via DB query: zero rows with media_type='video' or 'audio').",
+    "Time-boxed coverage note (widen-coverage-as-time-allows pass, not exhaustive): covered this run -- upload+thumbnail/webp+activity-row (C.member.upload-public), privacy spot-check across public/private/dm (C.member.upload-privacy-matrix, partial -- not the full 16-cell matrix), full album lifecycle (C.member.albums-lifecycle: create/add-items/reorder/set-cover/remove-item/delete, all via real REST calls), favorites toggle + heart state (C.member.reactions-favorites-comments), comments create/edit/delete, reactions toggle+switch on single-media (R5), notifications firing for media_favorite + media_comment (C.notifications.hook-contract, partial -- not all 5 event types), signed-URL gating (valid/tampered/expired/absent-token), grid render query budget (5 queries for a 12-tile page, well within the <=12 target), admin Overview/Settings/Moderation/All-Media-pagination clean load, Settings save+reload+DB-persist round-trip (mvs_max_upload_size), explore/single-media/album broken-image + mixed-CDN-host sweep (all clean). NOT covered this run and recommended for a follow-up pass: C.anon.search-empty-state, C.anon.tag, C.anon.user-profile, C.anon.album-collection privacy states, C.member.upload-rejections, C.member.bulk-trash-restore-delete, C.member.lightbox-edit-modal (full modal UI beyond the title-validation slice covered by R1), C.member.edit-categories-persist, C.member.activity-composer-attach/preview (BP composer), C.member.streak-badge, C.member.follow-mention, C.member.dm-send-receive, C.admin.moderation-flow (approve/trash/spam action buttons), C.admin.bulk-and-cli, C.notifications.email, C.cron, C.bp-integration, C.blocks, D.rewrite-flush, D.bp-thumbnail-leak, D.esc-close-lightbox, D.dashboard-anon-gate, D.search-empty-state, D.streak-badge-aria, D.activity-button-icon-only, D.activity-privacy-alignment, D.activity-preview-hero-regression, D.bp-css-ownership, D.frontend-asset-bleed, D.share-no-prompt-fallback, D.shared-ui-shell-rename, D.privacy-fix-2026-05-07 full 16-cell matrix, D.i18n-textdomain-too-early, D.script-module-i18n, D.categories-cache-miss-drop, D.notification-hook-message-link.",
+    "Documentation drift found (NOT a code bug, no card needed): qa/inventory/WHAT-TO-CHECK.md's 'mvs_thumbnail_size' row and runbook rows C.member.grid-thumbnail-size / D.grid-thumb-size-default still describe the 1.7.0 default (medium) and expect GET /mvs/v1/media thumbnail_url to use the medium rung. Live code (includes/Core/SettingsHelper.php get_grid_thumb_size_key(), with an explicit 1.8.0-dated comment) intentionally reverted the grid default to 'large' because 'medium' visibly upscaled on retina/HiDPI grid tiles. Confirmed against both a multi-size image (id 123, has thumb_medium AND thumb_large) and a single-thumb-only image (id 139) -- both correctly return mvs_size=large from GET /mvs/v1/media and GET /mvs/v1/media/{id}. Recommend updating the runbook/WHAT-TO-CHECK text to reflect the 1.8.0 decision so this doesn't cost another investigation."
+  ]
+}

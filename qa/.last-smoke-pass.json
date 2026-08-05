@@ -1,50 +1,59 @@
 {
   "mode": "combo",
-  "release_version": "2.3.0",
-  "free_version": "2.3.0",
-  "pro_version": "2.3.0",
-  "ran_at": "2026-08-02T04:05:00Z",
+  "release_version": "2.3.1",
+  "pro_version": "2.3.1",
+  "ran_at": "2026-08-05T13:33:34Z",
   "sections": {
-    "A_fresh_install": {
-      "pass": 5,
-      "fail": 0,
-      "skipped": 0
-    },
-    "B_upgrade": {
-      "pass": 3,
-      "fail": 0,
-      "skipped": 0
-    },
-    "C_core_flows": {
-      "pass": 14,
-      "fail": 0,
-      "skipped": 24
-    },
-    "D_regression_guards": {
-      "pass": 6,
-      "fail": 0,
-      "skipped": 28
-    },
-    "E_pro_smoke": {
-      "pass": 4,
-      "fail": 0,
-      "skipped": 20
-    },
-    "F_cross_browser": {
-      "pass": 0,
-      "fail": 0,
-      "skipped": 5
-    }
+    "A_fresh_install":     { "pass": 0, "fail": 0, "skipped": 5 },
+    "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
+    "C_core_flows":        { "pass": 4, "fail": 0, "skipped": 34 },
+    "D_regression_guards": { "pass": 2, "fail": 0, "skipped": 25 },
+    "E_pro_smoke":         { "pass": 30, "fail": 0, "skipped": 8 },
+    "F_cross_browser":     { "pass": 0, "fail": 0, "skipped": 4 },
+    "S_pro_supplements":   { "pass": 19, "fail": 0, "skipped": 15 }
   },
-  "failures": [],
-  "debug_log_issues": [],
+  "storage_checks": {
+    "S1_counter_accuracy": "pass",
+    "S2_connection_error_reporting": "pass",
+    "S3_cdn_variant_same_host": "pass"
+  },
+  "failures": [
+    {
+      "id": "for.competitions.stale-fixture-unknown-users",
+      "origin": "for",
+      "triage_note": "Battle #4 (Oliver Brooks vs Mina Aoki) and Tournament #5 entries (Spring Photography Championship) reference wp_users IDs 2, 3, 5, 6 which no longer exist on this dev site (current real users are 1, 7-13). Root cause is leftover fixture data from a much older QA baseline (2026-04-23), not a 2.3.1 code defect. The frontend correctly avoids a fatal and falls back to an 'Unknown' placeholder identity + generic avatar rather than crashing, which is graceful degradation, but the visual result ('Unknown vs Unknown') looks broken on /compete/ Recent Results and on the tournament bracket. A freshly-created battle (#7, varundubey vs Oliver Brooks, both real users) rendered names correctly, confirming name resolution itself is not broken. Recommend a fixture cleanup pass (delete or reassign mvs_competitions/mvs_competition_entries rows whose user_id has no matching wp_users row) before the next run. Does not block the 2.3.1 tag.",
+      "expected": "Recent Results / bracket shows real display names for battle and tournament participants.",
+      "actual": "Shows 'Unknown' with a generic placeholder avatar for participants whose wp_users row was deleted in a prior QA cycle.",
+      "url": "http://mediaverse.local/compete/ and http://mediaverse.local/media/tournaments/ (Spring Photography Championship bracket)",
+      "screenshot": ".playwright-mcp/e-compete-hub.png, .playwright-mcp/e-tournament-bracket.png"
+    },
+    {
+      "id": "for.explore.stale-fixture-tiny-and-empty-album-tiles",
+      "origin": "for",
+      "triage_note": "Two dirty pre-existing rows surface on /media/ across all 4 Pro layout modes: (1) media_id=124, title='tiny', a genuine 1x1px private test image left over from a prior thumbnail-backfill test (title/slug/original_filename all say 'tiny'; 3 sibling rows tiny/tiny-1/tiny-2 also exist in the admin's own My Media tab) - the plugin correctly serves the file as-is (it IS 1x1), so the black tile is accurate rendering of bad fixture data, not a serving bug. (2) media_id=22 has NULL file_url/media_type/title and a permalink of /media/qa-own-album-1785596565438/, i.e. an orphaned 'qa-own-album' fixture (likely an album row) that the Explore feed query pulls in as if it were a plain media item; the template correctly falls back to a generic-file placeholder icon rather than a broken <img>, which is the intended no-dead-image contract. Both are QA-environment data hygiene issues from earlier smoke/unit-test runs, not caused by 2.3.1 changes. Recommend a fixture sweep (delete media_id 22 and the 4 'tiny' rows) so future Explore/layout screenshots aren't dominated by black/placeholder tiles.",
+      "expected": "Explore/layout feeds show only real photo content; no empty-record rows leak into the grid.",
+      "actual": "A black 1x1 tile and a generic-file-icon placeholder tile appear at the top of every layout (instagram/flickr/pinterest/dribbble) because of two leftover test-fixture rows.",
+      "url": "http://mediaverse.local/media/",
+      "screenshot": ".playwright-mcp/p21-instagram-desktop.png, .playwright-mcp/p21-flickr-desktop.png, .playwright-mcp/p21-pinterest-desktop.png, .playwright-mcp/p21-dribbble-desktop.png"
+    }
+  ],
+  "debug_log_issues": [
+    { "section": "E_pro_smoke / general frontend sweep", "level": "deprecated", "origin": "for", "line": "PHP Deprecated: File Theme without header.php is deprecated since version 3.0.0 with no alternative available. Please include a header.php template in your theme. in wp-includes/functions.php on line 6170 (active theme Twenty Twenty-Five, an FSE-only block theme, has no classic header.php; fires whenever a plugin template calls get_header())", "file": "wp-includes/functions.php" },
+    { "section": "E_pro_smoke / general frontend sweep", "level": "deprecated", "origin": "for", "line": "PHP Deprecated: File Theme without footer.php is deprecated since version 3.0.0 with no alternative available. Please include a footer.php template in your theme. in wp-includes/functions.php on line 6170 (same root cause as above, get_footer())", "file": "wp-includes/functions.php" }
+  ],
   "manual_required": [
-    "Section F (Firefox desktop, Safari iOS 390px) SKIPPED -- Chromium-only coverage explicitly accepted by the site owner for this release (2026-08-02).",
-    "SELF-CERTIFIED, no independent reviewer. The mediaverse-qa skill asks for a reviewer separate from the agent that produced the findings; one agent did both here. Three measurement errors were caught and corrected mid-run -- a layout matrix that never set its option, a degradation check that grepped server HTML for client-rendered tabs, and a debug-log read taken while WP_DEBUG was off -- and every one of them initially looked like a pass. An independent re-walk before tagging remains the safer path.",
-    "Sections A and B were walked in Docker (wordpress:php8.2-apache + mariadb:11, WP 7.0.2) installing the built release ZIPs, not a working copy. A: 0 fatals, 22 tables Free / 32 with Pro, routes 200 with no manual rewrite flush, 3 pages auto-created, zero debug.log lines. B: real 2.2.1 -> 2.3.0 upgrade, db_version 24 -> 25, all seeded media preserved with privacy and files intact, migration idempotent over two cycles, migration-25 user_archived index back-filled.",
-    "Fixed during this cycle and re-verified: F1 soft-404 on every paginated Explore/profile page (95d5406f), F2 no document shell / PHP deprecation on block themes (5f76532a).",
-    "F3 OPEN but non-blocking: 7 committed -rtl.css files are never enqueued -- and must not be, because serving them double-flips RTL. Recommend dropping the rtlcss grunt task and deleting the files. RTL rendering itself verified correct on an Arabic install.",
-    "Carousel mosaic in the BuddyX Instagram layout was verified by activity counts, image counts and caption presence -- not by eye.",
-    "Basecamp #9962498757 ('single media page feels disconnected') should be re-assessed against this build: block themes now render real site navigation on plugin pages for the first time, which was the same root cause."
+    "Firefox Desktop: Storage settings 'Test BunnyCDN Connection' inline error rendering + admin-post batch migrate/cleanup buttons",
+    "Safari iOS 390px: Compete hub, tournament bracket horizontal scroll, layout-mode switcher, streak widget tap targets",
+    "E.streaks.freeze-proportional-cost: requires seeding specific _mvs_streak_freezes + missed-day gaps; not exercised (out of scope for a no-elaborate-fixtures smoke pass)",
+    "E.streaks.daily-check-bounded: requires 2000+ users with _mvs_last_upload_date seeded; explicitly out of scope per runbook 'do not seed elaborate fixtures'",
+    "E.competitions.cron-bounded: requires 200 mvs_competitions rows per cron-targeted status; not seeded this run",
+    "E.battles.win-xp-configured / E.gamification.configured-xp / E.gamification.winners-notified: WB Gamification plugin (free) is NOT installed on this site, so XP awarding, winner notifications, and points debit cannot be end-to-end verified. Settings UI for battle-win XP (100 default) renders and is editable; underlying award path unverified.",
+    "E.ai-providers: no Google Vision / AWS Rekognition / OpenAI keys configured, so AI auto-moderation flagging + circuit breaker were only confirmed to noop cleanly (no fatals), not exercised end-to-end.",
+    "E.watermarking: no watermark configured this run; not exercised.",
+    "E.feature-toggle-degradation: individual mvs_*_enabled toggles were not flipped off/on this run to confirm nav/page/cron cleanup.",
+    "Full interactive competition journeys (submit challenge entry, cast a vote, resolve a battle, register+advance a tournament match) were not walked end-to-end this run - only presence/no-fatal/REST-sanity was verified per runbook guidance to avoid elaborate fixture seeding.",
+    "BuddyPress-dependent surfaces (C.bp-integration, D.bp-thumbnail-leak, P18 activity composer with boosted media/streak badge) could not be exercised - BuddyPress is not active on this site (only wpmediaverse + wpmediaverse-pro active).",
+    "F.rtl and F.a11y sweeps not performed this run.",
+    "J23.5 (12 new Pro Gutenberg blocks in-editor + frontend pass) not walked this run."
   ]
 }

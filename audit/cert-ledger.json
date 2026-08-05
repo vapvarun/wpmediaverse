@@ -10,7 +10,7 @@
             "check": "contract",
             "entity": "mvs_allow_downloads",
             "status": "pass",
-            "detail": "off=mvs_downloads_disabled(403) on=-(200) expect off=mvs_downloads_disabled"
+            "detail": "off=mvs_downloads_disabled(403) on=mvs_not_found(404) expect off=mvs_downloads_disabled"
         },
         {
             "check": "coverage",
@@ -118,19 +118,19 @@
             "check": "boot",
             "entity": "/mvs/v1/media/(?P<id>[\\d]+)",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404 (mvs_not_found)"
         },
         {
             "check": "boot",
             "entity": "/mvs/v1/media/(?P<id>[\\d]+)/access",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404 (mvs_not_found)"
         },
         {
             "check": "boot",
             "entity": "/mvs/v1/media/(?P<id>[\\d]+)/group",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404 (mvs_not_found)"
         },
         {
             "check": "boot",
@@ -166,19 +166,19 @@
             "check": "boot",
             "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/reactions",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404 (mvs_not_found)"
         },
         {
             "check": "boot",
             "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/comments",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404 (mvs_not_found)"
         },
         {
             "check": "boot",
             "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/favorite",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404 (mvs_not_found)"
         },
         {
             "check": "boot",
@@ -190,7 +190,7 @@
             "check": "boot",
             "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/stats",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404 (mvs_not_found)"
         },
         {
             "check": "boot",
@@ -232,7 +232,7 @@
             "check": "boot",
             "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/rules",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404 (mvs_not_found)"
         },
         {
             "check": "boot",
@@ -250,7 +250,7 @@
             "check": "boot",
             "entity": "/mvs/v1/media/(?P<media_id>[\\d]+)/signed-url",
             "status": "pass",
-            "detail": "GET -> 200"
+            "detail": "GET -> 404 (mvs_not_found)"
         },
         {
             "check": "boot",
@@ -382,13 +382,13 @@
             "check": "boot",
             "entity": "/mvs/v1/conversations/(?P<id>\\d+)",
             "status": "pass",
-            "detail": "GET -> 404"
+            "detail": "GET -> 200"
         },
         {
             "check": "boot",
             "entity": "/mvs/v1/conversations/(?P<id>\\d+)/messages",
             "status": "pass",
-            "detail": "GET -> 404"
+            "detail": "GET -> 200"
         },
         {
             "check": "boot",
@@ -400,7 +400,7 @@
             "check": "boot",
             "entity": "/mvs/v1/conversations/(?P<id>\\d+)/media",
             "status": "pass",
-            "detail": "GET -> 404"
+            "detail": "GET -> 200"
         },
         {
             "check": "boot",

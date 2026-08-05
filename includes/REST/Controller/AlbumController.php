@@ -394,20 +394,23 @@ class AlbumController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		$update_data = array( 'ID' => $album_id );
+		// Post fields go through AlbumService::update() rather than being assembled
+		// here, so the album -> post-field mapping (description => post_content)
+		// lives in one place and any other caller gets the same contract.
+		$post_fields = array();
 
 		$title = $request->get_param( 'title' );
 		if ( null !== $title ) {
-			$update_data['post_title'] = sanitize_text_field( $title );
+			$post_fields['title'] = (string) $title;
 		}
 
 		$description = $request->get_param( 'description' );
 		if ( null !== $description ) {
-			$update_data['post_content'] = wp_kses_post( $description );
+			$post_fields['description'] = (string) $description;
 		}
 
-		if ( count( $update_data ) > 1 ) {
-			$result = wp_update_post( $update_data, true );
+		if ( ! empty( $post_fields ) ) {
+			$result = $this->albums->update( $album_id, $post_fields );
 			if ( is_wp_error( $result ) ) {
 				return $result;
 			}

@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-02T04:35:14Z",
+    "generated_at": "2026-08-05T13:51:39Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -396,7 +396,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/Services/AlbumService.php",
-                    "lines": "610-610",
+                    "lines": "661-661",
                     "method": "albums_for_media"
                 },
                 {
@@ -590,7 +590,7 @@
                 },
                 {
                     "file": "includes/Integrations/BunnyCDN/StorageDriver.php",
-                    "lines": "327-327",
+                    "lines": "424-424",
                     "method": "StorageDriver::download"
                 }
             ]
@@ -639,12 +639,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/AlbumController.php",
-                    "lines": "586-586",
+                    "lines": "589-589",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/AlbumController.php",
-                    "lines": "611-611",
+                    "lines": "614-614",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -657,12 +657,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1541-1541",
+                    "lines": "1563-1563",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1566-1566",
+                    "lines": "1588-1588",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -1024,12 +1024,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/AlbumController.php",
-                    "lines": "573-573",
+                    "lines": "576-576",
                     "method": "create_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1507-1507",
+                    "lines": "1529-1529",
                     "method": "create_item_permissions_check"
                 },
                 {

@@ -127,4 +127,94 @@ final class MediaUrl {
 	public static function variant_path_meta_key( string $size, string $format = VariantSpec::FORMAT_PRIMARY ): string {
 		return self::variant_meta_key( $size, $format ) . '_path';
 	}
+
+	/**
+	 * Where a stored variant actually lives, as a URL.
+	 *
+	 * Cloud path is for display; all processing happens on the local path. This
+	 * is the display side of that rule for stored variants, and the single
+	 * implementation behind every caller that needs one.
+	 *
+	 * Resolution order matches
+	 * `SignedUrlService::maybe_direct_cloud_thumbnail_url()`, because the
+	 * primary and its siblings must agree on where the file is:
+	 *
+	 *   1. `<key>_path` — the driver-agnostic relative path, source of truth
+	 *      since 1.4.0 — resolved through the driver the file actually lives
+	 *      on. On a CDN site this yields the CDN URL.
+	 *   2. The legacy absolute URL meta, for rows that never got a `_path`:
+	 *      pre-1.4.0 rows the Migrator v14 backfill has not reached, and
+	 *      imported MediaPress / rtMedia / BuddyBoss records that
+	 *      `MediaVariantWriter::path_meta_ok()` deliberately skips because
+	 *      their `file_path` is absolute.
+	 *
+	 * Callers pairing this with an already-rendered primary URL must also check
+	 * the two share a host — see `TemplateHelpers::get_variant_url()`. A variant
+	 * on a different host than its primary is unreachable, which is what made
+	 * every WebP 403 behind a CDN (Basecamp #10162798416).
+	 *
+	 * @since 2.3.1
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $meta_key Variant meta key, e.g. `thumb_large_webp` or
+	 *                         `original_webp`. Use `variant_meta_key()` to build it.
+	 * @return string Resolved URL, or '' when the variant is not stored.
+	 */
+	public static function variant_url( int $media_id, string $meta_key ): string {
+		if ( $media_id <= 0 || '' === $meta_key ) {
+			return '';
+		}
+
+		// `ServiceContainer::get()` throws on an unregistered key rather than
+		// returning null, so there is nothing to guard against here.
+		$container = Plugin::container();
+		$repo      = $container->get( 'media_repository' );
+
+		$legacy_url = (string) $repo->get_raw( $media_id, $meta_key );
+
+		$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' );
+		if ( '' !== $rel_path ) {
+			$url = (string) $container->get( 'storage' )->get_driver_for_location( $media_id )->url( $rel_path );
+
+			// The driver can only describe locations it knows about. Cloud
+			// drivers ship in Pro, so on a Free-only site whose library was
+			// migrated to a CDN, `get_driver_for_location()` falls back to
+			// LocalDriver and happily builds a local URL for a file that no
+			// longer lives there — silently wrong, and a 404 once the local
+			// copies are cleaned up.
+			//
+			// `file_url` on the index row is the authority for where the file
+			// actually is. When the driver disagrees with it, trust the stored
+			// variant URL instead: it was written by whichever driver DID own
+			// the file. Same invariant the frontend enforces — a variant lives
+			// on the same host as its primary.
+			if ( '' !== $url && '' !== $legacy_url && ! self::same_host_as_primary( $media_id, $url ) && self::same_host_as_primary( $media_id, $legacy_url ) ) {
+				return $legacy_url;
+			}
+
+			if ( '' !== $url ) {
+				return $url;
+			}
+		}
+
+		return $legacy_url;
+	}
+
+	/**
+	 * Whether a URL sits on the same host as the media's primary file.
+	 *
+	 * @since 2.3.1
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $url      Candidate URL.
+	 */
+	private static function same_host_as_primary( int $media_id, string $url ): bool {
+		$repo     = Plugin::container()->get( 'media_repository' );
+		$file_url = (string) $repo->get_raw( $media_id, 'file_url' );
+		if ( '' === $file_url ) {
+			return true; // Nothing to compare against — do not veto.
+		}
+
+		return (string) wp_parse_url( $url, PHP_URL_HOST ) === (string) wp_parse_url( $file_url, PHP_URL_HOST );
+	}
 }

@@ -133,7 +133,8 @@ class MediaController extends WP_REST_Controller {
 						),
 						'title'          => array(
 							'type'        => 'string',
-							'description' => __( 'Media title.', 'wpmediaverse' ),
+							'minLength'   => 1,
+							'description' => __( 'Media title. Cannot be empty when supplied; omit the field to leave the title unchanged.', 'wpmediaverse' ),
 						),
 						'description'    => array(
 							'type'        => 'string',
@@ -875,7 +876,28 @@ class MediaController extends WP_REST_Controller {
 
 		$title = $request->get_param( 'title' );
 		if ( null !== $title ) {
-			$update_data['title'] = sanitize_text_field( $title );
+			$clean_title = sanitize_text_field( $title );
+
+			// An explicitly-sent empty title is a mistake, not "leave it
+			// alone" — silently ignoring it would let the edit modal appear
+			// to save while the old title stayed, which is worse than saying
+			// no. Refuse it (Coding Rule 20: a refusal is never a success
+			// response) so the caller can show why. Whitespace-only counts as
+			// empty; " " is not a name.
+			//
+			// The guard belongs here and not only in the UI: without it any
+			// REST client — including the planned native app — can leave a
+			// media item with no name at all, which is exactly how the
+			// pre-existing empty-title rows on QA sites were produced.
+			if ( '' === trim( $clean_title ) ) {
+				return new WP_Error(
+					'mvs_empty_title',
+					__( 'Media title cannot be empty.', 'wpmediaverse' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			$update_data['title'] = $clean_title;
 			// IMPORTANT: do NOT regenerate slug from the title. Title edits
 			// must NOT change the public URL — that breaks inbound links,
 			// shared OG cards, search-engine cache, and the URL the user

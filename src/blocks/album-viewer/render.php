@@ -19,18 +19,38 @@ $columns          = isset( $attributes['columns'] ) ? absint( $attributes['colum
 $show_title       = ! empty( $attributes['showTitle'] );
 $show_description = ! empty( $attributes['showDescription'] );
 
-if ( ! $album_id ) {
+// Misconfiguration — no album chosen, or an id that is not an album. Show the
+// editor what went wrong instead of rendering nothing (Coding Rule 11); a
+// blank space is indistinguishable from a broken plugin. Visitors get nothing,
+// because a stray "album not found" on a live page helps nobody and hints at
+// content they were never meant to know about.
+if ( ! $album_id || ! ( $mvs_album_post = get_post( $album_id ) ) || 'mvs_album' !== $mvs_album_post->post_type ) {
+	if ( current_user_can( 'edit_posts' ) ) {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML.
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'image',
+				'title'   => __( 'Album not found', 'wpmediaverse' ),
+				'message' => $album_id
+					? __( 'This block points at an album that no longer exists. Pick another album in the block settings.', 'wpmediaverse' )
+					: __( 'Choose an album in the block settings to display it here.', 'wpmediaverse' ),
+			)
+		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
 	return;
 }
 
-$album = get_post( $album_id );
-if ( ! $album || 'mvs_album' !== $album->post_type ) {
-	return;
-}
+$album = $mvs_album_post;
 
 // Privacy gate: a members/private album embedded via this block (or the
 // [mvs_album] shortcode that shares this render) must not expose its contents
 // to viewers who can't see it (audit 2026-06-04). A non-viewer gets nothing.
+//
+// Deliberately NO empty state here, unlike the not-found branch above. An
+// "you cannot see this album" notice confirms the album exists, which is the
+// one thing a privacy gate must not disclose. Coding Rule 11 wants the editor
+// told about mistakes, not the visitor told about content.
 if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $album_id, get_current_user_id() ) ) {
 	return;
 }

@@ -687,60 +687,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Browser-safe WebP variant URL or empty string.
 	 */
 	public function get_webp_variant_url( int $media_id, string $size, string $jpeg_url ): string {
-		if ( $media_id <= 0 || '' === $jpeg_url ) {
-			return '';
-		}
-
-		// Skip when the JPEG URL routes through the gated /serve REST
-		// endpoint. The endpoint reads `file_path` from mvs_media_index and
-		// streams the bytes; it has no WebP variant negotiation yet. Emitting
-		// a `_webp` URL that bypasses /serve would break privacy enforcement.
-		if ( false !== strpos( $jpeg_url, '/mvs/v1/serve' ) || false !== strpos( $jpeg_url, '/serve?' ) ) {
-			return '';
-		}
-
-		// Resolve which meta key holds the WebP sibling for this size. The
-		// 'full' / empty cases hit the original WebP; the named intermediate
-		// sizes (large/medium/thumb) map to thumb_<size>_webp. Anything else
-		// gracefully falls through (returns '' so the JPEG stays).
-		$meta_key = '';
-		switch ( $size ) {
-			case '':
-			case 'full':
-				$meta_key = \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP;
-				break;
-			case 'thumbnail':
-				$meta_key = 'thumb_thumb_webp';
-				break;
-			case 'large':
-			case 'medium':
-			case 'thumb':
-				$meta_key = 'thumb_' . $size . '_webp';
-				break;
-			default:
-				return '';
-		}
-
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$url  = (string) $repo->get_raw( $media_id, $meta_key );
-
-		// Fallback: if the requested size has no WebP sibling AND the JPEG
-		// renderer fell back to the original (i.e. no thumb_<size> exists
-		// either, which currently happens on cloud uploads where thumbnail
-		// generation needs a local source file), reuse `original_webp`.
-		// Browsers downloading the original WebP at thumbnail-size container
-		// dimensions is still a strict win because the WebP is dramatically
-		// smaller than the original JPEG/PNG. Skip when the requested size
-		// IS `full` to avoid recursion.
-		if ( '' === $url && \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP !== $meta_key ) {
-			$thumb_meta_key = ( 'thumbnail' === $size ) ? 'thumb_thumb' : 'thumb_' . $size;
-			$has_size_thumb = '' !== (string) $repo->get_raw( $media_id, $thumb_meta_key );
-			if ( ! $has_size_thumb ) {
-				$url = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
-			}
-		}
-
-		return '' !== $url ? $url : '';
+		return $this->get_variant_url( $media_id, $size, $jpeg_url, \WPMediaVerse\Services\VariantSpec::FORMAT_WEBP );
 	}
 
 	/**
@@ -762,50 +709,128 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string Browser-safe AVIF variant URL or empty string.
 	 */
 	public function get_avif_variant_url( int $media_id, string $size, string $jpeg_url ): string {
-		if ( $media_id <= 0 || '' === $jpeg_url ) {
-			return '';
-		}
+		return $this->get_variant_url( $media_id, $size, $jpeg_url, \WPMediaVerse\Services\VariantSpec::FORMAT_AVIF );
+	}
 
-		if ( false !== strpos( $jpeg_url, '/mvs/v1/serve' ) || false !== strpos( $jpeg_url, '/serve?' ) ) {
-			return '';
-		}
-
-		$meta_key = '';
+	/**
+	 * Meta key holding a modern-format sibling for a rendered size.
+	 *
+	 * Normalises the template-side size vocabulary ('' / full / thumbnail) onto
+	 * the storage-side key vocabulary, then defers to the canonical mapper in
+	 * `Core\MediaUrl` so the size+format -> key rule lives in one place.
+	 *
+	 * @since 2.3.1
+	 *
+	 * @param string $size   Size key (large|medium|thumb|thumbnail|full|'').
+	 * @param string $format `VariantSpec::FORMAT_WEBP` or `FORMAT_AVIF`.
+	 * @return string Meta key, or '' when the size has no variant.
+	 */
+	private function variant_meta_key_for_size( string $size, string $format ): string {
 		switch ( $size ) {
 			case '':
 			case 'full':
-				$meta_key = \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF;
-				break;
+				return 'original_' . $format;
 			case 'thumbnail':
-				$meta_key = 'thumb_thumb_avif';
-				break;
+				return MediaUrl::variant_meta_key( 'thumb', $format );
 			case 'large':
 			case 'medium':
 			case 'thumb':
-				$meta_key = 'thumb_' . $size . '_avif';
-				break;
+				return MediaUrl::variant_meta_key( $size, $format );
 			default:
 				return '';
 		}
+	}
 
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$url  = (string) $repo->get_raw( $media_id, $meta_key );
+	/**
+	 * Resolve a modern-format sibling URL (WebP/AVIF) for an already-rendered
+	 * primary (JPEG/PNG) URL.
+	 *
+	 * Single implementation behind `get_webp_variant_url()` and
+	 * `get_avif_variant_url()`, which previously differed only by format.
+	 *
+	 * Resolution mirrors the primary path in
+	 * `SignedUrlService::maybe_direct_cloud_thumbnail_url()`, because the two
+	 * must agree on WHERE a file lives:
+	 *
+	 *   1. `<key>_path` -- the driver-agnostic relative path (source of truth
+	 *      since 1.4.0) -- resolved through the driver the file actually lives
+	 *      on. This is what puts the variant on the CDN when the primary is on
+	 *      the CDN.
+	 *   2. The legacy absolute URL meta, for rows that never got a `_path`:
+	 *      pre-1.4.0 rows the Migrator v14 backfill has not reached, and
+	 *      imported MediaPress / rtMedia / BuddyBoss records that
+	 *      `MediaVariantWriter::path_meta_ok()` deliberately skips because
+	 *      their `file_path` is absolute.
+	 *
+	 * Then one invariant, which is the actual fix for Basecamp #10162798416:
+	 * **never emit a variant on a different host from the primary.** Before
+	 * this, a Bunny-CDN JPEG was paired with the stale local `_webp` URL, which
+	 * points inside wp-content/uploads/wpmediaverse/ -- the directory MediaVerse
+	 * itself locks with `Deny from all` -- so every WebP returned 403 on Apache
+	 * (AH01797) and rendered as a broken image. The host check is deliberately
+	 * broader than the CDN case: it also covers any future arrangement where
+	 * primary and variant could diverge.
+	 *
+	 * @since 2.3.1
+	 *
+	 * @param int    $media_id    Media id.
+	 * @param string $size        Size key (large|medium|thumb|thumbnail|full|'').
+	 * @param string $primary_url The resolved JPEG/PNG URL being paired with.
+	 * @param string $format      `VariantSpec::FORMAT_WEBP` or `FORMAT_AVIF`.
+	 * @return string Browser-safe variant URL, or '' to fall back to the primary.
+	 */
+	private function get_variant_url( int $media_id, string $size, string $primary_url, string $format ): string {
+		if ( $media_id <= 0 || '' === $primary_url ) {
+			return '';
+		}
 
-		// Same original-AVIF fallback as the WebP path: if the requested size
-		// has no AVIF sibling AND no JPEG sibling either (cloud uploads, etc.),
-		// fall back to the original AVIF. Downloading the original AVIF at
-		// thumbnail dimensions is still a win — AVIF is so much smaller than
-		// JPEG/PNG that even at full resolution it beats the smaller-format
-		// thumb in bytes.
-		if ( '' === $url && \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF !== $meta_key ) {
+		// Skip when the primary routes through the gated /serve REST endpoint:
+		// /serve does its own Accept-header negotiation (1.3.0), and emitting a
+		// sibling URL that bypasses it would break privacy enforcement.
+		if ( false !== strpos( $primary_url, '/mvs/v1/serve' ) || false !== strpos( $primary_url, '/serve?' ) ) {
+			return '';
+		}
+
+		$meta_key = $this->variant_meta_key_for_size( $size, $format );
+		if ( '' === $meta_key ) {
+			return '';
+		}
+
+		$repo         = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$original_key = 'original_' . $format;
+
+		// 1. Where the variant actually lives — `_path` through the driver,
+		// falling back to the legacy URL meta. Single implementation in the
+		// read-side facade, shared with the admin variant links.
+		$url = MediaUrl::variant_url( $media_id, $meta_key );
+
+		// Fall back to the original-format sibling when the requested size has
+		// neither a variant nor a primary thumb of its own (cloud uploads, where
+		// thumbnail generation needs a local source file). Serving the original
+		// at thumbnail dimensions is still a strict byte win. Skipped when the
+		// requested size IS the original, to avoid recursing onto itself.
+		if ( '' === $url && $original_key !== $meta_key ) {
 			$thumb_meta_key = ( 'thumbnail' === $size ) ? 'thumb_thumb' : 'thumb_' . $size;
-			$has_size_thumb = '' !== (string) $repo->get_raw( $media_id, $thumb_meta_key );
+			$has_size_thumb = '' !== (string) $repo->get_raw( $media_id, $thumb_meta_key )
+				|| '' !== (string) $repo->get_raw( $media_id, $thumb_meta_key . '_path' );
 			if ( ! $has_size_thumb ) {
-				$url = (string) $repo->get_raw( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_AVIF );
+				$url = MediaUrl::variant_url( $media_id, $original_key );
 			}
 		}
 
-		return '' !== $url ? $url : '';
+		if ( '' === $url ) {
+			return '';
+		}
+
+		// 2. The invariant. A variant on a different host from the primary is
+		// unreachable by definition -- the primary is what the site has proven
+		// it can serve. Relative URLs parse to an empty host on both sides and
+		// compare equal, which is correct: same origin.
+		if ( (string) wp_parse_url( $url, PHP_URL_HOST ) !== (string) wp_parse_url( $primary_url, PHP_URL_HOST ) ) {
+			return '';
+		}
+
+		return $url;
 	}
 
 	/**
