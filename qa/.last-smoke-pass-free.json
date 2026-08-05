@@ -2,61 +2,79 @@
   "mode": "free",
   "release_version": "2.3.1",
   "pro_version": null,
-  "ran_at": "2026-08-05T11:31:00Z",
+  "ran_at": "2026-08-05T12:15:17Z",
   "sections": {
     "A_fresh_install":     { "pass": 0, "fail": 0, "skipped": 5 },
     "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 7, "fail": 2, "skipped": 29 },
-    "D_regression_guards": { "pass": 3, "fail": 1, "skipped": 25 },
+    "C_core_flows":        { "pass": 17, "fail": 2, "skipped": 19 },
+    "D_regression_guards": { "pass": 8, "fail": 1, "skipped": 18 },
     "E_pro_smoke":         { "pass": 0, "fail": 0, "skipped": 24 },
-    "F_cross_browser":     { "pass": 1, "fail": 0, "skipped": 2 },
+    "F_cross_browser":     { "pass": 2, "fail": 0, "skipped": 3 },
     "S_pro_supplements":   { "pass": 0, "fail": 0, "skipped": 0 }
+  },
+  "retests": {
+    "R1_blank_title":        "pass",
+    "R2_admin_cdn_links":    "pass",
+    "R3_search_404_origin":  "for"
   },
   "failures": [
     {
-      "id": "C.member.lightbox-edit-modal",
+      "id": "D.private-media-activity-row",
       "origin": "from",
-      "triage_note": "PARTIAL FIX since the prior run. The dangerous half is fixed: the prior run found Save actually persisted an empty title (real data loss on media_id 125). This run confirms the server now correctly refuses -- PUT /mvs/v1/media/64 with title:'' returns HTTP 400 rest_invalid_param, and the stored title (media_id=64, 'Alpine Mountain Sunrise') is unchanged in the DB after the attempt. But the UI half the task asked to re-verify ('Save DISABLED' while title is empty) was never wired: Save's disabled binding is data-wp-bind--disabled=\"state.editModal.saving\" only, no title-empty condition. Clicking Save with a blank title now silently no-ops client-side (no PUT fires, no visible error -- an empty error slot exists in the DOM but is never populated), violating the runbook's 'no silent action' gate. Net: no data can be lost anymore, but the exact UI contract this retest was asked to confirm does not pass.",
-      "expected": "Owner opens Edit Media modal on /my-media/, clears Title -> Save button becomes disabled immediately. If a save is attempted anyway, a visible error appears and the server refuses with 400.",
-      "actual": "Save button stays enabled (disabled=false) after the Title field is cleared to ''. Clicking it does not send a PUT request and shows no visible error message. Direct REST call to PUT /mvs/v1/media/64 with title:'' correctly returns HTTP 400 rest_invalid_param, and the DB title is unchanged -- server-side data protection now works, client-side gating/feedback still does not.",
+      "triage_note": "REGRESSION, confirmed live this run. Social\\ActivityService::on_upload() (line ~198) contains `if ( in_array( $privacy, array( 'private', 'dm' ), true ) ) { return; }` -- this explicitly SKIPS creating an mvs_activity row for private uploads. This is the exact opposite of the D-row's documented contract, which states the 1.7.0 fix (fc31bf0) made private uploads WRITE a row (only the BP sitewide mirror stays privacy-gated). Reproduced live: uploaded 'Smoke Upload Private' (media_id=135, privacy=private) via the real /my-media/ dashboard as owner -- zero rows in mvs_activity for media_id=135, confirmed by direct query immediately after upload (last activity id stayed at 72, no id=73 was ever created). By contrast, uploading the same file at privacy=public and privacy=members in the same session both correctly wrote activity rows (ids 71, 72). A pre-existing seed row (media_id=124, private, activity id=66) does have a row, but that was seeded by an older process before this regression -- it is not evidence the current code path works; the current code path was directly exercised via the real dashboard UI and failed.",
+      "expected": "Uploading a media item with privacy=private writes exactly one row to mvs_activity for it (SELECT * FROM mvs_activity WHERE media_id = $ID returns 1 row), per the documented 1.7.0 fix and the D-row contract. Only the BP sitewide activity mirror should stay privacy-gated, not the native mvs_activity table.",
+      "actual": "Uploading privacy=private via /my-media/ writes ZERO rows to mvs_activity. ActivityService::on_upload() bare-returns for privacy in ('private','dm') before ever calling record(). Public and members uploads in the same session correctly wrote activity rows.",
       "url": "http://mediaverse.local/my-media/",
-      "screenshot": ".playwright-mcp/edit-modal-blank-title-save-not-disabled.png"
+      "screenshot": "n/a - server-side/DB-verified defect, no visual signature"
     },
     {
-      "id": "priority1.admin-media-details-cdn-link-host-mismatch",
+      "id": "C.shortcodes.mvs_album-no-id-silent",
       "origin": "from",
-      "triage_note": "Root cause is in Free's own code, not simply Pro's absence: MediaUrl::variant_url() (includes/Core/MediaUrl.php) resolves a variant through StorageService::get_driver_for_location(), whose final fallback is get_driver() -> apply_filters('mvs_storage_driver', null, $name) -> LocalDriver when nothing hooks the filter. Only Pro's driver classes (S3/BunnyCDN/R2/DOSpaces) hook that filter, so in free-only mode every cloud-hosted variant resolves through LocalDriver, which always returns a non-empty local URL -- so variant_url() never reaches its documented fallback to the correct legacy CDN meta value. The code's own doc-comment warns this exact host-mismatch class 403'd WebP behind a CDN before (Basecamp #10162798416); this reproduces the same class, just not yet 404ing because local mirror copies still exist.",
-      "expected": "On the per-media Details view for media_id=64 (the item migrated to BunnyCDN), the 'Open the original image', 'Open WebP copy', and all three per-size 'View ->' links (Large/Medium/Thumbnail) should all resolve on mediaverse1.b-cdn.net, matching the stored file_url/thumb_* meta, and none should 404.",
-      "actual": "Only 'Open the original image' correctly points at https://mediaverse1.b-cdn.net/wpmediaverse/2026/08/1e602735c00b673e.jpg. 'Open WebP copy' and all 3 'View ->' size links instead point at http://mediaverse.local/wp-content/uploads/wpmediaverse/2026/08/1e602735c00b673e*.{jpg,webp} -- a different host than the primary link for the same media item. curl confirms both hosts currently return HTTP 200 for every one of these URLs (local mirrors have not been cleaned up), so nothing visibly 404s today, but the page is silently serving 5 of 6 links from the wrong location for a cloud-migrated item, and will 404 once local cleanup runs.",
-      "url": "http://mediaverse.local/wp-admin/admin.php?page=mvs-media&view=details&media_id=64",
-      "screenshot": ".playwright-mcp/media64-details-host-mismatch.png"
+      "triage_note": "Coding Rule 11 violation ('No silent render fallthrough... every return; inside a render path must be paired with a visible empty state'). render_album() in Shortcodes.php delegates entirely to render_block_template('album-viewer', ...) -> build/blocks/album-viewer/render.php, which does a bare `if ( ! $album_id ) { return; }` with zero output. Contrast with the sibling [mvs_collection] shortcode, which handles its own no-id case directly in Shortcodes.php and returns a friendly '<p>Please provide a collection ID: [mvs_collection id=\"123\"]</p>' message. [mvs_album] with a VALID id (tested id=17, 'Mountain Escapes') renders correctly (title, description, grid) -- only the missing/invalid-id empty-state branch is broken. Same underlying render.php is shared by the mvs/album-viewer block, so the block has the identical empty-state gap.",
+      "expected": "[mvs_album] (and the mvs/album-viewer block) with no id or an invalid id produces a visible empty-state message, matching the pattern used by the sibling [mvs_collection] shortcode.",
+      "actual": "[mvs_album] and [mvs_album id=\"999999\"] (nonexistent) render nothing at all -- zero output, no message, no visible empty state. Verified via a temporary WP-CLI-seeded test page (torn down after the check).",
+      "url": "http://mediaverse.local/smoke-shortcodes-test/ (fixture page, deleted after verification)",
+      "screenshot": "n/a - defect is the absence of any rendered output"
     },
     {
-      "id": "D.search-empty-state",
-      "origin": "for",
-      "triage_note": "Reproduced on a completely unrelated stock WordPress Page with zero plugin markup (/sample-page/?s=test also 404s), and no new debug.log entries appear when it happens -- confirms this is WordPress core / rewrite-permalink query-var routing on this site short-circuiting BEFORE wpmediaverse's own explore.php template (which correctly reads $_GET['s'] and implements the documented friendly empty state) ever executes. wpmediaverse's own template code for this contract is correct; the site's routing is swallowing the request first. Still filed because it fully blocks a documented customer contract on this install, but the fix is not a wpmediaverse code change.",
-      "expected": "/explore-media/?s=zzznoresults999 renders the Explore page with a 'no results for {term}' heading, a 'Browse all media' link, and >=5 popular-tag chips.",
-      "actual": "/explore-media/?s=zzznoresults999 (and any other search term, e.g. ?s=mountain) returns a hard HTTP 404 'Page not found' -- worse than the originally described regression (a generic empty state); the page does not render at all.",
-      "url": "http://mediaverse.local/explore-media/?s=zzznoresults999",
-      "screenshot": ".playwright-mcp/explore-search-404.png"
-    }
-  ],
-  "debug_log_issues": [
+      "id": "C.shortcodes.mvs_player-image-type-silent",
+      "origin": "from",
+      "triage_note": "Coding Rule 11 violation. build/blocks/media-player/render.php gates `if ( ! $is_video && ! $is_audio ) { return; }` with zero output for image-type media -- no 'unsupported media type' message, no fallback image display. Verified against media_id=61 (real, existing, public image, title 'tiny'): [mvs_player id=\"61\"] renders nothing. Historical findings-history F10 (2026-04-23) described this as a shortcode-vs-block DIVERGENCE where the shortcode rendered the image fine and only the block failed; that is no longer true -- both paths now share render_block_template() -> the same render.php, so the shortcode has regressed to the same silent-empty behavior as the block. Same render.php backs the mvs/media-player block, so the block has the identical gap.",
+      "expected": "[mvs_player id=\"<image media>\"] (and the mvs/media-player block) either renders the image as a fallback, or shows a visible 'this media type is not playable here' message -- never a bare empty output, per Coding Rule 11 and the render-state-rules standing contract.",
+      "actual": "[mvs_player id=\"61\"] against a real, existing, public IMAGE media item renders zero output -- no image, no message, no visible empty state.",
+      "url": "http://mediaverse.local/smoke-shortcodes-test/ (fixture page, deleted after verification)",
+      "screenshot": "n/a - defect is the absence of any rendered output"
+    },
     {
-      "section": "baseline/admin",
-      "level": "warning",
-      "origin": "for",
-      "line": "[05-Aug-2026 11:05:47 UTC] Cron reschedule event error for hook: action_scheduler_run_queue, Error code: invalid_schedule, Error message: Event schedule does not exist., Data: {\"schedule\":\"every_minute\",\"args\":[\"WP Cron\"],\"interval\":60}",
-      "file": "wp-content/debug.log (pre-existing Action Scheduler / WP-Cron infrastructure noise, not wpmediaverse code; timestamped before browser testing began)"
+      "id": "minor.single-media-reaction-bar-a11y-gap",
+      "origin": "from",
+      "triage_note": "Minor, separate component from the lightbox modal (which fully passes D.lightbox-reactions-a11y this run -- role=group aria-label=\"Reactions\", aria-pressed toggling, sentence-form-ish labels, aria-hidden emoji spans, all confirmed on the real modal opened from /explore-media/). The STANDALONE single-media page (/media/<slug>/) has its OWN, separate reaction-bar markup that does not carry the same a11y wiring: aria-label values are bare lowercase words ('like','love',...) with no aria-pressed attribute at all, and the wrapping [role=\"group\"] has no aria-label. Included for rigor since this page is a real, frequently-shared customer surface, distinct from the tested-and-passing lightbox.",
+      "expected": "Reaction buttons on the single-media page carry aria-pressed (toggle state) and the role=\"group\" wrapper carries an aria-label, matching the standard already implemented (and verified passing) in the lightbox modal.",
+      "actual": "On http://mediaverse.local/media/smoke-upload-public/ (fixture, deleted after verification), the 6 reaction buttons have aria-label values 'like'/'love'/'haha'/'wow'/'sad'/'angry' with aria-pressed=null on all of them, and the role=\"group\" wrapper has no aria-label.",
+      "url": "http://mediaverse.local/media/smoke-upload-public/ (fixture page, deleted after verification)",
+      "screenshot": "n/a - a11y attribute gap, not a visual defect"
+    },
+    {
+      "id": "minor.comment_count-orphaned-column",
+      "origin": "from",
+      "triage_note": "Low severity, no customer-facing impact -- the real, displayed comment count comes from mvs_media_stats.comments, which DOES update correctly and is what MediaController's REST response and the grid UI actually read. mvs_media_index.comment_count is a SEPARATE denormalized column, defined in the schema (Migrator) and listed in MediaRepository's field allowlist, but no writer anywhere in includes/ ever updates it after its default 0 -- confirmed via full-codebase grep. Contrast with the sibling reaction_count column, which ReactionService explicitly keeps in sync with an inline comment documenting the intent ('Keep the denormalized reaction_count in mvs_media_index in sync'). CommentService has no equivalent line. Flagging per the plugin's own coding rule ('any store written but never read, or defined but never written, is dead weight') -- worth a one-line fix or removing the column, not a release blocker.",
+      "expected": "mvs_media_index.comment_count either stays in sync with real comment activity (matching the reaction_count pattern) or is removed if genuinely unused.",
+      "actual": "Posted a real comment on media_id=133 (fixture, deleted after verification) via the lightbox composer -- mvs_media_stats.comments correctly went 0 to 1, but mvs_media_index.comment_count stayed at 0.",
+      "url": "http://mediaverse.local/explore-media/ (fixture media, deleted after verification)",
+      "screenshot": "n/a - DB-only observation"
     }
   ],
+  "debug_log_issues": [],
   "manual_required": [
-    "A_fresh_install (A1-A5) and B_upgrade (B1-B3): skipped entirely -- this is a live dev site with 65 real media rows, 6 albums, and seeded users/reports; a clean-WP-install activation test or a prior-version-to-2.3.1 upgrade test needs a disposable environment this session does not have.",
+    "A_fresh_install (A1-A5) and B_upgrade (B1-B3): skipped -- this is a live dev site with real media/albums/users; needs a disposable clean-WP environment for a true activation/upgrade test.",
     "Firefox Desktop: upload modal file picker not verified -- Playwright MCP is Chromium-only.",
     "Safari iOS 390px: lightbox swipe + reaction tap not verified -- Playwright MCP is Chromium-only.",
-    "All Media (admin.php?page=mvs-media) bulk-submit-with-zero-selected safety guard: NOT exercised live. The sandbox's auto-mode permission classifier blocked the click (selecting 'Move to Trash' + Apply with 0 rows checked) as a potentially destructive action against 65 real media rows, before it could run. Needs a human tester or an explicitly-authorized session to confirm zero-selected submit shows a friendly no-op error and does not act on all visible rows.",
-    "F.rtl (Arabic/RTL locale rendering of Explore/single-media/profile/dashboard/lightbox) not exercised this run -- out of scope for the stated priorities this pass.",
-    "The site-level ?s= query-var 404 (see D.search-empty-state failure) needs a server/hosting-side look at permalink structure and any query-var-stripping rewrite rule or security layer -- it reproduces on a stock WP page with no plugin content, so it is not fixable inside the wpmediaverse codebase alone.",
-    "C.member.upload-privacy-matrix, C.member.albums-lifecycle, E.collections-lifecycle, C.member.video-poster-fallback, C.member.grid-render-query-budget, C.shortcodes, C.blocks, C.notifications*, C.cron, C.member.signed-url, C.member.dm-send-receive and remaining C rows not itemized above were not re-walked this run -- this pass focused on the stated priorities (admin surface coverage, the lightbox-edit-modal bug retest, media_id=64 CDN link check, representative core-flow + regression-guard spot checks, frontend image-integrity). A full C/D sweep matching the prior run's breadth still needs a follow-up pass."
+    "R3 / D.search-empty-state: /explore-media/?s=zzznoresults999 still hard-404s. Confirmed origin='for' this run by reproducing the identical 404 on /sample-page/?s=test (a stock WordPress page with zero plugin markup), while the WordPress-native /?s=test search on the homepage works fine. This isolates the fault to this site's permalink/rewrite routing for '<page>/?s=' combinations specifically, not to wpmediaverse's own explore.php template (whose search-empty-state code is present and correct, just never reached). Needs a server/hosting-side look at rewrite rules, not a plugin code change.",
+    "F.rtl (Arabic/RTL rendering of Explore/single-media/profile/dashboard/lightbox) not exercised this run.",
+    "Frontend dark mode: emulateMedia(colorScheme:'dark') produced no visual change (--mvs-bg stayed #ffffff in both light and dark emulation). Verified via source that this is INTENTIONAL, not a bug -- assets/css/frontend.css line ~141 documents 'Dark mode: theme-controlled only (no prefers-color-scheme)', gated behind theme-supplied variables (--reign-site-body-bg-color etc.). The active theme on this site (Twenty Twenty-Five) has no dark-mode class/attribute hook, so no dark styling applies -- expected on this theme, would need a Reign-theme (or equivalent dark-mode-aware theme) site to actually exercise the plugin's dark-mode CSS branch.",
+    "Media 64 (BunnyCDN) frontend serving: the single-media page and REST thumbnail_url/file_url for media_id=64 route through the LOCAL /wp-json/mvs/v1/serve proxy rather than a direct mediaverse1.b-cdn.net link, even though R2 (Admin Details page links) is now fixed and correctly shows direct CDN hrefs. The image itself loads correctly (200, real bytes, naturalWidth=800) so there is no visible defect, but this differs from the 1.4.0 'location-based media display' direct-CDN-for-public-cloud-media design. Plausible explanation: the direct-CDN bypass requires a cloud StorageDriver class to resolve eligibility, and those classes ship in Pro (deactivated for this free-mode run) -- needs confirmation against a combo-mode run before treating as a gap.",
+    "C.member.video-poster-fallback: skipped -- no video or audio media exists anywhere in the current dataset (verified via DB query), and none was seeded this run due to time. Needs a video fixture seeded via UploadService to exercise the posterless-video fallback path.",
+    "C.member.albums-lifecycle: only the populated-render branch was verified (existing album id=17). The full create -> add-items -> reorder -> set-cover -> privacy-toggle -> delete journey was not walked end-to-end this run.",
+    "C.member.upload-rejections, C.member.bulk-trash-restore-delete, C.member.streak-badge, C.member.dm-send-receive, C.admin.plugin-pages (full sweep), C.admin.settings-readers, C.admin.moderation-flow, C.notifications.email, C.cron, C.anon.tag, C.anon.user-profile, C.anon.dashboard-gate not re-walked this run -- prioritized upload/privacy/lightbox/notifications/shortcodes/blocks/signed-url/query-budget coverage per the task's stated priorities instead."
   ]
 }
