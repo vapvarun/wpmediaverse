@@ -97,6 +97,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			return state.uploadModalMode !== 'album' || state.uploadModalUploading || ! state.hasFiles;
 		},
 
+		get editModalSaveDisabled() {
+			// Runbook contract C.member.lightbox-edit-modal: "save disabled
+			// while title empty".
+			return state.editModalSaving
+				|| '' === String( state.editModalTitle || '' ).trim();
+		},
 		get uploadModalHeading() {
 			const titles = {
 				photo: ( state.i18n?.uploadPhoto || 'Upload Photo' ),
@@ -559,6 +565,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		async saveEditModal() {
 			if ( state.editModalSaving || ! state.editModalMediaId ) return;
+
+			// Mirrors the server guard (mvs_empty_title). Whitespace-only is
+			// empty — " " is not a name.
+			if ( '' === String( state.editModalTitle || '' ).trim() ) {
+				state.editModalError = ( state.i18n?.titleRequired || 'Title cannot be empty.' );
+				return;
+			}
+
 			state.editModalSaving = true;
 			state.editModalError = '';
 

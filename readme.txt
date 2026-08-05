@@ -115,6 +115,7 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * Fix      - WebP and AVIF images no longer return 403 on sites that serve media from a CDN. Variant URLs now resolve through the same storage driver as the JPEG instead of a stale local path.
 * Fix      - Admin media details links to a variant file now point at the file's real location, so they open instead of failing on CDN-backed sites.
 * Improve  - Migrating media to or from cloud storage now repoints every stored variant URL, so nothing is left pointing at the previous location.
+* Fix      - A media item can no longer be saved without a title. The Save button stays disabled while the field is empty, and the API refuses a blank title instead of storing one.
 
 = 2.3.0 - August 2026 =
 

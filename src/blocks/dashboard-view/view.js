@@ -746,6 +746,16 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 		async saveEdit() {
 			const ctx = getContext();
+
+			// A media item with no name renders as an untitled tile everywhere
+			// it appears. The server refuses this too (mvs_empty_title); this
+			// guard keeps the round-trip off the wire and puts the reason next
+			// to the field the user has to fix.
+			if ( '' === String( state.editModal.title || '' ).trim() ) {
+				state.editModal.error = ( state.i18n?.titleRequired || 'Title cannot be empty.' );
+				return;
+			}
+
 			state.editModal.saving = true;
 
 			// Array.from() unwraps the Interactivity Proxy so JSON.stringify

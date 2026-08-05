@@ -44,6 +44,7 @@ wp_interactivity_state(
 	'mvs/shared-ui',
 	array(
 		'i18n' => array(
+			'titleRequired'    => __( 'Title cannot be empty.', 'wpmediaverse' ),
 			'uploadPhoto'      => __( 'Upload Photo', 'wpmediaverse' ),
 			'createGallery'    => __( 'Create Gallery Post', 'wpmediaverse' ),
 			'createAlbum'      => __( 'Create Album', 'wpmediaverse' ),
@@ -325,7 +326,7 @@ wp_interactivity_state(
 				<button class="mvs-btn mvs-btn--secondary" data-wp-on--click="actions.closeEditModal" data-wp-bind--disabled="state.editModalSaving">
 					<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
 				</button>
-				<button class="mvs-btn mvs-btn--primary" data-wp-on--click="actions.saveEditModal" data-wp-bind--disabled="state.editModalSaving">
+				<button class="mvs-btn mvs-btn--primary" data-wp-on--click="actions.saveEditModal" data-wp-bind--disabled="state.editModalSaveDisabled">
 					<span data-wp-bind--hidden="state.editModalSaving"><?php esc_html_e( 'Save changes', 'wpmediaverse' ); ?></span>
 					<span data-wp-bind--hidden="!state.editModalSaving"><?php esc_html_e( 'Saving…', 'wpmediaverse' ); ?></span>
 				</button>
