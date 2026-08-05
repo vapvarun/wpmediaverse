@@ -112,12 +112,15 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 
 = 2.3.1 - August 2026 =
 
+Images served from a CDN render again, and a few surfaces now say what they mean.
+
+* Improve  - Migrating media to or from cloud storage now repoints every stored variant URL, so nothing is left pointing at the previous location.
+* Improve  - Reaction buttons on a single media page now report their pressed state to screen readers, matching the lightbox.
 * Fix      - WebP and AVIF images no longer return 403 on sites that serve media from a CDN. Variant URLs now resolve through the same storage driver as the JPEG instead of a stale local path.
 * Fix      - Admin media details links to a variant file now point at the file's real location, so they open instead of failing on CDN-backed sites.
-* Improve  - Migrating media to or from cloud storage now repoints every stored variant URL, so nothing is left pointing at the previous location.
 * Fix      - A media item can no longer be saved without a title. The Save button stays disabled while the field is empty, and the API refuses a blank title instead of storing one.
 * Fix      - The album and media-player blocks now explain themselves when they point at something missing, instead of rendering an empty space. Editors see the reason; visitors see nothing.
-* Improve  - Reaction buttons on a single media page now report their pressed state to screen readers, matching the lightbox.
+* Fix      - The storage panel no longer counts private media as being in the cloud. The three tiles now add up to the library total.
 
 = 2.3.0 - August 2026 =
 
