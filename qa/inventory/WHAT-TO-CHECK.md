@@ -77,7 +77,7 @@ Render rule (standing): every row above must produce visible output in both popu
 
 | Action | Expected state changes | Expected signals |
 |--------|------------------------|------------------|
-| Upload photo | row in `mvs_media_index` + `mvs_media_meta` (all 3 thumb sizes, back-filled for small sources) + an `mvs_activity` row at EVERY privacy level incl. `private` (1.7.0 fc31bf0) | `mvs_media_uploaded` fires once |
+| Upload photo | row in `mvs_media_index` + `mvs_media_meta` (all 3 thumb sizes, back-filled for small sources) + an `mvs_activity` row for every privacy level **except `private` and `dm`** (fc31bf0) | `mvs_media_uploaded` fires once |
 | Upload posterless video | row + meta; REST `thumbnail_url` falls back to the bundled default poster SVG (never `''`); grid tile renders an `<img>` (no blank/black tile) | `mvs_media_uploaded` fires once |
 | Edit media categories (REST `PUT`) | `wp_set_object_terms()` + `category` cache meta derived from submitted term IDs; persists across a persistent-object-cache miss; only an empty array clears | none; `wp_set_object_terms()` error → 500 `mvs_categories_not_saved` |
 | Upload gallery (2-6 images) | one index row + meta group, all thumbs | same action once |
@@ -176,7 +176,7 @@ Every key must have at least one reader in `templates/` or `includes/**/Service.
 | `mvs_favorites` | `FavoriteService::toggle()` | favorites tab, heart icon state |
 | `mvs_follows` | `FollowService::follow()` | profile counts, "Follows you" badge |
 | `mvs_notifications` | every service that fires a notification | notification bell + list |
-| `mvs_activity` | `ActivityService::log()` — fires for ALL upload privacy levels incl. `private` (1.7.0 fc31bf0: private uploads DO write an `mvs_activity` row; only the BP sitewide stream mirror is gated by privacy) | feed sort "Following", profile activity stream |
+| `mvs_activity` | `ActivityService::on_upload()` — fires for every upload privacy level **except `private` and `dm`**, which return early (fc31bf0). BuddyNext DM attachments upload as `private`, so writing a row for them would put DM contents in the activity stream. Corrected 2026-08-05: this table previously claimed the opposite and cited the same commit. | feed sort "Following", profile activity stream |
 | `mvs_reports` | `ReportService::submit()` | admin moderation tab |
 | `mvs_access_rules` + `mvs_access_grants` | admin + `AccessRulesService` | `PrivacyService::can_view()` |
 | `mvs_conversations` + `_participants` + `_messages` | `MessagingService::send()` | messages UI, unread counts |

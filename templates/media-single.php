@@ -425,10 +425,19 @@ $mvs_archive_url = home_url( '/media/' );
 			<!-- Previously split across .mvs-social-bar + sticky .mvs-social-actions; the sticky -->
 			<!-- bar overlapped the chat FAB on mobile and wasted vertical space. -->
 			<div class="mvs-social-bar">
-				<div class="mvs-reactions<?php echo ! is_user_logged_in() ? ' mvs-reactions--readonly' : ''; ?>">
+				<div class="mvs-reactions<?php echo ! is_user_logged_in() ? ' mvs-reactions--readonly' : ''; ?>"
+					role="group" aria-label="<?php esc_attr_e( 'Reactions', 'wpmediaverse' ); ?>">
 					<template data-wp-each="context.reactions">
+						<?php
+						// aria-pressed mirrors the `active` class: these are toggles, and
+						// without it a screen reader announces "Like button" whether or not
+						// you have already reacted. The lightbox's reaction row already
+						// binds it (shared-ui-frame.php) — this one was the odd one out.
+						?>
 						<button class="mvs-reaction-btn"
+							type="button"
 							data-wp-class--active="context.item.active"
+							data-wp-bind--aria-pressed="context.item.active"
 							data-wp-bind--data-reaction-type="context.item.type"
 							data-wp-bind--aria-label="context.item.type"
 							data-wp-on--click="actions.toggleReaction">

@@ -18,12 +18,23 @@ $autoplay = ! empty( $attributes['autoplay'] );
 $loop     = ! empty( $attributes['loop'] );
 $show_dl  = ! empty( $attributes['showDownload'] );
 
-if ( ! $media_id ) {
-	return;
-}
-
-// Verify media exists in the index table.
-if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+// Misconfiguration — nothing chosen, or an id that is not in the index.
+// Tell the editor rather than rendering nothing (Coding Rule 11). Visitors get
+// nothing: a "media not found" notice on a live page is noise to them.
+if ( ! $media_id || ! \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->exists( $media_id ) ) {
+	if ( current_user_can( 'edit_posts' ) ) {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML.
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'circle-play',
+				'title'   => __( 'Media not found', 'wpmediaverse' ),
+				'message' => $media_id
+					? __( 'This player points at media that no longer exists. Pick another item in the block settings.', 'wpmediaverse' )
+					: __( 'Choose a video or audio item in the block settings to play it here.', 'wpmediaverse' ),
+			)
+		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
 	return;
 }
 
@@ -33,6 +44,9 @@ $media_title = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )
 $mp_signed = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 $file_url  = $mp_signed ? $mp_signed->generate( $media_id, get_current_user_id() ) : '';
 
+// No signed URL means the privacy gate declined. Silent by design — see the
+// note on the album block's privacy branch: announcing it would confirm the
+// item exists.
 if ( ! $file_url ) {
 	return;
 }
@@ -40,7 +54,21 @@ if ( ! $file_url ) {
 $is_video = strpos( $file_type, 'video/' ) === 0;
 $is_audio = strpos( $file_type, 'audio/' ) === 0;
 
+// An image handed to a player. This one is worth naming precisely: the editor
+// picked a real media item, so "not found" would be misleading — the item is
+// fine, it is just the wrong kind for this block.
 if ( ! $is_video && ! $is_audio ) {
+	if ( current_user_can( 'edit_posts' ) ) {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML.
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'circle-play',
+				'title'   => __( 'Not a playable item', 'wpmediaverse' ),
+				'message' => __( 'The media player only handles video and audio. Use the Media Grid block to display an image.', 'wpmediaverse' ),
+			)
+		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
 	return;
 }
 

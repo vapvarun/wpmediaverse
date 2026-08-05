@@ -116,6 +116,8 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 * Fix      - Admin media details links to a variant file now point at the file's real location, so they open instead of failing on CDN-backed sites.
 * Improve  - Migrating media to or from cloud storage now repoints every stored variant URL, so nothing is left pointing at the previous location.
 * Fix      - A media item can no longer be saved without a title. The Save button stays disabled while the field is empty, and the API refuses a blank title instead of storing one.
+* Fix      - The album and media-player blocks now explain themselves when they point at something missing, instead of rendering an empty space. Editors see the reason; visitors see nothing.
+* Improve  - Reaction buttons on a single media page now report their pressed state to screen readers, matching the lightbox.
 
 = 2.3.0 - August 2026 =
 
