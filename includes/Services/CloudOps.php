@@ -480,10 +480,24 @@ class CloudOps {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$non_public = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy != 'public'" );
 
+		// Counted from the index, NOT derived as `total - needs_migration`.
+		// That subtraction over-reported: `total` spans every privacy level
+		// while `needs_migration` filters to privacy='public', so private rows
+		// fell out of the subtrahend and were silently reported as "in cloud"
+		// — while the private tile counted them a second time. On a library of
+		// 64 with 4 private rows the panel showed "4 in cloud" against 0 files
+		// actually on the CDN, and the three tiles summed past the total.
+		//
+		// This is the exact complement of `needs_migration` inside the public
+		// set, so on_cloud + needs_migration == public rows, by construction.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$on_cloud = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status IN ('publish','draft') AND file_path IS NOT NULL AND file_path != '' AND privacy = 'public' AND file_url NOT LIKE 'http%/wp-content/uploads/%'" );
+
 		return array(
 			'total'           => $total,
 			'needs_migration' => $still_local,
 			'non_public_kept' => $non_public,
+			'on_cloud'        => $on_cloud,
 		);
 	}
 
