@@ -199,6 +199,30 @@ class VariantUrlTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Free-only site whose library was migrated to a CDN by Pro.
+	 *
+	 * Cloud drivers ship in Pro, so `get_driver_for_location()` falls back to
+	 * LocalDriver and builds a local URL for a file that lives on the CDN —
+	 * silently wrong, and a 404 once the local copies are cleaned up.
+	 * `file_url` is the authority for where the file is; when the driver
+	 * disagrees with it, the stored variant URL (written by whichever driver
+	 * DID own the file) wins.
+	 */
+	public function test_cloud_hosted_media_does_not_fall_back_to_a_local_variant_url(): void {
+		$m = $this->make_media();
+
+		$cdn_base = 'https://example.b-cdn.net/wpmediaverse/';
+		$this->repo()->set( $m['id'], 'file_url', $cdn_base . $m['jpeg_rel'] );
+		$this->repo()->set( $m['id'], 'thumb_medium_webp', $cdn_base . $m['webp_rel'] );
+
+		$this->assertSame(
+			$cdn_base . $m['webp_rel'],
+			\WPMediaVerse\Core\MediaUrl::variant_url( $m['id'], 'thumb_medium_webp' ),
+			'A CDN-hosted item must not resolve its variant to the local uploads dir just because no cloud driver is loaded.'
+		);
+	}
+
+	/**
 	 * An unknown size has no variant mapping and must not guess.
 	 */
 	public function test_unknown_size_returns_empty(): void {

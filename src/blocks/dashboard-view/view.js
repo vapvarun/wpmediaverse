@@ -129,6 +129,17 @@ const { state, actions } = store( 'mvs/dashboard', {
 			categories: [],
 		},
 		// Derived state
+		get editModalSaveDisabled() {
+			// Runbook contract C.member.lightbox-edit-modal: "save disabled
+			// while title empty". A disabled Save is the feedback — pairing it
+			// with the inline hint below the field so it is not a dead button
+			// with no explanation.
+			return state.editModal.saving
+				|| '' === String( state.editModal.title || '' ).trim();
+		},
+		get editModalTitleMissing() {
+			return '' === String( state.editModal.title || '' ).trim();
+		},
 		get isMediaTab() { return state.activeTab === 'media'; },
 		get isAlbumsTab() { return state.activeTab === 'albums'; },
 		get isFavoritesTab() { return state.activeTab === 'favorites'; },
@@ -748,11 +759,11 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const ctx = getContext();
 
 			// A media item with no name renders as an untitled tile everywhere
-			// it appears. The server refuses this too (mvs_empty_title); this
-			// guard keeps the round-trip off the wire and puts the reason next
-			// to the field the user has to fix.
+			// it appears, and the server refuses it (mvs_empty_title). The
+			// Save button is bound to editModalSaveDisabled so this should be
+			// unreachable from the UI; it stays as the belt-and-braces path
+			// for keyboard/programmatic submits.
 			if ( '' === String( state.editModal.title || '' ).trim() ) {
-				state.editModal.error = ( state.i18n?.titleRequired || 'Title cannot be empty.' );
 				return;
 			}
 

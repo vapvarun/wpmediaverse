@@ -2,38 +2,61 @@
   "mode": "free",
   "release_version": "2.3.1",
   "pro_version": null,
-  "ran_at": "2026-08-05T06:10:00Z",
+  "ran_at": "2026-08-05T11:31:00Z",
   "sections": {
     "A_fresh_install":     { "pass": 0, "fail": 0, "skipped": 5 },
     "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 15, "fail": 1, "skipped": 22 },
-    "D_regression_guards": { "pass": 11, "fail": 0, "skipped": 18 },
+    "C_core_flows":        { "pass": 7, "fail": 2, "skipped": 29 },
+    "D_regression_guards": { "pass": 3, "fail": 1, "skipped": 25 },
     "E_pro_smoke":         { "pass": 0, "fail": 0, "skipped": 24 },
-    "F_cross_browser":     { "pass": 2, "fail": 0, "skipped": 2 },
+    "F_cross_browser":     { "pass": 1, "fail": 0, "skipped": 2 },
     "S_pro_supplements":   { "pass": 0, "fail": 0, "skipped": 0 }
   },
   "failures": [
     {
       "id": "C.member.lightbox-edit-modal",
       "origin": "from",
-      "triage_note": "Our own JS validation gate and REST write path both fail to reject an empty title; confirmed via exact accessibility-tree ref (not a stale-query artifact) and confirmed server-side that the row was actually written with title='' after Save.",
-      "expected": "Per qa/runbooks/AGENT_SMOKE_RUNBOOK.md C.member.lightbox-edit-modal and qa/inventory/WHAT-TO-CHECK.md row 'Lightbox Edit-Media modal': 'save disabled while title empty' — clearing the Title field in the per-media Edit modal must disable the Save button so an empty title can never be persisted.",
-      "actual": "Cleared the Title field (confirmed value==='' on the exact input element) in the Edit Media modal for a freshly uploaded media item (media_id 125, slug smoke-free-upload-test). The Save button (class 'mvs-btn', in the Edit Media modal footer) remained enabled (disabled=false, no disabled attribute, no aria-disabled). Clicking Save succeeded (no client-side block, no visible validation error) and the REST write persisted: wp_mvs_media_index.title for media_id 125 became an empty string. This is a real data-loss bug, not just a UI gating miss — the backend also does not reject an empty title.",
+      "triage_note": "PARTIAL FIX since the prior run. The dangerous half is fixed: the prior run found Save actually persisted an empty title (real data loss on media_id 125). This run confirms the server now correctly refuses -- PUT /mvs/v1/media/64 with title:'' returns HTTP 400 rest_invalid_param, and the stored title (media_id=64, 'Alpine Mountain Sunrise') is unchanged in the DB after the attempt. But the UI half the task asked to re-verify ('Save DISABLED' while title is empty) was never wired: Save's disabled binding is data-wp-bind--disabled=\"state.editModal.saving\" only, no title-empty condition. Clicking Save with a blank title now silently no-ops client-side (no PUT fires, no visible error -- an empty error slot exists in the DOM but is never populated), violating the runbook's 'no silent action' gate. Net: no data can be lost anymore, but the exact UI contract this retest was asked to confirm does not pass.",
+      "expected": "Owner opens Edit Media modal on /my-media/, clears Title -> Save button becomes disabled immediately. If a save is attempted anyway, a visible error appears and the server refuses with 400.",
+      "actual": "Save button stays enabled (disabled=false) after the Title field is cleared to ''. Clicking it does not send a PUT request and shows no visible error message. Direct REST call to PUT /mvs/v1/media/64 with title:'' correctly returns HTTP 400 rest_invalid_param, and the DB title is unchanged -- server-side data protection now works, client-side gating/feedback still does not.",
       "url": "http://mediaverse.local/my-media/",
-      "screenshot": "fail-C.member.lightbox-edit-modal-empty-title.png"
+      "screenshot": ".playwright-mcp/edit-modal-blank-title-save-not-disabled.png"
+    },
+    {
+      "id": "priority1.admin-media-details-cdn-link-host-mismatch",
+      "origin": "from",
+      "triage_note": "Root cause is in Free's own code, not simply Pro's absence: MediaUrl::variant_url() (includes/Core/MediaUrl.php) resolves a variant through StorageService::get_driver_for_location(), whose final fallback is get_driver() -> apply_filters('mvs_storage_driver', null, $name) -> LocalDriver when nothing hooks the filter. Only Pro's driver classes (S3/BunnyCDN/R2/DOSpaces) hook that filter, so in free-only mode every cloud-hosted variant resolves through LocalDriver, which always returns a non-empty local URL -- so variant_url() never reaches its documented fallback to the correct legacy CDN meta value. The code's own doc-comment warns this exact host-mismatch class 403'd WebP behind a CDN before (Basecamp #10162798416); this reproduces the same class, just not yet 404ing because local mirror copies still exist.",
+      "expected": "On the per-media Details view for media_id=64 (the item migrated to BunnyCDN), the 'Open the original image', 'Open WebP copy', and all three per-size 'View ->' links (Large/Medium/Thumbnail) should all resolve on mediaverse1.b-cdn.net, matching the stored file_url/thumb_* meta, and none should 404.",
+      "actual": "Only 'Open the original image' correctly points at https://mediaverse1.b-cdn.net/wpmediaverse/2026/08/1e602735c00b673e.jpg. 'Open WebP copy' and all 3 'View ->' size links instead point at http://mediaverse.local/wp-content/uploads/wpmediaverse/2026/08/1e602735c00b673e*.{jpg,webp} -- a different host than the primary link for the same media item. curl confirms both hosts currently return HTTP 200 for every one of these URLs (local mirrors have not been cleaned up), so nothing visibly 404s today, but the page is silently serving 5 of 6 links from the wrong location for a cloud-migrated item, and will 404 once local cleanup runs.",
+      "url": "http://mediaverse.local/wp-admin/admin.php?page=mvs-media&view=details&media_id=64",
+      "screenshot": ".playwright-mcp/media64-details-host-mismatch.png"
+    },
+    {
+      "id": "D.search-empty-state",
+      "origin": "for",
+      "triage_note": "Reproduced on a completely unrelated stock WordPress Page with zero plugin markup (/sample-page/?s=test also 404s), and no new debug.log entries appear when it happens -- confirms this is WordPress core / rewrite-permalink query-var routing on this site short-circuiting BEFORE wpmediaverse's own explore.php template (which correctly reads $_GET['s'] and implements the documented friendly empty state) ever executes. wpmediaverse's own template code for this contract is correct; the site's routing is swallowing the request first. Still filed because it fully blocks a documented customer contract on this install, but the fix is not a wpmediaverse code change.",
+      "expected": "/explore-media/?s=zzznoresults999 renders the Explore page with a 'no results for {term}' heading, a 'Browse all media' link, and >=5 popular-tag chips.",
+      "actual": "/explore-media/?s=zzznoresults999 (and any other search term, e.g. ?s=mountain) returns a hard HTTP 404 'Page not found' -- worse than the originally described regression (a generic empty state); the page does not render at all.",
+      "url": "http://mediaverse.local/explore-media/?s=zzznoresults999",
+      "screenshot": ".playwright-mcp/explore-search-404.png"
     }
   ],
-  "debug_log_issues": [],
+  "debug_log_issues": [
+    {
+      "section": "baseline/admin",
+      "level": "warning",
+      "origin": "for",
+      "line": "[05-Aug-2026 11:05:47 UTC] Cron reschedule event error for hook: action_scheduler_run_queue, Error code: invalid_schedule, Error message: Event schedule does not exist., Data: {\"schedule\":\"every_minute\",\"args\":[\"WP Cron\"],\"interval\":60}",
+      "file": "wp-content/debug.log (pre-existing Action Scheduler / WP-Cron infrastructure noise, not wpmediaverse code; timestamped before browser testing began)"
+    }
+  ],
   "manual_required": [
-    "Firefox Desktop: upload modal file picker",
-    "Safari iOS 390px: lightbox swipe + reaction tap",
-    "Safari iOS 390px: activity composer privacy <select> open/close (native UI) - N/A this run, BuddyPress not active",
-    "Safari iOS: navigator.share native sheet on lightbox Share button (Chromium confirmed no window.prompt fallback and no console errors, but native share sheet itself needs a real Safari/iOS check)",
-    "RTL locale (ar): Explore, single-media, profile, dashboard, lightbox not walked this run",
-    "Admin browser walk (Overview, Settings x8 tabs, Moderation, Stats, Logs, All Media, Setup Wizard, per-media Details view for media_id=64): could not be completed this run - no admin credentials were available and generating a session (password reset or auth-cookie mint) was blocked by the environment's auto-mode safety classifier as an auth-bypass action. Verified the underlying contracts server-side instead: CloudOps::count_candidates() executes cleanly with the new on_cloud key (total=64, needs_migration=59, non_public_kept=4, on_cloud=1) and does not fatal in free mode; MediaListPage's admin variant-link builders (MediaUrl::variant_url for thumb_large, thumb_medium, thumb_thumb_webp, original_webp) were called directly for media_id=64 and every resulting URL returned HTTP 200 on the same host as its sibling. A real browser pass of the admin UI (page=wpmediaverse-media&view=details&media_id=64 included) is still needed to close this out.",
-    "C.member.upload-privacy-matrix (16-cell privacy x viewer matrix) not walked this run - time-boxed out after the core upload/edit/delete/categories/reactions journeys",
-    "C.member.albums-lifecycle, E.collections-lifecycle full walks not performed - only album/collection anonymous read-side was checked",
-    "C.member.video-poster-fallback / D.blank-video-poster not testable - no video media exists in the current dataset to seed a posterless-video fixture against",
-    "C.member.grid-render-query-budget - grid pages rendered fast and correctly across explore/album/collection but the $wpdb->num_queries delta was not instrumented this run"
+    "A_fresh_install (A1-A5) and B_upgrade (B1-B3): skipped entirely -- this is a live dev site with 65 real media rows, 6 albums, and seeded users/reports; a clean-WP-install activation test or a prior-version-to-2.3.1 upgrade test needs a disposable environment this session does not have.",
+    "Firefox Desktop: upload modal file picker not verified -- Playwright MCP is Chromium-only.",
+    "Safari iOS 390px: lightbox swipe + reaction tap not verified -- Playwright MCP is Chromium-only.",
+    "All Media (admin.php?page=mvs-media) bulk-submit-with-zero-selected safety guard: NOT exercised live. The sandbox's auto-mode permission classifier blocked the click (selecting 'Move to Trash' + Apply with 0 rows checked) as a potentially destructive action against 65 real media rows, before it could run. Needs a human tester or an explicitly-authorized session to confirm zero-selected submit shows a friendly no-op error and does not act on all visible rows.",
+    "F.rtl (Arabic/RTL locale rendering of Explore/single-media/profile/dashboard/lightbox) not exercised this run -- out of scope for the stated priorities this pass.",
+    "The site-level ?s= query-var 404 (see D.search-empty-state failure) needs a server/hosting-side look at permalink structure and any query-var-stripping rewrite rule or security layer -- it reproduces on a stock WP page with no plugin content, so it is not fixable inside the wpmediaverse codebase alone.",
+    "C.member.upload-privacy-matrix, C.member.albums-lifecycle, E.collections-lifecycle, C.member.video-poster-fallback, C.member.grid-render-query-budget, C.shortcodes, C.blocks, C.notifications*, C.cron, C.member.signed-url, C.member.dm-send-receive and remaining C rows not itemized above were not re-walked this run -- this pass focused on the stated priorities (admin surface coverage, the lightbox-edit-modal bug retest, media_id=64 CDN link check, representative core-flow + regression-guard spot checks, frontend image-integrity). A full C/D sweep matching the prior run's breadth still needs a follow-up pass."
   ]
 }

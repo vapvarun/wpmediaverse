@@ -170,14 +170,51 @@ final class MediaUrl {
 		$container = Plugin::container();
 		$repo      = $container->get( 'media_repository' );
 
+		$legacy_url = (string) $repo->get_raw( $media_id, $meta_key );
+
 		$rel_path = (string) $repo->get_raw( $media_id, $meta_key . '_path' );
 		if ( '' !== $rel_path ) {
 			$url = (string) $container->get( 'storage' )->get_driver_for_location( $media_id )->url( $rel_path );
+
+			// The driver can only describe locations it knows about. Cloud
+			// drivers ship in Pro, so on a Free-only site whose library was
+			// migrated to a CDN, `get_driver_for_location()` falls back to
+			// LocalDriver and happily builds a local URL for a file that no
+			// longer lives there — silently wrong, and a 404 once the local
+			// copies are cleaned up.
+			//
+			// `file_url` on the index row is the authority for where the file
+			// actually is. When the driver disagrees with it, trust the stored
+			// variant URL instead: it was written by whichever driver DID own
+			// the file. Same invariant the frontend enforces — a variant lives
+			// on the same host as its primary.
+			if ( '' !== $url && '' !== $legacy_url && ! self::same_host_as_primary( $media_id, $url ) && self::same_host_as_primary( $media_id, $legacy_url ) ) {
+				return $legacy_url;
+			}
+
 			if ( '' !== $url ) {
 				return $url;
 			}
 		}
 
-		return (string) $repo->get_raw( $media_id, $meta_key );
+		return $legacy_url;
+	}
+
+	/**
+	 * Whether a URL sits on the same host as the media's primary file.
+	 *
+	 * @since 2.3.1
+	 *
+	 * @param int    $media_id Media ID.
+	 * @param string $url      Candidate URL.
+	 */
+	private static function same_host_as_primary( int $media_id, string $url ): bool {
+		$repo     = Plugin::container()->get( 'media_repository' );
+		$file_url = (string) $repo->get_raw( $media_id, 'file_url' );
+		if ( '' === $file_url ) {
+			return true; // Nothing to compare against — do not veto.
+		}
+
+		return (string) wp_parse_url( $url, PHP_URL_HOST ) === (string) wp_parse_url( $file_url, PHP_URL_HOST );
 	}
 }

@@ -834,7 +834,11 @@ wp_interactivity_state(
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
 					<input type="text" data-wp-bind--value="state.editModal.title"
-						data-wp-on--input="actions.setEditTitle" />
+						data-wp-on--input="actions.setEditTitle"
+						aria-describedby="mvs-edit-title-hint"
+						data-wp-bind--aria-invalid="state.editModalTitleMissing" />
+					<span class="mvs-field-hint" id="mvs-edit-title-hint" role="status"
+						data-wp-bind--hidden="!state.editModalTitleMissing"><?php esc_html_e( 'Title cannot be empty.', 'wpmediaverse' ); ?></span>
 				</div>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
@@ -902,7 +906,7 @@ wp_interactivity_state(
 					data-wp-on--click="actions.closeEditModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
 				<button class="mvs-btn" type="button"
 					data-wp-on--click="actions.saveEdit"
-					data-wp-bind--disabled="state.editModal.saving">
+					data-wp-bind--disabled="state.editModalSaveDisabled">
 					<span data-wp-bind--hidden="state.editModal.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 					<span data-wp-bind--hidden="!state.editModal.saving"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 				</button>
