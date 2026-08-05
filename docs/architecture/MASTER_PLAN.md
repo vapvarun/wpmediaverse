@@ -2,7 +2,7 @@
 
 > Where the product is now and what's next. **Forward-looking — completed work and historical context belong in git log / changelogs, not here.** Refresh every release cycle.
 
-**Baseline:** Free 1.5.0 + Pro 1.5.0 (paired).
+**Baseline:** Free 2.3.1 + Pro 2.3.1 (paired, released 2026-08-05).
 **Horizon:** next 6 months.
 **Owner:** Varun.
 
@@ -11,7 +11,7 @@
 ## Part 1 — What WPMediaVerse is today
 
 ### Free — core platform
-- Custom-table media storage. 25 `mvs_*` tables, no `wp_posts` dependency for media records.
+- Custom-table media storage. 22 `mvs_*` tables, no `wp_posts` dependency for media records.
 - 6 privacy levels: public, members, friends, private, group, custom (access rules).
 - Storage drivers: local. Cloud drivers (BunnyCDN, AWS S3, Cloudflare R2, DigitalOcean Spaces) shipped via Pro.
 - Image variant pipeline: large/medium/thumb generated at upload, with WebP + AVIF siblings.
@@ -19,8 +19,8 @@
 - Audio cover/waveform: ID3 art extraction → render-time SHA-1-seeded SVG waveform.
 - Signed-URL `/serve` endpoint with HMAC + expiry + per-request privacy re-check.
 - Direct-CDN bypass for public media on cloud drivers (filter `mvs_public_cloud_thumbnail_url`).
-- REST API: 45 routes across 18 controllers.
-- Gutenberg blocks: 13 Free + 13 Pro = 26 total.
+- REST API: 114 endpoints across 23 controllers (`mvs/v1`), plus 37 in Pro (`mvs-pro/v1`).
+- Gutenberg blocks: 9 registered in Free (13 `block.json` dirs; 4 Interactivity-only) + 13 Pro.
 - BuddyPress integration: activity composer, profile tabs, group tabs, notifications, member photos.
 - Albums (custom post type) + collections (smart auto-curation).
 - Social layer: reactions (6 types), threaded comments, favorites, follows, @mentions, sharing.
