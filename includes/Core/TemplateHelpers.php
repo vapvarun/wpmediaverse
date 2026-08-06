@@ -385,7 +385,23 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			if ( $file_url ) {
 				$vid_class   = trim( 'mvs-grid-video-preview ' . $extra_class );
 				$poster_attr = ' poster="' . esc_url( $poster_url ) . '"';
-				return '<video class="' . esc_attr( $vid_class ) . '" preload="metadata" muted playsinline disablepictureinpicture aria-hidden="true"' . $poster_attr . ' src="' . esc_url( $file_url ) . '#t=0.1"></video>' . $play_icon;
+				// preload="none" and NO `#t=` fragment, deliberately.
+				//
+				// This used to be preload="metadata" with `#t=0.1` so a bad
+				// poster URL would degrade to the video's own first frame. That
+				// backfired: a video element paints its current frame as soon as
+				// it has one, and the poster is only shown UNTIL then — so the
+				// 0.1s frame was painted over every poster, good ones included.
+				// Any video that opens on a fade-in, a title card or a white
+				// intro therefore rendered a blank tile no matter how good its
+				// poster was, and the bundled fallback below could never be seen
+				// either. That is the "blank video cover" customers report.
+				//
+				// $poster_url is never empty — it falls back to the bundled SVG
+				// on this very line above — so there is nothing left for the
+				// frame-grab to rescue. Dropping it also means a grid of videos
+				// no longer fetches a moov atom per tile.
+				return '<video class="' . esc_attr( $vid_class ) . '" preload="none" muted playsinline disablepictureinpicture aria-hidden="true"' . $poster_attr . ' src="' . esc_url( $file_url ) . '"></video>' . $play_icon;
 			}
 			// No streamable URL (access-rules locked the file). Show the
 			// default poster as a still image with the play overlay.

@@ -47,8 +47,8 @@ function buildThumbnailNodes( item ) {
 	if ( 'video' === mediaType && fileUrl ) {
 		const video = document.createElement( 'video' );
 		video.className = 'mvs-grid-video-preview';
-		video.src = fileUrl + '#t=0.1';
-		video.preload = 'metadata';
+		video.src = fileUrl;
+		video.preload = 'none';
 		video.muted = true;
 		video.setAttribute( 'playsinline', 'playsinline' );
 		video.setAttribute( 'aria-hidden', 'true' );

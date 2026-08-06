@@ -172,8 +172,8 @@
 		// upload show the generic placeholder instead of its real first frame.
 		if ( 'video' === mediaType && fileUrl ) {
 			var vidAttrs = {
-				src: fileUrl + '#t=0.1',
-				preload: 'metadata',
+				src: fileUrl,
+				preload: 'none',
 				muted: 'muted',
 				playsinline: 'playsinline',
 				disablepictureinpicture: 'disablepictureinpicture',
@@ -861,22 +861,22 @@
 		root.appendChild( header );
 
 		// ── Media area ──────────────────────────────────────────────────
-		// Video-first (matching the server-side instagram feed-card.php): a
-		// streamable video renders an inline <video> first-frame preview with
-		// the poster as a fallback, so a poster-less video shows its real frame
-		// instead of the injected default-poster image. The #t=0.1 fragment
-		// makes the browser paint the first frame even when the poster is the
-		// generic placeholder. Layout-specific classes (mvs-ig-video /
-		// mvs-ig-card-img) are kept so the Instagram CSS still applies.
+		// Video-first (matching the server-side instagram feed-card.php).
+		// preload="none" and no `#t=` fragment: a <video> paints its current
+		// frame as soon as it has one and only shows the poster until then, so
+		// forcing a 0.1s frame painted over every poster — leaving a blank tile
+		// for any video that opens on a fade-in or title card. See the matching
+		// comment in TemplateHelpers::media_thumbnail(). Layout-specific classes
+		// (mvs-ig-video / mvs-ig-card-img) are kept so the Instagram CSS applies.
 		var mediaWrap = el( 'div', 'mvs-ig-card-media' );
 		var fileUrl   = item.file_url || '';
 
 		if ( item.media_type === 'video' && fileUrl ) {
 			var video = el( 'video', 'mvs-ig-video', {
-				src: fileUrl + '#t=0.1',
+				src: fileUrl,
 				muted: 'muted',
 				playsinline: 'playsinline',
-				preload: 'metadata',
+				preload: 'none',
 			} );
 			if ( thumbUrl ) {
 				video.poster = thumbUrl;

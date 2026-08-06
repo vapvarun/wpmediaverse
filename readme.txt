@@ -120,6 +120,9 @@ Images served from a CDN render again, and a few surfaces now say what they mean
 * Fix      - Uploading several files at once from the Upload page or the member dashboard now posts one activity item with all the images, instead of a separate feed entry per file. The upload modal already worked this way.
 * Fix      - A multi-file upload from the member dashboard now keeps its description, so the grouped activity item is no longer posted without its caption.
 * Fix      - The "Upload 0 file(s)" bar no longer appears on the member dashboard when no files are selected.
+* Fix      - Video covers no longer render blank. Grids were forcing the browser to paint the frame at 0.1 seconds, which covered up the generated poster, so any video opening on a fade-in, title card or white intro showed an empty tile. Posters and the bundled fallback cover are now what you see.
+* Fix      - Videos uploaded from the Upload page or the member dashboard now get a cover captured in the browser, so a site without ffmpeg installed no longer ends up with cover-less videos.
+* Improve  - Grids of videos no longer download part of every video file just to draw a thumbnail.
 * Improve  - Reaction buttons on a single media page now report their pressed state to screen readers, matching the lightbox.
 * Fix      - WebP and AVIF images no longer return 403 on sites that serve media from a CDN. Variant URLs now resolve through the same storage driver as the JPEG instead of a stale local path.
 * Fix      - Admin media details links to a variant file now point at the file's real location, so they open instead of failing on CDN-backed sites.

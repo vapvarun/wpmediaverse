@@ -8,6 +8,63 @@
 
 import { store, getContext } from '@wordpress/interactivity';
 
+/**
+ * Grab a poster frame from a video File and append it as `thumbnail`.
+ *
+ * See the twin in src/blocks/media-upload/view.js for the full rationale: a
+ * video uploaded on a host with no ffmpeg and no embedded cover atom gets no
+ * poster at all and renders as a blank tile. These view bundles are script
+ * MODULES, so a cross-file import is emitted as a bare specifier the browser
+ * 404s on — hence the deliberate copy. Keep the two in sync.
+ *
+ * @param {FormData} formData Upload payload, mutated in place.
+ * @param {File}     file     File being uploaded.
+ * @return {Promise<void>} Resolves whether or not a poster was attached.
+ */
+async function appendVideoPoster( formData, file ) {
+	if ( ! file || ! file.type || ! file.type.startsWith( 'video/' ) ) {
+		return;
+	}
+	const blob = await new Promise( ( resolve ) => {
+		const video = document.createElement( 'video' );
+		const url = URL.createObjectURL( file );
+		let settled = false;
+		const finish = ( result ) => {
+			if ( settled ) return;
+			settled = true;
+			URL.revokeObjectURL( url );
+			resolve( result );
+		};
+		const timer = setTimeout( () => finish( null ), 5000 );
+		video.preload = 'metadata';
+		video.muted = true;
+		video.playsInline = true;
+		video.addEventListener( 'loadeddata', () => {
+			video.currentTime = video.duration && video.duration < 1 ? 0 : 1;
+		} );
+		video.addEventListener( 'seeked', () => {
+			clearTimeout( timer );
+			try {
+				const canvas = document.createElement( 'canvas' );
+				canvas.width = video.videoWidth || 320;
+				canvas.height = video.videoHeight || 180;
+				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+				canvas.toBlob( ( b ) => finish( b ), 'image/jpeg', 0.7 );
+			} catch {
+				finish( null );
+			}
+		} );
+		video.addEventListener( 'error', () => {
+			clearTimeout( timer );
+			finish( null );
+		} );
+		video.src = url;
+	} );
+	if ( blob ) {
+		formData.append( 'thumbnail', blob, 'video-thumb.jpg' );
+	}
+}
+
 // i18n: this is a script MODULE, so window.wp.i18n.__() is English-locked here.
 // PHP (dashboard-content.php) seeds translated strings into interactivity state;
 // read them as `state.i18n.<key>` with an English fallback. Basecamp 10073528834.
@@ -183,7 +240,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// that gate was what made My Media diverge from Explore.
 			const item = getContext().item;
 			if ( ! item || item.media_type !== 'video' ) return '';
-			return item.file_url ? item.file_url + '#t=0.1' : '';
+			return item.file_url ? item.file_url : '';
 		},
 		get showMediaVideoPreview() {
 			return !! state.mediaVideoPreviewUrl;
@@ -220,7 +277,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// See mediaVideoPreviewUrl — a streamable video always previews.
 			const item = getContext().item;
 			if ( ! item || item.media_type !== 'video' ) return '';
-			return item.file_url ? item.file_url + '#t=0.1' : '';
+			return item.file_url ? item.file_url : '';
 		},
 		get showFavVideoPreview() {
 			return !! state.favVideoPreviewUrl;
@@ -252,7 +309,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// See mediaVideoPreviewUrl — a streamable video always previews.
 			const item = getContext().item;
 			if ( ! item || item.media_type !== 'video' ) return '';
-			return item.file_url ? item.file_url + '#t=0.1' : '';
+			return item.file_url ? item.file_url : '';
 		},
 		get showPickerVideoPreview() {
 			return !! state.pickerVideoPreviewUrl;
@@ -528,6 +585,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 					.replace( '%2$d', total );
 				const formData = new FormData();
 				formData.append( 'file', files[ i ] );
+				// Capture a poster frame for videos — see media-upload. Without
+				// it, a video uploaded from the dashboard is posterless on a
+				// host with no ffmpeg and renders as a blank tile.
+				await appendVideoPoster( formData, files[ i ] );
 				if ( mediaGroup ) {
 					formData.append( 'media_group', mediaGroup );
 					formData.append( 'group_position', String( i ) );

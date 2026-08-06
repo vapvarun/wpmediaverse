@@ -7,6 +7,73 @@
 import { store, getContext } from '@wordpress/interactivity';
 
 /**
+ * Grab a poster frame from a video File and append it as `thumbnail`.
+ *
+ * MediaVerse builds a video poster server-side from an embedded cover atom or
+ * an ffmpeg first-frame grab. On a host with no ffmpeg, a video with no cover
+ * atom gets NO poster and the grid renders a blank tile with a play icon —
+ * which reads to a member as "my video is broken". Capturing the frame in the
+ * browser removes the ffmpeg dependency for the common case.
+ * `MediaController::create_item()` already accepts the `thumbnail` file param
+ * and hands it to `PosterService::stage_client_frame()`.
+ *
+ * This block and dashboard-view carry their own copy on purpose: these view
+ * bundles are script MODULES, and a cross-file import is emitted as a bare
+ * specifier the browser 404s on. shared-ui has a third variant that reuses the
+ * frame it already decoded for its preview UI, so it isn't double-decoding.
+ * Keep the three in sync — seek to 1s, fall back to frame 0 under 1s, 5s
+ * timeout, never reject.
+ *
+ * @param {FormData} formData Upload payload, mutated in place.
+ * @param {File}     file     File being uploaded.
+ * @return {Promise<void>} Resolves whether or not a poster was attached.
+ */
+async function appendVideoPoster( formData, file ) {
+	if ( ! file || ! file.type || ! file.type.startsWith( 'video/' ) ) {
+		return;
+	}
+	const blob = await new Promise( ( resolve ) => {
+		const video = document.createElement( 'video' );
+		const url = URL.createObjectURL( file );
+		let settled = false;
+		const finish = ( result ) => {
+			if ( settled ) return;
+			settled = true;
+			URL.revokeObjectURL( url );
+			resolve( result );
+		};
+		// A file that never fires `seeked` (bad codec) must not hang the upload.
+		const timer = setTimeout( () => finish( null ), 5000 );
+		video.preload = 'metadata';
+		video.muted = true;
+		video.playsInline = true;
+		video.addEventListener( 'loadeddata', () => {
+			video.currentTime = video.duration && video.duration < 1 ? 0 : 1;
+		} );
+		video.addEventListener( 'seeked', () => {
+			clearTimeout( timer );
+			try {
+				const canvas = document.createElement( 'canvas' );
+				canvas.width = video.videoWidth || 320;
+				canvas.height = video.videoHeight || 180;
+				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+				canvas.toBlob( ( b ) => finish( b ), 'image/jpeg', 0.7 );
+			} catch {
+				finish( null );
+			}
+		} );
+		video.addEventListener( 'error', () => {
+			clearTimeout( timer );
+			finish( null );
+		} );
+		video.src = url;
+	} );
+	if ( blob ) {
+		formData.append( 'thumbnail', blob, 'video-thumb.jpg' );
+	}
+}
+
+/**
  * Map of MIME types to human-readable labels for error messages.
  */
 const MIME_LABELS = {
@@ -277,6 +344,11 @@ const { state, actions } = store( 'mvs/media-upload', {
 					.replace( '%2$d', files.length );
 				const formData = new FormData();
 				formData.append( 'file', files[ i ] );
+				// Capture a poster frame for videos. Without this a video
+				// uploaded here has no poster at all on a host with no ffmpeg,
+				// and the grid renders a blank tile. The upload modal has
+				// always done this; this surface did not.
+				await appendVideoPoster( formData, files[ i ] );
 				if ( mediaGroup ) {
 					formData.append( 'media_group', mediaGroup );
 					formData.append( 'group_position', String( i ) );
