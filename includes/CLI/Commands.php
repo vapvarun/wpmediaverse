@@ -11,6 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WP_CLI;
 use WP_CLI\Utils;
+use WPMediaVerse\Services\CloudOps;
 
 /**
  * Manage WPMediaVerse media, stats, and maintenance tasks.
@@ -996,110 +997,76 @@ class Commands {
 			WP_CLI::confirm( 'Proceed?' );
 		}
 
-		$tmp_root = trailingslashit( get_temp_dir() ) . 'mvs-migrate-' . uniqid() . '/';
+		// `--include-non-public` is gated at the query level above. CloudOps
+		// keeps its own privacy safety net, so open it for the rows we
+		// deliberately selected — otherwise every one of them comes back
+		// 'skipped-non-public' and the flag silently does nothing.
+		if ( $include_non_public && 'local' !== $to ) {
+			// Deliberately not `__return_true`: this is a storage filter in a
+			// CLI command, not a REST permission callback, and the bare
+			// callback name trips the Rule 2 gate that guards public routes.
+			add_filter(
+				'mvs_cloudops_allow_non_public_to_cloud',
+				static function () {
+					return true;
+				}
+			);
+		}
+
 		$migrated = 0;
 		$skipped  = 0;
 		$failed   = 0;
 		$progress = Utils\make_progress_bar( 'Migrating media', $total );
 
 		foreach ( $rows as $row ) {
-			$rel_path = (string) $row->file_path;
-
-			// Skip if destination already has the file (idempotent re-run).
-			if ( $dest_driver->exists( $rel_path ) ) {
-				// Backfill file_url for files migrated before Stage 3.5
-				// existed (pre-1.2.1). Idempotent — wpdb->update is a
-				// no-op when the value already matches.
-				if ( ! $dry_run ) {
-					$expected = $dest_driver->url( $rel_path );
-					if ( '' !== $expected ) {
-						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-						$wpdb->update(
-							$wpdb->prefix . 'mvs_media_index',
-							array( 'file_url' => $expected ),
-							array( 'media_id' => (int) $row->media_id ),
-							array( '%s' ),
-							array( '%d' )
-						);
-					}
-				}
-				++$skipped;
-				$progress->tick();
-				continue;
-			}
+			$media_id_row = (int) $row->media_id;
 
 			if ( $dry_run ) {
-				++$migrated;
-				$progress->tick();
-				continue;
-			}
-
-			// Stage 1 — pull source to local temp.
-			$tmp_path = $tmp_root . ltrim( $rel_path, '/' );
-			if ( ! $source_driver->download( $rel_path, $tmp_path ) ) {
-				WP_CLI::warning( sprintf( 'Download failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
-				++$failed;
-				$progress->tick();
-				continue;
-			}
-
-			// Stage 2 — push local temp to destination.
-			if ( ! $dest_driver->store( $tmp_path, $rel_path ) ) {
-				WP_CLI::warning( sprintf( 'Upload to destination failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
-				if ( file_exists( $tmp_path ) ) {
-					wp_delete_file( $tmp_path );
+				// Cheap preview: a row whose ORIGINAL is already on the
+				// destination is reported as skipped. The real run still
+				// re-checks every variant individually.
+				if ( $dest_driver->exists( (string) $row->file_path ) ) {
+					++$skipped;
+				} else {
+					++$migrated;
 				}
-				++$failed;
 				$progress->tick();
 				continue;
 			}
 
-			// Stage 3 — verify destination presence before any deletes.
-			if ( ! $dest_driver->exists( $rel_path ) ) {
-				WP_CLI::warning( sprintf( 'Post-upload verify failed for media #%d (path: %s)', $row->media_id, $rel_path ) );
-				++$failed;
-				$progress->tick();
-				continue;
-			}
+			// Delegate to the single authoritative implementation. It moves the
+			// original PLUS every stored variant (thumbnails, WebP/AVIF
+			// siblings, video/audio posters), verifies each on the destination
+			// before flipping `file_url`, repoints the variant URL metas, and
+			// only then deletes sources. This CLI previously carried its own
+			// loop that transferred `file_path` alone, so on a CDN migration
+			// every thumbnail and WebP sibling stayed behind on local disk
+			// while `get_driver_for_location()` resolved their URLs to the CDN
+			// — a 404 on every derived image. The Pro admin UI already went
+			// through CloudOps and was never affected.
+			$result = CloudOps::migrate_one( $media_id_row, $from, $to, $keep_source );
 
-			// Stage 3.5 — refresh mvs_media_index.file_url to the destination
-			// driver's URL. Display surfaces (lightbox, explore, BP activity
-			// rebuild) don't depend on this column — they sign URLs through
-			// the active driver dynamically. But storage-internal callers
-			// (UploadService thumb-fallback, WatermarkService) read the raw
-			// column via get_raw('file_url') and would otherwise see the
-			// old driver's URL until the next re-upload.
-			$new_url = $dest_driver->url( $rel_path );
-			if ( '' !== $new_url ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-				$wpdb->update(
-					$wpdb->prefix . 'mvs_media_index',
-					array( 'file_url' => $new_url ),
-					array( 'media_id' => (int) $row->media_id ),
-					array( '%s' ),
-					array( '%d' )
+			if ( ! empty( $result['ok'] ) ) {
+				if ( 'skipped' === ( $result['status'] ?? '' ) ) {
+					++$skipped;
+				} else {
+					++$migrated;
+				}
+			} else {
+				WP_CLI::warning(
+					sprintf(
+						'Migration failed for media #%d: %s',
+						$media_id_row,
+						(string) ( $result['error'] ?? 'unknown error' )
+					)
 				);
+				++$failed;
 			}
 
-			// Stage 4 — delete the source unless keep-source flag set.
-			if ( ! $keep_source ) {
-				$source_driver->delete( $rel_path );
-			}
-
-			if ( file_exists( $tmp_path ) ) {
-				wp_delete_file( $tmp_path );
-			}
-			++$migrated;
 			$progress->tick();
 		}
 
 		$progress->finish();
-
-		// Cleanup temp root if empty.
-		if ( is_dir( $tmp_root ) ) {
-			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- best-effort cleanup of a plugin-controlled tmp dir from a WP-CLI command; WP_Filesystem isn't initialized here and would add a credentials prompt for an internal-only path.
-			@rmdir( $tmp_root );
-		}
 
 		$prefix = $dry_run ? '[dry-run] Would migrate' : 'Migrated';
 		WP_CLI::success(
@@ -1234,14 +1201,24 @@ class Commands {
 					break;
 				}
 			}
-			if ( $all_cloud ) {
-				++$skipped;
+			if ( $dry_run ) {
+				++$migrated;
 				$progress->tick();
 				continue;
 			}
 
-			if ( $dry_run ) {
-				++$migrated;
+			// A row whose sizes are all on cloud still needs the variant sweep
+			// below: `original_webp` / `original_avif` are not size variants, so
+			// an earlier successful thumbnail backfill leaves them behind and
+			// the single-media view keeps 404ing. Skip only the expensive
+			// download + regenerate, never the sweep.
+			if ( $all_cloud ) {
+				$sweep = self::sweep_stored_variants( (int) $row->media_id, $driver_slug );
+				if ( $sweep ) {
+					++$migrated;
+				} else {
+					++$skipped;
+				}
 				$progress->tick();
 				continue;
 			}
@@ -1259,6 +1236,12 @@ class Commands {
 			// upload: WP multi_resize creates locals, the driver pushes each
 			// to cloud, meta updates to cloud URLs.
 			$ok = $service->generate_thumbnails( (int) $row->media_id, $tmp_path, (string) $row->file_type );
+
+			// Stage 2b — sweep any stored variant the resize pass does not own
+			// (see sweep_stored_variants).
+			if ( $ok ) {
+				self::sweep_stored_variants( (int) $row->media_id, $driver_slug );
+			}
 
 			// Stage 3 — clean up the temp original (size variants the
 			// generate_thumbnails call wrote next to it are also cleaned).
@@ -1298,6 +1281,45 @@ class Commands {
 				$failed
 			)
 		);
+	}
+
+	/**
+	 * Copy any stored variant still missing from the active cloud driver.
+	 *
+	 * `generate_thumbnails()` rebuilds the SIZE variants and their WebP/AVIF
+	 * siblings, but `original_webp` / `original_avif` are written by the
+	 * optimization pass at upload time and are not size variants — so a
+	 * thumbnail backfill alone leaves them on local disk while
+	 * `get_driver_for_location()` resolves their URLs to the cloud. The
+	 * single-media view renders at size `full` and reads exactly those keys,
+	 * which is why it kept showing a broken image after the sizes were healed.
+	 *
+	 * Delegates to `CloudOps::migrate_one()` so the enumeration of "every
+	 * stored file for this media" lives in one place. Copy-only and
+	 * idempotent here: files already on the destination are skipped, and
+	 * `keep_source = true` means nothing local is ever deleted.
+	 *
+	 * @since 2.3.1
+	 *
+	 * @param int    $media_id    Media ID.
+	 * @param string $driver_slug Active cloud driver slug.
+	 * @return bool True when the sweep completed (whether or not it moved anything).
+	 */
+	private static function sweep_stored_variants( int $media_id, string $driver_slug ): bool {
+		$sweep = CloudOps::migrate_one( $media_id, 'local', $driver_slug, true );
+
+		if ( empty( $sweep['ok'] ) ) {
+			WP_CLI::warning(
+				sprintf(
+					'Variant sweep incomplete for media #%d: %s',
+					$media_id,
+					(string) ( $sweep['error'] ?? 'unknown error' )
+				)
+			);
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

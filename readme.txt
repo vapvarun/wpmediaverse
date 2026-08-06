@@ -115,6 +115,8 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 Images served from a CDN render again, and a few surfaces now say what they mean.
 
 * Improve  - Migrating media to or from cloud storage now repoints every stored variant URL, so nothing is left pointing at the previous location.
+* Fix      - Migrating media with WP-CLI now moves thumbnails and WebP/AVIF files too, not just the original. Previously every derived image was left behind and broke once the media pointed at the CDN. Sites migrated from the admin screen were never affected.
+* Fix      - Backfilling cloud thumbnails now also uploads the full-size WebP and AVIF files, which repairs single media pages left broken by an earlier migration.
 * Improve  - Reaction buttons on a single media page now report their pressed state to screen readers, matching the lightbox.
 * Fix      - WebP and AVIF images no longer return 403 on sites that serve media from a CDN. Variant URLs now resolve through the same storage driver as the JPEG instead of a stale local path.
 * Fix      - Admin media details links to a variant file now point at the file's real location, so they open instead of failing on CDN-backed sites.
