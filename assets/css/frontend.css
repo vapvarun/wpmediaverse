@@ -2769,6 +2769,15 @@ a.mvs-dashboard-card-title:hover {
     border-radius: 6px;
 }
 
+/* Respect the HTML [hidden] attribute set by data-wp-bind--hidden. The
+   display:flex above is a class rule, so it outranks the UA stylesheet's
+   [hidden]{display:none} and the review bar stayed on screen with zero files
+   staged — the "Upload 0 file(s)" button was visible AND clickable. Same
+   guard as .mvs-dashboard-panel[hidden] and the messaging panels. */
+.mvs-dashboard-upload-review[hidden] {
+    display: none;
+}
+
 .mvs-dashboard-upload-review-label {
     font-size: 0.9em;
     color: var(--mvs-text-muted, #555);

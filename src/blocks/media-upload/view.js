@@ -261,12 +261,26 @@ const { state, actions } = store( 'mvs/media-upload', {
 				// Pro endpoint not available — proceed without check.
 			}
 
+			// Tie a multi-file selection together so the BuddyPress activity
+			// sync emits ONE carousel item instead of one feed row per file.
+			// The upload modal (shared-ui) has always sent this; this block and
+			// the dashboard did not, so uploading N files here posted N
+			// separate activity rows. Same key shape as shared-ui.
+			const mediaGroup =
+				files.length > 1
+					? 'grp_' + Date.now() + '_' + Math.random().toString( 36 ).slice( 2, 8 )
+					: null;
+
 			for ( let i = 0; i < files.length; i++ ) {
 				ctx.uploadMessage = ( state.i18n?.uploadingProgress || 'Uploading %1$d of %2$d...' )
 					.replace( '%1$d', i + 1 )
 					.replace( '%2$d', files.length );
 				const formData = new FormData();
 				formData.append( 'file', files[ i ] );
+				if ( mediaGroup ) {
+					formData.append( 'media_group', mediaGroup );
+					formData.append( 'group_position', String( i ) );
+				}
 				if ( ctx.privacy ) {
 					formData.append( 'privacy', ctx.privacy );
 				}

@@ -513,15 +513,32 @@ const { state, actions } = store( 'mvs/dashboard', {
 			let uploaded = 0;
 			let lastError = '';
 
+			// Tie a multi-file selection together so the BuddyPress activity
+			// sync emits ONE carousel item instead of one feed row per file.
+			// Same key shape as the upload modal (shared-ui), which has always
+			// sent this.
+			const mediaGroup =
+				total > 1
+					? 'grp_' + Date.now() + '_' + Math.random().toString( 36 ).slice( 2, 8 )
+					: null;
+
 			for ( let i = 0; i < total; i++ ) {
 				state.upload.status = ( state.i18n?.uploadingProgress || 'Uploading %1$d of %2$d...' )
 					.replace( '%1$d', i + 1 )
 					.replace( '%2$d', total );
 				const formData = new FormData();
 				formData.append( 'file', files[ i ] );
+				if ( mediaGroup ) {
+					formData.append( 'media_group', mediaGroup );
+					formData.append( 'group_position', String( i ) );
+				}
 				if ( state.upload.privacy ) formData.append( 'privacy', state.upload.privacy );
+				// Title stays single-file only (N files must not share one name),
+				// but the description IS the carousel caption — dropping it on a
+				// multi-file upload is exactly why grouped feed items posted with
+				// no caption text.
 				if ( state.upload.title && total === 1 ) formData.append( 'title', state.upload.title );
-				if ( state.upload.description && total === 1 ) formData.append( 'description', state.upload.description );
+				if ( state.upload.description ) formData.append( 'description', state.upload.description );
 				if ( state.upload.tags ) {
 					state.upload.tags.split( ',' ).map( ( t ) => t.trim() ).filter( Boolean )
 						.forEach( ( tag ) => formData.append( 'tags[]', tag ) );

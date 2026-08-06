@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "2.2.0",
+    "version": "2.3.1",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -1152,6 +1152,16 @@
         "permission": "check_auth",
         "purpose": "Decline a message request",
         "file": "includes/Messaging/MessagingController.php:324"
+      },
+      {
+        "route": "/mvs/v1/conversations/(?P<id>\\d+)/media",
+        "methods": [
+          "GET"
+        ],
+        "handler": "MessagingController::list_conversation_media",
+        "permission": "check_auth",
+        "purpose": "List media shared in a conversation (full history, app parity)",
+        "file": "includes/Messaging/MessagingController.php:184"
       },
       {
         "route": "/mvs/v1/messages/upload",
@@ -5891,7 +5901,7 @@
   "counts": {
     "wp_cli": 20,
     "hooks_fired_unique": 220,
-    "rest_endpoints": 114,
+    "rest_endpoints": 115,
     "tables": 22,
     "services": 49,
     "shortcodes": 13,

@@ -117,6 +117,9 @@ Images served from a CDN render again, and a few surfaces now say what they mean
 * Improve  - Migrating media to or from cloud storage now repoints every stored variant URL, so nothing is left pointing at the previous location.
 * Fix      - Migrating media with WP-CLI now moves thumbnails and WebP/AVIF files too, not just the original. Previously every derived image was left behind and broke once the media pointed at the CDN. Sites migrated from the admin screen were never affected.
 * Fix      - Backfilling cloud thumbnails now also uploads the full-size WebP and AVIF files, which repairs single media pages left broken by an earlier migration.
+* Fix      - Uploading several files at once from the Upload page or the member dashboard now posts one activity item with all the images, instead of a separate feed entry per file. The upload modal already worked this way.
+* Fix      - A multi-file upload from the member dashboard now keeps its description, so the grouped activity item is no longer posted without its caption.
+* Fix      - The "Upload 0 file(s)" bar no longer appears on the member dashboard when no files are selected.
 * Improve  - Reaction buttons on a single media page now report their pressed state to screen readers, matching the lightbox.
 * Fix      - WebP and AVIF images no longer return 403 on sites that serve media from a CDN. Variant URLs now resolve through the same storage driver as the JPEG instead of a stale local path.
 * Fix      - Admin media details links to a variant file now point at the file's real location, so they open instead of failing on CDN-backed sites.
