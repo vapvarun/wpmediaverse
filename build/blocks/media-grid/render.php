@@ -197,19 +197,34 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 				$item_permalink      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $item_id );
 				$mvs_grid_author_id  = ! empty( $item['post_author'] ) ? (int) $item['post_author'] : 0;
 				$mvs_grid_thumb_url  = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_thumb_url( $item_id, 'large' );
+
+				// The lightbox reads this embedded JSON in preference to REST
+				// (view.js openLightboxById), so it has to carry the same
+				// lightbox_* keys MediaController emits. Without them the image
+				// getter fell through to file_url and `mvs_lightbox_image_source`
+				// did nothing on this block — including every tile appended by
+				// Load More. (Basecamp 10171640247)
+				$mvs_grid_helpers       = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' );
+				$mvs_grid_lightbox_url  = $mvs_grid_helpers->get_lightbox_url( $item_id, (string) ( $item['file_url'] ?? '' ) );
+				$mvs_grid_lightbox_webp = $mvs_grid_helpers->get_lightbox_webp_url( $item_id, $mvs_grid_lightbox_url );
+				$mvs_grid_lightbox_avif = $mvs_grid_helpers->get_lightbox_avif_url( $item_id, $mvs_grid_lightbox_url );
+
 				$mvs_grid_lightbox   = array(
-					'id'            => $item_id,
-					'title'         => $item_title,
-					'description'   => $item['description'] ?? '',
-					'media_type'    => $mvs_grid_media_type,
-					'file_url'      => $mvs_grid_file_url ?: ( $item['file_url'] ?? '' ),
-					'file_type'     => $item['file_type'] ?? '',
-					'thumbnail_url' => $mvs_grid_thumb_url,
-					'link'          => $item_permalink,
-					'media_group'   => $mvs_grid_group ?: '',
-					'group_count'   => $mvs_grid_group_cnt,
-					'author'        => $mvs_grid_author_id,
-					'author_data'   => array(
+					'id'                => $item_id,
+					'title'             => $item_title,
+					'description'       => $item['description'] ?? '',
+					'media_type'        => $mvs_grid_media_type,
+					'file_url'          => $mvs_grid_file_url ?: ( $item['file_url'] ?? '' ),
+					'file_type'         => $item['file_type'] ?? '',
+					'thumbnail_url'     => $mvs_grid_thumb_url,
+					'lightbox_url'      => $mvs_grid_lightbox_url,
+					'lightbox_webp_url' => $mvs_grid_lightbox_webp,
+					'lightbox_avif_url' => $mvs_grid_lightbox_avif,
+					'link'              => $item_permalink,
+					'media_group'       => $mvs_grid_group ?: '',
+					'group_count'       => $mvs_grid_group_cnt,
+					'author'            => $mvs_grid_author_id,
+					'author_data'       => array(
 						// Plain name — third-party filters (bp-verified-member
 						// hooks `bp_core_get_user_displayname`) can inject
 						// HTML into the raw meta, which would arrive in the

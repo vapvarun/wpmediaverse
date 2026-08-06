@@ -126,6 +126,8 @@ Images served from a CDN render again, and a few surfaces now say what they mean
 * New      - The profile and group Media tabs now have title, caption, tags and privacy fields on upload, matching every other upload screen.
 * New      - The lightbox now has an Edit button on your own media, so a title or caption can be added after uploading.
 * Improve  - Opening a photo full size now loads the 1024px version instead of the untouched original, so the first view is much faster. Sites that want the original back can switch Lightbox Image Size in Display settings.
+* New      - Album contents can now be read over the REST API. Asking for an album's items previously returned "not found", so apps and custom clients could not list an album.
+* Improve  - Media grid rendering tightened.
 * Improve  - Reaction buttons on a single media page now report their pressed state to screen readers, matching the lightbox.
 * Fix      - WebP and AVIF images no longer return 403 on sites that serve media from a CDN. Variant URLs now resolve through the same storage driver as the JPEG instead of a stale local path.
 * Fix      - Admin media details links to a variant file now point at the file's real location, so they open instead of failing on CDN-backed sites.

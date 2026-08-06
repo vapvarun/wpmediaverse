@@ -154,24 +154,51 @@ class AlbumController extends WP_REST_Controller {
 			)
 		);
 
-		// POST /albums/{id}/items.
+		// GET + POST /albums/{id}/items.
 		register_rest_route(
 			$this->namespace,
 			'/' . $this->rest_base . '/(?P<id>[\d]+)/items',
 			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'add_items' ),
-				'permission_callback' => array( $this, 'update_item_permissions_check' ),
-				'args'                => array(
-					'id'        => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_album_items' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'id'       => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						'page'     => array(
+							'type'              => 'integer',
+							'default'           => 1,
+							'minimum'           => 1,
+							'sanitize_callback' => 'absint',
+						),
+						'per_page' => array(
+							'type'              => 'integer',
+							'default'           => 20,
+							'minimum'           => 1,
+							'maximum'           => 100,
+							'sanitize_callback' => 'absint',
+						),
 					),
-					'media_ids' => array(
-						'type'     => 'array',
-						'required' => true,
-						'items'    => array( 'type' => 'integer' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'add_items' ),
+					'permission_callback' => array( $this, 'update_item_permissions_check' ),
+					'args'                => array(
+						'id'        => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						'media_ids' => array(
+							'type'     => 'array',
+							'required' => true,
+							'items'    => array( 'type' => 'integer' ),
+						),
 					),
 				),
 			)
@@ -339,6 +366,63 @@ class AlbumController extends WP_REST_Controller {
 		}
 
 		return rest_ensure_response( $this->prepare_album_response( $post, true ) );
+	}
+
+	/**
+	 * Get an album's media items, in album order, paginated.
+	 *
+	 * `GET /albums/{id}/items`. The route previously registered POST only, so
+	 * every client asking for an album's contents got a 404 and rendered an
+	 * empty album — the mobile app's album screen among them. `GET /albums/{id}`
+	 * returns bare media IDs; this returns the hydrated rows a grid needs.
+	 *
+	 * Paginated deliberately: an album is unbounded, and hydrating every row
+	 * would put an unbounded ID list into `get_batch()`'s prepared statement.
+	 *
+	 * @since 2.3.1
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function get_album_items( $request ) {
+		$post = get_post( $request->get_param( 'id' ) );
+		if ( ! $post || 'mvs_album' !== $post->post_type ) {
+			return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
+		}
+
+		// Same gate as get_item() — a private album's contents are private.
+		if ( ! $this->privacy->can_view( $post->ID, get_current_user_id() ) ) {
+			return new WP_Error( 'mvs_forbidden', __( 'You do not have access to this album.', 'wpmediaverse' ), array( 'status' => 403 ) );
+		}
+
+		$per_page = (int) $request->get_param( 'per_page' );
+		$page     = max( 1, (int) $request->get_param( 'page' ) );
+
+		// get_items() already excludes trashed media and orders by position, so
+		// the slice below is the album's real order, not a re-sort.
+		$all_ids  = array_map( 'intval', array_column( $this->albums->get_items( $post->ID ), 'media_id' ) );
+		$total    = count( $all_ids );
+		$page_ids = array_slice( $all_ids, ( $page - 1 ) * $per_page, $per_page );
+
+		$items = array();
+		if ( ! empty( $page_ids ) ) {
+			// One batched read for the page, then the shared media formatter —
+			// no per-tile query, and no second copy of the response shape.
+			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( $page_ids );
+			$media_controller = new MediaController( $this->privacy );
+			foreach ( $page_ids as $media_id ) {
+				$prepared = $media_controller->prepare_item_for_response( $media_id, $request );
+				if ( null !== $prepared ) {
+					$items[] = $prepared;
+				}
+			}
+		}
+
+		$response = rest_ensure_response( $items );
+		$response->header( 'X-WP-Total', (string) $total );
+		$response->header( 'X-WP-TotalPages', (string) ( $per_page > 0 ? (int) ceil( $total / $per_page ) : 0 ) );
+
+		return $response;
 	}
 
 	/**
