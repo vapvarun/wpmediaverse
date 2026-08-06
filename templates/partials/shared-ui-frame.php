@@ -365,7 +365,8 @@ wp_interactivity_state(
 					<source type="image/webp" data-wp-bind--srcset="state.lightboxImageWebpUrl" data-wp-bind--hidden="state.lightboxHideImageWebp" />
 					<img data-wp-bind--src="state.lightboxImageUrl" alt="" data-wp-bind--alt="state.lightboxTitle" data-wp-bind--hidden="state.lightboxHideImage" />
 				</picture>
-				<video class="mvs-lightbox-video" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
+				<?php // preload/poster mirror media-single.php:243 — without them the lightbox pulled the whole file on open and showed a black frame while it buffered. (Basecamp 10171640247) ?>
+				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" hidden></video>
 				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
 
 				<!-- Next arrow (gallery groups only) -->
@@ -452,6 +453,28 @@ wp_interactivity_state(
 						<button class="mvs-lightbox-action mvs-lb-save" data-wp-on--click="actions.lightboxOpenCollections" aria-label="<?php esc_attr_e( 'Save this media to a collection', 'wpmediaverse' ); ?>">
 							<i data-lucide="bookmark" aria-hidden="true"></i>
 							<?php esc_html_e( 'Save', 'wpmediaverse' ); ?>
+						</button>
+					<?php endif; ?>
+					<?php
+					/*
+					 * Edit — owner only.
+					 *
+					 * The edit modal (title / caption / privacy / tags) has
+					 * existed since 1.2.0, but the ONLY way in was the Edit
+					 * button on a dashboard grid card. A member who opened
+					 * their own item in the lightbox — the normal path from a
+					 * BuddyPress profile Media tab — had no way to name or
+					 * caption it after upload. Basecamp 10171655728.
+					 *
+					 * `lightboxIsOwner` compares the payload's author id to the
+					 * current user, so this stays hidden for other people's
+					 * media; the REST route enforces the real permission.
+					 */
+					?>
+					<?php if ( $mvs_is_logged_in ) : ?>
+						<button class="mvs-lightbox-action mvs-lb-edit" data-wp-on--click="actions.lightboxEdit" data-wp-bind--hidden="!state.lightboxIsOwner" aria-label="<?php esc_attr_e( 'Edit this media', 'wpmediaverse' ); ?>">
+							<i data-lucide="pencil" aria-hidden="true"></i>
+							<?php esc_html_e( 'Edit', 'wpmediaverse' ); ?>
 						</button>
 					<?php endif; ?>
 					<button class="mvs-lightbox-action mvs-lb-share" data-wp-on--click="actions.lightboxShare" aria-label="<?php esc_attr_e( 'Share this media', 'wpmediaverse' ); ?>">

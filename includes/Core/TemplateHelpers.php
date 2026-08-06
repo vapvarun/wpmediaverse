@@ -76,7 +76,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		// in /wp-content/uploads/wpmediaverse/ doesn't 403 the lightbox image.
 		// $file_url parameter is ignored — the helper resolves the right URL
 		// from $media_id alone, signed.
-		$source = (string) get_option( 'mvs_lightbox_image_source', 'original' );
+		$source = (string) get_option( 'mvs_lightbox_image_source', 'large' );
 		if ( 'auto' === $source ) {
 			$source = wp_is_mobile() ? 'large' : 'original';
 		}
@@ -121,7 +121,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			return '';
 		}
 
-		$source = (string) get_option( 'mvs_lightbox_image_source', 'original' );
+		$source = (string) get_option( 'mvs_lightbox_image_source', 'large' );
 		if ( 'auto' === $source ) {
 			$source = wp_is_mobile() ? 'large' : 'original';
 		}
@@ -157,7 +157,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			return '';
 		}
 
-		$source = (string) get_option( 'mvs_lightbox_image_source', 'original' );
+		$source = (string) get_option( 'mvs_lightbox_image_source', 'large' );
 		if ( 'auto' === $source ) {
 			$source = wp_is_mobile() ? 'large' : 'original';
 		}

@@ -700,7 +700,15 @@ class SettingsRegistrar {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( Sanitizers::class, 'sanitize_lightbox_image_source' ),
-				'default'           => 'original',
+				// 'large', not 'original': opening a photo used to stream the
+				// full unresized file through /serve, so the first view of a
+				// 4-6 MB phone photo was visibly slow on every site that had
+				// not changed this setting. 1024px is the size the lightbox
+				// actually displays on all but the largest screens. Sites that
+				// want the original back set this to 'original' or 'auto' —
+				// the setting IS the escape hatch (Production Rule 3).
+				// Basecamp 10171640247.
+				'default'           => 'large',
 			)
 		);
 		add_settings_field(
@@ -717,7 +725,10 @@ class SettingsRegistrar {
 					'medium'   => __( 'Medium (300px, fastest — small gallery)', 'wpmediaverse' ),
 					'auto'     => __( 'Auto (original on desktop, large on mobile)', 'wpmediaverse' ),
 				),
-				'description' => __( 'Which image size opens in the lightbox. Users can always tap "View Original" to open the full file in a new tab.', 'wpmediaverse' ),
+				// The old copy promised a "View Original" control that has never
+				// existed in the lightbox — the Open action goes to the media
+				// permalink, not the file. (Basecamp 10171640247)
+				'description' => __( 'Which image size opens in the lightbox. Original is sharpest on high-density screens but is the slowest to load; Large is a good default on media-heavy communities. Sized options only apply where the variant exists — the original is used as a fallback.', 'wpmediaverse' ),
 			)
 		);
 

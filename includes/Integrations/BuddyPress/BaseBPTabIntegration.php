@@ -307,6 +307,44 @@ abstract class BaseBPTabIntegration {
 				<span class="mvs-bp-dropzone-text"><?php esc_html_e( 'Drop files here or click to upload', 'wpmediaverse' ); ?></span>
 			</div>
 			<div id="mvs-bp-upload-preview" class="mvs-bp-upload-preview"></div>
+
+			<?php
+			/*
+			 * Title / caption / tags / privacy.
+			 *
+			 * Every other upload surface (the shared-ui modal, the Upload Media
+			 * block, the member dashboard) has carried these since 1.2.0; this
+			 * one shipped with a dropzone and nothing else, so a member
+			 * uploading from their profile Media tab could not name or caption
+			 * the item at upload time at all. Basecamp 10171655728.
+			 *
+			 * Read back by assets/js/frontend/bp-tab-upload.js. Title is sent
+			 * only for a single-file upload — N files must not share one name —
+			 * while the description travels with every file so a multi-file
+			 * upload keeps its caption (the same rule the dashboard uses).
+			 */
+			?>
+			<div class="mvs-bp-upload-fields">
+				<input type="text" id="mvs-bp-upload-title" class="mvs-bp-upload-field"
+					placeholder="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>"
+					aria-label="<?php esc_attr_e( 'Title (optional)', 'wpmediaverse' ); ?>" />
+				<textarea id="mvs-bp-upload-description" class="mvs-bp-upload-field" rows="2"
+					placeholder="<?php esc_attr_e( 'Caption (optional)', 'wpmediaverse' ); ?>"
+					aria-label="<?php esc_attr_e( 'Caption (optional)', 'wpmediaverse' ); ?>"></textarea>
+				<input type="text" id="mvs-bp-upload-tags" class="mvs-bp-upload-field"
+					placeholder="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>"
+					aria-label="<?php esc_attr_e( 'Tags (comma separated)', 'wpmediaverse' ); ?>" />
+				<select id="mvs-bp-upload-privacy" class="mvs-bp-upload-field"
+					aria-label="<?php esc_attr_e( 'Who can see this media', 'wpmediaverse' ); ?>">
+					<option value="public"><?php esc_html_e( 'Public: anyone can see', 'wpmediaverse' ); ?></option>
+					<option value="members"><?php esc_html_e( 'Members: logged-in users only', 'wpmediaverse' ); ?></option>
+					<?php if ( function_exists( 'bp_is_active' ) && bp_is_active( 'friends' ) ) : ?>
+						<option value="friends"><?php esc_html_e( 'Friends', 'wpmediaverse' ); ?></option>
+					<?php endif; ?>
+					<option value="private"><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
+				</select>
+			</div>
+
 			<div class="mvs-bp-upload-status" id="mvs-bp-upload-status" style="display:none;"></div>
 			<div class="mvs-bp-upload-form-actions">
 				<button type="button" id="mvs-bp-upload-cancel" class="mvs-btn mvs-btn-secondary"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>

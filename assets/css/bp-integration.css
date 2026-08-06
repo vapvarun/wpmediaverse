@@ -128,6 +128,38 @@
     list-style: none;
 }
 
+/* Title / caption / tags / privacy on the tab uploader. BP-only markup
+ * (render_upload_form), so this stays scoped here per Coding Rule 12 —
+ * unlike the dropzone siblings above, which album.php also emits outside
+ * BuddyPress and therefore live unscoped in frontend.css. */
+#buddypress .mvs-bp-screen .mvs-bp-upload-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 16px 0 0;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-upload-field {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--mvs-text);
+    background: var(--mvs-bg);
+    border: 1px solid var(--mvs-border);
+    border-radius: 6px;
+    /* 40px floor from the responsive contract — these are touch targets. */
+    min-height: 40px;
+}
+
+#buddypress .mvs-bp-screen .mvs-bp-upload-field:focus {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 1px;
+}
+
+#buddypress .mvs-bp-screen textarea.mvs-bp-upload-field {
+    resize: vertical;
+}
+
 #buddypress .mvs-bp-screen .mvs-bp-upload-status {
     margin: 12px 0 0;
     font-size: 13px;

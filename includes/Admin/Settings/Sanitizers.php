@@ -214,7 +214,7 @@ class Sanitizers {
 	 */
 	public static function sanitize_lightbox_image_source( $value ): string {
 		$value = is_string( $value ) ? $value : '';
-		return in_array( $value, self::WHITELISTS['mvs_lightbox_image_source'], true ) ? $value : 'original';
+		return in_array( $value, self::WHITELISTS['mvs_lightbox_image_source'], true ) ? $value : 'large';
 	}
 
 	/**

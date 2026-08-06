@@ -265,6 +265,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxVideoUrl() {
 			return state.lightboxMediaData?.file_url || '';
 		},
+		get lightboxPosterUrl() {
+			// Poster for the lightbox <video>, matching what media-single.php
+			// already does. Without it the player shows a black rectangle while
+			// the file buffers — on a large MP4 that is the whole "slow" feel.
+			// MediaController falls back to the bundled default poster for
+			// posterless videos, so thumbnail_url is always safe here.
+			const d = state.lightboxMediaData;
+			if ( ! d || d.media_type !== 'video' ) {
+				return '';
+			}
+			return d.thumbnail_url || '';
+		},
 		get lightboxFileType() {
 			return state.lightboxMediaData?.file_type || '';
 		},
@@ -1306,6 +1318,24 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			} finally {
 				state.lightboxCommentSubmitting = false;
 			}
+		},
+		/**
+		 * Open the edit modal for the item currently shown in the lightbox.
+		 *
+		 * The modal already existed but was only reachable from a dashboard
+		 * grid card, so a member viewing their own upload in the lightbox had
+		 * no way to add a title or caption after the fact (Basecamp
+		 * 10171655728). Closes the lightbox first so the two overlays never
+		 * stack — openEditModal fetches, and the lightbox's own key handlers
+		 * would otherwise still be listening underneath.
+		 */
+		async lightboxEdit() {
+			const mediaId = state.lightboxMediaId;
+			if ( ! mediaId ) {
+				return;
+			}
+			actions.closeLightbox();
+			await actions.openEditModal( mediaId );
 		},
 		async lightboxShare() {
 			// Two valid surfaces, in priority order:

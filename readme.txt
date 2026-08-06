@@ -123,6 +123,9 @@ Images served from a CDN render again, and a few surfaces now say what they mean
 * Fix      - Video covers no longer render blank. Grids were forcing the browser to paint the frame at 0.1 seconds, which covered up the generated poster, so any video opening on a fade-in, title card or white intro showed an empty tile. Posters and the bundled fallback cover are now what you see.
 * Fix      - Videos uploaded from the Upload page or the member dashboard now get a cover captured in the browser, so a site without ffmpeg installed no longer ends up with cover-less videos.
 * Improve  - Grids of videos no longer download part of every video file just to draw a thumbnail.
+* New      - The profile and group Media tabs now have title, caption, tags and privacy fields on upload, matching every other upload screen.
+* New      - The lightbox now has an Edit button on your own media, so a title or caption can be added after uploading.
+* Improve  - Opening a photo full size now loads the 1024px version instead of the untouched original, so the first view is much faster. Sites that want the original back can switch Lightbox Image Size in Display settings.
 * Improve  - Reaction buttons on a single media page now report their pressed state to screen readers, matching the lightbox.
 * Fix      - WebP and AVIF images no longer return 403 on sites that serve media from a CDN. Variant URLs now resolve through the same storage driver as the JPEG instead of a stale local path.
 * Fix      - Admin media details links to a variant file now point at the file's real location, so they open instead of failing on CDN-backed sites.
