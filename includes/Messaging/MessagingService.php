@@ -1425,8 +1425,16 @@ class MessagingService {
 			'content'         => $content,
 			'message_type'    => $message_type,
 			'created_at'      => $now,
+			// Stamp updated_at from the SAME UTC clock as created_at. Left to the
+			// column's DEFAULT CURRENT_TIMESTAMP it is filled in MySQL SERVER-LOCAL
+			// time while every reader (poll_reaction_updates) and writer
+			// (touch_message) uses PHP UTC — so on any host whose MySQL timezone
+			// is ahead of UTC, every new message sat "in the future" of the poll
+			// cursor and was re-shipped as an empty reaction update on every poll
+			// for hours.
+			'updated_at'      => $now,
 		);
-		$insert_formats = array( '%d', '%d', '%s', '%s', '%s' );
+		$insert_formats = array( '%d', '%d', '%s', '%s', '%s', '%s' );
 
 		if ( ! empty( $data['attachment_id'] ) ) {
 			$insert_data['attachment_id'] = (int) $data['attachment_id'];

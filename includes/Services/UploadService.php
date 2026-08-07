@@ -940,8 +940,8 @@ class UploadService {
 		// above — so 'path' is always present and isset() would be dead weight.
 		$written = (string) $saved['path'];
 		if ( '' !== $written && $written !== $file_path && file_exists( $written ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- moving a temp file we just created, WP_Filesystem is not initialised this early in the upload path.
-			if ( ! @rename( $written, $file_path ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			// Moving a temp file we just created; WP_Filesystem is not initialised this early in the upload path.
+			if ( ! @rename( $written, $file_path ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename, WordPress.PHP.NoSilencedErrors.Discouraged
 				if ( ! copy( $written, $file_path ) ) {
 					LoggerService::error(
 						'upload',

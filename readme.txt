@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 2.3.1
+Stable tag: 2.3.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -109,6 +109,16 @@ Use the WP-CLI command: `wp mvs import-rtmedia`. Run with `--dry-run` first to p
 8. **Moderation Queue** - AI-flagged media review with approve/reject workflow.
 
 == Changelog ==
+
+= 2.3.2 - August 2026 =
+
+Media works again for logged-in members on private communities, and the community stays sealed for guests.
+
+* Fix      - Media loads again for logged-in members when the host community requires login. The privacy gate was blocking the signed media route that every image and video loads through, and browsers cannot attach a login session to those requests, so all media returned 401 for members and guests alike.
+* Fix      - Logged-out visitors are now redirected to the login page from every media page while the community is private. The pages previously rendered normally with working media links in the HTML.
+* Fix      - Message reaction updates no longer resend every conversation message for hours on hosts whose database server is not set to UTC. New messages are now stamped with the same clock the polling reads.
+* Dev      - New filters mvs_rest_gate_exempt_route_prefixes, mvs_community_gated_page and mvs_community_login_url let a host community or integration tune which routes and pages the privacy gate covers and where blocked visitors are sent.
+* Compat   - Aligned with WPMediaVerse Pro 2.3.2. Install both updates together.
 
 = 2.3.1 - August 2026 =
 

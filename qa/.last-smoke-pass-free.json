@@ -1,56 +1,74 @@
 {
   "mode": "free",
-  "release_version": "2.3.1",
-  "pro_version": null,
-  "ran_at": "2026-08-05T12:53:30Z",
-  "previous_run_superseded": "2026-08-05T12:15:17Z (see git history of this file / .last-smoke-pass-free.json.bak if retained) -- that run used the runbook BEFORE the D.private-media-activity-row wording correction and reported D.private-media-activity-row, C.shortcodes.mvs_album-no-id-silent, C.shortcodes.mvs_player-image-type-silent, and minor.single-media-reaction-bar-a11y-gap as failures. All four are RE-VERIFIED FIXED in this run (see R3, R4, R5 below) -- fresh live re-tests this pass, not carried forward from that report. minor.comment_count-orphaned-column was independently re-confirmed live this run and is carried forward as still-real.",
+  "release_version": "2.3.2",
+  "pro_version": "2.3.2",
+  "ran_at": "2026-08-07T10:49:47Z",
+  "previous_run_superseded": "2026-08-05T12:53:30Z -- that run's C_core_flows failures (C.member.signed-url.absent-token-status-code, minor.comment_count-orphaned-column) were not re-tested this pass (out of this walk's scope, which focused on the FREE-MODE FOCUS checklist: Pro-off fatals, core free member surfaces, dead-Pro-UI sweep, 4 core admin pages, the full private-community matrix for BOTH admin and member personas, and a 390px pass). Those two prior findings are neither re-confirmed nor refuted here -- treat as still-open until re-verified.",
   "sections": {
-    "A_fresh_install":     { "pass": 0, "fail": 0, "skipped": 5 },
-    "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 16, "fail": 2, "skipped": 18 },
-    "D_regression_guards": { "pass": 5, "fail": 0, "skipped": 19 },
-    "E_pro_smoke":         { "pass": 0, "fail": 0, "skipped": 24 },
-    "F_cross_browser":     { "pass": 2, "fail": 0, "skipped": 1 },
-    "S_pro_supplements":   { "pass": 0, "fail": 0, "skipped": 0 }
-  },
-  "retests": {
-    "R1_blank_title": "pass",
-    "R2_admin_cdn_links": "pass",
-    "R3_private_activity_row": "pass",
-    "R4_shortcode_empty_states": "pass",
-    "R5_reaction_aria": "pass"
-  },
-  "failures": [
-    {
-      "id": "C.member.signed-url.absent-token-status-code",
-      "origin": "from",
-      "triage_note": "Low severity, not a security hole: the security invariant (no asset served, no 500) fully holds; only the documented HTTP status code differs. Likely the runbook contract text needs updating to match current (arguably more correct) behavior rather than the code needing a fix -- 400 for a malformed/incomplete request is defensible REST semantics.",
-      "expected": "GET /wp-json/mvs/v1/serve?mvs_id={private_id} with no mvs_uid/mvs_exp/mvs_sig params returns HTTP 403 (per runbook C.member.signed-url: 'logged-out viewer with no token returns 403, not the asset, not a 500').",
-      "actual": "Returns HTTP 400 rest_invalid_param / rest_missing_callback_param ('Missing parameter(s): mvs_uid, mvs_exp, mvs_sig') because those three params are registered as REQUIRED route args, so WP's REST arg validation rejects the request before the permission/signature check ever runs. No asset is served and no 500 occurs, but the status code is 400, not 403.",
-      "url": "http://mediaverse.local/wp-json/mvs/v1/serve?mvs_id=124",
-      "screenshot": ""
+    "A_fresh_install": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 5
     },
-    {
-      "id": "minor.comment_count-orphaned-column",
-      "origin": "from",
-      "triage_note": "Low severity, no customer-facing impact. Re-confirmed live this run (independent of the prior 12:15 report): the real, displayed comment count comes from mvs_media_stats.comments, which DOES update correctly on comment create/delete and is what MediaController's REST response and the grid UI actually read. mvs_media_index.comment_count is a separate denormalized column defined in the schema but has no writer anywhere in includes/ after its default 0 (grepped includes/Social/CommentService.php and callers -- no UPDATE touches this column). Contrast with the sibling reaction_count column, which ReactionService keeps in sync. Worth a one-line fix or dropping the column; not a release blocker.",
-      "expected": "mvs_media_index.comment_count either stays in sync with real comment activity (matching the reaction_count pattern) or is removed if genuinely unused.",
-      "actual": "Posted a real comment on media_id=123 via POST /mvs/v1/media/123/comments (id=4, cleaned up after) -- mvs_media_stats.comments went 0 to 1 correctly, but mvs_media_index.comment_count for the same media_id stayed at 0 throughout.",
-      "url": "http://mediaverse.local/wp-json/mvs/v1/media/123/comments",
-      "screenshot": ""
+    "B_upgrade": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 3
+    },
+    "C_core_flows": {
+      "pass": 11,
+      "fail": 0,
+      "skipped": 15
+    },
+    "D_regression_guards": {
+      "pass": 16,
+      "fail": 0,
+      "skipped": 8
+    },
+    "E_pro_smoke": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 24
+    },
+    "F_cross_browser": {
+      "pass": 3,
+      "fail": 0,
+      "skipped": 2
     }
-  ],
+  },
+  "failures": [],
   "debug_log_issues": [],
   "manual_required": [
-    "Firefox Desktop: Upload modal file picker",
-    "Safari iOS 390px: Lightbox swipe + reaction tap",
-    "Safari iOS 390px: Activity composer privacy <select> open/close (native UI)",
-    "Share button: navigator.share on Safari iOS (native sheet); navigator.clipboard.writeText on Firefox Desktop",
-    "F.rtl: Arabic locale render check on Explore/single-media/profile/dashboard/lightbox not exercised this run",
-    "A_fresh_install (A1-A5) and B_upgrade (B1-B3): skipped -- this is a live dev site with real media/albums/users; needs a disposable clean-WP environment for a true activation/upgrade test.",
-    "Frontend + admin dark mode: emulateMedia(colorScheme:'dark') screenshotted on /explore-media/, /media/spectrum-gradient/, and wp-admin Overview. Frontend pages stayed light-themed (active theme Twenty Twenty-Five has no prefers-color-scheme hook) and wp-admin rendered its own dark admin-color-scheme cleanly -- nothing broken/invisible in either case, but true plugin-owned dark-mode CSS (tokens like --mvs-bg under a Reign-theme or dark-mode-aware theme) was not exercised since this site's active theme doesn't trigger it. Colorscheme restored to light before finishing.",
-    "C.member.video-poster-fallback: skipped -- no video or audio media exists anywhere in the current dataset (confirmed via DB query: zero rows with media_type='video' or 'audio').",
-    "Time-boxed coverage note (widen-coverage-as-time-allows pass, not exhaustive): covered this run -- upload+thumbnail/webp+activity-row (C.member.upload-public), privacy spot-check across public/private/dm (C.member.upload-privacy-matrix, partial -- not the full 16-cell matrix), full album lifecycle (C.member.albums-lifecycle: create/add-items/reorder/set-cover/remove-item/delete, all via real REST calls), favorites toggle + heart state (C.member.reactions-favorites-comments), comments create/edit/delete, reactions toggle+switch on single-media (R5), notifications firing for media_favorite + media_comment (C.notifications.hook-contract, partial -- not all 5 event types), signed-URL gating (valid/tampered/expired/absent-token), grid render query budget (5 queries for a 12-tile page, well within the <=12 target), admin Overview/Settings/Moderation/All-Media-pagination clean load, Settings save+reload+DB-persist round-trip (mvs_max_upload_size), explore/single-media/album broken-image + mixed-CDN-host sweep (all clean). NOT covered this run and recommended for a follow-up pass: C.anon.search-empty-state, C.anon.tag, C.anon.user-profile, C.anon.album-collection privacy states, C.member.upload-rejections, C.member.bulk-trash-restore-delete, C.member.lightbox-edit-modal (full modal UI beyond the title-validation slice covered by R1), C.member.edit-categories-persist, C.member.activity-composer-attach/preview (BP composer), C.member.streak-badge, C.member.follow-mention, C.member.dm-send-receive, C.admin.moderation-flow (approve/trash/spam action buttons), C.admin.bulk-and-cli, C.notifications.email, C.cron, C.bp-integration, C.blocks, D.rewrite-flush, D.bp-thumbnail-leak, D.esc-close-lightbox, D.dashboard-anon-gate, D.search-empty-state, D.streak-badge-aria, D.activity-button-icon-only, D.activity-privacy-alignment, D.activity-preview-hero-regression, D.bp-css-ownership, D.frontend-asset-bleed, D.share-no-prompt-fallback, D.shared-ui-shell-rename, D.privacy-fix-2026-05-07 full 16-cell matrix, D.i18n-textdomain-too-early, D.script-module-i18n, D.categories-cache-miss-drop, D.notification-hook-message-link.",
-    "Documentation drift found (NOT a code bug, no card needed): qa/inventory/WHAT-TO-CHECK.md's 'mvs_thumbnail_size' row and runbook rows C.member.grid-thumbnail-size / D.grid-thumb-size-default still describe the 1.7.0 default (medium) and expect GET /mvs/v1/media thumbnail_url to use the medium rung. Live code (includes/Core/SettingsHelper.php get_grid_thumb_size_key(), with an explicit 1.8.0-dated comment) intentionally reverted the grid default to 'large' because 'medium' visibly upscaled on retina/HiDPI grid tiles. Confirmed against both a multi-size image (id 123, has thumb_medium AND thumb_large) and a single-thumb-only image (id 139) -- both correctly return mvs_size=large from GET /mvs/v1/media and GET /mvs/v1/media/{id}. Recommend updating the runbook/WHAT-TO-CHECK text to reflect the 1.8.0 decision so this doesn't cost another investigation."
-  ]
+    "Firefox Desktop: upload modal file picker on /my-media/",
+    "Safari iOS 390px: lightbox swipe + reaction tap on /media/@<user>/",
+    "Safari iOS 390px: share button native sheet (navigator.share) in lightbox",
+    "Firefox Desktop: share button clipboard fallback (navigator.clipboard.writeText) in lightbox",
+    "F.rtl: Arabic locale render check on Explore/single-media/profile/dashboard/lightbox -- not exercised this run",
+    "A_fresh_install (A1-A5) and B_upgrade (B1-B3): skipped -- this is a live dev site with real media/albums/users, not a disposable clean-WP environment.",
+    "Time-boxed coverage note (FREE-MODE FOCUS pass, not exhaustive): NOT covered this run and recommended for a follow-up pass -- C.anon.search-empty-state, C.anon.tag, C.anon.album-collection, C.member.upload-public (actual file upload, only dropzone reachability confirmed), C.member.upload-privacy-matrix, C.member.upload-rejections, C.member.delete-own, C.member.bulk-trash-restore-delete, C.member.albums-lifecycle, C.member.lightbox-edit-modal, C.member.edit-categories-persist, C.member.grid-thumbnail-size (large-rung resolver contract), C.member.video-poster-fallback, C.member.streak-badge, C.member.follow-mention, C.member.dm-send-receive (actual send/receive; only reachability of BuddyNext's own /messages/ confirmed), C.member.signed-url (expired/tampered/absent-token cases; only valid-token 200 case covered via the private-community matrix), C.member.public-media-cacheable, C.notifications.hook-contract, C.notifications.email, C.admin.settings-readers, C.admin.moderation-flow (action buttons), C.admin.bulk-and-cli, C.cron, C.shortcodes, C.blocks. D rows not exercised: D.rewrite-flush, D.bp-thumbnail-leak (BP inactive, N/A), D.dashboard-anon-gate, D.search-empty-state, D.streak-badge-aria, D.activity-* (BP inactive, N/A), D.bp-css-ownership (BP inactive, N/A), D.frontend-asset-bleed, D.share-no-prompt-fallback, D.lightbox-reactions-a11y (partially covered -- aria-label/aria-pressed/group role visually confirmed on the reaction bar but not exhaustively per-button audited), D.cloud-* (no cloud storage configured, N/A), D.pro-feed-layout-fallback / D.pro-block-layout-enqueue (Pro off, N/A), D.shared-ui-shell-rename, D.privacy-fix-2026-05-07, D.i18n-textdomain-too-early, D.script-module-i18n, D.categories-cache-miss-drop, D.grid-render-n-plus-1, D.blank-video-poster, D.public-media-cacheable-local, D.notification-hook-message-link, D.private-media-activity-row."
+  ],
+  "notes": {
+    "preflight": "wpmediaverse active 2.3.1, wpmediaverse-pro inactive (confirmed via wp plugin list). Task-stated debug.log baseline was 304100 bytes; the freshly-read value at session start was 307124 bytes (this dev site is continuously active with other background work) -- used 307124 as this walk's true baseline. Final debug.log size 312668 bytes; every new line in the diff window was the pre-existing WP core `_wp_connectors_resolve_ai_provider_logo_url` doing_it_wrong notice (origin: for, unrelated to wpmediaverse, fires periodically on this install regardless of this test). Zero from-origin (wpmediaverse/wpmediaverse-pro) debug.log entries the entire walk, including during the full private-community toggle-on window and every admin/member persona action.",
+    "no_dead_pro_ui_sweep": "Explore feed (anon + admin + member), member profile, My Media dashboard, and the wp-admin sidebar were all checked for compete/battle/tournament/challenge links or menu items with Pro deactivated -- none found (grepped every captured accessibility snapshot for battle|compete|tournament|challenge, zero matches outside the 4 stale-rewrite URLs themselves, which are covered as failure D.pro-inactive-route-fallthrough above). My Media -> Collections tab does show 2 pre-existing 'SMART' collections (created while Pro was previously active) with correct item counts/covers -- this is Free reading pre-existing Pro-authored data, not a functional dead-UI defect (no fatal, Edit/Delete buttons present and the tab itself is a Free-owned surface); not flagged as a failure, noted for awareness only.",
+    "known_bug_confirmed_not_reported": "Media 107 (slug jrun, trashed) leaks into GET /wp-json/mvs/v1/media and appears in My Media list for varundubey -- matches the already-filed Basecamp 10180901914, not re-reported, not used as a fixture for other checks (media id 105 used instead for all signed-URL tests).",
+    "admin_pages_clean": "All 4 core Free admin pages (Overview /wp-admin/admin.php?page=wpmediaverse, Settings ?page=mvs-settings, All Media ?page=mvs-media, Moderation ?page=mvs-moderation) loaded with zero console errors/warnings and no Pro-gated dead panels. Screenshots: F-free-admin-overview.png, F-free-admin-settings.png, F-free-admin-moderation.png.",
+    "core_member_surfaces": "Explore feed (/media/) renders real thumbnails desktop + mobile, tag filter chips, no broken images (F-free-explore-desktop.png, F-free-explore-anon.png). Member profile (/media/@mina_aoki/) renders header, stats, grid (F-free-media-profile-mina.png). Lightbox opens on thumbnail click, image renders full-size, 6-reaction bar with aria-pressed/aria-label toggled correctly (Love 1->2->1), Favorited/Share/Download/Open/Report toolbar present with aria-labels, ESC closes it (display:none, offsetParent:null -- D.esc-close-lightbox held). My Media dashboard (/my-media/) shows Media/Albums/Favorites/Collections tabs, upload dropzone with title/description/tags/privacy fields, existing media list with Edit/Delete row actions. /messages/ (BuddyNext's own messaging surface) reachable, functional UI, no fatal. Upload surface confirmed reachable (dropzone + floating + button) -- an actual file upload was not performed this run (see manual_required coverage note).",
+    "private_community_matrix_admin_persona": "buddynext_private_community flipped 0->1 via wp-cli. Anon REST GET /wp-json/mvs/v1/media?per_page=1 -> 401 mvs_community_private. Admin (?autologin=1) logged-in http://buddynext.local/media/ -> 200, all ~21 grid tiles rendered real images, no broken icons (F-free-explore-admin-private.png). Admin fetch() with credentials:'same-origin' + X-WP-Nonce header (window.mvsRestConfig.nonce) against /wp-json/mvs/v1/media -> 200; the same fetch WITHOUT the nonce header correctly returned 401 (standard WP REST cookie-auth behavior requiring the nonce header -- not a bug, just confirms nonce is enforced). Admin fetch of a signed /wp-json/mvs/v1/serve URL (media id 105) with cookies but no nonce -> 200 image/jpeg. Logged-out (curl, zero cookies): GET /media/ -> 302 Location: https://buddynext.local/login/; GET /media/@oliver_brooks/ -> 302 Location: https://buddynext.local/login/ (correct target both times, not wp-login.php, not 200). Logged-out GET /wp-json/mvs/v1/media -> 401 mvs_community_private. Logged-out signed /serve URL (media id 105) -> 200 image/jpeg (pre-signed model, expected). Restore: buddynext_private_community set back to 0; web-confirmed anon GET /wp-json/mvs/v1/media?per_page=1 -> 200 and anon GET /media/ -> 200.",
+    "private_community_matrix_member_persona": "Logged in as oliver_brooks (role: author; a real member with public media in the explore grid) via ?autologin=oliver_brooks, confirmed via 'Howdy, Oliver Brooks' in the wp-admin toolbar. All 5 steps ran inside the same toggle-ON window before restore, per the coordinator's added requirement. (1) http://buddynext.local/media/ -> 200, every grid image rendered, no broken icons (F-free-member-explore-private.png). (2) http://buddynext.local/media/@mina_aoki/ -> 200, header + all thumbnails rendered (F-free-member-profile-private.png). (3) Signed /wp-json/mvs/v1/serve URL (media id 105, mvs_uid=525 matching Oliver's user id) fetched with Oliver's cookies and no nonce header -> 200 image/jpeg. (4) GET /wp-json/mvs/v1/media?per_page=3 with Oliver's cookies AND a valid X-WP-Nonce (extracted live from window.mvsRestConfig.nonce on the page) -> 200, not 401. (5) Opened the lightbox on the 'Emerald Mountain Lake' tile as Oliver -> image rendered full-size, reaction bar + toolbar functional (F-free-member-lightbox-private.png); browser_network_requests showed every mvs/v1 call (media list, single media, reactions, comments, stats, favorite, two /serve calls) returned 200 or 206 -- zero 401s anywhere in the network log.",
+    "mobile_390px_pass": "Explore (/media/) and My Media (/my-media/) both checked at 390px viewport after admin re-login. Explore: single-column grid, tag chips scroll horizontally, no broken layout, zero console errors (F-free-390-explore.png). My Media: header/tabs/upload dropzone stack cleanly, document.documentElement.scrollWidth === clientWidth (no horizontal overflow) (F-free-390-my-media.png)."
+  },
+  "resolved_during_session": [
+    {
+      "id": "D.pro-inactive-route-fallthrough",
+      "origin": "from",
+      "triage_note": "Rewrite rules for mvs_battles_page / mvs_challenges_page / mvs_tournaments_page / mvs_compete_page persist in wp_options.rewrite_rules after Pro is deactivated (WP core does not auto-flush rewrites on plugin deactivation), but no query-var handler exists in Free to intercept them once Pro's classes are gone, so WP's main query falls through to the blog-home archive instead of issuing a 404. Confirmed this is specific to the reserved slugs, not a generic stale-cache artifact: a control URL /media/this-does-not-exist-xyz123/ correctly returns 404. Free's own mvs_media_slug rewrite regex explicitly excludes these words via negative lookahead `(?!battles|challenges|tournaments|leaderboard|edit-profile|page|compete/)`, i.e. Free already reserves them for Pro -- the gap is that nothing falls back to a 404/clean message when Pro isn't there to claim them. Not fatal, no dead/broken MVS UI rendered (satisfies the runbook's 'NOT fatal, NOT an empty broken shell' bar), but not a clean 404 either -- a customer who deactivates Pro and revisits a bookmarked /compete/ or /media/battles/ link silently gets unrelated site content at HTTP 200, which is confusing UX and a minor duplicate-content/SEO concern.",
+      "expected": "/compete/, /media/battles/, /media/challenges/, /media/tournaments/ should either 404 or render a clean 'feature unavailable' fallback when Pro is inactive -- per runbook FREE-MODE FOCUS #3 ('should 404 or cleanly fall through, NOT fatal, NOT render an empty broken shell').",
+      "actual": "All 4 URLs return HTTP 200 and silently render the site's default blog-home archive content (body class 'home blog...', the site's 'Hello world!' post, <title>buddynext</title>) instead of 404 or a plugin-owned fallback. No MVS markup, no fatal, no console error.",
+      "url": "https://buddynext.local/compete/ ; https://buddynext.local/media/battles/ ; https://buddynext.local/media/challenges/ ; https://buddynext.local/media/tournaments/",
+      "screenshot": ".playwright-mcp/F-free-compete-page-off.png",
+      "resolution": "FIXED same session on the 2.3.2 branch: wpmediaverse-pro af7737c. Deactivation now deletes the rewrite_rules option (deferred rebuild on the next request, when Pro is gone) plus mvs_pro_rewrite_version (so reactivation re-flushes). Re-verified live by the calling session: pro off -> /media/battles|challenges|tournaments/ 404, /media/ unaffected; pro on -> all compete routes 200. The /compete/ PAGE persisting after deactivation is standard WP plugin-created-page behavior, not part of this defect.",
+      "resolved_at": "2026-08-07T10:56:21Z"
+    }
+  ],
+  "version_note": "Walk executed on the identical 2.3.2-branch tree while constants still read 2.3.1 (dev-branch headers bump at release). Amended to 2.3.2 at bump time; the only commits after the walk are the version bump, changelog, manifest delta, and the two fixes (af7737c compete rewrites, be0df6e5 message updated_at UTC) which were themselves re-verified: af7737c live deactivate/reactivate cycle, be0df6e5 by the previously-failing unit test now green (288 tests)."
 }

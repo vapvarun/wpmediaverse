@@ -1186,7 +1186,7 @@
           "username (required, string)",
           "password (required, string)",
           "app_name (optional, string)",
-          "app_id (optional, string — stable per-install id so a repeat sign-in replaces the row)"
+          "app_id (optional, string \u2014 stable per-install id so a repeat sign-in replaces the row)"
         ]
       }
     ]
@@ -1443,7 +1443,7 @@
       "section": "mvs_storage",
       "sanitize_callback": "Sanitizers::sanitize_storage_driver",
       "where": "Admin/Settings/SettingsRegistrar.php:243",
-      "controls": "Active storage driver (local/S3/BunnyCDN — Pro-extensible via mvs_storage_driver filter)"
+      "controls": "Active storage driver (local/S3/BunnyCDN \u2014 Pro-extensible via mvs_storage_driver filter)"
     },
     {
       "key": "mvs_signed_url_ttl",
@@ -1513,7 +1513,7 @@
       "section": "mvs_storage",
       "sanitize_callback": "rest_sanitize_boolean",
       "where": "Admin/Settings/SettingsRegistrar.php:412",
-      "controls": "Emit AVIF sibling for original + each thumbnail size. AVIF is 30–50% smaller than WebP but encodes 3–10× slower. Requires AVIF-capable Imagick (libheif) or GD on PHP 8.1+ (libavif); silent no-op when unavailable. Default OFF (opt-in).",
+      "controls": "Emit AVIF sibling for original + each thumbnail size. AVIF is 30\u201350% smaller than WebP but encodes 3\u201310\u00d7 slower. Requires AVIF-capable Imagick (libheif) or GD on PHP 8.1+ (libavif); silent no-op when unavailable. Default OFF (opt-in).",
       "added": "1.2.3"
     },
     {
@@ -1714,7 +1714,7 @@
       "section": "mvs_moderation",
       "sanitize_callback": "absint",
       "where": "Admin/Settings/SettingsRegistrar.php:902",
-      "controls": "Reports → auto-hide threshold. Set to 0 to disable."
+      "controls": "Reports \u2192 auto-hide threshold. Set to 0 to disable."
     },
     {
       "key": "mvs_webhooks",
@@ -3753,7 +3753,7 @@
       ],
       "where": "templates/media-single.php:479",
       "consumed_by": [
-        "wpmediaverse-pro (Frontend\\BoostAffordance — boost store/modal + owner button on the canonical single-media page, all layouts)"
+        "wpmediaverse-pro (Frontend\\BoostAffordance \u2014 boost store/modal + owner button on the canonical single-media page, all layouts)"
       ],
       "added": "2.1.0"
     },
@@ -5180,7 +5180,7 @@
   "ci_guards": {
     "script": "bin/ci-local.sh",
     "url_emission_regex": "esc_url(MediaRepository::get(.., 'file_url'|thumb_*)) | 'cover_image_url'=>$row->.. | bare MediaRepository::get(.., 'file_url')",
-    "storage_internal_marker": "// CI: storage-internal — use this trailing comment to mark internal-only file_url reads (DB writes, filesystem path derivation, filter args) so the CI guard skips them",
+    "storage_internal_marker": "// CI: storage-internal \u2014 use this trailing comment to mark internal-only file_url reads (DB writes, filesystem path derivation, filter args) so the CI guard skips them",
     "duplicate_method_check": true,
     "phpstan_level": 5
   },
@@ -5195,10 +5195,10 @@
     "Errors: WP_Error or LoggerService (no silent return false)",
     "i18n: __() / esc_html__() / esc_attr__() with text domain wpmediaverse",
     "Pro boundary: never import Free classes directly (exception: MediaRepository, tech debt)",
-    "No silent render fallthrough — every return; in render path needs visible empty state",
+    "No silent render fallthrough \u2014 every return; in render path needs visible empty state",
     "CSS file ownership: BP rules in bp-integration.css scoped under #buddypress",
     "Names don't lie: class/hook/CSS names match actual usage",
-    "Sibling classes with ≥50% duplicate methods share a base at n=3"
+    "Sibling classes with \u226550% duplicate methods share a base at n=3"
   ],
   "test_dirs": [
     "tests/unit/"
@@ -5226,7 +5226,7 @@
           "WPMediaVerse\\Services\\CloudOps"
         ],
         "interface_changes": [
-          "StorageDriverInterface::download(string $path, string $local_dest): bool — new contract method"
+          "StorageDriverInterface::download(string $path, string $local_dest): bool \u2014 new contract method"
         ],
         "cli_subcommands_added": [
           "wp mvs migrate-storage --from --to [--keep-source] [--include-non-public]",
@@ -5237,14 +5237,14 @@
           "mvs_cloud_direct_public_urls (boolean, default false)"
         ],
         "filters_added": [
-          "mvs_cloud_thumbnail_url($url, $size, $media_id) — delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
-          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) — opt-in for private-bucket setups"
+          "mvs_cloud_thumbnail_url($url, $size, $media_id) \u2014 delegate per-size resizing to CDN URL params (BunnyCDN Optimizer / Cloudflare Images)",
+          "mvs_cloudops_allow_non_public_to_cloud($allow, $media_id, $privacy, $to) \u2014 opt-in for private-bucket setups"
         ],
         "options_added": [
-          "mvs_cloud_ops_status — last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
+          "mvs_cloud_ops_status \u2014 last admin migrate/cleanup batch state (read by Pro CloudOpsManager UI)"
         ],
         "i18n_strings_wrapped": 98,
-        "pot_entries": "1 → 1,179",
+        "pot_entries": "1 \u2192 1,179",
         "wp_localize_script_handles": [
           "mvsConfirmI18n",
           "mvsCardBuildersI18n"
@@ -5372,13 +5372,13 @@
         "Admin bulk-optimize progress UI"
       ]
     },
-    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only — inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired — manifest category counts unchanged. Full re-scan deferred to next structural change.",
+    "refresh_notes": "Lightweight refresh for 1.4.0 hardening pass (commit 88920c1). Pattern-level changes only \u2014 inline cap+nonce pairs, native confirm/alert fallback removal, new Blocks\\\\SafeRender helper (Pro), call-site esc_attr() on title fields. No new REST/AJAX/admin pages/tables/hooks fired \u2014 manifest category counts unchanged. Full re-scan deferred to next structural change.",
     "refresh_2026_07_07": {
-      "scope": "FULL re-enumeration for 1.9.0 (1.2.1→1.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
-      "method": "wp-plugin-onboard refresh — 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
+      "scope": "FULL re-enumeration for 1.9.0 (1.2.1\u21921.9.0 drift). Rebuilt: REST (113), hooks_fired (167), tables, blocks, shortcodes, cron, wp_cli, admin_pages, ajax, capabilities, services, post_types, taxonomies.",
+      "method": "wp-plugin-onboard refresh \u2014 3 parallel Explore enumeration agents (REST / hooks / structural), coverage-gate verified against ground-truth grep. Deterministic MCP generator not used: MediaVerse registers REST/AJAX/shortcodes via a controller registry the tracer cannot follow (>20% miss).",
       "namespace": "mvs/v1",
       "consumed_by_note": "hooks_fired[].consumed_by preserved from prior manifest by name; full cross-plugin index (Phase 2.5.10) not re-derived this pass.",
-      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks — deferred."
+      "not_regenerated": "FEATURE_AUDIT.md / CODE_FLOWS.md / ROLE_MATRIX.md (Phase 3), audit/derived/ cache, static_analysis sub-checks \u2014 deferred."
     },
     "refresh_2026_07_07_v200": {
       "scope": "2.0.0 functional bug batch (21 cards). Free: moderation wp_update_post removed (no wp_posts corruption); messaging global-nobody ceiling + can_message on send (resolve_privacy_ceiling, chat_panel_enabled helpers); user_login->nicename profile URLs (get_user_profile_url) with login-fallback alias; watermark preview on single media page (TemplateHelpers::resolve_watermark_preview + mvs_apply_watermark_preview filter); media-grid columns attribute honored; /media feed prefetch N+1 fix; delete_cascade taxonomy cleanup; find_ids_by_meta keyset args.",
@@ -5398,14 +5398,14 @@
           "mvs_media_single_actions (templates/media-single.php social bar; Pro BoostAffordance renders boost UI on every layout)"
         ],
         "migrator": [
-          "v21 — backfill rank_scan leaderboard index on upgrading 2.0.x sites (fresh-install CREATE already had it)",
-          "v22 — typing_until datetime column + conv_typing key on mvs_conversation_participants (durable typing indicator marker)"
+          "v21 \u2014 backfill rank_scan leaderboard index on upgrading 2.0.x sites (fresh-install CREATE already had it)",
+          "v22 \u2014 typing_until datetime column + conv_typing key on mvs_conversation_participants (durable typing indicator marker)"
         ],
         "note": "2.1.0 was the member-safety/privacy + compete-fix release; REST/table/blocks counts unchanged beyond the migrator columns above."
       },
       "v220_added": {
         "classes_added": [
-          "WPMediaVerse\\REST\\CommunityPrivacyGate — rest_pre_dispatch private-community gate over mvs/v1 (and any prefix added via filter); registered from Core\\Plugin boot"
+          "WPMediaVerse\\REST\\CommunityPrivacyGate \u2014 rest_pre_dispatch private-community gate over mvs/v1 (and any prefix added via filter); registered from Core\\Plugin boot"
         ],
         "filters_added": [
           "mvs_rest_require_auth",
@@ -5413,7 +5413,7 @@
           "mvs_rest_gated_route_prefixes"
         ],
         "methods_added": [
-          "Core\\Dates::resolve_backdate() — importer seam; UTC backdate normalizer (null/future -> null = now-stamp)",
+          "Core\\Dates::resolve_backdate() \u2014 importer seam; UTC backdate normalizer (null/future -> null = now-stamp)",
           "MessagingService::find_or_create_conversation()/send_message()/create_group_conversation() accept optional created_at (backdate; live callers unchanged)"
         ],
         "behavior_changes": [
@@ -5424,7 +5424,7 @@
           "lightbox favorite .active color survives the theme-defense guard"
         ],
         "i18n_strings_added": [
-          "Uploading %s…",
+          "Uploading %s\u2026",
           "Only image, video, and audio files can be shared in messages."
         ],
         "tests_added": [
@@ -5478,13 +5478,13 @@
     "refresh_2026_08_01_v230_step2": {
       "scope": "Step 2 messaging: archived conversations tab + honest pagination + tab semantics fix",
       "rest_changed": [
-        "GET /mvs/v1/me/conversations — tab enum gains archived; now emits X-WP-Total / X-WP-TotalPages"
+        "GET /mvs/v1/me/conversations \u2014 tab enum gains archived; now emits X-WP-Total / X-WP-TotalPages"
       ],
       "hooks_fired_added": [
         "mvs_dm_unarchive_on_activity (filter, Production Rule 3 escape hatch)"
       ],
       "migrator_added": [
-        "v25 — KEY user_archived (user_id, is_archived, status) on mvs_conversation_participants; added to the CREATE for fresh installs"
+        "v25 \u2014 KEY user_archived (user_id, is_archived, status) on mvs_conversation_participants; added to the CREATE for fresh installs"
       ],
       "methods_added": [
         "MessagingService::count_conversations()",
@@ -5499,7 +5499,7 @@
     "refresh_2026_08_01_v230_step3": {
       "scope": "Step 3: EXIF orientation applied at the single upload seam + repair path",
       "hooks_fired_added": [
-        "mvs_apply_exif_orientation (filter) — skip rotation on sites that normalise upstream"
+        "mvs_apply_exif_orientation (filter) \u2014 skip rotation on sites that normalise upstream"
       ],
       "methods_added": [
         "UploadService::apply_exif_orientation() (private)"
@@ -5530,7 +5530,7 @@
         "AlbumService::add_items() clamps each item to the more restrictive of (item, album) privacy"
       ],
       "explicitly_not_changed": [
-        "explore privacy SQL untouched — the three existing copies of the clause already handle a correctly-set item privacy, so no fourth copy was added",
+        "explore privacy SQL untouched \u2014 the three existing copies of the clause already handle a correctly-set item privacy, so no fourth copy was added",
         "album privacy CHANGE does not re-clamp existing items; no migration of historical rows (owner decision 2026-08-01)"
       ],
       "docs_corrected": [
@@ -5554,17 +5554,17 @@
         "bp-activity-media disables the submit BUTTON, not just the input",
         "media-social reads the server-resolved comment edit window instead of a hardcoded 15 minutes"
       ],
-      "pending": "lightbox comment edit/delete controls (existing PUT/DELETE routes, markup not yet wired) — needs browser verification"
+      "pending": "lightbox comment edit/delete controls (existing PUT/DELETE routes, markup not yet wired) \u2014 needs browser verification"
     },
     "refresh_2026_08_01_v230_full_reconcile": {
       "scope": "FULL hook reconciliation for 2.3.0. The per-step deltas kept pace with new work but never re-checked the existing inventory, which had drifted badly.",
       "method": "Diffed every do_action/apply_filters across includes/ templates/ src/ against manifest.hooks_fired. Deterministic generator still NOT used (see the standing limitation note).",
       "hooks_added": 26,
       "subsystems_that_were_entirely_absent": [
-        "Services\\AccountDeletionService — 5 hooks (grace period, request, cancel, execute, password gate)",
-        "REST\\RestGate + RestGuards — 5 hooks (map, enabled, unresolved, resolve_targets, denied, suspension check)",
-        "Privacy\\MemberDataMap + MemberPurger — 3 hooks (erase map, retain map, purged)",
-        "app config/template surface — mvs_app_page_ids, mvs_app_template, mvs_app_config_legal"
+        "Services\\AccountDeletionService \u2014 5 hooks (grace period, request, cancel, execute, password gate)",
+        "REST\\RestGate + RestGuards \u2014 5 hooks (map, enabled, unresolved, resolve_targets, denied, suspension check)",
+        "Privacy\\MemberDataMap + MemberPurger \u2014 3 hooks (erase map, retain map, purged)",
+        "app config/template surface \u2014 mvs_app_page_ids, mvs_app_template, mvs_app_config_legal"
       ],
       "hooks_removed_as_phantom": [
         "mvs_apply_watermark_preview",
@@ -5573,10 +5573,10 @@
         "mvs_watermark_invalidated",
         "mvs_watermarks_invalidated_all"
       ],
-      "phantom_note": "Those five appear in NEITHER Free nor Pro. mvs_apply_watermark_preview was recorded as a new symbol in the 2.0.0 refresh and later removed without updating the manifest. The manifest was advertising five extension points that silently do nothing — the same failure mode as the documented-but-nonexistent inherit_privacy album flag.",
+      "phantom_note": "Those five appear in NEITHER Free nor Pro. mvs_apply_watermark_preview was recorded as a new symbol in the 2.0.0 refresh and later removed without updating the manifest. The manifest was advertising five extension points that silently do nothing \u2014 the same failure mode as the documented-but-nonexistent inherit_privacy album flag.",
       "kept": "mvs_settings_render_{renderer} stays in its documented placeholder form; the literal prefix at Admin/Settings/SettingsPage.php:495 is a dynamic hook name.",
       "correction": "First pass under-counted. The extraction regex required the hook name on the same line as do_action(/apply_filters(, so every MULTI-LINE call was invisible and the pass reported a false '0 missing'. Caught because manifest.hooks.json carried an entry (mvs_rest_timestamp_keys) the scan claimed did not exist - it is fired from Core/Dates.php:98 across two lines. Re-scanned multi-line aware: 18 further hooks were missing, including mvs_media_uploaded, which BuddyNext itself hooks.",
-      "hooks_total_after": 220,
+      "hooks_total_after": 223,
       "tables_deduplicated": 1,
       "counts_now_derived": "Summary counts are computed from the manifest's own arrays instead of hand-maintained, which is how they drifted (services 37 vs 49, wp_cli 18 vs 20, migrator_version 20 vs 25).",
       "extraction_lessons": [
@@ -5680,20 +5680,20 @@
         "hook": "mvs_share_recorded",
         "listener": "Services/CacheService.php:331",
         "severity": "low",
-        "note": "1.2.0 record_share endpoint does not fire this hook — cache stays stale on share recordings"
+        "note": "1.2.0 record_share endpoint does not fire this hook \u2014 cache stays stale on share recordings"
       },
       {
         "hook": "mvs_reaction_removed",
         "listener": "Services/CacheService.php:329",
         "severity": "medium",
-        "note": "ReactionService::remove never fires symmetric hook (mvs_reaction_added IS fired) — cache stays stale on reaction removal"
+        "note": "ReactionService::remove never fires symmetric hook (mvs_reaction_added IS fired) \u2014 cache stays stale on reaction removal"
       },
       {
         "hook": "mvs_media_moderated",
         "listener_1": "Services/CacheService.php:334",
         "listener_2": "Integrations/WebhookService.php:40",
         "severity": "high",
-        "note": "ModerationController::approve/reject_item writes moderation_status without firing hook — outbound webhooks for moderation events are silently broken"
+        "note": "ModerationController::approve/reject_item writes moderation_status without firing hook \u2014 outbound webhooks for moderation events are silently broken"
       }
     ],
     "cap_context_mismatches": [],
@@ -5728,7 +5728,7 @@
         "consumer": "wpmediaverse-pro/includes/Quota/QuotaService.php:37",
         "free_status": "never_fired",
         "severity": "medium",
-        "note": "Pro QuotaService falls back to rest_pre_dispatch interception — works but indirect"
+        "note": "Pro QuotaService falls back to rest_pre_dispatch interception \u2014 works but indirect"
       },
       {
         "filter": "mvs_feed_media_ids",
@@ -5745,7 +5745,7 @@
         "fetch_count": 23,
         "abort_aware_count": 0,
         "severity": "medium",
-        "note": "Zero AbortController/signal usage. New 1.2.0 sites: line 332 (search autocomplete — race condition real bug), line 485 (Edit modal save), line 1133 (record_share), line 1196 (record_download). Recommend 1.2.1 fetch hardening pass."
+        "note": "Zero AbortController/signal usage. New 1.2.0 sites: line 332 (search autocomplete \u2014 race condition real bug), line 485 (Edit modal save), line 1133 (record_share), line 1196 (record_download). Recommend 1.2.1 fetch hardening pass."
       }
     ],
     "visual_required_no_enforcement": [],
@@ -5755,7 +5755,7 @@
         "file": "assets/css/bp-integration.css:812",
         "rule": "grid-template-columns: repeat(6, 1fr)",
         "severity": "medium",
-        "note": "Risk of column collapse on narrow tablet under BP themes injecting unbreakable strings — recommend minmax(0,1fr)"
+        "note": "Risk of column collapse on narrow tablet under BP themes injecting unbreakable strings \u2014 recommend minmax(0,1fr)"
       },
       {
         "selector_family": ".mvs-media-grid + .mvs-dashboard-grid + various",
@@ -5827,7 +5827,7 @@
         "name": "mvs/pdf-viewer",
         "layout_owning": false,
         "added": "1.2.0",
-        "note": "Single-iframe embed; no inner-block flow — correct value"
+        "note": "Single-iframe embed; no inner-block flow \u2014 correct value"
       }
     ],
     "derived_caches": {
@@ -5844,7 +5844,7 @@
       ],
       "computed_at": "2026-05-03T17:30:00Z"
     },
-    "notes": "Phase 2.5.11–2.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits — WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-03 captures the live findings (zero real bugs — see audit/wppqa-baseline-2026-05-03/SUMMARY.md). Settings access for paired plugins (Pro/themes/integrations) flows through Core\\SettingsHelper static API; the canonical accessor today covers page-id slots (dashboard/explore/upload) and exposes filter mvs_page_id_{slot}. New cross-plugin readable settings should be added there before any consumer goes to get_option() directly. Static-analysis findings: 3 dead listeners (1 high-severity: mvs_media_moderated webhook silently broken), 6 extensibility gaps (Pro listens but Free does not fire — 4 low / 2 medium), 1 medium-severity REST hang risk (search autocomplete race condition — line 332 of shared-ui/view.js), 1 medium-severity grid-1fr collapse risk (bp-integration.css:812), all other categories clean.",
+    "notes": "Phase 2.5.11\u20132.5.14 (adapter/registry detectors) skipped: pre-condition `class implements *Adapter*` returns no hits \u2014 WPMediaVerse uses ServiceContainer DI, not adapter/registry pattern. wppqa baseline 2026-05-03 captures the live findings (zero real bugs \u2014 see audit/wppqa-baseline-2026-05-03/SUMMARY.md). Settings access for paired plugins (Pro/themes/integrations) flows through Core\\SettingsHelper static API; the canonical accessor today covers page-id slots (dashboard/explore/upload) and exposes filter mvs_page_id_{slot}. New cross-plugin readable settings should be added there before any consumer goes to get_option() directly. Static-analysis findings: 3 dead listeners (1 high-severity: mvs_media_moderated webhook silently broken), 6 extensibility gaps (Pro listens but Free does not fire \u2014 4 low / 2 medium), 1 medium-severity REST hang risk (search autocomplete race condition \u2014 line 332 of shared-ui/view.js), 1 medium-severity grid-1fr collapse risk (bp-integration.css:812), all other categories clean.",
     "refresh_2026_05_07": {
       "scope": "targeted (1.2.1 privacy-sync fix + 100k-readiness pass + filename refactor + 4-level activity privacy)",
       "added": {
@@ -5869,38 +5869,38 @@
         "schema_migration": "v13: ALTER TABLE mvs_media_index ADD FULLTEXT KEY media_search_ft (title, description)",
         "activity_meta_keys": [
           "_mvs_activity_privacy (slug: public|members|friends|group|private|custom)",
-          "_mvs_activity_privacy_level (numeric: 0|20|40|60|80|90 — rtMedia parity)"
+          "_mvs_activity_privacy_level (numeric: 0|20|40|60|80|90 \u2014 rtMedia parity)"
         ],
         "media_meta_keys": [
           "original_filename (display name for uploads stored under hashed strategy)"
         ],
         "coding_rules": [
           "Rule 3 (no raw $wpdb SUM/COUNT against mvs_* outside AdminAggregatesService)",
-          "Rule 4 (no per-entity transients — Coding Rule #16)",
+          "Rule 4 (no per-entity transients \u2014 Coding Rule #16)",
           "Rule 5 (every REST per_page schema entry must declare 'maximum')"
         ]
       },
       "renamed": {
         "css_files": [
-          "shared-ui-shell.css → shared-ui-frame.css (+rtl + .min variants)"
+          "shared-ui-shell.css \u2192 shared-ui-frame.css (+rtl + .min variants)"
         ],
         "templates": [
-          "templates/partials/shared-ui-shell.php → shared-ui-frame.php"
+          "templates/partials/shared-ui-shell.php \u2192 shared-ui-frame.php"
         ],
         "methods": [
-          "Plugin::render_shared_ui_shell → render_shared_ui_frame"
+          "Plugin::render_shared_ui_shell \u2192 render_shared_ui_frame"
         ],
         "enqueue_handles": [
-          "mvs-shared-ui-shell → mvs-shared-ui-frame (legacy handle kept as register-only shim until 1.3.0)"
+          "mvs-shared-ui-shell \u2192 mvs-shared-ui-frame (legacy handle kept as register-only shim until 1.3.0)"
         ]
       },
-      "rationale": "(1) Customer WAFs (Crisp #NZRSBX) flag any 'shell' token in filenames; rename eliminates the trigger. (2) Zoho #39974: media + album privacy now drive a 4-level BP activity privacy model with viewer-side JOIN filter (rtMedia parity) instead of being ignored. (3) 100k-readiness — search FULLTEXT, AdminAggregatesService consolidation, MediaRepository request cache + prefetch kill render N+1, REST per_page caps. (4) Filename refactor (Crisp #NZRSBX) — additive, never rewrites existing media on disk.",
-      "out_of_scope": "Full Phase 0–6 onboard run (wppqa baseline, 14 sub-checks, FEATURE_AUDIT regen, derived/ cache rebuild). Defer to a full /wp-plugin-onboard --refresh after Phase 6 release."
+      "rationale": "(1) Customer WAFs (Crisp #NZRSBX) flag any 'shell' token in filenames; rename eliminates the trigger. (2) Zoho #39974: media + album privacy now drive a 4-level BP activity privacy model with viewer-side JOIN filter (rtMedia parity) instead of being ignored. (3) 100k-readiness \u2014 search FULLTEXT, AdminAggregatesService consolidation, MediaRepository request cache + prefetch kill render N+1, REST per_page caps. (4) Filename refactor (Crisp #NZRSBX) \u2014 additive, never rewrites existing media on disk.",
+      "out_of_scope": "Full Phase 0\u20136 onboard run (wppqa baseline, 14 sub-checks, FEATURE_AUDIT regen, derived/ cache rebuild). Defer to a full /wp-plugin-onboard --refresh after Phase 6 release."
     }
   },
   "counts": {
     "wp_cli": 20,
-    "hooks_fired_unique": 220,
+    "hooks_fired_unique": 223,
     "rest_endpoints": 115,
     "tables": 22,
     "services": 49,
