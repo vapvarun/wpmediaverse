@@ -690,6 +690,33 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_community_gated_page",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $is_gated_page"
+      ],
+      "where": "includes/REST/CommunityPrivacyGate.php:146",
+      "consumed_by": [
+        "wpmediaverse-pro (adds compete/battles/challenges/tournaments pages)"
+      ],
+      "added": "2.3.2"
+    },
+    {
+      "name": "mvs_community_login_url",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $login_url = wp_login_url($current)",
+        "string $current"
+      ],
+      "where": "includes/REST/CommunityPrivacyGate.php:92",
+      "consumed_by": [
+        "buddynext (points it at PageRouter::auth_url())"
+      ],
+      "added": "2.3.2"
+    },
+    {
       "name": "mvs_conversation_created",
       "type": "action",
       "args_count": 3,
@@ -1762,6 +1789,20 @@
       "args_signature": [],
       "where": "includes/REST/RestGate.php:333",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_rest_gate_exempt_route_prefixes",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string[] $exempt = array('/mvs/v1/serve')",
+        "\\WP_REST_Request $request"
+      ],
+      "where": "includes/REST/CommunityPrivacyGate.php:224",
+      "consumed_by": [
+        "wpmediaverse-pro (exempts /mvs-pro/v1/credits/webhook, HMAC-authenticated)"
+      ],
+      "added": "2.3.2"
     },
     {
       "name": "mvs_rest_gate_map",
