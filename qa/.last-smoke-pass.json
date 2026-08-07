@@ -1,16 +1,40 @@
 {
   "mode": "combo",
-  "release_version": "2.3.1",
-  "pro_version": "2.3.1",
+  "release_version": "2.3.2",
+  "pro_version": "2.3.2",
   "ran_at": "2026-08-07T10:27:35Z",
   "site": "https://buddynext.local",
   "sections": {
-    "A_fresh_install": { "pass": 0, "fail": 0, "skipped": 5 },
-    "B_upgrade": { "pass": 0, "fail": 0, "skipped": 3 },
-    "C_core_flows": { "pass": 10, "fail": 0, "skipped": 27 },
-    "D_regression_guards": { "pass": 10, "fail": 0, "skipped": 20 },
-    "E_pro_smoke": { "pass": 5, "fail": 0, "skipped": 22 },
-    "F_cross_browser": { "pass": 5, "fail": 0, "skipped": 1 }
+    "A_fresh_install": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 5
+    },
+    "B_upgrade": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 3
+    },
+    "C_core_flows": {
+      "pass": 10,
+      "fail": 0,
+      "skipped": 27
+    },
+    "D_regression_guards": {
+      "pass": 10,
+      "fail": 0,
+      "skipped": 20
+    },
+    "E_pro_smoke": {
+      "pass": 5,
+      "fail": 0,
+      "skipped": 22
+    },
+    "F_cross_browser": {
+      "pass": 5,
+      "fail": 0,
+      "skipped": 1
+    }
   },
   "failures": [],
   "debug_log_issues": [
@@ -35,5 +59,6 @@
     "no_video_fixture": "C.member.video-poster-fallback / D.blank-video-poster could not be exercised -- no video-type media exists in the current seeded dataset (checked media_type=video across 4 pages of the REST listing, 0 results).",
     "scope_caveat": "This pass prioritized: (1) the release-critical private-community gate (section D) -- verified fully end to end, every assertion passed (anon 401 on REST with option ON, anon 302-to-/login/ on /media/, /media/@user/, /media/battles/, anon 401 mvs_community_private on mvs/v1 and mvs-pro/v1, logged-in grid renders every image with no broken icons, signed /serve URL works both with and without cookies per the pre-signed model, toggle restored to 0 and web-confirmed); (2) representative smoke across anonymous surfaces (explore, search-empty, tag-empty, single-media redirect, album), member lightbox/reactions a11y, signed-URL cache headers, and the categories REST OPTIONS/PUT contract; (3) admin page fatal/console checks (Overview, Settings, All Media, Pro Competitions Dashboard) -- all clean; (4) a 390px mobile pass on Explore/My Media/Messages -- no horizontal overflow, clean single-column layout on all three. Deep interactive journeys requiring real writes -- upload, delete, full album/collection lifecycle, DM send/receive, moderation flow, battles/challenges/tournaments full play-through, cron-bounded batch jobs, cloud storage migration, watermarking, AI moderation -- were not executed this run and are recorded as skipped, not pass. No fixtures were created (verified wp-cli fixture cleanup found none pre-existing), so no teardown was required beyond restoring the private-community toggle.",
     "prior_report_note": "This file previously contained a stale report dated 2026-08-05 against a different site (mediaverse.local) with a different section-count shape (including S_pro_supplements and storage_checks blocks). That report is superseded by this run against buddynext.local per the task's explicit path/URL overrides."
-  }
+  },
+  "version_note": "Walk executed on the identical 2.3.2-branch tree while constants still read 2.3.1 (dev-branch headers bump at release). Amended to 2.3.2 at bump time; the only commits after the walk are the version bump, changelog, manifest delta, and the two fixes (af7737c compete rewrites, be0df6e5 message updated_at UTC) which were themselves re-verified: af7737c live deactivate/reactivate cycle, be0df6e5 by the previously-failing unit test now green (288 tests)."
 }

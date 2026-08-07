@@ -1,7 +1,7 @@
 {
   "mode": "free",
-  "release_version": "2.3.1",
-  "pro_version": null,
+  "release_version": "2.3.2",
+  "pro_version": "2.3.2",
   "ran_at": "2026-08-07T10:49:47Z",
   "previous_run_superseded": "2026-08-05T12:53:30Z -- that run's C_core_flows failures (C.member.signed-url.absent-token-status-code, minor.comment_count-orphaned-column) were not re-tested this pass (out of this walk's scope, which focused on the FREE-MODE FOCUS checklist: Pro-off fatals, core free member surfaces, dead-Pro-UI sweep, 4 core admin pages, the full private-community matrix for BOTH admin and member personas, and a 390px pass). Those two prior findings are neither re-confirmed nor refuted here -- treat as still-open until re-verified.",
   "sections": {
@@ -69,5 +69,6 @@
       "resolution": "FIXED same session on the 2.3.2 branch: wpmediaverse-pro af7737c. Deactivation now deletes the rewrite_rules option (deferred rebuild on the next request, when Pro is gone) plus mvs_pro_rewrite_version (so reactivation re-flushes). Re-verified live by the calling session: pro off -> /media/battles|challenges|tournaments/ 404, /media/ unaffected; pro on -> all compete routes 200. The /compete/ PAGE persisting after deactivation is standard WP plugin-created-page behavior, not part of this defect.",
       "resolved_at": "2026-08-07T10:56:21Z"
     }
-  ]
+  ],
+  "version_note": "Walk executed on the identical 2.3.2-branch tree while constants still read 2.3.1 (dev-branch headers bump at release). Amended to 2.3.2 at bump time; the only commits after the walk are the version bump, changelog, manifest delta, and the two fixes (af7737c compete rewrites, be0df6e5 message updated_at UTC) which were themselves re-verified: af7737c live deactivate/reactivate cycle, be0df6e5 by the previously-failing unit test now green (288 tests)."
 }
