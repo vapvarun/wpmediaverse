@@ -2,58 +2,38 @@
   "mode": "combo",
   "release_version": "2.3.1",
   "pro_version": "2.3.1",
-  "ran_at": "2026-08-05T13:33:34Z",
+  "ran_at": "2026-08-07T10:27:35Z",
+  "site": "https://buddynext.local",
   "sections": {
-    "A_fresh_install":     { "pass": 0, "fail": 0, "skipped": 5 },
-    "B_upgrade":           { "pass": 0, "fail": 0, "skipped": 3 },
-    "C_core_flows":        { "pass": 4, "fail": 0, "skipped": 34 },
-    "D_regression_guards": { "pass": 2, "fail": 0, "skipped": 25 },
-    "E_pro_smoke":         { "pass": 30, "fail": 0, "skipped": 8 },
-    "F_cross_browser":     { "pass": 0, "fail": 0, "skipped": 4 },
-    "S_pro_supplements":   { "pass": 19, "fail": 0, "skipped": 15 }
+    "A_fresh_install": { "pass": 0, "fail": 0, "skipped": 5 },
+    "B_upgrade": { "pass": 0, "fail": 0, "skipped": 3 },
+    "C_core_flows": { "pass": 10, "fail": 0, "skipped": 27 },
+    "D_regression_guards": { "pass": 10, "fail": 0, "skipped": 20 },
+    "E_pro_smoke": { "pass": 5, "fail": 0, "skipped": 22 },
+    "F_cross_browser": { "pass": 5, "fail": 0, "skipped": 1 }
   },
-  "storage_checks": {
-    "S1_counter_accuracy": "pass",
-    "S2_connection_error_reporting": "pass",
-    "S3_cdn_variant_same_host": "pass"
-  },
-  "failures": [
+  "failures": [],
+  "debug_log_issues": [
     {
-      "id": "for.competitions.stale-fixture-unknown-users",
+      "section": "D_regression_guards",
+      "level": "warning",
       "origin": "for",
-      "triage_note": "Battle #4 (Oliver Brooks vs Mina Aoki) and Tournament #5 entries (Spring Photography Championship) reference wp_users IDs 2, 3, 5, 6 which no longer exist on this dev site (current real users are 1, 7-13). Root cause is leftover fixture data from a much older QA baseline (2026-04-23), not a 2.3.1 code defect. The frontend correctly avoids a fatal and falls back to an 'Unknown' placeholder identity + generic avatar rather than crashing, which is graceful degradation, but the visual result ('Unknown vs Unknown') looks broken on /compete/ Recent Results and on the tournament bracket. A freshly-created battle (#7, varundubey vs Oliver Brooks, both real users) rendered names correctly, confirming name resolution itself is not broken. Recommend a fixture cleanup pass (delete or reassign mvs_competitions/mvs_competition_entries rows whose user_id has no matching wp_users row) before the next run. Does not block the 2.3.1 tag.",
-      "expected": "Recent Results / bracket shows real display names for battle and tournament participants.",
-      "actual": "Shows 'Unknown' with a generic placeholder avatar for participants whose wp_users row was deleted in a prior QA cycle.",
-      "url": "http://mediaverse.local/compete/ and http://mediaverse.local/media/tournaments/ (Spring Photography Championship bracket)",
-      "screenshot": ".playwright-mcp/e-compete-hub.png, .playwright-mcp/e-tournament-bracket.png"
-    },
-    {
-      "id": "for.explore.stale-fixture-tiny-and-empty-album-tiles",
-      "origin": "for",
-      "triage_note": "Two dirty pre-existing rows surface on /media/ across all 4 Pro layout modes: (1) media_id=124, title='tiny', a genuine 1x1px private test image left over from a prior thumbnail-backfill test (title/slug/original_filename all say 'tiny'; 3 sibling rows tiny/tiny-1/tiny-2 also exist in the admin's own My Media tab) - the plugin correctly serves the file as-is (it IS 1x1), so the black tile is accurate rendering of bad fixture data, not a serving bug. (2) media_id=22 has NULL file_url/media_type/title and a permalink of /media/qa-own-album-1785596565438/, i.e. an orphaned 'qa-own-album' fixture (likely an album row) that the Explore feed query pulls in as if it were a plain media item; the template correctly falls back to a generic-file placeholder icon rather than a broken <img>, which is the intended no-dead-image contract. Both are QA-environment data hygiene issues from earlier smoke/unit-test runs, not caused by 2.3.1 changes. Recommend a fixture sweep (delete media_id 22 and the 4 'tiny' rows) so future Explore/layout screenshots aren't dominated by black/placeholder tiles.",
-      "expected": "Explore/layout feeds show only real photo content; no empty-record rows leak into the grid.",
-      "actual": "A black 1x1 tile and a generic-file-icon placeholder tile appear at the top of every layout (instagram/flickr/pinterest/dribbble) because of two leftover test-fixture rows.",
-      "url": "http://mediaverse.local/media/",
-      "screenshot": ".playwright-mcp/p21-instagram-desktop.png, .playwright-mcp/p21-flickr-desktop.png, .playwright-mcp/p21-pinterest-desktop.png, .playwright-mcp/p21-dribbble-desktop.png"
+      "line": "PHP Warning: wp_update_plugins(): An unexpected error occurred... WordPress could not establish a secure connection to WordPress.org.",
+      "file": "wp-includes/functions.php:6170"
     }
   ],
-  "debug_log_issues": [
-    { "section": "E_pro_smoke / general frontend sweep", "level": "deprecated", "origin": "for", "line": "PHP Deprecated: File Theme without header.php is deprecated since version 3.0.0 with no alternative available. Please include a header.php template in your theme. in wp-includes/functions.php on line 6170 (active theme Twenty Twenty-Five, an FSE-only block theme, has no classic header.php; fires whenever a plugin template calls get_header())", "file": "wp-includes/functions.php" },
-    { "section": "E_pro_smoke / general frontend sweep", "level": "deprecated", "origin": "for", "line": "PHP Deprecated: File Theme without footer.php is deprecated since version 3.0.0 with no alternative available. Please include a footer.php template in your theme. in wp-includes/functions.php on line 6170 (same root cause as above, get_footer())", "file": "wp-includes/functions.php" }
-  ],
   "manual_required": [
-    "Firefox Desktop: Storage settings 'Test BunnyCDN Connection' inline error rendering + admin-post batch migrate/cleanup buttons",
-    "Safari iOS 390px: Compete hub, tournament bracket horizontal scroll, layout-mode switcher, streak widget tap targets",
-    "E.streaks.freeze-proportional-cost: requires seeding specific _mvs_streak_freezes + missed-day gaps; not exercised (out of scope for a no-elaborate-fixtures smoke pass)",
-    "E.streaks.daily-check-bounded: requires 2000+ users with _mvs_last_upload_date seeded; explicitly out of scope per runbook 'do not seed elaborate fixtures'",
-    "E.competitions.cron-bounded: requires 200 mvs_competitions rows per cron-targeted status; not seeded this run",
-    "E.battles.win-xp-configured / E.gamification.configured-xp / E.gamification.winners-notified: WB Gamification plugin (free) is NOT installed on this site, so XP awarding, winner notifications, and points debit cannot be end-to-end verified. Settings UI for battle-win XP (100 default) renders and is editable; underlying award path unverified.",
-    "E.ai-providers: no Google Vision / AWS Rekognition / OpenAI keys configured, so AI auto-moderation flagging + circuit breaker were only confirmed to noop cleanly (no fatals), not exercised end-to-end.",
-    "E.watermarking: no watermark configured this run; not exercised.",
-    "E.feature-toggle-degradation: individual mvs_*_enabled toggles were not flipped off/on this run to confirm nav/page/cron cleanup.",
-    "Full interactive competition journeys (submit challenge entry, cast a vote, resolve a battle, register+advance a tournament match) were not walked end-to-end this run - only presence/no-fatal/REST-sanity was verified per runbook guidance to avoid elaborate fixture seeding.",
-    "BuddyPress-dependent surfaces (C.bp-integration, D.bp-thumbnail-leak, P18 activity composer with boosted media/streak badge) could not be exercised - BuddyPress is not active on this site (only wpmediaverse + wpmediaverse-pro active).",
-    "F.rtl and F.a11y sweeps not performed this run.",
-    "J23.5 (12 new Pro Gutenberg blocks in-editor + frontend pass) not walked this run."
-  ]
+    "Firefox Desktop: Upload modal file picker",
+    "Safari iOS 390px: Lightbox swipe + reaction tap",
+    "Safari iOS: navigator.share native sheet on lightbox Share; Firefox Desktop: navigator.clipboard.writeText fallback",
+    "F.rtl: Arabic locale render pass over Explore/single-media/profile/dashboard/lightbox not executed this run",
+    "BP classic composer alignment rows (D.activity-button-icon-only, D.activity-privacy-alignment, D.activity-preview-hero-regression, C.member.activity-composer-attach) not testable on this install -- see notes.environment"
+  ],
+  "notes": {
+    "environment": "BuddyPress classic templates are NOT active on this BuddyNext install (no #buddypress DOM, no /activity/ #whats-new-form; plugin list has no 'buddypress' entry). BuddyNext runs its own hub/feed system (body class bn-hub-feed) and its own parallel media lightbox (bn-lightbox__*) that visually intercepts clicks on top of WPMediaVerse's own Interactivity-API lightbox (mvs-lightbox-*, present and correctly wired in the DOM -- data-wp-bind--aria-pressed, role=group aria-label=Reactions -- but not what the user actually sees/clicks). All C/D rows keyed to '(BP active)' or classic BuddyPress composer markup were marked skipped/not-applicable rather than pass or fail: untestable in this environment, not proven broken.",
+    "grid_thumbnail_size_finding": "C.member.grid-thumbnail-size / D.grid-thumb-size-default: REST GET /mvs/v1/media returns mvs_size=large in thumbnail_url even though mvs_thumbnail_size resolves to its 'medium' default (option row absent from wp_options -- confirmed via direct mysql query against the live web DB, bypassing the known wp-cli wrong-DB risk). This is NOT a regression: SettingsHelper::get_grid_thumb_size_key() (includes/Core/SettingsHelper.php:144) was deliberately changed in 1.8.0 to always serve the 'large' rung for grid/masonry tiles regardless of the configured medium/full setting, for HiDPI/retina crispness, with an mvs_grid_thumb_size_key filter as the escape hatch (see the method's own docblock). The runbook's C.member.grid-thumbnail-size and D.grid-thumb-size-default rows still describe pre-1.8.0 behavior and need a wording update to match the intentional 1.8.0 change. Not filed as a bug -- code-level review confirms this is working as designed.",
+    "no_video_fixture": "C.member.video-poster-fallback / D.blank-video-poster could not be exercised -- no video-type media exists in the current seeded dataset (checked media_type=video across 4 pages of the REST listing, 0 results).",
+    "scope_caveat": "This pass prioritized: (1) the release-critical private-community gate (section D) -- verified fully end to end, every assertion passed (anon 401 on REST with option ON, anon 302-to-/login/ on /media/, /media/@user/, /media/battles/, anon 401 mvs_community_private on mvs/v1 and mvs-pro/v1, logged-in grid renders every image with no broken icons, signed /serve URL works both with and without cookies per the pre-signed model, toggle restored to 0 and web-confirmed); (2) representative smoke across anonymous surfaces (explore, search-empty, tag-empty, single-media redirect, album), member lightbox/reactions a11y, signed-URL cache headers, and the categories REST OPTIONS/PUT contract; (3) admin page fatal/console checks (Overview, Settings, All Media, Pro Competitions Dashboard) -- all clean; (4) a 390px mobile pass on Explore/My Media/Messages -- no horizontal overflow, clean single-column layout on all three. Deep interactive journeys requiring real writes -- upload, delete, full album/collection lifecycle, DM send/receive, moderation flow, battles/challenges/tournaments full play-through, cron-bounded batch jobs, cloud storage migration, watermarking, AI moderation -- were not executed this run and are recorded as skipped, not pass. No fixtures were created (verified wp-cli fixture cleanup found none pre-existing), so no teardown was required beyond restoring the private-community toggle.",
+    "prior_report_note": "This file previously contained a stale report dated 2026-08-05 against a different site (mediaverse.local) with a different section-count shape (including S_pro_supplements and storage_checks blocks). That report is superseded by this run against buddynext.local per the task's explicit path/URL overrides."
+  }
 }
