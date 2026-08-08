@@ -318,7 +318,8 @@ footer li b{color:var(--ink);font-weight:600}
     <li><a href="#screens">Screens</a></li>
     <li><a href="#access">Access</a></li>
     <li><a href="#build">Build order</a></li>
-    <li><a href="#decide">Open decisions</a></li>
+    <li><a href="#embed">Embeds</a></li>
+    <li><a href="#decide">Decisions</a></li>
     <li><a href="#drive">Drive parity</a></li>
   </ol>
 </nav>
@@ -328,13 +329,14 @@ footer li b{color:var(--ink);font-weight:600}
     <p class="eyebrow">MediaVerse Free + Pro 2.5.0 · planning</p>
     <h1>A document library that reuses the library you already have</h1>
     <p class="lede">Documents become <b>one more media type</b>, not a second content system. Folders get a single purpose-built table. The drive root is a number, not a row. What was a nine-table migration across fifty production sites is now <b>one new table and five added columns</b>.</p>
+    <p class="lede" style="margin-top:14px;font-size:15.5px"><b>Phase 0 is closed.</b> Eight decisions locked 2026-08-08, two of them corrected after a team review found real schema defects. Build against them.</p>
 
     <dl class="facts">
       <div class="fact"><dt>New tables</dt><dd>1 <small>was 3</small></dd></div>
       <div class="fact"><dt>Schema rewrites</dt><dd>0 <small>keys, PKs, backfills</small></dd></div>
       <div class="fact"><dt>Build</dt><dd>34.5<small> days</small></dd></div>
       <div class="fact"><dt>Phases</dt><dd>11<small> + decisions</small></dd></div>
-      <div class="fact"><dt>Blocking calls</dt><dd>3<small> before phase 3</small></dd></div>
+      <div class="fact"><dt>Decisions</dt><dd>8<small> locked</small></dd></div>
     </dl>
   </div>
 </header>
@@ -407,6 +409,7 @@ footer li b{color:var(--ink);font-weight:600}
           <li>privacy, status</li>
           <li>created_by</li>
           <li>created_at, updated_at, trashed_at</li>
+          <li class="newcol">UNIQUE (drive_type, drive_id,<br>&nbsp;&nbsp;parent_id, name(150)) <i>fixed</i></li>
         </ul>
       </div>
 
@@ -422,6 +425,7 @@ footer li b{color:var(--ink);font-weight:600}
           <li class="newcol">permission <i>view | comment | edit</i></li>
           <li>user_id, expires_at, revoked_at</li>
           <li>source <i>purchase vs share</i></li>
+          <li class="newcol">KEY grantee <i>new — was missing</i></li>
         </ul>
       </div>
     </div>
@@ -635,13 +639,49 @@ footer li b{color:var(--ink);font-weight:600}
   </div>
 </section>
 
+<section id="embed">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">06</span><h2>How each type is displayed</h2></div>
+    <p class="sec-sub">The tiers say <em>how</em> a file becomes viewable. This says <em>where</em>, and what each type looks like on each of the four surfaces that carry documents.</p>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Type</th><th>Drive row</th><th>Single view</th><th>Embed block</th><th>Activity</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip crit">PDF</span></td><td>icon, name, size, modified</td><td>native browser viewer, sandboxed iframe</td><td><strong>inline viewer</strong>, height configurable</td><td>card + Open</td></tr>
+          <tr><td><span class="chip accent">MD / TXT / CSV</span></td><td>same</td><td>server-rendered sanitized HTML</td><td><strong>inline HTML</strong>, capped per page</td><td>card + first-line excerpt</td></tr>
+          <tr><td><span class="chip ok">DOCX / XLSX</span></td><td>same</td><td>client-parsed on Preview click</td><td><strong>click-to-load only</strong> — never auto-parsed</td><td>card, no preview</td></tr>
+          <tr><td><span class="chip neutral">PPT / ODF / RTF / legacy</span></td><td>same</td><td>metadata card + Download</td><td>metadata card + Download</td><td>card, no preview</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <p><strong>Icons, not thumbnails.</strong> A PDF first-page poster needs Imagick with Ghostscript, absent on much of shared hosting. Every surface uses a type icon. If a poster is wanted later, follow the video-poster precedent — capability-detect, fall back, never block the upload.</p>
+
+      <h3>The four rules embedding adds</h3>
+      <ol class="ladder">
+        <li><b>The privacy gate runs in the embed, every render</b><i>Resolved for the <strong>viewer</strong>, not the author. A private document in a public post shows the lock, never the content. This is the most likely way to leak a document — precisely because the author sees it working.</i></li>
+        <li><b>Tier 3 is click-to-load, always</b><i>Ten .docx embeds on a page would otherwise pull ~1.5&nbsp;MB of parser before anyone asks to read anything.</i></li>
+        <li><b>Server-rendered tiers cap at 5 per page</b><i>Each is a file read plus a parse on every uncached load. Beyond the cap it degrades to the metadata card. Output cached against the document's updated_at.</i></li>
+        <li><b>Missing or newly-restricted degrades, never fatals</b><i>"This document is no longer available" — the same for one whose privacy tightened after the post was published.</i></li>
+      </ol>
+
+      <div class="note crit">
+        <span class="tag">No oEmbed, no auto-embed on paste</span>
+        <p>Pasting a document permalink leaves a plain link. WordPress's internal-link embed would render a preview using the <strong>author's</strong> permission at save time and cache it — exactly the leak rule 1 exists to prevent. An explicit block is the only way in.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="build">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">06</span><h2>Build order</h2></div>
+    <div class="sec-head"><span class="sec-num">07</span><h2>Build order</h2></div>
     <p class="sec-sub">The original plan opened with a nine-table migration across fifty live sites — the step it called the only irreversible-feeling one. That phase no longer exists.</p>
 
     <div class="phases">
-      <div class="ph"><span class="no">00</span><span class="nm">Decisions<i>Grant authority · team quota · replace undo</i></span><span><span class="bar dec"></span></span><span class="d">—</span></div>
+      <div class="ph"><span class="no">00</span><span class="nm">Decisions <span class="chip ok">closed</span><i>All eight locked — see below</i></span><span><span class="bar dec"></span></span><span class="d">—</span></div>
       <div class="ph"><span class="no">01</span><span class="nm">Query discipline<i>Choke point, ~66-file audit, CI rule, journey</i></span><span><span class="bar risk" style="--d:2"></span></span><span class="d">2.0</span></div>
       <div class="ph"><span class="no">02</span><span class="nm">Schema<i>Migrator v26 / Pro v11, type groups, quarantine</i></span><span><span class="bar" style="--d:1.5"></span></span><span class="d">1.5</span></div>
       <div class="ph"><span class="no">03</span><span class="nm">Pro engine<i>Types, upload, folders, permissions, delivery, cloud</i></span><span><span class="bar" style="--d:7"></span></span><span class="d">7.0</span></div>
@@ -665,56 +705,84 @@ footer li b{color:var(--ink);font-weight:600}
 
     <div class="col">
       <p><strong>Phase 1 ships before any document row exists.</strong> With one shared table the media-grid guarantee is a query guarantee — so the choke point, the audit and the CI rule land while there is still nothing to leak. Doing it afterwards means auditing under time pressure against live data.</p>
-      <p><strong>Phase 0 is not optional.</strong> Who may grant access, and how a drive with no user owner is charged for storage, both change what the permission service and the upload path do. Deciding them after phase 3 means rewriting phase 3.</p>
+      <p><strong>Phase 0 is closed.</strong> All eight decisions are locked. They changed what the permission service and the upload path do, which is why they had to be settled before phase 3 rather than during it.</p>
+      <div class="note">
+        <span class="tag">The v1 cut</span>
+        <p>~34.5 days is a large surface to hold open. <strong>Ship personal drives first</strong> — everything except Space drives. The schema carries <span class="m">drive_type</span> / <span class="m">drive_id</span> from day one, so nothing is rebuilt; only the resolver and BuddyNext's bridge land later.</p>
+        <p><strong>And mind the gap in search:</strong> <span class="m">search_text</span> lands in the schema at phase 2, but extraction lands at phase 8. Between them the column is empty — the UI must not imply search works at first enable. A search box that silently returns nothing reads as broken.</p>
+      </div>
       <p><strong>Nothing member-visible ships before phase 9.</strong> Phases 1–8 leave the feature reachable by API and admin only — the half-cooked state the three-entry-point rule forbids.</p>
+
+      <h3>Release blockers, not polish</h3>
+      <p>A build that ships without any one of these is not shippable, regardless of what else is done.</p>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Blocker</th><th>Why it is not optional</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip crit">T1</span> <strong>Departing member: purge personal-drive docs, <em>reassign</em> team-drive ones</strong></td><td>Otherwise a member leaving takes the team's files with them. Silent, permanent, triggered by a routine event</td></tr>
+          <tr><td><span class="chip crit">T2</span> <strong>Tightening a folder cascades; loosening does not</strong></td><td>Otherwise a folder set to private leaves its documents public, with nothing to indicate it</td></tr>
+          <tr><td><span class="chip crit">Journey</span> <strong>A document appears in the drive and in no media surface</strong></td><td>This is what replaced the structural guarantee. Without it the query discipline has no regression net</td></tr>
+          <tr><td><span class="chip crit">Breadcrumb</span> <strong>Shared view starts at the highest granted ancestor</strong></td><td>Folder names carry client identities and project codenames. An information leak, not a display bug</td></tr>
+          <tr><td><span class="chip crit">Storage</span> <strong>Local deny rules + Site Health check the bucket is not public-read</strong></td><td>The difference between "documents are private" being true and being merely intended</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
     </div>
   </div>
 </section>
 
 <section id="decide">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">07</span><h2>What needs deciding</h2></div>
-    <p class="sec-sub">Three calls before phase 3. All three are product decisions, not implementation details.</p>
+    <div class="sec-head"><span class="sec-num">08</span><h2>Decisions — locked</h2></div>
+    <p class="sec-sub">Signed off 2026-08-08. These change <span class="m">PermissionService</span> or the upload path, so deciding them mid-build would mean rewriting Phase&nbsp;3. Build against them.</p>
 
     <div class="scroll">
       <table>
-        <thead><tr><th>Call</th><th>The question</th><th>Recommendation</th></tr></thead>
+        <thead><tr><th>#</th><th>Decision</th><th>Why this and not the obvious alternative</th></tr></thead>
         <tbody>
-          <tr>
-            <td><span class="chip crit">blocking</span><br><strong>Who may grant</strong></td>
-            <td>Nothing says who can hand out access. The natural-looking choice — “edit implies share” — lets any editor mint an anonymous link to a contract.</td>
-            <td>Drive owner and drive-admin only for v1. A fourth <span class="m">manage</span> level fits the existing column later, and widening is additive.</td>
-          </tr>
-          <tr>
-            <td><span class="chip crit">blocking</span><br><strong>Team-drive quota</strong></td>
-            <td>Quota is per-user throughout. A Space drive has no user owner — charge the uploader for storage they cannot clean up, or let it escape entirely?</td>
-            <td>A drive-level allowance keyed on <span class="m">(drive_type, drive_id)</span>. Gates phase 11.</td>
-          </tr>
-          <tr>
-            <td><span class="chip warn">decide</span><br><strong>Replace is permanent</strong></td>
-            <td>No version history is a settled decision. The mitigation covers accidental overwrite but not “the edit was wrong — give me yesterday’s file,” which is the case teams hit most.</td>
-            <td>Keep the superseded file 30 days under a meta key, admin-restorable. Not versioning — an undo. Meta plus a cron sweep, no schema.</td>
-          </tr>
-          <tr>
-            <td><span class="chip warn">v1 scope</span><br><strong>Anonymous links vs private community</strong></td>
-            <td>The REST gate 401s the whole namespace when private-community mode is armed — and BuddyNext arms it. Anonymous links would be dead on the only stated consumer.</td>
-            <td>Disable anonymous links whenever the gate is armed, and say so in the UI, rather than punching a hole through it.</td>
-          </tr>
-          <tr>
-            <td><span class="chip warn">v1 scope</span><br><strong>Rate limiting</strong></td>
-            <td>The limiter has zero call sites in Pro. Anonymous link redemption is an unauthenticated exact-match token lookup with no throttle.</td>
-            <td>Not optional if anonymous links ship.</td>
-          </tr>
+          <tr><td><strong>D1</strong></td><td><strong>Only the drive owner or a drive-admin may grant access or mint a link</strong></td><td>view / comment / edit say what a grantee can do with the item — none confer the right to hand access to someone else. "Edit implies share" lets any editor mint an anonymous link to a contract. Widening is additive later; narrowing takes something away, so start narrow</td></tr>
+          <tr><td><strong>D2</strong></td><td><strong>One quota pool. Media, video and documents all increment the same member counter</strong> <span class="chip warn">corrected</span></td><td>A first draft proposed a drive-level allowance, possibly with its own table — SaaS thinking. <span class="m">QuotaService</span> is per-user <em>by design</em> so allowance ties to a membership level, which is what the MemberPress / PMPro / WooCommerce adapters do. A Space is not a billing entity. Also no <span class="m">document_count</span>: storage only</td></tr>
+          <tr><td><strong>D3</strong></td><td><strong>Replace keeps the superseded file 30 days, admin-restorable</strong></td><td>An undo, not versioning — no history UI, no version table, no schema. It removes the only unrecoverable member action for a meta key and a cron sweep</td></tr>
+          <tr><td><strong>D4</strong></td><td><strong>Anonymous links are absent whenever private-community mode is armed</strong></td><td>The gate 401s the namespace and BuddyNext arms it, so the feature cannot work there regardless of the setting. No exemption is punched through a gate whose purpose is "no unauthenticated reads"</td></tr>
+          <tr><td><strong>D5</strong></td><td><strong>Rate limiting ships with anonymous links, or they do not ship</strong></td><td>Redemption is an unauthenticated exact-match token lookup. Hashing protects a database leak; it does nothing against guessing. <span class="m">RateLimiter</span> has zero call sites in Pro today</td></tr>
+          <tr><td><strong>D6</strong></td><td><strong>Documents reuse <span class="m">mvs_tag</span> and <span class="m">mvs_category</span></strong></td><td>One ID space means no correctness argument for separate vocabularies, and one vocabulary makes unified search simpler</td></tr>
+          <tr><td><strong>D7</strong></td><td><strong>Gated streaming is the default; presigned CDN is opt-in</strong> <span class="chip warn">corrected</span></td><td>A first draft defaulted to presigned URLs and counted downloads "at mint" — a hosted-service answer. A plugin has to work on shared hosting with no cloud. The default should be the one that works everywhere and tells the truth</td></tr>
+          <tr><td><strong>D8</strong></td><td><strong>Documents get their own private bucket; cloud is opt-in</strong></td><td>Not a preference — one bucket cannot serve both. Public media needs a <strong>public-read</strong> bucket for direct CDN URLs; documents need a private one. Sharing it leaves every document world-readable behind an unguessable path</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="col">
+      <div class="note warn">
+        <span class="tag">Team review found two real schema defects</span>
+        <p><strong>The folder unique key was wrong.</strong> Keyed on <span class="m">(parent_id, name)</span> — and every drive root uses <span class="m">parent_id = 0</span>, so two members creating "Invoices" at their own root would collide and the second insert would fail. Now <span class="m">(drive_type, drive_id, parent_id, name(150))</span>, the prefix trimmed to stay under InnoDB's 767-byte COMPACT limit.</p>
+        <p><strong><span class="m">KEY grantee_user</span> did not exist.</strong> The "Shared with me" query was written against an index carried over from an abandoned table design, so it had nothing behind it. Added explicitly.</p>
+      </div>
+
+      <h3>What a second bucket costs</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Provider</th><th>Extra bucket / zone</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Cloudflare R2</td><td><span class="chip ok">free</span></td><td>Private by default — the wanted posture</td></tr>
+            <tr><td>AWS S3</td><td><span class="chip ok">free</span></td><td>Billed on storage + requests only</td></tr>
+            <tr><td>BunnyCDN</td><td><span class="chip ok">free</span></td><td>Storage Zones cost nothing; just don't attach a Pull Zone</td></tr>
+            <tr><td>DigitalOcean Spaces</td><td><span class="chip warn">~$5/mo</span></td><td>Billed per Space — belongs in the setting description, not on an invoice</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Sizing for context: 500 members × 40 files × 800&nbsp;KB is ~16&nbsp;GB — single-digit dollars. <strong>Storage cost is not the deciding factor. Bucket access policy is.</strong></p>
+
+      <h3>Still delegated to BuddyNext — not blocking</h3>
+      <p>Automatic vs opt-in Space drives; whether <span class="m">secret</span> Spaces get drives at all (if so, an unauthorized caller gets <strong>404, never 403</strong>); child-Space inheritance; whether <span class="m">moderator</span> implies <span class="m">edit</span>. MediaVerse holds an opaque drive id and asks — which is why <span class="m">mvs_document_drive_access</span> returns a permission, not a boolean.</p>
+
       <div class="note crit">
-        <span class="tag">Separate cards — shipped bugs, found while planning</span>
-        <p><strong>Album IDs collide with media IDs.</strong> Albums write their post ID into a column that auto-increments for media. On the reference install, row 77 is simultaneously an album with two items <em>and</em> an image with a real file path. Deleting that album destroys the image’s index row — the file survives on disk and vanishes from the library.</p>
-        <p><strong>Categories carry two ID spaces.</strong> Album post IDs and media IDs both write to the same term-relationship column, so where the integers coincide each returns the other’s categories. Tags are clean.</p>
-        <p>Neither is caused by this feature and neither is fixed by it. Both need their own cards — bundling them into a feature release hides them.</p>
+        <span class="tag">Separate cards — shipped bugs, now fixed</span>
+        <p><strong>Album IDs collided with media IDs</strong> in <span class="m">mvs_media_index</span>, and <strong>categories carried two ID spaces</strong>. Both were fixed on the 2.3.3 branch. This design depends on that fix: it puts documents into <span class="m">mvs_media_index</span>, and that work is what makes the ID space safe to share.</p>
       </div>
     </div>
   </div>
@@ -722,8 +790,14 @@ footer li b{color:var(--ink);font-weight:600}
 
 <section id="drive">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">08</span><h2>Measured against Google Drive for a team</h2></div>
-    <p class="sec-sub">The storage model needs no changes to serve a team. The collaboration model needs five.</p>
+    <div class="sec-head"><span class="sec-num">09</span><h2>Measured against Google Drive for a team</h2></div>
+    <p class="sec-sub">The storage model needs no changes to serve a team. The collaboration model needs four — one was reconsidered.</p>
+    <div class="col">
+      <div class="note">
+        <span class="tag">Read this as a checklist, not a product to clone</span>
+        <p>Google Drive is a hosted service with a billing entity, an org directory and an admin console. This is a WordPress plugin: the site owner owns the disk, membership plugins own the tiers, and anything needing a subsystem WordPress does not have gets a filter instead. Where a Drive behaviour does not map — team storage metering being the clearest case — it is <strong>not adopted</strong>, and the reason is recorded rather than the gap left open.</p>
+      </div>
+    </div>
 
     <div class="scroll">
       <table>
@@ -745,9 +819,9 @@ footer li b{color:var(--ink);font-weight:600}
             <td>Decide it — see above.</td>
           </tr>
           <tr>
-            <td><span class="chip warn">abuse</span> <strong>Space drives have no ceiling</strong></td>
-            <td>The storage hole the spec itself rules out.</td>
-            <td>Drive-level allowance.</td>
+            <td><span class="chip ok">not adopted</span> <strong>Space drives have no separate ceiling</strong></td>
+            <td>Google meters shared-drive storage against the org — it has a billing entity per workspace.</td>
+            <td><strong>D2.</strong> A WordPress site owner owns the disk. Every upload counts against the uploading member, which is what the membership adapters already meter. A per-Space cap is a filter, not a subsystem.</td>
           </tr>
           <tr>
             <td><span class="chip ok">designed</span> <strong>Nothing showed what was shared with you</strong></td>
