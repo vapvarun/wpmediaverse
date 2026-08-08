@@ -328,7 +328,7 @@ footer li b{color:var(--ink);font-weight:600}
   <div class="wrap">
     <p class="eyebrow">MediaVerse Free + Pro 2.5.0 · planning</p>
     <h1>A document library that reuses the library you already have</h1>
-    <p class="lede">Documents become <b>one more media type</b>, not a second content system. Folders get a single purpose-built table. The drive root is a number, not a row. What was a nine-table migration across fifty production sites is now <b>one new table and five added columns</b>.</p>
+    <p class="lede">Documents become <b>one more media type</b>, not a second content system. Folders get a single purpose-built table. The drive root is a number, not a row. What was a nine-table migration across fifty production sites is now <b>two purpose-built tables and a handful of added columns</b> — folders, and a search side table that keeps the FULLTEXT index off the hot media table (scale review, 2026-08-08).</p>
     <p class="lede" style="margin-top:14px;font-size:15.5px"><b>Phase 0 is closed.</b> Eight decisions locked 2026-08-08, two of them corrected after a team review found real schema defects. Build against them.</p>
 
     <dl class="facts">
@@ -392,12 +392,12 @@ footer li b{color:var(--ink);font-weight:600}
           <li>status, moderation_status</li>
           <li>file_type <i>the validated MIME</i></li>
           <li>file_size, file_hash, slug</li>
-          <li class="newcol">search_text <i>new, FULLTEXT</i></li>
+          <li>created_at, updated_at</li>
         </ul>
       </div>
 
       <div class="tbl">
-        <div class="tbl-h"><b>mvs_pro_folders</b><span class="badge new">new — the only one</span></div>
+        <div class="tbl-h"><b>mvs_pro_folders</b><span class="badge new">new</span></div>
         <ul>
           <li class="key">folder_id <i>PK auto-inc</i></li>
           <li class="fk">parent_id <i>self · 0 = root</i></li>
@@ -410,6 +410,15 @@ footer li b{color:var(--ink);font-weight:600}
           <li>created_by</li>
           <li>created_at, updated_at, trashed_at</li>
           <li class="newcol">UNIQUE (drive_type, drive_id,<br>&nbsp;&nbsp;parent_id, name(150)) <i>fixed</i></li>
+        </ul>
+      </div>
+
+      <div class="tbl">
+        <div class="tbl-h"><b>mvs_document_search</b><span class="badge new">new — search only</span></div>
+        <ul>
+          <li class="key">media_id <i>PK, joins the index</i></li>
+          <li>search_text <i>FULLTEXT lives here</i></li>
+          <li>updated_at <i>cache key for renders</i></li>
         </ul>
       </div>
 
