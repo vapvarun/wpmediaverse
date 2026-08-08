@@ -883,9 +883,23 @@ membership level, which is exactly what the MemberPress / PMPro / WooCommerce ad
 `Integrations/` do. A Space is not a billing entity. There is no WordPress concept a drive-level
 allowance would map to, and inventing one means a new table for a limit nobody asked for.
 
-**So: an upload to a Space or site drive counts against the uploading member's existing quota**, the
-same as an upload to their own drive. Nothing new to store, nothing new to configure, and the
-membership adapters keep working untouched.
+**One pool, all content types.** Owner, 2026-08-08: *"it does not matter if it's media, video or
+documents — all update the same current member quota."*
+
+A document upload increments the same `_mvs_storage_used` user meta an image or a video does, on the
+same member, whichever drive it lands in. There is no document pool, no drive pool, and no new
+counter.
+
+**No `document_count`.** `QuotaService::get_usage()` also tracks `image_count` / `video_count` /
+`audio_count`, and `deduct_credit()` is keyed by media type. Documents deliberately consume
+**storage only** — adding a fourth counter would mean a schema change to `mvs_quota_packages` for a
+per-type limit nobody has asked for, and the storage ceiling already caps abuse. If per-document
+limits are ever wanted, add the column then.
+
+The practical effect is what a member already expects: one number, one bar. The profile storage line
+reads "2.1 GB of 5 GB used" across everything they have uploaded, because that is how a quota is
+actually experienced. Nothing new to store, nothing new to configure, and the MemberPress / PMPro /
+WooCommerce adapters keep working untouched.
 
 *The abuse hole this closes anyway:* every upload is charged to a real person at the moment it
 happens. D5's reassignment only moves *ownership of the file* when a member is deleted — long after
