@@ -421,9 +421,13 @@ inside it. The share modal shows both.
 
 ## 6. Storage, delivery and viewers
 
-**Location:** `uploads/wpmediaverse-documents/<random-per-install-segment>/`, protected by
-`.htaccess`, `web.config` and an `index.php` guard. The random segment matters because nginx ignores
-`.htaccess`.
+**Location (local, the default):** `uploads/wpmediaverse-documents/<random-per-install-segment>/`,
+protected by `.htaccess`, `web.config` and an `index.php` guard. The random segment matters because
+nginx ignores `.htaccess`.
+
+**Location (cloud, opt-in):** a **separate private bucket** from media — see D8. The media bucket
+must be public-read for direct CDN URLs to work, and a document bucket must not be, so one bucket
+cannot serve both.
 
 **Two endpoints, different rules:**
 
@@ -463,6 +467,61 @@ is not a feature, it is an incident.
 **Rejected formats:** HTML, SVG, XML (stored-XSS vectors from your own origin) and `.zip` (out of
 v1). Legacy `.doc`/`.xls`/`.ppt` are accepted as **opaque bytes only** — never parsed, never
 previewed, handed back byte-identical.
+
+### Display and embedding — every type, every surface
+
+The tiers say *how* a file is turned into something viewable. This says *where* that happens, and
+what each type looks like on each surface. Four surfaces carry documents.
+
+| `doc_type` | Row in the drive | Single view | **Embed block / shortcode** | Activity feed |
+|---|---|---|---|---|
+| `pdf` | icon + name + size + modified | native browser viewer in a sandboxed iframe | **inline viewer**, height configurable, click-to-load above the size ceiling | card: icon, name, size, Open |
+| `markdown` `text` `csv` | same | server-rendered sanitized HTML | **inline rendered HTML**, subject to the per-page cap below | card + first-line excerpt |
+| `word` `excel` | same | client-parsed on Preview click | **click-to-load only** — never auto-parsed | card, no preview |
+| `powerpoint` `odf_*` `rtf` legacy `.doc/.xls/.ppt` | same | metadata card + Download | metadata card + Download | card, no preview |
+
+**Icons, not thumbnails.** Documents have no thumbnail pipeline and are not getting one in v1: a
+PDF first-page poster needs Imagick with Ghostscript, which is absent on much of shared hosting.
+Every surface uses a type icon. If a poster is wanted later, follow the video-poster precedent —
+capability-detect, generate when possible, fall back to the icon, and never block the upload on it.
+
+### The four rules embedding adds
+
+Embedding is not "the single view, smaller". It puts documents on pages the author does not fully
+control, and each of these is a way that goes wrong:
+
+**1. The privacy gate runs in the embed, on every render.** A private document embedded in a public
+post shows the lock and the login CTA (`.mvs-media-gate`), never the content. The embed resolves
+permission for **the viewer**, not the author — an author embedding something they can see must not
+publish it to everyone. This is the single most likely way to leak a document, because the author
+sees it working.
+
+**2. Tier 3 is click-to-load, always.** Ten `.docx` embeds on one page would otherwise pull ~1.5 MB
+of parser before anyone asks to read anything. The embed renders the metadata card with a Preview
+button; the bundle loads on click, once per page regardless of how many embeds want it.
+
+**3. Server-rendered tiers are capped per page.** Each tier-2 embed is a file read plus a parse on
+every uncached page load. Cap at **5 rendered embeds per page** (filterable); beyond that the embed
+degrades to the metadata card with a Preview link. Rendered output is cached against the document's
+`updated_at` so a repeat view is a cache hit, not a re-parse.
+
+**4. A deleted or trashed document degrades, it does not fatal.** The embed renders "This document
+is no longer available" — Coding Rule 11, and the same for a document whose privacy tightened after
+the post was published.
+
+### Blocks and shortcodes
+
+| | Purpose |
+|---|---|
+| `document-embed` block | One document, any type. Attributes: `documentId`, `height`, `showToolbar`, `forceDownloadOnly`. Delegates PDFs to the existing `pdf-viewer` rendering path rather than duplicating it |
+| `document-list` block | A folder or a filtered set as rows. Attributes: `folderId`, `docType`, `limit`, `showSize`, `showModified` |
+| `[mvs_document id="123"]` | Shortcode parity for classic editors and page builders |
+| `[mvs_documents folder="48"]` | List parity |
+
+**No oEmbed, and no auto-embed on paste.** Pasting a document permalink into the editor leaves a
+plain link. WordPress's internal-link embed would render a preview using the *author's* permission
+at save time and cache it — exactly the leak rule 1 exists to prevent. An explicit block is the only
+way in.
 
 ### Cloud storage
 
@@ -896,6 +955,57 @@ not counted.
 owner who opts into CDN delivery has made an informed trade; an owner on shared hosting should never
 have to discover that their download numbers are approximate because of a default they did not
 choose.
+
+### D8 — Documents get their own private bucket, and cloud for documents is opt-in
+
+**They cannot share the media bucket. This is a technical constraint, not a preference.**
+
+Public media is served from cloud by **direct CDN URL** (1.4.0). For an unsigned URL to resolve, the
+bucket or zone must be **publicly readable**. Documents must be **privately** readable — every
+delivery goes through the gated endpoint or a short-lived signed URL (D7).
+
+Those are contradictory bucket-level policies. Put documents in the media bucket and every document
+is world-readable, protected only by an unguessable path — strictly weaker than the local driver,
+which has `Deny from all` **and** a random segment. The plan already refuses to rely on obscurity
+alone for local storage; it cannot quietly accept it for cloud.
+
+| | Media bucket | Document bucket |
+|---|---|---|
+| Public read | **required** — direct CDN URLs | **must be off** |
+| Delivery | unsigned CDN URL for public items | gated stream, or opt-in presigned |
+| Site Health assertion | n/a | **must not be public-read** |
+
+### Configuration shape
+
+Reuse the configured provider and credentials — most owners run one. Add only the target:
+
+- `mvs_pro_documents_cloud_enabled` — default **off**
+- `mvs_pro_documents_bucket` — bucket / storage-zone name, required when enabled
+- **Refuse to save a value equal to the media bucket.** That single validation prevents the exact
+  misconfiguration this decision exists to avoid, and it is cheaper than detecting it later.
+
+**Default is local.** With cloud disabled, documents stay on local disk behind the existing deny
+rules — which works on shared hosting with no cloud account at all. Cloud is a deliberate opt-in,
+and enabling it requires naming a second bucket, so the owner cannot arrive there by accident.
+
+### What a second bucket costs
+
+| Provider | Extra bucket / zone | Note |
+|---|---|---|
+| Cloudflare R2 | **free** | Buckets are free; private by default, which is the wanted posture |
+| AWS S3 | **free** | Billed on storage + requests only |
+| BunnyCDN | **free** | Storage Zones cost nothing; simply do not attach a Pull Zone |
+| DigitalOcean Spaces | **~$5/month** | Spaces are billed per Space — the one provider where this is a real line item |
+
+So on three of four supported providers a second bucket is free, and the fourth should be told
+plainly in the setting description rather than discovering it on an invoice.
+
+### Sizing
+
+Documents are small next to media. A 500-member community with heavy document use — say 40 files
+per active member at an average 800 KB (PDFs and Office files; scanned PDFs skew higher) — is
+**~16 GB**. Against R2 or S3 pricing that is single-digit dollars a month; against a Space it fits
+inside the base $5. Storage cost is not the deciding factor here. **Bucket access policy is.**
 
 ---
 
