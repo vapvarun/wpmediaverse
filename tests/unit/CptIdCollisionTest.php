@@ -153,7 +153,7 @@ class CptIdCollisionTest extends WP_UnitTestCase {
 		$this->assertIsInt( $album_id, 'Album was not created.' );
 		$this->assertSame(
 			'private',
-			\WPMediaVerse\Services\AlbumService::get_privacy( $album_id ),
+			Plugin::container()->get( 'albums' )->get_privacy( $album_id ),
 			'Album privacy did not round-trip through post meta.'
 		);
 	}
@@ -193,7 +193,11 @@ class CptIdCollisionTest extends WP_UnitTestCase {
 	 */
 	public function test_deleting_album_leaves_unrelated_media_untouched(): void {
 		$album_id = self::factory()->post->create( array( 'post_type' => 'mvs_album' ) );
-		$this->repo->set_many( $album_id, array( 'privacy' => 'private' ) );
+
+		// Album privacy goes to post meta. Writing it through MediaRepository is
+		// exactly what the guard refuses — see
+		// test_repository_refuses_an_album_id below.
+		Plugin::container()->get( 'albums' )->set_privacy( $album_id, 'private' );
 
 		$other_id = $album_id + 5000;
 		$this->seed_media_row_at( $other_id, self::factory()->user->create(), 'Untouched' );
@@ -201,6 +205,25 @@ class CptIdCollisionTest extends WP_UnitTestCase {
 		wp_delete_post( $album_id, true );
 
 		$this->assertTrue( $this->repo->exists( $other_id ), 'An unrelated media row was removed.' );
+	}
+
+	/**
+	 * The guard is the invariant enforced at the choke point: mvs_media_index is
+	 * keyed on media IDs, so a wp_posts ID must be refused rather than written.
+	 *
+	 * Refuses rather than throws — a fatal on a mis-keyed write would take a site
+	 * down, and the correct outcome is simply that the bad write does not happen.
+	 */
+	public function test_repository_refuses_an_album_id(): void {
+		$album_id = self::factory()->post->create( array( 'post_type' => 'mvs_album' ) );
+
+		$this->setExpectedIncorrectUsage( 'WPMediaVerse\\Repository\\MediaRepository::set_many' );
+		$this->repo->set_many( $album_id, array( 'privacy' => 'private', 'slug' => 'nope' ) );
+
+		$this->assertFalse(
+			$this->repo->exists( $album_id ),
+			'The guard let an album ID into mvs_media_index.'
+		);
 	}
 
 	/**
