@@ -193,7 +193,10 @@ class SuggestionService {
 				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = i.media_id AND tr.term_taxonomy_id IN ({$tt_ph})
 				-- public-only by design: interest-affinity suggestions rank authors by their
 				-- PUBLIC media only; viewer-aware privacy must NOT be applied here.
-				WHERE i.privacy = 'public' AND i.moderation_status = 'approved' AND i.post_author IN ({$cand_ph})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				-- status = 'publish' for the same reason the /media list route needs it:
+				-- a trashed item is still an approved public row, so without this an
+				-- author kept earning affinity from media they had deleted.
+				WHERE i.status = 'publish' AND i.privacy = 'public' AND i.moderation_status = 'approved' AND i.post_author IN ({$cand_ph})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				...array_merge( array_values( $tt_ids ), array_map( 'intval', $candidate_ids ) )
 			)
 		);

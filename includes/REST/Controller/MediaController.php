@@ -373,8 +373,19 @@ class MediaController extends WP_REST_Controller {
 		// leave in mvs_media_index (media_type empty — see PrivacyService). Without
 		// it the /media feed (and the mobile app that reads it) returned those
 		// stubs as empty items. Same fix as the media-grid block. Basecamp 10074442944.
-		$where  = array( 'moderation_status = %s', "media_type != ''" );
-		$params = array( 'approved' );
+		// status = 'publish' is NOT optional here, and its absence is why a trashed
+		// item kept appearing at the top of the feed with a working signed URL: the
+		// owner removed it and every member -- and the mobile app, which reads this
+		// same route -- went on being served it.
+		//
+		// The column is a lifecycle field with several legitimate non-publish
+		// values (trash, and scheduled items awaiting publish_at), so this must
+		// assert publish rather than exclude trash; != 'trash' would leak scheduled
+		// items instead. MediaRepository's shared query builder already defaults to
+		// exactly this, which is why the slug lookup and the album-items query were
+		// never affected -- this route hand-builds its WHERE and simply omitted it.
+		$where  = array( 'status = %s', 'moderation_status = %s', "media_type != ''" );
+		$params = array( 'publish', 'approved' );
 
 		// Privacy filtering via index table.
 		if ( ! $user_id ) {

@@ -176,7 +176,11 @@ class UserController extends WP_REST_Controller {
 		global $wpdb;
 		$media_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND moderation_status = 'approved' AND privacy = 'public'",
+				// status = 'publish' or the profile advertises a media count the
+				// visitor cannot reach: trashed items stayed in the total, so the
+				// number never matched the grid below it. The sibling query at the
+				// bottom of this controller always had the clause; this one did not.
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = 'publish' AND moderation_status = 'approved' AND privacy = 'public'",
 				$user_id
 			)
 		);
