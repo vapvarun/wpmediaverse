@@ -32,12 +32,18 @@ These block task P1.1. Status as of 2026-08-08.
 |---|---|---|
 | **PRE-1** | **WP test library installed; suite runs** | ✅ **DONE** — 295/295 green. Install notes in commit `7f1bf92b`: symlink the socket (spaces), socket-only (no TCP grant), create the DB by hand (MySQL 8.4 GRANT), and pass `WP_TESTS_DIR`/`WP_CORE_DIR` explicitly (macOS `$TMPDIR` ≠ `/tmp`) |
 | **PRE-2** | **wppqa baseline** — CI stage 2.4 fails on every push without it | ⬜ Blocks trusting the gate that Phase 1 depends on |
-| **PRE-3** | **Scale fixture** — the design asserts behaviour at 2,000-document drives, 20-level trees, 30k-row subtree writes. The reference install has 75 media rows and 9 albums | ⬜ Every scale claim is unverifiable until this exists |
+| **PRE-3** | **Scale fixture** — the design asserts behaviour at 2,000-document drives, 20-level trees, 30k-row subtree writes. The reference install has 75 media rows and 9 albums | ⬜ **Moved into Phase 3** — see below |
 
-**PRE-3 shape.** A WP-CLI seeder (`wp mvs seed-documents --members=N --docs-per=N --depth=N`) that
-builds a drive with a known structure, so the same fixture backs the scale assertions in P4, P8 and
-P9 rather than three ad-hoc ones. It seeds through the real service layer, never raw SQL — a fixture
-that bypasses the code under test proves nothing.
+**PRE-3 correction (2026-08-08).** As written this was wrong: a document seeder cannot exist before
+documents do. The rule it must obey — **seed through the real service layer, never raw SQL** — is
+exactly what makes it impossible to build early, and that rule is not negotiable: a fixture that
+bypasses the code under test proves nothing, and raw seeding at a chosen ID is what destroyed four
+media rows on the reference install.
+
+So it becomes **P3.9**, landing with the engine that gives it something to create:
+`wp mvs seed-documents --members=N --docs-per=N --depth=N`, building a known structure so one fixture
+backs the scale assertions in P4, P8 and P9 rather than three ad-hoc ones. **It gates those phases,
+not Phase 1** — a static callsite audit needs no data.
 
 ---
 
@@ -60,6 +66,14 @@ guarantee, so it lands first and it is mutation-tested before it is trusted.
 
 > This task exists because the ~66 figure is a grep, and the phase estimate depends on how many are
 > `route` rather than `allow`. Do not estimate P1.2 before this lands.
+>
+> **Two grep failures already, before the audit even started.** (1) The ~66 figure counted *filename
+> mentions* — docblocks, comments, string references — not queries; the real SQL-site count in Free
+> is ~50 across 18 files. (2) A pattern matching `FROM …mvs_media_index` reported **zero sites in
+> Pro**, which is false: Pro assigns `$index = $wpdb->prefix . 'mvs_media_index'` and queries the
+> variable later, so the table name never appears adjacent to `FROM`. Any audit of this codebase
+> must trace variable assignments, not just literal table names — and that is precisely the shape of
+> query the CI ban in P1.3 has to catch too.
 
 ### P1.2 — Route the `route` callsites through `MediaRepository`
 
