@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Migrator {
 
-	const CURRENT_VERSION = 25;
+	const CURRENT_VERSION = 26;
 	const VERSION_OPTION  = 'mvs_db_version';
 
 	/**
@@ -1567,5 +1567,155 @@ class Migrator {
 			'rows_updated'    => $rows_updated,
 			'rows_unresolved' => $rows_unresolved,
 		);
+	}
+
+	/**
+	 * Migration v26 — evict album/collection rows from mvs_media_index.
+	 *
+	 * THE INVARIANT: mvs_media_index holds media, one row per media item, and an
+	 * album or collection ID must never appear in media_id. Albums are wp_posts rows
+	 * that media point at; their own attributes belong in post meta.
+	 *
+	 * Before 2.3.3 albums wrote privacy/album_type/import-markers through
+	 * MediaRepository keyed on their post ID. media_id is AUTO_INCREMENT for media,
+	 * so on any site where uploads have outrun post IDs that write landed on a real
+	 * photo and overwrote its slug and privacy.
+	 *
+	 * This pass is COPY-THEN-DELETE and never the reverse, so an interruption leaves
+	 * data duplicated rather than lost. It is idempotent: existing post meta is never
+	 * overwritten, and a second run finds nothing to do.
+	 *
+	 * Rows carrying real media are PRESERVED and logged. Their album data was
+	 * destroyed at write time and is not recoverable — the photo is real and must not
+	 * be touched.
+	 *
+	 * Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md
+	 *
+	 * @since 2.3.3
+	 * @return void
+	 */
+	private function migrate_to_26(): void {
+		global $wpdb;
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+		$meta  = $wpdb->prefix . 'mvs_media_meta';
+
+		// Keys only an album ever writes. Safe to lift and remove even from a colliding
+		// row, because a media item never uses them. Everything else under a colliding
+		// ID belongs to the photo (thumbnails, webp paths, EXIF) and must be left alone.
+		$album_only_keys = array(
+			'album_type'       => '_mvs_album_type',
+			'mpp_gallery_id'   => '_mvs_mpp_gallery_id',
+			'rtmedia_album_id' => '_mvs_rtmedia_album_id',
+			'bb_album_id'      => '_mvs_bb_album_id',
+		);
+
+		// AMBIGUOUS: media uses group_id too — PrivacyService::check_group() reads it
+		// off a media row to resolve BuddyPress group visibility. On a colliding ID
+		// there is no way to tell whose it is, so it is neither copied nor deleted
+		// there: guessing wrong would either mis-scope the album or destroy the
+		// photo's group assignment. On a clean album row it migrates normally.
+		$ambiguous_keys = array(
+			'group_id' => '_mvs_group_id',
+		);
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT p.ID AS cpt_id, p.post_type, m.privacy, m.media_type
+				   FROM {$index} m
+				   INNER JOIN {$wpdb->posts} p ON p.ID = m.media_id
+				  WHERE p.post_type IN ( %s, %s )",
+				'mvs_album',
+				'mvs_collection'
+			),
+			ARRAY_A
+		);
+
+		$migrated  = 0;
+		$preserved = array();
+
+		foreach ( (array) $rows as $row ) {
+			$cpt_id    = (int) $row['cpt_id'];
+			$colliding = '' !== (string) $row['media_type'];
+
+			// 1. Privacy onto the post. Never overwrite a value already there.
+			if ( '' === (string) get_post_meta( $cpt_id, '_mvs_privacy', true ) ) {
+				$privacy = (string) $row['privacy'];
+				update_post_meta( $cpt_id, '_mvs_privacy', '' !== $privacy ? $privacy : 'public' );
+			}
+
+			// 2. Album attribute meta onto the post, then drop just those keys.
+			$movable = $colliding ? $album_only_keys : array_merge( $album_only_keys, $ambiguous_keys );
+
+			foreach ( $movable as $old_key => $post_key ) {
+				$value = $wpdb->get_var(
+					$wpdb->prepare( "SELECT meta_value FROM {$meta} WHERE media_id = %d AND meta_key = %s", $cpt_id, $old_key )
+				);
+				if ( null === $value ) {
+					continue;
+				}
+				if ( '' === (string) get_post_meta( $cpt_id, $post_key, true ) ) {
+					update_post_meta( $cpt_id, $post_key, $value );
+				}
+				$wpdb->delete(
+					$meta,
+					array(
+						'media_id' => $cpt_id,
+						'meta_key' => $old_key,
+					),
+					array( '%d', '%s' )
+				);
+			}
+
+			if ( $colliding ) {
+				// A real media row wearing this album's privacy. Keep every byte of it.
+				$preserved[] = $cpt_id;
+				continue;
+			}
+
+			// 3. Attribute-only row — it was never legitimate. Remove it.
+			$wpdb->delete( $index, array( 'media_id' => $cpt_id ), array( '%d' ) );
+			++$migrated;
+		}
+
+		// 4. Album-space taxonomy rows. Categories on albums were write-only (nothing
+		// read them back) and shared object_id space with media. Clear them ONLY where
+		// the ID is not also a media row — where it is, the terms are the photo's and
+		// deleting them would be the same class of data loss this migration exists to
+		// stop.
+		$orphan_terms = (int) $wpdb->query(
+			$wpdb->prepare(
+				"DELETE tr FROM {$wpdb->term_relationships} tr
+				   INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+				   INNER JOIN {$wpdb->posts} p ON p.ID = tr.object_id
+				   LEFT JOIN {$index} m ON m.media_id = tr.object_id AND m.media_type <> ''
+				  WHERE tt.taxonomy IN ( %s, %s )
+				    AND p.post_type IN ( %s, %s )
+				    AND m.media_id IS NULL",
+				'mvs_category',
+				'mvs_tag',
+				'mvs_album',
+				'mvs_collection'
+			)
+		);
+		// phpcs:enable
+
+		if ( ! empty( $preserved ) ) {
+			update_option( 'mvs_cpt_id_collisions', $preserved, false );
+		}
+
+		if ( class_exists( '\\WPMediaVerse\\Services\\LoggerService' ) ) {
+			\WPMediaVerse\Services\LoggerService::error(
+				'migration',
+				'v26 evicted album/collection rows from mvs_media_index',
+				array(
+					'rows_removed'     => $migrated,
+					'collisions_kept'  => count( $preserved ),
+					'collision_ids'    => $preserved,
+					'orphan_term_rows' => $orphan_terms,
+				)
+			);
+		}
 	}
 }

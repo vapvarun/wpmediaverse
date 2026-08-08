@@ -91,7 +91,11 @@ class PrivacyService {
 			return $media_privacy;
 		}
 
-		$album_privacy = (string) $repo->get( $album_id, 'privacy' );
+		// Album privacy is a property of the album post, not of any media row.
+		// Before 2.3.3 this read mvs_media_index at media_id = <album post ID>, which
+		// on a colliding ID returned an unrelated PHOTO's privacy and clamped this
+		// item against it. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		$album_privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $album_id );
 		if ( '' === $album_privacy || 'public' === $album_privacy ) {
 			return $media_privacy;
 		}
@@ -128,29 +132,31 @@ class PrivacyService {
 	 * @return bool
 	 */
 	private function check_access( int $media_id, int $user_id ): bool {
-		// Resolve the item's author. A real media item lives in mvs_media_index
-		// with a concrete media_type (image/video/audio). Albums and collections
-		// are CPTs whose authoritative author is wp_posts.post_author — but they
-		// may ALSO get an mvs_media_index row that only stores their privacy
-		// (media_type left empty). That row's post_author is unreliable (0 or
-		// stale), so an indexed album must NOT be treated as media, or the owner
-		// is denied their own non-public album (Basecamp 10071824547). Keying on
-		// media_type keeps the hot media-grid path (media_type set) fast — no
-		// get_post() — and only albums/collections fall through to the CPT branch.
-		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$in_index   = $repo->exists( $media_id );
-		$media_type = $in_index ? (string) $repo->get( $media_id, 'media_type' ) : '';
+		// Resolve the item's author, and with it which KIND of thing this ID is.
+		//
+		// Albums and collections are CPTs; media lives in mvs_media_index. Since
+		// 2.3.3 those are two clean ID spaces — a CPT never writes an index row — so
+		// the post type is authoritative and cheap to trust.
+		//
+		// This replaces the media_type sniff added by 3cfff321 for Basecamp
+		// 10071824547 ("owner denied their own private album"). That workaround read
+		// the index row and, when media_type was empty, treated the ID as a CPT. It
+		// could not survive a collision: where an album's post ID landed on a real
+		// photo, media_type was 'image', so the album was access-checked as that
+		// photo — resolving to the PHOTO's owner and the PHOTO's privacy. The album's
+		// owner was denied their own album and an unrelated member was granted it.
+		// Root cause, not symptom: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		$repo          = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$post_type     = get_post_type( $media_id );
+		$allowed_types = array( 'mvs_album', 'mvs_collection' );
 
-		if ( $in_index && '' !== $media_type ) {
+		if ( $post_type && in_array( $post_type, $allowed_types, true ) ) {
+			// Album / collection CPT — wp_posts.post_author is authoritative.
+			$author_id = (int) get_post_field( 'post_author', $media_id );
+		} elseif ( $repo->exists( $media_id ) ) {
 			$author_id = $repo->get_author( $media_id );
 		} else {
-			// Album / collection CPT (no index row, or a privacy-only row).
-			$post          = get_post( $media_id );
-			$allowed_types = array( 'mvs_album', 'mvs_collection' );
-			if ( ! $post || ! in_array( $post->post_type, $allowed_types, true ) ) {
-				return false;
-			}
-			$author_id = (int) $post->post_author;
+			return false;
 		}
 
 		// Owners and admins always have access.
@@ -158,7 +164,13 @@ class PrivacyService {
 			return true;
 		}
 
-		$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'privacy' );
+		// Same split for the privacy value itself: an album's lives in post meta,
+		// a media item's in its index row.
+		if ( $post_type && in_array( $post_type, $allowed_types, true ) ) {
+			$privacy = \WPMediaVerse\Core\Plugin::container()->get( 'albums' )->get_privacy( $media_id );
+		} else {
+			$privacy = (string) $repo->get( $media_id, 'privacy' );
+		}
 		if ( ! $privacy ) {
 			$privacy = 'public';
 		}

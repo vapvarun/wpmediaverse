@@ -2014,4 +2014,189 @@ class Commands {
 			)
 		);
 	}
+
+	/**
+	 * Report album/collection IDs that collide with media IDs.
+	 *
+	 * Albums store their attributes by calling MediaRepository::set() with their
+	 * `wp_posts` ID. That column is AUTO_INCREMENT for real media, so the two ID
+	 * sequences collide wherever the integers coincide — overwriting media data,
+	 * inverting album access checks, and destroying a media row when the album
+	 * is deleted.
+	 *
+	 * This command is READ-ONLY. It never writes. Run it before upgrading so you
+	 * know what a site actually has.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--format=<format>]
+	 * : Output format for the detail tables.
+	 * ---
+	 * default: table
+	 * options:
+	 *   - table
+	 *   - csv
+	 *   - json
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mvs diagnose_cpt_ids
+	 *     wp mvs diagnose_cpt_ids --format=json
+	 *
+	 * @since 2.3.3
+	 *
+	 * @param array $args       Positional args (unused).
+	 * @param array $assoc_args Associative args.
+	 * @return void
+	 */
+	public function diagnose_cpt_ids( $args, $assoc_args ) {
+		unset( $args );
+
+		$format  = (string) Utils\get_flag_value( $assoc_args, 'format', 'table' );
+		$service = new \WPMediaVerse\Services\CptIdCollisionService();
+		$report  = $service->analyze();
+
+		$totals = $report['totals'];
+
+		WP_CLI::log( '' );
+		WP_CLI::log( '── Totals ────────────────────────────────────────────' );
+		Utils\format_items(
+			'table',
+			array(
+				array(
+					'Metric' => 'Album + collection posts',
+					'Count'  => $totals['cpt_posts'],
+				),
+				array(
+					'Metric' => '…with an mvs_media_index row',
+					'Count'  => $totals['cpt_indexed'],
+				),
+				array(
+					'Metric' => '…COLLIDING with a real media row',
+					'Count'  => $totals['collisions'],
+				),
+				array(
+					'Metric' => '…clean (attribute-only rows)',
+					'Count'  => $totals['privacy_only'],
+				),
+				array(
+					'Metric' => 'Real media rows',
+					'Count'  => $totals['real_media_rows'],
+				),
+			),
+			array( 'Metric', 'Count' )
+		);
+
+		$forecast = $report['forecast'];
+
+		WP_CLI::log( '' );
+		WP_CLI::log( '── Forecast — will the NEXT album corrupt something? ──' );
+		Utils\format_items(
+			'table',
+			array(
+				array(
+					'Metric' => 'Next wp_posts ID',
+					'Value'  => $forecast['next_post_id'],
+				),
+				array(
+					'Metric' => 'Next mvs_media_index ID',
+					'Value'  => $forecast['next_media_id'],
+				),
+				array(
+					'Metric' => 'Post IDs still behind media IDs',
+					'Value'  => $forecast['window'],
+				),
+				array(
+					'Metric' => '…of those, already used by media',
+					'Value'  => $forecast['occupied'],
+				),
+				array(
+					'Metric' => 'Chance the next album collides',
+					'Value'  => $forecast['risk_percent'] . '%',
+				),
+			),
+			array( 'Metric', 'Value' )
+		);
+		WP_CLI::log( '   ' . $forecast['verdict'] );
+
+		$this->report_section(
+			'Collisions — a CPT and a media item share one index row',
+			$report['collisions'],
+			array( 'cpt_id', 'post_type', 'cpt_title', 'cpt_author', 'media_title', 'media_author', 'privacy', 'index_slug' ),
+			$format
+		);
+
+		$this->report_section(
+			'DATA LOSS RISK — deleting these CPTs destroys the listed media',
+			$report['purge_risk'],
+			array( 'cpt_id', 'post_type', 'cpt_title', 'media_at_risk', 'media_author', 'file_path' ),
+			$format
+		);
+
+		$this->report_section(
+			'Slug overwritten — the media item now carries the CPT slug',
+			$report['slug_overwrites'],
+			array( 'cpt_id', 'cpt_title', 'cpt_slug', 'media_title', 'index_slug' ),
+			$format
+		);
+
+		$this->report_section(
+			'Attribute-only rows — safe to migrate to post meta',
+			$report['privacy_only'],
+			array( 'cpt_id', 'post_type', 'cpt_title', 'privacy', 'index_slug' ),
+			$format
+		);
+
+		$this->report_section(
+			'mvs_media_meta rows keyed by a CPT post ID',
+			$report['meta_rows'],
+			array( 'cpt_id', 'post_type', 'meta_key', 'meta_value', 'shares_with_media' ),
+			$format
+		);
+
+		$this->report_section(
+			'Taxonomy object_id spread',
+			$report['taxonomy'],
+			array( 'taxonomy', 'relationships', 'on_cpt_post', 'on_media', 'ambiguous' ),
+			$format
+		);
+
+		WP_CLI::log( '' );
+
+		if ( $totals['collisions'] > 0 ) {
+			WP_CLI::warning(
+				sprintf(
+					'%d collision(s) found. Do NOT permanently delete the listed albums/collections until the fix ships — see plan/2026-08-08-cpt-id-collision-fix-plan.md.',
+					$totals['collisions']
+				)
+			);
+			return;
+		}
+
+		WP_CLI::success( 'No collisions on this site.' );
+	}
+
+	/**
+	 * Print one titled section of the collision report.
+	 *
+	 * @since 2.3.3
+	 *
+	 * @param string $title  Section heading.
+	 * @param array  $rows   Result rows.
+	 * @param array  $fields Column order.
+	 * @param string $format Output format.
+	 * @return void
+	 */
+	private function report_section( string $title, array $rows, array $fields, string $format ): void {
+		WP_CLI::log( '' );
+		WP_CLI::log( '── ' . $title . ' ──' );
+
+		if ( empty( $rows ) ) {
+			WP_CLI::log( '   none' );
+			return;
+		}
+
+		Utils\format_items( $format, $rows, $fields );
+	}
 }

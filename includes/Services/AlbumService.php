@@ -18,6 +18,109 @@ defined( 'ABSPATH' ) || exit;
 class AlbumService {
 
 	/**
+	 * Post-meta key holding an album's own privacy.
+	 *
+	 * Album privacy controls how the ALBUM is visible. It is a property of the
+	 * album post, not of any media item, and it lives here — never in
+	 * mvs_media_index, whose `privacy` column means a media item's own visibility.
+	 *
+	 * @since 2.3.3
+	 * @var string
+	 */
+	public const PRIVACY_META = '_mvs_privacy';
+
+	/**
+	 * Post-meta key holding an album's type (default | playlist).
+	 *
+	 * @since 2.3.3
+	 * @var string
+	 */
+	public const TYPE_META = '_mvs_album_type';
+
+	/**
+	 * Read an album's privacy.
+	 *
+	 * Post meta is authoritative. The mvs_media_index fallback exists only for
+	 * installs upgrading from before 2.3.3 whose Migrator v26 pass has not run yet
+	 * (or failed): without it every album would read as the default and a private
+	 * album would be exposed. It is a safety net for one migration window, not a
+	 * supported storage location.
+	 *
+	 * Note the fallback can return the WRONG value on a legacy install: where an
+	 * album's post ID collided with a real media_id, the index row holds that
+	 * photo's privacy. That is the defect being fixed, and Migrator v26 records
+	 * every such album for review.
+	 *
+	 * @since 2.3.3
+	 *
+	 * @param int $album_id Album post ID.
+	 * @return string Privacy slug; 'public' when nothing is stored.
+	 */
+	public function get_privacy( int $album_id ): string {
+		$privacy = (string) get_post_meta( $album_id, self::PRIVACY_META, true );
+
+		if ( '' !== $privacy ) {
+			return $privacy;
+		}
+
+		// @deprecated 2.3.3 Legacy read. Remove in 3.0.0 once every install has run v26.
+		$legacy = (string) \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->get( $album_id, 'privacy' );
+
+		return '' !== $legacy ? $legacy : 'public';
+	}
+
+	/**
+	 * Store an album's privacy.
+	 *
+	 * @since 2.3.3
+	 *
+	 * @param int    $album_id Album post ID.
+	 * @param string $privacy  Privacy slug.
+	 * @return void
+	 */
+	public function set_privacy( int $album_id, string $privacy ): void {
+		update_post_meta( $album_id, self::PRIVACY_META, sanitize_text_field( $privacy ) );
+	}
+
+	/**
+	 * Read an album's type.
+	 *
+	 * @since 2.3.3
+	 *
+	 * @param int $album_id Album post ID.
+	 * @return string 'default' when nothing is stored.
+	 */
+	public function get_album_type( int $album_id ): string {
+		$type = (string) get_post_meta( $album_id, self::TYPE_META, true );
+
+		if ( '' !== $type ) {
+			return $type;
+		}
+
+		// @deprecated 2.3.3 Legacy read. Remove in 3.0.0.
+		$legacy = (string) \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->get( $album_id, 'album_type' );
+
+		return '' !== $legacy ? $legacy : 'default';
+	}
+
+	/**
+	 * Store an album's type.
+	 *
+	 * @since 2.3.3
+	 *
+	 * @param int    $album_id Album post ID.
+	 * @param string $type     Album type slug.
+	 * @return void
+	 */
+	public function set_album_type( int $album_id, string $type ): void {
+		update_post_meta( $album_id, self::TYPE_META, sanitize_text_field( $type ) );
+	}
+
+	/**
 	 * Create a new album.
 	 *
 	 * Wraps the `mvs_album` CPT insertion + privacy / album_type / group
@@ -41,7 +144,6 @@ class AlbumService {
 	 *                               written to both mvs_media_meta AND
 	 *                               post_meta `_mvs_group_id` (BP group tab
 	 *                               listings WP_Query against post_meta).
-	 *     @type array  $categories  Optional. mvs_category term IDs.
 	 * }
 	 * @return int|\WP_Error Album post ID on success, WP_Error on validation
 	 *                      failure or DB error.
@@ -67,37 +169,32 @@ class AlbumService {
 			return $album_id;
 		}
 
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-
 		$privacy    = isset( $args['privacy'] ) ? sanitize_text_field( $args['privacy'] ) : 'public';
 		$album_type = isset( $args['album_type'] ) ? sanitize_text_field( $args['album_type'] ) : 'default';
 
-		// Create the index row with a unique slug in the first write. Calling
-		// set() per-key would INSERT a row with slug left at its DEFAULT '' —
-		// and mvs_media_index has a UNIQUE KEY on slug, so the first album would
-		// take slug='' and every subsequent album would collide on that key and
-		// silently fail, losing privacy/album_type (read back as public/default).
-		$repo->set_many(
-			$album_id,
-			array(
-				'slug'       => $repo->generate_unique_slug( $title ),
-				'privacy'    => $privacy,
-				'album_type' => $album_type,
-			)
-		);
+		// Album attributes live in post meta. Before 2.3.3 they were written through
+		// MediaRepository at media_id = <album post ID>, which put an album ID into the
+		// media ID sequence: on any site where uploads have outrun post IDs — most of
+		// them — the write landed on a real photo and overwrote its slug and privacy.
+		// The album's own slug is wp_posts.post_name, which wp_insert_post() has
+		// already made unique. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		$this->set_privacy( $album_id, $privacy );
+		$this->set_album_type( $album_id, $album_type );
 
 		// Group association — only honour when the author is actually a member.
 		$group_id = isset( $args['group_id'] ) ? absint( $args['group_id'] ) : 0;
 		if ( $group_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( $author_id, $group_id ) ) {
-			$repo->set( $album_id, 'privacy', 'group' );
-			$repo->set( $album_id, 'group_id', $group_id );
+			$this->set_privacy( $album_id, 'group' );
 			update_post_meta( $album_id, '_mvs_group_id', $group_id );
 		}
 
-		// Categories (mvs_category taxonomy on the mvs_album CPT).
-		if ( isset( $args['categories'] ) && is_array( $args['categories'] ) ) {
-			wp_set_object_terms( $album_id, array_map( 'absint', array_filter( $args['categories'] ) ), 'mvs_category' );
-		}
+		// Album categories removed in 2.3.3. They were write-only: every browsing,
+		// filtering and archive surface resolves mvs_category by joining
+		// wp_term_relationships.object_id to mvs_media_index.media_id, so a category
+		// assigned to an album matched nothing anywhere. Worse, the album's post ID and
+		// a media item's ID share that object_id space, so an album's terms could be
+		// read back as a photo's. Media categories are unaffected.
+		// Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §3.4.
 
 		return (int) $album_id;
 	}
@@ -248,7 +345,7 @@ class AlbumService {
 	public function add_items( int $album_id, array $media_ids ): int {
 		global $wpdb;
 
-		$is_playlist = 'playlist' === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $album_id, 'album_type' );
+		$is_playlist = 'playlist' === $this->get_album_type( $album_id );
 
 		$max_pos = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
@@ -318,7 +415,7 @@ class AlbumService {
 			 * @param int[] $media_ids Media IDs being added.
 			 */
 			$inherit       = (bool) apply_filters( 'mvs_album_inherit_privacy', true, $album_id, $media_ids );
-			$album_privacy = $inherit ? (string) $repo->get( $album_id, 'privacy' ) : '';
+			$album_privacy = $inherit ? $this->get_privacy( $album_id ) : '';
 
 			foreach ( $media_ids as $mid ) {
 				$mid = (int) $mid;

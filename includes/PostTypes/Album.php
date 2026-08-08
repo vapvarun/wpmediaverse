@@ -73,11 +73,29 @@ class Album {
 		global $wpdb;
 		$wpdb->delete( $wpdb->prefix . 'mvs_album_items', array( 'album_id' => $post_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
-		// Albums also carry an mvs_media_index row (privacy storage). Purge it so a
-		// deleted album doesn't leave a dead, click-broken tile on Explore Media —
-		// this fires for MediaVerse's own REST delete AND BuddyNext's wrapper, both
-		// of which funnel through wp_delete_post()/before_delete_post. Basecamp 10073671889.
-		\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->purge_index_record( $post_id );
+		// NO index purge here — removed in 2.3.3, and it must not come back.
+		//
+		// An album is a wp_posts row that media POINT AT via mvs_media_index.album_id.
+		// It is a reference target, never a row in the media table: media_id belongs to
+		// the media ID sequence and an album ID must never appear there. Album privacy
+		// controls how the ALBUM is visible and lives in post meta (_mvs_privacy);
+		// mvs_media_index.privacy means the media item's own visibility. Two values,
+		// two homes.
+		//
+		// The old code stored album privacy at mvs_media_index.media_id = <album post
+		// ID>, then purged that row on delete. Because media_id is AUTO_INCREMENT for
+		// real media, an album's post ID routinely lands on an existing photo — so the
+		// purge destroyed that photo's index record: the file survived on disk and the
+		// item vanished from every surface. It also meant the purge was only ever
+		// needed to clean up rows that should not have existed.
+		//
+		// With albums no longer writing to mvs_media_index (AlbumService,
+		// AlbumController, Pro importers) and MediaRepository refusing wp_posts IDs,
+		// there is nothing left to purge. Legacy rows from before 2.3.3 are cleared
+		// once by Migrator v26, not on every delete.
+		//
+		// Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+		// Audit any site with `wp mvs diagnose_cpt_ids` (read-only).
 
 		/**
 		 * Fires after an album's custom-table rows are cleaned on permanent delete.

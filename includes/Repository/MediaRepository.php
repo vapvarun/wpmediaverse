@@ -669,6 +669,63 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Per-request memo for is_cpt_id() so the guard costs at most one lookup per ID.
+	 *
+	 * @since 2.3.3
+	 * @var array<int,bool>
+	 */
+	private static $cpt_id_memo = array();
+
+	/**
+	 * Refuse a write keyed on a wp_posts ID.
+	 *
+	 * THE INVARIANT: mvs_media_index holds media, one row per media item, and an
+	 * album or collection ID must never appear in media_id. Albums are wp_posts rows
+	 * that media POINT AT via the album_id column; their own attributes (privacy,
+	 * type, import markers) belong in post meta.
+	 *
+	 * Before 2.3.3 albums stored privacy by calling set()/set_many() with their post
+	 * ID. media_id is AUTO_INCREMENT for media, so on any site where uploads have
+	 * outrun post IDs — most of them, since members upload far more than a site
+	 * publishes — that write landed on a real photo and overwrote its slug and
+	 * privacy. It is a silent corruption on every album creation, which is why the
+	 * refusal lives here at the choke point rather than at each caller.
+	 *
+	 * Refuses rather than throws: a fatal on a mis-keyed write would take a site
+	 * down, and the correct outcome is simply that the bad write does not happen.
+	 *
+	 * Basecamp 10183850886. Plan: plan/2026-08-08-cpt-id-collision-fix-plan.md §4.0.
+	 *
+	 * @since 2.3.3
+	 *
+	 * @param int    $media_id Candidate row key.
+	 * @param string $context  Calling method, for the notice.
+	 * @return bool True when the write must be refused.
+	 */
+	private function refuses_cpt_id( int $media_id, string $context ): bool {
+		if ( $media_id <= 0 ) {
+			return false;
+		}
+
+		if ( ! isset( self::$cpt_id_memo[ $media_id ] ) ) {
+			$type                           = get_post_type( $media_id );
+			self::$cpt_id_memo[ $media_id ] = ( 'mvs_album' === $type || 'mvs_collection' === $type );
+		}
+
+		if ( ! self::$cpt_id_memo[ $media_id ] ) {
+			return false;
+		}
+
+		_doing_it_wrong(
+			esc_html( $context ),
+			'mvs_media_index is keyed on media IDs. Album and collection attributes belong in post meta — see AlbumService::set_privacy().',
+			'2.3.3'
+		);
+
+		return true;
+	}
+
+	/**
 	 * Set a single field for a media item.
 	 *
 	 * @param int    $media_id Media ID.
@@ -677,6 +734,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	 */
 	public function set( int $media_id, string $key, $value ): void {
 		global $wpdb;
+
+		if ( $this->refuses_cpt_id( $media_id, __METHOD__ ) ) {
+			return;
+		}
 
 		if ( in_array( $key, self::$index_columns, true ) ) {
 			$old_privacy = null;
@@ -761,6 +822,10 @@ class MediaRepository implements MediaRepositoryInterface {
 	 */
 	public function set_many( int $media_id, array $data ): void {
 		global $wpdb;
+
+		if ( $this->refuses_cpt_id( $media_id, __METHOD__ ) ) {
+			return;
+		}
 
 		$index_data = array();
 		$meta_data  = array();
@@ -1420,21 +1485,21 @@ class MediaRepository implements MediaRepositoryInterface {
 		return wp_parse_args(
 			$args,
 			array(
-				'status'                  => 'publish',
-				'moderation_status'       => '',
-				'author_id'               => 0,
-				'search'                  => '',
-				'tag_tt_id'               => 0,
-				'category_tt_id'          => 0,
-				'privacy'                 => 'any',
-				'viewer_id'               => 0,
-				'exclude_non_cover_group' => false,
+				'status'                   => 'publish',
+				'moderation_status'        => '',
+				'author_id'                => 0,
+				'search'                   => '',
+				'tag_tt_id'                => 0,
+				'category_tt_id'           => 0,
+				'privacy'                  => 'any',
+				'viewer_id'                => 0,
+				'exclude_non_cover_group'  => false,
 				'exclude_empty_media_type' => false,
-				'since'                   => '',
-				'orderby'                 => 'created_at',
-				'order'                   => 'DESC',
-				'limit'                   => 20,
-				'offset'                  => 0,
+				'since'                    => '',
+				'orderby'                  => 'created_at',
+				'order'                    => 'DESC',
+				'limit'                    => 20,
+				'offset'                   => 0,
 			)
 		);
 	}
