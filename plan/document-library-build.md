@@ -61,8 +61,39 @@ guarantee, so it lands first and it is mutation-tested before it is trusted.
   ~50 Free + ~16 Pro files by grep, but **grep is not the answer** — several are string references,
   not queries, and at least one is a docblock. Open each.
 - **Test** — `live:` the JSON parses and every entry has a verdict.
-- **Done** — Every callsite classified. **The `allow` list is the CI allowlist in P1.3**, so a lazy
-  verdict here weakens the gate permanently.
+- **Done** — ✅ **COMPLETE 2026-08-08.** `audit/derived/media-index-callsites.json`.
+
+### P1.1 result — the phase is bigger than estimated
+
+| | |
+|---|---|
+| **Query sites** | **98** (not ~66 files — that figure counted filename mentions) |
+| **ROUTE** | **47**, of which **28 are HIGH risk** — member-facing lists or counts that would surface documents |
+| **ALLOW** | 48 — migrations, CLI maintenance, storage ops, GDPR, canonical admin aggregates |
+| **DEAD** | 3 |
+| **Pro share** | **12 ROUTE**, all HIGH except one. Pro ships in lockstep with Phase 1, not just Phase 3 |
+
+**The single most important finding.** `MediaController.php:572` — the primary `/media` feed count,
+read by the web app *and* the mobile app — constrains with `media_type != ''`. That is an
+**exclusion**, and it passes `'document'` straight through. It is the same shape as the query that
+caused the trashed-media leak (`68113454`), and it is why:
+
+- design §3.2's **positive inclusion, never exclusion** rule is not stylistic, and
+- P1.3 **bans** the query rather than checking its predicate. A predicate rule would pass this line.
+
+**Where the 28 HIGH-risk sites are:** the `/media` feed (5), smart collections (3), leaderboard
+ranking (7 — uploading documents would inflate a public ranking, which is gameable), Instagram-layout
+feed (2), stories bar (2), album items/count/cover (3), who-to-follow ranking (2), profile media
+count (1), suggestion thumbnails (1), interest-category cover (1), `GET /stats/me` (1).
+
+**Two judgement calls worth preserving:**
+
+- `AdminAggregatesService` (4 sites) is **ALLOW, not ROUTE** — it *is* the Coding Rule 16 canonical
+  aggregate service, so routing it away would break the rule it exists to serve. Its counts will
+  still include documents; **the fix belongs inside it**, as a parameter.
+- `CacheService::get_user_stats()` and `::get_moderation_counts()` are **DEAD** — unreachable
+  duplicates of `MediaRepository` methods, and one is *looser* than the original (no `status`
+  filter), so wiring it up would leak trashed media. Delete rather than route.
 
 > This task exists because the ~66 figure is a grep, and the phase estimate depends on how many are
 > `route` rather than `allow`. Do not estimate P1.2 before this lands.
@@ -76,6 +107,10 @@ guarantee, so it lands first and it is mutation-tested before it is trusted.
 > query the CI ban in P1.3 has to catch too.
 
 ### P1.2 — Route the `route` callsites through `MediaRepository`
+
+> **Sized by P1.1: 47 sites across 20 files, 12 of them in Pro.** Order by risk — the 28 HIGH-risk
+> sites first, since those are what a document would actually leak into. The remaining 19 are
+> correctness-and-consistency work that can follow.
 
 - **Files** — `~ includes/Repository/MediaRepository.php`, plus each `route` file from P1.1
 - **Do** — Add repository methods for the query shapes found. **Every list/count method takes a type
