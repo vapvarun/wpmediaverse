@@ -461,7 +461,7 @@ footer li b{color:var(--ink);font-weight:600}
       </div>
       <div class="root computed">
         <h5>Shared with me</h5>
-        <span class="src">computed from grants · KEY grantee_user</span>
+        <span class="src">computed from grants · KEY grantee</span>
         <p>Entry points others gave you — not their drives. No row, no parent, nothing can be created in it.</p>
       </div>
       <div class="root">
@@ -721,7 +721,7 @@ footer li b{color:var(--ink);font-weight:600}
       <table>
         <thead><tr><th>Blocker</th><th>Why it is not optional</th></tr></thead>
         <tbody>
-          <tr><td><span class="chip crit">T1</span> <strong>Departing member: purge personal-drive docs, <em>reassign</em> team-drive ones</strong></td><td>Otherwise a member leaving takes the team's files with them. Silent, permanent, triggered by a routine event</td></tr>
+          <tr><td><span class="chip warn">T1 · phase 11</span> <strong>Departing member: purge personal-drive docs, <em>reassign</em> team-drive ones</strong></td><td>Otherwise a member leaving takes the team's files with them — silent, permanent, triggered by a routine event. <strong>Blocks Phase 11, not v1:</strong> a personal-only v1 has nothing to reassign, and purging personal documents is the existing cascade. The other four block v1</td></tr>
           <tr><td><span class="chip crit">T2</span> <strong>Tightening a folder cascades; loosening does not</strong></td><td>Otherwise a folder set to private leaves its documents public, with nothing to indicate it</td></tr>
           <tr><td><span class="chip crit">Journey</span> <strong>A document appears in the drive and in no media surface</strong></td><td>This is what replaced the structural guarantee. Without it the query discipline has no regression net</td></tr>
           <tr><td><span class="chip crit">Breadcrumb</span> <strong>Shared view starts at the highest granted ancestor</strong></td><td>Folder names carry client identities and project codenames. An information leak, not a display bug</td></tr>
@@ -760,7 +760,7 @@ footer li b{color:var(--ink);font-weight:600}
       <div class="note warn">
         <span class="tag">Team review found two real schema defects</span>
         <p><strong>The folder unique key was wrong.</strong> Keyed on <span class="m">(parent_id, name)</span> — and every drive root uses <span class="m">parent_id = 0</span>, so two members creating "Invoices" at their own root would collide and the second insert would fail. Now <span class="m">(drive_type, drive_id, parent_id, name(150))</span>, the prefix trimmed to stay under InnoDB's 767-byte COMPACT limit.</p>
-        <p><strong><span class="m">KEY grantee_user</span> did not exist.</strong> The "Shared with me" query was written against an index carried over from an abandoned table design, so it had nothing behind it. Added explicitly.</p>
+        <p><strong>The index the query named did not exist.</strong> "Shared with me" was written against <span class="m">KEY grantee_user</span>, carried over from an abandoned table design, so the surface's only query had nothing behind it. The index now added is <span class="m">KEY grantee</span>.</p>
       </div>
 
       <h3>What a second bucket costs</h3>

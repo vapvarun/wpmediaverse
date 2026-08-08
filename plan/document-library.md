@@ -21,9 +21,10 @@ An independent review of this plan found **two real schema defects**, both now f
 1. **`UNIQUE KEY name_in_parent` was wrong.** Keyed on `(parent_id, name)` alone, every drive root
    shares `parent_id = 0`, so two members creating "Invoices" at their own root would collide and
    the second insert would fail. Now `(drive_type, drive_id, parent_id, name(150))`.
-2. **`KEY grantee_user` did not exist.** The "Shared with me" query was written against an index
-   carried over from an abandoned table design, so it had nothing behind it. Added explicitly to
-   the schema delta as `KEY grantee`.
+2. **The index the query named did not exist.** "Shared with me" was written against
+   `KEY grantee_user`, carried over from the abandoned `mvs_pro_doc_permissions` design, so the
+   surface's only query had nothing behind it. The index now added — and referenced everywhere else
+   in this plan — is **`KEY grantee (grantee_type, user_id, grantee_role(60))`**.
 
 Also adopted: the five items in §15 are now stated as **release blockers** rather than
 recommendations; a **v1 cut** is stated in §14 (personal drives first, Space drives as the
@@ -784,7 +785,7 @@ undo: meta plus a cron sweep, no schema). One folder per file, no shortcuts. Few
 **Phase 1 ships before any document row exists** — the media-grid guarantee is a query guarantee
 now, so the choke point and CI rule land while there is nothing to leak.
 
-**Phase 0 is closed.** All seven decisions are locked in §17 (2026-08-08). They changed what
+**Phase 0 is closed.** All eight decisions are locked in §17 (2026-08-08). They changed what
 `PermissionService` and the upload path do, which is why they had to be settled before Phase 3
 rather than during it.
 
@@ -813,11 +814,16 @@ one of them is not shippable, regardless of what else is done.
 
 | | Blocker | Why it is not optional |
 |---|---|---|
-| **T1** | Departing member: purge personal-drive documents, **reassign** Space/site-drive ones | Otherwise a member leaving takes the team's files with them. Silent, permanent, triggered by a routine event |
+| **T1** | Departing member: purge personal-drive documents, **reassign** Space/site-drive ones | Otherwise a member leaving takes the team's files with them. Silent, permanent, triggered by a routine event. **Scoped to Phase 11** — see below |
 | **T2** | Tightening a folder's privacy cascades to its contents; loosening does not | Otherwise a folder set to private leaves its documents public, with nothing to indicate it |
 | **Journey** | One executable journey: a document appears in the drive and in **no** media surface — grid, explore, album, collection, lightbox, activity | This is what replaced the structural guarantee. Without it the query discipline has no regression net |
 | **Breadcrumb** | Shared view starts at the highest granted ancestor; owner folder names above the grant point are never emitted | Folder names carry client identities and project codenames. This is an information leak, not a display bug |
 | **Storage privacy** | Local deny rules **and** a Site Health check that the cloud bucket is not public-read | The difference between "documents are private" being true and being merely intended |
+
+**T1 blocks Phase 11, not v1.** Under the v1 cut (§14) there are no Space or site drives, so there is
+nothing to reassign — a departing member's documents are all personal, and purging them is the
+existing media-cascade behaviour. T1 becomes a blocker the moment team drives ship, and must land in
+the same phase they do. The other four block v1.
 
 ---
 
@@ -902,7 +908,7 @@ actually experienced. Nothing new to store, nothing new to configure, and the Me
 WooCommerce adapters keep working untouched.
 
 *The abuse hole this closes anyway:* every upload is charged to a real person at the moment it
-happens. D5's reassignment only moves *ownership of the file* when a member is deleted — long after
+happens. **T1's** reassignment only moves *ownership of the file* when a member is deleted — long after
 the storage was accounted for — so it opens no gap.
 
 *If a site owner does want to cap a particular Space,* that is a filter
