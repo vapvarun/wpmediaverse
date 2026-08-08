@@ -792,7 +792,7 @@ The precedent exists: Free's `dashboard-view/view.js` already carries `isChallen
 `mvs_document_max_depth`, `mvs_document_scan_file`, `mvs_document_signed_url_ttl`,
 `mvs_document_root_label`, `mvs_media_type_for_mime`.
 
-**Capabilities** — `mvs_manage_documents` (site drive + admin screens); member access resolves
+**Capabilities** — `manage_mvs_documents` (site drive + admin screens; named to match the registered family — `manage_mvs_settings`, `manage_mvs_access` — manifest check 2026-08-08, an earlier draft said `mvs_manage_documents` which matches nothing); member access resolves
 through drive ownership and grants.
 
 **Virus scanning** — MediaVerse ships **no scanner**, but must ship the seam:
@@ -959,7 +959,7 @@ against them.
 
 `view | comment | edit` say what a grantee can do with the item. **None of them confer the right to
 hand access to someone else.** Granting, and minting a link, require drive ownership,
-`mvs_manage_documents`, or a Space role BN resolves as owner/moderator.
+`manage_mvs_documents`, or a Space role BN resolves as owner/moderator.
 
 *Why:* the natural-looking alternative — "edit implies share" — means any editor can mint an
 anonymous link to a contract. On a Space drive with dozens of members that is one bad day away from
