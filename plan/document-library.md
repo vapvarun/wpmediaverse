@@ -36,6 +36,44 @@ The review confirmed the core as written — documents as a `media_type`, `folde
 row, no Office Online viewers, `token_hash DEFAULT NULL`, a new dashboard tab registry, the
 `/app/config` documents block, and Application-Password-only auth.
 
+### Scale review, 2026-08-08 — adopted
+
+A second review judged the plan against the fleet standard — 10k–100k-member sites, shared hosting,
+multi-year table growth — with each factual claim checked against the running code rather than read.
+Verdict: the architecture holds at scale; **one schema change and three write-path guards were
+required**, all applied above:
+
+1. **`search_text` + FULLTEXT moved off `mvs_media_index` into a side table**
+   (`mvs_document_search`, §2). The hottest table in the product must not carry an FTS index it
+   maintains on every write, a long-lock `ALTER` on fleet-sized tables, or a `longtext` that
+   degrades buffer-pool density for every media query — costs paid by all rows for a feature used
+   by a minority of them. One JOIN on the search query alone. The one-ID-space rule is untouched:
+   the side table is an index keyed on `media_id`, not a second identity.
+2. **Subtree writes are batched above 5,000 rows** — rename/move (§4) and the privacy cascade (§5)
+   — through Action Scheduler, the pattern extraction already uses. The cascade flips the folder's
+   own privacy first, synchronously, so the sweep window fails closed. A 30k-document Space drive
+   must never run a 30k-row transaction inside a web request.
+3. **Depth default cut from 20 to 12** (§4). `KEY subtree` prefixes `path` at 150 bytes; a depth-20
+   path with 8-digit ids is ~180 chars — past the prefix, silently degrading subtree queries to
+   drive-wide scans. Depth 12 keeps the worst case inside the index. The `name_in_parent` byte math
+   was also corrected (660, not 658; utf8mb4 prefixes carry 2 length bytes — conclusion unchanged),
+   and folder names are trimmed, NFC-normalized and validation-capped at 150 chars so the unique
+   index prefix always equals the whole value.
+4. **The D3 sweep queries by value range, not by bare `meta_key`** (§17), capped per run — a
+   meta-key-only scan is the classic large-postmeta trap. And D2 gains the "what's using my 5 GB"
+   answer as an on-demand `GROUP BY`, no counter, because that is the first support question a
+   quota site asks after launch (§17).
+
+Also recorded, not plan changes: the §8 CI rule should **ban** direct `FROM mvs_media_index` outside
+`MediaRepository` (explicit allowlist) rather than merely require a `media_type` predicate — the
+trashed-media leak (Basecamp 10180901914) was exactly a hand-built query missing one clause, and the
+predicate-only rule would not have caught it. The rule must be mutation-tested before it is trusted:
+add a document-blind query, watch CI fail by name. And D4's guarantee leans on `CommunityPrivacyGate`
+staying closed — when the link-redemption route lands it must NOT join the gate's exempt list on a
+private community, which deserves a pinning test, because "just exempt the new route" is precisely
+the change a future fix will reach for (the sibling BN gate shipped that exact hole for its PWA and
+payment routes).
+
 ---
 
 ## 1. What this is
@@ -50,7 +88,7 @@ permission grants, and a REST surface complete enough to drive a native client.
 | Ownership | Personal drives, BuddyNext **Space** drives, site-wide library |
 | Consumer | **BuddyNext only.** Not BuddyPress, not BuddyBoss |
 | Entity model | **Documents are one more `media_type` in `mvs_media_index`** — not a separate entity |
-| New tables | **One** (`mvs_pro_folders`). Everything else reuses what exists |
+| New tables | **Two** — `mvs_pro_folders`, plus `mvs_document_search` (scale review: the FULLTEXT index lives beside the hot table, not on it). Everything else reuses what exists |
 | Version history | **None.** Current file only |
 | Link sharing | Logged-in **and** anonymous; anonymous **off by default** per site |
 | Formats | PDF, modern Office, ODF, plain text, legacy Office. **`.zip` excluded** |
@@ -85,7 +123,11 @@ wp_mvs_media_index                     (existing — one row per library item)
   album_id                    │        ← existing, media only, untouched
   post_author, privacy, status, moderation_status,
   file_type, file_size, file_hash, slug, view_count,
-  search_text (NEW), created_at, updated_at
+  created_at, updated_at
+                              │
+wp_mvs_document_search        │        (NEW — search index, documents only)
+  media_id      PK ◄──────────┤        one row per document, FULLTEXT lives
+  search_text, updated_at     │        here, never on the hot index table
                               │
 wp_mvs_pro_folders            │        (NEW — the only new table)
   folder_id     PK ◄──────────┘
@@ -113,8 +155,24 @@ UPDATE {p}mvs_media_index SET media_type='legacy_document' WHERE media_type='doc
 ALTER TABLE {p}mvs_media_index ADD COLUMN folder_id bigint(20) unsigned NOT NULL DEFAULT 0;
 ALTER TABLE {p}mvs_media_index ADD KEY doc_listing (media_type, folder_id, status, created_at);
 ALTER TABLE {p}mvs_media_index ADD KEY type_file  (media_type, file_type);
-ALTER TABLE {p}mvs_media_index ADD COLUMN search_text longtext DEFAULT NULL;
-ALTER TABLE {p}mvs_media_index ADD FULLTEXT KEY media_content_ft (search_text);
+
+-- Search lives in a SIDE TABLE, not on the index (scale review, 2026-08-08).
+-- An earlier draft put search_text longtext + FULLTEXT on mvs_media_index
+-- itself. That lands the cost on the hottest table in the product: every
+-- InnoDB write to it would maintain an FTS index, the ALTER is a long lock
+-- (or an online-DDL disk-double) on a 500k-row fleet site, and a longtext in
+-- the row pushes toward off-page storage — degrading buffer-pool density for
+-- EVERY media query, when documents will be a small minority of rows. A side
+-- table keyed on media_id costs one JOIN on the search query alone and
+-- nothing anywhere else. This is an index, not an entity — the one-ID-space
+-- rule is about identity, and media_id stays the only identity here.
+CREATE TABLE {p}mvs_document_search (
+  media_id    bigint(20) unsigned NOT NULL,
+  search_text longtext NOT NULL,
+  updated_at  datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (media_id),
+  FULLTEXT KEY media_content_ft (search_text)
+) {charset_collate};
 ```
 
 **Pro Migrator v11:**
@@ -156,7 +214,7 @@ ALTER TABLE {p}mvs_access_grants ADD KEY grantee (grantee_type, user_id, grantee
 > row takes the same value and `ADD UNIQUE KEY` fails on the duplicates. MySQL exempts NULL from
 > UNIQUE. This would fail the migration on every site that has ever sold media access.
 
-**Totals: 1 new table, 2 new columns, 3 new indexes, 5 columns + 3 indexes on `mvs_access_grants`.**
+**Totals: 2 new tables (`mvs_pro_folders`, `mvs_document_search`), 1 new column on `mvs_media_index` (`folder_id`), 2 new indexes on it, 5 columns + 3 indexes on `mvs_access_grants`.** The FULLTEXT index lives on the search side table only.
 No key rewrites, no PRIMARY KEY rebuilds, no backfills, no `wp_posts` rows.
 
 ### Why `folder_id` and not a reuse of `album_id`
@@ -279,9 +337,9 @@ and a race rule, four mechanisms that existed only to represent an absence.
 | Breadcrumbs | parsed from `path` — **zero queries** |
 | Children | `KEY drive` |
 | Subtree (delete, move, count) | `KEY subtree` → one `LIKE '/12/48/%'` |
-| Name collision in one parent | `UNIQUE KEY name_in_parent (drive_type, drive_id, parent_id, name(150))` — **enforced by the database**, race-proof. The drive columns are not optional: every drive root uses `parent_id = 0`, so keying on `(parent_id, name)` alone would make two members creating "Invoices" at their own root collide. `name(150)` keeps the key under the 767-byte InnoDB COMPACT limit (42 + 8 + 8 + 600 = 658) so it holds on hosts that have not moved to DYNAMIC row format |
-| Depth cap | `depth` + filter `mvs_document_max_depth` (default 20), keeping `path` in varchar(255) |
-| Rename / move | one `UPDATE` rewriting the subtree `path` prefix |
+| Name collision in one parent | `UNIQUE KEY name_in_parent (drive_type, drive_id, parent_id, name(150))` — **enforced by the database**, race-proof. The drive columns are not optional: every drive root uses `parent_id = 0`, so keying on `(parent_id, name)` alone would make two members creating "Invoices" at their own root collide. `name(150)` keeps the key under the 767-byte InnoDB COMPACT limit (42 + 8 + 8 + 602 = 660; utf8mb4 varchar prefixes carry 2 length bytes) so it holds on hosts that have not moved to DYNAMIC row format. Names are **trimmed and NFC-normalized before insert, and validation caps them at 150 chars** so the index prefix always equals the whole value — otherwise two 200-char names sharing a 150-char prefix collide falsely, and the member is told "name already exists" about a name that does not |
+| Depth cap | `depth` + filter `mvs_document_max_depth` (**default 12**, was 20 — scale review). `KEY subtree` prefixes `path` at 150 bytes; with 8-digit folder ids a depth-20 path is ~180 chars, PAST the prefix, so deep trees silently degrade to scanning within the drive. Depth 12 keeps the worst case ≈110 chars, inside the index. Raising the filter past 16 is on the site owner, and the consequence belongs in the filter's docblock |
+| Rename / move | one `UPDATE` rewriting the subtree `path` prefix. **Batched above 5,000 rows** (scale review): on a Space drive with 30k documents this is otherwise a 30k-row transaction inside a web request. Above the threshold the subtree rewrite runs through Action Scheduler — the same pattern extraction already uses — with the folder marked `status='moving'` so a half-applied rename is visible rather than silent |
 | Routing | Pro page + rewrite, following `Frontend\GamificationTemplateLoader` |
 
 ### Drive scoping at the root
@@ -405,6 +463,11 @@ breaks the safe one:
 Fix: one indexed `UPDATE` over the subtree via `path`. **Tightening cascades; loosening does not** —
 an explicit `private` on a file outranks its container. With a confirmation, because it is a bulk
 permission change: *"Make this folder private? 47 documents inside will also become private."*
+
+Same batching rule as rename/move (scale review, 2026-08-08): above 5,000 affected rows the cascade
+runs through Action Scheduler rather than inside the request. The order matters for this one —
+**the folder's own privacy flips first, synchronously**, then the contents follow in batches, so the
+window during the sweep fails CLOSED (folder already private) rather than open.
 
 ### Sharing a folder vs a file
 
@@ -907,6 +970,13 @@ reads "2.1 GB of 5 GB used" across everything they have uploaded, because that i
 actually experienced. Nothing new to store, nothing new to configure, and the MemberPress / PMPro /
 WooCommerce adapters keep working untouched.
 
+One consequence to design for rather than discover (scale review, 2026-08-08): with no
+`document_count`, the storage bar cannot answer *"what is using my 5 GB"* by type — and on any site
+with a quota, that is the first support question after documents launch. The answer is an on-demand
+`SELECT media_type, SUM(file_size) … GROUP BY media_type` behind the bar's "what's using this?"
+expander, indexed by `KEY type_file`, computed when clicked and never stored. No counter, no schema —
+the decision above stands; the breakdown is a query, not a ledger.
+
 *The abuse hole this closes anyway:* every upload is charged to a real person at the moment it
 happens. **T1's** reassignment only moves *ownership of the file* when a member is deleted — long after
 the storage was accounted for — so it opens no gap.
@@ -923,6 +993,13 @@ and *"the edit was wrong, give me yesterday's file"* is the case teams hit most.
 On `POST /documents/{id}/replace`, the superseded file stays on disk under a `_mvs_replaced_from`
 meta key with a timestamp, swept by cron after 30 days (filterable). An admin can restore it. **This
 is an undo, not versioning** — one step back, no history UI, no version table, no schema.
+
+The sweep queries `mvs_media_meta` **by `meta_key` with a value-range condition on the stored
+timestamp**, not by scanning for the key alone (scale review, 2026-08-08): a bare meta_key lookup is
+a full-meta-table scan pattern on a site with millions of meta rows. The timestamp is stored as the
+meta value's leading sortable component (`YYYYMMDDHHMMSS|<path>`) precisely so the sweep's WHERE can
+bound it, and each sweep run caps at 500 deletions — the same bounded-cron shape
+`StorageRepairService` uses.
 
 *Why:* it removes the only unrecoverable member action for the cost of a meta key and a cron sweep.
 Adding real versioning later still needs a Migrator bump and a minor release; this does not.
