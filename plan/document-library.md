@@ -1,0 +1,753 @@
+# Document Library — plan
+
+**Status:** PLANNING. No code written.
+**Target:** Free + Pro **2.5.0**, paired (minor — additive, Production Rule 8).
+**Consumer:** BuddyNext. MediaVerse's own UI is the standalone fallback.
+**Visual summary:** `plan/document-library-visual.html` (open in a browser).
+
+> **This is the single source of truth.** It replaces five earlier working documents — the
+> 2026-08-05 spec and plan, the gap audit, the v2 implementation plan, and the Google Drive parity
+> audit. Their conclusions are folded in below; the deliberation that produced them is in
+> `git log`. If you are reviewing this feature, read only this file.
+
+**Hard dependency:** the album/collection ID-collision fix
+(`plan/2026-08-08-cpt-id-collision-fix-plan.md`, 2.4.0-dev) **must ship first or alongside.** This
+design puts documents into `mvs_media_index`, and that fix is what makes the ID space safe to share.
+
+---
+
+## 1. What this is
+
+A Drive-style document library: personal, Space and site-wide drives with a nested folder tree,
+permission grants, and a REST surface complete enough to drive a native client.
+
+### Owner decisions
+
+| Question | Decision |
+|---|---|
+| Ownership | Personal drives, BuddyNext **Space** drives, site-wide library |
+| Consumer | **BuddyNext only.** Not BuddyPress, not BuddyBoss |
+| Entity model | **Documents are one more `media_type` in `mvs_media_index`** — not a separate entity |
+| New tables | **One** (`mvs_pro_folders`). Everything else reuses what exists |
+| Version history | **None.** Current file only |
+| Link sharing | Logged-in **and** anonymous; anonymous **off by default** per site |
+| Formats | PDF, modern Office, ODF, plain text, legacy Office. **`.zip` excluded** |
+
+### Why documents are a media type, not a separate entity
+
+An earlier draft gave documents their own tables and generalized six Free engagement tables with an
+`object_type` column. That was reversed. The separation bought one thing — a structural guarantee
+that a document could never appear in a media grid — and paid for it with **two ID spaces**: nine
+tables needing a new column, four unique keys widened, two PRIMARY KEY rebuilds on 50+ live sites, a
+parallel comment scope, a parallel taxonomy, parallel REST controllers for every social action, and
+a quota system that could not see documents.
+
+Removing the second ID space removes all of it. Reactions, comments, favourites, tags, reports,
+moderation, activity, notifications, stats, GDPR export/erase, quota, the admin list, `/me/media`
+and **the existing `pdf-viewer` block** all work unchanged, because a document *is* an
+`mvs_media_index` row.
+
+What replaces the structural guarantee is **query discipline at one choke point, enforced by CI**
+(§8). That trades an unrecoverable, silent, migration-time risk for a visible, patchable,
+render-time one — the right direction on a production fleet.
+
+---
+
+## 2. Data model
+
+```
+wp_mvs_media_index                     (existing — one row per library item)
+  media_id      PK AUTO_INCREMENT      ← never written explicitly
+  media_type    'image'|'video'|'audio'|'document'   ← the discriminator
+  folder_id     ──────────────┐        ← NEW column, documents only
+  album_id                    │        ← existing, media only, untouched
+  post_author, privacy, status, moderation_status,
+  file_type, file_size, file_hash, slug, view_count,
+  search_text (NEW), created_at, updated_at
+                              │
+wp_mvs_pro_folders            │        (NEW — the only new table)
+  folder_id     PK ◄──────────┘
+  parent_id     ──┐ self-referencing, 0 = drive root (virtual)
+  folder_id     ◄─┘
+  drive_type, drive_id, name, slug, path, depth,
+  privacy, status, created_by, created_at, updated_at, trashed_at
+
+wp_mvs_access_grants                   (existing — extended)
+  target_type   'media' | 'folder'     ← NEW discriminator
+  media_id      → media_id  OR  folder_id
+  grantee_type  'user'|'role'|'link', grantee_role, token_hash, permission  ← NEW
+  user_id, expires_at, revoked_at, source (existing)
+```
+
+Two relationships, both single-column and indexed. A document points at one folder; a folder points
+at one parent. No junction table, no meta join, no recursive query on any read path.
+
+### Schema delta
+
+**Free Migrator v27** — additive, `information_schema`-guarded, no backfill:
+
+```sql
+UPDATE {p}mvs_media_index SET media_type='legacy_document' WHERE media_type='document';  -- first
+ALTER TABLE {p}mvs_media_index ADD COLUMN folder_id bigint(20) unsigned NOT NULL DEFAULT 0;
+ALTER TABLE {p}mvs_media_index ADD KEY doc_listing (media_type, folder_id, status, created_at);
+ALTER TABLE {p}mvs_media_index ADD KEY type_file  (media_type, file_type);
+ALTER TABLE {p}mvs_media_index ADD COLUMN search_text longtext DEFAULT NULL;
+ALTER TABLE {p}mvs_media_index ADD FULLTEXT KEY media_content_ft (search_text);
+```
+
+**Pro Migrator v11:**
+
+```sql
+CREATE TABLE {p}mvs_pro_folders (
+  folder_id  bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  drive_type varchar(10)  NOT NULL DEFAULT 'user',   -- user | space | site
+  drive_id   bigint(20) unsigned NOT NULL DEFAULT 0,
+  parent_id  bigint(20) unsigned NOT NULL DEFAULT 0, -- 0 = drive root
+  name       varchar(255) NOT NULL,
+  slug       varchar(255) NOT NULL DEFAULT '',
+  path       varchar(255) NOT NULL DEFAULT '/',      -- '/12/48/'
+  depth      smallint(5) unsigned NOT NULL DEFAULT 0,
+  privacy    varchar(20)  NOT NULL DEFAULT 'private',
+  status     varchar(20)  NOT NULL DEFAULT 'active', -- active | trashed
+  created_by bigint(20) unsigned NOT NULL,
+  created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at datetime DEFAULT NULL,
+  trashed_at datetime DEFAULT NULL,
+  PRIMARY KEY  (folder_id),
+  KEY drive    (drive_type, drive_id, parent_id, status),
+  KEY parent   (parent_id, status),
+  KEY subtree  (drive_type, drive_id, path(150)),
+  UNIQUE KEY name_in_parent (parent_id, name(191))
+) {charset_collate};
+
+ALTER TABLE {p}mvs_access_grants ADD COLUMN target_type  varchar(10) NOT NULL DEFAULT 'media';
+ALTER TABLE {p}mvs_access_grants ADD COLUMN grantee_type varchar(10) NOT NULL DEFAULT 'user';
+ALTER TABLE {p}mvs_access_grants ADD COLUMN grantee_role varchar(60) NOT NULL DEFAULT '';
+ALTER TABLE {p}mvs_access_grants ADD COLUMN permission   varchar(10) NOT NULL DEFAULT 'view';
+ALTER TABLE {p}mvs_access_grants ADD COLUMN token_hash   varchar(64) DEFAULT NULL;   -- NULL, not ''
+ALTER TABLE {p}mvs_access_grants ADD UNIQUE KEY token_hash (token_hash);
+ALTER TABLE {p}mvs_access_grants ADD KEY target (target_type, media_id);
+```
+
+> **Migration trap:** `token_hash` must be `DEFAULT NULL`. With `DEFAULT ''` every existing grant
+> row takes the same value and `ADD UNIQUE KEY` fails on the duplicates. MySQL exempts NULL from
+> UNIQUE. This would fail the migration on every site that has ever sold media access.
+
+**Totals: 1 new table, 2 new columns, 3 new indexes, 5 columns + 2 indexes on `mvs_access_grants`.**
+No key rewrites, no PRIMARY KEY rebuilds, no backfills, no `wp_posts` rows.
+
+### Why `folder_id` and not a reuse of `album_id`
+
+A document lives in exactly one container, so `album_id` looked reusable. It is not: `album_id`
+holds `wp_posts` IDs and folder IDs come from `mvs_pro_folders`, so one column would carry two
+independent auto-increment sequences disambiguated only by remembering to check `media_type`. That
+is precisely the defect the 2.4.0 fix removes. One extra `ADD COLUMN` keeps the relationship
+unambiguous.
+
+---
+
+## 3. Identification — explicit, never inferred
+
+**MediaVerse is a media plugin first. Document support is additive and must be asked for
+explicitly.** No code path may reach a document type by elimination.
+
+### The catch-all is deleted
+
+`UploadService::get_media_type()` currently ends `return 'document';` — anything unrecognised
+becomes a document — and the 1.2.3 upload guard *depends* on that fallback to know what to reject.
+Both change together:
+
+```php
+return '';   // unknown — named nothing, inferred nothing
+…
+if ( '' === $this->get_media_type( $mime ) ) { … reject … }
+```
+
+Strictly safer: an unrecognised MIME is currently *labelled* a document then rejected by that label;
+afterwards it is rejected *because it is unrecognised*. Escape hatch per Production Rule 3:
+`apply_filters( 'mvs_media_type_for_mime', $type, $mime )`.
+
+`'document'` is then produced by exactly one function: `DocumentTypes::resolve( string $mime, string
+$extension ): ?string`, which returns a **named** type or `null` and has no default branch.
+
+| `doc_type` | MIME | Extensions |
+|---|---|---|
+| `pdf` | `application/pdf` | `.pdf` |
+| `word` | `application/msword`, `…wordprocessingml.document` | `.doc`, `.docx` |
+| `excel` | `application/vnd.ms-excel`, `…spreadsheetml.sheet` | `.xls`, `.xlsx` |
+| `powerpoint` | `application/vnd.ms-powerpoint`, `…presentationml.presentation` | `.ppt`, `.pptx` |
+| `odf_text` / `odf_sheet` / `odf_presentation` | the three `vnd.oasis.opendocument.*` | `.odt`, `.ods`, `.odp` |
+| `text` / `markdown` / `csv` | `text/plain`, `text/markdown`, `text/csv` | `.txt`, `.md`, `.csv` |
+| `rtf` | `application/rtf`, `text/rtf` | `.rtf` |
+
+**Two sniffing traps.** OOXML and ODF are ZIP containers — `finfo` returns `application/zip`. Accept
+it **only** when the extension is in the OOXML/ODF set **and** the archive contains the expected
+marker (`[Content_Types].xml` for OOXML, a `mimetype` entry for ODF); a bare `.zip` fails because
+`.zip` is not in the extension map. And `.md`/`.csv` sniff as `text/plain` — the extension separates
+them, which is why resolution takes both arguments and trusts neither alone.
+
+**The REST upload takes an explicit `doc_type`** and rejects with `400` when the caller's declared
+type disagrees with the resolved type. Never a silent correction.
+
+`doc_type` is **not a stored column** — `file_type` already holds the validated MIME, and
+`DocumentTypes::group_for_mime()` maps it to a display group. `KEY type_file` makes "every PDF in
+this drive" an index range scan. Grouping an already-admitted file is not inference.
+
+### Grouping — positive inclusion, never exclusion
+
+The reference install already holds a row with an empty `media_type`. So:
+
+```php
+final class MediaTypes {
+    public const MEDIA     = array( 'image', 'video', 'audio' );
+    public const DOCUMENTS = array( 'document' );
+    public const ALL       = array( 'image', 'video', 'audio', 'document' );
+}
+```
+
+`WHERE media_type IN (…)`, never `!= 'document'`. Untyped rows belong to neither library — an
+untyped row is a data defect, not content.
+
+### Legacy rows
+
+A site that ran pre-1.2.3 with PDF uploads enabled may hold `media_type='document'` rows classified
+by the old catch-all. The migration re-types them to `legacy_document` **before** the feature can
+create anything, so they leave media surfaces and never enter a drive, while staying readable at
+their permalink. Check any site with
+`SELECT COUNT(*) FROM …mvs_media_index WHERE media_type='document'`.
+
+---
+
+## 4. Folders
+
+### Why a custom table, not a CPT or a taxonomy
+
+- **Not a taxonomy.** `wp_terms` / `wp_term_taxonomy` have no column for an owner, a timestamp or a
+  status. The folder view sorts by *modified*, shows *owner*, and folders trash — as termmeta those
+  become `ORDER BY` on an unindexed `meta_value` and a filter every query must remember.
+- **Not a CPT.** `wp_posts` on a BuddyPress/BuddyNext community is tiny — **65 rows on the reference
+  install, 42 of them BP email templates** — because community data lives in `bp_*` and `mvs_*`
+  tables. At 10,000 members folders would be ~99% of that table, and the three postmeta rows each
+  folder needs would take `wp_postmeta` from 13 rows to tens of thousands with a join on every
+  listing. A folder as a post also wastes 15 of 23 columns, including three empty `longtext`s.
+- **A custom table** gives 14 purposeful columns, indexed drive scoping, a database-enforced
+  duplicate-name guard, and a materialized `path` — which matters because WordPress still supports
+  MySQL 5.7, where `WITH RECURSIVE` does not exist.
+
+**No folder-meta table.** A folder's twelve attributes are fixed and nearly all filtered or sorted
+on. At 10k folders that is 10k rows against ~120k, and an unindexed lookup per listing — the
+`wp_postmeta` problem rebuilt under a plugin prefix.
+
+### The root is virtual
+
+`folder_id = 0` on a document and `parent_id = 0` on a folder both mean "at the drive root". **There
+is no root row.** A member who never creates a folder produces **zero** rows, so folder count scales
+with deliberate folder creation, not member count. "My Documents" is a display string
+(`mvs_document_root_label`), not a record — which removes lazy creation, an ID cache, a delete guard
+and a race rule, four mechanisms that existed only to represent an absence.
+
+### Storage map
+
+| Concern | Mechanism |
+|---|---|
+| Nesting | `parent_id` + `path` materialized as `/12/48/` |
+| Drive ownership | `drive_type` + `drive_id`, indexed with `parent_id` |
+| Privacy / owner / dates / trash | columns |
+| Breadcrumbs | parsed from `path` — **zero queries** |
+| Children | `KEY drive` |
+| Subtree (delete, move, count) | `KEY subtree` → one `LIKE '/12/48/%'` |
+| Name collision in one parent | `UNIQUE KEY name_in_parent` — **enforced by the database**, race-proof |
+| Depth cap | `depth` + filter `mvs_document_max_depth` (default 20), keeping `path` in varchar(255) |
+| Rename / move | one `UPDATE` rewriting the subtree `path` prefix |
+| Routing | Pro page + rewrite, following `Frontend\GamificationTemplateLoader` |
+
+### Drive scoping at the root
+
+| Drive | Mechanism | Cost |
+|---|---|---|
+| **Personal** (v1) | `mvs_media_index.post_author` for root documents; `drive_type`/`drive_id` columns for folders | indexed both sides, no join |
+| **Space / site** (later phase) | drive meta on the document, mirroring media's group assignment | one meta read |
+
+The hot query — a personal drive root listing — is one index range scan:
+
+```sql
+SELECT … FROM {p}mvs_media_index
+ WHERE media_type='document' AND folder_id=0 AND post_author=%d AND status='publish'
+ ORDER BY created_at DESC LIMIT %d OFFSET %d
+```
+
+Inside a folder it drops `post_author` entirely, because the folder already scoped the drive —
+`KEY doc_listing` used left-to-right, flat at any drive size.
+
+### Counts, and mixing folders with files
+
+**Counts are DIRECT children, not recursive.** Recursive counts in a list view either N+1 the page
+or need a denormalized counter corrected on six events, and a counter that drifts is worse than no
+counter. Two queries per page:
+
+```sql
+SELECT folder_id, COUNT(*) FROM {p}mvs_media_index
+ WHERE media_type='document' AND status='publish' AND folder_id IN (…) GROUP BY folder_id;
+
+SELECT parent_id, COUNT(*) FROM {p}mvs_pro_folders
+ WHERE status='active' AND parent_id IN (…) GROUP BY parent_id;
+```
+
+Recursive counts stay available via `path LIKE` but only **on demand** — delete confirmation ("this
+will trash 240 files"), folder properties — never in list rendering.
+
+**Counts carry the same permission predicate as the listing.** A folder reading "12 items" to
+someone who can see 3 leaks the existence of 9 files.
+
+**Pagination across two tables.** Folders sort above files; the offset maths is the easy thing to
+get wrong:
+
+```
+folder_total    = COUNT(*) of visible sub-folders
+folders_on_page = mvs_pro_folders   LIMIT per_page OFFSET offset
+file_offset     = MAX( 0, offset - folder_total )
+files_on_page   = mvs_media_index   LIMIT (per_page - count(folders_on_page)) OFFSET file_offset
+X-WP-Total      = folder_total + file_total
+```
+
+15 sub-folders, 500 files, 50 per page → page 1 is all 15 folders + 35 files; page 2 is files 36–85.
+Sorting by *size* puts folders in an odd position — they sort by name in that mode and the size
+column reads "—" rather than showing a number that needs a recursive computation.
+
+---
+
+## 5. Access
+
+### Privacy is the default; grants are the override
+
+This is where documents genuinely diverge from media, and the same column means something different.
+
+| | Media | Documents |
+|---|---|---|
+| `privacy` | **the whole story** — public media is browsable in Explore | the **default answer** absent a grant |
+| Grants | rare (paid access rules) | **the primary mechanism** — this is a collaboration product |
+| "Public" means | discoverable — feeds, grids, Explore | **reachable by URL, never discoverable** |
+| Default | `public` (column default) | `private`, set explicitly in the service |
+
+**So "public" on a document means unlisted, not published.** A member marking a contract public gets
+a URL anyone can open — they do **not** get it posted to the community feed (Part C forbids a
+document in any media grid). The share modal says *"Anyone with the link can view"*, never "Public".
+
+Privacy vocabulary matches media — `public`, `members` (alias `loggedin`), `friends`, `space`,
+`private`, `custom`; `dm` does not apply. **Media's `group` becomes `space`**, because
+`PrivacyService::check_group()` resolves through `groups_is_user_member()` and denies when
+BuddyPress is absent — and BN Spaces are not BP groups. The REST layer accepts `group` as an input
+alias; storage is always the canonical token.
+
+### Resolution ladder — two queries per page
+
+1. **Drive owner or admin.** The Space answer is resolved **once per request per drive** and cached
+   — the filter must never be called per row.
+2. **Explicit grant** — document grant, then nearest folder ancestor. One query for the whole page.
+3. **Privacy level.** Ancestor chain parsed from `path`, zero queries.
+4. **Deny.** Most specific wins; highest permission among equals.
+
+### Three surfaces, not one tree
+
+A folder shared with you lives in **someone else's drive** — its parent chain ends at their root, so
+grafting it into yours would mean one item with two parents in two ownership domains.
+
+| Surface | Resolved from |
+|---|---|
+| **My Drive** | `drive_type='user'`, `drive_id=<me>` |
+| **Shared with me** | computed from `mvs_access_grants` over `KEY grantee_user` — no row, nothing can be created in it |
+| **Space drives** | `mvs_document_drive_owners`, one per Space you are an `active` member of |
+
+**Topmost-grant collapsing:** granted both `/Contracts` and `/Contracts/2026`, the surface shows one
+entry — otherwise the same files appear twice and people think they have duplicates. A path-prefix
+comparison in PHP, no extra query.
+
+> **Breadcrumbs are a leak vector.** Open a shared folder and you are inside the owner's tree. A
+> full breadcrumb shows every ancestor **name** above your grant point —
+> `Clients / AcmeCorp-litigation / Contracts` when you were given only *Contracts*. Folder names
+> carry client identities and project codenames.
+>
+> **The breadcrumb starts at the highest ancestor you hold a grant on.** Everything above renders as
+> one non-navigable root crumb, never as names — in templates, in API payloads, everywhere.
+
+### Tightening a folder must cascade
+
+Privacy is resolved with `more_restrictive()` at move time and written to the row, deliberately, so
+tightening a folder later cannot silently *re-expose* files. That blocks the dangerous direction but
+breaks the safe one:
+
+> A member drops ten public documents into `/Working`, realises the folder should be private and
+> switches it. **The ten stay public**, and nothing says so.
+
+Fix: one indexed `UPDATE` over the subtree via `path`. **Tightening cascades; loosening does not** —
+an explicit `private` on a file outranks its container. With a confirmation, because it is a bulk
+permission change: *"Make this folder private? 47 documents inside will also become private."*
+
+### Sharing a folder vs a file
+
+| | Folder grant | Document grant |
+|---|---|---|
+| Row | `target_type='folder'`, `media_id`=`folder_id` | `target_type='media'` |
+| Scope | whole subtree, **including items added later** | that one file |
+| In "Shared with me" | the folder, navigable | the file, flat |
+| Interaction | a document grant **survives** revocation of the folder grant above it | — |
+
+That last row matters: revoking a folder share does not silently strip individual file shares made
+inside it. The share modal shows both.
+
+---
+
+## 6. Storage, delivery and viewers
+
+**Location:** `uploads/wpmediaverse-documents/<random-per-install-segment>/`, protected by
+`.htaccess`, `web.config` and an `index.php` guard. The random segment matters because nginx ignores
+`.htaccess`.
+
+**Two endpoints, different rules:**
+
+| Endpoint | Disposition | Types |
+|---|---|---|
+| `GET /documents/{id}/download` | `attachment`, always | every type |
+| `GET /documents/{id}/preview` | `inline` | **PDF only** — plus server-rendered HTML for tier 2, which is not the file |
+
+```
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'none'; sandbox
+X-Frame-Options: SAMEORIGIN          (preview only — framed by our own viewer)
+Cache-Control: private, no-store
+```
+
+### Viewer tiers
+
+| Tier | Formats | Mechanism | Cost |
+|---|---|---|---|
+| 1 | `.pdf` | existing `pdf-viewer` block → signed URL → browser's native viewer | **0** — the block takes `mediaId` and mints via `SignedUrlService`, both of which work on a document |
+| 2 | `.md`, `.txt`, `.csv` | PHP renders **sanitized HTML**; the browser never receives the original bytes | 0 |
+| 3 | `.docx`, `.xlsx` | fetched as `ArrayBuffer`, parsed **in JS**, sanitized before insertion | ~150 KB / ~400 KB, **lazy on Preview click only** |
+| 4 | legacy `.doc`/`.xls`/`.ppt`, `.pptx`, ODF, `.rtf` | **metadata card + Download.** No broken viewer, no apology text | 0 |
+
+Tier 2 guards: Markdown via a sanitizing renderer with raw HTML never honoured; `.txt` refuses above
+1 MB; `.csv` caps at 500 rows with an honest footer. **Markdown is the single highest-risk item
+here** — it is the easiest place to introduce stored XSS.
+
+Tier 3 output must pass through client-side sanitization (DOMPurify, ~20 KB — not counted in the
+figures above) because a `.docx` can carry embedded HTML.
+
+**Explicitly rejected: Office Online / Google Docs viewers.** Both require the file to be publicly
+reachable on the internet, which destroys the permission model, and both ship customer documents to
+a third party. A self-hosted library that silently uploads private files to Microsoft to draw them
+is not a feature, it is an incident.
+
+**Rejected formats:** HTML, SVG, XML (stored-XSS vectors from your own origin) and `.zip` (out of
+v1). Legacy `.doc`/`.xls`/`.ppt` are accepted as **opaque bytes only** — never parsed, never
+previewed, handed back byte-identical.
+
+### Cloud storage
+
+`StorageService::get_driver_for_privacy()` sends only **public** media to cloud, so documents
+(default `private`) would never use it. Resolution: separate *where it is stored* from *how it is
+delivered*.
+
+| Document privacy | Stored | Delivered |
+|---|---|---|
+| `public` | cloud (if configured) | direct CDN URL |
+| everything else | **cloud (if configured)** | **presigned short-TTL URL**, or gated stream where the driver cannot sign. `url()` is never called |
+
+Signing goes in a **separate optional interface** (`SignedDeliveryInterface`) that drivers opt into —
+adding an abstract method to the published `StorageDriverInterface` would fatal every third-party
+driver on upgrade.
+
+**The trade presigned URLs carry:** permission is evaluated once at mint, so a revoked user's
+unexpired URL still works. Mitigations: 300 s default TTL (`mvs_document_signed_url_ttl`), minted
+per request, **never logged**, and a site setting to force streaming for owners who want
+per-request revocation over CDN performance.
+
+**Bucket visibility is the operational trap.** On cloud the equivalent of the local deny-rules is a
+private bucket — site-owner configuration MediaVerse does not control. A **Site Health check** must
+verify the document bucket is not public-read, following the `wpmediaverse_video_posters` precedent.
+This is the difference between "documents are private" being true and being merely intended.
+
+### No versioning
+
+Per owner decision. The one consequence designed around: a same-name upload creates a **new row**
+("Invoices (2).pdf") rather than overwriting; replacement is an explicit, confirmed action. That
+gives no-versioning semantics without a silent overwrite. Adding real versioning later needs a
+Migrator bump and therefore a minor release.
+
+---
+
+## 7. The BuddyNext seam
+
+BN owns Spaces in `bn_spaces` / `bn_space_members`. **MediaVerse must never query them.**
+`drive_type = 'space'` is an opaque token; every question goes through filters BN answers from its
+`Bridges\WPMediaVerseBridge`:
+
+```php
+apply_filters( 'mvs_document_drive_owners', [], $user_id );
+apply_filters( 'mvs_document_drive_access', false, $drive_type, $drive_id, $user_id );
+apply_filters( 'mvs_document_drive_label',  '',  $drive_type, $drive_id );
+```
+
+The contract must express what BN's model implies: Spaces are typed `open|private|secret` (a
+**secret** Space's drive must 404, never 403); membership carries a status (only `active` is a
+member) and a role (the natural source of the permission level); Spaces are hierarchical, so
+child-Space inheritance is BN's decision through the same filter.
+
+**Frontend-presence policy.** `Core\Plugin` already stands MediaVerse's UI down when
+`mvs_buddynext_active` is true. Documents follow: when BN is active MediaVerse renders no document
+frontend and BN builds its own on the REST API. **MediaVerse's templates are the standalone
+fallback; the REST surface is the product.**
+
+---
+
+## 8. Query discipline — what replaces the structural guarantee
+
+Documents and media share a table, so *"a document never renders in a media grid"* becomes a query
+guarantee. Three mechanisms hold it, and they ship **before any document row can exist**:
+
+1. **One choke point.** `MediaRepository` list/count methods take a type group, defaulting to
+   `MediaTypes::MEDIA`. The document library asks for `MediaTypes::DOCUMENTS` explicitly.
+2. **A one-pass audit.** `mvs_media_index` is named directly in **~50 Free files and ~16 Pro files**
+   outside `MediaRepository` — nine templates and block `render.php` files, plus Pro's
+   `InstagramLayout`, `LeaderboardService`, `ChallengeService`, `StoryService`, `TournamentService`.
+3. **A CI gate.** New rule in `bin/coding-rules-check.sh`: `FROM …mvs_media_index` outside
+   `MediaRepository` without a `media_type` predicate fails the build.
+
+Plus one executable journey: upload a document, assert it appears in the drive and in **no** media
+grid, explore feed, album, collection, lightbox or BP activity stream.
+
+---
+
+## 9. REST surface — `mvs-pro/v1`
+
+```
+GET    /drives                                  drives visible to me
+GET    /folders?drive=user:12&parent=0          folder children
+POST   /folders                                 create
+PATCH  /folders/{id}                            rename / move
+DELETE /folders/{id}                            trash (subtree)
+POST   /folders/{id}/restore                    untrash
+GET    /documents?folder=48&page=1&per_page=50  paginated listing
+POST   /documents                               upload (multipart; doc_type REQUIRED)
+GET    /documents/{id}                          metadata
+PATCH  /documents/{id}                          rename / move / describe
+DELETE /documents/{id}                          trash
+POST   /documents/{id}/restore                  untrash
+POST   /documents/{id}/replace                  explicit replace
+POST   /documents/bulk                          bulk move / trash / download
+GET    /documents/{id}/download                 gated stream (attachment)
+GET    /documents/{id}/preview                  gated preview (inline PDF, or tier-2 HTML as JSON)
+GET    /documents/{id}/permissions              list grants
+POST   /documents/{id}/permissions              grant to user or role
+POST   /documents/{id}/permissions/link         mint link token (raw token returned ONCE)
+DELETE /permissions/{id}                        revoke
+GET    /documents/search?q=…&drive=…            cross-drive full-text search
+GET    /me/shared                               items others have shared with me
+```
+
+**Social actions need no new routes.** Reactions, comments, favourites, stats, reports and tags run
+through Free's existing `/media/{id}/…` family, because a document *is* an `mvs_media_index` row.
+`/me/media` returns documents with a type filter. This is the single largest saving from the
+media-type model.
+
+Every list route returns honest `X-WP-Total` / `X-WP-TotalPages` from a dedicated `COUNT(*)`. Every
+controller extends `WP_REST_Controller` with a real `get_item_schema()`. Auth must work outside the
+cookie/nonce browser context — Application Passwords only.
+
+`/app/config` gains a `documents` block (enabled flag, allowed types, effective max size, preview
+tiers, anonymous-link policy) so **the app never hardcodes the format list**. Max size =
+`min( mvs_pro_documents_max_size, wp_max_upload_size() )`, and that effective number is what the app
+reports — so it rejects an oversized file locally instead of uploading into a `413`.
+
+Pro registers its prefix with `mvs_rest_gated_route_prefixes` so private-community mode covers
+`mvs-pro/v1`.
+
+---
+
+## 10. Frontend, admin and interlinking
+
+**Reuses `media-single.php`** for the document single view — header row, privacy gate, description,
+social bar and inline edit are identical; only the preview panel differs.
+
+**The drive view is rows, not tiles** — icon, name, size, modified, owner. A grid of identical PDF
+icons carries no information. Folders sort above files; the chosen sort applies within each group.
+
+Every screen states its empty, loading and error paths (Coding Rule 11). Notably: an empty shared
+drive a member cannot write to shows **no upload button** — a control they cannot use is a support
+ticket waiting to happen; and a filtered-empty state ("No PDFs in this folder" + Clear filter) is
+distinct from a genuinely empty folder, because conflating them makes people think their files
+vanished.
+
+New `assets/css/documents.css` under CSS file ownership (Rule 12), no inline cosmetic styles
+(Rule 19). Mobile verified at 390px, 40px tap targets.
+
+**Admin** — a Documents screen: list across all drives, filter by drive / owner / type / status,
+sort by size and date, storage totals via `AdminAggregatesService` (never raw `SUM`/`COUNT`), trash
+purge, orphan cleanup. Largely `MediaListPage` with a type-group filter. Admin HTML in
+`templates/admin/` only.
+
+**Interlinking — one product, not two plugins.**
+
+| Never mix | Always interlink |
+|---|---|
+| A document never renders as a tile in a media grid | Documents get a tab in the same dashboard |
+| A document never enters the media lightbox | One search box returns both, grouped |
+| No media template is edited | One activity feed, one notification stream |
+| Folder view is rows; media grid stays tiles | Same reactions, favourites, comments UI |
+
+The precedent exists: Free's `dashboard-view/view.js` already carries `isChallengesTab` /
+`isBattlesTab` for **Pro** features, and nobody experiences gamification as a separate plugin.
+
+> **Fix first:** the dashboard tab seam. `mvs_dashboard_tabs` already exists as
+> `do_action()` (`templates/partials/dashboard-content.php:461`) with two Pro subscribers that echo
+> markup and return nothing. WordPress keeps actions and filters in one registry, so calling
+> `apply_filters()` on that name would print connector markup mid-filter and assign `null` to the
+> tab array. Use a new name (`mvs_dashboard_tab_registry`).
+
+---
+
+## 11. Settings, hooks, capabilities
+
+**Settings** — `mvs_pro_documents_enabled` (default `'0'`), `_allowed_types`, `_max_size`,
+`_default_privacy`, `_anon_links` (default `'0'`), `_link_ttl`.
+
+**Hooks** — actions `mvs_document_uploaded`, `mvs_document_deleted`,
+`mvs_document_permission_granted`, `mvs_folder_created`, `mvs_folder_deleted`; filters
+`mvs_document_allowed_file_types`, `mvs_document_max_size`, `mvs_document_can_view`,
+`mvs_document_max_depth`, `mvs_document_scan_file`, `mvs_document_signed_url_ttl`,
+`mvs_document_root_label`, `mvs_media_type_for_mime`.
+
+**Capabilities** — `mvs_manage_documents` (site drive + admin screens); member access resolves
+through drive ownership and grants.
+
+**Virus scanning** — MediaVerse ships **no scanner**, but must ship the seam:
+`mvs_document_scan_file` returning `WP_Error` to reject, with the outcome in `scan_status`. Shipping
+a document library with no scan hook is the gap a security reviewer finds first.
+
+**Metadata stripping** — more important for documents than photos. `.docx`/`.xlsx` embed author
+names, company, tracked changes and deleted comments; PDFs carry author and editing history. A
+member uploading an invoice can leak their accountant's name. Default on, with the caveat stated in
+the setting: stripping rewrites the file, so the stored copy is not byte-identical.
+
+---
+
+## 12. Big-site readiness
+
+| # | Item | How this design satisfies it |
+|---|---|---|
+| 1 | Pagination | `LIMIT`/`OFFSET` + `COUNT(*)` on every list route |
+| 2 | Indexes | `KEY doc_listing` **is** the drive query verbatim; `KEY subtree` backs the prefix scan |
+| 3 | N+1 | permission resolution 2 queries/page; counts 1 `GROUP BY` per page |
+| 4 | `COUNT(*)` | dedicated count methods, never `count()` over a result set |
+| 5 | Filter + sort | drive, folder, type (`KEY type_file`), status, owner |
+| 6 | Mobile + RTL | tokens, `margin-inline-*`, rows stack under 480px, verified at 390px |
+| 7 | Dark mode | tokens only, no raw hex |
+| 8 | A11y | semantic markup, ARIA on icon-only buttons, keyboard-reachable tree |
+| 9 | Empty / error / loading | every async surface |
+| 10 | Caching | folder children and grant resolution cached per request, invalidated on write |
+| 11 | Concurrency | `UNIQUE KEY name_in_parent`; already-deleted / already-moved handled gracefully |
+
+---
+
+## 13. Measured against Google Drive for a team
+
+Parity is wide — nested folders, per-file **and** per-folder grants with inheritance, link sharing
+with expiry and revocation, full-text search inside files, trash/restore, comments, @mentions, bulk
+ops, download tracking, a mobile client. **Ahead of Drive:** duplicate detection on `file_hash`, the
+virus-scan seam, metadata stripping (Drive does not strip), and self-hosting — no third-party
+processor, which for a team handling contracts is the entire reason not to use Drive.
+
+**Five gaps would hurt a real team. One loses data.**
+
+| # | Gap | What happens | Fix |
+|---|---|---|---|
+| T1 | **A departing member takes the team's files** | Files belong to the uploader and the `deleted_user` cascade purges them. Someone uploads 200 files to a Space drive, deletes their account, the drive loses all 200. **This is exactly why Google built Shared Drives** | A branch in the cascade: purge personal-drive documents, reassign team-drive ones. No schema |
+| T2 | **Tightening a folder doesn't tighten its contents** | Folder goes private, the public documents inside stay public, silently | One indexed `UPDATE` (§5) |
+| T3 | **Who may share is undefined** | The natural-looking choice — "edit implies share" — lets any editor mint an anonymous link to a contract | Drive owner / drive-admin only for v1. A fourth `manage` level fits the existing column later |
+| T4 | **Space drives have no storage ceiling** | The abuse hole this design's own quota section rules out | Drive-level allowance keyed on `(drive_type, drive_id)` |
+| T5 | **"Shared with me" surface** | A file shared from a private drive is unreachable if the notification is missed | Designed — §5. No schema |
+
+**Deliberate divergences.** No version history (owner decision — but for teams this is the
+most-used recovery path, so consider keeping the superseded file 30 days as an admin-restorable
+undo: meta plus a cron sweep, no schema). One folder per file, no shortcuts. Fewer preview formats
+— which is a feature, given why Office Online was rejected.
+
+---
+
+## 14. Build order
+
+| # | Phase | Effort |
+|---|---|---|
+| 0 | **Decisions** — T3 grant authority, T4 team quota, replace-undo. No code | — |
+| 1 | Query discipline: choke point, ~66-file audit, CI rule, journey — **before any document row exists** | ~2 d |
+| 2 | Schema (Free v27, Pro v11) + `MediaTypes` + `get_media_type()` allowlist + legacy quarantine | ~1.5 d |
+| 3 | Pro engine: `DocumentTypes`, upload path, `mvs_pro_folders` + `FolderService`, `PermissionService`, delivery, cloud + presigned + Site Health, WP-CLI seed | ~7 d |
+| 3b | Team-drive correctness: deletion-cascade branch (T1), privacy cascade (T2), grant authority (T3), trash retention | ~2 d |
+| 4 | REST + app contract, `/app/config`, ETags, Application-Password verification, `/me/shared` | ~3.5 d |
+| 5 | Viewers — tiers 2/3/4 (tier 1 free) | ~4 d |
+| 6 | Admin screen | ~1.5 d |
+| 7 | Parity **verification** — social/GDPR/quota/moderation already work; prove it | ~1 d |
+| 8 | Text extraction (async, via Action Scheduler following `StorageRepairService`) + search | ~3 d |
+| 9 | Frontend: drive, single view, overlay, share modal, three virtual roots | ~5 d |
+| 10 | Interlinking | ~2 d |
+| 11 | Space drives | ~2 d |
+| | **Total** | **~34.5 d** |
+
+**Phase 1 ships before any document row exists** — the media-grid guarantee is a query guarantee
+now, so the choke point and CI rule land while there is nothing to leak.
+
+**Phase 0 is not optional.** T3 and T4 both change what `PermissionService` and the upload path do;
+deciding them after Phase 3 means rewriting Phase 3.
+
+**Nothing member-visible ships before Phase 9.** Phases 1–8 leave the feature reachable by API and
+admin only — the half-cooked state Coding Rule 18 forbids.
+
+---
+
+## 15. Verification (blocking)
+
+- **No explicit `media_id` is ever inserted**; creating a folder writes **zero** `mvs_media_index` rows
+- **The `media_type=''` row stays out of both libraries**; no list query uses `media_type != …`
+- **No document in any media surface** — explore grid, album, collection, lightbox, BP activity,
+  `/media`, `/me/media`, Instagram layout, leaderboard, challenges, stories, tournaments
+- **Zero folder rows** on a 1,000-member fixture where nobody created a folder
+- **`name_in_parent` holds under concurrency** — two simultaneous "Invoices" produce one row
+- **`token_hash` UNIQUE add succeeds** on a table with existing grant rows
+- **`DocumentTypes::resolve()` returns `null`** for every media MIME and for junk
+- **`.docx` renamed `.zip` rejected; `.zip` renamed `.docx` rejected** — both directions
+- Declared `doc_type` disagreeing with the resolved type → `400`, never a silent fix
+- Legacy `.doc`/`.xls` round-trip byte-identical
+- **Markdown XSS**: an `.md` containing `<script>`, `<img onerror>` and a `javascript:` link renders inert
+- **CSV with 50,000 rows** renders the first 500 with an honest footer, does not hang
+- **`/preview` refuses every non-PDF raw type**
+- **Lazy bundles absent from the main page load** — verified in the network panel, not the build config
+- **Preview failure never blocks download** — corrupt a `.docx`, confirm card + working download
+- **Breadcrumbs truncate at the grant point** — a member granted `/Contracts` never sees an ancestor name in any response
+- **A departing member does not take the team's files** (T1) — seed both drive types from one uploader, delete the user
+- **Tightening cascades; loosening does not** (T2)
+- **Direct-URL fetch of a stored file returns 403/404 on both Apache and nginx**
+- Permission matrix per role × drive type × grant type — owner, shared-user, shared-role, link, anonymous, non-member, logged-out
+- **Every action drivable with an Application Password alone** — no cookies, no nonce
+- 2000-document drive + 20-level tree: listing paginated, query count flat
+- **390px browser verification of every screen**, per item, not batched
+
+---
+
+## 16. Open decisions
+
+1. **T3 — who may grant access?** Recommend: drive owner / drive-admin only in v1.
+2. **T4 — quota for Space and site drives.** `QuotaService` is per-user with no non-user branch.
+3. **Replace is permanent** — accept, or keep the superseded file 30 days as an admin-restorable undo?
+4. **Anonymous links under private-community mode.** `CommunityPrivacyGate` 401s the whole namespace
+   when `mvs_rest_require_auth` is armed, and BuddyNext arms it — so anonymous links are dead on the
+   only stated consumer. Recommend: disable them whenever the gate is armed, and say so in the UI.
+5. **Rate limiting.** `RateLimiter` has zero call sites in Pro, and anonymous link redemption is an
+   unauthenticated exact-match token lookup. **Not optional if anonymous links ship.**
+6. **One tag vocabulary or two?** Documents can reuse `mvs_tag` / `mvs_category` at zero cost now.
+7. **Presigned delivery vs download analytics** — a CDN-served download is invisible to
+   `mvs_media_views`. Accept, or force streaming when tracking is on?
+
+**Delegated to BuddyNext** (not blocking): whether every Space gets a drive, whether `secret` Spaces
+get drives, child-Space inheritance, whether `moderator` implies `edit`, whether a plain `member`
+may upload. MediaVerse's only obligation is that the filter contract can express whatever BN
+decides — which is why `mvs_document_drive_access` returns a permission, not a boolean.
