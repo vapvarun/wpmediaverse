@@ -134,7 +134,7 @@ wp_mvs_document_search        │        (NEW — search index, documents only)
   media_id      PK ◄──────────┤        one row per document, FULLTEXT lives
   search_text, updated_at     │        here, never on the hot index table
                               │
-wp_mvs_pro_folders            │        (NEW — the only new table)
+wp_mvs_pro_folders            │        (NEW — 1 of 2 new tables)
   folder_id     PK ◄──────────┘
   parent_id     ──┐ self-referencing, 0 = drive root (virtual)
   folder_id     ◄─┘
