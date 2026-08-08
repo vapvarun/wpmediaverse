@@ -64,15 +64,20 @@ required**, all applied above:
    answer as an on-demand `GROUP BY`, no counter, because that is the first support question a
    quota site asks after launch (§17).
 
-Also recorded, not plan changes: the §8 CI rule should **ban** direct `FROM mvs_media_index` outside
-`MediaRepository` (explicit allowlist) rather than merely require a `media_type` predicate — the
-trashed-media leak (Basecamp 10180901914) was exactly a hand-built query missing one clause, and the
-predicate-only rule would not have caught it. The rule must be mutation-tested before it is trusted:
-add a document-blind query, watch CI fail by name. And D4's guarantee leans on `CommunityPrivacyGate`
-staying closed — when the link-redemption route lands it must NOT join the gate's exempt list on a
-private community, which deserves a pinning test, because "just exempt the new route" is precisely
-the change a future fix will reach for (the sibling BN gate shipped that exact hole for its PWA and
-payment routes).
+**Both items the scale review recorded rather than changed have now been applied**, because both
+were right:
+
+5. **The §8 CI rule now BANS direct `FROM mvs_media_index` outside `MediaRepository`** with an
+   explicit allowlist, instead of merely requiring a `media_type` predicate — and it is
+   mutation-tested before it is trusted. The evidence settles it: the trashed-media leak
+   (`68113454`, Basecamp 10180901914) was a hand-built feed query whose `WHERE` **already contained
+   a `media_type` predicate** (`media_type != ''`) and was missing `status = 'publish'`. A
+   predicate-checking rule passes that query clean. It would have bought false confidence in the one
+   gate that replaced a structural guarantee. Detail in §8.
+6. **D4 is pinned by a test** asserting the link-redemption route never joins
+   `CommunityPrivacyGate`'s exempt set while the gate is armed — the sibling BuddyNext gate shipped
+   exactly that hole for its PWA and payment routes, and "just exempt the new route" is the change a
+   future fix reaches for. Detail in §17 D4.
 
 ---
 
@@ -655,8 +660,33 @@ guarantee. Three mechanisms hold it, and they ship **before any document row can
 2. **A one-pass audit.** `mvs_media_index` is named directly in **~50 Free files and ~16 Pro files**
    outside `MediaRepository` — nine templates and block `render.php` files, plus Pro's
    `InstagramLayout`, `LeaderboardService`, `ChallengeService`, `StoryService`, `TournamentService`.
-3. **A CI gate.** New rule in `bin/coding-rules-check.sh`: `FROM …mvs_media_index` outside
-   `MediaRepository` without a `media_type` predicate fails the build.
+3. **A CI gate that BANS the query, not one that inspects it.** New rule in
+   `bin/coding-rules-check.sh`: `FROM …mvs_media_index` outside `MediaRepository` **fails the
+   build**, full stop, with an explicit allowlist for the call sites that genuinely need raw SQL.
+
+   > **Why banning, not "require a `media_type` predicate"** (scale review, 2026-08-08, and the
+   > evidence is three commits back in this repo). The trashed-media leak — `68113454`, Basecamp
+   > 10180901914 — was a hand-built feed query that returned items the owner had trashed, with a
+   > working signed URL, to the feed **and the mobile app**. Its `WHERE` was:
+   >
+   > ```php
+   > $where = array( 'moderation_status = %s', "media_type != ''" );   // status = 'publish' missing
+   > ```
+   >
+   > **It had a `media_type` predicate.** A predicate-checking rule passes it clean. The fault was a
+   > *different* missing clause, and no realistic static rule enumerates every clause a correct
+   > query needs. A predicate rule would have bought false confidence — the worst outcome for a gate,
+   > because it is trusted.
+   >
+   > Note also what that predicate was: `media_type != ''`, an exclusion. Under the document library
+   > it would have returned documents into the media feed, which is the failure this whole section
+   > exists to prevent. The rule that catches that is not a better predicate — it is not letting the
+   > query be written outside the repository at all.
+
+4. **The gate is mutation-tested before it is trusted.** Add a deliberately document-blind query to a
+   branch, confirm CI fails **and names the file**, then remove it. A rule nobody has watched fail is
+   a rule nobody knows works — and this one is load-bearing, because it is what replaced a structural
+   guarantee.
 
 Plus one executable journey: upload a document, assert it appears in the drive and in **no** media
 grid, explore feed, album, collection, lightbox or BP activity stream.
@@ -1017,6 +1047,12 @@ is punched through the gate.
 *Why:* exempting the redemption route would open the one hole through a gate whose entire purpose is
 "no unauthenticated reads". A control that is visibly unavailable with a reason beats one that
 silently fails.
+
+**Pinned by a test, because "just exempt the new route" is what a future fix reaches for.** When the
+redemption route lands, a test asserts it is **not** in `mvs_rest_gated_route_prefixes`' exempt set
+while `mvs_rest_require_auth` is armed. This is not hypothetical: the sibling BuddyNext gate shipped
+exactly that hole for its PWA and payment routes. The guarantee here rests entirely on the gate
+staying closed, so the thing that would quietly open it is the thing to pin.
 
 ### D5 — Rate limiting on link redemption ships with anonymous links, or anonymous links do not ship
 
