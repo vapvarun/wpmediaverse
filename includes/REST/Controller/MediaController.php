@@ -7,6 +7,8 @@
 
 namespace WPMediaVerse\REST\Controller;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 use WP_Error;
@@ -369,10 +371,11 @@ class MediaController extends WP_REST_Controller {
 		$media_type = $request->get_param( 'media_type' );
 		$author     = $request->get_param( 'author' );
 
-		// media_type != '' excludes the privacy-only stub rows albums/collections
-		// leave in mvs_media_index (media_type empty — see PrivacyService). Without
-		// it the /media feed (and the mobile app that reads it) returned those
-		// stubs as empty items. Same fix as the media-grid block. Basecamp 10074442944.
+		// The old media_type != '' guard existed to hide the privacy-only stub rows
+		// albums and collections used to leave in mvs_media_index (Basecamp
+		// 10074442944). Migrator v26 evicted those rows entirely, so that job is done;
+		// what replaces it below is a positive type group, which is a different and
+		// stronger guarantee.
 		// status = 'publish' is NOT optional here, and its absence is why a trashed
 		// item kept appearing at the top of the feed with a working signed URL: the
 		// owner removed it and every member -- and the mobile app, which reads this
@@ -384,8 +387,28 @@ class MediaController extends WP_REST_Controller {
 		// items instead. MediaRepository's shared query builder already defaults to
 		// exactly this, which is why the slug lookup and the album-items query were
 		// never affected -- this route hand-builds its WHERE and simply omitted it.
-		$where  = array( 'status = %s', 'moderation_status = %s', "media_type != ''" );
+		$where  = array( 'status = %s', 'moderation_status = %s' );
 		$params = array( 'publish', 'approved' );
+
+		// POSITIVE INCLUSION, never exclusion. This clause used to read
+		// media_type != '' — which answered "what do I not want today" and passed
+		// every future type straight through. `document` rows would have landed in
+		// this feed, and in the mobile app that reads the same route, without a line
+		// of code changing. The trashed-media leak (68113454) was the same shape: it
+		// too carried a media_type predicate and still leaked.
+		//
+		// An explicit ?media_type= is honoured — that is how a document surface asks
+		// for documents — but it is validated against the known vocabulary rather
+		// than passed through, so an unknown value narrows to nothing instead of
+		// silently widening the feed.
+		if ( $media_type && MediaTypes::is_known( (string) $media_type ) ) {
+			$where[]  = 'media_type = %s';
+			$params[] = sanitize_text_field( (string) $media_type );
+		} else {
+			list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA );
+			$where[]                                = $mvs_type_sql;
+			$params                                 = array_merge( $params, $mvs_type_params );
+		}
 
 		// Privacy filtering via index table.
 		if ( ! $user_id ) {
@@ -394,11 +417,6 @@ class MediaController extends WP_REST_Controller {
 		} elseif ( ! user_can( $user_id, 'moderate_mvs_media' ) ) {
 			$where[]  = "(privacy = 'public' OR privacy = 'members' OR post_author = %d)";
 			$params[] = $user_id;
-		}
-
-		if ( $media_type ) {
-			$where[]  = 'media_type = %s';
-			$params[] = sanitize_text_field( $media_type );
 		}
 
 		if ( $author ) {
@@ -690,12 +708,19 @@ class MediaController extends WP_REST_Controller {
 
 		// Query group members from mvs_media_meta custom table.
 		global $wpdb;
+		// Type group, not an exclusion. This feeds the gallery lightbox, which steps
+		// through members with prev/next — a document has nothing to render there, so
+		// it must not be reachable by arrowing off the end of a photo.
+		list( $mvs_group_type_sql, $mvs_group_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA, 'mi.media_type' );
+
 		$group_media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT mm.media_id FROM {$wpdb->prefix}mvs_media_meta mm
 				INNER JOIN {$wpdb->prefix}mvs_media_index mi ON mm.media_id = mi.media_id
-				WHERE mm.meta_key = 'media_group' AND mm.meta_value = %s AND mi.status = 'publish'", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$group_id
+				WHERE mm.meta_key = 'media_group' AND mm.meta_value = %s AND mi.status = 'publish'
+				  AND {$mvs_group_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$group_id,
+				...$mvs_group_type_params
 			)
 		);
 
