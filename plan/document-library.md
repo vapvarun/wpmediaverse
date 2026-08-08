@@ -473,7 +473,7 @@ delivered*.
 | Document privacy | Stored | Delivered |
 |---|---|---|
 | `public` | cloud (if configured) | direct CDN URL |
-| everything else | **cloud (if configured)** | **presigned short-TTL URL**, or gated stream where the driver cannot sign. `url()` is never called |
+| everything else | **cloud (if configured)** | **gated stream by default** (D7). Presigned short-TTL URL only when the owner opts in; where a driver cannot sign, always streamed. `url()` is never called |
 
 Signing goes in a **separate optional interface** (`SignedDeliveryInterface`) that drivers opt into —
 adding an abstract method to the published `StorageDriverInterface` would fatal every third-party
@@ -673,6 +673,13 @@ the setting: stripping rewrites the file, so the stored copy is not byte-identic
 
 ## 13. Measured against Google Drive for a team
 
+> **Read this as a checklist of collaboration behaviours users will expect, not as a product to
+> clone.** Google Drive is a hosted service with a billing entity, an org directory and an admin
+> console. This is a WordPress plugin: the site owner owns the disk, membership plugins own the
+> tiers, and anything that would need a subsystem WordPress does not have gets a filter instead.
+> Where a Drive behaviour does not map — team storage metering being the clearest case — it is
+> **not adopted**, and the reason is recorded rather than the gap being left open.
+
 Parity is wide — nested folders, per-file **and** per-folder grants with inheritance, link sharing
 with expiry and revocation, full-text search inside files, trash/restore, comments, @mentions, bulk
 ops, download tracking, a mobile client. **Ahead of Drive:** duplicate detection on `file_hash`, the
@@ -686,7 +693,7 @@ processor, which for a team handling contracts is the entire reason not to use D
 | T1 | **A departing member takes the team's files** | Files belong to the uploader and the `deleted_user` cascade purges them. Someone uploads 200 files to a Space drive, deletes their account, the drive loses all 200. **This is exactly why Google built Shared Drives** | A branch in the cascade: purge personal-drive documents, reassign team-drive ones. No schema |
 | T2 | **Tightening a folder doesn't tighten its contents** | Folder goes private, the public documents inside stay public, silently | One indexed `UPDATE` (§5) |
 | T3 | **Who may share is undefined** | The natural-looking choice — "edit implies share" — lets any editor mint an anonymous link to a contract | Drive owner / drive-admin only for v1. A fourth `manage` level fits the existing column later |
-| T4 | **Space drives have no storage ceiling** | The abuse hole this design's own quota section rules out | Drive-level allowance keyed on `(drive_type, drive_id)` |
+| T4 | **Space drives have no storage ceiling** | Google meters shared-drive storage against the org | **Not adopted — D2.** Google is a hosted service with a billing entity per workspace; a WordPress site owner owns the disk. Every upload counts against the uploading member's existing quota, which is what the membership adapters already meter. A per-Space cap is a filter, not a subsystem |
 | T5 | **"Shared with me" surface** | A file shared from a private drive is unreachable if the notification is missed | Designed — §5. No schema |
 
 **Deliberate divergences.** No version history (owner decision — but for teams this is the
@@ -700,7 +707,7 @@ undo: meta plus a cron sweep, no schema). One folder per file, no shortcuts. Few
 
 | # | Phase | Effort |
 |---|---|---|
-| 0 | **Decisions** — T3 grant authority, T4 team quota, replace-undo. No code | — |
+| 0 | ~~Decisions~~ **LOCKED — see §17.** No code | — |
 | 1 | Query discipline: choke point, ~66-file audit, CI rule, journey — **before any document row exists** | ~2 d |
 | 2 | Schema (Free v27, Pro v11) + `MediaTypes` + `get_media_type()` allowlist + legacy quarantine | ~1.5 d |
 | 3 | Pro engine: `DocumentTypes`, upload path, `mvs_pro_folders` + `FolderService`, `PermissionService`, delivery, cloud + presigned + Site Health, WP-CLI seed | ~7 d |
@@ -718,8 +725,9 @@ undo: meta plus a cron sweep, no schema). One folder per file, no shortcuts. Few
 **Phase 1 ships before any document row exists** — the media-grid guarantee is a query guarantee
 now, so the choke point and CI rule land while there is nothing to leak.
 
-**Phase 0 is not optional.** T3 and T4 both change what `PermissionService` and the upload path do;
-deciding them after Phase 3 means rewriting Phase 3.
+**Phase 0 is closed.** All seven decisions are locked in §17 (2026-08-08). They changed what
+`PermissionService` and the upload path do, which is why they had to be settled before Phase 3
+rather than during it.
 
 **Nothing member-visible ships before Phase 9.** Phases 1–8 leave the feature reachable by API and
 admin only — the half-cooked state Coding Rule 18 forbids.
@@ -783,21 +791,123 @@ one of them is not shippable, regardless of what else is done.
 
 ---
 
-## 17. Open decisions
+## 17. Phase 0 decisions — LOCKED 2026-08-08
 
-1. **T3 — who may grant access?** Recommend: drive owner / drive-admin only in v1.
-2. **T4 — quota for Space and site drives.** `QuotaService` is per-user with no non-user branch.
-3. **Replace is permanent** — accept, or keep the superseded file 30 days as an admin-restorable undo?
-4. **Anonymous links under private-community mode.** `CommunityPrivacyGate` 401s the whole namespace
-   when `mvs_rest_require_auth` is armed, and BuddyNext arms it — so anonymous links are dead on the
-   only stated consumer. Recommend: disable them whenever the gate is armed, and say so in the UI.
-5. **Rate limiting.** `RateLimiter` has zero call sites in Pro, and anonymous link redemption is an
-   unauthenticated exact-match token lookup. **Not optional if anonymous links ship.**
-6. **One tag vocabulary or two?** Documents can reuse `mvs_tag` / `mvs_category` at zero cost now.
-7. **Presigned delivery vs download analytics** — a CDN-served download is invisible to
-   `mvs_media_views`. Accept, or force streaming when tracking is on?
+Owner sign-off. These were the five that change `PermissionService` or the upload path, so deciding
+them mid-build would mean rewriting Phase 3. They are decisions now, not recommendations — build
+against them.
 
-**Delegated to BuddyNext** (not blocking): whether every Space gets a drive, whether `secret` Spaces
-get drives, child-Space inheritance, whether `moderator` implies `edit`, whether a plain `member`
-may upload. MediaVerse's only obligation is that the filter contract can express whatever BN
-decides — which is why `mvs_document_drive_access` returns a permission, not a boolean.
+### D1 — Only the drive owner or a drive-admin may grant access
+
+`view | comment | edit` say what a grantee can do with the item. **None of them confer the right to
+hand access to someone else.** Granting, and minting a link, require drive ownership,
+`mvs_manage_documents`, or a Space role BN resolves as owner/moderator.
+
+*Why:* the natural-looking alternative — "edit implies share" — means any editor can mint an
+anonymous link to a contract. On a Space drive with dozens of members that is one bad day away from
+an incident. Google separates these roles for the same reason, and most Workspace admins turn
+editor-sharing off.
+
+*Implementation:* one check in the permission callback for `POST /documents/{id}/permissions` and
+`…/permissions/link`. A fourth `manage` level fits the existing `permission varchar(10)` column
+later without a migration — **widening is additive; narrowing takes something away from people who
+had it**, so start narrow.
+
+### D2 — No separate drive quota. Every upload counts against the uploader
+
+**Corrected 2026-08-08.** An earlier draft proposed a drive-level allowance keyed on
+`(drive_type, drive_id)`, possibly with its own table. That was SaaS thinking — metering a workspace
+tier — and it does not belong in a WordPress plugin.
+
+`QuotaService` is per-user **by design**: it exists so a site owner can tie upload allowance to a
+membership level, which is exactly what the MemberPress / PMPro / WooCommerce adapters in
+`Integrations/` do. A Space is not a billing entity. There is no WordPress concept a drive-level
+allowance would map to, and inventing one means a new table for a limit nobody asked for.
+
+**So: an upload to a Space or site drive counts against the uploading member's existing quota**, the
+same as an upload to their own drive. Nothing new to store, nothing new to configure, and the
+membership adapters keep working untouched.
+
+*The abuse hole this closes anyway:* every upload is charged to a real person at the moment it
+happens. D5's reassignment only moves *ownership of the file* when a member is deleted — long after
+the storage was accounted for — so it opens no gap.
+
+*If a site owner does want to cap a particular Space,* that is a filter
+(`mvs_document_upload_allowed`, returning `WP_Error`), not a schema feature. Ship the seam, not the
+subsystem.
+
+### D3 — Replace keeps the superseded file for 30 days, admin-restorable
+
+No version history stands. But "replace" is currently the only irreversible action in the product,
+and *"the edit was wrong, give me yesterday's file"* is the case teams hit most.
+
+On `POST /documents/{id}/replace`, the superseded file stays on disk under a `_mvs_replaced_from`
+meta key with a timestamp, swept by cron after 30 days (filterable). An admin can restore it. **This
+is an undo, not versioning** — one step back, no history UI, no version table, no schema.
+
+*Why:* it removes the only unrecoverable member action for the cost of a meta key and a cron sweep.
+Adding real versioning later still needs a Migrator bump and a minor release; this does not.
+
+### D4 — Anonymous links are disabled whenever private-community mode is armed
+
+`CommunityPrivacyGate` 401s the whole namespace when `mvs_rest_require_auth` is on, and BuddyNext
+arms it. So on a private BN community — the only stated consumer — an anonymous link cannot work
+regardless of what the setting says.
+
+**When the gate is armed, the anonymous option is absent from the share modal**, not
+present-and-broken, and the site setting reads as unavailable with the reason stated. No exemption
+is punched through the gate.
+
+*Why:* exempting the redemption route would open the one hole through a gate whose entire purpose is
+"no unauthenticated reads". A control that is visibly unavailable with a reason beats one that
+silently fails.
+
+### D5 — Rate limiting on link redemption ships with anonymous links, or anonymous links do not ship
+
+`RateLimiter` exists in Free and has **zero call sites in Pro**. Anonymous link redemption is an
+unauthenticated exact-match lookup on `token_hash` — hashing protects a database leak, and does
+nothing against guessing.
+
+**`RateLimiter::check()` on the redemption route is a hard prerequisite for D4's feature.** Also
+metered: upload, download, and tier-2 preview (which runs server-side parsing per request and is
+cheap to spam).
+
+### D6 — Documents reuse `mvs_tag` and `mvs_category`
+
+With one ID space there is no correctness argument for separate vocabularies, and one vocabulary
+makes unified search (§10) simpler. Revisit only if a shared tag cloud proves noisy in practice.
+
+### D7 — Gated streaming is the default; presigned CDN delivery is opt-in
+
+**Corrected 2026-08-08.** An earlier draft made presigned CDN URLs the default and counted downloads
+at mint time, calling the metric "URLs issued, not bytes delivered". That is a hosted-service
+answer. A WordPress plugin has to work on shared hosting with no cloud configured at all.
+
+**Default: the gated endpoint streams the file**, exactly as `/serve` already does for private
+media. It needs no cloud configuration, re-checks permission on every request, and records an honest
+download in `mvs_media_views` (`event_type='download'`, a value the column already carries).
+
+**Presigned CDN delivery is opt-in**, for owners who have cloud storage configured and want the
+bandwidth off their origin. Turning it on carries a documented trade, stated in the setting itself:
+permission is evaluated once at mint rather than per request, and downloads served from the edge are
+not counted.
+
+*Why this way round:* the default should be the one that works everywhere and tells the truth. An
+owner who opts into CDN delivery has made an informed trade; an owner on shared hosting should never
+have to discover that their download numbers are approximate because of a default they did not
+choose.
+
+---
+
+## 18. Still delegated to BuddyNext
+
+Not blocking. MediaVerse holds an opaque drive id and asks; it does not need the answers to build.
+
+1. Does every Space get a drive automatically, or does a Space owner enable it?
+2. Do `secret` Spaces get drives at all? (If so, an unauthorized caller gets **404, never 403**.)
+3. Does a child Space inherit its parent's drive?
+4. Does `moderator` imply `edit`? May a plain `member` upload, or only read?
+
+MediaVerse's only obligation is that the filter contract can express whatever BN decides — which is
+why `mvs_document_drive_access` takes `($drive_type, $drive_id, $user_id)` and returns a permission
+rather than a boolean.
