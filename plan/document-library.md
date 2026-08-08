@@ -11,8 +11,29 @@
 > `git log`. If you are reviewing this feature, read only this file.
 
 **Hard dependency:** the album/collection ID-collision fix
-(`plan/2026-08-08-cpt-id-collision-fix-plan.md`, 2.4.0-dev) **must ship first or alongside.** This
+(`plan/2026-08-08-cpt-id-collision-fix-plan.md`, on the 2.3.3 branch) **must ship first or alongside.** This
 design puts documents into `mvs_media_index`, and that fix is what makes the ID space safe to share.
+
+### Team review, 2026-08-08 — adopted
+
+An independent review of this plan found **two real schema defects**, both now fixed above:
+
+1. **`UNIQUE KEY name_in_parent` was wrong.** Keyed on `(parent_id, name)` alone, every drive root
+   shares `parent_id = 0`, so two members creating "Invoices" at their own root would collide and
+   the second insert would fail. Now `(drive_type, drive_id, parent_id, name(150))`.
+2. **`KEY grantee_user` did not exist.** The "Shared with me" query was written against an index
+   carried over from an abandoned table design, so it had nothing behind it. Added explicitly to
+   the schema delta as `KEY grantee`.
+
+Also adopted: the five items in §15 are now stated as **release blockers** rather than
+recommendations; a **v1 cut** is stated in §14 (personal drives first, Space drives as the
+follow-on); and §14 now warns that `search_text` lands in the schema six phases before extraction
+fills it, so the UI must not imply search works at first enable.
+
+The review confirmed the core as written — documents as a `media_type`, `folder_id` separate from
+`album_id`, the virtual root, killing the MIME catch-all, the query choke point before any document
+row, no Office Online viewers, `token_hash DEFAULT NULL`, a new dashboard tab registry, the
+`/app/config` documents block, and Application-Password-only auth.
 
 ---
 
@@ -117,7 +138,7 @@ CREATE TABLE {p}mvs_pro_folders (
   KEY drive    (drive_type, drive_id, parent_id, status),
   KEY parent   (parent_id, status),
   KEY subtree  (drive_type, drive_id, path(150)),
-  UNIQUE KEY name_in_parent (parent_id, name(191))
+  UNIQUE KEY name_in_parent (drive_type, drive_id, parent_id, name(150))
 ) {charset_collate};
 
 ALTER TABLE {p}mvs_access_grants ADD COLUMN target_type  varchar(10) NOT NULL DEFAULT 'media';
@@ -127,13 +148,14 @@ ALTER TABLE {p}mvs_access_grants ADD COLUMN permission   varchar(10) NOT NULL DE
 ALTER TABLE {p}mvs_access_grants ADD COLUMN token_hash   varchar(64) DEFAULT NULL;   -- NULL, not ''
 ALTER TABLE {p}mvs_access_grants ADD UNIQUE KEY token_hash (token_hash);
 ALTER TABLE {p}mvs_access_grants ADD KEY target (target_type, media_id);
+ALTER TABLE {p}mvs_access_grants ADD KEY grantee (grantee_type, user_id, grantee_role(60));
 ```
 
 > **Migration trap:** `token_hash` must be `DEFAULT NULL`. With `DEFAULT ''` every existing grant
 > row takes the same value and `ADD UNIQUE KEY` fails on the duplicates. MySQL exempts NULL from
 > UNIQUE. This would fail the migration on every site that has ever sold media access.
 
-**Totals: 1 new table, 2 new columns, 3 new indexes, 5 columns + 2 indexes on `mvs_access_grants`.**
+**Totals: 1 new table, 2 new columns, 3 new indexes, 5 columns + 3 indexes on `mvs_access_grants`.**
 No key rewrites, no PRIMARY KEY rebuilds, no backfills, no `wp_posts` rows.
 
 ### Why `folder_id` and not a reuse of `album_id`
@@ -256,7 +278,7 @@ and a race rule, four mechanisms that existed only to represent an absence.
 | Breadcrumbs | parsed from `path` — **zero queries** |
 | Children | `KEY drive` |
 | Subtree (delete, move, count) | `KEY subtree` → one `LIKE '/12/48/%'` |
-| Name collision in one parent | `UNIQUE KEY name_in_parent` — **enforced by the database**, race-proof |
+| Name collision in one parent | `UNIQUE KEY name_in_parent (drive_type, drive_id, parent_id, name(150))` — **enforced by the database**, race-proof. The drive columns are not optional: every drive root uses `parent_id = 0`, so keying on `(parent_id, name)` alone would make two members creating "Invoices" at their own root collide. `name(150)` keeps the key under the 767-byte InnoDB COMPACT limit (42 + 8 + 8 + 600 = 658) so it holds on hosts that have not moved to DYNAMIC row format |
 | Depth cap | `depth` + filter `mvs_document_max_depth` (default 20), keeping `path` in varchar(255) |
 | Rename / move | one `UPDATE` rewriting the subtree `path` prefix |
 | Routing | Pro page + rewrite, following `Frontend\GamificationTemplateLoader` |
@@ -355,7 +377,7 @@ grafting it into yours would mean one item with two parents in two ownership dom
 | Surface | Resolved from |
 |---|---|
 | **My Drive** | `drive_type='user'`, `drive_id=<me>` |
-| **Shared with me** | computed from `mvs_access_grants` over `KEY grantee_user` — no row, nothing can be created in it |
+| **Shared with me** | computed from `mvs_access_grants` over the new `KEY grantee` — no row, nothing can be created in it |
 | **Space drives** | `mvs_document_drive_owners`, one per Space you are an `active` member of |
 
 **Topmost-grant collapsing:** granted both `/Contracts` and `/Contracts/2026`, the surface shows one
@@ -702,9 +724,37 @@ deciding them after Phase 3 means rewriting Phase 3.
 **Nothing member-visible ships before Phase 9.** Phases 1–8 leave the feature reachable by API and
 admin only — the half-cooked state Coding Rule 18 forbids.
 
+### The v1 cut
+
+~34.5 d is a large surface to hold open. **Ship personal drives first:** phases 0–10 minus Space
+drives — personal drive, sharing, REST, viewers, search, frontend, interlinking. **Phase 11 (Space
+drives) is the follow-on.** The schema carries `drive_type` / `drive_id` from day one, so nothing
+has to be rebuilt; only the resolver and BN's bridge land later. That also defers the two
+team-drive questions (T1 reassignment, T4 quota) to the phase that actually needs them.
+
+**`search_text` lands in the schema at phase 2; extraction lands at phase 8.** Between those, the
+column exists and is empty. Do not let the UI imply search works at first enable — the search box
+should be absent, or say "indexing" until extraction has run. A search that silently returns
+nothing reads as broken.
+
 ---
 
-## 15. Verification (blocking)
+## 15. Release blockers
+
+Team review, 2026-08-08: these are **release blockers, not polish**. A build that ships without any
+one of them is not shippable, regardless of what else is done.
+
+| | Blocker | Why it is not optional |
+|---|---|---|
+| **T1** | Departing member: purge personal-drive documents, **reassign** Space/site-drive ones | Otherwise a member leaving takes the team's files with them. Silent, permanent, triggered by a routine event |
+| **T2** | Tightening a folder's privacy cascades to its contents; loosening does not | Otherwise a folder set to private leaves its documents public, with nothing to indicate it |
+| **Journey** | One executable journey: a document appears in the drive and in **no** media surface — grid, explore, album, collection, lightbox, activity | This is what replaced the structural guarantee. Without it the query discipline has no regression net |
+| **Breadcrumb** | Shared view starts at the highest granted ancestor; owner folder names above the grant point are never emitted | Folder names carry client identities and project codenames. This is an information leak, not a display bug |
+| **Storage privacy** | Local deny rules **and** a Site Health check that the cloud bucket is not public-read | The difference between "documents are private" being true and being merely intended |
+
+---
+
+## 16. Verification (blocking)
 
 - **No explicit `media_id` is ever inserted**; creating a folder writes **zero** `mvs_media_index` rows
 - **The `media_type=''` row stays out of both libraries**; no list query uses `media_type != …`
@@ -733,7 +783,7 @@ admin only — the half-cooked state Coding Rule 18 forbids.
 
 ---
 
-## 16. Open decisions
+## 17. Open decisions
 
 1. **T3 — who may grant access?** Recommend: drive owner / drive-admin only in v1.
 2. **T4 — quota for Space and site drives.** `QuotaService` is per-user with no non-user branch.
