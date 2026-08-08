@@ -238,11 +238,11 @@ class CollectionService {
 					}
 					// Same-key terms OR together via term_id IN (...); different
 					// taxonomies (tag vs category) stay separate JOINs, so they AND.
-					$alias_tr     = 'tr' . $join_idx;
-					$alias_tt     = 'tt' . $join_idx;
-					$placeholders = implode( ',', array_fill( 0, count( $term_ids ), '%d' ) );
-					$joins[]      = "INNER JOIN {$wpdb->term_relationships} AS {$alias_tr} ON {$alias_tr}.object_id = idx.media_id";
-					$joins[]      = "INNER JOIN {$wpdb->term_taxonomy} AS {$alias_tt} ON {$alias_tt}.term_taxonomy_id = {$alias_tr}.term_taxonomy_id AND {$alias_tt}.taxonomy = %s AND {$alias_tt}.term_id IN ({$placeholders})";
+					$alias_tr      = 'tr' . $join_idx;
+					$alias_tt      = 'tt' . $join_idx;
+					$placeholders  = implode( ',', array_fill( 0, count( $term_ids ), '%d' ) );
+					$joins[]       = "INNER JOIN {$wpdb->term_relationships} AS {$alias_tr} ON {$alias_tr}.object_id = idx.media_id";
+					$joins[]       = "INNER JOIN {$wpdb->term_taxonomy} AS {$alias_tt} ON {$alias_tt}.term_taxonomy_id = {$alias_tr}.term_taxonomy_id AND {$alias_tt}.taxonomy = %s AND {$alias_tt}.term_id IN ({$placeholders})";
 					$join_params[] = $taxonomy;
 					foreach ( $term_ids as $term_id ) {
 						$join_params[] = $term_id;

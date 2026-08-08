@@ -74,9 +74,9 @@ class IntegrationsPage {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wpmediaverse' ) );
 		}
 
-		$companions   = CompanionRegistry::all();
-		$logo_base    = MVS_PLUGIN_URL . 'assets/img/companions/';
-		$logo_dir     = MVS_PLUGIN_DIR . 'assets/img/companions/';
+		$companions = CompanionRegistry::all();
+		$logo_base  = MVS_PLUGIN_URL . 'assets/img/companions/';
+		$logo_dir   = MVS_PLUGIN_DIR . 'assets/img/companions/';
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only redirect-back status flags, no state change.
 		$install_state = isset( $_GET['mvs_install'] ) ? sanitize_key( wp_unslash( $_GET['mvs_install'] ) ) : '';

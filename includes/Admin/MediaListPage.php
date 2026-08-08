@@ -1397,9 +1397,9 @@ class MediaListPage {
 		// Display URL for the "Open WebP copy" link below. `$webp_orig` stays the
 		// raw meta because the badges around it only test existence.
 		$webp_orig_url = \WPMediaVerse\Core\MediaUrl::variant_url( $media_id, \WPMediaVerse\Services\ImageOptimizationService::META_ORIGINAL_WEBP );
-		$width        = (int) $repo->get_raw( $media_id, 'width' );
-		$height       = (int) $repo->get_raw( $media_id, 'height' );
-		$saved_pct    = ( $bytes_before > 0 ) ? round( ( $bytes_before - $bytes_after ) / $bytes_before * 100, 2 ) : 0;
+		$width         = (int) $repo->get_raw( $media_id, 'width' );
+		$height        = (int) $repo->get_raw( $media_id, 'height' );
+		$saved_pct     = ( $bytes_before > 0 ) ? round( ( $bytes_before - $bytes_after ) / $bytes_before * 100, 2 ) : 0;
 
 		$optimize_url = wp_nonce_url(
 			add_query_arg(

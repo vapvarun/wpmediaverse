@@ -272,7 +272,7 @@ class CloudOps {
 			return 'skipped';
 		}
 
-		$tmp_path = trailingslashit( get_temp_dir() ) . 'mvs-cloudops-' . uniqid() . '/' . ltrim( $rel_path, '/' );
+		$tmp_path   = trailingslashit( get_temp_dir() ) . 'mvs-cloudops-' . uniqid() . '/' . ltrim( $rel_path, '/' );
 		$tmp_dirs[] = dirname( $tmp_path );
 
 		if ( ! $source_driver->download( $rel_path, $tmp_path ) ) {

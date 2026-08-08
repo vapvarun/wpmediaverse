@@ -254,12 +254,12 @@ class StorageRepairService {
 		$state = is_array( $state ) ? $state : array();
 
 		foreach ( $ids as $media_id ) {
-			$result                      = $this->repair_one( (int) $media_id );
-			$state['scanned']            = ( (int) ( $state['scanned'] ?? 0 ) ) + 1;
-			$state['healed_absolute']    = ( (int) ( $state['healed_absolute'] ?? 0 ) ) + ( 'absolute' === $result ? 1 : 0 );
-			$state['healed_stranded']    = ( (int) ( $state['healed_stranded'] ?? 0 ) ) + ( 'stranded' === $result ? 1 : 0 );
-			$state['failed']             = ( (int) ( $state['failed'] ?? 0 ) ) + ( 'failed' === $result ? 1 : 0 );
-			$cursor                      = max( $cursor, (int) $media_id );
+			$result                   = $this->repair_one( (int) $media_id );
+			$state['scanned']         = ( (int) ( $state['scanned'] ?? 0 ) ) + 1;
+			$state['healed_absolute'] = ( (int) ( $state['healed_absolute'] ?? 0 ) ) + ( 'absolute' === $result ? 1 : 0 );
+			$state['healed_stranded'] = ( (int) ( $state['healed_stranded'] ?? 0 ) ) + ( 'stranded' === $result ? 1 : 0 );
+			$state['failed']          = ( (int) ( $state['failed'] ?? 0 ) ) + ( 'failed' === $result ? 1 : 0 );
+			$cursor                   = max( $cursor, (int) $media_id );
 		}
 
 		$state['status'] = 'running';

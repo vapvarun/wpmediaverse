@@ -172,7 +172,7 @@ class SuggestionService {
 
 		global $wpdb;
 		// term_id -> term_taxonomy_id for mvs_category.
-		$ti_ph = implode( ',', array_fill( 0, count( $interests ), '%d' ) );
+		$ti_ph  = implode( ',', array_fill( 0, count( $interests ), '%d' ) );
 		$tt_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT term_taxonomy_id FROM {$wpdb->term_taxonomy} WHERE taxonomy = 'mvs_category' AND term_id IN ({$ti_ph})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared

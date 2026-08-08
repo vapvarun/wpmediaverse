@@ -511,7 +511,7 @@ class ActivitySyncIntegration {
 	 * @return int Activity ID, or 0 when the group has no activity yet.
 	 */
 	private function find_group_activity( string $media_group ): int {
-		$repo      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$repo       = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$member_ids = $repo->get_group_media_ids( $media_group );
 
 		foreach ( $member_ids as $member_id ) {

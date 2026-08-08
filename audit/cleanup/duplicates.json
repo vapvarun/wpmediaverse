@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-06T07:59:57Z",
+    "generated_at": "2026-08-08T14:26:36Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -17,8 +17,8 @@
     "counts": {
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 36,
-        "free_files_scanned": 188,
-        "pro_files_scanned": 170
+        "free_files_scanned": 189,
+        "pro_files_scanned": 171
     },
     "cross_plugin_duplicates": [
         {
@@ -396,7 +396,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/Services/AlbumService.php",
-                    "lines": "661-661",
+                    "lines": "758-758",
                     "method": "albums_for_media"
                 },
                 {
@@ -596,24 +596,6 @@
             ]
         },
         {
-            "hash": "7bf43e973c0dc3db2da9048acc10e30268b4fad3",
-            "plugin": "pro",
-            "instances": 2,
-            "token_count": 130,
-            "sites": [
-                {
-                    "file": "includes/Integrations/MediaPress/Importer.php",
-                    "lines": "364-364",
-                    "method": "create_album_from_mpp_gallery"
-                },
-                {
-                    "file": "includes/Integrations/MediaPress/MigrationAdmin.php",
-                    "lines": "268-268",
-                    "method": "create_album_from_mpp_gallery"
-                }
-            ]
-        },
-        {
             "hash": "0385aa938a771cdb17ee0f89c4c5cb661667f3d2",
             "plugin": "pro",
             "instances": 2,
@@ -639,12 +621,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/AlbumController.php",
-                    "lines": "673-673",
+                    "lines": "679-679",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/AlbumController.php",
-                    "lines": "698-698",
+                    "lines": "704-704",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -657,12 +639,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1563-1563",
+                    "lines": "1574-1574",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1588-1588",
+                    "lines": "1599-1599",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -682,6 +664,24 @@
                     "file": "includes/Integrations/BuddyBoss/MigrationAdmin.php",
                     "lines": "387-387",
                     "method": "create_album_from_bb"
+                }
+            ]
+        },
+        {
+            "hash": "51a0fd843e05e1d4e9bc20a234ebc47c811a209f",
+            "plugin": "pro",
+            "instances": 2,
+            "token_count": 119,
+            "sites": [
+                {
+                    "file": "includes/Integrations/MediaPress/Importer.php",
+                    "lines": "364-364",
+                    "method": "create_album_from_mpp_gallery"
+                },
+                {
+                    "file": "includes/Integrations/MediaPress/MigrationAdmin.php",
+                    "lines": "268-268",
+                    "method": "create_album_from_mpp_gallery"
                 }
             ]
         },
@@ -765,12 +765,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2234-2234",
+                    "lines": "2299-2299",
                     "method": "trash"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2262-2262",
+                    "lines": "2327-2327",
                     "method": "restore"
                 }
             ]
@@ -811,7 +811,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2063-2063",
+                    "lines": "2128-2128",
                     "method": "record_event"
                 },
                 {
@@ -870,12 +870,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2008-2008",
+                    "lines": "2073-2073",
                     "method": "increment_stat"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2035-2035",
+                    "lines": "2100-2100",
                     "method": "set_stat"
                 }
             ]
@@ -1024,12 +1024,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/AlbumController.php",
-                    "lines": "660-660",
+                    "lines": "666-666",
                     "method": "create_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1529-1529",
+                    "lines": "1540-1540",
                     "method": "create_item_permissions_check"
                 },
                 {
@@ -1180,7 +1180,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "1940-1940",
+                    "lines": "2005-2005",
                     "method": "get_user_stats"
                 },
                 {
@@ -1190,7 +1190,7 @@
                 },
                 {
                     "file": "includes/Messaging/MessagingService.php",
-                    "lines": "2499-2499",
+                    "lines": "2507-2507",
                     "method": "get_conversation_unread_count"
                 }
             ]

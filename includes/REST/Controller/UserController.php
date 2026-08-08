@@ -421,7 +421,7 @@ class UserController extends WP_REST_Controller {
 	 */
 	private function sample_media_thumbs( int $user_id, int $n, $tpl ): array {
 		global $wpdb;
-		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$ids    = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index
 				WHERE post_author = %d AND status = 'publish' AND moderation_status = 'approved' AND privacy = 'public'

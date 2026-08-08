@@ -949,7 +949,7 @@ class MessagingService {
 		$conv_table = $wpdb->prefix . 'mvs_conversations';
 		$part_table = $wpdb->prefix . 'mvs_conversation_participants';
 		// Importer seam: $opts['created_at'] backdates a migrated group thread.
-		$now        = \WPMediaVerse\Core\Dates::resolve_backdate( isset( $opts['created_at'] ) ? (string) $opts['created_at'] : null ) ?? current_time( 'mysql', true );
+		$now = \WPMediaVerse\Core\Dates::resolve_backdate( isset( $opts['created_at'] ) ? (string) $opts['created_at'] : null ) ?? current_time( 'mysql', true );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->insert(
