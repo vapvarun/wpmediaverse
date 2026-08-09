@@ -90,13 +90,20 @@ class MediaTypeGroupTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Unknown values are dropped rather than passed through to SQL.
+	 * Unknown values are dropped; storable values are not.
+	 *
+	 * `legacy_document` is a value the column legitimately holds after Migrator v26,
+	 * so in_clause() must accept it — otherwise MEDIA_LIBRARY would be silently
+	 * narrowed back to MEDIA and pre-1.2.3 PDFs would vanish from the feed. It is
+	 * still not a LIBRARY type, which is what is_known() answers.
 	 */
 	public function test_unknown_types_are_filtered_out(): void {
 		list( , $params ) = MediaTypes::in_clause( array( 'image', 'legacy_document', 'nonsense' ) );
 
-		$this->assertSame( array( 'image' ), $params );
-		$this->assertFalse( MediaTypes::is_known( 'legacy_document' ) );
+		$this->assertSame( array( 'image', 'legacy_document' ), $params, 'A storable value was dropped.' );
+		$this->assertNotContains( 'nonsense', $params, 'An unknown value reached SQL.' );
+
+		$this->assertFalse( MediaTypes::is_known( MediaTypes::LEGACY_DOCUMENT ), 'legacy_document is storable, but not a library type.' );
 		$this->assertFalse( MediaTypes::is_known( '' ) );
 		$this->assertTrue( MediaTypes::is_known( 'document' ) );
 	}
@@ -169,6 +176,42 @@ class MediaTypeGroupTest extends WP_UnitTestCase {
 		$ids = wp_list_pluck( (array) $response->get_data(), 'id' );
 
 		$this->assertNotContains( $orphan, $ids, 'An untyped row reached the feed.' );
+	}
+
+	/**
+	 * A pre-1.2.3 PDF must keep rendering after upgrade.
+	 *
+	 * 1.2.3 blocked PDF uploads but deliberately left the read side intact "so
+	 * historical PDF media keeps rendering" (UploadService::handle()). Those rows
+	 * are media_type='document' until Migrator v26 re-types them to
+	 * legacy_document. Dropping them from listings would delete content from a
+	 * member's library on upgrade — on precisely the sites that comment protects.
+	 *
+	 * This is the test the local fixture could never have prompted: the playground
+	 * has no legacy rows, so only the code flow says the promise exists.
+	 */
+	public function test_legacy_document_rows_keep_appearing_in_the_media_feed(): void {
+		$legacy = $this->insert_row( MediaTypes::LEGACY_DOCUMENT, 'Historical PDF' );
+		$doc    = $this->insert_row( 'document', 'New Document' );
+
+		$request  = new \WP_REST_Request( 'GET', '/mvs/v1/media' );
+		$response = rest_get_server()->dispatch( $request );
+		$ids      = wp_list_pluck( (array) $response->get_data(), 'id' );
+
+		$this->assertContains( $legacy, $ids, 'A pre-1.2.3 PDF vanished from the media feed on upgrade.' );
+		$this->assertNotContains( $doc, $ids, 'A real document leaked into the media feed.' );
+	}
+
+	/**
+	 * …but the document library must not claim them.
+	 *
+	 * They never passed DocumentTypes::resolve(), have no folder and no scan.
+	 * Adopting them is an owner-initiated migration, never an upgrade side effect.
+	 */
+	public function test_legacy_document_rows_are_not_documents(): void {
+		$this->assertNotContains( MediaTypes::LEGACY_DOCUMENT, MediaTypes::DOCUMENTS );
+		$this->assertContains( MediaTypes::LEGACY_DOCUMENT, MediaTypes::MEDIA_LIBRARY );
+		$this->assertNotContains( MediaTypes::LEGACY_DOCUMENT, MediaTypes::MEDIA );
 	}
 
 	/**

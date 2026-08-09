@@ -259,7 +259,7 @@ class AlbumService {
 	public function get_items( int $album_id ): array {
 		global $wpdb;
 
-		list( $mvs_type_sql, $mvs_type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::MEDIA, 'idx.media_type' );
+		list( $mvs_type_sql, $mvs_type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::MEDIA_LIBRARY, 'idx.media_type' );
 
 		return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
@@ -335,7 +335,7 @@ class AlbumService {
 	public function get_item_count( int $album_id ): int {
 		global $wpdb;
 
-		list( $mvs_count_type_sql, $mvs_count_type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::MEDIA, 'idx.media_type' );
+		list( $mvs_count_type_sql, $mvs_count_type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::MEDIA_LIBRARY, 'idx.media_type' );
 
 		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(

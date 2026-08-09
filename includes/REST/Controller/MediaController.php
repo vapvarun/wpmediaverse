@@ -405,7 +405,7 @@ class MediaController extends WP_REST_Controller {
 			$where[]  = 'media_type = %s';
 			$params[] = sanitize_text_field( (string) $media_type );
 		} else {
-			list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA );
+			list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
 			$where[]                                = $mvs_type_sql;
 			$params                                 = array_merge( $params, $mvs_type_params );
 		}
@@ -711,7 +711,7 @@ class MediaController extends WP_REST_Controller {
 		// Type group, not an exclusion. This feeds the gallery lightbox, which steps
 		// through members with prev/next — a document has nothing to render there, so
 		// it must not be reachable by arrowing off the end of a photo.
-		list( $mvs_group_type_sql, $mvs_group_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA, 'mi.media_type' );
+		list( $mvs_group_type_sql, $mvs_group_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'mi.media_type' );
 
 		$group_media_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(

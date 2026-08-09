@@ -66,6 +66,34 @@ final class MediaTypes {
 	public const LEGACY_DOCUMENT = 'legacy_document';
 
 	/**
+	 * What the MEDIA LIBRARY shows: real media plus the legacy rows.
+	 *
+	 * `MEDIA` is the semantic group — the three types a member can upload today.
+	 * This is the wider set that listings, counts and feeds use, and the difference
+	 * is a promise the codebase made in writing.
+	 *
+	 * 1.2.3 blocked PDF uploads but left the read side intact on purpose:
+	 * *"the read/display side (pdf-viewer block, 'document' media_type, /serve
+	 * content-type whitelist) is intentionally left intact so historical PDF media
+	 * keeps rendering"* (`UploadService::handle()`). On a site that ran pre-1.2.3
+	 * with PDFs enabled those rows exist, members can see them in the feed today,
+	 * and Migrator v26 re-types them to `legacy_document`.
+	 *
+	 * Excluding them from listings would delete content from a member's library on
+	 * upgrade — a visible regression on the exact sites that comment protects, and a
+	 * default-behaviour change of the kind Production Rule 3 forbids. So they keep
+	 * appearing where they already appear.
+	 *
+	 * They are NOT in `DOCUMENTS`: they never passed `DocumentTypes::resolve()`, have
+	 * no folder and no scan, so the document library must not claim them. Adopting
+	 * them is a deliberate, owner-initiated migration, never an upgrade side effect.
+	 *
+	 * @since 2.3.3
+	 * @var string[]
+	 */
+	public const MEDIA_LIBRARY = array( 'image', 'video', 'audio', 'legacy_document' );
+
+	/**
 	 * Build a `media_type IN (…)` fragment and its parameters.
 	 *
 	 * ALWAYS a positive list. Never `!= ''`, never `NOT IN`.
@@ -85,7 +113,11 @@ final class MediaTypes {
 	 * @return array{0:string,1:string[]} SQL fragment and its ordered parameters.
 	 */
 	public static function in_clause( array $types, string $column = 'media_type' ): array {
-		$types = array_values( array_intersect( $types, self::ALL ) );
+		// Validate against every value this plugin may legitimately store, which
+		// includes the legacy quarantine value — otherwise MEDIA_LIBRARY would be
+		// silently narrowed back to MEDIA here and the promise above broken again.
+		$known = array_merge( self::ALL, array( self::LEGACY_DOCUMENT ) );
+		$types = array_values( array_intersect( $types, $known ) );
 
 		if ( empty( $types ) ) {
 			// An empty group must match nothing, never everything — failing open
