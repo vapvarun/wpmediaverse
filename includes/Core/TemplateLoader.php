@@ -187,6 +187,15 @@ class TemplateLoader {
 					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1',
 					'top'
 				);
+
+				// Every other section gets a URL too. A section that exists only
+				// as JavaScript state cannot be linked, bookmarked or returned
+				// to — and "send me your albums" is a thing people say.
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/(media|albums|favorites|collections|challenges|battles|tournaments)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_section=$matches[1]',
+					'top'
+				);
 			}
 		}
 
@@ -254,6 +263,7 @@ class TemplateLoader {
 		$vars[] = 'mvs_doc_view';
 		$vars[] = 'mvs_doc_path';
 		$vars[] = 'mvs_doc_page';
+		$vars[] = 'mvs_section';
 
 		$vars[] = 'mvs_media_archive';
 		$vars[] = 'mvs_media_slug';

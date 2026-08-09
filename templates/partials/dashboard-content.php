@@ -117,7 +117,9 @@ wp_interactivity_state(
 		// Which tab the URL asked for. Seeded server-side so that landing on
 		// /my-media/documents/ paints the right panel on first render rather
 		// than flashing Media and correcting itself once the module loads.
-		'activeTab' => get_query_var( 'mvs_doc_view' ) ? 'documents' : 'media',
+		'activeTab' => get_query_var( 'mvs_doc_view' )
+			? 'documents'
+			: ( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' ),
 		'i18n' => array(
 			// Rule-builder select options + placeholders.
 			'selectOption'            => __( '-- Select --', 'wpmediaverse' ),
@@ -433,27 +435,52 @@ wp_interactivity_state(
 		<?php endif; ?>
 	</div>
 
-	<nav class="mvs-dashboard-tabs" role="tablist">
-		<button class="mvs-dashboard-tab" data-tab="media" role="tab" type="button"
+	<?php
+	/**
+	 * A section's URL. Every rail item is a real link, so a section can be
+	 * shared, bookmarked and opened in a new tab; the click handler still
+	 * switches client-side and writes the URL with pushState.
+	 *
+	 * @param string $section Section slug.
+	 * @return string
+	 */
+	$mvs_dash_section_url = static function ( string $section ): string {
+		$page = (int) get_option( 'mvs_page_dashboard', 0 );
+		$base = $page ? (string) get_permalink( $page ) : home_url( '/' );
+
+		if ( ! get_option( 'permalink_structure' ) ) {
+			return add_query_arg( 'documents' === $section ? array( 'mvs_doc_view' => 1 ) : array( 'mvs_section' => $section ), $base );
+		}
+
+		return trailingslashit( $base ) . $section . '/';
+	};
+
+	$mvs_dash_active = get_query_var( 'mvs_doc_view' )
+		? 'documents'
+		: ( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' );
+	?>
+	<nav class="mvs-dashboard-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Your library', 'wpmediaverse' ); ?>">
+		<span class="mvs-dashboard-tabs__group"><?php esc_html_e( 'Library', 'wpmediaverse' ); ?></span>
+		<a class="mvs-dashboard-tab<?php echo 'media' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="media" role="tab" href="<?php echo esc_url( $mvs_dash_section_url( 'media' ) ); ?>"
 			data-wp-class--active="state.isMediaTab"
 			data-wp-on--click="actions.switchTab">
 			<?php esc_html_e( 'Media', 'wpmediaverse' ); ?>
-		</button>
-		<button class="mvs-dashboard-tab" data-tab="albums" role="tab" type="button"
+		</a>
+		<a class="mvs-dashboard-tab<?php echo 'albums' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="albums" role="tab" href="<?php echo esc_url( $mvs_dash_section_url( 'albums' ) ); ?>"
 			data-wp-class--active="state.isAlbumsTab"
 			data-wp-on--click="actions.switchTab">
 			<?php esc_html_e( 'Albums', 'wpmediaverse' ); ?>
-		</button>
-		<button class="mvs-dashboard-tab" data-tab="favorites" role="tab" type="button"
+		</a>
+		<a class="mvs-dashboard-tab<?php echo 'favorites' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="favorites" role="tab" href="<?php echo esc_url( $mvs_dash_section_url( 'favorites' ) ); ?>"
 			data-wp-class--active="state.isFavoritesTab"
 			data-wp-on--click="actions.switchTab">
 			<?php esc_html_e( 'Favorites', 'wpmediaverse' ); ?>
-		</button>
-		<button class="mvs-dashboard-tab" data-tab="collections" role="tab" type="button"
+		</a>
+		<a class="mvs-dashboard-tab<?php echo 'collections' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="collections" role="tab" href="<?php echo esc_url( $mvs_dash_section_url( 'collections' ) ); ?>"
 			data-wp-class--active="state.isCollectionsTab"
 			data-wp-on--click="actions.switchTab">
 			<?php esc_html_e( 'Collections', 'wpmediaverse' ); ?>
-		</button>
+		</a>
 		<?php
 		/**
 		 * Documents. A real tab with a real panel, not a link away: a member
@@ -468,11 +495,12 @@ wp_interactivity_state(
 
 		if ( '' !== $mvs_dash_drive ) :
 			?>
-			<button class="mvs-dashboard-tab<?php echo get_query_var( 'mvs_doc_view' ) ? ' active' : ''; ?>" data-tab="documents" role="tab" type="button"
+			<a class="mvs-dashboard-tab<?php echo 'documents' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="documents" role="tab"
+				href="<?php echo esc_url( $mvs_dash_section_url( 'documents' ) ); ?>"
 				data-wp-class--active="state.isDocumentsTab"
 				data-wp-on--click="actions.switchTab">
 				<?php esc_html_e( 'Documents', 'wpmediaverse' ); ?>
-			</button>
+			</a>
 			<?php
 		endif;
 
@@ -528,6 +556,13 @@ wp_interactivity_state(
 		 *
 		 * @since 1.1.0
 		 */
+		// Pro's competition tabs land under their own heading. The grouping is
+		// what makes eight items readable; a flat rail of eight is just a
+		// shorter list, not a clearer one.
+		if ( has_action( 'mvs_dashboard_tabs' ) ) {
+			printf( '<span class="mvs-dashboard-tabs__group">%s</span>', esc_html__( 'Compete', 'wpmediaverse' ) );
+		}
+
 		do_action( 'mvs_dashboard_tabs' );
 		?>
 	</nav>

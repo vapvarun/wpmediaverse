@@ -448,8 +448,28 @@ const { state, actions } = store( 'mvs/dashboard', {
 			const tabBtn = event.target.closest( '[data-tab]' );
 			const tab = tabBtn?.dataset.tab;
 			if ( ! tab ) return;
+
+			// The rail items are real links now, so a section can be shared,
+			// bookmarked and opened in a new tab. Switching still happens
+			// client-side — the panels are already in the page — so the click is
+			// intercepted and the URL is written with pushState instead.
+			//
+			// Modified clicks are left alone: cmd/ctrl/shift-click and
+			// middle-click mean "open this somewhere else", and hijacking them
+			// is how a link stops behaving like a link.
+			const plainClick = ! event.metaKey && ! event.ctrlKey && ! event.shiftKey && ! event.altKey && 0 === ( event.button || 0 );
+
+			if ( tabBtn.href && plainClick ) {
+				event.preventDefault();
+				window.history.pushState( {}, '', tabBtn.href );
+			} else if ( tabBtn.href ) {
+				// Let the browser handle it.
+				return;
+			} else {
+				window.location.hash = tab;
+			}
+
 			state.activeTab = tab;
-			window.location.hash = tab;
 			// Mobile §5.2: scroll the tapped tab into view so users can see what's
 			// next when the strip overflows. Center inline keeps neighbours visible.
 			if ( tabBtn && typeof tabBtn.scrollIntoView === 'function' ) {

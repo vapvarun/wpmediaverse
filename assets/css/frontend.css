@@ -6931,3 +6931,53 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 }
 
 
+
+/* ============================================================================
+ * My Media — vertical rail.
+ *
+ * The dashboard began with four tabs and carries eight. A horizontal row stops
+ * working somewhere around six: it wraps to two lines, the wrap point moves
+ * with the theme, and nothing groups. A rail with headings makes eight items
+ * readable and leaves an obvious place for the ninth.
+ *
+ * @since 2.4.0
+ * ========================================================================== */
+
+/* NOTE: the vertical rail layout is NOT applied yet, deliberately.
+ *
+ * Gridding `.mvs-dashboard` puts EVERY child in the grid — the profile header,
+ * the streak bar and the completion notice all landed in the rail column
+ * alongside the nav. The rail needs a wrapper around just the nav and the
+ * panels, which is markup surgery worth doing carefully rather than quickly.
+ *
+ * What IS live: the group headings, and every rail item being a real link with
+ * its own URL. Those are the parts the layout depends on, so the layout can
+ * follow without redoing them.
+ */
+
+
+.mvs-dashboard-tabs__group {
+    padding: var(--mvs-space-3) var(--mvs-space-3) var(--mvs-space-1);
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* A rail item is an anchor now, so it has to be told not to look like body
+   copy — themes style `a` inside content aggressively. */
+a.mvs-dashboard-tab,
+a.mvs-dashboard-tab:hover,
+a.mvs-dashboard-tab:focus-visible {
+    text-decoration: none;
+}
+
+@media (max-width: 860px) {
+
+    /* Below the rail's width the group headings earn nothing — they cost a
+       whole row in a horizontal scroller. */
+    .mvs-dashboard-tabs__group {
+        display: none;
+    }
+}
