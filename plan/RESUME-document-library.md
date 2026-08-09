@@ -5,6 +5,14 @@
 Free `wpmediaverse` + Pro `wpmediaverse-pro`, both on branch `2.4.0`.
 Last commits: Free `45b55160`, Pro `c9e66bc`, plus the rail CSS on top.
 
+**Companion artifact** (visual UX spec, screens and layouts):
+<https://claude.ai/code/artifact/3620f81c-eaea-4d17-9f0e-56e178ec56e2>
+
+The written spec below is the authoritative one — it carries the guards, the
+URL scheme and the reasoning, and it is versioned with the code. The artifact
+is the picture of it. If they disagree, this file wins; update the artifact to
+match rather than the other way round.
+
 ---
 
 ## Where it stands
