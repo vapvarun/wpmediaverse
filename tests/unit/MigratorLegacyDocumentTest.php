@@ -106,26 +106,31 @@ class MigratorLegacyDocumentTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Quarantined rows STAY VISIBLE in the media library.
+	 * Quarantined rows move to the DOCUMENT library, not out of existence.
 	 *
-	 * This is the promise that stops the migration deleting content from a
-	 * member's library on upgrade. If MEDIA_LIBRARY ever narrows to MEDIA, this
-	 * test is what fails.
+	 * They leave the media grid — where a PDF can only draw as a broken tile —
+	 * and are listed by the document surfaces, which render a row with a type
+	 * chip. No drive claims them: they never passed DocumentTypes::resolve().
 	 */
-	public function test_quarantined_rows_remain_in_the_media_library(): void {
+	public function test_quarantined_rows_move_to_the_document_library(): void {
 		$legacy = $this->insert_row( 'document' );
 
 		$this->run_v27();
 
-		$this->assertContains(
+		$this->assertNotContains(
 			MediaTypes::LEGACY_DOCUMENT,
 			MediaTypes::MEDIA_LIBRARY,
-			'legacy_document must stay in the media library or upgrading hides member content.'
+			'A quarantined PDF in a media grid renders as a broken tile (owner, 2026-08-09).'
+		);
+		$this->assertContains(
+			MediaTypes::LEGACY_DOCUMENT,
+			MediaTypes::DOCUMENT_LIBRARY,
+			'It is relocated, not hidden — the document page draws it as a row with a type chip.'
 		);
 		$this->assertNotContains(
 			MediaTypes::LEGACY_DOCUMENT,
 			MediaTypes::DOCUMENTS,
-			'A quarantined row was never a real document; the document library must not claim it.'
+			'A quarantined row was never a real document; no drive may claim it.'
 		);
 		$this->assertSame( MediaTypes::LEGACY_DOCUMENT, $this->stored_type( $legacy ) );
 	}

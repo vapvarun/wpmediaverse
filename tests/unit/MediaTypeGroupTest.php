@@ -93,9 +93,9 @@ class MediaTypeGroupTest extends WP_UnitTestCase {
 	 * Unknown values are dropped; storable values are not.
 	 *
 	 * `legacy_document` is a value the column legitimately holds after Migrator v26,
-	 * so in_clause() must accept it — otherwise MEDIA_LIBRARY would be silently
-	 * narrowed back to MEDIA and pre-1.2.3 PDFs would vanish from the feed. It is
-	 * still not a LIBRARY type, which is what is_known() answers.
+	 * so in_clause() must accept it — the document listing asks for it by name via
+	 * DOCUMENT_LIBRARY. It is still not a LIBRARY type, which is what is_known()
+	 * answers, and it is no longer in MEDIA_LIBRARY.
 	 */
 	public function test_unknown_types_are_filtered_out(): void {
 		list( , $params ) = MediaTypes::in_clause( array( 'image', 'legacy_document', 'nonsense' ) );
@@ -194,38 +194,73 @@ class MediaTypeGroupTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A pre-1.2.3 PDF must keep rendering after upgrade.
+	 * NEITHER kind of document appears in the media feed.
 	 *
-	 * 1.2.3 blocked PDF uploads but deliberately left the read side intact "so
-	 * historical PDF media keeps rendering" (UploadService::handle()). Those rows
-	 * are media_type='document' until Migrator v26 re-types them to
-	 * legacy_document. Dropping them from listings would delete content from a
-	 * member's library on upgrade — on precisely the sites that comment protects.
+	 * REVERSED, owner 2026-08-09: *"documents type will never display at media
+	 * grid."* This previously asserted that a pre-1.2.3 PDF must keep appearing,
+	 * so upgrading would not remove content a member can see. The browser settled
+	 * it — that row rendered in Explore as a **broken image tile**, a dark
+	 * rectangle with a missing-image glyph. Keeping it "visible" published a
+	 * defect rather than content.
 	 *
-	 * This is the test the local fixture could never have prompted: the playground
-	 * has no legacy rows, so only the code flow says the promise exists.
+	 * The rows are relocated, not deleted: `MediaTypes::DOCUMENT_LIBRARY` carries
+	 * them to the document surfaces, which draw a row with a type chip instead of
+	 * trying to draw a picture that does not exist. Absent beats broken, and
+	 * correct beats both.
 	 */
-	public function test_legacy_document_rows_keep_appearing_in_the_media_feed(): void {
+	public function test_no_document_type_appears_in_the_media_feed(): void {
 		$legacy = $this->insert_row( MediaTypes::LEGACY_DOCUMENT, 'Historical PDF' );
 		$doc    = $this->insert_row( 'document', 'New Document' );
+		$photo  = $this->insert_row( 'image', 'A Photo' );
 
 		$request  = new \WP_REST_Request( 'GET', '/mvs/v1/media' );
 		$response = rest_get_server()->dispatch( $request );
 		$ids      = wp_list_pluck( (array) $response->get_data(), 'id' );
 
-		$this->assertContains( $legacy, $ids, 'A pre-1.2.3 PDF vanished from the media feed on upgrade.' );
-		$this->assertNotContains( $doc, $ids, 'A real document leaked into the media feed.' );
+		$this->assertContains( $photo, $ids, 'Media must still appear.' );
+		$this->assertNotContains( $doc, $ids, 'A document leaked into the media feed.' );
+		$this->assertNotContains( $legacy, $ids, 'A legacy PDF rendered as a broken tile in the media grid.' );
 	}
 
 	/**
-	 * …but the document library must not claim them.
+	 * The escape hatch puts the legacy rows back, for a site that wants them.
 	 *
-	 * They never passed DocumentTypes::resolve(), have no folder and no scan.
-	 * Adopting them is an owner-initiated migration, never an upgrade side effect.
+	 * Production Rule 3: this IS a default-behaviour change, so one filter
+	 * restores the old listing — along with the broken tile it comes with.
 	 */
-	public function test_legacy_document_rows_are_not_documents(): void {
-		$this->assertNotContains( MediaTypes::LEGACY_DOCUMENT, MediaTypes::DOCUMENTS );
-		$this->assertContains( MediaTypes::LEGACY_DOCUMENT, MediaTypes::MEDIA_LIBRARY );
+	public function test_media_library_types_filter_restores_legacy_rows(): void {
+		$legacy = $this->insert_row( MediaTypes::LEGACY_DOCUMENT, 'Restored PDF' );
+
+		add_filter(
+			'mvs_media_library_types',
+			static fn( $types ) => array_merge( $types, array( MediaTypes::LEGACY_DOCUMENT ) )
+		);
+
+		$restored = MediaTypes::library_types();
+		remove_all_filters( 'mvs_media_library_types' );
+
+		$this->assertContains( MediaTypes::LEGACY_DOCUMENT, $restored );
+		$this->assertIsInt( $legacy );
+
+		// And a filter cannot widen a listing into rows nothing knows how to draw.
+		add_filter( 'mvs_media_library_types', static fn() => array( 'nonsense' ) );
+		$this->assertSame( MediaTypes::MEDIA_LIBRARY, MediaTypes::library_types() );
+		remove_all_filters( 'mvs_media_library_types' );
+	}
+
+	/**
+	 * A legacy row belongs to no drive, but the document PAGE still lists it.
+	 *
+	 * Two different questions, which one constant used to answer badly:
+	 * "whose drive is this in?" (`DOCUMENTS` — never a legacy row, it has no
+	 * folder and no extraction) and "what does the document page show?"
+	 * (`DOCUMENT_LIBRARY` — which does include it, because that surface renders a
+	 * row with a type chip and can draw it correctly).
+	 */
+	public function test_legacy_rows_are_listed_as_documents_but_owned_by_no_drive(): void {
+		$this->assertNotContains( MediaTypes::LEGACY_DOCUMENT, MediaTypes::DOCUMENTS, 'No drive may claim a quarantined row.' );
+		$this->assertContains( MediaTypes::LEGACY_DOCUMENT, MediaTypes::DOCUMENT_LIBRARY, 'The document page is where they render correctly.' );
+		$this->assertNotContains( MediaTypes::LEGACY_DOCUMENT, MediaTypes::MEDIA_LIBRARY, 'They must never reach a media grid.' );
 		$this->assertNotContains( MediaTypes::LEGACY_DOCUMENT, MediaTypes::MEDIA );
 	}
 

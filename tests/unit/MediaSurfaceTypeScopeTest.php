@@ -235,12 +235,19 @@ class MediaSurfaceTypeScopeTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Legacy PDFs keep counting everywhere they already counted.
+	 * A legacy PDF does not count as MEDIA on a profile.
 	 *
-	 * The MEDIA_LIBRARY promise has to hold on every surface, not just the feed —
-	 * otherwise upgrading silently deducts from a member's visible numbers.
+	 * REVERSED with the MEDIA_LIBRARY change (owner, 2026-08-09: "documents type
+	 * will never display at media grid"). This previously asserted the opposite,
+	 * to stop an upgrade deducting from a member's visible numbers. The browser
+	 * settled it: the row a profile was counting rendered in Explore as a broken
+	 * image tile, so the count was promising a picture that did not exist.
+	 *
+	 * The rows are not lost — they move to the document surfaces, which draw them
+	 * as rows with a type chip. Counting them as media was the part that was
+	 * wrong, not their existence.
 	 */
-	public function test_legacy_documents_still_count_on_a_profile(): void {
+	public function test_legacy_documents_do_not_count_as_media_on_a_profile(): void {
 		$user = self::factory()->user->create();
 
 		$this->insert_row( 'image', $user );
@@ -250,6 +257,6 @@ class MediaSurfaceTypeScopeTest extends WP_UnitTestCase {
 		$response = rest_get_server()->dispatch( $request );
 		$data     = (array) $response->get_data();
 
-		$this->assertSame( 2, (int) $data['media_count'], 'A pre-1.2.3 PDF was deducted from a profile count on upgrade.' );
+		$this->assertSame( 1, (int) $data['media_count'], 'Only the photo is media.' );
 	}
 }

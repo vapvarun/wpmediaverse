@@ -66,32 +66,97 @@ final class MediaTypes {
 	public const LEGACY_DOCUMENT = 'legacy_document';
 
 	/**
-	 * What the MEDIA LIBRARY shows: real media plus the legacy rows.
+	 * What the MEDIA LIBRARY shows. Media, and only media.
 	 *
-	 * `MEDIA` is the semantic group — the three types a member can upload today.
-	 * This is the wider set that listings, counts and feeds use, and the difference
-	 * is a promise the codebase made in writing.
+	 * **REVERSED BY THE OWNER, 2026-08-09: "documents type will never display at
+	 * media grid."** This constant previously also carried `legacy_document`, on
+	 * the reasoning that hiding those rows would remove content a member can see
+	 * today. That reasoning was sound in the abstract and wrong in practice, and
+	 * the browser showed why: the quarantined PDF rendered in Explore as a
+	 * **broken image tile** — a dark rectangle with a missing-image glyph. A grid
+	 * is a grid of pictures. A PDF has no picture, so "keeping it visible" did not
+	 * keep anything visible; it published a defect.
 	 *
-	 * 1.2.3 blocked PDF uploads but left the read side intact on purpose:
-	 * *"the read/display side (pdf-viewer block, 'document' media_type, /serve
-	 * content-type whitelist) is intentionally left intact so historical PDF media
-	 * keeps rendering"* (`UploadService::handle()`). On a site that ran pre-1.2.3
-	 * with PDFs enabled those rows exist, members can see them in the feed today,
-	 * and Migrator v26 re-types them to `legacy_document`.
+	 * **Absent beats broken.** These rows stay fully readable at their permalink,
+	 * stay in the database, and stay countable — they simply stop being offered to
+	 * surfaces that can only draw them wrong.
 	 *
-	 * Excluding them from listings would delete content from a member's library on
-	 * upgrade — a visible regression on the exact sites that comment protects, and a
-	 * default-behaviour change of the kind Production Rule 3 forbids. So they keep
-	 * appearing where they already appear.
+	 * They are still NOT in `DOCUMENTS`: they never passed
+	 * `DocumentTypes::resolve()`, have no folder and no extraction, so the
+	 * document library must not claim them either. Adopting one is a deliberate,
+	 * owner-initiated migration, never an upgrade side effect. `legacy_document`
+	 * is a quarantine, and a quarantine belongs to neither library.
 	 *
-	 * They are NOT in `DOCUMENTS`: they never passed `DocumentTypes::resolve()`, have
-	 * no folder and no scan, so the document library must not claim them. Adopting
-	 * them is a deliberate, owner-initiated migration, never an upgrade side effect.
+	 * Production Rule 3 is satisfied by `library_types()`, not by keeping the old
+	 * behaviour: a site that wants those rows back in its grids adds one filter.
 	 *
 	 * @since 2.4.0
 	 * @var string[]
 	 */
-	public const MEDIA_LIBRARY = array( 'image', 'video', 'audio', 'legacy_document' );
+	public const MEDIA_LIBRARY = array( 'image', 'video', 'audio' );
+
+	/**
+	 * What the DOCUMENT LIBRARY's public listing shows.
+	 *
+	 * Wider than `DOCUMENTS` on purpose, and this is what resolves the problem the
+	 * broken Explore tile exposed. Two different questions were being answered by
+	 * one constant:
+	 *
+	 *   - *"whose drive is this in?"* — `DOCUMENTS`, real documents only. A
+	 *     `legacy_document` has no folder and no extraction, so no drive claims it.
+	 *   - *"what does the document page list?"* — this, which includes the legacy
+	 *     rows, because a document listing renders a **row with a type chip**, not
+	 *     an image tile. A quarantined PDF draws perfectly here and drew a broken
+	 *     rectangle in the media grid.
+	 *
+	 * So the legacy rows are not hidden, they are relocated: out of the surface
+	 * that could only render them wrong, into the one built for exactly their
+	 * shape. That is a better answer than either of the two this replaced —
+	 * keeping them in the media grid (broken) or dropping them entirely (content
+	 * a member can see today, gone).
+	 *
+	 * @since 2.4.0
+	 * @var string[]
+	 */
+	public const DOCUMENT_LIBRARY = array( 'document', 'legacy_document' );
+
+	/**
+	 * The media-library type group, filtered.
+	 *
+	 * Production Rule 3 escape hatch for the reversal above. A site that ran
+	 * pre-1.2.3 with PDFs enabled and would rather show those rows than hide them
+	 * can restore the previous behaviour in one line:
+	 *
+	 *     add_filter(
+	 *         'mvs_media_library_types',
+	 *         fn( $types ) => array_merge( $types, array( \WPMediaVerse\Core\MediaTypes::LEGACY_DOCUMENT ) )
+	 *     );
+	 *
+	 * The trade it re-accepts is the broken tile, so the docblock says so rather
+	 * than presenting it as a neutral preference.
+	 *
+	 * Values outside the known vocabulary are dropped — a filter cannot widen a
+	 * listing into rows this plugin has no idea how to render.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[]
+	 */
+	public static function library_types(): array {
+		/**
+		 * Filters the media_type group that media listings show.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param string[] $types Default MediaTypes::MEDIA_LIBRARY.
+		 */
+		$types = (array) apply_filters( 'mvs_media_library_types', self::MEDIA_LIBRARY );
+
+		$known = array_merge( self::ALL, array( self::LEGACY_DOCUMENT ) );
+		$types = array_values( array_intersect( $types, $known ) );
+
+		return $types ?: self::MEDIA_LIBRARY;
+	}
 
 	/**
 	 * Build a `media_type IN (…)` fragment and its parameters.
