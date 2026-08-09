@@ -170,4 +170,65 @@ class MediaTypeGroupTest extends WP_UnitTestCase {
 
 		$this->assertNotContains( $orphan, $ids, 'An untyped row reached the feed.' );
 	}
+
+	/**
+	 * An album must not hold a document, and its count must agree with its list.
+	 *
+	 * Before this work get_items()/get_item_count() joined on `status <> 'trash'`
+	 * while the render path (get_items_with_data) filtered to 'publish' in PHP — so
+	 * an album containing a scheduled or held-for-moderation item reported a higher
+	 * count than it rendered, which the count method's own comment forbids.
+	 */
+	public function test_album_items_and_count_agree_and_exclude_documents(): void {
+		$albums   = Plugin::container()->get( 'albums' );
+		$album_id = $albums->create( 1, array( 'title' => 'Mixed Album', 'privacy' => 'public' ) );
+		$this->assertIsInt( $album_id );
+
+		$photo     = $this->insert_row( 'image', 'Album Photo' );
+		$doc       = $this->insert_row( 'document', 'Album Document' );
+		$scheduled = $this->insert_row( 'image', 'Album Scheduled' );
+		$this->repo->set( $scheduled, 'status', 'scheduled' );
+
+		$albums->add_items( $album_id, array( $photo, $doc, $scheduled ) );
+
+		$ids = array_map( 'intval', array_column( $albums->get_items( $album_id ), 'media_id' ) );
+
+		$this->assertContains( $photo, $ids, 'The published photo should be in the album.' );
+		$this->assertNotContains( $doc, $ids, 'A document leaked into an album.' );
+		$this->assertNotContains( $scheduled, $ids, 'A scheduled item leaked into an album.' );
+
+		$this->assertSame(
+			count( $ids ),
+			$albums->get_item_count( $album_id ),
+			'The album count disagrees with the album list.'
+		);
+	}
+
+	/**
+	 * A document must never be picked as an album cover.
+	 *
+	 * The cover falls back to "first item of any type" when the album holds no
+	 * image. A document there is a broken thumbnail on explore, the CPT archive,
+	 * album REST and the BuddyPress tab.
+	 *
+	 * `get_first_image_item()` is private — it is the unit under test, so it is
+	 * reached by reflection rather than by asserting on `get_cover_url()`, whose
+	 * return also depends on thumbnail files that do not exist in a unit run.
+	 */
+	public function test_document_is_never_an_album_cover(): void {
+		$albums   = Plugin::container()->get( 'albums' );
+		$album_id = $albums->create( 1, array( 'title' => 'Docs First Album', 'privacy' => 'public' ) );
+
+		// Document added FIRST, so position order would pick it if type were ignored.
+		$doc   = $this->insert_row( 'document', 'Cover Document' );
+		$video = $this->insert_row( 'video', 'Cover Video' );
+		$albums->add_items( $album_id, array( $doc, $video ) );
+
+		$method = new \ReflectionMethod( $albums, 'get_first_image_item' );
+		$method->setAccessible( true );
+		$cover = (int) $method->invoke( $albums, $album_id );
+
+		$this->assertNotSame( $doc, $cover, 'A document was chosen as the album cover.' );
+		$this->assertSame( $video, $cover, 'The renderable item should have been chosen instead.' );
+	}
 }
