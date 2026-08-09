@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-09T04:57:35Z",
+    "generated_at": "2026-08-09T05:20:56Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -16,9 +16,9 @@
     },
     "counts": {
         "cross_plugin_duplicates": 15,
-        "within_plugin_duplicates": 36,
+        "within_plugin_duplicates": 32,
         "free_files_scanned": 190,
-        "pro_files_scanned": 171
+        "pro_files_scanned": 173
     },
     "cross_plugin_duplicates": [
         {
@@ -537,29 +537,6 @@
     ],
     "within_plugin_duplicates": [
         {
-            "hash": "1ef8f904528bc37c54a2d73072c408c85c29e9ef",
-            "plugin": "pro",
-            "instances": 3,
-            "token_count": 235,
-            "sites": [
-                {
-                    "file": "includes/Frontend/Layouts/PinterestLayout.php",
-                    "lines": "53-53",
-                    "method": "PinterestLayout::render_feed"
-                },
-                {
-                    "file": "includes/Frontend/Layouts/DribbbleLayout.php",
-                    "lines": "53-53",
-                    "method": "DribbbleLayout::render_feed"
-                },
-                {
-                    "file": "includes/Frontend/Layouts/FlickrLayout.php",
-                    "lines": "55-55",
-                    "method": "FlickrLayout::render_feed"
-                }
-            ]
-        },
-        {
             "hash": "c32d97e74a5373be5288fd3b2b350341763eedfb",
             "plugin": "free",
             "instances": 2,
@@ -650,42 +627,6 @@
             ]
         },
         {
-            "hash": "a89ff37f1236126da34a74ed30108d742f64d10c",
-            "plugin": "pro",
-            "instances": 2,
-            "token_count": 121,
-            "sites": [
-                {
-                    "file": "includes/Integrations/BuddyBoss/Importer.php",
-                    "lines": "460-460",
-                    "method": "create_album_from_bb"
-                },
-                {
-                    "file": "includes/Integrations/BuddyBoss/MigrationAdmin.php",
-                    "lines": "387-387",
-                    "method": "create_album_from_bb"
-                }
-            ]
-        },
-        {
-            "hash": "51a0fd843e05e1d4e9bc20a234ebc47c811a209f",
-            "plugin": "pro",
-            "instances": 2,
-            "token_count": 119,
-            "sites": [
-                {
-                    "file": "includes/Integrations/MediaPress/Importer.php",
-                    "lines": "364-364",
-                    "method": "create_album_from_mpp_gallery"
-                },
-                {
-                    "file": "includes/Integrations/MediaPress/MigrationAdmin.php",
-                    "lines": "268-268",
-                    "method": "create_album_from_mpp_gallery"
-                }
-            ]
-        },
-        {
             "hash": "c742facf8990597e96ada240f13ef67615485405",
             "plugin": "free",
             "instances": 2,
@@ -772,34 +713,6 @@
                     "file": "includes/Repository/MediaRepository.php",
                     "lines": "2349-2349",
                     "method": "restore"
-                }
-            ]
-        },
-        {
-            "hash": "d027df3f30f7383e4dc1f575329c9d2227f7e446",
-            "plugin": "pro",
-            "instances": 4,
-            "token_count": 59,
-            "sites": [
-                {
-                    "file": "includes/Frontend/Layouts/PinterestLayout.php",
-                    "lines": "89-89",
-                    "method": "PinterestLayout::enqueue_assets"
-                },
-                {
-                    "file": "includes/Frontend/Layouts/DribbbleLayout.php",
-                    "lines": "89-89",
-                    "method": "DribbbleLayout::enqueue_assets"
-                },
-                {
-                    "file": "includes/Frontend/Layouts/InstagramLayout.php",
-                    "lines": "48-48",
-                    "method": "InstagramLayout::enqueue_assets"
-                },
-                {
-                    "file": "includes/Frontend/Layouts/FlickrLayout.php",
-                    "lines": "92-92",
-                    "method": "FlickrLayout::enqueue_assets"
                 }
             ]
         },
