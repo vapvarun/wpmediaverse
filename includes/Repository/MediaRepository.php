@@ -1215,11 +1215,23 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		// `any_folder` spans the whole drive rather than one folder — what a
 		// "Recent" view needs, since recency is a property of the document and
-		// not of where it happens to be filed. The folder predicate is DROPPED
-		// rather than widened, so `KEY doc_listing` is still used left to right
-		// (media_type, then status, then created_at for the sort).
+		// not of where it happens to be filed.
+		//
+		// INDEX REALITY, measured rather than assumed. `KEY doc_listing` is
+		// (media_type, folder_id, status, created_at), so dropping `folder_id`
+		// leaves a gap and the index can only serve its first column — it cannot
+		// serve the `created_at` sort. EXPLAIN against the 2,000-document
+		// fixture confirms MySQL picks `rank_scan` instead (type=ref, ~991 rows
+		// on a deep page, ~8ms). Flat across pages 1 to 80 and indexed, so it is
+		// fine at this size, but it is NOT the clean left-to-right read the
+		// folder listing gets.
+		//
+		// The clean fix is an index this table does not have —
+		// (media_type, post_author, status, created_at) — which is a schema
+		// change, so it belongs in its own migration rather than riding along
+		// with a UI phase. Until then, a very deep OFFSET on a drive with tens
+		// of thousands of documents is the known soft spot.
 		$any_folder = ! empty( $args['any_folder'] );
-
 		$where  = $any_folder
 			? array( $type_sql, 'status = %s' )
 			: array( $type_sql, 'folder_id = %d', 'status = %s' );
@@ -1231,6 +1243,23 @@ class MediaRepository implements MediaRepositoryInterface {
 			$where[]  = 'post_author = %d';
 			$params[] = $author;
 		}
+
+		// A drive with 2,000 documents is unusable without a way to narrow it and
+		// a way to reorder it — big-site checklist item 5. Both run on indexed
+		// columns, and the sort column comes from a fixed allowlist because a
+		// column name cannot be a prepared parameter.
+		if ( ! empty( $args['doc_type'] ) ) {
+			list( $mime_sql, $mime_params ) = $this->document_type_clause( (string) $args['doc_type'] );
+
+			$where[] = $mime_sql;
+			$params  = array_merge( $params, $mime_params );
+		}
+
+		$sortable = array( 'created_at', 'title', 'file_size' );
+		$orderby  = ( isset( $args['orderby'] ) && in_array( $args['orderby'], $sortable, true ) )
+			? (string) $args['orderby']
+			: 'created_at';
+		$order    = ( isset( $args['order'] ) && 'ASC' === strtoupper( (string) $args['order'] ) ) ? 'ASC' : 'DESC';
 
 		$index     = $wpdb->prefix . 'mvs_media_index';
 		$where_sql = implode( ' AND ', $where );
@@ -1248,7 +1277,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, privacy, folder_id, created_at
 				   FROM {$index}
 				  WHERE {$where_sql}
-				  ORDER BY created_at DESC
+				  ORDER BY {$orderby} {$order}
 				  LIMIT %d OFFSET %d",
 				...$page_params
 			),
