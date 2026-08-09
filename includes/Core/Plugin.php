@@ -1007,14 +1007,16 @@ class Plugin {
 		// Documents — the backend entry point for the document library (Coding
 		// Rule 18). Documents never appear on a media surface, so without this
 		// screen a site owner could not see what members had uploaded.
-		$document_hook = add_submenu_page(
+		// Only when something can show a document (Pro). A screen that can only
+		// ever be empty is worse than no screen.
+		$document_hook = self::documents_enabled() ? add_submenu_page(
 			self::ADMIN_SLUG,
 			__( 'Documents', 'wpmediaverse' ),
 			__( 'Documents', 'wpmediaverse' ),
 			'manage_options',
 			\WPMediaVerse\Admin\DocumentListPage::SLUG,
 			array( \WPMediaVerse\Admin\DocumentListPage::class, 'render' )
-		);
+		) : '';
 		if ( $document_hook ) {
 			// Same reason as All Media above: row and bulk actions redirect, so
 			// they have to run before any output.
@@ -1799,6 +1801,35 @@ class Plugin {
 		}
 
 		return $filtered;
+	}
+
+	/**
+	 * Whether anything on this site can actually show a document.
+	 *
+	 * Documents are a PRO feature. Free still has to KNOW what a document is —
+	 * `MediaTypes::DOCUMENT_LIBRARY` is what keeps them out of every media grid,
+	 * and `DocumentTypes` sits on Free's upload path — but Free must not put up
+	 * surfaces for a feature it cannot deliver. A Free-only site was getting an
+	 * `/explore-document/` page and a wp-admin Documents screen that could only
+	 * ever be empty.
+	 *
+	 * A filter rather than a class_exists check: Free asks whether the capability
+	 * is present and something else answers, which is the same seam the drive
+	 * already uses and keeps the dependency pointing one way.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return bool
+	 */
+	public static function documents_enabled(): bool {
+		/**
+		 * Filter whether document surfaces are available.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param bool $enabled Default false — Free alone cannot show a document.
+		 */
+		return (bool) apply_filters( 'mvs_documents_enabled', false );
 	}
 
 	/**

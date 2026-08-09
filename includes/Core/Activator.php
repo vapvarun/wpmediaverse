@@ -49,6 +49,32 @@ class Activator {
 	}
 
 	/**
+	 * Whether the documents page has anything to be for.
+	 *
+	 * True when Pro can show documents, or when the site holds quarantined
+	 * legacy documents that have no other surface.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return bool
+	 */
+	private static function documents_page_needed(): bool {
+		if ( Plugin::documents_enabled() ) {
+			return true;
+		}
+
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return (bool) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT 1 FROM {$wpdb->prefix}mvs_media_index WHERE media_type = %s LIMIT 1",
+				'legacy_document'
+			)
+		);
+	}
+
+	/**
 	 * Create the default frontend pages for Explore, Dashboard, and Upload.
 	 *
 	 * Pages are only created when the stored option is missing or points to a
@@ -99,9 +125,17 @@ class Activator {
 			// back link goes, so a member is never sent to a grid their item is
 			// not in.
 			//
-			// Created here even on a Free-only site: after Migrator v27 those
-			// sites can hold `legacy_document` rows, and this is the only surface
-			// that lists them.
+			// Documents are a PRO feature, so this page is NOT created on a
+			// Free-only site — with one exception that matters more than the
+			// rule. After Migrator v27 a site that upgraded can hold
+			// `legacy_document` rows: real files a member uploaded before 2.4.0,
+			// now excluded from every media grid because a PDF in a grid is a
+			// broken tile. This page is the only surface that lists them.
+			//
+			// Gating it unconditionally would therefore not make documents
+			// Pro-only; it would take away files people already had. So the page
+			// exists when Pro can show documents, OR when the site has legacy
+			// documents that would otherwise be unreachable.
 			'mvs_page_explore_documents' => array(
 				'title'     => 'Explore Documents',
 				'slug'      => 'explore-document',
@@ -110,6 +144,10 @@ class Activator {
 		);
 
 		foreach ( $pages as $option_key => $page_data ) {
+			if ( 'mvs_page_explore_documents' === $option_key && ! self::documents_page_needed() ) {
+				continue;
+			}
+
 			// 1. If the option already points to a live page with our shortcode, nothing to do.
 			$existing_id = (int) get_option( $option_key );
 			if ( $existing_id > 0 && 'publish' === get_post_status( $existing_id ) ) {
