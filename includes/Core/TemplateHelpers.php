@@ -1155,11 +1155,82 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		return home_url( '/media/' );
 	}
 
+	/**
+	 * The document listing page URL, or '' when there is not one.
+	 *
+	 * Returns an empty string rather than a fallback on purpose: with no document
+	 * page there is nowhere sensible to send a member, and sending them to the
+	 * MEDIA grid — which by design contains no documents — would be worse than
+	 * leaving the link as Explore.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string
+	 */
+	private function resolve_documents_url(): string {
+		$page_id = (int) get_option( 'mvs_page_explore_documents', 0 );
+
+		if ( $page_id ) {
+			$url = get_permalink( $page_id );
+			if ( $url ) {
+				return (string) $url;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Whether a media row is a document of either kind.
+	 *
+	 * Uses DOCUMENT_LIBRARY, so a quarantined `legacy_document` also returns to
+	 * the document page — it is not in a media grid either, so Explore would be
+	 * just as wrong for it.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $media_id Media id.
+	 * @return bool
+	 */
+	private function is_document( int $media_id ): bool {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		if ( ! $repo->exists( $media_id ) ) {
+			return false;
+		}
+
+		return in_array(
+			(string) $repo->get( $media_id, 'media_type' ),
+			\WPMediaVerse\Core\MediaTypes::DOCUMENT_LIBRARY,
+			true
+		);
+	}
+
 	public function get_parent_route( string $context, array $args = array() ): ?array {
 		$parent = null;
 
 		switch ( $context ) {
 			case 'single-media':
+				// A document goes back to the DOCUMENT page, never to Explore.
+				// `media-single.php` is shared by both — that reuse is deliberate
+				// (design §10) — but the back link is the one place where sharing
+				// a template would tell a member the wrong thing about where they
+				// came from, and offer them a grid their item is not in.
+				// (Owner, 2026-08-09.)
+				$media_id = isset( $args['media_id'] ) ? (int) $args['media_id'] : 0;
+
+				if ( $media_id && $this->is_document( $media_id ) ) {
+					$documents_url = $this->resolve_documents_url();
+
+					if ( '' !== $documents_url ) {
+						$parent = array(
+							'url'   => $documents_url,
+							'label' => __( 'Documents', 'wpmediaverse' ),
+						);
+						break;
+					}
+				}
+
 				$parent = array(
 					'url'   => $this->resolve_explore_url(),
 					'label' => __( 'Explore', 'wpmediaverse' ),

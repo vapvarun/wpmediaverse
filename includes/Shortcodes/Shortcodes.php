@@ -29,6 +29,7 @@ class Shortcodes {
 		add_shortcode( 'mvs_dashboard', array( $this, 'render_dashboard' ) );
 		add_shortcode( 'mvs_collection', array( $this, 'render_collection' ) );
 		add_shortcode( 'mvs_profile_edit', array( $this, 'render_profile_edit' ) );
+		add_shortcode( 'mvs_documents', array( $this, 'render_documents' ) );
 		add_shortcode( 'mvs_explore_feed', array( $this, 'render_explore_feed' ) );
 		add_shortcode( 'mvs_lock_overlay', array( $this, 'render_lock_overlay' ) );
 		add_shortcode( 'mvs_member_photos', array( $this, 'render_member_photos' ) );
@@ -814,6 +815,63 @@ class Shortcodes {
 
 		ob_start();
 		require \WPMediaVerse\Core\TemplateLoader::locate( 'usage-history.php', 'partials' ) ?: MVS_PLUGIN_DIR . 'templates/partials/usage-history.php';
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Render the [mvs_documents] shortcode — the public document listing.
+	 *
+	 * Documents get their own page rather than a corner of Explore (owner,
+	 * 2026-08-09). Two reasons, and the first is visible in a screenshot: a media
+	 * grid draws pictures, a PDF has none, so a document in one renders as a
+	 * broken tile. The second is that a single document's back link needs
+	 * somewhere honest to point — sending a member to a grid their item is not in
+	 * is worse than no link.
+	 *
+	 * ROWS, NOT TILES, per the display contract: a grid of identical PDF icons
+	 * carries no information, so each document is a row with a type chip, an
+	 * owner and a date.
+	 *
+	 * Lists PUBLIC documents only. Private ones live in the member's drive, which
+	 * is a different surface with a different permission model — this page never
+	 * tries to answer "what may this viewer see", it lists what is already public.
+	 *
+	 * Usage: [mvs_documents per_page="20"]
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array|string $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_documents( $atts ): string {
+		$atts = shortcode_atts(
+			array(
+				'per_page' => 20,
+				'type'     => '',
+			),
+			$atts,
+			'mvs_documents'
+		);
+
+		$mvs_doc_per_page = max( 1, min( 100, (int) $atts['per_page'] ) );
+		$mvs_doc_page     = max( 1, (int) ( $_GET['doc_page'] ?? 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$mvs_doc_filter   = sanitize_key( (string) ( $_GET['doc_type'] ?? $atts['type'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		wp_enqueue_style( 'mvs-frontend' );
+		if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
+			wp_enqueue_script( 'mvs-lucide' );
+		}
+
+		$mvs_doc_query = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->public_documents(
+			array(
+				'per_page' => $mvs_doc_per_page,
+				'page'     => $mvs_doc_page,
+				'doc_type' => $mvs_doc_filter,
+			)
+		);
+
+		ob_start();
+		require \WPMediaVerse\Core\TemplateLoader::locate( 'documents.php' ) ?: MVS_PLUGIN_DIR . 'templates/documents.php';
 		return (string) ob_get_clean();
 	}
 }

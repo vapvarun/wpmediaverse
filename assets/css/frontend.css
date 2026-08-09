@@ -6613,3 +6613,152 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 .mvs-media-gate__cta {
 	margin-top: 0.5rem;
 }
+
+/* ---------------------------------------------------------------------------
+ * Document listing — /explore-document
+ *
+ * ROWS, not tiles. A grid of identical PDF icons carries no information, and a
+ * media grid asked to draw a PDF produces a broken tile. A row shows what
+ * actually distinguishes one document from another.
+ * ------------------------------------------------------------------------- */
+.mvs-documents__header {
+	display: flex;
+	align-items: baseline;
+	gap: var(--mvs-space-sm, 8px);
+	margin-block-end: var(--mvs-space-lg, 24px);
+}
+
+.mvs-documents__count {
+	color: var(--mvs-text-muted, #646970);
+	margin: 0;
+}
+
+.mvs-documents__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	border: 1px solid var(--mvs-border, #dcdcde);
+	border-radius: var(--mvs-radius-md, 8px);
+	overflow: hidden;
+}
+
+.mvs-documents__row {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+	align-items: center;
+	gap: var(--mvs-space-md, 16px);
+	padding: var(--mvs-space-md, 16px);
+	border-block-end: 1px solid var(--mvs-border, #dcdcde);
+	background: var(--mvs-surface, #fff);
+}
+
+.mvs-documents__row:last-child {
+	border-block-end: 0;
+}
+
+.mvs-documents__icon {
+	display: inline-flex;
+	color: var(--mvs-text-muted, #646970);
+}
+
+.mvs-documents__main {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.mvs-documents__name {
+	font-weight: 600;
+	text-decoration: none;
+	color: var(--mvs-text, #1d2327);
+	/* 40px tap target on touch without stretching the row on desktop. */
+	padding-block: 4px;
+}
+
+.mvs-documents__name:hover,
+.mvs-documents__name:focus-visible {
+	text-decoration: underline;
+}
+
+.mvs-documents__excerpt,
+.mvs-documents__owner,
+.mvs-documents__size,
+.mvs-documents__date {
+	color: var(--mvs-text-muted, #646970);
+	font-size: var(--mvs-font-sm, 0.875rem);
+}
+
+.mvs-documents__excerpt {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mvs-documents__chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px var(--mvs-space-sm, 8px);
+	border-radius: var(--mvs-radius-pill, 999px);
+	background: var(--mvs-surface-2, #f0f0f1);
+	color: var(--mvs-text-muted, #646970);
+	font-size: var(--mvs-font-xs, 0.75rem);
+	font-weight: 600;
+	letter-spacing: 0.02em;
+}
+
+.mvs-documents__pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--mvs-space-md, 16px);
+	margin-block-start: var(--mvs-space-lg, 24px);
+}
+
+/* Under 640px the metadata columns stop earning their width, so the row stops
+ * being a grid entirely.
+ *
+ * It cannot stay a grid with the meta cells sharing one area: four siblings
+ * assigned to the same grid-area STACK on top of each other, which is exactly
+ * what the 390px screenshot showed — "PDF", the owner, the size and the date
+ * all overprinting in one box. Flex-wrap flows them instead. */
+@media (max-width: 640px) {
+	.mvs-documents__row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		column-gap: var(--mvs-space-sm, 8px);
+		row-gap: 4px;
+	}
+
+	.mvs-documents__main {
+		/* Take the rest of the first line, pushing the meta to the next. */
+		flex: 1 1 60%;
+	}
+
+	.mvs-documents__excerpt {
+		white-space: normal;
+	}
+
+	/* The row is the whole visual hit area on a phone, but the LINK is what a
+	 * finger aims at, and at desktop line-height it lands at 30px. Raise it past
+	 * the 40px floor rather than relying on the row's padding, which is not
+	 * clickable. */
+	.mvs-documents__name {
+		min-height: 40px;
+		display: flex;
+		align-items: center;
+	}
+
+	.mvs-documents__chip,
+	.mvs-documents__owner,
+	.mvs-documents__size,
+	.mvs-documents__date {
+		flex: 0 0 auto;
+	}
+
+	/* The meta line starts under the icon, not beside it. */
+	.mvs-documents__chip {
+		margin-inline-start: calc(20px + var(--mvs-space-md, 16px));
+	}
+}

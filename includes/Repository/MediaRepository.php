@@ -848,6 +848,94 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Public documents, for the document listing page.
+	 *
+	 * Uses `MediaTypes::DOCUMENT_LIBRARY`, so quarantined `legacy_document` rows
+	 * appear here — this is the surface that renders them correctly, as a row with
+	 * a type chip rather than a picture that does not exist.
+	 *
+	 * PUBLIC ONLY. Private documents belong to a member's drive, which is a
+	 * different surface with a grants-first permission model; this page never
+	 * tries to answer "what may this viewer see", it lists what is already public.
+	 * That keeps it a simple indexed read and keeps the ACL in one place.
+	 *
+	 * Served by `KEY type_file` when filtered by type, and returns an honest total
+	 * from a dedicated COUNT(*) — never `count()` of the page, which would be
+	 * wrong past page 1.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type int    $per_page Rows per page. Default 20.
+	 *     @type int    $page     1-based page. Default 1.
+	 *     @type string $doc_type Optional MIME-group filter, e.g. 'pdf'.
+	 * }
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function public_documents( array $args = array() ): array {
+		global $wpdb;
+
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 20;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+		$doc_type = isset( $args['doc_type'] ) ? (string) $args['doc_type'] : '';
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENT_LIBRARY );
+
+		$where  = array( $type_sql, 'privacy = %s', 'status = %s', 'moderation_status = %s' );
+		$params = array_merge( $type_params, array( 'public', 'publish', 'approved' ) );
+
+		// A doc_type filter resolves to the MIME types that map to it, so the
+		// clause stays a positive list on an indexed column rather than a LIKE.
+		if ( '' !== $doc_type && class_exists( '\WPMediaVerse\Core\DocumentTypes' ) ) {
+			$mimes = array();
+			foreach ( \WPMediaVerse\Core\DocumentTypes::allowed_mimes() as $mime ) {
+				if ( \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mime ) === $doc_type ) {
+					$mimes[] = $mime;
+				}
+			}
+
+			if ( $mimes ) {
+				$where[] = 'file_type IN ( ' . implode( ', ', array_fill( 0, count( $mimes ), '%s' ) ) . ' )';
+				$params  = array_merge( $params, $mimes );
+			} else {
+				// An unknown filter matches nothing rather than everything —
+				// failing open here would show every document under a label the
+				// member chose to narrow by.
+				$where[] = '1 = 0';
+			}
+		}
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$where_sql}", ...$params ) );
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = ( $page - 1 ) * $per_page;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, created_at
+				   FROM {$index}
+				  WHERE {$where_sql}
+				  ORDER BY created_at DESC
+				  LIMIT %d OFFSET %d",
+				...$page_params
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+			'pages' => (int) ceil( $total / $per_page ),
+		);
+	}
+
+	/**
 	 * How closed a privacy value is. Instance form, for the boundary interface.
 	 *
 	 * @since 2.4.0

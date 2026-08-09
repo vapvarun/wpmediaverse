@@ -517,7 +517,7 @@ parameters:
 
 		-
 			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 10
+			count: 11
 			path: includes/Shortcodes/Shortcodes.php
 
 		-

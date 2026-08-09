@@ -103,7 +103,15 @@ $mvs_permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository'
 $mvs_archive_url = home_url( '/media/' );
 ?>
 <div class="mvs-single-media mvs-page">
-	<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_back_link( 'single-media' ); ?>
+	<?php
+	// The id decides where "back" goes: a document returns to the document page,
+	// media to Explore. This template is shared by both on purpose (design §10),
+	// and the back link is the one part that must not be.
+	\WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_back_link(
+		'single-media',
+		array( 'media_id' => $mvs_media_id )
+	);
+	?>
 	<article id="mvs-media-<?php echo absint( $mvs_media_id ); ?>" class="mvs-media-article">
 		<header class="mvs-media-header">
 			<div class="mvs-media-header-row">

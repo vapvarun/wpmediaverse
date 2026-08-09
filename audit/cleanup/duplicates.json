@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-09T11:57:37Z",
+    "generated_at": "2026-08-09T12:09:10Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -17,7 +17,7 @@
     "counts": {
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 32,
-        "free_files_scanned": 191,
+        "free_files_scanned": 192,
         "pro_files_scanned": 181
     },
     "cross_plugin_duplicates": [
@@ -706,12 +706,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2625-2625",
+                    "lines": "2713-2713",
                     "method": "trash"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2653-2653",
+                    "lines": "2741-2741",
                     "method": "restore"
                 }
             ]
@@ -724,7 +724,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2454-2454",
+                    "lines": "2542-2542",
                     "method": "record_event"
                 },
                 {
@@ -783,12 +783,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2399-2399",
+                    "lines": "2487-2487",
                     "method": "increment_stat"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2426-2426",
+                    "lines": "2514-2514",
                     "method": "set_stat"
                 }
             ]
@@ -1093,7 +1093,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2331-2331",
+                    "lines": "2419-2419",
                     "method": "get_user_stats"
                 },
                 {

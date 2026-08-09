@@ -91,6 +91,22 @@ class Activator {
 				'slug'      => 'upload-media',
 				'shortcode' => '[mvs_upload]',
 			),
+			// Documents get their OWN listing page, not a corner of Explore.
+			// (Owner, 2026-08-09.) A media grid draws pictures; a PDF has none, so
+			// a document in one renders as a broken tile — which is what a
+			// screenshot of `/explore-media` showed. This page renders documents
+			// as rows with a type chip, and it is also where a single document's
+			// back link goes, so a member is never sent to a grid their item is
+			// not in.
+			//
+			// Created here even on a Free-only site: after Migrator v27 those
+			// sites can hold `legacy_document` rows, and this is the only surface
+			// that lists them.
+			'mvs_page_explore_documents' => array(
+				'title'     => 'Explore Documents',
+				'slug'      => 'explore-document',
+				'shortcode' => '[mvs_documents]',
+			),
 		);
 
 		foreach ( $pages as $option_key => $page_data ) {
