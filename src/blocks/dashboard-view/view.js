@@ -201,6 +201,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get isAlbumsTab() { return state.activeTab === 'albums'; },
 		get isFavoritesTab() { return state.activeTab === 'favorites'; },
 		get isCollectionsTab() { return state.activeTab === 'collections'; },
+		// Documents: a server-rendered panel, so the store only owns which tab
+		// is showing. The drive inside it is plain HTML — no client state to
+		// keep in step with it.
+		get isDocumentsTab() { return state.activeTab === 'documents'; },
 		// Pro gamification tabs (computed here so panels can bind without store extension).
 		get isChallengesTab() { return state.activeTab === 'challenges'; },
 		get isBattlesTab() { return state.activeTab === 'battles'; },

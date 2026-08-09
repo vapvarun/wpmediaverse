@@ -452,6 +452,27 @@ wp_interactivity_state(
 		</button>
 		<?php
 		/**
+		 * Documents. A real tab with a real panel, not a link away: a member
+		 * managing their media should not be sent to another page to manage
+		 * their documents, and the upload control has to be on the screen they
+		 * are already looking at.
+		 *
+		 * Rendered only when something can fill it (Pro), for the same reason
+		 * the registry tabs are only offered when they resolve.
+		 */
+		$mvs_dash_drive = (string) apply_filters( 'mvs_documents_drive_html', '', 'my-drive', array( 'probe' => true ) );
+
+		if ( '' !== $mvs_dash_drive ) :
+			?>
+			<button class="mvs-dashboard-tab" data-tab="documents" role="tab" type="button"
+				data-wp-class--active="state.isDocumentsTab"
+				data-wp-on--click="actions.switchTab">
+				<?php esc_html_e( 'Documents', 'wpmediaverse' ); ?>
+			</button>
+			<?php
+		endif;
+
+		/**
 		 * Filter the dashboard's registered tabs.
 		 *
 		 * A REGISTRY, returning data the template renders — not markup an
@@ -506,6 +527,28 @@ wp_interactivity_state(
 		do_action( 'mvs_dashboard_tabs' );
 		?>
 	</nav>
+
+	<?php if ( '' !== $mvs_dash_drive ) : ?>
+		<!-- Documents Panel -->
+		<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isDocumentsTab">
+			<?php
+			// The drive, rendered server-side into the panel: folders, upload,
+			// filters and the per-row controls, on the same screen.
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the filter contract requires escaped markup.
+			echo apply_filters(
+				'mvs_documents_drive_html',
+				'',
+				'my-drive',
+				array(
+					// phpcs:disable WordPress.Security.NonceVerification.Recommended
+					'folder' => isset( $_GET['folder'] ) ? absint( $_GET['folder'] ) : 0,
+					'page'   => isset( $_GET['doc_page'] ) ? max( 1, absint( $_GET['doc_page'] ) ) : 1,
+					// phpcs:enable WordPress.Security.NonceVerification.Recommended
+				)
+			);
+			?>
+		</div>
+	<?php endif; ?>
 
 	<!-- My Media Panel -->
 	<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isMediaTab">

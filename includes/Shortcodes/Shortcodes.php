@@ -904,11 +904,20 @@ class Shortcodes {
 			wp_enqueue_script( 'mvs-lucide' );
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only listing control.
+		$mvs_doc_search = isset( $_GET['doc_s'] ) ? sanitize_text_field( wp_unslash( $_GET['doc_s'] ) ) : '';
+
+		// Only the types this site actually HAS, so no chip is a dead end.
+		$mvs_doc_type_counts = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->document_type_counts(
+			array( 'public_only' => true )
+		);
+
 		$mvs_doc_query = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->public_documents(
 			array(
 				'per_page' => $mvs_doc_per_page,
 				'page'     => $mvs_doc_page,
 				'doc_type' => $mvs_doc_filter,
+				'search'   => $mvs_doc_search,
 			)
 		);
 

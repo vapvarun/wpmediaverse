@@ -16,6 +16,8 @@
  * @var int    $mvs_doc_page     Current page.
  * @var int    $mvs_doc_per_page Rows per page.
  * @var string $mvs_doc_filter   Active type filter, or ''.
+ * @var string $mvs_doc_search      Active search term, or ''.
+ * @var array  $mvs_doc_type_counts Named type => count, for the chip row.
  * @var string $mvs_doc_root     Active drive root, or '' for the public listing.
  * @var int    $mvs_doc_folder   Folder being viewed, 0 for a drive root.
  *
@@ -48,69 +50,79 @@ $mvs_doc_icons = array(
 	'rtf'              => 'file',
 );
 
-/**
- * The drive — "My Drive", "Shared with me", "Recent".
- *
- * Rendered by Pro: folders, the permission ladder and grants all live there, and
- * Free showing an approximation of a permission-scoped listing would be worse
- * than Free showing none. An empty answer means the tab is not offered at all —
- * a tab that opens onto nothing is a broken promise, not a smaller feature.
- *
- * @since 2.4.0
- *
- * @param string $html Drive markup. Must be fully escaped.
- * @param string $root my-drive|shared|recent.
- * @param array  $args { @type int $folder, @type int $page }.
- */
-$mvs_doc_drive_html = is_user_logged_in() && '' !== $mvs_doc_root
-	? (string) apply_filters(
-		'mvs_documents_drive_html',
-		'',
-		$mvs_doc_root,
-		array(
-			'folder' => $mvs_doc_folder,
-			'page'   => $mvs_doc_page,
-		)
-	)
-	: '';
-
-// Only offer the drive tabs when something can actually render them.
-$mvs_doc_has_drive = is_user_logged_in()
-	&& '' !== (string) apply_filters( 'mvs_documents_drive_html', '', 'my-drive', array( 'probe' => true ) );
-
-$mvs_doc_tabs = array( 'public' => __( 'Public', 'wpmediaverse' ) );
-
-if ( $mvs_doc_has_drive ) {
-	$mvs_doc_tabs = array(
-		'my-drive' => __( 'My Drive', 'wpmediaverse' ),
-		'shared'   => __( 'Shared with me', 'wpmediaverse' ),
-		'recent'   => __( 'Recent', 'wpmediaverse' ),
-		'public'   => __( 'Public', 'wpmediaverse' ),
-	);
-}
-
-$mvs_doc_active = ( '' !== $mvs_doc_root && isset( $mvs_doc_tabs[ $mvs_doc_root ] ) ) ? $mvs_doc_root : 'public';
 ?>
 <div class="mvs-documents mvs-page">
-	<?php if ( count( $mvs_doc_tabs ) > 1 ) : ?>
-		<nav class="mvs-documents__tabs" aria-label="<?php esc_attr_e( 'Document views', 'wpmediaverse' ); ?>">
-			<ul>
-				<?php foreach ( $mvs_doc_tabs as $mvs_doc_tab => $mvs_doc_label ) : ?>
-					<li>
-						<a class="mvs-documents__tab<?php echo $mvs_doc_tab === $mvs_doc_active ? ' is-active' : ''; ?>"
-							href="<?php echo esc_url( 'public' === $mvs_doc_tab ? remove_query_arg( array( 'drive', 'folder', 'doc_page' ) ) : add_query_arg( array( 'drive' => $mvs_doc_tab, 'folder' => null, 'doc_page' => null ) ) ); ?>"
-							<?php echo $mvs_doc_tab === $mvs_doc_active ? ' aria-current="page"' : ''; ?>>
-							<?php echo esc_html( $mvs_doc_label ); ?>
-						</a>
-					</li>
-				<?php endforeach; ?>
-			</ul>
-		</nav>
+	<?php
+	// The same search bar and chip row Explore Media uses, with its classes, so
+	// the two pages read as one product rather than two. Documents get a type
+	// chip row where media gets tags — the equivalent "narrow this down"
+	// control for a library where every item looks alike.
+	$mvs_doc_base = remove_query_arg( array( 'doc_s', 'doc_type', 'doc_page' ) );
+	?>
+	<div class="mvs-explore-search">
+		<form method="get" action="<?php echo esc_url( $mvs_doc_base ); ?>">
+			<?php
+			// phpcs:disable WordPress.Security.NonceVerification.Recommended
+			foreach ( array( 'drive', 'folder' ) as $mvs_doc_carry ) {
+				if ( isset( $_GET[ $mvs_doc_carry ] ) && '' !== $_GET[ $mvs_doc_carry ] ) {
+					printf(
+						'<input type="hidden" name="%s" value="%s" />',
+						esc_attr( $mvs_doc_carry ),
+						esc_attr( sanitize_text_field( wp_unslash( $_GET[ $mvs_doc_carry ] ) ) )
+					);
+				}
+			}
+			// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+			if ( '' !== $mvs_doc_filter ) {
+				printf( '<input type="hidden" name="doc_type" value="%s" />', esc_attr( $mvs_doc_filter ) );
+			}
+			?>
+			<div class="mvs-search-bar">
+				<div class="mvs-search-field">
+					<svg class="mvs-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+					<label for="mvs-doc-search" class="screen-reader-text"><?php esc_html_e( 'Search documents', 'wpmediaverse' ); ?></label>
+					<input type="text" id="mvs-doc-search" name="doc_s"
+						placeholder="<?php esc_attr_e( 'Search documents...', 'wpmediaverse' ); ?>"
+						value="<?php echo esc_attr( $mvs_doc_search ); ?>" />
+				</div>
+			</div>
+		</form>
+	</div>
+
+	<?php if ( count( $mvs_doc_type_counts ) > 1 || '' !== $mvs_doc_filter ) : ?>
+	<div class="mvs-tag-cloud">
+		<a class="mvs-tag-cloud-item <?php echo '' === $mvs_doc_filter ? 'active' : ''; ?>"
+			href="<?php echo esc_url( add_query_arg( array_filter( array( 'doc_s' => $mvs_doc_search ) ), $mvs_doc_base ) ); ?>">
+			<?php esc_html_e( 'All', 'wpmediaverse' ); ?>
+		</a>
+		<span class="mvs-tag-cloud-items">
+			<?php
+			// Only types this site HAS, commonest first. A chip built from every
+			// type the plugin can store is a chip guaranteed to return nothing —
+			// a site with two PDFs was offering PowerPoint, ODF Slides and RTF,
+			// each one a dead end.
+			//
+			// The active filter is kept even at zero, so a member who followed a
+			// link or narrowed to nothing still sees which chip is on and can
+			// turn it off.
+			$mvs_doc_chips = $mvs_doc_type_counts;
+
+			if ( '' !== $mvs_doc_filter && ! isset( $mvs_doc_chips[ $mvs_doc_filter ] ) ) {
+				$mvs_doc_chips[ $mvs_doc_filter ] = 0;
+			}
+
+			foreach ( $mvs_doc_chips as $mvs_doc_opt => $mvs_doc_count ) :
+				?>
+				<a class="mvs-tag-cloud-item <?php echo $mvs_doc_filter === $mvs_doc_opt ? 'active' : ''; ?>"
+					href="<?php echo esc_url( add_query_arg( array_filter( array( 'doc_type' => $mvs_doc_opt, 'doc_s' => $mvs_doc_search ) ), $mvs_doc_base ) ); ?>">
+					<?php echo esc_html( \WPMediaVerse\Core\DocumentTypes::label( (string) $mvs_doc_opt ) ); ?>
+				</a>
+			<?php endforeach; ?>
+		</span>
+	</div>
 	<?php endif; ?>
 
-	<?php if ( 'public' !== $mvs_doc_active ) : ?>
-		<?php echo $mvs_doc_drive_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the filter contract requires escaped markup. ?>
-	<?php else : ?>
 	<header class="mvs-documents__header">
 		<?php
 		// No <h1> here: the page already supplies its title, and a second heading
@@ -136,16 +148,16 @@ $mvs_doc_active = ( '' !== $mvs_doc_root && isset( $mvs_doc_tabs[ $mvs_doc_root 
 			$mvs_doc_helper->render_block_empty_state(
 				array(
 					'icon'    => 'file-text',
-					'title'   => '' !== $mvs_doc_filter
-						? __( 'No documents of that type yet', 'wpmediaverse' )
+					'title'   => ( '' !== $mvs_doc_filter || '' !== $mvs_doc_search )
+						? __( 'Nothing matches that search', 'wpmediaverse' )
 						: __( 'No documents yet', 'wpmediaverse' ),
-					'message' => '' !== $mvs_doc_filter
-						? __( 'Nothing here matches that filter. Try browsing everything instead.', 'wpmediaverse' )
+					'message' => ( '' !== $mvs_doc_filter || '' !== $mvs_doc_search )
+						? __( 'Try a different word, or browse everything instead.', 'wpmediaverse' )
 						: __( 'Documents shared publicly will appear here.', 'wpmediaverse' ),
-					'actions' => '' !== $mvs_doc_filter
+					'actions' => ( '' !== $mvs_doc_filter || '' !== $mvs_doc_search )
 						? array(
 							array(
-								'url'   => remove_query_arg( array( 'doc_type', 'doc_page' ) ),
+								'url'   => remove_query_arg( array( 'doc_type', 'doc_page', 'doc_s' ) ),
 								'label' => __( 'Browse all documents', 'wpmediaverse' ),
 							),
 						)
@@ -231,6 +243,5 @@ $mvs_doc_active = ( '' !== $mvs_doc_root && isset( $mvs_doc_tabs[ $mvs_doc_root 
 				<?php endif; ?>
 			</nav>
 		<?php endif; ?>
-	<?php endif; ?>
 	<?php endif; ?>
 </div>

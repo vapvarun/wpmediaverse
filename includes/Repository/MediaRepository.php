@@ -1017,6 +1017,86 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Which document types are actually present, and how many of each.
+	 *
+	 * A filter row built from every type this plugin CAN store offers chips that
+	 * are guaranteed to return nothing — a site with three PDFs still showed
+	 * PowerPoint, ODF Slides and RTF, each one a dead end. The media tag cloud
+	 * has always worked the other way round: it lists the tags in use. This is
+	 * the same idea for documents.
+	 *
+	 * One grouped query. The MIME-to-type fold happens in PHP because the
+	 * mapping lives in `DocumentTypes` and duplicating it in SQL would give the
+	 * database its own opinion about what a Word file is.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type bool   $public_only Restrict to publicly visible documents.
+	 *     @type int    $author      Restrict to one uploader, 0 for all.
+	 *     @type bool   $legacy      Include quarantined legacy documents.
+	 * }
+	 * @return array<string, int> Named type => count, highest first, no zeroes.
+	 */
+	public function document_type_counts( array $args = array() ): array {
+		global $wpdb;
+
+		$public_only = ! empty( $args['public_only'] );
+		$author      = isset( $args['author'] ) ? (int) $args['author'] : 0;
+		$types       = ! empty( $args['legacy'] ) ? MediaTypes::DOCUMENT_LIBRARY : MediaTypes::DOCUMENTS;
+
+		list( $type_sql, $params ) = MediaTypes::in_clause( $types );
+
+		$where = array( $type_sql, 'status = %s' );
+		$params[] = 'publish';
+
+		if ( $public_only ) {
+			$where[]  = 'privacy = %s';
+			$params[] = 'public';
+			$where[]  = 'moderation_status = %s';
+			$params[] = 'approved';
+		}
+
+		if ( $author > 0 ) {
+			$where[]  = 'post_author = %d';
+			$params[] = $author;
+		}
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT file_type, COUNT(*) AS total
+				   FROM {$index}
+				  WHERE {$where_sql}
+				  GROUP BY file_type",
+				...$params
+			),
+			ARRAY_A
+		);
+
+		$counts = array();
+
+		foreach ( $rows as $row ) {
+			$group = \WPMediaVerse\Core\DocumentTypes::group_for_mime( (string) $row['file_type'] );
+
+			if ( null === $group ) {
+				// A stored MIME this build does not name. Counting it under a
+				// chip nobody could click would be worse than leaving it out.
+				continue;
+			}
+
+			$counts[ $group ] = ( $counts[ $group ] ?? 0 ) + (int) $row['total'];
+		}
+
+		arsort( $counts );
+
+		return $counts;
+	}
+
+	/**
 	 * SQL clause narrowing a document listing to one named type.
 	 *
 	 * A `doc_type` is a display group, not a stored column — `file_type` holds
@@ -1196,6 +1276,18 @@ class MediaRepository implements MediaRepositoryInterface {
 
 			$where[] = $mime_sql;
 			$params  = array_merge( $params, $mime_params );
+		}
+
+		// Title search on the public listing. Deliberately NOT the full-text
+		// index: that one is permission-scoped and covers file CONTENTS, which
+		// is not something an anonymous visitor gets to search.
+		$search = isset( $args['search'] ) ? trim( (string) $args['search'] ) : '';
+
+		if ( '' !== $search ) {
+			$where[]  = '( title LIKE %s OR description LIKE %s )';
+			$like     = '%' . $wpdb->esc_like( $search ) . '%';
+			$params[] = $like;
+			$params[] = $like;
 		}
 
 		$index     = $wpdb->prefix . 'mvs_media_index';

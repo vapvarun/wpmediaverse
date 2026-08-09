@@ -342,6 +342,36 @@ final class DocumentTypes {
 	}
 
 	/**
+	 * Human label for a named type.
+	 *
+	 * The internal keys are snake_case identifiers — printing them raw gave the
+	 * public filter row chips reading "ODF_PRESENTATION", which is a database
+	 * value wearing a button. Translators get a real word to translate, too.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $type Named document type.
+	 * @return string
+	 */
+	public static function label( string $type ): string {
+		$labels = array(
+			'pdf'              => __( 'PDF', 'wpmediaverse' ),
+			'word'             => __( 'Word', 'wpmediaverse' ),
+			'excel'            => __( 'Excel', 'wpmediaverse' ),
+			'powerpoint'       => __( 'PowerPoint', 'wpmediaverse' ),
+			'odf_text'         => __( 'ODF Text', 'wpmediaverse' ),
+			'odf_sheet'        => __( 'ODF Sheet', 'wpmediaverse' ),
+			'odf_presentation' => __( 'ODF Slides', 'wpmediaverse' ),
+			'text'             => __( 'Text', 'wpmediaverse' ),
+			'markdown'         => __( 'Markdown', 'wpmediaverse' ),
+			'csv'              => __( 'CSV', 'wpmediaverse' ),
+			'rtf'              => __( 'RTF', 'wpmediaverse' ),
+		);
+
+		return $labels[ $type ] ?? ucfirst( str_replace( '_', ' ', $type ) );
+	}
+
+	/**
 	 * The MIME this library stores for a named type.
 	 *
 	 * `group_for_mime()` is the only way anything downstream learns a document's

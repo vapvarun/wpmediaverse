@@ -303,12 +303,13 @@ class Plugin {
 		$access_rules = self::$container->get( 'access_rules' );
 		add_filter( 'mvs_privacy_can_view', array( $access_rules, 'filter_privacy_can_view' ), 20, 4 );
 
-		// Interlinking (P10.1): the dashboard gets a Documents tab, so a member
-		// who is looking at their media has a way to reach their documents. It
-		// registers through the new tab REGISTRY rather than echoing markup on
-		// the legacy action — the registry is the seam that can be reasoned
-		// about, and this is its first consumer.
-		add_filter( 'mvs_dashboard_tab_registry', array( self::class, 'register_documents_tab' ) );
+		// NOTE: the dashboard's Documents tab is no longer registered here. It
+		// began as a registry LINK out to the documents page, and became a real
+		// panel rendering the drive in place — a member managing their media
+		// should not be sent elsewhere to manage their documents, and the upload
+		// control has to be on the screen they are already on. The registry
+		// itself stays: it is the seam that fixed the action/filter collision,
+		// and it remains the supported way for anything else to add a tab.
 
 		// Signing now lives in \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get($id, 'file_url') — the
 		// previous `mvs_media_response` listener at priority 10 was retired
