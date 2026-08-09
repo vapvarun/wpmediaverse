@@ -323,7 +323,7 @@ All five verified at **390px**. A viewer that only works on desktop is not done.
 
 | Task | Do | Self-check |
 |---|---|---|
-| **P9.0** | **`/explore-documents` archive page** — the documents counterpart to `/explore-media`, so the two libraries never share a page (owner, 2026-08-09). New `mvs_page_documents` option + page in `Activator::create_pages()` (slug `explore-documents`, title "Explore Documents"), new `[mvs_documents]` shortcode, new `templates/explore-documents.php`. **Detach `_wp_auto_add_pages_to_menu` around the insert exactly as the existing three pages do** (Coding Rule 17 — activation must never edit the site's menus) | Open `/explore-documents` and `/explore-media` side by side, desktop + 390px: neither lists the other's items. Confirm **Appearance → Menus is unchanged** after activation |
+| **P9.0** | **The documents page + `/documents/` route** — so documents are reachable at their own stable URL and never share a page with media (owner, 2026-08-09). New `mvs_page_documents` option + page in `Activator::create_pages()` and a `[mvs_documents]` shortcode rendering the P9.1 drive. **Detach `_wp_auto_add_pages_to_menu` around the insert exactly as the existing three pages do** (Coding Rule 17 — activation must never edit the site's menus). **Not a public archive** — see the resolution below | Open the documents page and `/explore-media` side by side, desktop + 390px: neither lists the other's items. Confirm **Appearance → Menus is unchanged** after activation |
 | **P9.1** | Drive view — three virtual roots (My Drive / Shared with me / Recent) | Desktop + 390px |
 | **P9.2** | Folder navigation + **breadcrumbs** | **RELEASE BLOCKER:** a member granted `/Contracts` must never see an ancestor folder name in **any** response. Folder names carry client identities and project codenames — this is an information leak, not a display bug. Check the JSON, not just the rendered crumb |
 | **P9.3** | Single-document view | Desktop + 390px |
@@ -334,20 +334,30 @@ All five verified at **390px**. A viewer that only works on desktop is not done.
 
 ---
 
-### Open question on P9.0 — what does `/explore-documents` list?
+### P9.0 resolved against the locked UX — it is `/documents/`, and it is not a feed
 
-The separation is settled; **the audience is not**, and the two readings are materially different
-builds:
+The separation the owner asked for (2026-08-09) is already the design. The
+[UX artifact](https://claude.ai/code/artifact/70f57ecc-48e5-477c-8f8a-7ae19a81e521) locks two rules
+that decide the shape, and a literal mirror of `/explore-media` would break both:
 
-- **(a) Viewer-scoped archive** — the documents this viewer can see: their own, shared with them,
-  plus any deliberately made public. Works on every site from day one.
-- **(b) Public archive**, the true mirror of `/explore-media`. But **D8 / P3.4 force uploaded
-  documents to `private`**, so on a default install this page renders empty until members
-  deliberately publish documents. An empty "Explore Documents" page reads as broken.
+> **"On a document, public means unlisted — reachable by URL, never in a feed."**
+>
+> **"Files are rows, not tiles — a grid of identical PDF icons carries no information."**
 
-**Assumption if unanswered: (a).** It satisfies the stated goal — documents never mixed with media —
-without shipping a surface that is empty by construction. If (b) is wanted, the privacy default in
-P3.4 has to be revisited with it, because the two decisions contradict each other.
+So there is no public documents *feed* to build. The documents counterpart to `/explore-media` is the
+**drive**, viewer-scoped, at `/documents/` with the three roots in P9.1 — My Drive, Shared with me,
+Space drives. That satisfies the requirement in full (documents are never listed beside media, and
+they have a page of their own) without shipping a surface that is empty by construction on a default
+install, since **D8 / P3.4 force uploaded documents to `private`**.
+
+**Therefore P9.0 is a page + route task, not a new archive:** register the `/documents/` path and its
+page so the drive is reachable at a stable URL, and keep `explore-documents` as an alias only if the
+owner wants that wording in the menu. Everything it lists comes from P9.1.
+
+**The UX artifact is the display contract.** Rows not tiles; folders sort above files; direct-child
+counts via one `GROUP BY` per page, never recursive; icon chips per type; breadcrumb truncated at the
+grant point; single view reuses `media-single.php` with only the preview panel differing; the share
+modal never says "Public". Build P9.x against it, not against this file's summaries of it.
 
 ---
 
