@@ -351,4 +351,62 @@ interface MediaRepositoryInterface {
 	 * @param int $media_id The mvs_media_index PK.
 	 */
 	public function purge_index_record( int $media_id ): void;
+
+	/**
+	 * Tighten the privacy of every document sitting in the given folders.
+	 *
+	 * On the boundary interface because Pro's FolderService drives the T2
+	 * cascade and must reach this WITHOUT writing `mvs_media_index` itself —
+	 * Free owns that table (architecture invariant 6).
+	 *
+	 * Tightening only: rows already at or beyond the target are left alone, so
+	 * an explicit `private` on one file outranks its container.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $folder_ids Folder ids whose documents are affected.
+	 * @param string $privacy    Target privacy.
+	 * @param int    $limit      0 for no limit; above 0 caps the update for batching.
+	 * @return int Rows changed.
+	 */
+	public function tighten_document_privacy_in_folders( array $folder_ids, string $privacy, int $limit = 0 ): int;
+
+	/**
+	 * How many documents a privacy tightening would change.
+	 *
+	 * Backs the confirmation copy, counted the same way the UPDATE selects so the
+	 * number a member is shown is the number that moves.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $folder_ids Folder ids.
+	 * @param string $privacy    Target privacy.
+	 * @return int
+	 */
+	public function count_documents_to_tighten( array $folder_ids, string $privacy ): int;
+
+	/**
+	 * How closed a privacy value is. Higher is more restrictive; -1 if unknown.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $privacy Privacy value.
+	 * @return int
+	 */
+	public function privacy_level( string $privacy ): int;
+
+	/**
+	 * Every privacy value strictly looser than the given one.
+	 *
+	 * Exposed so a caller can tighten its OWN table with the same definition of
+	 * "looser" this repository uses. Without it Pro would have to re-implement
+	 * the ordering, and two copies of a privacy comparison drifting apart is a
+	 * security bug rather than an inconsistency.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $privacy Privacy value.
+	 * @return string[] Empty when nothing is looser, or the value is unknown.
+	 */
+	public function privacy_levels_looser_than( string $privacy ): array;
 }

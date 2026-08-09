@@ -50,6 +50,12 @@ class MediaRepository implements MediaRepositoryInterface {
 		'height',
 		'duration',
 		'album_id',
+		// Added by Migrator v27 for the document library. It MUST be listed here:
+		// without it `set( $id, 'folder_id', … )` writes to mvs_media_meta
+		// instead of the column, so the column stays 0, `KEY doc_listing`
+		// matches nothing, and every drive listing and privacy cascade silently
+		// finds no documents. Caught by the P3.8 cascade tests.
+		'folder_id',
 		'view_count',
 		'reaction_count',
 		'comment_count',
@@ -814,6 +820,186 @@ class MediaRepository implements MediaRepositoryInterface {
 		);
 
 		self::invalidate_row_cache( $media_id );
+	}
+
+	/**
+	 * Privacy levels ordered from most open to most closed.
+	 *
+	 * Used to decide what "tightening" means. `dm` is absent deliberately — it is
+	 * a messaging scope, not a position on this scale.
+	 *
+	 * @since 2.4.0
+	 * @var string[]
+	 */
+	public const PRIVACY_ORDER = array( 'public', 'members', 'loggedin', 'friends', 'space', 'group', 'private' );
+
+	/**
+	 * How closed a privacy value is. Higher is more restrictive.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $privacy Privacy value.
+	 * @return int -1 when unrecognised.
+	 */
+	public static function privacy_rank( string $privacy ): int {
+		$index = array_search( $privacy, self::PRIVACY_ORDER, true );
+
+		return false === $index ? -1 : (int) $index;
+	}
+
+	/**
+	 * How closed a privacy value is. Instance form, for the boundary interface.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $privacy Privacy value.
+	 * @return int
+	 */
+	public function privacy_level( string $privacy ): int {
+		return self::privacy_rank( $privacy );
+	}
+
+	/**
+	 * Every privacy value strictly looser than the given one.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $privacy Privacy value.
+	 * @return string[]
+	 */
+	public function privacy_levels_looser_than( string $privacy ): array {
+		$rank = self::privacy_rank( $privacy );
+
+		if ( $rank <= 0 ) {
+			return array();
+		}
+
+		return array_slice( self::PRIVACY_ORDER, 0, $rank );
+	}
+
+	/**
+	 * Tighten the privacy of every document sitting in the given folders.
+	 *
+	 * ONE indexed UPDATE, not a row-by-row walk: a Space drive folder can hold
+	 * tens of thousands of documents and this runs while somebody waits.
+	 *
+	 * TIGHTENING ONLY. Rows already at or beyond the target are left alone, so an
+	 * explicit `private` on a single file outranks its container and a later
+	 * loosening of the folder cannot silently re-expose it. That asymmetry is the
+	 * whole point of T2: the dangerous direction is blocked, the safe one is not.
+	 *
+	 * Lives in Free because Free owns this table — Pro calls it rather than
+	 * writing `mvs_media_index` directly (architecture invariant 6).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $folder_ids Folder ids whose direct documents are affected.
+	 * @param string $privacy    Target privacy.
+	 * @param int    $limit      0 for no limit; above 0 the update is capped so a
+	 *                           caller can batch a very large subtree.
+	 * @return int Rows changed.
+	 */
+	public function tighten_document_privacy_in_folders( array $folder_ids, string $privacy, int $limit = 0 ): int {
+		global $wpdb;
+
+		$folder_ids = array_values( array_unique( array_filter( array_map( 'intval', $folder_ids ), static fn( $id ) => $id >= 0 ) ) );
+		$target     = self::privacy_rank( $privacy );
+
+		if ( ! $folder_ids || $target < 0 ) {
+			return 0;
+		}
+
+		// Only values strictly LOOSER than the target move. `public` is the
+		// loosest level there is, so nothing can be looser than it and a
+		// "tightening" to public moves nothing by definition.
+		if ( 0 === $target ) {
+			return 0;
+		}
+
+		$looser = array_slice( self::PRIVACY_ORDER, 0, $target );
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		$folder_placeholders  = implode( ', ', array_fill( 0, count( $folder_ids ), '%d' ) );
+		$privacy_placeholders = implode( ', ', array_fill( 0, count( $looser ), '%s' ) );
+
+		$params = array_merge(
+			array( $privacy ),
+			$folder_ids,
+			$looser,
+			array( 'document' )
+		);
+
+		$sql = "UPDATE {$index}
+		           SET privacy = %s
+		         WHERE folder_id IN ({$folder_placeholders})
+		           AND privacy IN ({$privacy_placeholders})
+		           AND media_type = %s";
+
+		if ( $limit > 0 ) {
+			$sql     .= ' LIMIT %d';
+			$params[] = $limit;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$changed = (int) $wpdb->query( $wpdb->prepare( $sql, ...$params ) );
+
+		if ( $changed > 0 ) {
+			// A bulk UPDATE bypasses the per-id invalidation every other write
+			// goes through, so the whole request cache goes rather than guessing
+			// which ids moved — a stale `privacy` here is a stale ACCESS answer.
+			self::$row_cache         = array();
+			self::$meta_fully_loaded = array();
+		}
+
+		return $changed;
+	}
+
+	/**
+	 * How many documents a privacy tightening would change.
+	 *
+	 * Backs the confirmation copy — "47 documents inside will also become
+	 * private" — so the number the member is shown is the number that will move,
+	 * counted the same way the UPDATE selects.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[]  $folder_ids Folder ids.
+	 * @param string $privacy    Target privacy.
+	 * @return int
+	 */
+	public function count_documents_to_tighten( array $folder_ids, string $privacy ): int {
+		global $wpdb;
+
+		$folder_ids = array_values( array_unique( array_filter( array_map( 'intval', $folder_ids ), static fn( $id ) => $id >= 0 ) ) );
+		$target     = self::privacy_rank( $privacy );
+
+		if ( ! $folder_ids || $target < 0 ) {
+			return 0;
+		}
+
+		// Nothing is looser than `public`, so counting a tightening to it is 0.
+		if ( 0 === $target ) {
+			return 0;
+		}
+
+		$looser = array_slice( self::PRIVACY_ORDER, 0, $target );
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		$folder_placeholders  = implode( ', ', array_fill( 0, count( $folder_ids ), '%d' ) );
+		$privacy_placeholders = implode( ', ', array_fill( 0, count( $looser ), '%s' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$index}
+				  WHERE folder_id IN ({$folder_placeholders})
+				    AND privacy IN ({$privacy_placeholders})
+				    AND media_type = %s",
+				...array_merge( $folder_ids, $looser, array( 'document' ) )
+			)
+		);
 	}
 
 	/**
