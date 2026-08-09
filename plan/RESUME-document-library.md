@@ -46,16 +46,47 @@ Free 371 tests green. Both CI gates green. CSS token contract clean.
 
 ---
 
-## Start here: trash + restore
+## Done since: trash + restore, and the profile in the rail
 
-**The only gap that loses member data.** `DriveActions` already implements
-`restore` for documents *and* folders, correctly guarded. Nothing in the UI can
-reach it — so trash is a one-way door and a trashed document is simply gone
-from every surface the member has.
+**Trash is built and browser-verified as `journey-member`** (Free `b6fee7fb`,
+Pro `1d09817`). `?show=trash` on the drive — a query arg, not a path, because
+`/documents/trash/` would shadow a folder somebody named "Trash". Drive-wide.
+Trashed names render as text, not links; the Items column is dropped rather
+than filled with a count that would be wrong; folders list subtree ROOTS only,
+because `restore()` refuses a folder whose parent is still trashed. Restoring a
+document into a still-trashed folder is refused the same way, with a message
+saying which folder to restore first. Walked in the browser: trash → restore →
+back on the drive, and the refusal path fires and reads correctly.
 
-The write path exists and is proven. What is missing is a listing filtered to
-`status = 'trash'` with a restore control per row, and a way into it from the
-drive. Small job, high value. Do it first.
+**Two counts fixed on the way.** `count_documents()` was site-wide and
+status-blind: the rail read "Documents 6" beside "Media 0" for a member who
+owned three, and a trashed document went on being counted. Author + status
+scoping added; the unscoped default stays for the extraction health check.
+
+**The profile is in the rail** (Free `792d59e8`). The card above the sections
+is gone (~110px back on every visit). `Edit profile` is a real section at
+`/my-media/profile/`; `View profile` is a link in the rail head, deliberately
+NOT a section, because it navigates away and every other item does not.
+
+**Two structural fixes underneath that, both worth knowing:**
+
+1. Section URLs are built from the registry now, not a literal list of seven
+   slugs. Declaring a section through the documented filter used to produce a
+   rail item pointing at a 404.
+2. **The rail was losing to the plugin's own `!important`,** not to the theme.
+   The armour from the horizontal-tab era pinned `border-bottom`,
+   `border-radius: 0` and `background: none`, so every rule the rail wrote for
+   itself lost. That is the real cause of the "three items render as red
+   underlined links" symptom recorded below. Diagnosed by computed style —
+   `display: flex` from a rule applied while `border: 0` from the SAME rule did
+   not, which can only mean something later and at least as heavy.
+
+   **The lesson for the sweep below:** before adding declarations to beat a
+   theme, check whether the plugin is beating itself. Grep `!important` in the
+   surface first.
+
+The auto-login mu-plugin now SWITCHES users instead of bailing when someone is
+already signed in. Bailing is what let a whole QA walk run as admin.
 
 ---
 
@@ -96,8 +127,10 @@ have no search and no sort. The user asked for every tab to look uniform
 
 ## Also open, in rough priority
 
-- **Profile block into the left rail** (user's space-saving idea) — deferred
-  because it carries an inline edit form, so it is surgery, not a move.
+- **The rail strip does not scroll the active item into view on a direct URL
+  load.** `init()` already does this on click and on hash; landing on
+  `/my-media/profile/` at 390px leaves the active item off-screen to the right.
+  Small, and it makes the narrow rail honest about where you are.
 - Share to a person or role; document-page action set; folder header;
   multi-select + bulk move; drive search box; Location column; global sort;
   download from the row.
@@ -271,7 +304,7 @@ Built.
 
 ## Still to design and build
 
-- **Trash view + restore.** Start here. See the top of this document.
+- ~~Trash view + restore~~ — **built and verified.** See the top of this file.
 - **Shared with me** as its own band on the drive screen.
 - **Share to a person or role** — link sharing works; targeted sharing does not.
 - **Folder header** — the current folder's name, path breadcrumb and its own
