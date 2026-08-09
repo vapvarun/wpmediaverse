@@ -597,6 +597,92 @@ differing, and a share modal that never says "Public".
 
 ---
 
+---
+
+## Entry-point coverage — read from the code, 2026-08-09
+
+Every phase above is complete. This section answers the narrower question the
+phase ledger hides: **can a member do these things from the front end?**
+
+Coding Rule 18 asks for three entry points per data store. Applied capability by
+capability rather than feature by feature, the answer is **no** — 21 of 21
+capabilities are reachable via REST, 8 by a member, 6 by an admin, and **11 are
+API-only**.
+
+### Documents
+
+| Capability | Front end | Admin | REST |
+|---|---|---|---|
+| Upload | yes | — | yes |
+| Browse / list | yes | yes | yes |
+| Preview | yes | links out | yes |
+| Download | yes | via the document | yes |
+| Share by link | yes | — | yes |
+| Shared-with-me | yes | — | yes |
+| Share to user / role | **no** | **no** | yes |
+| Search inside | **no** | titles only | yes |
+| Rename / edit | **no** | **no** | yes |
+| Move to folder | **no** | **no** | yes |
+| Change privacy | **no** | filter only | yes |
+| Trash | **no** | yes | yes |
+| Restore | **no** | yes | yes |
+| Delete permanently | **no** | yes | yes |
+
+### Folders
+
+| Capability | Front end | Admin | REST |
+|---|---|---|---|
+| Create | yes | **no** | yes |
+| Browse / enter | yes | **no** | yes |
+| Rename | **no** | **no** | yes |
+| Move | **no** | **no** | yes |
+| Trash / restore | **no** | **no** | yes |
+| Privacy + cascade | **no** | **no** | yes |
+
+**What this means in practice.** A member can create a drive, make folders and
+fill them, and then cannot tidy it: no rename, no move, no privacy change, and —
+sharpest of all — **no way to withdraw their own document**. Trash is
+admin-only, so a member who uploads the wrong file has to ask an administrator.
+
+Every missing control sits over a route that already exists, is guarded, and is
+tested. This is not engineering risk; it is unfinished surface.
+
+### Recommended before release
+
+| Item | Cost | Why |
+|---|---|---|
+| Member trash / restore | small | A member cannot withdraw their own document |
+| Rename + move | small | A drive that can be filled but never tidied |
+| Drive search box | small | Full-text search ships invisible |
+| Privacy control + T2 cascade dialog | medium | `count_privacy_cascade()` already returns the confirmation count |
+| Share to a person or role | medium | The UI offers only anonymous links — the *less* private option |
+| Shared-with-me columns + topmost-grant collapsing | medium | Duplicate-looking entries; no view of who shared what |
+
+### Display-contract audit
+
+Checked against the built drive, not the plan. Held: rows-not-tiles, folders
+above files, truncated breadcrumbs, `media-single.php` reuse, no "Public" in the
+share modal. **Fixed during the audit:** direct-child counts (missing entirely)
+and per-type icon chips (one glyph for everything, which is the no-information
+grid rows-not-tiles exists to reject). **Still open:** "Shared with me" shows
+type/size/date where the mock specifies Access and Shared by, and topmost-grant
+collapsing is not implemented.
+
+### Four silent bugs the audit found
+
+1. **Every browser upload ignored the folder** — the JS sent `folder_id`, the
+   route declares `folder`, so files landed at the drive root regardless of
+   which folder was open. The upload succeeded; the file was just elsewhere.
+2. **Trashing a document did not withdraw it** — listings honoured trash,
+   delivery did not, so an anonymous share-link holder could still download it.
+3. **Two admin counts never updated again** — new cached aggregates were not
+   added to `CACHE_KEYS`, so both went stale on the first write.
+4. **`FolderService::create()` was called with an argument it does not take** —
+   PHP ignores extras, so the call worked while meaning nothing.
+
+QA cards for all of the above: `qa/inventory/WHAT-TO-CHECK.md` plus the shared
+status page.
+
 ## Phase 11 — Space drives *(follow-on, not v1)*
 
 | Task | Do | Self-check |
