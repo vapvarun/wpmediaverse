@@ -2679,6 +2679,148 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * A member's aggregate media totals.
+	 *
+	 * `total_media` counts MEDIA (Coding Rule 13). Documents get their own
+	 * counters; folding them in here would silently change every existing
+	 * member's headline number on upgrade.
+	 *
+	 * NOTE — deliberately no status filter, preserving the behaviour this
+	 * replaces: trashed items still count toward a member's totals. That is a
+	 * real discrepancy against every other count in the plugin, but correcting it
+	 * changes a number members already see, so it needs its own decision rather
+	 * than a quiet ride-along on a relocation.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $user_id Author user id.
+	 * @param array $args    types (default MediaTypes::MEDIA_LIBRARY).
+	 * @return array{total_media:int, total_views:int, total_downloads:int, total_reactions:int, total_comments:int, total_shares:int}
+	 */
+	public function user_media_totals( int $user_id, array $args = array() ): array {
+		global $wpdb;
+
+		$zero = array(
+			'total_media'     => 0,
+			'total_views'     => 0,
+			'total_downloads' => 0,
+			'total_reactions' => 0,
+			'total_comments'  => 0,
+			'total_shares'    => 0,
+		);
+
+		$types                          = isset( $args['types'] ) && is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'i.media_type' );
+
+		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT
+					COUNT(*) as total_media,
+					COALESCE(SUM(s.views), 0) as total_views,
+					COALESCE(SUM(s.downloads), 0) as total_downloads,
+					COALESCE(SUM(s.reactions), 0) as total_reactions,
+					COALESCE(SUM(s.comments), 0) as total_comments,
+					COALESCE(SUM(s.shares), 0) as total_shares
+				FROM {$wpdb->prefix}mvs_media_index i
+				INNER JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id
+				WHERE i.post_author = %d AND {$type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id,
+				...$type_params
+			),
+			ARRAY_A
+		);
+
+		if ( ! $row ) {
+			return $zero;
+		}
+
+		foreach ( $zero as $key => $unused ) {
+			$zero[ $key ] = isset( $row[ $key ] ) ? (int) $row[ $key ] : 0;
+		}
+
+		return $zero;
+	}
+
+	/**
+	 * Author ids ranked by how much public media they have.
+	 *
+	 * Feeds "who to follow". The type group is what keeps that honest: ranked by
+	 * COUNT(*), a member could otherwise earn a place in a discovery feed by
+	 * bulk-uploading documents, which are cheap to produce and are not what
+	 * anyone is browsing there.
+	 *
+	 * `privacy = 'public'` is intentional and must NOT become the viewer-aware
+	 * clause — this ranks people by their PUBLIC output only.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $limit Max authors.
+	 * @param array $args  types (default MediaTypes::MEDIA_LIBRARY).
+	 * @return int[]
+	 */
+	public function top_author_ids( int $limit, array $args = array() ): array {
+		global $wpdb;
+
+		$types                          = isset( $args['types'] ) && is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types );
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT post_author
+				FROM {$wpdb->prefix}mvs_media_index
+				WHERE status = 'publish' AND moderation_status = 'approved' AND privacy = 'public' AND post_author > 0 AND {$type_sql}
+				GROUP BY post_author ORDER BY COUNT(*) DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...array_merge( $type_params, array( max( 1, $limit ) ) )
+			)
+		);
+
+		return array_values( array_filter( array_map( 'intval', (array) $ids ) ) );
+	}
+
+	/**
+	 * Which of the given authors have public media in the given taxonomy terms.
+	 *
+	 * Takes term_taxonomy_ids, NOT term_ids — the caller resolves them, because
+	 * it already knows the taxonomy. The two columns are different and equal only
+	 * by coincidence, so the distinction is kept explicit in the method name.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[] $author_ids Candidate authors.
+	 * @param int[] $tt_ids     term_taxonomy_ids.
+	 * @param array $args       types (default MediaTypes::MEDIA_LIBRARY).
+	 * @return int[] Author ids with a match.
+	 */
+	public function authors_with_term_taxonomy_ids( array $author_ids, array $tt_ids, array $args = array() ): array {
+		global $wpdb;
+
+		$author_ids = array_values( array_filter( array_map( 'intval', $author_ids ) ) );
+		$tt_ids     = array_values( array_filter( array_map( 'intval', $tt_ids ) ) );
+
+		if ( empty( $author_ids ) || empty( $tt_ids ) ) {
+			return array();
+		}
+
+		$types                          = isset( $args['types'] ) && is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'i.media_type' );
+
+		$cand_ph = implode( ',', array_fill( 0, count( $author_ids ), '%d' ) );
+		$tt_ph   = implode( ',', array_fill( 0, count( $tt_ids ), '%d' ) );
+
+		$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT DISTINCT i.post_author
+				FROM {$wpdb->prefix}mvs_media_index i
+				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = i.media_id AND tr.term_taxonomy_id IN ({$tt_ph})
+				WHERE i.status = 'publish' AND i.privacy = 'public' AND i.moderation_status = 'approved' AND i.post_author IN ({$cand_ph}) AND {$type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...array_merge( $tt_ids, $author_ids, $type_params )
+			)
+		);
+
+		return array_values( array_filter( array_map( 'intval', (array) $rows ) ) );
+	}
+
+	/**
 	 * Media rows belonging to an album, in album order.
 	 *
 	 * @since 2.4.0

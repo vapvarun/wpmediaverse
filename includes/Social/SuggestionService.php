@@ -121,25 +121,14 @@ class SuggestionService {
 			$pool[ (int) $row['uid'] ] = (int) $row['c'];
 		}
 
-		// 2. Supplement with prolific public creators (followers default 0).
-		// privacy = 'public' is intentional: "who to follow" is a discovery feed that
-		// ranks people by their PUBLIC output only — never their private/members media.
-		// Do NOT swap in the viewer-aware build_privacy_where() helper here.
-		// Ranked by COUNT(*) of public output, so the type list is what keeps this
-		// honest: without it a member could earn a place in a discovery feed by
-		// bulk-uploading documents, which are cheap to produce and are not what
-		// anyone is browsing here. Same shape as the Pro leaderboard.
-		list( $mvs_sugg_type_sql, $mvs_sugg_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
+		// 2. Supplement with prolific public creators (followers default 0),
+		// through the repository (P1.2). Why this ranks on PUBLIC output only,
+		// and why the type group is what keeps it honest, is documented on
+		// MediaRepository::top_author_ids().
+		$creators = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->top_author_ids( self::POOL_SIZE );
 
-		$creators = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT post_author
-				FROM {$wpdb->prefix}mvs_media_index
-				WHERE status = 'publish' AND moderation_status = 'approved' AND privacy = 'public' AND post_author > 0 AND {$mvs_sugg_type_sql}
-				GROUP BY post_author ORDER BY COUNT(*) DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				...array_merge( $mvs_sugg_type_params, array( self::POOL_SIZE ) )
-			)
-		);
 		foreach ( (array) $creators as $uid ) {
 			$uid = (int) $uid;
 			if ( ! isset( $pool[ $uid ] ) ) {
@@ -192,27 +181,11 @@ class SuggestionService {
 			return array();
 		}
 
-		$cand_ph = implode( ',', array_fill( 0, count( $candidate_ids ), '%d' ) );
-		$tt_ph   = implode( ',', array_fill( 0, count( $tt_ids ), '%d' ) );
-
-		// Interest affinity is earned with media, for the same reason as the pool
-		// query above. Appended last in the WHERE, so its params go last too.
-		list( $mvs_aff_type_sql, $mvs_aff_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'i.media_type' );
-
-		$rows    = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT DISTINCT i.post_author
-				FROM {$wpdb->prefix}mvs_media_index i
-				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = i.media_id AND tr.term_taxonomy_id IN ({$tt_ph})
-				-- public-only by design: interest-affinity suggestions rank authors by their
-				-- PUBLIC media only; viewer-aware privacy must NOT be applied here.
-				-- status = 'publish' for the same reason the /media list route needs it:
-				-- a trashed item is still an approved public row, so without this an
-				-- author kept earning affinity from media they had deleted.
-				WHERE i.status = 'publish' AND i.privacy = 'public' AND i.moderation_status = 'approved' AND i.post_author IN ({$cand_ph}) AND {$mvs_aff_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				...array_merge( array_values( $tt_ids ), array_map( 'intval', $candidate_ids ), $mvs_aff_type_params )
-			)
-		);
+		// Through the repository (P1.2). tt_ids are already resolved above — the
+		// method takes term_taxonomy_ids, not term_ids, and says so in its name.
+		$rows = \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->authors_with_term_taxonomy_ids( $candidate_ids, $tt_ids );
 
 		$map = array();
 		foreach ( (array) $rows as $uid ) {
