@@ -140,6 +140,30 @@ class MediaSurfaceTypeScopeTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * "Who to follow" must not be buyable with documents.
+	 *
+	 * The candidate pool ranks by COUNT(*) of public output, so without a type
+	 * list a member reaches a discovery feed by bulk-uploading files nobody
+	 * browses there — the same exploit shape as the Pro leaderboard.
+	 */
+	public function test_suggestion_pool_is_not_earned_with_documents(): void {
+		$stuffer = self::factory()->user->create();
+		$viewer  = self::factory()->user->create();
+
+		for ( $i = 0; $i < 5; $i++ ) {
+			$this->insert_row( 'document', $stuffer );
+		}
+
+		delete_transient( 'mvs_top_creators' );
+
+		// Not a container service — UserController news it up directly.
+		$suggestions = ( new \WPMediaVerse\Social\SuggestionService() )->get_suggestions( $viewer, 50 );
+		$ids         = array_map( 'intval', array_column( $suggestions, 'user_id' ) );
+
+		$this->assertNotContains( $stuffer, $ids, 'Document uploads bought a place in "who to follow".' );
+	}
+
+	/**
 	 * Legacy PDFs keep counting everywhere they already counted.
 	 *
 	 * The MEDIA_LIBRARY promise has to hold on every surface, not just the feed —
