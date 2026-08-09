@@ -10,6 +10,8 @@
 
 namespace WPMediaVerse\Admin;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Core\Plugin;
@@ -127,10 +129,23 @@ class MediaListPage {
 			$params[] = $like;
 		}
 
-		if ( $type_filter ) {
-			$where[]  = 'media_type = %s';
-			$params[] = $type_filter;
+		// An explicit type filter wins — that is how an owner asks this screen for
+		// one library. With no filter chosen the screen shows the MEDIA library,
+		// because that is what "All Media" means; the document library gets its own
+		// screen rather than being folded in here where every column (dimensions,
+		// thumbnail, poster) is built for media.
+		//
+		// Same opt-in shape as the /media REST feed, and the same reason: an
+		// unconstrained default silently adopts every type added later.
+		if ( $type_filter && MediaTypes::is_known( $type_filter ) ) {
+			$mvs_type_sql    = 'media_type = %s';
+			$mvs_type_params = array( $type_filter );
+		} else {
+			list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
 		}
+
+		$where[] = $mvs_type_sql;
+		$params  = array_merge( $params, $mvs_type_params );
 
 		if ( $status_filter ) {
 			$where[]  = 'status = %s';
@@ -164,8 +179,21 @@ class MediaListPage {
 		$items      = $wpdb->get_results( $wpdb->prepare( $query, ...$all_params ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 
 		// Status counts for tabs.
+		//
+		// Deliberately NOT narrowed by search / privacy / status: these are the
+		// global per-status totals, the same way WP's own post-list status links
+		// stay global while the table below them is filtered.
+		//
+		// Type is the exception, and it is the one predicate that must be applied.
+		// The tabs label the list beneath them, so counting a library this screen
+		// never renders would advertise "Published (100)" over a table that can
+		// only ever show 70 of them. Uses the same predicate the list resolved, so
+		// an explicit type filter narrows the tabs with it.
 		$status_counts = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-			"SELECT status, COUNT(*) AS cnt FROM {$table} GROUP BY status",
+			$wpdb->prepare(
+				"SELECT status, COUNT(*) AS cnt FROM {$table} WHERE {$mvs_type_sql} GROUP BY status", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$mvs_type_params
+			),
 			OBJECT_K
 		);
 

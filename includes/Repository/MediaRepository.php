@@ -11,6 +11,8 @@
 
 namespace WPMediaVerse\Repository;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -1474,6 +1476,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *     @type int    $viewer_id                Required when privacy='visible'/'profile'. Default 0.
 	 *     @type bool   $exclude_non_cover_group  Drop non-cover gallery members. Default false.
 	 *     @type bool   $exclude_empty_media_type Drop privacy-only stub rows (albums/collections). Default false.
+	 *     @type string[] $media_types              Library this listing is for. Default MediaTypes::MEDIA_LIBRARY.
 	 *     @type string $since                    created_at >= this datetime. Default ''.
 	 *     @type string $orderby                  Allowlisted column. Default 'created_at'.
 	 *     @type string $order                    'ASC'|'DESC'. Default 'DESC'.
@@ -1495,6 +1498,7 @@ class MediaRepository implements MediaRepositoryInterface {
 				'viewer_id'                => 0,
 				'exclude_non_cover_group'  => false,
 				'exclude_empty_media_type' => false,
+				'media_types'              => MediaTypes::MEDIA_LIBRARY,
 				'since'                    => '',
 				'orderby'                  => 'created_at',
 				'order'                    => 'DESC',
@@ -1574,17 +1578,35 @@ class MediaRepository implements MediaRepositoryInterface {
 			$where[] = 'm.media_id NOT IN (' . $this->gallery_exclude_subquery() . ')';
 		}
 
-		// Drop the privacy-only stub rows that album/collection creation inserts
-		// into mvs_media_index (media_type left empty — see PrivacyService). These
-		// are containers, not media, and render as broken tiles on grids/explore.
-		if ( ! empty( $args['exclude_empty_media_type'] ) ) {
-			$where[] = "m.media_type != ''";
+		// Every listing this repository serves — explore, the BuddyPress profile
+		// and group tabs, the Pro layout feeds — states the library it is for.
+		// This is the one place that has to be right: query(), query_count() and
+		// query_by_author() all funnel through here, and only ONE caller
+		// (explore.php) ever passed the old exclude_empty_media_type flag, so
+		// every other listing ran with no type predicate at all.
+		//
+		// That flag was `m.media_type != ''`, an exclusion written to drop the
+		// privacy-only stub rows album creation used to insert. It is superseded
+		// twice over: those stubs no longer exist (2.3.3 stopped albums writing to
+		// the index and Migrator v26 removed the rows), and an exclusion passes
+		// every type added later — including documents — straight through.
+		//
+		// The arg is still accepted and still does what its name says, because it
+		// is public API on the repository interface (Production Rule 2). It is now
+		// simply redundant: a positive list already excludes the empty string.
+		$mvs_types = $args['media_types'];
+		if ( ! is_array( $mvs_types ) ) {
+			$mvs_types = MediaTypes::MEDIA_LIBRARY;
 		}
 
-		if ( empty( $where ) ) {
-			$where[] = '1 = 1';
-		}
+		list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( $mvs_types, 'm.media_type' );
+		$where[] = $mvs_type_sql;
+		$params  = array_merge( $params, $mvs_type_params );
 
+		// No `1 = 1` fallback below this point: the type clause above is
+		// unconditional, so $where can no longer be empty. in_clause() also
+		// guarantees a real predicate — an empty type set yields `1 = 0`, which
+		// matches nothing rather than everything.
 		return array(
 			'join'     => $join,
 			'where'    => implode( ' AND ', $where ),

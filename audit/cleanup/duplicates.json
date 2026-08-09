@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-09T04:47:26Z",
+    "generated_at": "2026-08-09T04:57:35Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -765,12 +765,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2299-2299",
+                    "lines": "2321-2321",
                     "method": "trash"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2327-2327",
+                    "lines": "2349-2349",
                     "method": "restore"
                 }
             ]
@@ -811,7 +811,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2128-2128",
+                    "lines": "2150-2150",
                     "method": "record_event"
                 },
                 {
@@ -870,12 +870,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2073-2073",
+                    "lines": "2095-2095",
                     "method": "increment_stat"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2100-2100",
+                    "lines": "2122-2122",
                     "method": "set_stat"
                 }
             ]
@@ -1144,7 +1144,7 @@
                 },
                 {
                     "file": "includes/Admin/StatsPage.php",
-                    "lines": "42-42",
+                    "lines": "44-44",
                     "method": "StatsPage::add_menu_page"
                 },
                 {
@@ -1180,7 +1180,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2005-2005",
+                    "lines": "2027-2027",
                     "method": "get_user_stats"
                 },
                 {

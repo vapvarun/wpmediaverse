@@ -177,49 +177,21 @@ class CacheService {
 	/**
 	 * Get user stats with caching.
 	 *
+	 * @deprecated 2.3.3 Use MediaRepository::get_user_stats() instead. This copy
+	 *             carried its own SQL that had already drifted from the
+	 *             repository's — it applied no status filter, so it could report
+	 *             a different number for the same member. Kept as a caching
+	 *             delegate because it is public API on a container-registered
+	 *             service (Production Rule 1); scheduled for removal in 4.0.
+	 *
 	 * @param int $user_id User ID.
 	 * @return array Aggregated stats.
 	 */
 	public function get_user_stats( int $user_id ): array {
-		$key = "user_stats_{$user_id}";
 		return $this->remember(
-			$key,
-			function () use ( $user_id ) {
-				global $wpdb;
-				$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					$wpdb->prepare(
-						"SELECT
-							COUNT(*) as total_media,
-							COALESCE(SUM(s.views), 0) as total_views,
-							COALESCE(SUM(s.downloads), 0) as total_downloads,
-							COALESCE(SUM(s.reactions), 0) as total_reactions,
-							COALESCE(SUM(s.comments), 0) as total_comments,
-							COALESCE(SUM(s.shares), 0) as total_shares
-						FROM {$wpdb->prefix}mvs_media_index i
-						INNER JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id
-						WHERE i.post_author = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-						$user_id
-					),
-					ARRAY_A
-				);
-				if ( ! $row ) {
-					return array(
-						'total_media'     => 0,
-						'total_views'     => 0,
-						'total_downloads' => 0,
-						'total_reactions' => 0,
-						'total_comments'  => 0,
-						'total_shares'    => 0,
-					);
-				}
-				return array(
-					'total_media'     => (int) $row['total_media'],
-					'total_views'     => (int) $row['total_views'],
-					'total_downloads' => (int) $row['total_downloads'],
-					'total_reactions' => (int) $row['total_reactions'],
-					'total_comments'  => (int) $row['total_comments'],
-					'total_shares'    => (int) $row['total_shares'],
-				);
+			"user_stats_{$user_id}",
+			static function () use ( $user_id ) {
+				return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_user_stats( $user_id );
 			},
 			self::TTL_MEDIUM
 		);
@@ -228,24 +200,18 @@ class CacheService {
 	/**
 	 * Get moderation counts with caching.
 	 *
+	 * @deprecated 2.3.3 Use MediaRepository::get_moderation_counts() instead.
+	 *             Duplicate of the repository query; kept as a caching delegate
+	 *             because it is public API on a container-registered service
+	 *             (Production Rule 1). Scheduled for removal in 4.0.
+	 *
 	 * @return array Counts by status.
 	 */
 	public function get_moderation_counts(): array {
 		return $this->remember(
 			'moderation_counts',
-			function () {
-				global $wpdb;
-				$rows   = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-					"SELECT moderation_status, COUNT(*) as cnt FROM {$wpdb->prefix}mvs_media_index GROUP BY moderation_status", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					ARRAY_A
-				);
-				$counts = array();
-				if ( $rows ) {
-					foreach ( $rows as $row ) {
-						$counts[ $row['moderation_status'] ] = (int) $row['cnt'];
-					}
-				}
-				return $counts;
+			static function () {
+				return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_moderation_counts();
 			},
 			self::TTL_SHORT
 		);

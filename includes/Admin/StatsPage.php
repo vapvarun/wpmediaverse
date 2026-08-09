@@ -7,6 +7,8 @@
 
 namespace WPMediaVerse\Admin;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Services\AIService;
@@ -70,16 +72,22 @@ class StatsPage {
 		$stats_table = $wpdb->prefix . 'mvs_media_stats';
 
 		$index_table = $wpdb->prefix . 'mvs_media_index';
+
+		// The export is the Stats page in CSV form, so it carries the same scope as
+		// the cards it exports. If the two disagreed, an owner reconciling the CSV
+		// against the dashboard would find rows that the totals never counted.
+		list( $mvs_csv_type_sql, $mvs_csv_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'm.media_type' );
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$top_media = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT s.media_id, s.views, s.reactions, s.comments, s.shares, m.title AS post_title
 				FROM {$stats_table} s
 				INNER JOIN {$index_table} m ON m.media_id = s.media_id
-				WHERE m.status = %s
+				WHERE m.status = %s AND {$mvs_csv_type_sql}
 				ORDER BY s.views DESC
 				LIMIT 100",
-				'publish'
+				...array_merge( array( 'publish' ), $mvs_csv_type_params )
 			),
 			ARRAY_A
 		);
@@ -244,12 +252,18 @@ class StatsPage {
 		$date_filter = $this->get_date_filter( $range );
 		$range_start = $this->get_range_start( $range );
 
+		// The card is labelled "Total Media", so it counts media. Documents are a
+		// separate library and are owed their own card rather than a silent share
+		// of this one — an owner reading a jump in this number needs to know which
+		// library grew. See plan/document-library.md for the documents card.
+		list( $mvs_stats_type_sql, $mvs_stats_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
+
 		// Overall counts (apply date filter so cards change across Today / Week / Month / All).
 		if ( $range_start ) {
 			$total_media  = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-					$range_start
+					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s AND {$mvs_stats_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( array( $range_start ), $mvs_stats_type_params )
 				)
 			);
 			$total_albums = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -262,7 +276,10 @@ class StatsPage {
 			);
 		} else {
 			$total_media  = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish'" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND {$mvs_stats_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...$mvs_stats_type_params
+				)
 			);
 			$album_counts = wp_count_posts( 'mvs_album' );
 			$total_albums = isset( $album_counts->publish ) ? (int) $album_counts->publish : 0;

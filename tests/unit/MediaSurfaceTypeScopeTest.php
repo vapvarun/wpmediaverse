@@ -164,6 +164,77 @@ class MediaSurfaceTypeScopeTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The repository default is the one that covers every listing at once.
+	 *
+	 * query(), query_count() and query_by_author() all funnel through the same
+	 * arg normalisation, and only explore.php ever passed the old
+	 * exclude_empty_media_type flag — so every other listing (the BuddyPress
+	 * profile and group tabs, the Pro layout feeds) ran with no type predicate.
+	 */
+	public function test_repository_query_defaults_to_the_media_library(): void {
+		$author = self::factory()->user->create();
+
+		$photo = $this->insert_row( 'image', $author );
+		$doc   = $this->insert_row( 'document', $author );
+
+		$rows = $this->repo->query( array( 'author_id' => $author, 'limit' => 50 ) );
+		$ids  = array_map( 'intval', array_column( $rows, 'media_id' ) );
+
+		$this->assertContains( $photo, $ids );
+		$this->assertNotContains( $doc, $ids, 'A document reached a default repository listing.' );
+
+		$this->assertSame(
+			count( $ids ),
+			$this->repo->query_count( array( 'author_id' => $author ) ),
+			'query_count() disagrees with query() on the same args.'
+		);
+	}
+
+	/**
+	 * …and the document library asks for itself explicitly.
+	 *
+	 * The default must be narrow, but it must not be a dead end — this is the
+	 * seam the document surfaces will use.
+	 */
+	public function test_repository_query_can_be_asked_for_documents(): void {
+		$author = self::factory()->user->create();
+
+		$photo = $this->insert_row( 'image', $author );
+		$doc   = $this->insert_row( 'document', $author );
+
+		$rows = $this->repo->query(
+			array(
+				'author_id'   => $author,
+				'limit'       => 50,
+				'media_types' => MediaTypes::DOCUMENTS,
+			)
+		);
+		$ids  = array_map( 'intval', array_column( $rows, 'media_id' ) );
+
+		$this->assertContains( $doc, $ids, 'An explicit document listing returned no documents.' );
+		$this->assertNotContains( $photo, $ids, 'An explicit document listing returned media.' );
+	}
+
+	/**
+	 * The BuddyPress profile tab and /users/{id}/media inherit the default.
+	 *
+	 * query_by_author() delegates to query(), so this proves the fix reaches the
+	 * callers that never passed a flag of their own.
+	 */
+	public function test_profile_listing_inherits_the_media_default(): void {
+		$author = self::factory()->user->create();
+
+		$photo = $this->insert_row( 'image', $author );
+		$doc   = $this->insert_row( 'document', $author );
+
+		$rows = $this->repo->query_by_author( $author, array( 'limit' => 50, 'include_private' => true ) );
+		$ids  = array_map( 'intval', array_column( $rows, 'media_id' ) );
+
+		$this->assertContains( $photo, $ids );
+		$this->assertNotContains( $doc, $ids, 'A document reached the profile media listing.' );
+	}
+
+	/**
 	 * Legacy PDFs keep counting everywhere they already counted.
 	 *
 	 * The MEDIA_LIBRARY promise has to hold on every surface, not just the feed —
