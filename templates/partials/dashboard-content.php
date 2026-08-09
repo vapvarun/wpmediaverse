@@ -455,9 +455,11 @@ wp_interactivity_state(
 		return trailingslashit( $base ) . $section . '/';
 	};
 
-	$mvs_dash_active = get_query_var( 'mvs_doc_view' )
-		? 'documents'
-		: ( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' );
+	$mvs_dash_active = \WPMediaVerse\Core\DashboardSections::resolve(
+		get_query_var( 'mvs_doc_view' )
+			? 'documents'
+			: (string) get_query_var( 'mvs_section', '' )
+	);
 	?>
 	<?php
 	// The rail and the panels share a grid; everything else on the page — the
@@ -468,109 +470,63 @@ wp_interactivity_state(
 	<div class="mvs-dashboard__body">
 
 	<nav class="mvs-dashboard-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Your library', 'wpmediaverse' ); ?>">
-		<span class="mvs-dashboard-tabs__group"><?php esc_html_e( 'Library', 'wpmediaverse' ); ?></span>
-		<a class="mvs-dashboard-tab<?php echo 'media' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="media" role="tab" href="<?php echo esc_url( $mvs_dash_section_url( 'media' ) ); ?>"
-			data-wp-class--active="state.isMediaTab"
-			data-wp-on--click="actions.switchTab">
-			<?php esc_html_e( 'Media', 'wpmediaverse' ); ?>
-		</a>
-		<a class="mvs-dashboard-tab<?php echo 'albums' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="albums" role="tab" href="<?php echo esc_url( $mvs_dash_section_url( 'albums' ) ); ?>"
-			data-wp-class--active="state.isAlbumsTab"
-			data-wp-on--click="actions.switchTab">
-			<?php esc_html_e( 'Albums', 'wpmediaverse' ); ?>
-		</a>
-		<a class="mvs-dashboard-tab<?php echo 'favorites' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="favorites" role="tab" href="<?php echo esc_url( $mvs_dash_section_url( 'favorites' ) ); ?>"
-			data-wp-class--active="state.isFavoritesTab"
-			data-wp-on--click="actions.switchTab">
-			<?php esc_html_e( 'Favorites', 'wpmediaverse' ); ?>
-		</a>
-		<a class="mvs-dashboard-tab<?php echo 'collections' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="collections" role="tab" href="<?php echo esc_url( $mvs_dash_section_url( 'collections' ) ); ?>"
-			data-wp-class--active="state.isCollectionsTab"
-			data-wp-on--click="actions.switchTab">
-			<?php esc_html_e( 'Collections', 'wpmediaverse' ); ?>
-		</a>
 		<?php
-		/**
-		 * Documents. A real tab with a real panel, not a link away: a member
-		 * managing their media should not be sent to another page to manage
-		 * their documents, and the upload control has to be on the screen they
-		 * are already looking at.
-		 *
-		 * Rendered only when something can fill it (Pro), for the same reason
-		 * the registry tabs are only offered when they resolve.
-		 */
-		$mvs_dash_drive = (string) apply_filters( 'mvs_documents_drive_html', '', 'my-drive', array( 'probe' => true ) );
+		// Rendered from the SECTION REGISTRY, not from hardcoded markup. Eight
+		// sections built eight ways is eight things to keep in step — which is
+		// how Documents ended up gated correctly while the competition tabs were
+		// still switching by hash. A declaration can be rendered one way.
+		$mvs_dash_groups = \WPMediaVerse\Core\DashboardSections::grouped();
+		$mvs_dash_labels = array(
+			'library' => __( 'Library', 'wpmediaverse' ),
+			'compete' => __( 'Compete', 'wpmediaverse' ),
+		);
 
-		if ( '' !== $mvs_dash_drive ) :
-			?>
-			<a class="mvs-dashboard-tab<?php echo 'documents' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="documents" role="tab"
-				href="<?php echo esc_url( $mvs_dash_section_url( 'documents' ) ); ?>"
-				data-wp-class--active="state.isDocumentsTab"
-				data-wp-on--click="actions.switchTab">
-				<?php esc_html_e( 'Documents', 'wpmediaverse' ); ?>
-			</a>
-			<?php
-		endif;
-
-		/**
-		 * Filter the dashboard's registered tabs.
-		 *
-		 * A REGISTRY, returning data the template renders — not markup an
-		 * extension echoes. Each entry is:
-		 *
-		 *     array(
-		 *         'slug'  => 'documents',
-		 *         'label' => __( 'Documents', ... ),
-		 *         'url'   => 'https://example.test/explore-document/',
-		 *     )
-		 *
-		 * DELIBERATELY A NEW NAME, not `apply_filters( 'mvs_dashboard_tabs' )`.
-		 * WordPress keeps actions and filters in ONE registry, and
-		 * `mvs_dashboard_tabs` already exists as an action with subscribers that
-		 * echo markup and return nothing. Filtering that name would print their
-		 * markup in the middle of the filter and then assign `null` to the tab
-		 * array — the collision this seam exists to avoid (design §10).
-		 *
-		 * Registered tabs are LINKS, because a tab whose content lives on
-		 * another page is a link; inventing panel state for content that is not
-		 * in this document would be a lie the Interactivity store has to keep.
-		 *
-		 * @since 2.4.0
-		 *
-		 * @param array $tabs Registered tabs.
-		 */
-		$mvs_dash_extra_tabs = (array) apply_filters( 'mvs_dashboard_tab_registry', array() );
-
-		foreach ( $mvs_dash_extra_tabs as $mvs_dash_tab ) {
-			if ( empty( $mvs_dash_tab['label'] ) || empty( $mvs_dash_tab['url'] ) ) {
-				continue;
+		foreach ( $mvs_dash_groups as $mvs_dash_group => $mvs_dash_sections ) {
+			// A heading earns its place over two or more items; over one it is a
+			// label repeating itself.
+			if ( count( $mvs_dash_sections ) > 1 && isset( $mvs_dash_labels[ $mvs_dash_group ] ) ) {
+				printf(
+					'<span class="mvs-dashboard-tabs__group">%s</span>',
+					esc_html( $mvs_dash_labels[ $mvs_dash_group ] )
+				);
 			}
 
-			printf(
-				'<a class="mvs-dashboard-tab mvs-dashboard-tab--link" data-tab="%1$s" href="%2$s">%3$s</a>',
-				esc_attr( (string) ( $mvs_dash_tab['slug'] ?? '' ) ),
-				esc_url( (string) $mvs_dash_tab['url'] ),
-				esc_html( (string) $mvs_dash_tab['label'] )
-			);
+			foreach ( $mvs_dash_sections as $mvs_dash_slug => $mvs_dash_section ) {
+				$mvs_dash_count = \WPMediaVerse\Core\DashboardSections::count( $mvs_dash_slug );
+
+				// The client store exposes is<Slug>Tab getters for the sections it
+				// knows. One it does not know still highlights server-side; it
+				// simply will not re-highlight without a page load.
+				$mvs_dash_binding = 'state.is' . ucfirst( $mvs_dash_slug ) . 'Tab';
+				?>
+				<a class="mvs-dashboard-tab<?php echo $mvs_dash_slug === $mvs_dash_active ? ' active' : ''; ?>"
+					data-tab="<?php echo esc_attr( $mvs_dash_slug ); ?>"
+					role="tab"
+					href="<?php echo esc_url( \WPMediaVerse\Core\DashboardSections::url( $mvs_dash_slug ) ); ?>"
+					data-wp-class--active="<?php echo esc_attr( $mvs_dash_binding ); ?>"
+					data-wp-on--click="actions.switchTab">
+					<span class="mvs-dashboard-tab__label"><?php echo esc_html( $mvs_dash_section['label'] ); ?></span>
+					<?php if ( null !== $mvs_dash_count ) : ?>
+						<?php // Null and zero are different answers: null is "does not count itself". ?>
+						<span class="mvs-dashboard-tab__count"><?php echo esc_html( number_format_i18n( $mvs_dash_count ) ); ?></span>
+					<?php endif; ?>
+				</a>
+				<?php
+			}
 		}
 
 		/**
 		 * Fires after the last dashboard tab button.
 		 *
-		 * Pro uses this to inject gamification tabs (Challenges, Battles, Tournaments).
-		 *
-		 * Still an action, still fired, and still after the registry — the two
-		 * seams coexist rather than one replacing the other (Production Rule 1).
+		 * @deprecated 2.4.0 Declare a section through `mvs_dashboard_sections`
+		 *                   instead. An action that echoes markup cannot be given
+		 *                   a shape by the page that hosts it — which is how three
+		 *                   competition tabs stayed hash-switching buttons after
+		 *                   every other item became a link. Still fired; nothing
+		 *                   is removed in a minor.
 		 *
 		 * @since 1.1.0
 		 */
-		// Pro's competition tabs land under their own heading. The grouping is
-		// what makes eight items readable; a flat rail of eight is just a
-		// shorter list, not a clearer one.
-		if ( has_action( 'mvs_dashboard_tabs' ) ) {
-			printf( '<span class="mvs-dashboard-tabs__group">%s</span>', esc_html__( 'Compete', 'wpmediaverse' ) );
-		}
-
 		do_action( 'mvs_dashboard_tabs' );
 		?>
 	</nav>

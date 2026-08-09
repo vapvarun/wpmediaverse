@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-09T17:32:09Z",
+    "generated_at": "2026-08-09T17:46:35Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -17,7 +17,7 @@
     "counts": {
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 32,
-        "free_files_scanned": 194,
+        "free_files_scanned": 195,
         "pro_files_scanned": 195
     },
     "cross_plugin_duplicates": [

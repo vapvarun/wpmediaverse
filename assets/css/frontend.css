@@ -6978,21 +6978,47 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
         min-width: 0;
     }
 
-    .mvs-dashboard-tab {
+    /* `a.` bumps specificity past the base tab rule, which sets a bottom
+       border every rail item inherited — a red rule under each row. */
+    .mvs-dashboard-tabs a.mvs-dashboard-tab,
+    .mvs-dashboard-tabs button.mvs-dashboard-tab {
         justify-content: flex-start;
-        border-bottom: 0;
+        gap: var(--mvs-space-2);
+        /* The horizontal tab styling puts a border on the bottom of every item,
+           which down a rail reads as a rule under each row. All four sides are
+           reset here rather than only the active one — that was the red line
+           under Favorites and Collections. */
+        border: 0;
         border-inline-start: 2px solid transparent;
         border-radius: var(--mvs-radius-sm);
+        padding: var(--mvs-space-2) var(--mvs-space-3);
+        min-height: 0;
+        color: var(--mvs-text-secondary);
+        font-size: var(--mvs-font-sm);
+        font-weight: 500;
+        line-height: 1.4;
         text-align: start;
+    }
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab:hover {
+        background: var(--mvs-surface);
+        color: var(--mvs-text);
+    }
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab:focus-visible {
+        outline: 2px solid var(--mvs-primary);
+        outline-offset: -2px;
     }
 
     /* The horizontal tab styling underlines the active item, which on a rail
        reads as a stray rule under one row. The selector carries the rail so it
        outranks the base tab rule. */
-    .mvs-dashboard-tabs .mvs-dashboard-tab.active {
-        border-bottom-color: transparent;
+    .mvs-dashboard-tabs a.mvs-dashboard-tab.active,
+    .mvs-dashboard-tabs button.mvs-dashboard-tab.active {
         border-inline-start-color: var(--mvs-primary);
         background: var(--mvs-surface);
+        color: var(--mvs-primary);
+        font-weight: 600;
     }
 }
 
@@ -7021,4 +7047,29 @@ a.mvs-dashboard-tab:focus-visible {
     .mvs-dashboard-tabs__group {
         display: none;
     }
+}
+
+
+/* The count sits at the far end of a rail item, quiet until you look for it. */
+.mvs-dashboard-tab__label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mvs-dashboard-tab__count {
+    flex: 0 0 auto;
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-xs);
+    font-variant-numeric: tabular-nums;
+}
+
+.mvs-dashboard-tab.active .mvs-dashboard-tab__count {
+    color: var(--mvs-primary);
+}
+
+.mvs-dashboard-tabs__group:first-child {
+    padding-top: var(--mvs-space-1);
 }
