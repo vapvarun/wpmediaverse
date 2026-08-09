@@ -13,7 +13,7 @@ The **display contract** is the UX artifact: <https://claude.ai/code/artifact/70
 | Branch | **`2.4.0`** on BOTH repos, pushed |
 | Last released | 2.3.2. **2.3.3 does not exist** — it was renamed to 2.4.0 because Phase 2 changes schema and Production Rule 4 forbids that in a patch |
 | Version constants | still `2.3.2` — they bump at release, not now |
-| Free tests | **348 green** (321 + 5 P1.5, + 6 P2.2, + 15 P3.1) |
+| Free tests | **349 green** (321 + 5 P1.5, + 6 P2.2, + 15 P3.1) |
 | Pro Documents | `Documents\{FolderService, PermissionService, StorageResolver, HealthCheck}` |
 | Free Migrator | **v27** (was 26). `mvs_db_version` on the reference install is 27 |
 | Pro tests | **328: 40 errors / 43 failures — the SAME PRE-EXISTING set** (was 215/40/43; +6 P2.3, +23 P3.2, +22 P3.3, +21 P3.6/7, +11 P3.8, +16 P3.4, +14 P3.5 — all passing). Basecamp 10184313297. Do not mistake this for something you broke |
@@ -47,6 +47,28 @@ composer ci:no-journeys     # the gate; run before every commit
   with no document on the site every absence check passes and proves nothing.
   Side finding worth its own card: `delete_cascade()` writes nothing to `mvs_error_log`, so the
   plugin can erase a member's whole library with no trace in its own log.
+
+## Owner decisions this session — both reverse a locked design point
+
+**1. "documents type will never display at media grid" (with a screenshot).**
+`MediaTypes::MEDIA_LIBRARY` no longer carries `legacy_document`. The quarantined PDF was rendering in
+Explore as a **broken image tile** — a grid draws pictures, a PDF has none, so "keeping it visible"
+published a defect rather than content. New `MediaTypes::DOCUMENT_LIBRARY` separates *"whose drive is
+this in?"* (`DOCUMENTS`, never a legacy row) from *"what does the document page list?"* (includes
+them). Production Rule 3 escape hatch: `mvs_media_library_types`.
+
+**2. `/explore-document` exists, and a document's back link points there.**
+This reverses P9.0's "there is no public documents feed to build". The containment guarantee is
+unchanged — a document never appears in a MEDIA surface — but *"not in a media feed"* and *"not in
+any feed"* were being treated as one statement and they are not. `[mvs_documents]` +
+`MediaRepository::public_documents()` list public documents as **rows with a type chip**, and
+`get_parent_route( 'single-media' )` now takes a `media_id` so a document returns to `/explore-document/`
+while a photo still returns to `/explore-media/`.
+
+**Not yet wired: `wpmediaverse-pro/includes/REST/FolderController.php`** — Phase 4 (P4.1) work
+started before decision 2 landed, then deliberately left uncommitted. It lints, but it is registered
+nowhere and has no tests, and the reversal may change what Phase 4's document routes should expose
+(there is a public listing now). **Review it against the new shape before wiring it up.**
 
 ## The verification method that works
 
