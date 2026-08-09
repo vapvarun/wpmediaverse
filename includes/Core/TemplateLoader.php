@@ -150,6 +150,46 @@ class TemplateLoader {
 	 *   /media/edit-profile/             — Profile edit
 	 */
 	public function register_rewrite_rules(): void {
+		// The member's documents, as a real path.
+		//
+		// `/my-media/?drive=my-drive&folder=69#documents` was three mechanisms
+		// doing one job: a query var left over from when the drive lived on the
+		// public page, a raw database id, and a hash the server never sees. A
+		// folder id in a URL is also a number a member can edit — the guard
+		// refuses it, but offering it at all invites the attempt.
+		//
+		// `/my-media/documents/contracts/2026/` instead: the path IS the folder
+		// path, it survives being shared, and the server can render the right
+		// folder on first paint rather than after JavaScript runs.
+		$mvs_dashboard = (int) get_option( 'mvs_page_dashboard', 0 );
+
+		if ( $mvs_dashboard ) {
+			$mvs_dashboard_slug = get_post_field( 'post_name', $mvs_dashboard );
+
+			if ( $mvs_dashboard_slug ) {
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/page/([0-9]+)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_page=$matches[1]',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/(.+?)/page/([0-9]+)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_path=$matches[1]&mvs_doc_page=$matches[2]',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/(.+?)/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1&mvs_doc_path=$matches[1]',
+					'top'
+				);
+				add_rewrite_rule(
+					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/documents/?$',
+					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_doc_view=1',
+					'top'
+				);
+			}
+		}
+
 		// Media archive (explore).
 		add_rewrite_rule(
 			'^media/page/([0-9]+)/?$',
@@ -210,6 +250,11 @@ class TemplateLoader {
 	 * @return string[]
 	 */
 	public function register_query_vars( array $vars ): array {
+		// The member's documents view and the folder path within it.
+		$vars[] = 'mvs_doc_view';
+		$vars[] = 'mvs_doc_path';
+		$vars[] = 'mvs_doc_page';
+
 		$vars[] = 'mvs_media_archive';
 		$vars[] = 'mvs_media_slug';
 		$vars[] = 'mvs_profile_user';

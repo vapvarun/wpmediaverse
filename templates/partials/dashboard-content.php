@@ -114,6 +114,10 @@ wp_enqueue_style( 'mvs-frontend' );
 wp_interactivity_state(
 	'mvs/dashboard',
 	array(
+		// Which tab the URL asked for. Seeded server-side so that landing on
+		// /my-media/documents/ paints the right panel on first render rather
+		// than flashing Media and correcting itself once the module loads.
+		'activeTab' => get_query_var( 'mvs_doc_view' ) ? 'documents' : 'media',
 		'i18n' => array(
 			// Rule-builder select options + placeholders.
 			'selectOption'            => __( '-- Select --', 'wpmediaverse' ),
@@ -464,7 +468,7 @@ wp_interactivity_state(
 
 		if ( '' !== $mvs_dash_drive ) :
 			?>
-			<button class="mvs-dashboard-tab" data-tab="documents" role="tab" type="button"
+			<button class="mvs-dashboard-tab<?php echo get_query_var( 'mvs_doc_view' ) ? ' active' : ''; ?>" data-tab="documents" role="tab" type="button"
 				data-wp-class--active="state.isDocumentsTab"
 				data-wp-on--click="actions.switchTab">
 				<?php esc_html_e( 'Documents', 'wpmediaverse' ); ?>
@@ -530,20 +534,25 @@ wp_interactivity_state(
 
 	<?php if ( '' !== $mvs_dash_drive ) : ?>
 		<!-- Documents Panel -->
-		<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isDocumentsTab">
+		<div class="mvs-dashboard-panel" role="tabpanel" data-wp-bind--hidden="!state.isDocumentsTab"
+			<?php echo get_query_var( 'mvs_doc_view' ) ? '' : 'hidden'; ?>>
 			<?php
 			// The drive, rendered server-side into the panel: folders, upload,
 			// filters and the per-row controls, on the same screen.
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the filter contract requires escaped markup.
+			// The path comes from the URL — `/my-media/documents/contracts/2026/`
+			// — not from a folder id in a query string. Pro turns the slug path
+			// into a folder, scoped to this member's own drive, so one member's
+			// `/2026/` can never resolve to another's.
 			echo apply_filters(
 				'mvs_documents_drive_html',
 				'',
 				'my-drive',
 				array(
-					// phpcs:disable WordPress.Security.NonceVerification.Recommended
-					'folder' => isset( $_GET['folder'] ) ? absint( $_GET['folder'] ) : 0,
-					'page'   => isset( $_GET['doc_page'] ) ? max( 1, absint( $_GET['doc_page'] ) ) : 1,
-					// phpcs:enable WordPress.Security.NonceVerification.Recommended
+					// Free owns the page, so Free says where the drive lives.
+					'base' => (string) get_permalink( (int) get_option( 'mvs_page_dashboard', 0 ) ),
+					'path' => (string) get_query_var( 'mvs_doc_path', '' ),
+					'page' => max( 1, (int) get_query_var( 'mvs_doc_page', 1 ) ),
 				)
 			);
 			?>

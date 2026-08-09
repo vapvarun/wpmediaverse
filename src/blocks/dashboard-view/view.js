@@ -93,7 +93,11 @@ function proApiFetch( ctx, path, opts = {} ) {
 
 const { state, actions } = store( 'mvs/dashboard', {
 	state: {
-		activeTab: 'media',
+		// NOT defaulted here. The client state literal is applied ON TOP of the
+		// server's, so a default in this file silently overwrote
+		// wp_interactivity_state()'s value and /my-media/documents/ always
+		// opened on Media. The server seeds it; the getters below fall back.
+
 		// My Media
 		media: {
 			items: [],
@@ -197,20 +201,20 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get editModalTitleMissing() {
 			return '' === String( state.editModal.title || '' ).trim();
 		},
-		get isMediaTab() { return state.activeTab === 'media'; },
-		get isAlbumsTab() { return state.activeTab === 'albums'; },
-		get isFavoritesTab() { return state.activeTab === 'favorites'; },
-		get isCollectionsTab() { return state.activeTab === 'collections'; },
+		get isMediaTab() { return ( state.activeTab || 'media' ) === 'media'; },
+		get isAlbumsTab() { return ( state.activeTab || 'media' ) === 'albums'; },
+		get isFavoritesTab() { return ( state.activeTab || 'media' ) === 'favorites'; },
+		get isCollectionsTab() { return ( state.activeTab || 'media' ) === 'collections'; },
 		// Documents: a server-rendered panel, so the store only owns which tab
 		// is showing. The drive inside it is plain HTML — no client state to
 		// keep in step with it.
-		get isDocumentsTab() { return state.activeTab === 'documents'; },
+		get isDocumentsTab() { return ( state.activeTab || 'media' ) === 'documents'; },
 		// Pro gamification tabs (computed here so panels can bind without store extension).
-		get isChallengesTab() { return state.activeTab === 'challenges'; },
-		get isBattlesTab() { return state.activeTab === 'battles'; },
-		get isTournamentsTab() { return state.activeTab === 'tournaments'; },
+		get isChallengesTab() { return ( state.activeTab || 'media' ) === 'challenges'; },
+		get isBattlesTab() { return ( state.activeTab || 'media' ) === 'battles'; },
+		get isTournamentsTab() { return ( state.activeTab || 'media' ) === 'tournaments'; },
 		// Pro connectors tab.
-		get isConnectorsTab() { return state.activeTab === 'connectors'; },
+		get isConnectorsTab() { return ( state.activeTab || 'media' ) === 'connectors'; },
 		get hasMoreMedia() { return state.media.page < state.media.totalPages; },
 		get hasMoreFavorites() { return state.favorites.page < state.favorites.totalPages; },
 		get hasNotifications() { return state.notifications.items.length > 0; },
