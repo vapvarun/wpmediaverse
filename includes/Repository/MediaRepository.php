@@ -891,23 +891,57 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * to say how much of the library has been indexed, and a count taken from a
 	 * page would understate it on every site with more than one page.
 	 *
-	 * @since 2.4.0
+	 * UNSCOPED BY DEFAULT, and that is right for its original caller: the
+	 * extraction health check asks how much of the SITE's library is indexed.
+	 * It is wrong for anything drawn beside a member's own name — the dashboard
+	 * rail read 6 next to "Media 0" for a member who owned three documents,
+	 * because one counter answered "on this site" and the one above it answered
+	 * "yours". Two numbers in one list have to answer the same question.
 	 *
-	 * @param bool $include_legacy Whether quarantined legacy documents count.
+	 * @since 2.4.0
+	 * @since 2.4.0 `$args` adds author and status scoping.
+	 *
+	 * @param bool  $include_legacy Whether quarantined legacy documents count.
+	 * @param array $args {
+	 *     @type int    $author Owner to scope to, or 0 for the whole site.
+	 *     @type string $status publish|trash|any. Default publish.
+	 * }
 	 * @return int
 	 */
-	public function count_documents( bool $include_legacy = false ): int {
+	public function count_documents( bool $include_legacy = false, array $args = array() ): int {
 		global $wpdb;
 
 		$types = $include_legacy ? MediaTypes::DOCUMENT_LIBRARY : MediaTypes::DOCUMENTS;
 
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types );
 
-		$index = $wpdb->prefix . 'mvs_media_index';
+		$where  = array( $type_sql );
+		$params = $type_params;
+
+		$author = isset( $args['author'] ) ? (int) $args['author'] : 0;
+
+		if ( $author > 0 ) {
+			$where[]  = 'post_author = %d';
+			$params[] = $author;
+		}
+
+		// `any` is the pre-existing behaviour — trashed rows included — kept as
+		// the default so the health check keeps counting what it always counted.
+		$status = ( isset( $args['status'] ) && in_array( $args['status'], array( 'publish', 'trash', 'any' ), true ) )
+			? (string) $args['status']
+			: 'any';
+
+		if ( 'any' !== $status ) {
+			$where[]  = 'status = %s';
+			$params[] = $status;
+		}
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		return (int) $wpdb->get_var(
-			$wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$type_sql}", ...$type_params )
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$where_sql}", ...$params )
 		);
 	}
 
@@ -1340,10 +1374,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @since 2.4.0
 	 *
 	 * @param array $args {
-	 *     @type int $author    Drive owner. Required for a root listing.
-	 *     @type int $folder_id Folder, or 0 for the drive root.
-	 *     @type int $per_page  Default 50.
-	 *     @type int $page      Default 1.
+	 *     @type int    $author    Drive owner. Required for a root listing.
+	 *     @type int    $folder_id Folder, or 0 for the drive root.
+	 *     @type int    $per_page  Default 50.
+	 *     @type int    $page      Default 1.
+	 *     @type string $status    publish|trash. Default publish.
 	 * }
 	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
 	 */
@@ -1352,6 +1387,15 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$author    = isset( $args['author'] ) ? (int) $args['author'] : 0;
 		$folder_id = isset( $args['folder_id'] ) ? (int) $args['folder_id'] : 0;
+
+		// `status` is an ALLOWLIST, not a passthrough — it lands in an indexed
+		// column of a query a member controls through the URL. The trash view is
+		// the only caller that asks for anything but `publish`, and it asks for a
+		// listing the member can restore from: without one, trashing is a one-way
+		// door and the row is simply gone from every surface they have.
+		$status = ( isset( $args['status'] ) && in_array( $args['status'], array( 'publish', 'trash' ), true ) )
+			? (string) $args['status']
+			: 'publish';
 		$per_page  = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 50;
 		$page      = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
 
@@ -1380,8 +1424,8 @@ class MediaRepository implements MediaRepositoryInterface {
 			? array( $type_sql, 'status = %s' )
 			: array( $type_sql, 'folder_id = %d', 'status = %s' );
 		$params = $any_folder
-			? array_merge( $type_params, array( 'publish' ) )
-			: array_merge( $type_params, array( $folder_id, 'publish' ) );
+			? array_merge( $type_params, array( $status ) )
+			: array_merge( $type_params, array( $folder_id, $status ) );
 
 		if ( ( $any_folder || 0 === $folder_id ) && $author > 0 ) {
 			$where[]  = 'post_author = %d';
