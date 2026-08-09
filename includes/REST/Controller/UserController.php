@@ -18,6 +18,7 @@ use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WPMediaVerse\Core\MediaTypes;
 use WPMediaVerse\Core\Plugin;
 use WPMediaVerse\REST\RateLimiter;
 
@@ -174,14 +175,21 @@ class UserController extends WP_REST_Controller {
 
 		// Count public media.
 		global $wpdb;
+		list( $mvs_count_type_sql, $mvs_count_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
+
 		$media_count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				// status = 'publish' or the profile advertises a media count the
 				// visitor cannot reach: trashed items stayed in the total, so the
 				// number never matched the grid below it. The sibling query at the
 				// bottom of this controller always had the clause; this one did not.
-				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = 'publish' AND moderation_status = 'approved' AND privacy = 'public'",
-				$user_id
+				//
+				// The type list is the same requirement one step further on: a
+				// profile that counts documents but renders a media grid tells the
+				// visitor the same lie by a different route.
+				"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE post_author = %d AND status = 'publish' AND moderation_status = 'approved' AND privacy = 'public' AND {$mvs_count_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id,
+				...$mvs_count_type_params
 			)
 		);
 
@@ -421,13 +429,18 @@ class UserController extends WP_REST_Controller {
 	 */
 	private function sample_media_thumbs( int $user_id, int $n, $tpl ): array {
 		global $wpdb;
+		// Thumbnails for a profile card. A document has no thumbnail, so an
+		// unfiltered sample renders as blank tiles on the one surface that is
+		// meant to show a member at a glance.
+		list( $mvs_thumb_type_sql, $mvs_thumb_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
+
 		$ids    = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index
-				WHERE post_author = %d AND status = 'publish' AND moderation_status = 'approved' AND privacy = 'public'
+				WHERE post_author = %d AND status = 'publish' AND moderation_status = 'approved' AND privacy = 'public' AND {$mvs_thumb_type_sql}
 				ORDER BY created_at DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$user_id,
-				$n
+				...array_merge( $mvs_thumb_type_params, array( $n ) )
 			)
 		);
 		$thumbs = array();

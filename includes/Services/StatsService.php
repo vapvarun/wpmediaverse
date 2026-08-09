@@ -9,6 +9,8 @@
 
 namespace WPMediaVerse\Services;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -57,6 +59,17 @@ class StatsService {
 	public function get_for_user( int $user_id ): array {
 		global $wpdb;
 
+		// `total_media` must count media (Coding Rule 13). Documents get their own
+		// counters when the document library ships; folding them in here would
+		// silently change every existing member's headline number on upgrade.
+		//
+		// Untouched on purpose: this query has NO status filter, so trashed items
+		// still count toward a member's totals. That is a real discrepancy against
+		// every other count in the plugin, but correcting it changes a number
+		// members already see, which is a behaviour change and needs its own
+		// decision rather than a quiet ride-along on a type fix.
+		list( $mvs_stats_type_sql, $mvs_stats_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'i.media_type' );
+
 		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT
@@ -68,8 +81,9 @@ class StatsService {
 					COALESCE(SUM(s.shares), 0) as total_shares
 				FROM {$wpdb->prefix}mvs_media_index i
 				INNER JOIN {$wpdb->prefix}mvs_media_stats s ON i.media_id = s.media_id
-				WHERE i.post_author = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$user_id
+				WHERE i.post_author = %d AND {$mvs_stats_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$user_id,
+				...$mvs_stats_type_params
 			),
 			ARRAY_A
 		);

@@ -9,6 +9,8 @@
 
 namespace WPMediaVerse\Services;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -120,8 +122,14 @@ class CollectionService {
 	/**
 	 * Resolve smart collection rules to media IDs.
 	 *
+	 * A collection draws from the MEDIA library only. The document library has its
+	 * own folders and surfaces, and no rule set can opt a collection into it.
+	 *
 	 * Supported rule keys:
-	 * - media_type: string (image, video, audio, document)
+	 * - media_type: string — matched against the MIME type (`file_type LIKE`), so
+	 *   the useful values are 'image', 'video', 'audio'. This key has never
+	 *   filtered the `media_type` column despite its name; 'document' was listed
+	 *   here but could not match, because the stored MIME is 'application/pdf'.
 	 * - tag: int (term ID for mvs_tag)
 	 * - category: int (term ID for mvs_category)
 	 * - author: int (user ID)
@@ -156,6 +164,23 @@ class CollectionService {
 		$join_params  = array();
 		$where_params = array();
 		$join_idx     = 0;
+
+		// A collection is a MEDIA collection. Its rules narrow the library; they
+		// never widen it, and no rule set can opt a collection into documents —
+		// the document library has its own folders and surfaces. Added with the
+		// base condition (before the rule loop) so its params sit first in
+		// $where_params, matching the order the clauses are imploded in.
+		//
+		// Note the rule named 'media_type' below does NOT filter this column: it
+		// matches `file_type LIKE '%…%'`, i.e. the MIME type. That name already
+		// lies (Coding Rule 13) and is worth its own fix; it is not this one, and
+		// no MIME rule can reach documents anyway.
+		list( $mvs_coll_type_sql, $mvs_coll_type_params ) = MediaTypes::in_clause(
+			MediaTypes::MEDIA_LIBRARY,
+			'idx.media_type'
+		);
+		$wheres[]     = $mvs_coll_type_sql;
+		$where_params = array_merge( $where_params, $mvs_coll_type_params );
 
 		// Group rule values by key, then combine SAME-key values with OR and
 		// DIFFERENT keys with AND. A flat AND over every rule made same-key rules

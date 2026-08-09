@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-08T17:21:01Z",
+    "generated_at": "2026-08-09T04:44:01Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -17,7 +17,7 @@
     "counts": {
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 36,
-        "free_files_scanned": 189,
+        "free_files_scanned": 190,
         "pro_files_scanned": 171
     },
     "cross_plugin_duplicates": [
@@ -291,7 +291,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/REST/Controller/InterestsController.php",
-                    "lines": "221-221",
+                    "lines": "228-228",
                     "method": "logged_in_check"
                 },
                 {
@@ -396,7 +396,7 @@
                 {
                     "plugin": "free",
                     "file": "includes/Services/AlbumService.php",
-                    "lines": "758-758",
+                    "lines": "788-788",
                     "method": "albums_for_media"
                 },
                 {
@@ -639,12 +639,12 @@
             "sites": [
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1574-1574",
+                    "lines": "1599-1599",
                     "method": "update_item_permissions_check"
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1599-1599",
+                    "lines": "1624-1624",
                     "method": "delete_item_permissions_check"
                 }
             ]
@@ -1029,7 +1029,7 @@
                 },
                 {
                     "file": "includes/REST/Controller/MediaController.php",
-                    "lines": "1540-1540",
+                    "lines": "1565-1565",
                     "method": "create_item_permissions_check"
                 },
                 {
@@ -1198,7 +1198,7 @@
         {
             "hash": "91fe7b3f30c614a71aa33de7faf616290b532f11",
             "plugin": "pro",
-            "instances": 2,
+            "instances": 3,
             "token_count": 33,
             "sites": [
                 {
@@ -1208,7 +1208,12 @@
                 },
                 {
                     "file": "includes/REST/CompeteSummaryController.php",
-                    "lines": "502-502",
+                    "lines": "453-453",
+                    "method": "get_user_challenges"
+                },
+                {
+                    "file": "includes/REST/CompeteSummaryController.php",
+                    "lines": "507-507",
                     "method": "get_user_tournaments"
                 }
             ]

@@ -8,6 +8,8 @@
 
 namespace WPMediaVerse\REST\Controller;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 use WP_Error;
@@ -195,6 +197,10 @@ final class InterestsController extends WP_REST_Controller {
 	 */
 	private function category_cover_url( int $tt_id, $tpl ): string {
 		global $wpdb;
+		// A cover has to render. Documents produce no thumbnail, so one winning on
+		// reaction_count would leave the interest picker showing an empty card.
+		list( $mvs_cover_type_sql, $mvs_cover_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY, 'i.media_type' );
+
 		$media_id = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT i.media_id
@@ -204,10 +210,11 @@ final class InterestsController extends WP_REST_Controller {
 				-- cover image shown to EVERYONE for an interest tag, so it must never surface
 				-- members/friends/private media. Do NOT route through the viewer-aware
 				-- MediaRepository::build_privacy_where() helper — that would leak non-public media.
-				WHERE i.status = 'publish' AND i.moderation_status = 'approved' AND i.privacy = 'public'
+				WHERE i.status = 'publish' AND i.moderation_status = 'approved' AND i.privacy = 'public' AND {$mvs_cover_type_sql}
 				ORDER BY i.reaction_count DESC
 				LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$tt_id
+				$tt_id,
+				...$mvs_cover_type_params
 			)
 		);
 		return ( $media_id && $tpl ) ? (string) $tpl->get_thumb_url( $media_id, 'medium' ) : '';
