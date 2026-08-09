@@ -216,15 +216,45 @@ class CommunityPrivacyGate {
 		 * exemption here; other plugins with token-authenticated routes
 		 * (e.g. a payment webhook) append theirs.
 		 *
+		 * `/app/config` is the second built-in case, added in 2.4.0, and it is a
+		 * BOOTSTRAP problem rather than a policy one: that route is where a
+		 * native client learns how to sign in — the `auth` block naming the
+		 * connect URL and whether password login is available. Gating it makes
+		 * private-community mode unenterable from an app: the client needs the
+		 * config to authenticate, and needed to authenticate to read the config.
+		 *
+		 * Found while building P4.4's ETag check, where an armed gate returned
+		 * 401 to an anonymous config request.
+		 *
+		 * It carries no member content — branding, feature flags, legal URLs, the
+		 * auth block and the document capability list, all of which a login
+		 * screen needs before anyone has logged in. A site wanting the harder
+		 * line can drop it through this same filter.
+		 *
 		 * @since 2.3.2
 		 *
 		 * @param string[]         $exempt  Exempt route prefixes.
 		 * @param \WP_REST_Request $request Current request.
 		 */
-		$exempt = (array) apply_filters( 'mvs_rest_gate_exempt_route_prefixes', array( '/mvs/v1/serve' ), $request );
+		$exempt = (array) apply_filters(
+			'mvs_rest_gate_exempt_route_prefixes',
+			array( '/mvs/v1/serve', '/mvs/v1/app/config' ),
+			$request
+		);
 
 		foreach ( $exempt as $prefix ) {
-			if ( '' !== $prefix && 0 === strpos( $route, (string) $prefix ) ) {
+			$prefix = (string) $prefix;
+
+			// Match on a PATH BOUNDARY, not a bare string prefix. A plain
+			// strpos() makes every exemption wider than the route it names:
+			// `/mvs/v1/app/config` would also exempt a future
+			// `/mvs/v1/app/configuration`, silently, and an exemption that grows
+			// on its own is how a privacy gate develops a hole nobody added.
+			// Caught by the test written for the 2.4.0 config exemption.
+			$matches = ( '' !== $prefix )
+				&& ( $route === $prefix || 0 === strpos( $route, rtrim( $prefix, '/' ) . '/' ) );
+
+			if ( $matches ) {
 				return $result;
 			}
 		}

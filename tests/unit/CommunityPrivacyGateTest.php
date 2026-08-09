@@ -254,4 +254,40 @@ class CommunityPrivacyGateTest extends WP_UnitTestCase {
 
 		$this->assertSame( $prior, $result );
 	}
+	/**
+	 * /app/config stays reachable while the community is private.
+	 *
+	 * A BOOTSTRAP exemption, not a policy softening: that route is where a native
+	 * client learns how to sign in. Gating it makes private-community mode
+	 * unenterable from an app — the client needs the config to authenticate and
+	 * would need to authenticate to read the config.
+	 *
+	 * Found while building P4.4's ETag check, where an armed gate returned 401 to
+	 * an anonymous config request.
+	 */
+	public function test_app_config_is_exempt_so_an_app_can_still_sign_in(): void {
+		add_filter( 'mvs_rest_require_auth', '__return_true' );
+		wp_set_current_user( 0 );
+
+		$result = CommunityPrivacyGate::gate( null, null, new WP_REST_Request( 'GET', '/mvs/v1/app/config' ) );
+
+		$this->assertNull( $result, 'A private community must still tell an app how to log in.' );
+	}
+
+	/**
+	 * Everything else on the namespace is still gated.
+	 *
+	 * The exemption must be a hole exactly one route wide.
+	 */
+	public function test_the_exemption_does_not_open_the_rest_of_the_namespace(): void {
+		add_filter( 'mvs_rest_require_auth', '__return_true' );
+		wp_set_current_user( 0 );
+
+		foreach ( array( '/mvs/v1/media', '/mvs/v1/me/media', '/mvs/v1/app/configuration-ish' ) as $route ) {
+			$result = CommunityPrivacyGate::gate( null, null, new WP_REST_Request( 'GET', $route ) );
+
+			$this->assertInstanceOf( \WP_Error::class, $result, "{$route} should still be gated." );
+			$this->assertSame( 'mvs_community_private', $result->get_error_code() );
+		}
+	}
 }
