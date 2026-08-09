@@ -17,7 +17,7 @@
 		"ajax": 3,
 		"admin_pages": 20,
 		"settings": 41,
-		"shortcodes": 13,
+		"shortcodes": 14,
 		"blocks": 9,
 		"blocks_defined": 13,
 		"post_types": 2,
@@ -26,7 +26,7 @@
 		"capabilities": 10,
 		"services": 49,
 		"services_registered": 37,
-		"hooks_fired_unique": 225,
+		"hooks_fired_unique": 234,
 		"hooks_with_args_signature": 29,
 		"hooks_no_call_site": 0,
 		"cron": 4,
@@ -396,5 +396,6 @@
 		"new_class": "Social/SuggestionService (cached candidate pool, big-site-safe)",
 		"spec": "docs/plans/app/MEDIAVERSE-ACTIVATION-SPEC.md"
 	},
-	"counts_delta_2026_08_09": "version 2.3.1->2.3.2 (last released; 2.4.0 in development). migrator_version 25->26->27 (v27 = P2.2: legacy_document quarantine, folder_id column, KEY doc_listing, KEY type_file on mvs_media_index; no new table -- the search side table is P8.1). New core class Core\\MediaTypes (vocabulary, not a container service, so services count is unchanged). New option mvs_legacy_documents_quarantined (internal migration record, not a setting, so the settings count is unchanged). hooks_fired_unique 223->225: two Production Rule 3 filters for the document library -- mvs_media_type_for_mime (P2.1, recorded late) and mvs_media_feed_allows_documents (P1.5). See generated.delta_2026_08_09 in manifest.json."
+	"counts_delta_2026_08_09": "version 2.3.1->2.3.2 (last released; 2.4.0 in development). migrator_version 25->26->27 (v27 = P2.2: legacy_document quarantine, folder_id column, KEY doc_listing, KEY type_file on mvs_media_index; no new table -- the search side table is P8.1). New core class Core\\MediaTypes (vocabulary, not a container service, so services count is unchanged). New option mvs_legacy_documents_quarantined (internal migration record, not a setting, so the settings count is unchanged). hooks_fired_unique 223->225: two Production Rule 3 filters for the document library -- mvs_media_type_for_mime (P2.1, recorded late) and mvs_media_feed_allows_documents (P1.5). See generated.delta_2026_08_09 in manifest.json.",
+	"counts_delta_2026_08_09_phase34": "Phases 3-4 (document library). FREE: +1 shortcode [mvs_documents]; +1 page option mvs_page_explore_documents (Explore Documents page); new Core\\DocumentTypes; MediaRepository gains drive_documents/public_documents/documents_shared_with/tighten_document_privacy_in_folders/count_documents_to_tighten/privacy_level/privacy_levels_looser_than, all on MediaRepositoryInterface; SettingsHelper gains get_max_upload_size; ConfigController gains an ETag and the mvs_app_config filter; hooks_fired_unique 225->234. PRO (see audit/pro/): new table mvs_pro_folders (Migrator v11) + 5 columns and 3 indexes on mvs_access_grants; new namespace mvs-pro/v1 with 10 routes (folders CRUD, documents CRUD, me/shared, permissions, permissions/link, documents/{id}/download|preview); new services Documents\\{FolderService, PermissionService, StorageResolver, HealthCheck, DocumentIngestService, AppConfig}; new WP-CLI `wp mvs seed-documents`. Recorded 2026-08-09 after a self-audit found these unrecorded — the first two hooks were delta'd with their change and the habit lapsed through Phases 3-4."
 }

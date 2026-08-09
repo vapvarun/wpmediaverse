@@ -1011,6 +1011,108 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Documents shared WITH a viewer, by direct grant.
+	 *
+	 * Here rather than in Pro because it JOINS `mvs_media_index`, and Free owns
+	 * that table. Pro's `/me/shared` route built this query itself at first —
+	 * assigning the table name to a variable and joining it, which is precisely
+	 * the shape the P1.1 audit records as a grep blind spot ("Pro assigns the
+	 * table to a variable and queries that"). It survived the architecture check
+	 * and the duplication gate, and was found only by a self-audit that went
+	 * looking for that exact pattern.
+	 *
+	 * Direct DOCUMENT grants only. A folder grant surfaces as the folder,
+	 * navigable in its owner's tree; flattening its contents here would list the
+	 * same document twice with no way to tell why (design §5).
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type int      $user_id  Viewer. Required.
+	 *     @type string[] $roles    Viewer's roles, for role grants.
+	 *     @type int      $per_page Default 50.
+	 *     @type int      $page     Default 1.
+	 * }
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function documents_shared_with( array $args = array() ): array {
+		global $wpdb;
+
+		$user_id  = isset( $args['user_id'] ) ? (int) $args['user_id'] : 0;
+		$roles    = isset( $args['roles'] ) && is_array( $args['roles'] ) ? array_values( $args['roles'] ) : array();
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 50;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+
+		$empty = array(
+			'items' => array(),
+			'total' => 0,
+			'pages' => 0,
+		);
+
+		if ( $user_id <= 0 ) {
+			return $empty;
+		}
+
+		$grants = $wpdb->prefix . 'mvs_access_grants';
+		$index  = $wpdb->prefix . 'mvs_media_index';
+
+		// Params are appended in PLACEHOLDER ORDER. Building them out of order and
+		// splicing one back into position works right up until somebody adds a
+		// clause, and a misaligned prepare() is a silent wrong-answer bug.
+		$grantee_sql = '( ( g.grantee_type = %s AND g.user_id = %d )';
+		$params      = array( 'user', $user_id );
+
+		if ( $roles ) {
+			$grantee_sql .= ' OR ( g.grantee_type = %s AND g.grantee_role IN ( ' . implode( ', ', array_fill( 0, count( $roles ), '%s' ) ) . ' ) )';
+			$params[]     = 'role';
+			$params       = array_merge( $params, $roles );
+		}
+		$grantee_sql .= ' )';
+
+		$where = "{$grantee_sql}
+		           AND g.revoked_at IS NULL
+		           AND ( g.expires_at IS NULL OR g.expires_at > %s )
+		           AND g.target_type = %s
+		           AND m.media_type = %s
+		           AND m.status = %s";
+
+		$params[] = current_time( 'mysql', true );
+		$params[] = 'media';
+		$params[] = 'document';
+		$params[] = 'publish';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(DISTINCT m.media_id) FROM {$grants} g INNER JOIN {$index} m ON m.media_id = g.media_id WHERE {$where}", ...$params )
+		);
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = ( $page - 1 ) * $per_page;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT DISTINCT m.media_id, m.title, m.slug, m.description, m.post_author, m.media_type,
+				        m.file_type, m.file_size, m.privacy, m.folder_id, m.created_at
+				   FROM {$grants} g
+				   INNER JOIN {$index} m ON m.media_id = g.media_id
+				  WHERE {$where}
+				  ORDER BY m.created_at DESC
+				  LIMIT %d OFFSET %d",
+				...$page_params
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+			'pages' => (int) ceil( $total / $per_page ),
+		);
+	}
+
+	/**
 	 * How closed a privacy value is. Instance form, for the boundary interface.
 	 *
 	 * @since 2.4.0

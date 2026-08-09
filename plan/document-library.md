@@ -412,12 +412,32 @@ This is where documents genuinely diverge from media, and the same column means 
 |---|---|---|
 | `privacy` | **the whole story** — public media is browsable in Explore | the **default answer** absent a grant |
 | Grants | rare (paid access rules) | **the primary mechanism** — this is a collaboration product |
-| "Public" means | discoverable — feeds, grids, Explore | **reachable by URL, never discoverable** |
+| "Public" means | discoverable — feeds, grids, Explore | discoverable **in the document listing only** |
 | Default | `public` (column default) | `private`, set explicitly in the service |
 
-**So "public" on a document means unlisted, not published.** A member marking a contract public gets
-a URL anyone can open — they do **not** get it posted to the community feed (Part C forbids a
-document in any media grid). The share modal says *"Anyone with the link can view"*, never "Public".
+> ### ⚠️ REVISED BY THE OWNER, 2026-08-09 — read this before the paragraph below
+>
+> This section originally read: *"public on a document means unlisted, not published"* — reachable
+> by URL, never in any feed. **That is no longer the rule.** Documents have their own listing at
+> `/explore-document`, and a public document appears there.
+>
+> The distinction that was collapsed: *"never in a MEDIA feed"* and *"never in ANY feed"* were being
+> treated as one statement. Only the first was ever the guarantee. A document still appears in no
+> media grid, Explore, album, collection or activity row — every Phase 1 predicate holds unchanged —
+> but it is listed among documents, as a row with a type chip.
+>
+> What forced it: with no document listing there was nowhere honest for a single document's back
+> link to point, and quarantined `legacy_document` rows had no surface that could render them at all
+> (a media grid drew them as broken tiles).
+>
+> **Built:** `[mvs_documents]`, `MediaRepository::public_documents()`, page option
+> `mvs_page_explore_documents`, and a type-aware back link in `TemplateHelpers::get_parent_route()`.
+
+**So "public" on a document means listed among DOCUMENTS, never among media.** A member marking a
+contract public gets a URL anyone can open and a row in the document listing — they do **not** get it
+posted to the community media feed (Part C still forbids a document in any media grid). The share
+modal still says *"Anyone with the link can view"* rather than "Public", because a link grant and a
+public privacy level are different things.
 
 Privacy vocabulary matches media — `public`, `members` (alias `loggedin`), `friends`, `space`,
 `private`, `custom`; `dm` does not apply. **Media's `group` becomes `space`**, because

@@ -551,30 +551,39 @@ All five verified at **390px**. A viewer that only works on desktop is not done.
 
 ---
 
-### P9.0 resolved against the locked UX — it is `/documents/`, and it is not a feed
+### P9.0 — SUPERSEDED 2026-08-09. It IS a feed, and it already exists.
 
-The separation the owner asked for (2026-08-09) is already the design. The
-[UX artifact](https://claude.ai/code/artifact/70f57ecc-48e5-477c-8f8a-7ae19a81e521) locks two rules
-that decide the shape, and a literal mirror of `/explore-media` would break both:
-
-> **"On a document, public means unlisted — reachable by URL, never in a feed."**
+> **This section previously argued the opposite** — that "public means unlisted, never in a feed"
+> meant there was no public documents feed to build, and that such a page would be *"empty by
+> construction on a default install"* because uploads force `private`.
 >
-> **"Files are rows, not tiles — a grid of identical PDF icons carries no information."**
+> **The owner reversed it, with a screenshot.** Both premises were wrong in different ways:
+>
+> 1. *"Never in a feed"* conflated **never in a MEDIA feed** (the actual guarantee, still enforced)
+>    with **never in any feed**. Only the first was ever promised.
+> 2. *"Empty by construction"* ignored that a member can mark a document public after upload, and
+>    ignored `legacy_document` rows entirely — which had **no** surface that could render them,
+>    since a media grid drew them as broken tiles.
+>
+> **Already built and verified**, ahead of Phase 9:
+>
+> | Piece | Where |
+> |---|---|
+> | `/explore-document` page + `mvs_page_explore_documents` option | `Core\Activator::create_pages()` |
+> | `[mvs_documents]` — rows with a type chip, not tiles | `Shortcodes::render_documents()`, `templates/documents.php` |
+> | Public listing with honest `COUNT(*)` | `MediaRepository::public_documents()` |
+> | Type-aware back link — a document returns to Documents, media to Explore | `TemplateHelpers::get_parent_route()` |
+> | `MediaTypes::DOCUMENT_LIBRARY` — includes `legacy_document`, so quarantined rows render correctly | `Core\MediaTypes` |
+>
+> **What Phase 9 still owes:** the DRIVE (P9.1's three roots), folder navigation with truncated
+> breadcrumbs (P9.2), the single-document view's preview panel (P9.3), upload/replace (P9.4), the
+> share modal (P9.5), and the T2 confirmation dialog whose count `count_privacy_cascade()` already
+> returns. The public listing is not the drive and does not replace it.
 
-So there is no public documents *feed* to build. The documents counterpart to `/explore-media` is the
-**drive**, viewer-scoped, at `/documents/` with the three roots in P9.1 — My Drive, Shared with me,
-Space drives. That satisfies the requirement in full (documents are never listed beside media, and
-they have a page of their own) without shipping a surface that is empty by construction on a default
-install, since **D8 / P3.4 force uploaded documents to `private`**.
-
-**Therefore P9.0 is a page + route task, not a new archive:** register the `/documents/` path and its
-page so the drive is reachable at a stable URL, and keep `explore-documents` as an alias only if the
-owner wants that wording in the menu. Everything it lists comes from P9.1.
-
-**The UX artifact is the display contract.** Rows not tiles; folders sort above files; direct-child
-counts via one `GROUP BY` per page, never recursive; icon chips per type; breadcrumb truncated at the
-grant point; single view reuses `media-single.php` with only the preview panel differing; the share
-modal never says "Public". Build P9.x against it, not against this file's summaries of it.
+**The UX artifact is still the display contract** for everything above: rows not tiles, folders sort
+above files, direct-child counts via one `GROUP BY` per page, icon chips per type, breadcrumb
+truncated at the grant point, single view reusing `media-single.php` with only the preview panel
+differing, and a share modal that never says "Public".
 
 ---
 
@@ -694,3 +703,35 @@ CRUD, document pagination, a share attempt by a non-owner, and a 304.
   possible, and P4.x's `/restore` pair has not been built.
 - `/documents/bulk`, `/documents/search` and `POST /documents` (upload) from design §9 are also not
   built — the upload path exists as `DocumentIngestService` but has no REST route yet.
+
+---
+
+## Self-audit — 2026-08-09, after Phase 4
+
+Run because the work had moved fast through two owner reversals and the bookkeeping needed checking
+against reality rather than against its own commit messages. **Seven findings. Four fixed, three
+recorded below as release gates.** The substance held; what slipped was legibility.
+
+### Fixed in this pass
+
+| # | Finding |
+|---|---|
+| 1 | **Manifest drift.** 9 hooks, ~10 Pro routes, `mvs_pro_folders`, the `[mvs_documents]` shortcode and the page option were all unrecorded. The rule is a delta *with* the change; it was followed for the first two hooks and then lapsed through Phases 3-4. Recorded now, `hooks_fired_unique` 225 → 234 |
+| 2 | **The design doc contradicted the build.** §5 still said *"public means unlisted, never discoverable"* and P9.0 still argued there was no documents feed to build. Both revised in place with the reasoning, so a future session cannot rebuild what was reversed |
+| 3 | **`/me/shared` queried Free's `mvs_media_index` directly**, assigning the table to a variable — precisely the grep blind spot P1.1 documents. It passed the architecture check AND the duplication gate, and my own first audit grep missed it. Moved to `MediaRepository::documents_shared_with()` on the boundary interface |
+| 6 | **Journey 07 predated both reversals** — it asserted only absence, so a build that dropped documents from *their own page too* would have passed it. New step 12b asserts each fixture is on exactly one side of the line, and the back-link assertion covers both a document and a photo |
+
+### Recorded as release gates — NOT fixed
+
+| # | Gate | Why it is not just paperwork |
+|---|---|---|
+| 4 | **`DocumentIngestService` has no REST route.** P3.4 is tested and reachable only from WP-CLI or a direct call. Design §9 lists `POST /documents` (upload, `doc_type` REQUIRED) and it does not exist. **No real member can create a document today.** `/documents/bulk`, `/documents/search` and the two `/restore` routes are likewise unbuilt — and `DELETE` trashes rather than destroys *specifically* so restore stays possible, which is a promise nothing currently keeps |
+| 5 | **Coding Rule 18: `mvs_pro_folders` is API-only.** No frontend (Phase 9), no admin (Phase 6). The rule demands all three in one release *or* a documented exception. This is the exception, and it is only acceptable because nothing member-visible ships before Phase 9. **If 2.4.0 is cut earlier, this is a half-cooked feature by the plugin's own definition** |
+| 7 | **P1.2's raw-SQL counts are untrustworthy.** The plan says 43 Free / 16 Pro; a narrow grep says 12 / 1. Finding 3 proves *why* neither is reliable — a table name in a variable is invisible to both. **P1.3's CI ban cannot be designed against a number nobody trusts**, and P1.3 is what the ban's own mutation test (P1.4) exists to prove. A real inventory has to come first, and it has to trace variable assignments |
+
+### The habit worth keeping
+
+Three of the seven were found only by testing a *known* blind spot on purpose — the plan's own
+warning that "a grep is not evidence" caught my own code. The other four came from comparing the
+artefacts against the code rather than against each other. Neither is something a green CI run
+surfaces: every gate passed throughout.

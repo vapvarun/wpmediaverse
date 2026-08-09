@@ -294,6 +294,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_app_config",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $config"
+      ],
+      "where": "includes/REST/Controller/ConfigController.php:189",
+      "consumed_by": [],
+      "note": "Extension point Pro fills with the `documents` block, so a client never hardcodes the format list, size ceiling or preview tiers. P4.4."
+    },
+    {
       "name": "mvs_app_config_branding",
       "type": "filter",
       "args_signature": [],
@@ -893,6 +904,94 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_document_can_grant",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $can",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/PermissionService.php:can_grant()",
+      "consumed_by": [],
+      "note": "D1 seam for non-personal drives. DEFAULTS FALSE so an unanswered filter denies rather than opening sharing to every member of a space."
+    },
+    {
+      "name": "mvs_document_folder_created",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $folder_id",
+        "array $args"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:create()",
+      "consumed_by": [],
+      "note": "Fires after a document folder is created."
+    },
+    {
+      "name": "mvs_document_folder_privacy_cascaded",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $folder_id",
+        "string $privacy",
+        "int $cascaded"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:set_privacy()",
+      "consumed_by": [],
+      "note": "T2. Fires after a tightening has swept the subtree. Loosening never cascades, so it does not fire."
+    },
+    {
+      "name": "mvs_document_folder_trashed",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": [
+        "int $folder_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:trash()",
+      "consumed_by": [],
+      "note": "Fires after a folder and its subtree are trashed."
+    },
+    {
+      "name": "mvs_document_max_depth",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $depth"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/FolderService.php:max_depth()",
+      "consumed_by": [],
+      "note": "Folder nesting cap, default 12. Raising past 16 pushes `path` beyond KEY subtree's 150-byte prefix, so deep trees silently stop using the index."
+    },
+    {
+      "name": "mvs_document_owns_drive",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $owns",
+        "string $drive_type",
+        "int $drive_id",
+        "int $user_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/PermissionService.php:owns_drive()",
+      "consumed_by": [],
+      "note": "Space-drive ownership seam, resolved once per drive per request. Defaults false."
+    },
+    {
+      "name": "mvs_document_uploaded",
+      "type": "action",
+      "args_count": 3,
+      "args_signature": [
+        "int $media_id",
+        "string $doc_type",
+        "int $folder_id"
+      ],
+      "where": "wpmediaverse-pro/includes/Documents/DocumentIngestService.php:handle()",
+      "consumed_by": [],
+      "note": "Fires after a document is ingested. Quota rides the existing mvs_media_uploaded instead, which is why D2 needs no fourth counter."
+    },
+    {
       "name": "mvs_explore_query_args",
       "type": "filter",
       "args_count": 2,
@@ -1163,6 +1262,17 @@
       ],
       "where": "includes/REST/Controller/MediaController.php:803",
       "consumed_by": []
+    },
+    {
+      "name": "mvs_media_library_types",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string[] $types"
+      ],
+      "where": "includes/Core/MediaTypes.php:library_types()",
+      "consumed_by": [],
+      "note": "Production Rule 3 escape hatch for narrowing MEDIA_LIBRARY to media only (owner, 2026-08-09: documents never render in a media grid). Restoring legacy_document re-accepts the broken tile."
     },
     {
       "name": "mvs_media_metadata",

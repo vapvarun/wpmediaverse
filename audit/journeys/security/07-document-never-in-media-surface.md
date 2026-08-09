@@ -20,8 +20,10 @@ Phase 1 replaced the structural guarantee with a positive type predicate on ever
 (`MediaTypes::MEDIA_LIBRARY`); this journey is the regression net that proves the predicate is
 actually applied, on every surface, at both viewports. Without it the discipline has no proof.
 
-**Design**: `plan/document-library.md` §3.2 (positive inclusion, never exclusion) and §5
-(*on a document, `public` means unlisted — reachable by URL, never discoverable*).
+**Design**: `plan/document-library.md` §3.2 (positive inclusion, never exclusion) and §5 as REVISED
+2026-08-09 — a public document is discoverable **in the document listing only**, never in a media
+surface. "Never in a media feed" and "never in any feed" are different statements; only the first was
+ever the guarantee.
 
 **Read this before editing the journey**: an absence assertion is only worth what its fixture makes
 non-vacuous. Each step below records whether it is currently **load-bearing** (the surface would
@@ -52,13 +54,18 @@ would pass either way). Do not promote a vacuous step to load-bearing without gi
   `privacy = public`, and the seed document *is* public. It therefore matches the collection's rule
   on every column except type, which is exactly the discriminator under test. No setup needed.
 - **The legacy counterpart — assert BOTH, always.** Since Migrator v27 the site also carries a
-  `legacy_document` row (option `mvs_qa_legacy_doc_id`): a pre-1.2.3 catch-all row that **must stay
-  visible** in every surface below, while the real document must stay out.
+  `legacy_document` row (option `mvs_qa_legacy_doc_id`): a pre-1.2.3 catch-all row that must stay out
+  of every media surface below, exactly like the real document, and appear on the document listing.
 
   | Fixture | `media_type` | Every media surface |
   |---|---|---|
-  | `mvs_qa_legacy_doc_id` | `legacy_document` | **PRESENT** — hiding it deletes content from members' libraries on upgrade |
-  | `mvs_qa_seed_doc_id` | `document` | **ABSENT** |
+  | `mvs_qa_legacy_doc_id` | `legacy_document` | **ABSENT** from media surfaces, **PRESENT** on `/explore-document` |
+  | `mvs_qa_seed_doc_id` | `document` | **ABSENT** from media surfaces, **PRESENT** on `/explore-document` when public |
+
+  **Revised 2026-08-09** (owner): this table previously said the legacy row must stay PRESENT in
+  media surfaces, so an upgrade would not hide content a member can see. A screenshot settled it —
+  the row rendered in Explore as a **broken image tile**. It is relocated rather than hidden: out of
+  the surface that could only draw it wrong, onto the one built for its shape.
 
   Assert the pair, never just the absence. A surface that filters on the wrong side of that line —
   `MEDIA` where it meant `MEDIA_LIBRARY` — passes an absence-only check perfectly while quietly
@@ -181,10 +188,28 @@ would pass either way). Do not promote a vacuous step to load-bearing without gi
 
 ### 12. Reachable at its own URL — the other half of the promise
 - **Action**: open `$SITE_URL/media/<seed slug>/`.
-- **Expect**: it **renders** — this must NOT 404. Containment means "not discoverable", never
-  "unreachable"; design §5 is explicit that public-on-a-document means reachable by URL.
-- **Today** it renders through `media-single.php` with full media chrome (reactions, share, comments)
-  and no preview panel. That is expected until **P9.3** replaces the preview panel for documents.
+- **Expect**: it **renders** — this must NOT 404. Containment means "not in a media surface", never
+  "unreachable".
+- **And the BACK LINK must read "Documents"**, pointing at `/explore-document/` — not "Explore"
+  pointing at `/explore-media/`. `media-single.php` is shared by media and documents deliberately;
+  the back link is the one part that must not be, because sending a member to a grid their item is
+  not in is worse than no link. A photo's back link must still read "Explore" — assert both, or a
+  regression that sends everything to Documents would pass.
+- **Today** it renders with full media chrome (reactions, share, comments) and no preview panel.
+  Expected until **P9.3**.
+
+### 12b. The DOCUMENT listing shows what the media grid must not — LOAD-BEARING
+- **Action**: open `$SITE_URL/explore-document/` at desktop and 390px.
+- **Expect**: **both** fixtures appear as rows with a type chip — the real `document` AND the
+  quarantined `legacy_document`. Neither appears in any media surface.
+- **Why this step exists**: added 2026-08-09 after the owner reversed two design points. Without it
+  the journey asserts only ABSENCE, and a build that dropped documents everywhere — including from
+  their own page — would pass it perfectly. **Absence alone is not the guarantee; the guarantee is
+  that each type is on exactly one side of the line.**
+- **The legacy row is the sharp case**: it must be ABSENT from Explore (a media grid renders a PDF as
+  a broken tile — this is what a screenshot showed) and PRESENT here (a row with a chip renders it
+  correctly). If both fixtures ever land on the same side, something has collapsed
+  `MediaTypes::MEDIA_LIBRARY` and `MediaTypes::DOCUMENT_LIBRARY` back together.
 
 ### 13. Both viewports
 - **Action**: repeat steps 4-8 at 390x844.

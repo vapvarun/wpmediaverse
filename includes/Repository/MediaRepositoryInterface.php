@@ -436,4 +436,19 @@ interface MediaRepositoryInterface {
 	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
 	 */
 	public function public_documents( array $args = array() ): array;
+
+	/**
+	 * Documents shared WITH a viewer, by direct grant.
+	 *
+	 * On the interface because it JOINS `mvs_media_index`, which Free owns. Pro's
+	 * `/me/shared` route built this query itself at first, assigning the table to
+	 * a variable — the documented grep blind spot, which survived both the
+	 * architecture check and the duplication gate.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args user_id, roles, per_page, page.
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function documents_shared_with( array $args = array() ): array;
 }
