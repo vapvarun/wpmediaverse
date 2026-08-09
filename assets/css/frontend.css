@@ -7073,3 +7073,78 @@ a.mvs-dashboard-tab:focus-visible {
 .mvs-dashboard-tabs__group:first-child {
     padding-top: var(--mvs-space-1);
 }
+
+/* ---------------------------------------------------------------------------
+   The rail states its own appearance.
+
+   Everything above sets rail styling inside a min-width media query, so below
+   that breakpoint — and anywhere the theme's `a` rules are more specific — the
+   items fell back to being links: red, underlined, with the horizontal tab's
+   bottom border still under each row. Three items showed it and three did not,
+   which is the signature of inherited styling rather than declared styling.
+
+   These rules are unconditional and name every property a theme is likely to
+   set on an anchor, so the rail looks the same on any theme. This is the
+   "plugin owns its classes" rule (Varun, 2026-08-09): a surface must not
+   depend on a property it never declares.
+   --------------------------------------------------------------------------- */
+.mvs-dashboard-tabs a.mvs-dashboard-tab,
+.mvs-dashboard-tabs button.mvs-dashboard-tab {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-2);
+    box-sizing: border-box;
+    width: 100%;
+    /* Declared, not inherited: the theme's link colour and the horizontal
+       tab's bottom border are both overwritten here rather than fought
+       selector by selector when a screenshot catches them. */
+    border: 0;
+    border-inline-start: 2px solid transparent;
+    border-radius: var(--mvs-radius-sm);
+    background: transparent;
+    box-shadow: none;
+    color: var(--mvs-text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.mvs-dashboard-tabs a.mvs-dashboard-tab:hover,
+.mvs-dashboard-tabs a.mvs-dashboard-tab:focus,
+.mvs-dashboard-tabs button.mvs-dashboard-tab:hover,
+.mvs-dashboard-tabs button.mvs-dashboard-tab:focus {
+    border-block-end: 0;
+    background: var(--mvs-surface);
+    color: var(--mvs-text);
+    text-decoration: none;
+}
+
+.mvs-dashboard-tabs a.mvs-dashboard-tab.active,
+.mvs-dashboard-tabs button.mvs-dashboard-tab.active {
+    border-block-end: 0;
+    border-inline-start-color: var(--mvs-primary);
+    background: var(--mvs-surface);
+    color: var(--mvs-primary);
+    font-weight: 600;
+}
+
+/* The count is a quantity, not part of the name — a pill at the far end reads
+   as one and stops "Documents 6" scanning as a title. */
+.mvs-dashboard-tabs .mvs-dashboard-tab__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    padding: 0.0625rem var(--mvs-space-1);
+    border-radius: 999px;
+    background: var(--mvs-border-light, var(--mvs-surface));
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+}
+
+.mvs-dashboard-tabs .mvs-dashboard-tab.active .mvs-dashboard-tab__count {
+    background: var(--mvs-primary);
+    color: var(--mvs-on-primary);
+}
