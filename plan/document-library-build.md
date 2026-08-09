@@ -40,7 +40,7 @@ Never fill a login form by hand.
 | **1 — Query discipline** | P1.1 – P1.6 | 🟡 P1.1 ✅, P1.2 🟡 partial, P1.5 🟡 walked + written, P1.3/P1.4/P1.6 ⬜ |
 | **2 — Schema** | P2.1 – P2.3 | 🟢 P2.1 ✅, P2.2 🟡 applied + verified (customer-DB run outstanding), P2.3 ✅ |
 | **3 — Pro engine** | P3.1 – P3.9 | ✅ **COMPLETE** — P3.1–P3.9 all done, every Self-check run |
-| **4 — REST + app contract** | P4.1 – P4.5 | ⬜ |
+| **4 — REST + app contract** | P4.1 – P4.5 | 🟡 P4.1 ✅ (phase gate proven live), P4.2–P4.5 ⬜ |
 | **5 — Viewers** | P5.1 – P5.5 | ⬜ |
 | **6 — Admin** | P6.1 – P6.3 | ⬜ |
 | **7 — Parity verification** | P7.1 – P7.5 | ⬜ builds nothing, proves things |
@@ -478,7 +478,7 @@ WHERE clauses on the REST controllers, not only `FROM …mvs_media_index` string
 
 | Task | Do | Self-check |
 |---|---|---|
-| **P4.1** | Folder CRUD routes on `mvs-pro/v1` (design §9) | Network panel: answers with an **Application Password alone** — no cookie, no nonce |
+| **P4.1 ✅** | Folder CRUD routes on `mvs-pro/v1` (design §9) | ✅ **DONE — the phase gate is proven, not asserted.** A real Application Password over HTTP completed the whole cycle with no cookie and no nonce: 201 create, 200 read, 200 rename, nested create, 200 delete, honest `X-WP-Total` from a dedicated `COUNT(*)`. Anonymous 401, another member's drive 403, duplicate name 409. The breadcrumb blocker is asserted on the **JSON**, since the API is where it leaks first. Pro's prefix opts into private-community mode as `/mvs-pro/v1/` — slash-delimited, because the gate uses `strpos()` and a bare prefix would never match while looking covered |
 | **P4.2** | Document list/get/update/delete, honest `X-WP-Total` / `X-WP-TotalPages` | Paginate past page 1; the header total must equal what the UI renders |
 | **P4.3** | Share/grant routes; grant authority per **D1** | As a non-owner, attempt a grant → 403 |
 | **P4.4** | `/app/config` additions + ETags | Re-request with `If-None-Match` → **304** in the network panel |
