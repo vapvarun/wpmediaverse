@@ -965,6 +965,58 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Direct document counts for a set of folders, in ONE query.
+	 *
+	 * The display contract is specific about this: "counts are direct children —
+	 * one GROUP BY per page, never recursive". Both halves matter. A count per
+	 * folder row would be an N+1 on the one surface a member opens most, and a
+	 * RECURSIVE count would need the subtree on every row — which on a drive
+	 * with 30k documents is the whole table, to render a number.
+	 *
+	 * Folders absent from the result have no documents; the caller defaults to 0
+	 * rather than this padding the array with zeroes.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[] $folder_ids Folder ids.
+	 * @return array<int, int> folder_id => direct document count.
+	 */
+	public function count_documents_in_folders( array $folder_ids ): array {
+		global $wpdb;
+
+		$folder_ids = array_values( array_unique( array_filter( array_map( 'intval', $folder_ids ) ) ) );
+
+		if ( ! $folder_ids ) {
+			return array();
+		}
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		$index        = $wpdb->prefix . 'mvs_media_index';
+		$placeholders = implode( ', ', array_fill( 0, count( $folder_ids ), '%d' ) );
+		$params       = array_merge( $type_params, $folder_ids, array( 'publish' ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT folder_id, COUNT(*) AS total
+				   FROM {$index}
+				  WHERE {$type_sql} AND folder_id IN ( {$placeholders} ) AND status = %s
+				  GROUP BY folder_id",
+				...$params
+			),
+			ARRAY_A
+		);
+
+		$counts = array();
+		foreach ( $rows as $row ) {
+			$counts[ (int) $row['folder_id'] ] = (int) $row['total'];
+		}
+
+		return $counts;
+	}
+
+	/**
 	 * SQL clause narrowing a document listing to one named type.
 	 *
 	 * A `doc_type` is a display group, not a stored column — `file_type` holds
