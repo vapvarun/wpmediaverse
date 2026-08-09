@@ -936,6 +936,81 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Documents in one drive, optionally inside one folder.
+	 *
+	 * The drive query from design §4, verbatim, so `KEY doc_listing` serves it
+	 * left to right: `media_type`, `folder_id`, `status`, then `created_at` for
+	 * the sort. Verified with EXPLAIN against the P3.9 fixture (`type=ref`).
+	 *
+	 * `post_author` scopes the ROOT listing only. Inside a folder it is dropped,
+	 * because the folder already scoped the drive — carrying it would add a
+	 * column the index cannot use at that position and change nothing.
+	 *
+	 * Returns rows plus an honest total from a dedicated `COUNT(*)`. It does NOT
+	 * apply document permissions: the caller holds `PermissionService` and
+	 * resolves a whole page in two queries, which is the only way that stays
+	 * within budget. A repository that filtered per row would reintroduce the
+	 * N+1 this design exists to avoid.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type int $author    Drive owner. Required for a root listing.
+	 *     @type int $folder_id Folder, or 0 for the drive root.
+	 *     @type int $per_page  Default 50.
+	 *     @type int $page      Default 1.
+	 * }
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function drive_documents( array $args = array() ): array {
+		global $wpdb;
+
+		$author    = isset( $args['author'] ) ? (int) $args['author'] : 0;
+		$folder_id = isset( $args['folder_id'] ) ? (int) $args['folder_id'] : 0;
+		$per_page  = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 50;
+		$page      = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		$where  = array( $type_sql, 'folder_id = %d', 'status = %s' );
+		$params = array_merge( $type_params, array( $folder_id, 'publish' ) );
+
+		if ( 0 === $folder_id && $author > 0 ) {
+			$where[]  = 'post_author = %d';
+			$params[] = $author;
+		}
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$where_sql}", ...$params ) );
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = ( $page - 1 ) * $per_page;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT media_id, title, slug, description, post_author, media_type, file_type, file_size, privacy, folder_id, created_at
+				   FROM {$index}
+				  WHERE {$where_sql}
+				  ORDER BY created_at DESC
+				  LIMIT %d OFFSET %d",
+				...$page_params
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+			'pages' => (int) ceil( $total / $per_page ),
+		);
+	}
+
+	/**
 	 * How closed a privacy value is. Instance form, for the boundary interface.
 	 *
 	 * @since 2.4.0

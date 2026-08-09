@@ -409,4 +409,31 @@ interface MediaRepositoryInterface {
 	 * @return string[] Empty when nothing is looser, or the value is unknown.
 	 */
 	public function privacy_levels_looser_than( string $privacy ): array;
+
+	/**
+	 * Documents in one drive, optionally inside one folder.
+	 *
+	 * On the boundary interface because Pro's document REST surface lists a drive
+	 * and must not query `mvs_media_index` itself (architecture invariant 6).
+	 *
+	 * Applies NO document permissions — the caller resolves a whole page through
+	 * PermissionService in two queries, which is the only way that stays within
+	 * budget. Filtering per row here would reintroduce the N+1 the design avoids.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args author, folder_id, per_page, page.
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function drive_documents( array $args = array() ): array;
+
+	/**
+	 * Public documents, for the public document listing page.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args per_page, page, doc_type.
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function public_documents( array $args = array() ): array;
 }
