@@ -129,11 +129,29 @@ would pass either way). Do not promote a vacuous step to load-bearing without gi
   there is nothing for this step to find either way. It becomes load-bearing at **P3.4**, when a
   document can be uploaded for real. Do not read a pass here as evidence.
 
-### 10. Pro surfaces — Instagram layout, leaderboard, challenges, tournaments, stories
+### 10. Pro surfaces — Instagram layout, leaderboard, challenges, tournaments, boosts, stories
 - **Action**: open `$SITE_URL/compete/` and the Instagram-layout Explore variant.
 - **Expect**: the document appears in none of them.
-- **Status**: **VACUOUS TODAY for compete** — the fixture has no competitions, so those pages render
-  an empty state. Seed one competition entry to make it load-bearing.
+- **LOAD-BEARING AT THE WRITE, which is stronger than a read filter.** A document cannot *become* a
+  competition entry or a boost in the first place, so there is no bad row for these surfaces to
+  filter. Assert the four refusals directly rather than only eyeballing the pages:
+
+  | Call | Expected |
+  |---|---|
+  | `ChallengeService::submit_entry( $c, $u, <doc> )` | `mvs_challenge_invalid_media` |
+  | `BattleService` submit | `mvs_battle_invalid_media` |
+  | `TournamentService` submit | `mvs_match_invalid_media` |
+  | `BoostService::create( $u, <doc> )` | `mvs_boost_invalid_media` |
+
+  **And each must still accept a real image** — verified 2026-08-09: document refused on all four,
+  image accepted into a live challenge.
+- **Why the write is the right place**: all four checked `exists() && author === user` and **not the
+  type**, in four separate copies. A boost is the sharpest case — it buys placement in the *feed*,
+  which is the exact surface the document library exists to stay out of. The four copies are now one
+  `Support\CompetitionMedia::is_entrable()`.
+- **Note on reading these pages**: `/compete/` shows "You haven't joined any competitions yet" for a
+  member with no entries. That is the **My Activity panel**, not an empty site — this fixture has 8
+  competitions. Do not record a personal empty state as proof the surface is empty.
 - **Stories is LOAD-BEARING by code, not by render**: `StoryService::create()` refuses any media
   whose type is outside `MediaTypes::MEDIA_LIBRARY`, and the story listing query carries the same
   positive clause. Assert the refusal directly:
