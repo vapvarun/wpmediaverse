@@ -323,6 +323,7 @@ All five verified at **390px**. A viewer that only works on desktop is not done.
 
 | Task | Do | Self-check |
 |---|---|---|
+| **P9.0** | **`/explore-documents` archive page** — the documents counterpart to `/explore-media`, so the two libraries never share a page (owner, 2026-08-09). New `mvs_page_documents` option + page in `Activator::create_pages()` (slug `explore-documents`, title "Explore Documents"), new `[mvs_documents]` shortcode, new `templates/explore-documents.php`. **Detach `_wp_auto_add_pages_to_menu` around the insert exactly as the existing three pages do** (Coding Rule 17 — activation must never edit the site's menus) | Open `/explore-documents` and `/explore-media` side by side, desktop + 390px: neither lists the other's items. Confirm **Appearance → Menus is unchanged** after activation |
 | **P9.1** | Drive view — three virtual roots (My Drive / Shared with me / Recent) | Desktop + 390px |
 | **P9.2** | Folder navigation + **breadcrumbs** | **RELEASE BLOCKER:** a member granted `/Contracts` must never see an ancestor folder name in **any** response. Folder names carry client identities and project codenames — this is an information leak, not a display bug. Check the JSON, not just the rendered crumb |
 | **P9.3** | Single-document view | Desktop + 390px |
@@ -330,6 +331,23 @@ All five verified at **390px**. A viewer that only works on desktop is not done.
 | **P9.5** | Share modal | Keyboard reachable, focus trapped, ESC closes |
 | **P9.6** | Empty / loading / error states on every async surface | All three, on each surface (Coding Rule 11) |
 | **P9.7** | Big-site pass | With the P3.9 fixture: 2,000 documents paginate, no horizontal scroll at 390px, counts via `COUNT(*)` not `count(list_all())`, filter + sort present |
+
+---
+
+### Open question on P9.0 — what does `/explore-documents` list?
+
+The separation is settled; **the audience is not**, and the two readings are materially different
+builds:
+
+- **(a) Viewer-scoped archive** — the documents this viewer can see: their own, shared with them,
+  plus any deliberately made public. Works on every site from day one.
+- **(b) Public archive**, the true mirror of `/explore-media`. But **D8 / P3.4 force uploaded
+  documents to `private`**, so on a default install this page renders empty until members
+  deliberately publish documents. An empty "Explore Documents" page reads as broken.
+
+**Assumption if unanswered: (a).** It satisfies the stated goal — documents never mixed with media —
+without shipping a surface that is empty by construction. If (b) is wanted, the privacy default in
+P3.4 has to be revisited with it, because the two decisions contradict each other.
 
 ---
 

@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-09T06:00:21Z",
+    "generated_at": "2026-08-09T06:24:17Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -291,8 +291,8 @@
                 {
                     "plugin": "free",
                     "file": "includes/REST/Controller/InterestsController.php",
-                    "lines": "228-228",
-                    "method": "logged_in_check"
+                    "lines": "230-230",
+                    "method": "InterestsController::logged_in_check"
                 },
                 {
                     "plugin": "free",

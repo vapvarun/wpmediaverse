@@ -1391,7 +1391,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @var array<string>
 	 */
-	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title' );
+	private const QUERY_ORDERBY_ALLOWED = array( 'created_at', 'media_id', 'title', 'reaction_count' );
 
 	/**
 	 * General media-index listing query — the single place feed/profile/explore
