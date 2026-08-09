@@ -37,7 +37,7 @@ Never fill a login form by hand.
 | Phase | Tasks | State |
 |---|---|---|
 | **Prerequisites** | PRE-1, PRE-2 | ✅ both done |
-| **1 — Query discipline** | P1.1 – P1.6 | 🟡 P1.1 ✅, P1.2 🟡 partial, P1.3–P1.6 ⬜ |
+| **1 — Query discipline** | P1.1 – P1.6 | 🟡 P1.1 ✅, P1.2 🟡 partial, P1.5 🟡 walked + written, P1.3/P1.4/P1.6 ⬜ |
 | **2 — Schema** | P2.1 – P2.3 | 🟡 P2.1 ✅, P2.2–P2.3 ⬜ |
 | **3 — Pro engine** | P3.1 – P3.9 | ⬜ |
 | **4 — REST + app contract** | P4.1 – P4.5 | ⬜ |
@@ -52,8 +52,11 @@ Never fill a login form by hand.
 **Nothing member-visible ships before Phase 9.** Phases 1–8 leave the feature reachable by API and
 admin only — the half-cooked state Coding Rule 18 forbids.
 
-**Browser verification to date: none.** Everything green so far is unit-level. **P1.5 is where that
-changes**, which is one reason it is a release blocker.
+**Browser verification: P1.5 walked 2026-08-09** — desktop and 390px, Free+Pro+BuddyPress active,
+against a seeded document made deliberately hard to exclude (public, published, approved, forced into
+an album, matching a `privacy=public` smart collection). It found a real leak on `/media` and
+`/me/media` that every unit test in the phase was green through. Everything before that date was
+unit-level only.
 
 ---
 
@@ -146,17 +149,60 @@ predicate rule would have passed that line.
 - **Self-check** — none. This IS the check.
 - **Done** — A rule nobody has watched fail is a rule nobody knows works. This is the watching.
 
-### P1.5 — The journey ⬜ **RELEASE BLOCKER** (design §15)
+### P1.5 — The journey 🟡 **RELEASE BLOCKER** (design §15) — walked, written, two halves deferred
 
-- **Files** — `+ audit/journeys/16-document-never-in-media-surface.json`
-- **Do** — Upload a document; assert it appears in the drive and in **none** of: explore grid, media
-  grid block, album, collection, lightbox, BP activity, `/media`, `/me/media`, Instagram layout,
-  leaderboard, challenges, stories, tournaments.
-- **Test** — `journey:` passes on Free-only and Free+Pro.
-- **Self-check** — **walk it by hand before automating.** Log in as a member, upload a document, then
-  open every surface in that list at desktop and 390px. This is the first browser verification the
-  document work gets; do not let the journey script be the first time a human sees it.
-- **Done** — The regression net for §8 exists. **Without it the query discipline has no proof.**
+- **Files** — `+ audit/journeys/security/07-document-never-in-media-surface.md` (**not** `16-….json`
+  — journeys are markdown in role subdirectories, and the coverage gate discovers them by `covers:`
+  tag, not by filename), `~ audit/journeys/REQUIRED-COVERS.txt`,
+  `+ tests/unit/MediaFeedDocumentRefusalTest.php`, `~ tests/unit/MediaTypeGroupTest.php`,
+  `~ includes/REST/Controller/MediaController.php`.
+- **Done** — the hand-walk (2026-08-09, desktop + 390px, admin session, Free+Pro+BP active) and the
+  journey written from it. **This is the first browser verification the document work has had.**
+  - Explore, album, collection, My Media, admin All Media (default), BP activity: **no leak**.
+  - **Album and collection are the load-bearing results.** The album was made adversarial — the seed
+    document forced in through the join table, 7 join rows, **6 tiles and "6 items"**, so the filter
+    holds in the count as well as the loop. The fixture's collection 15 matches on `privacy=public`
+    and the document *is* public, so only the type predicate excludes it: 68 items, no document.
+  - Stories verified by probe, both directions: document refused, a real image still accepted.
+- **The leak the walk found** — `GET /mvs/v1/media?media_type=document` **returned the document**,
+  and `/me/media` inherited it via `get_my_items()`'s delegation. Now **400 `mvs_document_route`**,
+  with `mvs_media_feed_allows_documents` as the Production Rule 3 escape hatch (verified in both
+  directions). See the reversal note below — this is why the phase's own tests could be green while
+  the promise was false.
+- **Deferred, and visible in the journey rather than dropped** — steps 14 (upload a real document,
+  **P3.4**) and 15 (it appears in the drive, **P9.1**) fail by design until those land. Neither can be
+  written today: every ingest path calls `reject_unsupported_mime()`, so a document cannot enter
+  through the front door, and there is no drive to look in. The journey therefore **seeds** through
+  `MediaRepository` (never raw SQL, never a chosen id) rather than uploading.
+- **Honest limits recorded in the journey** — the BP-activity and Pro-compete steps are **vacuous
+  today**: activity rows are written at ingest and a seeded row never had one, and the fixture has no
+  competitions. Each is labelled load-bearing or vacuous so nobody reads a pass as evidence.
+- **Test** — `unit:` 5 new cases (326 green, was 321). `journey:` still to be executed by an agent
+  against a Free-only install; today's walk was combo.
+- **Remaining before this closes** — run the journey Free-only, and seed one competition entry so the
+  Pro compete steps stop being vacuous.
+
+#### The media-route reversal (owner decision, 2026-08-09)
+
+`MediaController::get_items()` carried a comment saying an explicit `?media_type=` *"is how a
+document surface asks for documents"*. That was wrong on two counts the comment could not see:
+
+1. The route applies **media** privacy (public / members / author). Document access is grants-first
+   through the folder ancestor chain (design §5), so once `PermissionService` (P3.3) exists this
+   route answers with the wrong permission model — an ACL bypass by construction, not a stale filter.
+2. Design §5 locks *"on a document, `public` means unlisted — reachable by URL, never
+   discoverable."* A feed that enumerates public documents to anonymous callers breaks exactly that,
+   and this is the route the mobile app reads.
+
+`document` **stays in the parameter's enum on purpose**: removing it would make WP answer with a
+generic `rest_invalid_param` before the handler runs — telling a client nothing about where documents
+actually live — and would put the escape hatch out of reach, since the value would be rejected
+upstream of the filter.
+
+**Note for P1.3/P1.4**: this route hand-builds its own `WHERE` and never touches `MediaRepository`,
+so the planned CI ban would not have caught it, and P1.2's repository default did not cover it. The
+predicate was right and the promise was still false. Whatever P1.3 bans, it must reach hand-built
+WHERE clauses on the REST controllers, not only `FROM …mvs_media_index` string matches.
 
 ### P1.6 — `AdminAggregatesService` counts documents separately ⬜ *(new — from the P1.1 judgement call)*
 
@@ -386,7 +432,7 @@ modal never says "Public". Build P9.x against it, not against this file's summar
 
 | | Blocker | Task | State |
 |---|---|---|---|
-| **Journey** | A document appears in the drive and in no media surface | **P1.5** | ⬜ |
+| **Journey** | A document appears in the drive and in no media surface | **P1.5** | 🟡 absence half done + walked; presence half deferred to P3.4/P9.1 |
 | **T2** | Tightening a folder cascades; loosening does not | **P3.8** | ⬜ |
 | **Storage privacy** | Local deny rules **and** a Site Health check that the bucket is not public-read | **P3.6 + P3.7** | ⬜ |
 | **Breadcrumb** | Shared view starts at the highest granted ancestor | **P9.2** | ⬜ |

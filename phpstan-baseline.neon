@@ -381,11 +381,6 @@ parameters:
 			path: includes/REST/Controller/MediaController.php
 
 		-
-			message: "#^Method WPMediaVerse\\\\REST\\\\Controller\\\\MediaController\\:\\:get_items\\(\\) should return WP_REST_Response but returns WP_Error\\.$#"
-			count: 1
-			path: includes/REST/Controller/MediaController.php
-
-		-
 			message: "#^Parameter \\#2 \\$value of method WP_HTTP_Response\\:\\:header\\(\\) expects string, int given\\.$#"
 			count: 2
 			path: includes/REST/Controller/MediaController.php

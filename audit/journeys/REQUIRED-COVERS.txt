@@ -44,3 +44,15 @@ suspension-gate
 report
 reports-default-on
 safety
+
+# 2.4.0 document library. Documents and media share one table, so containment is
+# a query-discipline promise rather than a structural one: every listing carries a
+# positive type predicate instead of the table shape making a leak impossible.
+# A promise of that shape needs a net under it, and this is the net — without it
+# Phase 1 has no proof, which is why the plan calls it a release blocker.
+#
+# The journey is deliberately adversarial: the seeded document is public,
+# published and approved (the most exposed configuration), it is forced into an
+# album through the join table, and the fixture's smart collection matches on
+# `privacy = public` — so it matches every listing's criteria except type.
+document-never-in-media-surface

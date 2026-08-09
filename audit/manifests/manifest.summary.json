@@ -26,7 +26,7 @@
 		"capabilities": 10,
 		"services": 49,
 		"services_registered": 37,
-		"hooks_fired_unique": 223,
+		"hooks_fired_unique": 225,
 		"hooks_with_args_signature": 29,
 		"hooks_no_call_site": 0,
 		"cron": 4,
@@ -396,5 +396,5 @@
 		"new_class": "Social/SuggestionService (cached candidate pool, big-site-safe)",
 		"spec": "docs/plans/app/MEDIAVERSE-ACTIVATION-SPEC.md"
 	},
-	"counts_delta_2026_08_09": "version 2.3.1->2.3.2 (last released; 2.4.0 in development). migrator_version 25->26. New core class Core\\MediaTypes (vocabulary, not a container service, so services count is unchanged). See generated.delta_2026_08_09 in manifest.json."
+	"counts_delta_2026_08_09": "version 2.3.1->2.3.2 (last released; 2.4.0 in development). migrator_version 25->26. New core class Core\\MediaTypes (vocabulary, not a container service, so services count is unchanged). hooks_fired_unique 223->225: two Production Rule 3 filters for the document library -- mvs_media_type_for_mime (P2.1, recorded late) and mvs_media_feed_allows_documents (P1.5). See generated.delta_2026_08_09 in manifest.json."
 }

@@ -305,14 +305,45 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Whether the media feed may still serve documents.
+	 *
+	 * Production Rule 3 escape hatch. Until 2.4.0 `GET /media?media_type=document`
+	 * returned document rows, and the parameter has advertised `document` in its
+	 * enum since the first release — so a site or client depending on that can
+	 * restore it with one line:
+	 *
+	 *     add_filter( 'mvs_media_feed_allows_documents', '__return_true' );
+	 *
+	 * Restoring it re-opens the two problems described in `get_items()`, so it is
+	 * a migration aid rather than a supported configuration. The filter stays for
+	 * at least two majors; removal no earlier than 4.0.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return bool True when documents may be served by the media feed.
+	 */
+	public static function media_feed_allows_documents(): bool {
+		/**
+		 * Filters whether the media feed may serve document rows.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param bool $allowed Default false — documents are read through the
+		 *                      document routes, not the media feed.
+		 */
+		return (bool) apply_filters( 'mvs_media_feed_allows_documents', false );
+	}
+
+	/**
 	 * Get collection of media items.
 	 *
 	 * @param WP_REST_Request $request Request.
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_items( $request ) {
 		// Rate limit public reads: 120/min per user/IP to prevent scraping.
 		$rate_check = RateLimiter::check( 'media_read', 120, 60 );
+
 		if ( is_wp_error( $rate_check ) ) {
 			return $rate_check;
 		}
@@ -397,10 +428,34 @@ class MediaController extends WP_REST_Controller {
 		// of code changing. The trashed-media leak (68113454) was the same shape: it
 		// too carried a media_type predicate and still leaked.
 		//
-		// An explicit ?media_type= is honoured — that is how a document surface asks
-		// for documents — but it is validated against the known vocabulary rather
-		// than passed through, so an unknown value narrows to nothing instead of
-		// silently widening the feed.
+		// An explicit ?media_type= is honoured for the MEDIA vocabulary, and it is
+		// validated against the known types rather than passed through, so an
+		// unknown value narrows to nothing instead of silently widening the feed.
+		//
+		// `document` is REFUSED here, and that is a deliberate reversal. The
+		// comment this replaced read "that is how a document surface asks for
+		// documents", but the document library does not ask through this route:
+		//
+		// 1. It reads documents under MEDIA privacy (public / members / author).
+		// Document access is grants-first through the folder ancestor chain
+		// (design §5), so once PermissionService lands this route resolves the
+		// wrong answer by construction — an ACL bypass, not a stale filter.
+		//
+		// 2. On a document, `public` means UNLISTED — reachable by URL, never
+		// discoverable (design §5). A feed that enumerates public documents to
+		// anonymous callers breaks that, and this route is read by the mobile
+		// app, so the leak would ship to every client at once.
+		//
+		// Documents are read through the Pro document routes instead.
+		$mvs_wants_documents = $media_type && in_array( (string) $media_type, MediaTypes::DOCUMENTS, true );
+		if ( $mvs_wants_documents && ! self::media_feed_allows_documents() ) {
+			return new WP_Error(
+				'mvs_document_route',
+				__( 'Documents are not served by the media feed. Use the document routes instead.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
+		}
+
 		if ( $media_type && MediaTypes::is_known( (string) $media_type ) ) {
 			$where[]  = 'media_type = %s';
 			$params[] = sanitize_text_field( (string) $media_type );
@@ -1934,6 +1989,13 @@ class MediaController extends WP_REST_Controller {
 				'minimum'           => 1,
 				'sanitize_callback' => 'absint',
 			),
+			// `document` stays in the enum on purpose. Dropping it would make WP
+			// answer a document request with a generic rest_invalid_param before
+			// the handler ever runs, which tells a client nothing about where
+			// documents actually live — and it would also make the
+			// `mvs_media_feed_allows_documents` escape hatch unreachable, since
+			// the value would be rejected upstream of the filter. The handler
+			// refuses it with `mvs_document_route` instead. @deprecated 2.4.0
 			'media_type'   => array(
 				'type'              => 'string',
 				'enum'              => array( 'image', 'video', 'audio', 'document' ),

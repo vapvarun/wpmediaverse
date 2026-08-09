@@ -130,20 +130,35 @@ class MediaTypeGroupTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The opt-in path still works — that is how a document surface asks for documents.
+	 * The opt-in path is REFUSED — the media feed is not a document surface.
+	 *
+	 * This test previously asserted the opposite, on the reasoning that an
+	 * explicit `?media_type=document` is "how a document surface asks for
+	 * documents". Reversed by owner decision (2026-08-09) after the P1.5 walk,
+	 * for two reasons the original framing missed:
+	 *
+	 * 1. This route applies MEDIA privacy (public / members / author). Document
+	 *    access is grants-first through the folder ancestor chain, so the route
+	 *    answers with the wrong permission model — an ACL bypass by construction
+	 *    once PermissionService exists, not merely a stale filter.
+	 * 2. On a document, `public` means UNLISTED — reachable by URL, never
+	 *    discoverable. A feed that enumerates public documents to anonymous
+	 *    callers breaks that, and the mobile app reads this same route.
+	 *
+	 * Full coverage of the refusal, the delegation through `/me/media`, and the
+	 * Production Rule 3 escape hatch lives in `MediaFeedDocumentRefusalTest`.
+	 * This case stays here so the reversal is visible where the old promise was.
 	 */
-	public function test_explicit_media_type_param_can_request_documents(): void {
-		$photo = $this->insert_row( 'image', 'Optin Photo' );
-		$doc   = $this->insert_row( 'document', 'Optin Document' );
+	public function test_explicit_media_type_param_is_refused_for_documents(): void {
+		$this->insert_row( 'image', 'Optin Photo' );
+		$this->insert_row( 'document', 'Optin Document' );
 
 		$request = new \WP_REST_Request( 'GET', '/mvs/v1/media' );
 		$request->set_param( 'media_type', 'document' );
 		$response = rest_get_server()->dispatch( $request );
 
-		$ids = wp_list_pluck( (array) $response->get_data(), 'id' );
-
-		$this->assertContains( $doc, $ids, 'An explicit media_type=document must return documents.' );
-		$this->assertNotContains( $photo, $ids, 'An explicit type filter must exclude other types.' );
+		$this->assertSame( 400, $response->get_status(), 'The media feed must refuse a document request.' );
+		$this->assertSame( 'mvs_document_route', $response->as_error()->get_error_code() );
 	}
 
 	/**

@@ -1121,6 +1121,17 @@
       ]
     },
     {
+      "name": "mvs_media_feed_allows_documents",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $allowed"
+      ],
+      "where": "includes/REST/Controller/MediaController.php:334",
+      "consumed_by": [],
+      "note": "Production Rule 3 escape hatch for P1.5. GET /media?media_type=document (and /me/media, which delegates to the same handler) returned document rows until 2.4.0 and the parameter has advertised 'document' in its enum since the first release. The route now answers 400 mvs_document_route; this filter restores the old behaviour for at least two majors. Default false."
+    },
+    {
       "name": "mvs_media_files_orphaned",
       "type": "action",
       "args_count": 2,
@@ -1246,6 +1257,18 @@
         "wpmediaverse-pro (Frontend\\BoostAffordance \u2014 boost store/modal + owner button on the canonical single-media page, all layouts)"
       ],
       "added": "2.1.0"
+    },
+    {
+      "name": "mvs_media_type_for_mime",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "string $type",
+        "string $mime"
+      ],
+      "where": "includes/Services/UploadService.php:866",
+      "consumed_by": [],
+      "note": "Production Rule 3 escape hatch for P2.1. get_media_type() used to return 'document' for any unrecognised MIME; it now returns ''. A filter value outside MediaTypes::ALL is ignored, so an unknown string cannot defeat the positive type predicates downstream. Added to the manifest 2026-08-09 -- it shipped in the P2.1 commit without a manifest delta."
     },
     {
       "name": "mvs_media_uploaded",
