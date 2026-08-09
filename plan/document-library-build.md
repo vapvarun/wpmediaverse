@@ -40,7 +40,7 @@ Never fill a login form by hand.
 | **1 — Query discipline** | P1.1 – P1.6 | 🟡 P1.1 ✅, P1.2 🟡 partial, P1.5 🟡 walked + written, P1.3/P1.4/P1.6 ⬜ |
 | **2 — Schema** | P2.1 – P2.3 | 🟢 P2.1 ✅, P2.2 🟡 applied + verified (customer-DB run outstanding), P2.3 ✅ |
 | **3 — Pro engine** | P3.1 – P3.9 | ✅ **COMPLETE** — P3.1–P3.9 all done, every Self-check run |
-| **4 — REST + app contract** | P4.1 – P4.5 | 🟡 P4.1 ✅ P4.2 ✅ P4.5 ✅ (all proven live with an Application Password), P4.3 share/grant + P4.4 /app/config ⬜ |
+| **4 — REST + app contract** | P4.1 – P4.5 | 🟡 P4.1 ✅ P4.2 ✅ P4.3 ✅ P4.5 ✅ — all proven live with an Application Password. **P4.4 `/app/config` + ETags ⬜** is the only one left |
 | **5 — Viewers** | P5.1 – P5.5 | ⬜ |
 | **6 — Admin** | P6.1 – P6.3 | ⬜ |
 | **7 — Parity verification** | P7.1 – P7.5 | ⬜ builds nothing, proves things |
@@ -480,7 +480,7 @@ WHERE clauses on the REST controllers, not only `FROM …mvs_media_index` string
 |---|---|---|
 | **P4.1 ✅** | Folder CRUD routes on `mvs-pro/v1` (design §9) | ✅ **DONE — the phase gate is proven, not asserted.** A real Application Password over HTTP completed the whole cycle with no cookie and no nonce: 201 create, 200 read, 200 rename, nested create, 200 delete, honest `X-WP-Total` from a dedicated `COUNT(*)`. Anonymous 401, another member's drive 403, duplicate name 409. The breadcrumb blocker is asserted on the **JSON**, since the API is where it leaks first. Pro's prefix opts into private-community mode as `/mvs-pro/v1/` — slash-delimited, because the gate uses `strpos()` and a bare prefix would never match while looking covered |
 | **P4.2 ✅** | Document list/get/update/delete, honest `X-WP-Total` / `X-WP-TotalPages` | ✅ **DONE.** Verified live across three pages: **3 + 3 + 1 rows rendered, header saying 7 on every page.** The total reports what the VIEWER can see, not what the table holds — a raw `COUNT(*)` would promise rows a shared folder then withholds. Permissions for a whole page resolve in **two queries** via `prefetch()`; the repository deliberately returns rows without ACLs so the check can be batched |
-| **P4.3** | Share/grant routes; grant authority per **D1** | As a non-owner, attempt a grant → 403 |
+| **P4.3 ✅** | Share/grant routes; grant authority per **D1** | ✅ **DONE, verified live.** A member holding **EDIT** reads the document (200) and is refused both a grant and a link mint (**403** each); the owner does both. An editor cannot even LIST the shares — that list names other members. The raw link token is returned **once** and only its SHA-256 stored, so neither the listing nor anyone reading the database can re-expose it. **D4** holds: link sharing is refused while private-community mode is armed |
 | **P4.4** | `/app/config` additions + ETags | Re-request with `If-None-Match` → **304** in the network panel |
 | **P4.5 ✅** | `/me/shared` — documents shared *with* the viewer | ✅ **DONE.** Two members, each seeing only their own grants; a revoked grant drops out. Lists **direct document grants only** — a folder grant surfaces as the FOLDER, navigable in its owner's tree, because flattening its contents here would show the same document twice with no way to tell why |
 
