@@ -1745,6 +1745,13 @@ class MediaRepository implements MediaRepositoryInterface {
 		switch ( $mode ) {
 			case 'public':
 				return array( "m.privacy = 'public'", array() );
+			case 'explore':
+				// The explore/feed-layout rule, which is NOT the same as 'visible':
+				// it grants moderators everything, and it does not exclude the
+				// viewer's own `dm` attachments. Both differences are load-bearing,
+				// so the Pro layouts get this mode rather than being quietly
+				// remapped onto 'visible' and narrowing what a moderator sees.
+				return $this->explore_privacy_clause( 'm', $viewer_id );
 			case 'visible':
 				// Owner sees their own media EXCEPT conversation-scoped 'dm'
 				// attachments, which never belong in any library/grid listing.
