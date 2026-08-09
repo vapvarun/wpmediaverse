@@ -848,10 +848,39 @@ class Shortcodes {
 			array(
 				'per_page' => 20,
 				'type'     => '',
+				'folder'   => 0,
 			),
 			$atts,
 			'mvs_documents'
 		);
+
+		// `folder` scopes the list to one folder, which needs the folder tree
+		// AND the permission ladder — both Pro's. Rather than a second seam,
+		// this reuses the one the drive already goes through, so a folder list
+		// in a post and a folder in the drive cannot render differently.
+		$mvs_doc_folder_att = (int) $atts['folder'];
+
+		if ( $mvs_doc_folder_att > 0 ) {
+			$mvs_doc_folder_html = (string) apply_filters(
+				'mvs_documents_drive_html',
+				'',
+				'my-drive',
+				array(
+					'folder' => $mvs_doc_folder_att,
+					'page'   => max( 1, (int) ( $_GET['doc_page'] ?? 1 ) ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				)
+			);
+
+			// Empty means nothing can render a folder here — Pro absent. Saying
+			// so to an editor beats printing nothing and looking broken.
+			if ( '' === $mvs_doc_folder_html ) {
+				return current_user_can( 'edit_posts' )
+					? '<p class="mvs-documents__notice">' . esc_html__( 'Folder listings need WPMediaVerse Pro.', 'wpmediaverse' ) . '</p>'
+					: '';
+			}
+
+			return $mvs_doc_folder_html;
+		}
 
 		$mvs_doc_per_page = max( 1, min( 100, (int) $atts['per_page'] ) );
 		$mvs_doc_page     = max( 1, (int) ( $_GET['doc_page'] ?? 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended

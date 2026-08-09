@@ -775,6 +775,18 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_dashboard_tab_registry",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "array $tabs"
+      ],
+      "where": "templates/partials/dashboard-content.php:481",
+      "consumed_by": [
+        "Core\\Plugin::register_documents_tab"
+      ]
+    },
+    {
       "name": "mvs_dashboard_tabs",
       "type": "action",
       "args_count": 0,

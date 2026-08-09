@@ -452,9 +452,54 @@ wp_interactivity_state(
 		</button>
 		<?php
 		/**
+		 * Filter the dashboard's registered tabs.
+		 *
+		 * A REGISTRY, returning data the template renders — not markup an
+		 * extension echoes. Each entry is:
+		 *
+		 *     array(
+		 *         'slug'  => 'documents',
+		 *         'label' => __( 'Documents', ... ),
+		 *         'url'   => 'https://example.test/explore-document/',
+		 *     )
+		 *
+		 * DELIBERATELY A NEW NAME, not `apply_filters( 'mvs_dashboard_tabs' )`.
+		 * WordPress keeps actions and filters in ONE registry, and
+		 * `mvs_dashboard_tabs` already exists as an action with subscribers that
+		 * echo markup and return nothing. Filtering that name would print their
+		 * markup in the middle of the filter and then assign `null` to the tab
+		 * array — the collision this seam exists to avoid (design §10).
+		 *
+		 * Registered tabs are LINKS, because a tab whose content lives on
+		 * another page is a link; inventing panel state for content that is not
+		 * in this document would be a lie the Interactivity store has to keep.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array $tabs Registered tabs.
+		 */
+		$mvs_dash_extra_tabs = (array) apply_filters( 'mvs_dashboard_tab_registry', array() );
+
+		foreach ( $mvs_dash_extra_tabs as $mvs_dash_tab ) {
+			if ( empty( $mvs_dash_tab['label'] ) || empty( $mvs_dash_tab['url'] ) ) {
+				continue;
+			}
+
+			printf(
+				'<a class="mvs-dashboard-tab mvs-dashboard-tab--link" data-tab="%1$s" href="%2$s">%3$s</a>',
+				esc_attr( (string) ( $mvs_dash_tab['slug'] ?? '' ) ),
+				esc_url( (string) $mvs_dash_tab['url'] ),
+				esc_html( (string) $mvs_dash_tab['label'] )
+			);
+		}
+
+		/**
 		 * Fires after the last dashboard tab button.
 		 *
 		 * Pro uses this to inject gamification tabs (Challenges, Battles, Tournaments).
+		 *
+		 * Still an action, still fired, and still after the registry — the two
+		 * seams coexist rather than one replacing the other (Production Rule 1).
 		 *
 		 * @since 1.1.0
 		 */

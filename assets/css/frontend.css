@@ -6871,3 +6871,17 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
         align-self: stretch;
     }
 }
+
+/* A registered dashboard tab is an anchor, not a button — its content lives on
+   another page. It has to look and size identically to the button tabs beside
+   it, or the row reads as two different kinds of control. */
+.mvs-dashboard-tab--link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.mvs-dashboard-tab--link:hover,
+.mvs-dashboard-tab--link:focus-visible {
+    text-decoration: none;
+}

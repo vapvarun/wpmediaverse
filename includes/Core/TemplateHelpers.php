@@ -1167,7 +1167,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *
 	 * @return string
 	 */
-	private function resolve_documents_url(): string {
+	public function resolve_documents_url(): string {
 		$page_id = (int) get_option( 'mvs_page_explore_documents', 0 );
 
 		if ( $page_id ) {
