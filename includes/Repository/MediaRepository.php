@@ -1499,7 +1499,12 @@ class MediaRepository implements MediaRepositoryInterface {
 				'exclude_non_cover_group'  => false,
 				'exclude_empty_media_type' => false,
 				'media_types'              => MediaTypes::MEDIA_LIBRARY,
+				'authors_in'               => array(),
+				'privacy_in'               => array(),
+				'mime_like_in'             => array(),
+				'tax_terms'                => array(),
 				'since'                    => '',
+				'until'                    => '',
 				'orderby'                  => 'created_at',
 				'order'                    => 'DESC',
 				'limit'                    => 20,
@@ -1518,13 +1523,49 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * @param array $args Normalized args.
 	 * @return array{join:string,where:string,params:array,distinct:bool}
 	 */
+	/**
+	 * Build an OR-set predicate for one column: `(col op %x OR col op %x …)`.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $column      Qualified column.
+	 * @param string $placeholder '%d' or '%s'.
+	 * @param mixed  $values      Values; non-arrays and empties yield no clause.
+	 * @param string $operator    Comparison operator, '=' or 'LIKE'.
+	 * @return array{0:string,1:array} Fragment (empty when nothing to add) and params.
+	 */
+	private function or_set( string $column, string $placeholder, $values, string $operator = '=' ): array {
+		$values = array_values(
+			array_filter(
+				(array) $values,
+				static function ( $v ) {
+					return '' !== $v && null !== $v;
+				}
+			)
+		);
+
+		if ( empty( $values ) ) {
+			return array( '', array() );
+		}
+
+		$operator = 'LIKE' === strtoupper( $operator ) ? 'LIKE' : '=';
+		$ors      = array_fill( 0, count( $values ), "{$column} {$operator} {$placeholder}" );
+
+		if ( '%d' === $placeholder ) {
+			$values = array_map( 'intval', $values );
+		}
+
+		return array( '(' . implode( ' OR ', $ors ) . ')', $values );
+	}
+
 	private function build_query_parts( array $args ): array {
 		global $wpdb;
 
-		$join     = '';
-		$where    = array();
-		$params   = array();
-		$distinct = false;
+		$join        = '';
+		$join_params = array();
+		$where       = array();
+		$params      = array();
+		$distinct    = false;
 
 		if ( '' !== (string) $args['status'] ) {
 			$where[]  = 'm.status = %s';
@@ -1561,6 +1602,72 @@ class MediaRepository implements MediaRepositoryInterface {
 			$where[]  = 'trc.term_taxonomy_id = %d';
 			$params[] = (int) $args['category_tt_id'];
 			$distinct = true;
+		}
+
+		// ── Multi-value (OR-within-key) filters ───────────────────────────────
+		//
+		// Smart collections group rule values by key and combine SAME-key values
+		// with OR, different keys with AND. A flat AND made same-key rules
+		// mutually exclusive — two media_type rules became `file_type LIKE
+		// '%image%' AND file_type LIKE '%video%'`, which no single file can
+		// satisfy, so the collection resolved to zero and rendered the broken
+		// placeholder cover (#9962118482). These args carry that semantic, so the
+		// collection service no longer needs SQL of its own to express it.
+		list( $or_where, $or_params ) = $this->or_set( 'm.post_author', '%d', $args['authors_in'] );
+		if ( '' !== $or_where ) {
+			$where[] = $or_where;
+			$params  = array_merge( $params, $or_params );
+		}
+
+		list( $or_where, $or_params ) = $this->or_set( 'm.privacy', '%s', $args['privacy_in'] );
+		if ( '' !== $or_where ) {
+			$where[] = $or_where;
+			$params  = array_merge( $params, $or_params );
+		}
+
+		list( $or_where, $or_params ) = $this->or_set( 'm.file_type', '%s', $args['mime_like_in'], 'LIKE' );
+		if ( '' !== $or_where ) {
+			$where[] = $or_where;
+			$params  = array_merge( $params, $or_params );
+		}
+
+		// Taxonomy sets: TERM IDs within one taxonomy, OR'd. Each taxonomy gets its
+		// own aliased pair of joins so different taxonomies AND together.
+		//
+		// This joins term_taxonomy and matches `tt.term_id`, NOT
+		// `tr.term_taxonomy_id`. The two are different columns and are only equal
+		// by coincidence on simple installs — comparing a term_id against a
+		// term_taxonomy_id silently returns the wrong rows. The `tt.taxonomy`
+		// constraint matters for the same reason: without it a tag and a category
+		// that happen to share a term_id cross-match.
+		$tax_idx = 0;
+		foreach ( (array) $args['tax_terms'] as $set ) {
+			$taxonomy = isset( $set['taxonomy'] ) ? (string) $set['taxonomy'] : '';
+			$term_ids = array_values( array_unique( array_filter( array_map( 'intval', (array) ( $set['term_ids'] ?? array() ) ) ) ) );
+
+			if ( '' === $taxonomy || empty( $term_ids ) ) {
+				continue;
+			}
+
+			$tr_alias = 'trx' . $tax_idx;
+			$tt_alias = 'ttx' . $tax_idx;
+			$ph       = implode( ',', array_fill( 0, count( $term_ids ), '%d' ) );
+
+			$join .= " INNER JOIN {$wpdb->term_relationships} AS {$tr_alias} ON {$tr_alias}.object_id = m.media_id";
+			$join .= " INNER JOIN {$wpdb->term_taxonomy} AS {$tt_alias} ON {$tt_alias}.term_taxonomy_id = {$tr_alias}.term_taxonomy_id AND {$tt_alias}.taxonomy = %s AND {$tt_alias}.term_id IN ({$ph})";
+
+			// Join params precede WHERE params in the final SQL, so they are held
+			// separately and merged join-first below.
+			$join_params[] = $taxonomy;
+			$join_params   = array_merge( $join_params, $term_ids );
+
+			$distinct = true;
+			++$tax_idx;
+		}
+
+		if ( '' !== (string) $args['until'] ) {
+			$where[]  = 'm.created_at <= %s';
+			$params[] = (string) $args['until'];
 		}
 
 		list( $privacy_where, $privacy_params ) = $this->build_privacy_where( (string) $args['privacy'], (int) $args['viewer_id'], (int) $args['author_id'] );
@@ -1600,17 +1707,21 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( $mvs_types, 'm.media_type' );
-		$where[] = $mvs_type_sql;
-		$params  = array_merge( $params, $mvs_type_params );
+		$where[]                                = $mvs_type_sql;
+		$params                                 = array_merge( $params, $mvs_type_params );
 
 		// No `1 = 1` fallback below this point: the type clause above is
 		// unconditional, so $where can no longer be empty. in_clause() also
 		// guarantees a real predicate — an empty type set yields `1 = 0`, which
 		// matches nothing rather than everything.
+		// Join placeholders appear BEFORE where placeholders in the assembled SQL,
+		// so their params must lead. Getting this backwards misaligns every value
+		// after the first join param — the same class of bug the collection
+		// service's own comment records from when it built this by hand.
 		return array(
 			'join'     => $join,
 			'where'    => implode( ' AND ', $where ),
-			'params'   => $params,
+			'params'   => array_merge( $join_params, $params ),
 			'distinct' => $distinct,
 		);
 	}
@@ -2557,10 +2668,10 @@ class MediaRepository implements MediaRepositoryInterface {
 			$params[] = (string) $args['mime_like'];
 		}
 
-		$types = is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		$types                          = is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'idx.media_type' );
-		$where[] = $type_sql;
-		$params  = array_merge( $params, $type_params );
+		$where[]                        = $type_sql;
+		$params                         = array_merge( $params, $type_params );
 
 		unset( $wpdb );
 
