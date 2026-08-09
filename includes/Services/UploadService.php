@@ -9,6 +9,8 @@
 
 namespace WPMediaVerse\Services;
 
+use WPMediaVerse\Core\MediaTypes;
+
 defined( 'ABSPATH' ) || exit;
 
 use WP_Error;
@@ -68,29 +70,27 @@ class UploadService {
 		$allowed = $this->get_allowed_types();
 		$mime    = $this->detect_mime( $file['tmp_name'] );
 
-		// Hard guard: PDF / document uploads are not supported (owner decision,
+		// Hard guard: PDF and unrecognised uploads are refused (owner decision,
 		// Basecamp #9962125462). This is the real enforcement — it fires even
 		// when a legacy site still has `application/pdf` in its stored
 		// `mvs_allowed_file_types` option (1.2.3 dropped it from the default but
 		// did not strip it from existing installs) or when the
 		// `mvs_allowed_file_types` filter re-adds it. The read/display side
-		// (pdf-viewer block, 'document' media_type, /serve content-type
+		// (pdf-viewer block, legacy_document rows, /serve content-type
 		// whitelist) is intentionally left intact so historical PDF media keeps
 		// rendering. We only block NEW uploads here.
-		if ( 'application/pdf' === $mime || 'document' === $this->get_media_type( $mime ) ) {
+		$mvs_refusal = $this->reject_unsupported_mime( $mime );
+		if ( $mvs_refusal ) {
 			LoggerService::error(
 				'upload',
-				'PDF/document upload rejected',
+				'Unsupported upload rejected',
 				array(
 					'mime'    => $mime,
+					'code'    => $mvs_refusal->get_error_code(),
 					'user_id' => $user_id,
 				)
 			);
-			return new WP_Error(
-				'mvs_document_not_supported',
-				__( 'PDF uploads are not supported.', 'wpmediaverse' ),
-				array( 'status' => 400 )
-			);
+			return $mvs_refusal;
 		}
 
 		if ( ! in_array( $mime, $allowed, true ) ) {
@@ -774,7 +774,7 @@ class UploadService {
 	 * @since 1.6.0
 	 *
 	 * @param string $mime MIME type.
-	 * @return string 'image' | 'video' | 'audio' | 'document'.
+	 * @return string 'image' | 'video' | 'audio', or '' when the MIME is unrecognised.
 	 */
 	public function get_media_type_public( string $mime ): string {
 		return $this->get_media_type( $mime );
@@ -839,16 +839,76 @@ class UploadService {
 	 * @return string image|video|audio|document.
 	 */
 	private function get_media_type( string $mime ): string {
+		$type = '';
+
 		if ( 0 === strpos( $mime, 'image/' ) ) {
-			return 'image';
+			$type = 'image';
+		} elseif ( 0 === strpos( $mime, 'video/' ) ) {
+			$type = 'video';
+		} elseif ( 0 === strpos( $mime, 'audio/' ) ) {
+			$type = 'audio';
 		}
-		if ( 0 === strpos( $mime, 'video/' ) ) {
-			return 'video';
+
+		/**
+		 * Resolve a MIME type to a media_type.
+		 *
+		 * Production Rule 3 escape hatch for the behaviour change in 2.4.0: this
+		 * used to return 'document' for anything unrecognised, so a site relying
+		 * on that can restore it with a one-line filter. A filter that returns a
+		 * value outside MediaTypes::ALL is ignored — an unknown string here would
+		 * defeat every positive type predicate downstream.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param string $type Resolved type, or '' when the MIME is unrecognised.
+		 * @param string $mime Detected MIME type.
+		 */
+		$filtered = (string) apply_filters( 'mvs_media_type_for_mime', $type, $mime );
+
+		return MediaTypes::is_known( $filtered ) ? $filtered : $type;
+	}
+
+	/**
+	 * Reject a MIME this plugin will not ingest.
+	 *
+	 * ONE guard, called by both ingest paths. There were two copies — `handle()`
+	 * and `MediaController::replace_file()` — and the second existed only because
+	 * a double-verifier caught replace_file bypassing the first (#9962125462).
+	 * Two copies of a security guard is the shape that produced that bypass, and
+	 * this change would have needed both edited in lockstep to stay correct.
+	 *
+	 * Until 2.4.0 the unsupported test was a NAME test: `'document' === type`,
+	 * which worked only because unknown MIMEs were *named* 'document' by
+	 * elimination. Now that unknown resolves to '', it is an UNKNOWN test. The
+	 * two had to change together or unrecognised files would have started being
+	 * accepted the moment the fallback changed.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $mime Detected MIME type.
+	 * @return \WP_Error|null Error when the file must be refused, null to proceed.
+	 */
+	public function reject_unsupported_mime( string $mime ): ?\WP_Error {
+		// PDF stays its own case: it is explicitly blocked by owner decision
+		// (#9962125462) and keeps its established error code, which clients
+		// already branch on.
+		if ( 'application/pdf' === $mime ) {
+			return new WP_Error(
+				'mvs_document_not_supported',
+				__( 'PDF uploads are not supported.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
 		}
-		if ( 0 === strpos( $mime, 'audio/' ) ) {
-			return 'audio';
+
+		if ( '' === $this->get_media_type( $mime ) ) {
+			return new WP_Error(
+				'mvs_unsupported_file_type',
+				__( 'This file type is not supported.', 'wpmediaverse' ),
+				array( 'status' => 400 )
+			);
 		}
-		return 'document';
+
+		return null;
 	}
 
 	/**
