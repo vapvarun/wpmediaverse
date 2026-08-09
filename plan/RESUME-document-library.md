@@ -15,7 +15,8 @@ The **display contract** is the UX artifact: <https://claude.ai/code/artifact/70
 | Version constants | still `2.3.2` — they bump at release, not now |
 | Free tests | **332 green** (321 + 5 from P1.5, + 6 from P2.2's `MigratorLegacyDocumentTest`) |
 | Free Migrator | **v27** (was 26). `mvs_db_version` on the reference install is 27 |
-| Pro tests | **215: 40 errors / 43 failures — PRE-EXISTING**, verified by stashing everything and re-running against HEAD. Basecamp 10184313297. Do not mistake this for something you broke |
+| Pro tests | **221: 40 errors / 43 failures — the SAME PRE-EXISTING set** (was 215/40/43; +6 from P2.3's `MigratorFolderSchemaTest`, all passing). Verified originally by stashing everything and re-running against HEAD. Basecamp 10184313297. Do not mistake this for something you broke |
+| Pro Migrator | **v11** (was 10). `mvs_pro_db_version` on the reference install is 11 |
 | local-CI | green on both |
 
 ## Environment (these took a while to work out — don't rediscover them)
@@ -120,8 +121,16 @@ media surface. The guarantee holds; it is simply not machine-enforced yet. So bu
    The quarantine is guarded by option `mvs_legacy_documents_quarantined`, not only the version gate:
    after P3.4 a second pass would re-type every real document and **silently empty every drive on the
    site**. Proven by force-invoking the migration twice against a live document row.
-3. **#12 P2.3 — Pro Migrator v11.** `mvs_pro_folders` + 5 grant columns. **`token_hash` DEFAULT
-   NULL** or the UNIQUE add fails on every site that has ever sold media access.
+3. **#12 P2.3 — Pro Migrator v11.** ✅ **DONE.** `mvs_pro_folders` + the 5 grant columns and 3 indexes.
+   6 unit tests (Pro suite 221, still the documented pre-existing 40/43 — my 6 pass, nothing
+   regressed). Pro cycled twice with **zero** duplicate-key errors, `mvs_pro_db_version` = 11.
+   **The `token_hash` trap is demonstrated, not just avoided**: a scratch-table counterfactual on the
+   live MySQL gives `Duplicate entry '' for key 'token_hash'` with `DEFAULT ''` and succeeds with
+   `DEFAULT NULL`. Keep that receipt — the failure only appears on a table that already has rows, so
+   every empty-table test passes while the upgrade breaks for exactly the paying customers.
+   Buyer check PASS (buyer + owner can view, stranger cannot) after **two malformed attempts**:
+   a grant with no `mvs_access_rules` row is inert by design, and `rule_type` `'purchase'` does not
+   exist (`role|capability|membership|code`). Both looked like "the migration broke paid access".
 4. **Phase 3 — the engine.** DocumentTypes (no default branch), FolderService (depth 12, batched
    subtree writes), PermissionService (2 queries/page), document ingest, delivery, storage resolver,
    Site Health. Then P3.9, the scale fixture, which gates P4/P8/P9.

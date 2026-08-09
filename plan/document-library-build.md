@@ -38,7 +38,7 @@ Never fill a login form by hand.
 |---|---|---|
 | **Prerequisites** | PRE-1, PRE-2 | ✅ both done |
 | **1 — Query discipline** | P1.1 – P1.6 | 🟡 P1.1 ✅, P1.2 🟡 partial, P1.5 🟡 walked + written, P1.3/P1.4/P1.6 ⬜ |
-| **2 — Schema** | P2.1 – P2.3 | 🟡 P2.1 ✅, P2.2 🟡 applied + verified (customer-DB run outstanding), P2.3 ⬜ |
+| **2 — Schema** | P2.1 – P2.3 | 🟢 P2.1 ✅, P2.2 🟡 applied + verified (customer-DB run outstanding), P2.3 ✅ |
 | **3 — Pro engine** | P3.1 – P3.9 | ⬜ |
 | **4 — REST + app contract** | P4.1 – P4.5 | ⬜ |
 | **5 — Viewers** | P5.1 – P5.5 | ⬜ |
@@ -268,18 +268,48 @@ WHERE clauses on the REST controllers, not only `FROM …mvs_media_index` string
   That pairing is the only configuration where a surface filtering on the wrong side of the
   legacy/document line becomes visible instead of silent.
 
-### P2.3 — Pro Migrator v11 ⬜
+### P2.3 — Pro Migrator v11 ✅ DONE
 
-- **Files** — `~ wpmediaverse-pro/includes/Core/Migrator.php`
-- **Do** — `mvs_pro_folders` (design §2 — drive-scoped unique key, `name(150)`), and the five
-  `mvs_access_grants` columns + three indexes. **`token_hash` is `DEFAULT NULL`** — with `DEFAULT ''`
-  the `ADD UNIQUE KEY` fails on every site that has ever sold media access.
-- **Test** — `unit:` the UNIQUE add succeeds against a table pre-seeded with grant rows; two
-  same-named folders at different drive roots both insert.
-- **Self-check** — no surface yet, so: **activate and deactivate Pro twice**, confirm no
-  duplicate-key error in `debug.log`, and open a purchased item **as the buyer** to confirm existing
-  paid access still resolves. A migration that breaks live grants is the failure mode here.
-- **Done** — v11 applied on a site with existing grants.
+- **Files** — `~ wpmediaverse-pro/includes/Core/Migrator.php`,
+  `+ wpmediaverse-pro/tests/unit/MigratorFolderSchemaTest.php`
+- **Done** — `CURRENT_VERSION` 10 → 11. `mvs_pro_folders` with the drive-scoped
+  `UNIQUE KEY name_in_parent (drive_type, drive_id, parent_id, name(150))` plus `drive`, `parent` and
+  `subtree` keys; the five `mvs_access_grants` columns and three indexes.
+- **The `token_hash` trap is closed AND demonstrated, not just avoided.** A scratch-table
+  counterfactual proved both branches on the live MySQL:
+  - `DEFAULT ''` → **`Duplicate entry '' for key 'token_hash'`**, migration fails.
+  - `DEFAULT NULL` → succeeds. MySQL exempts NULL from UNIQUE.
+
+  It is worth keeping that receipt: the failure only appears on a table that already has rows, so
+  every empty-table test in the world passes while the upgrade breaks on exactly the customers who
+  pay for the feature.
+- **Grant extension is defensive about ownership** — `mvs_access_grants` is Free's table, so
+  `extend_access_grants()` returns early if it is absent rather than creating it. Pro creating a
+  table Free owns is the v2 messaging mistake that emitted a duplicate-key warning on every
+  activation; that is not repeated here.
+- **Test** — `unit:` 6 cases. The trap test **pre-seeds grant rows before migrating**, because
+  against an empty table it would pass either way and prove nothing. Also: existing grants keep
+  today's semantics with no backfill (`media`/`user`/`view`), same folder name at two different drive
+  roots both insert, a duplicate name in the same parent is rejected, indexes present and re-running
+  is safe, and a new folder defaults to **private** (a safety property, not a preference — a
+  public default would expose contents before the owner chose anything).
+  Pro suite: **221 tests, 40 errors / 43 failures — unchanged from the documented pre-existing
+  215/40/43 baseline**, so all 6 new cases pass and nothing regressed.
+- **`live:` — applied, then the grant half re-tested properly.** The migration first ran against an
+  EMPTY `mvs_access_grants`, which does not exercise the trap at all; the grant half was therefore
+  rolled back, real grants seeded, and re-run — UNIQUE key added cleanly, all rows preserved.
+- **Self-check — passed.** Pro deactivated + reactivated **twice**: `mvs_pro_db_version` = 11, and
+  **zero** non-noise entries in `debug.log` across both cycles (no duplicate-key error).
+- **Buyer check — PASS, after two malformed attempts worth recording.**
+  1. Grants seeded with no row in `mvs_access_rules` — grants are only consulted for media that HAS a
+     rule, so they were inert **by design**. *A grant without a rule is not a purchase.*
+  2. `rule_type` `'purchase'`, which does not exist — `RULE_TYPES` is `role|capability|membership|code`
+     and `add_rule()` returns `false` for anything else, so again no rule.
+
+  With a real `code` rule + grant: buyer `can_view` YES, owner YES, **stranger NO**. Paid access
+  resolves unchanged under the v11 schema. Both false alarms are recorded because each *looked* like
+  "the migration broke paid access" and neither was.
+- **Site left as found** — fixture grants and rules removed, media 64 restored to `public`.
 
 ---
 
