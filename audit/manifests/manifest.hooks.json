@@ -1719,6 +1719,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_pro_document_extraction_enabled",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "bool $enabled"
+      ],
+      "where": "wpmediaverse-pro: includes/Documents/ExtractionService.php::is_enabled",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_profile_data",
       "type": "filter",
       "args_count": 2,

@@ -848,6 +848,123 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Document ids after a cursor, in id order.
+	 *
+	 * Keyset pagination for background sweeps: an `OFFSET` walk over a large
+	 * library re-reads everything it has already passed, and drifts when rows
+	 * are inserted mid-run. A cursor on the primary key does neither.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $cursor Exclusive lower bound on media_id.
+	 * @param int $limit  Maximum ids to return.
+	 * @return int[]
+	 */
+	public function document_ids_after( int $cursor, int $limit = 100 ): array {
+		global $wpdb;
+
+		$limit = max( 1, min( 1000, $limit ) );
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		$index  = $wpdb->prefix . 'mvs_media_index';
+		$params = array_merge( $type_params, array( $cursor, $limit ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT media_id FROM {$index}
+				  WHERE {$type_sql} AND media_id > %d
+				  ORDER BY media_id ASC
+				  LIMIT %d",
+				...$params
+			)
+		);
+
+		return array_map( 'intval', $ids );
+	}
+
+	/**
+	 * How many documents exist.
+	 *
+	 * A dedicated `COUNT(*)`, never `count()` of a listing — the number is used
+	 * to say how much of the library has been indexed, and a count taken from a
+	 * page would understate it on every site with more than one page.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param bool $include_legacy Whether quarantined legacy documents count.
+	 * @return int
+	 */
+	public function count_documents( bool $include_legacy = false ): int {
+		global $wpdb;
+
+		$types = $include_legacy ? MediaTypes::DOCUMENT_LIBRARY : MediaTypes::DOCUMENTS;
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types );
+
+		$index = $wpdb->prefix . 'mvs_media_index';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$type_sql}", ...$type_params )
+		);
+	}
+
+	/**
+	 * Fetch documents by id, preserving the order they were asked for.
+	 *
+	 * Search hands back ids ranked by relevance; re-sorting them by date here
+	 * would throw that ranking away, and a second query per id would be the N+1
+	 * the whole design avoids.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int[] $ids Document ids.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function documents_by_ids( array $ids ): array {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $ids ) ) ) );
+
+		if ( ! $ids ) {
+			return array();
+		}
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
+
+		$index        = $wpdb->prefix . 'mvs_media_index';
+		$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+		$params       = array_merge( $type_params, $ids );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, folder_id, created_at
+				   FROM {$index}
+				  WHERE {$type_sql} AND media_id IN ( {$placeholders} )",
+				...$params
+			),
+			ARRAY_A
+		);
+
+		$by_id = array();
+		foreach ( $rows as $row ) {
+			$by_id[ (int) $row['media_id'] ] = $row;
+		}
+
+		$ordered = array();
+		foreach ( $ids as $id ) {
+			if ( isset( $by_id[ $id ] ) ) {
+				$ordered[] = $by_id[ $id ];
+			}
+		}
+
+		return $ordered;
+	}
+
+	/**
 	 * SQL clause narrowing a document listing to one named type.
 	 *
 	 * A `doc_type` is a display group, not a stored column — `file_type` holds
