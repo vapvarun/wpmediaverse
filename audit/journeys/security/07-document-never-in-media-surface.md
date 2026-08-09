@@ -191,13 +191,23 @@ would pass either way). Do not promote a vacuous step to load-bearing without gi
 - **Expect**: same absences, and no horizontal page scroll
   (`document.documentElement.scrollWidth <= window.innerWidth + 1`).
 
-### 14. Upload a real document — TODO(P3.4), MUST FAIL THIS JOURNEY UNTIL THEN
-- **Action**: `POST /wp-json/mvs/v1/media` with a `.pdf`.
-- **Expect once P3.4 lands**: HTTP 201, `media_type=document`, `privacy` forced to `private`, and a
-  declared `doc_type` that disagrees with the resolved one gets a 400 rather than a silent fix.
-- **Today**: 400 `mvs_document_not_supported`. Every ingest path calls
-  `UploadService::reject_unsupported_mime()`, so no document can enter through the front door yet —
-  which is why this journey seeds instead of uploading.
+### 14. Upload a real document — ACTIVE since P3.4
+- **Action**: ingest a `.pdf` through `Documents\DocumentIngestService::handle()`.
+  **Not** `POST /mvs/v1/media` — that is the MEDIA door and it still refuses documents, deliberately.
+  Document ingest is a separate entry point in Pro precisely so media upload cannot fall through to
+  it; there is no branch to fall through.
+- **Expect**: a media id back, `media_type=document`, `privacy` forced to **private** whatever the
+  caller asked for, `file_url` stored **empty** (every read goes through the gated endpoint; a stored
+  absolute URL is how one would leak), the file on disk at mode `0640` inside the private document
+  directory, and quota moved on **storage only** — no fourth counter (D2).
+- **And the mismatch rule**: declaring `doc_type=excel` for a PDF is **400
+  `mvs_document_type_mismatch`**, never a silent correction. A disagreement means the client
+  mis-detected or somebody renamed a file past a filter, and both deserve an answer.
+- **Verified live 2026-08-09**: all of the above, plus the uploaded file's direct URL returning
+  **403**, and the document appearing in none of the REST feed, Explore, the collection or the
+  activity stream.
+- **This makes step 9 non-vacuous too** — a real ingest fires `mvs_media_uploaded`, so BP activity
+  now has a genuine opportunity to create a row, and the absence there means something.
 
 ### 15. It appears in the drive — TODO(P9.1)
 - **Action**: open `/documents/` and assert the seeded document is listed in My Drive.

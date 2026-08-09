@@ -96,16 +96,27 @@ class DocumentTypesTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * An unknown extension on text/plain stays text — it does not become null,
-	 * and it does not become whatever the extension claims.
+	 * text/plain under a FOREIGN extension resolves to nothing.
+	 *
+	 * Reversed after the P3.4 ingest tests: falling back to `text` for any
+	 * text/plain looked harmless and was not. A file called `photo.jpg` holding
+	 * text was accepted as a text document — identification by elimination
+	 * wearing a different hat, which is what this class exists to remove.
 	 */
-	public function test_text_plain_with_a_foreign_extension_stays_text(): void {
-		$this->assertSame( 'text', DocumentTypes::resolve( 'text/plain', 'log' ) );
-		$this->assertSame(
-			'text',
-			DocumentTypes::resolve( 'text/plain', 'exe' ),
-			'A binary extension must not let a text file claim to be something else.'
+	public function test_text_plain_with_a_foreign_extension_is_not_a_document(): void {
+		$this->assertNull( DocumentTypes::resolve( 'text/plain', 'log' ) );
+		$this->assertNull( DocumentTypes::resolve( 'text/plain', 'exe' ) );
+		$this->assertNull(
+			DocumentTypes::resolve( 'text/plain', 'jpg' ),
+			'A text file wearing an image extension must not become a document.'
 		);
+	}
+
+	/**
+	 * With NO extension there is nothing to contradict the sniffed type.
+	 */
+	public function test_text_plain_without_an_extension_is_text(): void {
+		$this->assertSame( 'text', DocumentTypes::resolve( 'text/plain', '' ) );
 	}
 
 	/**

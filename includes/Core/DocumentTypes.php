@@ -169,12 +169,26 @@ final class DocumentTypes {
 		}
 
 		// 2. Ambiguous text. `.md` and `.csv` both sniff as text/plain, so the
-		// extension decides — but only among the text family, so a mislabelled
-		// binary cannot ride in on a `.md` name.
+		// extension decides — but ONLY within the text family.
+		//
+		// An earlier version fell back to `text` for any text/plain whatever the
+		// extension. That looks harmless and is not: a file called `photo.jpg`
+		// holding text would be stored as a text document, which is
+		// identification by elimination wearing a different hat — the exact thing
+		// this class exists to remove. Caught by the P3.4 ingest tests, where a
+		// `.jpg` was accepted as a document.
+		//
+		// So an unrecognised extension on text/plain resolves to nothing. An
+		// ABSENT extension still resolves to `text`, because there is nothing to
+		// contradict the sniffed type.
 		if ( in_array( $mime, self::AMBIGUOUS_TEXT_MIMES, true ) ) {
+			if ( '' === $extension ) {
+				return 'text';
+			}
+
 			$by_ext = self::BY_EXTENSION[ $extension ] ?? null;
 
-			return in_array( $by_ext, array( 'text', 'markdown', 'csv' ), true ) ? $by_ext : 'text';
+			return in_array( $by_ext, array( 'text', 'markdown', 'csv' ), true ) ? $by_ext : null;
 		}
 
 		// 3. Unambiguous MIME.

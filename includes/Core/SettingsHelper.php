@@ -226,4 +226,26 @@ class SettingsHelper {
 
 		return $key;
 	}
+
+	/**
+	 * The maximum upload size in bytes, already filtered.
+	 *
+	 * Exists so Pro's document ingest reads this the same way Free's media
+	 * ingest does. Pro reading `get_option( 'mvs_max_upload_size' )` itself is an
+	 * architecture violation (A4) for a good reason rather than a stylistic one:
+	 * two readers of one setting drift, and the one that forgets to apply
+	 * `mvs_max_upload_size` silently enforces a different ceiling from the one
+	 * the site owner configured.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int $user_id User the limit applies to.
+	 * @return int Bytes.
+	 */
+	public static function get_max_upload_size( int $user_id = 0 ): int {
+		$max_size = (int) get_option( 'mvs_max_upload_size', 104857600 );
+
+		/** This filter is documented in includes/Services/UploadService.php */
+		return (int) apply_filters( 'mvs_max_upload_size', $max_size, $user_id );
+	}
 }
