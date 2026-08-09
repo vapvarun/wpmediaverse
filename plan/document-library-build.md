@@ -39,7 +39,7 @@ Never fill a login form by hand.
 | **Prerequisites** | PRE-1, PRE-2 | ✅ both done |
 | **1 — Query discipline** | P1.1 – P1.6 | 🟡 P1.1 ✅, P1.2 🟡 partial, P1.5 🟡 walked + written, P1.3/P1.4/P1.6 ⬜ |
 | **2 — Schema** | P2.1 – P2.3 | 🟢 P2.1 ✅, P2.2 🟡 applied + verified (customer-DB run outstanding), P2.3 ✅ |
-| **3 — Pro engine** | P3.1 – P3.9 | ⬜ |
+| **3 — Pro engine** | P3.1 – P3.9 | 🟡 P3.1 ✅, P3.2 ✅, P3.3–P3.9 ⬜ |
 | **4 — REST + app contract** | P4.1 – P4.5 | ⬜ |
 | **5 — Viewers** | P5.1 – P5.5 | ⬜ |
 | **6 — Admin** | P6.1 – P6.3 | ⬜ |
@@ -317,13 +317,58 @@ WHERE clauses on the REST controllers, not only `FROM …mvs_media_index` string
 
 | Task | Files | Gist |
 |---|---|---|
-| **P3.1** | `+ Services/DocumentTypes.php` | `resolve()` returns a named type or `null`, **no default branch**. OOXML/ODF zip-marker check **both directions**. Folds in the rtMedia catch-all carried from P2.1 |
-| **P3.2** | `+ Documents/FolderService.php` | CRUD, move, depth cap **12**, `path` maintenance, **subtree writes batched above 5,000 rows** (design §4) |
+| **P3.1 ✅** | `+ wpmediaverse/includes/Core/DocumentTypes.php` | **DONE.** See below |
+| **P3.2 ✅** | `+ wpmediaverse-pro/includes/Documents/FolderService.php` | **DONE.** See below |
 | **P3.3** | `+ Documents/PermissionService.php` | Batched resolution, **2 queries per page**. Grant authority per **D1** |
 | **P3.4** | `~ Services/UploadService.php` | Explicit document ingest; declared `doc_type` verified against resolved, **400 on mismatch, never a silent fix**; privacy forced `private` |
 | **P3.5** | `+ Documents/DeliveryController.php` | `/download` and `/preview`, headers per design §6 |
 | **P3.6** | `+ Documents/StorageResolver.php` | Separate private bucket per **D8**; refuse a bucket equal to the media bucket. **Release blocker** with P3.7 |
 | **P3.7** | `~ Core/HealthCheckService.php` | Site Health: document bucket is not public-read. **Release blocker** |
+
+### P3.1 — `DocumentTypes` ✅ DONE
+
+- **Placed in FREE, not Pro**, despite the document library being a Pro feature. The ingest path is
+  Free's `UploadService` and **Free must never depend on Pro** (Coding Rule 10 runs one way), so the
+  vocabulary sits beside `Core\MediaTypes` for the same reason that does. Pro owns the engine and
+  calls in freely. The build plan's `Services/DocumentTypes.php` was ambiguous about which plugin;
+  this is the resolution and the reason.
+- Both sniffing traps handled **in both directions**: a zip is admitted only when the extension names
+  a container format AND the archive carries that format's marker (extension-only admits a renamed
+  `.zip`; marker-only does not know what to look for). ODF verifies the **contents** of the `mimetype`
+  entry, so an `.odt` declaring itself a spreadsheet is refused. `.md`/`.csv` are separated by
+  extension, but only within the text family, so a binary extension cannot let a text file claim to
+  be something else. A MIME/extension disagreement returns `null` rather than picking a side.
+- **rtMedia catch-all folded in** (carried from P2.1). Its `document`/`other` buckets mapped to
+  `media_type='document'` by elimination — worse there than in `UploadService`, because after this
+  release `document` means "a real document in a drive", so an rtMedia `.psd` would have imported
+  straight into one. The file now decides; what `DocumentTypes` declines becomes `legacy_document`,
+  so imports stay whole without claiming they are documents.
+- **Test** — 15 cases, 118 assertions, weighted to the negative property. A suite that only checked
+  the happy path would pass against a class that ended `return 'pdf';`.
+
+### P3.2 — `FolderService` ✅ DONE
+
+- CRUD, rename, move, trash, listing, `count_children()`, breadcrumbs. Depth cap **12** with the
+  filter's docblock explaining the cost of raising it (`KEY subtree` indexes 150 bytes of `path`;
+  a depth-20 path runs ~180 chars, so deep trees silently stop using the index).
+- **`MAX_NAME_LENGTH` equals the UNIQUE prefix (150) deliberately** — longer names sharing a 150-char
+  prefix would collide in the index and tell a member a name is taken when it is not. Names are
+  trimmed, whitespace-collapsed and NFC-normalized so two visually identical names cannot coexist.
+- **The invariants that corrupt a tree silently, each tested**: move-into-self, **move into own
+  descendant** (the cycle that detaches a subtree and makes every folder in it unreachable),
+  cross-drive nesting on create *and* move (without it a member nests into another drive and inherits
+  its grants), depth measured for the **whole subtree** on a move (checking only the moved folder lets
+  its children land past the cap), and trash cascading so no child surfaces at a root it does not
+  belong to.
+- Paths are built from **ids, not names**, so a rename touches one row at any subtree size and
+  ancestors parse out with zero queries. Breadcrumbs re-order in PHP — MySQL returns `IN ()` in
+  whatever order it likes, and a breadcrumb in the wrong order is worse than none.
+- Subtree rewrites above **5,000 rows** go async with the folder left `status='moving'`.
+- **Duplicate names are rejected by the DATABASE** (check-then-insert is a race every double-click
+  wins) — and the wpdb error is **suppressed** around the insert and the rename, because that
+  rejection is an expected answer, not a fault. Found while writing the tests: without it, a member
+  typing an existing name on a site with `WP_DEBUG_DISPLAY` on gets a raw SQL dump in the page.
+- **Test** — 23 cases. Pro suite 244, still the documented pre-existing 40/43.
 
 **Self-check for P3.1–P3.7** — no member UI yet, so:
 1. **wp-admin → Tools → Site Health** shows the P3.7 check, desktop and 390px.
