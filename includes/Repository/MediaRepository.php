@@ -1213,10 +1213,21 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENTS );
 
-		$where  = array( $type_sql, 'folder_id = %d', 'status = %s' );
-		$params = array_merge( $type_params, array( $folder_id, 'publish' ) );
+		// `any_folder` spans the whole drive rather than one folder — what a
+		// "Recent" view needs, since recency is a property of the document and
+		// not of where it happens to be filed. The folder predicate is DROPPED
+		// rather than widened, so `KEY doc_listing` is still used left to right
+		// (media_type, then status, then created_at for the sort).
+		$any_folder = ! empty( $args['any_folder'] );
 
-		if ( 0 === $folder_id && $author > 0 ) {
+		$where  = $any_folder
+			? array( $type_sql, 'status = %s' )
+			: array( $type_sql, 'folder_id = %d', 'status = %s' );
+		$params = $any_folder
+			? array_merge( $type_params, array( 'publish' ) )
+			: array_merge( $type_params, array( $folder_id, 'publish' ) );
+
+		if ( ( $any_folder || 0 === $folder_id ) && $author > 0 ) {
 			$where[]  = 'post_author = %d';
 			$params[] = $author;
 		}

@@ -16,6 +16,8 @@
  * @var int    $mvs_doc_page     Current page.
  * @var int    $mvs_doc_per_page Rows per page.
  * @var string $mvs_doc_filter   Active type filter, or ''.
+ * @var string $mvs_doc_root     Active drive root, or '' for the public listing.
+ * @var int    $mvs_doc_folder   Folder being viewed, 0 for a drive root.
  *
  * @package WPMediaVerse
  * @since   2.4.0
@@ -45,8 +47,70 @@ $mvs_doc_icons = array(
 	'csv'              => 'file-spreadsheet',
 	'rtf'              => 'file',
 );
+
+/**
+ * The drive — "My Drive", "Shared with me", "Recent".
+ *
+ * Rendered by Pro: folders, the permission ladder and grants all live there, and
+ * Free showing an approximation of a permission-scoped listing would be worse
+ * than Free showing none. An empty answer means the tab is not offered at all —
+ * a tab that opens onto nothing is a broken promise, not a smaller feature.
+ *
+ * @since 2.4.0
+ *
+ * @param string $html Drive markup. Must be fully escaped.
+ * @param string $root my-drive|shared|recent.
+ * @param array  $args { @type int $folder, @type int $page }.
+ */
+$mvs_doc_drive_html = is_user_logged_in() && '' !== $mvs_doc_root
+	? (string) apply_filters(
+		'mvs_documents_drive_html',
+		'',
+		$mvs_doc_root,
+		array(
+			'folder' => $mvs_doc_folder,
+			'page'   => $mvs_doc_page,
+		)
+	)
+	: '';
+
+// Only offer the drive tabs when something can actually render them.
+$mvs_doc_has_drive = is_user_logged_in()
+	&& '' !== (string) apply_filters( 'mvs_documents_drive_html', '', 'my-drive', array( 'probe' => true ) );
+
+$mvs_doc_tabs = array( 'public' => __( 'Public', 'wpmediaverse' ) );
+
+if ( $mvs_doc_has_drive ) {
+	$mvs_doc_tabs = array(
+		'my-drive' => __( 'My Drive', 'wpmediaverse' ),
+		'shared'   => __( 'Shared with me', 'wpmediaverse' ),
+		'recent'   => __( 'Recent', 'wpmediaverse' ),
+		'public'   => __( 'Public', 'wpmediaverse' ),
+	);
+}
+
+$mvs_doc_active = ( '' !== $mvs_doc_root && isset( $mvs_doc_tabs[ $mvs_doc_root ] ) ) ? $mvs_doc_root : 'public';
 ?>
 <div class="mvs-documents mvs-page">
+	<?php if ( count( $mvs_doc_tabs ) > 1 ) : ?>
+		<nav class="mvs-documents__tabs" aria-label="<?php esc_attr_e( 'Document views', 'wpmediaverse' ); ?>">
+			<ul>
+				<?php foreach ( $mvs_doc_tabs as $mvs_doc_tab => $mvs_doc_label ) : ?>
+					<li>
+						<a class="mvs-documents__tab<?php echo $mvs_doc_tab === $mvs_doc_active ? ' is-active' : ''; ?>"
+							href="<?php echo esc_url( 'public' === $mvs_doc_tab ? remove_query_arg( array( 'drive', 'folder', 'doc_page' ) ) : add_query_arg( array( 'drive' => $mvs_doc_tab, 'folder' => null, 'doc_page' => null ) ) ); ?>"
+							<?php echo $mvs_doc_tab === $mvs_doc_active ? ' aria-current="page"' : ''; ?>>
+							<?php echo esc_html( $mvs_doc_label ); ?>
+						</a>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</nav>
+	<?php endif; ?>
+
+	<?php if ( 'public' !== $mvs_doc_active ) : ?>
+		<?php echo $mvs_doc_drive_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the filter contract requires escaped markup. ?>
+	<?php else : ?>
 	<header class="mvs-documents__header">
 		<?php
 		// No <h1> here: the page already supplies its title, and a second heading
@@ -167,5 +231,6 @@ $mvs_doc_icons = array(
 				<?php endif; ?>
 			</nav>
 		<?php endif; ?>
+	<?php endif; ?>
 	<?php endif; ?>
 </div>

@@ -857,6 +857,19 @@ class Shortcodes {
 		$mvs_doc_page     = max( 1, (int) ( $_GET['doc_page'] ?? 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$mvs_doc_filter   = sanitize_key( (string) ( $_GET['doc_type'] ?? $atts['type'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
+		// Which view: the public listing, or one of the drive's virtual roots.
+		// An unknown value falls back to the public listing rather than to an
+		// empty screen — a mistyped URL should show something real.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$mvs_doc_root   = sanitize_key( (string) ( $_GET['drive'] ?? '' ) );
+		$mvs_doc_folder = isset( $_GET['folder'] ) ? absint( $_GET['folder'] ) : 0;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		if ( ! in_array( $mvs_doc_root, array( 'my-drive', 'shared', 'recent' ), true ) ) {
+			$mvs_doc_root   = '';
+			$mvs_doc_folder = 0;
+		}
+
 		wp_enqueue_style( 'mvs-frontend' );
 		if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
 			wp_enqueue_script( 'mvs-lucide' );
