@@ -29,9 +29,15 @@ composer ci:no-journeys     # the gate; run before every commit
 - Site: **http://mediaverse.local** — auto-login with `?autologin=1`, never fill the login form.
 - WP-CLI: use the **`mcp-local-wp` `wp_cli` tool**, not a bare `wp` (a bare `wp` hits the wrong DB).
   For anything with quotes, write a PHP file and use `eval-file` — inline `eval` quoting will fight you.
-- **Seeded fixture on the site:** one row `QA Seed Document (delete me)`, `media_id=157`, id also in
-  option `mvs_qa_seed_doc_id`. It is the ONLY document on the site, so it is what makes every
-  exclusion check non-vacuous. **Keep it until P1.5 lands.**
+- **Seeded fixture on the site:** one row `QA Seed Document (delete me)`, now **`media_id=158`** —
+  **always read option `mvs_qa_seed_doc_id`, never hard-code the id.** It is the ONLY document on the
+  site, so it is what makes every exclusion check non-vacuous.
+  **The original (157) and 18 other QA media rows were deleted on 2026-08-09 at 08:12 UTC**, cause
+  not established — full evidence in the journey's "Fixture incident" section. Re-seeded through
+  `MediaRepository`. If the option ever points at a missing row, **re-seed before running anything**:
+  with no document on the site every absence check passes and proves nothing.
+  Side finding worth its own card: `delete_cascade()` writes nothing to `mvs_error_log`, so the
+  plugin can erase a member's whole library with no trace in its own log.
 
 ## The verification method that works
 

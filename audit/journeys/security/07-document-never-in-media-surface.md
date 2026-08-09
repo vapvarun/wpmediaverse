@@ -38,8 +38,13 @@ would pass either way). Do not promote a vacuous step to load-bearing without gi
   - Seed as `media_type=document`, `privacy=public`, `status=publish`,
     `moderation_status=approved` — the **most exposed** configuration, so every absence assertion
     below is made against the row most likely to leak.
-  - Record the id in option `mvs_qa_seed_doc_id`. Fixture on the reference install: `media_id=157`,
-    title `QA Seed Document (delete me)`, author 1.
+  - Record the id in option `mvs_qa_seed_doc_id`. **Always read the option; never hard-code the id.**
+    The fixture is not durable: the original `media_id=157` and its PDF were destroyed on the
+    reference install on 2026-08-09 (see below) and re-seeded as `158`. A journey that assumes an id
+    fails for a reason that has nothing to do with what it is testing.
+  - **If the option points at a missing row, re-seed rather than skipping.** A run with no document
+    on the site passes every absence assertion while proving nothing — the worst possible outcome
+    for this journey, because it is green and empty.
 - **Adversarial album injection** — insert one row into `mvs_album_items` pointing the album at the
   seed document. This only touches the join table and reuses the existing `media_id`, so it does not
   violate the seeding rule. The album must end with **N+1 join rows and render N items**.
@@ -185,6 +190,31 @@ would pass either way). Do not promote a vacuous step to load-bearing without gi
 
 **Deferred** — steps 14 and 15 fail by design until P3.4 and P9.1 land. They are listed, not hidden:
 this journey is not complete until a document can be uploaded and seen in its own surface.
+
+## Fixture incident, 2026-08-09 — read before trusting a green run
+
+Between two verification passes on the reference install, **19 media rows were deleted**, including
+the seed document (`media_id=157`) and its PDF. Established from the evidence, not inferred:
+
+- `wp_actionscheduler_actions` holds ~19 `mvs_cleanup_media_files` jobs all scheduled at
+  **08:12:17 UTC**, and that hook is queued only by `MediaRepository::delete_cascade()`. One job's
+  args name `2026/08/qa-seed-document.pdf`, so the document went through the normal cascade — this
+  was a delete, not a truncate or a corrupted table.
+- The deleted set is the admin-owned QA fixture media uploaded 2026-08-05/06. Demo-user media
+  (users 8-12) was untouched, so the demo cleanup script — which scopes to `@demo.local` — is not
+  the cause.
+- **Not the test suite**: PHPUnit runs against a separate database (`wp_tests`, prefix `wptests_`),
+  verified in `wp-tests-config.php`.
+- `mvs_error_log` has no entry, because `delete_cascade()` does not log deletions. That absence is
+  itself worth noting: **the plugin can delete a member's entire library and leave no trace in its
+  own log.** Whatever triggered this, that is a gap worth closing on its own merits.
+- **Trigger not established.** The window overlaps a `plugin deactivate`/`activate` cycle on Pro run
+  during verification, but Pro's deactivation hooks only clear cron events and transients, so the
+  cycle does not explain a cascade delete. Stated as unresolved rather than guessed.
+
+The fixture was re-seeded through `MediaRepository` (id 158) and containment re-verified against the
+new row. **The lesson for this journey**: its Setup is not optional scaffolding — it is the only
+thing standing between a meaningful run and a green, empty one.
 
 ## Fail diagnostics
 
