@@ -459,6 +459,14 @@ wp_interactivity_state(
 		? 'documents'
 		: ( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' );
 	?>
+	<?php
+	// The rail and the panels share a grid; everything else on the page — the
+	// streak bar, the profile header, the completion notice, the modals — must
+	// stay OUTSIDE it. Gridding `.mvs-dashboard` itself put all of them into
+	// the rail column beside the nav.
+	?>
+	<div class="mvs-dashboard__body">
+
 	<nav class="mvs-dashboard-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Your library', 'wpmediaverse' ); ?>">
 		<span class="mvs-dashboard-tabs__group"><?php esc_html_e( 'Library', 'wpmediaverse' ); ?></span>
 		<a class="mvs-dashboard-tab<?php echo 'media' === $mvs_dash_active ? ' active' : ''; ?>" data-tab="media" role="tab" href="<?php echo esc_url( $mvs_dash_section_url( 'media' ) ); ?>"
@@ -849,6 +857,8 @@ wp_interactivity_state(
 	 */
 	do_action( 'mvs_dashboard_panels' );
 	?>
+
+	</div><!-- /.mvs-dashboard__body -->
 
 	<!-- Collection Modal (Create/Edit with Rule Builder) -->
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.collectionModal.visible"

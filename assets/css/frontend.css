@@ -6943,17 +6943,58 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
  * @since 2.4.0
  * ========================================================================== */
 
-/* NOTE: the vertical rail layout is NOT applied yet, deliberately.
- *
- * Gridding `.mvs-dashboard` puts EVERY child in the grid — the profile header,
- * the streak bar and the completion notice all landed in the rail column
- * alongside the nav. The rail needs a wrapper around just the nav and the
- * panels, which is markup surgery worth doing carefully rather than quickly.
- *
- * What IS live: the group headings, and every rail item being a real link with
- * its own URL. Those are the parts the layout depends on, so the layout can
- * follow without redoing them.
- */
+/* The grid goes on `.mvs-dashboard__body`, which holds ONLY the rail and the
+   panels. Putting it on `.mvs-dashboard` swept the streak bar, the profile
+   header and the completion notice into the rail column too — every child of a
+   grid is a grid item, including the ones that were never meant to be. */
+@media (min-width: 861px) {
+
+    .mvs-dashboard__body {
+        display: grid;
+        grid-template-columns: 13rem minmax(0, 1fr);
+        gap: var(--mvs-space-5);
+        align-items: start;
+    }
+
+    .mvs-dashboard-tabs {
+        position: sticky;
+        top: var(--mvs-space-4);
+        grid-column: 1;
+        grid-row: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: var(--mvs-space-2);
+        border: 1px solid var(--mvs-border);
+        border-radius: var(--mvs-radius-md);
+        background: var(--mvs-bg-subtle);
+    }
+
+    /* Every panel stacks into the same cell; only the active one is visible,
+       so the column is as tall as whichever is showing. */
+    .mvs-dashboard-panel {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+    }
+
+    .mvs-dashboard-tab {
+        justify-content: flex-start;
+        border-bottom: 0;
+        border-inline-start: 2px solid transparent;
+        border-radius: var(--mvs-radius-sm);
+        text-align: start;
+    }
+
+    /* The horizontal tab styling underlines the active item, which on a rail
+       reads as a stray rule under one row. The selector carries the rail so it
+       outranks the base tab rule. */
+    .mvs-dashboard-tabs .mvs-dashboard-tab.active {
+        border-bottom-color: transparent;
+        border-inline-start-color: var(--mvs-primary);
+        background: var(--mvs-surface);
+    }
+}
 
 
 .mvs-dashboard-tabs__group {
