@@ -273,4 +273,62 @@ class DocumentAdminPageTest extends WP_UnitTestCase {
 
 		$this->assertSame( $before, $aggregates->total_media(), 'Documents must not inflate the media count.' );
 	}
+
+	/**
+	 * Deleting a document must move the cached counts.
+	 *
+	 * `AdminAggregatesService::CACHE_KEYS` is the canonical list that
+	 * `CacheService::on_admin_aggregate_change()` iterates, and its own comment
+	 * says a new aggregate needs a new entry. Phase 6 added two cached keys and
+	 * added neither — so both counts went stale on the first write and stayed
+	 * that way until something unrelated flushed the cache. The Overview
+	 * screen read 11 documents while the admin list showed 6.
+	 *
+	 * The failure mode is silent by construction: the number is plausible, just
+	 * old. This test is the thing that makes it loud.
+	 */
+	public function test_deleting_a_document_invalidates_the_cached_counts(): void {
+		$aggregates = Plugin::container()->get( 'admin_aggregates' );
+
+		$doc = $this->row( 'document', 'application/pdf', 'Doomed report' );
+
+		// Warm both caches.
+		$documents_before = $aggregates->total_documents();
+		$media_before     = $aggregates->total_media();
+
+		$this->repo->delete_cascade( $doc );
+
+		$this->assertSame(
+			$documents_before - 1,
+			$aggregates->total_documents(),
+			'The cached document count must follow a delete.'
+		);
+		$this->assertSame(
+			$media_before,
+			$aggregates->total_media(),
+			'Deleting a document must not change the media count.'
+		);
+	}
+
+	/**
+	 * Every aggregate this service caches is listed for invalidation.
+	 *
+	 * Guards the class of mistake rather than the instance: a new cached key
+	 * that nobody adds to CACHE_KEYS is a number that never updates again.
+	 */
+	public function test_every_cached_aggregate_is_registered_for_invalidation(): void {
+		$source = file_get_contents( MVS_PLUGIN_DIR . 'includes/Services/AdminAggregatesService.php' );
+
+		preg_match_all( "/remember_persistent\(\s*'([a-z0-9_]+)'/", (string) $source, $matches );
+
+		$this->assertNotEmpty( $matches[1], 'The scan must find the cached keys.' );
+
+		foreach ( array_unique( $matches[1] ) as $key ) {
+			$this->assertContains(
+				$key,
+				\WPMediaVerse\Services\AdminAggregatesService::CACHE_KEYS,
+				"'{$key}' is cached but not listed in CACHE_KEYS, so nothing will ever invalidate it."
+			);
+		}
+	}
 }

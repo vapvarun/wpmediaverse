@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-09T15:50:47Z",
+    "generated_at": "2026-08-09T16:03:02Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -978,27 +978,27 @@
             "sites": [
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "141-141",
+                    "lines": "146-146",
                     "method": "pending_moderation"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "154-154",
+                    "lines": "159-159",
                     "method": "total_views"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "167-167",
+                    "lines": "172-172",
                     "method": "total_reactions"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "180-180",
+                    "lines": "185-185",
                     "method": "total_favorites"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "193-193",
+                    "lines": "198-198",
                     "method": "storage_size_bytes"
                 }
             ]

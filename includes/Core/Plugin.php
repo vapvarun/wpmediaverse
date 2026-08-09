@@ -1663,8 +1663,10 @@ class Plugin {
 	/**
 	 * Reorder the WPMediaVerse submenu for a logical admin experience.
 	 *
-	 * Order: Overview > separator > All Media > Add New > Tags > Categories >
-	 * Albums > Collections > separator > Settings > Moderation > Stats.
+	 * Groups (Wbcom Rule 2): Overview → Content → Moderation → Insights →
+	 * Tools → Settings last. Pro extends this list via its own reorder when
+	 * active; Free must still order every slug it registers so items like
+	 * Documents / Tags / Logs do not land in a random middle bucket.
 	 */
 	public static function reorder_submenu(): void {
 		global $submenu;
@@ -1674,23 +1676,48 @@ class Plugin {
 			return;
 		}
 
-		$order_map = array(
-			self::ADMIN_SLUG   => 1,
-			'mvs-media'        => 5,
-			'mvs-settings'     => 50,
-			'mvs-moderation'   => 51,
-			'mvs-stats'        => 52,
-			'mvs-integrations' => 53,
+		// Explicit order. Unknown slugs append at the end (hidden Setup, etc.).
+		$order = array(
+			// Dashboard.
+			self::ADMIN_SLUG,
+			// Content.
+			'mvs-media',
+			'mvs-documents',
+			'edit.php?post_type=mvs_album',
+			'edit.php?post_type=mvs_collection',
+			'mvs-tags',
+			'edit-tags.php?taxonomy=mvs_category&post_type=mvs_album',
+			// Moderation / trust & safety queues.
+			'mvs-moderation',
+			'mvs-reports',
+			// Insights.
+			'mvs-stats',
+			// Tools.
+			'mvs-integrations',
+			'mvs-logs',
+			// Config — always last.
+			'mvs-settings',
 		);
 
-		usort(
-			$submenu[ $parent ],
-			function ( $a, $b ) use ( $order_map ) {
-				$a_order = $order_map[ $a[2] ] ?? 30;
-				$b_order = $order_map[ $b[2] ] ?? 30;
-				return $a_order - $b_order;
+		$by_slug  = array();
+		$leftover = array();
+		foreach ( $submenu[ $parent ] as $item ) {
+			$slug = $item[2] ?? '';
+			if ( in_array( $slug, $order, true ) ) {
+				$by_slug[ $slug ] = $item;
+			} else {
+				$leftover[] = $item;
 			}
-		);
+		}
+
+		$sorted = array();
+		foreach ( $order as $slug ) {
+			if ( isset( $by_slug[ $slug ] ) ) {
+				$sorted[] = $by_slug[ $slug ];
+			}
+		}
+
+		$submenu[ $parent ] = array_merge( $sorted, $leftover ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 	}
 
 	/**

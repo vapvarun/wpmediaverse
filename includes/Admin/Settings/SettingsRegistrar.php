@@ -763,10 +763,10 @@ class SettingsRegistrar {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Register Moderation-related settings (shown on AI tab).
+	 * Register Moderation-related settings (Safety → Moderation sidebar).
 	 */
 	private function register_moderation_settings(): void {
-		add_settings_section( 'mvs_moderation', __( 'Moderation', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-ai' );
+		add_settings_section( 'mvs_moderation', __( 'Moderation', 'wpmediaverse' ), '__return_null', SettingsPage::PAGE_SLUG . '-moderation' );
 
 		// Legal + safety surface. Handed to the mobile app through
 		// /mvs/v1/app/config -> legal.*, because App Store guideline 1.2 expects a
@@ -794,7 +794,7 @@ class SettingsRegistrar {
 
 		foreach ( $legal_fields as $option => $labels ) {
 			register_setting(
-				SettingsPage::OPTION_GROUP . '_ai',
+				SettingsPage::OPTION_GROUP . '_moderation',
 				$option,
 				array(
 					'type'              => 'string',
@@ -806,7 +806,7 @@ class SettingsRegistrar {
 				$option,
 				$labels[0],
 				array( FieldRenderer::class, 'render_text_field' ),
-				SettingsPage::PAGE_SLUG . '-ai',
+				SettingsPage::PAGE_SLUG . '-moderation',
 				'mvs_moderation',
 				array(
 					'option'      => $option,
@@ -819,7 +819,7 @@ class SettingsRegistrar {
 		// Somebody must receive abuse reports. Defaults to the site admin, because
 		// on a UGC site that person exists whether or not they nominated anyone.
 		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
+			SettingsPage::OPTION_GROUP . '_moderation',
 			'mvs_abuse_contact_email',
 			array(
 				'type'              => 'string',
@@ -831,7 +831,7 @@ class SettingsRegistrar {
 			'mvs_abuse_contact_email',
 			__( 'Abuse Contact Email', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_text_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
+			SettingsPage::PAGE_SLUG . '-moderation',
 			'mvs_moderation',
 			array(
 				'option'      => 'mvs_abuse_contact_email',
@@ -846,7 +846,7 @@ class SettingsRegistrar {
 		// in the User Reports screen. Owners may opt out, but they must choose
 		// to.
 		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
+			SettingsPage::OPTION_GROUP . '_moderation',
 			'mvs_enable_reports',
 			array(
 				'type'              => 'boolean',
@@ -858,7 +858,7 @@ class SettingsRegistrar {
 			'mvs_enable_reports',
 			__( 'Member Reporting', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
+			SettingsPage::PAGE_SLUG . '-moderation',
 			'mvs_moderation',
 			array(
 				'option'      => 'mvs_enable_reports',
@@ -868,7 +868,7 @@ class SettingsRegistrar {
 		);
 
 		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
+			SettingsPage::OPTION_GROUP . '_moderation',
 			'mvs_moderation_auto_action',
 			array(
 				'type'              => 'string',
@@ -887,7 +887,7 @@ class SettingsRegistrar {
 			'mvs_moderation_auto_action',
 			__( 'When AI Flags Content', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
+			SettingsPage::PAGE_SLUG . '-moderation',
 			'mvs_moderation',
 			array(
 				'option'      => 'mvs_moderation_auto_action',
@@ -905,7 +905,7 @@ class SettingsRegistrar {
 		// as an array of category keys; every category is enabled by default so
 		// the rule is never blank.
 		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
+			SettingsPage::OPTION_GROUP . '_moderation',
 			'mvs_ai_moderation_categories',
 			array(
 				'type'              => 'array',
@@ -917,7 +917,7 @@ class SettingsRegistrar {
 			'mvs_ai_moderation_categories',
 			__( 'AI Flag Criteria', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_checkbox_group_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
+			SettingsPage::PAGE_SLUG . '-moderation',
 			'mvs_moderation',
 			array(
 				'option'      => 'mvs_ai_moderation_categories',
@@ -938,7 +938,7 @@ class SettingsRegistrar {
 		// content, competitor logos). Narrated to the AI alongside the
 		// categories above.
 		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
+			SettingsPage::OPTION_GROUP . '_moderation',
 			'mvs_ai_moderation_custom_terms',
 			array(
 				'type'              => 'string',
@@ -950,7 +950,7 @@ class SettingsRegistrar {
 			'mvs_ai_moderation_custom_terms',
 			__( 'Custom Flag Terms', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_textarea_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
+			SettingsPage::PAGE_SLUG . '-moderation',
 			'mvs_moderation',
 			array(
 				'option'      => 'mvs_ai_moderation_custom_terms',
@@ -960,7 +960,7 @@ class SettingsRegistrar {
 
 		// Report auto-hide threshold.
 		register_setting(
-			SettingsPage::OPTION_GROUP . '_ai',
+			SettingsPage::OPTION_GROUP . '_moderation',
 			'mvs_report_auto_hide_threshold',
 			array(
 				'type'              => 'integer',
@@ -972,7 +972,7 @@ class SettingsRegistrar {
 			'mvs_report_auto_hide_threshold',
 			__( 'Auto-Hide Threshold', 'wpmediaverse' ),
 			array( FieldRenderer::class, 'render_number_field' ),
-			SettingsPage::PAGE_SLUG . '-ai',
+			SettingsPage::PAGE_SLUG . '-moderation',
 			'mvs_moderation',
 			array(
 				'option'      => 'mvs_report_auto_hide_threshold',

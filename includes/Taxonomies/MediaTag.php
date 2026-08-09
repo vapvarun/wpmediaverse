@@ -39,6 +39,11 @@ class MediaTag {
 			'labels'                => $labels,
 			'hierarchical'          => false,
 			'public'                => true,
+			'show_ui'               => true,
+			// Hide the core taxonomy submenu — TagManagementPage (`mvs-tags`) is
+			// the single Tags screen. Leaving show_in_menu on produced two "Tags"
+			// entries under WPMediaVerse (custom page + edit-tags.php).
+			'show_in_menu'          => false,
 			'show_in_rest'          => true,
 			'show_admin_column'     => true,
 			'rewrite'               => array( 'slug' => 'media-tag' ),

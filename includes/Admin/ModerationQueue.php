@@ -48,14 +48,14 @@ class ModerationQueue {
 		}
 		$badge = $counts['flagged'];
 
-		$menu_title = __( 'Media Moderation', 'wpmediaverse' );
+		$menu_title = __( 'Moderation', 'wpmediaverse' );
 		if ( $badge > 0 ) {
 			$menu_title .= sprintf( ' <span class="awaiting-mod">%d</span>', $badge );
 		}
 
 		add_submenu_page(
 			\WPMediaVerse\Core\Plugin::ADMIN_SLUG,
-			__( 'Media Moderation', 'wpmediaverse' ),
+			__( 'Moderation', 'wpmediaverse' ),
 			$menu_title,
 			'manage_options',
 			self::PAGE_SLUG,

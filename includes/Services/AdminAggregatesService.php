@@ -36,7 +36,12 @@ class AdminAggregatesService {
 	 * can iterate without keeping a parallel list in sync.
 	 */
 	public const CACHE_KEYS = array(
+		// The pre-2.4.0 key. Kept so an upgraded site whose cache still holds
+		// the old value gets it cleared on the next write rather than carrying
+		// a number nothing writes any more.
 		'admin_total_media',
+		'admin_total_media_v2',
+		'admin_total_documents',
 		'admin_total_albums',
 		'admin_total_views',
 		'admin_total_reactions',
