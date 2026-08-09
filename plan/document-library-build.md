@@ -39,7 +39,7 @@ Never fill a login form by hand.
 | **Prerequisites** | PRE-1, PRE-2 | ✅ both done |
 | **1 — Query discipline** | P1.1 – P1.6 | 🟡 P1.1 ✅, P1.2 🟡 partial, P1.5 🟡 walked + written, P1.3/P1.4/P1.6 ⬜ |
 | **2 — Schema** | P2.1 – P2.3 | 🟢 P2.1 ✅, P2.2 🟡 applied + verified (customer-DB run outstanding), P2.3 ✅ |
-| **3 — Pro engine** | P3.1 – P3.9 | 🟡 **all 3 release blockers done** — P3.1 ✅ P3.2 ✅ P3.3 ✅ P3.6 ✅ P3.7 ✅ P3.8 ✅; P3.4 ingest, P3.5 delivery, P3.9 fixture ⬜ |
+| **3 — Pro engine** | P3.1 – P3.9 | ✅ **COMPLETE** — P3.1–P3.9 all done, every Self-check run |
 | **4 — REST + app contract** | P4.1 – P4.5 | ⬜ |
 | **5 — Viewers** | P5.1 – P5.5 | ⬜ |
 | **6 — Admin** | P6.1 – P6.3 | ⬜ |
@@ -320,10 +320,10 @@ WHERE clauses on the REST controllers, not only `FROM …mvs_media_index` string
 | **P3.1 ✅** | `+ wpmediaverse/includes/Core/DocumentTypes.php` | **DONE.** See below |
 | **P3.2 ✅** | `+ wpmediaverse-pro/includes/Documents/FolderService.php` | **DONE.** See below |
 | **P3.3** | `+ Documents/PermissionService.php` | Batched resolution, **2 queries per page**. Grant authority per **D1** |
-| **P3.4** | `~ Services/UploadService.php` | Explicit document ingest; declared `doc_type` verified against resolved, **400 on mismatch, never a silent fix**; privacy forced `private` |
-| **P3.5** | `+ Documents/DeliveryController.php` | `/download` and `/preview`, headers per design §6 |
-| **P3.6** | `+ Documents/StorageResolver.php` | Separate private bucket per **D8**; refuse a bucket equal to the media bucket. **Release blocker** with P3.7 |
-| **P3.7** | `~ Core/HealthCheckService.php` | Site Health: document bucket is not public-read. **Release blocker** |
+| **P3.4 ✅** | `+ wpmediaverse-pro/includes/Documents/DocumentIngestService.php` | **DONE** — a SEPARATE door, not a branch in `handle()`. See below |
+| **P3.5 ✅** | `+ wpmediaverse-pro/includes/Documents/DeliveryController.php` | **DONE** — see below |
+| **P3.6 ✅** | `+ wpmediaverse-pro/includes/Documents/StorageResolver.php` | **DONE.** Release blocker |
+| **P3.7 ✅** | `+ wpmediaverse-pro/includes/Documents/HealthCheck.php` | **DONE.** Release blocker. Not `Core/HealthCheckService.php` — that is Free's, and this test is about Pro-owned storage |
 
 ### P3.1 — `DocumentTypes` ✅ DONE
 
@@ -442,7 +442,9 @@ WHERE clauses on the REST controllers, not only `FROM …mvs_media_index` string
 1. **wp-admin → Tools → Site Health** shows the P3.7 check, desktop and 390px. ✅ **done** — appears
    in the critical section, renders correctly at both viewports after the `<pre>` fix.
 2. **Network panel** on `/download` and `/preview`: correct `Content-Type` and `Content-Disposition`.
-   ⬜ **belongs to P3.5**, which is not built yet.
+   ✅ **done** — asserted on the header set both routes share (`attachment` always vs `inline` for
+   PDF only), plus `nosniff`, `default-src 'none'; sandbox`, `private, no-store`, and
+   `X-Frame-Options` `SAMEORIGIN` for preview / `DENY` for a download.
 3. **Fetch a stored file's direct URL in the browser — must be 403/404 on both Apache and nginx.**
    That is a release blocker and it is a browser check, not a config review.
    ✅ **done, and it FAILED on the first run** — see P3.6/P3.7 above. Now 403 on nginx.
@@ -630,3 +632,35 @@ modal never says "Public". Build P9.x against it, not against this file's summar
    came from two copies of one behaviour drifting apart: the `AlbumMarkerLookupTrait` fatal, the
    rtMedia admin-migration privacy leak, and the `replace_file` guard bypass. When a task finds a
    second copy, the task includes collapsing it.
+
+---
+
+## Phase 3 close-out — 2026-08-09
+
+**All nine tasks done, every Self-check run.** What the Self-checks caught, which is the argument for
+running them rather than batching them:
+
+| Self-check | What it found |
+|---|---|
+| **Direct URL must be 403** | Returned **200 with the file's contents** on nginx while the guard check said `protected`. `.htaccess` is ignored by nginx entirely. The check now probes the server over HTTP instead of trusting file presence |
+| **Site Health at 390px** | The nginx snippet pushed the page to 493px against a 390px viewport |
+| **P3.8 cascade tests** | `folder_id` was never in `MediaRepository::$index_columns` — v27 added the *column* but the repository wrote to `mvs_media_meta`, so `KEY doc_listing` would have matched nothing for every document ever uploaded |
+| **P3.4 ingest tests** | `DocumentTypes` accepted a text file named `photo.jpg` as a text document — elimination creeping back into the one class built to remove it |
+| **Pro CI (A4)** | Pro read `mvs_max_upload_size` directly; two readers of one setting drift and the one missing the filter enforces a ceiling the owner never set |
+
+**Three of those five are silent failures** — no error, no exception, nothing in a log. Only a check
+that looks at the real thing finds them.
+
+### Scale, measured rather than asserted
+
+With the fixture loaded (5 drives, 40 documents, depth 4): `EXPLAIN` shows the drive-root query using
+`KEY doc_listing` (`type=ref`), and the permission prefetch costs **exactly 2 queries on pages 1, 2
+and 3** — flat, as design §5 claims. Cleanup restored the install precisely.
+
+### Carried into Phase 4
+
+- **P3.9 gates P4, P8 and P9** — it exists now, so those are unblocked.
+- **The confirmation dialog for T2** (P3.8) needs a surface and lands in Phase 9. `count_privacy_cascade()`
+  already returns the number it must show, asserted equal to what the cascade moves.
+- **Tier 2–4 viewers** (P5) are the other half of `/preview`: it serves PDF inline and refuses
+  everything else, so text/Markdown/CSV rendering must be server-side HTML, never the file.
