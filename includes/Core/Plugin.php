@@ -996,6 +996,23 @@ class Plugin {
 			add_action( 'load-' . $media_hook, array( \WPMediaVerse\Admin\MediaListPage::class, 'handle_bulk_actions' ) );
 		}
 
+		// Documents — the backend entry point for the document library (Coding
+		// Rule 18). Documents never appear on a media surface, so without this
+		// screen a site owner could not see what members had uploaded.
+		$document_hook = add_submenu_page(
+			self::ADMIN_SLUG,
+			__( 'Documents', 'wpmediaverse' ),
+			__( 'Documents', 'wpmediaverse' ),
+			'manage_options',
+			\WPMediaVerse\Admin\DocumentListPage::SLUG,
+			array( \WPMediaVerse\Admin\DocumentListPage::class, 'render' )
+		);
+		if ( $document_hook ) {
+			// Same reason as All Media above: row and bulk actions redirect, so
+			// they have to run before any output.
+			add_action( 'load-' . $document_hook, array( \WPMediaVerse\Admin\DocumentListPage::class, 'handle_actions' ) );
+		}
+
 		// Tags — tag management page.
 		add_submenu_page(
 			self::ADMIN_SLUG,

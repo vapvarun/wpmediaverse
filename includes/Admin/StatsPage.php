@@ -252,11 +252,12 @@ class StatsPage {
 		$date_filter = $this->get_date_filter( $range );
 		$range_start = $this->get_range_start( $range );
 
-		// The card is labelled "Total Media", so it counts media. Documents are a
-		// separate library and are owed their own card rather than a silent share
-		// of this one — an owner reading a jump in this number needs to know which
-		// library grew. See plan/document-library.md for the documents card.
+		// The card is labelled "Total Media", so it counts media. Documents get
+		// their own card beside it: an owner reading a jump in a number needs to
+		// know which library grew, and a count that stops being part of one total
+		// has to become its own or it silently vanishes from the admin.
 		list( $mvs_stats_type_sql, $mvs_stats_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
+		list( $mvs_stats_doc_sql, $mvs_stats_doc_params )   = MediaTypes::in_clause( MediaTypes::DOCUMENT_LIBRARY );
 
 		// Overall counts (apply date filter so cards change across Today / Week / Month / All).
 		if ( $range_start ) {
@@ -264,6 +265,12 @@ class StatsPage {
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s AND {$mvs_stats_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					...array_merge( array( $range_start ), $mvs_stats_type_params )
+				)
+			);
+			$total_documents = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND created_at >= %s AND {$mvs_stats_doc_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...array_merge( array( $range_start ), $mvs_stats_doc_params )
 				)
 			);
 			$total_albums = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -279,6 +286,12 @@ class StatsPage {
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND {$mvs_stats_type_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 					...$mvs_stats_type_params
+				)
+			);
+			$total_documents = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND {$mvs_stats_doc_sql}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					...$mvs_stats_doc_params
 				)
 			);
 			$album_counts = wp_count_posts( 'mvs_album' );
@@ -387,6 +400,10 @@ class StatsPage {
 				<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $total_media ) ); ?></span>
 				<span class="mvs-stat-label"><?php esc_html_e( 'Total Media', 'wpmediaverse' ); ?></span>
 			</div>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . \WPMediaVerse\Admin\DocumentListPage::SLUG ) ); ?>" class="mvs-stat-card mvs-stat-card--accent">
+				<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $total_documents ) ); ?></span>
+				<span class="mvs-stat-label"><?php esc_html_e( 'Documents', 'wpmediaverse' ); ?></span>
+			</a>
 			<div class="mvs-stat-card mvs-stat-card--accent">
 				<span class="mvs-stat-number"><?php echo esc_html( number_format_i18n( $total_albums ) ); ?></span>
 				<span class="mvs-stat-label"><?php esc_html_e( 'Albums', 'wpmediaverse' ); ?></span>

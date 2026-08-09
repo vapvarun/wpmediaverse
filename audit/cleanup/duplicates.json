@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-08-09T13:45:12Z",
+    "generated_at": "2026-08-09T14:04:25Z",
     "generator": "bin/cleanup-duplicate-detect.php",
     "config": {
         "min_tokens": 30,
@@ -17,7 +17,7 @@
     "counts": {
         "cross_plugin_duplicates": 15,
         "within_plugin_duplicates": 32,
-        "free_files_scanned": 192,
+        "free_files_scanned": 194,
         "pro_files_scanned": 187
     },
     "cross_plugin_duplicates": [
@@ -652,12 +652,12 @@
             "sites": [
                 {
                     "file": "includes/Admin/OverviewPage.php",
-                    "lines": "644-644",
+                    "lines": "648-648",
                     "method": "OverviewPage::ajax_import_demo_data"
                 },
                 {
                     "file": "includes/Admin/OverviewPage.php",
-                    "lines": "671-671",
+                    "lines": "675-675",
                     "method": "OverviewPage::handle_cleanup_demo"
                 }
             ]
@@ -706,12 +706,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2890-2890",
+                    "lines": "3014-3014",
                     "method": "trash"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2918-2918",
+                    "lines": "3042-3042",
                     "method": "restore"
                 }
             ]
@@ -724,7 +724,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2719-2719",
+                    "lines": "2843-2843",
                     "method": "record_event"
                 },
                 {
@@ -783,12 +783,12 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2664-2664",
+                    "lines": "2788-2788",
                     "method": "increment_stat"
                 },
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2691-2691",
+                    "lines": "2815-2815",
                     "method": "set_stat"
                 }
             ]
@@ -973,37 +973,32 @@
         {
             "hash": "23ed8d1771929515d1d96b1cd6b9d5efcf6d395c",
             "plugin": "free",
-            "instances": 6,
+            "instances": 5,
             "token_count": 37,
             "sites": [
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "63-63",
-                    "method": "AdminAggregatesService::total_media"
-                },
-                {
-                    "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "88-88",
+                    "lines": "141-141",
                     "method": "pending_moderation"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "101-101",
+                    "lines": "154-154",
                     "method": "total_views"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "114-114",
+                    "lines": "167-167",
                     "method": "total_reactions"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "127-127",
+                    "lines": "180-180",
                     "method": "total_favorites"
                 },
                 {
                     "file": "includes/Services/AdminAggregatesService.php",
-                    "lines": "140-140",
+                    "lines": "193-193",
                     "method": "storage_size_bytes"
                 }
             ]
@@ -1093,7 +1088,7 @@
             "sites": [
                 {
                     "file": "includes/Repository/MediaRepository.php",
-                    "lines": "2596-2596",
+                    "lines": "2720-2720",
                     "method": "get_user_stats"
                 },
                 {

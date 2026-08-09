@@ -58,14 +58,67 @@ class AdminAggregatesService {
 	}
 
 	/**
-	 * Total published media items.
+	 * Total published MEDIA items — photos, video and audio.
+	 *
+	 * Documents are counted separately by `total_documents()`. They share the
+	 * index table but they are not media, and until 2.4.0 this counted them:
+	 * a site whose members had uploaded 400 documents saw them added to "Total
+	 * Media" on a screen where no document was reachable.
+	 *
+	 * The type list runs through `MediaTypes::library_types()`, so a site that
+	 * wants the old number back has the documented one-line escape hatch
+	 * (`mvs_media_library_types`) rather than nothing (Production Rule 3).
+	 *
+	 * The cache key is deliberately versioned: the same key holding a different
+	 * meaning would keep showing the pre-2.4.0 number until something unrelated
+	 * flushed it.
 	 */
 	public function total_media(): int {
 		return (int) $this->cache->remember_persistent(
-			'admin_total_media',
+			'admin_total_media_v2',
 			static function (): int {
 				global $wpdb;
-				return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+
+				list( $type_sql, $type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::library_types() );
+
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+				return (int) $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND {$type_sql}",
+						...$type_params
+					)
+				);
+			}
+		);
+	}
+
+	/**
+	 * Total published documents, both current and quarantined-legacy.
+	 *
+	 * Owed since the library types were narrowed: a count that stops being part
+	 * of one number has to become its own, or it silently disappears from the
+	 * admin. Together with `total_media()` this sums to every published index
+	 * row — asserted by `DocumentAggregatesTest`.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return int
+	 */
+	public function total_documents(): int {
+		return (int) $this->cache->remember_persistent(
+			'admin_total_documents',
+			static function (): int {
+				global $wpdb;
+
+				list( $type_sql, $type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::DOCUMENT_LIBRARY );
+
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+				return (int) $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM {$wpdb->prefix}mvs_media_index WHERE status = 'publish' AND {$type_sql}",
+						...$type_params
+					)
+				);
 			}
 		);
 	}
@@ -186,6 +239,7 @@ class AdminAggregatesService {
 	public function overview_cards(): array {
 		return array(
 			'total_media'        => $this->total_media(),
+			'total_documents'    => $this->total_documents(),
 			'total_albums'       => $this->total_albums(),
 			'pending_moderation' => $this->pending_moderation(),
 			'total_views'        => $this->total_views(),

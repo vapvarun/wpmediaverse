@@ -848,6 +848,144 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * SQL clause narrowing a document listing to one named type.
+	 *
+	 * A `doc_type` is a display group, not a stored column — `file_type` holds
+	 * the validated MIME. So the filter expands to the MIME types that map to
+	 * that group, which keeps the clause a positive list on an indexed column
+	 * instead of a `LIKE` that no index can serve.
+	 *
+	 * An unknown type matches NOTHING rather than everything. Failing open would
+	 * show every document under a label the caller chose in order to narrow.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $doc_type Named document type.
+	 * @return array{0: string, 1: array<int, string>} Clause and its params.
+	 */
+	private function document_type_clause( string $doc_type ): array {
+		if ( ! class_exists( '\WPMediaVerse\Core\DocumentTypes' ) ) {
+			return array( '1 = 0', array() );
+		}
+
+		$mimes = array();
+		foreach ( \WPMediaVerse\Core\DocumentTypes::allowed_mimes() as $mime ) {
+			if ( \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mime ) === $doc_type ) {
+				$mimes[] = $mime;
+			}
+		}
+
+		if ( ! $mimes ) {
+			return array( '1 = 0', array() );
+		}
+
+		return array(
+			'file_type IN ( ' . implode( ', ', array_fill( 0, count( $mimes ), '%s' ) ) . ' )',
+			$mimes,
+		);
+	}
+
+	/**
+	 * Every document on the site, for the admin screen.
+	 *
+	 * The site owner's view, so it is NOT privacy-scoped — unlike every
+	 * member-facing document query. It is still paginated, still counted with a
+	 * dedicated `COUNT(*)`, and still filtered and sorted on indexed columns:
+	 * an admin screen is exactly where a site with 50,000 documents shows up.
+	 *
+	 * Sorting is restricted to a fixed allowlist because the column name cannot
+	 * be a prepared parameter — anything outside it falls back to recency rather
+	 * than being interpolated.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param array $args {
+	 *     @type int    $per_page Rows per page. Default 20, max 100.
+	 *     @type int    $page     1-based page. Default 1.
+	 *     @type string $doc_type Optional named-type filter.
+	 *     @type string $privacy  Optional privacy filter.
+	 *     @type int    $author   Optional author filter.
+	 *     @type string $search   Optional title search.
+	 *     @type string $orderby  created_at|title|file_size. Default created_at.
+	 *     @type string $order    ASC|DESC. Default DESC.
+	 * }
+	 * @return array{items: array<int, array<string, mixed>>, total: int, pages: int}
+	 */
+	public function admin_documents( array $args = array() ): array {
+		global $wpdb;
+
+		$per_page = isset( $args['per_page'] ) ? max( 1, min( 100, (int) $args['per_page'] ) ) : 20;
+		$page     = isset( $args['page'] ) ? max( 1, (int) $args['page'] ) : 1;
+		$doc_type = isset( $args['doc_type'] ) ? (string) $args['doc_type'] : '';
+		$privacy  = isset( $args['privacy'] ) ? (string) $args['privacy'] : '';
+		$author   = isset( $args['author'] ) ? (int) $args['author'] : 0;
+		$search   = isset( $args['search'] ) ? trim( (string) $args['search'] ) : '';
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::DOCUMENT_LIBRARY );
+
+		$where  = array( $type_sql );
+		$params = $type_params;
+
+		if ( '' !== $doc_type ) {
+			list( $mime_sql, $mime_params ) = $this->document_type_clause( $doc_type );
+
+			$where[] = $mime_sql;
+			$params  = array_merge( $params, $mime_params );
+		}
+
+		if ( '' !== $privacy ) {
+			$where[]  = 'privacy = %s';
+			$params[] = $privacy;
+		}
+
+		if ( $author > 0 ) {
+			$where[]  = 'post_author = %d';
+			$params[] = $author;
+		}
+
+		if ( '' !== $search ) {
+			$where[]  = 'title LIKE %s';
+			$params[] = '%' . $wpdb->esc_like( $search ) . '%';
+		}
+
+		// The column cannot be prepared, so it comes from a fixed allowlist.
+		$sortable = array( 'created_at', 'title', 'file_size' );
+		$orderby  = isset( $args['orderby'] ) && in_array( $args['orderby'], $sortable, true )
+			? (string) $args['orderby']
+			: 'created_at';
+		$order    = isset( $args['order'] ) && 'ASC' === strtoupper( (string) $args['order'] ) ? 'ASC' : 'DESC';
+
+		$index     = $wpdb->prefix . 'mvs_media_index';
+		$where_sql = implode( ' AND ', $where );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$index} WHERE {$where_sql}", ...$params ) );
+
+		$page_params   = $params;
+		$page_params[] = $per_page;
+		$page_params[] = ( $page - 1 ) * $per_page;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT media_id, title, slug, post_author, media_type, file_type, file_size, privacy, status, created_at
+				   FROM {$index}
+				  WHERE {$where_sql}
+				  ORDER BY {$orderby} {$order}
+				  LIMIT %d OFFSET %d",
+				...$page_params
+			),
+			ARRAY_A
+		);
+
+		return array(
+			'items' => $rows,
+			'total' => $total,
+			'pages' => (int) ceil( $total / $per_page ),
+		);
+	}
+
+	/**
 	 * Public documents, for the document listing page.
 	 *
 	 * Uses `MediaTypes::DOCUMENT_LIBRARY`, so quarantined `legacy_document` rows
@@ -884,25 +1022,11 @@ class MediaRepository implements MediaRepositoryInterface {
 		$where  = array( $type_sql, 'privacy = %s', 'status = %s', 'moderation_status = %s' );
 		$params = array_merge( $type_params, array( 'public', 'publish', 'approved' ) );
 
-		// A doc_type filter resolves to the MIME types that map to it, so the
-		// clause stays a positive list on an indexed column rather than a LIKE.
-		if ( '' !== $doc_type && class_exists( '\WPMediaVerse\Core\DocumentTypes' ) ) {
-			$mimes = array();
-			foreach ( \WPMediaVerse\Core\DocumentTypes::allowed_mimes() as $mime ) {
-				if ( \WPMediaVerse\Core\DocumentTypes::group_for_mime( $mime ) === $doc_type ) {
-					$mimes[] = $mime;
-				}
-			}
+		if ( '' !== $doc_type ) {
+			list( $mime_sql, $mime_params ) = $this->document_type_clause( $doc_type );
 
-			if ( $mimes ) {
-				$where[] = 'file_type IN ( ' . implode( ', ', array_fill( 0, count( $mimes ), '%s' ) ) . ' )';
-				$params  = array_merge( $params, $mimes );
-			} else {
-				// An unknown filter matches nothing rather than everything —
-				// failing open here would show every document under a label the
-				// member chose to narrow by.
-				$where[] = '1 = 0';
-			}
+			$where[] = $mime_sql;
+			$params  = array_merge( $params, $mime_params );
 		}
 
 		$index     = $wpdb->prefix . 'mvs_media_index';

@@ -1,6 +1,11 @@
 parameters:
 	ignoreErrors:
 		-
+			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
+			count: 1
+			path: includes/Admin/DocumentListPage.php
+
+		-
 			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
 			count: 2
 			path: includes/Admin/CollectionMetaBox.php

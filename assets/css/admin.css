@@ -2157,3 +2157,85 @@ a.mvs-stat-card:focus {
 	display: inline-block;
 	margin-right: 4px;
 }
+
+/* ============================================================================
+ * Documents admin screen.
+ *
+ * The table itself is a core `wp-list-table` and inherits core's styling and
+ * its ≤782px collapse; what is styled here is the filter bar, the empty state,
+ * and the trashed badge — the parts core knows nothing about.
+ *
+ * Uses the :root tokens directly, NOT the `--mvs-admin-*` aliases: those are
+ * declared inside `.mvs-settings-wrap` only, so on this page they resolve to
+ * nothing and every rule using them silently drops. The token-contract check
+ * cannot catch that — it verifies a token is declared somewhere, not that it is
+ * in scope where it is used.
+ *
+ * @since 2.4.0
+ * ========================================================================== */
+
+.mvs-documents-admin__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.mvs-documents-admin__filters input[type="search"] {
+    min-width: 200px;
+    flex: 1 1 200px;
+}
+
+.mvs-documents-admin__empty {
+    padding: 32px 24px;
+    border: 1px solid var(--mvs-border-light);
+    border-radius: var(--mvs-radius-lg);
+    background: var(--mvs-surface-muted);
+    text-align: center;
+    color: var(--mvs-text);
+}
+
+.mvs-documents-admin__empty p {
+    margin: 0 0 8px;
+}
+
+.mvs-documents-admin__empty .description {
+    color: var(--mvs-text-secondary);
+}
+
+.mvs-documents-admin__badge {
+    display: inline-block;
+    margin-inline-start: 6px;
+    padding: 1px 8px;
+    border-radius: var(--mvs-radius-sm);
+    background: var(--mvs-surface-muted);
+    color: var(--mvs-text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
+}
+
+@media screen and (max-width: 640px) {
+
+    .mvs-documents-admin__filters {
+        /* Each control gets its own line rather than three cramped ones. */
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mvs-documents-admin__filters input[type="search"],
+    .mvs-documents-admin__filters select,
+    .mvs-documents-admin__filters button {
+        width: 100%;
+    }
+
+    .mvs-documents-admin__filters input[type="search"] {
+        /* The desktop `flex: 1 1 200px` sets a basis along the MAIN axis, and
+           the main axis is now the column — so it read as a 200px-TALL search
+           box. Reset it once the direction flips. */
+        flex: 0 0 auto;
+    }
+}
