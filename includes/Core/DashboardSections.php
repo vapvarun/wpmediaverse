@@ -49,7 +49,7 @@ final class DashboardSections {
 	 * @since 2.4.0
 	 * @var string[]
 	 */
-	public const GROUPS = array( 'library', 'compete' );
+	public const GROUPS = array( 'library', 'compete', 'account' );
 
 	/**
 	 * Resolved sections for this request.
@@ -159,6 +159,38 @@ final class DashboardSections {
 	 */
 	public static function exists( string $slug ): bool {
 		return isset( self::all()[ $slug ] );
+	}
+
+	/**
+	 * Every DECLARED section slug, before any per-member filtering.
+	 *
+	 * Deliberately not `all()`. `all()` answers "what may this member see",
+	 * which depends on who is asking and runs the count closures; a rewrite rule
+	 * is registered once, on `init`, for everybody. Asking `all()` there would
+	 * build the URL vocabulary out of one visitor's permissions — the first
+	 * person to hit an empty cache would decide which sections have URLs for the
+	 * whole site.
+	 *
+	 * This is the vocabulary: the keys, no capability checks, no counts.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @return string[]
+	 */
+	public static function slugs(): array {
+		$declared = (array) apply_filters( 'mvs_dashboard_sections', self::core_sections() );
+
+		$slugs = array();
+
+		foreach ( array_keys( $declared ) as $slug ) {
+			$slug = sanitize_key( (string) $slug );
+
+			if ( '' !== $slug ) {
+				$slugs[] = $slug;
+			}
+		}
+
+		return array_values( array_unique( $slugs ) );
 	}
 
 	/**
@@ -294,6 +326,22 @@ final class DashboardSections {
 				'group'     => 'library',
 				'order'     => 60,
 				'endpoints' => 'mvs/v1/favorites',
+			),
+			// Editing your profile was a button on a card above the rail, which
+			// cost every member ~110px of vertical space on every visit to say
+			// what the rail head now says in a line. It is a PANEL like the rest
+			// — it always was, toggled by `editingProfile` — so it is declared
+			// like the rest and rendered where the rest render.
+			//
+			// Viewing the profile is NOT here: it navigates away to the
+			// community profile, and a rail whose items all switch a panel
+			// except one that silently leaves the page is a rail you cannot
+			// trust. That one is a link in the rail head, beside the name.
+			'profile'     => array(
+				'label'     => __( 'Edit profile', 'wpmediaverse' ),
+				'group'     => 'account',
+				'order'     => 10,
+				'endpoints' => 'mvs/v1/profile',
 			),
 		);
 	}

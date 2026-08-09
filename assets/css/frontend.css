@@ -1867,27 +1867,76 @@ body.dark-mode .mvs-skeleton::after {
 
 /* Theme defense. Some themes (e.g. BuddyX) style bare <button> with a filled
    accent background + full border + radius, which turns these flat tabs into
-   chunky colored buttons. Re-assert the intended clean look so the dashboard
-   reads the same on any theme: flat text tabs, primary underline on the active
-   tab. !important is the standard pattern for a frontend plugin defending its
-   own controls inside arbitrary themes. Bug #10019404777. */
+   chunky colored buttons. Re-assert the intended look so the dashboard reads
+   the same on any theme. !important is the standard pattern for a frontend
+   plugin defending its own controls inside arbitrary themes. Bug #10019404777.
+
+   IT WAS ALSO DEFENDING A DESIGN THAT NO LONGER EXISTS. Written for the
+   horizontal strip, it pinned `border-bottom: 2px solid transparent`,
+   `border-radius: 0` and `background: none` with !important — so when the
+   sections became a vertical rail, every rule the rail wrote for its own
+   appearance lost to armour the plugin had aimed at itself. That is why rail
+   items rendered as red underlined links with no active fill and no
+   inline-start marker: not the theme winning, the plugin's own past winning.
+   Diagnosed by computed style, after `display: flex` from a rule applied while
+   `border: 0` from the SAME rule did not.
+
+   What is invariant across both designs stays here. What is per-design moves
+   into the breakpoint that owns that design — because below 861px the strip IS
+   horizontal, and there an underline is the right marker. */
 .mvs-dashboard-tabs .mvs-dashboard-tab {
     background: none !important;
     border: 0 !important;
-    border-bottom: 2px solid transparent !important;
-    border-radius: 0 !important;
     box-shadow: none !important;
     /* The theme also forces button text white; without re-asserting the text
        color the label turns white-on-light = invisible once the fill is gone. */
     color: var(--mvs-text) !important;
 }
 
-.mvs-dashboard-tabs .mvs-dashboard-tab:hover,
-.mvs-dashboard-tabs .mvs-dashboard-tab:focus,
-.mvs-dashboard-tabs .mvs-dashboard-tab.active {
-    background: none !important;
-    border-bottom-color: var(--mvs-primary) !important;
-    color: var(--mvs-primary) !important;
+/* Horizontal strip: the active marker is an underline. */
+@media (max-width: 860px) {
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab {
+        border-bottom: 2px solid transparent !important;
+        border-radius: 0 !important;
+    }
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab:hover,
+    .mvs-dashboard-tabs .mvs-dashboard-tab:focus,
+    .mvs-dashboard-tabs .mvs-dashboard-tab.active {
+        border-bottom-color: var(--mvs-primary) !important;
+        color: var(--mvs-primary) !important;
+    }
+}
+
+/* Rail: the active marker is the inline-start edge plus a surface fill. An
+   underline down a rail reads as a rule under one row, which is what it looked
+   like. Declared at the same weight as the armour above, or the armour wins
+   again — the whole point of this block. */
+@media (min-width: 861px) {
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab {
+        border-inline-start: 2px solid transparent !important;
+        border-radius: var(--mvs-radius-sm) !important;
+        color: var(--mvs-text-secondary) !important;
+    }
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab:hover,
+    .mvs-dashboard-tabs .mvs-dashboard-tab:focus {
+        background: var(--mvs-surface) !important;
+        color: var(--mvs-text) !important;
+    }
+
+    .mvs-dashboard-tabs .mvs-dashboard-tab.active {
+        border-inline-start-color: var(--mvs-primary) !important;
+        background: var(--mvs-surface) !important;
+        color: var(--mvs-primary) !important;
+    }
+
+    /* A group with no heading still shows its break. */
+    .mvs-dashboard-tabs .mvs-dashboard-tab--group-start {
+        border-block-start: 1px solid var(--mvs-border) !important;
+    }
 }
 
 .mvs-dashboard-panel {
@@ -4233,58 +4282,10 @@ a.mvs-dashboard-card-title:hover {
    32. Profile Header (Dashboard) & Profile Edit
    ========================================================================== */
 
-/* Dashboard Profile Header */
-.mvs-dashboard-profile-header {
-    margin-bottom: 1.5rem;
-    padding: 1.25rem;
-    background: var(--mvs-surface-2);
-    border: 1px solid var(--mvs-border, #dcdcde);
-    border-radius: 12px;
-}
-
-.mvs-dashboard-profile-view {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.mvs-dashboard-profile-avatar {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-}
-
-.mvs-dashboard-profile-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.mvs-dashboard-profile-name {
-    font-size: 1.125rem;
-    margin: 0 0 0.125rem;
-    font-weight: 600;
-}
-
-.mvs-dashboard-profile-bio {
-    font-size: 0.8125rem;
-    color: var(--mvs-text-secondary);
-    margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.mvs-dashboard-profile-actions {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.mvs-dashboard-profile-actions .mvs-btn {
-    font-size: 0.875rem;
-}
+/* The profile CARD that lived above the rail is gone — its avatar, name, bio
+   and buttons became the rail head plus the `profile` section, so its rules go
+   with it rather than lingering as selectors nothing emits (Coding Rule 12).
+   The edit FORM's own styling continues below; only the card is removed. */
 
 .mvs-dashboard-profile-edit-btn {
     flex-shrink: 0;
@@ -4584,15 +4585,6 @@ a.mvs-dashboard-card-title:hover {
 
     .mvs-profile-avatar-remove {
         text-align: center;
-    }
-
-    .mvs-dashboard-profile-view {
-        flex-wrap: wrap;
-    }
-
-    .mvs-dashboard-profile-actions {
-        flex: 0 0 100%;
-        flex-wrap: wrap;
     }
 
     .mvs-profile-field-row {
@@ -6952,15 +6944,27 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
     .mvs-dashboard__body {
         display: grid;
         grid-template-columns: 13rem minmax(0, 1fr);
+        /* Two rows, and the SECOND one absorbs the slack. Without this both
+           rows shared the panel's height, so a tall panel pushed the sections
+           box a long way down the page and left the rail looking broken in
+           two. The head is auto — as tall as a name and a link — and
+           everything left over goes to the sections column. */
+        grid-template-rows: auto 1fr;
         gap: var(--mvs-space-5);
         align-items: start;
+    }
+
+    /* The identity sits above the sections, in the rail column. */
+    .mvs-dashboard-rail-head {
+        grid-column: 1;
+        grid-row: 1;
     }
 
     .mvs-dashboard-tabs {
         position: sticky;
         top: var(--mvs-space-4);
         grid-column: 1;
-        grid-row: 1;
+        grid-row: 2;
         display: flex;
         flex-direction: column;
         gap: 2px;
@@ -6971,10 +6975,12 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
     }
 
     /* Every panel stacks into the same cell; only the active one is visible,
-       so the column is as tall as whichever is showing. */
+       so the column is as tall as whichever is showing. Spanning both rail rows
+       so the panel starts level with the member's name rather than level with
+       the first section below it. */
     .mvs-dashboard-panel {
         grid-column: 2;
-        grid-row: 1;
+        grid-row: 1 / span 2;
         min-width: 0;
     }
 
@@ -7147,4 +7153,96 @@ a.mvs-dashboard-tab:focus-visible {
 .mvs-dashboard-tabs .mvs-dashboard-tab.active .mvs-dashboard-tab__count {
     background: var(--mvs-primary);
     color: var(--mvs-on-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   The rail head: who you are, and the way to your public profile.
+
+   Unconditional, for the same reason the rail items are: a theme that paints
+   anchors will paint these, and declaring appearance only inside a min-width
+   query is what left half the rail looking like links. Every property a theme
+   is likely to set on an anchor is named here.
+   --------------------------------------------------------------------------- */
+.mvs-dashboard-rail-head {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-3);
+    margin-bottom: var(--mvs-space-3);
+    padding: var(--mvs-space-3);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-bg-subtle);
+}
+
+.mvs-dashboard-rail-head__avatar {
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    object-fit: cover;
+}
+
+.mvs-dashboard-rail-head__avatar-link {
+    display: block;
+    flex: 0 0 auto;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    line-height: 0;
+    text-decoration: none;
+}
+
+.mvs-dashboard-rail-head__id {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+/* WRAPS rather than truncating. A 13rem rail minus a 40px avatar cut
+   "journey-member" to "journey-mem…" — and a name is the one string on this
+   page where the end matters, because that is where people put the digits that
+   tell two accounts apart. Two lines are cheaper than the wrong name. */
+.mvs-dashboard-rail-head__name {
+    color: var(--mvs-text);
+    font-size: var(--mvs-font-sm);
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.mvs-dashboard-rail-head__link {
+    border: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--mvs-primary);
+    font-size: var(--mvs-font-xs);
+    text-decoration: none;
+}
+
+.mvs-dashboard-rail-head__link:hover,
+.mvs-dashboard-rail-head__link:focus-visible {
+    color: var(--mvs-primary);
+    text-decoration: underline;
+}
+
+/* Below the rail breakpoint the rail is a horizontal scroller, so the head
+   stops being a column header and becomes a line above it. */
+@media (max-width: 860px) {
+
+    .mvs-dashboard-rail-head {
+        margin-bottom: var(--mvs-space-2);
+    }
+}
+
+/* A group that earned no heading still gets its break. Drawn on the item that
+   starts it, because the rail is a flat list of items — there is no element
+   standing for "the group" to hang a border on.
+
+   The border itself lives with the theme-defense block, which is the only
+   place that can outrank its own `border: 0 !important`; spacing is free to
+   live here. One border, one implementation. */
+.mvs-dashboard-tabs .mvs-dashboard-tab--group-start {
+    margin-block-start: var(--mvs-space-2);
+    padding-block-start: var(--mvs-space-2);
 }

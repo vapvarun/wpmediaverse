@@ -209,6 +209,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// is showing. The drive inside it is plain HTML — no client state to
 		// keep in step with it.
 		get isDocumentsTab() { return ( state.activeTab || 'media' ) === 'documents'; },
+		// Profile edit: was a card above the rail toggled by context.editingProfile,
+		// now a section like any other, so it binds like any other.
+		get isProfileTab() { return ( state.activeTab || 'media' ) === 'profile'; },
 		// Pro gamification tabs (computed here so panels can bind without store extension).
 		get isChallengesTab() { return ( state.activeTab || 'media' ) === 'challenges'; },
 		get isBattlesTab() { return ( state.activeTab || 'media' ) === 'battles'; },
@@ -921,11 +924,31 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 		},
 
+		// Kept, and kept honest: profile editing is now a SECTION, so this moves
+		// between it and the library instead of flipping a card open above the
+		// rail. The name still describes what a member sees, and the two callers
+		// that were here before — the completion prompt and the form's own
+		// Cancel — go on working without knowing anything changed.
+		//
+		// `editingProfile` is still written for any theme override still binding
+		// to it (Production Rule 1: nothing is removed in a minor).
 		toggleProfileEdit() {
 			const ctx = getContext();
-			ctx.editingProfile = ! ctx.editingProfile;
+			const goingToEdit = ( state.activeTab || 'media' ) !== 'profile';
+
+			state.activeTab = goingToEdit ? 'profile' : 'media';
+			ctx.editingProfile = goingToEdit;
 			ctx.profileMessage = '';
 			ctx.profileError = '';
+
+			// Keep the URL honest with the panel. The rail already knows every
+			// section's address, so the link is read from it rather than rebuilt
+			// here — one implementation of what a section URL looks like.
+			const railLink = document.querySelector( `.mvs-dashboard-tab[data-tab="${ state.activeTab }"]` );
+
+			if ( railLink?.href ) {
+				window.history.pushState( {}, '', railLink.href );
+			}
 		},
 
 		/* =====================================================================

@@ -191,11 +191,31 @@ class TemplateLoader {
 				// Every other section gets a URL too. A section that exists only
 				// as JavaScript state cannot be linked, bookmarked or returned
 				// to — and "send me your albums" is a thing people say.
-				add_rewrite_rule(
-					'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/(media|albums|favorites|collections|challenges|battles|tournaments)/?$',
-					'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_section=$matches[1]',
-					'top'
+				//
+				// Built FROM THE REGISTRY rather than from a literal list. The
+				// literal said `media|albums|favorites|collections|challenges|
+				// battles|tournaments`, while `DashboardSections::url()` builds
+				// `/my-media/<slug>/` for whatever is declared — so declaring a
+				// section through the documented filter produced a rail item
+				// linking to a 404, and the registry's whole promise is that
+				// declaring a section is all you do. `documents` only escaped it
+				// by owning separate rewrites for its folder paths.
+				//
+				// Rewrites are cached in the `rewrite_rules` option, so a plugin
+				// that adds a section must flush on activation — as Pro already
+				// does for its own document paths.
+				$mvs_section_slugs = array_map(
+					static fn( $slug ) => preg_quote( $slug, '/' ),
+					\WPMediaVerse\Core\DashboardSections::slugs()
 				);
+
+				if ( $mvs_section_slugs ) {
+					add_rewrite_rule(
+						'^' . preg_quote( (string) $mvs_dashboard_slug, '/' ) . '/(' . implode( '|', $mvs_section_slugs ) . ')/?$',
+						'index.php?pagename=' . $mvs_dashboard_slug . '&mvs_section=$matches[1]',
+						'top'
+					);
+				}
 			}
 		}
 

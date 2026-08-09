@@ -120,7 +120,7 @@ wp_interactivity_state(
 		'activeTab' => get_query_var( 'mvs_doc_view' )
 			? 'documents'
 			: ( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' ),
-		'i18n' => array(
+		'i18n'      => array(
 			// Rule-builder select options + placeholders.
 			'selectOption'            => __( '-- Select --', 'wpmediaverse' ),
 			'optImage'                => __( 'Image', 'wpmediaverse' ),
@@ -180,176 +180,6 @@ wp_interactivity_state(
 	<?php echo wp_interactivity_data_wp_context( $mvs_dash_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() encodes + escapes the JSON payload itself. ?>
 	data-wp-init="callbacks.init">
 
-	<!-- Profile Header -->
-	<div class="mvs-dashboard-profile-header">
-		<div class="mvs-dashboard-profile-view" data-wp-bind--hidden="context.editingProfile">
-			<?php
-			// Platform-agnostic profile URL (BP / BuddyNext override via filter) so
-			// the header avatar + name route to the integration's profile.
-			$mvs_dash_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_current_user->ID );
-			?>
-			<?php if ( $mvs_dash_profile_url ) : ?>
-			<a class="mvs-dashboard-profile-avatar-link" href="<?php echo esc_url( $mvs_dash_profile_url ); ?>"><img class="mvs-dashboard-profile-avatar" data-wp-bind--src="context.avatarUrl" alt="" data-wp-bind--alt="context.displayName" width="64" height="64" /></a>
-			<?php else : ?>
-			<img class="mvs-dashboard-profile-avatar" data-wp-bind--src="context.avatarUrl"
-				alt="" data-wp-bind--alt="context.displayName" width="64" height="64" />
-			<?php endif; ?>
-			<div class="mvs-dashboard-profile-info">
-				<h2 class="mvs-dashboard-profile-name">
-					<?php if ( $mvs_dash_profile_url ) : ?>
-					<a href="<?php echo esc_url( $mvs_dash_profile_url ); ?>" data-wp-text="context.displayName"></a>
-					<?php else : ?>
-					<span data-wp-text="context.displayName"></span>
-					<?php endif; ?>
-				</h2>
-				<p class="mvs-dashboard-profile-bio" data-wp-bind--hidden="!context.bio"
-					data-wp-text="context.bio"></p>
-			</div>
-			<div class="mvs-dashboard-profile-actions">
-				<a class="mvs-btn mvs-btn--secondary mvs-btn--small"
-					href="<?php echo esc_url( \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_current_user->ID ) ); ?>">
-					<?php esc_html_e( 'View Profile', 'wpmediaverse' ); ?>
-				</a>
-				<button class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-dashboard-profile-edit-btn"
-					type="button"
-					data-wp-on--click="actions.toggleProfileEdit">
-					<?php esc_html_e( 'Edit Profile', 'wpmediaverse' ); ?>
-				</button>
-			</div>
-		</div>
-
-		<!-- Inline Edit Form -->
-		<div class="mvs-dashboard-profile-edit-form"
-			data-wp-bind--hidden="!context.editingProfile">
-			<div data-wp-interactive="mvs/profile-edit"
-			<?php
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_interactivity_data_wp_context() handles its own escaping.
-			echo wp_interactivity_data_wp_context(
-				array(
-					'restUrl'         => esc_url_raw( rest_url( 'mvs/v1/' ) ),
-					'nonce'           => wp_create_nonce( 'wp_rest' ),
-					'firstName'       => $mvs_current_user->first_name,
-					'lastName'        => $mvs_current_user->last_name,
-					'displayName'     => $mvs_current_user->display_name,
-					'bio'             => $mvs_current_user->description,
-					'dmAccess'        => get_user_meta( $mvs_current_user->ID, '_mvs_dm_access', true ) ?: get_option( 'mvs_dm_access', 'everyone' ),
-					'onlineStatus'    => get_user_meta( $mvs_current_user->ID, '_mvs_show_online', true ) ?: get_option( 'mvs_show_online_status', 'everyone' ),
-					'avatarUrl'       => $mvs_avatar_url ?: '',
-					'hasCustomAvatar' => $mvs_has_custom,
-					'uploadingAvatar' => false,
-					'savingProfile'   => false,
-					'saving'          => false,
-					'profileMessage'  => '',
-					'profileError'    => '',
-					'savedMessage'    => '',
-					'errorMessage'    => '',
-				)
-			);
-			?>
-			>
-
-			<div class="mvs-profile-message mvs-profile-message--success"
-				data-wp-bind--hidden="!context.profileMessage"
-				data-wp-text="context.profileMessage"></div>
-			<div class="mvs-profile-message mvs-profile-message--error"
-				data-wp-bind--hidden="!context.profileError"
-				data-wp-text="context.profileError"></div>
-
-			<div class="mvs-profile-avatar-section">
-				<div class="mvs-profile-avatar-preview">
-					<img data-wp-bind--src="context.avatarUrl"
-						alt="" width="96" height="96" class="mvs-profile-avatar-img" />
-				</div>
-				<div class="mvs-profile-avatar-actions">
-					<label class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-avatar-upload-label">
-						<span data-wp-bind--hidden="context.uploadingAvatar"><?php esc_html_e( 'Change Avatar', 'wpmediaverse' ); ?></span>
-						<span data-wp-bind--hidden="!context.uploadingAvatar"><?php esc_html_e( 'Uploading...', 'wpmediaverse' ); ?></span>
-						<input type="file" accept="image/jpeg,image/png,image/gif,image/webp"
-							class="mvs-profile-avatar-input"
-							data-wp-on--change="actions.uploadAvatar" />
-					</label>
-					<button type="button"
-						class="mvs-btn mvs-btn--text mvs-profile-avatar-remove"
-						data-wp-bind--hidden="!context.hasCustomAvatar"
-						data-wp-on--click="actions.deleteAvatar">
-						<?php esc_html_e( 'Remove', 'wpmediaverse' ); ?>
-					</button>
-					<p class="mvs-profile-avatar-hint"><?php esc_html_e( 'Max 2 MB. JPEG, PNG, GIF, WebP.', 'wpmediaverse' ); ?></p>
-				</div>
-			</div>
-
-			<div class="mvs-profile-form-inline">
-				<div class="mvs-profile-field-row">
-					<div class="mvs-profile-field">
-						<label><?php esc_html_e( 'First Name', 'wpmediaverse' ); ?></label>
-						<input type="text" data-wp-bind--value="context.firstName"
-							data-wp-on--input="actions.updateFirstName" />
-					</div>
-					<div class="mvs-profile-field">
-						<label><?php esc_html_e( 'Last Name', 'wpmediaverse' ); ?></label>
-						<input type="text" data-wp-bind--value="context.lastName"
-							data-wp-on--input="actions.updateLastName" />
-					</div>
-				</div>
-				<div class="mvs-profile-field">
-					<label><?php esc_html_e( 'Display Name', 'wpmediaverse' ); ?></label>
-					<input type="text" data-wp-bind--value="context.displayName"
-						data-wp-on--input="actions.updateDisplayName" />
-				</div>
-				<div class="mvs-profile-field">
-					<label><?php esc_html_e( 'Bio', 'wpmediaverse' ); ?></label>
-					<textarea rows="3" maxlength="500"
-						data-wp-on--input="actions.updateBio"
-						data-wp-bind--value="context.bio"></textarea>
-				</div>
-				<div class="mvs-profile-field-row">
-					<div class="mvs-profile-field">
-						<label for="mvs-dash-dm-access"><?php esc_html_e( 'Who can message you', 'wpmediaverse' ); ?></label>
-						<select id="mvs-dash-dm-access"
-							data-wp-bind--value="context.dmAccess"
-							data-wp-on--change="actions.updateDmAccess">
-							<option value="everyone"><?php esc_html_e( 'Everyone', 'wpmediaverse' ); ?></option>
-							<option value="followers"><?php esc_html_e( 'People who follow you', 'wpmediaverse' ); ?></option>
-							<option value="mutual"><?php esc_html_e( 'People you follow back', 'wpmediaverse' ); ?></option>
-							<option value="nobody"><?php esc_html_e( 'No one', 'wpmediaverse' ); ?></option>
-						</select>
-					</div>
-					<div class="mvs-profile-field">
-						<label for="mvs-dash-online-status"><?php esc_html_e( 'Show your online status', 'wpmediaverse' ); ?></label>
-						<select id="mvs-dash-online-status"
-							data-wp-bind--value="context.onlineStatus"
-							data-wp-on--change="actions.updateOnlineStatus">
-							<option value="everyone"><?php esc_html_e( 'Yes', 'wpmediaverse' ); ?></option>
-							<option value="nobody"><?php esc_html_e( 'No', 'wpmediaverse' ); ?></option>
-						</select>
-					</div>
-				</div>
-				<div class="mvs-profile-form-actions">
-					<button type="button" class="mvs-btn mvs-btn--primary mvs-btn--small"
-						data-wp-bind--disabled="context.savingProfile"
-						data-wp-on--click="actions.saveProfile">
-						<span data-wp-bind--hidden="context.savingProfile"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
-						<span data-wp-bind--hidden="!context.savingProfile"><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
-					</button>
-					<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-profile-cancel-btn"
-						data-wp-on--click="mvs/dashboard::actions.toggleProfileEdit">
-						<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
-					</button>
-				</div>
-
-					<?php
-					// See and undo your blocks. This section lived only in
-					// templates/profile-edit.php, reachable solely via the
-					// [mvs_profile_edit] shortcode — and the plugin never creates a page
-					// for it. So a member could block someone and never take it back.
-					// Rendered here, inside the mvs/profile-edit region that owns
-					// actions.unblockMember, it reaches every install.
-					require MVS_PLUGIN_DIR . 'templates/partials/blocked-members.php';
-					?>
-			</div>
-			</div>
-		</div>
-	</div>
 
 	<?php
 	// Profile completion prompt (if no avatar or empty bio).
@@ -379,14 +209,14 @@ wp_interactivity_state(
 			aria-label="<?php esc_attr_e( 'Dismiss', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
 		<?php
-// @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
-// enqueues this handle for every MVS-owned page. Enqueuing from a template body only
-// ever worked on a hard page load: the <script> tag prints in wp_footer, OUTSIDE
-// [data-wp-router-region="mvs/main"], so a client-side navigation swapped in the markup
-// without ever delivering the script (Basecamp #10148246386, #10134243697). Left as an
-// idempotent no-op because themes may override this template — Production Rule #5.
-?>
-<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
+		// @deprecated 2.3.0 Not the enqueue site any more — Core\Plugin::enqueue_frontend_assets()
+		// enqueues this handle for every MVS-owned page. Enqueuing from a template body only
+		// ever worked on a hard page load: the <script> tag prints in wp_footer, OUTSIDE
+		// [data-wp-router-region="mvs/main"], so a client-side navigation swapped in the markup
+		// without ever delivering the script (Basecamp #10148246386, #10134243697). Left as an
+		// idempotent no-op because themes may override this template — Production Rule #5.
+		?>
+		<?php wp_enqueue_script( 'mvs-dismissible' ); ?>
 	<?php endif; ?>
 
 	<?php
@@ -469,6 +299,41 @@ wp_interactivity_state(
 	?>
 	<div class="mvs-dashboard__body">
 
+	<?php
+	// The identity, at the head of the rail.
+	//
+	// It was a full-width card above the tabs: a 64px avatar, the name, the bio
+	// and two buttons, costing every member around 110px of vertical space
+	// before the library they came for started — on a phone, most of the first
+	// screen. In the rail it is a line, and it is beside the sections it
+	// belongs to rather than stacked on top of them.
+	//
+	// NOT a tablist child: `role="tablist"` means its children are tabs, and an
+	// avatar and a link out to the community profile are not tabs. It sits
+	// before the nav, in the same rail column.
+	$mvs_dash_profile_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->get_user_profile_url( (int) $mvs_current_user->ID );
+	?>
+	<div class="mvs-dashboard-rail-head">
+		<?php if ( $mvs_dash_profile_url ) : ?>
+			<a class="mvs-dashboard-rail-head__avatar-link" href="<?php echo esc_url( $mvs_dash_profile_url ); ?>">
+				<img class="mvs-dashboard-rail-head__avatar" data-wp-bind--src="context.avatarUrl"
+					alt="" data-wp-bind--alt="context.displayName" width="40" height="40" />
+			</a>
+		<?php else : ?>
+			<img class="mvs-dashboard-rail-head__avatar" data-wp-bind--src="context.avatarUrl"
+				alt="" data-wp-bind--alt="context.displayName" width="40" height="40" />
+		<?php endif; ?>
+
+		<div class="mvs-dashboard-rail-head__id">
+			<span class="mvs-dashboard-rail-head__name" data-wp-text="context.displayName"></span>
+			<?php if ( $mvs_dash_profile_url ) : ?>
+				<a class="mvs-dashboard-rail-head__link" href="<?php echo esc_url( $mvs_dash_profile_url ); ?>">
+					<?php esc_html_e( 'View profile', 'wpmediaverse' ); ?>
+				</a>
+			<?php endif; ?>
+		</div>
+	</div>
+
 	<nav class="mvs-dashboard-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Your library', 'wpmediaverse' ); ?>">
 		<?php
 		// Rendered from the SECTION REGISTRY, not from hardcoded markup. Eight
@@ -479,19 +344,36 @@ wp_interactivity_state(
 		$mvs_dash_labels = array(
 			'library' => __( 'Library', 'wpmediaverse' ),
 			'compete' => __( 'Compete', 'wpmediaverse' ),
+			'account' => __( 'Account', 'wpmediaverse' ),
 		);
+
+		$mvs_dash_first_group = true;
 
 		foreach ( $mvs_dash_groups as $mvs_dash_group => $mvs_dash_sections ) {
 			// A heading earns its place over two or more items; over one it is a
 			// label repeating itself.
-			if ( count( $mvs_dash_sections ) > 1 && isset( $mvs_dash_labels[ $mvs_dash_group ] ) ) {
+			$mvs_dash_titled = count( $mvs_dash_sections ) > 1 && isset( $mvs_dash_labels[ $mvs_dash_group ] );
+
+			if ( $mvs_dash_titled ) {
 				printf(
 					'<span class="mvs-dashboard-tabs__group">%s</span>',
 					esc_html( $mvs_dash_labels[ $mvs_dash_group ] )
 				);
 			}
 
+			// A one-item group gets no heading, and without one it reads as the
+			// last item of the group above it — "Edit profile" looked like a
+			// competition. The break is drawn instead of named: the grouping is
+			// real, it just does not need a word.
+			$mvs_dash_break = ! $mvs_dash_titled && ! $mvs_dash_first_group;
+
+			$mvs_dash_first_group = false;
+			$mvs_dash_item        = 0;
+
 			foreach ( $mvs_dash_sections as $mvs_dash_slug => $mvs_dash_section ) {
+				$mvs_dash_starts_group = $mvs_dash_break && 0 === $mvs_dash_item;
+
+				++$mvs_dash_item;
 				$mvs_dash_count = \WPMediaVerse\Core\DashboardSections::count( $mvs_dash_slug );
 
 				// The client store exposes is<Slug>Tab getters for the sections it
@@ -499,7 +381,7 @@ wp_interactivity_state(
 				// simply will not re-highlight without a page load.
 				$mvs_dash_binding = 'state.is' . ucfirst( $mvs_dash_slug ) . 'Tab';
 				?>
-				<a class="mvs-dashboard-tab<?php echo $mvs_dash_slug === $mvs_dash_active ? ' active' : ''; ?>"
+				<a class="mvs-dashboard-tab<?php echo $mvs_dash_slug === $mvs_dash_active ? ' active' : ''; ?><?php echo $mvs_dash_starts_group ? ' mvs-dashboard-tab--group-start' : ''; ?>"
 					data-tab="<?php echo esc_attr( $mvs_dash_slug ); ?>"
 					role="tab"
 					href="<?php echo esc_url( \WPMediaVerse\Core\DashboardSections::url( $mvs_dash_slug ) ); ?>"
@@ -530,6 +412,12 @@ wp_interactivity_state(
 		do_action( 'mvs_dashboard_tabs' );
 		?>
 	</nav>
+
+	<?php
+	// Profile edit, as a panel among panels. Same markup as the card carried,
+	// at a new address — see the partial's header.
+	require MVS_PLUGIN_DIR . 'templates/partials/profile-edit-panel.php';
+	?>
 
 	<?php if ( '' !== $mvs_dash_drive ) : ?>
 		<!-- Documents Panel -->
