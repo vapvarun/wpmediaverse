@@ -39,7 +39,7 @@ Never fill a login form by hand.
 | **Prerequisites** | PRE-1, PRE-2 | ✅ both done |
 | **1 — Query discipline** | P1.1 – P1.6 | 🟡 P1.1 ✅, P1.2 🟡 partial, P1.5 🟡 walked + written, P1.3/P1.4/P1.6 ⬜ |
 | **2 — Schema** | P2.1 – P2.3 | 🟢 P2.1 ✅, P2.2 🟡 applied + verified (customer-DB run outstanding), P2.3 ✅ |
-| **3 — Pro engine** | P3.1 – P3.9 | 🟡 P3.1 ✅, P3.2 ✅, P3.3–P3.9 ⬜ |
+| **3 — Pro engine** | P3.1 – P3.9 | 🟡 **all 3 release blockers done** — P3.1 ✅ P3.2 ✅ P3.3 ✅ P3.6 ✅ P3.7 ✅ P3.8 ✅; P3.4 ingest, P3.5 delivery, P3.9 fixture ⬜ |
 | **4 — REST + app contract** | P4.1 – P4.5 | ⬜ |
 | **5 — Viewers** | P5.1 – P5.5 | ⬜ |
 | **6 — Admin** | P6.1 – P6.3 | ⬜ |
@@ -370,11 +370,82 @@ WHERE clauses on the REST controllers, not only `FROM …mvs_media_index` string
   typing an existing name on a site with `WP_DEBUG_DISPLAY` on gets a raw SQL dump in the page.
 - **Test** — 23 cases. Pro suite 244, still the documented pre-existing 40/43.
 
+### P3.3 — `PermissionService` ✅ DONE
+
+- The ladder in **two queries per page**, asserted over 25 documents, with every lookup after the
+  prefetch costing zero. Writing that test found the viewer's role lookup as a third query; it is
+  per-request rather than per-row, and a listing always renders for the **current** viewer (already
+  loaded by WordPress), so it now costs nothing in the case that actually happens.
+- A document grant is checked **before** any folder grant, so it survives revocation of the folder
+  share above it. Nearest folder ancestor wins over a stronger grant further up.
+- **D1 enforced**: `edit` does not confer sharing. Space drives default **closed** — an unanswered
+  filter denies rather than opening sharing to every member of a space.
+- **The breadcrumb blocker was folded in here** (owner decision) rather than left to P9.2.
+  `visible_breadcrumbs()` starts at the highest granted ancestor and collapses everything above into
+  one un-named crumb. It lives beside the resolution because **by Phase 9 the raw chain is already
+  flowing through the Phase 4 REST layer** — the leak would ship through the API long before a
+  template rendered it. Fails closed: arriving by privacy rather than grant shows no ancestor names,
+  and a grant on the folder you are standing in still hides its parents.
+- **Test** — 22 cases.
+
+### P3.6 + P3.7 — storage privacy ✅ DONE — **and the browser Self-check FAILED first**
+
+- **Step 3 of the Self-check below is what earned this task.** Fetching a stored document over HTTP
+  on the reference install returned **200 with the file's contents**, while `guard_status()` reported
+  `protected: true`. The host is nginx, and **nginx ignores `.htaccess` entirely** — exactly what
+  design §6 warned about. A file-presence check calls that healthy, so the guards were never the
+  thing worth asserting.
+- **So the check now asks the server.** `probe_public_access()` writes a canary, requests it over
+  HTTP, and reports what came back. A directory that answers 200 is public whatever is written in it.
+  A blocked loopback reports **unchecked**, not protected — claiming protection nobody verified is
+  the failure this replaces, so Site Health says "recommended", never "good".
+- Site Health goes **critical** with the exact nginx `location` block to paste. Verified end to end:
+  200/critical → apply the rule → **403/good**, with media and REST unaffected.
+- **D8** enforced at save time (a document bucket equal to the media bucket is refused,
+  case-insensitively) *and* re-checked independently by Site Health, because a value can reach the
+  option through WP-CLI, a migration or a database edit without passing the form.
+- Guards are written into the segment directory **and its parent** — a browsable parent lists the
+  segment, handing out the one secret the segment exists to keep. Both run on **every load**, since
+  guards get removed by migrations and sync tools long after activation.
+- **390px Self-check also failed and is fixed**: the nginx snippet is a `<pre>`, `<pre>` does not
+  wrap, and its longest line pushed the whole Site Health page to 493px against a 390px viewport. It
+  now scrolls inside its own box via a class in Pro's admin stylesheet (Coding Rule 19, not inline),
+  enqueued on `site-health.php` — which Pro's normal screen guard skips because it is a core screen.
+- **Test** — 21 cases.
+
+### P3.8 — T2 privacy cascade ✅ DONE
+
+- Tightening cascades to documents and subfolders; **loosening does not**. The folder's own privacy
+  flips **first and synchronously**, so the window during a large sweep fails **closed**. A test
+  asserts the ordering by reading the folder's stored privacy at the moment the document UPDATE runs.
+- The cascade cannot escape its subtree and never touches media — tested with a photo deliberately
+  given the same `folder_id`.
+- `count_privacy_cascade()` backs the confirmation copy and is asserted to equal what actually moves.
+  A dialog promising 47 and moving 51 is worse than no dialog. **The dialog itself is Phase 9** — the
+  number it needs exists now.
+- Above 5,000 documents it goes async and re-enqueues until drained. **Both** Action Scheduler hooks
+  are registered on every load, not only when a folder changes: AS runs them in a later request, and
+  an unregistered hook leaves documents public inside a private folder — the exact T2 failure.
+- **Found while testing, and it would have been a silent feature-wide failure:** `folder_id` was
+  never added to `MediaRepository::$index_columns`. Migrator v27 added the *column*, but the
+  repository did not know it was one, so `set( $id, 'folder_id', … )` wrote to `mvs_media_meta`. The
+  column would have stayed 0 for every document ever uploaded, `KEY doc_listing` would have matched
+  nothing, and every drive listing and cascade would have found no documents — with no error
+  anywhere. Five cascade tests failed on it.
+- **Self-check — run live** on a real folder with three real documents: folder and all three flip to
+  private together; loosening the folder back to public leaves all three private; a stranger still
+  cannot view them; fixture cleaned up. **The browser half needs the folder UI and belongs to Phase
+  9** — recorded rather than invented.
+- **Test** — 11 cases.
+
 **Self-check for P3.1–P3.7** — no member UI yet, so:
-1. **wp-admin → Tools → Site Health** shows the P3.7 check, desktop and 390px.
+1. **wp-admin → Tools → Site Health** shows the P3.7 check, desktop and 390px. ✅ **done** — appears
+   in the critical section, renders correctly at both viewports after the `<pre>` fix.
 2. **Network panel** on `/download` and `/preview`: correct `Content-Type` and `Content-Disposition`.
+   ⬜ **belongs to P3.5**, which is not built yet.
 3. **Fetch a stored file's direct URL in the browser — must be 403/404 on both Apache and nginx.**
    That is a release blocker and it is a browser check, not a config review.
+   ✅ **done, and it FAILED on the first run** — see P3.6/P3.7 above. Now 403 on nginx.
 
 ### P3.8 — Team-drive correctness *(the release blockers that are code)* ⬜
 
@@ -531,9 +602,9 @@ modal never says "Public". Build P9.x against it, not against this file's summar
 | | Blocker | Task | State |
 |---|---|---|---|
 | **Journey** | A document appears in the drive and in no media surface | **P1.5** | 🟡 absence half done + walked; presence half deferred to P3.4/P9.1 |
-| **T2** | Tightening a folder cascades; loosening does not | **P3.8** | ⬜ |
-| **Storage privacy** | Local deny rules **and** a Site Health check that the bucket is not public-read | **P3.6 + P3.7** | ⬜ |
-| **Breadcrumb** | Shared view starts at the highest granted ancestor | **P9.2** | ⬜ |
+| **T2** | Tightening a folder cascades; loosening does not | **P3.8** | ✅ verified live |
+| **Storage privacy** | Local deny rules **and** a Site Health check that the bucket is not public-read | **P3.6 + P3.7** | ✅ browser-verified 403 on nginx after the first run FAILED at 200 |
+| **Breadcrumb** | Shared view starts at the highest granted ancestor | **P3.3** (moved from P9.2) | ✅ enforced in the permission layer so it cannot leak through Phase 4's API |
 | **T1** | Departing member reassignment | **P11.2** | ⬜ blocks Phase 11, **not v1** — a personal-only v1 has nothing to reassign |
 
 ---
