@@ -992,6 +992,20 @@
       "note": "Fires after a document is ingested. Quota rides the existing mvs_media_uploaded instead, which is why D2 needs no fourth counter."
     },
     {
+      "name": "mvs_document_viewer_html",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "string $html",
+        "int $media_id",
+        "string $mime"
+      ],
+      "where": "templates/media-single.php:334",
+      "consumed_by": [
+        "wpmediaverse-pro: includes/Documents/DocumentViewer.php::render"
+      ]
+    },
+    {
       "name": "mvs_explore_query_args",
       "type": "filter",
       "args_count": 2,

@@ -122,6 +122,31 @@ final class DocumentTypes {
 	private const AMBIGUOUS_TEXT_MIMES = array( 'text/plain' );
 
 	/**
+	 * MIME types a text-family document is routinely mis-sniffed as.
+	 *
+	 * Markdown is the case that matters: a README carrying an `<img>` badge or a
+	 * `<details>` block inspects as HTML, because by content it IS HTML. Those
+	 * files are ordinary Markdown and refusing them is a false negative on a
+	 * legitimate document.
+	 *
+	 * Unlike `AMBIGUOUS_TEXT_MIMES` these NEVER resolve on an absent extension.
+	 * "Sniffs as HTML, no extension to contradict it" describes an HTML file, and
+	 * this library does not store those.
+	 *
+	 * @since 2.4.0
+	 * @var string[]
+	 */
+	private const HTML_SNIFFED_MIMES = array( 'text/html', 'text/x-markdown' );
+
+	/**
+	 * The text family — the types resolvable from a text-ish sniff.
+	 *
+	 * @since 2.4.0
+	 * @var string[]
+	 */
+	private const TEXT_FAMILY = array( 'text', 'markdown', 'csv' );
+
+	/**
 	 * Every named document type.
 	 *
 	 * @since 2.4.0
@@ -164,8 +189,37 @@ final class DocumentTypes {
 		// 1. ZIP containers. OOXML and ODF are zip archives, so the MIME says
 		// "zip" and tells us nothing. Admit only when the extension names a
 		// container format AND the archive carries that format's marker.
-		if ( in_array( $mime, self::ZIP_MIMES, true ) ) {
+		//
+		// Dispatch is driven by the EXTENSION, not by the claimed MIME, and that
+		// is the whole point. An earlier version entered this branch only when
+		// the MIME sniffed as zip — which never happened in production, because
+		// every caller gets its MIME from `wp_check_filetype_and_ext()`, and for
+		// a non-image WordPress derives that from the extension. So `.docx`
+		// arrived already claiming the Word MIME, fell through to the
+		// unambiguous-MIME branch, and was admitted without the archive ever
+		// being opened. A file of pure garbage named `.docx` was accepted as a
+		// Word document. The marker check was unreachable for exactly the case
+		// it exists to catch. Found by uploading such a file over HTTP; no unit
+		// test caught it because the tests passed a sniffed MIME the real ingest
+		// path never produces.
+		$zip_family = self::ZIP_CONTAINERS[ $extension ] ?? null;
+		if ( null !== $zip_family ) {
+			// The claimed MIME still has to agree: either it sniffed as a bare
+			// archive, or it is the exact MIME this extension maps to. A `.docx`
+			// claiming to be a PDF is a disagreement, not something to resolve.
+			$expected = self::BY_EXTENSION[ $extension ] ?? null;
+			if ( ! in_array( $mime, self::ZIP_MIMES, true )
+				&& ( self::BY_MIME[ $mime ] ?? null ) !== $expected ) {
+				return null;
+			}
+
 			return self::resolve_zip_container( $extension, $file_path );
+		}
+
+		// A zip-sniffed file whose extension is not a container format is a plain
+		// archive. Not a document.
+		if ( in_array( $mime, self::ZIP_MIMES, true ) ) {
+			return null;
 		}
 
 		// 2. Ambiguous text. `.md` and `.csv` both sniff as text/plain, so the
@@ -188,7 +242,15 @@ final class DocumentTypes {
 
 			$by_ext = self::BY_EXTENSION[ $extension ] ?? null;
 
-			return in_array( $by_ext, array( 'text', 'markdown', 'csv' ), true ) ? $by_ext : null;
+			return in_array( $by_ext, self::TEXT_FAMILY, true ) ? $by_ext : null;
+		}
+
+		// 2b. Text-family files mis-sniffed as HTML. The extension is the only
+		// thing that can admit these, and an absent extension admits nothing.
+		if ( in_array( $mime, self::HTML_SNIFFED_MIMES, true ) ) {
+			$by_ext = self::BY_EXTENSION[ $extension ] ?? null;
+
+			return in_array( $by_ext, self::TEXT_FAMILY, true ) ? $by_ext : null;
 		}
 
 		// 3. Unambiguous MIME.
@@ -277,6 +339,30 @@ final class DocumentTypes {
 	 */
 	public static function group_for_mime( string $mime ): ?string {
 		return self::BY_MIME[ strtolower( trim( $mime ) ) ] ?? null;
+	}
+
+	/**
+	 * The MIME this library stores for a named type.
+	 *
+	 * `group_for_mime()` is the only way anything downstream learns a document's
+	 * type, because `doc_type` is not a stored column. That makes the stored MIME
+	 * load-bearing: it has to round-trip back to the type ingest resolved.
+	 *
+	 * A raw sniff does not always round-trip. `.md` inspects as `text/plain`
+	 * (or as `text/html` when it contains a badge or a `<details>` block), so
+	 * storing the sniff turned every Markdown upload into a plain-text document
+	 * and the Markdown renderer was never reached. Ingest stores this instead
+	 * whenever the sniff disagrees with the resolved type.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param string $type Named document type.
+	 * @return string|null Canonical MIME, or null when the type is not known.
+	 */
+	public static function canonical_mime( string $type ): ?string {
+		$mime = array_search( $type, self::BY_MIME, true );
+
+		return false === $mime ? null : (string) $mime;
 	}
 
 	/**

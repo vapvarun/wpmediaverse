@@ -51,6 +51,15 @@ $is_image = 'image' === $mvs_media_type;
 $is_video = 'video' === $mvs_media_type;
 $is_audio = 'audio' === $mvs_media_type;
 
+// A document is any row the document library owns. Both types matter here:
+// `document` is a 2.4.0 upload, `legacy_document` is a pre-2.4.0 file the v27
+// quarantine reclassified. Neither has an image, a player, or an aspect ratio,
+// and before this branch existed both fell through EVERY branch above and
+// rendered nothing at all — the page showed a title, reactions and a comment
+// box with no document on it and no way to download one. Coding Rule 11: no
+// silent render fallthrough.
+$is_document = in_array( $mvs_media_type, array( 'document', 'legacy_document' ), true );
+
 // Extra metadata from meta table.
 $artist     = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'artist' );
 $album_name = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'album_name' );
@@ -301,6 +310,67 @@ $mvs_archive_url = home_url( '/media/' );
 						data-wp-on--pause="actions.onPause">
 						<source src="<?php echo esc_url( $mvs_file_url ); ?>" type="<?php echo esc_attr( $mvs_file_type ); ?>" />
 					</audio>
+				</div>
+			<?php elseif ( $is_document ) : ?>
+				<?php
+				/**
+				 * Filter the document viewer markup.
+				 *
+				 * Pro answers this with a tiered viewer — the browser's own PDF
+				 * frame, or server-rendered HTML for the text family, or a card.
+				 * Free deliberately does NOT try to render document contents: the
+				 * renderer that makes a `.md` safe to display lives in Pro, and
+				 * Free showing a half-safe version of it would be worse than Free
+				 * showing none.
+				 *
+				 * Returning '' keeps the honest fallback below.
+				 *
+				 * @since 2.4.0
+				 *
+				 * @param string $html     Viewer markup. Must be fully escaped.
+				 * @param int    $media_id Document id.
+				 * @param string $mime     Stored MIME type.
+				 */
+				$mvs_doc_viewer = (string) apply_filters( 'mvs_document_viewer_html', '', $mvs_media_id, (string) $mvs_file_type );
+				?>
+				<div class="mvs-media-document">
+					<?php if ( '' !== $mvs_doc_viewer ) : ?>
+						<?php echo $mvs_doc_viewer; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the filter contract requires escaped markup; Pro's renderer escapes on the way in. ?>
+					<?php else : ?>
+						<?php
+						// The fallback is a real answer, not a placeholder: it
+						// names the file and hands over a working download.
+						$mvs_doc_size = (int) ( $mvs_media['file_size'] ?? 0 );
+						$mvs_doc_type = class_exists( '\WPMediaVerse\Core\DocumentTypes' )
+							? \WPMediaVerse\Core\DocumentTypes::group_for_mime( (string) $mvs_file_type )
+							: null;
+						?>
+						<div class="mvs-doc-card">
+							<span class="mvs-doc-card__icon" aria-hidden="true"></span>
+							<div class="mvs-doc-card__meta">
+								<span class="mvs-doc-card__name"><?php echo esc_html( $mvs_title ); ?></span>
+								<span class="mvs-doc-card__detail">
+									<?php
+									echo esc_html(
+										$mvs_doc_size
+											? sprintf(
+												/* translators: 1: document type, 2: file size. */
+												_x( '%1$s document, %2$s', 'document card detail', 'wpmediaverse' ),
+												strtoupper( (string) ( $mvs_doc_type ?: __( 'File', 'wpmediaverse' ) ) ),
+												size_format( $mvs_doc_size )
+											)
+											: strtoupper( (string) ( $mvs_doc_type ?: __( 'File', 'wpmediaverse' ) ) )
+									);
+									?>
+								</span>
+							</div>
+							<?php if ( '' !== $mvs_file_url ) : ?>
+								<a class="mvs-doc-download" href="<?php echo esc_url( $mvs_file_url ); ?>" download>
+									<?php esc_html_e( 'Download', 'wpmediaverse' ); ?>
+								</a>
+							<?php endif; ?>
+						</div>
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 

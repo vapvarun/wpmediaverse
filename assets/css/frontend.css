@@ -6762,3 +6762,112 @@ button.mvs-follows-open { background: none; border: 0; font: inherit; color: inh
 		margin-inline-start: calc(20px + var(--mvs-space-md, 16px));
 	}
 }
+
+/* ============================================================================
+ * Document card + download button.
+ *
+ * Free renders this card on the single-document page when Pro is absent, and
+ * Pro's viewer reuses the same class names for its tier-3/4 card — one card,
+ * one stylesheet, so the two cannot drift apart.
+ *
+ * The button is styled here rather than reusing `.mvs-btn-primary` because that
+ * class is only ever defined inside a `#buddypress` scope: outside BuddyPress it
+ * matches nothing and the download rendered as bare text. All four link states
+ * are set explicitly — a theme's `a:visited` will happily repaint an anchor
+ * button that only declared its resting colour.
+ *
+ * @since 2.4.0
+ * ========================================================================== */
+
+.mvs-media-document {
+    width: 100%;
+}
+
+.mvs-doc-card {
+    display: flex;
+    align-items: center;
+    gap: var(--mvs-space-3);
+    padding: var(--mvs-space-4);
+    border: 1px solid var(--mvs-border);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-surface);
+}
+
+.mvs-doc-card__icon {
+    flex: 0 0 auto;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--mvs-radius-sm);
+    background: var(--mvs-bg-muted);
+}
+
+.mvs-doc-card__meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mvs-space-1);
+    min-width: 0;
+}
+
+.mvs-doc-card__name {
+    overflow-wrap: anywhere;
+    color: var(--mvs-text);
+    font-weight: 600;
+}
+
+.mvs-doc-card__detail {
+    color: var(--mvs-text-muted);
+    font-size: var(--mvs-font-sm);
+}
+
+.mvs-doc-download,
+.mvs-doc-download:link,
+.mvs-doc-download:visited {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    gap: var(--mvs-space-2);
+    /* A download is the primary action on this page and has to clear the
+       minimum tap target on a phone. */
+    min-height: var(--mvs-touch-min);
+    padding: var(--mvs-space-2) var(--mvs-space-4);
+    border-radius: var(--mvs-radius-md);
+    background: var(--mvs-primary);
+    color: var(--mvs-on-primary);
+    font-size: var(--mvs-font-md);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background var(--mvs-duration-fast) var(--mvs-easing);
+}
+
+.mvs-doc-download:hover,
+.mvs-doc-download:focus-visible {
+    background: var(--mvs-primary-hover);
+    color: var(--mvs-on-primary);
+    text-decoration: none;
+}
+
+.mvs-doc-download:focus-visible {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .mvs-doc-download {
+        transition: none;
+    }
+}
+
+@media (max-width: 640px) {
+
+    .mvs-doc-card {
+        /* Icon and text stay side by side; the name wraps to its own line only
+           when it genuinely cannot fit. */
+        flex-wrap: wrap;
+    }
+
+    .mvs-doc-download {
+        align-self: stretch;
+    }
+}

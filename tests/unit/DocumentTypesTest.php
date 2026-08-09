@@ -257,4 +257,110 @@ class DocumentTypesTest extends WP_UnitTestCase {
 			$this->assertStringStartsNotWith( 'audio/', $mime );
 		}
 	}
+
+	// ------------------------------------------- production-MIME regressions --
+
+	/**
+	 * The marker check must fire on the MIME PRODUCTION actually supplies.
+	 *
+	 * Every zip test above passes `application/zip` — a value the real ingest
+	 * path never produces. `DocumentIngestService::detect_mime()` returns
+	 * `wp_check_filetype_and_ext()`, and for a non-image WordPress derives that
+	 * from the EXTENSION. So a `.docx` arrived already claiming the Word MIME,
+	 * skipped the zip branch entirely, and was admitted without the archive ever
+	 * being opened. A file of pure garbage named `.docx` was accepted as a Word
+	 * document over HTTP while this suite was green.
+	 */
+	public function test_garbage_named_docx_is_refused_under_the_production_mime(): void {
+		$path = wp_tempnam( 'mvs-doctype' ) . '.docx';
+		file_put_contents( $path, "this is not a docx, it is garbage bytes\x00\x01" );
+
+		$this->assertNull(
+			DocumentTypes::resolve(
+				'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+				'docx',
+				$path
+			),
+			'A non-archive named .docx must never be admitted.'
+		);
+
+		unlink( $path );
+	}
+
+	/**
+	 * A real .docx is still admitted when the MIME arrives extension-derived.
+	 */
+	public function test_real_docx_is_admitted_under_the_production_mime(): void {
+		$path = $this->make_zip( array( '[Content_Types].xml' => '<Types/>' ) );
+
+		$this->assertSame(
+			'word',
+			DocumentTypes::resolve(
+				'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+				'docx',
+				$path
+			)
+		);
+	}
+
+	/**
+	 * A container extension whose claimed MIME names a different format is a
+	 * disagreement, not something to resolve in either direction.
+	 */
+	public function test_docx_claiming_pdf_mime_is_refused(): void {
+		$path = $this->make_zip( array( '[Content_Types].xml' => '<Types/>' ) );
+
+		$this->assertNull( DocumentTypes::resolve( 'application/pdf', 'docx', $path ) );
+	}
+
+	// ------------------------------------------------ markdown sniffed as HTML --
+
+	/**
+	 * Markdown carrying an HTML snippet inspects as text/html and is STILL
+	 * markdown. A README with an <img> badge or a <details> block is the
+	 * ordinary case, and refusing it is a false negative on a real document.
+	 */
+	public function test_markdown_sniffed_as_html_is_admitted(): void {
+		$this->assertSame( 'markdown', DocumentTypes::resolve( 'text/html', 'md' ) );
+	}
+
+	/**
+	 * An actual HTML file is not a document, with or without an extension.
+	 */
+	public function test_html_is_never_a_document(): void {
+		$this->assertNull( DocumentTypes::resolve( 'text/html', 'html' ) );
+		$this->assertNull(
+			DocumentTypes::resolve( 'text/html', '' ),
+			'"Sniffs as HTML, nothing to contradict it" describes an HTML file.'
+		);
+	}
+
+	// -------------------------------------------------------- canonical MIME --
+
+	/**
+	 * The stored MIME must round-trip back to the resolved type.
+	 *
+	 * `doc_type` is not a stored column, so a MIME that groups to something else
+	 * silently discards the ingest decision. Storing the `.md` sniff turned every
+	 * Markdown upload into a plain-text document.
+	 */
+	public function test_canonical_mime_round_trips_every_type(): void {
+		foreach ( DocumentTypes::ALL as $type ) {
+			$mime = DocumentTypes::canonical_mime( $type );
+
+			$this->assertNotNull( $mime, "{$type} must have a canonical MIME." );
+			$this->assertSame(
+				$type,
+				DocumentTypes::group_for_mime( (string) $mime ),
+				"{$type} must round-trip through its canonical MIME."
+			);
+		}
+	}
+
+	/**
+	 * An unknown type has no canonical MIME rather than a guessed one.
+	 */
+	public function test_canonical_mime_of_an_unknown_type_is_null(): void {
+		$this->assertNull( DocumentTypes::canonical_mime( 'spreadsheet-ish' ) );
+	}
 }
