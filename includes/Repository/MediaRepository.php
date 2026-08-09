@@ -2516,4 +2516,114 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		return array_values( array_unique( $paths ) );
 	}
+
+	/**
+	 * Build the shared album-items JOIN.
+	 *
+	 * `AlbumService` had four copies of this join — the item list, the count, and
+	 * the cover picker's image pass and its fallback. They had already drifted
+	 * once: the list and count excluded trash while the render path asserted
+	 * publish, so an album reported twelve items and rendered nine. One builder
+	 * means the count cannot disagree with the list again.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $album_id Album post id.
+	 * @param array $args     status, types, mime_like.
+	 * @return array{0:string,1:array} WHERE fragment (after the JOIN) and its params.
+	 */
+	private function album_items_parts( int $album_id, array $args ): array {
+		global $wpdb;
+
+		$args = wp_parse_args(
+			$args,
+			array(
+				'status'    => 'publish',
+				'types'     => MediaTypes::MEDIA_LIBRARY,
+				'mime_like' => '',
+			)
+		);
+
+		$where  = array( 'ai.album_id = %d' );
+		$params = array( $album_id );
+
+		if ( '' !== (string) $args['status'] ) {
+			$where[]  = 'idx.status = %s';
+			$params[] = (string) $args['status'];
+		}
+
+		if ( '' !== (string) $args['mime_like'] ) {
+			$where[]  = 'idx.file_type LIKE %s';
+			$params[] = (string) $args['mime_like'];
+		}
+
+		$types = is_array( $args['types'] ) ? $args['types'] : MediaTypes::MEDIA_LIBRARY;
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( $types, 'idx.media_type' );
+		$where[] = $type_sql;
+		$params  = array_merge( $params, $type_params );
+
+		unset( $wpdb );
+
+		return array( implode( ' AND ', $where ), $params );
+	}
+
+	/**
+	 * Media rows belonging to an album, in album order.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $album_id Album post id.
+	 * @param array $args     status (default 'publish'), types (default
+	 *                        MediaTypes::MEDIA_LIBRARY), mime_like, limit.
+	 * @return array<int, array{media_id:int, position:int}>
+	 */
+	public function album_items( int $album_id, array $args = array() ): array {
+		global $wpdb;
+
+		list( $where, $params ) = $this->album_items_parts( $album_id, $args );
+
+		$limit = isset( $args['limit'] ) ? max( 0, (int) $args['limit'] ) : 0;
+		$sql   = "SELECT ai.media_id, ai.position
+			FROM {$wpdb->prefix}mvs_album_items ai
+			INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
+			WHERE {$where}
+			ORDER BY ai.position ASC";
+
+		if ( $limit > 0 ) {
+			$sql     .= ' LIMIT %d';
+			$params[] = $limit;
+		}
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( $sql, ...$params ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Count of an album's media, using the SAME filter as {@see album_items()}.
+	 *
+	 * @since 2.4.0
+	 *
+	 * @param int   $album_id Album post id.
+	 * @param array $args     Same args as album_items(), minus limit.
+	 * @return int
+	 */
+	public function count_album_items( int $album_id, array $args = array() ): int {
+		global $wpdb;
+
+		list( $where, $params ) = $this->album_items_parts( $album_id, $args );
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT COUNT(*)
+				FROM {$wpdb->prefix}mvs_album_items ai
+				INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
+				WHERE {$where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				...$params
+			)
+		);
+	}
 }

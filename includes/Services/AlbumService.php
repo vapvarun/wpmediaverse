@@ -257,38 +257,14 @@ class AlbumService {
 	 * @return array Array of items with media_id and position.
 	 */
 	public function get_items( int $album_id ): array {
-		global $wpdb;
-
-		list( $mvs_type_sql, $mvs_type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::MEDIA_LIBRARY, 'idx.media_type' );
-
-		return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				// Filtering happens here rather than in each caller. An album item row
-				// survives its media being trashed, so without this join a deleted
-				// photo stayed in every album it belonged to.
-				//
-				// ASSERT publish; do not exclude trash. `status` is a lifecycle field
-				// with four values — publish, trash, draft (held for moderation) and
-				// scheduled (awaiting publish_at, UploadService:425-435). The old
-				// `<> 'trash'` therefore passed drafts and scheduled items through, so
-				// AlbumController's two get_items() callers returned them over REST,
-				// and get_item_count() counted them while get_items_with_data() (which
-				// filters to 'publish' in PHP) rendered without them — an album
-				// reporting twelve items and showing nine, the exact divergence the
-				// count method's own comment forbids.
-				//
-				// The type group is positive for the same reason: an album is a MEDIA
-				// container, so it must say what it holds, not what it excludes.
-				"SELECT ai.media_id, ai.position
-				FROM {$wpdb->prefix}mvs_album_items ai
-				INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
-				WHERE ai.album_id = %d AND idx.status = 'publish' AND {$mvs_type_sql}
-				ORDER BY ai.position ASC",
-				$album_id,
-				...$mvs_type_params
-			),
-			ARRAY_A
-		);
+		// Through the repository (P1.2). The join, the publish assertion and the
+		// type group live in MediaRepository::album_items() so this method and
+		// get_item_count() below cannot drift — and they had drifted: both once
+		// excluded trash while the render path asserted publish, so an album
+		// reported twelve items and rendered nine.
+		return \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->album_items( $album_id );
 	}
 
 	/**
@@ -333,23 +309,10 @@ class AlbumService {
 	 * @return int
 	 */
 	public function get_item_count( int $album_id ): int {
-		global $wpdb;
-
-		list( $mvs_count_type_sql, $mvs_count_type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::MEDIA_LIBRARY, 'idx.media_type' );
-
-		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				// Must apply the SAME filter as get_items(), or an album reports
-				// twelve items and renders nine. It did: this counted `<> 'trash'`
-				// while the render path filtered to 'publish'.
-				"SELECT COUNT(*)
-				FROM {$wpdb->prefix}mvs_album_items ai
-				INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
-				WHERE ai.album_id = %d AND idx.status = 'publish' AND {$mvs_count_type_sql}",
-				$album_id,
-				...$mvs_count_type_params
-			)
-		);
+		// Same args as get_items(), by construction — see album_items_parts().
+		return \WPMediaVerse\Core\Plugin::container()
+			->get( 'media_repository' )
+			->count_album_items( $album_id );
 	}
 
 	/**
@@ -727,52 +690,35 @@ class AlbumService {
 	 * @return int|null Media post ID or null.
 	 */
 	private function get_first_image_item( int $album_id ): ?int {
-		global $wpdb;
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 
-		$index_table = $wpdb->prefix . 'mvs_media_index';
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$media_id = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT ai.media_id
-				FROM {$wpdb->prefix}mvs_album_items ai
-				INNER JOIN {$index_table} idx ON idx.media_id = ai.media_id
-				WHERE ai.album_id = %d AND idx.file_type LIKE %s AND idx.status = 'publish'
-				ORDER BY ai.position ASC
-				LIMIT 1",
-				$album_id,
-				'image/%'
+		// Prefer a real image.
+		$rows = $repo->album_items(
+			$album_id,
+			array(
+				'mime_like' => 'image/%',
+				'limit'     => 1,
 			)
 		);
 
-		// If no image item, fall back to just the first item (for video thumbnails etc).
-		if ( ! $media_id ) {
-			list( $mvs_cover_type_sql, $mvs_cover_type_params ) = \WPMediaVerse\Core\MediaTypes::in_clause( \WPMediaVerse\Core\MediaTypes::MEDIA, 'idx.media_type' );
-
-			$media_id = $wpdb->get_var(
-				$wpdb->prepare(
-					// Fallback when the album holds no image. It must still be
-					// something that RENDERS as a cover: video and audio carry a
-					// poster, a document has nothing to show, so a document picked
-					// here would be a broken thumbnail on explore, the CPT archive,
-					// album REST and the BuddyPress tab.
-					//
-					// `status = 'publish'`, not `<> 'trash'` — otherwise a scheduled
-					// photo becomes an album's public cover before its publish time.
-					"SELECT ai.media_id
-					FROM {$wpdb->prefix}mvs_album_items ai
-					INNER JOIN {$wpdb->prefix}mvs_media_index idx ON idx.media_id = ai.media_id
-					WHERE ai.album_id = %d AND idx.status = 'publish' AND {$mvs_cover_type_sql}
-					ORDER BY ai.position ASC
-					LIMIT 1",
-					$album_id,
-					...$mvs_cover_type_params
-				)
-			);
+		if ( ! empty( $rows[0]['media_id'] ) ) {
+			return (int) $rows[0]['media_id'];
 		}
-		// phpcs:enable
 
-		return $media_id ? (int) $media_id : null;
+		// Fallback when the album holds no image. It must still be something that
+		// RENDERS as a cover: video and audio carry a poster, a document has
+		// nothing to show, so a document picked here would be a broken thumbnail
+		// on explore, the CPT archive, album REST and the BuddyPress tab. Hence
+		// MEDIA, which is narrower than the MEDIA_LIBRARY default.
+		$rows = $repo->album_items(
+			$album_id,
+			array(
+				'types' => \WPMediaVerse\Core\MediaTypes::MEDIA,
+				'limit' => 1,
+			)
+		);
+
+		return empty( $rows[0]['media_id'] ) ? null : (int) $rows[0]['media_id'];
 	}
 
 	/**
